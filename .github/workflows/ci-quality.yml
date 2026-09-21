@@ -435,6 +435,9 @@ jobs:
       - name: Tracked runtime sidecars
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_tracked_sidecars.py
+      - name: Tree shape
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_tree_shape.py
       - name: Vendored blocker derivation
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_vendored_blocker_derivation.py
@@ -568,6 +571,13 @@ jobs:
         run: npm run check:ci-plan-citations
         env:
           GITHUB_BASE_REF: ${{ github.base_ref }}
+
+      # Hand-written for the same reason as every other step in this job. No
+      # GITHUB_BASE_REF: this one reads the working tree and the git log of each plan,
+      # never a merge-base, so it reaches the same verdict on a push and on a PR.
+      - name: Plan folders and retention
+        if: ${{ !cancelled() }}
+        run: npm run check:ci-plan-folders
 
       # HAND-WRITTEN, like its neighbours, and the reason is invariant 11:
       # quality-branch has no `- id: setup`, so `scripts/gate-bind.ts:289-300` refuses to

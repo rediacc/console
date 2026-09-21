@@ -1,0 +1,6 @@
+# twin .ci/scripts/infra/docker-prepull.sh blob baa2ba0d1ea50f42961565454fcd2650c7a3c6a1
+exit: 1
+--- stdout ---
+--- stderr ---
+✗ Required command 'docker' is not available
+--- docker calls ---

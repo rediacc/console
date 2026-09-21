@@ -1,0 +1,15 @@
+# twin .ci/scripts/autopilot/resolve-model-args.sh blob c77054b040287f6ad2c8420ef1aa0aa91de2170d
+exit: 0
+--- stdout ---
+--model m
+--max-turns 80
+--disallowed-tools Task,Agent
+--- stderr ---
+✓ round args: model m, 80 turns, the model's default effort
+--- github output ---
+args<<AUTOPILOT_ARGS_EOF
+--model m
+--max-turns 80
+--disallowed-tools Task,Agent
+AUTOPILOT_ARGS_EOF
+

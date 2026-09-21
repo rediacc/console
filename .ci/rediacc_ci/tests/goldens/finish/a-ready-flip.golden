@@ -1,0 +1,7 @@
+# twin .ci/scripts/autopilot/finish.sh blob bbd07cd04054c2a832b2393721d680966ef32ade
+exit: 0
+--- stdout ---
+marked ready--- stderr ---
+✓ PR #5 flipped ready for review
+--- gh calls ---
+pr	ready	5	--repo	rediacc/console

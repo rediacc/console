@@ -1,0 +1,18 @@
+# twin .ci/scripts/autopilot/autopilot-push.sh blob e560c38956d694662edcc15b3b5f48c3bb23b63d
+exit: 2
+--- stdout ---
+--- stderr ---
+✗ usage: autopilot-push.sh --root <checkout> --handoff <file> --branch <name> [--remote <name>] [--failed-jobs <file>] [--verdict-out <file>] [--dry-run]
+--- git calls ---
+--- gh calls ---
+--- git state ---
+{
+  "console": {
+    "branch": "work",
+    "head": "d36ce653845de891a11327bdada5192925f9bbbf",
+    "status": "A  src.txt\n?? handoff.json"
+  },
+  "console.git": {
+    "refs": ""
+  }
+}

@@ -1,7 +1,7 @@
 """Port of `.ci/scripts/test/gates/test-autopilot-guide-comment.sh`, retired in W7 P5.
 
 Structurally a mirror of the label-guide port, because the module is a mirror of that poster: same marker discipline, same bot-only ownership, same create/update/no-op contract driven against a fake GitHub client and asserted on the call trace. What differs is the CONTENT half, where every documented fact is re-derived from the file it came from, so a rename in `autopilot.yml`,
-`autopilot-gate.sh` or `resolve-model-args.sh` turns this red instead of leaving a wrong comment sitting on every PR.
+`autopilot_gate.py` or `resolve_model_args.py` turns this red instead of leaving a wrong comment sitting on every PR.
 
 THE NODE HARNESS IS THE TWIN'S, BYTE FOR BYTE, `@@RENDER@@` sentinel included. See the label-guide port's docstring for why a mock is never translated.
 
@@ -37,12 +37,12 @@ from rediacc_ci.tests.gates import harness
 MODULE = paths.from_root(".ci", "scripts", "ci", "autopilot-guide-comment.cjs")
 LABEL_MODULE = paths.from_root(".ci", "scripts", "ci", "label-guide-comment.cjs")
 AUTOPILOT_WF = paths.from_root(".github", "workflows", "autopilot.yml")
-GATE_SH = paths.from_root(".ci", "scripts", "autopilot", "autopilot-gate.sh")
-MODEL_ARGS_SH = paths.from_root(".ci", "scripts", "autopilot", "resolve-model-args.sh")
+GATE_PY = paths.from_root(".ci", "rediacc_ci", "autopilot", "autopilot_gate.py")
+MODEL_ARGS_PY = paths.from_root(".ci", "rediacc_ci", "autopilot", "resolve_model_args.py")
 LABELS_FILE = paths.from_root(".github", "labels.yml")
 CI_WORKFLOW = paths.from_root(".github", "workflows", "ci.yml")
 
-REQUIRED_INPUTS = (MODULE, AUTOPILOT_WF, GATE_SH, MODEL_ARGS_SH, LABELS_FILE, CI_WORKFLOW)
+REQUIRED_INPUTS = (MODULE, AUTOPILOT_WF, GATE_PY, MODEL_ARGS_PY, LABELS_FILE, CI_WORKFLOW)
 
 HARNESS_CJS = r"""
 const mod = require(process.argv[2]);
@@ -88,9 +88,11 @@ STOP_LABELS = ("autopilot", "autopilot-blocked")
 MIN_VARIABLES = 10
 
 JOB_KEY_RE = re.compile(r"^  [a-z][a-z0-9-]*:$")
-CAP_RE = re.compile(r'^MAX_ROUNDS="\$\{AUTOPILOT_MAX_ROUNDS:-([0-9]*)\}"', re.MULTILINE)
-TURNS_OTHER_RE = re.compile(r"^turns=([0-9]+)$", re.MULTILINE)
-TURNS_FIX_RE = re.compile(r'"fix" \]\] && turns=([0-9]+)')
+# Read out of the PORT since `autopilot-gate.sh` was retired: the default sits at module scope, so the anchor is the assignment rather than the twin's parameter expansion.
+CAP_RE = re.compile(r'^DEFAULT_MAX_ROUNDS = "([0-9]*)"$', re.MULTILINE)
+# Read out of the PORT since `resolve-model-args.sh` was retired: the two constants sit at module scope, so the anchor is the assignment rather than the twin's shell arithmetic.
+TURNS_OTHER_RE = re.compile(r"^TURNS_DEFAULT = ([0-9]+)$", re.MULTILINE)
+TURNS_FIX_RE = re.compile(r"^TURNS_FIX = ([0-9]+)$", re.MULTILINE)
 
 
 class Guide:
@@ -308,7 +310,7 @@ def test_every_variable_is_documented_and_real(gate, tmp_path):
 def test_stop_switches_are_documented_with_their_scopes(gate, tmp_path):
     guide = Guide(gate, tmp_path)
     body = guide.rendered_body()
-    gate_sh = GATE_SH.read_text(encoding="utf-8")
+    gate_py = GATE_PY.read_text(encoding="utf-8")
     labels = LABELS_FILE.read_text(encoding="utf-8")
     gate.assert_contains(
         body, "cancel the run (one round)", "the smallest scope, and that it is only one round"
@@ -318,7 +320,7 @@ def test_stop_switches_are_documented_with_their_scopes(gate, tmp_path):
     gate.assert_contains(body, "AUTOPILOT_ENABLED", "the repo-wide switch")
     # THE PRECISE CLAIM. Removing the arming label does NOT stop a campaign: the gate's arming chain accepts an open campaign with no label present. A guide that said otherwise would send someone to remove a label and walk away.
     gate.assert_contains(body, "only the label path", "removing the label is scoped honestly")
-    if 'ARMED_BY="campaign"' not in gate_sh:
+    if 'armed_by = "campaign"' not in gate_py:
         gate.log_fail(
             "the guide claims a campaign survives label removal, but the gate has no "
             "campaign arming path"
@@ -336,35 +338,35 @@ def test_stop_switches_are_documented_with_their_scopes(gate, tmp_path):
 def test_the_loop_and_its_bounds_match_the_gate(gate, tmp_path):
     guide = Guide(gate, tmp_path)
     body = guide.rendered_body()
-    gate_sh = GATE_SH.read_text(encoding="utf-8")
-    model_args = MODEL_ARGS_SH.read_text(encoding="utf-8")
+    gate_py = GATE_PY.read_text(encoding="utf-8")
+    model_args = MODEL_ARGS_PY.read_text(encoding="utf-8")
     for action in ROUND_ACTIONS:
         gate.assert_contains(body, "`%s`" % action, "the round action '%s' is named" % action)
-        if '"%s"' % action not in gate_sh:
+        if '"%s"' % action not in gate_py:
             gate.log_fail(
-                "the guide names round action '%s', which autopilot-gate.sh never emits" % action
+                "the guide names round action '%s', which autopilot_gate.py never emits" % action
             )
     gate.assert_contains(body, "stuck-signature", "the stuck-signature bound")
-    if "stuck-signature" not in gate_sh:
-        gate.log_fail("autopilot-gate.sh has no stuck-signature bound")
+    if "stuck-signature" not in gate_py:
+        gate.log_fail("autopilot_gate.py has no stuck-signature bound")
 
     # The NUMBERS, each read back out of its own source. A pattern that matches nothing is a REFUSAL and not an empty comparison, which is what the twin's `[ -n "$cap" ]` guard buys.
-    cap_match = CAP_RE.search(gate_sh)
+    cap_match = CAP_RE.search(gate_py)
     if not cap_match or not cap_match.group(1):
-        gate.log_fail("could not read the default round cap out of autopilot-gate.sh")
+        gate.log_fail("could not read the default round cap out of autopilot_gate.py")
     cap = cap_match.group(1)
     gate.assert_contains(body, "default %s" % cap, "the documented round cap matches the gate")
 
     other_match = TURNS_OTHER_RE.search(model_args)
     fix_match = TURNS_FIX_RE.search(model_args)
     if not other_match or not fix_match:
-        gate.log_fail("could not read the --max-turns values out of resolve-model-args.sh")
+        gate.log_fail("could not read the --max-turns values out of resolve_model_args.py")
     turns_other = other_match.group(1)
     turns_fix = fix_match.group(1)
     gate.assert_contains(
         body,
         "%s fixing, %s otherwise" % (turns_fix, turns_other),
-        "the documented turn caps match resolve-model-args.sh",
+        "the documented turn caps match resolve_model_args.py",
     )
     gate.log_pass(
         "round actions, stuck-signature, round cap (%s) and turn caps (%s/%s) all match their "

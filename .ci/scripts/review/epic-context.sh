@@ -59,7 +59,7 @@ PLANS="$(awk -v id="$EPIC" '
     /^### / { insection = 0 }
     $0 ~ ("PR-TASK: " id) { insection = 1 }
     insection { print }
-' "$SNAP" | grep -oE 'agent/PLAN-[A-Za-z0-9._-]+\.md' | sort -u || true)"
+' "$SNAP" | grep -oE 'agent/(plans/(_done/|_removed/)?)?PLAN-[A-Za-z0-9._-]+\.md' | sort -u || true)"
 if [[ -z "$PLANS" ]]; then
     echo "(none referenced)"
 else

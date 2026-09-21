@@ -1,0 +1,16 @@
+# twin .ci/scripts/autopilot/resolve-model-args.sh blob c77054b040287f6ad2c8420ef1aa0aa91de2170d
+exit: 0
+--- stdout ---
+::notice::autopilot: AUTOPILOT_EFFORT is 'banana', which is not one of low,medium,high,xhigh,max; ignoring it and running at the model's default effort
+--model claude-opus-5
+--max-turns 60
+--disallowed-tools Task,Agent
+--- stderr ---
+✓ round args: model claude-opus-5, 60 turns, the model's default effort
+--- github output ---
+args<<AUTOPILOT_ARGS_EOF
+--model claude-opus-5
+--max-turns 60
+--disallowed-tools Task,Agent
+AUTOPILOT_ARGS_EOF
+

@@ -1,0 +1,23 @@
+# twin .ci/scripts/autopilot/autopilot-push.sh blob e560c38956d694662edcc15b3b5f48c3bb23b63d
+exit: 1
+--- stdout ---
+--- stderr ---
+ESCALATE: handoff-missing: no handoff at '<sandbox>/console/handoff.json' - the model exited without leaving one; a wedged model must be visible, never a silent no-op
+validate-handoff: handoff REJECTED - the harness must escalate, not push.
+✗ handoff rejected; escalating (nothing staged, nothing pushed)
+--- git calls ---
+rev-parse	--abbrev-ref	HEAD
+status	--porcelain=v1	-z
+rev-parse	HEAD
+--- gh calls ---
+--- git state ---
+{
+  "console": {
+    "branch": "work",
+    "head": "d36ce653845de891a11327bdada5192925f9bbbf",
+    "status": "?? src.txt"
+  },
+  "console.git": {
+    "refs": ""
+  }
+}

@@ -1,0 +1,21 @@
+# twin .ci/scripts/autopilot/autopilot-push.sh blob e560c38956d694662edcc15b3b5f48c3bb23b63d
+exit: 0
+--- stdout ---
+--- stderr ---
+✓ outcome-escalate: validated round, nothing staged and nothing pushed; the post-boundary steps own the follow-up
+--- git calls ---
+rev-parse	--abbrev-ref	HEAD
+status	--porcelain=v1	-z
+rev-parse	HEAD
+--- gh calls ---
+--- git state ---
+{
+  "console": {
+    "branch": "work",
+    "head": "d36ce653845de891a11327bdada5192925f9bbbf",
+    "status": "?? handoff.json"
+  },
+  "console.git": {
+    "refs": ""
+  }
+}

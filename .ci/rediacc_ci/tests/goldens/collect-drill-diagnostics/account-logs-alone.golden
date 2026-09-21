@@ -1,0 +1,6 @@
+# twin .ci/scripts/test/collect-drill-diagnostics.sh blob 251a122bb8abad3b38c60f8c20dbad804f7f062a
+exit: 0
+--- stdout ---
+drill diagnostics collected: 1 file(s) under <out>/drill-diagnostics
+          14 bytes  <out>/drill-diagnostics/account-logs/rustfs.log
+--- stderr ---

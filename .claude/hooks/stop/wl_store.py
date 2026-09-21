@@ -167,7 +167,12 @@ def agent_root(root):
 
 # Directory names under agent/ that are NOT sessions. Shape cannot tell them apart -- `archive` and `programs` both fit the sanitised 8-character session slug -- so they are named. Getting this wrong is quiet: a listing that counted `archive` as a peer would report a session that does not exist, and one that missed a real peer would report nobody there. "reggate" holds the
 # per-branch effort-cap ledger (agent/reggate/<branch>.jsonl). It MUST be reserved: agent_session_dirs treats every other directory under agent/ as a session prefix, so omitting it makes the hook report a peer session named "reggate" that does not exist. That is the one silent failure the effort-cap change can cause, and it is why this name is here and not only in wl_reggate.
-AGENT_RESERVED_DIRS = frozenset({"archive", "programs", "worklist", "reggate"})
+#
+# THREE NAMES WERE MISSING, ADDED 2026-09-21. `pr` and `legacy` have been directories under agent/ for some time and were never reserved, so `agent_session_dirs` has been reporting two peer sessions named "pr" and "legacy" that do not exist -- the exact silent failure the paragraph above describes, already live. `plans` is the new plan home
+# (check:ci-plan-folders) and would have been the third the day it was created. The set is what `check:ci-tree-shape` DERIVES its agent-directory classes from rather than copying, so a name missing here is also a stray file there.
+AGENT_RESERVED_DIRS = frozenset(
+    {"archive", "programs", "worklist", "reggate", "plans", "pr", "legacy"}
+)
 
 
 def agent_session_slug(me):
@@ -208,8 +213,60 @@ def agent_rules_path(root, me):
 
 
 def agent_plan_dir(root):
-    """The tree ROOT, deliberately one level ABOVE the session directories: a plan belongs to the work rather than to whoever happened to write it, and --triage names the path before any session owns it. That property is what the branch level used to provide and what `agent/` provides now."""
+    """The tree ROOT, deliberately one level ABOVE the session directories: a plan belongs to the work rather than to whoever happened to write it, and --triage names the path before any session owns it. That property is what the branch level used to provide and what `agent/` provides now.
+
+    STILL THE ROOT, and still the right answer for the ONE question it is now asked: "where would a plan be written". Enumeration moved to `agent_plan_files` below when plans gained folders, because a single directory can no longer answer it.
+    """
     return agent_root(root)
+
+
+#: The plan folders under `agent/`, DEEPEST FIRST, relative to the agent root. "" is the LEGACY location, which is also the STUB namespace after the migration: a closed plan moves into `plans/_done/` and leaves a pointer behind at its old path so every citation still resolves. `.ci/rediacc_ci/quality/plan_lifecycle.PLAN_DIRS` is the same list one directory over, spelled
+#: absolute; the two are compared by `.claude/rediacc_hooks/tests/test_wl_plan_folders.py`. They cannot be ONE list: a CI gate under `.ci` has to answer on a checkout with no `.claude/`, and this module has to load with no `.ci` on sys.path.
+AGENT_PLAN_SUBDIRS = ("plans/_done", "plans/_removed", "plans", "")
+
+PLAN_GLOB = "PLAN-*.md"
+
+#: How many bytes decide whether a file is a plan or a pointer. The stub header is three lines, so a prefix answers it; `wl_planindex.plan_stats` is a stat-only fast path and this is the one read it is allowed to pay, 103 short reads rather than 103 whole plans.
+STUB_PROBE_BYTES = 1024
+
+_STUB_STATUS_RE = re.compile(r"^\*{0,2}Status\*{0,2}:[ \t]*moved[ \t]*$", re.MULTILINE)
+_STUB_TARGET_RE = re.compile(r"^Moved-To:[ \t]*(\S+)[ \t]*$", re.MULTILINE)
+
+
+def agent_plan_dirs(root):
+    """Every directory a plan may sit in, deepest first. Existing ones only."""
+    base = agent_root(root)
+    return [d for d in ((base / sub if sub else base) for sub in AGENT_PLAN_SUBDIRS) if d.is_dir()]
+
+
+def is_plan_stub(path):
+    """True when `path` is a POINTER left behind by a move, not a plan.
+
+    BOTH HALVES ARE REQUIRED. `Status: moved` alone would drop a plan whose author typed the word; `Moved-To:` alone would drop an ordinary plan that merely cites its successor. Together they are a shape nothing writes by accident.
+
+    A stub is dropped at the enumeration rather than filtered by each caller, which is what keeps the census, the box ledger, the housekeeping clock and the stop advisory from each needing their own opinion about pointers. `False` on any read error: a file that cannot be read is not evidence that it is a pointer, and treating it as one would silently shrink the corpus.
+    """
+    try:
+        with open(path, "rb") as handle:
+            head = handle.read(STUB_PROBE_BYTES).decode("utf-8", errors="replace")
+    except OSError:
+        return False
+    return bool(_STUB_STATUS_RE.search(head)) and bool(_STUB_TARGET_RE.search(head))
+
+
+def agent_plan_files(root):
+    """Every plan file under `agent/`, name-sorted, STUBS EXCLUDED.
+
+    THE ONE ENUMERATION. `wl_checks.plan_records` and `wl_planindex.plan_stats` both call it, so the slow path that reads plans and the fast path that stats them have no way to glob different sets -- which would make the census permanently STALE, the failure `wl_planindex.plan_dir`'s docstring already names for a hardcoded second literal.
+
+    Sorted by PATH rather than by folder so the order is stable across the migration: a plan that moves from `agent/` to `agent/plans/` changes position once, at the move, and never again.
+    """
+    seen = {}
+    for directory in agent_plan_dirs(root):
+        for path in directory.glob(PLAN_GLOB):
+            if path.is_file() and not is_plan_stub(path):
+                seen[str(path)] = path
+    return [seen[key] for key in sorted(seen)]
 
 
 def agent_traps_path(root):

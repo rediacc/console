@@ -1,0 +1,28 @@
+# twin .ci/scripts/autopilot/autopilot-push.sh blob e560c38956d694662edcc15b3b5f48c3bb23b63d
+exit: 1
+--- stdout ---
+--- stderr ---
+TRIPWIRE: new-file-over-8kb: 'blob.txt' is a new file adding 9000 bytes (cap 8192, applies regardless of prefix)
+exfil-tripwire TRIPPED: no commit, no push; escalate with these byte counts and paths only.
+Do NOT upload the diff as an artifact: console artifacts are public, and uploading the
+suspected diff would complete the exfiltration it exists to stop.
+✗ tripwire tripped; escalating (nothing committed, nothing pushed)
+--- git calls ---
+rev-parse	--abbrev-ref	HEAD
+status	--porcelain=v1	-z
+rev-parse	HEAD
+add	--	blob.txt
+diff	--cached	--name-only
+diff	--cached
+--- gh calls ---
+--- git state ---
+{
+  "console": {
+    "branch": "work",
+    "head": "d36ce653845de891a11327bdada5192925f9bbbf",
+    "status": "A  blob.txt\n?? handoff.json"
+  },
+  "console.git": {
+    "refs": ""
+  }
+}

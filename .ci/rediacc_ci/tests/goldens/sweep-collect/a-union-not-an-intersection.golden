@@ -1,0 +1,28 @@
+# twin .ci/scripts/autopilot/sweep-collect.sh blob 52ed925f8f71bdf9f2ad689677167385b887b34b
+exit: 0
+--- stdout ---
+--- stderr ---
+✓ sweep-campaigns: 1 open campaign(s) across 3 scanned PR(s)
+✓ sweeper: 2 armed PR(s) = 1 label-armed U 1 campaign-armed
+--- gh calls ---
+pr	list	--repo	rediacc/console	--state	open	--limit	50	--json	number
+pr	list	--repo	rediacc/console	--label	autopilot	--state	open	--json	number	--jq	.[].number
+api	repos/rediacc/console/issues/7/comments	--paginate	--slurp
+api	repos/rediacc/console/issues/10/comments	--paginate	--slurp
+api	repos/rediacc/console/issues/9/comments	--paginate	--slurp
+--- work ---
+{
+  "campaign-armed.txt": "10\n",
+  "comments/10.json": "[\n  {\n    \"id\": 110,\n    \"author\": \"autopilot-bot\",\n    \"body\": \"### Autopilot state (machine-maintained, do not edit)\\nstate: fix | round: 1/3 | head: abc | last_run: 1/1 handled | campaign: open | model: m | rounds_max: 3 | last_sig: none | sig_count: 0\\n\"\n  }\n]\n",
+  "comments/10.raw.json": "[[{\"id\": 110, \"user\": {\"login\": \"autopilot-bot\"}, \"body\": \"### Autopilot state (machine-maintained, do not edit)\\nstate: fix | round: 1/3 | head: abc | last_run: 1/1 handled | campaign: open | model: m | rounds_max: 3 | last_sig: none | sig_count: 0\\n\"}]]",
+  "comments/7.json": "[\n  {\n    \"id\": 107,\n    \"author\": \"autopilot-bot\",\n    \"body\": \"### Autopilot state (machine-maintained, do not edit)\\nstate: fix | round: 1/3 | head: abc | last_run: 1/1 handled | campaign: closed | model: m | rounds_max: 3 | last_sig: none | sig_count: 0\\n\"\n  }\n]\n",
+  "comments/7.raw.json": "[[{\"id\": 107, \"user\": {\"login\": \"autopilot-bot\"}, \"body\": \"### Autopilot state (machine-maintained, do not edit)\\nstate: fix | round: 1/3 | head: abc | last_run: 1/1 handled | campaign: closed | model: m | rounds_max: 3 | last_sig: none | sig_count: 0\\n\"}]]",
+  "comments/9.json": "[\n  {\n    \"id\": 109,\n    \"author\": \"autopilot-bot\",\n    \"body\": \"### Autopilot state (machine-maintained, do not edit)\\nstate: fix | round: 1/3 | head: abc | last_run: 1/1 handled | campaign: closed | model: m | rounds_max: 3 | last_sig: none | sig_count: 0\\n\"\n  }\n]\n",
+  "comments/9.raw.json": "[[{\"id\": 109, \"user\": {\"login\": \"autopilot-bot\"}, \"body\": \"### Autopilot state (machine-maintained, do not edit)\\nstate: fix | round: 1/3 | head: abc | last_run: 1/1 handled | campaign: closed | model: m | rounds_max: 3 | last_sig: none | sig_count: 0\\n\"}]]",
+  "label-armed.txt": "7",
+  "prs.json": "[{\"number\":7},{\"number\":10},{\"number\":9}]"
+}
+--- out ---
+10
+7
+

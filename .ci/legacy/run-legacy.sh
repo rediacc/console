@@ -439,7 +439,7 @@ quality_audit() {
 }
 
 quality_shell() {
-    "$ROOT_DIR/.ci/scripts/security/shellcheck.sh"
+    PYTHONPATH="$ROOT_DIR/.ci" python3 -m rediacc_ci.security.shellcheck
     "$ROOT_DIR/.ci/scripts/security/shfmt.sh"
 }
 

@@ -1,0 +1,19 @@
+# twin .ci/scripts/security/shellcheck.sh blob bd92dcbb76ec0045ffcf3b0c134ff17ff2294284
+exit: 1
+--- stdout ---
+info: Checking shell script compatibility
+ShellCheck - fake
+version: 9.99.0
+info: Checking every tracked and untracked *.sh file
+info: 6 file(s)
+info: Checking build scripts for bash 4+ features (macOS compatibility)
+
+declare -A (associative arrays require bash 4.0+):
+.ci/scripts/build/b.sh:2:declare -A m # printf 'a
+b'
+info: macOS ships with bash 3.2 due to GPLv3 licensing. Use bash 3.x compatible alternatives.
+--- stderr ---
+[0;31merror: Found bash 4+ features in build scripts that don't work on macOS (bash 3.2):[0m
+--- calls ---
+FAKECALL shellcheck -e SC1090 -e SC1091 -e SC2034 -S warning .ci/config/constants.sh .ci/scripts/build/b.sh .ci/scripts/lib/toolchain.sh .ci/scripts/security/shellcheck.sh run.sh scripts/one.sh
+FAKEBATCH 6

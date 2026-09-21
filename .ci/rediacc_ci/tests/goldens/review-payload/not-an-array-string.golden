@@ -1,0 +1,7 @@
+# twin .ci/scripts/autopilot/review-payload.sh blob f794c4b741afd63ff389bccfa70f70d3741ae824
+exit: 2
+--- stdout ---
+--- stderr ---
+✗ threads fixture is not a JSON array: threads.json
+--- out file ---
+<no file>

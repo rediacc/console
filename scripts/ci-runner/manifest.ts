@@ -1268,6 +1268,20 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    // WHERE A FILE MAY BE, at the repository root and under agent/. Two defects in one week were the same missing rule rather than two bugs: debris from the retired bash worklist suites sat untracked at the root, and a second reggate ledger appeared under .claude/hooks/stop/agent/ because a fallback root was cwd-relative. The classes are data in .ci/policy/tree-shape.json.
+    // Lane quality-static for the reason its neighbours are there: the verdict reads the git index and a handful of Python sources, never a merge-base, so it reaches the same answer on a push and on a PR. No `paths`: the subject is the WHOLE listing, and a half-populated path table would drop the gate from --changed exactly when a stray had just been added.
+    id: 'check:ci-tree-shape',
+    run: 'npm run check:ci-tree-shape',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_tree_shape.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-static',
+      step: 'Tree shape',
+    },
+  },
+  {
     // The runner's 21 assertions were its ONLY controls and ran on ONE side: `npm run ci` executes them on a developer machine and nothing in CI did, which is the "a gate that runs on one side only" case check:ci-parity exists to name. They pin the pre-push lane's correctness -- glob semantics (a `**` glob must match a root-level run.sh), gitlink widening (a changed submodule is
     // one diff entry, not a file list), and that --list reflects the SELECTION rather than every spec -- each with its converse.
     id: 'check:ci-runner-selftest',
@@ -1929,6 +1943,29 @@ export const GATES: readonly GateSpec[] = [
       workflow: '.github/workflows/ci-quality.yml',
       job: 'quality-branch',
       step: 'Plan records',
+    },
+  },
+  {
+    // WHERE a plan lives and WHEN it goes, which none of the three gates above asks. Boxes, age and compaction pointers were all covered while `agent/` accumulated 103 files at its root under no rule at all. A plan now lives under agent/plans/, moves exactly once at close into _done/ or _removed/ leaving a stub so every citation still resolves, and expires on one of two clocks.
+    // Lane quality-branch for its neighbours' reason rather than for a base ref: the step is hand-written there because that job has no `- id: setup`, and the plan family is read together. No 'agent/plans/**' in paths yet, because pathsOrigin 'declared' asserts every glob matches a tracked file and that directory does not exist until the migration lands.
+    id: 'check:ci-plan-folders',
+    run: 'npm run check:ci-plan-folders',
+    gate: true,
+    paths: [
+      'agent/PLAN-*.md',
+      'agent/INDEX.md',
+      '.ci/config/plan-lifecycle.json',
+      '.ci/config/plan-boxes.json',
+      '.ci/scripts/quality/check_plan_folders.py',
+      '.ci/rediacc_ci/quality/plan_lifecycle.py',
+    ],
+    pathsOrigin: 'declared',
+    leaves: ['.ci/scripts/quality/check_plan_folders.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-branch',
+      step: 'Plan folders and retention',
     },
   },
   {
@@ -4182,7 +4219,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-autopilot-workflow',
     run: 'npm run check:ci-autopilot-workflow',
     gate: true,
-    leaves: ['.ci/scripts/security/check-autopilot-workflow-invariants.sh'],
+    leaves: ['.ci/rediacc_ci/security/autopilot_workflow_invariants.py'],
     ci: {
       kind: 'test',
       test: '.ci/rediacc_ci/tests/gates/test_gate_autopilot_workflow_invariants.py',
@@ -4221,7 +4258,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-workflow-invariants',
     run: 'npm run check:ci-workflow-invariants',
     gate: true,
-    leaves: ['.ci/scripts/security/check-ci-workflow-invariants.sh'],
+    leaves: ['.ci/rediacc_ci/security/ci_workflow_invariants.py'],
     ci: {
       kind: 'test',
       test: '.ci/rediacc_ci/tests/gates/test_gate_ci_workflow_invariants.py',

@@ -1,0 +1,9 @@
+# twin .ci/scripts/infra/docker-pull-ghcr.sh blob 81bac6ffea1601bfa1e3d2c65cd4adda0fb391d4
+exit: 1
+--- stdout ---
+--- stderr ---
+✗ ERROR: Pulling :latest tag is not allowed in CI
+✗ Set USE_CI_IMAGES=false to explicitly allow :latest, or use CI tag
+✗ Image requested: registry.invalid/rediacc/renet:latest
+--- docker calls ---
+

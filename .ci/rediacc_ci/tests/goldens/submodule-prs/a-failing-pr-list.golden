@@ -1,0 +1,14 @@
+# twin .ci/scripts/autopilot/submodule-prs.sh blob e613fefe9d8660a4e2f922e880edf40d24802edc
+exit: 1
+--- stdout ---
+--- stderr ---
+⚠ existing PR for acme/renet: gh call failed or returned unusable output (attempt 1/3), retrying...
+⚠ existing PR for acme/renet: gh call failed or returned unusable output (attempt 2/3), retrying...
+✗ existing PR for acme/renet: gh failed after 3 attempts (last exit 1).
+    gh: fake pr list failure
+--- gh calls ---
+pr	list	--repo	acme/renet	--head	0906-1	--state	open	--json	url	--jq	.[0].url // empty
+pr	list	--repo	acme/renet	--head	0906-1	--state	open	--json	url	--jq	.[0].url // empty
+pr	list	--repo	acme/renet	--head	0906-1	--state	open	--json	url	--jq	.[0].url // empty
+--- gh bodies ---
+{}

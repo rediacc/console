@@ -1,0 +1,128 @@
+# twin .ci/scripts/autopilot/restore-trusted-config.sh blob 07087cb3543206b71f98ed50cdfeebe800e04003
+exit: 1
+--- stdout ---
+--- stderr ---
+✗ trusted-config-drift: '.claude' differs from the pre-checkout snapshot
+✗ assert: the checkout's protected set does not match the trusted snapshot; hooks from this tree must not run
+--- steps ---
+[
+  {
+    "argv": [
+      "snapshot",
+      "--checkout",
+      "<BASE>/checkout",
+      "--snapshot",
+      "<BASE>/snapshot"
+    ],
+    "exit": 0,
+    "stdout": "",
+    "stderr": "\u2713 snapshot: 6 protected entries captured to <BASE>/snapshot\n"
+  },
+  {
+    "argv": [
+      "assert",
+      "--checkout",
+      "<BASE>/checkout",
+      "--snapshot",
+      "<BASE>/snapshot"
+    ],
+    "exit": 1,
+    "stdout": "",
+    "stderr": "\u2717 trusted-config-drift: '.claude' differs from the pre-checkout snapshot\n\u2717 assert: the checkout's protected set does not match the trusted snapshot; hooks from this tree must not run\n"
+  }
+]
+--- checkout ---
+{
+  ".claude": [
+    "file",
+    "0o644",
+    "now a file\n"
+  ],
+  ".claude.json": [
+    "link",
+    ".mcp.json"
+  ],
+  ".gitmodules": [
+    "file",
+    "0o644",
+    "sub\n"
+  ],
+  ".husky": [
+    "dir",
+    "0o755"
+  ],
+  ".husky/pre-commit": [
+    "file",
+    "0o644",
+    "hook\n"
+  ],
+  ".mcp.json": [
+    "file",
+    "0o644",
+    "{\"a\":1}\n"
+  ],
+  ".ripgreprc": [
+    "link",
+    "nowhere"
+  ],
+  "CLAUDE.md": [
+    "file",
+    "0o644",
+    "# rules\n"
+  ]
+}
+--- snapshot ---
+{
+  ".claude": [
+    "dir",
+    "0o755"
+  ],
+  ".claude.json": [
+    "link",
+    ".mcp.json"
+  ],
+  ".claude/hooks": [
+    "dir",
+    "0o755"
+  ],
+  ".claude/hooks/pre-bash": [
+    "dir",
+    "0o755"
+  ],
+  ".claude/hooks/pre-bash/guard.sh": [
+    "file",
+    "0o755",
+    "#!/bin/bash\necho hi\n"
+  ],
+  ".gitmodules": [
+    "file",
+    "0o644",
+    "sub\n"
+  ],
+  ".husky": [
+    "dir",
+    "0o755"
+  ],
+  ".husky/pre-commit": [
+    "file",
+    "0o644",
+    "hook\n"
+  ],
+  ".mcp.json": [
+    "file",
+    "0o644",
+    "{\"a\":1}\n"
+  ],
+  ".protected-manifest": [
+    "file",
+    "0o644",
+    ".claude\n.mcp.json\n.claude.json\n.gitmodules\nCLAUDE.md\n.husky\n"
+  ],
+  "CLAUDE.md": [
+    "file",
+    "0o644",
+    "# rules\n"
+  ]
+}
+--- quarantine ---
+null

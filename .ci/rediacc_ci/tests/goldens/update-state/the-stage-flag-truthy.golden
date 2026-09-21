@@ -1,0 +1,8 @@
+# twin .ci/scripts/autopilot/update-state.sh blob 86b03e9eba69476079c0a1ca26711a02b532e21d
+exit: 1
+--- stdout ---
+--- stderr ---
+✗ stage-flag-disabled: AUTOPILOT_ALLOW_STATE is not 'true'; refusing the state write (fail closed)
+--- gh calls ---
+--- gh body ---
+<no body>

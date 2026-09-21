@@ -1,0 +1,11 @@
+# twin .ci/scripts/security/check-autopilot-workflow-invariants.sh blob 98d2acc3abe81dbdcf5fd5f4a94be0bab49c7478
+exit: 1
+--- stdout ---
+--- stderr ---
+✗ INVARIANT-FAIL: token-in-gate: <work>/wf.yml:14 (gate)
+✗ INVARIANT-FAIL: token-before-model: <work>/wf.yml:10 (alpha)
+✗ INVARIANT-FAIL: token-before-model: <work>/wf.yml:6 (zeta)
+✗ INVARIANT-FAIL: wall4-comment-missing: no 'WALL 4' comment explains the trusted checkout (<work>/wf.yml)
+✗ INVARIANT-FAIL: model-without-state-guard: no job-level 'if:' found for the model job in <work>/wf.yml (an unparsed guard cannot pass)
+✗ INVARIANT-FAIL: model-round-file-tools: could not locate the Model round settings block in <work>/wf.yml (an unparsed allowlist cannot pass)
+✗ autopilot workflow invariants FAILED (docs/ci-overhaul/03-v2-autonomy.md is the design source)

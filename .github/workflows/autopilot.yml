@@ -6,7 +6,7 @@ name: Autopilot
 # every write performed by the deterministic harness in .ci/scripts/autopilot/
 # AFTER the model step exits. THE MODEL NEVER HOLDS A WRITE TOKEN: the only
 # app-token mint in the model job sits after the model step, and the
-# invariants gate (.ci/scripts/security/check-autopilot-workflow-invariants.sh)
+# invariants gate (.ci/rediacc_ci/security/autopilot_workflow_invariants.py)
 # pins that ordering statically.
 #
 # ARMING (three paths, one latch; autopilot-gate.sh checks them in this order):
@@ -363,7 +363,7 @@ jobs:
     # that bounds the whole loop (03-v2-autonomy.md section 4's termination
     # proof) stops counting. Stage order is S2 before S4 precisely so this
     # combination never exists; the invariant `model-without-state-guard` in
-    # check-autopilot-workflow-invariants.sh pins it statically.
+    # rediacc_ci.security.autopilot_workflow_invariants pins it statically.
     if: >-
       needs.gate.outputs.decision == 'go' &&
       (needs.gate.outputs.mode == 'fix' || needs.gate.outputs.mode == 'review-response') &&

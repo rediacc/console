@@ -1,0 +1,13 @@
+# twin .ci/scripts/infra/docker-pull-ghcr.sh blob 81bac6ffea1601bfa1e3d2c65cd4adda0fb391d4
+exit: 0
+--- stdout ---
+--- stderr ---
+⚠ Using :latest tag (builds were skipped due to no private repo access)
+→ Authenticating with ghcr.io...
+→ Pulling registry.invalid/rediacc/renet:latest...
+→ Cleaning up GHCR credentials...
+✓ Successfully pulled registry.invalid/rediacc/renet:latest
+--- docker calls ---
+docker	login	ghcr.io	-u	fixture-actor	--password-stdin	stdin='fixture-token\n'
+docker	pull	registry.invalid/rediacc/renet:latest
+docker	logout	ghcr.io

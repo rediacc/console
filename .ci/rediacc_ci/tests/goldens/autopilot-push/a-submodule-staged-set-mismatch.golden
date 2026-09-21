@@ -1,0 +1,42 @@
+# twin .ci/scripts/autopilot/autopilot-push.sh blob e560c38956d694662edcc15b3b5f48c3bb23b63d
+exit: 1
+--- stdout ---
+--- stderr ---
+--- <work>/sub-declared.txt	<mtime>
++++ <work>/sub-staged.txt	<mtime>
+@@ -1 +1,2 @@
++extra.go
+ main.go
+✗ submodule-staged-set-mismatch: 'private/renet' staged set does not equal the validated files[]; refusing to commit
+--- git calls ---
+rev-parse	--abbrev-ref	HEAD
+status	--porcelain=v1	-z
+rev-parse	HEAD
+-C	<sandbox>/console/private/renet	rev-parse	--show-toplevel
+-C	<sandbox>/console/private/renet	rev-parse	--abbrev-ref	HEAD
+-C	<sandbox>/console/private/renet	show-ref	--verify	--quiet	refs/heads/work
+-C	<sandbox>/console/private/renet	checkout	-q	-b	work
+-C	<sandbox>/console/private/renet	rev-parse	HEAD
+-C	<sandbox>/console/private/renet	ls-files	--error-unmatch	--	main.go
+-C	<sandbox>/console/private/renet	add	--	main.go
+-C	<sandbox>/console/private/renet	diff	--cached	--name-only
+--- gh calls ---
+--- git state ---
+{
+  "console": {
+    "branch": "work",
+    "head": "18d324309f358efb4e98af4de1926febf0ff3ea5",
+    "status": "M private/renet\n?? handoff.json"
+  },
+  "console.git": {
+    "refs": ""
+  },
+  "console/private/renet": {
+    "branch": "work",
+    "head": "9c2e1ec4aa2994a5503f57c92213d4a4244d181c",
+    "status": "A  extra.go\nM  main.go"
+  },
+  "renet.git": {
+    "refs": "refs/heads/main 9c2e1ec4aa2994a5503f57c92213d4a4244d181c"
+  }
+}

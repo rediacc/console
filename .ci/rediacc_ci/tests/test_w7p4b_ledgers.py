@@ -386,6 +386,9 @@ def test_the_call_site_was_actually_cut_over(pair: str) -> None:
 # Pairs whose bash twin W7P5 has RETIRED, with the batch that did it. The ledger is then the whole of the evidence, which is what the K=5 assertion above exists to keep true; a re-record is no longer possible and is not supposed to be.
 RETIRED_TWINS = {
     "w7p4b-check-rerun-attempt": "W7P5 batch B5",
+    # Deleted by the 30-twin batch in 62599afc0 without an entry here, so this assertion was red in the tree until W7P5 batch M1 read it. The batch is named by its commit rather than by a label, because the label it carried is not written down anywhere the entry can cite.
+    "w7p4b-cancel-older-runs": "the 30-twin batch in commit 62599afc0",
+    "w7p4b-install-cli-global": "W7P5 batch M1",
 }
 
 

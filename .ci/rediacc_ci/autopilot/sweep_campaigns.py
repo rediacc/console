@@ -4,10 +4,10 @@
 Finds the open PRs whose autopilot CAMPAIGN is still open, so the 2-hourly sweeper can re-dispatch them. PR list and comment dumps in, PR numbers out, one per line, ascending.
 
 THE TRUST RULE IS THE PRODUCT, and it is why this is testable offline. A campaign is believed only when `state-comment.sh select` accepts the comment: its author must equal the autopilot bot AND its body must start with the exact header. Console is public, so a lookalike comment claiming `campaign: open` is the obvious way to make the sweeper dispatch rounds against a PR nobody
-armed. The port does not re-implement that check -- it CALLS the same `state-comment.sh`, twice per PR (`select`, then `fields`), exactly as the twin does, so there is still one reader and one writer of that format.
+armed. The port does not re-implement that check -- it CALLS the same state-comment reader, twice per PR (`select`, then `fields`), exactly as the twin did, so there is still one reader and one writer of that format.
 
-WHY THE SIBLING STAYS BASH. `state-comment.sh` is not ported yet, and re-implementing its `select`/`fields` here would create a SECOND parser of the state comment, which is the specific thing its own header says must not happen ("autopilot-gate.sh reads the metadata line through state-comment.sh instead of re-parsing it"). The port therefore resolves it the way the twin's
-`SCRIPT_DIR` does, relative to its own file, and spawns it.
+WHY THE SIBLING STAYS A SUBPROCESS. Re-implementing its `select`/`fields` here would create a SECOND parser of the state comment, which is the specific thing the format's own design forbids: the arming gate reads the metadata line through this reader rather than re-parsing it. The port therefore resolves it the way the twin's `SCRIPT_DIR` did, relative to its own file, and
+spawns it.
 
 "COULD NOT LOOK" IS NOT "NOT ARMED". A PR with no comment dump is skipped with a warning and does NOT count as scanned; the summary reports the scanned count separately for exactly that reason. Preserved verbatim, including the fact that a sweep over an empty PR list prints `0 open campaign(s) across 0 scanned PR(s)` and exits 0. That is the twin's documented "an empty sweep is a
 normal, quiet result", so the port keeps it -- but a reader should know that this line is also what a completely broken input produces, and it is the summary, not the exit code, that tells the two apart.
@@ -68,8 +68,30 @@ def script_dir() -> pathlib.Path:
     return pathlib.Path(__file__).resolve().parents[3] / ".ci" / "scripts" / "autopilot"
 
 
-def state_comment() -> str:
-    return str(script_dir() / "state-comment.sh")
+def state_comment_argv() -> list[str]:
+    """The state-comment reader, in the command form its own K=5 ledger licensed.
+
+    ITS BASH TWIN IS GONE (`.ci/shadow/w7p6-state-comment.observations.jsonl` recorded the port against it five times over, and W7P5 batch M3 deleted it), so the spawn names the port by PATH, which is the exact spelling that ledger carries. `-m` is deliberately not used: `check:ci-parity`'s tokenizer cannot read it, and a second spelling of one call is how the two drift apart.
+
+    The sibling is still SPAWNED rather than imported, for the reason this module's header gives: one reader and one writer of the state-comment format, and a child whose failure status propagates exactly as the twin's did.
+    """
+    return [sys.executable, str(port_dir() / "state_comment.py")]
+
+
+def port_dir() -> pathlib.Path:
+    """`.ci/rediacc_ci/autopilot`, from THIS file's own location."""
+    return pathlib.Path(__file__).resolve().parent
+
+
+def child_env() -> dict[str, str]:
+    """This process's environment with `rediacc_ci` importable by the child.
+
+    The parent is reached through `PYTHONPATH=.ci` with the checkout as the working directory, and a child started from anywhere else would not inherit a usable one, so the absolute path is computed here rather than trusted.
+    """
+    env = dict(os.environ)
+    env["PYTHONPATH"] = str(pathlib.Path(__file__).resolve().parents[2])
+    env["PYTHONDONTWRITEBYTECODE"] = "1"
+    return env
 
 
 def jq_r(program: str, path: str) -> tuple[int, str]:
@@ -145,10 +167,11 @@ def run_state_comment(args: list[str]) -> subprocess.CompletedProcess[str]:
     Only stdout is captured, because only stdout is what the twin captures with `$( )`. The child's diagnostics go to this process's fd 2 untouched.
     """
     return subprocess.run(
-        [state_comment(), *args],
+        [*state_comment_argv(), *args],
         stdout=subprocess.PIPE,
         text=True,
         check=False,
+        env=child_env(),
     )
 
 

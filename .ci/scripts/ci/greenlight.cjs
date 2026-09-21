@@ -56,7 +56,7 @@ const VM_E2E_PATHS = [
   '.ci/rediacc_ci',
   // The shadow-run step every VM E2E leg now carries: it `uses:` this local composite, which resolves from the WORKSPACE, so every key sharing this list must hold it or a change to the action does not re-run these legs.
   '.github/actions/bws-secrets',
-  // and the compare step beside it, extracted from 62 inline bodies on 2026-09-03 (check:ci-workflows caps inline logic at 8 lines). Built and installed globally by every leg: build-cli.sh:32 runs `npm run build:cli`, install-cli-global.sh:36-48 packs and installs it. packages/locales rides along as a workspace dependency of the CLI (packages/cli/package.json:53-55).
+  // and the compare step beside it, extracted from 62 inline bodies on 2026-09-03 (check:ci-workflows caps inline logic at 8 lines). Built and installed globally by every leg: build-cli.sh:32 runs `npm run build:cli`, rediacc_ci.setup.install_cli_global packs and installs it. packages/locales rides along as a workspace dependency of the CLI (packages/cli/package.json:53-55).
   'packages/cli',
   'packages/shared',
   'packages/provisioning',
@@ -68,13 +68,13 @@ const VM_E2E_PATHS = [
   '.ci/scripts/setup/install-deps.sh',
   '.ci/scripts/setup/build-packages.sh',
   '.ci/scripts/build/build-cli.sh',
-  '.ci/scripts/setup/install-cli-global.sh',
+  '.ci/rediacc_ci/setup/install_cli_global.py',
   '.ci/scripts/infra/docker-prepull.sh',
   '.ci/scripts/infra/build-renet.sh',
-  '.ci/scripts/infra/wait-for-vm-ssh.sh',
+  '.ci/rediacc_ci/infra/wait_for_vm_ssh.py',
   '.ci/scripts/env/create-e2e-env.sh',
   '.ci/scripts/test/run-e2e.sh',
-  '.ci/scripts/signal/create-complete.sh',
+  '.ci/rediacc_ci/ci_signal/create_complete.py',
   // Used by ONE leg each and carried by all eight: start-account-for-e2e.sh by e2e_k8s_multinode (ct-tests.yml:1080), the two private scripts by fork_isolation (:1423, :1436). Over-wide for the other seven, which is the safe direction and costs nothing extra: they are in the same listing.
   '.ci/scripts/test/start-account-for-e2e.sh',
   '.ci/scripts/private/concurrent-fork-isolation-test.sh',
@@ -198,7 +198,7 @@ const CLOSURES = {
       '.ci/scripts/setup/install-deps.sh',
       '.ci/scripts/setup/build-packages.sh',
       '.ci/scripts/infra/build-renet.sh',
-      '.ci/scripts/infra/verify-ssh.sh',
+      '.ci/rediacc_ci/infra/verify_ssh.py',
       '.ci/scripts/lib/common.sh',
       '.github/actions/setup-workspace',
       '.github/actions/app-token',
@@ -304,7 +304,7 @@ const CLOSURES = {
       // .ci/lib tree is one listing entry and self-maintains.
       '.ci/lib',
       '.ci/config/constants.sh',
-      '.ci/scripts/test/collect-drill-diagnostics.sh',
+      '.ci/rediacc_ci/diagnostics/collect_drill_diagnostics.py',
       '.ci/scripts/setup/install-deps.sh',
       '.ci/scripts/setup/build-packages.sh',
       '.ci/scripts/lib/common.sh',

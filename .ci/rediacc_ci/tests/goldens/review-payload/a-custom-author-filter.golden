@@ -1,0 +1,8 @@
+# twin .ci/scripts/autopilot/review-payload.sh blob f794c4b741afd63ff389bccfa70f70d3741ae824
+exit: 0
+--- stdout ---
+{"threads":[{"id":"T1","repo":null,"pr":null,"path":"packages/cli/src/x.ts","line":42,"comments":[{"author":"dependabot[bot]","body":"the finding","id":1000}]}],"kept":1,"dropped":0,"bytes":149}
+--- stderr ---
+✓ review payload: 1 thread(s), 149 bytes, rooted by an author matching 'dependabot'
+--- out file ---
+<no file>

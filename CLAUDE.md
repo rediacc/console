@@ -34,7 +34,8 @@ A session is scoped to one ask, but it walks past real defects on the way. Walki
 nothing, a flag that misbehaves, an error that explains nothing) means a defect has been found. Say so, with the exact command and the exact output. Do not quietly take the long way and leave the bug for the next session to rediscover.
 - **Discovery is always in scope, and so is the fix.** A finding is fixed in the
 session that finds it. Filing an issue never closes a finding. Small and local (no new abstraction, no signature change rippling outward): fix it inline immediately and say so. Bigger than that: ask the machinery (`worklist.py --triage <me> <finding...>` answers INLINE, PLAN+SUBAGENT, or OPERATOR-ONLY with the exact next command), have a Plan agent write the design to
-`agent/PLAN-<slug>.md` (committed, survives compaction), then implement it THIS session: via a writer sub-agent when the fix's file set is disjoint from the work in hand or the context is heavy (disjoint ownership, max 2, rule 4), inline otherwise. The fix rides the current PR when risk-compatible, otherwise its own branch cut the same session.
+`agent/plans/PLAN-<slug>.md` (committed, survives compaction; it moves once at close into `_done/` or `_removed/` and leaves a stub, which `check:ci-plan-folders --move` does in one step), then implement it THIS session: via a writer sub-agent when the fix's file set is disjoint from the work in hand or the context is heavy (disjoint ownership, max 2, rule 4), inline otherwise. The
+fix rides the current PR when risk-compatible, otherwise its own branch cut the same session.
 - **Issues are a last resort with exactly three doors:** the fix needs
 operator-only powers (secrets, purchases, external accounts, production deploys); the operator explicitly deferred it when asked; or the target is outside this session's write access. "It is big" is not a door. Any last-resort issue must carry the evidence (exact command, exact output) and a ready-to-run brief a future session can execute without rediscovery, and its worklist item
 closes only with the door named in the tick evidence (`door:operator-only`, `door:operator-deferred`, or `door:no-write-access`).
@@ -275,8 +276,8 @@ than blocked: a check that cannot fail, a ruling taken on faith, a comment that 
 
 ### The shape of the gate estate
 
-Both tables below are GENERATED from `scripts/ci-runner/gates.lock.json` and `.claude/settings.json` by `npx tsx scripts/gen/gen-docs.ts --write`, and verified by `gate-test:docs-gen`, which fails on drift either way. Do not hand-edit between the markers, and do not quote a number out of them into prose elsewhere: that is how `ci-gates.md` came to tell readers there were "254
-fast gates" against a live 312. Per-gate detail is in [docs/agent-reference/ci-gates.md](docs/agent-reference/ci-gates.md).
+Both tables below are GENERATED from `scripts/ci-runner/gates.lock.json` and `.claude/settings.json` by `npx tsx scripts/gen/gen-docs.ts --write`, and verified by `gate-test:docs-gen`, which fails on drift either way. Do not hand-edit between the markers, and do not quote a number out of them into prose elsewhere: that is how `ci-gates.md` came to tell readers there were "254 fast
+gates" against a live 312. Per-gate detail is in [docs/agent-reference/ci-gates.md](docs/agent-reference/ci-gates.md).
 
 <!-- >>> gen-docs: gates-summary -->
 
@@ -284,17 +285,17 @@ Scans: scripts/ci-runner/gates.lock.json, folded to one row per CI lane.
 
 | Where it runs | Registered | `gate: true` | Slow | Is a gate test |
 |---|---|---|---|---|
-| (all lanes) | 349 | 339 | 62 | 12 |
+| (all lanes) | 351 | 341 | 62 | 12 |
 | local-only (CI never runs it) | 12 | 9 | 3 | 0 |
 | step / build-renet | 1 | 1 | 1 | 0 |
-| step / quality-branch | 5 | 5 | 0 | 0 |
+| step / quality-branch | 6 | 6 | 0 | 0 |
 | step / quality-code | 102 | 101 | 19 | 0 |
 | step / quality-content | 43 | 43 | 5 | 0 |
 | step / quality-go | 16 | 16 | 3 | 0 |
 | step / quality-i18n | 40 | 38 | 3 | 0 |
 | step / quality-packages | 13 | 13 | 6 | 0 |
 | step / quality-security | 29 | 28 | 4 | 12 |
-| step / quality-static | 58 | 58 | 3 | 0 |
+| step / quality-static | 59 | 59 | 3 | 0 |
 | step / quality-wiring | 1 | 1 | 0 | 0 |
 | step / quality-www-build | 16 | 13 | 15 | 0 |
 | test (a gate test drives it) | 13 | 13 | 0 | 0 |

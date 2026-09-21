@@ -1,0 +1,19 @@
+# twin .ci/scripts/infra/verify-ssh.sh blob 03a853b7a3ab7d8da3ff395bfc38cfc95e420151
+exit: 0
+--- stdout ---
+SSH OK
+SSH OK
+SSH OK
+--- stderr ---
+✓ Attempt 1 on host-a failed
+✓ Attempt 1 failed for all targets, retrying in 5s...
+✓ Attempt 2 on host-a failed
+✓ Attempt 2 failed for all targets, retrying in 5s...
+✓ SSH connection successful via host-a on attempt 3
+--- calls ---
+whoami	
+ssh	-i	/fixture/id_rsa	-p	22	-o	StrictHostKeyChecking=no	-o	UserKnownHostsFile=/dev/null	-o	ConnectTimeout=5	fixtureuser@host-a	echo 'SSH OK'
+sleep	5
+ssh	-i	/fixture/id_rsa	-p	22	-o	StrictHostKeyChecking=no	-o	UserKnownHostsFile=/dev/null	-o	ConnectTimeout=5	fixtureuser@host-a	echo 'SSH OK'
+sleep	5
+ssh	-i	/fixture/id_rsa	-p	22	-o	StrictHostKeyChecking=no	-o	UserKnownHostsFile=/dev/null	-o	ConnectTimeout=5	fixtureuser@host-a	echo 'SSH OK'

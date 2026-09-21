@@ -66,7 +66,7 @@ mechanisms, and getting the base-moved case wrong silently weakens CI.
 assertions are structurally blind here; the reconciler is the only thing that is not.
 3. The **D5 content hash** (02 section B3). Under-inclusion causes stale image reuse, and the
 renet-pointer trap is subtle.
-4. The **autopilot harness** `autopilot-push.sh` (03). It is a security boundary. Keep it
+4. The **autopilot harness** `rediacc_ci.autopilot.autopilot_push` (03). It is a security boundary. Keep it
 tiny and boring.
 
 ---

@@ -1,0 +1,18 @@
+# twin .ci/scripts/infra/docker-prepull.sh blob baa2ba0d1ea50f42961565454fcd2650c7a3c6a1
+exit: 1
+--- stdout ---
+--- stderr ---
+Error response from daemon: fixture refuses registry.invalid/rediacc/base:fixture
+⚠ Pull failed for registry.invalid/rediacc/base:fixture <default>, retrying in 30s...
+Error response from daemon: fixture refuses registry.invalid/rediacc/base:fixture
+⚠ Pull failed for registry.invalid/rediacc/base:fixture <default>, retrying in 60s...
+Error response from daemon: fixture refuses registry.invalid/rediacc/base:fixture
+✗ Failed to pull registry.invalid/rediacc/base:fixture <default> after 3 attempts
+✗ One or more base images could not be pulled
+--- docker calls ---
+docker	pull	registry.invalid/rediacc/base:fixture
+sleep	30
+docker	pull	registry.invalid/rediacc/base:fixture
+sleep	60
+docker	pull	registry.invalid/rediacc/base:fixture
+docker	pull	registry.invalid/rediacc/base:fixture-ok

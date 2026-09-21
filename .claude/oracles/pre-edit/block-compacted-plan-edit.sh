@@ -70,6 +70,9 @@ FILE=$(printf '%s' "$INPUT" | jq -r '.tool_input.file_path // .tool_input.notebo
 
 case "$FILE" in
     */agent/PLAN-*.md | agent/PLAN-*.md) ;;
+    */agent/plans/PLAN-*.md | agent/plans/PLAN-*.md) ;;
+    */agent/plans/_done/PLAN-*.md | agent/plans/_done/PLAN-*.md) ;;
+    */agent/plans/_removed/PLAN-*.md | agent/plans/_removed/PLAN-*.md) ;;
     *) exit 0 ;;
 esac
 

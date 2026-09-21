@@ -94,6 +94,8 @@ const POLICY_FILES = Object.freeze([
   '.w7p5a-real-run-blocklist',
   // T-SCHED W7P5-a Section 4, 2026-09-15. Blocks only a `ledger`-status path's REAL-RUN leg, distinct from `.w7p5a-real-run-blocklist` (which blocks a whole path's port): the existing gate treats any allowlist entry whose path has graduated to "ledger" as STALE, so a genuinely-ledgered, real-run-blocked path needs its own file rather than sharing one with the whole-port blocklist.
   '.w7p5a-real-run-leg-blocklist',
+  // 2026-09-21. A TABLE of permitted root and agent/ classes, one row per class with its own reason, which a name-per-line dotfile could not carry. Read only by .ci/rediacc_ci/quality/tree_shape.py.
+  'tree-shape.json',
 ] as const);
 
 type PolicyFileName = (typeof POLICY_FILES)[number];

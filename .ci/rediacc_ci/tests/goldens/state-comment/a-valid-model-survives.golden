@@ -1,0 +1,12 @@
+# twin .ci/scripts/autopilot/state-comment.sh blob 8e2824ffbb16ae3acc60af3c8520f7aeccc1f233
+exit: 0
+--- stdout ---
+### Autopilot state (machine-maintained, do not edit)
+state: fixing | round: 2/8 | head: abc1234 | last_run: 555/1 handled | campaign: none | model: claude-opus-5.1 | rounds_max: 0 | last_sig: none | sig_count: 0
+
+#### Round ledger
+
+#### Ruled out
+
+#### DECISIONS (post-hoc review)
+--- stderr ---

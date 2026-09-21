@@ -1,0 +1,29 @@
+# twin .ci/scripts/autopilot/autopilot-push.sh blob e560c38956d694662edcc15b3b5f48c3bb23b63d
+exit: 0
+--- stdout ---
+exfil-tripwire quiet: 1 file(s), 120 diff bytes, 1 out-of-scope added bytes, 0 implicated prefix(es).
+aa4c67aac04d831995a79f977865e7b771dcafd8
+--- stderr ---
+✓ all repos validated; nothing has been pushed yet
+✓ dry-run: would push aa4c67aac04d831995a79f977865e7b771dcafd8 to origin refs/heads/work
+--- git calls ---
+rev-parse	--abbrev-ref	HEAD
+status	--porcelain=v1	-z
+rev-parse	HEAD
+add	--	src.txt
+diff	--cached	--name-only
+diff	--cached
+-c	user.name=Autopilot Operator	-c	user.email=operator@example.invalid	commit	-F	<work>/msg.txt	--quiet
+rev-parse	HEAD
+--- gh calls ---
+--- git state ---
+{
+  "console": {
+    "branch": "work",
+    "head": "aa4c67aac04d831995a79f977865e7b771dcafd8",
+    "status": "?? handoff.json"
+  },
+  "console.git": {
+    "refs": ""
+  }
+}

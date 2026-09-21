@@ -1,0 +1,90 @@
+# twin .ci/scripts/autopilot/restore-trusted-config.sh blob 07087cb3543206b71f98ed50cdfeebe800e04003
+exit: 1
+--- stdout ---
+--- stderr ---
+✗ trusted-config-drift: snapshot manifest missing at <BASE>/snapshot/.protected-manifest (nothing to assert against is itself a failure)
+--- steps ---
+[
+  {
+    "argv": [
+      "restore",
+      "--checkout",
+      "<BASE>/checkout",
+      "--snapshot",
+      "<BASE>/snapshot",
+      "--quarantine",
+      "<BASE>/quarantine"
+    ],
+    "exit": 1,
+    "stdout": "",
+    "stderr": "\u2717 restore-trusted-config: snapshot manifest missing at <BASE>/snapshot/.protected-manifest (fail closed: no trusted baseline, refusing to proceed)\n"
+  },
+  {
+    "argv": [
+      "assert",
+      "--checkout",
+      "<BASE>/checkout",
+      "--snapshot",
+      "<BASE>/snapshot"
+    ],
+    "exit": 1,
+    "stdout": "",
+    "stderr": "\u2717 trusted-config-drift: snapshot manifest missing at <BASE>/snapshot/.protected-manifest (nothing to assert against is itself a failure)\n"
+  }
+]
+--- checkout ---
+{
+  ".claude": [
+    "dir",
+    "0o755"
+  ],
+  ".claude.json": [
+    "link",
+    ".mcp.json"
+  ],
+  ".claude/hooks": [
+    "dir",
+    "0o755"
+  ],
+  ".claude/hooks/pre-bash": [
+    "dir",
+    "0o755"
+  ],
+  ".claude/hooks/pre-bash/guard.sh": [
+    "file",
+    "0o755",
+    "#!/bin/bash\necho hi\n"
+  ],
+  ".gitmodules": [
+    "file",
+    "0o644",
+    "sub\n"
+  ],
+  ".husky": [
+    "dir",
+    "0o755"
+  ],
+  ".husky/pre-commit": [
+    "file",
+    "0o644",
+    "hook\n"
+  ],
+  ".mcp.json": [
+    "file",
+    "0o644",
+    "{\"a\":1}\n"
+  ],
+  ".ripgreprc": [
+    "link",
+    "nowhere"
+  ],
+  "CLAUDE.md": [
+    "file",
+    "0o644",
+    "# rules\n"
+  ]
+}
+--- snapshot ---
+null
+--- quarantine ---
+null

@@ -1,0 +1,16 @@
+# twin .ci/scripts/autopilot/update-state.sh blob 86b03e9eba69476079c0a1ca26711a02b532e21d
+exit: 0
+--- stdout ---
+### Autopilot state (machine-maintained, do not edit)
+state: fixing | round: 2/8 | head: abc1234 | last_run: 555/1 handled | campaign: none | model: none | rounds_max: 8 | last_sig: none | sig_count: 0
+
+#### Round ledger
+
+#### Ruled out
+
+#### DECISIONS (post-hoc review)
+--- stderr ---
+✓ dry-run: would write the state comment for PR #42 (comment id 'none')
+--- gh calls ---
+--- gh body ---
+<no body>

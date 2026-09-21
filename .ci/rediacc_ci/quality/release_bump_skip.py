@@ -2,7 +2,7 @@
 
 Ported from `.ci/scripts/quality/check-release-bump-skip.sh`, retired in W7 P5; see `rediacc_ci.quality.__init__` for the phase-5 decision that retired the twin.
 
-WHY THIS EXISTS. Two gates already cover neighbouring ground and neither touches this: `check-ci-workflow-invariants.sh` asserts the WIRING in ci.yml (that the decision is declared once, threaded, and not re-decided in finalize-release-sentinel), and `test_gate_skip_release_channel_pointer.py` proves the UPLOAD script's guard branches correctly. Nothing drove
+WHY THIS EXISTS. Two gates already cover neighbouring ground and neither touches this: `rediacc_ci.security.ci_workflow_invariants` asserts the WIRING in ci.yml (that the decision is declared once, threaded, and not re-decided in finalize-release-sentinel), and `test_gate_skip_release_channel_pointer.py` proves the UPLOAD script's guard branches correctly. Nothing drove
 `dispatch-release.sh`'s own
 decision branch, so "Finalize Release emitted the skip signal for the right reason" was unobservable by construction. Release gates could say a release succeeded or was absent; they could not say WHY.
 
@@ -16,7 +16,7 @@ Observed live on 2026-08-26 (run 32961178698, job 98165911876) after merging PR 
 
 THE DIRECTION THAT MATTERS MOST is not "does it skip" -- it is that the signal must NOT appear when the commit is releasing. A skip notice on a releasing path would tell a reader the opposite of what happened, and `dispatch-release.sh`'s whole doctrine is that a silently withheld release is worse than an extra one.
 
-HERMETIC: `gh` is shimmed, so this never touches the network and can run in any lane. WHAT IT CANNOT SEE: whether the workflow actually CALLS the script (that is check-ci-workflow-invariants.sh's subject), and whether a real run's log retains the line (only a live bump-none merge shows that).
+HERMETIC: `gh` is shimmed, so this never touches the network and can run in any lane. WHAT IT CANNOT SEE: whether the workflow actually CALLS the script (that is `rediacc_ci.security.ci_workflow_invariants`'s subject), and whether a real run's log retains the line (only a live bump-none merge shows that).
 
 -----------------------------------------------------------------------------
 PORT NOTES.
@@ -210,7 +210,8 @@ def main(argv: list[str] | None = None) -> int:
         "four releasing paths"
     )
     log.info("  Blind spot: does not prove the workflow CALLS this script (that is")
-    log.info("  check-ci-workflow-invariants.sh), nor that a live run's log retains the")
+    log.info("  rediacc_ci.security.ci_workflow_invariants), nor that a live run's log")
+    log.info("  retains the")
     log.info("  line -- only a real bump-none merge shows that.")
     return 0
 

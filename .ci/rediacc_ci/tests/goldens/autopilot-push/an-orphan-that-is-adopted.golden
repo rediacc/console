@@ -1,0 +1,89 @@
+# twin .ci/scripts/autopilot/autopilot-push.sh blob e560c38956d694662edcc15b3b5f48c3bb23b63d
+exit: 0
+--- stdout ---
+exfil-tripwire quiet: 1 file(s), 182 diff bytes, 7 out-of-scope added bytes, 0 implicated prefix(es).
+exfil-tripwire quiet: 1 file(s), 245 diff bytes, 58 out-of-scope added bytes, 0 implicated prefix(es).
+exfil-tripwire quiet: 1 file(s), 245 diff bytes, 58 out-of-scope added bytes, 0 implicated prefix(es).
+8cc3b10f62195f9e1ef47f62c0c43469ec8758d0
+--- stderr ---
+✓ gitlink verified: private/renet -> 4eaefbdca2e58404f9a17d90a026e25bef7f0390
+✓ all repos validated; nothing has been pushed yet
+To <sandbox>/renet.git
+ ! [rejected]        4eaefbdca2e58404f9a17d90a026e25bef7f0390 -> work (fetch first)
+error: failed to push some refs to '<sandbox>/renet.git'
+hint: Updates were rejected because the remote contains work that you do not
+hint: have locally. This is usually caused by another repository pushing to
+hint: the same ref. If you want to integrate the remote changes, use
+hint: 'git pull' before pushing again.
+hint: See the 'Note about fast-forwards' in 'git push --help' for details.
+⚠ submodule 'private/renet': push rejected as non-fast-forward; inspecting the remote tip before deciding
+⚠ submodule 'private/renet': the remote tip c761e2f0fabe9e1bb81651dcf5e1e94250488ab6 is an autopilot orphan; rebuilding this round's commit on top of it
+To <sandbox>/renet.git
+   c761e2f..bdd5c31  bdd5c3194d09224eea0d5715f8af9ff3da002a5f -> work
+✓ adopted the orphan in 'private/renet': pushed bdd5c3194d09224eea0d5715f8af9ff3da002a5f to origin refs/heads/work
+⚠ an orphan was adopted; re-staging the pointers and re-running the console validation
+✓ gitlink verified: private/renet -> bdd5c3194d09224eea0d5715f8af9ff3da002a5f
+To <sandbox>/console.git
+ * [new branch]      8cc3b10f62195f9e1ef47f62c0c43469ec8758d0 -> work
+✓ pushed 8cc3b10f62195f9e1ef47f62c0c43469ec8758d0 to origin refs/heads/work
+--- git calls ---
+rev-parse	--abbrev-ref	HEAD
+status	--porcelain=v1	-z
+rev-parse	HEAD
+-C	<sandbox>/console/private/renet	rev-parse	--show-toplevel
+-C	<sandbox>/console/private/renet	rev-parse	--abbrev-ref	HEAD
+-C	<sandbox>/console/private/renet	show-ref	--verify	--quiet	refs/heads/work
+-C	<sandbox>/console/private/renet	checkout	-q	-b	work
+-C	<sandbox>/console/private/renet	rev-parse	HEAD
+-C	<sandbox>/console/private/renet	ls-files	--error-unmatch	--	main.go
+-C	<sandbox>/console/private/renet	add	--	main.go
+-C	<sandbox>/console/private/renet	diff	--cached	--name-only
+-C	<sandbox>/console/private/renet	diff	--cached	--src-prefix=a/private/renet/	--dst-prefix=b/private/renet/
+-C	<sandbox>/console/private/renet	-c	user.name=Autopilot Operator	-c	user.email=operator@example.invalid	commit	-F	<work>/sub-msg.txt	--quiet
+-C	<sandbox>/console/private/renet	rev-parse	HEAD
+-C	<sandbox>/console/private/renet	merge-base	--is-ancestor	9c2e1ec4aa2994a5503f57c92213d4a4244d181c	4eaefbdca2e58404f9a17d90a026e25bef7f0390
+add	--	private/renet
+diff	--cached	--name-only
+ls-files	-s	--	private/renet
+diff	--cached
+-C	<sandbox>/console/private/renet	push	origin	4eaefbdca2e58404f9a17d90a026e25bef7f0390:refs/heads/work
+-C	<sandbox>/console/private/renet	fetch	-q	origin	work
+-C	<sandbox>/console/private/renet	rev-parse	FETCH_HEAD
+-C	<sandbox>/console/private/renet	log	-1	--format=%ce	c761e2f0fabe9e1bb81651dcf5e1e94250488ab6
+-C	<sandbox>/console/private/renet	rev-parse	--verify	--quiet	origin/main
+-C	<sandbox>/console/private/renet	rev-parse	--verify	--quiet	origin/main
+-C	<sandbox>/console/private/renet	merge-base	9c2e1ec4aa2994a5503f57c92213d4a4244d181c	origin/main
+-C	<sandbox>/console/private/renet	merge-base	c761e2f0fabe9e1bb81651dcf5e1e94250488ab6	origin/main
+-C	<sandbox>/console/private/renet	checkout	-q	-B	work	c761e2f0fabe9e1bb81651dcf5e1e94250488ab6
+-C	<sandbox>/console/private/renet	cherry-pick	--no-commit	4eaefbdca2e58404f9a17d90a026e25bef7f0390
+-C	<sandbox>/console/private/renet	-c	user.name=Autopilot Operator	-c	user.email=operator@example.invalid	commit	-F	<work>/adopt-msg.txt	--quiet
+-C	<sandbox>/console/private/renet	rev-parse	HEAD
+-C	<sandbox>/console/private/renet	push	origin	bdd5c3194d09224eea0d5715f8af9ff3da002a5f:refs/heads/work
+add	--	private/renet
+add	--	private/renet
+diff	--cached	--name-only
+ls-files	-s	--	private/renet
+diff	--cached
+-c	user.name=Autopilot Operator	-c	user.email=operator@example.invalid	commit	-F	<work>/msg.txt	--quiet
+rev-parse	HEAD
+push	origin	8cc3b10f62195f9e1ef47f62c0c43469ec8758d0:refs/heads/work
+--- gh calls ---
+--- git state ---
+{
+  "console": {
+    "branch": "work",
+    "head": "8cc3b10f62195f9e1ef47f62c0c43469ec8758d0",
+    "status": "?? handoff.json"
+  },
+  "console.git": {
+    "refs": "refs/heads/work 8cc3b10f62195f9e1ef47f62c0c43469ec8758d0"
+  },
+  "console/private/renet": {
+    "branch": "work",
+    "head": "bdd5c3194d09224eea0d5715f8af9ff3da002a5f",
+    "status": ""
+  },
+  "renet.git": {
+    "refs": "refs/heads/main 9c2e1ec4aa2994a5503f57c92213d4a4244d181c\nrefs/heads/work bdd5c3194d09224eea0d5715f8af9ff3da002a5f"
+  }
+}

@@ -1,0 +1,18 @@
+# twin .ci/scripts/autopilot/sweep-collect.sh blob 52ed925f8f71bdf9f2ad689677167385b887b34b
+exit: 5
+--- stdout ---
+--- stderr ---
+jq: error (at work/comments/7.raw.json:0): Cannot iterate over number (1)
+--- gh calls ---
+pr	list	--repo	rediacc/console	--state	open	--limit	50	--json	number
+pr	list	--repo	rediacc/console	--label	autopilot	--state	open	--json	number	--jq	.[].number
+api	repos/rediacc/console/issues/7/comments	--paginate	--slurp
+--- work ---
+{
+  "comments/7.json": "",
+  "comments/7.raw.json": "[1,2]",
+  "label-armed.txt": "10\n7",
+  "prs.json": "[{\"number\":7},{\"number\":10},{\"number\":9}]"
+}
+--- out ---
+<absent>

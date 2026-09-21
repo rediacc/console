@@ -1,0 +1,42 @@
+# twin .ci/scripts/autopilot/review-reply.sh blob f3a9f6676f7027d2acc3fa53d311fb0fe33107db
+exit: 1
+--- stdout ---
+--- stderr ---
+⚠ review reply for thread T_acme1 in acme/console: gh call failed or returned unusable output (attempt 1/3), retrying...
+⚠ review reply for thread T_acme1 in acme/console: gh call failed or returned unusable output (attempt 2/3), retrying...
+✗ review reply for thread T_acme1 in acme/console: gh failed after 3 attempts (last exit 0).
+--- calls ---
+[
+  [
+    "api",
+    "graphql",
+    "-f",
+    "query=\nmutation($threadId: ID!, $body: String!) {\n  addPullRequestReviewThreadReply(input: {pullRequestReviewThreadId: $threadId, body: $body}) {\n    comment { id }\n  }\n}",
+    "-f",
+    "threadId=T_acme1",
+    "-f",
+    "body=a"
+  ],
+  [
+    "api",
+    "graphql",
+    "-f",
+    "query=\nmutation($threadId: ID!, $body: String!) {\n  addPullRequestReviewThreadReply(input: {pullRequestReviewThreadId: $threadId, body: $body}) {\n    comment { id }\n  }\n}",
+    "-f",
+    "threadId=T_acme1",
+    "-f",
+    "body=a"
+  ],
+  [
+    "api",
+    "graphql",
+    "-f",
+    "query=\nmutation($threadId: ID!, $body: String!) {\n  addPullRequestReviewThreadReply(input: {pullRequestReviewThreadId: $threadId, body: $body}) {\n    comment { id }\n  }\n}",
+    "-f",
+    "threadId=T_acme1",
+    "-f",
+    "body=a"
+  ]
+]
+--- plan-file ---
+null

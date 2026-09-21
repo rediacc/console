@@ -29,7 +29,9 @@ ROOT_DIR="$(cd "$PROXY_DIR/../../../.." && pwd)"
 # shellcheck source=./proxy-lib.sh
 source "$PROXY_DIR/proxy-lib.sh"
 
-SUBJECT="$ROOT_DIR/.ci/scripts/infra/docker-prepull.sh"
+SUBJECT="$ROOT_DIR/.ci/rediacc_ci/infra/docker_prepull.py"
+# ABSOLUTE, and set for both proxies alike: the subject imports `rediacc_ci`.
+export PYTHONPATH="$ROOT_DIR/.ci"
 IMAGE="hello-world:latest"
 
 if [[ "${1:-}" == "--selftest" ]]; then
@@ -37,7 +39,7 @@ if [[ "${1:-}" == "--selftest" ]]; then
     exit $?
 fi
 
-proxy_init docker-prepull ".ci/scripts/infra/docker-prepull.sh"
+proxy_init docker-prepull ".ci/rediacc_ci/infra/docker_prepull.py"
 
 proxy_need_exec "$SUBJECT" "the subject script is missing from this checkout"
 proxy_need_docker_daemon
@@ -56,11 +58,11 @@ trap cleanup EXIT
 
 # A script that pulls nothing when asked for nothing must SAY so, not exit 0
 # over an empty loop. This is the cheap proof that the subject really ran.
-proxy_expect_exit 1 "no arguments is refused, not treated as an empty success" -- "$SUBJECT"
+proxy_expect_exit 1 "no arguments is refused, not treated as an empty success" -- python3 "$SUBJECT"
 proxy_expect_contains "$PROXY_LAST_STDERR$PROXY_LAST_STDOUT" "Usage:" "the refusal prints its usage"
 
 # Bare ref.
-proxy_expect_exit 0 "a bare ref pulls" -- "$SUBJECT" "$IMAGE"
+proxy_expect_exit 0 "a bare ref pulls" -- python3 "$SUBJECT" "$IMAGE"
 proxy_expect_contains "$PROXY_LAST_STDERR$PROXY_LAST_STDOUT" "Pre-pulled 1 base image" "the bare-ref run reported the count it pulled"
 
 if docker image inspect "$IMAGE" >/dev/null 2>&1; then
@@ -71,13 +73,13 @@ fi
 
 # "<ref>=<platform>". The ref contains a ':' of its own, which is what makes the
 # %%= / #*= split worth exercising rather than assuming.
-proxy_expect_exit 0 "the <ref>=<platform> form pulls" -- "$SUBJECT" "${IMAGE}=linux/amd64"
+proxy_expect_exit 0 "the <ref>=<platform> form pulls" -- python3 "$SUBJECT" "${IMAGE}=linux/amd64"
 proxy_expect_contains "$PROXY_LAST_STDERR$PROXY_LAST_STDOUT" "Pre-pulled 1 base image" "the ref=platform run reported the count it pulled"
 
 # Two specs in one call: the count in the closing line is $#, so a loop that
 # silently dropped one would still say what it was handed. Assert the count and
 # the image both.
-proxy_expect_exit 0 "two specs in one call" -- "$SUBJECT" "$IMAGE" "${IMAGE}=linux/amd64"
+proxy_expect_exit 0 "two specs in one call" -- python3 "$SUBJECT" "$IMAGE" "${IMAGE}=linux/amd64"
 proxy_expect_contains "$PROXY_LAST_STDERR$PROXY_LAST_STDOUT" "Pre-pulled 2 base image" "the two-spec run reported 2"
 
 proxy_finish

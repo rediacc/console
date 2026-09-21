@@ -1,0 +1,12 @@
+# twin .ci/scripts/security/check-commands.sh blob 89f759b8611b181b8d52d089060ce9ed590aee96
+exit: 1
+--- stdout ---
+info: Checking shell scripts for CI-incompatible commands...
+  Line: if seq 1 10; then
+  Fix:  bash: for ((i=1; i<=n; i++)) or awk
+
+
+info: These commands may not be available in ubuntu-slim or other minimal CI images
+--- stderr ---
+[0;31merror: .ci/x/ifguard.sh:2: 'seq' not available in minimal CI[0m
+[0;31merror: Found 1 CI-incompatible command(s)[0m

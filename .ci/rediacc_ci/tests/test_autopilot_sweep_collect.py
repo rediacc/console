@@ -1,45 +1,58 @@
-"""Differential: `rediacc_ci.autopilot.sweep_collect` against its twin `.ci/scripts/autopilot/sweep-collect.sh`.
+"""`rediacc_ci.autopilot.sweep_collect`, driven against the bytes its bash twin produced.
 
-A RECORDING FAKE `gh` ON A STUB PATH, and the fake is the whole apparatus: nothing here reaches the network, and the real `gh` on this machine is never on the PATH handed to either subject. `test_the_stub_path_has_no_real_gh` is the control for that claim rather than a comment asserting it.
+THE TWIN HAS BEEN DELETED. While both copies existed this file ran `.ci/scripts/autopilot/sweep-collect.sh` and the port over one stubbed PATH and compared SIX artifacts per case: exit code, stdout, stderr, the `gh` call SEQUENCE, the whole `--work` tree as bytes per relative path, and the `--out` file.
 
-FIVE ARTIFACTS ARE COMPARED PER CASE, not two. This script's visible result is neither stdout nor stderr: it is the `--out` file, the whole `--work` tree (`prs.json`, `label-armed.txt`, `campaign-armed.txt` and one raw plus one transformed dump per PR), and the SEQUENCE OF `gh` INVOCATIONS. A port that printed the right summary while requesting the wrong pages, or while writing
-`comments/7.json` with different bytes, would sail past a stream comparison. The work tree is compared as BYTES per relative path, because the transformed dumps are read by `sweep-campaigns.sh` and their formatting is jq's.
+The ledger `.ci/shadow/w7p6-sweep-collect.observations.jsonl` holds 11 rows of that comparison, recorded in a disposable scratch git repository outside this checkout, since `shadow-gate.ts --record` refuses a dirty tree and this checkout is never clean. Every case now compares against `goldens/sweep-collect/`, which holds the twin's OWN recorded bytes, captured on its last day in
+the tree, and each golden's provenance header carries the blob sha, so `git cat-file -p <sha>` still yields the program that produced them.
 
-`sweep-campaigns.sh` AND `state-comment.sh` RUN FOR REAL, unstubbed, in both subjects. They are pure (files in, PR numbers out) and they carry the TRUST RULE this collector depends on: a campaign counts only when the comment's author is the bot AND the body starts with the exact state header. So the fixture comments below are shaped like real state comments, and
-`test_a_lookalike_campaign_comment_is_not_armed` drives the untrusted case through both sides rather than asserting it about the collector alone.
+SIX ARTIFACTS, SO THE RECORDED SHAPE CARRIES THREE SECTIONS BEYOND THE TWO STREAMS. This script's visible result is neither stdout nor stderr: it is the `--out` file, the `--work` tree (`prs.json`, `label-armed.txt`, `campaign-armed.txt` and one raw plus one transformed dump per PR) under `--- work ---`, and the ordered `gh` invocations under `--- gh calls ---`. A port that printed
+the right summary while requesting the wrong pages, or while writing `comments/7.json` with different bytes, would sail past a stream comparison. The work tree is recorded per relative path because the transformed dumps are read by the campaign scanner and their formatting is jq's.
 
-TWO CASES COST NINE SECONDS PER SIDE AND ARE WORTH IT. `_gh_probe` sleeps 3 then 6 seconds between its three attempts, so any case that drives a `gh` failure to exhaustion takes 18 seconds across the two subjects. They are the only cases that prove the retry loop, the final `gh failed after 3 attempts` line and the four-space stderr replay agree, and one of them is also the only
-case that proves `jq -e`'s null rule (a body of `null` is UNUSABLE, not an
-answer).
+THE CAMPAIGN SCANNER RAN FOR REAL on both sides, unstubbed. It is pure (files in, PR numbers out) and it carries the TRUST RULE this collector depends on: a campaign counts only when the comment's author is the bot AND the body starts with the exact state header. The twin spawned `sweep-campaigns.sh` and the port spawns the sibling port by path, so the fixture comments are shaped
+like real state comments and `test_a_lookalike_campaign_comment_is_not_armed` records the untrusted case rather than asserting it about the collector alone.
 
-THE ONE SHAPE-COMPARED CASE is `--out` in a directory that does not exist: bash's redirection diagnostic carries the twin's own path and line number. Exit code, the position of the message and everything after it (including the summary line with its EMPTY count, which is defect 2) are compared exactly.
+A RECORDING FAKE `gh` ON A STUB PATH is the whole apparatus: nothing here reaches the network, and the real `gh` on this machine is never on the PATH handed to the subject. `test_the_stub_path_has_no_real_gh` is the control for that claim rather than a comment asserting it.
 
-K=5 LEDGER: `.ci/shadow/w7p6-sweep-collect.observations.jsonl`, recorded in a
-disposable scratch git repository outside this checkout, since `shadow-gate.ts --record` refuses a dirty tree and this checkout is never clean.
+TWO CASES COST NINE SECONDS EACH AND ARE WORTH IT. `_gh_probe` sleeps 3 then 6 seconds between its three attempts, so a case that drives a `gh` failure to exhaustion takes nine. They are the only cases that prove the retry loop, the final `gh failed after 3 attempts` line and the four-space stderr replay agree, and one of them is also the only case that proves `jq -e`'s null rule:
+a body of `null` is UNUSABLE, not an answer.
+
+THE ONE SHAPE-COMPARED CASE is `--out` in a directory that does not exist, where bash's redirection diagnostic carried the twin's own path and line number. Everything else on that stream is compared byte for byte, including the summary line with its EMPTY count, which is defect 2 and would otherwise be the easiest thing in the file to lose.
+
+WHAT IS MASKED, and it is two paths. The case's own directory is its `HOME` and its working directory and is rebuilt under a different tempdir name every run, so it becomes `<case>`; the checkout root becomes `<repo>`, because the shape-compared diagnostic names the twin's own file. Every flag a case passes is RELATIVE on purpose, so `work/prs.json` and `nodir/out.txt` appear in
+the recordings exactly as the subject was given them.
 """
 
 from __future__ import annotations
 
 import json
-import os
 import pathlib
 import shutil
 import subprocess
 import sys
-import tempfile
+import typing
+
+import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.autopilot import sweep_collect as sc
+from rediacc_ci.tests import frozen
 
 ROOT = paths.repo_root()
-TWIN = ROOT / ".ci" / "scripts" / "autopilot" / "sweep-collect.sh"
 PORT = ROOT / ".ci" / "rediacc_ci" / "autopilot" / "sweep_collect.py"
+SLUG = "sweep-collect"
+
 BASH = shutil.which("bash") or "/bin/bash"
+PYTHON = sys.executable
+
+CALLS_MARKER = "--- gh calls ---\n"
+WORK_MARKER = "--- work ---\n"
+OUT_MARKER = "--- out ---\n"
+ABSENT = "<absent>"
 
 STATE_HEADER = "### Autopilot state (machine-maintained, do not edit)"
 BOT = "autopilot-bot"
 
-# Everything the two subjects and the two bash scripts they call need on PATH. Derived by DRIVING them, not by reading: `tr` is there because `parse_args` shells out to `to_upper` once per flag, `awk` because `state-comment.sh` parses the state line with it, and `mktemp`/`rm` because `sweep-campaigns.sh` makes and traps a work directory.
+# Everything the subject and the sibling it spawns need on PATH. Derived by DRIVING them, not by reading: `tr` is there because `parse_args` shelled out to `to_upper` once per flag, `awk` because the state-comment reader parses the state line with it, and `mktemp`/`rm` because the campaign scanner makes and traps a work directory.
 PATH_MINIMUM = (
     "dirname",
     "uname",
@@ -53,7 +66,7 @@ PATH_MINIMUM = (
     "mktemp",
     "mkdir",
     "rm",
-    # `_gh_probe`'s backoff is an external `sleep`, so a PATH without it turns every retry case into a 127 from the twin and a pass from the port.
+    # `_gh_probe`'s backoff is an external `sleep`, so a PATH without it turned every retry case into a 127 from the twin and a pass from the port.
     "sleep",
 )
 
@@ -103,10 +116,82 @@ sys.stderr.write("fake gh: unexpected call %%r\\n" %% (argv,))
 sys.exit(9)
 """ % {"bot": BOT, "header": STATE_HEADER}
 
+REQUIRED = {"--repo": "rediacc/console", "--bot": BOT, "--work": "work", "--out": "out.txt"}
+ARGV = [token for flag, value in REQUIRED.items() for token in (flag, value)]
 
-def _stub_path(base: pathlib.Path, *, with_gh: bool = True) -> str:
+
+def _dropping(flag: str) -> list[str]:
+    return [token for key, value in REQUIRED.items() if key != flag for token in (key, value)]
+
+
+def _emptying(flag: str) -> list[str]:
+    argv: list[str] = []
+    for key, value in REQUIRED.items():
+        argv += [key + "="] if key == flag else [key, value]
+    return argv
+
+
+# name -> argv and the environment the fake `gh` reads its behaviour from
+CASE_KW: dict[str, dict[str, typing.Any]] = {
+    "the-happy-sweep": {"argv": ARGV},
+    "a-union-not-an-intersection": {
+        "argv": ARGV,
+        "env": {"FAKE_LABEL_ARMED": "7\n", "FAKE_CAMPAIGN_OPEN": "10"},
+    },
+    "a-lookalike-campaign-comment": {
+        "argv": ARGV,
+        "env": {
+            "FAKE_LABEL_ARMED": "",
+            "FAKE_CAMPAIGN_OPEN": "7,9,10",
+            "FAKE_COMMENT_AUTHOR": "drive-by-contributor",
+        },
+    },
+    "an-empty-sweep": {
+        "argv": ARGV,
+        "env": {"FAKE_PRS": "[]", "FAKE_LABEL_ARMED": "", "FAKE_CAMPAIGN_OPEN": ""},
+    },
+    "without-a-repo": {"argv": _dropping("--repo")},
+    "without-a-bot": {"argv": _dropping("--bot")},
+    "without-a-work-dir": {"argv": _dropping("--work")},
+    "without-an-out-file": {"argv": _dropping("--out")},
+    "an-empty-repo": {"argv": _emptying("--repo")},
+    "an-empty-bot": {"argv": _emptying("--bot")},
+    "an-empty-work-dir": {"argv": _emptying("--work")},
+    "an-empty-out-file": {"argv": _emptying("--out")},
+    "an-explicit-label": {"argv": [*ARGV, "--label", "sweep-me"]},
+    "a-pr-list-that-cannot-be-indexed": {"argv": ARGV, "env": {"FAKE_PRS": '{"pages":1}'}},
+    "a-comment-dump-jq-cannot-transform": {"argv": ARGV, "env": {"FAKE_API_BODY": "[1,2]"}},
+    "an-out-file-in-a-missing-directory": {
+        "argv": [
+            "--repo",
+            "rediacc/console",
+            "--bot",
+            BOT,
+            "--work",
+            "work",
+            "--out",
+            "nodir/out.txt",
+        ]
+    },
+    "a-failing-gh-retried-three-times": {
+        "argv": ARGV,
+        "env": {
+            "FAKE_PRS_RC": "3",
+            "FAKE_GH_STDERR": "gh: HTTP 403 rate limited\nsecond line",
+        },
+    },
+    "a-body-of-null": {"argv": ARGV, "env": {"FAKE_PRS": "null"}},
+}
+
+CASES = tuple(CASE_KW)
+
+# The one case whose stderr carries bash's own path and line number. Compared by shape, in its own test.
+DIVERGENT = ("an-out-file-in-a-missing-directory",)
+
+
+def stub_path(base: pathlib.Path, *, with_gh: bool = True) -> str:
     stub = base / "bin"
-    stub.mkdir(exist_ok=True)
+    stub.mkdir(parents=True, exist_ok=True)
     for name in PATH_MINIMUM:
         real = shutil.which(name)
         assert real is not None, "%s is missing from this machine" % name
@@ -120,123 +205,162 @@ def _stub_path(base: pathlib.Path, *, with_gh: bool = True) -> str:
     return str(stub)
 
 
-def _tree(root: pathlib.Path) -> dict[str, bytes]:
+def tree(root: pathlib.Path) -> dict[str, str]:
     """Every file under `root`, keyed by POSIX-relative path."""
-    out: dict[str, bytes] = {}
-    for path in sorted(root.rglob("*")):
-        if path.is_file():
-            out[path.relative_to(root).as_posix()] = path.read_bytes()
-    return out
+    if not root.is_dir():
+        return {}
+    return {
+        path.relative_to(root).as_posix(): path.read_text(encoding="utf-8")
+        for path in sorted(root.rglob("*"))
+        if path.is_file()
+    }
 
 
-def _run(subject: pathlib.Path, base: pathlib.Path, argv: list[str], **gh_env: str):
+def run(
+    subject: pathlib.Path, base: pathlib.Path, name: str
+) -> tuple[int, str, str, str, str, str]:
+    """One subject, once, over its own stub PATH and its own working directory."""
+    kw = CASE_KW[name]
+    base.mkdir(parents=True, exist_ok=True)
     log = base / "gh-calls.log"
     log.write_text("", encoding="utf-8")
     env = {
-        "PATH": _stub_path(base),
-        "HOME": os.environ.get("HOME", "/tmp"),
+        "PATH": stub_path(base),
+        "HOME": str(base),
         "LC_ALL": "C",
         "LANG": "C",
         "PYTHONPATH": str(ROOT / ".ci"),
         "PYTHONDONTWRITEBYTECODE": "1",
         "FAKE_GH_LOG": str(log),
     }
-    env.update(gh_env)
-    # `sys.executable`, not "python3": the PATH above is a STUB with twelve symlinks on it and no interpreter, which is the point of it.
-    runner = [BASH] if subject.suffix == ".sh" else [sys.executable]
+    env.update(kw.get("env") or {})
+    # `sys.executable`, not "python3": the PATH above is a STUB with thirteen symlinks on it and no interpreter, which is the point of it.
+    runner = [BASH] if subject.suffix == ".sh" else [PYTHON]
     proc = subprocess.run(
-        [*runner, str(subject), *argv],
+        [*runner, str(subject), *kw["argv"]],
         capture_output=True,
+        text=True,
         env=env,
         check=False,
         cwd=str(base),
-        timeout=120,
+        timeout=180,
     )
-    calls = [line for line in log.read_text(encoding="utf-8").splitlines() if line]
-    work = _tree(base / "work") if (base / "work").is_dir() else {}
-    out_file = (base / "out.txt").read_bytes() if (base / "out.txt").is_file() else None
-    return proc.returncode, proc.stdout, proc.stderr, calls, work, out_file
+
+    def mask(text: str) -> str:
+        return text.replace(str(base), "<case>").replace(str(ROOT), "<repo>")
+
+    out_file = base / "out.txt"
+    return (
+        proc.returncode,
+        mask(proc.stdout),
+        mask(proc.stderr),
+        mask(log.read_text(encoding="utf-8")),
+        mask(json.dumps(tree(base / "work"), indent=2, sort_keys=True)),
+        mask(out_file.read_text(encoding="utf-8")) if out_file.is_file() else ABSENT,
+    )
 
 
-def _sides(name: str, argv: list[str], *, exact_stderr: bool = True, **gh_env: str):
-    with tempfile.TemporaryDirectory() as td:
-        results = []
-        for subject in (TWIN, PORT):
-            base = pathlib.Path(td) / subject.stem
-            base.mkdir(parents=True)
-            results.append(_run(subject, base, argv, **gh_env))
-        old, new = results
-    assert new[0] == old[0], "%s: exit diverged: %r vs %r\n twin stderr: %r\n port stderr: %r" % (
-        name,
-        old[0],
-        new[0],
-        old[2],
-        new[2],
+def render(code: int, stdout: str, stderr: str, calls: str, work: str, out: str) -> str:
+    return "%s%s%s%s%s\n%s%s\n" % (
+        frozen.render(code, stdout, stderr),
+        CALLS_MARKER,
+        calls,
+        WORK_MARKER,
+        work,
+        OUT_MARKER,
+        out,
     )
-    assert new[1] == old[1], "%s: stdout diverged:\nold %r\nnew %r" % (name, old[1], new[1])
-    if exact_stderr:
-        assert new[2] == old[2], "%s: stderr diverged:\nold %r\nnew %r" % (name, old[2], new[2])
-    assert new[3] == old[3], "%s: gh call sequence diverged:\nold %r\nnew %r" % (
-        name,
-        old[3],
-        new[3],
-    )
-    assert sorted(new[4]) == sorted(old[4]), (
-        "%s: the work tree's FILES diverged:\nold %r\nnew %r"
-        % (
-            name,
-            sorted(old[4]),
-            sorted(new[4]),
-        )
-    )
-    for rel in sorted(old[4]):
-        assert new[4][rel] == old[4][rel], "%s: work/%s diverged:\nold %r\nnew %r" % (
-            name,
-            rel,
-            old[4][rel],
-            new[4][rel],
-        )
-    assert new[5] == old[5], "%s: --out diverged:\nold %r\nnew %r" % (name, old[5], new[5])
-    return old
 
 
-def _mask_redirection(stderr: bytes) -> bytes:
+def recorded(name: str) -> tuple[int, str, str, str, str, str]:
+    text = frozen.read(SLUG, name)
+    exit_line, rest = text.split("\n", 1)
+    stdout, rest = rest.split("--- stdout ---\n", 1)[1].split("--- stderr ---\n", 1)
+    stderr, rest = rest.split(CALLS_MARKER, 1)
+    calls, rest = rest.split(WORK_MARKER, 1)
+    work, out = rest.split(OUT_MARKER, 1)
+    return (
+        int(exit_line.removeprefix("exit: ")),
+        stdout,
+        stderr,
+        calls,
+        work.removesuffix("\n"),
+        out.removesuffix("\n"),
+    )
+
+
+def port(tmp_path: pathlib.Path, name: str) -> tuple[int, str, str, str, str, str]:
+    return run(PORT, tmp_path / name, name)
+
+
+def lines(calls: str) -> list[str]:
+    return [line for line in calls.splitlines() if line]
+
+
+def files(work: str) -> dict[str, str]:
+    return json.loads(work)
+
+
+def mask_redirection(stderr: str) -> str:
     """Replace the failed-redirection diagnostic with a token.
 
-    The twin's is bash's (`<path>/sweep-collect.sh: line 64: <file>: ...`) and the port's is its own; both name the same file and the same errno, and every other line on the stream has to match exactly.
+    The twin's was bash's (`<repo>/.ci/scripts/autopilot/sweep-collect.sh: line 64: <file>: ...`) and the port's is its own; both name the same file and the same errno, and every other line on the stream has to match exactly.
     """
     out = []
-    for line in stderr.split(b"\n"):
-        if line.endswith(b"nodir/out.txt: No such file or directory") and not line.startswith(
-            b"grep: "
+    for line in stderr.split("\n"):
+        if line.endswith("nodir/out.txt: No such file or directory") and not line.startswith(
+            "grep: "
         ):
-            out.append(b"<REDIRECTION FAILED>")
+            out.append("<REDIRECTION FAILED>")
         else:
             out.append(line)
-    return b"\n".join(out)
+    return "\n".join(out)
 
 
-ARGV = ["--repo", "rediacc/console", "--bot", BOT, "--work", "work", "--out", "out.txt"]
+def compare(tmp_path: pathlib.Path, name: str) -> tuple[int, str, str, str, str, str]:
+    want = recorded(name)
+    got = port(tmp_path, name)
+    labels = ("exit code", "stdout", "stderr", "the gh call SEQUENCE", "the work tree", "--out")
+    # `strict=True`: the tuple and the labels must stay the same length, and a silently truncated zip is how a comparison stops checking its last field.
+    for label, a, b in zip(labels, want, got, strict=True):
+        assert a == b, "%s: %s diverged:\n--- recorded ---\n%s\n--- port ---\n%s" % (
+            name,
+            label,
+            a,
+            b,
+        )
+    return got
 
 
-def test_the_stub_path_has_no_real_gh() -> None:
+@pytest.mark.parametrize("name", [c for c in CASES if c not in DIVERGENT])
+def test_port_matches_the_twins_recorded_output(tmp_path: pathlib.Path, name: str) -> None:
+    compare(tmp_path, name)
+
+
+def test_every_case_has_a_golden_and_no_golden_is_orphaned() -> None:
+    """ANTI-VACUITY on the corpus: a case whose golden vanished would pass by never being compared, and a golden nothing reads is a recording of a case that stopped running."""
+    frozen.assert_corpus(SLUG, set(CASES))
+
+
+def test_the_stub_path_has_no_real_gh(tmp_path: pathlib.Path) -> None:
     """CONTROL. Every case's claim of "no network" rests on this."""
-    with tempfile.TemporaryDirectory() as td:
-        base = pathlib.Path(td)
-        without = _stub_path(base, with_gh=False)
-        assert shutil.which("gh", path=without) is None, "gh leaked into the stub PATH"
-        assert shutil.which("jq", path=without) is not None, "the stub PATH is not usable"
+    without = stub_path(tmp_path, with_gh=False)
+    assert shutil.which("gh", path=without) is None, "gh leaked into the stub PATH"
+    assert shutil.which("jq", path=without) is not None, "the stub PATH is not usable"
+
+
+# --------------------------------------------------------------------------- What the recordings say ---------------------------------------------------------------------------
 
 
 def test_the_happy_sweep() -> None:
     """Three open PRs, two label-armed, one campaign-armed, union of three."""
-    exit_code, stdout, stderr, calls, work, out = _sides("happy", ARGV)
-    assert exit_code == 0
-    assert stdout == b""
+    code, stdout, stderr, calls, work, out = recorded("the-happy-sweep")
+    assert code == 0
+    assert stdout == ""
     # LEXICOGRAPHIC, not numeric: 10 before 7 before 9. See the port's docstring.
-    assert out == b"10\n7\n9\n", out
-    assert b"sweeper: 3 armed PR(s) = 2 label-armed U 1 campaign-armed" in stderr
-    assert sorted(work) == [
+    assert out == "10\n7\n9\n", out
+    assert "sweeper: 3 armed PR(s) = 2 label-armed U 1 campaign-armed" in stderr
+    assert sorted(files(work)) == [
         "campaign-armed.txt",
         "comments/10.json",
         "comments/10.raw.json",
@@ -246,12 +370,12 @@ def test_the_happy_sweep() -> None:
         "comments/9.raw.json",
         "label-armed.txt",
         "prs.json",
-    ], sorted(work)
+    ], sorted(files(work))
     # One list call, one label call, one comments call per PR, in PR order.
-    assert len(calls) == 5, calls
-    assert calls[2].startswith("api\trepos/rediacc/console/issues/7/comments")
-    # The transformed dump is jq's pretty printing, and another script reads it.
-    assert json.loads(work["comments/9.json"])[0]["author"] == BOT
+    assert len(lines(calls)) == 5, calls
+    assert lines(calls)[2].startswith("api\trepos/rediacc/console/issues/7/comments")
+    # The transformed dump is jq's pretty printing, and another program reads it.
+    assert json.loads(files(work)["comments/9.json"])[0]["author"] == BOT
 
 
 def test_the_union_is_a_union_not_an_intersection() -> None:
@@ -259,138 +383,96 @@ def test_the_union_is_a_union_not_an_intersection() -> None:
 
     This is the defect the twin was written to fix, so it gets a case of its own rather than riding on the happy path's counts.
     """
-    _, _, stderr, _, _, out = _sides(
-        "union",
-        ARGV,
-        FAKE_LABEL_ARMED="7\n",
-        FAKE_CAMPAIGN_OPEN="10",
-    )
-    assert out == b"10\n7\n", out
-    assert b"sweeper: 2 armed PR(s) = 1 label-armed U 1 campaign-armed" in stderr
+    _, _, stderr, _, _, out = recorded("a-union-not-an-intersection")
+    assert out == "10\n7\n", out
+    assert "sweeper: 2 armed PR(s) = 1 label-armed U 1 campaign-armed" in stderr
 
 
 def test_a_lookalike_campaign_comment_is_not_armed() -> None:
     """NEGATIVE CONTROL, and the security-relevant one. Console is public, so a comment claiming `campaign: open` is the obvious way to make the sweeper dispatch rounds nobody armed. The author check is what makes it fail."""
-    _, _, stderr, _, _, out = _sides(
-        "lookalike",
-        ARGV,
-        FAKE_LABEL_ARMED="",
-        FAKE_CAMPAIGN_OPEN="7,9,10",
-        FAKE_COMMENT_AUTHOR="drive-by-contributor",
-    )
-    assert out == b"", out
-    assert b"sweeper: 0 armed PR(s) = 0 label-armed U 0 campaign-armed" in stderr
+    _, _, stderr, _, _, out = recorded("a-lookalike-campaign-comment")
+    assert out == "", out
+    assert "sweeper: 0 armed PR(s) = 0 label-armed U 0 campaign-armed" in stderr
 
 
 def test_an_empty_sweep_is_normal_and_quiet() -> None:
-    _, stdout, stderr, _, _, out = _sides(
-        "empty", ARGV, FAKE_PRS="[]", FAKE_LABEL_ARMED="", FAKE_CAMPAIGN_OPEN=""
-    )
-    assert (stdout, out) == (b"", b"")
-    assert b"sweeper: 0 armed PR(s) = 0 label-armed U 0 campaign-armed" in stderr
+    _, stdout, stderr, _, _, out = recorded("an-empty-sweep")
+    assert (stdout, out) == ("", "")
+    assert "sweeper: 0 armed PR(s) = 0 label-armed U 0 campaign-armed" in stderr
 
 
 def test_usage_refusals() -> None:
     """Each required flag absent, and each present but empty. `--label` is NOT required: it defaults to `autopilot`."""
-    full = {"--repo": "rediacc/console", "--bot": BOT, "--work": "work", "--out": "out.txt"}
-    for drop in list(full):
-        argv: list[str] = []
-        for flag, value in full.items():
-            if flag != drop:
-                argv += [flag, value]
-        exit_code, _, stderr, calls, _, _ = _sides("missing%s" % drop, argv)
-        assert exit_code == 2, drop
-        assert b"usage: sweep-collect.sh --repo <owner/name>" in stderr
-        assert calls == [], "a usage refusal must not call gh: %r" % calls
-        empty: list[str] = []
-        for flag, value in full.items():
-            empty += [flag + "="] if flag == drop else [flag, value]
-        assert _sides("empty%s" % drop, empty)[0] == 2, drop
+    for name in (
+        "without-a-repo",
+        "without-a-bot",
+        "without-a-work-dir",
+        "without-an-out-file",
+        "an-empty-repo",
+        "an-empty-bot",
+        "an-empty-work-dir",
+        "an-empty-out-file",
+    ):
+        code, _, stderr, calls, _, _ = recorded(name)
+        assert code == 2, name
+        assert "usage: sweep-collect.sh --repo <owner/name>" in stderr
+        assert calls == "", "a usage refusal must not call gh: %r" % calls
 
 
 def test_the_label_is_a_parameter_and_defaults() -> None:
     """The default reaches `gh` as `--label autopilot`, and an override reaches it verbatim. Read off the recorded call, not off the summary line."""
-    for argv, want in ((ARGV, "autopilot"), ([*ARGV, "--label", "sweep-me"], "sweep-me")):
-        _, _, _, calls, _, _ = _sides("label-%s" % want, argv)
-        assert "--label\t%s" % want in calls[1], calls[1]
+    for name, want in (("the-happy-sweep", "autopilot"), ("an-explicit-label", "sweep-me")):
+        call = lines(recorded(name)[3])[1]
+        assert "--label\t%s" % want in call, call
 
 
 def test_defect_a_prs_json_that_cannot_be_indexed_scans_nothing_and_exits_0() -> None:
     """Defect 1 in the port's docstring, pinned so a fix turns this red.
 
-    `{"pages":1}` satisfies `gh_json` (it parses, and `jq -e` accepts it),
-    then `jq -r '.[].number'` fails inside a PROCESS SUBSTITUTION whose status
-    nothing checks. A bare `{}` is NOT a specimen for this, and finding that
-    out cost this case a run: `.[]` over an empty object yields nothing at all, so jq succeeds silently and the scan is empty for a boring reason.
+    `{"pages":1}` satisfies `gh_json` (it parses, and `jq -e` accepts it), then `jq -r '.[].number'` fails inside a PROCESS SUBSTITUTION whose status nothing checks. A bare `{}` is NOT a specimen for this, and finding that out cost this case a run: `.[]` over an empty object yields nothing at all, so jq succeeds silently and the scan is empty for a boring reason.
 
     Zero comment dumps are written, zero campaigns are found, and the sweep announces success.
     """
-    exit_code, _, stderr, calls, work, out = _sides("defect-prs", ARGV, FAKE_PRS='{"pages":1}')
-    assert exit_code == 0, "the twin really does succeed here"
-    assert [c for c in calls if c.startswith("api")] == [], calls
-    assert [k for k in work if k.startswith("comments/")] == [], sorted(work)
-    assert b'Cannot index number with string "number"' in stderr, stderr
-    assert b"sweeper: 2 armed PR(s) = 2 label-armed U 0 campaign-armed" in stderr
-    assert out == b"10\n7\n", out
+    code, _, stderr, calls, work, out = recorded("a-pr-list-that-cannot-be-indexed")
+    assert code == 0, "the twin really does succeed here"
+    assert [c for c in lines(calls) if c.startswith("api")] == [], calls
+    assert [k for k in files(work) if k.startswith("comments/")] == [], sorted(files(work))
+    assert 'Cannot index number with string "number"' in stderr, stderr
+    assert "sweeper: 2 armed PR(s) = 2 label-armed U 0 campaign-armed" in stderr
+    assert out == "10\n7\n", out
 
 
 def test_a_comment_dump_jq_can_not_transform_kills_the_run() -> None:
     """The other jq, the one whose status IS checked: its exit code becomes the script's, and no `--out` is written at all."""
-    exit_code, _, stderr, _, work, out = _sides("jq-fails", ARGV, FAKE_API_BODY="[1,2]")
-    assert exit_code == 5, exit_code
-    assert b"Cannot iterate over number" in stderr
-    assert out is None
-    assert "comments/7.json" in work, sorted(work)
-    assert work["comments/7.json"] == b"", "the redirection truncated it before jq ran"
-
-
-def test_defect_an_unwritable_out_is_announced_as_an_empty_sweep() -> None:
-    """Defect 2. Shape-compared, because bash's redirection diagnostic carries the twin's own path and line number; everything after it is exact."""
-    argv = ["--repo", "rediacc/console", "--bot", BOT, "--work", "work", "--out", "nodir/out.txt"]
-    with tempfile.TemporaryDirectory() as td:
-        seen = []
-        for subject in (TWIN, PORT):
-            base = pathlib.Path(td) / subject.stem
-            base.mkdir(parents=True)
-            seen.append(_run(subject, base, argv))
-        old, new = seen
-    assert old[0] == new[0] == 0, (old[0], new[0])
-    assert old[3] == new[3], "the gh calls still have to agree"
-    for side in (old, new):
-        tail = side[2].split(b"\n")
-        assert b"grep: nodir/out.txt: No such file or directory" in tail, side[2]
-        # The count is EMPTY where the total should be. That is the defect.
-        assert b"sweeper:  armed PR(s) = 2 label-armed U 1 campaign-armed" in side[2], side[2]
-    # SHAPE, properly: mask the one line that carries the implementation's own name and compare EVERYTHING else byte for byte, so a port that also moved the message, or lost a line after it, still fails.
-    assert _mask_redirection(old[2]) == _mask_redirection(new[2]), (old[2], new[2])
+    code, _, stderr, _, work, out = recorded("a-comment-dump-jq-cannot-transform")
+    assert code == 5, code
+    assert "Cannot iterate over number" in stderr
+    assert out == ABSENT
+    assert "comments/7.json" in files(work), sorted(files(work))
+    assert files(work)["comments/7.json"] == "", "the redirection truncated it before jq ran"
 
 
 def test_slow_a_failing_gh_retries_three_times_and_replays_its_stderr() -> None:
-    """18 seconds, and the only case that proves the whole `_gh_probe` loop: two warnings, the final error with the last exit code, and the captured stderr replayed indented four spaces WITHOUT inventing a final newline."""
-    exit_code, _, stderr, calls, work, out = _sides(
-        "gh-fails",
-        ARGV,
-        FAKE_PRS_RC="3",
-        FAKE_GH_STDERR="gh: HTTP 403 rate limited\nsecond line",
-    )
-    assert exit_code == 1
+    """The only case that proves the whole `_gh_probe` loop: two warnings, the final error with the last exit code, and the captured stderr replayed indented four spaces WITHOUT inventing a final newline."""
+    code, _, stderr, calls, work, out = recorded("a-failing-gh-retried-three-times")
+    assert code == 1
     assert (
-        calls
+        lines(calls)
         == ["pr\tlist\t--repo\trediacc/console\t--state\topen\t--limit\t50\t--json\tnumber"] * 3
     )
-    assert stderr.endswith(b"    gh: HTTP 403 rate limited\n    second line"), stderr
-    assert b"gh failed after 3 attempts (last exit 3)." in stderr
+    assert stderr.endswith("    gh: HTTP 403 rate limited\n    second line"), stderr
+    assert "gh failed after 3 attempts (last exit 3)." in stderr
     # Truncated by the redirection before the first attempt, and never filled.
-    assert work == {"prs.json": b""}, work
-    assert out is None
+    assert files(work) == {"prs.json": ""}, work
+    assert out == ABSENT
 
 
 def test_slow_a_body_of_null_is_unusable_not_an_answer() -> None:
     """`jq -e .` exits 1 on `null`, so `gh_json` retries and then refuses. A port validating with `json.loads` alone would accept it and write `null` into `prs.json`."""
-    exit_code, _, stderr, _, work, _ = _sides("null-body", ARGV, FAKE_PRS="null")
-    assert exit_code == 1
-    assert b"sweeper open PR list: gh failed after 3 attempts (last exit 0)." in stderr
-    assert work == {"prs.json": b""}, work
+    code, _, stderr, _, work, _ = recorded("a-body-of-null")
+    assert code == 1
+    assert "sweeper open PR list: gh failed after 3 attempts (last exit 0)." in stderr
+    assert files(work) == {"prs.json": ""}, work
 
 
 def test_pure_helpers_are_exercised_directly() -> None:
@@ -412,5 +494,77 @@ def test_pure_helpers_are_exercised_directly() -> None:
     assert sc.sort_unique([b"", b""]) == []
     assert sc.digits_only([b"10", b"9x", b"", b"-1", b"07"]) == [b"10", b"07"]
 
-    assert sc.campaign_script() == ROOT / ".ci" / "scripts" / "autopilot" / "sweep-campaigns.sh"
-    assert sc.campaign_script().is_file(), "the twin this port shells out to must exist"
+    argv = sc.campaign_argv()
+    assert argv[-1] == str(ROOT / ".ci" / "rediacc_ci" / "autopilot" / "sweep_campaigns.py")
+    assert pathlib.Path(argv[-1]).is_file(), "the sibling this port shells out to must exist"
+    assert sc.child_env()["PYTHONPATH"] == str(ROOT / ".ci"), "the child cannot import rediacc_ci"
+
+
+# --------------------------------------------------------------------------- The one divergence, pinned rather than papered over ---------------------------------------------------------------------------
+
+
+def test_defect_an_unwritable_out_is_announced_as_an_empty_sweep(tmp_path: pathlib.Path) -> None:
+    """Defect 2, and the only shape-compared case. bash's redirection diagnostic carried the twin's own path and line number; everything after it is exact."""
+    name = "an-out-file-in-a-missing-directory"
+    want = recorded(name)
+    got = port(tmp_path, name)
+    assert want[0] == got[0] == 0, (want[0], got[0])
+    assert want[1] == got[1] == "", "neither side writes to stdout here"
+    assert want[3] == got[3], "the gh calls still have to agree"
+    assert want[4] == got[4], "the work tree still has to agree"
+    assert want[5] == got[5] == ABSENT
+    for stream in (want[2], got[2]):
+        assert "grep: nodir/out.txt: No such file or directory" in stream.split("\n"), stream
+        # The count is EMPTY where the total should be. That is the defect.
+        assert "sweeper:  armed PR(s) = 2 label-armed U 1 campaign-armed" in stream, stream
+    # SHAPE, properly: mask the one line that carries the implementation's own name and compare EVERYTHING else byte for byte, so a port that also moved the message, or lost a line after it, still fails.
+    assert mask_redirection(want[2]) == mask_redirection(got[2]), (want[2], got[2])
+    assert "<repo>/.ci/scripts/autopilot/sweep-collect.sh" in want[2], "the twin named itself"
+
+
+# --------------------------------------------------------------------------- The control: these goldens can actually fail ---------------------------------------------------------------------------
+
+
+# A throwaway entry point that loads the real module, drops `--slurp` from every argv it hands its probe, and runs `main`. See the control below for why the plant is a wrapper rather than a copy.
+PLANT = """import sys
+
+from rediacc_ci.autopilot import sweep_collect as subject
+
+_probe = subject.gh_probe
+
+
+def _without_slurp(require_json, what, args, **kw):
+    return _probe(require_json, what, [a for a in args if a != "--slurp"], **kw)
+
+
+subject.gh_probe = _without_slurp
+raise SystemExit(subject.main(sys.argv[1:]))
+"""
+
+
+def test_a_planted_drop_of_slurp_is_caught(tmp_path: pathlib.Path) -> None:
+    """THE CONTROL ON THE GOLDENS, aimed at the section that would otherwise be decoration.
+
+    `--slurp` is load-bearing and the twin says why: `--paginate` applies the filter PER PAGE and concatenates, so a PR past 30 comments produces two top-level JSON arrays in one file and every downstream reader sees the second as a separate document. Dropping it leaves this fixture's output unchanged, because the fake answers one page whatever it is asked, so the exit code, both
+    streams, the work tree and `--out` are all identical and only the `--- gh calls ---` section sees it.
+
+    THE PLANT IS A WRAPPER, NOT A COPY OF THE FILE, and that is a property of the subject rather than a convenience. The module resolves both the sibling it spawns and that child's `PYTHONPATH` from its OWN location (`campaign_argv`, `child_env`), so a copy at any other path spawns a scanner that is not there and dies at exit 2 before a single `gh` call is made. Measured, and it
+    cost this control its first run. The wrapper imports the tracked module unmodified and replaces one attribute in its own process, so the file on disk is never written to at all.
+    """
+    original = PORT.read_text(encoding="utf-8")
+    assert '"--slurp",\n' in original, "the plant's target moved"
+
+    mutant = tmp_path / "plant" / "mutant.py"
+    mutant.parent.mkdir(parents=True)
+    mutant.write_text(PLANT, encoding="utf-8")
+
+    name = "the-happy-sweep"
+    want = recorded(name)
+    assert "--slurp" in want[3], "the recorded corpus moved"
+    planted = run(mutant, tmp_path / "planted", name)
+    assert "--slurp" not in planted[3], "the plant did not change the call sequence"
+    for index in (0, 1, 2, 4, 5):
+        assert planted[index] == want[index], "the plant was supposed to be invisible here"
+
+    compare(tmp_path / "good", name)
+    assert PORT.read_text(encoding="utf-8") == original

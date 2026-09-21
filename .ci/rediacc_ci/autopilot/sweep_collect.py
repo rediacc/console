@@ -4,20 +4,20 @@ Collects every PR the 2-hourly sweeper should re-dispatch: LABEL-ARMED UNION CAM
 
 THE UNION IS THE FIX, in the twin's words: the sweep used to list label-armed PRs only, and its own comment admitted the gap. A PR armed only by an open campaign carries no label, so campaign rounds rode their own `workflow_run` events -- and those events are exactly what a sweeper exists to survive the loss of. The sweep was reaching the arming path that needs it least.
 
-READ-ONLY. Listing PRs and reading comments needs no app token; the dispatch that follows is a separate step with a separate credential. Trust in a campaign comes from `sweep-campaigns.sh`, which this script SHELLS OUT TO rather than reimplements (see below), because console is public and a lookalike comment claiming `campaign: open` is the obvious way to make the sweeper dispatch
+READ-ONLY. Listing PRs and reading comments needs no app token; the dispatch that follows is a separate step with a separate credential. Trust in a campaign comes from the campaign scanner, which this script SHELLS OUT TO rather than reimplements (see below), because console is public and a lookalike comment claiming `campaign: open` is the obvious way to make the sweeper dispatch
 rounds nobody armed.
 
 -----------------------------------------------------------------------------
 WHAT IS PORTED AND WHAT IS DELIBERATELY STILL A SUBPROCESS
 -----------------------------------------------------------------------------
-`sweep-campaigns.sh` STILL THE BASH SCRIPT, invoked exactly as the twin
-                      invokes it, resolved from this file's own location
-                      (`parents[3]/.ci/scripts/autopilot/`) the way the twin
-                      resolves it from `SCRIPT_DIR`. It is a separate script
-                      with a separate port box and a separate owner; calling it
-                      is what the twin does, and reimplementing its trust rule
-                      here would put two copies of a SECURITY decision in the
-                      tree that can disagree.
+`sweep_campaigns.py` STILL A SUBPROCESS, invoked in the command form its
+                      own K=5 ledger licensed and resolved from this file's own
+                      location, the way the twin resolved its bash sibling from
+                      `SCRIPT_DIR`. It is a separate program with a separate
+                      port box and a separate owner; spawning it is what the
+                      twin did, and reimplementing its trust rule here would
+                      put two copies of a SECURITY decision in the tree that
+                      can disagree.
 `jq` STILL jq, for both filters. The comment transform's
                       output is a FILE another program reads, so its bytes
                       (jq's two-space pretty printing, its key order, its
@@ -49,7 +49,7 @@ order rather than PR order. Preserved: the caller re-dispatches every line and d
 -----------------------------------------------------------------------------
 TWO DEFECTS IN THE TWIN, REPRODUCED AND NAMED, both pinned by tests
 -----------------------------------------------------------------------------
-DEFECT 1: A MALFORMED `prs.json` SCANS ZERO PRS AND STILL SUCCEEDS. The PR number loop reads from a PROCESS SUBSTITUTION (`done < <(jq -r ... )`), whose exit status bash never checks and `pipefail` cannot reach. If that jq fails, the loop body runs zero times, no comment dump is written, `sweep-campaigns.sh` reports no campaigns, and the sweep exits 0 announcing "0 armed PR(s)".
+DEFECT 1: A MALFORMED `prs.json` SCANS ZERO PRS AND STILL SUCCEEDS. The PR number loop reads from a PROCESS SUBSTITUTION (`done < <(jq -r ... )`), whose exit status bash never checks and `pipefail` cannot reach. If that jq fails, the loop body runs zero times, no comment dump is written, the campaign scanner reports no campaigns, and the sweep exits 0 announcing "0 armed PR(s)".
 The label-armed half still works, which is what makes it look plausible. `gh_json` validating the body makes this hard to reach today, and "hard to reach" is not
 "cannot happen": a body of `{}` parses, satisfies `jq -e`, and then breaks
 `.[].number`.
@@ -94,18 +94,27 @@ COMMENT_FILTER = "[.[][] | {id, author: .user.login, body}]"
 NUMBER_FILTER = ".[].number"
 
 
-def campaign_script() -> pathlib.Path:
-    """`$SCRIPT_DIR/sweep-campaigns.sh`, from this file's own location.
+def campaign_argv() -> list[str]:
+    """The campaign scanner, in the command form its own K=5 ledger licensed.
 
-    `rediacc_ci.paths.repo_root()` is deliberately not used: it honours `$REDIACC_CI_ROOT`, the twin has no such override, and a fixture that moved one and not the other would diverge for a reason unrelated to this script.
+    ITS BASH TWIN IS GONE (`.ci/shadow/w7p6-sweep-campaigns.observations.jsonl` recorded the port against it five times over, and W7P5 batch M3 deleted it), so the spawn names the port by PATH, the exact spelling that ledger carries. `-m` is deliberately not used: `check:ci-parity`'s tokenizer cannot read it.
+
+    Still SPAWNED rather than imported, for the reason this module's header gives: the trust rule is the product, and it stays in one program with one exit status this one propagates.
+
+    `rediacc_ci.paths.repo_root()` is deliberately not used: it honours `$REDIACC_CI_ROOT`, the twin had no such override, and a fixture that moved one and not the other would diverge for a reason unrelated to this script.
     """
-    return (
-        pathlib.Path(__file__).resolve().parents[3]
-        / ".ci"
-        / "scripts"
-        / "autopilot"
-        / "sweep-campaigns.sh"
-    )
+    return [sys.executable, str(pathlib.Path(__file__).resolve().parent / "sweep_campaigns.py")]
+
+
+def child_env() -> dict[str, str]:
+    """This process's environment with `rediacc_ci` importable by the child.
+
+    The parent is reached through `PYTHONPATH=.ci` with the checkout as the working directory, and a child started from anywhere else would not inherit a usable one, so the absolute path is computed here rather than trusted.
+    """
+    env = dict(os.environ)
+    env["PYTHONPATH"] = str(pathlib.Path(__file__).resolve().parents[2])
+    env["PYTHONDONTWRITEBYTECODE"] = "1"
+    return env
 
 
 def _json_usable(body: bytes) -> bool:
@@ -343,7 +352,7 @@ def main(argv: list[str], *, sleeper=time.sleep) -> int:
     with open(campaign_armed, "wb") as handle:
         rc = subprocess.run(
             [
-                str(campaign_script()),
+                *campaign_argv(),
                 "--prs",
                 prs_json,
                 "--comments-dir",
@@ -354,6 +363,7 @@ def main(argv: list[str], *, sleeper=time.sleep) -> int:
             stdout=handle,
             stdin=subprocess.DEVNULL,
             check=False,
+            env=child_env(),
         ).returncode
     if rc != 0:
         return rc

@@ -1,0 +1,14 @@
+# twin .ci/scripts/autopilot/review-reply.sh blob f3a9f6676f7027d2acc3fa53d311fb0fe33107db
+exit: 0
+--- stdout ---
+{"replies":[{"thread_id":"T_acme1","body":"kept","repo":"acme/console"}],"skipped":[{"entry":"has spaces","reason":"malformed-id"},{"entry":"../../etc/passwd","reason":"malformed-id"},{"entry":"T_someoneElsesPR","reason":"unknown-thread"}],"flagged":true}
+--- stderr ---
+⚠ review-reply plan: 3 disposition(s) name no thread in this round's payload and were skipped:
+    - malformed-id: has spaces
+    - malformed-id: ../../etc/passwd
+    - unknown-thread: T_someoneElsesPR
+✓ review-reply plan: 1 reply/resolve pair(s) planned
+--- calls ---
+[]
+--- plan-file ---
+null

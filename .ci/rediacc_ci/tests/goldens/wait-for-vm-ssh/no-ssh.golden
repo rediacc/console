@@ -1,0 +1,8 @@
+# twin .ci/scripts/infra/wait-for-vm-ssh.sh blob d9697b5163e00d7e17dfc0d3e3a619fe9b98543c
+exit: 1
+--- stdout ---
+--- stderr ---
+✗ Required command 'ssh' is not available
+--- calls ---
+--- known hosts ---
+<absent>

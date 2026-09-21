@@ -1,0 +1,7 @@
+# twin .ci/scripts/infra/docker-prepull.sh blob baa2ba0d1ea50f42961565454fcd2650c7a3c6a1
+exit: 0
+--- stdout ---
+--- stderr ---
+✓ Pre-pulled 1 base image(s)
+--- docker calls ---
+docker	pull	registry.invalid/rediacc/base:fixture

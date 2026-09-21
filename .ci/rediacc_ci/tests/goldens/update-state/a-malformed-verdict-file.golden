@@ -1,0 +1,8 @@
+# twin .ci/scripts/autopilot/update-state.sh blob 86b03e9eba69476079c0a1ca26711a02b532e21d
+exit: 5
+--- stdout ---
+--- stderr ---
+jq: parse error: Invalid literal at EOF at line 1, column 10
+--- gh calls ---
+--- gh body ---
+<no body>

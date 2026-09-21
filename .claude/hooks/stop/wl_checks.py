@@ -790,15 +790,14 @@ def plan_owner(root, rel):
 
 
 def plan_records(root):
-    """[(relpath, status, lines)] for agent/PLAN-*.md.
+    """[(relpath, status, lines)] for every plan under agent/, folders included.
 
     status is the parsed value lowercased, or 'UNKNOWN' when no Status line sits in the first PLAN_HEADER_LINES lines. Newest mtime first. Empty list when the directory is absent, so callers never have to know whether this project uses the convention.
+
+    THE GLOB IS `wl_store.agent_plan_files` AND NOT A LITERAL HERE. A plan lives in one of four folders since the tree-lifecycle change, and a pointer left behind by a move is dropped there rather than filtered here, so this function, the census and the box ledger cannot disagree about what the corpus is.
     """
-    d = plan_dir(root)
-    if not d.is_dir():
-        return []
     rows = []
-    for f in sorted(d.glob("PLAN-*.md")):
+    for f in S.agent_plan_files(root):
         try:
             text = f.read_text(encoding="utf-8", errors="replace")
             mtime = f.stat().st_mtime

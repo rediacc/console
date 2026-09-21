@@ -1,0 +1,17 @@
+# twin .ci/scripts/autopilot/sweep-collect.sh blob 52ed925f8f71bdf9f2ad689677167385b887b34b
+exit: 0
+--- stdout ---
+--- stderr ---
+✓ sweep-campaigns: 0 open campaign(s) across 0 scanned PR(s)
+✓ sweeper: 0 armed PR(s) = 0 label-armed U 0 campaign-armed
+--- gh calls ---
+pr	list	--repo	rediacc/console	--state	open	--limit	50	--json	number
+pr	list	--repo	rediacc/console	--label	autopilot	--state	open	--json	number	--jq	.[].number
+--- work ---
+{
+  "campaign-armed.txt": "",
+  "label-armed.txt": "",
+  "prs.json": "[]"
+}
+--- out ---
+

@@ -109,7 +109,7 @@ REGISTRY: tuple[tuple[str, str], ...] = (
     # A DIFF gate with no baseline and no ledger measures nothing, and "measured nothing" must never read as "found nothing". Against the empty fixture both its inputs are gone, so it must refuse to run. Its first draft did the opposite: a wrong ledger path made the protected set empty, so it reported OK on a planted fabrication. Only a control caught that.
     ("check-locale-only-edits.ts", "Refusing to run"),
     ("check-jq-boolean-default.ts", "Refusing to run"),
-    (".ci/scripts/security/check-autopilot-workflow-invariants.sh", "INVARIANT-FAIL"),
+    (".ci/rediacc_ci/security/autopilot_workflow_invariants.py", "INVARIANT-FAIL"),
     # Its DOCS_DIR is a hardcoded path constant, so this is root pattern 1 verbatim: point it at a tree without packages/www/src/content/docs and the glob returns zero files, every loop iterates zero times, and it printed "All external links are valid". Measured on the empty fixture before the guard was added, not inferred from reading it.
     ("check-external-links.ts", "Refusing to run"),
     # Root pattern 1 with a baseline bolted on, which makes it worse: with the locale trees absent it finds zero contamination AND every one of its 379 baselined findings looks fixed, so an unguarded version would either print a checkmark or fail for the wrong reason. It must refuse instead.
@@ -180,6 +180,13 @@ def run_against_empty_tree(script: str) -> harness.RunResult:
         (tmp / "node_modules").symlink_to(ROOT / "node_modules")
 
         env = {"CI": "true"}
+        if script.startswith(".ci/rediacc_ci/"):
+            # A PACKAGE MODULE, not a standalone entry point. The `.ci/scripts/quality/check_*.py`
+            # entries below carry their own `_cipath` hop and need nothing; a module under the
+            # package imports `rediacc_ci` directly and is reached through PYTHONPATH the way
+            # `package.json` reaches it, so the fixture has to say so rather than inherit it.
+            env["PYTHONPATH"] = ".ci"
+            env["PYTHONDONTWRITEBYTECODE"] = "1"
         if script.endswith(".sh"):
             argv = [harness.require_tool("bash", "install bash"), script]
         elif script.endswith(".py"):

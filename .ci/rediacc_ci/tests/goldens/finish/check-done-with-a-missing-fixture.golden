@@ -1,0 +1,6 @@
+# twin .ci/scripts/autopilot/finish.sh blob bbd07cd04054c2a832b2393721d680966ef32ade
+exit: 1
+--- stdout ---
+--- stderr ---
+✗ Required file 'nope.json' does not exist
+--- gh calls ---

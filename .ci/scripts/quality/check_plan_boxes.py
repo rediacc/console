@@ -83,6 +83,7 @@ from pathlib import Path
 
 import _cipath  # noqa: F401
 from rediacc_ci import controls, paths
+from rediacc_ci.quality import plan_lifecycle as PL
 
 ROOT = Path(os.environ.get("PLAN_BOXES_ROOT") or Path(__file__).resolve().parents[3])
 # The hop onto the Stop hook's directory, through the package's own resolver. `paths.on_sys_path` is idempotent where a bare `sys.path.insert(0, d)` is not, and `paths.hooks_stop_dir` is the ONE place the `.claude/hooks/stop` literal lives, so the move planned for that program is a one-line change there rather than a sweep of nine call sites. ROOT is passed explicitly: this gate
@@ -106,7 +107,6 @@ except ImportError as _exc:  # pragma: no cover -- exercised by test-gate-anti-v
     sys.exit(1)
 
 LEDGER = ROOT / ".ci" / "config" / "plan-boxes.json"
-PLAN_GLOB = "PLAN-*.md"
 
 # Floors. Measured 2026-09-02: 10 plan files carry boxes out of 70 total, 83 open and 37 ticked. The file floor is deliberately well under the total -- it guards against the glob losing the corpus, not against ordinary housekeeping -- and the box floor guards against a parser that silently resolves nothing.
 MIN_PLAN_FILES = int(os.environ.get("PLAN_BOXES_MIN_PLANS", "20"))
@@ -158,8 +158,21 @@ def loose_sig(task: str) -> str:
     ).hexdigest()[:8]
 
 
-def scan(root: Path) -> dict:
-    """{relpath: {status, owner, open, done, task_sigs}} for every plan under agent/."""
+def prior_rows() -> dict:
+    """The rows in the COMMITTED ledger, or {}. Read for one key only.
+
+    `moved_at` is the only thing carried forward: it is the date a plan was moved into a terminal folder, which nothing in the tree can be read back out of once a later commit touches the new path. Recomputing it here would reset the 40-day retention clock on every regeneration, which is risk 1 of agent/PLAN-agent-tree-lifecycle.md in its quietest form. `check:ci-plan-folders` F6
+    is what stops the carried value drifting away from git.
+    """
+    try:
+        return (json.loads(LEDGER.read_text(encoding="utf-8")) or {}).get("plans") or {}
+    except (OSError, ValueError):
+        return {}
+
+
+def scan(root: Path, prior: dict | None = None) -> dict:
+    """{relpath: {status, owner, folder, moved_at, open, done, task_sigs}} per plan."""
+    carried = prior_rows() if prior is None else prior
     out: dict[str, dict] = {}
     for rel, status, _lines in CK.plan_records(root):
         text = (root / rel).read_text(encoding="utf-8", errors="replace")
@@ -167,6 +180,10 @@ def scan(root: Path) -> dict:
         out[rel] = {
             "status": status,
             "owner": CK.plan_owner(root, rel) or "unowned",
+            # DERIVED, and therefore COMPARED below: the folder is a second reading of the path, so a ledger that disagrees with it names a plan that has moved without the ledger being regenerated.
+            "folder": PL.folder_of(rel),
+            # CARRIED, and therefore NOT compared below: see prior_rows().
+            "moved_at": str((carried.get(rel) or {}).get("moved_at") or ""),
             "open": len(open_t),
             "done": len(done_t),
             "open_sigs": sorted({sig(t) for t in open_t}),
@@ -232,9 +249,10 @@ def diff_problems(scanned: dict, ledger: dict) -> list[str]:
     for rel in sorted(set(scanned) & set(plans)):
         got, want = scanned[rel], plans[rel]
         out.extend(
-            f"{rel}: {field} is {got[field]!r}, ledger says {want.get(field)!r}"
-            for field in ("status", "owner", "open", "done")
-            if got[field] != want.get(field)
+            f"{rel}: {field} is {got.get(field)!r}, ledger says {want.get(field)!r}"
+            # `.get` on BOTH sides: the selftest builds rows by hand and a KeyError there would be a crash rather than a finding. `scan()` always sets every one of these, which the control "scan emits the lifecycle keys" proves against the real tree.
+            for field in ("status", "owner", "folder", "open", "done")
+            if got.get(field) != want.get(field)
         )
         for field in ("open_sigs", "done_sigs"):
             if sorted(got[field]) != sorted(want.get(field) or []):
@@ -376,12 +394,14 @@ def _name_status(base: str) -> list[tuple[str, str]]:
     return rows
 
 
+# THE PREDICATE IS `plan_lifecycle.is_plan_path`, NOT A PREFIX. `startswith("agent/PLAN-")` was the whole corpus while plans lived at the agent root; it misses every plan under `agent/plans/**` and it also matched `agent/PLAN-x.md/whatever`, which nothing writes but which a prefix cannot refuse. One predicate, shared with the folder gate, so the two cannot disagree about what a
+# plan is.
 def _touched_plans(base: str) -> set[str]:
-    return {p for st, p in _name_status(base) if st != "D" and p.startswith("agent/PLAN-")}
+    return {p for st, p in _name_status(base) if st != "D" and PL.is_plan_path(p)}
 
 
 def _added_plans(base: str) -> set[str]:
-    return {p for st, p in _name_status(base) if st == "A" and p.startswith("agent/PLAN-")}
+    return {p for st, p in _name_status(base) if st == "A" and PL.is_plan_path(p)}
 
 
 def _content_age_days(rel: str, base: str) -> int | None:
@@ -463,9 +483,14 @@ def transition_problems(scanned: dict, base: str) -> tuple[list[str], int]:
     #
     # WHAT THE AMNESTY WAS COSTING, measured on a real scratch tree before it was removed: a 41-day-old plan deleted wholesale, carrying one open box that survived nowhere, exited 0 -- and the success line ASSERTED "21 box(es) open at <base> all survive at HEAD" when 22 were open and one had just been destroyed. An instrument that reports work it did not do is the failure this file
     # is for. ARCHIVING IS A LEGAL HOME AND G-A1 DID NOT KNOW IT, found 2026-09-09 by the control that replaced the age amnesty. G-A1's own message has always listed "not archived" among the ways a box may be gone and told the reader to `git mv` the plan into the archive -- but only G-A5 consulted `archived_ok`, so doing that reddened G-A1 on any plan the amnesty did not cover.
-    # Measured against the committed file the same day: a YOUNG plan moved into the archive at R100 reported "is GONE at HEAD ... not archived" while the identical move on a 999-day-old plan was silent. That is age deciding whether a correct action is correct, which it never should have. One predicate now, shared, so the two rules cannot disagree again.
+    # Measured against the committed file the same day: a YOUNG plan moved into the archive at R100 reported "is GONE at HEAD ... not archived" while the identical move on a 999-day-old plan was silent. That is age deciding whether a correct action is correct, which it never should have. One predicate now, shared, so the two rules cannot disagree again. MATCHED BY BASENAME, WHICH
+    # IS WHY THE CORPUS IT SCANS IS ARCHIVE_DIR AND NOTHING ELSE. `archived_ok` holds only paths under `agent/archive/plans/`, so a plan moved into `agent/plans/_done/` by the tree-lifecycle change is NOT read as archived here, and its boxes survive through the ordinary route instead: the box signatures are still in `head_open` at the new path, which is a set over the WHOLE corpus
+    # rather than per plan. Tested by `test_a_move_into_the_plan_folders_is_not_read_as_archiving` in the gate suite.
+    #
+    # The residual imprecision is real and bounded: two plans with the same basename in different trees, one archived and one deleted, would exempt the wrong one. Exactness is unavailable because the archive carries `agent/archive/<label>/` subtrees whose depth is not fixed, and narrowing to an exact old path would drop the plain-add exemption the header records.
     def _archived(rel: str) -> bool:
-        return any(a.endswith("/" + rel.rsplit("/", 1)[-1]) for a in archived_ok)
+        name = rel.rsplit("/", 1)[-1]
+        return any(a.startswith(ARCHIVE_DIR) and a.endswith("/" + name) for a in archived_ok)
 
     compared = 0
     for rel, rec in sorted(base_plans.items()):
@@ -883,6 +908,13 @@ def selftest() -> int:
             {"plans": {"p.md": dict(tree["p.md"], open_sigs=["aa", "bb", "zz"])}},
             "open_sigs disagree",
         ),
+        # The lifecycle field, 2026-09-21. `folder` is DERIVED from the path, so a ledger carrying the old one names a plan that moved without the ledger being regenerated -- which would leave check:ci-plan-folders reading a retention clock against the wrong directory.
+        (
+            "a folder the ledger disagrees with",
+            {"agent/plans/_done/p.md": dict(tree["p.md"], folder="agent/plans/_done")},
+            {"plans": {"agent/plans/_done/p.md": dict(tree["p.md"], folder="agent/plans")}},
+            "folder is",
+        ),
     ]
     for label, t, led, needle in cases:
         got = diff_problems(t, led)
@@ -895,6 +927,18 @@ def selftest() -> int:
     print(f"  {'PASS' if ok else 'FAIL'}  CONTROL: a ledger that agrees is silent")
     if not ok:
         bad += 1
+
+    # `folder` is derived here and nowhere else, so the derivation is controlled here too. A path outside the four legal folders answers "" rather than guessing, which is what keeps a session note out of the plan corpus.
+    for label, rel, want in (
+        ("legacy", "agent/PLAN-x.md", "agent"),
+        ("active", "agent/plans/PLAN-x.md", "agent/plans"),
+        ("terminal", "agent/plans/_done/PLAN-x.md", "agent/plans/_done"),
+        ("not a plan folder", "agent/abcd1234/STATE.md", ""),
+    ):
+        ok = PL.folder_of(rel) == want
+        print(f"  {'PASS' if ok else 'FAIL'}  folder_of reads a {label} path as {want!r}")
+        if not ok:
+            bad += 1
 
     # G-A6, whose whole job is to refuse rather than pass.
     ok = any("glob lost the corpus" in m for m in vacuity_problems({}, 0))

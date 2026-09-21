@@ -1,0 +1,10 @@
+# twin .ci/scripts/signal/create-complete.sh blob 6218aef1389e5fc463b126a27910b983342307ab
+exit: 1
+--- stdout ---
+--- stderr ---
+mkdir: Already exists
+--- files ---
+{
+  "decoy": {},
+  "out": {}
+}

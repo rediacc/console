@@ -1,0 +1,21 @@
+# twin .ci/scripts/setup/install-cli-global.sh blob 73cc24bed9bb46c7b520dd3f3d10eaeec3212a5a
+exit: 0
+--- stdout ---
+call: npm pack
+rediacc-cli-0.10.0.tgz
+call: npm install -g rediacc-cli-0.10.0.tgz
+--- stderr ---
+→ Installing CLI globally from packages/cli...
+→ Creating npm package tarball...
+→ Installing rediacc-cli-0.10.0.tgz globally...
+✓ CLI installed globally
+⚠ CLI command not found in PATH (may need to restart shell)
+--- calls ---
+[
+  "npm\tpack",
+  "npm\tinstall\t-g\trediacc-cli-0.10.0.tgz"
+]
+--- tree ---
+[
+  "packages/cli/rediacc-cli-0.9.0.tgz"
+]

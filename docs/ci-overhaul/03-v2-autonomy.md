@@ -30,7 +30,7 @@ operator's `<id>+<login>@users.noreply.github.com` identity, unsigned. The actio
 **A second GitHub App, `rediacc-autopilot`,** with `contents:write`, `pull_requests:write`, `issues:write`, `actions:write`, installed on the same five repos, and **with no bypass on the console ruleset**. Then even a harness bug cannot push console main; the platform refuses.
 
 **Residual to state honestly:** `renet`, `account` and `elite` have no rulesets (free-plan private repos), so nothing platform-side stops a main push there. The only guard is the harness's hardcoded branch checks. **A harness compromise can push submodule main.** Trusted scripts come only from `console@main`, so the attack requires a merge first, which makes the human merge the
-boundary. Keep `autopilot-push.sh` tiny and boring, and review it as the security boundary it is.
+boundary. Keep `rediacc_ci.autopilot.autopilot_push` tiny and boring, and review it as the security boundary it is.
 
 ---
 

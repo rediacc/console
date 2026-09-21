@@ -1,6 +1,6 @@
 """Port of `.ci/scripts/test/gates/test-autopilot-workflow-invariants.sh`, retired in W7 P5.
 
-Tests `.ci/scripts/security/check-autopilot-workflow-invariants.sh`, the static gate over `.github/workflows/autopilot.yml` -- the workflow that hands a model a shell over PR-authored code.
+Tests `.ci/rediacc_ci/security/autopilot_workflow_invariants.py`, the static gate over `.github/workflows/autopilot.yml` -- the workflow that hands a model a shell over PR-authored code.
 
 THE METHOD IS THE POINT, and it is carried over unchanged. A static grep that has never been shown to FAIL is indistinguishable from `true` (this repo shipped exactly that shape in a `--selftest` nothing invoked). So every invariant is proven in both directions: the REAL workflow passes, and a MUTATED copy of the real workflow with that one invariant broken must exit 1 with the
 pinned diagnostic. Mutating the LIVE file rather than a frozen fixture keeps the proofs from rotting as the workflow evolves: if the workflow's shape drifts so far that a mutation stops landing, `assert_mutated` fails loudly instead of the test silently testing nothing.
@@ -9,7 +9,7 @@ WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP. Every case reads `.github/workfl
 divergence that would be blamed on this port. `REAL_TREE_TWIN = True` is what buys
 the serialisation, and it is honoured only because this module declares no `XDIST_GROUP` of its own; see `real_tree_admission` in `test_twin_parity.py`.
 
-WHAT IS REIMPLEMENTED, AND WHAT IS NOT. The SUBJECT is never reimplemented: every verdict below comes from the real `bash check-autopilot-workflow-invariants.sh`. What is reimplemented is the twin's MUTATION toolkit -- `perl -pe`, `perl -0pe`, `sed` and `grep -v` -- as the four line helpers below. Their perl semantics are reproduced deliberately and are documented on each helper,
+WHAT IS REIMPLEMENTED, AND WHAT IS NOT. The SUBJECT is never reimplemented: every verdict below comes from the real `python3 autopilot_workflow_invariants.py`. What is reimplemented is the twin's MUTATION toolkit -- `perl -pe`, `perl -0pe`, `sed` and `grep -v` -- as the four line helpers below. Their perl semantics are reproduced deliberately and are documented on each helper,
 because a mutation that lands in the wrong place is a control that fires for the wrong reason. Every mutation is still checked against the real file by `assert_mutated`, which is the thing that catches a helper whose semantics drifted.
 """
 
@@ -22,7 +22,7 @@ from rediacc_ci.tests.gates import harness
 # Reads and mutates copies of the real .github/workflows/autopilot.yml, and the first case drives the subject at the real file in place.
 REAL_TREE_TWIN = True
 
-GATE_REL = ".ci/scripts/security/check-autopilot-workflow-invariants.sh"
+GATE_REL = ".ci/rediacc_ci/security/autopilot_workflow_invariants.py"
 GATE = paths.from_root(*GATE_REL.split("/"))
 REAL_REL = ".github/workflows/autopilot.yml"
 REAL = paths.from_root(*REAL_REL.split("/"))
@@ -37,7 +37,7 @@ def require_gate(gate) -> str:
             "the real workflow is missing at %s, so every mutation below would be a "
             "mutation of nothing and this file would prove nothing at all." % REAL_REL
         )
-    return harness.require_tool("bash", "install bash; the subject IS a bash script")
+    return harness.require_tool("python3", "install python3; the subject IS a Python module")
 
 
 def real_source(gate) -> str:
@@ -58,13 +58,17 @@ def real_source(gate) -> str:
 def run_gate(gate, workflow_file) -> harness.RunResult:
     """`run_gate` from the twin: the real subject, WORKFLOW_FILE pointed at `workflow_file`, stdout and stderr kept APART.
 
-    The twin captures the two streams into separate files and asserts on `err()`, because `common.sh`'s `log_error`/`log_info` write to stderr. Merging them here would hide a diagnostic that moved to the wrong stream, which is a real defect in a gate whose whole output is diagnostics.
+    The twin captured the two streams into separate files and asserted on `err()`, because its `log_error`/`log_info` wrote to stderr, and the port keeps both streams where the twin put them. Merging them here would hide a diagnostic that moved to the wrong stream, which is a real defect in a gate whose whole output is diagnostics.
     """
-    bash = require_gate(gate)
+    python = require_gate(gate)
     return harness.run(
-        [bash, os.fspath(GATE)],
+        [python, os.fspath(GATE)],
         cwd=paths.repo_root(),
-        env={"WORKFLOW_FILE": os.fspath(workflow_file)},
+        env={
+            "WORKFLOW_FILE": os.fspath(workflow_file),
+            "PYTHONPATH": ".ci",
+            "PYTHONDONTWRITEBYTECODE": "1",
+        },
     )
 
 

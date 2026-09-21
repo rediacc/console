@@ -9,7 +9,7 @@
 // rename in autopilot.yml turns this comment red rather than stale.
 //
 // EVERY CLAIM'S SOURCE, so the next editor can re-verify rather than trust: arming paths, stop scopes, variables .. .github/workflows/autopilot.yml (the roster comment at its top) arming ORDER, round cap, stuck sig .... .ci/scripts/autopilot/autopilot-gate.sh round actions (fix/ready-flip/...) .... same file, the conclusion `case` --max-turns per mode .................
-// .ci/scripts/autopilot/resolve-model-args.sh label names and meanings ............. .github/labels.yml
+// .ci/rediacc_ci/autopilot/resolve_model_args.py label names and meanings ......... .github/labels.yml
 //
 // IDEMPOTENCE IS THE WHOLE DESIGN, and it is copied from the label guide deliberately rather than reinvented: find the existing comment by an HTML marker, and write ONLY when the body actually differs. A PR gets a CI run per push, so a guide posted per run would bury the conversation. A rerun on an unchanged tree performs zero API writes.
 //

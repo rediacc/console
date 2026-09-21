@@ -7,7 +7,9 @@ Authenticate to GHCR, pull ONE named image, log out again. The twin's header sel
 THE SHARED GHCR-AUTH LOGIC WITH `ci-pull-images.sh`, AND WHY NO HELPER IS BEING
 INVENTED HERE
 -----------------------------------------------------------------------------
-`.ci/scripts/infra/ci-pull-images.sh` (ported beside this file as `rediacc_ci.infra.ci_pull_images`) runs the same login/pull/logout dance. The duplication is REAL and it is not shared today: `.ci/scripts/lib/common.sh` is 772 lines and contains no `ghcr`, no `docker login`, and no registry helper at all (grepped 2026-09-13, zero hits). Both twins open-code it.
+`.ci/scripts/infra/ci-pull-images.sh` (ported beside this file as `rediacc_ci.infra.ci_pull_images`) runs the same login/pull/logout dance. The duplication is REAL and it is not shared today: `.ci/scripts/lib/common.sh` is 772 lines and contains no `ghcr`, no `docker login`, and no registry helper at all (grepped 2026-09-13, zero hits). Both twins open-coded it.
+
+This one's twin has since been retired against `goldens/docker-pull-ghcr/`, and the duplication it names lives on in the sibling.
 
 So this port open-codes it too. Factoring a `core.ghcr` on the Python side only would give the port a structure its twin does not have, and the differential would then be comparing two differently-shaped programs -- which is how a port starts "agreeing" for reasons unrelated to the subject. Naming the duplication is the deliverable; removing it is a cutover decision for a later
 box.

@@ -1,0 +1,70 @@
+# twin .ci/scripts/autopilot/autopilot-push.sh blob e560c38956d694662edcc15b3b5f48c3bb23b63d
+exit: 1
+--- stdout ---
+exfil-tripwire quiet: 1 file(s), 182 diff bytes, 7 out-of-scope added bytes, 0 implicated prefix(es).
+exfil-tripwire quiet: 1 file(s), 245 diff bytes, 58 out-of-scope added bytes, 0 implicated prefix(es).
+--- stderr ---
+✓ gitlink verified: private/renet -> 4eaefbdca2e58404f9a17d90a026e25bef7f0390
+✓ all repos validated; nothing has been pushed yet
+To <sandbox>/renet.git
+ ! [rejected]        4eaefbdca2e58404f9a17d90a026e25bef7f0390 -> work (fetch first)
+error: failed to push some refs to '<sandbox>/renet.git'
+hint: Updates were rejected because the remote contains work that you do not
+hint: have locally. This is usually caused by another repository pushing to
+hint: the same ref. If you want to integrate the remote changes, use
+hint: 'git pull' before pushing again.
+hint: See the 'Note about fast-forwards' in 'git push --help' for details.
+⚠ submodule 'private/renet': push rejected as non-fast-forward; inspecting the remote tip before deciding
+⚠ submodule 'private/renet': the remote tip d47adecbd3b158879607c131e0a63487964aef3f is an autopilot orphan; rebuilding this round's commit on top of it
+✗ submodule-adopt-conflict: 'private/renet' this round's commit does not apply cleanly on top of d47adecbd3b158879607c131e0a63487964aef3f; a human must reconcile the branch
+--- git calls ---
+rev-parse	--abbrev-ref	HEAD
+status	--porcelain=v1	-z
+rev-parse	HEAD
+-C	<sandbox>/console/private/renet	rev-parse	--show-toplevel
+-C	<sandbox>/console/private/renet	rev-parse	--abbrev-ref	HEAD
+-C	<sandbox>/console/private/renet	show-ref	--verify	--quiet	refs/heads/work
+-C	<sandbox>/console/private/renet	checkout	-q	-b	work
+-C	<sandbox>/console/private/renet	rev-parse	HEAD
+-C	<sandbox>/console/private/renet	ls-files	--error-unmatch	--	main.go
+-C	<sandbox>/console/private/renet	add	--	main.go
+-C	<sandbox>/console/private/renet	diff	--cached	--name-only
+-C	<sandbox>/console/private/renet	diff	--cached	--src-prefix=a/private/renet/	--dst-prefix=b/private/renet/
+-C	<sandbox>/console/private/renet	-c	user.name=Autopilot Operator	-c	user.email=operator@example.invalid	commit	-F	<work>/sub-msg.txt	--quiet
+-C	<sandbox>/console/private/renet	rev-parse	HEAD
+-C	<sandbox>/console/private/renet	merge-base	--is-ancestor	9c2e1ec4aa2994a5503f57c92213d4a4244d181c	4eaefbdca2e58404f9a17d90a026e25bef7f0390
+add	--	private/renet
+diff	--cached	--name-only
+ls-files	-s	--	private/renet
+diff	--cached
+-C	<sandbox>/console/private/renet	push	origin	4eaefbdca2e58404f9a17d90a026e25bef7f0390:refs/heads/work
+-C	<sandbox>/console/private/renet	fetch	-q	origin	work
+-C	<sandbox>/console/private/renet	rev-parse	FETCH_HEAD
+-C	<sandbox>/console/private/renet	log	-1	--format=%ce	d47adecbd3b158879607c131e0a63487964aef3f
+-C	<sandbox>/console/private/renet	rev-parse	--verify	--quiet	origin/main
+-C	<sandbox>/console/private/renet	rev-parse	--verify	--quiet	origin/main
+-C	<sandbox>/console/private/renet	merge-base	9c2e1ec4aa2994a5503f57c92213d4a4244d181c	origin/main
+-C	<sandbox>/console/private/renet	merge-base	d47adecbd3b158879607c131e0a63487964aef3f	origin/main
+-C	<sandbox>/console/private/renet	checkout	-q	-B	work	d47adecbd3b158879607c131e0a63487964aef3f
+-C	<sandbox>/console/private/renet	cherry-pick	--no-commit	4eaefbdca2e58404f9a17d90a026e25bef7f0390
+-C	<sandbox>/console/private/renet	cherry-pick	--abort
+--- gh calls ---
+--- git state ---
+{
+  "console": {
+    "branch": "work",
+    "head": "18d324309f358efb4e98af4de1926febf0ff3ea5",
+    "status": "MM private/renet\n?? handoff.json"
+  },
+  "console.git": {
+    "refs": ""
+  },
+  "console/private/renet": {
+    "branch": "work",
+    "head": "d47adecbd3b158879607c131e0a63487964aef3f",
+    "status": "UU main.go"
+  },
+  "renet.git": {
+    "refs": "refs/heads/main 9c2e1ec4aa2994a5503f57c92213d4a4244d181c\nrefs/heads/work d47adecbd3b158879607c131e0a63487964aef3f"
+  }
+}

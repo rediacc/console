@@ -1,0 +1,8 @@
+# twin .ci/scripts/autopilot/finish.sh blob bbd07cd04054c2a832b2393721d680966ef32ade
+exit: 1
+--- stdout ---
+--- stderr ---
+✗ rerun-review: no review-pipeline run found for head deadbeef
+--- gh calls ---
+api	repos/r/c/pulls/5	--jq	{sha: .head.sha}
+api	repos/r/c/actions/runs?head_sha=deadbeef&event=pull_request	--jq	{id: ([.workflow_runs[] | select(.name | test("[Rr]eview"))] | first | .id)}

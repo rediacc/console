@@ -11,8 +11,11 @@ WHAT IT DOES NOT DO. It does not turn parallelism on, and it does not decide the
 24 inner ones. Without `--dist loadgroup` these markers do nothing at all, which is what makes it safe for this file to land before the flag does.
 """
 
+import os
+import subprocess
+
 import pytest
-from rediacc_ci import xdist_groups
+from rediacc_ci import paths, xdist_groups
 
 # The lock's real-tree declarations, read ONCE per process. A dict rather than a module-level rebind so no `global` statement is needed; the key names the reason the entry exists rather than being a bare index.
 _CACHE: dict[str, set[str]] = {}
@@ -67,3 +70,75 @@ def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item
         group = seen[name]
         if group:
             item.add_marker(pytest.mark.xdist_group(group))
+
+
+# --------------------------------------------------------------------------- The untracked-file snapshot, and the reason it is session-scoped and autouse.
+#
+# A TEST THAT WRITES THE REAL TREE LEAVES NO TRACE IN ITS OWN RESULT. The retired bash worklist suites wrote `aa.jsonl`, `zz.jsonl`, `.events.jsonl`, `.lastevent-*.json`, `.requests`, `.local/` and `claude/` into the repository root and every one of them passed; the debris was found weeks later by a human looking at `git status`. `check:ci-tree-shape` now refuses those files in
+# CI, which catches them a commit too late. This catches them in the run that made them.
+#
+# WHY SESSION-SCOPED RATHER THAN PER TEST. A per-test snapshot is two `git status` calls times nine thousand tests, which is minutes of subprocess time to answer a question whose answer changes a handful of times a year. The session pair costs two calls and still names the culprit, because the LAST TEST TO RUN is reported alongside the paths -- not proof, but the first place
+# to look, and under `-p no:randomly` it is the file that wrote them.
+#
+# WHY IT FAILS RATHER THAN WARNS. A warning at the end of a green run is read by nobody. The failure is raised from the fixture's teardown, so the tests' own verdicts are printed first and this one lands underneath them where it cannot be mistaken for a test failure.
+#
+# UNDER xdist THE CHECK RUNS IN EVERY WORKER, and that is harmless rather than wrong: each worker snapshots the same tree, so a file written by any of them is reported by all of them. `TREE_SNAPSHOT=0` switches it off for the one case it cannot serve, a suite deliberately driven against a dirty checkout.
+
+#: NOT a `WORKLIST_*` name, deliberately. `check:ci-worklist-env-registry` owns that prefix and its corpus does not reach this file, so a name claiming it would be governed by a registry that cannot see it. `check:ci-python-env-registry` keys on the whole tree with no prefix and does reach here, which is the one that must carry it.
+SNAPSHOT_ENV = "TREE_SNAPSHOT"
+
+#: The three trees a stray is both likely and invisible in. `:(glob)*` matches depth-1 files at the root only, because a bare `*` in a git pathspec crosses `/` and would pull in the whole repository.
+SCOPE = (":(glob)*", "agent", ".claude/hooks/stop")
+
+
+def _untracked() -> set[str]:
+    """Untracked-not-ignored paths, or an empty set when git cannot answer.
+
+    An EMPTY SET on failure rather than a raise: this fixture must never be the reason a suite fails, and a git that cannot run leaves the before and after equal, which is silence rather than a false accusation.
+    """
+    try:
+        result = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(paths.repo_root()),
+                "ls-files",
+                "-z",
+                "--others",
+                "--exclude-standard",
+                "--",
+                *SCOPE,
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=60,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return set()
+    if result.returncode != 0:
+        return set()
+    return {path for path in result.stdout.split("\0") if path}
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _tree_snapshot(request):
+    """Fail the session when a test left an untracked file in the real tree."""
+    if os.environ.get(SNAPSHOT_ENV) == "0":
+        yield
+        return
+    before = _untracked()
+    yield
+    added = sorted(_untracked() - before)
+    if not added:
+        return
+    last = getattr(getattr(request.session, "items", [None])[-1], "nodeid", "(unknown)")
+    raise AssertionError(
+        "%d untracked file(s) appeared in the real tree during this session:\n%s\n"
+        "  The last test to run was %s, which is where to look first.\n"
+        "  A test that writes the repository leaves no trace in its own result, which is "
+        "how the retired bash worklist suites put aa.jsonl, zz.jsonl and .events.jsonl at "
+        "the repository root and stayed green. Write to tmp_path instead.\n"
+        "  Set %s=0 only for a suite deliberately driven against a dirty checkout."
+        % (len(added), "\n".join("    %s" % path for path in added), last, SNAPSHOT_ENV)
+    )

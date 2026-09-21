@@ -1,0 +1,156 @@
+# twin .ci/scripts/infra/wait-for-vm-ssh.sh blob d9697b5163e00d7e17dfc0d3e3a619fe9b98543c
+exit: 1
+--- stdout ---
+ready
+ready
+ready
+ready
+ready
+ready
+ready
+ready
+ready
+ready
+ready
+ready
+ready
+ready
+ready
+ready
+ready
+ready
+ready
+ready
+ready
+ready
+ready
+ready
+ready
+ready
+ready
+ready
+ready
+ready
+ready
+ready
+ready
+ready
+ready
+ready
+--- stderr ---
+✓ Waiting for 10.0.0.1 as fixtureuser...
+✓ Waiting for VM 10.0.0.1 SSH... (1/36)
+✓ Waiting for VM 10.0.0.1 SSH... (2/36)
+✓ Waiting for VM 10.0.0.1 SSH... (3/36)
+✓ Waiting for VM 10.0.0.1 SSH... (4/36)
+✓ Waiting for VM 10.0.0.1 SSH... (5/36)
+✓ Waiting for VM 10.0.0.1 SSH... (6/36)
+✓ Waiting for VM 10.0.0.1 SSH... (7/36)
+✓ Waiting for VM 10.0.0.1 SSH... (8/36)
+✓ Waiting for VM 10.0.0.1 SSH... (9/36)
+✓ Waiting for VM 10.0.0.1 SSH... (10/36)
+✓ Waiting for VM 10.0.0.1 SSH... (11/36)
+✓ Waiting for VM 10.0.0.1 SSH... (12/36)
+✓ Waiting for VM 10.0.0.1 SSH... (13/36)
+✓ Waiting for VM 10.0.0.1 SSH... (14/36)
+✓ Waiting for VM 10.0.0.1 SSH... (15/36)
+✓ Waiting for VM 10.0.0.1 SSH... (16/36)
+✓ Waiting for VM 10.0.0.1 SSH... (17/36)
+✓ Waiting for VM 10.0.0.1 SSH... (18/36)
+✓ Waiting for VM 10.0.0.1 SSH... (19/36)
+✓ Waiting for VM 10.0.0.1 SSH... (20/36)
+✓ Waiting for VM 10.0.0.1 SSH... (21/36)
+✓ Waiting for VM 10.0.0.1 SSH... (22/36)
+✓ Waiting for VM 10.0.0.1 SSH... (23/36)
+✓ Waiting for VM 10.0.0.1 SSH... (24/36)
+✓ Waiting for VM 10.0.0.1 SSH... (25/36)
+✓ Waiting for VM 10.0.0.1 SSH... (26/36)
+✓ Waiting for VM 10.0.0.1 SSH... (27/36)
+✓ Waiting for VM 10.0.0.1 SSH... (28/36)
+✓ Waiting for VM 10.0.0.1 SSH... (29/36)
+✓ Waiting for VM 10.0.0.1 SSH... (30/36)
+✓ Waiting for VM 10.0.0.1 SSH... (31/36)
+✓ Waiting for VM 10.0.0.1 SSH... (32/36)
+✓ Waiting for VM 10.0.0.1 SSH... (33/36)
+✓ Waiting for VM 10.0.0.1 SSH... (34/36)
+✓ Waiting for VM 10.0.0.1 SSH... (35/36)
+✓ Waiting for VM 10.0.0.1 SSH... (36/36)
+✗ VM 10.0.0.1 SSH not ready after 180s
+✗ load average (1m 5m 15m): unavailable, cores: unknown
+--- calls ---
+ssh	-o	StrictHostKeyChecking=accept-new	-o	ConnectTimeout=5	fixtureuser@10.0.0.1	echo	ready
+sleep	5
+ssh	-o	StrictHostKeyChecking=accept-new	-o	ConnectTimeout=5	fixtureuser@10.0.0.1	echo	ready
+sleep	5
+ssh	-o	StrictHostKeyChecking=accept-new	-o	ConnectTimeout=5	fixtureuser@10.0.0.1	echo	ready
+sleep	5
+ssh	-o	StrictHostKeyChecking=accept-new	-o	ConnectTimeout=5	fixtureuser@10.0.0.1	echo	ready
+sleep	5
+ssh	-o	StrictHostKeyChecking=accept-new	-o	ConnectTimeout=5	fixtureuser@10.0.0.1	echo	ready
+sleep	5
+ssh	-o	StrictHostKeyChecking=accept-new	-o	ConnectTimeout=5	fixtureuser@10.0.0.1	echo	ready
+sleep	5
+ssh	-o	StrictHostKeyChecking=accept-new	-o	ConnectTimeout=5	fixtureuser@10.0.0.1	echo	ready
+sleep	5
+ssh	-o	StrictHostKeyChecking=accept-new	-o	ConnectTimeout=5	fixtureuser@10.0.0.1	echo	ready
+sleep	5
+ssh	-o	StrictHostKeyChecking=accept-new	-o	ConnectTimeout=5	fixtureuser@10.0.0.1	echo	ready
+sleep	5
+ssh	-o	StrictHostKeyChecking=accept-new	-o	ConnectTimeout=5	fixtureuser@10.0.0.1	echo	ready
+sleep	5
+ssh	-o	StrictHostKeyChecking=accept-new	-o	ConnectTimeout=5	fixtureuser@10.0.0.1	echo	ready
+sleep	5
+ssh	-o	StrictHostKeyChecking=accept-new	-o	ConnectTimeout=5	fixtureuser@10.0.0.1	echo	ready
+sleep	5
+ssh	-o	StrictHostKeyChecking=accept-new	-o	ConnectTimeout=5	fixtureuser@10.0.0.1	echo	ready
+sleep	5
+ssh	-o	StrictHostKeyChecking=accept-new	-o	ConnectTimeout=5	fixtureuser@10.0.0.1	echo	ready
+sleep	5
+ssh	-o	StrictHostKeyChecking=accept-new	-o	ConnectTimeout=5	fixtureuser@10.0.0.1	echo	ready
+sleep	5
+ssh	-o	StrictHostKeyChecking=accept-new	-o	ConnectTimeout=5	fixtureuser@10.0.0.1	echo	ready
+sleep	5
+ssh	-o	StrictHostKeyChecking=accept-new	-o	ConnectTimeout=5	fixtureuser@10.0.0.1	echo	ready
+sleep	5
+ssh	-o	StrictHostKeyChecking=accept-new	-o	ConnectTimeout=5	fixtureuser@10.0.0.1	echo	ready
+sleep	5
+ssh	-o	StrictHostKeyChecking=accept-new	-o	ConnectTimeout=5	fixtureuser@10.0.0.1	echo	ready
+sleep	5
+ssh	-o	StrictHostKeyChecking=accept-new	-o	ConnectTimeout=5	fixtureuser@10.0.0.1	echo	ready
+sleep	5
+ssh	-o	StrictHostKeyChecking=accept-new	-o	ConnectTimeout=5	fixtureuser@10.0.0.1	echo	ready
+sleep	5
+ssh	-o	StrictHostKeyChecking=accept-new	-o	ConnectTimeout=5	fixtureuser@10.0.0.1	echo	ready
+sleep	5
+ssh	-o	StrictHostKeyChecking=accept-new	-o	ConnectTimeout=5	fixtureuser@10.0.0.1	echo	ready
+sleep	5
+ssh	-o	StrictHostKeyChecking=accept-new	-o	ConnectTimeout=5	fixtureuser@10.0.0.1	echo	ready
+sleep	5
+ssh	-o	StrictHostKeyChecking=accept-new	-o	ConnectTimeout=5	fixtureuser@10.0.0.1	echo	ready
+sleep	5
+ssh	-o	StrictHostKeyChecking=accept-new	-o	ConnectTimeout=5	fixtureuser@10.0.0.1	echo	ready
+sleep	5
+ssh	-o	StrictHostKeyChecking=accept-new	-o	ConnectTimeout=5	fixtureuser@10.0.0.1	echo	ready
+sleep	5
+ssh	-o	StrictHostKeyChecking=accept-new	-o	ConnectTimeout=5	fixtureuser@10.0.0.1	echo	ready
+sleep	5
+ssh	-o	StrictHostKeyChecking=accept-new	-o	ConnectTimeout=5	fixtureuser@10.0.0.1	echo	ready
+sleep	5
+ssh	-o	StrictHostKeyChecking=accept-new	-o	ConnectTimeout=5	fixtureuser@10.0.0.1	echo	ready
+sleep	5
+ssh	-o	StrictHostKeyChecking=accept-new	-o	ConnectTimeout=5	fixtureuser@10.0.0.1	echo	ready
+sleep	5
+ssh	-o	StrictHostKeyChecking=accept-new	-o	ConnectTimeout=5	fixtureuser@10.0.0.1	echo	ready
+sleep	5
+ssh	-o	StrictHostKeyChecking=accept-new	-o	ConnectTimeout=5	fixtureuser@10.0.0.1	echo	ready
+sleep	5
+ssh	-o	StrictHostKeyChecking=accept-new	-o	ConnectTimeout=5	fixtureuser@10.0.0.1	echo	ready
+sleep	5
+ssh	-o	StrictHostKeyChecking=accept-new	-o	ConnectTimeout=5	fixtureuser@10.0.0.1	echo	ready
+sleep	5
+ssh	-o	StrictHostKeyChecking=accept-new	-o	ConnectTimeout=5	fixtureuser@10.0.0.1	echo	ready
+sleep	5
+cut	-d 	-f1-3	/proc/loadavg
+nproc	
+--- known hosts ---
+<absent>

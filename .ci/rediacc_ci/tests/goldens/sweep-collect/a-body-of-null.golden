@@ -1,0 +1,17 @@
+# twin .ci/scripts/autopilot/sweep-collect.sh blob 52ed925f8f71bdf9f2ad689677167385b887b34b
+exit: 1
+--- stdout ---
+--- stderr ---
+⚠ sweeper open PR list: gh call failed or returned unusable output (attempt 1/3), retrying...
+⚠ sweeper open PR list: gh call failed or returned unusable output (attempt 2/3), retrying...
+✗ sweeper open PR list: gh failed after 3 attempts (last exit 0).
+--- gh calls ---
+pr	list	--repo	rediacc/console	--state	open	--limit	50	--json	number
+pr	list	--repo	rediacc/console	--state	open	--limit	50	--json	number
+pr	list	--repo	rediacc/console	--state	open	--limit	50	--json	number
+--- work ---
+{
+  "prs.json": ""
+}
+--- out ---
+<absent>

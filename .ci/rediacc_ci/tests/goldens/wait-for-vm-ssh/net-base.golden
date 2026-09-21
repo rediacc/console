@@ -1,0 +1,19 @@
+# twin .ci/scripts/infra/wait-for-vm-ssh.sh blob d9697b5163e00d7e17dfc0d3e3a619fe9b98543c
+exit: 0
+--- stdout ---
+ready
+ready
+--- stderr ---
+✓ Waiting for 192.168.111.1 as fixtureuser...
+✓ VM 192.168.111.1 is SSH-ready
+✓ Waiting for 192.168.111.11 as fixtureuser...
+✓ VM 192.168.111.11 is SSH-ready
+--- calls ---
+ssh	-o	StrictHostKeyChecking=accept-new	-o	ConnectTimeout=5	fixtureuser@192.168.111.1	echo	ready
+ssh-keyscan	192.168.111.1
+ssh	-o	StrictHostKeyChecking=accept-new	-o	ConnectTimeout=5	fixtureuser@192.168.111.11	echo	ready
+ssh-keyscan	192.168.111.11
+--- known hosts ---
+vm ssh-ed25519 AAAAFIXTUREKEY
+vm ssh-ed25519 AAAAFIXTUREKEY
+

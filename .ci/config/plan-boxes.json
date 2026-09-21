@@ -4,6 +4,8 @@
     "agent/PLAN-add-chunkstore-backup-verb.md": {
       "status": "compacted",
       "owner": "97604f47",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -12,6 +14,8 @@
     "agent/PLAN-add-js-extensions-shared.md": {
       "status": "compacted",
       "owner": "97604f47",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -20,6 +24,8 @@
     "agent/PLAN-agent-hints-implementation.md": {
       "status": "compacted",
       "owner": "97604f47",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -28,6 +34,8 @@
     "agent/PLAN-agent-hints-in-stop-hook.md": {
       "status": "compacted",
       "owner": "97604f47",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -36,6 +44,8 @@
     "agent/PLAN-agent-tree-lifecycle.md": {
       "status": "in-progress",
       "owner": "d778be9d",
+      "folder": "agent",
+      "moved_at": "",
       "open": 7,
       "done": 0,
       "open_sigs": [
@@ -52,6 +62,8 @@
     "agent/PLAN-ask-flow-preemptive-settled-check.md": {
       "status": "compacted",
       "owner": "9d92d9b6",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -60,6 +72,8 @@
     "agent/PLAN-b2-emit-matrix.md": {
       "status": "partially",
       "owner": "f4da5c2e",
+      "folder": "agent",
+      "moved_at": "",
       "open": 6,
       "done": 7,
       "open_sigs": [
@@ -83,6 +97,8 @@
     "agent/PLAN-backup-list-executor-fix.md": {
       "status": "compacted",
       "owner": "97604f47",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -91,6 +107,8 @@
     "agent/PLAN-backup-quota-delta-gc.md": {
       "status": "compacted",
       "owner": "97604f47",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -99,6 +117,8 @@
     "agent/PLAN-backup-restore-target-license.md": {
       "status": "compacted",
       "owner": "97604f47",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -107,6 +127,8 @@
     "agent/PLAN-breakpoint-secret-shape.md": {
       "status": "design",
       "owner": "unowned",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -115,6 +137,8 @@
     "agent/PLAN-bump-k3s-upstream-1-36-4.md": {
       "status": "compacted",
       "owner": "9d92d9b6",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -123,6 +147,8 @@
     "agent/PLAN-bws-rotation-on-failure.md": {
       "status": "draft",
       "owner": "8f55d4f0",
+      "folder": "agent",
+      "moved_at": "",
       "open": 18,
       "done": 0,
       "open_sigs": [
@@ -150,6 +176,8 @@
     "agent/PLAN-chunk-store-browse-DECISION.md": {
       "status": "compacted",
       "owner": "8f55d4f0",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -158,6 +186,8 @@
     "agent/PLAN-chunk-store-browse-engine.md": {
       "status": "compacted",
       "owner": "unowned",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -166,6 +196,8 @@
     "agent/PLAN-chunk-store-browse-server.md": {
       "status": "compacted",
       "owner": "unowned",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -174,6 +206,8 @@
     "agent/PLAN-chunkstore-restore.md": {
       "status": "compacted",
       "owner": "97604f47",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -182,6 +216,8 @@
     "agent/PLAN-ci-pr-head-ref-trigger-resolution.md": {
       "status": "draft",
       "owner": "d778be9d",
+      "folder": "agent",
+      "moved_at": "",
       "open": 15,
       "done": 0,
       "open_sigs": [
@@ -206,6 +242,8 @@
     "agent/PLAN-ci-trace-no-pr-branch.md": {
       "status": "compacted",
       "owner": "854ac1c6",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -214,6 +252,8 @@
     "agent/PLAN-ci-vacuity-baseline-registry.md": {
       "status": "ready",
       "owner": "f4da5c2e",
+      "folder": "agent",
+      "moved_at": "",
       "open": 1,
       "done": 14,
       "open_sigs": [
@@ -239,6 +279,8 @@
     "agent/PLAN-ci-watch-enforcement.md": {
       "status": "draft",
       "owner": "unowned",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -247,6 +289,8 @@
     "agent/PLAN-citation-fragility.md": {
       "status": "compacted",
       "owner": "unowned",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 6,
       "open_sigs": [],
@@ -262,6 +306,8 @@
     "agent/PLAN-cli-em-dash-lint-gate.md": {
       "status": "compacted",
       "owner": "e6500e92",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -270,6 +316,8 @@
     "agent/PLAN-cold-path.md": {
       "status": "compacted",
       "owner": "unowned",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -278,6 +326,8 @@
     "agent/PLAN-commit-author-identity.md": {
       "status": "draft",
       "owner": "74de73ca",
+      "folder": "agent",
+      "moved_at": "",
       "open": 3,
       "done": 10,
       "open_sigs": [
@@ -301,6 +351,8 @@
     "agent/PLAN-completion-strategy.md": {
       "status": "compacted",
       "owner": "f4da5c2e",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -309,6 +361,8 @@
     "agent/PLAN-consolidate-test-scaffolding.md": {
       "status": "done",
       "owner": "8f55d4f0",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 4,
       "open_sigs": [],
@@ -322,6 +376,8 @@
     "agent/PLAN-consolidation-pressure.md": {
       "status": "compacted",
       "owner": "d778be9d",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 10,
       "open_sigs": [],
@@ -341,6 +397,8 @@
     "agent/PLAN-devbox-uid-derived-image.md": {
       "status": "compacted",
       "owner": "unowned",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -349,6 +407,8 @@
     "agent/PLAN-docker-image-freshness-soak-filter.md": {
       "status": "compacted",
       "owner": "854ac1c6",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -357,6 +417,8 @@
     "agent/PLAN-duplication-angle.md": {
       "status": "compacted",
       "owner": "unowned",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -365,6 +427,8 @@
     "agent/PLAN-durable-reports-and-push-inbox.md": {
       "status": "compacted",
       "owner": "e6500e92",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -373,6 +437,8 @@
     "agent/PLAN-env-to-bitwarden-v2.md": {
       "status": "draft",
       "owner": "74de73ca",
+      "folder": "agent",
+      "moved_at": "",
       "open": 5,
       "done": 4,
       "open_sigs": [
@@ -392,6 +458,8 @@
     "agent/PLAN-extension-shaped-matchers.md": {
       "status": "compacted",
       "owner": "unowned",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -400,6 +468,8 @@
     "agent/PLAN-fix-ci-contention-aware-timeouts.md": {
       "status": "compacted",
       "owner": "unowned",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -408,6 +478,8 @@
     "agent/PLAN-fix-german-translation-artifacts.md": {
       "status": "compacted",
       "owner": "unowned",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -416,6 +488,8 @@
     "agent/PLAN-fix-in-session-rule.md": {
       "status": "compacted",
       "owner": "unowned",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -424,6 +498,8 @@
     "agent/PLAN-fix-tutorial-player-debug-hook-attachment.md": {
       "status": "compacted",
       "owner": "unowned",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -432,6 +508,8 @@
     "agent/PLAN-gh-swallow-gates-audit.md": {
       "status": "compacted",
       "owner": "f4da5c2e",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 6,
       "open_sigs": [],
@@ -447,6 +525,8 @@
     "agent/PLAN-git-history-media-rewrite.md": {
       "status": "compacted",
       "owner": "unowned",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -455,6 +535,8 @@
     "agent/PLAN-git-ignore-aware-discover.md": {
       "status": "compacted",
       "owner": "d778be9d",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 10,
       "open_sigs": [],
@@ -474,6 +556,8 @@
     "agent/PLAN-github-actions-workflow-run-trigger-fix.md": {
       "status": "compacted",
       "owner": "unowned",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -482,6 +566,8 @@
     "agent/PLAN-greenlight-verify-at-read.md": {
       "status": "compacted",
       "owner": "unowned",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -490,6 +576,8 @@
     "agent/PLAN-hook-inventory-warn-guards.md": {
       "status": "landed",
       "owner": "9d92d9b6",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -498,6 +586,8 @@
     "agent/PLAN-json-prose-scope-audit.md": {
       "status": "done",
       "owner": "d778be9d",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 9,
       "open_sigs": [],
@@ -516,6 +606,8 @@
     "agent/PLAN-judge-gate-worthiness-and-surface-scope.md": {
       "status": "compacted",
       "owner": "9d92d9b6",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -524,6 +616,8 @@
     "agent/PLAN-judge-prompt-trap-conflation.md": {
       "status": "compacted",
       "owner": "d778be9d",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 8,
       "open_sigs": [],
@@ -541,6 +635,8 @@
     "agent/PLAN-lint-css-ci-wiring.md": {
       "status": "compacted",
       "owner": "e6500e92",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -549,6 +645,8 @@
     "agent/PLAN-lint-rule-matrix-probe.md": {
       "status": "compacted",
       "owner": "97604f47",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -557,6 +655,8 @@
     "agent/PLAN-local-ci-gate-prerequisites.md": {
       "status": "landed",
       "owner": "9d92d9b6",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -565,6 +665,8 @@
     "agent/PLAN-locale-techdiff-resync.md": {
       "status": "ready",
       "owner": "unowned",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -573,6 +675,8 @@
     "agent/PLAN-localize-cheat-sheet-rendering.md": {
       "status": "compacted",
       "owner": "97604f47",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -581,6 +685,8 @@
     "agent/PLAN-migrate-plan-doc-discovery.md": {
       "status": "draft",
       "owner": "d778be9d",
+      "folder": "agent",
+      "moved_at": "",
       "open": 23,
       "done": 0,
       "open_sigs": [
@@ -613,6 +719,8 @@
     "agent/PLAN-nightly-retry-and-watchdog-noise.md": {
       "status": "compacted",
       "owner": "854ac1c6",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -621,6 +729,8 @@
     "agent/PLAN-npm-ci-parallel-parity.md": {
       "status": "compacted",
       "owner": "unowned",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -629,6 +739,8 @@
     "agent/PLAN-pipefail-grep-q-renet-gate.md": {
       "status": "draft",
       "owner": "d778be9d",
+      "folder": "agent",
+      "moved_at": "",
       "open": 16,
       "done": 0,
       "open_sigs": [
@@ -654,6 +766,8 @@
     "agent/PLAN-plan-file-lifecycle.md": {
       "status": "ready",
       "owner": "74de73ca",
+      "folder": "agent",
+      "moved_at": "",
       "open": 3,
       "done": 10,
       "open_sigs": [
@@ -677,6 +791,8 @@
     "agent/PLAN-plyr-css-on-demand-loading.md": {
       "status": "draft",
       "owner": "74de73ca",
+      "folder": "agent",
+      "moved_at": "",
       "open": 4,
       "done": 7,
       "open_sigs": [
@@ -698,6 +814,8 @@
     "agent/PLAN-printf-echo-pipefail-sweep.md": {
       "status": "compacted",
       "owner": "d778be9d",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 33,
       "open_sigs": [],
@@ -740,6 +858,8 @@
     "agent/PLAN-promote-mutation-runner.md": {
       "status": "compacted",
       "owner": "99ccf057",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -748,6 +868,8 @@
     "agent/PLAN-prose-style-under-wrap.md": {
       "status": "draft",
       "owner": "d778be9d",
+      "folder": "agent",
+      "moved_at": "",
       "open": 12,
       "done": 1,
       "open_sigs": [
@@ -771,6 +893,8 @@
     "agent/PLAN-pytest-parallelism.md": {
       "status": "compacted",
       "owner": "8f55d4f0",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 10,
       "open_sigs": [],
@@ -790,6 +914,8 @@
     "agent/PLAN-rclone-decommission.md": {
       "status": "compacted",
       "owner": "unowned",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -798,6 +924,8 @@
     "agent/PLAN-reflow-comments-boundary-wrapping.md": {
       "status": "done",
       "owner": "d778be9d",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 9,
       "open_sigs": [],
@@ -816,6 +944,8 @@
     "agent/PLAN-reggate-effort-cap.md": {
       "status": "compacted",
       "owner": "unowned",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -824,6 +954,8 @@
     "agent/PLAN-renet-fetch-hardening.md": {
       "status": "parked",
       "owner": "unowned",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -832,6 +964,8 @@
     "agent/PLAN-require-testid-sweep.md": {
       "status": "compacted",
       "owner": "97604f47",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -840,6 +974,8 @@
     "agent/PLAN-resprofile-wave2.md": {
       "status": "compacted",
       "owner": "74de73ca",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -848,6 +984,8 @@
     "agent/PLAN-rest-graphql-guard-parity.md": {
       "status": "compacted",
       "owner": "d778be9d",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 8,
       "open_sigs": [],
@@ -865,6 +1003,8 @@
     "agent/PLAN-resumable-rebase-executor.md": {
       "status": "compacted",
       "owner": "9d92d9b6",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -873,6 +1013,8 @@
     "agent/PLAN-review-red-stop-hook-check.md": {
       "status": "compacted",
       "owner": "unowned",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -881,6 +1023,8 @@
     "agent/PLAN-rotation-gh-removal.md": {
       "status": "plan",
       "owner": "unowned",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -889,6 +1033,8 @@
     "agent/PLAN-runtime-caller-identity.md": {
       "status": "compacted",
       "owner": "unowned",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -897,6 +1043,8 @@
     "agent/PLAN-scope-gate-sort-collation.md": {
       "status": "compacted",
       "owner": "854ac1c6",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -905,6 +1053,8 @@
     "agent/PLAN-scope-gates-split.md": {
       "status": "compacted",
       "owner": "unowned",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -913,6 +1063,8 @@
     "agent/PLAN-secret-namespace-migration.md": {
       "status": "partially",
       "owner": "unowned",
+      "folder": "agent",
+      "moved_at": "",
       "open": 9,
       "done": 21,
       "open_sigs": [
@@ -953,6 +1105,8 @@
     "agent/PLAN-sentence-aware-wrapping.md": {
       "status": "compacted",
       "owner": "unowned",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -961,6 +1115,8 @@
     "agent/PLAN-session-onboarding-marker.md": {
       "status": "draft",
       "owner": "74de73ca",
+      "folder": "agent",
+      "moved_at": "",
       "open": 5,
       "done": 5,
       "open_sigs": [
@@ -981,6 +1137,8 @@
     "agent/PLAN-shell-command-gate-regex-fix.md": {
       "status": "compacted",
       "owner": "f4da5c2e",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -989,6 +1147,8 @@
     "agent/PLAN-shell-resource-profiling.md": {
       "status": "compacted",
       "owner": "unowned",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -997,6 +1157,8 @@
     "agent/PLAN-skip-release-gates-r2-manifest.md": {
       "status": "compacted",
       "owner": "854ac1c6",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -1005,6 +1167,8 @@
     "agent/PLAN-ssr-nav-locale.md": {
       "status": "compacted",
       "owner": "e6500e92",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -1013,6 +1177,8 @@
     "agent/PLAN-staged-duplication-probe.md": {
       "status": "compacted",
       "owner": "d778be9d",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 8,
       "open_sigs": [],
@@ -1030,6 +1196,8 @@
     "agent/PLAN-state-md-session-isolation.md": {
       "status": "compacted",
       "owner": "99ccf057",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -1038,6 +1206,8 @@
     "agent/PLAN-stop-always-tier.md": {
       "status": "compacted",
       "owner": "unowned",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -1046,6 +1216,8 @@
     "agent/PLAN-stop-hook-cadence.md": {
       "status": "compacted",
       "owner": "unowned",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -1054,6 +1226,8 @@
     "agent/PLAN-stop-hook-overhaul.md": {
       "status": "ready",
       "owner": "f4da5c2e",
+      "folder": "agent",
+      "moved_at": "",
       "open": 31,
       "done": 0,
       "open_sigs": [
@@ -1094,6 +1268,8 @@
     "agent/PLAN-stop-report-queue.md": {
       "status": "compacted",
       "owner": "unowned",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -1102,6 +1278,8 @@
     "agent/PLAN-subagent-idle-detection.md": {
       "status": "compacted",
       "owner": "0ad063bf",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -1110,6 +1288,8 @@
     "agent/PLAN-subscription-status-error-swallowing.md": {
       "status": "done",
       "owner": "9d92d9b6",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 5,
       "open_sigs": [],
@@ -1124,6 +1304,8 @@
     "agent/PLAN-sync-docker-latest-tag-with-releases.md": {
       "status": "compacted",
       "owner": "e6500e92",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -1132,6 +1314,8 @@
     "agent/PLAN-test-advisor.md": {
       "status": "compacted",
       "owner": "b7baf3ee",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -1140,6 +1324,8 @@
     "agent/PLAN-testing-surface-audit.md": {
       "status": "compacted",
       "owner": "97604f47",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -1148,6 +1334,8 @@
     "agent/PLAN-tooling-transformation.md": {
       "status": "ready",
       "owner": "d778be9d",
+      "folder": "agent",
+      "moved_at": "",
       "open": 4,
       "done": 150,
       "open_sigs": [
@@ -1312,6 +1500,8 @@
     "agent/PLAN-trap-enforcement.md": {
       "status": "w",
       "owner": "99ccf057",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -1320,6 +1510,8 @@
     "agent/PLAN-typecheck-orphan-packages.md": {
       "status": "ready",
       "owner": "unowned",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -1328,6 +1520,8 @@
     "agent/PLAN-unify-trap-corpus.md": {
       "status": "compacted",
       "owner": "99ccf057",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -1336,6 +1530,8 @@
     "agent/PLAN-w7p4w-docker-cutover.md": {
       "status": "compacted",
       "owner": "f4da5c2e",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 12,
       "open_sigs": [],
@@ -1357,6 +1553,8 @@
     "agent/PLAN-w7p5a-deploy-release-port.md": {
       "status": "compacted",
       "owner": "f4da5c2e",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 8,
       "open_sigs": [],
@@ -1374,6 +1572,8 @@
     "agent/PLAN-w9p2-script-relocation.md": {
       "status": "draft",
       "owner": "f4da5c2e",
+      "folder": "agent",
+      "moved_at": "",
       "open": 10,
       "done": 0,
       "open_sigs": [
@@ -1393,6 +1593,8 @@
     "agent/PLAN-wire-account-vitest-ci.md": {
       "status": "compacted",
       "owner": "97604f47",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -1401,6 +1603,8 @@
     "agent/PLAN-wl-report-liveness-oracle.md": {
       "status": "compacted",
       "owner": "8f55d4f0",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 7,
       "open_sigs": [],
@@ -1417,6 +1621,8 @@
     "agent/PLAN-www-bundle-determinism.md": {
       "status": "compacted",
       "owner": "74de73ca",
+      "folder": "agent",
+      "moved_at": "",
       "open": 0,
       "done": 0,
       "open_sigs": [],

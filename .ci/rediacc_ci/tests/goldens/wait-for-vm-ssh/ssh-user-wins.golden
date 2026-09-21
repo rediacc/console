@@ -1,0 +1,13 @@
+# twin .ci/scripts/infra/wait-for-vm-ssh.sh blob d9697b5163e00d7e17dfc0d3e3a619fe9b98543c
+exit: 0
+--- stdout ---
+ready
+--- stderr ---
+✓ Waiting for 10.0.0.1 as chosen...
+✓ VM 10.0.0.1 is SSH-ready
+--- calls ---
+ssh	-o	StrictHostKeyChecking=accept-new	-o	ConnectTimeout=5	chosen@10.0.0.1	echo	ready
+ssh-keyscan	10.0.0.1
+--- known hosts ---
+vm ssh-ed25519 AAAAFIXTUREKEY
+

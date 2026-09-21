@@ -66,6 +66,9 @@ FILE=$(printf '%s' "$INPUT" | jq -r '.tool_input.file_path // empty' 2>/dev/null
 [ -n "$FILE" ] || exit 0
 case "$FILE" in
     */agent/PLAN-*.md | agent/PLAN-*.md | */.claude/plans/*.md) ;;
+    */agent/plans/PLAN-*.md | agent/plans/PLAN-*.md) ;;
+    */agent/plans/_done/PLAN-*.md | agent/plans/_done/PLAN-*.md) ;;
+    */agent/plans/_removed/PLAN-*.md | agent/plans/_removed/PLAN-*.md) ;;
     *) exit 0 ;;
 esac
 

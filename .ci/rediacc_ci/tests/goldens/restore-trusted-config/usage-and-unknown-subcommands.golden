@@ -1,0 +1,119 @@
+# twin .ci/scripts/autopilot/restore-trusted-config.sh blob 07087cb3543206b71f98ed50cdfeebe800e04003
+exit: 2
+--- stdout ---
+--- stderr ---
+✗ usage: restore-trusted-config.sh snapshot|restore|assert --checkout <dir> --snapshot <dir> [--quarantine <dir>]
+--- steps ---
+[
+  {
+    "argv": [
+      "snapshot",
+      "--checkout",
+      "<BASE>/checkout"
+    ],
+    "exit": 2,
+    "stdout": "",
+    "stderr": "\u2717 usage: restore-trusted-config.sh snapshot|restore|assert --checkout <dir> --snapshot <dir> [--quarantine <dir>]\n"
+  },
+  {
+    "argv": [
+      "snapshot",
+      "--snapshot",
+      "<BASE>/snapshot"
+    ],
+    "exit": 2,
+    "stdout": "",
+    "stderr": "\u2717 usage: restore-trusted-config.sh snapshot|restore|assert --checkout <dir> --snapshot <dir> [--quarantine <dir>]\n"
+  },
+  {
+    "argv": [
+      "frobnicate",
+      "--checkout",
+      "<BASE>/nope",
+      "--snapshot",
+      "<BASE>/snapshot"
+    ],
+    "exit": 1,
+    "stdout": "",
+    "stderr": "\u2717 Required directory '<BASE>/nope' does not exist\n"
+  },
+  {
+    "argv": [
+      "frobnicate",
+      "--checkout",
+      "<BASE>/checkout",
+      "--snapshot",
+      "<BASE>/snapshot"
+    ],
+    "exit": 2,
+    "stdout": "",
+    "stderr": "\u2717 unknown subcommand 'frobnicate' (snapshot|restore|assert)\n"
+  },
+  {
+    "argv": [
+      "--checkout",
+      "<BASE>/checkout",
+      "--snapshot",
+      "<BASE>/snapshot"
+    ],
+    "exit": 2,
+    "stdout": "",
+    "stderr": "\u2717 usage: restore-trusted-config.sh snapshot|restore|assert --checkout <dir> --snapshot <dir> [--quarantine <dir>]\n"
+  }
+]
+--- checkout ---
+{
+  ".claude": [
+    "dir",
+    "0o755"
+  ],
+  ".claude.json": [
+    "link",
+    ".mcp.json"
+  ],
+  ".claude/hooks": [
+    "dir",
+    "0o755"
+  ],
+  ".claude/hooks/pre-bash": [
+    "dir",
+    "0o755"
+  ],
+  ".claude/hooks/pre-bash/guard.sh": [
+    "file",
+    "0o755",
+    "#!/bin/bash\necho hi\n"
+  ],
+  ".gitmodules": [
+    "file",
+    "0o644",
+    "sub\n"
+  ],
+  ".husky": [
+    "dir",
+    "0o755"
+  ],
+  ".husky/pre-commit": [
+    "file",
+    "0o644",
+    "hook\n"
+  ],
+  ".mcp.json": [
+    "file",
+    "0o644",
+    "{\"a\":1}\n"
+  ],
+  ".ripgreprc": [
+    "link",
+    "nowhere"
+  ],
+  "CLAUDE.md": [
+    "file",
+    "0o644",
+    "# rules\n"
+  ]
+}
+--- snapshot ---
+null
+--- quarantine ---
+null

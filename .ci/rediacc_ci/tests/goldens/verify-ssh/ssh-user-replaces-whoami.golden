@@ -1,0 +1,8 @@
+# twin .ci/scripts/infra/verify-ssh.sh blob 03a853b7a3ab7d8da3ff395bfc38cfc95e420151
+exit: 0
+--- stdout ---
+SSH OK
+--- stderr ---
+✓ SSH connection successful via h on attempt 1
+--- calls ---
+ssh	-i	/fixture/id_rsa	-p	22	-o	StrictHostKeyChecking=no	-o	UserKnownHostsFile=/dev/null	-o	ConnectTimeout=5	someone@h	echo 'SSH OK'

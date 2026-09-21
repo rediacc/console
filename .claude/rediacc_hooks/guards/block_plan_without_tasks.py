@@ -57,7 +57,18 @@ ORDER = 10
 # The grandfather clause, and the measured 59-of-62 note above is entirely about it: without it every amendment to a legacy prose plan is refused, which is the over-block that gets a guard deleted within a week.
 DEFECT = ("if not hookio.grep_q(TASK_LINE, on_disk):", "if False:")
 
-PLAN_GLOBS = ("*/agent/PLAN-*.md", "agent/PLAN-*.md", "*/.claude/plans/*.md")
+# The four folders a plan may live in since the tree-lifecycle change, each spelled out rather than collapsed to `agent/plans/**`: a `**` in fnmatch would also claim `agent/plans/_done/notes/whatever.md`, and the arms of the bash twin must stay the same readable list. `.claude/plans/` is a DIFFERENT directory, the harness own plan mode, and is deliberately still here.
+PLAN_GLOBS = (
+    "*/agent/PLAN-*.md",
+    "agent/PLAN-*.md",
+    "*/agent/plans/PLAN-*.md",
+    "agent/plans/PLAN-*.md",
+    "*/agent/plans/_done/PLAN-*.md",
+    "agent/plans/_done/PLAN-*.md",
+    "*/agent/plans/_removed/PLAN-*.md",
+    "agent/plans/_removed/PLAN-*.md",
+    "*/.claude/plans/*.md",
+)
 
 TASK_LINE = hookio.rx(r"^[{S}]*[-*+] \[[ xX]\] ")
 

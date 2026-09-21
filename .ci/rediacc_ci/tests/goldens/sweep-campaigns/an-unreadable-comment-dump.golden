@@ -1,0 +1,6 @@
+# twin .ci/scripts/autopilot/sweep-campaigns.sh blob 0191d2fdc465409a67f4973eb261f972ada0c93f
+exit: 5
+--- stdout ---
+1
+--- stderr ---
+jq: error (at comments/2.json:0): Cannot index string with string "author"

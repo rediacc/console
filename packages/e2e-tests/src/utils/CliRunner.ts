@@ -106,7 +106,7 @@ export class CliRunner {
   }
 
   /**
-   * Resolve the CLI. CI installs it globally (install-cli-global.sh runs in
+   * Resolve the CLI. CI installs it globally (rediacc_ci.setup.install_cli_global runs in
    * every e2e job), so prefer `rdc` on PATH there; locally fall back to the
    * built bundle via node. `E2E_CLI_BIN` overrides both.
    */

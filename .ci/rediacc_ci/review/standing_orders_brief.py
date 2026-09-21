@@ -58,6 +58,19 @@ import time
 
 WL = ".claude/hooks/stop/worklist.py"
 
+
+#: THE SEAM IS THE CURRENT DIRECTORY, and it is a design decision rather than an oversight. The twin this module ports reads `agent/`, `.claude/hooks/stop/worklist.py` and a bare `pwd` relative to wherever it is RUN, which is what lets `test_review_standing_orders_brief.py` build a fixture tree and drive the real tracked module against it with `cwd` set, without copying
+#: anything. Resolving from the package instead was tried on 2026-09-21 and reverted: it breaks that seam, and it is also a claim the brief cannot make, because a caller who changed directory asked about the directory they changed to.
+#:
+#: SPELLED AS A NAME rather than inlined at four call sites, so the seam is visible, so a reader looking for "where does this think the tree is" finds one answer, and so `check:ci-tree-shape` T6 can tell it apart from the bare `pathlib.Path("agent").glob(...)` that really does answer the wrong question by accident.
+CWD_SEAM = "."
+
+
+def _agent_dir() -> pathlib.Path:
+    """`agent/` beneath the directory this brief was RUN in. See CWD_SEAM."""
+    return pathlib.Path(CWD_SEAM) / "agent"
+
+
 # `grep -o 'worker:[A-Za-z0-9._-]*'`. Explicit ASCII ranges, matching the twin's bracket expression under the C collation CI and the shadow-gate harness set.
 WORKER_RE = re.compile(r"worker:[A-Za-z0-9._-]*")
 
@@ -268,10 +281,12 @@ def main(argv: list[str]) -> int:
     sys.stdout.flush()
     print(flush=True)  # the twin's bare `echo ""`
 
-    state_age = _state_age(pathlib.Path("agent") / me / "STATE.md")
+    agent = _agent_dir()
+    state_age = _state_age(agent / me / "STATE.md")
+    # RECURSIVE over the plan folders since the tree-lifecycle change. A count that stopped at the agent root would read 0 the day the migration lands, and a brief that reports zero plans over a tree with a hundred is worse than one that reports nothing.
     plans = (
-        len(sorted(pathlib.Path("agent").glob("PLAN-*.md")))
-        if pathlib.Path("agent").is_dir()
+        len(sorted(agent.glob("PLAN-*.md")) + sorted((agent / "plans").glob("**/PLAN-*.md")))
+        if agent.is_dir()
         else 0
     )
     peers = _peer_dirs(me)
@@ -318,7 +333,7 @@ def _state_age(path: pathlib.Path) -> str:
 
 def _peer_dirs(me: str) -> int:
     """`find agent -mindepth 1 -maxdepth 1 -type d ! -name "$ME" 2>/dev/null | wc -l`."""
-    agent = pathlib.Path("agent")
+    agent = _agent_dir()
     if not agent.is_dir():
         return 0
     return sum(1 for child in agent.iterdir() if child.is_dir() and child.name != me)
@@ -326,7 +341,7 @@ def _peer_dirs(me: str) -> int:
 
 def _session_dirs() -> int:
     """`ls -1d agent/*/ 2>/dev/null | wc -l`: the shell glob `agent/*/` matches directories only, and skips dotted names."""
-    agent = pathlib.Path("agent")
+    agent = _agent_dir()
     if not agent.is_dir():
         return 0
     return sum(1 for child in agent.iterdir() if child.is_dir() and not child.name.startswith("."))

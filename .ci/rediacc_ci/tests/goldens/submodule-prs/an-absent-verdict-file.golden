@@ -1,0 +1,8 @@
+# twin .ci/scripts/autopilot/submodule-prs.sh blob e613fefe9d8660a4e2f922e880edf40d24802edc
+exit: 1
+--- stdout ---
+--- stderr ---
+✗ Required file 'nope.json' does not exist
+--- gh calls ---
+--- gh bodies ---
+{}

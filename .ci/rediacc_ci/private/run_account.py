@@ -150,8 +150,11 @@ def main(argv: list[str]) -> int:
         )
         return 1
 
-    # RELATIVE to the directory just entered, exactly as `[[ ! -d node_modules ]]` is. BEFORE the stage is validated -- see the docstring; that ordering is a defect being reproduced, and the call log is where it stays visible.
-    if not pathlib.Path("node_modules").is_dir():
+    # The directory just entered, exactly as `[[ ! -d node_modules ]]` means it. BEFORE the stage is validated -- see the docstring; that ordering is a defect being reproduced, and the call log is where it stays visible.
+    #
+    # SPELLED ABSOLUTE rather than relative, 2026-09-21, and the behaviour is identical: the `os.chdir(account_dir)` twelve lines up is what made the bare name correct, so joining the same directory explicitly answers the same question without depending on it. The relative spelling was the shape check:ci-tree-shape reports, because a reader cannot tell it from the one that really
+    # does answer the caller's working directory -- which is how a second reggate ledger came to be written under .claude/hooks/stop/agent/.
+    if not (account_dir / "node_modules").is_dir():
         rc = _npm(["ci"])
         if rc != 0:
             return rc

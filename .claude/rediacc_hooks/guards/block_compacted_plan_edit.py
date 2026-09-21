@@ -55,7 +55,17 @@ ORDER = 11
 # The blob VALUE test, and the reason the value tests exist at all. Reproduced 2026-09-06 against this hook with real payloads: four of five spine-destroying edits passed the line-anchored patterns, including `old_string: "<40 hex>"` -- which is the SHORTEST unique string in a record and therefore the one the Edit tool's "minimal unique old_string" advice leads you straight to.
 DEFECT = ("hookio.grep_q(blob, fragments, fixed=True)", "False")
 
-PLAN_GLOBS = ("*/agent/PLAN-*.md", "agent/PLAN-*.md")
+# The four folders a plan may live in since the tree-lifecycle change. A compacted record keeps its own path, so the legacy spelling stays first and stays load-bearing.
+PLAN_GLOBS = (
+    "*/agent/PLAN-*.md",
+    "agent/PLAN-*.md",
+    "*/agent/plans/PLAN-*.md",
+    "agent/plans/PLAN-*.md",
+    "*/agent/plans/_done/PLAN-*.md",
+    "agent/plans/_done/PLAN-*.md",
+    "*/agent/plans/_removed/PLAN-*.md",
+    "agent/plans/_removed/PLAN-*.md",
+)
 
 # The same 10-line header window every status regex in this repo reads (wl_checks.PLAN_HEADER_LINES).
 HEADER_LINES = 10

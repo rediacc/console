@@ -1,0 +1,184 @@
+{
+  "$comment": [
+    "WHAT SHAPE THE REPOSITORY ROOT AND agent/ ARE ALLOWED TO HAVE.",
+    "",
+    "WHY IT IS DATA AND NOT CODE. Two defects in one week showed that both trees",
+    "were clean by luck rather than by rule. Debris (`aa.jsonl`, `zz.jsonl`,",
+    "`.events.jsonl`, `.lastevent-*.json`, `.requests`, `.local/`, `claude/`) sat",
+    "untracked at the repository root, written by the old bash worklist suites; and",
+    "a second reggate ledger appeared under `.claude/hooks/stop/agent/` because",
+    "`wl_reggate.debt_dir()` fell back to a cwd-relative root. Neither was a bug in",
+    "one script. Both were a missing rule about where a file may be.",
+    "",
+    "THIS FILE IS THE RULE. `.ci/rediacc_ci/quality/tree_shape.py` reads it and",
+    "nothing else: every permitted name, pattern and directory is here, so adding",
+    "one is a reviewable line in a policy file rather than an edit to a matcher.",
+    "`check:ci-tree-shape` is what enforces it, `.ci/config/tree-shape-baseline.json`",
+    "freezes what was already there on the day it landed, and that baseline is",
+    "SHRINK-ONLY as a SET.",
+    "",
+    "SCOPE IS DELIBERATELY TWO TREES, not the whole repository. The root and",
+    "`agent/` are where a stray file is invisible: `packages/` and `docs/` are",
+    "reviewed as code and content, while a `.jsonl` at the root reaches nobody's",
+    "eye until a gate enumerates it. Widening the scope is a separate decision with",
+    "its own baseline, not a tightening of this one.",
+    "",
+    "THE AGENT DIRECTORY CLASSES ARE CHECKED AGAINST THE HOOK, NOT COPIED FROM IT.",
+    "`wl_store.AGENT_RESERVED_DIRS` already names every directory under `agent/`",
+    "that is not a session, and the gate asserts SET EQUALITY between that frozenset",
+    "and the `agent_dirs` classes below, in both directions. That is the point of",
+    "the derivation: when the hook learns a directory and this file does not, the",
+    "gate says so instead of the two quietly describing different trees. The set was",
+    "already stale when this landed -- `pr` and `legacy` were missing from the hook",
+    "and had been reported as phantom peer sessions.",
+    "",
+    "A CLASS IS A PERMISSION, NOT A REQUIREMENT. Nothing here says a file must",
+    "exist; every entry says a file matching it is allowed to. An absent permitted",
+    "file is a matter for whatever gate owns it."
+  ],
+  "root_files": {
+    "why": "Depth-1 files at the repository root. Every one is a toolchain manifest, a config a tool discovers by walking up, an entry point a human types, or a document a reader opens first.",
+    "names": [
+      ".ci-trigger",
+      ".dockerignore",
+      ".editorconfig",
+      ".gitattributes",
+      ".gitignore",
+      ".gitmodules",
+      ".npmrc",
+      ".syncpackrc-reasons.json",
+      ".syncpackrc.json",
+      "CLAUDE.md",
+      "CONTRIBUTING.md",
+      "Dockerfile",
+      "LICENSE",
+      "README.md",
+      "biome.json",
+      "conftest.py",
+      "css-custom-data.json",
+      "eslint.config.js",
+      "knip.jsonc",
+      "media.sh",
+      "package-lock.json",
+      "package.json",
+      "pyproject.toml",
+      "rdc.sh",
+      "regions.json",
+      "run.cmd",
+      "run.ps1",
+      "run.sh",
+      "tsconfig.json"
+    ]
+  },
+  "root_dirs": {
+    "why": "Depth-1 directories at the repository root. A new one is a new top-level concept and is worth a line here.",
+    "names": [
+      ".ci",
+      ".claude",
+      ".devcontainer",
+      ".github",
+      ".vscode",
+      ".worktrees",
+      "agent",
+      "compose",
+      "docs",
+      "eslint-rules",
+      "eslint.config",
+      "packages",
+      "private",
+      "programs",
+      "scripts",
+      "workers"
+    ]
+  },
+  "agent_files": {
+    "why": "Depth-1 files directly under agent/. A plan is matched by its own pattern below, because which FOLDER a given plan belongs in is plan_lifecycle's business rather than this file's.",
+    "names": [
+      "DECISIONS.md",
+      "INDEX.md",
+      "README.md",
+      "RULES.md"
+    ],
+    "patterns": [
+      {
+        "regex": "^PLAN-[A-Za-z0-9._-]+\\.md$",
+        "why": "The legacy plan location, and the stub namespace after the migration."
+      },
+      {
+        "regex": "^REPORT-[A-Za-z0-9._-]+\\.md$",
+        "why": "A session report. S5 of agent/PLAN-agent-tree-lifecycle.md moves these under agent/archive/ and this pattern goes with them."
+      },
+      {
+        "regex": "^census-[A-Za-z0-9._-]+\\.jsonl$",
+        "why": "The advisory plan-record census. S5 moves it to agent/ledgers/ and this pattern goes with it."
+      }
+    ]
+  },
+  "agent_dirs": {
+    "why": "Every directory under agent/ that is NOT a session. This list is asserted equal to wl_store.AGENT_RESERVED_DIRS in both directions; see the comment above.",
+    "classes": [
+      {
+        "name": "archive",
+        "why": "Frozen history, moved here when work concludes. Append-only; check:ci-plan-boxes G-A2 enforces that."
+      },
+      {
+        "name": "programs",
+        "why": "Handoff program suites, one directory per slug."
+      },
+      {
+        "name": "worklist",
+        "why": "The append-only worklist event log, one JSONL per session prefix. The path is the Stop hook's contract and does not move."
+      },
+      {
+        "name": "reggate",
+        "why": "The per-branch effort-cap ledger, agent/reggate/<branch>.jsonl. The path is the hook's contract and does not move."
+      },
+      {
+        "name": "plans",
+        "why": "Where a plan lives: active and backlog at the top, _done/ and _removed/ beneath. check:ci-plan-folders owns everything inside it."
+      },
+      {
+        "name": "pr",
+        "why": "Per-branch PR body snapshots, agent/pr/<branch>.md."
+      },
+      {
+        "name": "legacy",
+        "why": "Pre-per-session notes kept as a record. Frozen."
+      }
+    ]
+  },
+  "agent_session_dirs": {
+    "why": "A session's own notes. The name is the sanitised 8-character slug wl_store.agent_session_slug mints, which tells a session directory from a reserved one by SHAPE rather than by list.",
+    "regex": "^[0-9a-zA-Z._-]{1,8}$"
+  },
+  "bare_relative_scan": {
+    "why": "A module that builds a repository path out of a bare relative string answers the CALLER's working directory, not the tree. That is how a second reggate ledger appeared under .claude/hooks/stop/agent/, and how the standing-orders brief reported 0 plan files when run from a subdirectory.",
+    "why_derived": "The first path segment is compared against the repository's own top-level directory names, taken from git rather than typed here, so the rule cannot go stale as the tree grows.",
+    "dirs": [
+      ".claude/hooks",
+      ".ci/rediacc_ci"
+    ],
+    "callees": [
+      "open",
+      "os.listdir",
+      "os.scandir"
+    ],
+    "why_reached": "REACHED, not merely built. A relative constant a caller always joins to a root it was given is the CORRECT pattern; the defect is a literal the filesystem is touched through. So `open`, `os.listdir` and `os.scandir` are findings on sight, and a `Path(...)` literal is one only when a filesystem method is called on it in the same expression.",
+    "fs_methods": [
+      "exists",
+      "glob",
+      "is_dir",
+      "is_file",
+      "iterdir",
+      "mkdir",
+      "open",
+      "read_bytes",
+      "read_text",
+      "rglob",
+      "stat",
+      "unlink",
+      "write_bytes",
+      "write_text"
+    ]
+  }
+}

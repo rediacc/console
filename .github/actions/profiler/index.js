@@ -17,7 +17,7 @@ import { fileURLToPath } from 'node:url';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(HERE, '..', '..', '..');
 const SAMPLER = path.join(REPO_ROOT, '.ci', 'scripts', 'ci', 'profiler', 'sampler-linux.sh');
-const PANEL = path.join(REPO_ROOT, '.ci', 'scripts', 'ci', 'profiler', 'panel.sh');
+const PANEL = path.join(REPO_ROOT, '.ci', 'rediacc_ci', 'ci', 'profiler_panel.py');
 
 function input(name, fallback) {
   const key = `INPUT_${name.toUpperCase().replaceAll(' ', '_')}`;
@@ -167,10 +167,13 @@ function runPost() {
   const note = wasAlive ? stopSampler(pid) : samplerGoneNote(log);
 
   const wallS = start > 0 ? Math.round((Date.now() - start) / 1000) : 0;
-  const res = spawnSync('bash', [PANEL], {
+  const res = spawnSync('python3', [PANEL], {
     stdio: 'inherit',
     env: {
       ...process.env,
+      // The panel resolves `rediacc_ci` through PYTHONPATH, the way package.json reaches every other port. REPO_ROOT rather than a relative '.ci', because this action runs with the caller job's working directory and not the checkout root.
+      PYTHONPATH: path.join(REPO_ROOT, '.ci'),
+      PYTHONDONTWRITEBYTECODE: '1',
       PROFILER_SAMPLE_FILE: out,
       PROFILER_STRICT: strict,
       PROFILER_WALL_S: String(wallS),
@@ -179,11 +182,11 @@ function runPost() {
     },
   });
   if (res.error) {
-    notice('warning', `panel.sh could not be run: ${res.error.message}`);
+    notice('warning', `the profiler panel could not be run: ${res.error.message}`);
     return;
   }
   if (res.status !== 0) {
-    // panel.sh only exits non-zero under strict; anything else is its own bug and must not be swallowed.
+    // The panel only exits non-zero under strict; anything else is its own bug and must not be swallowed.
     process.exitCode = res.status;
   }
 }

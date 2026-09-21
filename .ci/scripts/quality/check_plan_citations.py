@@ -78,6 +78,7 @@ import tempfile
 
 import _cipath  # noqa: F401
 from rediacc_ci import paths
+from rediacc_ci.quality import plan_lifecycle as PL
 
 ROOT = pathlib.Path(
     os.environ.get("PLAN_CITATIONS_ROOT") or pathlib.Path(__file__).resolve().parents[3]
@@ -141,7 +142,8 @@ def in_scope(rel):
         return False
     if rel == "agent/INDEX.md":
         return True
-    return rel.startswith("agent/PLAN-")
+    # Every folder a plan may sit in, which since the tree-lifecycle change is four rather than one. A prefix test here would drop the whole corpus the day the migration lands, and the gate would go green over a scope it had stopped reading.
+    return PL.is_plan_path(rel)
 
 
 #: An object citation must be at least this long. NINE, and the number is

@@ -112,6 +112,7 @@ import wl_core as C
 import wl_planfid as PFID
 import wl_planfile as PF
 import wl_proc
+import wl_store as S
 
 # --------------------------------------------------------------------------- Bounds and constants.
 
@@ -202,8 +203,33 @@ BOX_LINE_RE = re.compile(r"^\s*[-*+]\s+\[([ xX])\]\s+(\S.*)$")
 
 #: A gate id as `package.json` spells it.
 GATE_RE = re.compile(r"\bcheck:[a-z0-9][a-z0-9:-]{2,60}\b")
-#: A plan path or slug.
-PLAN_REF_RE = re.compile(r"\bagent/PLAN-[A-Za-z0-9._-]+\.md\b")
+#: A plan path or slug, in any of the four folders a plan may sit in. The
+#: alternation is OPTIONAL and the legacy spelling stays first, because a stub
+#: keeps `agent/PLAN-<slug>.md` resolving forever and every one of the 523
+#: citations already in this tree uses it. `resolve` below is what turns either
+#: spelling into a file. `.ci/rediacc_ci/quality/plan_lifecycle.PLAN_REF_RE` is
+#: the same grammar one directory over, and the two are compared by
+#: `.ci/rediacc_ci/tests/test_quality_plan_lifecycle.py`.
+PLAN_REF_RE = re.compile(r"\bagent/(?:plans/(?:_done/|_removed/)?)?PLAN-[A-Za-z0-9._-]+\.md\b")
+#: Every folder a plan may sit in, deepest first. `wl_store.AGENT_PLAN_SUBDIRS` is
+#: the same list relative to `agent/`, and `.ci/rediacc_ci/quality/plan_lifecycle`
+#: holds the third copy that a gate running without `.claude/` needs; the three
+#: are compared by `.ci/rediacc_ci/tests/test_quality_plan_lifecycle.py`.
+PLAN_FOLDERS = tuple("agent/%s" % sub if sub else "agent" for sub in S.AGENT_PLAN_SUBDIRS)
+
+
+def plan_folder(rel):
+    """The plan directory `rel` sits in, or "" when it is not in one at all.
+
+    Deepest first, because `agent/plans/_done` is a prefix-extension of `agent/plans` and testing the short one first would file every terminal plan as active.
+    """
+    for candidate in PLAN_FOLDERS:
+        prefix = candidate + "/"
+        if rel.startswith(prefix) and "/" not in rel[len(prefix) :]:
+            return candidate
+    return ""
+
+
 #: A trap id, as `Trap-Id:` spells it in TRAPS.md.
 TRAP_REF_RE = re.compile(r"\btrap:([a-z0-9][a-z0-9-]{2,80})\b")
 #: Hex tokens long enough to be a git object. 7 is git's own abbreviation floor.
@@ -352,9 +378,18 @@ def resolve(root, kind, token):
             return False, "package.json has no scripts block to check against"
         return (token in scripts), ("package.json scripts" if token in scripts else "no such gate")
     if kind == "plan":
-        rel = token if token.startswith("agent/") else "agent/PLAN-%s.md" % token
-        p = pathlib.Path(root) / rel
-        return p.is_file(), (rel if p.is_file() else "%s does not exist" % rel)
+        # A BARE SLUG IS TRIED IN EVERY FOLDER, deepest first, because a closed plan lives under `agent/plans/_done/` and the slug in a citation does not say so. A full path is taken as written: the stub left at a moved plan's old path is a real file, so the legacy spelling resolves there and the citation keeps its meaning rather than silently following the move.
+        if token.startswith("agent/"):
+            candidates = [token]
+        else:
+            candidates = [
+                "%s/PLAN-%s.md" % (d, token) if d else "agent/PLAN-%s.md" % token
+                for d in ("agent/plans/_done", "agent/plans/_removed", "agent/plans", "")
+            ]
+        for rel in candidates:
+            if (pathlib.Path(root) / rel).is_file():
+                return True, rel
+        return False, "%s does not exist" % candidates[-1]
     if kind == "trap":
         ids = _trap_ids(root)
         if not ids:
@@ -1765,7 +1800,7 @@ def select_box(boxes, selector):
     return hits[0]
 
 
-def ledger_row(root, rel, text):
+def ledger_row(root, rel, text, moved_at=""):
     """The ledger entry for one plan, computed the way `check_plan_boxes.scan` computes it and not one field differently.
 
     RESTATED RATHER THAN IMPORTED, for the reason `box_sig` is: the import already runs the other way (the gate imports this directory), and importing back would make the two directories mutually dependent. The equality is pinned by a control in test-planrec.py, which is what keeps the restatement
@@ -1779,9 +1814,13 @@ def ledger_row(root, rel, text):
             status = st
             break
     open_t, done_t = PF.plan_boxes(text)
+    # `folder` and `moved_at` joined the row on 2026-09-21 with check:ci-plan-folders. `folder` is DERIVED from the path, so it is computed here exactly as the gate computes it. `moved_at` is CARRIED: it records when a closed plan was moved into a terminal folder, nothing in the tree can be read back out of it once a later commit touches the new path, and recomputing it would
+    # reset the 40-day retention clock on every surgical write. The previous value is passed in by the caller that has the committed ledger; absent, it is "" and the plan has not moved.
     return {
         "status": status,
         "owner": CK.plan_owner(root, rel) or "unowned",
+        "folder": plan_folder(rel),
+        "moved_at": moved_at or "",
         "open": len(open_t),
         "done": len(done_t),
         "open_sigs": sorted({box_sig(t) for t in open_t}),
@@ -1894,7 +1933,8 @@ def plan_tick(root, rel, selector, evidence, me, now=None):
             "reading of the same boxes -- cannot be written. Ticking the plan alone would "
             "red check:ci-plan-boxes." % (LEDGER_REL, exc)
         ) from exc
-    row = ledger_row(root, rel, out)
+    # `moved_at` is CARRIED from the committed row. A surgical tick must not reset the retention clock of a plan that has already moved, which recomputing it would do.
+    row = ledger_row(root, rel, out, ((doc.get("plans") or {}).get(rel) or {}).get("moved_at", ""))
     note = (
         "box %s moved from open_sigs to done_sigs in %s (%d open, %d done for this plan). "
         "BOTH files must land in the SAME commit." % (sig, LEDGER_REL, row["open"], row["done"])

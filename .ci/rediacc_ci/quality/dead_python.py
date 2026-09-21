@@ -122,13 +122,8 @@ GLOB_ROOTS = {
 MANUAL_ENTRY_POINTS: dict[str, str] = {
     # `.ci/rediacc_ci/version/resolve_version.py` was named here until W7P4-b's second family, with the reason "remove the entry the moment a real route lands". One landed: `.github/workflows/cd-v2.yml` calls the module, and `.ci/shadow/w7p4b-resolve-version.observations.jsonl` names it on the new side of ten rows. The gate reported the exemption as no longer true, in the direction
     # that is easy to leave unchecked, and this is that report being obeyed.
-    ".ci/rediacc_ci/ci_signal/create_complete.py": (
-        "W7P6 port. Invoked by MODULE-NAME STRING from its own pytest differential "
-        "(rediacc_ci.tests.differential), not by a static import, so this scanner's "
-        "import graph cannot see the route -- and it is not a gate either: this is a "
-        "workflow run: target script, and any cutover from the .sh call site is a "
-        "separate, later box. Remove the entry the moment a real route lands."
-    ),
+    # `.ci/rediacc_ci/ci_signal/create_complete.py` was named here with the reason "remove the entry the moment a real route lands". One landed: eight `ct-tests.yml` jobs call the module, and the greenlight closure that used to name the bash twin now names this file, so the gate reported the exemption as no longer true. The table is empty, which is the state it is
+    # supposed to reach; an entry is added back only with a fresh reason of its own.
 }
 
 _PY_TOKEN = re.compile(r"[\w.\-/]*[\w\-]\.py")

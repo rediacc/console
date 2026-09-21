@@ -1,0 +1,6 @@
+# twin .ci/scripts/security/check-ci-workflow-invariants.sh blob 23c86d2113491f7e0d9ac4adaada5b9d885f21d8
+exit: 0
+--- stdout ---
+--- stderr ---
+✓ ci workflow invariants hold: every channel-derived docker_tag job refuses an empty channel; the bump-none skip_release decision is declared once in initialize, passed to stage-artifacts, gates both pre-publish validators, and is not re-decided in finalize-release-sentinel
+✓   Blind spot: this reads ci.yml only. It cannot see whether cd-stage.yml FORWARDS skip_release to the upload scripts (check-workflow-gates.sh CHECK 2b/2c covers the input contract), nor whether the scripts honour it (their own gate test covers that).

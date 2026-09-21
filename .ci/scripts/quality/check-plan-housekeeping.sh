@@ -95,7 +95,26 @@ MIN_PLANS="${PLAN_HK_MIN_FILES:-30}"
 }
 WARN_DAYS=$(python3 -c "import json,sys;print(json.load(open(sys.argv[1]))['warn_days'])" "$CFG") || exit 2
 DELETE_DAYS=$(python3 -c "import json,sys;print(json.load(open(sys.argv[1]))['delete_days'])" "$CFG") || exit 2
-PLAN_GLOB=$(python3 -c "import json,sys;print(json.load(open(sys.argv[1]))['plan_glob'])" "$CFG") || exit 2
+# A LIST OF GLOBS, NOT ONE, since a plan gained folders (2026-09-21). The two
+# terminal folders are deliberately absent: a closed plan under
+# `agent/plans/_done/` is on the 40-day retention clock check:ci-plan-folders
+# owns, and demanding its compaction on the way to its deletion would be two
+# gates pulling one file in opposite directions. Newline-separated so a glob
+# containing a space could never split into two pathspecs.
+PLAN_GLOBS=$(python3 -c "import json,sys;print('\n'.join(json.load(open(sys.argv[1]))['plan_globs']))" "$CFG") || exit 2
+[[ -n "$PLAN_GLOBS" ]] || {
+    echo "VACUOUS INPUT: $CFG carries no plan_globs, so the corpus would be empty" >&2
+    exit 2
+}
+# The `Status:` word a POINTER carries. A move leaves one at the old path so
+# every citation still resolves, and a pointer is not a plan: on this clock it
+# would go red 33 days after a migration that closed nothing, and the only
+# remedy offered would be to compact a file three lines long.
+STUB_STATUS=$(python3 -c "import json,sys;print(json.load(open(sys.argv[1]))['stub_status'])" "$CFG") || exit 2
+[[ -n "$STUB_STATUS" ]] || {
+    echo "VACUOUS INPUT: $CFG carries no stub_status, so every pointer would be judged as a plan" >&2
+    exit 2
+}
 # W12 P3.3. THE RECORD-STATUS VOCABULARY COMES FROM THE CONFIG, not from a
 # literal in the sed below. It used to be the alternation `compacted\|parked`
 # typed here, again in `.ci/rediacc_ci/quality/plan_housekeeping.py` and a third
@@ -153,6 +172,13 @@ record_status() { # <plan file> -> `compacted` / `parked`, or nothing
     # `Status: compacted` routes into the compacted branch and is reported as an
     # offender regardless of its age.
     sed -n "1,10s/^Status:[[:space:]]*\($RECORD_STATES_ALT\)[[:space:]]*\$/\1/p" "$1" | head -1
+}
+display_status() { # <plan file> -> the first Status: anywhere in the file
+    # WHOLE FILE, deliberately, unlike record_status above: some plans put their
+    # header low and this one is for DISPLAY and for the stub filter, neither of
+    # which decides an exemption. Lifted out of the report loop when the corpus
+    # filter grew a second caller, so the two cannot read a status differently.
+    sed -n 's/^[[:space:]]*\(\*\*\)\?Status[[:space:]]*[:=][[:space:]]*\(\*\*\)\?\([A-Za-z][A-Za-z-]*\).*/\3/p' "$1" | head -1
 }
 blob_is_real() { # <blob> -> 0 when git has it AS A BLOB
     [[ -n "${1:-}" ]] || return 1
@@ -305,12 +331,18 @@ is_shallow() {
 # ---------------------------------------------------------------------------
 # A `while read` loop rather than `mapfile`: check:ci-shell-commands refuses
 # mapfile because it is bash-4-only and the minimal CI images do not carry it.
+GLOB_ARGS=()
+while IFS= read -r _g; do
+    [[ -n "$_g" ]] && GLOB_ARGS+=("$_g")
+done <<<"$PLAN_GLOBS"
 PLANS=()
 while IFS= read -r _p; do
-    [[ -n "$_p" ]] && PLANS+=("$_p")
-done < <(git ls-files "$PLAN_GLOB" 2>/dev/null)
+    [[ -n "$_p" ]] || continue
+    [[ "$(display_status "$_p")" == "$STUB_STATUS" ]] && continue
+    PLANS+=("$_p")
+done < <(git ls-files "${GLOB_ARGS[@]}" 2>/dev/null)
 if ((${#PLANS[@]} < MIN_PLANS)); then
-    echo "VACUOUS INPUT: found ${#PLANS[@]} tracked plan file(s) matching $PLAN_GLOB, floor is $MIN_PLANS." >&2
+    echo "VACUOUS INPUT: found ${#PLANS[@]} tracked plan file(s) matching ${GLOB_ARGS[*]}, floor is $MIN_PLANS." >&2
     echo "  The glob lost the corpus; refusing a verdict rather than reporting a clean tree." >&2
     exit 1
 fi
@@ -439,7 +471,7 @@ fi
 
 while IFS=$'\t' read -r p days red_on; do
     [[ -n "${p:-}" ]] || continue
-    status=$(sed -n 's/^[[:space:]]*\(\*\*\)\?Status[[:space:]]*[:=][[:space:]]*\(\*\*\)\?\([A-Za-z][A-Za-z-]*\).*/\3/p' "$p" | head -1)
+    status=$(display_status "$p")
     # W12. Checked BEFORE the allowlist and before the age thresholds, because a
     # compacted record is not being suppressed and is not waiting for a date -- it
     # has already been dealt with, and the age of a record is not a defect. Note

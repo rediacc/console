@@ -1,6 +1,6 @@
 """Port of `.ci/scripts/test/gates/test-profiler-report.sh`, retired in W7 P5.
 
-Tests for the profiler's aggregation: `.ci/scripts/ci/profiler/report.awk` via `.ci/scripts/ci/profiler/panel.sh`, plus the sampler's own two hard refusals.
+Tests for the profiler's aggregation: `.ci/scripts/ci/profiler/report.awk` via `rediacc_ci.ci.profiler_panel`, plus the sampler's own two hard refusals.
 
 Driven entirely from SYNTHETIC sample files, so it needs no runner, no cgroup and no elapsed time. That is the point: the shapes worth testing are the ones a real run almost never produces on demand, a sampler that died at sample two, a CPU series that is all zeros, a host leak, a 350-minute job.
 
@@ -8,7 +8,7 @@ EVERY ANTI-VACUITY ASSERTION CARRIES ITS CONTROL. A checker that cannot fire is 
 with the near-identical PASS case it was derived from.
 
 `GITHUB_STEP_SUMMARY` IS PINNED, NOT INHERITED, and this is the seam the twin
-records paying for. panel.sh reads `SUMMARY="${GITHUB_STEP_SUMMARY:-/dev/stdout}"`
+records paying for. The panel reads `SUMMARY="${GITHUB_STEP_SUMMARY:-/dev/stdout}"`
 and GitHub Actions ALWAYS sets that variable, so on a runner the panel wrote to the step-summary FILE while the helper captured stdout and asserted against "". The suite passed locally (variable unset) and failed in CI for that reason alone. An unset variable is not a neutral default.
 
 WHERE THIS REIMPLEMENTS printf, grep -c AND wc, AND WHY THE ANSWERS AGREE. The fixture writers are the twin's `printf` format strings with the same field order and the same tab separators, written through Python's `%` with the same specifiers. The two row counts are `grep -c '^| [0-9][0-9]-'` and `grep -c '^| [0-9][0-9]*-'`, which count matching LINES; the Python forms count
@@ -18,7 +18,7 @@ bash and `len()` is a character count in Python, and the panel is ASCII apart fr
 THE THREE LIVE CASES ARE NOT SIMULATED. `test_sampler_rejects_host_leak` drives the real sampler against a fake cgroup tree, `test_sampler_produces_a_real_profile` captures six real seconds on THIS machine, and `test_sampler_reads_a_real_containers_ceiling` proves the premise the whole advisor rests on against a kernel that is actually enforcing a quota. The last one keeps the
 twin's THREE-WAY structure exactly, including its two SKIP-shaped passes, because narrowing it to the docker branch would turn the strongest proof into a silent skip the day this suite moves to ubuntu-slim (which has no docker, and which IS the container whose ceiling we care about).
 
-NO `xdist_group`. Every case writes only into pytest's own `tmp_path`; panel.sh and the sampler are executed read-only, and the one docker invocation mounts the sampler's directory read-only and its own scratch directory read-write. Nothing is bound and no module global is mutated.
+NO `xdist_group`. Every case writes only into pytest's own `tmp_path`; the panel and the sampler are executed read-only, and the one docker invocation mounts the sampler's directory read-only and its own scratch directory read-write. Nothing is bound and no module global is mutated.
 """
 
 import pathlib
@@ -28,7 +28,7 @@ import shutil
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 
-PANEL_SH = paths.from_root(".ci", "scripts", "ci", "profiler", "panel.sh")
+PANEL = paths.from_root(".ci", "rediacc_ci", "ci", "profiler_panel.py")
 REPORT_AWK = paths.from_root(".ci", "scripts", "ci", "profiler", "report.awk")
 SAMPLER = paths.from_root(".ci", "scripts", "ci", "profiler", "sampler-linux.sh")
 
@@ -43,8 +43,8 @@ LONG_ROW_RE = re.compile(r"^\| [0-9][0-9]*-", re.MULTILINE)
 
 
 def require_subjects(gate) -> None:
-    if not PANEL_SH.is_file():
-        gate.log_fail("panel.sh not found at %s" % paths.relative_to_root(PANEL_SH))
+    if not PANEL.is_file():
+        gate.log_fail("the profiler panel is not at %s" % paths.relative_to_root(PANEL))
     if not REPORT_AWK.is_file():
         gate.log_fail("report.awk not found at %s" % paths.relative_to_root(REPORT_AWK))
 
@@ -98,8 +98,10 @@ def run_panel(
     """`run_panel <sample-file> <wall_s> <strict>`, streams MERGED (the twin's `2>&1`)."""
     require_subjects(gate)
     return harness.run(
-        ["bash", str(PANEL_SH)],
+        ["python3", str(PANEL)],
         env={
+            "PYTHONPATH": str(paths.from_root(".ci")),
+            "PYTHONDONTWRITEBYTECODE": "1",
             "GITHUB_STEP_SUMMARY": "/dev/stdout",
             "PROFILER_SAMPLE_FILE": str(sample_file),
             "PROFILER_WALL_S": str(wall),

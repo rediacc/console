@@ -1323,6 +1323,20 @@
     }
   },
   {
+    "id": "check:ci-tree-shape",
+    "run": "npm run check:ci-tree-shape",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_tree_shape.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Tree shape"
+    }
+  },
+  {
     "id": "check:ci-runner-selftest",
     "run": "npm run check:ci-runner-selftest",
     "gate": true,
@@ -2010,6 +2024,29 @@
       "workflow": ".github/workflows/ci-quality.yml",
       "job": "quality-branch",
       "step": "Plan records"
+    }
+  },
+  {
+    "id": "check:ci-plan-folders",
+    "run": "npm run check:ci-plan-folders",
+    "gate": true,
+    "paths": [
+      "agent/PLAN-*.md",
+      "agent/INDEX.md",
+      ".ci/config/plan-lifecycle.json",
+      ".ci/config/plan-boxes.json",
+      ".ci/scripts/quality/check_plan_folders.py",
+      ".ci/rediacc_ci/quality/plan_lifecycle.py"
+    ],
+    "pathsOrigin": "declared",
+    "leaves": [
+      ".ci/scripts/quality/check_plan_folders.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-branch",
+      "step": "Plan folders and retention"
     }
   },
   {
@@ -4514,7 +4551,7 @@
     "run": "npm run check:ci-autopilot-workflow",
     "gate": true,
     "leaves": [
-      ".ci/scripts/security/check-autopilot-workflow-invariants.sh"
+      ".ci/rediacc_ci/security/autopilot_workflow_invariants.py"
     ],
     "ci": {
       "kind": "test",
@@ -4555,7 +4592,7 @@
     "run": "npm run check:ci-workflow-invariants",
     "gate": true,
     "leaves": [
-      ".ci/scripts/security/check-ci-workflow-invariants.sh"
+      ".ci/rediacc_ci/security/ci_workflow_invariants.py"
     ],
     "ci": {
       "kind": "test",

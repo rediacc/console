@@ -10,7 +10,11 @@ The original worry stands and is worth restating: these must never become a comm
     agent/
       README.md              this file
       RULES.md               settled facts and standing constraints. SHARPEN.
-      PLAN-<slug>.md         durable designs; survive compaction.
+      plans/
+        PLAN-<slug>.md     durable designs; survive compaction. Active and backlog.
+        _done/             closed; kept 40 days from the move, then a tombstone row.
+        _removed/          withdrawn (`Status: removed` plus `Removed-Why:`); same 40 days.
+      PLAN-<slug>.md         the LEGACY location, and the STUB namespace after the move.
       <session-prefix>/
         STATE.md             what is true NOW and what happens next. REWRITE.
       programs/
@@ -21,7 +25,10 @@ The original worry stands and is worth restating: these must never become a comm
 **No branch anywhere in the path** (operator decision, 2026-08-18: "avoid using branch name in folder path, instead let's only use the session name"). The branch was the wrong key and the tree proved it: session `97604f47` owned three separate STATE.md files at once, under `main`, `0815-1` and `backup-storage`, because a `/pr-merge` moved the checkout under a live session and the
 hook quietly started writing somewhere else. The compact-recovery document is the one artifact that must not fork when the branch does. Two things fall out and both are improvements: a detached HEAD no longer disables the freshness check, and `archive/` is the only place a branch name still appears -- as a LABEL on frozen history, which is what it was always good at.
 
-`archive/<label>/` is frozen and nothing in the hooks reads it. `archive` and `programs` are the two reserved names under `agent/`; every other directory there is a session (`wl_store.AGENT_RESERVED_DIRS`).
+A plan moves exactly ONCE, at close, from `plans/` into `plans/_done/` or `plans/_removed/`, and leaves a one-line stub at its old path. The stub is what keeps every existing citation of `agent/PLAN-<slug>.md` resolving without re-pointing one of them, which is the mechanism plan compaction already relies on. `check:ci-plan-folders` enforces the layout and both retention clocks,
+and its `--move` verb performs the move, the stub and the `First-Seen:` stamp in one step. A not-started plan nobody has touched for 90 days expires the same way.
+
+`archive/<label>/` is frozen and nothing in the hooks reads it. `archive`, `programs`, `plans`, `pr`, `legacy`, `worklist` and `reggate` are the reserved names under `agent/`; every other directory there is a session (`wl_store.AGENT_RESERVED_DIRS`).
 
 `TRAPS.md` is NOT here. The standing lookup material -- TRAPS.md, ci-gates.md, suppressions.md -- lives in `docs/agent-reference/`, because it is reference prose that outlives every session, while everything under `agent/` is per-session state or a durable design record.
 
@@ -32,7 +39,7 @@ hook quietly started writing somewhere else. The compact-recovery document is th
 | Lives for | Goes in | Discipline |
 |---|---|---|
 | Minutes | `<session>/STATE.md` | Rewrite every time |
-| The work | `RULES.md`, `PLAN-<slug>.md` | Sharpen; edit in place when wrong |
+| The work | `RULES.md`, `plans/PLAN-<slug>.md` | Sharpen; edit in place when wrong |
 | Forever | `docs/agent-reference/TRAPS.md` | Append; never prune |
 | History | `archive/<label>/` | Frozen when the work concludes |
 

@@ -1,0 +1,21 @@
+# twin .ci/scripts/autopilot/update-state.sh blob 86b03e9eba69476079c0a1ca26711a02b532e21d
+exit: 0
+--- stdout ---
+--- stderr ---
+✓ state comment POST to repos/acme/widget/issues/42/comments (round 2/8, state fixing)
+--- gh calls ---
+api	--method	POST	repos/acme/widget/issues/42/comments	-F	body=@<work>/body.md
+--- gh body ---
+### Autopilot state (machine-maintained, do not edit)
+state: fixing | round: 2/8 | head: abc1234 | last_run: 555/1 handled | campaign: open | model: opus | rounds_max: 8 | last_sig: none | sig_count: 0
+
+#### Round ledger
+r1 | run 111 | commit deadbee | did the first thing
+r2 | run 555 | commit cafe | did more
+
+#### Ruled out
+- the cache theory
+
+#### DECISIONS (post-hoc review)
+- kept the retry
+

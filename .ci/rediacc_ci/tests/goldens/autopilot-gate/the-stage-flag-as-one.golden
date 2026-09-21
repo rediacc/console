@@ -1,0 +1,7 @@
+# twin .ci/scripts/autopilot/autopilot-gate.sh blob a0eb5eaa1794385f9b5e166b00d4f0099a7bac77
+exit: 0
+--- stdout ---
+{"decision":"no-go","mode":"none","reason":"stage-flag-disabled: AUTOPILOT_ENABLED is not 'true' (absent means off, fail closed)","round":1,"push_allowed":false,"armed_by":"none","model":"claude-sonnet-5","rounds_max":25,"campaign":"none","dispatch_trusted":false,"sig":"none","sig_count":0}
+--- stderr ---
+--- calls ---
+[]

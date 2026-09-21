@@ -1,0 +1,8 @@
+# twin .ci/scripts/autopilot/review-payload.sh blob f794c4b741afd63ff389bccfa70f70d3741ae824
+exit: 0
+--- stdout ---
+{"threads":[{"id":"T1","repo":null,"pr":null,"path":"","line":null,"comments":[{"author":"github-actions","body":"bad � byte","id":null}]}],"kept":1,"dropped":0,"bytes":130}
+--- stderr ---
+✓ review payload: 1 thread(s), 130 bytes, rooted by an author matching 'github-actions'
+--- out file ---
+<no file>

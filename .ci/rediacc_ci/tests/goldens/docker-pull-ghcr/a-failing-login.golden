@@ -1,0 +1,8 @@
+# twin .ci/scripts/infra/docker-pull-ghcr.sh blob 81bac6ffea1601bfa1e3d2c65cd4adda0fb391d4
+exit: 42
+--- stdout ---
+--- stderr ---
+→ Authenticating with ghcr.io...
+fixture: docker login refused
+--- docker calls ---
+docker	login	ghcr.io	-u	fixture-actor	--password-stdin	stdin='fixture-token\n'

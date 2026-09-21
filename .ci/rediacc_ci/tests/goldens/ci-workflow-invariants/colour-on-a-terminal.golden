@@ -1,0 +1,6 @@
+# twin .ci/scripts/security/check-ci-workflow-invariants.sh blob 23c86d2113491f7e0d9ac4adaada5b9d885f21d8
+exit: 1
+--- stdout ---
+--- stderr ---
+[0;31m✗[0m INVARIANT-FAIL: channel-as-docker-tag: job 'channel-consumer' passes the channel as docker_tag but its `if:` does not require `needs.initialize.outputs.channel != ''`. With an empty channel (every schedule run) constants.sh:27 rewrites the tag to 'latest', so the job validates the last RELEASED image while asserting the next version.
+[0;31m✗[0m ci workflow invariants FAILED

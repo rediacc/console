@@ -83,7 +83,8 @@ REGEN_CMD = "npm run check:ci-plan-record -- --update"
 #: path must load it, and the record machinery pulls in git. `test-planindex.py`
 #: asserts the two are equal, which is the only thing that could drift.
 INDEX_REL = "agent/INDEX.md"
-PLAN_GLOB = "PLAN-*.md"
+#: The store's, not a second literal, for the reason `plan_dir` below states. Kept as a name here because `test-planindex.py` and the census prose both refer to it.
+PLAN_GLOB = S.PLAN_GLOB
 
 
 def plan_dir(root) -> pathlib.Path:
@@ -96,16 +97,16 @@ def plan_dir(root) -> pathlib.Path:
 
 
 def plan_stats(root):
-    """[(rel, size, mtime)] for every plan on disk. STAT ONLY, no file is read.
+    """[(rel, size, mtime)] for every plan on disk. The CHEAP half.
 
     This is the cheap half of the freshness check and it is also what restores the listing's ORDER: `wl_checks.plan_records` sorts newest-mtime-first and `plan_status_excerpt` then takes `live[0]` as "the newest live plan", so an index that dropped mtime would silently change which plan a compacted session gets excerpted. mtime is read here, from the same `stat` the size needs, and
     is deliberately NOT stored in the committed file (see the docstring).
+
+    IT IS NO LONGER STAT-ONLY, and the difference is one kilobyte per file. `wl_store.agent_plan_files` reads the head of each candidate to tell a plan from the pointer a move leaves behind. The alternative was to let this half and `plan_records` glob different sets, which is the permanently-stale census `plan_dir` below warns about; 103 short reads is the cheaper of the two
+    by a wide margin, and it is still a hundredth of what opening every plan costs.
     """
-    d = plan_dir(root)
-    if not d.is_dir():
-        return []
     out = []
-    for f in sorted(d.glob(PLAN_GLOB)):
+    for f in S.agent_plan_files(root):
         try:
             st = f.stat()
         except OSError:

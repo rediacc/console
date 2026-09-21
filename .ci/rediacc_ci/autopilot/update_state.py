@@ -14,7 +14,7 @@ ONE WRITER, THREE CALLERS, AND THAT IS WHY THE IDEMPOTENCY LIVES IN ONE `if`. `-
 The comment is REWRITTEN WHOLE rather than appended to, and the carry-over of the previous rounds is `state-comment.sh render`'s job, fed the old body through `--body`. So the second round on a PR is not "the first round plus a line" -- it is a fresh render of everything, and the only thing that makes it idempotent is that `--comment-id` and `--body` name the same comment.
 `endpoint_for` below is that decision, exported so the differential can drive both arms without a PR.
 
-WHAT THIS PORT DOES NOT RE-IMPLEMENT. `state-comment.sh` (the renderer) and `gh` are spawned, exactly as the twin spawns them. Re-implementing the renderer would create a second writer of a format whose whole design is one reader and one writer; re-implementing `gh` is not a thing anyone can do.
+WHAT THIS PORT DOES NOT RE-IMPLEMENT. The renderer and `gh` are spawned, exactly as the twin spawned them, the renderer now as `state_comment.py` in the command form its own ledger licensed. Re-implementing the renderer would create a second writer of a format whose whole design is one reader and one writer; re-implementing `gh` is not a thing anyone can do.
 
 WHERE jq IS SPAWNED, and the rule is this wave's: the `--verdict` file comes
 from `autopilot-push.sh --verdict-out` and can be truncated, and when it is, the
@@ -82,9 +82,30 @@ def script_dir() -> pathlib.Path:
     """The twin's `SCRIPT_DIR`: `.ci/scripts/autopilot`.
 
     From THIS file's location, matching `dirname "${BASH_SOURCE[0]}"`.
-    `rediacc_ci.paths.repo_root()` is deliberately not used: it honours `$REDIACC_CI_ROOT` and the twin honours nothing.
+    `rediacc_ci.paths.repo_root()` is deliberately not used: it honours `$REDIACC_CI_ROOT` and the twin honoured nothing.
     """
     return pathlib.Path(__file__).resolve().parents[3] / ".ci" / "scripts" / "autopilot"
+
+
+def renderer_argv() -> list[str]:
+    """The state-comment renderer, in the command form its own K=5 ledger licensed.
+
+    ITS BASH TWIN IS GONE (`.ci/shadow/w7p6-state-comment.observations.jsonl` recorded the port against it five times over, and W7P5 batch M3 deleted it), so the spawn names the port by PATH, the exact spelling that ledger carries. `-m` is deliberately not used: `check:ci-parity`'s tokenizer cannot read it.
+
+    The renderer is still SPAWNED rather than imported, because its exit status is what `set -e` propagated here and its stderr has to reach this process's fd 2 in real time. `goldens/update-state/` was recorded while the twin spawned the bash renderer, so those recordings are what hold this flip to byte equivalence.
+    """
+    return [sys.executable, str(pathlib.Path(__file__).resolve().parent / "state_comment.py")]
+
+
+def child_env() -> dict[str, str]:
+    """This process's environment with `rediacc_ci` importable by the child.
+
+    The parent is reached through `PYTHONPATH=.ci` with the checkout as the working directory, and a child started from anywhere else would not inherit a usable one, so the absolute path is computed here rather than trusted.
+    """
+    env = dict(os.environ)
+    env["PYTHONPATH"] = str(pathlib.Path(__file__).resolve().parents[2])
+    env["PYTHONDONTWRITEBYTECODE"] = "1"
+    return env
 
 
 def gh_retry(what: str, args: list[str]) -> tuple[bool, str]:
@@ -246,9 +267,10 @@ def _write(
     body_md = os.path.join(work, "body.md")
     with open(body_md, "wb") as handle:
         render = subprocess.run(
-            [str(script_dir() / "state-comment.sh"), *render_args(args, work)],
+            [*renderer_argv(), *render_args(args, work)],
             stdout=handle,
             check=False,
+            env=child_env(),
         )
     if render.returncode != 0:
         # `set -e` on the renderer's status. The half-written body.md goes with the work directory, exactly as the twin's EXIT trap takes it.

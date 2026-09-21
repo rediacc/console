@@ -1,0 +1,10 @@
+# twin .ci/scripts/autopilot/sweep-collect.sh blob 52ed925f8f71bdf9f2ad689677167385b887b34b
+exit: 2
+--- stdout ---
+--- stderr ---
+✗ usage: sweep-collect.sh --repo <owner/name> --label <name> --bot <login> --work <dir> --out <file>
+--- gh calls ---
+--- work ---
+{}
+--- out ---
+<absent>

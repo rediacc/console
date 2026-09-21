@@ -1,0 +1,11 @@
+# twin .ci/scripts/security/shellcheck.sh blob bd92dcbb76ec0045ffcf3b0c134ff17ff2294284
+exit: 1
+--- stdout ---
+info: Checking shell script compatibility
+info: Every lane's toolchain: .ci/scripts/lib/toolchain.sh --report
+info: Or run the gate where it is pinned: ./run.sh devbox exec -- .ci/scripts/security/shellcheck.sh
+--- stderr ---
+toolchain: could not download shellcheck from https://github.com/koalaman/shellcheck/releases/download/v9.99.0/shellcheck-v9.99.0.linux.<arch>.tar.xz
+[0;31merror: shellcheck is unusable for this gate[0m
+--- calls ---
+FAKECALL curl -fsSL --max-time 180 --retry 3 --retry-delay 5 -o <cache>/rediacc-toolchain/shellcheck-9.99.0/sc.<tmp>/sc.tar.xz https://github.com/koalaman/shellcheck/releases/download/v9.99.0/shellcheck-v9.99.0.linux.<arch>.tar.xz

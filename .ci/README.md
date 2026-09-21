@@ -31,12 +31,9 @@ Abridged — only the entry points most often edited by hand are listed. The ful
 │   │   └── resolve-version.sh  # Resolve current/next version from git tags
 │   ├── setup/
 │   │   ├── install-deps.sh     # npm ci with platform handling
-│   │   ├── build-packages.sh   # Build shared libraries
-│   │   └── install-cli-global.sh # Install the built CLI tarball globally
+│   │   └── build-packages.sh   # Build shared libraries
 │   ├── env/
 │   │   └── create-e2e-env.sh   # Create E2E test .env
-│   ├── signal/
-│   │   └── create-complete.sh  # Create completion signal files
 │   ├── test/
 │   │   ├── run-unit.sh         # Run unit tests
 │   │   └── run-e2e.sh          # Run E2E (renet) tests

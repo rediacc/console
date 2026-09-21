@@ -1,39 +1,52 @@
-"""Differential: `rediacc_ci.autopilot.sweep_campaigns` against its twin `.ci/scripts/autopilot/sweep-campaigns.sh`.
+"""`rediacc_ci.autopilot.sweep_campaigns`, driven against the bytes its bash twin produced.
 
-NO NETWORK AND NO STUBS, because the twin has none either: the sweeper's whole design is that the decision is made from a PR list and a directory of comment dumps, so it can be exercised offline. Both sides call the REAL `state-comment.sh`, which is the point -- the trust rule (author equality plus exact header prefix) lives there, and a test that stubbed it would prove the port
-calls something, not that a lookalike comment is refused.
+THE TWIN HAS BEEN DELETED. While both copies existed this file ran `.ci/scripts/autopilot/sweep-campaigns.sh` and the port over one fixture tree and compared exit code, stdout and stderr, byte for byte, with no shape-compared arm and no exemption.
 
-THE LOOKALIKE IS THE FIXTURE THAT MATTERS. Console is public, so the attack is a comment from any account whose body claims `campaign: open`. Every case below that expects a dispatch is accompanied by one that must NOT dispatch: wrong author, right author with the wrong header, campaign `closed`, campaign absent. A test with only the positive direction would agree with the twin
+The ledger `.ci/shadow/w7p6-sweep-campaigns.observations.jsonl` holds 5 rows of that comparison, recorded in a disposable scratch git repository outside this checkout. Every case now compares against `goldens/sweep-campaigns/`, which holds the twin's OWN recorded bytes, captured on its last day in the tree, and each golden's provenance header carries the blob sha, so `git cat-file
+-p <sha>` still yields the program that produced them.
+
+THREE CHANNELS AND NO MORE, because this subject writes nothing that survives it. Its `mktemp -d` work directory holds one `body.txt` handed to the state-comment reader and is removed however the scan ends, so there is no durable artifact to freeze and a section recording an empty tree every time would be decoration. The product is the list of PR numbers on stdout and the counted
+summary on stderr.
+
+NO NETWORK AND NO STUBS, because the twin had none either: the sweeper's whole design is that the decision is made from a PR list and a directory of comment dumps, so it can be exercised offline. Both implementations call the REAL state-comment reader, which is the point. The trust rule (author equality plus the exact header prefix) lives there, and a recording made against a
+stubbed reader would prove the port calls something, not that a lookalike comment is refused. The twin spawned `state-comment.sh` and the port spawns the sibling port by path.
+
+THE LOOKALIKE IS THE FIXTURE THAT MATTERS. Console is public, so the attack is a comment from any account whose body claims `campaign: open`. The recording that carries a dispatch also carries the cases that must NOT dispatch: wrong author, right author with the wrong header, campaign `closed`, campaign absent. A corpus with only the positive direction would agree with the twin
 while the author check was deleted.
 
-RELATIVE PATHS ON PURPOSE. Each side runs with its own private `cwd`, and the warning line quotes the dump path it was given, so the fixtures pass `--comments-dir comments` rather than an absolute path. An absolute path would put two different temp directories into the two sides' stderr and force a masked comparison for no reason.
+RELATIVE PATHS ON PURPOSE. Each case runs in its own private working directory and the warning line quotes the dump path it was given, so every case passes `--comments-dir comments` rather than an absolute path. An absolute path would have put two different temp directories into the two sides' stderr and forced a masked comparison for no reason, and it would now put one into the
+goldens.
 
-K=5 LEDGER: `.ci/shadow/w7p6-sweep-campaigns.observations.jsonl`, recorded in a
-disposable scratch git repository outside this checkout.
+WHAT IS MASKED is therefore almost nothing, and the two tokens exist only so that a golden cannot quietly acquire a path. The case directory becomes `<case>` and the checkout root becomes `<repo>`; no recording in this corpus contains either, which is the property the relative paths above buy.
 """
 
 from __future__ import annotations
 
 import json
 import os
-import pathlib
 import shutil
 import subprocess
 import sys
-import tempfile
-from typing import Any
+import typing
+
+import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.autopilot import sweep_campaigns as sc
+from rediacc_ci.tests import frozen
+
+if typing.TYPE_CHECKING:
+    import pathlib
 
 ROOT = paths.repo_root()
-TWIN = ROOT / ".ci" / "scripts" / "autopilot" / "sweep-campaigns.sh"
 PORT = ROOT / ".ci" / "rediacc_ci" / "autopilot" / "sweep_campaigns.py"
+SLUG = "sweep-campaigns"
+
 BASH = shutil.which("bash") or "/bin/bash"
+PYTHON = sys.executable
 
 BASE_ENV = {
     "PATH": os.environ.get("PATH", "/usr/local/bin:/usr/bin:/bin"),
-    "HOME": os.environ.get("HOME", "/tmp"),
     "LC_ALL": "C",
     "LANG": "C",
     "PYTHONPATH": str(ROOT / ".ci"),
@@ -42,7 +55,7 @@ BASE_ENV = {
 
 BOT = "rediacc-autopilot[bot]"
 
-# `state-comment.sh`'s HEADER, and a body that does not start with it is not a state comment however well it is worded.
+# The state-comment reader's HEADER, and a body that does not start with it is not a state comment however well it is worded.
 HEADER = "### Autopilot state (machine-maintained, do not edit)"
 
 
@@ -56,166 +69,227 @@ def body(campaign: str = "open", *, header: str = HEADER) -> str:
     ) % (header, campaign)
 
 
-def comment(cid: int, author: str, text: str) -> dict[str, Any]:
+def comment(cid: int, author: str, text: str) -> dict[str, typing.Any]:
     return {"id": cid, "author": author, "body": text}
 
 
-def _tree(base: pathlib.Path, prs: Any, dumps: dict[int, Any], *, prs_raw: bytes | None = None):
+# Every decision this script can make, in one tree: an open campaign, a closed one, one with no campaign value, a lookalike with the wrong author, a right-author comment with the wrong header, and two PRs carrying two bot comments each where the NEWEST must win in both directions.
+MIXED = {
+    11: [comment(1, BOT, body("open"))],
+    12: [comment(2, BOT, body("closed"))],
+    13: [comment(3, BOT, body("none"))],
+    14: [comment(4, "mallory", body("open"))],
+    15: [comment(5, BOT, body("open", header="### Autopilot state"))],
+    16: [comment(6, BOT, body("open")), comment(7, BOT, body("closed"))],
+    17: [comment(8, BOT, body("closed")), comment(9, BOT, body("open"))],
+}
+
+UNSORTED = {n: [comment(n, BOT, body("open"))] for n in (3, 21, 7)}
+ONE_OPEN = {5: [comment(1, BOT, body("open"))]}
+
+DEFAULT_ARGV = ["--prs", "prs.json", "--comments-dir", "comments", "--bot", BOT]
+
+# name -> the PR list, the comment dumps, and the argv. `prs_raw` writes the PR list VERBATIM, which is the only way to put bytes jq cannot parse into it.
+CASE_KW: dict[str, dict[str, typing.Any]] = {
+    "every-decision-in-one-tree": {
+        "prs": [{"number": n} for n in sorted(MIXED)],
+        "dumps": MIXED,
+    },
+    "an-unsorted-pr-list": {"prs": [{"number": n} for n in (21, 3, 7)], "dumps": UNSORTED},
+    "a-bare-number-list": {"prs": [5], "dumps": ONE_OPEN},
+    "junk-entries": {"prs": ["x", None, {"title": "t"}, [], 5], "dumps": ONE_OPEN},
+    "a-top-level-object": {"prs": {"number": 5}, "dumps": ONE_OPEN},
+    "a-duplicate-pr": {"prs": [5, 5], "dumps": ONE_OPEN},
+    "a-missing-comment-dump": {"prs": [5, 6], "dumps": ONE_OPEN},
+    "an-empty-sweep": {"prs": []},
+    "without-prs": {"prs": [], "argv": ["--comments-dir", "comments", "--bot", BOT]},
+    "without-a-comments-dir": {"prs": [], "argv": ["--prs", "prs.json", "--bot", BOT]},
+    "without-a-bot": {"prs": [], "argv": ["--prs", "prs.json", "--comments-dir", "comments"]},
+    "an-empty-bot": {
+        "prs": [],
+        "argv": ["--prs", "prs.json", "--comments-dir", "comments", "--bot="],
+    },
+    "a-prs-file-that-is-absent": {
+        "prs": [],
+        "argv": ["--prs", "nope.json", "--comments-dir", "comments", "--bot", BOT],
+    },
+    "a-comments-dir-that-is-absent": {
+        "prs": [],
+        "argv": ["--prs", "prs.json", "--comments-dir", "nope", "--bot", BOT],
+    },
+    "a-malformed-pr-list": {"prs": None, "prs_raw": b"{not json"},
+    "an-unreadable-comment-dump": {
+        "prs": [1, 2],
+        "dumps": {1: [comment(1, BOT, body("open"))], 2: {"not": "an array"}},
+    },
+}
+
+CASES = tuple(CASE_KW)
+
+
+def fixture(base: pathlib.Path, name: str) -> None:
+    """This case's PR list and comment dumps, in a directory of its own."""
+    kw = CASE_KW[name]
     (base / "comments").mkdir(parents=True, exist_ok=True)
+    raw = kw.get("prs_raw")
     (base / "prs.json").write_bytes(
-        prs_raw if prs_raw is not None else json.dumps(prs).encode("utf-8")
+        raw if raw is not None else json.dumps(kw["prs"]).encode("utf-8")
     )
-    for number, payload in dumps.items():
+    for number, payload in (kw.get("dumps") or {}).items():
         (base / "comments" / ("%d.json" % number)).write_text(json.dumps(payload), encoding="utf-8")
 
 
-def _run(subject: pathlib.Path, base: pathlib.Path, argv: list[str]):
-    runner = [BASH] if subject.suffix == ".sh" else [sys.executable]
+def run(subject: pathlib.Path, base: pathlib.Path, name: str) -> tuple[int, str, str]:
+    """One subject, once, over this case's own tree."""
+    base.mkdir(parents=True, exist_ok=True)
+    fixture(base, name)
+    env = dict(BASE_ENV)
+    env["HOME"] = str(base)
+    runner = [BASH] if subject.suffix == ".sh" else [PYTHON]
     proc = subprocess.run(
-        [*runner, str(subject), *argv],
+        [*runner, str(subject), *CASE_KW[name].get("argv", DEFAULT_ARGV)],
         capture_output=True,
-        env=dict(BASE_ENV),
+        text=True,
+        env=env,
         check=False,
         cwd=str(base),
         timeout=120,
     )
-    return proc.returncode, proc.stdout, proc.stderr
+
+    def mask(text: str) -> str:
+        return text.replace(str(base), "<case>").replace(str(ROOT), "<repo>")
+
+    return proc.returncode, mask(proc.stdout), mask(proc.stderr)
 
 
-DEFAULT_ARGV = ["--prs", "prs.json", "--comments-dir", "comments", "--bot", BOT]
+def render(code: int, stdout: str, stderr: str) -> str:
+    return frozen.render(code, stdout, stderr)
 
 
-def _sides(
-    name: str,
-    prs: Any,
-    dumps: dict[int, Any] | None = None,
-    argv: list[str] | None = None,
-    *,
-    prs_raw: bytes | None = None,
-):
-    results = []
-    with tempfile.TemporaryDirectory() as td:
-        for subject in (TWIN, PORT):
-            base = pathlib.Path(td) / subject.stem
-            base.mkdir(parents=True)
-            _tree(base, prs, dumps or {}, prs_raw=prs_raw)
-            results.append(_run(subject, base, list(argv) if argv is not None else DEFAULT_ARGV))
-    old, new = results
-    assert new[0] == old[0], "%s: exit diverged: %r vs %r\n twin: %r\n port: %r" % (
-        name,
-        old[0],
-        new[0],
-        old[2],
-        new[2],
-    )
-    assert new[1] == old[1], "%s: stdout diverged:\n twin: %r\n port: %r" % (name, old[1], new[1])
-    assert new[2] == old[2], "%s: stderr diverged:\n twin: %r\n port: %r" % (name, old[2], new[2])
-    return old
+def recorded(name: str) -> tuple[int, str, str]:
+    text = frozen.read(SLUG, name)
+    exit_line, rest = text.split("\n", 1)
+    stdout, stderr = rest.split("--- stdout ---\n", 1)[1].split("--- stderr ---\n", 1)
+    return int(exit_line.removeprefix("exit: ")), stdout, stderr
+
+
+def port(tmp_path: pathlib.Path, name: str) -> tuple[int, str, str]:
+    return run(PORT, tmp_path / name, name)
+
+
+def compare(tmp_path: pathlib.Path, name: str) -> tuple[int, str, str]:
+    want = recorded(name)
+    got = port(tmp_path, name)
+    labels = ("exit code", "stdout", "stderr")
+    # `strict=True`: the tuple and the labels must stay the same length, and a silently truncated zip is how a comparison stops checking its last field.
+    for label, a, b in zip(labels, want, got, strict=True):
+        assert a == b, "%s: %s diverged:\n--- recorded ---\n%s\n--- port ---\n%s" % (
+            name,
+            label,
+            a,
+            b,
+        )
+    return got
+
+
+@pytest.mark.parametrize("name", CASES)
+def test_port_matches_the_twins_recorded_output(tmp_path: pathlib.Path, name: str) -> None:
+    compare(tmp_path, name)
+
+
+def test_every_case_has_a_golden_and_no_golden_is_orphaned() -> None:
+    """ANTI-VACUITY on the corpus: a case whose golden vanished would pass by never being compared, and a golden nothing reads is a recording of a case that stopped running."""
+    frozen.assert_corpus(SLUG, set(CASES))
+
+
+def test_no_recording_carries_an_absolute_path() -> None:
+    """The relative-path rule in the module docstring, asserted rather than trusted. A case that started passing an absolute fixture path would put a tempdir into a golden and only fail months later, on a machine whose tempdir is spelled differently."""
+    for name in CASES:
+        for stream in recorded(name)[1:]:
+            assert "<case>" not in stream, name
+            assert "<repo>" not in stream, name
+
+
+# --------------------------------------------------------------------------- What the recordings say ---------------------------------------------------------------------------
 
 
 def test_open_campaigns_are_swept_and_lookalikes_are_not() -> None:
     """One tree carrying every decision this script can make."""
-    dumps = {
-        11: [comment(1, BOT, body("open"))],
-        12: [comment(2, BOT, body("closed"))],
-        13: [comment(3, BOT, body("none"))],
-        # A lookalike: perfect body, wrong author.
-        14: [comment(4, "mallory", body("open"))],
-        # Right author, wrong header: not a state comment.
-        15: [comment(5, BOT, body("open", header="### Autopilot state"))],
-        # Two comments from the bot; the NEWEST (highest id) wins.
-        16: [comment(6, BOT, body("open")), comment(7, BOT, body("closed"))],
-        17: [comment(8, BOT, body("closed")), comment(9, BOT, body("open"))],
-    }
-    exit_code, stdout, stderr = _sides("mixed", [{"number": n} for n in sorted(dumps)], dumps)
-    assert exit_code == 0
-    assert stdout == b"11\n17\n", stdout
-    assert b"7 scanned PR(s)" in stderr
-    assert b"2 open campaign(s)" in stderr
+    code, stdout, stderr = recorded("every-decision-in-one-tree")
+    assert code == 0
+    assert stdout == "11\n17\n", stdout
+    assert "7 scanned PR(s)" in stderr
+    assert "2 open campaign(s)" in stderr
 
 
 def test_output_is_ascending_whatever_the_input_order() -> None:
-    dumps = {n: [comment(n, BOT, body("open"))] for n in (3, 21, 7)}
-    exit_code, stdout, _ = _sides("unsorted", [{"number": n} for n in (21, 3, 7)], dumps)
-    assert exit_code == 0
-    assert stdout == b"3\n7\n21\n", "sort -n was not reproduced (this is a numeric sort)"
+    code, stdout, _ = recorded("an-unsorted-pr-list")
+    assert code == 0
+    assert stdout == "3\n7\n21\n", "sort -n was not reproduced (this is a numeric sort)"
 
 
 def test_pr_list_shapes() -> None:
     """The two accepted spellings, plus everything that is silently ignored."""
-    dumps = {5: [comment(1, BOT, body("open"))]}
-    # A bare [N, ...] list.
-    assert _sides("bare-numbers", [5], dumps)[1] == b"5\n"
+    assert recorded("a-bare-number-list")[1] == "5\n"
     # Junk entries: strings, nulls, objects with no number, nested arrays.
-    assert _sides("junk", ["x", None, {"title": "t"}, [], 5], dumps)[1] == b"5\n"
+    assert recorded("junk-entries")[1] == "5\n"
     # A top-level object is not an array, so `if type == "array"` yields [].
-    assert _sides("object-input", {"number": 5}, dumps)[1] == b""
-    # A duplicate is scanned twice by both, so the number is printed twice.
-    exit_code, stdout, stderr = _sides("duplicate", [5, 5], dumps)
-    assert exit_code == 0
-    assert stdout == b"5\n5\n"
-    assert b"2 scanned PR(s)" in stderr
+    assert recorded("a-top-level-object")[1] == ""
+    # A duplicate is scanned twice, so the number is printed twice.
+    code, stdout, stderr = recorded("a-duplicate-pr")
+    assert code == 0
+    assert stdout == "5\n5\n"
+    assert "2 scanned PR(s)" in stderr
 
 
 def test_a_missing_dump_warns_and_is_not_counted_as_scanned() -> None:
     """ "Could not look" is not "not armed"."""
-    dumps = {5: [comment(1, BOT, body("open"))]}
-    exit_code, stdout, stderr = _sides("missing-dump", [5, 6], dumps)
-    assert exit_code == 0
-    assert stdout == b"5\n"
-    assert b"no comment dump for PR #6 at comments/6.json" in stderr
-    assert b"1 scanned PR(s)" in stderr, "the unreadable PR was counted as scanned"
+    code, stdout, stderr = recorded("a-missing-comment-dump")
+    assert code == 0
+    assert stdout == "5\n"
+    assert "no comment dump for PR #6 at comments/6.json" in stderr
+    assert "1 scanned PR(s)" in stderr, "the unreadable PR was counted as scanned"
 
 
 def test_empty_sweep() -> None:
     """A documented, quiet zero. Named here so the number is visible: this is also what a completely empty input directory produces."""
-    exit_code, stdout, stderr = _sides("empty", [])
-    assert exit_code == 0
-    assert stdout == b""
-    assert b"0 open campaign(s) across 0 scanned PR(s)" in stderr
+    code, stdout, stderr = recorded("an-empty-sweep")
+    assert code == 0
+    assert stdout == ""
+    assert "0 open campaign(s) across 0 scanned PR(s)" in stderr
 
 
 def test_usage_and_missing_inputs() -> None:
-    for name, argv in (
-        ("no-prs", ["--comments-dir", "comments", "--bot", BOT]),
-        ("no-dir", ["--prs", "prs.json", "--bot", BOT]),
-        ("no-bot", ["--prs", "prs.json", "--comments-dir", "comments"]),
-        ("empty-bot", ["--prs", "prs.json", "--comments-dir", "comments", "--bot="]),
-    ):
-        code, _, err = _sides(name, [], argv=argv)
+    for name in ("without-prs", "without-a-comments-dir", "without-a-bot", "an-empty-bot"):
+        code, _, stderr = recorded(name)
         assert code == 2, name
-        assert b"usage: sweep-campaigns.sh" in err
+        assert "usage: sweep-campaigns.sh" in stderr
 
-    code, _, err = _sides(
-        "prs-absent", [], argv=["--prs", "nope.json", "--comments-dir", "comments", "--bot", BOT]
-    )
+    code, _, stderr = recorded("a-prs-file-that-is-absent")
     assert code == 1
-    assert b"Required file" in err
+    assert "Required file" in stderr
 
-    code, _, err = _sides(
-        "dir-absent", [], argv=["--prs", "prs.json", "--comments-dir", "nope", "--bot", BOT]
-    )
+    code, _, stderr = recorded("a-comments-dir-that-is-absent")
     assert code == 1
-    assert b"Required directory" in err
+    assert "Required directory" in stderr
 
 
 def test_a_malformed_pr_list_fails_with_jqs_own_words() -> None:
     """The parse error IS the observable, which is why the port spawns jq here rather than reproducing the message."""
-    code, stdout, err = _sides("malformed-prs", None, prs_raw=b"{not json")
+    code, stdout, stderr = recorded("a-malformed-pr-list")
     assert code == 5, "jq's runtime exit code is 5, not 1 or 2"
-    assert stdout == b""
-    assert err.startswith(b"jq: parse error:"), err
+    assert stdout == ""
+    assert stderr.startswith("jq: parse error:"), stderr
 
 
 def test_an_unreadable_dump_stops_the_sweep_after_partial_output() -> None:
-    """`state-comment.sh select` failing takes the whole sweep down, and the numbers already printed stay printed. Both halves are compared."""
-    dumps = {1: [comment(1, BOT, body("open"))], 2: {"not": "an array"}}
-    code, stdout, err = _sides("bad-dump", [1, 2], dumps)
+    """The state-comment reader failing takes the whole sweep down, and the numbers already printed stay printed. Both halves are recorded."""
+    code, stdout, stderr = recorded("an-unreadable-comment-dump")
     assert code != 0
-    assert stdout == b"1\n", "the sweep did not keep the output it had already produced"
-    assert b"jq: error" in err, err
-    assert b"Cannot index string" in err, err
-    assert b"open campaign(s) across" not in err, "the summary was printed after a failure"
+    assert stdout == "1\n", "the sweep did not keep the output it had already produced"
+    assert "jq: error" in stderr, stderr
+    assert "Cannot index string" in stderr, stderr
+    assert "open campaign(s) across" not in stderr, "the summary was printed after a failure"
 
 
 def test_pure_helpers_are_exercised_directly() -> None:
@@ -232,4 +306,47 @@ def test_pure_helpers_are_exercised_directly() -> None:
         "an absent field renders as jq's `null`, not as Python's None"
     )
     assert sc.script_dir().is_dir()
-    assert os.path.isfile(sc.state_comment())
+    argv = sc.state_comment_argv()
+    assert os.path.isfile(argv[-1]), "the spawned sibling is not on disk: %r" % argv
+    assert argv[-1].endswith("/state_comment.py"), "the spawn stopped naming the port: %r" % argv
+    assert sc.child_env()["PYTHONPATH"].endswith("/.ci"), "the child cannot import rediacc_ci"
+
+
+# --------------------------------------------------------------------------- The control: these goldens can actually fail ---------------------------------------------------------------------------
+
+
+# A throwaway entry point that loads the real module, replaces its numeric sort with Python's default string sort, and runs `main`. See the control below for why the plant is a wrapper rather than a copy of the file.
+PLANT = """import sys
+
+from rediacc_ci.autopilot import sweep_campaigns as subject
+
+subject.sort_numeric = sorted
+raise SystemExit(subject.main(sys.argv[1:]))
+"""
+
+
+def test_a_planted_lexicographic_sort_is_caught(tmp_path: pathlib.Path) -> None:
+    """THE CONTROL ON THE GOLDENS, aimed at the one thing a weaker corpus would lose.
+
+    `LC_ALL=C sort -n` is a NUMERIC sort, and Python's default is not: over `21, 3, 7` the twin printed `3 7 21` and a port using plain `sorted` prints `21 3 7`. The set of numbers, the counts on stderr and the exit code are all identical, so a corpus that checked membership rather than bytes would stay green while the sweeper handed its caller a differently ordered list.
+
+    THE PLANT IS A WRAPPER, NOT A COPY OF THE FILE, and that is a property of the subject rather than a convenience. The module resolves both the sibling it spawns and that child's `PYTHONPATH` from its OWN location (`state_comment_argv`, `child_env`), so a copy at any other path spawns a reader that is not there. The wrapper imports the tracked module unmodified and replaces one
+    attribute in its own process, so the file on disk is never written to at all.
+    """
+    original = PORT.read_text(encoding="utf-8")
+
+    mutant = tmp_path / "plant" / "mutant.py"
+    mutant.parent.mkdir(parents=True)
+    mutant.write_text(PLANT, encoding="utf-8")
+
+    name = "an-unsorted-pr-list"
+    want = recorded(name)
+    assert want[1] == "3\n7\n21\n", "the recorded corpus moved"
+    planted = run(mutant, tmp_path / "planted", name)
+    assert planted[1] == "21\n3\n7\n", "the plant did not change the order"
+    assert sorted(planted[1].split()) == sorted(want[1].split()), "the plant changed the SET too"
+    assert planted[0] == want[0], "the plant was supposed to be invisible in the exit code"
+    assert planted[2] == want[2], "the plant was supposed to be invisible on stderr"
+
+    compare(tmp_path / "good", name)
+    assert PORT.read_text(encoding="utf-8") == original

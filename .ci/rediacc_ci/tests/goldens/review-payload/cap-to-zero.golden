@@ -1,0 +1,8 @@
+# twin .ci/scripts/autopilot/review-payload.sh blob f794c4b741afd63ff389bccfa70f70d3741ae824
+exit: 0
+--- stdout ---
+{"threads":[],"kept":0,"dropped":2,"bytes":2}
+--- stderr ---
+⚠ review payload capped at 10 bytes: 2 oldest thread(s) dropped, 0 kept
+--- out file ---
+<no file>

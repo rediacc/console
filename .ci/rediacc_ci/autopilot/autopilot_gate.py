@@ -54,7 +54,7 @@ ORDER IS A SECURITY PROPERTY HERE, NOT A STYLE. Three orderings in particular ar
     cannot learn the ledger's contents from which refusal it gets.
 
 -----------------------------------------------------------------------------
-WHY `jq`, `grep`, `sort` AND `state-comment.sh` ARE ALL STILL SPAWNED
+WHY `jq`, `grep`, `sort` AND THE STATE-COMMENT READER ARE ALL STILL SPAWNED
 -----------------------------------------------------------------------------
 Same rule as `finish.py` and `update_state.py` in this directory: the twin's observable behaviour on the paths a differential can reach INCLUDES the exit codes and diagnostics of the programs it spawns, and a reimplementation has to re-derive each of their rules correctly or change a decision.
 
@@ -75,7 +75,7 @@ Same rule as `finish.py` and `update_state.py` in this directory: the twin's obs
     decoded text; they agree until the input is not UTF-8, which a job display
     name from the GitHub API is not guaranteed to be. `sha256` is spawned in
     the twin and computed with `hashlib` here, because a digest is a digest.
-  * `state-comment.sh fields` is the ONE reader of the state comment's metadata
+  * `state_comment.py fields` is the ONE reader of the state comment's metadata
     line, and the twin's own comment says why: "a second copy of the format in
     this file is how the two would drift apart silently". Re-implementing it
     here would create exactly the second copy it refuses.
@@ -207,9 +207,30 @@ def script_dir() -> pathlib.Path:
     """The twin's `SCRIPT_DIR`: `.ci/scripts/autopilot`.
 
     From THIS file's location, matching `cd "$(dirname "${BASH_SOURCE[0]}")"`.
-    `rediacc_ci.paths.repo_root()` is deliberately NOT used, for the reason `update_state.py:108-115` gives: it honours `$REDIACC_CI_ROOT` and the twin honours nothing, so a port built on it would follow an env var the twin ignores and could spawn a DIFFERENT `state-comment.sh` than the twin does.
+    `rediacc_ci.paths.repo_root()` is deliberately NOT used, for the reason `update_state.py` gives at its own `script_dir`: it honours `$REDIACC_CI_ROOT` and the twin honoured nothing, so a port built on it would follow an env var the twin ignored.
     """
     return pathlib.Path(__file__).resolve().parents[3] / ".ci" / "scripts" / "autopilot"
+
+
+def fields_argv() -> list[str]:
+    """The state-comment reader, in the command form its own K=5 ledger licensed.
+
+    ITS BASH TWIN IS GONE (`.ci/shadow/w7p6-state-comment.observations.jsonl` recorded the port against it five times over, and W7P5 batch M3 deleted it), so the spawn names the port by PATH, the exact spelling that ledger carries. `-m` is deliberately not used: `check:ci-parity`'s tokenizer cannot read it.
+
+    Still SPAWNED rather than imported, for the reason the section above gives: ONE reader and ONE writer of the metadata line, and a child whose exit status propagates the way `set -e` propagated the twin's.
+    """
+    return [sys.executable, str(pathlib.Path(__file__).resolve().parent / "state_comment.py")]
+
+
+def child_env() -> dict[str, str]:
+    """This process's environment with `rediacc_ci` importable by the child.
+
+    The parent is reached through `PYTHONPATH=.ci` with the checkout as the working directory, and a child started from anywhere else would not inherit a usable one, so the absolute path is computed here rather than trusted.
+    """
+    env = dict(os.environ)
+    env["PYTHONPATH"] = str(pathlib.Path(__file__).resolve().parents[2])
+    env["PYTHONDONTWRITEBYTECODE"] = "1"
+    return env
 
 
 def bash_arith(text: str) -> int | None:
@@ -594,12 +615,12 @@ def _classify(args: dict[str, str], gate: Gate) -> Decided:
     if is_dispatch and in_csv_allowlist(dispatch_actor, applier_allowlist):
         gate.dispatch_trusted = "true"
 
-    # Campaign fields, read back through state-comment.sh rather than parsed here. The metadata line therefore has exactly ONE writer and ONE reader; a second copy of the format in this file is how the two would drift apart silently. Every value it returns is already normalized there.
+    # Campaign fields, read back through the state-comment port rather than parsed here. The metadata line therefore has exactly ONE writer and ONE reader; a second copy of the format in this file is how the two would drift apart silently. Every value it returns is already normalized there.
     campaign_fields = NO_STATE_FIELDS
     if non_empty_file(state):
-        proc = _run([str(script_dir() / "state-comment.sh"), "fields", "--body", state])
+        proc = _run([*fields_argv(), "fields", "--body", state], env=child_env())
         if proc.returncode != 0:
-            # `set -e` on a command substitution: state-comment.sh's own status.
+            # `set -e` on a command substitution: the reader's own status.
             return Decided(proc.returncode)
         campaign_fields = (proc.stdout or b"").decode("utf-8", "surrogateescape").rstrip("\n")
 

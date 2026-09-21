@@ -24,7 +24,8 @@ USAGE = """usage: epic-context.sh <epic-id> [branch]
 Prints one epic's title, its worklist items with evidence, any plan file they
 reference, and the commits carrying its PR-TASK trailer."""
 
-PLAN_RE = re.compile(r"agent/PLAN-[A-Za-z0-9._-]+\.md")
+#: Every folder a plan may live in. Mirrors `wl_planrec.PLAN_REF_RE` and `plan_lifecycle.PLAN_REF_RE`; the bash twin at `.ci/scripts/review/epic-context.sh` carries the same alternation and the two are diffed by the shadow ledger.
+PLAN_RE = re.compile(r"agent/(?:plans/(?:_done/|_removed/)?)?PLAN-[A-Za-z0-9._-]+\.md")
 
 
 def _epic_section(lines: list[str], epic: str) -> list[str]:

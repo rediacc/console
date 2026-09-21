@@ -458,7 +458,8 @@ def main(argv: list[str] | None = None) -> int:
         settings = json.loads(config.read_text(encoding="utf-8"))
         warn_days = int(settings["warn_days"])
         delete_days = int(settings["delete_days"])
-        plan_glob = str(settings["plan_glob"])
+        plan_globs = [str(g) for g in settings["plan_globs"]]
+        stub_status = str(settings["stub_status"]).lower()
     except (OSError, ValueError, KeyError, TypeError):
         # The twin runs three separate `python3 -c` calls and `|| exit 2` on each, so a config missing any one key is a SETUP error rather than a verdict. One read here, same exit code.
         return 2
@@ -489,11 +490,18 @@ def main(argv: list[str] | None = None) -> int:
     print(CONTROL_LINE_AGE)
     print(CONTROL_LINE_COMPACTION)
 
-    plans = gitx.ls_files(plan_glob, root=root)
+    # A LIST OF GLOBS, NOT ONE, since a plan gained folders. The terminal two are deliberately absent: a closed plan under `agent/plans/_done/` is on the 40-day retention clock that `check:ci-plan-folders` owns, and demanding its compaction on the way to its deletion would be two gates pulling one file in opposite directions.
+    #
+    # A STUB IS NOT A PLAN. A move leaves a pointer at the old path so every citation still resolves; on this clock it would go red 33 days after a migration that closed nothing, and the only remedy offered would be to compact a file that is three lines long.
+    plans = [
+        p
+        for p in gitx.ls_files(*plan_globs, root=root)
+        if display_status(pathlib.Path(root) / p).lower() != stub_status
+    ]
     if len(plans) < min_plans:
         print(
             "VACUOUS INPUT: found %d tracked plan file(s) matching %s, floor is %d."
-            % (len(plans), plan_glob, min_plans),
+            % (len(plans), ", ".join(plan_globs), min_plans),
             file=sys.stderr,
         )
         print(
@@ -872,7 +880,8 @@ def selftest() -> int:
             (tree / ".ci" / "config").mkdir(parents=True, exist_ok=True)
             (tree / ".ci" / "config" / "plan-lifecycle.json").write_text(
                 # `record_states` IS NOT OPTIONAL HERE. main() refuses a config without it (return 2), which is the right refusal and is why this fixture must carry it: a fixture missing the key does not test the gate, it tests the refusal, and every case below then reports 2 where it wanted 0 or 1.
-                '{"plan_glob": "agent/PLAN-*.md", "warn_days": 26, "delete_days": 33,'
+                '{"plan_globs": ["agent/PLAN-*.md", "agent/plans/PLAN-*.md"],'
+                ' "stub_status": "moved", "warn_days": 26, "delete_days": 33,'
                 ' "record_states": ["compacted", "parked"]}\n',
                 encoding="utf-8",
             )

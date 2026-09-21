@@ -1,0 +1,7 @@
+# twin .ci/scripts/autopilot/autopilot-gate.sh blob a0eb5eaa1794385f9b5e166b00d4f0099a7bac77
+exit: 0
+--- stdout ---
+{"decision":"no-go","mode":"none","reason":"stuck-signature: failed-job set 386b2639 is unchanged after 2 fix round(s); escalating rather than burning the round cap","round":3,"push_allowed":false,"armed_by":"label","model":"claude-sonnet-5","rounds_max":25,"campaign":"open","dispatch_trusted":false,"sig":"386b2639","sig_count":3}
+--- stderr ---
+--- calls ---
+[]

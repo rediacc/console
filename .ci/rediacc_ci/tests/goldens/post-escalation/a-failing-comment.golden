@@ -1,0 +1,19 @@
+# twin .ci/scripts/autopilot/post-escalation.sh blob 0daa71414af2093fd5d4bb7477014a0f7a103a83
+exit: 1
+--- stdout ---
+--- stderr ---
+⚠ escalation comment: gh call failed or returned unusable output (attempt 1/3), retrying...
+⚠ escalation comment: gh call failed or returned unusable output (attempt 2/3), retrying...
+✗ escalation comment: gh failed after 3 attempts (last exit 4).
+    gh: fake auth failure
+--- gh calls ---
+api	--method	POST	repos/acme/widget/issues/42/comments	-F	body=@<work>/body.md
+api	--method	POST	repos/acme/widget/issues/42/comments	-F	body=@<work>/body.md
+api	--method	POST	repos/acme/widget/issues/42/comments	-F	body=@<work>/body.md
+--- body ---
+### Autopilot escalation: the round could not proceed
+
+The loop is latched; clear the `autopilot-blocked` label to resume.
+
+r
+

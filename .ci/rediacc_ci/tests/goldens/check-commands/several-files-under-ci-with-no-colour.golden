@@ -1,0 +1,16 @@
+# twin .ci/scripts/security/check-commands.sh blob 89f759b8611b181b8d52d089060ce9ed590aee96
+exit: 1
+--- stdout ---
+info: Checking shell scripts for CI-incompatible commands...
+  Line: dc -e '1 2 + p'
+  Fix:  awk for calculations
+
+  Line: seq 1 3
+  Fix:  bash: for ((i=1; i<=n; i++)) or awk
+
+
+info: These commands may not be available in ubuntu-slim or other minimal CI images
+--- stderr ---
+error: .ci/x/b.sh:2: 'dc' not available in minimal CI
+error: .ci/x/a.sh:2: 'seq' not available in minimal CI
+error: Found 2 CI-incompatible command(s)

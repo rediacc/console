@@ -1,6 +1,6 @@
 """Port of `.ci/scripts/test/gates/test-ci-workflow-invariants.sh`, retired in W7 P5.
 
-Both-ways test for `.ci/scripts/security/check-ci-workflow-invariants.sh`.
+Both-ways test for `.ci/rediacc_ci/security/ci_workflow_invariants.py`, in the command form its own K=5 ledger licensed.
 
 THE METHOD IS THE POINT: a static check that has never been watched FAILING is indistinguishable from `true`. So the invariant is proven in both directions -- the real `ci.yml` passes, and a workflow with the invariant broken must exit 1 with the pinned diagnostic.
 
@@ -30,7 +30,7 @@ import pathlib
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 
-GATE = paths.from_root(".ci", "scripts", "security", "check-ci-workflow-invariants.sh")
+GATE = paths.from_root(".ci", "rediacc_ci", "security", "ci_workflow_invariants.py")
 REAL = paths.from_root(".github", "workflows", "ci.yml")
 
 HISTORICAL_COMMIT = "6584a8795"
@@ -41,7 +41,13 @@ def run_gate(gate, workflow: pathlib.Path) -> harness.RunResult:
     if not GATE.is_file():
         gate.log_fail("subject under test is missing: %s" % paths.relative_to_root(GATE))
     return harness.run(
-        ["bash", str(GATE)], cwd=paths.repo_root(), env={"WORKFLOW_FILE": str(workflow)}
+        ["python3", str(GATE)],
+        cwd=paths.repo_root(),
+        env={
+            "WORKFLOW_FILE": str(workflow),
+            "PYTHONPATH": ".ci",
+            "PYTHONDONTWRITEBYTECODE": "1",
+        },
     )
 
 

@@ -1,0 +1,27 @@
+# twin .ci/scripts/autopilot/autopilot-push.sh blob e560c38956d694662edcc15b3b5f48c3bb23b63d
+exit: 1
+--- stdout ---
+--- stderr ---
+✗ branch-forbidden: the autopilot never pushes 'main'
+--- git calls ---
+rev-parse	--abbrev-ref	HEAD
+--- gh calls ---
+--- git state ---
+{
+  "console": {
+    "branch": "main",
+    "head": "18d324309f358efb4e98af4de1926febf0ff3ea5",
+    "status": "M private/renet\n?? handoff.json"
+  },
+  "console.git": {
+    "refs": ""
+  },
+  "console/private/renet": {
+    "branch": "main",
+    "head": "9c2e1ec4aa2994a5503f57c92213d4a4244d181c",
+    "status": "M main.go"
+  },
+  "renet.git": {
+    "refs": "refs/heads/main 9c2e1ec4aa2994a5503f57c92213d4a4244d181c"
+  }
+}

@@ -615,9 +615,15 @@
       "PLAN_HK_MIN_FILES",
       "PLAN_HK_ROOT"
     ],
+    ".ci/rediacc_ci/quality/plan_lifecycle.py": [
+      "PLAN_FOLDERS_MIN_PLANS",
+      "PLAN_FOLDERS_ROOT"
+    ],
     ".ci/rediacc_ci/quality/pool_writer_safety.py": [
+      "*name",
       "POOL_SAFETY_GATES_DIR",
-      "POOL_SAFETY_LOCK"
+      "POOL_SAFETY_LOCK",
+      "POOL_SAFETY_PORTS_DIR"
     ],
     ".ci/rediacc_ci/quality/pr_description.py": [
       "*name",
@@ -751,6 +757,12 @@
       "*name",
       "TRAP_FLOOR"
     ],
+    ".ci/rediacc_ci/quality/tree_shape.py": [
+      "TREE_SHAPE_MIN_AGENT",
+      "TREE_SHAPE_MIN_ROOT",
+      "TREE_SHAPE_MIN_ROOT_DIRS",
+      "TREE_SHAPE_ROOT"
+    ],
     ".ci/rediacc_ci/quality/vendored_blocker_derivation.py": [
       "VENDORED_BLOCKER_ROOT"
     ],
@@ -781,6 +793,10 @@
       "CLOUDFLARE_R2_SECRET_ACCESS_KEY",
       "GITHUB_REPOSITORY",
       "RELEASES_BUCKET"
+    ],
+    ".ci/rediacc_ci/release/assert_r2_sentinel.py": [
+      "CLOUDFLARE_R2_ACCESS_KEY_ID",
+      "CLOUDFLARE_R2_SECRET_ACCESS_KEY"
     ],
     ".ci/rediacc_ci/release/backfill_write_sentinel.py": [
       "*name"
@@ -1044,9 +1060,6 @@
     ".ci/rediacc_ci/tests/test_autopilot_fetch_review_threads.py": [
       "PATH"
     ],
-    ".ci/rediacc_ci/tests/test_autopilot_finish.py": [
-      "HOME"
-    ],
     ".ci/rediacc_ci/tests/test_autopilot_gate.py": [
       "PATH"
     ],
@@ -1082,11 +1095,7 @@
       "PATH"
     ],
     ".ci/rediacc_ci/tests/test_autopilot_sweep_campaigns.py": [
-      "HOME",
       "PATH"
-    ],
-    ".ci/rediacc_ci/tests/test_autopilot_sweep_collect.py": [
-      "HOME"
     ],
     ".ci/rediacc_ci/tests/test_autopilot_update_state.py": [
       "PATH"
@@ -1278,9 +1287,6 @@
     ],
     ".ci/rediacc_ci/tests/test_infra_docker_pull_ghcr.py": [
       "PATH"
-    ],
-    ".ci/rediacc_ci/tests/test_infra_verify_ssh.py": [
-      "HOME"
     ],
     ".ci/rediacc_ci/tests/test_proxies_ensure_nfpm.py": [
       "HOME",
@@ -1488,6 +1494,9 @@
       "PLAN_CITATIONS_MAX_SHOWN",
       "PLAN_CITATIONS_OBJECT_MIN",
       "PLAN_CITATIONS_ROOT"
+    ],
+    ".ci/scripts/quality/check_plan_folders.py": [
+      "PLAN_FOLDERS_STRICT"
     ],
     ".ci/scripts/quality/check_plan_record.py": [
       "PLAN_RECORD_CENSUS_DAYS",
@@ -1781,6 +1790,9 @@
     ".claude/rediacc_hooks/hookio.py": [
       "PATH"
     ],
+    ".claude/rediacc_hooks/lifecycle.py": [
+      "REDIACC_HOOK_SETTINGS"
+    ],
     ".claude/rediacc_hooks/proc.py": [
       "REDIACC_PROC_BACKEND"
     ],
@@ -1807,13 +1819,25 @@
     ".claude/rediacc_hooks/tests/test_hooks_procs.py": [
       "REDIACC_TIMEOUT_BIN"
     ],
+    ".claude/rediacc_hooks/tests/test_post_bash_differential.py": [
+      "PATH"
+    ],
     ".claude/rediacc_hooks/tests/test_proc.py": [
       "HOME",
+      "PATH"
+    ],
+    ".claude/rediacc_hooks/tests/test_settings_collapse.py": [
       "PATH"
     ],
     ".claude/rediacc_hooks/tests/test_shellscan_differential.py": [
       "HOME",
       "PATH"
+    ],
+    ".claude/rediacc_hooks/tests/test_wl_report_inbox.py": [
+      "TMPDIR"
+    ],
+    "conftest.py": [
+      "TREE_SNAPSHOT"
     ],
     "packages/json/templates/networking/cloud-switch/web/app.py": [
       "FLASK_DEBUG"

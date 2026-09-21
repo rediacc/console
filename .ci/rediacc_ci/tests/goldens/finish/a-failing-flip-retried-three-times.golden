@@ -1,0 +1,12 @@
+# twin .ci/scripts/autopilot/finish.sh blob bbd07cd04054c2a832b2393721d680966ef32ade
+exit: 1
+--- stdout ---
+--- stderr ---
+⚠ ready-flip: gh call failed or returned unusable output (attempt 1/3), retrying...
+⚠ ready-flip: gh call failed or returned unusable output (attempt 2/3), retrying...
+✗ ready-flip: gh failed after 3 attempts (last exit 4).
+    gh: HTTP 401 Bad credentials
+--- gh calls ---
+pr	ready	5	--repo	r/c
+pr	ready	5	--repo	r/c
+pr	ready	5	--repo	r/c

@@ -1,0 +1,14 @@
+# twin .ci/scripts/security/shellcheck.sh blob bd92dcbb76ec0045ffcf3b0c134ff17ff2294284
+exit: 0
+--- stdout ---
+info: Checking shell script compatibility
+ShellCheck - fake
+version: 9.99.0
+info: Checking every tracked and untracked *.sh file
+info: 5 file(s)
+info: Checking build scripts for bash 4+ features (macOS compatibility)
+success: Shell scripts passed
+--- stderr ---
+--- calls ---
+FAKECALL shellcheck -e SC1090 -e SC1091 -e SC2034 -S warning .ci/config/constants.sh .ci/scripts/lib/toolchain.sh .ci/scripts/security/shellcheck.sh run.sh scripts/one.sh
+FAKEBATCH 5

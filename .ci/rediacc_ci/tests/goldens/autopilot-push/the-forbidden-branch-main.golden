@@ -1,0 +1,19 @@
+# twin .ci/scripts/autopilot/autopilot-push.sh blob e560c38956d694662edcc15b3b5f48c3bb23b63d
+exit: 1
+--- stdout ---
+--- stderr ---
+✗ branch-forbidden: the autopilot never pushes 'main'
+--- git calls ---
+rev-parse	--abbrev-ref	HEAD
+--- gh calls ---
+--- git state ---
+{
+  "console": {
+    "branch": "main",
+    "head": "d36ce653845de891a11327bdada5192925f9bbbf",
+    "status": "?? handoff.json\n?? src.txt"
+  },
+  "console.git": {
+    "refs": ""
+  }
+}

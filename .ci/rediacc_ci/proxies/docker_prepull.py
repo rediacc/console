@@ -16,6 +16,7 @@ K=5 LEDGER: `.ci/shadow/w7p6-proxy-docker-prepull.observations.jsonl`.
 
 from __future__ import annotations
 
+import os
 import subprocess
 import sys
 
@@ -23,6 +24,9 @@ from rediacc_ci import paths
 from rediacc_ci.core import proxyx
 
 IMAGE = "hello-world:latest"
+
+# The subject, which is the PORT since W7P6 retired `.ci/scripts/infra/docker-prepull.sh`.
+SUBJECT_REL = ".ci/rediacc_ci/infra/docker_prepull.py"
 
 
 def _image_present(image: str) -> bool:
@@ -39,10 +43,14 @@ def _image_present(image: str) -> bool:
 
 def run() -> int:
     root = paths.repo_root()
-    subject = str(root / ".ci" / "scripts" / "infra" / "docker-prepull.sh")
+    subject_path = str(root / SUBJECT_REL)
+    # The licensed command form from the subject's own ledger, `python3 <path>` with `PYTHONPATH=.ci`. The interpreter is spelled `python3` rather than `sys.executable` so that this proxy and its bash twin build the same argv.
+    subject = ["python3", subject_path]
+    # ABSOLUTE, and set for both proxies alike: the subject imports `rediacc_ci`, and a relative `.ci` would depend on the directory the proxy happened to be started from.
+    os.environ["PYTHONPATH"] = str(root / ".ci")
 
-    p = proxyx.Proxy("docker-prepull", ".ci/scripts/infra/docker-prepull.sh")
-    p.need_exec(subject, "the subject script is missing from this checkout")
+    p = proxyx.Proxy("docker-prepull", SUBJECT_REL)
+    p.need_exec(subject_path, "the subject script is missing from this checkout")
     p.need_docker_daemon()
     p.need_url(
         "https://registry-1.docker.io/v2/",
@@ -53,7 +61,7 @@ def run() -> int:
     preexisting = _image_present(IMAGE)
     try:
         # No arguments is refused, not an empty success.
-        p.expect_exit("1", "no arguments is refused, not treated as an empty success", [subject])
+        p.expect_exit("1", "no arguments is refused, not treated as an empty success", [*subject])
         p.expect_contains(
             p.last_stderr + p.last_stdout,
             "Usage:",
@@ -61,7 +69,7 @@ def run() -> int:
         )
 
         # Bare ref.
-        p.expect_exit("0", "a bare ref pulls", [subject, IMAGE])
+        p.expect_exit("0", "a bare ref pulls", [*subject, IMAGE])
         p.expect_contains(
             p.last_stderr + p.last_stdout,
             "Pre-pulled 1 base image",
@@ -77,7 +85,7 @@ def run() -> int:
             )
 
         # "<ref>=<platform>".
-        p.expect_exit("0", "the <ref>=<platform> form pulls", [subject, f"{IMAGE}=linux/amd64"])
+        p.expect_exit("0", "the <ref>=<platform> form pulls", [*subject, f"{IMAGE}=linux/amd64"])
         p.expect_contains(
             p.last_stderr + p.last_stdout,
             "Pre-pulled 1 base image",
@@ -85,7 +93,7 @@ def run() -> int:
         )
 
         # Two specs in one call.
-        p.expect_exit("0", "two specs in one call", [subject, IMAGE, f"{IMAGE}=linux/amd64"])
+        p.expect_exit("0", "two specs in one call", [*subject, IMAGE, f"{IMAGE}=linux/amd64"])
         p.expect_contains(
             p.last_stderr + p.last_stdout,
             "Pre-pulled 2 base image",

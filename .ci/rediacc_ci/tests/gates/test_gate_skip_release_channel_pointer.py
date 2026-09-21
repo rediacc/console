@@ -527,5 +527,5 @@ def test_the_fixture_shape_is_non_trivial(gate, sandbox):
     gate.log_info(
         "BLIND SPOT: this cannot see whether any workflow PASSES --skip-release/SKIP_RELEASE. "
         "A flag nobody passes would leave every case above green. That wiring is "
-        "check-ci-workflow-invariants.sh's subject, not this file's."
+        "rediacc_ci.security.ci_workflow_invariants's subject, not this file's."
     )

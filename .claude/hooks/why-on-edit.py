@@ -114,7 +114,10 @@ def similar_plans(root, slug):
         return []
     out = []
     try:
-        others = sorted((root / "agent").glob("PLAN-*.md"))
+        # RECURSIVE since a plan gained folders. A near-duplicate slug is exactly as confusing when the twin sits in `agent/plans/_done/`, and a non-recursive glob would stop seeing the whole corpus the day the migration lands.
+        others = sorted((root / "agent").glob("PLAN-*.md")) + sorted(
+            (root / "agent" / "plans").glob("**/PLAN-*.md")
+        )
     except OSError:
         return []
     for p in others:

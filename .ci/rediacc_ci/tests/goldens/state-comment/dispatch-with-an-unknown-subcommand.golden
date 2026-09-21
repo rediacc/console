@@ -1,0 +1,5 @@
+# twin .ci/scripts/autopilot/state-comment.sh blob 8e2824ffbb16ae3acc60af3c8520f7aeccc1f233
+exit: 2
+--- stdout ---
+--- stderr ---
+✗ unknown subcommand 'bogus' (select|render|fields)

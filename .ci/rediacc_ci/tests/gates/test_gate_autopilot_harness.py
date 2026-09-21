@@ -6,7 +6,7 @@ Tests for the Wave C autopilot harness (`.ci/scripts/autopilot/`), the determini
      `validate-handoff.cjs` -> `exfil-tripwire.cjs` -> `autopilot-push.sh`, and every
      rejection is a LOUD escalation, never a silent no-op.
   2. WALL 4: on `workflow_run` the action's `.claude/` protection never fires while
-     `.claude/hooks/**` still execute, so `restore-trusted-config.sh` is the only thing
+     `.claude/hooks/**` still execute, so `rediacc_ci.autopilot.restore_trusted_config` is the only thing
      standing between PR-authored hook code and a shell.
 
 House doctrine throughout: controls in BOTH directions. Every rejection class is asserted by its pinned diagnostic AND paired with the passing control; the tripwire must FIRE on a planted exfiltration shape AND stay quiet on a legitimate fix; the restore assert must go red WITHOUT restore and green with it. A validator proven only on valid input proves nothing.
@@ -38,19 +38,20 @@ from rediacc_ci.tests.gates import harness
 AUTOPILOT = paths.from_root(".ci", "scripts", "autopilot")
 VALIDATE = AUTOPILOT / "validate-handoff.cjs"
 TRIPWIRE = AUTOPILOT / "exfil-tripwire.cjs"
-RESTORE = AUTOPILOT / "restore-trusted-config.sh"
-PUSH = AUTOPILOT / "autopilot-push.sh"
-GATE = AUTOPILOT / "autopilot-gate.sh"
-STATE_COMMENT = AUTOPILOT / "state-comment.sh"
-FINISH = AUTOPILOT / "finish.sh"
-PAYLOAD = AUTOPILOT / "review-payload.sh"
-REVIEW_REPLY = AUTOPILOT / "review-reply.sh"
-SWEEP = AUTOPILOT / "sweep-campaigns.sh"
 LINKED_MODULE = "rediacc_ci.autopilot.linked_sub_prs"
 COMPOSE_MODULE = "rediacc_ci.autopilot.compose_prompt"
-UPDATE_STATE = AUTOPILOT / "update-state.sh"
-POST_ESC = AUTOPILOT / "post-escalation.sh"
-MARGS = AUTOPILOT / "resolve-model-args.sh"
+# The five subjects W7P5 batch M2 retired. Each is driven here the way `.github/workflows/autopilot.yml` drives it, as a module rather than a path: the twins are gone and their recorded bytes live in `.ci/rediacc_ci/tests/goldens/`.
+RESTORE_MODULE = "rediacc_ci.autopilot.restore_trusted_config"
+UPDATE_STATE_MODULE = "rediacc_ci.autopilot.update_state"
+GATE_MODULE = "rediacc_ci.autopilot.autopilot_gate"
+PAYLOAD_MODULE = "rediacc_ci.autopilot.review_payload"
+PUSH_MODULE = "rediacc_ci.autopilot.autopilot_push"
+STATE_COMMENT_MODULE = "rediacc_ci.autopilot.state_comment"
+SWEEP_MODULE = "rediacc_ci.autopilot.sweep_campaigns"
+FINISH_MODULE = "rediacc_ci.autopilot.finish"
+REVIEW_REPLY_MODULE = "rediacc_ci.autopilot.review_reply"
+POST_ESC_MODULE = "rediacc_ci.autopilot.post_escalation"
+MARGS_MODULE = "rediacc_ci.autopilot.resolve_model_args"
 SCOPE_MAP = paths.from_root(".ci", "scripts", "ci", "scope-map.cjs")
 
 HEADSHA = "1234567890abcdef1234567890abcdef12345678"
@@ -71,10 +72,6 @@ AUTOPILOT_VARS = (
 )
 
 
-def bash_bin() -> str:
-    return harness.require_tool("bash", "install bash; most autopilot subjects are bash")
-
-
 def node_bin() -> str:
     return harness.require_tool("node", "install Node 22 (the validator and tripwire are .cjs)")
 
@@ -87,6 +84,19 @@ def clean_env(**overrides: str) -> dict[str, str]:
     env = dict.fromkeys(AUTOPILOT_VARS, "")
     env.update(overrides)
     return env
+
+
+def run_port(module: str, *args: str, **env: str) -> harness.RunResult:
+    """One retired twin's port, driven the way the workflow drives it.
+
+    `PYTHONPATH=.ci` with `cwd` at the checkout root is the licensed spelling from each pair's shadow ledger, and it is what `autopilot.yml` runs; a path invocation would be a third way of reaching these modules that nothing in CI uses.
+    """
+    return harness.run(
+        ["python3", "-m", module, *args],
+        cwd=paths.repo_root(),
+        env=clean_env(PYTHONPATH=".ci", PYTHONDONTWRITEBYTECODE="1", **env),
+        timeout=180,
+    )
 
 
 def dumps(value: object) -> str:
@@ -768,11 +778,10 @@ def test_tripwire_hops_reuse_scope_engine(gate):
     gate.log_pass("hops 1 and 2 flow through EXPECTED_JOB_NAMES and JOB_SURFACES as designed")
 
 
-# --------------------------------------------------------------------------- restore-trusted-config.sh: the wall 4 mitigation, proven in both directions. ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- restore_trusted_config: the wall 4 mitigation, proven in both directions. ---------------------------------------------------------------------------
 
 
 def test_restore_quarantines_tampered_config(gate, tmp_path):
-    require_subjects(gate, RESTORE)
     base = tmp_path / "wall4" / "checkout"
     snap = tmp_path / "wall4" / "snap"
     quar = tmp_path / "wall4" / "quarantine"
@@ -783,7 +792,7 @@ def test_restore_quarantines_tampered_config(gate, tmp_path):
     (base / "CLAUDE.md").write_text("trusted instructions\n", encoding="utf-8")
 
     def restore(*args: str) -> harness.RunResult:
-        return harness.run([bash_bin(), str(RESTORE), *args], env=clean_env(), timeout=180)
+        return run_port(RESTORE_MODULE, *args)
 
     restore("snapshot", "--checkout", str(base), "--snapshot", str(snap))
 
@@ -838,34 +847,24 @@ def test_restore_quarantines_tampered_config(gate, tmp_path):
 
 
 def test_restore_fails_closed_without_snapshot(gate, tmp_path):
-    require_subjects(gate, RESTORE)
     base = tmp_path / "wall4b" / "checkout"
     base.mkdir(parents=True)
     missing = tmp_path / "wall4b" / "never-made"
-    result = harness.run(
-        [
-            bash_bin(),
-            str(RESTORE),
-            "restore",
-            "--checkout",
-            str(base),
-            "--snapshot",
-            str(missing),
-            "--quarantine",
-            str(tmp_path / "wall4b" / "q"),
-        ],
-        env=clean_env(),
-        timeout=180,
+    result = run_port(
+        RESTORE_MODULE,
+        "restore",
+        "--checkout",
+        str(base),
+        "--snapshot",
+        str(missing),
+        "--quarantine",
+        str(tmp_path / "wall4b" / "q"),
     )
     gate.assert_eq(result.rc, 1, "restore without a snapshot manifest must fail")
     gate.assert_contains(
         result.err, "snapshot manifest missing", "fail closed: no trusted baseline, no proceed"
     )
-    result = harness.run(
-        [bash_bin(), str(RESTORE), "assert", "--checkout", str(base), "--snapshot", str(missing)],
-        env=clean_env(),
-        timeout=180,
-    )
+    result = run_port(RESTORE_MODULE, "assert", "--checkout", str(base), "--snapshot", str(missing))
     gate.assert_eq(result.rc, 1, "assert without a snapshot fails too")
     gate.log_pass("a missing snapshot is a hard failure, never an implicit pass")
 
@@ -899,8 +898,9 @@ class PushRepo:
         )
         result = harness.run(
             [
-                bash_bin(),
-                str(PUSH),
+                "python3",
+                "-m",
+                PUSH_MODULE,
                 "--root",
                 str(self.root),
                 "--handoff",
@@ -909,7 +909,8 @@ class PushRepo:
                 branch,
                 *args,
             ],
-            env=overlay,
+            cwd=paths.repo_root(),
+            env={**overlay, "PYTHONPATH": ".ci", "PYTHONDONTWRITEBYTECODE": "1"},
             timeout=300,
         )
         self.out = result.out
@@ -941,7 +942,6 @@ def mk_handoff_at(
 
 
 def test_push_dry_run_happy_path(gate, tmp_path):
-    require_subjects(gate, PUSH)
     r = PushRepo(tmp_path / "push-happy", "fix-branch")
     with (r.root / "packages/cli/src/x.ts").open("a", encoding="utf-8") as handle:
         handle.write("fixed\n")
@@ -963,7 +963,6 @@ def test_push_dry_run_happy_path(gate, tmp_path):
 
 
 def test_push_stage_flag_fails_closed(gate, tmp_path):
-    require_subjects(gate, PUSH)
     r = PushRepo(tmp_path / "push-flag", "fix-branch")
     with (r.root / "packages/cli/src/x.ts").open("a", encoding="utf-8") as handle:
         handle.write("fixed\n")
@@ -976,7 +975,6 @@ def test_push_stage_flag_fails_closed(gate, tmp_path):
 
 
 def test_push_branch_checks_are_hardcoded(gate, tmp_path):
-    require_subjects(gate, PUSH)
     r = PushRepo(tmp_path / "push-branch", "fix-branch")
     with (r.root / "packages/cli/src/x.ts").open("a", encoding="utf-8") as handle:
         handle.write("fixed\n")
@@ -1001,7 +999,6 @@ def test_push_branch_checks_are_hardcoded(gate, tmp_path):
 
 
 def test_push_rejected_handoff_commits_nothing(gate, tmp_path):
-    require_subjects(gate, PUSH)
     r = PushRepo(tmp_path / "push-reject", "fix-branch")
     with (r.root / "packages/cli/src/x.ts").open("a", encoding="utf-8") as handle:
         handle.write("fixed\n")
@@ -1015,7 +1012,6 @@ def test_push_rejected_handoff_commits_nothing(gate, tmp_path):
 
 
 def test_push_tripped_tripwire_commits_nothing(gate, tmp_path):
-    require_subjects(gate, PUSH)
     r = PushRepo(tmp_path / "push-trip", "fix-branch")
     # A new in-repo file over 8KB: passes the validator (it is dirty and declared) and must then trip rule 2 BEFORE any commit exists.
     (r.root / "packages/cli/src/blob.txt").write_text("y" * 10240, encoding="utf-8")
@@ -1035,7 +1031,6 @@ def test_push_tripped_tripwire_commits_nothing(gate, tmp_path):
 
 
 def test_push_escalate_is_a_result_not_a_failure(gate, tmp_path):
-    require_subjects(gate, PUSH)
     r = PushRepo(tmp_path / "push-escalate", "fix-branch")
     # Clean tree: an escalating round changed nothing, and a dirty one would (correctly) die as undeclared-dirty instead.
     payload = json.loads(
@@ -1072,7 +1067,6 @@ def test_push_escalate_is_a_result_not_a_failure(gate, tmp_path):
 
 def test_push_escalate_without_a_reason_is_still_rejected(gate, tmp_path):
     """THE CONTROL THAT MATTERS: making escalate exit 0 must not make it a way to end a round quietly. A reasonless escalation is still a rejection."""
-    require_subjects(gate, PUSH)
     r = PushRepo(tmp_path / "push-escalate-bad", "fix-branch")
     payload = json.loads(
         mk_handoff_at(tmp_path / "escbad.json", [], "escalate", r.head).read_text(encoding="utf-8")
@@ -1098,7 +1092,6 @@ def test_push_escalate_without_a_reason_is_still_rejected(gate, tmp_path):
 
 
 def test_push_no_change_outcome(gate, tmp_path):
-    require_subjects(gate, PUSH)
     r = PushRepo(tmp_path / "push-nochange", "fix-branch")
     payload = json.loads(
         mk_handoff_at(tmp_path / "nc.json", [], "no-change", r.head).read_text(encoding="utf-8")
@@ -1132,7 +1125,6 @@ def test_push_no_change_outcome(gate, tmp_path):
 
 def test_push_publishes_the_verdict_on_the_push_path_too(gate, tmp_path):
     """CONTROL for the whole outcome branch: the push path is unchanged, and it publishes the same verdict file, so no caller has to re-parse the untrusted handoff."""
-    require_subjects(gate, PUSH)
     r = PushRepo(tmp_path / "push-verdict", "fix-branch")
     with (r.root / "packages/cli/src/x.ts").open("a", encoding="utf-8") as handle:
         handle.write("fixed\n")
@@ -1272,8 +1264,9 @@ class SubFixture:
         """
         result = harness.run(
             [
-                bash_bin(),
-                str(PUSH),
+                "python3",
+                "-m",
+                PUSH_MODULE,
                 "--root",
                 str(self.parent),
                 "--handoff",
@@ -1282,11 +1275,14 @@ class SubFixture:
                 branch,
                 *args,
             ],
+            cwd=paths.repo_root(),
             env=clean_env(
                 AUTOPILOT_GIT_NAME="Autopilot Test",
                 AUTOPILOT_GIT_EMAIL="autopilot@example.invalid",
                 AUTOPILOT_ALLOW_SUBMODULES=sub_flag,
                 AUTOPILOT_ALLOW_PUSH=push_flag,
+                PYTHONPATH=".ci",
+                PYTHONDONTWRITEBYTECODE="1",
             ),
             timeout=300,
         )
@@ -1325,7 +1321,6 @@ def write_sub_change(fx: SubFixture) -> None:
 
 
 def test_push_submodule_happy_path(gate, tmp_path):
-    require_subjects(gate, PUSH)
     fx = SubFixture(tmp_path / "sub-happy", "fix-branch")
     write_sub_change(fx)
     h = fx.mk_handoff(tmp_path / "sub-ok.json", ["private/renet"], ["pkg/x.go"])
@@ -1368,7 +1363,6 @@ def test_push_submodule_happy_path(gate, tmp_path):
 
 
 def test_push_submodule_dry_run_writes_no_remote(gate, tmp_path):
-    require_subjects(gate, PUSH)
     fx = SubFixture(tmp_path / "sub-dry", "fix-branch")
     write_sub_change(fx)
     h = fx.mk_handoff(tmp_path / "sub-dry.json", ["private/renet"], ["pkg/x.go"])
@@ -1399,7 +1393,6 @@ def test_push_submodule_dry_run_writes_no_remote(gate, tmp_path):
 
 
 def test_push_submodule_requires_the_stage_flag(gate, tmp_path):
-    require_subjects(gate, PUSH)
     fx = SubFixture(tmp_path / "sub-flag", "fix-branch")
     write_sub_change(fx)
     h = fx.mk_handoff(tmp_path / "sub-flag.json", ["private/renet"], ["pkg/x.go"])
@@ -1427,7 +1420,6 @@ def test_push_submodule_requires_the_stage_flag(gate, tmp_path):
 
 
 def test_push_submodule_file_outside_the_submodule(gate, tmp_path):
-    require_subjects(gate, PUSH)
     fx = SubFixture(tmp_path / "sub-escape", "fix-branch")
     write_sub_change(fx)
     # Traversal out of the submodule and back into console.
@@ -1468,7 +1460,6 @@ def test_push_submodule_file_outside_the_submodule(gate, tmp_path):
 
 
 def test_push_submodule_gitlink_must_be_declared(gate, tmp_path):
-    require_subjects(gate, PUSH)
     fx = SubFixture(tmp_path / "sub-gitlink", "fix-branch")
     write_sub_change(fx)
     # submodules[] present, but files[] does not declare the gitlink: the submodule commit would be pushed and then referenced by nothing.
@@ -1491,7 +1482,6 @@ def test_push_submodule_gitlink_must_be_declared(gate, tmp_path):
 
 
 def test_push_submodule_tripwire_fires(gate, tmp_path):
-    require_subjects(gate, PUSH)
     fx = SubFixture(tmp_path / "sub-trip", "fix-branch")
     (fx.sub / "pkg" / "blob.txt").write_text("y" * 10240, encoding="utf-8")
     h = fx.mk_handoff(tmp_path / "sub-trip.json", ["private/renet"], ["pkg/blob.txt"])
@@ -1516,7 +1506,6 @@ def test_push_submodule_tripwire_fires(gate, tmp_path):
 
 def test_push_validation_failure_leaves_no_remote_write(gate, tmp_path):
     """THE TRANSACTION ORDER. Submodules used to be pushed inside their own loop, so a CONSOLE-side refusal arrived after renet already had a branch on its remote: a published commit belonging to a console commit that was never made."""
-    require_subjects(gate, PUSH)
     fx = SubFixture(tmp_path / "sub-txn", "fix-branch")
     write_sub_change(fx)
     # An untracked DIRECTORY is dirty as `docs/` but stages as its files, so `git add -- docs/` expands and the staged set stops equalling the declared one. That is a real pathspec expansion, and it fails on the CONSOLE side, after the submodule has already been committed locally.
@@ -1570,7 +1559,6 @@ def test_push_validation_failure_leaves_no_remote_write(gate, tmp_path):
 
 def test_push_submodule_adopts_our_own_orphan(gate, tmp_path):
     """A previous round pushed the submodule and never landed its console half. This round branches from the recorded pointer, so its push is rejected as non-fast-forward BY A COMMIT THIS SYSTEM WROTE. Refusing there strands the campaign."""
-    require_subjects(gate, PUSH)
     fx = SubFixture(tmp_path / "sub-orphan", "fix-branch")
     orphan = fx.mk_orphan("fix-branch", "autopilot@example.invalid")
     write_sub_change(fx)
@@ -1613,7 +1601,6 @@ def test_push_submodule_adopts_our_own_orphan(gate, tmp_path):
 
 def test_push_submodule_refuses_a_foreign_branch(gate, tmp_path):
     """The other direction, and the one that matters more: a branch of the same name written by someone else is not ours to rewrite."""
-    require_subjects(gate, PUSH)
     fx = SubFixture(tmp_path / "sub-foreign", "fix-branch")
     foreign = fx.mk_orphan("fix-branch", "someone-else@example.invalid")
     write_sub_change(fx)
@@ -1640,7 +1627,6 @@ def test_push_submodule_refuses_a_foreign_branch(gate, tmp_path):
 
 def test_push_submodule_adoption_needs_resolvable_main(gate, tmp_path):
     """The ancestry half of the adoption check needs $REMOTE/main. When it is unresolvable even after a fetch, the guard must REFUSE rather than fall through to the identity check alone: a committer email is the forgeable half, and "both required" has to mean both. (Review observation on a2559c9: the old code swallowed the rev-parse failure.)"""
-    require_subjects(gate, PUSH)
     fx = SubFixture(tmp_path / "sub-nomain", "fix-branch")
     fx.mk_orphan("fix-branch", "autopilot@example.invalid")
     # Make main genuinely unresolvable: gone from the bare origin (so the rescue fetch finds nothing) and gone from the checkout's tracking refs.
@@ -1660,7 +1646,6 @@ def test_push_submodule_adoption_needs_resolvable_main(gate, tmp_path):
 
 def test_push_submodule_branch_forbidden_touches_nothing(gate, tmp_path):
     """The submodule branch name IS the console branch name, so `main` is refused by the parent's own branch check before any submodule is opened."""
-    require_subjects(gate, PUSH)
     fx = SubFixture(tmp_path / "sub-main", "main")
     write_sub_change(fx)
     h = fx.mk_handoff(tmp_path / "sub-main.json", ["private/renet"], ["pkg/x.go"])
@@ -1684,7 +1669,6 @@ def test_push_submodule_uninitialized_never_writes_the_parent(gate, tmp_path):
 
     WHAT THIS DOES AND DOES NOT PROVE. It proves the OUTCOME (refused, and nothing flattened into the parent). It does NOT exercise the submodule-not-initialized guard in autopilot-push.sh: an uninitialized submodule makes the parent report nothing dirty at that path, so the round dies earlier at path-not-dirty. That guard is documented at its own site as unreachable-today
     defence in depth, rather than counted here as a control it is not."""
-    require_subjects(gate, PUSH)
     fx = SubFixture(tmp_path / "sub-uninit", "fix-branch")
     # `rm -rf private/renet/.git`, and the FILE case is the one that matters. Modern `git submodule add` writes a GITFILE there, not a directory, so `shutil.rmtree`
     # alone silently removes nothing under `ignore_errors=True` and the case then runs
@@ -1846,10 +1830,8 @@ def mk_state(
 
 def run_gate(gate, event: pathlib.Path, pr: pathlib.Path, *args: str, **env: str) -> dict:
     """`--classify`, parsed. A non-JSON answer is a LOUD failure rather than a KeyError three assertions later."""
-    result = harness.run(
-        [bash_bin(), str(GATE), "--classify", "--event", str(event), "--pr", str(pr), *args],
-        env=clean_env(**env),
-        timeout=180,
+    result = run_port(
+        GATE_MODULE, "--classify", "--event", str(event), "--pr", str(pr), *args, **env
     )
     try:
         return json.loads(result.out)
@@ -1865,7 +1847,6 @@ ARMED = {"AUTOPILOT_ENABLED": "true", "AUTOPILOT_AUTHOR_ALLOWLIST": "op"}
 
 
 def test_gate_stage_flags_fail_closed(gate, tmp_path):
-    require_subjects(gate, GATE)
     event = mk_event(tmp_path / "ev.json", "failure")
     pr = mk_pr(tmp_path / "pr.json")
     d = run_gate(gate, event, pr)
@@ -1882,7 +1863,6 @@ def test_gate_stage_flags_fail_closed(gate, tmp_path):
 
 
 def test_gate_fork_guard(gate, tmp_path):
-    require_subjects(gate, GATE)
     event = mk_event(tmp_path / "ev.json", "failure")
     fork_pr = mk_pr(tmp_path / "pr-fork.json", head_repo="stranger/console-fork")
     d = run_gate(gate, event, fork_pr, **ARMED)
@@ -1895,7 +1875,6 @@ def test_gate_fork_guard(gate, tmp_path):
 
 
 def test_gate_label_and_allowlists(gate, tmp_path):
-    require_subjects(gate, GATE)
     event = mk_event(tmp_path / "ev.json", "failure")
     # 'not-armed' rather than the old 'label-absent': since the campaign work the label is one of three ways in, so the reason names all three and the state it read.
     d = run_gate(gate, event, mk_pr(tmp_path / "pr-nolabel.json", labels=[]), **ARMED)
@@ -1926,7 +1905,6 @@ def test_gate_label_and_allowlists(gate, tmp_path):
 
 
 def test_gate_arming_label_only(gate, tmp_path):
-    require_subjects(gate, GATE)
     d = run_gate(
         gate, mk_event(tmp_path / "ev.json", "failure"), mk_pr(tmp_path / "pr.json"), **ARMED
     )
@@ -1942,7 +1920,6 @@ def test_gate_arming_label_only(gate, tmp_path):
 
 
 def test_gate_arming_dispatch_only(gate, tmp_path):
-    require_subjects(gate, GATE)
     nolabel = mk_pr(tmp_path / "pr-nolabel.json", labels=[], label_applier="")
     # No label at all: the dispatch IS the arming act.
     disp = mk_dispatch_event(tmp_path / "ev-disp.json", "failure", "op", "7")
@@ -1975,7 +1952,6 @@ def test_gate_arming_dispatch_only(gate, tmp_path):
 
 
 def test_gate_arming_campaign(gate, tmp_path):
-    require_subjects(gate, GATE)
     event = mk_event(tmp_path / "ev.json", "failure")
     nolabel = mk_pr(tmp_path / "pr-nolabel.json", labels=[], label_applier="")
     # An open campaign carries the loop with no label and no dispatch: the workflow_run round that follows the arming dispatch.
@@ -1999,7 +1975,6 @@ def test_gate_arming_campaign(gate, tmp_path):
 
 
 def test_gate_blocked_label_beats_every_arming_path(gate, tmp_path):
-    require_subjects(gate, GATE)
     event = mk_event(tmp_path / "ev.json", "failure")
     b1 = mk_pr(tmp_path / "pr-b1.json", labels=["autopilot", "autopilot-blocked"])
     d = run_gate(gate, event, b1, **ARMED)
@@ -2019,7 +1994,6 @@ def test_gate_blocked_label_beats_every_arming_path(gate, tmp_path):
 
 
 def test_gate_campaign_field_resolution(gate, tmp_path):
-    require_subjects(gate, GATE)
     pr = mk_pr(tmp_path / "pr.json")
     state = mk_state(tmp_path / "state-camp.txt", "open", "claude-opus-5", 7, 1)
     event = mk_event(tmp_path / "ev.json", "failure")
@@ -2049,7 +2023,6 @@ def test_gate_campaign_field_resolution(gate, tmp_path):
 
 
 def test_gate_campaign_closes_on_done(gate, tmp_path):
-    require_subjects(gate, GATE)
     event = mk_event(tmp_path / "ev-s.json", "success")
     pr = mk_pr(tmp_path / "pr.json")
     state = mk_state(tmp_path / "state-open.txt", "open", "claude-opus-5", 12, 1)
@@ -2067,13 +2040,12 @@ def test_gate_campaign_closes_on_done(gate, tmp_path):
 
 
 def state_comment(*args: str) -> harness.RunResult:
-    return harness.run([bash_bin(), str(STATE_COMMENT), *args], env=clean_env(), timeout=180)
+    return run_port(STATE_COMMENT_MODULE, *args)
 
 
 def test_gate_campaign_fields_survive_a_round_trip(gate, tmp_path):
     """ANTI-DRIFT: the gate reads the metadata line through state-comment.sh rather than re-parsing it, so a rendered body must classify back to the values it was rendered
     with. If the format ever changes in one file only, this is what goes red."""
-    require_subjects(gate, GATE, STATE_COMMENT)
     body = state_comment(
         "render",
         "--body",
@@ -2113,7 +2085,6 @@ def test_gate_campaign_fields_survive_a_round_trip(gate, tmp_path):
 
 def test_state_comment_fields_normalize_hostile_values(gate, tmp_path):
     """The state comment is bot-authored and author-checked upstream, so this is defence in depth. But these values feed a model selection and a round cap, and a surprise value must fail closed rather than propagate."""
-    require_subjects(gate, STATE_COMMENT)
     hostile = tmp_path / "hostile.txt"
     hostile.write_text(
         "state: x | campaign: open; rm -rf / | model: ../../etc/passwd | rounds_max: 99999999\n",
@@ -2138,7 +2109,6 @@ def test_state_comment_fields_normalize_hostile_values(gate, tmp_path):
 
 
 def test_gate_dedup_and_round_cap(gate, tmp_path):
-    require_subjects(gate, GATE)
     event = mk_event(tmp_path / "ev.json", "failure")
     pr = mk_pr(tmp_path / "pr.json")
     dup = tmp_path / "state-dup.txt"
@@ -2174,7 +2144,6 @@ def test_gate_dedup_and_round_cap(gate, tmp_path):
 
 
 def test_gate_watchdog_deferral(gate, tmp_path):
-    require_subjects(gate, GATE)
     event = mk_event(tmp_path / "ev.json", "failure")
     pr = mk_pr(tmp_path / "pr.json")
     held = tmp_path / "watchdog.txt"
@@ -2189,7 +2158,6 @@ def test_gate_watchdog_deferral(gate, tmp_path):
 
 
 def test_gate_mode_selection_table(gate, tmp_path):
-    require_subjects(gate, GATE)
     pr = mk_pr(tmp_path / "pr.json")
     # cancelled + failed jobs = watchdog kill = fix.
     cancelled = mk_event(tmp_path / "ev-c.json", "cancelled")
@@ -2233,7 +2201,6 @@ def test_gate_mode_selection_table(gate, tmp_path):
 
 def test_gate_stuck_signature_stops_the_thrash(gate, tmp_path):
     """03-v2-autonomy.md section 4's flapping bound made mechanical. Three consecutive rounds facing an UNCHANGED failed-job set stop the campaign, because two distinct fixes have already failed to move it."""
-    require_subjects(gate, GATE)
     event = mk_event(tmp_path / "ev.json", "failure")
     pr = mk_pr(tmp_path / "pr.json")
     jobs = tmp_path / "sig-jobs.txt"
@@ -2280,7 +2247,6 @@ def test_gate_stuck_signature_stops_the_thrash(gate, tmp_path):
 
 
 def test_gate_rerun_review_mode(gate, tmp_path):
-    require_subjects(gate, GATE)
     success = mk_event(tmp_path / "ev-s.json", "success")
     # Red gate, nothing outstanding to answer: the review simply needs to run again, and that costs zero model tokens.
     red0 = mk_pr(tmp_path / "pr-red0.json", review_gate_red=True, unresolved_threads=0)
@@ -2308,7 +2274,6 @@ def test_gate_rerun_review_mode(gate, tmp_path):
 
 def test_gate_rerun_rounds_count_against_the_cap(gate, tmp_path):
     """TERMINATION: a rerun creates a review run, which creates a workflow_run, which re-enters the gate. That loop terminates only because the rerun writes a ledger line in the counted shape."""
-    require_subjects(gate, GATE)
     success = mk_event(tmp_path / "ev-s.json", "success")
     red0 = mk_pr(tmp_path / "pr-red0.json", review_gate_red=True, unresolved_threads=0)
     header = (
@@ -2350,7 +2315,6 @@ STATE_HEADER = "### Autopilot state (machine-maintained, do not edit)"
 
 
 def test_state_comment_trusted_selection(gate, tmp_path):
-    require_subjects(gate, STATE_COMMENT)
     comments = tmp_path / "comments.json"
     comments.write_text(
         json.dumps(
@@ -2390,7 +2354,6 @@ def test_state_comment_trusted_selection(gate, tmp_path):
 
 
 def test_state_comment_render_appends_and_caps(gate, tmp_path):
-    require_subjects(gate, STATE_COMMENT)
     body = state_comment(
         "render",
         "--body",
@@ -2459,7 +2422,6 @@ def test_state_comment_render_appends_and_caps(gate, tmp_path):
 
 
 def test_state_comment_compaction_over_55kb(gate, tmp_path):
-    require_subjects(gate, STATE_COMMENT)
     filler = "x" * 360
     big = tmp_path / "bigbody.txt"
     big.write_text(
@@ -2504,7 +2466,6 @@ def test_state_comment_compaction_over_55kb(gate, tmp_path):
 
 def test_state_comment_records_every_entry_not_just_the_first(gate, tmp_path):
     """THE ANTI-THRASH MEMORY ONLY WORKS IF IT REMEMBERS. The single --ruled-out / --decision flags recorded one entry per round, so a round that ruled out three approaches recorded one and the next round was free to retry the other two."""
-    require_subjects(gate, STATE_COMMENT)
     ruled = tmp_path / "ruled.txt"
     ruled.write_text(
         "widening the e2e timeout (red persisted)\n"
@@ -2625,7 +2586,6 @@ def test_state_comment_records_every_entry_not_just_the_first(gate, tmp_path):
 
 def test_state_comment_signature_fields_round_trip(gate, tmp_path):
     """ONE WRITER, ONE READER: the gate reads the signature back through `fields`, so a rendered body must classify to the values it carried."""
-    require_subjects(gate, STATE_COMMENT)
     body = state_comment(
         "render",
         "--body",
@@ -2698,11 +2658,7 @@ def mk_thread(
 
 
 def run_payload(threads: pathlib.Path, *args: str) -> harness.RunResult:
-    return harness.run(
-        [bash_bin(), str(PAYLOAD), "--threads", str(threads), *args],
-        env=clean_env(),
-        timeout=180,
-    )
+    return run_port(PAYLOAD_MODULE, "--threads", str(threads), *args)
 
 
 def write_threads(path: pathlib.Path, threads: list[dict]) -> pathlib.Path:
@@ -2711,7 +2667,6 @@ def write_threads(path: pathlib.Path, threads: list[dict]) -> pathlib.Path:
 
 
 def test_review_payload_filters_on_the_root_author(gate, tmp_path):
-    require_subjects(gate, PAYLOAD)
     threads = write_threads(
         tmp_path / "threads.json",
         [
@@ -2748,7 +2703,6 @@ def test_review_payload_filters_on_the_root_author(gate, tmp_path):
 
 def test_review_payload_byte_cap(gate, tmp_path):
     """Oversize plant: three fat threads against a small cap. Dropping is REPORTED, because a round that silently saw half the findings would claim to have addressed every finding."""
-    require_subjects(gate, PAYLOAD)
     fat = write_threads(
         tmp_path / "fat-threads.json",
         [
@@ -2836,7 +2790,6 @@ def test_linked_sub_prs_only_recognises_the_four_submodules(gate, tmp_path):
 
 def test_review_payload_carries_repo_and_counts_real_bytes(gate, tmp_path):
     """A submodule thread must stay answerable in the repository it lives in."""
-    require_subjects(gate, PAYLOAD)
     tagged = write_threads(
         tmp_path / "rp-tagged.json",
         [
@@ -2910,28 +2863,22 @@ def test_review_payload_carries_repo_and_counts_real_bytes(gate, tmp_path):
     gate.log_pass("the payload carries repo/pr and measures its cap in UTF-8 bytes")
 
 
-# --------------------------------------------------------------------------- review-reply.sh: the model records dispositions, the harness replies and resolves. A thread id the round was never shown is not addressable. ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- review_reply: the model records dispositions, the harness replies and resolves. A thread id the round was never shown is not addressable. ---------------------------------------------------------------------------
 
 
 def reply_plan(verdict: pathlib.Path, threads: pathlib.Path, *args: str) -> harness.RunResult:
-    return harness.run(
-        [
-            bash_bin(),
-            str(REVIEW_REPLY),
-            "plan",
-            "--verdict",
-            str(verdict),
-            "--threads",
-            str(threads),
-            *args,
-        ],
-        env=clean_env(),
-        timeout=180,
+    return run_port(
+        REVIEW_REPLY_MODULE,
+        "plan",
+        "--verdict",
+        str(verdict),
+        "--threads",
+        str(threads),
+        *args,
     )
 
 
 def test_review_reply_routes_to_the_threads_repo(gate, tmp_path):
-    require_subjects(gate, PAYLOAD, REVIEW_REPLY)
     tagged = write_threads(
         tmp_path / "rr-tagged.json",
         [
@@ -3006,7 +2953,6 @@ def test_review_reply_routes_to_the_threads_repo(gate, tmp_path):
 
 
 def test_review_reply_plan_requires_a_shown_thread(gate, tmp_path):
-    require_subjects(gate, PAYLOAD, REVIEW_REPLY)
     threads = write_threads(
         tmp_path / "rr-threads.json", [mk_thread("PRT_shown", "github-actions[bot]", False, False)]
     )
@@ -3062,7 +3008,6 @@ def test_review_reply_plan_requires_a_shown_thread(gate, tmp_path):
 
 
 def test_review_reply_caps_the_body_and_fails_closed_on_write(gate, tmp_path):
-    require_subjects(gate, PAYLOAD, REVIEW_REPLY)
     threads = write_threads(
         tmp_path / "rr-threads.json", [mk_thread("PRT_shown", "github-actions[bot]", False, False)]
     )
@@ -3089,11 +3034,7 @@ def test_review_reply_caps_the_body_and_fails_closed_on_write(gate, tmp_path):
     # The write half refuses without the stage flag, before any gh call could happen: replying and resolving are writes like any other.
     plan_path = tmp_path / "rr-plan.json"
     plan_path.write_text(json.dumps(plan), encoding="utf-8")
-    result = harness.run(
-        [bash_bin(), str(REVIEW_REPLY), "apply", "--plan", str(plan_path)],
-        env=clean_env(),
-        timeout=180,
-    )
+    result = run_port(REVIEW_REPLY_MODULE, "apply", "--plan", str(plan_path))
     gate.assert_eq(result.rc, 1, "apply without AUTOPILOT_ALLOW_PUSH refuses")
     gate.assert_contains(result.err, "stage-flag-disabled", "naming the flag")
     # CONTROL: an empty plan is a no-op that still refuses without the flag above, and succeeds trivially with it -- no network needed to prove the zero-entry path never reaches gh.
@@ -3101,10 +3042,8 @@ def test_review_reply_caps_the_body_and_fails_closed_on_write(gate, tmp_path):
     empty_plan.write_text(
         json.dumps({"replies": [], "skipped": [], "flagged": False}), encoding="utf-8"
     )
-    result = harness.run(
-        [bash_bin(), str(REVIEW_REPLY), "apply", "--plan", str(empty_plan)],
-        env=clean_env(AUTOPILOT_ALLOW_PUSH="true"),
-        timeout=180,
+    result = run_port(
+        REVIEW_REPLY_MODULE, "apply", "--plan", str(empty_plan), AUTOPILOT_ALLOW_PUSH="true"
     )
     gate.assert_eq(result.rc, 0, "an empty plan applies cleanly")
     gate.assert_contains(result.err, "no thread touched", "touching nothing")
@@ -3115,7 +3054,6 @@ def test_review_reply_caps_the_body_and_fails_closed_on_write(gate, tmp_path):
 
 
 def test_sweep_finds_open_campaigns_and_refuses_lookalikes(gate, tmp_path):
-    require_subjects(gate, SWEEP, STATE_COMMENT)
     comments_dir = tmp_path / "sweep" / "comments"
     comments_dir.mkdir(parents=True)
     open_body = state_comment(
@@ -3173,19 +3111,14 @@ def test_sweep_finds_open_campaigns_and_refuses_lookalikes(gate, tmp_path):
         json.dumps([{"number": 11}, {"number": 12}, {"number": 13}, {"number": 14}]),
         encoding="utf-8",
     )
-    result = harness.run(
-        [
-            bash_bin(),
-            str(SWEEP),
-            "--prs",
-            str(prs),
-            "--comments-dir",
-            str(comments_dir),
-            "--bot",
-            "rediacc-autopilot[bot]",
-        ],
-        env=clean_env(),
-        timeout=180,
+    result = run_port(
+        SWEEP_MODULE,
+        "--prs",
+        str(prs),
+        "--comments-dir",
+        str(comments_dir),
+        "--bot",
+        "rediacc-autopilot[bot]",
     )
     listed = result.out.strip()
     gate.assert_eq(listed, "11", "only the PR with a trusted open campaign is listed")
@@ -3202,19 +3135,16 @@ def test_sweep_finds_open_campaigns_and_refuses_lookalikes(gate, tmp_path):
     gate.log_pass("the sweeper reaches campaign-armed PRs and refuses lookalikes")
 
 
-# --------------------------------------------------------------------------- finish.sh check-done, both directions. ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- finish check-done, both directions. ---------------------------------------------------------------------------
 
 
 def test_finish_check_done(gate, tmp_path):
-    require_subjects(gate, FINISH)
     done = tmp_path / "done.json"
     done.write_text(
         json.dumps({"ci_green": True, "draft": False, "reviewed": True, "unresolved_threads": 0}),
         encoding="utf-8",
     )
-    result = harness.run(
-        [bash_bin(), str(FINISH), "check-done", "--pr", str(done)], env=clean_env(), timeout=180
-    )
+    result = run_port(FINISH_MODULE, "check-done", "--pr", str(done))
     gate.assert_eq(result.rc, 0, "all conditions met is done")
     gate.assert_eq(dumps(json.loads(result.out)["done"]), "true", "and says so")
     notdone = tmp_path / "notdone.json"
@@ -3222,21 +3152,13 @@ def test_finish_check_done(gate, tmp_path):
         json.dumps({"ci_green": True, "draft": False, "reviewed": False, "unresolved_threads": 2}),
         encoding="utf-8",
     )
-    result = harness.run(
-        [bash_bin(), str(FINISH), "check-done", "--pr", str(notdone)],
-        env=clean_env(),
-        timeout=180,
-    )
+    result = run_port(FINISH_MODULE, "check-done", "--pr", str(notdone))
     gate.assert_eq(result.rc, 1, "unmet conditions are not done")
     missing = dumps(json.loads(result.out)["missing"])
     gate.assert_contains(missing, "reviewed", "naming the missing review")
     gate.assert_contains(missing, "threads_resolved", "and the open threads")
     # A write path without the stage flag refuses (fail closed), even before any gh call could happen.
-    result = harness.run(
-        [bash_bin(), str(FINISH), "ready-flip", "--pr", "1", "--repo", "rediacc/console"],
-        env=clean_env(),
-        timeout=180,
-    )
+    result = run_port(FINISH_MODULE, "ready-flip", "--pr", "1", "--repo", "rediacc/console")
     gate.assert_eq(result.rc, 1, "ready-flip without AUTOPILOT_ALLOW_PUSH refuses")
     gate.assert_contains(result.err, "stage-flag-disabled", "naming the flag")
     gate.log_pass("done detection reads in both directions, and finish writes fail closed")
@@ -3313,12 +3235,8 @@ def test_compose_prompt_refuses_a_blind_review_round(gate, tmp_path):
 
 
 def test_update_state_fails_closed_and_renders_the_round(gate, tmp_path):
-    require_subjects(gate, UPDATE_STATE)
-
     def update(*args: str, **env: str) -> harness.RunResult:
-        return harness.run(
-            [bash_bin(), str(UPDATE_STATE), *args], env=clean_env(**env), timeout=180
-        )
+        return run_port(UPDATE_STATE_MODULE, *args, **env)
 
     # Fail closed FIRST: this is a write path, and the flag is the stage gate.
     result = update(
@@ -3434,24 +3352,17 @@ def test_update_state_fails_closed_and_renders_the_round(gate, tmp_path):
 
 
 def test_resolve_model_args_effort_sources(gate):
-    require_subjects(gate, MARGS)
-
     def margs(model: str, mode: str, effort: str, effort_var: str) -> str:
-        return harness.run(
-            [
-                bash_bin(),
-                str(MARGS),
-                "--model",
-                model,
-                "--mode",
-                mode,
-                "--effort",
-                effort,
-                "--effort-var",
-                effort_var,
-            ],
-            env=clean_env(),
-            timeout=180,
+        return run_port(
+            MARGS_MODULE,
+            "--model",
+            model,
+            "--mode",
+            mode,
+            "--effort",
+            effort,
+            "--effort-var",
+            effort_var,
         ).out
 
     # CONTROL: neither source set, so no --effort flag at all.
@@ -3497,10 +3408,9 @@ def first_diff_fence(text: str) -> str:
 
 
 def test_post_escalation_says_what_stopped(gate, tmp_path):
-    require_subjects(gate, POST_ESC)
 
     def post(*args: str, **env: str) -> harness.RunResult:
-        return harness.run([bash_bin(), str(POST_ESC), *args], env=clean_env(**env), timeout=180)
+        return run_port(POST_ESC_MODULE, *args, **env)
 
     result = post(
         "--pr", "1", "--repo", "rediacc/console", "--title", "the round failed", "--dry-run"
