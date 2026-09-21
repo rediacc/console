@@ -1,0 +1,15 @@
+# twin .ci/scripts/housekeeping/cleanup-pr-environments.sh blob 4d8000b5648f45a1ac73e0f20a4eb47002026c7e
+exit: 0
+--- stdout ---
+--- stderr ---
+→ Cleaning up empty pr-N environments in acme/widget
+⚠ DRY-RUN mode: no deletions will be performed
+⚠ [DRY-RUN] Would delete environment pr-1 (PR #1 CLOSED, 0 deployments)
+⚠ [DRY-RUN] Would delete environment pr-3 (PR #3 CLOSED, 0 deployments)
+✓ Would delete 2 of 2 pr-N environment(s)
+--- calls ---
+api	repos/acme/widget/environments	--paginate	--jq	.environments[]?.name
+pr	view	1	--repo	acme/widget	--json	state	--jq	.state
+api	repos/acme/widget/deployments?environment=pr-1&per_page=100	--jq	length
+pr	view	3	--repo	acme/widget	--json	state	--jq	.state
+api	repos/acme/widget/deployments?environment=pr-3&per_page=100	--jq	length

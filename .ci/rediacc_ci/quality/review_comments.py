@@ -1,7 +1,6 @@
 r"""Every review comment must have a SUBSTANTIVE reply, on both surfaces.
 
-Ported from `.ci/scripts/quality/check-review-comments.sh`, which is NOT deleted;
-see `rediacc_ci.quality.__init__` for why both copies live.
+Ported from `.ci/scripts/quality/check-review-comments.sh`, which W7 P5 batch G1 retired once `.ci/shadow/w7p2-review-comments.observations.jsonl` asserted equivalence over six distinct trees and the twin's own output was recorded as goldens.
 
 WHAT IT IS, in the twin's own words:
 
@@ -59,7 +58,7 @@ HOW THE SUMMARY IS IDENTIFIED, which is the part a reviewer must be able to chec
     That is not a heuristic invented here -- it is verbatim the selector
     claude-review-gate.sh --post-findings uses to locate the same comment and parse
     its findings array. If the fence name ever drifts, inline posting breaks in the
-    same commit, so the two cannot silently disagree. (test-review-status.sh asserts
+    same commit, so the two cannot silently disagree. (test_gate_review_status.py asserts
     the needle still exists in the gate script.)
 
     The verdict heading is a SECOND, weaker key for a review that produced no fence

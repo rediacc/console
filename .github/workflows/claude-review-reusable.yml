@@ -490,7 +490,7 @@ jobs:
       # run with the DEFAULT BRANCH tip. So review-status.sh received main's
       # SHA, found no PR for it, and exited 0 silently -- leaving the required
       # review check absent while every visible check was green. (Naming that
-      # check literally here would trip the cycle gate in test-review-status.sh,
+      # check literally here would trip the cycle gate in test_gate_review_status.py,
       # which forbids any other workflow referencing it. The gate is right: a
       # comment is not a dependency, but the string is what it can see.)
       # Measured 2026-08-06: every Claude Review run on this path carried

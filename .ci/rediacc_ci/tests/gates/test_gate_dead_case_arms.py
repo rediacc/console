@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-dead-case-arms.sh`.
+"""Port of `.ci/scripts/test/gates/test-dead-case-arms.sh`, retired in W7 P5.
 
 Tests for `.ci/scripts/quality/check-dead-case-arms.sh`, the scanner that catches a
 `case` arm globbing for a `field=` token no non-test script emits. An arm like that
@@ -20,8 +20,6 @@ import pathlib
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-dead-case-arms.sh"
 
 # The twin reads the real tree (`.ci/media` is scanned on every invocation, and the default CODE_DIRS greps `.ci/scripts`, `scripts` and `packages/www/scripts`), so this module must be serialised against the battery. See the module docstring.
 REAL_TREE_TWIN = True

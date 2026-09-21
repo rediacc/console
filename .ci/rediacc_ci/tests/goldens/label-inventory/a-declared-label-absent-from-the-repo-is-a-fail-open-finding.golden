@@ -1,0 +1,6 @@
+# twin .ci/scripts/quality/check-label-inventory.sh blob 13627d4c05edbdecca46be3ef0d973c2a99cf3de
+exit: 1
+--- stdout ---
+--- stderr ---
+✗ label 'foxtrot' is declared in fx/labels.yml but does NOT exist on the repo. Any workflow that searches or filters on it FAILS OPEN -- a search for a nonexistent label returns zero results rather than an error, which is exactly how 'rollback' let stable promotion proceed past a rolled-back PR. Create it: gh label create 'foxtrot'
+✗ 1 label inventory mismatch(es) between fx/labels.yml and the live repo.

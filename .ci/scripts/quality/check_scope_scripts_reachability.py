@@ -64,7 +64,7 @@ directly, not inferred.
 
 THE REAL TREE WAS NEVER WRITTEN TO for this gate; `git status --porcelain` carries no probe file.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-scope-scripts-reachability.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
+THE TWIN IS GONE. W7 P5 batch G1 deleted `.ci/scripts/quality/check-scope-scripts-reachability.sh` after `.ci/shadow/w7p2-scope-scripts-reachability.observations.jsonl` asserted equivalence over six distinct trees; its recorded output lives in `.ci/rediacc_ci/tests/goldens/`, headed with the blob sha it was captured from.
 
 ---- gate ----
 step: Scope map, reachable scripts/ paths force full CI

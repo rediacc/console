@@ -1,0 +1,8 @@
+# twin .ci/scripts/build/build-linux-packages.sh blob 2e21617dc5eeed091a89917aa35c43cb41edad7a
+exit: 1
+--- stdout ---
+--- stderr ---
+<root>/.ci/scripts/build/build-linux-packages.sh: line 36: NEXT_VERSION: build-linux-packages.sh: NEXT_VERSION must be set
+--- calls ---
+--- packages ---
+<no directory>

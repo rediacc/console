@@ -196,7 +196,7 @@ jobs:
     name: Server Docker (${{ matrix.variant }} amd64)
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    # Pushes to ghcr: buildx-push-web.sh runs `--push`, and create-manifest.sh
+    # Pushes to ghcr: buildx-push-web.sh runs `--push`, and create_manifest.py
     # runs `docker buildx imagetools create`, which is a registry write. The
     # ghcr login uses github.token, so this is a real packages: write.
     permissions:
@@ -296,7 +296,7 @@ jobs:
     name: Server Docker (${{ matrix.variant }} arm64)
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 45
-    # Pushes to ghcr: buildx-push-web.sh runs `--push`, and create-manifest.sh
+    # Pushes to ghcr: buildx-push-web.sh runs `--push`, and create_manifest.py
     # runs `docker buildx imagetools create`, which is a registry write. The
     # ghcr login uses github.token, so this is a real packages: write.
     permissions:
@@ -399,7 +399,7 @@ jobs:
     name: Server Docker Manifest (${{ matrix.variant }})
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    # Pushes to ghcr: buildx-push-web.sh runs `--push`, and create-manifest.sh
+    # Pushes to ghcr: buildx-push-web.sh runs `--push`, and create_manifest.py
     # runs `docker buildx imagetools create`, which is a registry write. The
     # ghcr login uses github.token, so this is a real packages: write.
     permissions:
@@ -452,7 +452,7 @@ jobs:
     name: CLI Docker
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    # Pushes to ghcr: buildx-push-web.sh runs `--push`, and create-manifest.sh
+    # Pushes to ghcr: buildx-push-web.sh runs `--push`, and create_manifest.py
     # runs `docker buildx imagetools create`, which is a registry write. The
     # ghcr login uses github.token, so this is a real packages: write.
     permissions:
@@ -530,7 +530,7 @@ jobs:
     name: Renet Docker
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    # Pushes to ghcr: buildx-push-web.sh runs `--push`, and create-manifest.sh
+    # Pushes to ghcr: buildx-push-web.sh runs `--push`, and create_manifest.py
     # runs `docker buildx imagetools create`, which is a registry write. The
     # ghcr login uses github.token, so this is a real packages: write.
     permissions:

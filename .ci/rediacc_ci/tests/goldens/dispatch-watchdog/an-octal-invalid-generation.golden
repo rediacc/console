@@ -1,0 +1,6 @@
+# twin .ci/scripts/ci/dispatch-watchdog.sh blob c8ca37cdeeadfc67b363eae6054040dec089ea5c
+exit: 0
+--- stdout ---
+--- stderr ---
+.ci/scripts/ci/dispatch-watchdog.sh: line 86: ((: 08: value too great for base (error token is "08")
+✓ Dispatched watchdog generation 08 for run 1 on ref m

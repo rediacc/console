@@ -18,7 +18,7 @@
  *    It answers the same string on a tree that has no `.ci` directory at all, so
  *    a caller's failure to find the file is the caller's own ENOENT, reported at
  *    the caller's own path, rather than this module quietly answering somewhere
- *    else. Proven by .ci/scripts/test/gates/test-policy-path.sh against a fixture
+ *    else. Proven by .ci/rediacc_ci/tests/gates/test_gate_policy_path.py against a fixture
  *    root containing nothing.
  *
  * 2. NO REGISTRY FILE. The valid names are the frozen array below, in source. A
@@ -138,7 +138,7 @@ function allPolicyPaths(root: string = REPO_ROOT): string[] {
 
 // --------------------------------------------------------------------------- CLI, for callers that are not TypeScript.
 //
-// `.ci/scripts/test/gates/test-policy-path.sh` drives this rather than generating an import snippet, and the phase-2 movers -- shell and Python gates that must not each re-derive where a policy file lives -- get the same answer here that the TS gates get from policyPath() above.
+// `.ci/rediacc_ci/tests/gates/test_gate_policy_path.py` drives this rather than generating an import snippet, and the phase-2 movers -- shell and Python gates that must not each re-derive where a policy file lives -- get the same answer here that the TS gates get from policyPath() above.
 //
 // It is also what keeps the module's EXPORT surface honest: only policyPath and isPolicyFileName are imported by other TypeScript, so only those two are exported. The name list, the directory and the all-paths helper are reachable through this CLI instead of being exports nothing imports, which is the shape `lint:unused` refuses and rightly.
 //

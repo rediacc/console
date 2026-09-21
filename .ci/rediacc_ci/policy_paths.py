@@ -4,10 +4,10 @@ WHY A TWIN AND NOT A CLIENT. `scripts/lib/policy-paths.ts` already answers "wher
 
   1. COST. `go_deps.py`, `plan_housekeeping.py` and `profiler_coverage.py` need
      the path at module import. A node startup per gate, to join two strings,
-     is the shape that made `test-policy-path.sh` the third-slowest gate in the
+     is the shape that made `test_gate_policy_path.py`'s bash twin the third-slowest gate in the
      quick lane before it was collapsed to one process.
   2. PURITY. `policy_path()` below does no filesystem access at all (rule 1
-     over there, and it is the property `test-policy-path.sh:63-80` proves with
+     over there, and it is the property `test_gate_policy_path.py` proves with
      an `rmdir`). A subprocess is filesystem access by definition, so a client
      could not have the property the twin is required to have.
   3. AVAILABILITY. A Python gate must answer on a tree where `node_modules` has

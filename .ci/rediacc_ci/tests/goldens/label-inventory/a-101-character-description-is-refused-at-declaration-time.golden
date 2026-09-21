@@ -1,0 +1,5 @@
+# twin .ci/scripts/quality/check-label-inventory.sh blob 13627d4c05edbdecca46be3ef0d973c2a99cf3de
+exit: 1
+--- stdout ---
+--- stderr ---
+✗ label 'longone' declares a 101-char description; GitHub rejects anything over 100 at create time, so this fails exactly when something finally tries to create or sync it. Shorten it in fx/labels.yml.

@@ -1,18 +1,21 @@
-"""`rediacc_ci.quality.scope_scripts_reachability` against its bash twin.
+"""`rediacc_ci.quality.scope_scripts_reachability`, driven against the bytes its bash twin printed.
 
-A bash child runs the REAL `.ci/scripts/quality/check-scope-scripts-reachability.sh` over a git fixture with stdout and stderr captured SEPARATELY, and its bytes are compared against the port's. Same recipe as the committed ledger, `.ci/shadow/w7p2-scope-scripts-reachability.observations.jsonl`.
+WHILE BOTH COPIES EXISTED a bash child ran the REAL `.ci/scripts/quality/check-scope-scripts-reachability.sh` over a git fixture with stdout and stderr captured SEPARATELY, and its bytes were compared against the port's. Same recipe as the committed ledger, `.ci/shadow/w7p2-scope-scripts-reachability.observations.jsonl`. The twin has now been deleted and every case that
+executed it compares against `goldens/scope-scripts-reachability/`, which holds the twin's OWN recorded output, captured from the tracked script on its last day in the tree. The provenance header of each golden carries the blob sha, so `git cat-file -p <sha>` still yields the program that printed those bytes.
 
 THE FIXTURE CARRIES THE REAL `scope-map.cjs`, and it has to. The gate's verdict is whatever `classify()` says, and that file's rule ORDER is semantics (first match wins, driver contract section 3). A stubbed classifier would make these cases assert that the port agrees with the stub.
 
 TWO CASES HERE ARE NOT IN THE LEDGER, and both are the interesting ones.
 
-  * THE DISPATCH-FLOOR REFUSAL EXITS 127, not 1, because the twin calls
-    `log_fail` and never sources the library that defines it. Both sides print a
-    single shell diagnostic and no finding, so `scripts/lib/shadow-gate.ts` scores
-    the pair VACUOUS_BOTH_EMPTY and refuses to record it. Byte equality can rule
-    on it, so it lives here.
+  * THE DISPATCH-FLOOR REFUSAL EXITS 127, not 1, because the twin called
+    `log_fail` and never sourced the library that defines it. Both sides printed a
+    single shell diagnostic and no finding, so `scripts/lib/shadow-gate.ts` scored
+    the pair VACUOUS_BOTH_EMPTY and refused to record it. Byte equality can rule
+    on it, so it lives here, and it is now the one recorded case whose LINE NUMBER
+    had to be frozen into the port: `dispatch_floor_refusal` used to read the twin
+    to find it. See `TWIN_LOG_FAIL_LINE`.
   * THE `\\x27` BLIND SPOT is a property of the twin's extractor rather than of any
-    one tree: an invocation whose only lead character is a single quote is
+    one tree: an invocation whose only lead character is a single quote was
     invisible, because GNU grep reads `\\x27` as the literal `x27`. Asserted here
     against the port's own extractor, so a future "cleanup" that turns `x27` back
     into `'` is caught as the behaviour change it is.
@@ -26,8 +29,9 @@ import pytest
 
 from rediacc_ci.quality import scope_scripts_reachability as gate
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.tests import frozen
 
-TWIN = ".ci/scripts/quality/check-scope-scripts-reachability.sh"
+SLUG = "scope-scripts-reachability"
 MODULE = "scope_scripts_reachability"
 
 RUNSH = """#!/bin/bash
@@ -40,7 +44,7 @@ esac
 
 
 def build(tmp_path: pathlib.Path, extra: dict[str, str], *, runsh: bool = True) -> pathlib.Path:
-    """A sealed git specimen with both implementations, scope-map.cjs and a run.sh.
+    """A sealed git specimen with the port, scope-map.cjs and a run.sh.
 
     THE BASELINE IS DELIBERATELY ABOVE BOTH FLOORS: twelve `.ci/scripts/deploy` references from a workflow and twelve `.ci/scripts/build` ones from a build script clear the 20-reference `.ci` floor, and the run.sh drill arm clears the dispatch floor of 1. A case that wants a floor to fire removes the baseline rather than lowering the floor, because a floor a test can lower is not a
     floor.
@@ -58,8 +62,6 @@ def build(tmp_path: pathlib.Path, extra: dict[str, str], *, runsh: bool = True) 
         "scripts/gates",
     ):
         (root / rel).mkdir(parents=True, exist_ok=True)
-    shutil.copytree(src / ".ci" / "scripts" / "lib", root / ".ci" / "scripts" / "lib")
-    shutil.copy2(src / TWIN, root / TWIN)
     shutil.copy2(
         src / ".ci" / "scripts" / "ci" / "scope-map.cjs",
         root / ".ci" / "scripts" / "ci" / "scope-map.cjs",
@@ -102,37 +104,64 @@ def build(tmp_path: pathlib.Path, extra: dict[str, str], *, runsh: bool = True) 
     return root
 
 
-def run_both(root: pathlib.Path) -> tuple[tuple[int, str, str], tuple[int, str, str]]:
-    old = diff.bash_streams("bash %s" % TWIN, cwd=str(root))
-    new = diff.bash_streams(
+def run_port(root: pathlib.Path) -> tuple[int, str, str]:
+    return diff.bash_streams(
         "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=.ci python3 -m rediacc_ci.quality.%s" % MODULE,
         cwd=str(root),
     )
-    return old, new
 
+
+def split_golden(text: str) -> tuple[int, str, str]:
+    """A recorded twin render, back into its three parts."""
+    exit_line, rest = text.split("\n", 1)
+    stdout, stderr = rest.split("--- stdout ---\n", 1)[1].split("--- stderr ---\n", 1)
+    return int(exit_line.removeprefix("exit: ")), stdout, stderr
+
+
+def compare(root: pathlib.Path, name: str) -> tuple[int, str, str]:
+    """Byte equality on BOTH streams against the twin's recorded bytes."""
+    want_exit, want_out, want_err = split_golden(frozen.read(SLUG, name))
+    returncode, stdout, stderr = run_port(root)
+    stdout = frozen.mask_root(stdout, root)
+    stderr = frozen.mask_root(stderr, root)
+    assert returncode == want_exit, "%s: the twin exited %d, the port %d" % (
+        name,
+        want_exit,
+        returncode,
+    )
+    assert stdout == want_out, "%s: stdout diverged from the twin's recorded bytes" % name
+    assert stderr == want_err, "%s: stderr diverged from the twin's recorded bytes" % name
+    return returncode, stdout, stderr
+
+
+MENTION = {
+    ".ci/scripts/deploy/publish.sh": (
+        'log_error "run scripts/gates/check-embed-credits.ts to fix this"\n'
+    )
+}
 
 CASES = [
     (
         # THE NEGATIVE HALF. The baseline alone references only paths that classify `full`, so the gate must be silent. Without it, a port that called everything a violation would pass every red case below.
-        "a tree whose reachable paths all force full is silent",
+        "a-tree-whose-reachable-paths-all-force-full-is-silent",
         {},
         True,
         0,
     ),
     (
-        "a narrowable path referenced from a workflow is a violation",
+        "a-narrowable-path-referenced-from-a-workflow-is-a-violation",
         {".github/workflows/ci.yml": "npx tsx scripts/gates/check-embed-credits.ts\n"},
         True,
         1,
     ),
     (
-        "a narrowable path referenced from a deploy script is a violation",
+        "a-narrowable-path-referenced-from-a-deploy-script-is-a-violation",
         {".ci/scripts/deploy/publish.sh": "npx tsx scripts/gates/check-embed-credits.ts\n"},
         True,
         1,
     ),
     (
-        "a narrowable path reached only through the run.sh dispatch is a violation",
+        "a-narrowable-path-reached-only-through-the-run-sh-dispatch-is-a-violation",
         {
             "run.sh": RUNSH.replace(
                 "bash scripts/drills/lib.sh",
@@ -143,58 +172,111 @@ CASES = [
         1,
     ),
     (
-        # DOCUMENTATION IS NOT A DEPENDENCY. This is the 2026-08-06 false positive that would have forced full CI on every scripts/dev edit forever.
-        "a log_error mention of a narrowable path is not a violation",
-        {
-            ".ci/scripts/deploy/publish.sh": (
-                'log_error "run scripts/gates/check-embed-credits.ts to fix this"\n'
-            )
-        },
+        # DOCUMENTATION IS NOT A DEPENDENCY. This is the 2026-08-06 false positive that would have forced full CI on every scripts/dev edit forever, and it is what the planted control below re-breaks.
+        "a-log-error-mention-of-a-narrowable-path-is-not-a-violation",
+        MENTION,
         True,
         0,
     ),
     (
-        "a collapsed .ci scan refuses rather than reporting clean",
+        "a-collapsed-ci-scan-refuses-rather-than-reporting-clean",
         {".github/workflows/ci.yml": "", ".ci/scripts/build/driver.sh": ""},
         True,
         1,
+    ),
+    (
+        # THE `log_fail` DEFECT. Its own case rather than a parametrized one, because its verdict is 127 and its reason has a docstring of its own below.
+        "the-dispatch-floor-refusal-exits-127",
+        {},
+        False,
+        127,
     ),
 ]
 
 
 @pytest.mark.parametrize(
-    ("extra", "runsh", "want_exit"),
-    [(c[1], c[2], c[3]) for c in CASES],
+    ("name", "extra", "runsh", "want_exit"),
+    CASES,
     ids=[c[0] for c in CASES],
 )
-def test_differential(tmp_path, extra, runsh, want_exit):
+def test_port_matches_the_twins_recorded_output(tmp_path, name, extra, runsh, want_exit):
     """Byte equality on BOTH streams, plus the exit code the case expects."""
     root = build(tmp_path, extra, runsh=runsh)
-    (old_rc, old_out, old_err), (new_rc, new_out, new_err) = run_both(root)
-    assert old_rc == want_exit, "the twin's verdict moved: %s%s" % (old_out, old_err)
-    assert new_rc == old_rc
-    assert new_out == old_out
-    assert new_err == old_err
+    returncode, _stdout, _stderr = compare(root, name)
+    assert returncode == want_exit, "the recorded verdict moved"
 
 
-def test_the_dispatch_floor_refusal_exits_127_on_both_sides(tmp_path):
+def test_every_case_has_a_golden_and_no_golden_is_orphaned() -> None:
+    """ANTI-VACUITY on the corpus: a case whose golden vanished would pass by never being compared, and a golden nothing reads is a recording of a case that stopped running."""
+    frozen.assert_corpus(SLUG, {name for name, _e, _r, _x in CASES})
+
+
+def test_the_green_case_is_not_vacuously_equal() -> None:
+    """Two implementations that both print nothing agree about nothing.
+
+    The silent case prints a control tally on stdout and nothing on stderr; the violation case prints nothing on stdout and a finding on stderr. A recording in which both were empty would be the both-empty trap with the twin no longer around to blame.
+    """
+    silent = split_golden(
+        frozen.read(SLUG, "a-tree-whose-reachable-paths-all-force-full-is-silent")
+    )
+    violation = split_golden(
+        frozen.read(SLUG, "a-narrowable-path-referenced-from-a-workflow-is-a-violation")
+    )
+    assert silent[0] == 0
+    assert violation[0] == 1
+    assert silent[1] != ""
+    assert violation[2] != ""
+    assert silent[1] != violation[1]
+
+
+def test_the_dispatch_floor_refusal_exits_127(tmp_path):
     """The `log_fail` defect, pinned so a one-sided repair is a disagreement.
 
-    The twin never sources `.ci/scripts/lib/common.sh`, and `log_fail` is defined only in `.ci/scripts/test/lib/test-helpers.sh` and four test scripts. Under `set -euo pipefail` the unknown command exits 127 at that line, so the three explanatory `echo`s and the `exit 1` beneath it never run. The identical defect is already on the record for the pool-writer-safety gate's own bash
-    twin, the since-retired shell battery runner.
+    The twin never sourced `.ci/scripts/lib/common.sh`, and `log_fail` is defined only in `.ci/scripts/test/lib/test-helpers.sh` and four test scripts. Under `set -euo pipefail` the unknown command exited 127 at that line, so the three explanatory `echo`s and the `exit 1` beneath it never ran. The identical defect is already on the record for the pool-writer-safety gate's own
+    bash twin, the since-retired shell battery runner.
 
-    NOT IN THE LEDGER: both sides print one shell diagnostic and no finding, so the comparator scores it VACUOUS_BOTH_EMPTY and refuses to record it. Byte equality can rule on it, which is why the case lives here.
+    NOT IN THE LEDGER: both sides printed one shell diagnostic and no finding, so the comparator scored it VACUOUS_BOTH_EMPTY and refused to record it. Byte equality can rule on it, which is why the case lives here.
     """
-    root = build(tmp_path, {}, runsh=False)
-    (old_rc, old_out, old_err), (new_rc, new_out, new_err) = run_both(root)
-    assert old_rc == 127, "the twin no longer hits the log_fail defect: %s" % old_err
-    assert new_rc == old_rc
-    assert new_out == old_out
-    assert new_err == old_err
-    assert "log_fail: command not found" in old_err
-    assert "Refusing to report on the .ci/scripts half alone" not in (old_out + old_err), (
-        "the explanatory text became reachable; the twin was repaired and the port must follow"
+    recorded_exit, recorded_out, recorded_err = split_golden(
+        frozen.read(SLUG, "the-dispatch-floor-refusal-exits-127")
     )
+    assert recorded_exit == 127
+    assert "log_fail: command not found" in recorded_err
+    assert "Refusing to report on the .ci/scripts half alone" not in (
+        recorded_out + recorded_err
+    ), "the explanatory text was reachable after all; the recording says otherwise"
+    assert ":%d:" % gate.TWIN_LOG_FAIL_LINE not in recorded_err
+    assert "line %d:" % gate.TWIN_LOG_FAIL_LINE in recorded_err, (
+        "the frozen line number no longer matches the number bash printed"
+    )
+    compare(build(tmp_path, {}, runsh=False), "the-dispatch-floor-refusal-exits-127")
+
+
+def test_planted_defect_is_caught_by_the_goldens(tmp_path):
+    """THE CONTROL ON THE GOLDENS. Let a documented mention count as an invocation.
+
+    Dropping the output-statement filter is the simplification that revives the 2026-08-06 false positive, and it turns the silent `a-log-error-mention-of-a-narrowable-path-is-not-a-violation` tree into a violation. The mutation is applied to the module COPY inside the throwaway fixture; the tracked port is never touched.
+    """
+    tracked = pathlib.Path(diff.repo()) / ".ci" / "rediacc_ci" / "quality" / ("%s.py" % MODULE)
+    before = tracked.read_text(encoding="utf-8")
+    anchor = 'OUTPUT_STATEMENT = re.compile(r"\\b(log_error|log_warn|log_info|log_debug|echo|printf)\\b")'
+    assert before.count(anchor) == 1, "the plant's anchor moved"
+
+    root = build(tmp_path, MENTION)
+    copy = root / ".ci" / "rediacc_ci" / "quality" / ("%s.py" % MODULE)
+    copy.write_text(
+        copy.read_text(encoding="utf-8").replace(
+            anchor, 'OUTPUT_STATEMENT = re.compile(r"(?!x)x")'
+        ),
+        encoding="utf-8",
+    )
+    with pytest.raises(AssertionError):
+        compare(root, "a-log-error-mention-of-a-narrowable-path-is-not-a-violation")
+
+    # And the real, unmutated module still agrees against the same fixture.
+    clean = build(tmp_path / "clean", MENTION)
+    compare(clean, "a-log-error-mention-of-a-narrowable-path-is-not-a-violation")
+    assert tracked.read_text(encoding="utf-8") == before
 
 
 def test_the_single_quote_lead_is_dead_under_gnu_grep():
@@ -259,8 +341,3 @@ def test_selftest_exits_zero_and_prints_a_count():
     assert code == 0, err
     assert "control(s) passed" in out
     assert int(out.split(" control(s)")[0].strip()) >= 16
-
-
-def test_the_twin_is_still_present():
-    """Invariant 5: a twin is never deleted in the change that ports it."""
-    assert (pathlib.Path(diff.repo()) / TWIN).is_file()

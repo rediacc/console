@@ -1,0 +1,16 @@
+# twin .ci/scripts/docker/retag-image.sh blob 5e261ceb531187621d6d95f32216a71516ae4d9d
+exit: 1
+--- stdout ---
+
+--- stderr ---
+→ Re-tagging all images...
+→ Re-tagging renet: a -> b
+ERROR: failed to create manifest list: unauthorized
+✗ Failed to re-tag ghcr.io/rediacc/renet:a -> ghcr.io/rediacc/renet:b
+→ Re-tagging rdc: a -> b
+ERROR: failed to create manifest list: unauthorized
+✗ Failed to re-tag ghcr.io/rediacc/rdc:a -> ghcr.io/rediacc/rdc:b
+✓ Re-tag summary: 0 succeeded, 2 failed
+--- calls ---
+docker	buildx	imagetools	create	-t	ghcr.io/rediacc/renet:b	ghcr.io/rediacc/renet:a
+docker	buildx	imagetools	create	-t	ghcr.io/rediacc/rdc:b	ghcr.io/rediacc/rdc:a

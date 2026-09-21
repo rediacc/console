@@ -11,8 +11,8 @@ THE HEADER BELOW IS THE TWIN'S, FIELD FOR FIELD, extracted from `.ci/scripts/qua
 this order: `kind`, `id`, `test`, `blocker`, `needs`. It carried NO `step:`, NO `lane:`, NO `emit:`, NO `selftest:`, NO `run:`, NO `why:`. Every one of those five presences and six absences is deliberate.
 
   `kind: test`   no workflow step invokes this gate directly. It is driven by
-                 `.ci/scripts/test/gates/test-label-references.sh` inside
-                 the gate-test battery, so there is no step to bind and no lane to place it
+                 `.ci/rediacc_ci/tests/gates/test_gate_label_references.py` inside
+                 the pytest lane, so there is no step to bind and no lane to place it
                  in. Losing this field would turn the gate into one that CLAIMS a
                  CI step, which is exactly what the blocker below refuses.
   `id:`          THE BASENAME DOES NOT DERIVE THE MANIFEST ID. `derivedId`
@@ -22,8 +22,8 @@ this order: `kind`, `id`, `test`, `blocker`, `needs`. It carried NO `step:`, NO 
                  binds to an id the manifest does not have. This is the mismatch
                  the batch brief warned about, confirmed by running `derivedId`
                  rather than by reading the module name.
-  `test:`        the harness path, carried unchanged. It still points at the
-                 bash harness, which still drives the bash twin; see the pin note
+  `test:`        the harness path. It named the bash harness until W7 P5 retired
+                 that file, and now names the pytest port; see the pin note
                  below.
   `blocker:`     carried BYTE FOR BYTE from the twin. It is a live suppression
                  reason under the BLOCKER convention.
@@ -33,13 +33,11 @@ this order: `kind`, `id`, `test`, `blocker`, `needs`. It carried NO `step:`, NO 
 
 THE RESOLVED NEED SET DOES NOT MOVE, verified by calling `bind()` on both files. Both infer `[]` and both resolve to the empty set `needs: none` declares.
 
-PINNED BY PATH, and this one is pinned in three places rather than one, so say which. `.ci/scripts/test/gates/test-label-references.sh:26` sets
-`GATE=".../check-label-references.sh"` and RUNS it, and the manifest's `test:`
-points at that harness; `.ci/rediacc_ci/tests/test_quality_label_references.py:35` and `.ci/rediacc_ci/tests/gates/test_gate_label_references.py:63` also name the twin path. All three go on exercising the bash twin after this cutover and go on passing, so the registry flip alone does not move them. Repointing is the driver's call, and the rows differ in kind: the harness RUNS the
+PINNED BY PATH, in two places rather than one, so say which. `test_quality_label_references.py:35` and `test_gate_label_references.py:63` name the twin path, and the manifest's `test:` points at the second. Both still exercise the bash twin, so the registry flip alone does not move them. Repointing is the driver's call, and the rows differ in kind: the harness RUNS the
 script by path, so it must be repointed at the ENTRY POINT (a module is not runnable by path),
 while any row asserting a behavioural needle belongs on the MODULE.
 
-THE TWIN'S SELF-EXCLUSION DOES NOT COVER THIS FILE, and that was checked rather than assumed. `check-label-references.sh:80` excludes exactly two BASENAMES, `check-label-references.sh` and `test-label-references.sh`, because each carries planted sample lines. This entry point carries none, and neither do its nine batch-mates: ALL TEN of the twin's extractor pipelines were run over
+THE TWIN'S SELF-EXCLUSION DID NOT COVER THIS FILE, and that was checked rather than assumed. `check-label-references.sh:80` excluded exactly two BASENAMES, `check-label-references.sh` and `test-label-references.sh`, because each carries planted sample lines. This entry point carries none, and neither do its nine batch-mates: ALL TEN of the twin's extractor pipelines were run over
 `.github .ci` twice, once as the gate runs them and once with the ten new `check_*.py` basenames excluded, and the two sorted result sets are identical at 13 names. So the cutover adds nothing to the swept corpus and the exclusion list correctly does not need to grow.
 
 DRIVEN, on this tree, both streams captured SEPARATELY, `CI=true` on both:
@@ -64,13 +62,13 @@ THE CONTROL WAS PROVED IN BOTH DIRECTIONS BEFORE EITHER SIDE RAN: the twin's own
 
 The plant was removed with `rm` and `git status --porcelain` diffed against its pre-plant capture with no difference.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-label-references.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
+THE TWIN IS GONE: W7 P5 froze `.ci/scripts/quality/check-label-references.sh`'s output into `.ci/rediacc_ci/tests/goldens/label-references/` and deleted it, so the differential now compares this port against the bytes the twin recorded rather than against a second live implementation.
 
 ---- gate ----
 kind: test
 id: check:ci-label-refs
-test: .ci/scripts/test/gates/test-label-references.sh
-blocker: BLOCKER: test-label-references.sh:116 runs the gate seam-free against the real tree inside the gate-test battery (ci-quality.yml quality-security, "Quality-gate unit tests"), so the real sweep over .github/.ci executes every CI run; the fixture cases around it prove both fire directions
+test: .ci/rediacc_ci/tests/gates/test_gate_label_references.py
+blocker: BLOCKER: test_gate_label_references.py:test_real_tree_is_clean_and_excludes_this_file runs the gate seam-free against the real tree under check:ci-pytest (ci-quality.yml quality-security, "Python package tests"), so the real sweep over .github/.ci executes every CI run; the fixture cases around it prove both fire directions
 needs: none
 ---- end gate ----
 """

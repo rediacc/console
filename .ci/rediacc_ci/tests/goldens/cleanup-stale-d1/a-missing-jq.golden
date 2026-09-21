@@ -1,0 +1,6 @@
+# twin .ci/scripts/housekeeping/cleanup-stale-d1.sh blob a068b60df3b7ecb2cc6bc3becc3ca089a52445ee
+exit: 1
+--- stdout ---
+--- stderr ---
+✗ Required command 'jq' is not available
+--- calls ---

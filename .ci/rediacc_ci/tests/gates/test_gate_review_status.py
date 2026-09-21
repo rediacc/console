@@ -1,4 +1,4 @@
-r"""Port of `.ci/scripts/test/gates/test-review-status.sh`.
+r"""Port of `.ci/scripts/test/gates/test-review-status.sh`, retired in W7 P5.
 
 Both-ways test for `.ci/scripts/review/review-status.sh` -- the script behind the `Review Complete` check-run -- and, from the second half onward, for the two top-level review-hygiene gates it shells out to.
 
@@ -35,7 +35,8 @@ Read from the lock rather than inferred from the fixtures, which would mislead: 
     `test_review_report_count_is_shared_and_unqualified` parse constants out of
     the two real hygiene gates and `common.sh`.
 
-Every temp-world case also RUNS the real `review-status.sh`, `check-review-comments.sh`, `check-review-report-replies.sh` and `claude-review-gate.sh` off the tracked tree. A battery step rewriting any of those mid-sweep is a divergence that would be blamed on this port.
+Every temp-world case also RUNS the real `review-status.sh`, `check_review_comments.py`, `check_review_report_replies.py` and `claude-review-gate.sh` off the tracked tree. A battery step rewriting any of those mid-sweep is a divergence that would be blamed on this port. The two hygiene gates are named by their entry points because their bash twins were retired in W7 P5 batch
+G1; see the pin rule beside `REVIEW_COMMENTS_GATE_REL` for why a harness that RUNS a gate and one that READS it take different files.
 
 `REAL_TREE_TWIN = True` buys the serialisation, and it is honoured ONLY because
 this module declares no `XDIST_GROUP` of its own; see `real_tree_admission` in `test_twin_parity.py`, where an own group silently makes the opt-in vacuous.
@@ -72,8 +73,6 @@ import pathlib
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-review-status.sh"
 
 # Seven cases read tracked files seam-free and every temp-world case runs the real scripts off the tracked tree. The lock says `tree:repo` too. See the docstring.
 REAL_TREE_TWIN = True

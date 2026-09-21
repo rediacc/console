@@ -1,6 +1,6 @@
 """Check for Claude attribution in a PR's commits and description.
 
-Ported from `.ci/scripts/quality/check-claude-attribution.sh`, which is NOT deleted; see `rediacc_ci.quality.__init__` for why both copies live.
+Ported from `.ci/scripts/quality/check-claude-attribution.sh`, which W7 P5 batch G1 retired once `.ci/shadow/w7p2-claude-attribution.observations.jsonl` asserted equivalence over five distinct trees and the twin's own output was recorded as goldens.
 
 The twin's header:
 

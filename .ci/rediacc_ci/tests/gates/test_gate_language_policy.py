@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-language-policy.sh`.
+"""Port of `.ci/scripts/test/gates/test-language-policy.sh`, retired in W7 P5.
 
 Subject: `.ci/scripts/quality/check_language_policy.py` (RULING 7). Its claim, and therefore what has to be proven in BOTH directions: the set of tracked bash files under `.ci` and `.claude` may lose members and may never gain one, exemptions are named with a `BLOCKER:` reason and die when they stop suppressing anything, and a green produced by an enumeration that saw nothing is
 refused rather than printed.
@@ -16,8 +16,6 @@ import pathlib
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-language-policy.sh"
 
 # The seam-free case runs the subject against the real repository. See the docstring.
 REAL_TREE_TWIN = True
@@ -599,12 +597,13 @@ def test_this_port_is_not_a_shrink_only_offender(gate):
             "gate-test:shrink-only-composition will report it as an unguarded Python "
             "baseline writer. Keep it rendered through DRAIN_FLAG."
         )
-    # AND THE CONSTANT MUST STILL BE THE REAL FLAG. A control that only checks for absence is satisfied by a typo, which would make every case above drive the subject with an argument it ignores. CHECKED AGAINST THE TWIN rather than against a literal written here: the twin is a `.sh` file, outside the offender corpus entirely, so it can carry the flag whole -- and comparing against
-    # a literal in THIS file would be a tautology or a second thing to keep rendered.
-    twin = (ROOT / BASH_TWIN).read_text(encoding="utf-8")
-    if DRAIN_FLAG not in twin:
+    # AND THE CONSTANT MUST STILL BE THE REAL FLAG. A control that only checks for absence is satisfied by a typo, which would make every case above drive the subject with an argument it ignores. CHECKED AGAINST THE SUBJECT, which is where the argument is really parsed, rather than against a literal written here, which would be a tautology or a second thing to keep rendered. The
+    # oracle was the bash twin until W7 P5 retired it; the subject is the better one, because a flag the subject stopped accepting is the failure this guards against and the twin only ever passed the flag along.
+    subject = GATE.read_text(encoding="utf-8")
+    if DRAIN_FLAG not in subject:
         gate.log_fail(
             "the rendered flag %r does not appear in %s, so it is a typo and every case "
-            "above drove the subject with an argument it ignores" % (DRAIN_FLAG, BASH_TWIN)
+            "above drove the subject with an argument it ignores"
+            % (DRAIN_FLAG, paths.relative_to_root(GATE))
         )
     gate.log_pass("the drain flag is rendered, so this port cannot flag itself (%r)" % DRAIN_FLAG)

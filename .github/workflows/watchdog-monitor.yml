@@ -5,8 +5,8 @@ run-name: "Watchdog: run ${{ inputs.target_run_id }} (gen ${{ inputs.generation 
 # has a hard, non-overridable 15-minute job cap, so the old single 3-hour
 # monitor job cannot run there; instead each generation polls until
 # WATCHDOG_DEADLINE_SECONDS and then dispatches the next generation via
-# dispatch-watchdog.sh, which also enforces the generation cap reproducing
-# the old 3-hour backstop. Dispatched by ci.yml's CI Watchdog bootstrap
+# rediacc_ci.ci.dispatch_watchdog, which also enforces the generation cap
+# reproducing the old 3-hour backstop. Dispatched by ci.yml's CI Watchdog bootstrap
 # (gen 1) and by itself (gen N+1). A lost dispatch fails open: the run
 # finishes unwatched and ci-complete still gates on every job's real
 # conclusion.
@@ -67,7 +67,7 @@ jobs:
     # Enforced by CHECK 3 in .ci/scripts/security/check-workflow-gates.sh.
     timeout-minutes: 14
     # actions: write is load-bearing: watchdog-monitor.cjs force-cancels and
-    # reruns failed jobs, and dispatch-watchdog.sh re-dispatches this workflow.
+    # reruns failed jobs, and rediacc_ci.ci.dispatch_watchdog re-dispatches it.
     # pull-requests: read is ADDED - cjs listLabelsOnIssue reads the live
     # no-auto-retry label and has been failing into its own try/catch, silently
     # falling back to stale event-payload labels.

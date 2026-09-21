@@ -1,0 +1,6 @@
+# twin .ci/scripts/quality/check-scope-scripts-reachability.sh blob 3ccfb3f3173ed0300fddef4ba081054d78383eca
+exit: 1
+--- stdout ---
+--- stderr ---
+[0;31m✗ VACUOUS SCAN[0m: only 12 .ci/scripts reference(s) found across 6 dirs.
+  The real tree invokes far more than that, so the enumeration broke.

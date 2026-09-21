@@ -1,6 +1,6 @@
 r"""The newest automated review REPORT (an issue comment) must have been answered.
 
-Ported from `.ci/scripts/quality/check-review-report-replies.sh`, which is NOT deleted; see `rediacc_ci.quality.__init__` for why both copies live.
+Ported from `.ci/scripts/quality/check-review-report-replies.sh`, which W7 P5 batch G1 retired once `.ci/shadow/w7p2-review-report-replies.observations.jsonl` asserted equivalence over seven distinct trees and the twin's own output was recorded as goldens.
 
 WHY THERE ARE TWO GATES ON ONE SURFACE, in the twin's own words, because this is the paragraph that stops someone deleting one of them:
 
@@ -30,7 +30,7 @@ WHY THERE ARE TWO GATES ON ONE SURFACE, in the twin's own words, because this is
 
     The obligation, though, is ONE: answer this review pass. Both scripts therefore
     apply the SAME reply rule (below), so a single substantive reply posted after
-    both comments satisfies both gates. test-review-status.sh drives both scripts
+    both comments satisfies both gates. test_gate_review_status.py drives both scripts
     against one fixture and asserts exactly that, because the moment they disagree
     this stops being coverage and starts being a tax.
 

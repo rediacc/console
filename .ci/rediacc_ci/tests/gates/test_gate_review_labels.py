@@ -38,12 +38,12 @@ from rediacc_ci.tests.gates import harness
 
 UNDER_TEST = paths.from_root(".ci", "scripts", "review", "claude-review-gate.sh")
 LABELS_FILE = paths.from_root(".github", "labels.yml")
-INVENTORY_GATE = paths.from_root(".ci", "scripts", "quality", "check-label-inventory.sh")
+INVENTORY_GATE = paths.from_root(".ci", "rediacc_ci", "quality", "label_inventory.py")
 INITIAL_PROMPT = paths.from_root(".ci", "scripts", "review", "prompts", "initial.md")
 FOLLOWUP_PROMPT = paths.from_root(".ci", "scripts", "review", "prompts", "followup.md")
 REUSABLE_WF = paths.from_root(".github", "workflows", "claude-review-reusable.yml")
 
-# The fence key the prompt emits and this arm parses. Asserted present in BOTH producers below, for the reason test-review-status.sh spells out about json:review-findings: a rename on one side alone makes the parser silently blind
+# The fence key the prompt emits and this arm parses. Asserted present in BOTH producers below, for the reason test_gate_review_status.py spells out about json:review-findings: a rename on one side alone makes the parser silently blind
 # while everything still reports OK.
 LABELS_FENCE_KEY = "json:pr-labels"
 LEDGER_PREFIX_EXPECTED = "<!-- claude-labels:"
@@ -663,7 +663,7 @@ def test_ci_is_on_the_inventory_allowlist(gate):
         encoding="utf-8"
     ):
         gate.log_fail(
-            "check-label-inventory.sh has no CREATE_ON_DEMAND entry for 'ci'; the label is "
+            "label_inventory.py has no CREATE_ON_DEMAND entry for 'ci'; the label is "
             "declared and absent, which that gate treats as a failure"
         )
     if not label_declared("ci"):
@@ -758,7 +758,7 @@ def test_bump_none_is_on_the_inventory_allowlist(gate):
     if '"bump-none|.ci/scripts/review/claude-review-gate.sh"' not in INVENTORY_GATE.read_text(
         encoding="utf-8"
     ):
-        gate.log_fail("check-label-inventory.sh has no CREATE_ON_DEMAND entry for 'bump-none'")
+        gate.log_fail("label_inventory.py has no CREATE_ON_DEMAND entry for 'bump-none'")
     if not label_declared("bump-none"):
         gate.log_fail(".github/labels.yml does not declare 'bump-none'")
     gate.log_pass("'bump-none' is declared AND allowlisted as create-on-demand")

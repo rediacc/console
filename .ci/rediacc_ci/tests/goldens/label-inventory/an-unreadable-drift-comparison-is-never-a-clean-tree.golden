@@ -1,0 +1,9 @@
+# twin .ci/scripts/quality/check-label-inventory.sh blob 13627d4c05edbdecca46be3ef0d973c2a99cf3de
+exit: 1
+--- stdout ---
+--- stderr ---
+✓ 'nightly-red' is declared and absent, which is expected: it is created on demand (see the allowlist in this script).
+✓ 'ci' is declared and absent, which is expected: it is created on demand (see the allowlist in this script).
+✓ 'bump-none' is declared and absent, which is expected: it is created on demand (see the allowlist in this script).
+LIVE_JSON is not valid JSON: Unterminated string starting at: line 1 column 18 (char 17)
+✗ regions/labels drift comparison FAILED to run (exit 1). An unreadable comparison is never a clean tree.

@@ -1,0 +1,6 @@
+# twin .ci/scripts/housekeeping/cleanup-stale-d1.sh blob a068b60df3b7ecb2cc6bc3becc3ca089a52445ee
+exit: 2
+--- stdout ---
+--- stderr ---
+<root>/.ci/scripts/housekeeping/../lib/common.sh: line 334: printf: `ARG_MAX.AGE': not a valid identifier
+--- calls ---

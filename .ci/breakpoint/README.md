@@ -87,7 +87,7 @@ $EDITOR <repo>/.ci/breakpoint/breakpoint.conf      # the ONLY file you should ed
 <repo>/.ci/breakpoint/scripts/check-breakpoint-drift.sh   # must print "Verified N files"
 ```
 
-No `.ci/scripts/`, no `package.json`, no composite action, no network. The folder works when `.ci/breakpoint/` is the only thing in `.ci/`, and `test-breakpoint-portability.sh` proves it by executing the gate inside an otherwise-empty tree.
+No `.ci/scripts/`, no `package.json`, no composite action, no network. The folder works when `.ci/breakpoint/` is the only thing in `.ci/`, and `test_gate_breakpoint_portability.py` proves it by executing the gate inside an otherwise-empty tree.
 
 **`breakpoint.conf` is the only file you should edit.** If you find yourself needing to change a script, that is a signal the value belongs in conf — raise it upstream rather than forking your copy.
 

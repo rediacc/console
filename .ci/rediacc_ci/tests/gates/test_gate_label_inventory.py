@@ -1,6 +1,6 @@
-"""Port of `.ci/scripts/test/gates/test-label-inventory.sh`.
+"""Port of `.ci/scripts/test/gates/test-label-inventory.sh`, retired in W7 P5.
 
-Behavioural test for `.ci/scripts/quality/check-label-inventory.sh`.
+Behavioural test for `.ci/scripts/quality/check_label_inventory.py`.
 
 WHAT IT GUARDS. The gate reconciles `.github/labels.yml` against the labels that actually exist on the repo, in BOTH directions, and the direction that bit was declared-but-absent: `rollback` was declared and referenced and did not exist, and `promote-stable.yml` searches `label:rollback`. A GitHub search for a nonexistent label returns zero PRs rather than an error, so the
 promotion block never fired. Nothing said so. That is the class this gate catches.
@@ -14,7 +14,7 @@ case copies the subject itself. A battery step rewriting either mid-read is a
 divergence that would be blamed on this port. `REAL_TREE_TWIN = True` is what buys
 the serialisation, and it is honoured only because this module declares no `XDIST_GROUP` of its own; see `real_tree_admission` in `test_twin_parity.py`.
 
-THE SUBJECT IS NEVER REIMPLEMENTED. Every verdict comes from the real `bash check-label-inventory.sh`. The one piece of the twin rewritten in Python is the mutant construction in `test_malformed_live_json_fails_closed`, which the twin already writes in Python via a heredoc; the three anchors and their count-exactly-one assertions are carried over verbatim, because a mutation that
+THE SUBJECT IS NEVER REIMPLEMENTED. Every verdict comes from the real `python3 check_label_inventory.py`. The subject was `bash check-label-inventory.sh` until W7 P5 froze its output into `goldens/label-inventory/` and deleted it, and the mutant in `test_malformed_live_json_fails_closed` moved with it: it now patches the ported module rather than the shell script, keeping the
 lands somewhere else is a control that fires for the wrong reason.
 """
 
@@ -24,13 +24,15 @@ import re
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 
-BASH_TWIN = ".ci/scripts/test/gates/test-label-inventory.sh"
-
 # Two cases drive the subject over the real .github/labels.yml, and a third copies the subject out of the tree to build a mutant. See the module docstring.
 REAL_TREE_TWIN = True
 
-GATE_REL = ".ci/scripts/quality/check-label-inventory.sh"
+GATE_REL = ".ci/scripts/quality/check_label_inventory.py"
 GATE = paths.from_root(*GATE_REL.split("/"))
+
+# The MODULE behind the entry point. The mutation control patches this text, because the entry point is a three-line shim and the swallowed-failure defect lives in the module.
+MODULE_REL = ".ci/rediacc_ci/quality/label_inventory.py"
+MODULE_SRC = paths.from_root(*MODULE_REL.split("/"))
 REAL_LABELS_REL = ".github/labels.yml"
 REAL_LABELS = paths.from_root(*REAL_LABELS_REL.split("/"))
 
@@ -41,22 +43,22 @@ def require_gate(gate) -> str:
     """The subject, proved present before anything is claimed."""
     if not GATE.is_file():
         gate.log_fail("subject under test is missing: %s" % GATE_REL)
-    return harness.require_tool("bash", "install bash; the subject IS a bash script")
+    return harness.require_tool("python3", "install python3; the subject IS a Python gate")
 
 
 def run_gate(gate, labels_file, live_file, **extra: str) -> harness.RunResult:
     """`run_gate` from the twin: merged streams, env scoped to this call.
 
-    The twin captures `2>&1` into `LAST_OUT` and asserts on the merged text, so the callers below read `.combined` for the same reason. Env is passed per call so one case cannot leak a seam into the next -- which is exactly what the twin's
-    inline `VAR=... bash "$GATE"` form buys it.
+    The twin captured `2>&1` into `LAST_OUT` and asserted on the merged text, so the callers below read `.combined` for the same reason. Env is passed per call so one case cannot leak a seam into the next -- which is exactly what the twin's
+    inline `VAR=... bash "$GATE"` form bought it.
     """
-    bash = require_gate(gate)
+    python3 = require_gate(gate)
     env = {
         "LABEL_INVENTORY_LABELS_FILE": os.fspath(labels_file),
         "LABEL_INVENTORY_LIVE_FILE": os.fspath(live_file),
     }
     env.update(extra)
-    return harness.run([bash, os.fspath(GATE)], cwd=paths.repo_root(), env=env)
+    return harness.run([python3, os.fspath(GATE)], cwd=paths.repo_root(), env=env)
 
 
 def write_labels(path, *names: str) -> None:
@@ -365,13 +367,13 @@ def test_real_tree_reconciles_against_an_injected_live_list(gate):
 
     The gate runs seam-free over the REAL `.github/labels.yml` -- real parse, real floor, real allowlist verification against the real `report-nightly-status.cjs` -- with the live list injected so no network is touched. The live GitHub read itself cannot run in the quality lane (no label-read token there); it runs on `npm run check:ci-label-inventory`.
     """
-    bash = require_gate(gate)
+    python3 = require_gate(gate)
     names = real_declared_names(gate)
     with harness.temp_dir() as d:
         live = d / "live.txt"
         live.write_text("".join(n + "\n" for n in names), encoding="utf-8")
         result = harness.run(
-            [bash, os.fspath(GATE)],
+            [python3, os.fspath(GATE)],
             cwd=paths.repo_root(),
             env={"LABEL_INVENTORY_LIVE_FILE": os.fspath(live)},
         )
@@ -387,7 +389,7 @@ def test_real_tree_reconciles_against_an_injected_live_list(gate):
         short = d / "live-short.txt"
         short.write_text("".join(n + "\n" for n in names if n != dropped), encoding="utf-8")
         result = harness.run(
-            [bash, os.fspath(GATE)],
+            [python3, os.fspath(GATE)],
             cwd=paths.repo_root(),
             env={"LABEL_INVENTORY_LIVE_FILE": os.fspath(short)},
         )
@@ -402,7 +404,7 @@ def test_real_tree_reconciles_against_an_injected_live_list(gate):
             "".join(n + "\n" for n in names) + "an-undeclared-live-label\n", encoding="utf-8"
         )
         result = harness.run(
-            [bash, os.fspath(GATE)],
+            [python3, os.fspath(GATE)],
             cwd=paths.repo_root(),
             env={"LABEL_INVENTORY_LIVE_FILE": os.fspath(extra)},
         )
@@ -418,11 +420,9 @@ def test_real_tree_reconciles_against_an_injected_live_list(gate):
 def test_malformed_live_json_fails_closed(gate):
     """Found by the automated review of 01e7111c, and confirmed real.
 
-    `LIVE_JSON` feeds a python heredoc that used to swallow a JSON decode failure
-    with a bare `sys.exit(0)`. The outer bash captures that exit code as `drift_rc`,
-    so a truncated/malformed API response (a real risk: `gh api ... --paginate || echo ""` can leave partial stdout on a mid-stream failure) read as "the comparison ran and found nothing" -- the exact swallowed-failure class 1eac336b already fixed once at the shell `|| true` level, one layer down.
+    `LIVE_JSON` fed a python heredoc that used to swallow a JSON decode failure with a bare `sys.exit(0)`, and the outer bash captured that as `drift_rc`, so a truncated response (`gh api ... --paginate || echo ""` can leave partial stdout mid-stream) read as "the comparison ran and found nothing" -- the class 1eac336b fixed once at the shell `|| true` level.
     """
-    bash = require_gate(gate)
+    python3 = require_gate(gate)
     names = real_declared_names(gate)
     with harness.temp_dir() as d:
         live = d / "live.txt"
@@ -433,7 +433,7 @@ def test_malformed_live_json_fails_closed(gate):
             "LABEL_INVENTORY_LIVE_FILE": os.fspath(live),
             "LABEL_INVENTORY_LIVE_JSON_FILE": os.fspath(bad_json),
         }
-        result = harness.run([bash, os.fspath(GATE)], cwd=paths.repo_root(), env=env)
+        result = harness.run([python3, os.fspath(GATE)], cwd=paths.repo_root(), env=env)
         gate.assert_exit_code(
             1,
             result.rc,
@@ -450,11 +450,16 @@ def test_malformed_live_json_fails_closed(gate):
 
         # CONTROL, built by construction: restore the exact bug this test exists for (a literal string replace of the CURRENT fixed line, not a pattern over unrelated text) and require the same input to flip to a false-clean exit 0. If it does not flip, this test is not measuring anything.
         #
-        # The mutant is a plain copy elsewhere, so two more lines that assume the gate's OWN directory location also need patching, or it fails on those for a DIFFERENT reason (source-not-found, or "labels file not found" from get_repo_root()'s 3-levels-up walk landing nowhere) -- either of which looks identical to "control did not fire" without proving anything. Pinning both to
-        # the real, already-known repo root sidesteps that path math entirely.
-        mutant = d / "mutant-gate.sh"
+        # The mutant is the MODULE's source with the raise swapped for a swallow, written beside the fixture and run as a script. Its own `from rediacc_ci import ...` lines resolve through PYTHONPATH, so the copy needs no package scaffolding and no path math: the only thing that differs from the real subject is the one clause under test.
+        mutant = d / "mutant_label_inventory.py"
         mutant.write_text(_mutate_subject(gate), encoding="utf-8")
-        result = harness.run([bash, os.fspath(mutant)], cwd=paths.repo_root(), env=env)
+        result = harness.run(
+            [python3, os.fspath(mutant)],
+            cwd=paths.repo_root(),
+            env=dict(
+                env, PYTHONPATH=os.fspath(paths.from_root(".ci")), PYTHONDONTWRITEBYTECODE="1"
+            ),
+        )
         if result.rc == 1:
             gate.log_fail(
                 "CONTROL DID NOT FIRE: the mutant with the old sys.exit(0) still failed closed"
@@ -469,39 +474,24 @@ def test_malformed_live_json_fails_closed(gate):
 
 
 def _mutate_subject(gate) -> str:
-    """The twin's python heredoc, verbatim in intent and in its three anchors.
+    """The module's source with the drift raise swapped for the pre-fix swallow.
 
-    Each anchor must appear EXACTLY ONCE. An ambiguous anchor would patch the wrong occurrence and the control would prove nothing, so the count is asserted rather
-    than assumed -- which is what the twin's `assert src.count(needle) == 1` does.
+    ONE ANCHOR, AND IT MUST APPEAR EXACTLY ONCE. An ambiguous anchor would patch the wrong occurrence and the control would prove nothing, so the count is asserted rather than assumed -- which is what the twin's `assert src.count(needle) == 1` did over its shell heredoc.
+
+    The swallow returns an EMPTY drift list, which is precisely the pre-fix contract: the comparison's failure became "the comparison ran and found nothing". Nothing else in the file is touched, so a mutant that passes for any other reason is a mutant that did not fire.
     """
-    repo_root = os.fspath(paths.repo_root())
-    src = GATE.read_text(encoding="utf-8")
+    src = MODULE_SRC.read_text(encoding="utf-8")
 
-    needle = "except Exception as e:"
+    needle = (
+        "    except Exception as exc:\n"
+        '        raise DriftUnreadableError("LIVE_JSON is not valid JSON: %s" % exc) from exc\n'
+    )
     if src.count(needle) != 1:
         gate.log_fail(
-            "mutation anchor missing or ambiguous: %r appears %d time(s) in %s"
-            % (needle, src.count(needle), GATE_REL)
+            "mutation anchor missing or ambiguous: it appears %d time(s) in %s"
+            % (src.count(needle), MODULE_REL)
         )
-    start = src.index(needle)
-    end = src.index("sys.exit(1)", start) + len("sys.exit(1)")
-    src = src[:start] + "except Exception:\n    sys.exit(0)" + src[end:]
-
-    source_needle = 'source "$SCRIPT_DIR/../lib/common.sh"'
-    if src.count(source_needle) != 1:
-        gate.log_fail(
-            "source anchor missing or ambiguous: %r appears %d time(s)"
-            % (source_needle, src.count(source_needle))
-        )
-    src = src.replace(source_needle, "source %r" % (repo_root + "/.ci/scripts/lib/common.sh"), 1)
-
-    root_needle = 'REPO_ROOT="$(get_repo_root)"'
-    if src.count(root_needle) != 1:
-        gate.log_fail(
-            "REPO_ROOT anchor missing or ambiguous: %r appears %d time(s)"
-            % (root_needle, src.count(root_needle))
-        )
-    return src.replace(root_needle, "REPO_ROOT=%r" % repo_root, 1)
+    return src.replace(needle, "    except Exception:\n        return []\n", 1)
 
 
 def test_the_real_declaration_file_is_non_trivial(gate):

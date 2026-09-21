@@ -291,8 +291,8 @@ Labels in this repo are kill switches (`full-ci` bypasses the scope engine's ski
 
 | Link | Enforced by |
 |------|-------------|
-| code names a label -> declared in `.github/labels.yml` | `check:ci-label-refs` (`.ci/scripts/quality/check-label-references.sh`) |
-| declared <-> the label exists on the repo | `check:ci-label-inventory` (`.ci/scripts/quality/check-label-inventory.sh`) |
+| code names a label -> declared in `.github/labels.yml` | `check:ci-label-refs` (`.ci/scripts/quality/check_label_references.py`) |
+| declared <-> the label exists on the repo | `check:ci-label-inventory` (`.ci/scripts/quality/check_label_inventory.py`) |
 | declared (and not `guide: false`) -> explained on every PR | `label-guide` job in `ci.yml` -> `.ci/scripts/ci/label-guide-comment.cjs` |
 
 **The inventory gate** reconciles `.github/labels.yml` against the live repo in both directions. Declared-but-absent is the direction that already bit: `rollback` was declared and referenced while not existing, and `promote-stable.yml` searches `label:rollback` -- a search for a nonexistent label returns zero PRs rather than an error, so the promotion block silently never fired.
@@ -304,7 +304,7 @@ anything else (403, 500, network) counts as "could not tell" and the finding sta
 `LABEL_INVENTORY_PROBE_FILE` is the separate seam that lets the test drive both re-verify outcomes offline. One label is exempt from the absent direction, via a commented allowlist inside the script: `nightly-red` is created on demand by `report-nightly-status.cjs` right before it opens the rolling issue. The allowlist re-verifies both halves of its own entry each run, so the
 exemption expires rather than rots.
 
-Its CI coverage is `kind: 'test'`: `test-label-inventory.sh` drives the real gate over the real `.github/labels.yml` inside the `Quality-gate unit tests` battery, with the live list injected, plus controls that drop a real label and add an undeclared one. The **live** GitHub read is the one part that lane cannot do (it holds no label-read token); run `npm run
+Its CI coverage is `kind: 'test'`: `test_gate_label_inventory.py` drives the real gate over the real `.github/labels.yml` inside the `Python package tests` lane, with the live list injected, plus controls that drop a real label and add an undeclared one. The **live** GitHub read is the one part that lane cannot do (it holds no label-read token); run `npm run
 check:ci-label-inventory` locally for that.
 
 **The PR label guide** is a single sticky comment posted by the `label-guide` job, rendered from `.github/labels.yml` so it cannot become a second, rotting

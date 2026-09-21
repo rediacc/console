@@ -210,7 +210,7 @@ const CLOSURES = {
       '.github/workflows/ci-build-renet.yml',
     ],
   },
-  // ct-install-methods.yml, called from ci.yml:1246. Six platform legs plus a STRICT aggregator, and the aggregator alone is sufficient evidence: "Install Methods Complete" runs `if: always() && !cancelled()` (ct-install-methods.yml:218) and assert-install-methods-complete.sh:43-45 fails on anything that is not the literal `success`, `skipped` included. Aggregator green therefore
+  // ct-install-methods.yml, called from ci.yml:1246. Six platform legs plus a STRICT aggregator, and the aggregator alone is sufficient evidence: "Install Methods Complete" runs `if: always() && !cancelled()` (ct-install-methods.yml:218) and `assert_install_methods_complete` fails on anything that is not the literal `success`, `skipped` included. Aggregator green therefore
   // means all six legs executed green, which is exactly what six separate jobNames would have asserted.
   install_methods: {
     jobNames: ['Install Methods Complete'],
@@ -232,7 +232,7 @@ const CLOSURES = {
       '.ci/scripts/setup/install-deps.sh',
       '.ci/scripts/setup/build-packages.sh',
       '.ci/scripts/test/test-install-methods.sh',
-      '.ci/scripts/ci/assert-install-methods-complete.sh',
+      '.ci/rediacc_ci/ci/assert_install_methods_complete.py',
       '.ci/scripts/lib/common.sh',
       // test-install-methods.sh:33 sources it for RELEASES_BASE_URL and the
       // package names the apt/dnf/apk/pacman legs install.

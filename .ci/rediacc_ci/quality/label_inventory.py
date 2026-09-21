@@ -1,11 +1,11 @@
 r"""`.github/labels.yml` and the labels that exist on the repo must agree, both ways.
 
-Ported from `.ci/scripts/quality/check-label-inventory.sh`, which is NOT deleted;
+Ported from `.ci/scripts/quality/check-label-inventory.sh`, which W7 P5 retired once its output was frozen into `.ci/rediacc_ci/tests/goldens/label-inventory/`;
 see `rediacc_ci.quality.__init__` for why both copies live.
 
 WHY, in the twin's own words, because the failure was a silent fail-open:
 
-    The sibling gate check-label-references.sh closes the first link of the
+    The sibling gate check_label_references.py closes the first link of the
     chain: code that names a label -> that label declared in .github/labels.yml.
     It stops there on purpose, because DECLARING is not CREATING. The link that
     was still open is the one that bit: `rollback` was declared and referenced and

@@ -23,9 +23,9 @@ jobs:
     # anything to delete. A workflow keeping write scope it cannot use is the
     # shape this repo's other permission gates exist to catch.
     #
-    # .ci/scripts/housekeeping/cleanup-github-deployments.sh STAYS in the tree: it
+    # rediacc_ci.housekeeping.cleanup_github_deployments STAYS in the tree: it
     # is the manual instrument for edge/stable records, and
-    # cleanup-pr-environments.sh names it in prose as the prerequisite for its own
+    # cleanup_pr_environments names it in prose as the prerequisite for its own
     # refusal. Only the automatic step is gone.
     permissions:
       contents: read

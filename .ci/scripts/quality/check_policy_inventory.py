@@ -871,7 +871,7 @@ _TS_JSDOC = """/**
  */
 """
 
-# `.ci/scripts/test/gates/test-policy-path.sh:21`, verbatim: the CURRENT value, in backticks, in a comment that must stay clean.
+# The CURRENT value, in backticks, in a comment that must stay clean. Copied verbatim from the header of `.ci/scripts/quality/check_policy_inventory.py`'s own subject when `test-policy-path.sh` still carried it at line 21.
 _CURRENT_CLAIM = (
     "# THE MOVE LANDED 2026-09-06 at b80552370: POLICY_DIR is `.ci/policy` and all\n"
     "# fifteen are there. `.ci-trigger` stayed at root with its own recorded reason.\n"
@@ -1061,7 +1061,7 @@ def selftest(verbose: bool = False) -> int:
         stale and "asserts POLICY_DIR is ''" in stale[0] and "'.ci/policy'" in stale[0],
     )
     c.check(
-        "ANTI-SILENCER: the CURRENT value in backticks is clean (test-policy-path.sh:21)",
+        "ANTI-SILENCER: the CURRENT value in backticks is clean",
         _prose("x.sh", _CURRENT_CLAIM),
         [],
     )

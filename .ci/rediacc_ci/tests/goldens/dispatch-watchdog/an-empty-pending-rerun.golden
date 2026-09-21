@@ -1,0 +1,6 @@
+# twin .ci/scripts/ci/dispatch-watchdog.sh blob c8ca37cdeeadfc67b363eae6054040dec089ea5c
+exit: 1
+--- stdout ---
+--- stderr ---
+call: gh api repos/rediacc/console --jq .default_branch
+✗ Failed to dispatch watchdog generation 1 for run 1: call: gh workflow run watchdog-monitor.yml --repo rediacc/console --ref  -f target_run_id=1 -f generation=1 -f pr_number=3 -f head_ref=m -f pending_rerun=false

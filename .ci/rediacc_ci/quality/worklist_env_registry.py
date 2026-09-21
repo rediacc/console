@@ -384,7 +384,7 @@ def evaluate(registry, reads):
 
 #: Test-only override for WHICH FILE `load_registry` reads, matching the
 #: `LABEL_INVENTORY_LIVE_FILE` seam already in this estate
-#: (`check-label-inventory.sh`). The real corpus scan (`scan_corpus`, above)
+#: (`label_inventory.py`). The real corpus scan (`scan_corpus`, above)
 #: is untouched by this seam -- only the registry file swaps -- so a plant
 #: that mutates the REGISTRY no longer has to write the tracked
 #: `.ci/policy/worklist-env-registry.json` to exercise the comparison. Two

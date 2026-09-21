@@ -75,7 +75,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-css-dom-refs | quality-content / CSS DOM references | yes | no | no |
 | check:ci-cta-bolt | quality-www-build / CTA bolt | yes | yes | no |
 | check:ci-dead-bash | quality-code / Dead bash | yes | yes | no |
-| check:ci-dead-case-arms | test: .ci/scripts/test/gates/test-dead-case-arms.sh | yes | no | no |
+| check:ci-dead-case-arms | test: .ci/rediacc_ci/tests/gates/test_gate_dead_case_arms.py | yes | no | no |
 | check:ci-dead-css | quality-content / Dead CSS | yes | no | no |
 | check:ci-dead-python | quality-static / Dead Python | yes | no | no |
 | check:ci-dead-service-methods | quality-content / Dead service methods | yes | no | no |
@@ -177,8 +177,8 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-jq-boolean-default | quality-code / jq boolean defaults | yes | no | no |
 | check:ci-judged-rule-wiring | quality-code / Judged rule wiring | yes | no | no |
 | check:ci-knip-blockers | quality-code / knip BLOCKER reasons | yes | no | no |
-| check:ci-label-inventory | test: .ci/scripts/test/gates/test-label-inventory.sh | yes | no | no |
-| check:ci-label-refs | test: .ci/scripts/test/gates/test-label-references.sh | yes | no | no |
+| check:ci-label-inventory | test: .ci/rediacc_ci/tests/gates/test_gate_label_inventory.py | yes | no | no |
+| check:ci-label-refs | test: .ci/rediacc_ci/tests/gates/test_gate_label_references.py | yes | no | no |
 | check:ci-landmarks | quality-www-build / Landmarks | yes | yes | no |
 | check:ci-language-policy | quality-static / Language policy | yes | no | no |
 | check:ci-layout-overflow | test: .ci/rediacc_ci/tests/gates/test_gate_layout_overflow.py | yes | no | no |
@@ -222,7 +222,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-pr-task-trailers | quality-code / Every commit names its epic | yes | no | no |
 | check:ci-pricing-consistency | quality-content / Pricing consistency | yes | no | no |
 | check:ci-probe-parity | quality-static / Capability-probe parity | yes | no | no |
-| check:ci-profiler-coverage | test: .ci/scripts/test/gates/test-profiler-coverage.sh | yes | no | no |
+| check:ci-profiler-coverage | test: .ci/rediacc_ci/tests/gates/test_gate_profiler_coverage.py | yes | no | no |
 | check:ci-prose-style | quality-content / Check prose style (the work, not the person) | yes | yes | no |
 | check:ci-proxy-cli-manifest | local-only | yes | no | no |
 | check:ci-proxy-docker-prepull | local-only | yes | yes | no |
@@ -360,23 +360,15 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | gate-test:autopilot-breakpoint-alignment | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:autopilot-no-bypass | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:blocker-golden-corpus | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:breakpoint-portability | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:ci-job-aggregation | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:claude-hooks | quality-security / Quality-gate unit tests | yes | yes | yes |
 | gate-test:commit-identity | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:dead-case-arms | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:gate-anti-vacuity | quality-security / Quality-gate unit tests | yes | yes | yes |
 | gate-test:generate-tag-inputs | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:go-module-sync | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:label-inventory | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:label-references | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:language-policy | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:media-r2 | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:plan-housekeeping | quality-security / Quality-gate unit tests | yes | yes | yes |
-| gate-test:policy-path | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:profiler-coverage | quality-security / Quality-gate unit tests | yes | yes | yes |
 | gate-test:regions-sync | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:review-status | quality-security / Quality-gate unit tests | yes | yes | yes |
 | gate-test:run-sh | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:runner-advice | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:toolchain | quality-security / Quality-gate unit tests | yes | no | yes |
@@ -386,7 +378,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | test:install-script | quality-static / Install-script tests | yes | no | no |
 | test:write-once-guard | quality-static / Write-once guard tests | yes | no | no |
 
-361 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
+353 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
 
 <!-- <<< gen-docs -->
 
@@ -693,27 +685,49 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/tests/goldens/allowlist/ts-records | 17 | .golden 17 |
 | .ci/rediacc_ci/tests/goldens/announce-gate-skips | 13 | .golden 13 |
 | .ci/rediacc_ci/tests/goldens/app-admin-perm | 7 | .golden 7 |
+| .ci/rediacc_ci/tests/goldens/assert-install-methods-complete | 12 | .golden 12 |
+| .ci/rediacc_ci/tests/goldens/branch | 2 | .golden 2 |
+| .ci/rediacc_ci/tests/goldens/build-json | 11 | .golden 11 |
+| .ci/rediacc_ci/tests/goldens/build-linux-packages | 14 | .golden 14 |
+| .ci/rediacc_ci/tests/goldens/cancel-older-runs | 28 | .golden 28 |
+| .ci/rediacc_ci/tests/goldens/claude-attribution | 2 | .golden 2 |
+| .ci/rediacc_ci/tests/goldens/cleanup-cf-preview | 22 | .golden 22 |
+| .ci/rediacc_ci/tests/goldens/cleanup-github-deployments | 14 | .golden 14 |
+| .ci/rediacc_ci/tests/goldens/cleanup-pr-environments | 17 | .golden 17 |
+| .ci/rediacc_ci/tests/goldens/cleanup-stale-d1 | 19 | .golden 19 |
+| .ci/rediacc_ci/tests/goldens/create-manifest | 22 | .golden 22 |
+| .ci/rediacc_ci/tests/goldens/dispatch-watchdog | 48 | .golden 48 |
+| .ci/rediacc_ci/tests/goldens/git-op-conditionals | 10 | .golden 10 |
+| .ci/rediacc_ci/tests/goldens/hook-integrity | 3 | .golden 3 |
+| .ci/rediacc_ci/tests/goldens/label-inventory | 13 | .golden 13 |
+| .ci/rediacc_ci/tests/goldens/label-references | 6 | .golden 6 |
+| .ci/rediacc_ci/tests/goldens/resolved-threads | 6 | .golden 6 |
+| .ci/rediacc_ci/tests/goldens/retag-image | 32 | .golden 32 |
+| .ci/rediacc_ci/tests/goldens/retry-failed-runs | 22 | .golden 22 |
+| .ci/rediacc_ci/tests/goldens/review-comments | 11 | .golden 11 |
+| .ci/rediacc_ci/tests/goldens/review-report-replies | 9 | .golden 9 |
 | .ci/rediacc_ci/tests/goldens/run-external-gate | 21 | .golden 21 |
+| .ci/rediacc_ci/tests/goldens/scope-scripts-reachability | 7 | .golden 7 |
 | .ci/rediacc_ci/tests/goldens/staging-tag-guard | 12 | .golden 12 |
 | .ci/rediacc_ci/tests/goldens/standing-orders-brief | 18 | .golden 18 |
 | .ci/rediacc_ci/version | 5 | .py 5 |
 | .ci/scripts/autopilot | 19 | .sh 16, .cjs 2, .json 1 |
 | .ci/scripts/autopilot/prompts | 2 | .md 2 |
-| .ci/scripts/build | 17 | .sh 17 |
+| .ci/scripts/build | 15 | .sh 15 |
 | .ci/scripts/build/sea-inject | 7 | .mjs 7 |
-| .ci/scripts/ci | 23 | .sh 13, .cjs 9, .py 1 |
+| .ci/scripts/ci | 20 | .sh 10, .cjs 9, .py 1 |
 | .ci/scripts/ci/profiler | 3 | .sh 2, .awk 1 |
 | .ci/scripts/deploy | 26 | .sh 26 |
-| .ci/scripts/docker | 7 | .py 4, .sh 3 |
+| .ci/scripts/docker | 5 | .py 4, .sh 1 |
 | .ci/scripts/docs | 2 | .mjs 2 |
 | .ci/scripts/env | 1 | .sh 1 |
-| .ci/scripts/housekeeping | 7 | .sh 6, .py 1 |
+| .ci/scripts/housekeeping | 2 | .py 1, .sh 1 |
 | .ci/scripts/infra | 11 | .sh 11 |
 | .ci/scripts/lib | 8 | .sh 8 |
 | .ci/scripts/pr | 1 | .sh 1 |
 | .ci/scripts/private | 9 | .sh 9 |
 | .ci/scripts/private/license-mint | 3 | .go 1, .mod 1, .sum 1 |
-| .ci/scripts/quality | 167 | .py 139, .sh 25, .json 2, .mjs 1 |
+| .ci/scripts/quality | 157 | .py 139, .sh 15, .json 2, .mjs 1 |
 | .ci/scripts/quality/lib | 1 | .py 1 |
 | .ci/scripts/release | 18 | .sh 18 |
 | .ci/scripts/review | 4 | .sh 4 |
@@ -723,7 +737,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/scripts/signal | 1 | .sh 1 |
 | .ci/scripts/test | 17 | .sh 16, .ts 1 |
 | .ci/scripts/test/fixtures/mutate-check | 2 | .py 1, .sh 1 |
-| .ci/scripts/test/gates | 23 | .sh 23 |
+| .ci/scripts/test/gates | 15 | .sh 15 |
 | .ci/scripts/test/lib | 3 | .sh 3 |
 | .ci/scripts/test/manual | 1 | .sh 1 |
 | .ci/scripts/test/proxies | 10 | .sh 10 |
@@ -736,7 +750,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/tutorials/apps/secrets-demo | 2 | (none) 1, .yml 1 |
 | .ci/tutorials/lib | 4 | .sh 4 |
 
-92 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
+114 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
 
 <!-- <<< gen-docs -->
 ## Hook wiring, folded

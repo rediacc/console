@@ -249,7 +249,8 @@ def run(ev):
                 )
                 return hookio.DENY
 
-        # Report-reply hygiene (both --auto and immediate): the newest finished review report must have a substantive id-referencing reply. Reuses the CI gate script verbatim; fails CLOSED on script/network failure.
+        # Report-reply hygiene (both --auto and immediate): the newest finished review report must have a substantive id-referencing reply. Reuses the CI gate verbatim; fails CLOSED on script/network failure. The gate moved from `check-review-report-replies.sh` to its registered `.py` entry point when W7 P5 batch G1 retired the bash twin, which is why the frozen oracle beside
+        # this file still spells the old path.
         token = hookio.run_out(["gh", "auth", "token"])
         out, rc = _run_capture(
             [
@@ -259,8 +260,8 @@ def run(ev):
                 "GH_TOKEN=%s" % token,
                 "PR_NUMBER=%s" % num,
                 "GITHUB_REPOSITORY=%s" % repo,
-                "bash",
-                "%s/.ci/scripts/quality/check-review-report-replies.sh" % root,
+                "python3",
+                "%s/.ci/scripts/quality/check_review_report_replies.py" % root,
             ]
         )
         if rc != 0:

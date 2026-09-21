@@ -85,7 +85,7 @@
 
 # The fourth member of the family, and the only one that subtracts: it skips the
 # WHOLE release rather than choosing its size. Created on demand by the applier
-# (see the CREATE_ON_DEMAND allowlist in check-label-inventory.sh) for the same
+# (see the CREATE_ON_DEMAND allowlist in label_inventory.py) for the same
 # ordering reason `ci` is.
 - name: bump-none
   color: "C5DEF5"

@@ -4,7 +4,7 @@ WHAT WAS ALREADY TRUE BEFORE THIS FILE, so a reader can see what is new.
 
 `.ci/breakpoint/lib/breakpoint-blocker.sh` is a deliberately reduced copy of the one BLOCKER convention, vendored into a directory invariant 8 says nobody writes to. Two instruments already watch it:
 
-  * `.ci/scripts/test/gates/test-breakpoint-portability.sh` `check_subset`
+  * `.ci/rediacc_ci/tests/gates/test_gate_breakpoint_portability.py` `check_subset`
     asserts `BREAKPOINT_LOW_EFFORT_BLOCKERS` is contained in the bash canonical's
     `LOW_EFFORT_BLOCKER_PATTERNS`, with a planted-defect control and a
     second-read guard against a truncated extractor. Containment of the PHRASE
@@ -71,7 +71,7 @@ ROOT_ENV = "VENDORED_BLOCKER_ROOT"
 PHRASE_ARRAY = "BREAKPOINT_LOW_EFFORT_BLOCKERS"
 MIN_LENGTH_NAME = "BREAKPOINT_BLOCKER_MIN_LENGTH"
 
-# The extractor-truncation floor `check_subset` in test-breakpoint-portability.sh carries, for the reason it records: on 2026-07-31 a short read under the parallel runner returned a canonical list missing one phrase and the subset check blamed the vendored copy. A parse below this is an extractor failure and says so, rather than being reported as a list that changed.
+# The extractor-truncation floor `check_subset` in test_gate_breakpoint_portability.py carries, for the reason it records: on 2026-07-31 a short read under the parallel runner returned a canonical list missing one phrase and the subset check blamed the vendored copy. A parse below this is an extractor failure and says so, rather than being reported as a list that changed.
 MIN_PARSED_PHRASES = 30
 
 # `[[ "$x" == *"$p"* ]]`, the only way bash does the substring match the canonical
@@ -94,7 +94,7 @@ def sha256_of(path: pathlib.Path) -> str:
 def manifest_digest(manifest: pathlib.Path, row: str) -> str:
     """The pinned digest for one row, or a refusal naming what was missing.
 
-    A MISSING MANIFEST IS THE CHEAPEST FREE PASS AVAILABLE, which is why it is a refusal rather than a skip: `test-breakpoint-portability.sh` already records that deleting `MANIFEST.sha256` is the least-effort way to make a diverged copy look clean, and a gate that shrugged at an absent pin would hand that back.
+    A MISSING MANIFEST IS THE CHEAPEST FREE PASS AVAILABLE, which is why it is a refusal rather than a skip: `test_gate_breakpoint_portability.py` already records that deleting `MANIFEST.sha256` is the least-effort way to make a diverged copy look clean, and a gate that shrugged at an absent pin would hand that back.
     """
     if not manifest.is_file():
         raise RefusalError(

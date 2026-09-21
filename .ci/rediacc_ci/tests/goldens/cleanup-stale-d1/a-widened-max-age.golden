@@ -1,0 +1,14 @@
+# twin .ci/scripts/housekeeping/cleanup-stale-d1.sh blob a068b60df3b7ecb2cc6bc3becc3ca089a52445ee
+exit: 0
+--- stdout ---
+Deleted database migration-test-a
+--- stderr ---
+→ Listing D1 databases...
+✓ Found 1 total D1 databases
+✓ Cutoff: 2026-09-20T09:45:13 (databases older than 1440m)
+→ Found 1 stale database(s)
+✓ Deleting: migration-test-a
+✓ Deleted 1 of 1 stale databases
+--- calls ---
+npx	wrangler	d1	list	--json
+npx	wrangler	d1	delete	migration-test-a	--skip-confirmation

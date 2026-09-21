@@ -1,0 +1,5 @@
+# twin .ci/scripts/quality/check-label-references.sh blob 5ff6c3d3873b3f6d81d427f7b7fb3c8502628483
+exit: 0
+--- stdout ---
+--- stderr ---
+✓ all 2 code-referenced labels are declared in fx/labels.yml

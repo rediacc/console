@@ -10,7 +10,7 @@
 #
 # THAT GATE'S VERDICT IS AN API ANSWER, so the only way to test it without a live PR
 # is to control what the API says. A fake `gh` on PATH serves fixture JSON and applies
-# the caller's own --jq to it, which is the pattern test-review-status.sh already uses.
+# the caller's own --jq to it, which is the pattern test_gate_review_status.py already uses.
 #
 # WHAT IT GUARDS. 30 of 42 commits on branch 0903-1 carried an email GitHub does not
 # link to the operator's account -- same display name as the good ones, so `git log`

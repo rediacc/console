@@ -1,0 +1,5 @@
+# twin .ci/scripts/quality/check-git-op-conditionals.sh blob 0ae06d6f5de9172245ed74bd33ce9f4793f3eb08
+exit: 0
+--- stdout ---
+case.py:bare-statement-line-2
+--- stderr ---

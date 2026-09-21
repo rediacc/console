@@ -8,7 +8,7 @@ THIS SCRIPT WRITES TO GITHUB, so the fake `gh` is not a convenience. Its success
   3. `GH_TOKEN` is a fixture string and `GH_CONFIG_DIR` points into the temp
      tree, so a leaked real `gh` would fail auth instead of writing.
 
-THE ROUTING FAKE APPLIES THE CALLER'S OWN `--jq`, which is the design the bash gate test `.ci/scripts/test/gates/test-review-status.sh:57` already uses and the reason this file can compare two implementations that ask for the same data DIFFERENTLY. The twin filters server-side (`gh api ... --jq '.[] | select(...)'`)
+THE ROUTING FAKE APPLIES THE CALLER'S OWN `--jq`, which is the design the retired bash gate test `.ci/scripts/test/gates/test-review-status.sh:57` already uses and the reason this file can compare two implementations that ask for the same data DIFFERENTLY. The twin filters server-side (`gh api ... --jq '.[] | select(...)'`)
 while `core.review_budget` fetches the page and filters in Python; the fake
 serves the same fixture to both and runs real jq when asked, so the ANSWERS are comparable even though the command lines are not.
 

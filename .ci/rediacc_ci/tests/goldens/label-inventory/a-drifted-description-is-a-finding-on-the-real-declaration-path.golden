@@ -1,0 +1,9 @@
+# twin .ci/scripts/quality/check-label-inventory.sh blob 13627d4c05edbdecca46be3ef0d973c2a99cf3de
+exit: 1
+--- stdout ---
+--- stderr ---
+✓ 'nightly-red' is declared and absent, which is expected: it is created on demand (see the allowlist in this script).
+✓ 'ci' is declared and absent, which is expected: it is created on demand (see the allowlist in this script).
+✓ 'bump-none' is declared and absent, which is expected: it is created on demand (see the allowlist in this script).
+✗ label 'alpha' has a drifted description: the repo says 'drifted', .github/labels.yml says something else. The description is what every human reads in the label picker, so a drifted one is documentation that lies. Push the declared values: gh api --method PATCH repos/{owner}/{repo}/labels/alpha -f description='<value from .github/labels.yml>'
+✗ 1 label inventory mismatch(es) between .github/labels.yml and the live repo.

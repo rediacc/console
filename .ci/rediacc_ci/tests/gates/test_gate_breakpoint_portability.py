@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-breakpoint-portability.sh`.
+"""Port of `.ci/scripts/test/gates/test-breakpoint-portability.sh`, retired in W7 P5.
 
 Makes the "self-contained, copyable folder" claim about `.ci/breakpoint/` ENFORCEABLE rather than aspirational.
 
@@ -33,8 +33,6 @@ import shutil
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-breakpoint-portability.sh"
 
 # `gate-test:breakpoint-portability` carries `reads: ["tree:repo"]`.
 REAL_TREE_TWIN = True

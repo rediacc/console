@@ -3,7 +3,7 @@
 
 Aggregates the six per-platform install-method jobs into one verdict and renders the platform table into the job summary. Every platform is HARD-required here -- `skipped` is not accepted, unlike the soft tier in `assert-ci-complete.sh` -- because an install method that silently stops being tested is the failure this gate exists to prevent. The twin's header owns that reasoning.
 
-LIVE CALLER, not repointed: `.github/workflows/ct-install-methods.yml:257` `run: .ci/scripts/ci/assert-install-methods-complete.sh`. The bash twin stays the registered gate; this module is its verified-equivalent alternative and the cutover is a separate, later, driver-only step.
+LIVE CALLER: `.github/workflows/ct-install-methods.yml:257` `run: PYTHONPATH=.ci python3 -m rediacc_ci.ci.assert_install_methods_complete`. The bash twin has been retired and its observable results are frozen in `.ci/rediacc_ci/tests/goldens/assert-install-methods-complete/`.
 
 Ledger: `.ci/shadow/w7p6-assert-install-methods-complete.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-assert-install-methods-complete --assert --k 5`).
 

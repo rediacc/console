@@ -1,0 +1,7 @@
+# twin .ci/scripts/quality/check-resolved-threads.sh blob 19a5839d4715dd5e8a8ac152d6c11d87ac09e868
+exit: 1
+--- stdout ---
+--- stderr ---
+→ Checking review threads and review status...
+→ Fetching review threads via GraphQL...
+✗ GraphQL query failed: Could not resolve to a Repository

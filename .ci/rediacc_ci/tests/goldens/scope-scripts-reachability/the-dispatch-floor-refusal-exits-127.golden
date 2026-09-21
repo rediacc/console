@@ -1,0 +1,5 @@
+# twin .ci/scripts/quality/check-scope-scripts-reachability.sh blob 3ccfb3f3173ed0300fddef4ba081054d78383eca
+exit: 127
+--- stdout ---
+--- stderr ---
+.ci/scripts/quality/check-scope-scripts-reachability.sh: line 275: log_fail: command not found

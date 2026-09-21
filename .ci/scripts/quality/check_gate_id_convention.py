@@ -44,7 +44,7 @@ A PORT GAP WAS FOUND DOING THIS AND FIXED IN `gate_id_convention.py`. The first 
 the bar is byte identity, and TTY-gating one side during a move is a behaviour change smuggled into a file move. The module now carries the same three unconditional constants and uses them at all three sites (the `fail` cross, the findings cross, the success tick), matching `shell_size.py`'s precedent.
 
 DRIVEN RED AS WELL, in a `cp -r` fixture root and not on the real tree: the twin copied to `.ci/scripts/quality/` so its `$BASH_SOURCE` root is the fixture, plus `package.json`, `.ci/scripts/test/` and `scripts/ci-runner/gates.lock.json`. The port is aimed at the same tree with `REDIACC_CI_ROOT`. The plant appends ONE entry to the fixture lock: id `check:ci-probe-8a-alias`, `run`
-pointing straight at `.ci/scripts/test/gates/test-dead-case-arms.sh`.
+pointing straight at `.ci/scripts/test/gates/test-media-r2.sh`.
 
 THE FIRST PLANT DID NOT FIRE, AND THE CONTROL WAS WRONG, NOT THE GATE. It named the gates/ script in `leaves` and left `run` as an npm alias with no matching
 package.json script. Subject-hood is decided by `resolves_to_gate_script(run)`

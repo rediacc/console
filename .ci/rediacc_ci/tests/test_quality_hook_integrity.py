@@ -12,7 +12,10 @@ that this gate's three readers were ALREADY Python, embedded as heredocs, and ev
   * `scope_list` is the thing standing between a malformed data file and a gate
     that audits nothing and exits 0.
 
-So all three heredocs are EXTRACTED from the twin and run as subprocesses over the same inputs, and compared. That is stronger than any hand-written expectation, because it fails when either side changes.
+So all three heredocs are RUN as subprocesses over the same inputs, and compared. That is stronger than any hand-written expectation, because it fails when either side changes.
+
+WHERE THE THREE PROGRAMS NOW COME FROM. W7 P5 batch G2 deleted `.ci/scripts/quality/check-hook-integrity.sh` once the ledger held, and each heredoc was recorded first: `goldens/hook-integrity/` holds the three programs as the extractor read them out of the tracked script on its last day in the tree, headed with the blob sha, so `git cat-file -p <sha>` still yields the file they
+were cut from. THEY ARE STILL EXECUTED, over the same live inputs as before. That is the half that could not have been frozen even in principle: two of the comparisons below run over the REAL tree, whose guard inventory changes with every guard added, so a recording of their OUTPUT would have gone stale the same week. A recording of the PROGRAM does not.
 """
 
 import json
@@ -20,23 +23,30 @@ import pathlib
 import subprocess
 import sys
 
+import pytest
+
 from rediacc_ci import paths
 from rediacc_ci.quality import hook_integrity as hi
+from rediacc_ci.tests import frozen
 
-TWIN = paths.from_root(".ci", "scripts", "quality", "check-hook-integrity.sh")
+SLUG = "hook-integrity"
+
+# marker + anchor -> the golden holding that heredoc's recorded bytes. THE OPENING WAS NOT ALWAYS THE END OF ITS LINE: `scope_list` wrote `<<'PY' 2>/dev/null`, so an extractor anchoring on `<<'PY'\n` skipped it and found `mkspec`'s heredoc instead -- a real program that ran cleanly and answered a different question. The first version of the extractor did exactly that and the
+# comparison failed as though the twin disagreed. The three names below are what
+# that extractor finally returned, which is why the anchors survive here as keys.
+HEREDOCS = {
+    ("PY", "covmap() {"): "the-covmap-reader",
+    ("FLOORPY", "floorcheck() {"): "the-floorcheck-reader",
+    ("PY", "scope_list() {"): "the-scope-list-reader",
+}
 
 
 def _heredoc(marker: str, after: str) -> str:
-    """The body of the first `<<'MARKER'` heredoc that follows `after`.
-
-    THE OPENING IS NOT ALWAYS THE END OF ITS LINE. `scope_list` writes `<<'PY' 2>/dev/null`, so anchoring on `<<'PY'\n` skips it and finds `mkspec`'s heredoc instead -- which extracts a real program, runs cleanly, and answers a different question. The first version of this helper did exactly that and the comparison failed as though the twin disagreed.
-    """
-    body = TWIN.read_text(encoding="utf-8")
-    anchor = body.index(after)
-    start = body.index("<<'%s'" % marker, anchor)
-    start = body.index("\n", start) + 1
-    end = body.index("\n%s\n" % marker, start)
-    return body[start:end]
+    """One of the twin's embedded readers, as it was recorded."""
+    text = frozen.read(SLUG, HEREDOCS[(marker, after)])
+    exit_line, rest = text.split("\n", 1)
+    assert exit_line == "exit: 0", "%s: the recorded extraction failed" % after
+    return rest.split("--- stdout ---\n", 1)[1].split("--- stderr ---\n", 1)[0].removesuffix("\n")
 
 
 def _run_python(program: str, args: list[str], stdin: str = "") -> tuple[int, str, str]:
@@ -195,3 +205,52 @@ def test_scope_list_matches_the_twin_on_every_malformed_shape(
 def test_selftest_runs_and_meets_its_floor() -> None:
     """The gate's own both-direction controls, over fixtures built by construction."""
     assert hi.selftest() == 0
+
+
+def test_every_heredoc_has_a_golden_and_no_golden_is_orphaned() -> None:
+    """ANTI-VACUITY on the corpus: a reader whose golden vanished would never be run, and a golden nothing reads is a recording of a comparison that stopped happening."""
+    frozen.assert_corpus(SLUG, set(HEREDOCS.values()))
+
+
+def test_the_recorded_readers_are_programs_and_not_empty_captures() -> None:
+    """An extraction that had captured nothing would make all three comparisons vacuous.
+
+    Each recording is asserted to be a runnable program that names the thing it reads, so a golden written from a failed slice reds here rather than turning every comparison below into a subprocess that prints nothing and agrees with a port that also printed nothing.
+    """
+    covmap = _heredoc("PY", "covmap() {")
+    floorcheck = _heredoc("FLOORPY", "floorcheck() {")
+    scope = _heredoc("PY", "scope_list() {")
+    assert 'sources, dirs = spec["sources"], spec["dirs"]' in covmap
+    assert len(covmap.split("\n")) > 30
+    assert "import re, sys" in floorcheck
+    assert len(floorcheck.split("\n")) > 15
+    assert "sys.argv[2]" in scope
+    assert scope.rstrip().endswith("print(x)")
+
+
+def test_planted_defect_is_caught_by_the_recorded_reader(tmp_path: pathlib.Path) -> None:
+    """THE CONTROL ON THE GOLDENS. Say yes to every guard, in the recorded reader.
+
+    A coverage reader that credits both directions unconditionally is the shape this gate's own history records twice, and it passes every positive fixture. The mutation is applied to a LOCAL copy of the recorded program; the golden on disk is never rewritten.
+    """
+    hooks = hi.build_fixture_hooks(tmp_path)
+    (hooks / "hooks" / "pre-bash" / "block-fixture-uncovered.sh").write_text(
+        "#!/usr/bin/env bash\nexit 0\n", encoding="utf-8"
+    )
+    spec = hi.mkspec(str(hooks / "hooks"), [str(hooks / "suite.sh")], ["pre-bash", "pre-edit"])
+    spec_path = _spec_file(tmp_path, spec)
+
+    program = _heredoc("PY", "covmap() {")
+    anchor = '        b, a = counts.get("%s/%s" % (seg, name), (0, 0))\n'
+    assert program.count(anchor) == 1, "the plant's anchor moved"
+    broken = program.replace(anchor, "        b, a = (1, 1)\n")
+    assert broken != program
+
+    code, out, err = _run_python(broken, [spec_path])
+    assert code == 0, err
+    assert "pre-bash/block-fixture-uncovered.sh 1 1" in out, "the plant did not land"
+    # The port, and the unmutated recording, both still call that guard uncovered.
+    assert ("pre-bash/block-fixture-uncovered.sh", 0, 0) in hi.covmap(spec)
+    assert hi.covmap(spec) == _twin_covmap(spec_path)
+    with pytest.raises(AssertionError):
+        assert "pre-bash/block-fixture-uncovered.sh 1 1" in _run_python(program, [spec_path])[1]

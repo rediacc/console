@@ -10,7 +10,7 @@ WHY AN ENTRY POINT AT ALL: `check_npmrc.py` states both measured reasons. A port
 THE HEADER BELOW IS THE TWIN'S, FIELD FOR FIELD, extracted from `.ci/scripts/quality/check-dead-case-arms.sh` by an awk range over its `---- gate ----` block, de-commented, and diffed as an ordered list of whole lines against the block in this docstring. The twin carried exactly FOUR fields in this order: `kind`, `test`, `blocker`, `needs`. No `step:`, no `emit:`, no `id:`, no
 `run:`, no `lane:`, no `selftest:`, no `why:`.
 
-`kind: test` IS THE LOAD-BEARING ONE. This gate has NO workflow step of its own: it reaches CI through `.ci/scripts/test/gates/test-dead-case-arms.sh` inside the shared "Quality-gate unit tests" step. Grepped every file under `.github/workflows/` for `check-dead-case-arms.sh` and found ZERO hits, which is what `kind: test` predicts and what makes the `blocker:` below the whole of
+`kind: test` IS THE LOAD-BEARING ONE. This gate has NO workflow step of its own: it reaches CI through `test_gate_dead_case_arms.py` in the "Python package tests" step, its bash twin having gone in W7 P5. Grepped `.github/workflows/` for `check-dead-case-arms.sh` and found ZERO hits, which is what `kind: test` predicts and what makes the `blocker:` below the whole of
 this gate's CI story. It is carried byte for byte, because a suppression reason that goes missing in a file move is a quiet exemption.
 
 NO `selftest:` IS CORRECT, carried exactly as found: the twin did not declare one. The port does implement `--selftest`, but declaring a field the twin never had would be a NEW claim rather than a moved one, and `selftest:` is inert for a `.py` gate anyway (`gate-bind.ts:598`).
@@ -19,15 +19,14 @@ NO `id:` IS CORRECT HERE: `derivedId` (`gate-header.ts:260`) maps this basename 
 
 THE RESOLVED NEED SET DOES NOT MOVE, verified by calling `bind()` on both files. Both infer `[]` and both resolve to the empty set `needs: none` declares.
 
-PINNED BY PATH IN THREE HARNESS ROWS, ALL OF THEM RUN-IN-PLACE, so all three take the ENTRY POINT arm if they are ever repointed. A fourth, `.ci/scripts/test/gates/test-media-helpers.sh:31`, went with its twin in W7 P5 and is covered by the port below it:
+PINNED BY PATH IN TWO HARNESS ROWS, BOTH OF THEM RUN-IN-PLACE, so both take the ENTRY POINT arm if they are ever repointed. Two more, `.ci/scripts/test/gates/test-media-helpers.sh:31` and `.ci/scripts/test/gates/test-dead-case-arms.sh:25`, went with their twins in W7 P5 and are covered by the ports below:
 
-  - `.ci/scripts/test/gates/test-dead-case-arms.sh:25`   `GATE=` then runs it
   - `.ci/rediacc_ci/tests/gates/test_gate_dead_case_arms.py:41`  runs it
   - `.ci/rediacc_ci/tests/gates/test_gate_media_helpers.py:40`   runs it
 
 `.ci/rediacc_ci/tests/test_quality_dead_case_arms.py:42` is the DIFFERENTIAL and must keep naming the twin; it copies the twin's two pipelines verbatim as a comment and pins the twin as the comparison side.
 
-BECAUSE THIS GATE IS `kind: test`, REPOINTING IS NOT COSMETIC HERE, and it is the driver's call, not this writer's: while `test-dead-case-arms.sh:25` still names the `.sh`, CI executes the TWIN and only the local `npm run` executes the port. That is the one-sided shape this programme exists to prevent, so it is called out in the report rather than left in a diff.
+BECAUSE THIS GATE IS `kind: test`, THE REPOINT WAS NOT COSMETIC: the header's `test:` now names the port, so CI executes the port under `check:ci-pytest` and the one-sided shape this programme exists to prevent, where CI runs the twin and only a local `npm run` runs the port, is closed.
 
 DRIVEN, on this tree, both streams captured SEPARATELY, `CI=true` on both:
 
@@ -64,8 +63,8 @@ INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-dead-case-arms.sh` is NOT dele
 
 ---- gate ----
 kind: test
-test: .ci/scripts/test/gates/test-dead-case-arms.sh
-blocker: BLOCKER: the gate is CONTROL-FIRST -- it plants a dead case arm with a runtime-generated key and refuses to report on the real tree unless its scanner catches that arm, so a green IS the fire proof; test-dead-case-arms.sh:14 runs it seam-free against the real tree inside the gate-test battery (ci-quality.yml quality-security, "Quality-gate unit tests")
+test: .ci/rediacc_ci/tests/gates/test_gate_dead_case_arms.py
+blocker: BLOCKER: the gate is CONTROL-FIRST -- it plants a dead case arm with a runtime-generated key and refuses to report on the real tree unless its scanner catches that arm, so a green IS the fire proof; test_gate_dead_case_arms.py:test_real_tree_is_clean_and_the_control_fired runs it seam-free against the real tree under check:ci-pytest (ci-quality.yml quality-security)
 needs: none
 ---- end gate ----
 """

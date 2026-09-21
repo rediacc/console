@@ -60,25 +60,27 @@ OUT_OF_SCOPE = ".ci/scripts/deploy"
 # AFTER A CUTOVER A ROW MUST NAME THE MODULE, NOT THE ENTRY POINT. The
 # registered `.py` for the OTLP gate is a three-line shim that imports the port;
 # the behaviour this row asserts lives in the module. Repointing it at the entry point (the obvious move, and the one recommended when the cutover landed) made the row grep a shim and fail with "lost its fix" against a fix that was never there.
+#
+# AND AFTER A RETIREMENT A ROW MUST NAME THE SURVIVOR. W7 P5 batch G1 deleted the bash twins behind the review-comments, resolved-threads and attribution rows; each now names the module that carries the fix, for the same reason the OTLP row does. The remaining `.sh` rows still name live files, and a row whose file is gone fails LOUDLY here rather than quietly passing.
 REPAIRS = (
     (
-        ".ci/scripts/quality/check-review-comments.sh",
+        ".ci/rediacc_ci/quality/review_comments.py",
         "gh_json",
         "the review-comment gate fetches through the status-checking helper",
     ),
     (
-        ".ci/scripts/quality/check-resolved-threads.sh",
+        ".ci/rediacc_ci/quality/resolved_threads.py",
         "Failing closed",
         "the resolved-threads gate fails closed on an unreadable API",
     ),
     (
-        ".ci/scripts/quality/check-claude-attribution.sh",
+        ".ci/rediacc_ci/quality/claude_attribution.py",
         "probe_failed",
         "the attribution gate fails closed on an unreadable API",
     ),
     (
-        ".ci/scripts/quality/check-branch.sh",
-        "must not be reported as up-to-date",
+        ".ci/rediacc_ci/quality/branch.py",
+        "as up-to-date.",
         "check-branch refuses to guess when rev-list fails",
     ),
     (

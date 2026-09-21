@@ -1,0 +1,5 @@
+# twin .ci/scripts/quality/check-claude-attribution.sh blob 19c3c9363f04d4706b0c43ea9aa9c7ede266b1a4
+exit: 0
+--- stdout ---
+151:    if grep -qiE "(claude|anthropic)" <<<"$AUTHOR_NAME $AUTHOR_EMAIL"; then
+--- stderr ---

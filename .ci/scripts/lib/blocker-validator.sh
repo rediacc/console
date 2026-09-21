@@ -116,7 +116,7 @@ _blocker_py() {
 
 # THESE TWO ARRAYS ARE A MIRROR, NOT THE RULE. Nothing in this file reads them
 # any more: validate_blocker_quality asks rediacc_ci.core.allowlist. They survive
-# because .ci/scripts/test/gates/test-breakpoint-portability.sh:361 parses
+# because .ci/rediacc_ci/tests/gates/test_gate_breakpoint_portability.py parses
 # LOW_EFFORT_BLOCKER_PATTERNS out of this file's TEXT to prove the vendored
 # breakpoint copy is a subset of it, and deleting the array would delete that
 # registered assertion rather than satisfy it.

@@ -160,7 +160,7 @@ REGISTRY=(
     # .ci/breakpoint/, so the drift gate would fail with "No such file or
     # directory" -- non-zero for a reason that has nothing to do with vacuity,
     # which is precisely the false signal the REGISTRY POLICY above warns about.
-    # Its missing-manifest behaviour is proven in test-breakpoint-portability.sh
+    # Its missing-manifest behaviour is proven in test_gate_breakpoint_portability.py
     # instead, where an isolated copy of the folder genuinely exists.
     # NOT registered here either: .ci/scripts/quality/check-autopilot-no-bypass.sh.
     # Its sibling check-autopilot-workflow-invariants.sh IS registered below, and

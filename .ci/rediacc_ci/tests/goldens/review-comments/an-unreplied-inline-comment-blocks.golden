@@ -1,0 +1,44 @@
+# twin .ci/scripts/quality/check-review-comments.sh blob 5266b55d1c74cf7509545c731781ba3ef5aac05d
+exit: 1
+--- stdout ---
+Checking review comments for PR #42...
+No top-level review summary found - OK
+
+============================================================
+  Review Comments Require Attention
+============================================================
+
+UNREPLIED COMMENTS (1):
+
+  - src/a.ts:12 by @muhammed
+    "please rename this..."
+
+------------------------------------------------------------
+Please address all review comments with SUBSTANTIVE replies.
+
+Low-effort replies like 'Acknowledged', 'OK', 'Done', 'Fixed'
+etc. are NOT accepted. Explain what you did or why you
+disagree with the feedback.
+
+Examples of good replies:
+  - 'Fixed by adding null check in validateInput()'
+  - 'Refactored to use the existing helper as suggested'
+  - 'Keeping as-is because X needs to happen before Y due to...'
+
+To reply using gh CLI:
+
+  # List unreplied comments (find the COMMENT_ID you need to reply to)
+  gh api repos/rediacc/console/pulls/42/comments \
+    --jq '.[] | select(.in_reply_to_id == null) | {id, path, line, body}'
+
+  # Reply to a specific comment (NOTE: PR number is required in the path!)
+  gh api repos/rediacc/console/pulls/42/comments/{COMMENT_ID}/replies \
+    -X POST -f body="Your substantive reply here"
+
+  # IMPORTANT: The endpoint is /pulls/{PR_NUMBER}/comments/{COMMENT_ID}/replies
+  # NOT /pulls/comments/{COMMENT_ID}/replies (this will return 404)
+
+Or reply directly on GitHub:
+  https://github.com/rediacc/console/pull/42
+------------------------------------------------------------
+--- stderr ---

@@ -2306,7 +2306,7 @@ jobs:
       # (gitx.py:235) has no production caller, and the battery's own tests
       # either SCRUB the variable (test_gate_untagged_commit_branch.py:105,
       # test-untagged-commit-branch.sh:66) or pin their own per call
-      # (test-review-status.sh:1207). Two of those modules were written
+      # (test_gate_review_status.py). Two of those modules were written
       # precisely because a differential inheriting the developer's environment
       # passes or fails on whether PR_HEAD_REF happens to be exported. So the
       # key was dead, and adding a fallback clause would have re-created the

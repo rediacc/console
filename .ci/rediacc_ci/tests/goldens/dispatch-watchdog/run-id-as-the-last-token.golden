@@ -1,0 +1,5 @@
+# twin .ci/scripts/ci/dispatch-watchdog.sh blob c8ca37cdeeadfc67b363eae6054040dec089ea5c
+exit: 1
+--- stdout ---
+--- stderr ---
+.ci/scripts/ci/dispatch-watchdog.sh: line 40: $2: unbound variable

@@ -566,3 +566,7 @@
 {"at":"2026-09-21T06:19:40Z","subject":"test_gate_gate_anti_vacuity","twin":".ci/scripts/test/gates/test-gate-anti-vacuity.sh","twin_sha":"e55b95a9bb07419e","port_sha":"683605df9888709a","agreed":true}
 {"at":"2026-09-21T06:19:42Z","subject":"test_gate_gate_header","twin":".ci/scripts/test/gates/test-gate-header.sh","twin_sha":"b86094fb600b2a12","port_sha":"e73199fbccca0ed3","agreed":true}
 {"at":"2026-09-21T06:27:52Z","subject":"test_gate_gate_lanes","twin":".ci/scripts/test/gates/test-gate-lanes.sh","twin_sha":"0c67664a5bb3451e","port_sha":"27933e453d737bf8","agreed":true}
+{"at":"2026-09-21T09:48:57Z","subject":"test_gate_review_status","twin":".ci/scripts/test/gates/test-review-status.sh","twin_sha":"a73337c6376b1dc9","port_sha":"5cb1c5f2ec52e26b","agreed":true}
+{"at":"2026-09-21T10:32:09Z","subject":"test_gate_breakpoint_portability","twin":".ci/scripts/test/gates/test-breakpoint-portability.sh","twin_sha":"e11ad40a6bed5d8c","port_sha":"70aecdfa26653e34","agreed":true}
+{"at":"2026-09-21T10:56:22Z","subject":"test_gate_blocker_golden_corpus","twin":".ci/scripts/test/gates/test-blocker-golden-corpus.sh","twin_sha":"ae49847596bb3448","port_sha":"8dbc98b176eae9f4","agreed":true}
+{"at":"2026-09-21T10:58:32Z","subject":"test_gate_gate_anti_vacuity","twin":".ci/scripts/test/gates/test-gate-anti-vacuity.sh","twin_sha":"d5771fe0f28039ce","port_sha":"18f6f82650b25e5b","agreed":true}

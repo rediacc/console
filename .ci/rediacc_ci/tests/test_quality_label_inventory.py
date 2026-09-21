@@ -1,6 +1,7 @@
-"""`rediacc_ci.quality.label_inventory` against its bash twin.
+"""`rediacc_ci.quality.label_inventory`, driven against the bytes its bash twin printed.
 
-A bash child runs the REAL `.ci/scripts/quality/check-label-inventory.sh` over a specimen with stdout and stderr captured SEPARATELY, and its bytes are compared against the port's. Same recipe as the committed ledger, `.ci/shadow/w7p2-label-inventory.observations.jsonl`.
+WHILE BOTH COPIES EXISTED a bash child ran the REAL `.ci/scripts/quality/check-label-inventory.sh` over a specimen with both streams captured SEPARATELY, and its bytes were compared against the port's. Same recipe as the ledger `.ci/shadow/w7p2-label-inventory.observations.jsonl`, which holds over ten distinct trees. The twin has now been deleted and every case that
+executed it compares against `goldens/label-inventory/`, which holds the twin's OWN recorded output, captured from the tracked script on its last day in the tree. The provenance header of each golden carries the blob sha, so `git cat-file -p <sha>` still yields the program that printed those bytes.
 
 EVERY CASE USES THE INJECTION SEAMS, so no case touches the network. That is the twin's own design (`LABEL_INVENTORY_LIVE_FILE`, `LABEL_INVENTORY_PROBE_FILE`, `LABEL_INVENTORY_LIVE_JSON_FILE`), and the PROBE seam is separate from the LIST seam on purpose: "the whole point of the re-read is that it can disagree with the list."
 
@@ -13,14 +14,16 @@ an exit code, and this file asserts that the exception is what happens.
 
 import json
 import pathlib
+import re
 import shutil
 
 import pytest
 
 from rediacc_ci.quality import label_inventory as gate
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.tests import frozen
 
-TWIN = ".ci/scripts/quality/check-label-inventory.sh"
+SLUG = "label-inventory"
 MODULE = "label_inventory"
 
 SEAM_ENV = "LABEL_INVENTORY_LABELS_FILE=fx/labels.yml LABEL_INVENTORY_LIVE_FILE=fx/live.txt"
@@ -54,8 +57,6 @@ def build(tmp_path: pathlib.Path, files: dict[str, str]) -> pathlib.Path:
         "fx",
     ):
         (root / rel).mkdir(parents=True, exist_ok=True)
-    shutil.copytree(src / ".ci" / "scripts" / "lib", root / ".ci" / "scripts" / "lib")
-    shutil.copy2(src / TWIN, root / TWIN)
     for name in ("__init__.py", "log.py", "paths.py", "controls.py"):
         shutil.copy2(src / ".ci" / "rediacc_ci" / name, root / ".ci" / "rediacc_ci" / name)
     for name in ("__init__.py", "%s.py" % MODULE):
@@ -78,14 +79,25 @@ def build(tmp_path: pathlib.Path, files: dict[str, str]) -> pathlib.Path:
     return root
 
 
-def run_both(root: pathlib.Path, env: str) -> tuple[tuple[int, str, str], tuple[int, str, str]]:
-    old = diff.bash_streams("%s bash %s" % (env, TWIN), cwd=str(root))
-    new = diff.bash_streams(
+def run_port(root: pathlib.Path, env: str) -> tuple[int, str, str]:
+    """The port, spelled exactly as the ledger licensed it."""
+    return diff.bash_streams(
         "%s PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=.ci python3 -m rediacc_ci.quality.%s"
         % (env, MODULE),
         cwd=str(root),
     )
-    return old, new
+
+
+def split_golden(text: str) -> tuple[int, str, str]:
+    """A recorded twin render, back into its three parts."""
+    exit_line, rest = text.split("\n", 1)
+    stdout, stderr = rest.split("--- stdout ---\n", 1)[1].split("--- stderr ---\n", 1)
+    return int(exit_line.removeprefix("exit: ")), stdout, stderr
+
+
+def slug(case_id: str) -> str:
+    """The golden's filename, DERIVED from the case id so the two cannot drift."""
+    return re.sub(r"[^a-z0-9]+", "-", case_id.lower()).strip("-")
 
 
 FIVE = ("alpha", "bravo", "charlie", "delta", "echo1")
@@ -228,18 +240,66 @@ CASES = [
 
 
 @pytest.mark.parametrize(
-    ("files", "env", "want_exit"),
-    [(c[1], c[2], c[3]) for c in CASES],
+    ("case_id", "files", "env", "want_exit"),
+    CASES,
     ids=[c[0] for c in CASES],
 )
-def test_differential(tmp_path, files, env, want_exit):
-    """Byte equality on BOTH streams, plus the exit code the case expects."""
+def test_port_matches_the_twins_recorded_output(tmp_path, case_id, files, env, want_exit):
+    """Byte equality on BOTH streams against the twin's recording, plus the exit code."""
     root = build(tmp_path, files)
-    (old_rc, old_out, old_err), (new_rc, new_out, new_err) = run_both(root, env)
-    assert old_rc == want_exit, "the twin's verdict moved: %s%s" % (old_out, old_err)
-    assert new_rc == old_rc
-    assert new_out == old_out
-    assert new_err == old_err
+    recorded_exit, want_out, want_err = split_golden(frozen.read(SLUG, slug(case_id)))
+    returncode, stdout, stderr = run_port(root, env)
+    stdout = frozen.mask_root(stdout, root)
+    stderr = frozen.mask_root(stderr, root)
+    assert recorded_exit == want_exit, "the recorded verdict moved"
+    assert returncode == recorded_exit, "the twin exited %d, the port %d" % (
+        recorded_exit,
+        returncode,
+    )
+    assert stdout == want_out, "stdout diverged from the twin's recorded bytes"
+    assert stderr == want_err, "stderr diverged from the twin's recorded bytes"
+
+
+def test_every_case_has_a_golden_and_no_golden_is_orphaned() -> None:
+    """ANTI-VACUITY on the corpus: a case whose golden vanished would pass by never being compared, and a golden nothing reads is a recording of a case that stopped running."""
+    frozen.assert_corpus(SLUG, {slug(c[0]) for c in CASES})
+
+
+def test_the_recorded_corpus_says_something_in_both_directions() -> None:
+    """Thirteen silences would be satisfied by a gate that does nothing.
+
+    Every case here writes on stderr and nothing on stdout, so an all-empty recording would turn each comparison above into two empty strings with the twin no longer around to blame. The split between quiet and firing verdicts is asserted by name, and the two texts must differ.
+    """
+    quiet = {slug(c[0]) for c in CASES if c[3] == 0}
+    firing = {slug(c[0]) for c in CASES if c[3] != 0}
+    assert quiet, "the corpus lost its quiet direction"
+    assert firing, "the corpus lost its firing direction"
+    for name in quiet | firing:
+        assert split_golden(frozen.read(SLUG, name))[2].strip() != "", name
+    silent = split_golden(frozen.read(SLUG, slug("a reconciled inventory is silent")))
+    finding = split_golden(frozen.read(SLUG, slug("a live label declared nowhere is a finding")))
+    assert silent[2] != finding[2]
+
+
+def test_planted_defect_is_caught_by_the_goldens() -> None:
+    """THE CONTROL ON THE GOLDENS: a declaration reader that keeps the `- name:` prefix.
+
+    The plant is a LOCAL re-read of the same declaration text with the prefix left on, never a change to the module. The silent case's recording says the declared set and the live set reconcile; a reader that answered `- name: alpha` would make all five declared labels look absent and all five live ones undeclared, so the recorded bytes could not have been printed.
+    """
+    case_id = "a reconciled inventory is silent"
+    recorded_exit, _out, err = split_golden(frozen.read(SLUG, slug(case_id)))
+    assert recorded_exit == 0
+    assert "✗" not in err, "the recorded silent case is no longer silent"
+    _id, files, _env, _exit = next(c for c in CASES if c[0] == case_id)
+    real = gate.declared_labels(files["fx/labels.yml"])
+    mutant = [line for line in files["fx/labels.yml"].split("\n") if line.startswith("- name:")]
+    live = [line for line in files["fx/live.txt"].split("\n") if line]
+    assert real, "the fixture declares nothing"
+    assert mutant, "the mutant lists nothing"
+    assert live, "the live listing is empty"
+    assert real != mutant, "the plant no longer diverges: the reader strips nothing"
+    assert sorted(real) == sorted(live), "the recorded silence is unexplained"
+    assert not set(mutant) & set(live), "the mutant still reconciles"
 
 
 def test_an_unreadable_drift_raises_rather_than_returning_nothing():
@@ -308,8 +368,3 @@ def test_selftest_exits_zero_and_prints_a_count():
     assert code == 0, err
     assert "control(s) passed" in out
     assert int(out.split(" control(s)")[0].strip()) >= 24
-
-
-def test_the_twin_is_still_present():
-    """Invariant 5: a twin is never deleted in the change that ports it."""
-    assert (pathlib.Path(diff.repo()) / TWIN).is_file()

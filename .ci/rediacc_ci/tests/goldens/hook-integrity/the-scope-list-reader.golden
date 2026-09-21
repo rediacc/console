@@ -1,0 +1,14 @@
+# twin .ci/scripts/quality/check-hook-integrity.sh blob 36c6ea0802307520e07f0b3ab4b3de7154f849d3
+exit: 0
+--- stdout ---
+import json, sys
+try:
+    data = json.load(open(sys.argv[1], encoding="utf-8"))
+except (OSError, ValueError):
+    sys.exit(1)
+v = data.get(sys.argv[2])
+if not isinstance(v, list) or not v or not all(isinstance(x, str) and x for x in v):
+    sys.exit(1)
+for x in v:
+    print(x)
+--- stderr ---

@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-profiler-coverage.sh`.
+"""Port of `.ci/scripts/test/gates/test-profiler-coverage.sh`, retired in W7 P5.
 
 Tests for `.ci/scripts/quality/check-profiler-coverage.sh`: every Linux job uses the runner profiler, and every job that uses it is configured right.
 
@@ -27,8 +27,6 @@ import os
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-profiler-coverage.sh"
 
 # test_real_tree_seam_free, test_setup_workspace_is_builtin_coverage, test_wrapper_that_lost_the_profiler_refuses and the added control all read the real tree, and the lock declares `reads: ["tree:repo"]`. See the docstring.
 REAL_TREE_TWIN = True

@@ -1,16 +1,17 @@
-"""Differential: `rediacc_ci.housekeeping.cleanup_cf_preview` against its twin `.ci/scripts/housekeeping/cleanup-cf-preview.sh`.
+"""`rediacc_ci.housekeeping.cleanup_cf_preview`, driven against the bytes its bash twin printed.
+
+WHILE BOTH COPIES EXISTED this file ran `.ci/scripts/housekeeping/cleanup-cf-preview.sh` and the port over the same fixture, one after the other, and compared exit code, stdout, stderr and the HTTP request log. The K=5 ledger `.ci/shadow/w7p6-cleanup-cf-preview.observations.jsonl` recorded that comparison over five distinct trees. The twin has now been deleted and every
+case that executed it compares against `goldens/cleanup-cf-preview/`, which holds the twin's OWN recorded bytes, captured from the tracked script on its last day in the tree. Each golden's provenance header carries the blob sha, so `git cat-file -p <sha>` still yields the program that printed them.
 
 A RECORDING FAKE `curl` ON A SCRATCH PATH, answering from the REQUEST SHAPE. Nothing here reaches Cloudflare. The fake routes on the URL -- a `/deployments/` segment is a delete, anything else is a listing -- and every case pins a fixture account id and token, so even a bypassed fake would not name a real account.
 
-THE REQUEST LOG IS COMPARED, NOT JUST THE STREAMS, and for this script it is the
-main evidence. The observable effect is a set of DELETE calls against a live CDN;
-two implementations can print the same tally while deleting different deployments, or while paginating differently, or while sending the token in the wrong header. `test_the_request_shape_is_asserted_in_full` pins the exact argv of both endpoints -- method, URL, and both headers -- against the port's own `curl_argv`, so the shape is checked against the code as well as against the
-twin.
+THE REQUEST LOG IS RECORDED, NOT JUST THE STREAMS, and for this script it is the main evidence. The observable effect is a set of DELETE calls against a live CDN; two implementations can print the same tally while deleting different deployments, or while paginating differently, or while sending the token in the wrong header. `test_the_request_shape_is_asserted_in_full` pins the
+exact argv of both endpoints -- method, URL, and both headers -- against the port's own `curl_argv` as well as against the recorded literals, so the shape is checked against the code and against the twin.
 
-THE THREE jq FAILURE MODES ARE DRIVEN, because the port shells out to jq rather than parsing JSON in Python precisely so that they agree: a non-JSON body and a `result`-less body both kill the run with jq's own message and exit 5, while an EMPTY body does not and takes the ordinary warning branch. A port using `json.loads` would pass every happy-path test here and differ on all
+THE THREE jq FAILURE MODES ARE DRIVEN, because the port shells out to jq rather than parsing JSON in Python precisely so that they agree: a non-JSON body and a `result`-less body both kill the run with jq's own message and exit 5, while an EMPTY body does not and takes the ordinary warning branch. A port using `json.loads` would pass every happy-path case here and differ on all
 three.
 
-THE VACUITY DEFECT IS PINNED. `test_defect_a_failed_listing_reads_as_nothing_to_do` drives a curl that cannot reach the host and asserts the twin exits 0 saying "No preview deployments to clean up". Reproduced because agreement with the live twin is the deliverable; repaired, the test goes red and names the port that must follow.
+THE VACUITY DEFECT IS PINNED. `test_defect_a_failed_listing_reads_as_nothing_to_do` reads the recording of a curl that could not reach the host and asserts the twin exited 0 saying "No preview deployments to clean up". Reproduced because agreement with the twin was the deliverable; repaired, the test goes red and names the port that must follow.
 """
 
 from __future__ import annotations
@@ -21,16 +22,20 @@ import subprocess
 import sys
 import typing
 
+import pytest
+
 from rediacc_ci import paths
 from rediacc_ci.housekeeping import cleanup_cf_preview as port
+from rediacc_ci.tests import frozen
 
 if typing.TYPE_CHECKING:
     import pathlib
 
 ROOT = paths.repo_root()
-TWIN = ROOT / ".ci" / "scripts" / "housekeeping" / "cleanup-cf-preview.sh"
 PORT = ROOT / ".ci" / "rediacc_ci" / "housekeeping" / "cleanup_cf_preview.py"
 BASH = shutil.which("bash") or "/bin/bash"
+
+SLUG = "cleanup-cf-preview"
 
 ACCOUNT = "acct-fixture"
 # Named BEARER rather than TOKEN because ruff's S105 keys on the NAME: a constant called TOKEN is "a hardcoded password" to the linter even when its value is visibly a fixture.
@@ -98,9 +103,10 @@ sys.stdout.write(json.dumps({"success": True, "result": result}) + "\\n")
 sys.exit(0)
 """
 
-# common.sh needs `dirname` and `uname` at source time and `tr` in parse_args;
-# the twin itself needs `jq`, which is a REQUIRED command of the subject and is therefore the real binary on both sides -- the port shells out to the same one.
+# The twin's `common.sh` needed `dirname` and `uname` at source time and `tr` in parse_args; `jq` is a REQUIRED command of the subject and is therefore the real binary on both sides -- the port shells out to the same one.
 PATH_MINIMUM = ("dirname", "uname", "tr", "jq")
+
+CALLS_MARKER = "--- calls ---\n"
 
 
 def _bin(tmp_path: pathlib.Path, name: str, *, tools: bool = True, drop: str = "") -> str:
@@ -130,12 +136,13 @@ def _run(
     tmp_path: pathlib.Path,
     args: list[str],
     *,
+    side: str = "new",
     tools: bool = True,
     drop: str = "",
     drop_env: tuple[str, ...] = (),
     **extra: str,
 ):
-    side = "old" if subject.suffix == ".sh" else "new"
+    tmp_path.mkdir(parents=True, exist_ok=True)
     call_log = tmp_path / f"{side}-calls.log"
     call_log.write_text("", encoding="utf-8")
     env = {
@@ -166,26 +173,100 @@ def _run(
     return proc, calls
 
 
-def run_both(tmp_path: pathlib.Path, args: list[str], **kw):
-    old, old_calls = _run(TWIN, tmp_path, args, **kw)
-    new, new_calls = _run(PORT, tmp_path, args, **kw)
-    return old, new, old_calls, new_calls
+SPACE_BODY = (
+    '{"success":true,"result":[{"id":"dep-space","created_on":"2026-02-02",'
+    '"deployment_trigger":{"metadata":{"branch":"odd name"}}}]}\n'
+)
+UNKNOWN_ERROR_BODY = (
+    '{"success":true,"result":[{"id":"dep-a","created_on":"x",'
+    '"deployment_trigger":{"metadata":{"branch":"feature-x"}}}]}\n'
+)
+
+# Every recorded case: the argv the subject is given, and the fake's knobs.
+CASE_KW: dict[str, tuple[list[str], dict[str, object]]] = {
+    "the-request-shape": (["--branch", "feature-x"], {}),
+    "only-the-named-branch": (["--branch", "feature-x"], {"FAKE_PER_PAGE": "6"}),
+    "a-branch-with-no-deployments": (["--branch", "nothing-here"], {}),
+    "a-dry-run": (["--branch", "feature-x", "--dry-run"], {}),
+    "dry-run-false-is-not-a-dry-run": (["--branch", "feature-x", "--dry-run", "false"], {}),
+    "pagination-to-a-short-page": (
+        ["--branch", "feature-x"],
+        {"FAKE_PER_PAGE": "25", "FAKE_LAST_PAGE": "2"},
+    ),
+    "a-refused-delete": (
+        ["--branch", "feature-x"],
+        {
+            "FAKE_PER_PAGE": "6",
+            "FAKE_DELETE_OK": "false",
+            "FAKE_DELETE_ERR": "latest deployment cannot be deleted",
+        },
+    ),
+    "a-delete-error-with-no-errors-array": (
+        ["--branch", "feature-x"],
+        {"FAKE_CURL_BODY": UNKNOWN_ERROR_BODY, "FAKE_DELETE_OK": "false"},
+    ),
+    "debug-is-exactly-true": (["--branch", "feature-x"], {"DEBUG": "true"}),
+    "debug-is-one": (["--branch", "feature-x"], {"DEBUG": "1"}),
+    "no-branch-at-all": ([], {}),
+    "a-missing-token": ([], {"drop_env": ("CLOUDFLARE_API_TOKEN",)}),
+    "a-missing-account-id": (["--branch", "b"], {"drop_env": ("CLOUDFLARE_ACCOUNT_ID",)}),
+    "a-missing-curl": (["--branch", "b"], {"drop": "curl"}),
+    "a-missing-jq": (["--branch", "b"], {"drop": "jq"}),
+    "an-unreachable-api": (["--branch", "feature-x"], {"FAKE_CURL_RC": "6"}),
+    "an-unsuccessful-listing-body": (["--branch", "feature-x"], {"FAKE_LIST_UNSUCCESSFUL": "1"}),
+    "a-non-json-body": (
+        ["--branch", "feature-x"],
+        {"FAKE_CURL_BODY": "<html>504 Gateway Timeout</html>\n"},
+    ),
+    "a-result-less-body": (["--branch", "feature-x"], {"FAKE_CURL_BODY": '{"success":true}\n'}),
+    "an-empty-body": (["--branch", "feature-x"], {"FAKE_CURL_BODY": ""}),
+    "a-branch-name-with-a-space": (["--branch", "odd name"], {"FAKE_CURL_BODY": SPACE_BODY}),
+    "a-cf-error-carrying-a-backslash-n": (
+        ["--branch", "feature-x"],
+        {"FAKE_DELETE_OK": "false", "FAKE_DELETE_ERR": "boom\\nline two"},
+    ),
+}
+
+CASES = tuple(CASE_KW)
+
+# The one case whose recorded stderr the port deliberately does NOT reproduce: `common.sh` logged through `echo -e`, and `rediacc_ci.log` formats the message as data.
+DIVERGENT = "a-cf-error-carrying-a-backslash-n"
 
 
-def _assert_agree(old, new, label: str, old_calls=None, new_calls=None) -> None:
-    assert new.returncode == old.returncode, (
-        f"{label}: exit diverged: {old.returncode!r} vs {new.returncode!r}"
+def render(proc, calls: list[str]) -> str:
+    body = frozen.render(proc.returncode, proc.stdout, proc.stderr)
+    return body + CALLS_MARKER + "".join("%s\n" % line for line in calls)
+
+
+def recorded(name: str) -> tuple[int, str, str, list[str]]:
+    """One golden, back into the four observables `_run` produces."""
+    text = frozen.read(SLUG, name)
+    exit_line, rest = text.split("\n", 1)
+    streams, calls_text = rest.split(CALLS_MARKER, 1)
+    stdout, stderr = streams.split("--- stdout ---\n", 1)[1].split("--- stderr ---\n", 1)
+    return (
+        int(exit_line.removeprefix("exit: ")),
+        stdout,
+        stderr,
+        [line for line in calls_text.splitlines() if line],
     )
-    assert new.stdout == old.stdout, (
-        f"{label}: stdout diverged:\nold: {old.stdout!r}\nnew: {new.stdout!r}"
+
+
+def drive(tmp_path: pathlib.Path, name: str, *, subject: pathlib.Path | None = None):
+    args, kw = CASE_KW[name]
+    return _run(subject or PORT, tmp_path, args, **kw)  # type: ignore[arg-type]
+
+
+def compare(tmp_path: pathlib.Path, name: str, *, subject: pathlib.Path | None = None):
+    want_exit, want_out, want_err, want_calls = recorded(name)
+    proc, calls = drive(tmp_path, name, subject=subject)
+    assert proc.returncode == want_exit, (
+        f"{name}: the twin exited {want_exit}, the port {proc.returncode}"
     )
-    assert new.stderr == old.stderr, (
-        f"{label}: stderr diverged:\nold: {old.stderr!r}\nnew: {new.stderr!r}"
-    )
-    if old_calls is not None:
-        assert new_calls == old_calls, (
-            f"{label}: request sequence diverged:\nold: {old_calls}\nnew: {new_calls}"
-        )
+    assert proc.stdout == want_out, f"{name}: stdout diverged from the recorded bytes"
+    assert proc.stderr == want_err, f"{name}: stderr diverged from the recorded bytes"
+    assert calls == want_calls, f"{name}: the request sequence diverged:\n{want_calls}\n{calls}"
+    return proc, calls
 
 
 def list_call(page: int) -> str:
@@ -201,11 +282,21 @@ def delete_call(dep_id: str) -> str:
     )
 
 
+@pytest.mark.parametrize("name", [c for c in CASES if c != DIVERGENT])
+def test_port_matches_the_twins_recorded_output(tmp_path: pathlib.Path, name: str) -> None:
+    compare(tmp_path, name)
+
+
+def test_every_case_has_a_golden_and_no_golden_is_orphaned() -> None:
+    """ANTI-VACUITY on the corpus: a case whose golden vanished would pass by never being compared, and a golden nothing reads is a recording of a case that stopped running."""
+    frozen.assert_corpus(SLUG, set(CASES))
+
+
 def test_the_request_shape_is_asserted_in_full(tmp_path: pathlib.Path) -> None:
     """THE REQUESTS, PINNED AGAINST THE LITERAL BYTES rather than against the port's own helpers, so that a change in both would still be caught. Method, URL, and BOTH headers, for both endpoints."""
-    old, new, old_calls, new_calls = run_both(tmp_path, ["--branch", "feature-x"])
-    assert old.returncode == 0
-    assert old_calls == [
+    want_exit, _, _, want_calls = recorded("the-request-shape")
+    assert want_exit == 0
+    assert want_calls == [
         (
             "curl\t-s\t-X\tGET\t"
             "https://api.cloudflare.com/client/v4/accounts/acct-fixture/pages/projects/"
@@ -220,270 +311,204 @@ def test_the_request_shape_is_asserted_in_full(tmp_path: pathlib.Path) -> None:
         ),
     ]
     # And the port's own builders agree with those literals.
-    assert old_calls == [list_call(1), delete_call("dep-1-0")]
-    _assert_agree(old, new, "request-shape", old_calls, new_calls)
+    assert want_calls == [list_call(1), delete_call("dep-1-0")]
+    compare(tmp_path, "the-request-shape")
 
 
 def test_only_the_named_branch_is_deleted(tmp_path: pathlib.Path) -> None:
     """THE ONE REFUSAL. The listing carries deployments from OTHER branches and they must never be touched; the filter is
     `.deployment_trigger.metadata.branch == $branch`."""
-    old, new, old_calls, new_calls = run_both(
-        tmp_path, ["--branch", "feature-x"], FAKE_PER_PAGE="6"
-    )
-    assert old.returncode == 0
-    assert "Found 3 preview deployments for branch 'feature-x'" in old.stderr
-    deleted = [c for c in old_calls if "DELETE" in c]
+    _, _, stderr, calls = recorded("only-the-named-branch")
+    assert "Found 3 preview deployments for branch 'feature-x'" in stderr
+    deleted = [c for c in calls if "DELETE" in c]
     assert len(deleted) == 3
     assert all("dep-1-0" in c or "dep-1-2" in c or "dep-1-4" in c for c in deleted), deleted
-    _assert_agree(old, new, "branch-filter", old_calls, new_calls)
+    compare(tmp_path, "only-the-named-branch")
 
 
 def test_a_branch_with_no_deployments_is_a_clean_no_op(tmp_path: pathlib.Path) -> None:
-    old, new, old_calls, new_calls = run_both(tmp_path, ["--branch", "nothing-here"])
-    assert old.returncode == 0
-    assert old.stderr == (
+    returncode, stdout, stderr, calls = recorded("a-branch-with-no-deployments")
+    assert returncode == 0
+    assert stderr == (
         "→ Cleaning up CF Pages preview deployments for branch: nothing-here\n"
         "→ Found 0 preview deployments for branch 'nothing-here'\n"
         "✓ No preview deployments to clean up\n"
     )
-    assert old.stdout == "", "this script must never put anything on stdout"
-    assert not any("DELETE" in c for c in old_calls)
-    _assert_agree(old, new, "no-match", old_calls, new_calls)
+    assert stdout == "", "this script must never put anything on stdout"
+    assert not any("DELETE" in c for c in calls)
+    compare(tmp_path, "a-branch-with-no-deployments")
 
 
 def test_dry_run_makes_no_delete_request_at_all(tmp_path: pathlib.Path) -> None:
-    old, new, old_calls, new_calls = run_both(tmp_path, ["--branch", "feature-x", "--dry-run"])
-    assert old.returncode == 0
-    assert old.stderr == (
+    returncode, _, stderr, calls = recorded("a-dry-run")
+    assert returncode == 0
+    assert stderr == (
         "→ Cleaning up CF Pages preview deployments for branch: feature-x\n"
         "⚠ DRY-RUN mode: no deletions will be performed\n"
         "→ Found 1 preview deployments for branch 'feature-x'\n"
         "⚠ [DRY-RUN] Would delete: dep-1-0 (created: 2026-01-01)\n"
         "✓ Would delete 1 of 1 deployments for branch 'feature-x'\n"
     )
-    assert not any("DELETE" in c for c in old_calls), "a dry run issued a DELETE"
-    _assert_agree(old, new, "dry-run", old_calls, new_calls)
+    assert not any("DELETE" in c for c in calls), "a dry run issued a DELETE"
+    compare(tmp_path, "a-dry-run")
 
 
 def test_dry_run_false_is_not_a_dry_run(tmp_path: pathlib.Path) -> None:
-    """parse_args quirk 2: `--dry-run false` stores the STRING `false`, and the comparison is against the literal `true`. So this really deletes."""
-    old, new, old_calls, new_calls = run_both(
-        tmp_path, ["--branch", "feature-x", "--dry-run", "false"]
-    )
-    assert old.returncode == 0
-    assert "DRY-RUN" not in old.stderr
-    assert any("DELETE" in c for c in old_calls)
-    _assert_agree(old, new, "dry-run-false", old_calls, new_calls)
+    """parse_args quirk 2: `--dry-run false` stored the STRING `false`, and the comparison was against the literal `true`. So this really deletes."""
+    returncode, _, stderr, calls = recorded("dry-run-false-is-not-a-dry-run")
+    assert returncode == 0
+    assert "DRY-RUN" not in stderr
+    assert any("DELETE" in c for c in calls)
+    compare(tmp_path, "dry-run-false-is-not-a-dry-run")
 
 
 def test_pagination_follows_until_a_short_page(tmp_path: pathlib.Path) -> None:
     """`per_page=25` and `[[ "$all_results" -lt 25 ]]`. A full page means there
     may be more; a short one ends the sweep. Three listings here: two full, one short."""
-    old, new, old_calls, new_calls = run_both(
-        tmp_path, ["--branch", "feature-x"], FAKE_PER_PAGE="25", FAKE_LAST_PAGE="2"
-    )
-    assert old.returncode == 0
-    lists = [c for c in old_calls if "\tGET\t" in c]
+    returncode, _, stderr, calls = recorded("pagination-to-a-short-page")
+    assert returncode == 0
+    lists = [c for c in calls if "\tGET\t" in c]
     assert lists == [list_call(1), list_call(2), list_call(3)]
-    assert "Found 26 preview deployments" in old.stderr
-    _assert_agree(old, new, "pagination", old_calls, new_calls)
+    assert "Found 26 preview deployments" in stderr
+    compare(tmp_path, "pagination-to-a-short-page")
 
 
-def test_a_refused_delete_is_reported_and_the_sweep_continues(
-    tmp_path: pathlib.Path,
-) -> None:
+def test_a_refused_delete_is_reported_and_the_sweep_continues(tmp_path: pathlib.Path) -> None:
     """Cloudflare refuses to delete the LATEST deployment of a branch. That is expected, not fatal: refusing over it would leave every older preview behind."""
-    old, new, old_calls, new_calls = run_both(
-        tmp_path,
-        ["--branch", "feature-x"],
-        FAKE_PER_PAGE="6",
-        FAKE_DELETE_OK="false",
-        FAKE_DELETE_ERR="latest deployment cannot be deleted",
-    )
-    assert old.returncode == 0
-    assert old.stderr.count("⚠ Could not delete ") == 3
-    assert "latest deployment cannot be deleted" in old.stderr
-    assert "✓ Deleted 0 of 3 deployments for branch 'feature-x'\n" in old.stderr
-    assert len([c for c in old_calls if "DELETE" in c]) == 3, "the sweep stopped early"
-    _assert_agree(old, new, "delete-refused", old_calls, new_calls)
+    returncode, _, stderr, calls = recorded("a-refused-delete")
+    assert returncode == 0
+    assert stderr.count("⚠ Could not delete ") == 3
+    assert "latest deployment cannot be deleted" in stderr
+    assert "✓ Deleted 0 of 3 deployments for branch 'feature-x'\n" in stderr
+    assert len([c for c in calls if "DELETE" in c]) == 3, "the sweep stopped early"
+    compare(tmp_path, "a-refused-delete")
 
 
-def test_a_delete_error_with_no_errors_array_says_unknown_error(
-    tmp_path: pathlib.Path,
-) -> None:
-    """`.errors[0].message // "unknown error"`. Indexing a missing key yields null in jq rather than raising, so this is a message and not a crash."""
-    old, new, old_calls, new_calls = run_both(
-        tmp_path,
-        ["--branch", "feature-x"],
-        FAKE_CURL_BODY='{"success":true,"result":[{"id":"dep-a","created_on":"x",'
-        '"deployment_trigger":{"metadata":{"branch":"feature-x"}}}]}\n',
-        FAKE_DELETE_OK="false",
-    )
-    # The body override answers BOTH endpoints, so the delete "succeeds" here;
-    # the point of the case is the shared-body path agreeing at all.
-    assert old.returncode == 0
-    _assert_agree(old, new, "unknown-error", old_calls, new_calls)
-
-
-def test_a_successful_delete_is_silent_unless_debug_is_true(
-    tmp_path: pathlib.Path,
-) -> None:
-    """`log_debug` is gated on `DEBUG=true` EXACTLY -- not on any truthy value.
-    Both directions are driven, because a port that logged unconditionally would look fine to a reader and change the workflow log."""
-    quiet_old, quiet_new, qoc, qnc = run_both(tmp_path, ["--branch", "feature-x"])
-    assert "Deleted: dep-1-0" not in quiet_old.stderr
-    _assert_agree(quiet_old, quiet_new, "debug-off", qoc, qnc)
-
-    loud_old, loud_new, loc, lnc = run_both(tmp_path, ["--branch", "feature-x"], DEBUG="true")
-    assert "[DEBUG] Deleted: dep-1-0" in loud_old.stderr
-    _assert_agree(loud_old, loud_new, "debug-on", loc, lnc)
-
-    one_old, one_new, ooc, onc = run_both(tmp_path, ["--branch", "feature-x"], DEBUG="1")
-    assert "Deleted: dep-1-0" not in one_old.stderr, "DEBUG=1 is not DEBUG=true"
-    _assert_agree(one_old, one_new, "debug-1", ooc, onc)
+def test_a_successful_delete_is_silent_unless_debug_is_true(tmp_path: pathlib.Path) -> None:
+    """`log_debug` was gated on `DEBUG=true` EXACTLY -- not on any truthy value.
+    All three states are recorded, because a port that logged unconditionally would look fine to a reader and change the workflow log."""
+    assert "Deleted: dep-1-0" not in recorded("the-request-shape")[2]
+    assert "[DEBUG] Deleted: dep-1-0" in recorded("debug-is-exactly-true")[2]
+    assert "Deleted: dep-1-0" not in recorded("debug-is-one")[2], "DEBUG=1 is not DEBUG=true"
+    for name in ("the-request-shape", "debug-is-exactly-true", "debug-is-one"):
+        compare(tmp_path / name, name)
 
 
 def test_no_branch_is_refused_after_the_prerequisites(tmp_path: pathlib.Path) -> None:
-    old, new, old_calls, new_calls = run_both(tmp_path, [])
-    assert old.returncode == 1
-    assert old.stderr == ("✗ Usage: cleanup-cf-preview.sh --branch <branch_name> [--dry-run]\n")
-    assert old_calls == []
-    _assert_agree(old, new, "no-branch", old_calls, new_calls)
+    returncode, _, stderr, calls = recorded("no-branch-at-all")
+    assert returncode == 1
+    assert stderr == ("✗ Usage: cleanup-cf-preview.sh --branch <branch_name> [--dry-run]\n")
+    assert calls == []
+    compare(tmp_path, "no-branch-at-all")
 
 
-def test_a_missing_token_is_refused_before_the_missing_branch(
-    tmp_path: pathlib.Path,
-) -> None:
-    """ORDER IS OBSERVABLE. `require_var` runs BEFORE the branch check, so a run
+def test_a_missing_token_is_refused_before_the_missing_branch(tmp_path: pathlib.Path) -> None:
+    """ORDER IS OBSERVABLE. `require_var` ran BEFORE the branch check, so a run
     with neither says which variable is missing rather than printing usage."""
-    old, new, old_calls, new_calls = run_both(tmp_path, [], drop_env=("CLOUDFLARE_API_TOKEN",))
-    assert old.returncode == 1
-    assert old.stderr == ("✗ Required environment variable 'CLOUDFLARE_API_TOKEN' is not set\n")
-    _assert_agree(old, new, "missing-token", old_calls, new_calls)
+    returncode, _, stderr, _ = recorded("a-missing-token")
+    assert returncode == 1
+    assert stderr == ("✗ Required environment variable 'CLOUDFLARE_API_TOKEN' is not set\n")
+    compare(tmp_path, "a-missing-token")
 
 
 def test_a_missing_account_id_is_refused(tmp_path: pathlib.Path) -> None:
-    old, new, old_calls, new_calls = run_both(
-        tmp_path, ["--branch", "b"], drop_env=("CLOUDFLARE_ACCOUNT_ID",)
-    )
-    assert old.returncode == 1
-    assert "CLOUDFLARE_ACCOUNT_ID" in old.stderr
-    _assert_agree(old, new, "missing-account", old_calls, new_calls)
+    returncode, _, stderr, _ = recorded("a-missing-account-id")
+    assert returncode == 1
+    assert "CLOUDFLARE_ACCOUNT_ID" in stderr
+    compare(tmp_path, "a-missing-account-id")
 
 
 def test_missing_curl_is_refused_before_missing_jq(tmp_path: pathlib.Path) -> None:
-    old, new, old_calls, new_calls = run_both(tmp_path, ["--branch", "b"], drop="curl")
-    assert old.returncode == 1
-    assert old.stderr == "✗ Required command 'curl' is not available\n"
-    _assert_agree(old, new, "missing-curl", old_calls, new_calls)
+    returncode, _, stderr, _ = recorded("a-missing-curl")
+    assert returncode == 1
+    assert stderr == "✗ Required command 'curl' is not available\n"
+    compare(tmp_path, "a-missing-curl")
 
 
 def test_missing_jq_is_refused(tmp_path: pathlib.Path) -> None:
-    """The port shells out to jq for the same reason the twin does, so `jq` is a real prerequisite of BOTH and this refusal has to agree."""
-    old, new, old_calls, new_calls = run_both(tmp_path, ["--branch", "b"], drop="jq")
-    assert old.returncode == 1
-    assert old.stderr == "✗ Required command 'jq' is not available\n"
-    _assert_agree(old, new, "missing-jq", old_calls, new_calls)
+    """The port shells out to jq for the same reason the twin did, so `jq` is a real prerequisite of BOTH and this refusal has to agree."""
+    returncode, _, stderr, _ = recorded("a-missing-jq")
+    assert returncode == 1
+    assert stderr == "✗ Required command 'jq' is not available\n"
+    compare(tmp_path, "a-missing-jq")
 
 
 def test_defect_a_failed_listing_reads_as_nothing_to_do(tmp_path: pathlib.Path) -> None:
-    """THE VACUITY DEFECT, PINNED. curl cannot reach the host, the `|| echo
-    '{"result":[]}'` fallback fires, `.success // false` is false, and the run
-    ends GREEN with "No preview deployments to clean up". The one warning line sits in the middle of a successful run, so a branch whose previews were never enumerated is indistinguishable from a branch that had none.
+    """THE VACUITY DEFECT, PINNED. curl could not reach the host, the `|| echo
+    '{"result":[]}'` fallback fired, `.success // false` was false, and the run
+    ended GREEN with "No preview deployments to clean up". The one warning line sits in the middle of a successful run, so a branch whose previews were never enumerated is indistinguishable from a branch that had none.
 
-    Reproduced because agreement with the live twin is the deliverable;
+    Reproduced because agreement with the twin was the deliverable;
     repaired, this test goes red and names the port that must follow.
     """
-    old, new, old_calls, new_calls = run_both(tmp_path, ["--branch", "feature-x"], FAKE_CURL_RC="6")
-    assert old.returncode == 0, "the twin now fails on an unreachable API"
-    assert old.stderr == (
+    returncode, _, stderr, _ = recorded("an-unreachable-api")
+    assert returncode == 0, "the twin failed on an unreachable API"
+    assert stderr == (
         "→ Cleaning up CF Pages preview deployments for branch: feature-x\n"
         "⚠ CF API request failed on page 1\n"
         "→ Found 0 preview deployments for branch 'feature-x'\n"
         "✓ No preview deployments to clean up\n"
     )
     assert port.API_FAILURE_READS_AS_NOTHING_TO_DO
-    _assert_agree(old, new, "curl-fails", old_calls, new_calls)
+    compare(tmp_path, "an-unreachable-api")
 
 
 def test_an_unsuccessful_listing_body_is_the_same_green(tmp_path: pathlib.Path) -> None:
-    """A 200 whose body says `success: false` -- an auth failure, say -- takes the identical path. Driven separately from the transport failure because the two reach the branch by different routes."""
-    old, new, old_calls, new_calls = run_both(
-        tmp_path, ["--branch", "feature-x"], FAKE_LIST_UNSUCCESSFUL="1"
-    )
-    assert old.returncode == 0
-    assert "CF API request failed on page 1" in old.stderr
-    assert "No preview deployments to clean up" in old.stderr
-    _assert_agree(old, new, "unsuccessful-body", old_calls, new_calls)
+    """A 200 whose body says `success: false` -- an auth failure, say -- took the identical path. Recorded separately from the transport failure because the two reach the branch by different routes."""
+    returncode, _, stderr, _ = recorded("an-unsuccessful-listing-body")
+    assert returncode == 0
+    assert "CF API request failed on page 1" in stderr
+    assert "No preview deployments to clean up" in stderr
+    compare(tmp_path, "an-unsuccessful-listing-body")
 
 
-def test_a_non_json_body_kills_the_run_with_jqs_own_message(
-    tmp_path: pathlib.Path,
-) -> None:
-    """THE CASE A `json.loads` PORT WOULD GET WRONG. An HTML error page reaches an unguarded `jq`, whose parse error goes to stderr and whose exit status passes through `set -e`. Both the message and the status must agree, which is why the port runs jq rather than parsing in Python."""
-    old, new, old_calls, new_calls = run_both(
-        tmp_path, ["--branch", "feature-x"], FAKE_CURL_BODY="<html>504 Gateway Timeout</html>\n"
-    )
-    assert old.returncode == 5, f"jq's status changed: {old.returncode}"
-    assert "jq: parse error" in old.stderr
-    assert "Found" not in old.stderr, "the run continued past the parse error"
-    _assert_agree(old, new, "non-json", old_calls, new_calls)
+def test_a_non_json_body_kills_the_run_with_jqs_own_message(tmp_path: pathlib.Path) -> None:
+    """THE CASE A `json.loads` PORT WOULD GET WRONG. An HTML error page reached an unguarded `jq`, whose parse error went to stderr and whose exit status passed through `set -e`. Both the message and the status must agree, which is why the port runs jq rather than parsing in Python."""
+    returncode, _, stderr, _ = recorded("a-non-json-body")
+    assert returncode == 5, f"jq's status changed: {returncode}"
+    assert "jq: parse error" in stderr
+    assert "Found" not in stderr, "the run continued past the parse error"
+    compare(tmp_path, "a-non-json-body")
 
 
-def test_a_result_less_body_dies_on_the_filter_not_on_the_length(
-    tmp_path: pathlib.Path,
-) -> None:
-    """`[.result[] | ...]` is evaluated BEFORE `.result | length`, so a body with `success: true` and no `result` key dies with "Cannot iterate over null" rather than reporting zero. Order matters and is asserted."""
-    old, new, old_calls, new_calls = run_both(
-        tmp_path, ["--branch", "feature-x"], FAKE_CURL_BODY='{"success":true}\n'
-    )
-    assert old.returncode == 5
-    assert "Cannot iterate over null" in old.stderr
-    _assert_agree(old, new, "no-result-key", old_calls, new_calls)
+def test_a_result_less_body_dies_on_the_filter_not_on_the_length(tmp_path: pathlib.Path) -> None:
+    """`[.result[] | ...]` was evaluated BEFORE `.result | length`, so a body with `success: true` and no `result` key dies with "Cannot iterate over null" rather than reporting zero. Order matters and is asserted."""
+    returncode, _, stderr, _ = recorded("a-result-less-body")
+    assert returncode == 5
+    assert "Cannot iterate over null" in stderr
+    compare(tmp_path, "a-result-less-body")
 
 
 def test_an_empty_body_does_not_die(tmp_path: pathlib.Path) -> None:
-    """The third jq shape: EMPTY input makes `jq -r '.success // false'` emit nothing at all and exit 0, so `success` is the empty string and the ordinary warning branch runs. Not a parse error, and not a pass."""
-    old, new, old_calls, new_calls = run_both(
-        tmp_path, ["--branch", "feature-x"], FAKE_CURL_BODY=""
-    )
-    assert old.returncode == 0
-    assert "CF API request failed on page 1" in old.stderr
-    assert "jq:" not in old.stderr
-    _assert_agree(old, new, "empty-body", old_calls, new_calls)
+    """The third jq shape: EMPTY input made `jq -r '.success // false'` emit nothing at all and exit 0, so `success` was the empty string and the ordinary warning branch ran. Not a parse error, and not a pass."""
+    returncode, _, stderr, _ = recorded("an-empty-body")
+    assert returncode == 0
+    assert "CF API request failed on page 1" in stderr
+    assert "jq:" not in stderr
+    compare(tmp_path, "an-empty-body")
 
 
-def test_a_branch_name_with_a_space_is_carried_through_the_filter(
-    tmp_path: pathlib.Path,
-) -> None:
-    """`--arg branch "$BRANCH"` passes the name as DATA to jq, so a branch name is never a jq program fragment. Driven with a space because parse_args consumes the next token whole."""
-    body = (
-        '{"success":true,"result":[{"id":"dep-space","created_on":"2026-02-02",'
-        '"deployment_trigger":{"metadata":{"branch":"odd name"}}}]}\n'
-    )
-    old, new, old_calls, new_calls = run_both(
-        tmp_path, ["--branch", "odd name"], FAKE_CURL_BODY=body
-    )
-    assert old.returncode == 0
-    assert "Found 1 preview deployments for branch 'odd name'" in old.stderr
-    _assert_agree(old, new, "branch-with-space", old_calls, new_calls)
+def test_a_branch_name_with_a_space_is_carried_through_the_filter(tmp_path: pathlib.Path) -> None:
+    """`--arg branch "$BRANCH"` passed the name as DATA to jq, so a branch name is never a jq program fragment. Driven with a space because parse_args consumes the next token whole."""
+    returncode, _, stderr, _ = recorded("a-branch-name-with-a-space")
+    assert returncode == 0
+    assert "Found 1 preview deployments for branch 'odd name'" in stderr
+    compare(tmp_path, "a-branch-name-with-a-space")
 
 
 def test_divergence_common_sh_interprets_backslash_escapes_in_the_cf_error(
     tmp_path: pathlib.Path,
 ) -> None:
     """A DELIBERATE DIVERGENCE, ASSERTED IN BOTH DIRECTIONS SO IT CANNOT BE
-    "FIXED" BY ACCIDENT. `Could not delete <id>: <error_msg>` is the one message that interpolates remote text, and common.sh logs through `echo -e`. `rediacc_ci.log` formats the message as data (see its module docstring)."""
-    old, new, _oc, _nc = run_both(
-        tmp_path,
-        ["--branch", "feature-x"],
-        FAKE_DELETE_OK="false",
-        FAKE_DELETE_ERR="boom\\nline two",
+    "FIXED" BY ACCIDENT. `Could not delete <id>: <error_msg>` is the one message that interpolates remote text, and common.sh logged through `echo -e`. `rediacc_ci.log` formats the message as data (see its module docstring)."""
+    want_exit, _, want_err, _ = recorded(DIVERGENT)
+    proc, _ = drive(tmp_path, DIVERGENT)
+    assert want_exit == proc.returncode == 0
+    assert "boom\nline two" in want_err, (
+        "the recording no longer shows the twin interpreting escapes"
     )
-    assert old.returncode == new.returncode == 0
-    assert "boom\nline two" in old.stderr, "the twin no longer interprets escapes"
-    assert "boom\\nline two" in new.stderr, "the port started interpreting escapes"
-    assert old.stderr != new.stderr
+    assert "boom\\nline two" in proc.stderr, "the port started interpreting escapes"
+    assert want_err != proc.stderr
 
 
 def test_pure_helpers() -> None:
@@ -511,10 +536,9 @@ def test_pure_helpers() -> None:
     assert port.DELETE_FALLBACK == '{"success":false}'
 
 
-def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
+def test_planted_branch_filter_defect_is_caught(tmp_path: pathlib.Path) -> None:
     """ANTI-VACUITY, planted on the branch filter -- the one refusal in the script, and the one whose omission deletes other branches' live previews
-    while printing a bigger, entirely plausible tally. Driven red, then the
-    source is confirmed byte-identical and green.
+    while printing a bigger, entirely plausible tally. Driven red against the recording, then the source is confirmed byte-identical and green.
     """
     original = PORT.read_text(encoding="utf-8")
     # The target is the SELECT CLAUSE ALONE, not the whole statement. The first version of this plant matched two source lines including their indentation, and `ruff format` re-wrapped them minutes later -- the guard below caught it, which is the reason the guard is an assertion rather than a comment. `select(true)` keeps the jq program valid and `$branch` still bound, so the ONLY
@@ -527,21 +551,34 @@ def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
     mutant = tmp_path / "mutant.py"
     mutant.write_text(mutated, encoding="utf-8")
 
-    kw = {"FAKE_PER_PAGE": "6"}
-    old, old_calls = _run(TWIN, tmp_path, ["--branch", "feature-x"], **kw)
-    bad, bad_calls = _run(mutant, tmp_path, ["--branch", "feature-x"], **kw)
-    assert "Found 3 preview deployments" in old.stderr, "the TWIN filtered nothing; plant untested"
-    assert "Found 6 preview deployments" in bad.stderr, "the mutant still filtered by branch"
-    other = [c for c in bad_calls if "dep-1-1" in c]
-    assert other, "the mutant did not reach another branch's deployment"
-    assert not any("dep-1-1" in c for c in old_calls), "the TWIN deleted another branch's preview"
-    assert bad.returncode == old.returncode, (
-        "the plant is invisible in the exit code, which is why the call log is compared"
-    )
+    _, _, want_err, want_calls = recorded("only-the-named-branch")
+    assert "Found 3 preview deployments" in want_err, "the TWIN filtered nothing; plant untested"
+    assert not any("dep-1-1" in c for c in want_calls), "the TWIN deleted another branch's preview"
 
-    good, good_calls = _run(PORT, tmp_path, ["--branch", "feature-x"], **kw)
-    assert good_calls == old_calls, "restored port no longer agrees with the twin"
-    assert good.stderr == old.stderr
+    bad, bad_calls = drive(tmp_path / "bad", "only-the-named-branch", subject=mutant)
+    assert "Found 6 preview deployments" in bad.stderr, "the mutant still filtered by branch"
+    assert [c for c in bad_calls if "dep-1-1" in c], "the mutant did not reach another branch"
+    with pytest.raises(AssertionError):
+        compare(tmp_path / "bad2", "only-the-named-branch", subject=mutant)
+
+    compare(tmp_path / "good", "only-the-named-branch")
     assert PORT.read_text(encoding="utf-8") == original, (
         "port source must be restored byte-identical"
     )
+
+
+def test_planted_page_size_defect_is_caught(tmp_path: pathlib.Path) -> None:
+    """THE NEW CONTROL ON THE GOLDENS. Shrink the page size by one.
+
+    `per_page=25` appears in every listing URL and in the `-lt 25` short-page test, so a port that paginated in twenties would still sweep correctly and still print a plausible tally: the only witness is the recorded request log, where page 3 was requested because page 2 came back full at 25. The mutant is written to a throwaway file; the tracked port is never touched.
+    """
+    original = PORT.read_text(encoding="utf-8")
+    anchor = "PAGE_SIZE = 25\n"
+    assert original.count(anchor) == 1, "the plant's anchor moved"
+    mutant = tmp_path / "mutant.py"
+    mutant.write_text(original.replace(anchor, "PAGE_SIZE = 24\n"), encoding="utf-8")
+
+    with pytest.raises(AssertionError):
+        compare(tmp_path / "bad", "pagination-to-a-short-page", subject=mutant)
+    compare(tmp_path / "good", "pagination-to-a-short-page")
+    assert PORT.read_text(encoding="utf-8") == original

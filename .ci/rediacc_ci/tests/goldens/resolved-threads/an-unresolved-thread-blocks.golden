@@ -1,0 +1,56 @@
+# twin .ci/scripts/quality/check-resolved-threads.sh blob 19a5839d4715dd5e8a8ac152d6c11d87ac09e868
+exit: 1
+--- stdout ---
+
+============================================================
+  Unresolved Review Threads
+============================================================
+
+Found 1 unresolved review thread(s):
+
+  src/a.ts:12
+    Author: @alice
+    Comment: rename...
+
+------------------------------------------------------------
+Please resolve all review threads before merging.
+
+Option 1: Via GitHub UI
+  1. Go to the PR: https://github.com/rediacc/console/pull/42
+  2. Click 'Resolve conversation' on each thread
+
+Option 2: Via CLI (resolve all threads at once)
+
+  # Get unresolved thread IDs
+  cat > /tmp/query.graphql << 'GRAPHQL'
+  query($owner: String!, $repo: String!, $pr: Int!) {
+    repository(owner: $owner, name: $repo) {
+      pullRequest(number: $pr) {
+        reviewThreads(first: 100) {
+          nodes { id isResolved }
+        }
+      }
+    }
+  }
+  GRAPHQL
+
+  cat > /tmp/resolve.graphql << 'GRAPHQL'
+  mutation($threadId: ID!) {
+    resolveReviewThread(input: {threadId: $threadId}) {
+      thread { id isResolved }
+    }
+  }
+  GRAPHQL
+
+  # Resolve all unresolved threads
+  for id in $(gh api graphql -F owner="rediacc" -F repo="console" -F pr=42 \
+      -f query="$(cat /tmp/query.graphql)" \
+      --jq '.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false) | .id'); do
+    gh api graphql -F threadId="$id" -f query="$(cat /tmp/resolve.graphql)" --silent
+  done
+
+------------------------------------------------------------
+--- stderr ---
+→ Checking review threads and review status...
+→ Fetching review threads via GraphQL...
+→ Checking review status...

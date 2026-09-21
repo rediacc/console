@@ -1,6 +1,6 @@
 """Report whether a PR branch is behind its base, and whether a rebase would conflict.
 
-Ported from `.ci/scripts/quality/check-branch.sh`, which is NOT deleted; see `rediacc_ci.quality.__init__` for why both copies live.
+Ported from `.ci/scripts/quality/check-branch.sh`, which W7 P5 batch G2 retired once `.ci/shadow/w7p2-branch.observations.jsonl` asserted equivalence over five distinct trees and the twin's own text was recorded as goldens.
 
 DETECTION ONLY. This module never rewrites history, never moves a ref, and never publishes anything. The twin's header says why, and it is the reason the gate has the shape it has:
 

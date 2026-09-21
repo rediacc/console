@@ -1,0 +1,15 @@
+# twin .ci/scripts/housekeeping/cleanup-cf-preview.sh blob 462ca490e7184f30b7fed025efddb7c3241b9a4d
+exit: 0
+--- stdout ---
+--- stderr ---
+→ Cleaning up CF Pages preview deployments for branch: feature-x
+→ Found 3 preview deployments for branch 'feature-x'
+⚠ Could not delete dep-1-0: latest deployment cannot be deleted
+⚠ Could not delete dep-1-2: latest deployment cannot be deleted
+⚠ Could not delete dep-1-4: latest deployment cannot be deleted
+✓ Deleted 0 of 3 deployments for branch 'feature-x'
+--- calls ---
+curl	-s	-X	GET	https://api.cloudflare.com/client/v4/accounts/acct-fixture/pages/projects/rediacc/deployments?env=preview&per_page=25&page=1	-H	Authorization: Bearer tok-fixture	-H	Content-Type: application/json
+curl	-s	-X	DELETE	https://api.cloudflare.com/client/v4/accounts/acct-fixture/pages/projects/rediacc/deployments/dep-1-0?force=true	-H	Authorization: Bearer tok-fixture	-H	Content-Type: application/json
+curl	-s	-X	DELETE	https://api.cloudflare.com/client/v4/accounts/acct-fixture/pages/projects/rediacc/deployments/dep-1-2?force=true	-H	Authorization: Bearer tok-fixture	-H	Content-Type: application/json
+curl	-s	-X	DELETE	https://api.cloudflare.com/client/v4/accounts/acct-fixture/pages/projects/rediacc/deployments/dep-1-4?force=true	-H	Authorization: Bearer tok-fixture	-H	Content-Type: application/json

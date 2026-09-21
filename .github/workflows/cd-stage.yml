@@ -226,7 +226,7 @@ jobs:
           password: ${{ github.token }}
 
       - name: Stage Docker images
-        # Skip on empty channel (schedule events). retag-image.sh
+        # Skip on empty channel (schedule events). retag_image.py
         # uses `set -euo pipefail` and would fail loudly on an empty target
         # tag; gating here is cheaper than erroring the job for validation-
         # only runs that deliberately don't publish.

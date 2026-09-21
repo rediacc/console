@@ -1,0 +1,10 @@
+# twin .ci/scripts/docker/create-manifest.sh blob b18c560bcfc37ac057d50b987187addf6573a51a
+exit: 0
+--- stdout ---
+  docker buildx imagetools create -t ghcr.io/rediacc/api:1  ghcr.io/rediacc/api:1-amd64 ghcr.io/rediacc/api:1-arm64
+--- stderr ---
+→ Creating multi-arch manifest for api:1
+✓   Manifest: ghcr.io/rediacc/api:1
+✓   Sources:  ghcr.io/rediacc/api:1-amd64 ghcr.io/rediacc/api:1-arm64
+✓ [DRY-RUN] Would create manifest:
+--- calls ---

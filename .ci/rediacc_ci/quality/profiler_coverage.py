@@ -34,7 +34,7 @@ stops doing so REFUSES rather than quietly covering nothing.
 
 ANTI-VACUITY. Every extractor self-tests against a planted sample BEFORE the sweep, and the sweep refuses on zero workflows, zero jobs, zero declared action inputs, or counts under the floors. An empty scan is a broken instrument, never a clean tree; this repo has shipped gates that checked zero files for weeks.
 
-TEST SEAMS, all optional, used by `.ci/scripts/test/gates/test-profiler-coverage.sh`:
+TEST SEAMS, all optional, used by `.ci/rediacc_ci/tests/gates/test_gate_profiler_coverage.py`:
 
   PROFILER_COVERAGE_WORKFLOW_DIR      directory of workflow YAML to scan
   PROFILER_COVERAGE_ALLOWLIST         allowlist path

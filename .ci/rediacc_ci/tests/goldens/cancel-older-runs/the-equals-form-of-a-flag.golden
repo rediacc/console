@@ -1,0 +1,9 @@
+# twin .ci/scripts/ci/cancel-older-runs.sh blob 59dcebb5dbcb23f3f71a6356c3b19e69270499c0
+exit: 0
+--- stdout ---
+--- stderr ---
+→ Checking for older in-progress CI runs...
+✓ Current run: #9 (branch: main, created: 2026-01-01T00:00:00Z)
+⚠ Timeout reached (0s) - some older runs may not have been cancelled
+--- calls ---
+FAKEGH| api repos/rediacc/console/actions/runs/9

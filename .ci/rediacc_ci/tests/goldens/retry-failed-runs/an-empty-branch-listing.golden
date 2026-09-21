@@ -1,0 +1,8 @@
+# twin .ci/scripts/housekeeping/retry-failed-runs.sh blob e59a3222b8f31364af2de2bff17b416e12e72a94
+exit: 0
+--- stdout ---
+--- stderr ---
+→ Nightly retry: failed runs in acme/widget (last 48h)
+⚠ could not list branch tips; skipping rather than retrying on incomplete data
+--- calls ---
+api	repos/acme/widget/branches?per_page=100	--paginate	--jq	.[].commit.sha

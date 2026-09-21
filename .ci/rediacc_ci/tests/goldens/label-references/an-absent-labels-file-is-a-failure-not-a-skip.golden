@@ -1,0 +1,5 @@
+# twin .ci/scripts/quality/check-label-references.sh blob 5ff6c3d3873b3f6d81d427f7b7fb3c8502628483
+exit: 1
+--- stdout ---
+--- stderr ---
+✗ labels file not found: fx/labels.yml

@@ -93,7 +93,7 @@ def real_tree_admission(module: object, twin: str, unsafe: set[str]) -> str | No
     """None when this module may drive its real-tree twin, else why not.
 
     THE BLANKET REFUSAL THIS REPLACES was correct about the danger and wrong about the remedy. It refused EVERY ported twin in the real-tree set, so the isolation machinery existed (`group_for` already returns `REAL_TREE_GROUP`) and the parity driver forbade using it -- leaving 27 of the 51 remaining twins, the largest blocked group in W7 P3, unportable by policy rather than by any
-    technical obstacle. Those 27 include the instruments this whole slice is measured by: `test-ci-parity.sh`, `test-language-policy.sh`, `test-gate-anti-vacuity.sh`, `test-dead-bash.sh` (the first and last were retired in W7 P5 census batch B2).
+    technical obstacle. Those 27 include the instruments this whole slice is measured by: `test-ci-parity.sh`, `test-language-policy.sh`, `test-gate-anti-vacuity.sh`, `test-dead-bash.sh` (all but the third have since been retired).
 
     An opt-in replaces it, and it is deliberately TWO conditions rather than
     one. A module that merely declares `REAL_TREE_TWIN = True` has stated an

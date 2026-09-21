@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-policy-path.sh`.
+"""Port of `.ci/scripts/test/gates/test-policy-path.sh`, retired in W7 P5.
 
 `scripts/lib/policy-paths.ts` is the ONE seam that says where a suppression policy file lives. Fifteen allow / block / exempt files used to sit at the repository root with their readers mostly hard-coding that, and four of them read a BARE RELATIVE NAME which was correct only because the reader happened to `cd` to the repo root first. The move to `.ci/policy` landed 2026-09-06 at
 b80552370.
@@ -28,8 +28,6 @@ import pathlib
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-policy-path.sh"
 
 LIB = paths.from_root("scripts", "lib", "policy-paths.ts")
 TSX = paths.from_root("node_modules", ".bin", "tsx")

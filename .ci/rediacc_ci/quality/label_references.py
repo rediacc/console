@@ -1,6 +1,6 @@
 r"""Every GitHub label the code names must be declared in `.github/labels.yml`.
 
-Ported from `.ci/scripts/quality/check-label-references.sh`, which is NOT deleted; see `rediacc_ci.quality.__init__` for why both copies live.
+Ported from `.ci/scripts/quality/check-label-references.sh`, which W7 P5 retired once its output was frozen into `.ci/rediacc_ci/tests/goldens/label-references/`; the goldens carry its blob sha, so `git cat-file -p` still yields the program those bytes came from.
 
 WHY THIS EXISTS, in the twin's own words, because the failure was silent:
 
@@ -96,7 +96,7 @@ DEFAULT_SCAN_DIRS = ".github .ci"
 # "The tree carries well over this many distinct referenced labels; finding fewer means the sweep itself broke (wrong root, bad glob), not a clean tree."
 DEFAULT_MIN_DISTINCT = 8
 
-# Excluded by BASENAME, because both files carry planted sample lines that are instrument fixtures rather than label references.
+# Excluded by BASENAME, because both files carried planted sample lines that were instrument fixtures rather than label references. Both have since been retired, so the list matches nothing today and is kept because the twin's recorded output was produced with it in place.
 GREP_EXCLUDES = ("check-label-references.sh", "test-label-references.sh")
 
 # The token every planted sample must yield, ASSEMBLED rather than written.

@@ -5,7 +5,7 @@ TWO SUBJECTS, and they are deliberately in one file because neither is worth muc
 WHAT IS PINNED HERE, and what is pinned elsewhere on purpose:
 
   * THE PURITY PROPERTY, which is the twin's rule 1 and this file's reason for
-    existing. `.ci/scripts/test/gates/test-policy-path.sh:63-80` proves it for
+    existing. `.ci/rediacc_ci/tests/gates/test_gate_policy_path.py` proves it for
     TypeScript with an `rmdir`: rmdir REFUSES a non-empty directory, so a helper
     that had stat'ed, cached or created anything under an empty fixture root
     fails that line. The Python twin is held to the same proof, the same way,

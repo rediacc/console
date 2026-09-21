@@ -1255,7 +1255,7 @@ jobs:
     # which check:ci-app-admin-perm deliberately forbids the CI App from
     # holding, so a leaked token cannot delete `edge` or `stable`. The result was
     # 25 empty `pr-*` shells on /deployments, deleted by hand on 2026-09-03 with
-    # .ci/scripts/housekeeping/cleanup-pr-environments.sh.
+    # rediacc_ci.housekeeping.cleanup_pr_environments.
     #
     # Nothing depended on the block. Every secret and variable this job reads
     # resolves at repo or org scope (checked against the live scopes, including

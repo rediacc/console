@@ -1,13 +1,17 @@
-"""`rediacc_ci.quality.review_report_replies` against its bash twin.
+"""`rediacc_ci.quality.review_report_replies`, driven against the bytes its bash twin printed.
 
-A bash child runs the REAL `.ci/scripts/quality/check-review-report-replies.sh` over a specimen with a stubbed `gh` on PATH, stdout and stderr captured SEPARATELY, and its bytes are compared against the port's. Same recipe as the committed ledger, `.ci/shadow/w7p2-review-report-replies.observations.jsonl`.
+WHILE BOTH COPIES EXISTED a bash child ran the REAL `.ci/scripts/quality/check-review-report-replies.sh` over a specimen with a stubbed `gh` on PATH, stdout and stderr captured SEPARATELY, and its bytes were compared against the port's. Same recipe as the committed ledger, `.ci/shadow/w7p2-review-report-replies.observations.jsonl`. The twin has now been deleted and every case
+that executed it compares against `goldens/review-report-replies/`, which holds the twin's OWN recorded output, captured from the tracked script on its last day in the tree. The provenance header of each golden carries the blob sha, so `git cat-file -p <sha>` still yields the program that printed those bytes.
 
-THE FOUR REPLY CLAUSES ARE EACH A CASE, and clause (a) is the one that decides whether this gate can fire at all: the pipeline posts several comments in a row under one identity, and on PR #551 the reviewed-SHA marker landed FOUR SECONDS after the report and is long enough to clear every substance test. Without the different-author rule the review answers itself on every PR.
+THE FOUR REPLY CLAUSES ARE EACH A CASE, and clause (a) is the one that decides whether this gate can fire at all: the pipeline posts several comments in a row under one identity, and on PR #551 the reviewed-SHA marker landed FOUR SECONDS after the report and is long enough to clear every substance test. Without the different-author rule the review answers itself on every PR. It is
+also what the planted control below re-breaks.
+
+SIX OF THE NINE RECORDED RENDERS ARE BYTE-IDENTICAL, and that is a property of the gate rather than of the recording: the failure block names the report, not the reason no reply matched, so four different unanswered shapes print the same 2628 bytes. What separates them is the INPUT each case feeds and the exit code, and what separates the corpus from a single observation re-shaded
+is the two silent cases beside them. A reader tempted to prune the duplicates should note that each one is a distinct clause, and a port that broke exactly one clause would still be caught by the case that exercises it.
 
 THE 2026-08-05 SHAPE IS A CASE TOO. A report whose body is a bare wrap-up ("Posted the review. Summary of what I did:") carries neither the findings fence nor a `### Review` heading, and the twin used to AND those in. It found no report and exited 0 while an 8141-char verdict sat unanswered. Keyed on the producer constant alone, it fires.
 
-THE PER-EPIC FAN-OUT IS ALSO HERE, driven from a snapshot at `agent/pr/<branch>.md`. It is a BOUNDED SELF-INVOCATION on both sides -- the twin re-executes `"$0"` with `REVIEW_EPIC_PREFIX` set, the port re-enters `main()` with the same variable -- so the case proves the recursion terminates and that one unanswered epic out of two fails the whole run while the answered one prints its
-OK line.
+THE PER-EPIC FAN-OUT IS ALSO HERE, driven from a snapshot at `agent/pr/<branch>.md`. It was a BOUNDED SELF-INVOCATION: the twin re-executed `"$0"` with `REVIEW_EPIC_PREFIX` set, the port re-enters `main()` with the same variable, so the case proves the recursion terminates and that one unanswered epic out of two fails the whole run while the answered one prints its OK line.
 """
 
 import json
@@ -20,8 +24,9 @@ import pytest
 from rediacc_ci.quality import review_comments as sibling
 from rediacc_ci.quality import review_report_replies as gate
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.tests import frozen
 
-TWIN = ".ci/scripts/quality/check-review-report-replies.sh"
+SLUG = "review-report-replies"
 MODULE = "review_report_replies"
 
 ENV_PREFIX = 'PR_NUMBER=42 GH_TOKEN=t GITHUB_REPOSITORY=rediacc/console PATH="$PWD/fxbin:$PATH"'
@@ -50,12 +55,11 @@ REPORT = {
 def build(
     tmp_path: pathlib.Path, comments: list[dict], snapshot: str | None = None
 ) -> pathlib.Path:
+    """The fixture tree the twin was recorded over, minus the twin itself."""
     src = pathlib.Path(diff.repo())
     root = tmp_path / "fixture"
-    for rel in (".ci/scripts/quality", ".ci/rediacc_ci/quality", "fxbin", "fxdata"):
+    for rel in (".ci/rediacc_ci/quality", "fxbin", "fxdata"):
         (root / rel).mkdir(parents=True, exist_ok=True)
-    shutil.copytree(src / ".ci" / "scripts" / "lib", root / ".ci" / "scripts" / "lib")
-    shutil.copy2(src / TWIN, root / TWIN)
     for name in ("__init__.py", "log.py", "paths.py", "controls.py"):
         shutil.copy2(src / ".ci" / "rediacc_ci" / name, root / ".ci" / "rediacc_ci" / name)
     for name in ("__init__.py", "%s.py" % MODULE):
@@ -83,35 +87,65 @@ def build(
     return root
 
 
-def run_both(root: pathlib.Path) -> tuple[tuple[int, str, str], tuple[int, str, str]]:
-    old = diff.bash_streams("%s bash %s" % (ENV_PREFIX, TWIN), cwd=str(root))
-    new = diff.bash_streams(
+def run_port(root: pathlib.Path) -> tuple[int, str, str]:
+    return diff.bash_streams(
         "%s PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=.ci python3 -m rediacc_ci.quality.%s"
         % (ENV_PREFIX, MODULE),
         cwd=str(root),
     )
-    return old, new
 
+
+def split_golden(text: str) -> tuple[int, str, str]:
+    """A recorded twin render, back into its three parts."""
+    exit_line, rest = text.split("\n", 1)
+    stdout, stderr = rest.split("--- stdout ---\n", 1)[1].split("--- stderr ---\n", 1)
+    return int(exit_line.removeprefix("exit: ")), stdout, stderr
+
+
+def compare(root: pathlib.Path, name: str) -> tuple[int, str, str]:
+    """Byte equality on BOTH streams against the twin's recorded bytes."""
+    want_exit, want_out, want_err = split_golden(frozen.read(SLUG, name))
+    returncode, stdout, stderr = run_port(root)
+    stdout = frozen.mask_root(stdout, root)
+    stderr = frozen.mask_root(stderr, root)
+    assert returncode == want_exit, "%s: the twin exited %d, the port %d" % (
+        name,
+        want_exit,
+        returncode,
+    )
+    assert stdout == want_out, "%s: stdout diverged from the twin's recorded bytes" % name
+    assert stderr == want_err, "%s: stderr diverged from the twin's recorded bytes" % name
+    return returncode, stdout, stderr
+
+
+EPIC_COMMENTS = [
+    dict(REPORT, id=200, body="**Claude finished (epic ab12cd34) reviewing."),
+    {"id": 201, "user": HUMAN, "created_at": "2026-08-05T11:00:00Z", "body": LONG},
+    dict(
+        REPORT,
+        id=202,
+        created_at="2026-08-05T12:00:00Z",
+        body="**Claude finished (epic ef56ab78) reviewing.",
+    ),
+]
+EPIC_SNAPSHOT = "`PR-TASK: ab12cd34`\n`PR-TASK: ef56ab78`\n"
+
+SELF_ANSWER = [REPORT, {"id": 101, "user": BOT, "created_at": "2026-08-05T10:00:04Z", "body": LONG}]
 
 CASES = [
     # THE NEGATIVE HALF, first: an answered report must be silent, or the gate is a permanent block and gets switched off.
     (
-        "a long-form answer from another author clears the gate",
+        "a-long-form-answer-from-another-author-clears-the-gate",
         [REPORT, {"id": 101, "user": HUMAN, "created_at": "2026-08-05T11:00:00Z", "body": LONG}],
         None,
         0,
     ),
-    ("an unanswered report blocks", [REPORT], None, 1),
+    ("an-unanswered-report-blocks", [REPORT], None, 1),
     # CLAUSE (a). The pipeline must not answer itself.
-    (
-        "the pipeline's own later comment is not an answer",
-        [REPORT, {"id": 101, "user": BOT, "created_at": "2026-08-05T10:00:04Z", "body": LONG}],
-        None,
-        1,
-    ),
+    ("the-pipelines-own-later-comment-is-not-an-answer", SELF_ANSWER, None, 1),
     # CLAUSE (c).
     (
-        "a stock acknowledgement is not an answer",
+        "a-stock-acknowledgement-is-not-an-answer",
         [
             REPORT,
             {
@@ -126,7 +160,7 @@ CASES = [
     ),
     # CLAUSE (d).
     (
-        "a substantive but unrelated comment is not an answer",
+        "a-substantive-but-unrelated-comment-is-not-an-answer",
         [
             REPORT,
             {
@@ -141,7 +175,7 @@ CASES = [
     ),
     (
         # NEWEST WINS. The older report is answered; the newer one is not, and it is the newer one that is gated.
-        "a newer report supersedes an answered older one",
+        "a-newer-report-supersedes-an-answered-older-one",
         [
             dict(
                 REPORT, id=100, created_at="2026-08-04T10:00:00Z", body="**Claude finished** one."
@@ -156,49 +190,58 @@ CASES = [
     ),
     (
         # THE 2026-08-05 SHAPE: no fence, no heading, still a report.
-        "a bare wrap-up with no fence and no heading is still a report",
+        "a-bare-wrap-up-with-no-fence-and-no-heading-is-still-a-report",
         [dict(REPORT, body="**Claude finished** Posted the review. Summary of what I did:")],
         None,
         1,
     ),
     (
-        "a PR with no report at all is silent",
+        "a-pr-with-no-report-at-all-is-silent",
         [{"id": 1, "user": HUMAN, "created_at": "2026-08-05T10:00:00Z", "body": "just chatter"}],
         None,
         0,
     ),
     (
         # THE PER-EPIC FAN-OUT: one epic answered, one not, and the run fails.
-        "one unanswered epic out of two fails the whole run",
-        [
-            dict(REPORT, id=200, body="**Claude finished (epic ab12cd34) reviewing."),
-            {"id": 201, "user": HUMAN, "created_at": "2026-08-05T11:00:00Z", "body": LONG},
-            dict(
-                REPORT,
-                id=202,
-                created_at="2026-08-05T12:00:00Z",
-                body="**Claude finished (epic ef56ab78) reviewing.",
-            ),
-        ],
-        "`PR-TASK: ab12cd34`\n`PR-TASK: ef56ab78`\n",
+        "one-unanswered-epic-out-of-two-fails-the-whole-run",
+        EPIC_COMMENTS,
+        EPIC_SNAPSHOT,
         1,
     ),
 ]
 
 
 @pytest.mark.parametrize(
-    ("comments", "snapshot", "want_exit"),
-    [(c[1], c[2], c[3]) for c in CASES],
+    ("name", "comments", "snapshot", "want_exit"),
+    CASES,
     ids=[c[0] for c in CASES],
 )
-def test_differential(tmp_path, comments, snapshot, want_exit):
+def test_port_matches_the_twins_recorded_output(tmp_path, name, comments, snapshot, want_exit):
     """Byte equality on BOTH streams, plus the exit code the case expects."""
     root = build(tmp_path, comments, snapshot)
-    (old_rc, old_out, old_err), (new_rc, new_out, new_err) = run_both(root)
-    assert old_rc == want_exit, "the twin's verdict moved: %s%s" % (old_out, old_err)
-    assert new_rc == old_rc
-    assert new_out == old_out
-    assert new_err == old_err
+    returncode, _stdout, _stderr = compare(root, name)
+    assert returncode == want_exit, "the recorded verdict moved"
+
+
+def test_every_case_has_a_golden_and_no_golden_is_orphaned() -> None:
+    """ANTI-VACUITY on the corpus: a case whose golden vanished would pass by never being compared, and a golden nothing reads is a recording of a case that stopped running."""
+    frozen.assert_corpus(SLUG, {name for name, _c, _s, _e in CASES})
+
+
+def test_the_recorded_corpus_is_not_one_observation_re_shaded() -> None:
+    """The stub answered, and the two verdicts print different things.
+
+    A `gh` stub that failed every call would have made every render an identical error message, which is byte-equal and proves nothing. The silent renders and the blocking ones are asserted to differ and to carry the text each verdict owns.
+    """
+    silent = split_golden(
+        frozen.read(SLUG, "a-long-form-answer-from-another-author-clears-the-gate")
+    )
+    blocked = split_golden(frozen.read(SLUG, "an-unanswered-report-blocks"))
+    assert silent[0] == 0
+    assert blocked[0] == 1
+    assert silent[1] != blocked[1]
+    assert "gh failed after 3 attempts" not in silent[1]
+    assert "review report" in silent[1].lower()
 
 
 def test_the_fan_out_runs_every_epic_and_names_the_unanswered_ones(tmp_path):
@@ -206,34 +249,45 @@ def test_the_fan_out_runs_every_epic_and_names_the_unanswered_ones(tmp_path):
 
     Gating only the newest report across all epics "would enforce the LAST epic's reply and silently excuse every other, which is worse than not gating: the unanswered ones look cleared."
     """
-    root = build(
-        tmp_path,
-        [
-            dict(REPORT, id=200, body="**Claude finished (epic ab12cd34) reviewing."),
-            {"id": 201, "user": HUMAN, "created_at": "2026-08-05T11:00:00Z", "body": LONG},
-            dict(
-                REPORT,
-                id=202,
-                created_at="2026-08-05T12:00:00Z",
-                body="**Claude finished (epic ef56ab78) reviewing.",
-            ),
-        ],
-        "`PR-TASK: ab12cd34`\n`PR-TASK: ef56ab78`\n",
+    recorded = split_golden(frozen.read(SLUG, "one-unanswered-epic-out-of-two-fails-the-whole-run"))
+    assert recorded[0] == 1
+    assert "Per-epic review reports: 2 epic(s) declared for main" in recorded[1]
+    assert "--- epic ab12cd34 ---" in recorded[1]
+    assert "--- epic ef56ab78 ---" in recorded[1]
+    assert "1 of 2 epic report(s) unanswered:" in recorded[1]
+    root = build(tmp_path, EPIC_COMMENTS, EPIC_SNAPSHOT)
+    compare(root, "one-unanswered-epic-out-of-two-fails-the-whole-run")
+
+
+def test_planted_defect_is_caught_by_the_goldens(tmp_path):
+    """THE CONTROL ON THE GOLDENS. Let the reviewer answer its own report.
+
+    Dropping the different-author clause is the one simplification that disarms this gate completely, and it turns the blocking `the-pipelines-own-later-comment-is-not-an-answer` tree into a silent one. The mutation is applied to the module COPY inside the throwaway fixture; the tracked port is never touched.
+    """
+    tracked = pathlib.Path(diff.repo()) / ".ci" / "rediacc_ci" / "quality" / ("%s.py" % MODULE)
+    before = tracked.read_text(encoding="utf-8")
+    anchor = 'if (((comment.get("user") or {}).get("login")) or "") != author\n'
+    assert before.count(anchor) == 1, "the plant's anchor moved"
+
+    root = build(tmp_path, SELF_ANSWER, None)
+    copy = root / ".ci" / "rediacc_ci" / "quality" / ("%s.py" % MODULE)
+    copy.write_text(
+        copy.read_text(encoding="utf-8").replace(anchor, "if True\n"),
+        encoding="utf-8",
     )
-    (old_rc, old_out, _err), (new_rc, new_out, _) = run_both(root)
-    assert old_rc == 1
-    assert new_out == old_out
-    assert "Per-epic review reports: 2 epic(s) declared for main" in old_out
-    assert "--- epic ab12cd34 ---" in old_out
-    assert "--- epic ef56ab78 ---" in old_out
-    assert "1 of 2 epic report(s) unanswered:" in old_out
-    assert new_rc == old_rc
+    with pytest.raises(AssertionError):
+        compare(root, "the-pipelines-own-later-comment-is-not-an-answer")
+
+    # And the real, unmutated module still agrees against the same fixture.
+    clean = build(tmp_path / "clean", SELF_ANSWER, None)
+    compare(clean, "the-pipelines-own-later-comment-is-not-an-answer")
+    assert tracked.read_text(encoding="utf-8") == before
 
 
 def test_the_two_shared_constants_match_the_sibling_gate():
     """One reply must clear BOTH gates, so these cannot drift.
 
-    `test-review-status.sh` parses both bash files and fails if they disagree; this asserts the same thing across the two ports, which is the half that gate cannot see.
+    `test_gate_review_status.py` parses both files and fails if they disagree; this asserts the same thing across the two ports, which is the half that gate cannot see.
     """
     assert gate.SUMMARY_MIN_CHARS == sibling.SUMMARY_MIN_CHARS == 30
     assert gate.SUMMARY_LONGFORM_CHARS == sibling.SUMMARY_LONGFORM_CHARS == 200
@@ -284,8 +338,3 @@ def test_selftest_exits_zero_and_prints_a_count():
     assert code == 0, err
     assert "control(s) passed" in out
     assert int(out.split(" control(s)")[0].strip()) >= 20
-
-
-def test_the_twin_is_still_present():
-    """Invariant 5: a twin is never deleted in the change that ports it."""
-    assert (pathlib.Path(diff.repo()) / TWIN).is_file()

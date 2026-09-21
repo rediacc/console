@@ -4487,8 +4487,8 @@
     ],
     "ci": {
       "kind": "test",
-      "test": ".ci/scripts/test/gates/test-dead-case-arms.sh",
-      "blocker": "BLOCKER: the gate is CONTROL-FIRST -- it plants a dead case arm with a runtime-generated key and refuses to report on the real tree unless its scanner catches that arm, so a green IS the fire proof; test-dead-case-arms.sh:14 runs it seam-free against the real tree inside the gate-test battery (ci-quality.yml quality-security, \"Quality-gate unit tests\")"
+      "test": ".ci/rediacc_ci/tests/gates/test_gate_dead_case_arms.py",
+      "blocker": "BLOCKER: the gate is CONTROL-FIRST -- it plants a dead case arm with a runtime-generated key and refuses to report on the real tree unless its scanner catches that arm, so a green IS the fire proof; test_gate_dead_case_arms.py:test_real_tree_is_clean_and_the_control_fired runs it seam-free against the real tree under check:ci-pytest (ci-quality.yml quality-security)"
     }
   },
   {
@@ -4500,8 +4500,8 @@
     ],
     "ci": {
       "kind": "test",
-      "test": ".ci/scripts/test/gates/test-label-references.sh",
-      "blocker": "BLOCKER: test-label-references.sh:116 runs the gate seam-free against the real tree inside the gate-test battery (ci-quality.yml quality-security, \"Quality-gate unit tests\"), so the real sweep over .github/.ci executes every CI run; the fixture cases around it prove both fire directions"
+      "test": ".ci/rediacc_ci/tests/gates/test_gate_label_references.py",
+      "blocker": "BLOCKER: test_gate_label_references.py:test_real_tree_is_clean_and_excludes_this_file runs the gate seam-free against the real tree under check:ci-pytest (ci-quality.yml quality-security, \"Python package tests\"), so the real sweep over .github/.ci executes every CI run; the fixture cases around it prove both fire directions"
     }
   },
   {
@@ -4513,8 +4513,8 @@
     ],
     "ci": {
       "kind": "test",
-      "test": ".ci/scripts/test/gates/test-label-inventory.sh",
-      "blocker": "BLOCKER: test-label-inventory.sh:191 runs the gate seam-free over the REAL .github/labels.yml inside the gate-test battery (ci-quality.yml quality-security, \"Quality-gate unit tests\") with the live list injected, so the real parse, the declared floor and the create-on-demand allowlist verification execute every CI run, and the two controls beside it drop a real label and add an undeclared one to prove both fire directions; the live GitHub read is the one part that cannot run in that lane because it holds no label-read token, and it runs on the local npm invocation"
+      "test": ".ci/rediacc_ci/tests/gates/test_gate_label_inventory.py",
+      "blocker": "BLOCKER: test_gate_label_inventory.py:test_real_tree_reconciles_against_an_injected_live_list runs the gate seam-free over the REAL .github/labels.yml under check:ci-pytest (ci-quality.yml quality-security) with the live list injected, so the real parse, the declared floor and the create-on-demand check execute every CI run; the live GitHub read runs on npm"
     }
   },
   {
@@ -4526,8 +4526,8 @@
     ],
     "ci": {
       "kind": "test",
-      "test": ".ci/scripts/test/gates/test-profiler-coverage.sh",
-      "blocker": "BLOCKER: test-profiler-coverage.sh:584 runs the gate seam-free against the real tree inside the gate-test battery (ci-quality.yml quality-security, \"Quality-gate unit tests\") -- real .github/workflows, real .profiler-coverage-allowlist, real .github/actions/profiler/action.yml, real floors -- so the full 121-job parse and both relations execute every CI run; the 22 fixture cases around it prove every fire direction, including the anti-vacuity refusals (empty dir, missing dir, zero jobs, three floors, missing action.yml) that a real-tree-only case can never exercise"
+      "test": ".ci/rediacc_ci/tests/gates/test_gate_profiler_coverage.py",
+      "blocker": "BLOCKER: test_gate_profiler_coverage.py:test_real_tree_seam_free runs the gate seam-free against the real tree under check:ci-pytest (ci-quality.yml quality-security) -- real workflows, real allowlist, real action.yml, real floors -- so the full job parse and both relations execute every CI run; the 22 fixture cases around it prove every fire direction"
     }
   },
   {
@@ -4971,24 +4971,6 @@
     }
   },
   {
-    "id": "gate-test:language-policy",
-    "run": ".ci/scripts/test/gates/test-language-policy.sh",
-    "gate": true,
-    "qualityGateTest": true,
-    "reads": [
-      "tree:repo"
-    ],
-    "leaves": [
-      ".ci/scripts/test/gates/test-language-policy.sh"
-    ],
-    "ci": {
-      "kind": "step",
-      "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-security",
-      "step": "Quality-gate unit tests"
-    }
-  },
-  {
     "id": "gate-test:run-sh",
     "run": ".ci/scripts/test/gates/test-run-sh.sh",
     "gate": true,
@@ -5036,24 +5018,6 @@
     "qualityGateTest": true,
     "leaves": [
       ".ci/scripts/test/gates/test-toolchain.sh"
-    ],
-    "ci": {
-      "kind": "step",
-      "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-security",
-      "step": "Quality-gate unit tests"
-    }
-  },
-  {
-    "id": "gate-test:breakpoint-portability",
-    "run": ".ci/scripts/test/gates/test-breakpoint-portability.sh",
-    "reads": [
-      "tree:repo"
-    ],
-    "gate": true,
-    "qualityGateTest": true,
-    "leaves": [
-      ".ci/scripts/test/gates/test-breakpoint-portability.sh"
     ],
     "ci": {
       "kind": "step",
@@ -5162,42 +5126,6 @@
     }
   },
   {
-    "id": "gate-test:label-inventory",
-    "run": ".ci/scripts/test/gates/test-label-inventory.sh",
-    "reads": [
-      "tree:repo"
-    ],
-    "gate": true,
-    "qualityGateTest": true,
-    "leaves": [
-      ".ci/scripts/test/gates/test-label-inventory.sh"
-    ],
-    "ci": {
-      "kind": "step",
-      "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-security",
-      "step": "Quality-gate unit tests"
-    }
-  },
-  {
-    "id": "gate-test:dead-case-arms",
-    "run": ".ci/scripts/test/gates/test-dead-case-arms.sh",
-    "reads": [
-      "tree:repo"
-    ],
-    "gate": true,
-    "qualityGateTest": true,
-    "leaves": [
-      ".ci/scripts/test/gates/test-dead-case-arms.sh"
-    ],
-    "ci": {
-      "kind": "step",
-      "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-security",
-      "step": "Quality-gate unit tests"
-    }
-  },
-  {
     "id": "check:ci-pytest",
     "run": "npm run check:ci-pytest",
     "gate": true,
@@ -5274,64 +5202,12 @@
     }
   },
   {
-    "id": "gate-test:policy-path",
-    "run": ".ci/scripts/test/gates/test-policy-path.sh",
-    "gate": true,
-    "qualityGateTest": true,
-    "leaves": [
-      ".ci/scripts/test/gates/test-policy-path.sh"
-    ],
-    "ci": {
-      "kind": "step",
-      "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-security",
-      "step": "Quality-gate unit tests"
-    }
-  },
-  {
     "id": "gate-test:media-r2",
     "run": ".ci/scripts/test/gates/test-media-r2.sh",
     "gate": true,
     "qualityGateTest": true,
     "leaves": [
       ".ci/scripts/test/gates/test-media-r2.sh"
-    ],
-    "ci": {
-      "kind": "step",
-      "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-security",
-      "step": "Quality-gate unit tests"
-    }
-  },
-  {
-    "id": "gate-test:label-references",
-    "run": ".ci/scripts/test/gates/test-label-references.sh",
-    "reads": [
-      "tree:repo"
-    ],
-    "gate": true,
-    "qualityGateTest": true,
-    "leaves": [
-      ".ci/scripts/test/gates/test-label-references.sh"
-    ],
-    "ci": {
-      "kind": "step",
-      "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-security",
-      "step": "Quality-gate unit tests"
-    }
-  },
-  {
-    "id": "gate-test:profiler-coverage",
-    "run": ".ci/scripts/test/gates/test-profiler-coverage.sh",
-    "reads": [
-      "tree:repo"
-    ],
-    "slow": true,
-    "gate": true,
-    "qualityGateTest": true,
-    "leaves": [
-      ".ci/scripts/test/gates/test-profiler-coverage.sh"
     ],
     "ci": {
       "kind": "step",
@@ -5350,25 +5226,6 @@
     "qualityGateTest": true,
     "leaves": [
       ".ci/scripts/test/gates/test-runner-advice.sh"
-    ],
-    "ci": {
-      "kind": "step",
-      "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-security",
-      "step": "Quality-gate unit tests"
-    }
-  },
-  {
-    "id": "gate-test:review-status",
-    "run": ".ci/scripts/test/gates/test-review-status.sh",
-    "reads": [
-      "tree:repo"
-    ],
-    "slow": true,
-    "gate": true,
-    "qualityGateTest": true,
-    "leaves": [
-      ".ci/scripts/test/gates/test-review-status.sh"
     ],
     "ci": {
       "kind": "step",

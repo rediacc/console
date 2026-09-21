@@ -1,0 +1,19 @@
+# twin .ci/scripts/quality/check-branch.sh blob ec2529722f1aff8ab3af512c1e0a5a315bf9a7cb
+exit: 0
+--- stdout ---
+136:echo "=============================================="
+138:echo "=============================================="
+142:echo "    Rebases the console repo AND every submodule carrying a branch of the"
+143:echo "    same name, resolving the gitlink conflicts that a plain 'git rebase'"
+144:echo "    gets wrong. It rebases and verifies only; it lands nothing."
+146:echo "  If the rebase halts on a conflict:"
+148:echo "    .claude/hooks/stop/worklist.py --git rebase-resolve"
+149:echo "        reports where it stopped and stages the paths it can decide"
+150:echo "        (gitlinks by ancestry, registry unions). All-or-nothing: if any"
+151:echo "        path needs you, nothing is written."
+152:echo "    .claude/hooks/stop/worklist.py --git rebase-continue --execute"
+153:echo "        continues the rebase once every conflicted path is staged."
+155:echo "  Prove no commit was lost across the rebase:"
+157:echo "    .claude/hooks/stop/worklist.py --git snapshot > /tmp/pre.snap   # BEFORE"
+160:echo "=============================================="
+--- stderr ---

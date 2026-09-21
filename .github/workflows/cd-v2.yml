@@ -223,7 +223,7 @@ jobs:
   publish:
     name: Tag & Release
     runs-on: ubuntu-latest
-    # packages: write because retag-image.sh does `buildx imagetools create`,
+    # packages: write because retag_image.py does `buildx imagetools create`,
     # which PUSHES to ghcr. actions: read for the cross-run
     # download-artifact (run-id + github-token). attestations: read for
     # `gh attestation verify`, which only READS the attestation - the signing

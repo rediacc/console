@@ -16,16 +16,16 @@
   "that shrank by 29 can still hide one brand-new violation. Comparing sizes is not",
   "the same claim as diffing the sets."
  ],
- "count": 5671,
- "files": 1194,
+ "count": 5668,
+ "files": 1191,
  "by_rule": {
   "R1": 1675,
   "R11": 178,
   "R14": 1,
-  "R18": 2267,
+  "R18": 2265,
   "R19": 62,
   "R2": 957,
-  "R7": 531
+  "R7": 530
  },
  "findings": {
   ".ci/breakpoint/README.md": {
@@ -899,11 +899,6 @@
     "d43dc5749eb5e905"
    ]
   },
-  ".ci/rediacc_ci/tests/test_housekeeping_retry_failed_runs.py": {
-   "R7": [
-    "a78e00e499513253"
-   ]
-  },
   ".ci/rediacc_ci/tests/test_infra_ci_start_elite.py": {
    "R7": [
     "2ce20239c0bbd1ef",
@@ -1246,11 +1241,6 @@
     "9771ca57b50358d9"
    ]
   },
-  ".ci/scripts/quality/check_label_inventory.py": {
-   "R18": [
-    "128aa70c1e4797b0"
-   ]
-  },
   ".ci/scripts/quality/check_plan_boxes.py": {
    "R2": [
     "4682c96cc0b045f9"
@@ -1281,14 +1271,6 @@
   ".ci/scripts/quality/check_policy_inventory.py": {
    "R7": [
     "53a79cb1df0c059c"
-   ]
-  },
-  ".ci/scripts/quality/check_profiler_coverage.py": {
-   "R18": [
-    "d96cf036badc80fc"
-   ],
-   "R7": [
-    "4db79f6f0dd811da"
    ]
   },
   ".ci/scripts/quality/check_python_control_plants.py": {

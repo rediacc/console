@@ -13,7 +13,7 @@ the same canonical module, so the hop the twin pays (bash -> python3 -m ... -> b
 --------------------------------------------------------------------------
 WHY THE PHRASE ARRAYS DO NOT CROSS OVER, WHICH IS NOT AN OVERSIGHT
 --------------------------------------------------------------------------
-The twin still carries `LOW_EFFORT_BLOCKER_PATTERNS` and `LOW_EFFORT_BLOCKER_SUBSTRINGS` as a TEXT MIRROR, because `.ci/scripts/test/gates/test-breakpoint-portability.sh:361` parses them out of THAT FILE'S TEXT to prove the vendored breakpoint copy is a subset. That justification is specific to the bash file and does not travel: a Python mirror would be read by nothing, and
+The twin still carries `LOW_EFFORT_BLOCKER_PATTERNS` and `LOW_EFFORT_BLOCKER_SUBSTRINGS` as a TEXT MIRROR, because `.ci/rediacc_ci/tests/gates/test-breakpoint-portability.sh:361` parses them out of THAT FILE'S TEXT to prove the vendored breakpoint copy is a subset. That justification is specific to the bash file and does not travel: a Python mirror would be read by nothing, and
 `.ci/rediacc_ci/tests/test_blocker_implementations.py:207` fails BY NAME on any tracked file that carries ten or more of the canonical phrases as quoted literals. So the constants below are REFERENCES to `rediacc_ci.core.allowlist`, never copies, and `BLOCKER_MIN_LENGTH` is `allowlist.MIN_REASON_LENGTH` rather than the literal 30 the twin writes.
 
 --------------------------------------------------------------------------

@@ -10,8 +10,8 @@ WHY AN ENTRY POINT AT ALL: `check_npmrc.py` states both measured reasons. A port
 THE HEADER BELOW IS THE TWIN'S, FIELD FOR FIELD, extracted from `.ci/scripts/quality/check-label-inventory.sh` by an awk range over its `---- gate ----` block, de-commented, and diffed as an ordered list of whole lines against the block in this docstring. The twin carried exactly FOUR fields in this order: `kind`, `test`, `blocker`, `needs`. No `step:`, no `emit:`, no `id:`, no
 `run:`, no `lane:`, no `selftest:`, no `why:`.
 
-`kind: test` IS THE LOAD-BEARING ONE, and the `blocker:` under it is 559 bytes of live suppression reason carried byte for byte. Grepped every file under `.github/workflows/` for `check-label-inventory.sh`: ZERO hits, which is what `kind: test` predicts. This gate reaches CI only through `.ci/scripts/test/gates/test-label-inventory.sh` inside the shared "Quality-gate unit tests"
-step, so that blocker is the whole of its CI story and losing a clause of it would be a quiet exemption.
+`kind: test` IS THE LOAD-BEARING ONE, and the `blocker:` under it is live suppression reason carried byte for byte. Grepped `.github/workflows/` for `check-label-inventory.sh`: ZERO hits, which is what `kind: test` predicts. This gate reaches CI only through `test_gate_label_inventory.py` inside the shared "Python package tests"
+step, the bash gate test having been retired in W7 P5, so that blocker is the whole of its CI story and losing a clause of it would be a quiet exemption.
 
 NO `selftest:` IS CORRECT, carried exactly as found: the twin did not declare one, and declaring one here would be a new claim rather than a moved one.
 
@@ -19,10 +19,9 @@ NO `id:` IS CORRECT HERE: `derivedId` (`gate-header.ts:260`) maps this basename 
 
 THE RESOLVED NEED SET DOES NOT MOVE, verified by calling `bind()` on both files. Both infer `[]` and both resolve to the empty set `needs: none` declares.
 
-PINNED BY PATH IN FOUR PLACES, AND THE ROWS SPLIT ACROSS ALL THREE ARMS:
+PINNED BY PATH IN THREE PLACES, AND THE ROWS SPLIT ACROSS ALL THREE ARMS:
 
   - RUN-IN-PLACE, so ENTRY POINT if repointed:
-    `.ci/scripts/test/gates/test-label-inventory.sh:34` (`GATE=`, then runs it)
     `.ci/rediacc_ci/tests/gates/test_gate_label_inventory.py:48` (`GATE_REL`)
   - GREPS A BEHAVIOURAL NEEDLE, so MODULE if repointed.
     `.ci/rediacc_ci/tests/gates/test_gate_review_labels.py:691,792` reads the
@@ -33,7 +32,7 @@ PINNED BY PATH IN FOUR PLACES, AND THE ROWS SPLIT ACROSS ALL THREE ARMS:
   - DIFFERENTIAL, so it MUST KEEP NAMING THE TWIN:
     `.ci/rediacc_ci/tests/test_quality_label_inventory.py:40`
 
-BECAUSE THIS GATE IS `kind: test`, the first bullet is not cosmetic: while `test-label-inventory.sh:34` still names the `.sh`, CI executes the TWIN and only the local `npm run` executes the port. Repointing is the driver's call and is called out in the report rather than left in a diff.
+BECAUSE THIS GATE IS `kind: test`, the first bullet is not cosmetic: the header's `test:` now names the port, so CI executes the port under `check:ci-pytest` rather than leaving the twin as the only side CI runs.
 
 DRIVEN, on this tree, both streams captured SEPARATELY, `CI=true` on both:
 
@@ -61,12 +60,12 @@ THE CONTROL WAS PROVED IN BOTH DIRECTIONS BEFORE THE PLANT RAN. A clean copy of 
 
 THE REAL TREE WAS NEVER WRITTEN TO for this gate; `.github/labels.yml` is untouched and the edited copy lives only at a scratch path.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-label-inventory.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
+THE TWIN IS GONE: W7 P5 froze `.ci/scripts/quality/check-label-inventory.sh`'s output into `.ci/rediacc_ci/tests/goldens/label-inventory/` and deleted it, so the differential now compares this port against the bytes the twin recorded rather than against a second live implementation.
 
 ---- gate ----
 kind: test
-test: .ci/scripts/test/gates/test-label-inventory.sh
-blocker: BLOCKER: test-label-inventory.sh:191 runs the gate seam-free over the REAL .github/labels.yml inside the gate-test battery (ci-quality.yml quality-security, "Quality-gate unit tests") with the live list injected, so the real parse, the declared floor and the create-on-demand allowlist verification execute every CI run, and the two controls beside it drop a real label and add an undeclared one to prove both fire directions; the live GitHub read is the one part that cannot run in that lane because it holds no label-read token, and it runs on the local npm invocation
+test: .ci/rediacc_ci/tests/gates/test_gate_label_inventory.py
+blocker: BLOCKER: test_gate_label_inventory.py:test_real_tree_reconciles_against_an_injected_live_list runs the gate seam-free over the REAL .github/labels.yml under check:ci-pytest (ci-quality.yml quality-security) with the live list injected, so the real parse, the declared floor and the create-on-demand check execute every CI run; the live GitHub read runs on npm
 needs: none
 ---- end gate ----
 """

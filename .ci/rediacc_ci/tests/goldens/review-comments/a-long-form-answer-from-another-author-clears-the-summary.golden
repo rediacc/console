@@ -1,0 +1,7 @@
+# twin .ci/scripts/quality/check-review-comments.sh blob 5266b55d1c74cf7509545c731781ba3ef5aac05d
+exit: 0
+--- stdout ---
+Checking review comments for PR #42...
+No inline review comments found - OK
+Top-level review summary (comment 5189236393) answered by comment 9 - OK
+--- stderr ---

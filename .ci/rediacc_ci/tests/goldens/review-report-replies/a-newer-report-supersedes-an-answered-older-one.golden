@@ -1,0 +1,65 @@
+# twin .ci/scripts/quality/check-review-report-replies.sh blob df873d4858c21e391c81281dbcb80ef4b9cebf47
+exit: 1
+--- stdout ---
+Checking review report replies for PR #42...
+
+============================================================
+  Review Report Requires a Reply
+============================================================
+
+The newest automated review report has not been addressed:
+
+  - comment 102 by @github-actions[bot], posted 2026-08-06T10:00:00Z
+    https://github.com/rediacc/console/pull/42#issuecomment-102
+
+------------------------------------------------------------
+WHY THIS BLOCKS. This is the pipeline's report for the head it
+reviewed. It is a top-level comment, so it has no thread and
+nothing to resolve: the only evidence anyone read it is a
+later comment answering it. There is none.
+
+READ THE REVIEWER'S OWN SUMMARY TOO. The same pass usually
+posts a SEPARATE summary comment carrying the findings, and
+this report can be just a wrap-up. List both before replying:
+
+  gh api repos/rediacc/console/issues/42/comments --paginate \
+    --jq '.[] | select(.user.login | test("github-actions")) | {id, created_at}'
+
+WHAT A SUBSTANTIVE REPLY MUST CONTAIN. Go finding by finding
+and for each one state exactly one of:
+  - fixed: what changed and in which commit
+  - deferred: where it is tracked (issue or worklist id) and why
+  - disagreed: the reason, concretely, not 'out of scope'
+It must be posted by someone other than @github-actions[bot] (a
+second comment from the pipeline is not an answer to the
+first), and it must either cite 102 or run past 200 characters.
+
+ONE reply covers this AND check-review-comments.sh's summary
+check, as long as it is posted after both comments.
+
+To answer using gh CLI:
+
+  # 1. Read the full report first
+  gh api repos/rediacc/console/issues/comments/102 --jq .body
+
+  # 2. Post the answer as a NEW top-level comment
+  gh api repos/rediacc/console/issues/42/comments -X POST \
+    -f body="Re: review report 102
+
+  - <finding 1 title>: fixed in <sha> - <what changed>
+  - <finding 2 title>: not changing - <why>
+  - <nit>: deferred to <issue/worklist id>"
+
+  # IMPORTANT: a top-level comment has NO replies endpoint. Both of
+  # these return 404 (verified against the live API):
+  #   repos/rediacc/console/issues/42/comments/102/replies
+  #   repos/rediacc/console/pulls/42/comments/102/replies
+  #     (that path is real, but only for INLINE comment ids)
+  # And repos/rediacc/console/issues/comments/102 is GET/PATCH only --
+  # the EDIT endpoint for the report itself. Posting there would
+  # overwrite the review rather than answer it.
+
+Or comment directly on GitHub:
+  https://github.com/rediacc/console/pull/42#issuecomment-102
+------------------------------------------------------------
+--- stderr ---

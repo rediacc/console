@@ -1,0 +1,5 @@
+# twin .ci/scripts/quality/check-label-inventory.sh blob 13627d4c05edbdecca46be3ef0d973c2a99cf3de
+exit: 1
+--- stdout ---
+--- stderr ---
+✗ the live label list read from fx/live.txt (injected) is EMPTY. A repo with zero labels is not a state this repo can be in, so this is a failed read, not a clean tree -- and an empty list would make half this gate vacuously green.

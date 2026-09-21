@@ -68,7 +68,7 @@ main() {
     # formatting problems" and "the enumeration lost its corpus" equally, which is
     # the shape check:ci-enumeration-vacuity exists to refuse. Measured 2026-09-21,
     # after census batches A3 to A10 and B1 to B4 of W7 P5 retired a hundred and
-    # twenty-six bash gate-test twins: 422 .sh files across the four scopes, down
+    # twenty-six bash gate-test twins: 375 .sh files across the four scopes, down
     # from 568 on 2026-09-04. The floor is well under that so it catches a broken
     # find, not today's file count.
     MIN_SHELL_FILES="${SHFMT_MIN_FILES:-200}"

@@ -1,0 +1,12 @@
+# twin .ci/scripts/docker/retag-image.sh blob 5e261ceb531187621d6d95f32216a71516ae4d9d
+exit: 1
+--- stdout ---
+
+--- stderr ---
+→ Re-tagging api: a -> b
+ERROR: failed to create manifest list: unauthorized
+✗ Failed to re-tag ghcr.io/rediacc/api:a -> ghcr.io/rediacc/api:latest
+✓ Re-tag summary: 0 succeeded, 1 failed
+--- calls ---
+docker	buildx	imagetools	create	-t	ghcr.io/rediacc/api:b	ghcr.io/rediacc/api:a
+docker	buildx	imagetools	create	-t	ghcr.io/rediacc/api:latest	ghcr.io/rediacc/api:a

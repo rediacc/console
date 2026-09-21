@@ -66,7 +66,7 @@ while this paragraph is only history.
 
 THE REAL TREE WAS NEVER WRITTEN TO for this gate.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-hook-integrity.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
+THE TWIN IS GONE. W7 P5 batch G2 deleted `.ci/scripts/quality/check-hook-integrity.sh` after `.ci/shadow/w7p2-hook-integrity.observations.jsonl` asserted equivalence over seven distinct trees; its recorded bytes live in `.ci/rediacc_ci/tests/goldens/`, headed with the blob sha they were captured from.
 
 ---- gate ----
 step: Hook integrity

@@ -13,6 +13,7 @@ import pytest
 
 from rediacc_ci.quality import git_op_conditionals as goc
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.tests import frozen
 
 # The twin's own `bad.sh` heredoc, pulled from the port rather than retyped: a retyped copy is a second thing to keep in step, and the point of these cases is that they are the SAME bytes the gate runs its inline controls on.
 _CONTROL_BAD = next(text for name, text, _fire, _msg in goc._CONTROLS if name == "bad.sh")
@@ -164,21 +165,28 @@ def test_the_bare_shape_has_no_file_wide_exemption() -> None:
 def test_the_exemption_is_by_name_and_fires_in_one_direction_only(
     tmp_path: pathlib.Path,
 ) -> None:
-    """The bash twin is exempt; the same bytes under another name are not.
+    """A named path is exempt; the same bytes under another name are not.
 
     A one-sided assertion here would pass for a port that exempted EVERYTHING, which is why the second half exists.
+
+    THE LIVE DICT IS EMPTY since W7 P5 batch G2 deleted the bash twin, which was its only entry, so this seeds its own and removes it in a `finally`. Asserting the dict is empty is the OTHER half: a stale entry excusing a file that no longer exists is the allowlist rot the port's docstring names.
     """
+    assert goc.EXEMPT_PATHS == {}, "an exemption reappeared without a reason in the output"
     subprocess.run(["git", "init", "-q", str(tmp_path)], check=True, capture_output=True)
     quality = tmp_path / ".ci" / "scripts" / "quality"
     quality.mkdir(parents=True)
     body = _CONTROL_BAD
-    (quality / "check-git-op-conditionals.sh").write_text(body, encoding="utf-8")
+    (tmp_path / goc.EXEMPT_PLANT).write_text(body, encoding="utf-8")
     files = goc.scan_files(tmp_path)
-    assert files == [".ci/scripts/quality/check-git-op-conditionals.sh"]
-    assert files[0] in goc.EXEMPT_PATHS
-    (quality / "check-something-else.sh").write_text(body, encoding="utf-8")
-    assert ".ci/scripts/quality/check-something-else.sh" not in goc.EXEMPT_PATHS
-    assert goc.scan_file(quality / "check-something-else.sh", "x") != []
+    assert files == [goc.EXEMPT_PLANT]
+    goc.EXEMPT_PATHS[goc.EXEMPT_PLANT] = "test fixture"
+    try:
+        assert files[0] in goc.EXEMPT_PATHS
+        (quality / "check-something-else.sh").write_text(body, encoding="utf-8")
+        assert ".ci/scripts/quality/check-something-else.sh" not in goc.EXEMPT_PATHS
+        assert goc.scan_file(quality / "check-something-else.sh", "x") != []
+    finally:
+        del goc.EXEMPT_PATHS[goc.EXEMPT_PLANT]
 
 
 def test_the_flat_quality_glob_would_match_nothing_with_a_double_star(
@@ -219,78 +227,141 @@ def test_selftest_is_green() -> None:
 
 # --------------------------------------------------------------------------- THE PYTHON HALF.
 #
-# Same philosophy as above: run the TWIN'S ACTUAL BYTES, not a retyped copy. The awk program and `scan_python_file` are sliced out of the shell script at test time and executed, so a divergence between the two implementations fails here rather than being discovered when the differential ledger is next recorded.
+# Same philosophy as above: compare against the TWIN'S ACTUAL BYTES, not a retyped copy. While both copies existed, the awk program and `scan_python_file` were sliced out of the shell script at test time and EXECUTED, so a divergence failed here rather than waiting for the next ledger recording.
+#
+# THE TWIN IS NOW GONE, and what stands in for it is the output that harness produced on the twin's last day in the tree, one golden per case under `goldens/git-op-conditionals/`. Nothing in a golden is a hand-written expectation: each is the exit code and both streams of the real awk, and the provenance header carries the blob sha, so `git cat-file -p <sha>` still yields the
+# program that printed those bytes.
 #
 # THIS IS NOT PARANOIA. Writing the mirror produced exactly one such divergence on 2026-09-08 and it was invisible on this tree: the awk emitted `B\t\t<lineno>` for the bare shape, tab is IFS whitespace, bash `read` collapsed the empty field, and the twin printed `bare-statement-line-` with NO NUMBER
-# while the port printed `bare-statement-line-2`. Neither side has a bare finding
-# on the real tree, so both were "equal" and green.
+# while the port printed `bare-statement-line-2`. Neither side has a bare finding on the real tree, so both were "equal" and green. That divergence was repaired before the recording, and `the-bare-shape-and-its-line-number` is the golden that now holds the repaired answer in place.
+#
+# SIX OF THE TEN RECORDED CASES ARE EMPTY, because six of the ten shapes must NOT fire. A port that returned nothing at all would satisfy those six and fail the other four, and `test_the_recorded_python_corpus_fires_on_something` refuses the corpus outright if the non-empty half ever shrinks to nothing.
+
+PY_SLUG = "git-op-conditionals"
 
 
-def _twin_python_scanner(tmp_path: pathlib.Path) -> pathlib.Path:
-    """A runnable harness holding the twin's own python-scanning bytes."""
-    twin = (
-        pathlib.Path(goc.__file__).resolve().parents[3]
-        / ".ci/scripts/quality/check-git-op-conditionals.sh"
-    )
-    text = twin.read_text(encoding="utf-8")
-    awk_start = text.index("PY_SCAN_AWK='")
-    awk_end = text.index("}'", awk_start) + 2
-    fn_start = text.index("scan_python_file() {")
-    fn_end = text.index("\n}\n", fn_start) + 3
-    harness = tmp_path / "harness.sh"
-    harness.write_text(
-        '#!/usr/bin/env bash\nset -uo pipefail\nROOT="$2"\n'
-        + text[awk_start:awk_end]
-        + "\n"
-        + text[fn_start:fn_end]
-        + '\nscan_python_file "$1"\n',
-        encoding="utf-8",
-    )
-    return harness
+def split_golden(text: str) -> tuple[int, str, str]:
+    """A recorded twin render, back into its three parts."""
+    exit_line, rest = text.split("\n", 1)
+    stdout, stderr = rest.split("--- stdout ---\n", 1)[1].split("--- stderr ---\n", 1)
+    return int(exit_line.removeprefix("exit: ")), stdout, stderr
+
+
+def recorded_findings(name: str) -> list[str]:
+    """The sorted finding lines the twin's awk printed for one case."""
+    returncode, stdout, stderr = split_golden(frozen.read(PY_SLUG, name))
+    assert returncode == 0, "%s: the recorded harness exited %d: %s" % (name, returncode, stderr)
+    return sorted(line for line in stdout.split("\n") if line)
 
 
 # One entry per shape the python predicate has to get right. The comment is the
-# property; `fires` is only a readability aid, the ASSERTION is twin == port.
+# property; the name is the golden holding the twin's own answer for it.
 PY_CASES = [
-    'branch = hookio.git_out(["rev-parse", "--abbrev-ref", "HEAD"])\nif not branch:\n    pass\n',
-    'branch = hookio.git_out(["rev-parse", "--abbrev-ref", "HEAD"])\nif branch == "HEAD":\n    pass\n',
+    (
+        "a-not-branch-truthiness-guard",
+        'branch = hookio.git_out(["rev-parse", "--abbrev-ref", "HEAD"])\nif not branch:\n    pass\n',
+    ),
+    (
+        "a-branch-equality-guard",
+        (
+            'branch = hookio.git_out(["rev-parse", "--abbrev-ref", "HEAD"])\n'
+            'if branch == "HEAD":\n    pass\n'
+        ),
+    ),
     # THE SPLIT CALL: `git` on the head line, `rev-parse` on the continuation.
-    'remote = hookio.git_out(\n    ["rev-parse", "--abbrev-ref", "HEAD"], cwd=root\n)\n',
+    (
+        "a-split-call-across-lines",
+        'remote = hookio.git_out(\n    ["rev-parse", "--abbrev-ref", "HEAD"], cwd=root\n)\n',
+    ),
     # The bare shape, whose line number is the divergence described above.
-    'def cb():\n    return hookio.git_out(["rev-parse", "--abbrev-ref", "HEAD"]) or "main"\n',
+    (
+        "the-bare-shape-and-its-line-number",
+        'def cb():\n    return hookio.git_out(["rev-parse", "--abbrev-ref", "HEAD"]) or "main"\n',
+    ),
     # A compound truthiness guard, which a narrower `if var:` spelling missed.
-    'p = hookio.git_out(["rev-parse", "--git-path", "x"])\nif p and pathlib.Path(p).is_file():\n    pass\n',
+    (
+        "a-compound-truthiness-guard",
+        (
+            'p = hookio.git_out(["rev-parse", "--git-path", "x"])\n'
+            "if p and pathlib.Path(p).is_file():\n    pass\n"
+        ),
+    ),
     # Fail-loud.
-    'sha = subprocess.run(["git", "rev-parse", "HEAD"], check=True).stdout\n',
+    (
+        "a-fail-loud-subprocess-run",
+        'sha = subprocess.run(["git", "rev-parse", "HEAD"], check=True).stdout\n',
+    ),
     # `github_api` carries the letters `git` and is not the git CLI.
-    'b = github_api(["rev-parse", "--abbrev-ref", "HEAD"])\nif b == "main":\n    pass\n',
+    (
+        "github-api-is-not-the-git-cli",
+        'b = github_api(["rev-parse", "--abbrev-ref", "HEAD"])\nif b == "main":\n    pass\n',
+    ),
     # A control body is fixture territory; the def AFTER it is not.
     (
-        'def selftest():\n    b = hookio.git_out(["rev-parse", "--abbrev-ref", "HEAD"])\n\n\n'
-        'def main():\n    c = hookio.git_out(["rev-parse", "--abbrev-ref", "HEAD"])\n'
+        "a-def-after-a-control-body",
+        (
+            "def selftest():\n"
+            '    b = hookio.git_out(["rev-parse", "--abbrev-ref", "HEAD"])\n\n\n'
+            'def main():\n    c = hookio.git_out(["rev-parse", "--abbrev-ref", "HEAD"])\n'
+        ),
     ),
     # The over-join regression: brackets inside a regex constant.
-    'A = (\n    r"(^|[;&|(]|&&"\n    + r"]*git["\n)\nb = hookio.git_out(["rev-parse", "HEAD"])\nif not b:\n    pass\n',
+    (
+        "brackets-inside-a-regex-constant",
+        (
+            'A = (\n    r"(^|[;&|(]|&&"\n    + r"]*git["\n)\n'
+            'b = hookio.git_out(["rev-parse", "HEAD"])\nif not b:\n    pass\n'
+        ),
+    ),
     # Not an identity command at all.
-    'status = hookio.git_out(["status", "--porcelain"])\nif status != "":\n    pass\n',
+    (
+        "not-an-identity-command",
+        'status = hookio.git_out(["status", "--porcelain"])\nif status != "":\n    pass\n',
+    ),
 ]
 
 
-@pytest.mark.parametrize("body", PY_CASES)
-def test_python_predicate_agrees_with_the_twins_awk(body: str, tmp_path: pathlib.Path) -> None:
-    harness = _twin_python_scanner(tmp_path)
-    target = tmp_path / "case.py"
-    target.write_text(body, encoding="utf-8")
-    proc = subprocess.run(
-        ["bash", str(harness), str(target), str(tmp_path)],
-        capture_output=True,
-        text=True,
-        check=False,
+@pytest.mark.parametrize(("name", "body"), PY_CASES, ids=[c[0] for c in PY_CASES])
+def test_python_predicate_matches_the_twins_recorded_awk(name: str, body: str) -> None:
+    assert sorted(goc.scan_python_text(body, "case.py")) == recorded_findings(name)
+
+
+def test_every_python_case_has_a_golden_and_no_golden_is_orphaned() -> None:
+    """ANTI-VACUITY on the corpus: a case whose golden vanished would pass by never being compared, and a golden nothing reads is a recording of a case that stopped running."""
+    frozen.assert_corpus(PY_SLUG, {name for name, _body in PY_CASES})
+
+
+def test_the_recorded_python_corpus_fires_on_something() -> None:
+    """A corpus of ten silences would be satisfied by a scanner that does nothing.
+
+    Four of the ten shapes must produce a finding and six must not, and both halves are asserted here so that a recording which had collapsed to all-empty reds by name rather than turning every case above into a comparison of two empty lists.
+    """
+    fires = {name for name, _body in PY_CASES if recorded_findings(name)}
+    assert fires == {
+        "a-not-branch-truthiness-guard",
+        "a-split-call-across-lines",
+        "the-bare-shape-and-its-line-number",
+        "a-def-after-a-control-body",
+    }
+    assert recorded_findings("the-bare-shape-and-its-line-number") == [
+        "case.py:bare-statement-line-2"
+    ], "the 2026-09-08 empty-field divergence is back"
+
+
+def test_planted_defect_is_caught_by_the_python_goldens() -> None:
+    """THE CONTROL ON THE GOLDENS. Scan line by line instead of on the joined text.
+
+    A line scanner is the obvious implementation and it misses `a-split-call-across-lines`, where neither line carries both tokens. The mutation is a local re-scan of each line, never a change to the module.
+    """
+    name, body = next(c for c in PY_CASES if c[0] == "a-split-call-across-lines")
+    line_by_line = sorted(
+        finding
+        for line in body.split("\n")
+        for finding in goc.scan_python_text(line + "\n", "case.py")
     )
-    assert proc.returncode == 0, proc.stderr
-    twin = sorted(line for line in proc.stdout.split("\n") if line)
-    port = sorted(goc.scan_python_text(body, "case.py"))
-    assert twin == port, "twin %r != port %r for %r" % (twin, port, body)
+    assert line_by_line != recorded_findings(name), "the plant no longer diverges"
+    # And the real, unmutated scanner still agrees with the recording.
+    assert sorted(goc.scan_python_text(body, "case.py")) == recorded_findings(name)
 
 
 def test_the_hooks_python_glob_needs_the_flat_spelling(tmp_path: pathlib.Path) -> None:

@@ -118,7 +118,7 @@ RE-KEYED in place. A rename reads to `--diff-snapshot` as fourteen MISSING keys,
 ## 3. The file that does NOT move: `.ci-trigger`
 
 **Decision: `.ci-trigger` stays at the repository root.** It is deliberately absent from
-`POLICY_FILES` in `scripts/lib/policy-paths.ts`, and `.ci/scripts/test/gates/test-policy-path.sh` asserts that absence so nobody adds it back by tidiness.
+`POLICY_FILES` in `scripts/lib/policy-paths.ts`, and `.ci/rediacc_ci/tests/gates/test_gate_policy_path.py` asserts that absence so nobody adds it back by tidiness.
 
 The evidence, measured 2026-09-06:
 

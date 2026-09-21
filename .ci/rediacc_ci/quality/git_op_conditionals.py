@@ -1,6 +1,6 @@
 """A git-identity capture that reaches a conditional must be guarded first.
 
-Ported from `.ci/scripts/quality/check-git-op-conditionals.sh`, which is NOT deleted; see `rediacc_ci.quality.__init__` for why both copies live side by side until a committed differential ledger says otherwise.
+Ported from `.ci/scripts/quality/check-git-op-conditionals.sh`, which W7 P5 batch G2 retired once `.ci/shadow/w7p2-gitop.observations.jsonl` asserted equivalence over five distinct trees and the twin's own embedded scanner was recorded as goldens.
 
 WHY THE TWIN EXISTS, carried over from its header because the archaeology is the half of a gate that cannot be recovered from the code:
 
@@ -73,7 +73,8 @@ for itself.
 A PORT CANNOT INHERIT THAT LINE, because `__file__` here is `.ci/rediacc_ci/quality/git_op_conditionals.py`, which is not in the scan set at all -- the globs cover `.sh` under `.claude/hooks/` and `.ci/scripts/quality/`. The file that still needs exempting is the BASH TWIN, which is in the scan set and does still contain the fixtures. So the exemption is written out BY NAME in
 `EXEMPT_PATHS` below, with the reason, and the gate PRINTS it on every run. A quiet exemption is how a gate stops meaning what its name says; this one cannot be forgotten because it is in the output.
 
-WHEN THE TWIN IS FINALLY DELETED, `EXEMPT_PATHS` must be emptied in the same change. Left behind it would silently excuse a file that no longer exists, which costs nothing today and is exactly the kind of stale allowlist entry that survives for years.
+THE TWIN IS NOW DELETED AND `EXEMPT_PATHS` IS EMPTY, in the same change, as this paragraph has required since the port was written. Left behind, the entry would have silently excused a file that no longer exists, which costs nothing today and is exactly the kind of stale allowlist entry that survives for years. The dict stays, rather than the lookup being deleted with its one
+entry, because the mechanism is what the two selftest controls below prove: a named path is skipped and the same bytes under any other name are not.
 
 THE GLOB SPELLINGS ARE ASYMMETRIC ON PURPOSE, and the twin pays six lines for it: `.claude/hooks/**/*.sh` and `.ci/scripts/quality/*.sh`. Git's default (non-`:(glob)`) pathspec uses wildmatch WITHOUT pathname mode, so `*` crosses `/` -- which means `**/*.sh` still demands a literal slash between the prefix and the filename, and `.ci/scripts/quality/` is FLAT. The `**` spelling
 matched ZERO files there while the gate reported "71 shell file(s) scanned", and it was caught only because a mutation-proof on the real defect the widening existed to catch still passed clean. `.claude/hooks` DOES have subdirectories, so `**/*.sh` was already correct there.
@@ -117,17 +118,15 @@ SPACE = r"[ \t\n\v\f\r]"
 # The two pathspecs, handed to git unchanged. See the port notes on why the two spellings differ and why neither is a typo.
 SCAN_GLOBS = (".claude/hooks/**/*.sh", ".ci/scripts/quality/*.sh")
 
-# THE ONE EXEMPTION, BY NAME AND WITH ITS REASON, PRINTED EVERY RUN.
+# NO EXEMPTIONS, AND THAT IS THE POINT OF THE EMPTY DICT.
 #
-# The bash twin quotes the risky shapes verbatim in its header and plants them in heredoc control fixtures, so it matches its own extraction regex. The twin
-# exempts itself with `${BASH_SOURCE[0]#"$ROOT"/}`; a Python port has no such
-# line to inherit, so the path is written out. DELETE THIS ENTRY IN THE SAME CHANGE THAT DELETES THE TWIN.
-EXEMPT_PATHS = {
-    ".ci/scripts/quality/check-git-op-conditionals.sh": (
-        "the bash twin of this gate: its header quotes the risky shapes as examples "
-        "and its controls plant them in heredocs"
-    ),
-}
+# It held exactly one entry: the bash twin, which quoted the risky shapes verbatim in its header and planted them in heredoc control fixtures, so it matched its own extraction regex. The twin exempted ITSELF with `${BASH_SOURCE[0]#"$ROOT"/}`, a line no Python port can inherit, so the path was written out here instead. W7 P5 batch G2 deleted the twin and emptied the dict in the
+# same change, as the module docstring has required since the port was written. An exemption added here is PRINTED on every run, and the selftest proves both
+# directions of the lookup; see `EXEMPT_PLANT`.
+EXEMPT_PATHS: dict[str, str] = {}
+
+# The selftest's stand-in for a file that genuinely has to be excused. It is planted into the fixture tree, exempted, and then the same bytes are planted under a second name and must still be flagged -- the half that refuses a port exempting everything.
+EXEMPT_PLANT = ".ci/scripts/quality/check-exempt-fixture.sh"
 
 # Every `VAR=$(git ... rev-parse|symbolic-ref|branch ...)` capture. `git` and its
 # subcommand are NOT required to be adjacent: `git -C "$dir" rev-parse ...` is the ACTUAL shape of the real defect, and an adjacency-requiring pattern missed it silently on the real tree while the synthetic control fixture, written without `-C`, still passed -- a gate proving its own harness works and nothing about the tree it was supposed to be reading.
@@ -1051,14 +1050,18 @@ def selftest() -> int:
         (pyhooks / "dirty.py").unlink()
         ctl.check("PLANT REMOVED: green returns", run(), 0)
 
-        # THE EXEMPTION, PROVEN IN BOTH DIRECTIONS. The named path is skipped;
-        # the same content under any other name is not.
+        # THE EXEMPTION, PROVEN IN BOTH DIRECTIONS. The named path is skipped; the same content under any other name is not. The live dict is empty since the twin was retired, so the control seeds its own entry and removes it again rather than leaving a real exemption behind.
         quality = root / ".ci" / "scripts" / "quality"
         quality.mkdir(parents=True)
-        (quality / "check-git-op-conditionals.sh").write_text(_CONTROLS[0][1], encoding="utf-8")
-        ctl.check("EXEMPT: the named twin is skipped", run(), 0)
-        (quality / "check-other-thing.sh").write_text(_CONTROLS[0][1], encoding="utf-8")
-        ctl.check("EXEMPT MIRROR: the same content under another name is flagged", run(), 1)
+        (root / EXEMPT_PLANT).write_text(_CONTROLS[0][1], encoding="utf-8")
+        EXEMPT_PATHS[EXEMPT_PLANT] = "selftest fixture: planted to prove the lookup skips it"
+        try:
+            ctl.check("EXEMPT: the named path is skipped", run(), 0)
+            (quality / "check-other-thing.sh").write_text(_CONTROLS[0][1], encoding="utf-8")
+            ctl.check("EXEMPT MIRROR: the same content under another name is flagged", run(), 1)
+        finally:
+            del EXEMPT_PATHS[EXEMPT_PLANT]
+        ctl.check("EXEMPT DRAINED: the live dict carries no entry", len(EXEMPT_PATHS), 0)
     return 0 if ctl.report() else 1
 
 

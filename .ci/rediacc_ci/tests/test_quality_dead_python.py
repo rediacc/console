@@ -107,7 +107,7 @@ def test_prose_is_not_an_admission_route_on_the_real_tree():
     assert dp.is_prose("docs/agent-reference/ci-gates.md")
     assert dp.is_prose(".ci/shadow/twin-parity.ledger.jsonl")
     assert not dp.is_prose("package.json")
-    assert not dp.is_prose(".ci/scripts/test/gates/test-dead-case-arms.sh")
+    assert not dp.is_prose(".ci/scripts/test/gates/test-media-r2.sh")
 
 
 def test_shadow_route_is_parsed_from_the_real_ledger():

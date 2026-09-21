@@ -1,0 +1,9 @@
+# twin .ci/scripts/build/build-json.sh blob ad78ff781a042badd7139e215166ba444f079d7d
+exit: 1
+--- stdout ---
+--- stderr ---
+→ Building json (template catalog)...
+✓ json build completed
+✗ json index.html not found in dist
+--- calls ---
+CALL npm	run	build:json

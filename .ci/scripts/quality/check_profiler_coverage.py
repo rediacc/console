@@ -10,7 +10,7 @@ WHY AN ENTRY POINT AT ALL: `check_npmrc.py` states both measured reasons. A port
 THE HEADER BELOW IS THE TWIN'S, FIELD FOR FIELD, extracted from `.ci/scripts/quality/check-profiler-coverage.sh` by an awk range over its `---- gate ----` block, de-commented, and diffed as an ordered list of whole lines against the block in this docstring. The twin carried exactly FOUR fields in this order: `kind`, `test`, `blocker`, `needs`. No `step:`, no `emit:`, no `id:`, no
 `run:`, no `lane:`, no `selftest:`, no `why:`.
 
-`kind: test` IS THE LOAD-BEARING ONE, and its `blocker:` runs to 560 bytes, naming the seam-free real-tree case at `test-profiler-coverage.sh:584`, the 121-job parse, and the five anti-vacuity refusals the 22 fixture cases cover. Carried byte for byte. Grepped every file under `.github/workflows/` for `check-profiler-coverage.sh`: ZERO hits, which is what `kind: test` predicts.
+`kind: test` IS THE LOAD-BEARING ONE, and its `blocker:` names the seam-free real-tree case at `test_gate_profiler_coverage.py:test_real_tree_seam_free`, the job parse, and the fire directions the 22 fixture cases cover. It came from the twin and was shortened in W7 P5 when the bash gate test it named went. Grepped `.github/workflows/` for `check-profiler-coverage.sh`: ZERO hits.
 
 NO `selftest:` IS CORRECT, carried exactly as found.
 
@@ -18,15 +18,14 @@ NO `id:` IS CORRECT HERE: `derivedId` (`gate-header.ts:260`) maps this basename 
 
 THE RESOLVED NEED SET DOES NOT MOVE, verified by calling `bind()` on both files. Both infer `[]` and both resolve to the empty set `needs: none` declares.
 
-PINNED BY PATH IN TWO RUN-IN-PLACE ROWS, so both take the ENTRY POINT arm if they are ever repointed:
+PINNED BY PATH IN ONE RUN-IN-PLACE ROW, so it takes the ENTRY POINT arm if it is ever repointed:
 
-  - `.ci/scripts/test/gates/test-profiler-coverage.sh:31` (`GATE=`, then runs it)
   - `.ci/rediacc_ci/tests/gates/test_gate_profiler_coverage.py:63` (`GATE_REL`)
 
-`.ci/rediacc_ci/tests/test_quality_profiler_coverage.py:34` is the DIFFERENTIAL and must keep naming the twin. Two further hits are prose only and pin nothing: `test-policy-path.sh:18` and `test_gate_emit_advisory.py:11` name this gate (a third, `test-emit-advisory.sh:97`, went with that twin in W7 P5) in comments about libraries it sources, and
+`.ci/rediacc_ci/tests/test_quality_profiler_coverage.py:34` is the DIFFERENTIAL and must keep naming the twin. One further hit is prose only and pins nothing: `test_gate_emit_advisory.py:11` names this gate (two more, `test-emit-advisory.sh:97` and `test-policy-path.sh:18`, went with their twins in W7 P5) in a comment about libraries it sources, and
 `.ci/rediacc_ci/tests/goldens/allowlist/corpus/profiler-coverage-allowlist.list:2` carries the path in a golden's own comment header.
 
-BECAUSE THIS GATE IS `kind: test`, the run-in-place rows decide which side CI executes: while `test-profiler-coverage.sh:31` still names the `.sh`, CI executes the TWIN. Repointing is the driver's call and is called out in the report.
+BECAUSE THIS GATE IS `kind: test`, the run-in-place rows decide which side CI executes: the header's `test:` now names the port, so CI executes the port under `check:ci-pytest`.
 
 DRIVEN, on this tree, both streams captured SEPARATELY, `CI=true` on both:
 
@@ -64,8 +63,8 @@ INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-profiler-coverage.sh` is NOT d
 
 ---- gate ----
 kind: test
-test: .ci/scripts/test/gates/test-profiler-coverage.sh
-blocker: BLOCKER: test-profiler-coverage.sh:584 runs the gate seam-free against the real tree inside the gate-test battery (ci-quality.yml quality-security, "Quality-gate unit tests") -- real .github/workflows, real .profiler-coverage-allowlist, real .github/actions/profiler/action.yml, real floors -- so the full 121-job parse and both relations execute every CI run; the 22 fixture cases around it prove every fire direction, including the anti-vacuity refusals (empty dir, missing dir, zero jobs, three floors, missing action.yml) that a real-tree-only case can never exercise
+test: .ci/rediacc_ci/tests/gates/test_gate_profiler_coverage.py
+blocker: BLOCKER: test_gate_profiler_coverage.py:test_real_tree_seam_free runs the gate seam-free against the real tree under check:ci-pytest (ci-quality.yml quality-security) -- real workflows, real allowlist, real action.yml, real floors -- so the full job parse and both relations execute every CI run; the 22 fixture cases around it prove every fire direction
 needs: none
 ---- end gate ----
 """

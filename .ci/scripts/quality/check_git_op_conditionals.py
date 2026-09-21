@@ -9,16 +9,15 @@ CUT OVER FROM BASH 2026-09-08 (W7 P4 batch 2). Measured that day:
     -> 5 row(s), 5 distinct clean tree(s), 5 distinct finding set(s)
     -> equivalence holds over 5 distinct trees
 
-THIS IS THE ONE PAIR OF THE SIX WHOSE STREAMS ARE NOT BYTE-IDENTICAL, and the difference is deliberate, documented in the port, and in the safe direction. Driven on this tree, both sides exit 0 with byte-identical STDERR; the port's stdout carries ONE extra line the twin does not print:
+THIS WAS THE ONE PAIR OF THE SIX WHOSE STREAMS WERE NOT BYTE-IDENTICAL, and the difference was deliberate, documented in the port, and in the safe direction. Driven while both copies existed, both sides exited 0 with byte-identical STDERR; the port's stdout carried ONE extra line the twin did not print:
 
     ok   exempt: .ci/scripts/quality/check-git-op-conditionals.sh -- the bash
     twin of this gate: its header quotes the risky shapes as examples and its
     controls plant them in heredocs
 
-The twin exempts ITSELF implicitly, by comparing each scanned path against
-`${BASH_SOURCE[0]}`. A Python port has no such self-reference to the .sh file
-that is still in the scan set, so the port names it in `EXEMPT_PATHS` with its reason and PRINTS it every run. That is the house rule for suppressions: an exemption stays visible or the gate stops meaning what its name says. It is chatter, not a finding, which is why the differential ledger reads the two sides as equivalent. When W7 P5 deletes the twin, `EXEMPT_PATHS` must be
-emptied in the same change; the port's own docstring says so at the point of the constant.
+The twin exempted ITSELF implicitly, by comparing each scanned path against
+`${BASH_SOURCE[0]}`. A Python port has no such self-reference to a .sh file in the scan set, so the port named it in `EXEMPT_PATHS` with its reason and PRINTED it every run. That is the house rule for suppressions: an exemption stays visible or the gate stops meaning what its name says. It was chatter, not a finding, which is why the differential ledger read the two sides as
+equivalent. W7 P5 batch G2 deleted the twin and emptied `EXEMPT_PATHS` in the same change, as the port's docstring required at the point of the constant, so the two stdouts would now agree as well.
 
 DRIVEN RED AS WELL. In a fixture repository holding a copy of `.ci`, a planted `.claude/hooks/pre-bash/plant.sh` captured the current branch from `--abbrev-ref HEAD` and guarded only emptiness and the literal "main", never the literal "HEAD" a detached checkout returns. Both sides exit 1 and print the SAME finding on stderr, byte for byte:
 
@@ -31,7 +30,7 @@ WHY AN ENTRY POINT AT ALL: `check_npmrc.py` states both measured reasons. A port
 
 THE HEADER BELOW IS THE TWIN'S, FIELD FOR FIELD, including `emit: false`, its `blocker:`, `needs: none`, `selftest: true` and `lane:`.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-git-op-conditionals.sh` is NOT deleted here. It stays on disk as the differential twin, and as the one path the exemption above names; deletion is W7 P5.
+THE TWIN IS GONE. W7 P5 batch G2 deleted `.ci/scripts/quality/check-git-op-conditionals.sh` after `.ci/shadow/w7p2-gitop.observations.jsonl` asserted equivalence over five distinct trees; its embedded python scanner is recorded in `.ci/rediacc_ci/tests/goldens/git-op-conditionals/`, headed with the blob sha it was captured from.
 
 ---- gate ----
 step: Git-op conditional guards

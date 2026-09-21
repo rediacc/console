@@ -1,0 +1,6 @@
+# twin .ci/scripts/docker/create-manifest.sh blob b18c560bcfc37ac057d50b987187addf6573a51a
+exit: 1
+--- stdout ---
+--- stderr ---
+<root>/<SELF>: line 43: $2: unbound variable
+--- calls ---

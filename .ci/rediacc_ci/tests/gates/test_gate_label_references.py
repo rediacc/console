@@ -1,6 +1,6 @@
-"""Port of `.ci/scripts/test/gates/test-label-references.sh`.
+"""Port of `.ci/scripts/test/gates/test-label-references.sh`, retired in W7 P5.
 
-Behavioural test for `.ci/scripts/quality/check-label-references.sh`: every GitHub label a workflow or a `.ci` script references by name must be declared in `.github/labels.yml`.
+Behavioural test for `.ci/scripts/quality/check_label_references.py`: every GitHub label a workflow or a `.ci` script references by name must be declared in `.github/labels.yml`. The subject was the bash twin `check-label-references.sh` until W7 P5 froze it against recorded goldens and deleted it; the entry point is what CI runs and what every case below drives.
 
 WHAT IT GUARDS. Labels are this repo's kill switches and routing flags, and the failure is SILENT fail-open: `promote-stable.yml` searched for a label that did not exist, a search for a nonexistent label returns zero PRs rather than an error, so the promotion block simply never fired. `full-ci`, `autopilot` and `autopilot-blocked` were all referenced by merged code for weeks while
 absent.
@@ -16,8 +16,8 @@ WHY EVERY FIXTURE LINE IN THIS FILE IS BUILT FROM A `%s` TEMPLATE
 --------------------------------------------------------------------------
 THIS IS THE LOAD-BEARING DIFFERENCE FROM THE TWIN, and getting it wrong would turn the real gate red for every session in the tree.
 
-The subject sweeps `.ci` recursively, and it protects itself from its OWN planted samples by excluding exactly two basenames: `check-label-references.sh` and `test-label-references.sh`. The twin is one of those two, so the twin may write its fixture lines out literally. THIS FILE IS NOT ON THAT LIST, it lives under `.ci/rediacc_ci/tests/gates/`, and adding it would mean editing the
-subject, which this port does not do.
+The subject sweeps `.ci` recursively, and it protects itself from planted samples by excluding exactly two basenames: `check-label-references.sh` and `test-label-references.sh`. Both files have since been retired, so the list now matches nothing and no file in the tree may write a reference shape out literally. THIS FILE IS CERTAINLY NOT ON IT, and adding it would mean editing
+the subject, which this port does not do.
 
 So no complete, matchable reference shape may exist as a literal anywhere in this source. Every template below carries `%s` where the label goes, and `%` is outside the `[A-Za-z0-9._:-]` character class all ten extractors use, so each pattern fails to match the template and matches only the RENDERED fixture, which lives in a tempdir outside the repository.
 
@@ -30,12 +30,10 @@ import re
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 
-BASH_TWIN = ".ci/scripts/test/gates/test-label-references.sh"
-
 # test_real_tree_is_clean_and_excludes_this_file and the added inertness control both drive the subject over the real .github and .ci trees. See the docstring.
 REAL_TREE_TWIN = True
 
-GATE_REL = ".ci/scripts/quality/check-label-references.sh"
+GATE_REL = ".ci/scripts/quality/check_label_references.py"
 GATE = paths.from_root(*GATE_REL.split("/"))
 HERE_REL = ".ci/rediacc_ci/tests/gates"
 
@@ -91,19 +89,19 @@ def require_gate(gate) -> str:
     """The subject, proved present before anything is claimed."""
     if not GATE.is_file():
         gate.log_fail("subject under test is missing: %s" % GATE_REL)
-    return harness.require_tool("bash", "install bash; the subject IS a bash script")
+    return harness.require_tool("python3", "install python3; the subject IS a Python gate")
 
 
 def run_gate(gate, root, labels, min_distinct: int = 1) -> harness.RunResult:
     """`run_gate` from the twin: the three env seams, merged streams.
 
-    The twin captures `2>&1` into `LAST_OUT` and asserts on the merged text, so every caller below reads `.combined` for the same reason. Env is passed per
+    The twin captured `2>&1` into `LAST_OUT` and asserted on the merged text, so every caller below reads `.combined` for the same reason. Env is passed per
     call rather than exported, which is what the twin's inline `VAR=... bash` form
-    buys it: one case cannot leak a seam into the next.
+    bought it: one case cannot leak a seam into the next.
     """
-    bash = require_gate(gate)
+    python3 = require_gate(gate)
     return harness.run(
-        [bash, os.fspath(GATE)],
+        [python3, os.fspath(GATE)],
         cwd=paths.repo_root(),
         env={
             "LABEL_REFS_SCAN_DIRS": os.fspath(root),
@@ -207,13 +205,13 @@ def test_floor_catches_a_dead_sweep(gate):
 def test_real_tree_is_clean_and_excludes_this_file(gate):
     """THE REAL-TREE CASE. The real invocation over the real `.github` and `.ci`.
 
-    It also proves the basename exclusion still works, because the TWIN plants matchable reference lines and is excluded by name; if that exclusion broke, the real gate would demand the twin's fixtures be declared in the real labels.yml.
+    It also proves no file under `.ci` plants a matchable reference line the sweep can see: if one did, the real gate would demand that fixture be declared in the real labels.yml. The twin used to be the file that relied on the basename exclusion for exactly this, and its retirement is why nothing may write a shape out literally any more.
 
     THE PORT ASSERTS MORE THAN THE TWIN HERE, in two ways. The twin looks for one leaked fixture label; this checks all ten, because an exclusion that broke for one shape broke for all of them and reporting the first is reporting a tenth of the finding. And the DISTINCT count is read out of the verdict line and printed, so a sweep that collapsed toward the subject's floor is
     visible rather than silent -- "the real tree is clean" says nothing about how much tree was swept.
     """
-    bash = require_gate(gate)
-    result = harness.run([bash, os.fspath(GATE)], cwd=paths.repo_root())
+    python3 = require_gate(gate)
+    result = harness.run([python3, os.fspath(GATE)], cwd=paths.repo_root())
     gate.assert_exit_code(
         0, result.rc, "the real tree must be clean (output: %s)" % result.combined
     )

@@ -1,6 +1,6 @@
 r"""Every ROOT `scripts/` path reachable from non-quality CI code must classify FULL.
 
-Ported from `.ci/scripts/quality/check-scope-scripts-reachability.sh`, which is NOT deleted; see `rediacc_ci.quality.__init__` for why both copies live.
+Ported from `.ci/scripts/quality/check-scope-scripts-reachability.sh`, which W7 P5 batch G1 retired once `.ci/shadow/w7p2-scope-scripts-reachability.observations.jsonl` asserted equivalence over six distinct trees and the twin's own output was recorded as goldens.
 
 WHY THIS EXISTS, in the twin's own words, because the failure is invisible:
 
@@ -160,8 +160,11 @@ GATED_DIRS = (
 # `run.sh` is the drill dispatcher and is itself a ROOT_MANIFEST path, so editing it forces full on its own. It is scanned because what it DISPATCHES to must still be full. The legacy body is here for the reason in the module docstring.
 GATED_FILES = ("run.sh", ".ci/legacy/run-legacy.sh")
 
-# Where the gate lives, as the CI invocation spells it. Used ONLY to reproduce bash's `command not found` diagnostic; see dispatch_floor_refusal.
+# Where the twin lived, as the CI invocation spelled it. Used ONLY to reproduce bash's `command not found` diagnostic; see dispatch_floor_refusal.
 TWIN_REL = ".ci/scripts/quality/check-scope-scripts-reachability.sh"
+
+# The line the twin's `log_fail` sat on, FROZEN because the twin is gone. Read out of the tracked file until W7 P5 retired it against `goldens/scope-scripts-reachability/`; blob 3ccfb3f3173ed0300fddef4ba081054d78383eca line 275, recoverable with `git cat-file -p <blob> | sed -n 275p`. A read of a deleted file returned 0 and quietly changed the diagnostic.
+TWIN_LOG_FAIL_LINE = 275
 
 # Stage 1: a line mentioning a root `scripts/` path at a path boundary.
 ROOT_LINE = re.compile(r"(^|[^A-Za-z0-9_./-])(\./|\"?\$[A-Za-z_]+/)?scripts/")
@@ -342,21 +345,13 @@ def dispatch_floor_refusal() -> int:
 
     THIS REPRODUCES A BUG. `log_fail` is undefined in the twin, so bash exits 127 at that line and the three explanatory `echo`s below it never run. See the module docstring for the identical, already-recorded instance in the pool-writer-safety gate's own twin.
 
-    HOW FAR THE REPRODUCTION GOES, stated so nobody reads more into it. bash's diagnostic is `<script as invoked>: line <n>: log_fail: command not found`, and both halves of that prefix belong to bash, not to the gate: the path is whatever argv[0] was, and the line number is the twin's. The port emits the canonical relative path and finds the line number by reading the twin, which
-    is exact when the gate is invoked the way CI invokes it and merely approximate when it is invoked by absolute path. The STATUS, which is what a caller acts on, is exact either way.
+    HOW FAR THE REPRODUCTION GOES, stated so nobody reads more into it. bash's diagnostic is `<script as invoked>: line <n>: log_fail: command not found`, and both halves of that prefix belong to bash, not to the gate: the path is whatever argv[0] was, and the line number is the twin's. The port emits the canonical relative path and the FROZEN line number, which is exact when the
+    gate is invoked the way CI invoked the twin and merely approximate when it is invoked by absolute path. The STATUS, which is what a caller acts on, is exact either way. The number was read out of the tracked twin until that file was retired; see `TWIN_LOG_FAIL_LINE` for the blob it came from.
     """
-    lineno = 0
-    twin = paths.repo_root() / TWIN_REL
-    try:
-        for number, line in enumerate(
-            twin.read_text(encoding="utf-8", errors="replace").split("\n"), start=1
-        ):
-            if line.lstrip().startswith("log_fail "):
-                lineno = number
-                break
-    except OSError:
-        lineno = 0
-    print("%s: line %d: log_fail: command not found" % (TWIN_REL, lineno), file=sys.stderr)
+    print(
+        "%s: line %d: log_fail: command not found" % (TWIN_REL, TWIN_LOG_FAIL_LINE),
+        file=sys.stderr,
+    )
     return 127
 
 

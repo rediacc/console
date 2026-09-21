@@ -1,0 +1,14 @@
+# twin .ci/scripts/housekeeping/cleanup-github-deployments.sh blob 4fe0c7d288b2d57f52ec5ddf231ffabaf2c92ae1
+exit: 0
+--- stdout ---
+--- stderr ---
+→ Cleaning up GitHub deployments for environment: pr-42 (acme/widget)
+⚠ Failed to delete deployment 101 (pr-42)
+⚠ Failed to delete deployment 102 (pr-42)
+✓ Deleted 0 of 2 deployment(s) for pr-42
+--- calls ---
+api	repos/acme/widget/deployments?environment=pr-42&per_page=100	--paginate	--jq	.[].id
+api	repos/acme/widget/deployments/101/statuses	-X	POST	-f	state=inactive
+api	-X	DELETE	repos/acme/widget/deployments/101
+api	repos/acme/widget/deployments/102/statuses	-X	POST	-f	state=inactive
+api	-X	DELETE	repos/acme/widget/deployments/102

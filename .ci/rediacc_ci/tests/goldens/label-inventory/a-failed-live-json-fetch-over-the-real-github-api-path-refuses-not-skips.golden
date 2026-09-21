@@ -1,0 +1,6 @@
+# twin .ci/scripts/quality/check-label-inventory.sh blob 13627d4c05edbdecca46be3ef0d973c2a99cf3de
+exit: 1
+--- stdout ---
+--- stderr ---
+✗ could not read the live label list (with descriptions/colours) from GitHub: HTTP 500: simulated failure
+✗ This gate refuses to pass blind on the drift comparison. Authenticate (gh auth login / GH_TOKEN) and re-run.

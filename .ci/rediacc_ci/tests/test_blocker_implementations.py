@@ -15,7 +15,7 @@ So this module asserts the OTHER direction, once per implementation:
      FIFTH implementation was found on 2026-09-09: `swallowed_failures.py` held a
      verbatim 150-line copy that the four-implementation docstring did not name.
   2. THE BASH MIRROR. `.ci/scripts/lib/blocker-validator.sh` still carries the two
-     arrays as TEXT, because `test-breakpoint-portability.sh:361` parses them out
+     arrays as TEXT, because `test_gate_breakpoint_portability.py` parses them out
      of that file to prove the vendored copy is a subset. Nothing in the bash file
      READS them any more. A mirror nothing compares is just a second opinion, so
      this asserts set EQUALITY in both directions, plus the floor.
@@ -33,7 +33,7 @@ So this module asserts the OTHER direction, once per implementation:
 WHAT IS DELIBERATELY NOT RE-ASSERTED HERE, because it already exists and a second implementation of a check is the same defect this module is about:
 
   * `bp_phrases` is a subset of the canonical, and the vendored file's own
-    innocence -- `.ci/scripts/test/gates/test-breakpoint-portability.sh:357-441`,
+    innocence -- `.ci/rediacc_ci/tests/gates/test_gate_breakpoint_portability.py`,
     with a planted-defect regression.
   * `bp_substrings == the empty set`, and the derivation of the corpus's five
     recorded divergences -- `check:ci-vendored-blocker-derivation`.
@@ -67,8 +67,6 @@ TS_CLIENT = "scripts/lib/blocker-validator.ts"
 #
 # BLOCKER: `is_low_effort_reply` is a DIFFERENT rule with a deliberately different punctuation class (it strips only `.!?`, this one strips `.!?,;:`). The two lists were written separately, the difference is real, and unifying them would change one gate's verdicts to fix nothing. The bash validator's own header has cross-referenced this sibling since it was written.
 SIBLING_LOW_EFFORT_REPLY_RULE: dict[str, str] = {
-    ".ci/scripts/quality/check-review-comments.sh": "is_low_effort_reply, review replies",
-    ".ci/scripts/quality/check-review-report-replies.sh": "is_low_effort_reply, report replies",
     ".ci/scripts/quality/check-submodule-branches.sh": "is_low_effort_reply, submodule replies",
     ".ci/rediacc_ci/quality/review_comments.py": "port of check-review-comments.sh",
     ".ci/rediacc_ci/quality/review_report_replies.py": "port of check-review-report-replies.sh",
@@ -110,7 +108,7 @@ def _text(rel: str) -> str:
 def bash_array(text: str, name: str) -> list[str]:
     """The elements of `readonly <name>=( ... )`, in order.
 
-    The SAME shape `.ci/scripts/test/gates/test-breakpoint-portability.sh:504` parses, deliberately: if this extractor and that one ever disagree about what the file says, the subset proof over there is reading something this equality proof is not.
+    The SAME shape `.ci/rediacc_ci/tests/gates/test_gate_breakpoint_portability.py` parses, deliberately: if this extractor and that one ever disagree about what the file says, the subset proof over there is reading something this equality proof is not.
     """
     match = re.search(
         r"^readonly %s=\(\n(.*?)^\)$" % re.escape(name), text, re.MULTILINE | re.DOTALL
@@ -196,7 +194,7 @@ def test_the_set_of_files_carrying_a_phrase_table_is_the_known_set():
         "delete its row here; a stale expectation makes this test assert less "
         "than it says. Full inventory: %s" % (gone, shape)
     )
-    assert len(found) == 9, "inventory shape changed: %s" % shape
+    assert len(found) == 7, "inventory shape changed: %s" % shape
 
 
 def test_the_inventory_detector_would_find_a_planted_table():
@@ -247,7 +245,7 @@ def test_the_bash_mirror_is_exactly_the_canonical_tables():
     )
     assert not canonical_only, (
         "the canonical bans %s and the bash mirror does not. The mirror is what "
-        "test-breakpoint-portability.sh:361 measures the vendored subset against, so "
+        "test_gate_breakpoint_portability.py measures the vendored subset against, so "
         "a short mirror makes that subset proof weaker than it reads." % canonical_only
     )
 
@@ -302,7 +300,7 @@ def test_the_bash_mirror_is_not_read_by_the_bash_validator():
     ):
         assert name not in body, (
             "%s reads %s again. It is a mirror of the canonical, kept only so "
-            "test-breakpoint-portability.sh can parse it; deciding anything from it "
+            "test_gate_breakpoint_portability.py can parse it; deciding anything from it "
             "re-creates the divergence this collapse removed." % (BASH_MIRROR, name)
         )
     assert "rediacc_ci.core.allowlist" in text, (
@@ -405,7 +403,7 @@ def test_the_python_clients_declare_no_rule_of_their_own():
     assert "blocker-validator.sh" in policy, (
         "check_language_policy no longer shells out for the BLOCKER quality rule. If "
         "it now calls rediacc_ci.core.allowlist directly, good; delete this assertion "
-        "AND the 'validator cannot be consulted' arm of test-language-policy.sh, which "
+        "AND the 'validator cannot be consulted' arm of test_gate_language_policy.py, which "
         "tests a failure mode that no longer exists."
     )
 

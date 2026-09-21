@@ -1,12 +1,17 @@
-"""Differential: `rediacc_ci.build.build_json` against its twin `.ci/scripts/build/build-json.sh`.
+"""`rediacc_ci.build.build_json`, driven against the bytes its bash twin printed.
 
-THE FIXTURE SHAPE AND ITS REASONS ARE `test_build_build_www.py`'s and are not restated: neither side takes a root override so both are copied into a throwaway root; `npm` is a recording fake on a PATH that REPLACES the caller's rather than prepending to it; `rediacc_ci` is vendored so no absolute path outside the tree appears in any command string; `$0` is masked to `<SELF>` and
-nothing else is.
+WHILE BOTH COPIES EXISTED this file ran `.ci/scripts/build/build-json.sh` and the port over the same throwaway root, one after the other, and compared exit code, stdout, stderr and the npm call log. The K=5 ledger `.ci/shadow/w7p6-build-json.observations.jsonl` recorded that comparison over five distinct trees. The twin has now been deleted and every case that executed it
+compares against `goldens/build-json/`, which holds the twin's OWN recorded bytes, captured from the tracked script on its last day in the tree. Each golden's provenance header carries the blob sha, so `git cat-file -p <sha>` still yields the program that printed them.
 
-WHAT THIS FILE ADDS ON TOP OF THAT is the pair assertion. `build-json.sh` is `build-www.sh` with the two output checks hand-rolled instead of delegated to `common.sh`, so the SAME failure prints a different sentence depending on which site failed. `test_the_two_twins_say_different_things_about_the_same_failure` drives BOTH bash twins and pins the disagreement, which is the only way
-a reader finds out that the wording is accidental rather than chosen.
+THE FIXTURE SHAPE AND ITS REASONS ARE `test_build_build_www.py`'s and are not restated: the port takes no root override so it is copied into a throwaway root; `npm` is a recording fake on a PATH that REPLACES the caller's rather than prepending to it; `rediacc_ci` is vendored so no absolute path outside the tree appears in any command string.
 
-K=5 LEDGER: `.ci/shadow/w7p6-build-json.observations.jsonl`.
+THE CALL LOG IS PART OF THE RECORDING. A build script that printed the right sentences while invoking the wrong npm script would pass a comparison of the two streams alone, so each golden carries a fourth `--- calls ---` section holding the fake npm's argv log. `frozen.render` stops at stderr; the section is appended after it, which `frozen.assert_corpus` accepts because it
+checks the header and the `exit: ` opening line.
+
+WHAT IS NORMALIZED is `$0` -- the one token a bash child and a python one never agreed on -- and the fixture root, which a recording compared against a tree built minutes later cannot share. Nothing else.
+
+THE PAIR ASSERTION SURVIVES THE DELETION. `build-json.sh` was `build-www.sh` with the two output checks hand-rolled instead of delegated to `common.sh`, so the SAME failure printed one of two unrelated sentences depending on which site failed. Both twins' bytes on that failure are recorded here, so the disagreement stays a measurement rather than a claim about files a reader can
+no longer run.
 """
 
 from __future__ import annotations
@@ -18,22 +23,27 @@ import subprocess
 import sys
 import typing
 
+import pytest
+
 from rediacc_ci import paths
 from rediacc_ci.build import build_json as port
+from rediacc_ci.tests import frozen
 
 if typing.TYPE_CHECKING:
     import pathlib
 
 ROOT = paths.repo_root()
 
+SLUG = "build-json"
+
 TWIN_REL = ".ci/scripts/build/build-json.sh"
 PORT_REL = ".ci/rediacc_ci/build/build_json.py"
 COMMON_REL = ".ci/scripts/lib/common.sh"
 
-# The www twin and its port, copied in for the one cross-pair case below.
+# The www twin, still tracked, whose bytes on the shared failure are recorded beside this pair's.
 WWW_TWIN_REL = ".ci/scripts/build/build-www.sh"
 
-# Everything the port imports, transitively. `build_www` is here because `build_json` reuses its `run_npm`: the two twins are byte-identical through `:23` and duplicating the npm-invocation logic would be a second thing to drift.
+# Everything the port imports, transitively. `build_www` is here because `build_json` reuses its `run_npm`: the two twins were byte-identical through `:23` and duplicating the npm-invocation logic would be a second thing to drift.
 VENDORED = (
     ".ci/rediacc_ci/__init__.py",
     ".ci/rediacc_ci/log.py",
@@ -65,12 +75,15 @@ exit "${FAKE_NPM_RC:-0}"
 
 SELF_RE = re.compile(r"\S*(?:%s|%s)" % (re.escape(TWIN_REL), re.escape(PORT_REL)))
 
+CALLS_MARKER = "--- calls ---\n"
+
 
 def fixture(tmp_path: pathlib.Path, *, port_source: str | None = None) -> pathlib.Path:
+    """A throwaway root holding the port, `common.sh` and the surviving www twin."""
     root = tmp_path / "repo"
-    for rel in (TWIN_REL, PORT_REL, COMMON_REL, WWW_TWIN_REL, *VENDORED):
+    for rel in (PORT_REL, COMMON_REL, WWW_TWIN_REL, *VENDORED):
         (root / rel).parent.mkdir(parents=True, exist_ok=True)
-    for rel in (TWIN_REL, COMMON_REL, WWW_TWIN_REL, *VENDORED):
+    for rel in (COMMON_REL, WWW_TWIN_REL, *VENDORED):
         shutil.copy2(ROOT / rel, root / rel)
     if port_source is None:
         shutil.copy2(ROOT / PORT_REL, root / PORT_REL)
@@ -99,16 +112,17 @@ def scratch_bin(root: pathlib.Path, *, drop_npm: bool = False) -> str:
     return str(stub)
 
 
-def _run(
+def drive(
     root: pathlib.Path,
-    side: str,
+    argv: list[str],
     *,
     drop_npm: bool = False,
     cwd: str | None = None,
-    script: str | None = None,
-    **extra,
-):
-    call_log = root / ("%s-calls.log" % side)
+    tag: str = "new",
+    **extra: str,
+) -> tuple[int, str, str, str]:
+    """One side, once, under a replaced PATH and a fresh call log."""
+    call_log = root / ("%s-calls.log" % tag)
     call_log.write_text("", encoding="utf-8")
     env = {
         # REPLACED, never prepended.
@@ -121,10 +135,6 @@ def _run(
         "FAKE_CALL_LOG": str(call_log),
     }
     env.update(extra)
-    if side == "old":
-        argv = [BASH, str(root / (script or TWIN_REL))]
-    else:
-        argv = [sys.executable, str(root / PORT_REL)]
     proc = subprocess.run(
         argv,
         cwd=cwd or str(root),
@@ -135,57 +145,105 @@ def _run(
         timeout=120,
         input="",
     )
-    return proc, call_log.read_text(encoding="utf-8")
+    return proc.returncode, proc.stdout, proc.stderr, call_log.read_text(encoding="utf-8")
 
 
-def run_both(root: pathlib.Path, **kw):
-    """Both sides from the SAME starting state; `packages/` is reset between."""
-    made = root / "packages"
-    snapshot = root / ".packages-snapshot"
-    if snapshot.exists():
-        shutil.rmtree(snapshot)
-    if made.exists():
-        shutil.copytree(made, snapshot, symlinks=True)
-    old, old_calls = _run(root, "old", **kw)
-    if made.exists():
-        shutil.rmtree(made)
-    if snapshot.exists():
-        shutil.copytree(snapshot, made, symlinks=True)
-    new, new_calls = _run(root, "new", **kw)
-    return old, new, old_calls, new_calls
+def build(tmp_path: pathlib.Path, name: str, *, port_source: str | None = None):
+    """The fixture tree and the run keywords for one recorded case."""
+    root = fixture(tmp_path, port_source=port_source)
+    kw: dict[str, str | bool] = {}
+    if name == "a-complete-build":
+        kw["FAKE_NPM_MAKE_INDEX"] = str(root / port.INDEX_HTML)
+    elif name == "a-dist-without-an-index":
+        kw["FAKE_NPM_MAKE_DIST"] = str(root / port.DIST_DIR)
+    elif name == "a-failing-npm":
+        kw["FAKE_NPM_RC"] = "1"
+    elif name == "npm-exits-three":
+        kw["FAKE_NPM_RC"] = "3"
+    elif name == "npm-exits-one-hundred-and-thirty-seven":
+        kw["FAKE_NPM_RC"] = "137"
+    elif name == "a-missing-npm":
+        kw["drop_npm"] = True
+    elif name == "a-decoy-working-directory":
+        decoy = tmp_path / "elsewhere"
+        (decoy / "packages" / "json" / "dist").mkdir(parents=True, exist_ok=True)
+        (decoy / "packages" / "json" / "dist" / "index.html").write_text("decoy", encoding="utf-8")
+        kw["cwd"] = str(decoy)
+    elif name == "npms-own-two-streams":
+        kw["FAKE_NPM_STDOUT"] = "vite: 12 modules transformed"
+        kw["FAKE_NPM_STDERR"] = "vite: warning: empty chunk"
+        kw["FAKE_NPM_MAKE_INDEX"] = str(root / port.INDEX_HTML)
+    elif name == "a-dist-that-is-a-file":
+        (root / "packages" / "json").mkdir(parents=True, exist_ok=True)
+        (root / "packages" / "json" / "dist").write_text("not a directory", encoding="utf-8")
+    return root, kw
 
 
-def _mask(text: str) -> str:
-    """`$0`, the one thing that cannot agree between the two sides."""
-    return SELF_RE.sub("<SELF>", text)
+CASES = (
+    "a-complete-build",
+    "a-missing-dist-directory",
+    "a-dist-without-an-index",
+    "a-failing-npm",
+    "npm-exits-three",
+    "npm-exits-one-hundred-and-thirty-seven",
+    "a-missing-npm",
+    "a-decoy-working-directory",
+    "npms-own-two-streams",
+    "a-dist-that-is-a-file",
+)
+
+# The www twin's bytes on the failure both twins reach, recorded under its own provenance header.
+WWW_CASE = "the-www-twin-on-a-missing-dist"
+
+EXPECTED_EXIT = {
+    "a-complete-build": 0,
+    "a-missing-dist-directory": 1,
+    "a-dist-without-an-index": 1,
+    "a-failing-npm": 1,
+    "npm-exits-three": 1,
+    "npm-exits-one-hundred-and-thirty-seven": 1,
+    "a-missing-npm": 1,
+    "a-decoy-working-directory": 1,
+    "npms-own-two-streams": 0,
+    "a-dist-that-is-a-file": 1,
+}
 
 
-def _agree(old, new, label: str, old_calls: str = "", new_calls: str = "") -> None:
-    assert new.returncode == old.returncode, (
-        "%s: exit diverged: %r vs %r\nold stderr: %r\nnew stderr: %r"
-        % (label, old.returncode, new.returncode, old.stderr, new.stderr)
+def mask(text: str, root: pathlib.Path) -> str:
+    """`$0` and the fixture root, and nothing else."""
+    return frozen.mask_root(SELF_RE.sub("<SELF>", text), root)
+
+
+def split_golden(text: str) -> tuple[int, str, str, str]:
+    """A recorded twin render, back into its four parts."""
+    exit_line, rest = text.split("\n", 1)
+    body, calls = rest.split(CALLS_MARKER, 1)
+    stdout, stderr = body.split("--- stdout ---\n", 1)[1].split("--- stderr ---\n", 1)
+    return int(exit_line.removeprefix("exit: ")), stdout, stderr, calls
+
+
+def run_port(root: pathlib.Path, **kw) -> tuple[int, str, str, str]:
+    return drive(root, [sys.executable, str(root / PORT_REL)], **kw)
+
+
+def compare(root: pathlib.Path, name: str, **kw) -> tuple[int, str, str, str]:
+    want_exit, want_out, want_err, want_calls = split_golden(frozen.read(SLUG, name))
+    returncode, stdout, stderr, calls = run_port(root, **kw)
+    assert returncode == want_exit, "%s: the twin exited %d, the port %d" % (
+        name,
+        want_exit,
+        returncode,
     )
-    assert _mask(new.stdout) == _mask(old.stdout), "%s: stdout diverged:\n%r\n%r" % (
-        label,
-        old.stdout,
-        new.stdout,
-    )
-    assert _mask(new.stderr) == _mask(old.stderr), "%s: stderr diverged:\n%r\n%r" % (
-        label,
-        old.stderr,
-        new.stderr,
-    )
-    assert new_calls == old_calls, "%s: call log diverged:\n%s---\n%s" % (
-        label,
-        old_calls,
-        new_calls,
-    )
+    assert mask(stdout, root) == want_out, "%s: stdout diverged from the recorded bytes" % name
+    assert mask(stderr, root) == want_err, "%s: stderr diverged from the recorded bytes" % name
+    assert mask(calls, root) == want_calls, "%s: the npm call log diverged" % name
+    return returncode, stdout, stderr, calls
 
 
 # --------------------------------------------------------------------------- The control on the control ---------------------------------------------------------------------------
 
 
-def test_the_scratch_path_cannot_reach_a_real_npm(tmp_path) -> None:
+def test_the_scratch_path_cannot_reach_a_real_npm(tmp_path: pathlib.Path) -> None:
     """`npm run build:json` in this checkout is a real site build. A PREPENDED PATH would still resolve the real binary, so the fixture REPLACES it and this asserts the replacement holds in both directions."""
     root = fixture(tmp_path)
     sealed = scratch_bin(root)
@@ -195,124 +253,75 @@ def test_the_scratch_path_cannot_reach_a_real_npm(tmp_path) -> None:
     assert shutil.which("node", path=dropped) is None
 
 
-# --------------------------------------------------------------------------- The four exit paths ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Every recorded case ---------------------------------------------------------------------------
 
 
-def test_a_complete_build_prints_three_lines_and_exits_zero(tmp_path) -> None:
-    root = fixture(tmp_path)
-    old, new, old_calls, new_calls = run_both(root, FAKE_NPM_MAKE_INDEX=str(root / port.INDEX_HTML))
-    assert old.returncode == 0, old.stderr
-    assert old.stdout == ""
-    assert old.stderr == (
-        "→ Building json (template catalog)...\n"
-        "✓ json build completed\n"
-        "✓ json build complete: packages/json/dist/\n"
-    )
-    assert old_calls == "CALL npm\trun\tbuild:json\n"
-    _agree(old, new, "success", old_calls, new_calls)
+@pytest.mark.parametrize("name", CASES)
+def test_port_matches_the_twins_recorded_output(tmp_path: pathlib.Path, name: str) -> None:
+    root, kw = build(tmp_path, name)
+    returncode, _, _, _ = compare(root, name, **kw)
+    assert returncode == EXPECTED_EXIT[name], "the recorded verdict moved"
 
 
-def test_a_missing_dist_directory_refuses_in_the_twins_own_words(tmp_path) -> None:
-    root = fixture(tmp_path)
-    old, new, old_calls, new_calls = run_both(root)
-    assert old.returncode == 1
-    assert old.stderr.endswith("✗ %s\n" % port.NO_DIST_MESSAGE), old.stderr
-    _agree(old, new, "no-dist", old_calls, new_calls)
+def test_every_case_has_a_golden_and_no_golden_is_orphaned() -> None:
+    """ANTI-VACUITY on the corpus: a case whose golden vanished would pass by never being compared, and a golden nothing reads is a recording of a case that stopped running."""
+    frozen.assert_corpus(SLUG, {*CASES, WWW_CASE})
 
 
-def test_a_dist_without_an_index_refuses_on_the_file(tmp_path) -> None:
-    root = fixture(tmp_path)
-    old, new, old_calls, new_calls = run_both(root, FAKE_NPM_MAKE_DIST=str(root / port.DIST_DIR))
-    assert old.returncode == 1
-    assert old.stderr.endswith("✗ %s\n" % port.NO_INDEX_MESSAGE), old.stderr
-    _agree(old, new, "no-index", old_calls, new_calls)
+def test_the_green_case_is_not_vacuously_equal() -> None:
+    """Two implementations that both print nothing agree about nothing."""
+    green = split_golden(frozen.read(SLUG, "a-complete-build"))
+    red = split_golden(frozen.read(SLUG, "a-missing-dist-directory"))
+    assert green[2] != red[2]
+    assert "✓ json build complete: packages/json/dist/\n" in green[2]
+    assert green[3] == "CALL npm\trun\tbuild:json\n", "the twin ran the wrong npm script"
 
 
-def test_a_failing_npm_is_reported_as_a_failed_build(tmp_path) -> None:
-    root = fixture(tmp_path)
-    old, new, old_calls, new_calls = run_both(root, FAKE_NPM_RC="1")
-    assert old.returncode == 1
-    assert old.stderr == "→ Building json (template catalog)...\n✗ json build failed\n"
-    _agree(old, new, "npm-fail", old_calls, new_calls)
+# --------------------------------------------------------------------------- The recorded defects ---------------------------------------------------------------------------
 
 
-# --------------------------------------------------------------------------- The shared defects, and the one thing that is this pair's alone ---------------------------------------------------------------------------
+def test_defect_npms_exit_code_is_flattened_to_one() -> None:
+    """npm exiting 3 or 137 both became a flat 1, as in `build-www.sh`."""
+    for name in ("npm-exits-three", "npm-exits-one-hundred-and-thirty-seven"):
+        assert split_golden(frozen.read(SLUG, name))[0] == 1, "%s leaked npm's status" % name
 
 
-def test_defect_npms_exit_code_is_flattened_to_one(tmp_path) -> None:
-    """npm exiting 3 or 137 both become a flat 1, as in `build-www.sh`."""
-    for npm_rc in ("3", "137"):
-        root = fixture(tmp_path / npm_rc)
-        old, new, old_calls, new_calls = run_both(root, FAKE_NPM_RC=npm_rc)
-        assert old.returncode == 1, "npm rc %s leaked through as %s" % (npm_rc, old.returncode)
-        _agree(old, new, "flattened " + npm_rc, old_calls, new_calls)
-
-
-def test_defect_the_green_tick_precedes_every_verification(tmp_path) -> None:
-    """`✓ json build completed` is printed on npm's exit code alone."""
-    root = fixture(tmp_path)
-    old, new, old_calls, new_calls = run_both(root)
-    lines = old.stderr.splitlines()
+def test_defect_the_green_tick_precedes_every_verification() -> None:
+    """`✓ json build completed` was printed on npm's exit code alone."""
+    lines = split_golden(frozen.read(SLUG, "a-missing-dist-directory"))[2].splitlines()
     assert lines[1] == "✓ json build completed"
     assert lines[2].startswith("✗ ")
-    _agree(old, new, "tick-before-check", old_calls, new_calls)
 
 
-def test_a_missing_npm_reads_as_a_failed_build_with_bashs_line_above_it(tmp_path) -> None:
-    root = fixture(tmp_path)
-    old, new, old_calls, new_calls = run_both(root, drop_npm=True)
-    assert old.returncode == 1
-    assert _mask(old.stderr) == (
+def test_a_missing_npm_reads_as_a_failed_build_with_bashs_line_above_it() -> None:
+    recorded = split_golden(frozen.read(SLUG, "a-missing-npm"))
+    assert recorded[2] == (
         "→ Building json (template catalog)...\n"
         "<SELF>: line %d: npm: command not found\n"
         "✗ json build failed\n" % port.NPM_LINE
-    ), old.stderr
-    assert old_calls == ""
-    _agree(old, new, "npm-absent", old_calls, new_calls)
-
-
-def test_the_two_twins_say_different_things_about_the_same_failure(tmp_path) -> None:
-    """THE PAIR ASSERTION. `build-json.sh:26-34` hand-rolls what `build-www.sh:26-27` delegates to `common.sh`, so a build that produced no `dist/` reports one of two unrelated sentences depending on which site it was. Both bash twins are driven here, in one fixture, so the disagreement is recorded rather than inferred from reading.
-
-    The hand-rolled half is the better one: it names the site, which is exactly what `build-www.sh`'s dropped label argument was trying and failing to do.
-    """
-    root = fixture(tmp_path)
-    json_side, _ = _run(root, "old")
-    www_side, _ = _run(root, "old", script=WWW_TWIN_REL)
-    assert json_side.returncode == www_side.returncode == 1
-    assert json_side.stderr.endswith("✗ json dist directory not created\n")
-    assert www_side.stderr.endswith("✗ Required directory 'packages/www/dist' does not exist\n")
-    assert "json" not in www_side.stderr.splitlines()[-1]
-    assert "www build output" not in www_side.stderr
-
-
-# --------------------------------------------------------------------------- The `cd`, the stream discipline, and the real tree ---------------------------------------------------------------------------
-
-
-def test_both_sides_cd_to_the_repo_root_whatever_the_caller_did(tmp_path) -> None:
-    """Driven from a directory holding a DECOY `packages/json/dist/index.html`: a side reading paths relative to the caller would find it and exit 0."""
-    root = fixture(tmp_path)
-    decoy = tmp_path / "elsewhere"
-    (decoy / "packages" / "json" / "dist").mkdir(parents=True)
-    (decoy / "packages" / "json" / "dist" / "index.html").write_text("decoy", encoding="utf-8")
-    old, new, old_calls, new_calls = run_both(root, cwd=str(decoy))
-    assert old.returncode == 1, "the decoy was picked up: the twin did not cd"
-    assert old.stderr.endswith("✗ %s\n" % port.NO_DIST_MESSAGE)
-    _agree(old, new, "cd", old_calls, new_calls)
-
-
-def test_npms_own_two_streams_are_inherited_unmerged(tmp_path) -> None:
-    root = fixture(tmp_path)
-    old, new, old_calls, new_calls = run_both(
-        root,
-        FAKE_NPM_STDOUT="vite: 12 modules transformed",
-        FAKE_NPM_STDERR="vite: warning: empty chunk",
-        FAKE_NPM_MAKE_INDEX=str(root / port.INDEX_HTML),
     )
-    assert old.returncode == 0, old.stderr
-    assert old.stdout == "vite: 12 modules transformed\n"
-    assert "vite: warning: empty chunk\n" in old.stderr
-    _agree(old, new, "streams", old_calls, new_calls)
+    assert recorded[3] == "", "npm was absent, so nothing could have been logged"
+
+
+def test_the_two_twins_said_different_things_about_the_same_failure() -> None:
+    """THE PAIR ASSERTION. `build-json.sh:26-34` hand-rolled what `build-www.sh:26-27` delegates to `common.sh`, so a build that produced no `dist/` reported one of two unrelated sentences depending on which site it was.
+
+    The hand-rolled half was the better one: it names the site, which is exactly what `build-www.sh`'s dropped label argument was trying and failing to do.
+    """
+    json_side = split_golden(frozen.read(SLUG, "a-missing-dist-directory"))
+    www_side = split_golden(frozen.read(SLUG, WWW_CASE))
+    assert json_side[0] == www_side[0] == 1
+    assert json_side[2].endswith("✗ json dist directory not created\n")
+    assert www_side[2].endswith("✗ Required directory 'packages/www/dist' does not exist\n")
+    assert "json" not in www_side[2].splitlines()[-1]
+    assert "www build output" not in www_side[2]
+
+
+def test_the_www_golden_names_a_different_twin() -> None:
+    """The pair assertion is only a pair if the two recordings came from two programs."""
+    header = (frozen.directory(SLUG) / ("%s.golden" % WWW_CASE)).read_text(encoding="utf-8")
+    assert WWW_TWIN_REL in header.split("\n", 1)[0]
+    assert TWIN_REL not in header.split("\n", 1)[0]
 
 
 def test_the_port_and_the_twin_agree_about_the_repo_root_in_this_checkout() -> None:
@@ -327,13 +336,13 @@ def test_the_port_and_the_twin_agree_about_the_repo_root_in_this_checkout() -> N
     assert proc.stdout.strip() == str(ROOT)
 
 
-# --------------------------------------------------------------------------- The control: this differential can actually fail ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The controls: these goldens can actually fail ---------------------------------------------------------------------------
 
 
-def test_a_planted_defect_is_caught(tmp_path) -> None:
+def test_a_planted_dist_check_defect_is_caught(tmp_path: pathlib.Path) -> None:
     """A gate that has never been seen to fail is not a gate.
 
-    The plant swaps `is_dir()` for `exists()` on the dist check, which is what a reader "simplifying" the port would reach for. It is invisible on every other case in this file and visible on exactly one: a `packages/json/dist` that is a FILE rather than a directory, which `[[ ! -d ]]` rejects and `exists()` accepts.
+    The plant swaps `is_dir()` for `exists()` on the dist check, which is what a reader "simplifying" the port would reach for. It is invisible on every other case in this file and visible on exactly one: a `packages/json/dist` that is a FILE rather than a directory, which `[[ ! -d ]]` rejected and `exists()` accepts.
     """
     source = (ROOT / PORT_REL).read_text(encoding="utf-8")
     planted = source.replace(
@@ -341,11 +350,27 @@ def test_a_planted_defect_is_caught(tmp_path) -> None:
         "if not pathlib.Path(DIST_DIR).exists():",
     )
     assert planted != source, "the plant site moved; this control is not planting anything"
-    root = fixture(tmp_path, port_source=planted)
-    (root / "packages" / "json").mkdir(parents=True)
-    (root / "packages" / "json" / "dist").write_text("not a directory", encoding="utf-8")
-    old, new, _old_calls, _new_calls = run_both(root)
-    assert old.returncode == 1, old.stderr
-    assert old.stderr.endswith("✗ json dist directory not created\n")
-    assert new.stderr.endswith("✗ json index.html not found in dist\n")
-    assert _mask(new.stderr) != _mask(old.stderr), "the plant did not diverge"
+    root, kw = build(tmp_path, "a-dist-that-is-a-file", port_source=planted)
+    with pytest.raises(AssertionError):
+        compare(root, "a-dist-that-is-a-file", **kw)
+    # And the tracked port still agrees against the same fixture.
+    clean_root, clean_kw = build(tmp_path / "clean", "a-dist-that-is-a-file")
+    compare(clean_root, "a-dist-that-is-a-file", **clean_kw)
+    assert (ROOT / PORT_REL).read_text(encoding="utf-8") == source
+
+
+def test_a_planted_repair_of_the_premature_tick_is_caught(tmp_path: pathlib.Path) -> None:
+    """THE NEW CONTROL ON THE GOLDENS. Move the green tick after the verifications.
+
+    Printing `✓ json build completed` before anything has been verified is the twin's own defect, and repairing it is exactly the improvement a reader would make on sight. The recording forbids it: the tick sits on the second stderr line of every failing case, so a port that withheld it no longer matches the bytes.
+    """
+    source = (ROOT / PORT_REL).read_text(encoding="utf-8")
+    anchor = '    log.info("json build completed")\n'
+    assert source.count(anchor) == 1, "the plant's anchor moved"
+    planted = source.replace(anchor, "    pass\n")
+    root, kw = build(tmp_path, "a-missing-dist-directory", port_source=planted)
+    with pytest.raises(AssertionError):
+        compare(root, "a-missing-dist-directory", **kw)
+    clean_root, clean_kw = build(tmp_path / "clean", "a-missing-dist-directory")
+    compare(clean_root, "a-missing-dist-directory", **clean_kw)
+    assert (ROOT / PORT_REL).read_text(encoding="utf-8") == source

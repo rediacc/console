@@ -1,0 +1,30 @@
+# twin .ci/scripts/quality/check-hook-integrity.sh blob 36c6ea0802307520e07f0b3ab4b3de7154f849d3
+exit: 0
+--- stdout ---
+import re, sys
+try:
+    lines = open(sys.argv[1], encoding="utf-8", errors="replace").read().splitlines()
+except OSError:
+    sys.exit(0)
+# A fold of a VARIABLE count. `PASS + 1` is a single case incrementing itself and
+# needs no floor; `PASS + n` folds in a whole sibling suite's self-reported total.
+fold = re.compile(r"PASS=\$\(\(PASS \+ ([A-Za-z_][A-Za-z0-9_]*)\)\)")
+# A minimum can be a named `floor` or a literal number -- `-lt 12` is exactly
+# as much of a floor as `-lt "$floor"`, and demanding the variable reported two
+# correctly floored folds as defects the first time this ran. A zero-count
+# refusal (`-gt 0`, `-eq 0`) is a floor of one and catches the same failure.
+guard = re.compile(r"-lt[ \t]+(\"?\$?\{?floor|[0-9])|-gt[ \t]+0|-eq[ \t]+0|-le[ \t]+0")
+# THE WINDOW INCLUDES THE FOLD LINE ITSELF. It used to stop one line short, so a
+# fold whose refusal sits on the SAME line -- `if [ "$n" -lt "$floor" ]; then
+# FAIL=...; else PASS=$((PASS + n)); fi` -- was reported as unfloored. A
+# correctly floored fold named as a defect is the cry-wolf failure the comment
+# above is about, and it is the reason a floorcheck fixture written that way
+# went red while asserting nothing. Found by planting it. No effect on the
+# current harness, whose folds are all multi-line.
+for i, line in enumerate(lines):
+    if not fold.search(line):
+        continue
+    window = lines[max(0, i - 12):i + 1]
+    if not any(guard.search(w) for w in window):
+        print(i + 1)
+--- stderr ---

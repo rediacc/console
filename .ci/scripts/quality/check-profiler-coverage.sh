@@ -60,7 +60,7 @@
 # instrument, never a clean tree -- this repo has shipped gates that checked
 # zero files for weeks.
 #
-# TEST SEAMS (all optional, used by .ci/scripts/test/gates/test-profiler-coverage.sh):
+# TEST SEAMS (all optional, used by .ci/rediacc_ci/tests/gates/test_gate_profiler_coverage.py):
 #   PROFILER_COVERAGE_WORKFLOW_DIR   directory of workflow YAML to scan
 #   PROFILER_COVERAGE_ALLOWLIST      allowlist path
 #   PROFILER_COVERAGE_ACTION_DIR     directory holding the profiler action.yml
@@ -102,7 +102,7 @@ read -r -a WRAPPER_DIRS <<<"${PROFILER_COVERAGE_WRAPPER_DIRS-.github/actions/set
 
 # Extra `uses:` strings that count as coverage, taken on trust and NOT verified.
 # Empty by default. This is the extension seam for a wrapper that lives outside
-# this repo's action tree, and it is also what test-profiler-coverage.sh drives
+# this repo's action tree, and it is also what test_gate_profiler_coverage.py drives
 # to prove the wrapper path is live code rather than a comment.
 read -r -a EXTRA_COVERING_ACTIONS <<<"${PROFILER_COVERAGE_COVERING_ACTIONS:-}"
 

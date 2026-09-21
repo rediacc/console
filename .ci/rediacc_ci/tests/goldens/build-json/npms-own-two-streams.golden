@@ -1,0 +1,11 @@
+# twin .ci/scripts/build/build-json.sh blob ad78ff781a042badd7139e215166ba444f079d7d
+exit: 0
+--- stdout ---
+vite: 12 modules transformed
+--- stderr ---
+→ Building json (template catalog)...
+vite: warning: empty chunk
+✓ json build completed
+✓ json build complete: packages/json/dist/
+--- calls ---
+CALL npm	run	build:json

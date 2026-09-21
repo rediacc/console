@@ -8,7 +8,7 @@ The three-line hop below is what makes a path invocation work at all: nothing pu
 NO `---- gate ----` HEADER, deliberately. `.ci/scripts/quality/check-branch.sh` carries none either: this pair is hand-registered in `.github/workflows/ci-quality.yml` and excused from the local gate set by `.ci/policy/.ci-parity-exempt`, and `check:ci-parity` is what holds those two ends together. Writing a header here would hand the step to `gate:bind`, which is a different
 change from moving which file the step runs.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-branch.sh` is NOT deleted by this change. It stays on disk as the twin this port is proven against; deleting it is W7 P5's job, in a later change.
+THE TWIN IS GONE. W7 P5 batch G2 deleted `.ci/scripts/quality/check-branch.sh` after `.ci/shadow/w7p2-branch.observations.jsonl` asserted equivalence over five distinct trees; its recorded bytes live in `.ci/rediacc_ci/tests/goldens/`, headed with the blob sha they were captured from.
 
 THE LEDGER CONDITION IS MET. Driven 2026-09-08:
 

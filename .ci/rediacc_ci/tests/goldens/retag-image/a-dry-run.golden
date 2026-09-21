@@ -1,0 +1,12 @@
+# twin .ci/scripts/docker/retag-image.sh blob 5e261ceb531187621d6d95f32216a71516ae4d9d
+exit: 0
+--- stdout ---
+
+--- stderr ---
+→ Re-tagging api: a -> b
+✓ [DRY-RUN] Verifying source image: ghcr.io/rediacc/api:a
+✓ [DRY-RUN] Verified source exists, would re-tag to: ghcr.io/rediacc/api:b
+✓ [DRY-RUN] Would also tag: ghcr.io/rediacc/api:latest
+✓ Re-tag summary: 1 succeeded, 0 failed
+--- calls ---
+docker	buildx	imagetools	inspect	ghcr.io/rediacc/api:a

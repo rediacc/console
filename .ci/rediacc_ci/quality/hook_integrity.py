@@ -1,7 +1,6 @@
 """The enforcement layer cannot quietly disarm itself.
 
-Ported from `.ci/scripts/quality/check-hook-integrity.sh`, which is NOT deleted;
-see `rediacc_ci.quality.__init__` for why both copies live.
+Ported from `.ci/scripts/quality/check-hook-integrity.sh`, which W7 P5 batch G2 retired once `.ci/shadow/w7p2-hook-integrity.observations.jsonl` asserted equivalence over seven distinct trees and the twin's own text was recorded as goldens.
 
 The twin's header, carried whole. Every paragraph of it records a hole this gate had and closed, and the holes are the design:
 

@@ -261,7 +261,7 @@ test_recorded_divergence_is_still_exactly_five() {
     # The corpus is also the RECORD of how far the vendored subset drifts. If the
     # breakpoint copy silently gained or lost a phrase, the divergence count moves
     # and this fires -- which is the only place that drift is visible, since the
-    # subset assertion in test-breakpoint-portability.sh checks containment, not
+    # subset assertion in test_gate_breakpoint_portability.py checks containment, not
     # behaviour.
     local n
     n=$(awk -F'|' 'NF && $3 != $5' <<<"$CORPUS" | wc -l)
