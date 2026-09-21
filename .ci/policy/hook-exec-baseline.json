@@ -11,7 +11,7 @@
     "tool": "Bash",
     "reading": "fullmatch",
     "processes": 2,
-    "why": "W5's stated target, recorded here so the gap is a number rather than a memory. Today's value is in measured.tools.Bash; the gate does NOT enforce the target, it enforces that today's value cannot drift without an edit here. D4 (lifecycle collapse 30 -> 11) moved it on 2026-09-21, from 12 to 3: one harness command per (event, matcher) pattern, with the commands each pattern used to register now listed in .claude/rediacc_hooks/lifecycle.py. The remaining 3 are the PreToolUse chain head and the two PostToolUse entries."
+    "why": "W5's stated target, recorded so the gap is a number. Today's value is in measured.tools.Bash; the gate enforces that it cannot drift without an edit here, not the target. D4 moved it from 12 to 3 on 2026-09-21: one harness command per (event, matcher) pattern, members listed in .claude/rediacc_hooks/lifecycle.py."
   },
   "probeTools": {
     "AskUserQuestion": "the third PreToolUse matcher. Its chain is the shortest, which makes it the row that notices a guard being added to every chain by habit.",
@@ -32,7 +32,7 @@
         "search": 3,
         "fullmatch": 1
       },
-      "why": "BLOCKER: the `Bash` matcher in .claude/settings.json is written bare, not anchored, and nothing in this repository documents whether the harness matches a matcher with search or with fullmatch. Under search, `Bash` selects `BashOutput` and every Bash-chain guard runs on a BashOutput call; under fullmatch it does not. The two readings differ by 2 processes, down from 9 before the D4 collapse; the ambiguity itself is unchanged, only its cost. This is pinned rather than resolved because resolving it means either reading the harness or anchoring the matcher to `^Bash$`, and anchoring it is a behaviour change to every Bash guard that belongs in its own box with its own evidence. It shrinks by anchoring the matcher, never by editing this list."
+      "why": "BLOCKER: the `Bash` matcher in .claude/settings.json is bare, and nothing here documents whether the harness matches with search or fullmatch. Under search, `Bash` also selects `BashOutput`; under fullmatch it does not. The two readings differ by 2 processes, down from 9 before the D4 collapse. Anchoring the matcher to `^Bash$` would resolve it, as its own box."
     }
   },
   "measured": {

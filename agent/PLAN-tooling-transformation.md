@@ -4813,7 +4813,7 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       `check:ci-pytest` timing: the delegates module alone is **787.0s** at `-n 4` against
       `RUN_TIMEOUT_S = 1080` at `.ci/rediacc_ci/check_pytest.py:141` under a 20-minute job cap.
       Both belong to W7P5-c's licence, not here.
-- [ ] **D4 S** Lifecycle collapse 30 -> 11. The redundancy is mechanical: `require-jq.sh` and
+- [x] **D4 S** Lifecycle collapse 30 -> 11. The redundancy is mechanical: `require-jq.sh` and
       `require-python.sh` are duplicated across all three PreToolUse matchers and PostToolUse/Bash
       -- 8 of the 30 entries and 8 of the 12 processes.
       **Acceptance:** entry count equals the 11 distinct `(event, matcher)` patterns AND **the
@@ -4862,6 +4862,11 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       ported; `FIRST_GUARD = "require-jq.sh"` is at `check_hooks_resolvable.py:107` and the hooks table is read at
       `doc-providers.ts:295`; the language policy reports 539 bash files, 464 frozen, none added, so a new
       tracked `.sh` is still refused.
+      **D4 DONE 2026-09-21 (036dc10d4), operator option A.** settings.json reads 11 commands in 11 groups over 11
+      patterns. The chain head (admitted by a `file:` allowlist entry) runs the two toolchain checks and hands the
+      pattern to `lifecycle.py`. A differential over 378 corpus payloads is byte-identical on exit code, stdout and
+      stderr against the old 30-command wiring, and five member-drop controls turn it red. `FIRST_GUARD` needed no
+      re-key because the gate flattens through the table.
       **WHICH RULING CLEARS WHICH BLOCKER (2026-09-20).** Blocker (1), the bash chain head, is the only one that
       needs the operator: EITHER (A, recommended) `.ci/config/language-policy` admits exactly one named file,
       `.claude/hooks/chain-head.sh`, that inlines the two checks and then execs `dispatch.py`, which lets the

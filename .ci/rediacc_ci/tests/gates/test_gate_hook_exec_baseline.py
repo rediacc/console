@@ -66,15 +66,15 @@ def test_a_removed_hook_command_reds_and_says_shrank(gate):
         gate.assert_exit_code(0, _run(root).rc, "the untouched copy is green first")
 
         def drop(obj):
-            for group in obj["hooks"]["PostToolUse"]:
-                group["hooks"] = [h for h in group["hooks"] if "cancel-old-ci" not in h["command"]]
+            for group in obj["hooks"]["SubagentStop"]:
+                group["hooks"] = [h for h in group["hooks"] if "wl_report" not in h["command"]]
 
         _edit_settings(root, drop)
         result = _run(root)
         gate.assert_exit_code(1, result.rc, "a cheaper wiring is still a finding")
         gate.assert_contains(result.combined, "entryCount SHRANK", "names the direction")
         gate.assert_contains(
-            result.combined, "repin it with 29", "and hands over the value to paste"
+            result.combined, "repin it with 10", "and hands over the value to paste"
         )
     gate.log_pass("a SHRINK reds with the repin value, which is what keeps the pin honest")
 
