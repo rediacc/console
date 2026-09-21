@@ -1522,10 +1522,12 @@ jobs:
   quality-packages:
     name: Packages
     runs-on: ubuntu-latest
-    # 15 -> 20 for the Stop-hook worklist suite added below (MEASURED 4m6s,
-    # 693 assertions, 2026-08-15). ubuntu-latest has no hard cap, unlike the
-    # slim lanes, so raising it here is meaningful rather than cosmetic; the
-    # neighbouring www-build and security lanes already sit at 20.
+    # 15 -> 20 was bought for the Stop-hook worklist suite, which has since
+    # been ported to pytest and now runs under check:ci-pytest in the security
+    # lane. The 20 is KEPT rather than reverted: ubuntu-latest has no hard cap,
+    # unlike the slim lanes, the neighbouring www-build and security lanes
+    # already sit at 20, and lowering it buys nothing while risking a cancelled
+    # job with no failed step.
     timeout-minutes: 20
     # Checkout plus local gates; the private submodules come in on the
     # readonly-preset App token. The github.token uses left in this job are
@@ -1704,20 +1706,6 @@ jobs:
       - name: Tutorial healthcheck headroom
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-tutorial-healthcheck-headroom
-
-      # The stop hook's own suite (693 assertions). It lives in this lane, not
-      # in Static, for two reasons: it IS a test suite like its neighbours, and
-      # Static runs on ubuntu-slim whose HARD 15-minute cap kills the job as
-      # "cancelled" with no failed step. Raising a slim timeout past 14 is
-      # therefore meaningless and is refused by check-workflow-gates.sh CHECK 3.
-      # Measured 4m6s locally on 2026-08-15.
-      #
-      # check:ci-mutate-check does NOT cover this: it drives a miniature
-      # fixture-suite to prove the mutation RUNNER still reports four verdicts,
-      # and never runs the real suite.
-      - name: Stop-hook worklist suite
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .claude/hooks/stop/test-worklist-v5.sh
 
       # The generated CLI contract drives the web console, `rdc --proxy` and
       # the executor. It was RED at HEAD when first run here: a stale value

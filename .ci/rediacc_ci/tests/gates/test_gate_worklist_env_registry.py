@@ -4,9 +4,9 @@ NEW GATE, NOT A PORT. The selftest proves the predicate against a four-name fixt
 
 TWO KINDS OF PLANT, and the pairing is the point. Planting into the REGISTRY exercises the comparison against a real scan; planting into a real SOURCE file exercises the scanner against a real registry. A gate can pass one and fail the other, and this gate did neither until both were driven.
 
-THE SOURCE PLANT TARGET is `.claude/hooks/stop/worklist-cases/21-cadence.sh`, a
-case file reached only by `test-hooks.sh` and never by a live hook chain, and
-the bytes are restored from what was read before the write. `git diff --quiet` is asked afterwards, so a different instrument confirms the restore.
+THE SOURCE PLANT TARGET is `.claude/hooks/stop/test-reggate-ledger.py`, a test file reached only by its own harness and never by a live hook chain, and the bytes are never written at all: the seam below substitutes CONTENT from a tmp copy. `git diff --quiet` is asked afterwards, so a different instrument confirms it.
+
+IT USED TO BE `worklist-cases/21-cadence.sh`, which was chosen for the same property and deleted when the bash Stop-hook suite was ported to pytest. The plant moved with it rather than being dropped, because the direction it covers, the SCANNER against a real registry, is the one the registry plant above cannot reach.
 """
 
 import json
@@ -20,7 +20,7 @@ from rediacc_ci.tests.gates import harness
 
 GATE = paths.from_root(".ci", "scripts", "quality", "check_worklist_env_registry.py")
 REGISTRY = paths.from_root(".ci", "policy", "worklist-env-registry.json")
-SOURCE_PLANT = paths.from_root(".claude", "hooks", "stop", "worklist-cases", "21-cadence.sh")
+SOURCE_PLANT = paths.from_root(".claude", "hooks", "stop", "test-reggate-ledger.py")
 SOURCE_PLANT_REL = str(SOURCE_PLANT.relative_to(paths.repo_root()))
 
 
@@ -111,12 +111,19 @@ def test_a_typo_in_a_real_source_file_reds(gate):
     # real `git ls-files` list, the real file count and the real everything-else are unchanged, only SOURCE_PLANT's bytes come from a tmp copy instead of disk. A hard kill mid-test now leaves a tmp file orphaned, never the tracked one -- the same class of hazard the WORKLIST_FOCUS registry corruption was (that half fixed by the registry-path seam above), one file over.
     original = SOURCE_PLANT.read_bytes()
     with tempfile.TemporaryDirectory() as td:
-        mutated = pathlib.Path(td) / "21-cadence-mutated.sh"
-        mutated.write_bytes(original + b'\n# gate probe\necho "${WORKLIST_CADENEC:-on}"\n')
+        mutated = pathlib.Path(td) / "reggate-ledger-mutated.py"
+        # THE PLANT IS PYTHON NOW, because the target is. The scanner counts a
+        # named environment lookup, not a shell expansion, so a bash `${...}`
+        # appended to a .py file would be invisible and the case would go green
+        # having planted nothing.
+        mutated.write_bytes(
+            original
+            + b'\n# gate probe\nimport os\n_probe = os.environ.get("WORKLIST_CADENEC", "on")\n'
+        )
         result = _run(env={"WORKLIST_SOURCE_OVERRIDE_FILE": "%s:%s" % (SOURCE_PLANT_REL, mutated)})
     gate.assert_exit_code(1, result.rc, "a typo'd name must red")
     gate.assert_contains(result.combined, "WORKLIST_CADENEC", "names the misspelling")
-    gate.assert_contains(result.combined, "21-cadence.sh", "and the file it is in")
+    gate.assert_contains(result.combined, "test-reggate-ledger.py", "and the file it is in")
     gate.assert_eq(
         SOURCE_PLANT.read_bytes(), original, "never touched on disk, not merely restored"
     )

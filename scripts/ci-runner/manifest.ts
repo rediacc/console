@@ -1494,26 +1494,6 @@ export const GATES: readonly GateSpec[] = [
       step: 'Mutation runner self-test',
     },
   },
-  // <<< gen-manifest: region 12 The 675-assertion suite behind the stop hook. check:ci-mutate-check does NOT cover this: it drives a miniature fixture-suite.sh to prove the MUTATION RUNNER still reports four verdicts, and never runs the real suite. So until this entry the hook logic was gated by nothing, and a hand fix to it could regress silently -- which is exactly how the dead
-  // i18n rules survived. `heavy` because it is minutes, not seconds.
-  {
-    id: 'check:ci-hook-worklist-suite',
-    run: 'npm run check:ci-hook-worklist-suite',
-    slow: true, // 460.3s measured
-    gate: true,
-    // One glob covers the leaf, every wl_*.py it imports, worklist-cases/** and _harness.sh. The harness pins every ambient path, so nothing outside this directory moves the verdict. Do NOT narrow to *.sh: the Python modules ARE the subject.
-    paths: ['.claude/hooks/stop/**'],
-    pathsOrigin: 'declared',
-    weight: 2,
-    heavy: true,
-    leaves: ['.claude/hooks/stop/test-worklist-v5.sh'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-packages',
-      step: 'Stop-hook worklist suite',
-    },
-  },
   {
     id: 'check:ci-shell-lint',
     run: 'npm run check:ci-shell-lint',

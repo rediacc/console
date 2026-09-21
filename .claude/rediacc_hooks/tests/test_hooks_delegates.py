@@ -13,6 +13,7 @@ TWO MODULES CARRIED SELFTESTS THAT NOTHING RAN, found 2026-08-26: wl_git.py and 
 from a suite that never executed.
 """
 
+import pathlib
 import re
 import subprocess
 
@@ -106,37 +107,42 @@ TAILED = [
     "stop/test-reggate-ledger.py",
 ]
 
-# The two bash sub-suites. The stop gate carries its own because its cases need fixtures rather than the single-JSON-on-stdin shape every guard case uses; the report-inbox suite covers the whole cross-session waiter/nudge mechanism and this aggregate runner did NOT run it until a sub-agent found 125 invisible cases in it. relative | the npm key that also reaches it, or None when
-# the harness is its only route. NOT EXECUTED HERE -- see test_a_delegated_bash_suite_is_reachable.
-BASH_SUITES = [
-    ("stop/test-worklist-v5.sh", "check:ci-hook-worklist-suite"),
-    ("stop/test-report-inbox.sh", None),
-]
+# THE TWO BASH SUB-SUITES ARE GONE, ported to pytest under this same directory: `stop/test-worklist-v5.sh` (26 case files, 944 assertions) and `stop/test-report-inbox.sh` (164 assertions) both drove PYTHON through a shell fixture layer, and the ports keep the same subprocess calls and the same assertions with `wlfix.py` in place of `_harness.sh`.
+#
+# WHAT REPLACES THEM HERE IS THE SAME CLAIM ABOUT A DIFFERENT ROUTE. The aggregate no longer runs them; `check:ci-pytest` collects them, because `.claude/rediacc_hooks/tests` is a pyproject `testpaths` root. That delegation is invisible when it breaks: a renamed or emptied root looks exactly like a root that ran and passed. So the three links are asserted directly, and the
+# control below strips each one.
+PORT_ROOT = "rediacc_hooks/tests"
+PORT_FIXTURE = "wlfix.py"
+PORT_MODULE_FLOOR = 20
 
 # The aggregate that really runs both, itself gated by `gate-test:claude-hooks`.
 AGGREGATE = HOOKS / "test-hooks.sh"
 PACKAGE_JSON = HOOKS.parent.parent / "package.json"
+PYPROJECT = HOOKS.parent.parent / "pyproject.toml"
 
 
-def bash_suite_problem(relative: str, npm_key, aggregate_source: str, pkg_source: str):
-    """None when the suite is genuinely reachable, else the ONE link that broke.
+def port_delegation_problem(aggregate_source: str, pyproject_source: str, module_count: int):
+    """None when the ported suite is genuinely reachable, else the ONE link that broke.
 
     Returns the reason rather than raising so the control can observe a verdict.
     """
-    if not (HOOKS / relative).is_file():
-        return "FAIL[%s]: the suite file does not exist, so nothing runs it." % relative
-    if relative not in aggregate_source:
+    if PORT_ROOT not in pyproject_source:
         return (
-            "FAIL[%s]: test-hooks.sh no longer invokes it, so this suite now runs "
-            "NOWHERE -- this module stopped running it on the strength of that "
-            "invocation." % relative
+            "FAIL[%s]: the directory is not a pyproject testpaths root, so check:ci-pytest "
+            "no longer collects the ported Stop-hook suite and it runs NOWHERE." % PORT_ROOT
         )
-    if npm_key is not None:
-        matching = [ln for ln in pkg_source.splitlines() if '"%s":' % npm_key in ln]
-        if not matching:
-            return 'FAIL[%s]: package.json has no "%s" script.' % (relative, npm_key)
-        if relative.rsplit("/", 1)[-1] not in "\n".join(matching):
-            return 'FAIL[%s]: "%s" no longer runs it.' % (relative, npm_key)
+    if PORT_ROOT not in aggregate_source or PORT_FIXTURE not in aggregate_source:
+        return (
+            "FAIL[%s]: test-hooks.sh no longer names the ported suite, so the aggregate has "
+            "stopped checking that the delegation is live and a broken one runs NOWHERE."
+            % PORT_ROOT
+        )
+    if module_count < PORT_MODULE_FLOOR:
+        return (
+            "FAIL[%s]: only %d test_wl_*.py module(s) present against a floor of %d; the port "
+            "had 27, so most of the suite runs NOWHERE."
+            % (PORT_ROOT, module_count, PORT_MODULE_FLOOR)
+        )
     return None
 
 
@@ -192,40 +198,45 @@ def test_an_orphan_control_suite_runs_and_says_something(relative):
     assert text.strip() != "", "%s printed nothing, which is what a stub returns" % relative
 
 
-@pytest.mark.parametrize(("relative", "npm_key"), BASH_SUITES, ids=[row[0] for row in BASH_SUITES])
-def test_a_delegated_bash_suite_is_reachable(relative, npm_key):
+def ported_module_count() -> int:
+    return len(list(pathlib.Path(__file__).resolve().parent.glob("test_wl_*.py")))
+
+
+def test_the_ported_stop_hook_suite_is_reachable():
     """Reachability is asserted, NOT re-established by running the suite again.
 
-    This module's rationale for executing these was reachability -- "a test nothing invokes is dead code". `test-hooks.sh` invokes both itself (lines 2698 and 2743), and that harness is executed by the registered gate `gate-test:claude-hooks`. So running them here re-did work already done: measured 866.78s and 56.16s, against a harness that is 931.14s in total and was being billed
-    three times inside one 1200s-capped job.
+    This module's rationale for executing the two retired bash suites was reachability, since a test nothing invokes is dead code. Running them here re-did work already done: measured 866.78s and 56.16s, against a harness that is 931.14s in total and was being billed three times inside one 1200s-capped job. The ports inherit the rationale and the restraint: check:ci-pytest
+    collects them, and re-running them from here would reintroduce exactly that doubling.
 
-    The reachability CLAIM still has to hold, and a broken one is invisible -- a suite the aggregate stopped invoking looks exactly like a suite that ran and passed. So the claim is asserted directly and nothing is executed.
+    The reachability CLAIM still has to hold, and a broken one is invisible: a root the collector stopped seeing looks exactly like a root that ran and passed. So the claim is asserted directly and nothing is executed.
     """
-    problem = bash_suite_problem(
-        relative,
-        npm_key,
+    problem = port_delegation_problem(
         AGGREGATE.read_text(encoding="utf-8"),
-        PACKAGE_JSON.read_text(encoding="utf-8"),
+        PYPROJECT.read_text(encoding="utf-8"),
+        ported_module_count(),
     )
-    hooklabels.record(0, "%s: reachable via test-hooks.sh" % relative, ok=problem is None)
+    hooklabels.record(0, "%s: reachable via check:ci-pytest" % PORT_ROOT, ok=problem is None)
     assert problem is None, problem
 
 
-def test_the_reachability_assertion_fires_when_the_aggregate_drops_a_suite():
+def test_the_reachability_assertion_fires_on_each_broken_link():
     """CONTROL. A reachability claim that cannot fail is not a claim.
 
-    Driven against an aggregate source with the suite's invocation stripped. Operates on a STRING, never on the real file, so no tracked file is written (T-12).
+    Each of the three links is stripped in turn, on STRINGS and a COUNT, never on the real files, so no tracked file is written (T-12). All three are driven rather than one, because a predicate can be right about the link its author tested and blind to the other two.
     """
-    relative, npm_key = BASH_SUITES[0]
-    real = AGGREGATE.read_text(encoding="utf-8")
-    assert relative in real, "control could not strip what is not there"
-    doctored = real.replace(relative, "stop/SOME-OTHER-SUITE.sh")
+    aggregate = AGGREGATE.read_text(encoding="utf-8")
+    pyproject = PYPROJECT.read_text(encoding="utf-8")
+    assert PORT_ROOT in aggregate, "control could not strip what is not there"
+    assert PORT_ROOT in pyproject, "control could not strip what is not there"
 
-    problem = bash_suite_problem(
-        relative, npm_key, doctored, PACKAGE_JSON.read_text(encoding="utf-8")
-    )
-    assert problem is not None, (
-        "CONTROL FAILED: reachability PASSED against an aggregate that no longer "
-        "invokes %s, so it cannot detect the disappearance it exists to detect." % relative
-    )
-    assert "runs\nNOWHERE" in problem.replace(" ", "\n") or "NOWHERE" in problem, problem
+    for label, args in (
+        ("testpaths", (aggregate, pyproject.replace(PORT_ROOT, "SOME/OTHER/ROOT"), 27)),
+        ("aggregate", (aggregate.replace(PORT_ROOT, "SOME/OTHER/ROOT"), pyproject, 27)),
+        ("floor", (aggregate, pyproject, 0)),
+    ):
+        problem = port_delegation_problem(*args)
+        assert problem is not None, (
+            "CONTROL FAILED: reachability PASSED with the %s link broken, so it cannot detect "
+            "the disappearance it exists to detect." % label
+        )
+        assert "NOWHERE" in problem, problem

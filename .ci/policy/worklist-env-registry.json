@@ -2,7 +2,7 @@
   "$why": [
     "Every WORKLIST_* environment name this repository reads, in one place, so that a name nobody reads and a read nobody registered are both findings.",
     "THE DEFECT: a typo'd name reads as UNSET. For a flag that defaults to `on` -- WORKLIST_AGENT_HINT, WORKLIST_AGENT_PUSHBACK, WORKLIST_CADENCE, WORKLIST_FOCUS -- that is the FAIL-OPEN direction: the author believes they switched something off and it is still running. Nothing in the tree said so before 2026-09-09.",
-    "Measured on 2026-09-09: 133 live names across 60 tracked files at 183 read sites (155 Python environment lookups plus 28 bash ${...} expansions), and 153 bash assignment sites in the test corpora. The plan box said `134 distinct names across ~56-60 files at 178 read sites`; 134 is the GREP answer and one of them, WORKLIST_EMAIL, is prose-only history in .claude/hooks/stop/worklist-cases/13-ci-queue-and-mail.sh:142 describing a name that no longer exists.",
+    "Measured 2026-09-09 against the bash corpus that has since been ported to pytest: 133 live names across 60 tracked files at 183 read sites. The plan box said 134, which is the GREP answer; one of those, WORKLIST_EMAIL, appeared only in a comment describing a name that no longer existed, which is why this scanner counts READS rather than greps.",
     "Enforced by check:ci-worklist-env-registry, both directions. Every field except `why` is DERIVED from the code by the gate and pinned here, so this file cannot drift into being a description of what somebody once intended."
   ],
   "$gate": ".ci/rediacc_ci/quality/worklist_env_registry.py",
@@ -621,8 +621,6 @@
     "WORKLIST_REPORTS_DIR": {
       "kind": "path",
       "defaults": [
-        "''",
-        "'<unset -- reads the REAL store>'",
         "NONE"
       ]
     },
@@ -746,12 +744,11 @@
       "defaults": [
         "''"
       ],
-      "why": "GATE-SEAM, test-only: `rel/path:override/file`, read by check:ci-worklist-env-registry's own scan_corpus() to substitute one tracked source file's CONTENT with a tmp copy during the plant tests, so a source-file plant (test_a_typo_in_a_real_source_file_reds) never writes the real tracked .claude/hooks/stop/worklist-cases/21-cadence.sh -- the same class of hazard the WORKLIST_FOCUS registry corruption was, one file over. Unset means no substitution: the real corpus is scanned unchanged."
+      "why": "GATE-SEAM, test-only: `rel/path:override/file`, read by check:ci-worklist-env-registry's own scan_corpus() to substitute one tracked source file's CONTENT with a tmp copy during the plant tests, so test_a_typo_in_a_real_source_file_reds never writes the real tracked file it names. Unset means no substitution: the real corpus is scanned unchanged."
     },
     "WORKLIST_STORE_DIR": {
       "kind": "path",
       "defaults": [
-        "'$BASE/proj/agent/worklist'",
         "NONE",
         "REQUIRED"
       ]

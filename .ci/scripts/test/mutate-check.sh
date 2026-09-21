@@ -23,7 +23,11 @@
 set -uo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
-SUITE="$REPO_ROOT/.claude/hooks/stop/test-worklist-v5.sh"
+# NO DEFAULT SINCE THE PORT. This used to default to the Stop-hook worklist
+# suite, which is now pytest under .claude/rediacc_hooks/tests; a default
+# pointing at a deleted path would fail with "--suite does not exist" at
+# every bare call and read as a broken tool rather than a missing argument.
+SUITE=""
 FILE=""
 FROM=""
 TO=""
@@ -43,7 +47,7 @@ usage() {
     cat >&2 <<'USAGE'
 usage: mutate-check.sh --file <path> --from <exact string> --to <replacement>
                        --expect-red <case-id> [--expect-red <case-id> ...]
-                       [--suite <path>]
+                       --suite <path>
 
 --expect-red takes a CASE ID as the suite prints it after "PASS: " / "FAIL: "
 (e.g. 208), never a phrase from the case's message: pass() and fail() word the
@@ -86,7 +90,7 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-[[ -n "$FILE" && -n "$FROM" && -n "$TO" && ${#EXPECT_RED[@]} -gt 0 ]] || usage
+[[ -n "$FILE" && -n "$FROM" && -n "$TO" && -n "$SUITE" && ${#EXPECT_RED[@]} -gt 0 ]] || usage
 [[ -f "$FILE" ]] || {
     echo "mutate-check.sh: --file '$FILE' does not exist" >&2
     exit 2

@@ -16,16 +16,16 @@
   "that shrank by 29 can still hide one brand-new violation. Comparing sizes is not",
   "the same claim as diffing the sets."
  ],
- "count": 5668,
- "files": 1191,
+ "count": 5669,
+ "files": 1195,
  "by_rule": {
   "R1": 1675,
   "R11": 178,
   "R14": 1,
-  "R18": 2265,
+  "R18": 2263,
   "R19": 62,
   "R2": 957,
-  "R7": 530
+  "R7": 533
  },
  "findings": {
   ".ci/breakpoint/README.md": {
@@ -155,10 +155,8 @@
   ".ci/policy/worklist-env-registry.json": {
    "R18": [
     "0a5d3d94b0f9dddf",
-    "4a4d6caa4cd9ab1d",
     "74c2ea36dcf397c3",
-    "83b6278ab7f8e361",
-    "bf25b1d32bd3299e"
+    "83b6278ab7f8e361"
    ],
    "R7": [
     "33006525c9e20d0e"
@@ -801,13 +799,6 @@
     "25191c99a86eef7b"
    ]
   },
-  ".ci/rediacc_ci/tests/gates/test_gate_worklist_hooks.py": {
-   "R7": [
-    "3312d206e138670d",
-    "68065c15aa7515fe",
-    "7c418bdcff34f035"
-   ]
-  },
   ".ci/rediacc_ci/tests/gates/test_twin_parity.py": {
    "R2": [
     "df24ea89a2acc1c1"
@@ -974,6 +965,11 @@
    ],
    "R7": [
     "a907062be4dbe2ec"
+   ]
+  },
+  ".ci/rediacc_ci/tests/test_quality_hook_integrity.py": {
+   "R7": [
+    "791f75d96738c693"
    ]
   },
   ".ci/rediacc_ci/tests/test_quality_label_references.py": {
@@ -2413,6 +2409,28 @@
   ".claude/rediacc_hooks/tests/test_hooks_trapguard.py": {
    "R1": [
     "b40021c9578e63da"
+   ]
+  },
+  ".claude/rediacc_hooks/tests/test_wl_first_touch.py": {
+   "R7": [
+    "0da3e1565afcfe0c"
+   ]
+  },
+  ".claude/rediacc_hooks/tests/test_wl_plan_fidelity.py": {
+   "R7": [
+    "7e5a96f82be8a845"
+   ]
+  },
+  ".claude/rediacc_hooks/tests/test_wl_report_inbox.py": {
+   "R7": [
+    "208ee1a5bebd0628",
+    "4ff75cc6a76118fc",
+    "ffa21b8902e7f7ac"
+   ]
+  },
+  ".claude/rediacc_hooks/tests/test_wl_state_document.py": {
+   "R7": [
+    "fcdb6b2f17c85322"
    ]
   },
   ".claude/skills/ci-watch/SKILL.md": {

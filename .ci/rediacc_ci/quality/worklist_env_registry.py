@@ -209,7 +209,7 @@ def tracked_files(root):
 #: but when the walk reaches `rel/path`, it reads CONTENT from `override/file`
 #: (a tmp copy the caller mutated) instead of the tracked file on disk. This is
 #: what lets a plant test corrupt a scanned SOURCE file without ever writing to
-#: it: `.claude/hooks/stop/worklist-cases/21-cadence.sh` is real, tracked, and
+#: it: `.claude/hooks/stop/test-reggate-ledger.py` is real, tracked, and
 #: a hard kill mid-test used to be able to leave it mutated (the same shape as
 #: the WORKLIST_FOCUS registry corruption, one file over). Split on the FIRST
 #: colon only, so a Windows-style drive-letter override path still parses.

@@ -54,30 +54,6 @@
       "lang": "bash",
       "file": ".ci/scripts/test/gates/test-runner-advice.sh",
       "text": "sed -i 's/\"format\": 1,/\"format\": 2,/' \"$d/base.json\""
-    },
-    {
-      "id": "1c025df11e0be11a",
-      "lang": "bash",
-      "file": ".claude/hooks/stop/worklist-cases/10-event-store.sh",
-      "text": "sed -i 's/^- \\[ \\] (deadbeef) fix the parser/- [x] (deadbeef) fix the parser/' \"$WL\""
-    },
-    {
-      "id": "3e6a44b45d889750",
-      "lang": "bash",
-      "file": ".claude/hooks/stop/worklist-cases/21-cadence.sh",
-      "text": "sed -i \"s|^- \\[ \\] (deadbeef) first thing|- [x] (deadbeef) first thing proof $(git -C \"$BASE/proj\" rev-parse --short HEAD)|\" \"$WL\""
-    },
-    {
-      "id": "8de76cbd7319372e",
-      "lang": "bash",
-      "file": ".claude/hooks/stop/worklist-cases/21-cadence.sh",
-      "text": "sed -i 's|^- \\[ \\] (deadbeef) do the thing|- [?] (deadbeef) do the thing DEFAULT: do it on Monday|' \"$WL\""
-    },
-    {
-      "id": "69802c1d711d917d",
-      "lang": "bash",
-      "file": ".claude/hooks/stop/worklist-cases/21-cadence.sh",
-      "text": "sed -i 's|^def idle_stall(|def idle_stall(*_a, **_k):\\n raise RuntimeError(\"planted idle_stall crash\")\\n\\n\\ndef _idle_stall_unused(|' \"$CRASHDIR/wl_checks.py\""
     }
   ]
 }

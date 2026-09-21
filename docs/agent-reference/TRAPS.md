@@ -594,7 +594,7 @@ Verify existence with the path from `find`/`git ls-files`, never a remembered on
 
 ## Harness task output streams live under <tmp>/claude-<uid>/, not <tmp>/
 Trap-Id: task-output-lives-under-claude-uid
-Enforced-By: file:.claude/hooks/stop/worklist-cases/15-waiter-controls.sh:376
+Enforced-By: gate:check:ci-pytest
 Residue:
 
 Any hook code deriving a background task's output path must include the claude-<uid> segment: the real layout is <tmp>/claude-<uid>/<munged-cwd>/<session-id>/tasks/<task-id>.output, where munged-cwd is the cwd with every non-alphanumeric character replaced by '-'. A derivation that starts at bare gettempdir() resolves to a path that never exists, and the failure is SILENT (stat
@@ -1185,7 +1185,7 @@ The same hazard applies to anything that reads manifests off disk to produce a c
 
 ## After a compaction, your own open items look like a peer's — and the reflex is to leave them alone
 Trap-Id: compaction-orphans-your-own-items
-Enforced-By: file:.claude/hooks/stop/worklist-cases/24-lineage.sh
+Enforced-By: gate:check:ci-pytest
 Residue: Any ownership rule keyed on a session id. A compaction can change that id, so identity and continuity are not the same question.
 
 The worklist blocks only on items tagged with YOUR session prefix, and CLAUDE.md is emphatic that you never tick another session's tracking. Both are right. What neither says is that **a compaction can hand one continuous conversation a new session id**, at which point the rule fires against the session's own work.
@@ -1228,7 +1228,7 @@ Related hygiene, which is worth doing anyway but was NOT the cause here: a case 
 
 ## (superseded) A test helper that inherits stdin — the stdin hygiene is real, the hang diagnosis was not
 Trap-Id: case-helper-inherits-stdin
-Enforced-By: file:.claude/hooks/stop/worklist-cases/25-first-touch.sh
+Enforced-By: gate:check:ci-pytest
 Residue: Any case helper driving a hook. A hook that READS its event from stdin must not have stdin redirected away, and one that does not read stdin should close it.
 
 **This entry originally claimed inherited stdin caused a hang. That was wrong**, and the entry above it records what the evidence actually showed. The stdin point stands on its own merits and is kept for that reason, not as a post-mortem.
@@ -1327,7 +1327,7 @@ obvious cause, and read the assertion. Two of those three paid, and neither was 
 
 ## A fixture with an absolute date walks across a retention window on its own
 Trap-Id: absolute-date-fixture-crosses-retention-window
-Enforced-By: file:.claude/hooks/stop/test-report-inbox.sh
+Enforced-By: gate:check:ci-pytest
 Residue: The instrument is the one suite that was bitten, rewritten to relative stamps. Any other fixture that feeds an age-based prune, lookback or expiry with a constant date is still a calendar bomb until the day it fires, and no gate scans for the shape.
 
 `Quality / Security` went red on 2026-09-04 with NO change in the window: two assertions in `test-report-inbox.sh` case 12 failed, "body holds the SendMessage payload" and "body also holds the sign-off". The suite had been green for a month. `--show` said why: "indexed but its body is gone (pruned after 30 days)".

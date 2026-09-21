@@ -1559,27 +1559,6 @@
     }
   },
   {
-    "id": "check:ci-hook-worklist-suite",
-    "run": "npm run check:ci-hook-worklist-suite",
-    "slow": true,
-    "gate": true,
-    "paths": [
-      ".claude/hooks/stop/**"
-    ],
-    "pathsOrigin": "declared",
-    "weight": 2,
-    "heavy": true,
-    "leaves": [
-      ".claude/hooks/stop/test-worklist-v5.sh"
-    ],
-    "ci": {
-      "kind": "step",
-      "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-packages",
-      "step": "Stop-hook worklist suite"
-    }
-  },
-  {
     "id": "check:ci-shell-lint",
     "run": "npm run check:ci-shell-lint",
     "slow": true,

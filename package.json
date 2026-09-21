@@ -25,7 +25,6 @@
     "check:ci-dead-bash": "tsx scripts/gates/check-dead-bash.ts",
     "check:ci-doc-region-parity": "tsx scripts/gates/check-doc-region-parity.ts --selftest && tsx scripts/gates/check-doc-region-parity.ts",
     "check:ci-mutate-check": ".ci/scripts/quality/check_mutate_check.py",
-    "check:ci-hook-worklist-suite": ".claude/hooks/stop/test-worklist-v5.sh",
     "check:deps": "tsx scripts/gates/check-deps.ts --selftest && tsx scripts/gates/check-deps.ts",
     "check:ci-compose-env": ".ci/scripts/quality/check_compose_env.py",
     "check:ci-go-deps": ".ci/scripts/quality/check_go_deps.py",

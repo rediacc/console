@@ -2737,78 +2737,41 @@ else
     echo "FAIL [1] stop/wl_profile.py missing"
 fi
 
-STOP_SUITE="$DIR/stop/test-worklist-v5.sh"
-if [[ -x "$STOP_SUITE" ]]; then
-    echo
-    if out="$(bash "$STOP_SUITE" 2>&1)"; then
-        n=$(grep -cE "^[[:space:]]*PASS:" <<<"$out")
-        # A SUITE THAT EXITS 0 MUST REPORT CASES. Counting a per-case pattern is
-        # only as good as the pattern: the inbox block below shipped one run
-        # counting `^  PASS:` against a suite that prints `  ok   `, reported
-        # "0 case(s) passed", and still said ok -- a green over zero coverage.
-        # The zero-count refusal catches that whatever the pattern drifts to, so
-        # both blocks carry it rather than only the one that was caught.
-        if [[ "$n" -eq 0 ]]; then
-            FAIL=$((FAIL + 1))
-            echo "FAIL [1] stop/test-worklist-v5.sh: exited 0 but reported 0 cases"
-        else
-            PASS=$((PASS + n))
-            echo "ok   [0] stop/test-worklist-v5.sh: $n case(s) passed"
-        fi
-    else
-        FAIL=$((FAIL + 1))
-        echo "FAIL [1] stop/test-worklist-v5.sh"
-        # THE FAILING CASES FIRST, then context. This used to be `tail -20`,
-        # which prints the LAST twenty lines -- in a 575-case suite those are
-        # almost always PASS lines plus the summary, so the FAIL lines scroll
-        # past and CI reports "12 failed" while naming none of them. A failure
-        # report that hides the failures forces a re-run to learn anything, and
-        # when the failure only reproduces in CI (as this one did) there is no
-        # local run to fall back on.
-        echo "       --- failing cases ---"
-        grep -E "^\s*(FAIL|  - )" <<<"$out" | sed 's/^/       /' | head -40
-        echo "       --- tail for context ---"
-        sed 's/^/       /' <<<"$out" | tail -12
-    fi
-else
+# THE TWO STOP-HOOK SUITES MOVED TO PYTEST, and this block is what stops that
+# move becoming a silent loss of coverage. `stop/test-worklist-v5.sh` (26 case
+# files, 944 assertions) and `stop/test-report-inbox.sh` (164 assertions) both
+# drove PYTHON through a bash fixture layer; the ports under
+# `.claude/rediacc_hooks/tests/test_wl_*.py` keep the same subprocess calls and
+# the same assertions, with `wlfix.py` in place of `_harness.sh`.
+#
+# THEY ARE NOT RE-RUN HERE. `.claude/rediacc_hooks/tests` is a pyproject
+# `testpaths` root, so every one of those modules is collected by the registered
+# gate `check:ci-pytest`, and running them a second time from this harness is the
+# exact doubling the retired wrapper recorded having measured and removed once
+# already: two top-level copies of the same suite alive for 775 seconds each.
+#
+# WHAT IS ASSERTED INSTEAD is the delegation itself, because a delegation nobody
+# checks reopens the hole the moment the root is renamed, dropped, or emptied --
+# every one of those a silent, green-looking change. Both halves are checked: the
+# root is still declared collectable, and it still holds ported modules. The
+# floor is a COUNT for the same reason the retired wrapper parsed a summary line
+# rather than trusting an exit code: a directory that collected nothing looks
+# identical to one that collected everything and passed.
+STOP_TESTS="$DIR/../rediacc_hooks/tests"
+STOP_PYPROJECT="$DIR/../../pyproject.toml"
+n=$(find "$STOP_TESTS" -maxdepth 1 -name 'test_wl_*.py' 2>/dev/null | wc -l)
+if ! grep -qF '".claude/rediacc_hooks/tests"' "$STOP_PYPROJECT" 2>/dev/null; then
     FAIL=$((FAIL + 1))
-    echo "FAIL [1] stop/test-worklist-v5.sh missing or not executable"
-fi
-
-# The report-inbox suite, which this aggregate runner did NOT run. Found by a
-# sub-agent while adding cases to it: 125 cases covering the report inbox and
-# the whole cross-session waiter/nudge mechanism were invisible here, so a break
-# in any of them passed `test-hooks.sh` in silence. Its own header (:5-7) says
-# the cases were meant to migrate into the v5 harness "once it frees"; that
-# never happened, and the gap outlived the note. Mirrors the STOP_SUITE wiring
-# above rather than inventing a second reporting shape.
-INBOX_SUITE="$DIR/stop/test-report-inbox.sh"
-if [[ -x "$INBOX_SUITE" ]]; then
-    echo
-    if out="$(bash "$INBOX_SUITE" 2>&1)"; then
-        # This suite prints `ok <case>`, NOT the v5 harness's `  PASS:`. Copying
-        # the v5 counter verbatim made it count 0 and still report "ok ...
-        # 0 case(s) passed" -- a green that verified nothing, which is the exact
-        # defect this block was added to close. Refuse a zero count outright.
-        n=$(grep -cE "^[[:space:]]*ok[[:space:]]" <<<"$out")
-        if [[ "$n" -eq 0 ]]; then
-            FAIL=$((FAIL + 1))
-            echo "FAIL [1] stop/test-report-inbox.sh: exited 0 but reported 0 cases"
-        else
-            PASS=$((PASS + n))
-            echo "ok   [0] stop/test-report-inbox.sh: $n case(s) passed"
-        fi
-    else
-        FAIL=$((FAIL + 1))
-        echo "FAIL [1] stop/test-report-inbox.sh"
-        echo "       --- failing cases ---"
-        grep -E "^\s*(FAIL|  - )" <<<"$out" | sed 's/^/       /' | head -40
-        echo "       --- tail for context ---"
-        sed 's/^/       /' <<<"$out" | tail -12
-    fi
-else
+    echo "FAIL [1] stop suites: .claude/rediacc_hooks/tests is not in pyproject testpaths, so check:ci-pytest no longer collects the ported Stop-hook suite"
+elif [[ ! -f "$STOP_TESTS/wlfix.py" ]]; then
     FAIL=$((FAIL + 1))
-    echo "FAIL [1] stop/test-report-inbox.sh missing or not executable"
+    echo "FAIL [1] stop suites: wlfix.py is gone, so every ported case has lost its fixture layer"
+elif [[ "$n" -lt 20 ]]; then
+    FAIL=$((FAIL + 1))
+    echo "FAIL [1] stop suites: only $n test_wl_*.py module(s) under rediacc_hooks/tests; the port had 27"
+else
+    PASS=$((PASS + 1))
+    echo "ok   [0] stop suites: $n ported module(s) collected by check:ci-pytest, not re-run here"
 fi
 
 echo
