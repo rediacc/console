@@ -66,7 +66,9 @@ def debt_dir(root=None):
     override = os.environ.get("WORKLIST_STORE_DIR")
     if override:
         return pathlib.Path(override).parent / "reggate"
-    return pathlib.Path(root or ".") / "agent" / "reggate"
+    if root is None:
+        root = C.project_root(C.project_start())
+    return pathlib.Path(root) / "agent" / "reggate"
 
 
 def _branch_slug(branch):
