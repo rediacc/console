@@ -24,7 +24,7 @@ import pathlib
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 
-SUT = paths.from_root(".ci", "scripts", "housekeeping", "retry-failed-runs.sh")
+SUT = paths.from_root(".ci", "rediacc_ci", "housekeeping", "retry_failed_runs.py")
 
 LIVE_SHA = "a" * 40
 DEAD_SHA = "b" * 40
@@ -79,7 +79,7 @@ class Fixture:
     def __init__(self, gate, tmp_path: pathlib.Path) -> None:
         if not SUT.is_file():
             gate.log_fail("subject under test is missing: %s" % SUT)
-        harness.require_tool("bash", "install bash; the subject is a shell script")
+        harness.require_tool("python3", "install python3; the subject is a Python module")
         self.gate = gate
         self.root = tmp_path
         self.bindir = tmp_path / "bin"
@@ -105,8 +105,12 @@ class Fixture:
 
     def run(self, script: pathlib.Path | None = None) -> harness.RunResult:
         return harness.run(
-            ["bash", str(script or SUT)],
-            env={"PATH": "%s%s%s" % (self.bindir, os.pathsep, os.environ.get("PATH", ""))},
+            ["python3", str(script or SUT)],
+            env={
+                "PATH": "%s%s%s" % (self.bindir, os.pathsep, os.environ.get("PATH", "")),
+                "PYTHONPATH": str(paths.from_root(".ci")),
+                "PYTHONDONTWRITEBYTECODE": "1",
+            },
             timeout=300,
         )
 
@@ -253,18 +257,18 @@ def test_control_removing_the_watchdog_filter_is_caught(gate, tmp_path):
     catch, and it is easy to write by accident.
     """
     fx = Fixture(gate, tmp_path)
-    mutant = tmp_path / "mutant.sh"
-    lines: list[str] = []
-    inside = False
-    for line in source(gate).splitlines():
-        lines.append(line)
-        if line.startswith("is_excluded() {"):
-            inside = True
-        elif inside and line == "}":
-            lines.append("is_excluded() { return 1; }")
-            inside = False
-    mutant.write_text("\n".join(lines) + "\n", encoding="utf-8")
-    if "is_excluded() { return 1; }" not in mutant.read_text(encoding="utf-8"):
+    mutant = tmp_path / "mutant.py"
+    # The twin's `is_excluded() { ... }` became a `def`, so the plant is a SECOND definition that rebinds the name. It goes BEFORE the `if __name__` line and not at the end of the file: an override appended after the entry point is defined too late to affect the run it is supposed to change, and the control would then report a pass for a mutation that never happened.
+    text = source(gate)
+    anchor = "def is_excluded(path: str) -> bool:\n"
+    if text.count(anchor) != 1:
+        gate.log_fail("CONTROL ANCHOR MOVED: %r is not in the subject exactly once" % anchor)
+    entry = 'if __name__ == "__main__":'
+    if text.count(entry) != 1:
+        gate.log_fail("CONTROL ANCHOR MOVED: the subject has no single entry-point guard")
+    override = "def is_excluded(path: str) -> bool:\n    del path\n    return False\n\n\n"
+    mutant.write_text(text.replace(entry, override + entry), encoding="utf-8")
+    if "    return False\n" not in mutant.read_text(encoding="utf-8"):
         gate.log_fail("CONTROL WAS NOT PLANTED: the mutant is unmodified")
 
     fx.fake_gh(

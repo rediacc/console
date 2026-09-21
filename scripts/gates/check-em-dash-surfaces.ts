@@ -131,7 +131,9 @@ const SURFACES: readonly Surface[] = [
   // can only fall from here.
   //
   // Three sibling dirs rather than one `.ci`, because the floors differ by an order of magnitude and one global floor would stop catching a collapsed glob in the small one.
-  { dir: '.ci/scripts', kind: 'source', exts: ['.sh', '.py'], minFiles: 300 },
+  //
+  // `.ci/scripts` READ 300 UNTIL THE BASH RETIREMENT CAMPAIGN TOOK IT TO 299, at which point the floor was refusing the campaign's own success rather than a collapsed glob. Re-measured 2026-09-21 at 299 and lowered to 200, so the margin is 99 files and shrinking; it is restated on each retirement batch so a closing margin is visible early.
+  { dir: '.ci/scripts', kind: 'source', exts: ['.sh', '.py'], minFiles: 200 },
   { dir: '.ci/rediacc_ci', kind: 'source', exts: ['.py'], minFiles: 200 },
   { dir: '.ci/lib', kind: 'source', exts: ['.sh'], minFiles: 5 },
   // packages/cli. The first two join at ZERO (measured clean when they were added); the third rides the baseline, because 93 percent of its findings are prose inside JSDoc where the dash often does real syntactic work, and a mechanical pass over that changes documented meaning.

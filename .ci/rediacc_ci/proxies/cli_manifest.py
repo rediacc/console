@@ -29,12 +29,20 @@ def _sha256sum(path: str) -> str:
     return proc.stdout.split()[0]
 
 
+# The subject, which is the PORT since W7P6 retired `.ci/scripts/build/generate-cli-manifest.sh`.
+SUBJECT_REL = ".ci/rediacc_ci/build/generate_cli_manifest.py"
+
+
 def run() -> int:
     root = paths.repo_root()
-    subject = str(root / ".ci" / "scripts" / "build" / "generate-cli-manifest.sh")
+    subject_path = str(root / SUBJECT_REL)
+    # The licensed command form from the subject's own ledger, `python3 <path>` with `PYTHONPATH=.ci`. The interpreter is spelled `python3` rather than `sys.executable` so that this proxy and its bash twin build the same argv.
+    subject = ["python3", subject_path]
+    # ABSOLUTE, and set for both proxies alike: the subject imports `rediacc_ci`, and a relative `.ci` would depend on the directory the proxy happened to be started from.
+    os.environ["PYTHONPATH"] = str(root / ".ci")
 
-    p = proxyx.Proxy("cli-manifest", ".ci/scripts/build/generate-cli-manifest.sh")
-    p.need_exec(subject, "the subject script is missing from this checkout")
+    p = proxyx.Proxy("cli-manifest", SUBJECT_REL)
+    p.need_exec(subject_path, "the subject script is missing from this checkout")
     p.need_cmd("jq", "sudo apt-get install -y jq")
     p.need_cmd("sha256sum", "sudo apt-get install -y coreutils")
     p.preflight()
@@ -64,15 +72,25 @@ def run() -> int:
 
         out = os.path.join(work, "manifest.json")
         proc = subprocess.run(
-            [subject, "--version", "9.9.9", "--channel", "edge", "--input", indir, "--output", out],
+            [
+                *subject,
+                "--version",
+                "9.9.9",
+                "--channel",
+                "edge",
+                "--input",
+                indir,
+                "--output",
+                out,
+            ],
             capture_output=True,
             text=True,
             check=False,
         )
         if proc.returncode == 0:
-            p.ok("generate-cli-manifest.sh exited 0 over the fixture dist dir")
+            p.ok("generate_cli_manifest.py exited 0 over the fixture dist dir")
         else:
-            p.bad(f"generate-cli-manifest.sh exited {proc.returncode}")
+            p.bad(f"generate_cli_manifest.py exited {proc.returncode}")
             print("  --- stdout ---", file=sys.stderr)
             print(proc.stdout, file=sys.stderr, end="")
             print("  --- stderr ---", file=sys.stderr)
@@ -128,7 +146,7 @@ def run() -> int:
             pr_out = os.path.join(work, "pr.json")
             pr_proc = subprocess.run(
                 [
-                    subject,
+                    *subject,
                     "--version",
                     "9.9.9",
                     "--channel",
@@ -169,13 +187,13 @@ def run() -> int:
         p.expect_exit(
             "1",
             "a missing --version is refused",
-            [subject, "--input", indir, "--output", os.path.join(work, "x.json")],
+            [*subject, "--input", indir, "--output", os.path.join(work, "x.json")],
         )
         p.expect_exit(
             "1",
             "an unknown flag is refused",
             [
-                subject,
+                *subject,
                 "--version",
                 "9.9.9",
                 "--input",
@@ -192,7 +210,7 @@ def run() -> int:
         empty_out = os.path.join(work, "empty.json")
         hazard_proc = subprocess.run(
             [
-                subject,
+                *subject,
                 "--version",
                 "9.9.9",
                 "--channel",
@@ -226,7 +244,7 @@ def run() -> int:
             f"{yel}  no downloads at all, and nothing on the release path notices. Reproduce with:{off}"
         )
         print(
-            f"{yel}    .ci/scripts/build/generate-cli-manifest.sh --version 9.9.9 --input "
+            f"{yel}    python3 {SUBJECT_REL} --version 9.9.9 --input "
             f"$(mktemp -d) --output /tmp/m.json{off}"
         )
 

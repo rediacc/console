@@ -6,7 +6,7 @@ A thin wrapper: check that the `private/account` submodule is checked out, insta
 THIS MODULE IS WHAT `check:ci-account-server` RUNS, since W7P4-W. `package.json` spells the gate `PYTHONPATH=.ci python3 -m rediacc_ci.private.run_account test`, `scripts/ci-runner/manifest.ts` names this file as the gate's `leaf`, and `.github/workflows/ci-quality.yml` runs the same module form. The licence is
 `.ci/shadow/w7p4b-run-account.observations.jsonl`, ten clean trees at `--assert --k 5`.
 
-THE `---- gate ----` HEADER STAYS ON THE BASH FILE, and that is not an oversight. `scripts/gate-bind.ts` resolves a gate by where its header lives, so a second file claiming `id: check:ci-account-server` would give one gate two owners; the header's own `run:` was flipped to the module form instead, which is what the binder emits into the workflow.
+THE `---- gate ----` HEADER MOVED HERE when the twin was retired, the way `rediacc_ci.quality.staging_tag_guard` carries its own. `scripts/gate-bind.ts` resolves a gate by where its header lives, so one file claims `id: check:ci-account-server` and it is this one; the header's `run:` was already the module form, which is what the binder emits into the workflow.
 
 -----------------------------------------------------------------------------
 THE SUBMODULE GUARD HAS THREE ARMS AND THE MIDDLE ONE IS THE WHOLE POINT
@@ -57,6 +57,14 @@ never through an `env = dict(os.environ)` alias, so the env-registry AST scanner
 can see the name.
 
 CONSOLE ROOT comes from this file's own location (`parents[3]`), matching the twin's `get_repo_root` (common.sh:205-210). `rediacc_ci.paths.repo_root()` is deliberately not used, on the `run_renet.py` precedent: it honours `$REDIACC_CI_ROOT` and the twin honours nothing.
+
+---- gate ----
+step: Run account integration tests
+needs: none
+id: check:ci-account-server
+run: PYTHONPATH=.ci python3 -m rediacc_ci.private.run_account test
+lane: quality-go
+---- end gate ----
 """
 
 from __future__ import annotations

@@ -266,6 +266,52 @@ def added_lines(base):
     return out
 
 
+def moved_from(root, rel):
+    """The path `rel` was moved FROM, proved by the stub left behind, or "".
+
+    A MOVE IS NOT AN ADDITION, and the stub is the evidence. `check_plan_folders.py --move` renames a plan into `agent/plans/**` and leaves a one-line pointer at the old path, so the old path still EXISTS and git's rename detection cannot fire: the new path is a pure add and every line of a document written months ago is attributed to whoever moved it. Measured 2026-09-21: the
+    103-plan migration turned 335 findings into 424 without a single new citation being written.
+
+    The stub is read rather than inferred from the basename, so a plan that merely shares a name with something at the legacy path proves nothing here.
+    """
+    name = rel.rsplit("/", 1)[-1]
+    if not PL.is_plan_path(rel) or PL.folder_of(rel) == PL.AGENT_DIR:
+        return ""
+    origin = "%s/%s" % (PL.AGENT_DIR, name)
+    try:
+        probe = (root / origin).read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return ""
+    if not PL.looks_like_stub(probe) or PL.parse_plan(origin, probe).moved_to != rel:
+        return ""
+    return origin
+
+
+def carried_lines(root, base, rel):
+    """The lines `rel` already carried at `base`, under the path it moved from.
+
+    A set of whole lines rather than a diff: the question is only whether THIS change wrote the citation, and a line that is verbatim in the pre-move document was not written here whatever moved around it. It errs in the safe direction -- a genuinely new citation line is in no base blob, so it is still judged.
+    """
+    origin = moved_from(root, rel)
+    if not origin:
+        return frozenset()
+    raw = _git("show", "%s:%s" % (base, origin))
+    return frozenset(raw.split("\n")) if raw else frozenset()
+
+
+def drop_moved_lines(root, base, rows):
+    """`rows` without the lines a stubbed move carried in from another path."""
+    carried = {}
+    out = []
+    for rel, lineno, text in rows:
+        if rel not in carried:
+            carried[rel] = carried_lines(root, base, rel)
+        if text in carried[rel]:
+            continue
+        out.append((rel, lineno, text))
+    return out
+
+
 def fenced_lines(root, rel):
     """The set of 1-based line numbers inside a fenced code block in `rel`.
 
@@ -758,7 +804,13 @@ def main(argv):
         )
         return 0
 
-    rows = added_lines(base)
+    raw_rows = added_lines(base)
+    rows = drop_moved_lines(root, base, raw_rows)
+    if len(rows) != len(raw_rows):
+        print(
+            "  %d added line(s) were carried in by a stubbed plan move and are not judged "
+            "as additions; %d remain" % (len(raw_rows) - len(rows), len(rows))
+        )
     # PRINTED EVERY RUN, whether or not anything was skipped, so an exclusion can never become invisible debt: a reader of a green run sees exactly which citations this process was not in a position to judge.
     absent = absent_submodules(root)
     if absent:

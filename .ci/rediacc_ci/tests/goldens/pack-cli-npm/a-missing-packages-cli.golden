@@ -1,0 +1,13 @@
+# twin .ci/scripts/build/pack-cli-npm.sh blob d9231defb48d8d5b124492d1f43d41e74a5bc74a
+exit: 1
+--- stdout ---
+--- stderr ---
+<root>/.ci/scripts/build/pack-cli-npm.sh: line 30: cd: <root>/packages/cli: No such file or directory
+--- calls ---
+--- tree ---
+{
+  "alias": null,
+  "manifest": null,
+  "out_dir": null,
+  "tmp_left": false
+}

@@ -1,0 +1,8 @@
+# twin .ci/scripts/build/build-www.sh blob 3382a9cc1ca7a01906efdb9b111e858f410a4958
+exit: 1
+--- stdout ---
+--- stderr ---
+→ Building www (Astro)...
+<SELF>: line 18: npm: command not found
+✗ www build failed
+--- calls ---

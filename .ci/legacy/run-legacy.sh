@@ -207,7 +207,8 @@ pr_publish() {
     "$ROOT_DIR/.ci/scripts/build/build-cli-executables.sh" --platform linux --arch x64
 
     log_step "Generating CLI manifest..."
-    bash "$ROOT_DIR/.ci/scripts/build/generate-cli-manifest.sh" \
+    PYTHONPATH="$ROOT_DIR/.ci" PYTHONDONTWRITEBYTECODE=1 \
+        python3 "$ROOT_DIR/.ci/rediacc_ci/build/generate_cli_manifest.py" \
         --version "$cli_version" --input dist/cli/
 
     log_step "Uploading CLI binary to R2 (channel: ${channel})..."
@@ -440,7 +441,7 @@ quality_audit() {
 
 quality_shell() {
     PYTHONPATH="$ROOT_DIR/.ci" python3 -m rediacc_ci.security.shellcheck
-    "$ROOT_DIR/.ci/scripts/security/shfmt.sh"
+    PYTHONPATH="$ROOT_DIR/.ci" python3 -m rediacc_ci.security.shfmt
 }
 
 quality_submodules() {

@@ -102,6 +102,18 @@
         "reason": "BLOCKER: the archived copies of the same scratch, kept as a record. Rewriting a record to satisfy a line-length rule would falsify the record."
       },
       {
+        "glob": "agent/archive/REPORT-*.md",
+        "reason": [
+          "BLOCKER: the same class as the archived STATE.md above, and the same reason. A",
+          "session report is frozen when it is written; rewriting one to satisfy a",
+          "line-length or a pronoun rule would falsify the record it exists to be. Its",
+          "findings were already frozen debt at agent/REPORT-<slug>.md and re-keyed when S5",
+          "of agent/PLAN-agent-tree-lifecycle.md moved the file into the archive class the",
+          "operator ruled it belongs to, so this entry silences nothing that was being",
+          "reported before the move."
+        ]
+      },
+      {
         "glob": "agent/pr/*.md",
         "reason": [
           "BLOCKER: a GENERATED artifact, not authored prose. `worklist.py --publish` renders",

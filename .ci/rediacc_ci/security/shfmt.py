@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/security/shfmt.sh`.
 
-W7P6 wave 28. The bash twin stays the LIVE registered gate (`check:ci-shell-format`, step "Shell format"); this module is its VERIFIED-EQUIVALENT ALTERNATIVE, proved on both streams by
+W7P6 wave 28, cut over since. THIS MODULE IS THE LIVE REGISTERED GATE (`check:ci-shell-format`, step "Shell format"); the bash twin was proved equivalent on both streams by
 `.ci/rediacc_ci/tests/test_security_shfmt.py` and by the K=5 shadow ledger
-`.ci/shadow/w7p6-shfmt.observations.jsonl`. Nothing is repointed at this file. Cutover is a separate, later, driver-only step.
+`.ci/shadow/w7p6-shfmt.observations.jsonl`, then retired against `goldens/shfmt/`.
 
 WHAT IT DOES. Acquires shfmt AT THE PIN through `rediacc_ci.core.toolchain` (the already-landed port of `.ci/scripts/lib/toolchain.sh`), refuses to report a
 verdict if fewer than `${SHFMT_MIN_FILES:-200}` shell scripts are visible, then
@@ -64,6 +64,15 @@ a file gets escape sequences) and a different stream split (`info` and `success`
 rest) does not apply. Checked, and recorded so the next reader does not repeat the check.
 
 ONE MORE NAMED DIVERGENCE THIS PORT ADDS: `paths.repo_root()` honours `$REDIACC_CI_ROOT` and the twin's `SCRIPT_DIR/../../..` does not.
+
+THE `---- gate ----` HEADER MOVED HERE when the twin was retired, the way `rediacc_ci.quality.staging_tag_guard` carries its own. `scripts/gate-bind.ts` resolves a gate by where its header lives, and with the bash file gone this is the one file that can own it; the `run:` was already the module form, which is what the binder emits into the workflow.
+
+---- gate ----
+step: Shell format
+needs: none
+run: PYTHONPATH=.ci python3 -m rediacc_ci.security.shfmt
+id: check:ci-shell-format
+---- end gate ----
 """
 
 from __future__ import annotations
@@ -79,7 +88,7 @@ from rediacc_ci.core import toolchain
 # `-i 4` four-space indent, `-ci` indent switch cases, `-d` diff mode (show what would change, exit non-zero if changes are needed). The twin keeps these in one space-separated `SHFMT_OPTS` string and word-splits it at four call sites, each carrying a `BLOCKER:` comment saying the splitting is intentional.
 SHFMT_OPTS = ("-i", "4", "-ci", "-d")
 
-# The vacuity floor's default. Measured 2026-09-04: 568 .sh files across the four scopes; re-measured 2026-09-21 at 328, after the bash-retirement campaign and batch M1's six, so the margin is 128 files and shrinking.
+# The vacuity floor's default. Measured 2026-09-04: 568 .sh files across the four scopes; re-measured 2026-09-21 at 306, after the bash-retirement campaign and batches M1 to M4, so the margin is 106 files and shrinking.
 #
 # The floor stays well under the count, to catch a broken enumeration rather than today's file count, and is restated on each retirement batch so a closing margin is visible early.
 DEFAULT_MIN_FILES = "200"

@@ -5076,11 +5076,11 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-proxy-cli-manifest',
     run: 'npm run check:ci-proxy-cli-manifest',
     gate: true,
-    leaves: ['.ci/scripts/test/proxies/proxy-cli-manifest.sh'],
+    leaves: ['.ci/rediacc_ci/proxies/cli_manifest.py'],
     ci: {
       kind: 'local-only',
       blocker:
-        'BLOCKER: .ci/scripts/build/generate-cli-manifest.sh runs only on the release path in cd-stage.yml, which is outside paritySurface(), and had no test of any kind. The proxy drives it against a synthetic dist directory in a tmpdir, so it asserts the generator rather than a release.',
+        'BLOCKER: .ci/rediacc_ci/build/generate_cli_manifest.py runs only on the release path in cd-stage.yml, which is outside paritySurface(), and had no test of any kind. The proxy drives it against a synthetic dist directory in a tmpdir, so it asserts the generator rather than a release.',
     },
   },
   {
@@ -5088,11 +5088,11 @@ export const GATES: readonly GateSpec[] = [
     run: 'npm run check:ci-proxy-docker-prepull',
     slow: true,
     gate: true,
-    leaves: ['.ci/scripts/test/proxies/proxy-docker-prepull.sh'],
+    leaves: ['.ci/rediacc_ci/proxies/docker_prepull.py'],
     ci: {
       kind: 'local-only',
       blocker:
-        'BLOCKER: .ci/scripts/infra/docker-prepull.sh runs inside docker build jobs outside paritySurface() and had no test. The proxy needs a live daemon and a reachable registry, both of which are cannot-run rather than findings on a developer machine.',
+        'BLOCKER: .ci/rediacc_ci/infra/docker_prepull.py runs inside docker build jobs outside paritySurface() and had no test. The proxy needs a live daemon and a reachable registry, both of which are cannot-run rather than findings on a developer machine.',
     },
   },
   {

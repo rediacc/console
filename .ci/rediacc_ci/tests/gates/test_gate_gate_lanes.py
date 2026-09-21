@@ -109,7 +109,7 @@ process.stdout.write(JSON.stringify({
     static3: planned('quality-static', 3),
   },
   refusals: {
-    branch6: refusal('quality-branch', 6),
+    branch7: refusal('quality-branch', 7),
     www5: refusal('quality-www-build', 5),
     submodule2: refusal('quality-submodule-branches', 2),
     nowhere2: refusal('quality-nowhere', 2),
@@ -381,8 +381,9 @@ def test_the_sharder_read_a_real_lock(gate):
     """ANTI-VACUITY for the sharding half, and it comes first for the same reason the lane one does: an empty lock satisfies most of what follows."""
     gate.log_test("the lock the sharder reads is not empty")
     data = probe(gate)
-    # 40, not 100: W7 P5 census batches B1 to B3 retired 26 of quality-security's gate-test entries and took the lane from 69 to 43. A floor guards against a collapsed read, so it sits below the live count rather than at it.
-    if data["lockSize"] < 100 or len(data["laneSets"]["quality-security"]) < 40:
+    # 20, not 40 and not 100: W7 P5 census batches B1 to B3 retired 26 of quality-security's gate-test entries and took the lane from 69 to 43, and the batches after them took it to 29 while this floor still read 40, so it was refusing the campaign's own success rather than a collapsed read. A floor sits BELOW the live count, and it is restated on each
+    # retirement batch so a closing margin is visible early.
+    if data["lockSize"] < 100 or len(data["laneSets"]["quality-security"]) < 20:
         gate.log_fail(
             "the sharder saw %d lock entries and %d in quality-security. A plan over a "
             "collapsed lock emits shards that run nothing, and it would satisfy the "
@@ -530,9 +531,9 @@ def test_the_plan_is_deterministic(gate):
 def test_more_shards_than_gates_refuses(gate):
     """THE REFUSAL THE BOX CALLS OUT BY NAME."""
     gate.log_test("more shards than gates must REFUSE, not emit an empty shard")
-    message = probe(gate)["refusals"]["branch6"]
+    message = probe(gate)["refusals"]["branch7"]
     gate.assert_contains(
-        message, "Ask for at most 5", "6 shards over quality-branch's 5 gates must refuse"
+        message, "Ask for at most 6", "7 shards over quality-branch's 6 gates must refuse"
     )
     gate.log_pass("more shards than gates refuses, and the message names the ceiling")
 

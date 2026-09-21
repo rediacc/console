@@ -95,6 +95,16 @@ whose colour rule is `CI != true` with no tty test and whose `info`/`success`
 land on STDOUT.
 
 ONE MORE NAMED DIVERGENCE THIS PORT ADDS: `paths.repo_root()` honours `$REDIACC_CI_ROOT` and the twin's `SCRIPT_DIR/../../..` does not.
+
+THE `---- gate ----` HEADER MOVED HERE when the twin was retired, the way `rediacc_ci.quality.staging_tag_guard` carries its own. `scripts/gate-bind.ts` resolves a gate by where its header lives, and with the bash file gone this is the one file that can own it; the `run:` was already the module form, which is what the binder emits into the workflow.
+
+---- gate ----
+step: Shell lint
+needs: none
+run: PYTHONPATH=.ci python3 -m rediacc_ci.security.shellcheck
+id: check:ci-shell-lint
+selftest: true
+---- end gate ----
 """
 
 from __future__ import annotations

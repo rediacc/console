@@ -1,0 +1,151 @@
+# twin .ci/scripts/ci/scope-shadow.sh blob 50ed7f024fb1321afc340a379bfeb08163142dec
+exit: 0
+--- stdout ---
+### Scope engine (LIVE: this decides which jobs run)
+
+shallow: `unknown`, grafts: `0` (grafts must be 0, or nothing below is meaningful)
+base: `unknown`  head: `deadbeefcafe`
+
+_skipped --classify: no base/head pair resolved_
+
+**--resolve-baseline** (THIS is the plan that gates jobs)
+
+```json
+{
+  "mode": "reduced",
+  "jobs": {
+    "e2e_workers": {
+      "run": true,
+      "reason": "scope"
+    },
+    "renet": {
+      "run": true,
+      "reason": "scope"
+    },
+    "unit": {
+      "run": false,
+      "reason": "scope"
+    }
+  }
+}
+```
+**pre-existing skip conditions recorded in the plan**
+
+```json
+{
+  "conditions": {},
+  "exempt_keys": [],
+  "planned_keys": 3
+}
+```
+
+**cross-PR greenlight** (asked about: e2e_workers renet)
+
+```
+renet                  GREENLIT by run 331002       closure=111111111111 walked=1
+                         newest 331002 rule3: executed green
+e2e_workers            no greenlight (walked 1)     closure=222222222222 walked=1
+                         newest 331001 rule1: candidate skipped
+```
+**greenlit, and the plan now says so**: `renet=331002`
+
+**outputs written to $GITHUB_OUTPUT**
+
+```
+run_renet=false
+run_unit=false
+scope_mode=reduced
+```
+
+--- stderr ---
+--- artifacts ---
+=== summary
+### Scope engine (LIVE: this decides which jobs run)
+
+shallow: `unknown`, grafts: `0` (grafts must be 0, or nothing below is meaningful)
+base: `unknown`  head: `deadbeefcafe`
+
+_skipped --classify: no base/head pair resolved_
+
+**--resolve-baseline** (THIS is the plan that gates jobs)
+
+```json
+{
+  "mode": "reduced",
+  "jobs": {
+    "e2e_workers": {
+      "run": true,
+      "reason": "scope"
+    },
+    "renet": {
+      "run": true,
+      "reason": "scope"
+    },
+    "unit": {
+      "run": false,
+      "reason": "scope"
+    }
+  }
+}
+```
+**pre-existing skip conditions recorded in the plan**
+
+```json
+{
+  "conditions": {},
+  "exempt_keys": [],
+  "planned_keys": 3
+}
+```
+
+**cross-PR greenlight** (asked about: e2e_workers renet)
+
+```
+renet                  GREENLIT by run 331002       closure=111111111111 walked=1
+                         newest 331002 rule3: executed green
+e2e_workers            no greenlight (walked 1)     closure=222222222222 walked=1
+                         newest 331001 rule1: candidate skipped
+```
+**greenlit, and the plan now says so**: `renet=331002`
+
+**outputs written to $GITHUB_OUTPUT**
+
+```
+run_renet=false
+run_unit=false
+scope_mode=reduced
+```
+
+=== gh-output
+run_renet=false
+run_unit=false
+scope_mode=reduced
+=== plan.json
+{
+  "mode": "reduced",
+  "jobs": {
+    "e2e_workers": {
+      "run": true,
+      "reason": "scope"
+    },
+    "renet": {
+      "run": false,
+      "reason": "greenlight:331002"
+    },
+    "unit": {
+      "run": false,
+      "reason": "scope"
+    }
+  },
+  "run_id": 12345,
+  "base_sha": null,
+  "head_sha": "deadbeefcafe",
+  "conditions": {}
+}=== greenlight.err
+greenlight[renet] closure=1111111111111111 f=1
+   run id   sha        verdict
+   331002   00ff00ff   rule3: executed green
+greenlight[renet] VERDICT: GREENLIT by run 331002
+greenlight[e2e_workers] closure=2222222222222222 f=2
+   331001   deadbeef   rule1: candidate skipped
+greenlight[e2e_workers] VERDICT: no greenlight (walked 1)

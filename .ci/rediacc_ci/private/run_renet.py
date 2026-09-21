@@ -6,7 +6,7 @@ A thin wrapper: check that the `private/renet` submodule is checked out, pin `GO
 THIS MODULE IS WHAT `check:ci-renet` RUNS, since W7P4-W. `package.json` spells the gate `PYTHONPATH=.ci python3 -m rediacc_ci.private.run_renet quality`, `scripts/ci-runner/manifest.ts` names this file as the gate's `leaf` and in its `paths`, and both `.github/workflows/ci-quality.yml` (quality) and `.github/workflows/ct-tests.yml` (test) run the module form. The licence is
 `.ci/shadow/w7p4b-run-renet.observations.jsonl`, nine clean trees at `--assert --k 5`.
 
-THE `---- gate ----` HEADER STAYS ON THE BASH FILE, and that is not an oversight. `scripts/gate-bind.ts` resolves a gate by where its header lives, so a second file claiming `id: check:ci-renet` would give one gate two owners; the header's own `run:` was flipped to the module form instead, which is what the binder emits into the workflow.
+THE `---- gate ----` HEADER MOVED HERE when the twin was retired, the way `rediacc_ci.quality.staging_tag_guard` carries its own. `scripts/gate-bind.ts` resolves a gate by where its header lives, so one file claims `id: check:ci-renet` and it is this one; the header's `run:` was already the module form, which is what the binder emits into the workflow.
 
 -----------------------------------------------------------------------------
 THE SUBMODULE GUARD IS THE ONLY DECISION IN THE FILE, AND IT HAS THREE ARMS
@@ -49,6 +49,14 @@ compares its argv, cwd and inherited `GOTOOLCHAIN`, because a port that printed 
 EXTRA ARGUMENTS ARE DROPPED IN SILENCE. `run-renet.sh quality test` runs `quality` and says nothing about `test`; so does this. Reproduced deliberately, not endorsed.
 
 CONSOLE ROOT comes from this file's own location (`parents[3]`), matching the twin's `get_repo_root`; `rediacc_ci.paths.repo_root()` is not used because it honours `$REDIACC_CI_ROOT` and the twin honours nothing.
+
+---- gate ----
+step: Run renet quality
+needs: none
+id: check:ci-renet
+run: PYTHONPATH=.ci python3 -m rediacc_ci.private.run_renet quality
+lane: quality-go
+---- end gate ----
 """
 
 from __future__ import annotations

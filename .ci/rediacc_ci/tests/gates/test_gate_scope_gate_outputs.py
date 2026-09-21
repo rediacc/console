@@ -1,6 +1,8 @@
 """Port of `.ci/scripts/test/gates/test-scope-gate-outputs.sh`, retired in W7 P5.
 
-The scope gate's OUTPUT CONTRACT, driven end to end through the real `.ci/scripts/ci/scope-shadow.sh`.
+The scope gate's OUTPUT CONTRACT, driven end to end through the real `rediacc_ci.ci.scope_shadow`.
+
+THE SUBJECT MOVED IN W7P5 batch M6, from `.ci/scripts/ci/scope-shadow.sh` to the module, and the fixture moved with it: the engine copy is still the real `.ci/scripts/ci`, and the subject is copied separately to `.ci/rediacc_ci/ci/scope_shadow.py` inside the same fixture repository so that both resolve the same console root.
 
 WHAT THIS GUARDS. Since 2026-07-31 that script no longer observes, it DECIDES:
 ci.yml reads its `run_<key>=false` outputs and skips jobs on them. The safety
@@ -12,11 +14,11 @@ resolves a symlinked module to its real path and `__dirname` would land back on 
 
 EVERY CASE CARRIES ITS CONTROL. An emitter that writes nothing at all passes cases (b), (c) and (d) trivially, so case (a) pins the exact set of false lines a reduced plan must produce, and cases (b) and (d) re-run the SAME fixture with the defect removed and require the lines to come back.
 
-WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP. `build_fixture` reads the real `.ci/scripts/ci` tree wholesale and every case runs against that copy, so a battery step rewriting `scope-shadow.sh`, `scope-map.cjs` or `skip-plan-reconcile.cjs`
+WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP. `build_fixture` reads the real `.ci/scripts/ci` tree wholesale and every case runs against that copy, so a battery step rewriting the subject, `scope-map.cjs` or `skip-plan-reconcile.cjs`
 mid-copy is a divergence that would be blamed on this port. `REAL_TREE_TWIN = True`
 buys the serialisation, and it is honoured only because this module declares no `XDIST_GROUP` of its own; see `real_tree_admission` in `test_twin_parity.py`.
 
-THE SUBJECT DOES NOT SELF-SCAN. `scope-shadow.sh` classifies a git delta inside the fixture repository and never walks `.ci` looking for samples, so no fixture string in this file needs the `%s` template treatment `test_gate_label_references.py` owes its own self-scanning subject. Checked before any fixture was written, not assumed.
+THE SUBJECT DOES NOT SELF-SCAN. It classifies a git delta inside the fixture repository and never walks `.ci` looking for samples, so no fixture string in this file needs the `%s` template treatment `test_gate_label_references.py` owes its own self-scanning subject. Checked before any fixture was written, not assumed.
 
 THE FIXTURE IS BUILT ONCE PER MODULE, where the twin builds it once per process. Same shape: eight cases against one repository, each writing into its own `out-<name>` directory. A function-scoped build would re-run `git init`, four commits, a merge and two `node -e` calls eight times for no additional coverage. All eight land on one xdist worker because the module is in
 `REAL_TREE_GROUP`.
@@ -36,7 +38,7 @@ TWO PORT-SPECIFIC NOTES ON THE ORDERING ASSERTION, both about the same trap.
     are byte-order sorts over the SAME strings rather than two sorts that merely
     agree today.
 
-ADDED BY THE PORT: `test_the_fixture_carries_a_real_engine`. Anti-vacuity on the fixture itself. Every case below is a statement about a COPY of `.ci/scripts/ci`, so a copy that silently landed empty or lost `scope-shadow.sh` would make each `run_gate` fail for a reason that has nothing to do with the output contract. The added case prints how many files the copy carries and names
+ADDED BY THE PORT: `test_the_fixture_carries_a_real_engine`. Anti-vacuity on the fixture itself. Every case below is a statement about a COPY of `.ci/scripts/ci`, so a copy that silently landed empty or lost the subject would make each `run_gate` fail for a reason that has nothing to do with the output contract. The added case prints how many files the copy carries and names
 the three the other cases execute.
 """
 
@@ -58,8 +60,13 @@ REAL_TREE_TWIN = True
 CI_SRC_REL = ".ci/scripts/ci"
 CI_SRC = paths.from_root(*CI_SRC_REL.split("/"))
 
-# The three files the cases below actually execute. A copy missing any of them turns every run_gate into a "command not found" with nothing to say about the output contract.
-REQUIRED_ENGINE_FILES = ("scope-shadow.sh", "scope-map.cjs", "skip-plan-reconcile.cjs")
+# The two `.cjs` neighbours the cases below execute. A copy missing either turns every run_gate into a "command not found" with nothing to say about the output contract.
+REQUIRED_ENGINE_FILES = ("scope-map.cjs", "skip-plan-reconcile.cjs")
+
+# THE SUBJECT ITSELF, which no longer lives under `.ci/scripts/ci`. `rediacc_ci.ci.scope_shadow` resolves the console root as `parents[3]` of its own file, exactly as the retired bash twin resolved `$SCRIPT_DIR/../../..`, so a COPY at that same relative depth inside the fixture repository lands both of them on the same root.
+# The package it imports comes from the real checkout through PYTHONPATH; only the entry point is copied.
+SUBJECT_REL = ".ci/rediacc_ci/ci/scope_shadow.py"
+SUBJECT_SRC = paths.from_root(*SUBJECT_REL.split("/"))
 
 BASELINE_RUN_ID = 1111
 CURRENT_RUN_ID = 999
@@ -161,6 +168,14 @@ class Fixture:
             )
         self.ci_dir.parent.mkdir(parents=True, exist_ok=True)
         shutil.copytree(CI_SRC, self.ci_dir)
+        subject = self.repo / SUBJECT_REL
+        subject.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(SUBJECT_SRC, subject)
+        if not (self.repo / SUBJECT_REL).is_file():
+            raise FixtureError(
+                "the subject copy at %s is missing, so every run_gate below would fail "
+                "for a reason that has nothing to do with the output contract." % SUBJECT_REL
+            )
         missing = [n for n in REQUIRED_ENGINE_FILES if not (self.ci_dir / n).is_file()]
         if missing:
             raise FixtureError(
@@ -347,9 +362,9 @@ process.stdout.write(Object.keys(JOB_SURFACES).map((k) => `run_${k}`).join("\\n"
         env: dict[str, str] | None = None,
         unset: tuple[str, ...] = (),
     ) -> "GateRun":
-        """`run_gate <case-name> [env-args...]`: the real script, its rc, its bytes.
+        """`run_gate <case-name> [env-args...]`: the real subject, its rc, its bytes.
 
-        The twin passes extra environment as `env "$@" bash scope-shadow.sh`, so a
+        The retired bash twin passed extra environment as `env "$@" bash scope-shadow.sh`, so a
         token is either `NAME=value` or `-u NAME`. Those two shapes become the `env`
         and `unset` arguments here rather than being parsed back out of a string, which is the one place a port can silently drop a seam.
         """
@@ -373,9 +388,11 @@ process.stdout.write(Object.keys(JOB_SURFACES).map((k) => `run_${k}`).join("\\n"
         environment.update(merged)
         for key in unset:
             environment.pop(key, None)
-        bash = harness.require_tool("bash", "install bash; the subject IS a bash script")
+        environment["PYTHONPATH"] = os.fspath(paths.ci_dir())
+        environment["PYTHONDONTWRITEBYTECODE"] = "1"
+        python = harness.require_tool("python3", "install python3; the subject IS a module")
         result = harness.run(
-            [bash, os.fspath(self.ci_dir / "scope-shadow.sh")],
+            [python, os.fspath(self.repo / SUBJECT_REL)],
             cwd=self.repo,
             env=environment,
             env_replace=True,
@@ -423,7 +440,9 @@ def fixture(tmp_path_factory):
 def test_the_fixture_carries_a_real_engine(gate, fixture):
     """ADDED BY THE PORT. Anti-vacuity on the fixture rather than on the subject.
 
-    Every case below is a statement about a COPY of `.ci/scripts/ci`. A copy that landed empty, or lost `scope-shadow.sh`, would make each `run_gate` fail as "no such file" -- red, but saying nothing about the output contract, and sending the reader to look at the emitter. Discovering zero files here is a FAILURE, and the count is PRINTED so a collapse is visible rather than
+    Every case below is a statement about a COPY of `.ci/scripts/ci` plus a copy of the subject at its own relative depth.
+
+    A copy that landed empty, or lost one of them, would make each `run_gate` fail as "no such file" -- red, but saying nothing about the output contract, and sending the reader to look at the emitter. Discovering zero files here is a FAILURE, and the count is PRINTED so a collapse is visible rather than
     silent.
     """
     count = fixture.engine_file_count()
@@ -435,6 +454,8 @@ def test_the_fixture_carries_a_real_engine(gate, fixture):
     for name in REQUIRED_ENGINE_FILES:
         if not (fixture.ci_dir / name).is_file():
             gate.log_fail("the engine copy is missing %s, which the cases below execute" % name)
+    if not (fixture.repo / SUBJECT_REL).is_file():
+        gate.log_fail("the subject copy at %s is missing, so nothing below drives it" % SUBJECT_REL)
     gate.assert_eq(len(fixture.expected_false.split("\n")), 17, "17 out-of-scope keys expected")
     gate.log_pass(
         "the fixture carries %d file(s) copied from %s, including %s, and 17 expected "
@@ -626,8 +647,8 @@ def test_plan_write_failure_emits_nothing_and_still_exits_zero(gate, fixture):
 
 def test_unset_output_file_decides_nothing(gate, fixture):
     """The old shadow behaviour, kept reachable: a local run has no `$GITHUB_OUTPUT` and must neither crash nor invent one. It must still write the plan, which is
-    what makes `SCOPE_SHADOW_OUT=... scope-shadow.sh` a usable way to see what a
-    change WOULD scope to."""
+    what makes `SCOPE_SHADOW_OUT=... python3 -m rediacc_ci.ci.scope_shadow` a usable way to
+    see what a change WOULD scope to."""
     run = fixture.run_gate("nooutput", unset=("OUTPUT_FILE",))
     gate.assert_exit_code(0, run.rc, "a run with no OUTPUT_FILE must exit 0")
     gate.assert_eq(len(run.emitted.splitlines()), 0, "and must write nothing anywhere")

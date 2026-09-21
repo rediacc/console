@@ -31,7 +31,8 @@ from rediacc_ci.tests.gates import harness
 ENGINE = paths.from_root(".ci", "scripts", "ci", "scope-engine.cjs")
 MAP = paths.from_root(".ci", "scripts", "ci", "scope-map.cjs")
 RECONCILE = paths.from_root(".ci", "scripts", "ci", "skip-plan-reconcile.cjs")
-SHADOW = paths.from_root(".ci", "scripts", "ci", "scope-shadow.sh")
+# The scope shadow SUBJECT, which since W7P5 batch M6 is the module rather than the retired `.ci/scripts/ci/scope-shadow.sh`.
+SHADOW = paths.from_root(".ci", "rediacc_ci", "ci", "scope_shadow.py")
 
 HARNESS_JS = r"""'use strict';
 const fs = require('fs');
@@ -833,16 +834,16 @@ def test_notes_reach_the_shadow_artifact(gate):
         1,
         "the CLI emits result.notes as baseline_notes",
     )
-    # The twin's `grep -A2 -- '--resolve-baseline \'`: the matching line plus two after.
+    # The retired twin wrote this as one `node ... --resolve-baseline \` line with the redirection two lines below it, so the structural grep took the match plus two. The module builds the same call as an argv list and opens the artifact BEFORE it, so the window is taken around the match rather than after it. The claim is unchanged: the two names must sit in one block.
     shadow_lines = SHADOW.read_text(encoding="utf-8").splitlines()
     window = []
     for index, line in enumerate(shadow_lines):
-        if "--resolve-baseline \\" in line:
-            window.extend(shadow_lines[index : index + 3])
+        if "--resolve-baseline" in line:
+            window.extend(shadow_lines[max(0, index - 12) : index + 12])
     gate.assert_contains(
         "\n".join(window),
         "scope-baseline.json",
-        "and scope-shadow.sh writes the engine stdout into the shadow artifact",
+        "and the scope shadow writes the engine stdout into the shadow artifact",
     )
     gate.log_pass("(v) the notes channel has a live listener: CLI output into the shadow artifact")
 

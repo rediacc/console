@@ -1,0 +1,60 @@
+# twin .ci/scripts/ci/scope-shadow.sh blob 50ed7f024fb1321afc340a379bfeb08163142dec
+exit: 0
+--- stdout ---
+### Scope engine (LIVE: this decides which jobs run)
+
+shallow: `unknown`, grafts: `0` (grafts must be 0, or nothing below is meaningful)
+base: `unknown`  head: `deadbeefcafe`
+
+**OPERATOR OVERRIDE: full CI forced** by the FULL_CI repository variable.
+The engine did not run: no baseline walk, no classify, no reduction.
+
+**outputs written to $GITHUB_OUTPUT**
+
+```
+scope_mode=full
+```
+
+--- stderr ---
+--- artifacts ---
+=== summary
+### Scope engine (LIVE: this decides which jobs run)
+
+shallow: `unknown`, grafts: `0` (grafts must be 0, or nothing below is meaningful)
+base: `unknown`  head: `deadbeefcafe`
+
+**OPERATOR OVERRIDE: full CI forced** by the FULL_CI repository variable.
+The engine did not run: no baseline walk, no classify, no reduction.
+
+**outputs written to $GITHUB_OUTPUT**
+
+```
+scope_mode=full
+```
+
+=== gh-output
+scope_mode=full
+=== plan.json
+{
+  "mode": "full",
+  "jobs": {
+    "e2e_workers": {
+      "run": true,
+      "reason": "forced"
+    },
+    "renet": {
+      "run": true,
+      "reason": "forced"
+    },
+    "unit": {
+      "run": true,
+      "reason": "forced"
+    }
+  },
+  "reason": "operator-forced-full",
+  "run_id": 12345,
+  "base_sha": null,
+  "head_sha": "deadbeefcafe",
+  "conditions": {}
+}=== greenlight.err
+(absent)

@@ -9,7 +9,7 @@ Running the thing can.
 
 WHAT A GREEN HERE DOES NOT COVER, stated so it is not read as more than it is: only the floors whose corpus is addressable from outside, through an environment override or a function parameter. The seven whose corpus is fixed relative to `__dirname`, or which need a built tree or AWS, are confirmed by reading only.
 
-EXIT 77 IS "CANNOT RUN", NOT A VERDICT, and the twin's header records what conflating the two cost: `.ci/scripts/security/shfmt.sh` exits 77 when it cannot obtain shfmt at the pin, and in the `quality-security` lane `go install shfmt` fails. A first version read any non-zero exit as "refused" and then demanded the word VACUOUS, so CI reported `FAIL: shfmt: refused (exit 77) but
+EXIT 77 IS "CANNOT RUN", NOT A VERDICT, and the twin's header records what conflating the two cost: the shell-format gate exits 77 when it cannot obtain shfmt at the pin, and in the `quality-security` lane `go install shfmt` fails. A first version read any non-zero exit as "refused" and then demanded the word VACUOUS, so CI reported `FAIL: shfmt: refused (exit 77) but
 never said VACUOUS` about a floor it never reached. A tool that is absent proves nothing either way -- and a run where EVERY case skipped has verified nothing, which is what the exercised-count refusal below is for.
 
 WHERE THE PORT REIMPLEMENTS THE TWIN. The twin greps its captured output with `grep -qi 'vacuous'`; the port lowercases the combined streams and asks for the substring. Same predicate, one fewer subprocess, and it reads both streams rather than a merge decided by the shell.
@@ -26,7 +26,7 @@ from rediacc_ci.tests.gates import harness
 ROOT = paths.repo_root()
 TSX = paths.from_root("node_modules", ".bin", "tsx")
 
-SHFMT = paths.from_root(".ci", "scripts", "security", "shfmt.sh")
+SHFMT = paths.from_root(".ci", "rediacc_ci", "security", "shfmt.py")
 RETIRE = paths.from_root(".ci", "scripts", "housekeeping", "retire-shadowed-secrets.py")
 SECRET_RENAME = paths.from_root("scripts", "ops", "secret-rename.py")
 ACTION_REFS = paths.from_root("scripts", "lib", "action-refs.ts")
@@ -59,8 +59,12 @@ def test_every_impossible_floor_is_refused_and_says_vacuous(gate):
     gate.log_test("an impossible floor must be refused, in the floor's own words")
     exercised = 0
 
-    # 1. shfmt.sh -- SHFMT_MIN_FILES over the four shell scopes.
-    result = harness.run(["bash", str(SHFMT)], cwd=ROOT, env={"SHFMT_MIN_FILES": "999999"})
+    # 1. the shell-format gate -- SHFMT_MIN_FILES over the four shell scopes. Its bash twin was retired in W7P5 batch M4 against `goldens/shfmt/`, so this drives the port, which carries the same floor and the same 77.
+    result = harness.run(
+        ["python3", str(SHFMT)],
+        cwd=ROOT,
+        env={"SHFMT_MIN_FILES": "999999", "PYTHONPATH": ".ci", "PYTHONDONTWRITEBYTECODE": "1"},
+    )
     if result.rc == 77:
         gate.log_pass("SKIP shfmt: its tool is unavailable here (exit 77); no verdict either way")
     elif result.rc == 0:
@@ -122,7 +126,11 @@ def test_every_impossible_floor_is_refused_and_says_vacuous(gate):
 def test_shfmt_accepts_the_real_corpus(gate):
     """The other half: a floor that always fires is as useless as one that never does."""
     gate.log_test("CONTROL: the REAL corpus must still pass")
-    result = harness.run(["bash", str(SHFMT)], cwd=ROOT)
+    result = harness.run(
+        ["python3", str(SHFMT)],
+        cwd=ROOT,
+        env={"PYTHONPATH": ".ci", "PYTHONDONTWRITEBYTECODE": "1"},
+    )
     if result.rc == 77:
         gate.log_pass("SKIP CONTROL shfmt: its tool is unavailable here (exit 77)")
         return

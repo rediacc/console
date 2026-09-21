@@ -4,7 +4,7 @@ The watchdog's by-design failure must SAY it is by design.
 
 THE PROBLEM, measured 2026-08-26 across three days of rediacc/console runs: 589 success, 230 skipped, 117 cancelled, 64 failure -- and 63 of those 64 failures are this one code path. The watchdog cancels the CI run it monitors, then `core.setFailed()`s to signal that it did. That is its SUCCESS mode.
 
-Nothing said so. To a human scanning the Actions tab, to any dashboard, and to any sweeper keyed on `conclusion`, a working watchdog and a broken one are indistinguishable. It is also the direct reason the nightly retry (`.ci/scripts/housekeeping/retry-failed-runs.sh`) must exclude this workflow by path: without that exclusion, 63 of its 64 candidates are deliberate.
+Nothing said so. To a human scanning the Actions tab, to any dashboard, and to any sweeper keyed on `conclusion`, a working watchdog and a broken one are indistinguishable. It is also the direct reason the nightly retry (`rediacc_ci.housekeeping.retry_failed_runs`) must exclude this workflow by path: without that exclusion, 63 of its 64 candidates are deliberate.
 
 WHY THE RUN NAME IS NOT THE FIX, worth recording because the obvious design does not work: GitHub evaluates `run-name` at run CREATION from the dispatch inputs, before the monitored run's outcome exists. It CANNOT carry a verdict decided mid-run. The step summary is the earliest surface that can, so that is where the explanation lives.
 
@@ -16,7 +16,7 @@ import re
 from rediacc_ci import paths
 
 SUT = paths.from_root(".ci", "scripts", "ci", "watchdog-monitor.cjs")
-SWEEPER = paths.from_root(".ci", "scripts", "housekeeping", "retry-failed-runs.sh")
+SWEEPER = paths.from_root(".ci", "rediacc_ci", "housekeeping", "retry_failed_runs.py")
 
 # Three by-design paths, one real-error setFailed. These are COUNTS OF A KNOWN SET rather than thresholds: the twin asserts equality both ways for the same reason, because a fourth by-design site is as much a change as a lost one.
 BY_DESIGN_SITES = 3

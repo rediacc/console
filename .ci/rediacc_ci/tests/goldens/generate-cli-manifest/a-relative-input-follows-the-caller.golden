@@ -1,0 +1,28 @@
+# twin .ci/scripts/build/generate-cli-manifest.sh blob 65e5a49bf3a4b75569a2365724b01eb56bc7beba
+exit: 0
+--- stdout ---
+--- stderr ---
+→ Generating CLI manifest v4.0.0
+✓   Input: in
+✓   Output: m.json
+✓   Skipping linux-x64 (no checksum file)
+✓   Skipping linux-arm64 (no checksum file)
+✓   Skipping mac-x64 (no checksum file)
+✓   Skipping mac-arm64 (no checksum file)
+✓   Added win-x64: bbbbbbbbbbbbbbbb...
+✓   Skipping win-arm64 (no checksum file)
+✓ Manifest generated: m.json
+--- calls ---
+CALL date	-u	+%Y-%m-%dT%H:%M:%SZ
+CALL jq	-n	--arg	version	4.0.0	--arg	releaseDate	2026-09-14T00:00:00Z	--arg	releaseNotesUrl	https://github.com/rediacc/console/releases/tag/v4.0.0	--arg	commit	unknown	{version: $version, releaseDate: $releaseDate, releaseNotesUrl: $releaseNotesUrl, commit: $commit, binaries: {}}
+CALL awk	{print $1}	in/rdc-win-x64.exe.sha256
+CALL jq	--arg	key	win-x64	--arg	url	https://releases.rediacc.com/cli/v4.0.0/rdc-win-x64.exe	--arg	sha256	bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb	.binaries[$key] = {url: $url, sha256: $sha256}
+CALL mkdir	-p	.
+CALL jq	.
+--- files ---
+{
+  "elsewhere/in": "dir",
+  "elsewhere/in/rdc-win-x64.exe.sha256": "file:5b345cf20c45c2b9",
+  "elsewhere/m.json": "file:52004db62d3608fe",
+  "in/rdc-linux-x64.sha256": "file:11814d0e060824d9"
+}

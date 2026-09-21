@@ -1,6 +1,6 @@
 ---
 name: e2e-local
-description: Running the Playwright/bridge E2E suites LOCALLY against the KVM fleet instead of round-tripping CI. Covers the two-command recipe (create-e2e-env.sh + run-e2e.sh), targeting one suite or one distro, the three env traps that make a local run fail in ways CI never does (missing bin/renet, CI=true stealing the data dir, the wrong SSH key), how to read bridge-logs, and how to pull a failing CI job's artifact when a distro-specific failure genuinely cannot be reproduced locally. Use whenever an E2E test is red, before pushing a test change, or when tempted to "just push and see what CI says".
+description: Running the Playwright/bridge E2E suites LOCALLY against the KVM fleet instead of round-tripping CI. Covers the two-command recipe (rediacc_ci.env.create_e2e_env + run-e2e.sh), targeting one suite or one distro, the three env traps that make a local run fail in ways CI never does (missing bin/renet, CI=true stealing the data dir, the wrong SSH key), how to read bridge-logs, and how to pull a failing CI job's artifact when a distro-specific failure genuinely cannot be reproduced locally. Use whenever an E2E test is red, before pushing a test change, or when tempted to "just push and see what CI says".
 tools: Bash, Read, Edit, Write, Grep, Glob
 model: opus
 ---
@@ -20,10 +20,10 @@ The fleet must be up first (see `ops-vms`): `./rdc.sh ops up --basic` gives the 
 #
 # TOPOLOGY COMES FROM THE FLAGS, NOT THE ENVIRONMENT. This block used to carry a
 # `VM_BRIDGE=... VM_WORKERS=... VM_CEPH_NODES=...` prefix, which is INERT:
-# create-e2e-env.sh:66-72 reads topology only from --vm-workers/--vm-ceph-nodes.
+# rediacc_ci.env.create_e2e_env reads topology only from --vm-workers/--vm-ceph-nodes.
 # It appeared to work because the values happened to match the defaults. (VM_RAM_*
 # and VM_IMAGE DO fall back to env; topology does not.)
-.ci/scripts/env/create-e2e-env.sh \
+PYTHONPATH=.ci python3 -m rediacc_ci.env.create_e2e_env \
   --renet-path "$PWD/private/renet/bin/renet" \
   --output packages/e2e-tests/.env \
   --vm-workers "11 12"

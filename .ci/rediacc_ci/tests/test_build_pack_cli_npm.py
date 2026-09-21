@@ -1,36 +1,41 @@
-"""Differential: `.ci/rediacc_ci/build/pack_cli_npm.py` against its twin `.ci/scripts/build/pack-cli-npm.sh`.
+"""`rediacc_ci.build.pack_cli_npm`, driven against the bytes its bash twin printed.
 
-WHY A DIFFERENTIAL AND NOT A UNIT TEST. The claim a port makes is not "the new code is correct", it is "the new code says what the old code said". Only running BOTH, on the same fixture, in the same run, can support that.
+THE TWIN HAS BEEN DELETED. While both copies existed this file ran `.ci/scripts/build/pack-cli-npm.sh` and the port over the same fixture tree and compared EIGHT observables per case. The ledger `.ci/shadow/w7p6-pack-cli-npm.observations.jsonl` holds 5 rows of that comparison.
 
-WHAT IS COMPARED, AND WHY IT IS SEVEN THINGS. This script's product is a file on disk, so exit code and stdout describe barely half of it. Every case compares:
+Every fixture case now compares against `goldens/pack-cli-npm/`, which holds the twin's OWN recorded bytes, captured on its last day in the tree, and each golden's provenance header carries the blob sha.
 
-  1. the exit code, which is where DEFECT 1 lives (a silent 2 where the
-     unreachable `else` intended a 1 with a message);
-  2. stdout -- npm's own tarball line, passed through untouched;
-  3. stderr -- the `✓ Injected ...` / `✓ Packed ...` transcript;
-  4. the CALL LOG: every `jq` and `npm` invocation, its argv AND its cwd. A port
-     that printed the same transcript while never running `npm pack`, or running
-     it from the wrong directory, passes a stdout-only comparison and ships
-     nothing. The cwd half is load-bearing: the twin's whole header is about a
-     step that resolved the script's path against the wrong directory;
-  5. what is in `OUT_DIR` afterwards, by name;
-  6. the BYTES of `rediacc-cli-latest.tgz`, which is the artifact every install
-     path fetches -- comparing only its NAME would pass a port that aliased the
-     wrong tarball, which is exactly DEFECT 2's shape;
-  7. `packages/cli/package.json` after the run, plus whether `package.json.tmp`
-     was left behind. The manifest is what `npm pack` names the tarball from, so
-     a port that wrote it differently would be caught here rather than in a
-     release.
+WHAT IS COMPARED, AND WHY IT IS EIGHT THINGS. This subject's product is a file on disk, so exit code and stdout describe barely half of it. The recorded shape therefore carries two sections beyond the streams:
 
-PATH IS REPLACED, NEVER PREPENDED. This host has a real `npm` and a real `jq`, and `packages/cli` in the real checkout is one `get_repo_root` away from any fixture that gets its root wrong. A prepended PATH would leave a subject that mis-derived its root running a REAL `npm pack` against the live tree. `_binder` therefore builds the ENTIRE PATH out of named tools plus the two
-fakes, and asserts that anything it was asked to exclude really is absent -- a control on the control, because a probe that cannot fire looks exactly like a subject that cannot fail.
+  `--- calls ---`  every `jq` and `npm` invocation, its argv AND its cwd. A port
+                   that printed the same transcript while never running
+                   `npm pack`, or running it from the wrong directory, passes a
+                   stdout-only comparison and ships nothing. The cwd half is
+                   load-bearing: the twin's whole header is about a step that
+                   resolved the script's path against the wrong directory.
+  `--- tree ---`   what is in `OUT_DIR` afterwards by name, the BYTES of
+                   `rediacc-cli-latest.tgz`, `packages/cli/package.json` after
+                   the run, and whether `package.json.tmp` was left behind. The
+                   alias is the artifact every install path fetches, so
+                   comparing only its NAME would pass a port that aliased the
+                   wrong tarball, which is exactly defect 2's shape.
 
-`LC_ALL=C` ON BOTH SIDES, deliberately, and it is not boilerplate: the twin's
-tarball choice is `ls | head -1`, whose order is `LC_COLLATE`'s, and the port sorts by code point. The two agree under C. Pinning it makes the comparison measure the port instead of the developer's locale, and `select_tarball`'s docstring says the same thing from the other side.
+IT WAS SAFE TO RETIRE, and that was established before anything was deleted. The one live invocation is already the port, `.github/workflows/ci-build-docker.yml:91`, as `PYTHONPATH=.ci python3 -m rediacc_ci.build.pack_cli_npm`.
 
-THE TWO DELIBERATE DIVERGENCES ARE TESTED, NOT HIDDEN:
-`test_a_missing_packages_cli_names_the_program_that_could_not_proceed` masks the `<path>: line <n>: ` prefix and compares the rest, and `test_a_failing_mkdir_agrees_on_the_status_and_not_on_the_text` asserts the exit codes match AND that the coreutils diagnostic does not, so the difference is a recorded decision rather than an absence.
+The only other reference was a CLOSURE PATH LIST that is hashed to decide whether a docker build can be skipped, and it exists twice, at `rediacc_ci/ci/generate_tag.py:124` and `.ci/scripts/ci/generate-tag.sh:219`. Both were flipped to the port's path and the generate-tag differential was re-run with both of ITS copies still present, which is the live evidence that the two lists
+still agree and the closure hash still resolves.
+
+PATH IS REPLACED, NEVER PREPENDED. This host has a real `npm` and a real `jq`, and `packages/cli` in the real checkout is one `get_repo_root` away from any fixture that gets its root wrong. A prepended PATH would leave a subject that mis-derived its root running a REAL `npm pack` against the live tree. The binder therefore builds the ENTIRE PATH out of named tools plus the two
+fakes, and asserts that anything it was asked to exclude really is absent, which is a control on the control: a probe that cannot fire looks exactly like a subject that cannot fail.
+
+`LC_ALL=C` ON EVERY RUN, deliberately, and it is not boilerplate: the tarball choice was `ls | head -1`, whose order is `LC_COLLATE`'s, and the port sorts by code point. The two agree under C. Pinning it makes the comparison measure the port instead of the developer's locale.
+
+TWO CASES ARE COMPARED BY SHAPE. A missing `packages/cli` makes both sides fail the `cd` and exit 1, and bash named the script and its line where the port names its own; everything after that prefix is compared byte for byte. A failing `mkdir` agrees on the status and not necessarily on the text, because the diagnostic belongs to coreutils and the port SYNTHESISES GNU's wording, so
+whether the two agree is a property of the host's mkdir rather than of the port. The port's own text is asserted exactly either way.
+
+WHICH CASES ARE RECORDED AND WHICH ARE NOT. Every case driving the fixture has a golden. `test_select_tarball_is_the_twins_ordering` does NOT: its oracle is bash running the twin's actual pipeline over a scratch directory, and bash is still here, so asking it remains the honest answer rather than freezing one.
 """
+
+from __future__ import annotations
 
 import json
 import os
@@ -39,24 +44,26 @@ import re
 import shutil
 import subprocess
 import tempfile
+import typing
 
 import pytest
 
 from rediacc_ci import paths
-from rediacc_ci.build import pack_cli_npm
+from rediacc_ci.build import pack_cli_npm as pcn
+from rediacc_ci.tests import frozen
 
 ROOT = paths.repo_root()
-TWIN = ROOT / ".ci" / "scripts" / "build" / "pack-cli-npm.sh"
 COMMON = ROOT / ".ci" / "scripts" / "lib" / "common.sh"
 PORT = ROOT / ".ci" / "rediacc_ci" / "build" / "pack_cli_npm.py"
 
 TWIN_REL = pathlib.PurePosixPath(".ci/scripts/build/pack-cli-npm.sh")
 PORT_REL = pathlib.PurePosixPath(".ci/rediacc_ci/build/pack_cli_npm.py")
 
-# The recording `jq`. It performs the twin's ACTUAL transformation rather than echoing a canned manifest, because observable 7 compares the resulting
-# package.json and a canned answer would make that comparison vacuous. Both
-# subjects run this same fake, so whatever it does, it does identically to both;
-# what is under test is whether each one CALLS it with the same argv and then moves the output into place.
+SLUG = "pack-cli-npm"
+CALLS_MARKER = "--- calls ---\n"
+TREE_MARKER = "--- tree ---\n"
+
+# The recording `jq`. It performs the twin's ACTUAL transformation rather than echoing a canned manifest, because the recorded tree compares the resulting package.json and a canned answer would make that comparison vacuous.
 FAKE_JQ = """#!/usr/bin/env python3
 import json, os, pathlib, sys
 LOG = %(log)r
@@ -95,7 +102,7 @@ for name in PRODUCES:
 sys.exit(RC)
 """
 
-# Everything both subjects need once PATH is rebuilt from scratch. Named rather than derived: a PATH built by copying "everything except npm" is a PATH nobody can state, and the first tool it forgot would look like a divergence in the subject rather than a hole in the harness.
+# Everything the subject needs once PATH is rebuilt from scratch. Named rather than derived: a PATH built by copying "everything except npm" is a PATH nobody can state, and the first tool it forgot would look like a divergence in the subject rather than a hole in the harness.
 NEEDED = (
     "bash",
     "sh",
@@ -112,51 +119,84 @@ NEEDED = (
     "rm",
 )
 
-# The manifest the fixture starts from. Two keys beyond `version`, so a port that rewrote the file wholesale instead of editing one field would show up in observable 7.
+# The manifest the fixture starts from. Two keys beyond `version`, so a port that rewrote the file wholesale instead of editing one field would show up in the recorded tree.
 BASE_MANIFEST = {"name": "@rediacc/cli", "version": "0.0.0-dev", "private": False}
 
-# `<path>: line <n>: ` -- bash's prefix on a `cd` diagnostic, and the port's own equivalent. Masked only in the two tests that are ABOUT that divergence.
+# `<path>: line <n>: `, bash's prefix on a `cd` diagnostic and the port's own equivalent. Masked only in the one case that is ABOUT that divergence.
 LINE_PREFIX = re.compile(r"^[^\n]*: line \d+: ", re.MULTILINE)
 
+# name -> the fixture shape and the run parameters
+CASE_KW: dict[str, dict[str, typing.Any]] = {
+    "the-placeholder-version": {},
+    "a-version-injected": {"version": "1.2.3"},
+    "an-empty-version": {"version": ""},
+    "a-failing-jq": {"version": "9.9.9", "jq_rc": 4},
+    "a-failing-npm-pack": {"npm_rc": 7},
+    "npm-pack-producing-nothing": {"produces": ()},
+    "two-tarballs": {"produces": ("rediacc-cli-0.9.0.tgz", "rediacc-cli-0.10.0.tgz")},
+    "a-stale-tarball": {
+        "seeded": ("rediacc-cli-0.10.0.tgz",),
+        "produces": ("rediacc-cli-0.9.0.tgz",),
+    },
+    "the-alias-is-the-only-match": {
+        "seeded": ("rediacc-cli-latest.tgz",),
+        "produces": ("other-name.tgz",),
+    },
+    "no-jq-on-the-path": {"exclude": ("jq",)},
+    "no-npm-on-the-path": {"exclude": ("npm",)},
+    "a-nested-out-dir": {"out_dir": "deep/nested/out"},
+    "a-non-ascii-manifest": {
+        "manifest": {"name": "@rediacc/cli", "version": "0.0.0-dev", "keywords": ["ä", "b"]},
+        "version": "2.0.0",
+    },
+    "a-missing-packages-cli": {"drop_packages": True},
+    "an-unwritable-out-dir": {"denied": True, "out_dir": "denied/out"},
+}
 
-def _fixture(
-    where: pathlib.Path,
-    *,
-    manifest: dict | None = None,
-    seeded: tuple[str, ...] = (),
-    out_dir: str = "out",
-) -> pathlib.Path:
-    """A tree shaped like the repository, holding COPIES of both subjects.
+CASES = tuple(CASE_KW)
 
-    Copies, because each subject derives the console root from its own location (`BASH_SOURCE`/`__file__`, then three directories up). Driving the TRACKED files with a `cwd` would point them at the real repository, and the version injection would then rewrite `packages/cli/package.json` in the live tree.
+# The two cases in which a diagnostic belongs to something other than the subject. Compared by shape, in their own tests.
+DIVERGENT = ("a-missing-packages-cli", "an-unwritable-out-dir")
 
-    `.resolve()` on the root is load-bearing: bash's `cd X && pwd` reports the LOGICAL path it was handed while `pathlib.resolve()` follows symlinks, and the root appears in `cd` diagnostics. Handing both subjects an already-resolved root makes them agree for the right reason.
 
-    `seeded` pre-creates names in OUT_DIR, which is how the stale-tarball half of DEFECT 2 is reached without waiting for a second run.
+def fixture(where: pathlib.Path, name: str, subject: pathlib.PurePosixPath) -> pathlib.Path:
+    """A tree shaped like the repository, holding a COPY of the subject.
+
+    A copy, because the subject derives the console root from its own location (`BASH_SOURCE` or `__file__`, then three directories up). Driving the TRACKED file with a `cwd` would point it at the real repository, and the version injection would then rewrite `packages/cli/package.json` in the live tree.
+
+    `.resolve()` on the root is load-bearing: bash's `cd X && pwd` reports the LOGICAL path it was handed while `pathlib.resolve()` follows symlinks, and the root appears in `cd` diagnostics.
     """
+    kw = CASE_KW[name]
     root = where.resolve() / "tree"
     (root / ".ci" / "scripts" / "build").mkdir(parents=True)
     (root / ".ci" / "scripts" / "lib").mkdir(parents=True)
     (root / ".ci" / "rediacc_ci" / "build").mkdir(parents=True)
-    shutil.copy2(TWIN, root / TWIN_REL)
     shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / "common.sh")
-    shutil.copy2(PORT, root / PORT_REL)
+    if subject.suffix == ".sh":
+        shutil.copy2(ROOT / str(TWIN_REL), root / TWIN_REL)
+    else:
+        shutil.copy2(PORT, root / PORT_REL)
 
     cli = root / "packages" / "cli"
     cli.mkdir(parents=True)
     (cli / "package.json").write_text(
-        json.dumps(BASE_MANIFEST if manifest is None else manifest, indent=2) + "\n",
-        encoding="utf-8",
+        json.dumps(kw.get("manifest") or BASE_MANIFEST, indent=2) + "\n", encoding="utf-8"
     )
-    if seeded:
+    out_dir = kw.get("out_dir", "out")
+    for seeded in kw.get("seeded", ()):
         dest = cli / out_dir
         dest.mkdir(parents=True, exist_ok=True)
-        for name in seeded:
-            (dest / name).write_text("seeded:" + name + "\n", encoding="utf-8")
+        (dest / seeded).write_text("seeded:" + seeded + "\n", encoding="utf-8")
+    if kw.get("drop_packages"):
+        shutil.rmtree(root / "packages")
+    if kw.get("denied"):
+        denied = cli / "denied"
+        denied.mkdir()
+        denied.chmod(0o500)
     return root
 
 
-def _binder(
+def binder(
     where: pathlib.Path,
     root: pathlib.Path,
     *,
@@ -167,24 +207,24 @@ def _binder(
     exclude: tuple[str, ...],
 ) -> str:
     """The COMPLETE PATH for one run: named tools, plus the two fakes."""
-    binder = where / "bin"
-    binder.mkdir(parents=True, exist_ok=True)
+    stub = where / "bin"
+    stub.mkdir(parents=True, exist_ok=True)
     for tool in NEEDED:
         if tool in exclude:
             continue
         target = shutil.which(tool)
         if target is None:
             continue
-        link = binder / tool
+        link = stub / tool
         if not link.exists():
             link.symlink_to(target)
 
     if "jq" not in exclude:
-        jq = binder / "jq"
+        jq = stub / "jq"
         jq.write_text(FAKE_JQ % {"log": str(log), "root": str(root), "rc": jq_rc}, encoding="utf-8")
         jq.chmod(0o755)
     if "npm" not in exclude:
-        npm = binder / "npm"
+        npm = stub / "npm"
         npm.write_text(
             FAKE_NPM
             % {"log": str(log), "root": str(root), "rc": npm_rc, "produces": list(produces)},
@@ -192,252 +232,289 @@ def _binder(
         )
         npm.chmod(0o755)
 
-    assert shutil.which("bash", path=str(binder)), "the restricted PATH cannot run the twin"
-    assert shutil.which("python3", path=str(binder)), "the restricted PATH cannot run the port"
+    assert shutil.which("bash", path=str(stub)), "the restricted PATH cannot run bash"
+    assert shutil.which("python3", path=str(stub)), "the restricted PATH cannot run the port"
     for tool in exclude:
-        assert shutil.which(tool, path=str(binder)) is None, (
+        assert shutil.which(tool, path=str(stub)) is None, (
             "%r survived exclusion; the case that needs it absent would be vacuous" % tool
         )
-    return str(binder)
+    return str(stub)
 
 
-def _run(
-    subject: pathlib.PurePosixPath,
-    root: pathlib.Path,
-    *,
-    version: str | None = None,
-    out_dir: str | None = "out",
-    jq_rc: int = 0,
-    npm_rc: int = 0,
-    produces: tuple[str, ...] = ("rediacc-cli-1.2.3.tgz",),
-    exclude: tuple[str, ...] = (),
-) -> dict[str, object]:
-    """Drive one subject and collect all seven observables."""
-    tag = pathlib.Path(subject).name
-    log = root.parent / ("calls-%s.txt" % tag)
+def run(
+    subject: pathlib.PurePosixPath, where: pathlib.Path, name: str
+) -> tuple[int, str, str, str, str]:
+    """One subject, once, over its own fixture tree, collecting all eight observables."""
+    kw = CASE_KW[name]
+    where.mkdir(parents=True, exist_ok=True)
+    root = fixture(where, name, subject)
+    out_dir = kw.get("out_dir", "out")
+    log = where / "calls.txt"
     env = {
-        "PATH": _binder(
-            root.parent / ("fxbin-%s" % tag),
+        "PATH": binder(
+            where,
             root,
             log=log,
-            jq_rc=jq_rc,
-            npm_rc=npm_rc,
-            produces=produces,
-            exclude=exclude,
+            jq_rc=kw.get("jq_rc", 0),
+            npm_rc=kw.get("npm_rc", 0),
+            produces=kw.get("produces", ("rediacc-cli-1.2.3.tgz",)),
+            exclude=kw.get("exclude", ()),
         ),
-        "HOME": str(root.parent),
+        "HOME": str(where),
         "PYTHONDONTWRITEBYTECODE": "1",
-        # LC_ALL/LANG: see the module docstring. `ls | head -1` versus a code point sort agree under C and are not guaranteed to elsewhere.
+        # See the module docstring: `ls | head -1` and a code point sort agree under C and are not guaranteed to elsewhere.
         "LC_ALL": "C",
         "LANG": "C",
         # The port imports `rediacc_ci.log` and `rediacc_ci.core.common`; the COPY under the fixture is what runs, so the package has to come from the real checkout. This is the only thing the fixture borrows from outside itself.
         "PYTHONPATH": str(ROOT / ".ci"),
+        "OUT_DIR": out_dir,
     }
-    if version is not None:
-        env["VERSION"] = version
-    if out_dir is not None:
-        env["OUT_DIR"] = out_dir
+    if "version" in kw:
+        env["VERSION"] = kw["version"]
+    target = root / (TWIN_REL if subject.suffix == ".sh" else PORT_REL)
+    try:
+        proc = subprocess.run(
+            ["bash" if subject.suffix == ".sh" else "python3", str(target)],
+            capture_output=True,
+            text=True,
+            env=env,
+            check=False,
+            timeout=120,
+        )
+    finally:
+        if kw.get("denied"):
+            (root / "packages" / "cli" / "denied").chmod(0o700)
 
-    runner = "bash" if subject.suffix == ".sh" else "python3"
-    proc = subprocess.run(
-        [runner, str(root / subject)],
-        capture_output=True,
-        text=True,
-        env=env,
-        check=False,
-        timeout=120,
-    )
-
-    calls = []
+    calls = log.read_text(encoding="utf-8") if log.exists() else ""
     if log.exists():
-        calls = [line for line in log.read_text(encoding="utf-8").splitlines() if line]
         log.unlink()
-
     cli = root / "packages" / "cli"
-    dest = cli / (out_dir or "")
+    dest = cli / out_dir
     alias = dest / "rediacc-cli-latest.tgz"
     manifest = cli / "package.json"
-    return {
-        "exit": proc.returncode,
-        "stdout": proc.stdout.replace(str(root), "<root>"),
-        "stderr": proc.stderr.replace(str(root), "<root>"),
-        "calls": calls,
+    tree = {
         "out_dir": sorted(p.name for p in dest.iterdir()) if dest.is_dir() else None,
         "alias": alias.read_text(encoding="utf-8") if alias.is_file() else None,
         "manifest": manifest.read_text(encoding="utf-8") if manifest.is_file() else None,
         "tmp_left": (cli / "package.json.tmp").is_file(),
     }
 
+    def mask(text: str) -> str:
+        return text.replace(str(root), "<root>").replace(str(where), "<work>")
 
-FIELDS = ("exit", "stdout", "stderr", "calls", "out_dir", "alias", "manifest", "tmp_left")
-
-CASES = [
-    pytest.param({}, {}, id="placeholder-version-no-injection"),
-    pytest.param({}, {"version": "1.2.3"}, id="version-injected"),
-    pytest.param({}, {"version": ""}, id="empty-version-takes-the-placeholder"),
-    pytest.param(
-        {},
-        {"version": "1.2.3", "produces": ("rediacc-cli-1.2.3.tgz",)},
-        id="injected-then-packed",
-    ),
-    pytest.param({}, {"jq_rc": 4, "version": "9.9.9"}, id="jq-fails-manifest-untouched"),
-    pytest.param({}, {"npm_rc": 7}, id="npm-pack-fails"),
-    pytest.param({}, {"produces": ()}, id="npm-pack-produces-nothing"),
-    pytest.param(
-        {},
-        {"produces": ("rediacc-cli-0.9.0.tgz", "rediacc-cli-0.10.0.tgz")},
-        id="two-tarballs-lexically-first-wins",
-    ),
-    pytest.param(
-        {"seeded": ("rediacc-cli-0.10.0.tgz",)},
-        {"produces": ("rediacc-cli-0.9.0.tgz",)},
-        id="stale-tarball-beats-this-run",
-    ),
-    pytest.param(
-        {"seeded": ("rediacc-cli-latest.tgz",)},
-        {"produces": ("other-name.tgz",)},
-        id="alias-is-the-only-match-cp-refuses",
-    ),
-    pytest.param({}, {"exclude": ("jq",)}, id="no-jq"),
-    pytest.param({}, {"exclude": ("npm",)}, id="no-npm"),
-    pytest.param({}, {"out_dir": "deep/nested/out"}, id="out-dir-is-created"),
-    pytest.param(
-        {"manifest": {"name": "@rediacc/cli", "version": "0.0.0-dev", "keywords": ["ä", "b"]}},
-        {"version": "2.0.0"},
-        id="non-ascii-manifest-survives-injection",
-    ),
-]
+    return (
+        proc.returncode,
+        mask(proc.stdout),
+        mask(proc.stderr),
+        mask(calls),
+        mask(json.dumps(tree, indent=2, sort_keys=True, ensure_ascii=False)),
+    )
 
 
-@pytest.mark.parametrize(("fixture_kw", "run_kw"), CASES)
-def test_port_and_twin_agree(tmp_path, fixture_kw, run_kw):
-    out_dir = run_kw.get("out_dir", "out")
-    root_a = _fixture(tmp_path / "a", out_dir=out_dir, **fixture_kw)
-    old = _run(TWIN_REL, root_a, **run_kw)
+def render(code: int, stdout: str, stderr: str, calls: str, tree: str) -> str:
+    return "%s%s%s%s%s\n" % (
+        frozen.render(code, stdout, stderr),
+        CALLS_MARKER,
+        calls,
+        TREE_MARKER,
+        tree,
+    )
 
-    root_b = _fixture(tmp_path / "b", out_dir=out_dir, **fixture_kw)
-    new = _run(PORT_REL, root_b, **run_kw)
 
-    for field in FIELDS:
-        assert new[field] == old[field], "%s diverged:\n twin: %r\n port: %r" % (
-            field,
-            old[field],
-            new[field],
+def recorded(name: str) -> tuple[int, str, str, str, str]:
+    text = frozen.read(SLUG, name)
+    exit_line, rest = text.split("\n", 1)
+    stdout, rest = rest.split("--- stdout ---\n", 1)[1].split("--- stderr ---\n", 1)
+    stderr, rest = rest.split(CALLS_MARKER, 1)
+    calls, tree = rest.split(TREE_MARKER, 1)
+    return (
+        int(exit_line.removeprefix("exit: ")),
+        stdout,
+        stderr,
+        calls,
+        tree.removesuffix("\n"),
+    )
+
+
+def port(tmp_path: pathlib.Path, name: str) -> tuple[int, str, str, str, str]:
+    return run(PORT_REL, tmp_path / name, name)
+
+
+def lines(calls: str) -> list[str]:
+    return [line for line in calls.splitlines() if line]
+
+
+def tree_of(state: str) -> dict[str, typing.Any]:
+    return json.loads(state)
+
+
+def compare(tmp_path: pathlib.Path, name: str) -> tuple[int, str, str, str, str]:
+    want = recorded(name)
+    got = port(tmp_path, name)
+    labels = ("exit code", "stdout", "stderr", "the CALL LOG", "the tree left behind")
+    # `strict=True`: the tuple and the labels must stay the same length, and a silently truncated zip is how a comparison stops checking its last field.
+    for label, a, b in zip(labels, want, got, strict=True):
+        assert a == b, "%s: %s diverged:\n--- recorded ---\n%s\n--- port ---\n%s" % (
+            name,
+            label,
+            a,
+            b,
         )
+    return got
 
 
-def test_the_fakes_are_actually_reached(tmp_path):
+@pytest.mark.parametrize("name", [c for c in CASES if c not in DIVERGENT])
+def test_port_matches_the_twins_recorded_output(tmp_path: pathlib.Path, name: str) -> None:
+    compare(tmp_path, name)
+
+
+def test_every_case_has_a_golden_and_no_golden_is_orphaned() -> None:
+    """ANTI-VACUITY on the corpus: a case whose golden vanished would pass by never being compared, and a golden nothing reads is a recording of a case that stopped running."""
+    frozen.assert_corpus(SLUG, set(CASES))
+
+
+# --------------------------------------------------------------------------- What the recordings say ---------------------------------------------------------------------------
+
+
+def test_the_fakes_were_actually_reached() -> None:
     """ANTI-VACUITY. Every comparison above is worthless if `npm pack` never ran.
 
-    Also pins the CWD, which is the twin's own header incident: the script has to be inside `packages/cli` when it packs, however it was invoked.
+    Also pins the CWD, which is the twin's own header incident: the subject has to be inside `packages/cli` when it packs, however it was invoked.
     """
-    root = _fixture(tmp_path / "v")
-    out = _run(PORT_REL, root, version="1.2.3")
-    assert out["calls"], "no fake was invoked; this file proves nothing"
-    assert out["calls"] == [
+    code, _, _, calls, _ = recorded("a-version-injected")
+    assert lines(calls) == [
         "call: jq --arg v 1.2.3 .version = $v package.json",
         "cwd: packages/cli",
         "call: npm pack --pack-destination out",
         "cwd: packages/cli",
-    ], out["calls"]
-    assert out["exit"] == 0, "the happy path must succeed: %r" % out
+    ], calls
+    assert code == 0, "the happy path must succeed"
 
 
-def test_the_placeholder_really_skips_jq(tmp_path):
+def test_the_placeholder_really_skips_jq() -> None:
     """CONTROL for the case above, in the other direction: `0.0.0-dev` must call NO jq at all. A port that injected unconditionally would satisfy every positive assertion in this file and would dirty `package.json` on every dev build."""
-    root = _fixture(tmp_path / "s")
-    out = _run(PORT_REL, root)
-    assert not [c for c in out["calls"] if c.startswith("call: jq")], out["calls"]
-    assert out["manifest"] == json.dumps(BASE_MANIFEST, indent=2) + "\n", (
-        "the manifest was rewritten despite the placeholder: %r" % out["manifest"]
+    calls = recorded("the-placeholder-version")[3]
+    assert not [c for c in lines(calls) if c.startswith("call: jq")], calls
+    assert tree_of(recorded("the-placeholder-version")[4])["manifest"] == (
+        json.dumps(BASE_MANIFEST, indent=2) + "\n"
+    ), "the manifest was rewritten despite the placeholder"
+
+
+def test_an_empty_version_takes_the_placeholder_path() -> None:
+    assert not [c for c in lines(recorded("an-empty-version")[3]) if c.startswith("call: jq")]
+
+
+def test_defect_1_the_dead_else_branch_is_dead() -> None:
+    """DEFECT 1, pinned.
+
+    `npm pack` produced nothing, which is the ONE failure the twin wrote a message for. Under `set -euo pipefail` the message never printed: the `CLI_PKG="$(ls ... | head -1)"` assignment carried `ls`'s exit 2 and errexit killed the script before the `if`. So the observable is exit 2 and total silence. Reported, not fixed: the repair is a cutover-box decision.
+    """
+    code, _, stderr, _, tree = recorded("npm-pack-producing-nothing")
+    assert code == 2, "expected the silent 2, got %r" % code
+    assert "npm pack produced no" not in stderr, (
+        "the unreachable branch RAN, so the defect is gone and this recording is stale"
+    )
+    assert tree_of(tree)["alias"] is None, "an alias was written anyway"
+
+
+def test_defect_3_a_failing_jq_is_announced_as_a_success() -> None:
+    """DEFECT 3, pinned, and the reason this file exists.
+
+    `set -e` does not fire on a failing member of an AND-OR list, so a jq that died left `package.json` untouched, left an EMPTY `package.json.tmp` behind, printed `✓ Injected version 9.9.9 into package.json` anyway, packed the uninjected manifest and exited 0.
+
+    Four separate assertions rather than one, because each is a different half of the lie and a port could get any one of them right by accident.
+    """
+    code, _, stderr, calls, tree = recorded("a-failing-jq")
+    assert code == 0, "the failure was reported after all: %r" % code
+    assert "Injected version 9.9.9" in stderr, (
+        "the success line is gone, so the defect is fixed and this recording is stale"
+    )
+    assert tree_of(tree)["manifest"] == json.dumps(BASE_MANIFEST, indent=2) + "\n", (
+        "the manifest changed despite jq failing"
+    )
+    assert tree_of(tree)["tmp_left"], "package.json.tmp was cleaned up"
+    assert [c for c in lines(calls) if c.startswith("call: npm")], (
+        "npm pack did not run, so nothing was published from the stale manifest"
     )
 
 
-def test_the_dead_else_branch_is_dead_in_both(tmp_path):
-    """DEFECT 1, pinned in BOTH implementations.
+def test_defect_2_a_stale_tarball_is_aliased_over_this_runs_own() -> None:
+    """DEFECT 2, demonstrated rather than asserted in prose.
 
-    `npm pack` produced nothing, which is the ONE failure the twin wrote a message for. Under `set -euo pipefail` the message never prints: the
-    `CLI_PKG="$(ls ... | head -1)"` assignment carries `ls`'s exit 2 and errexit
-    kills the script before the `if`. So the observable is exit 2 and total silence, in both. If either half ever changes, this reds here rather than on somebody's release day. Reported, not fixed -- the repair is a cutover-box decision.
+    `OUT_DIR` defaults to `/tmp/cli-npm` and nothing cleans it, so a previous run's `rediacc-cli-0.10.0.tgz` is still there when this run packs 0.9.0. `ls | head -1` sorts `1` before `9`, so the alias every install path fetches gets the OLD tarball and the subject reports success naming it.
     """
-    for subject in (TWIN_REL, PORT_REL):
-        root = _fixture(tmp_path / ("d-%s" % subject.name))
-        out = _run(subject, root, produces=())
-        assert out["exit"] == 2, "%s: expected the silent 2, got %r" % (subject.name, out["exit"])
-        assert "npm pack produced no" not in out["stderr"], (
-            "%s: the unreachable branch RAN, so the defect is gone and this test is stale: %r"
-            % (subject.name, out["stderr"])
-        )
-        assert out["alias"] is None, "%s: an alias was written anyway" % subject.name
-
-
-def test_a_failing_jq_is_announced_as_a_success_in_both(tmp_path):
-    """DEFECT 3, pinned in BOTH implementations, and the reason this file exists.
-
-    `set -e` does not fire on a failing member of an AND-OR list, so a jq that dies leaves `package.json` untouched, leaves an EMPTY `package.json.tmp` behind, prints `✓ Injected version 9.9.9 into package.json` anyway, packs the uninjected manifest and exits 0.
-
-    Four separate assertions rather than one, because each is a different half of the lie and a port could get any one of them right by accident. Reported, not fixed -- the repair is a cutover-box decision.
-    """
-    for subject in (TWIN_REL, PORT_REL):
-        root = _fixture(tmp_path / ("j-%s" % subject.name))
-        out = _run(subject, root, version="9.9.9", jq_rc=4)
-        assert out["exit"] == 0, "%s: the failure was reported after all: %r" % (
-            subject.name,
-            out["exit"],
-        )
-        assert "Injected version 9.9.9" in out["stderr"], (
-            "%s: the success line is gone, so the defect is fixed and this test is "
-            "stale: %r" % (subject.name, out["stderr"])
-        )
-        assert out["manifest"] == json.dumps(BASE_MANIFEST, indent=2) + "\n", (
-            "%s: the manifest changed despite jq failing: %r" % (subject.name, out["manifest"])
-        )
-        assert out["tmp_left"], "%s: package.json.tmp was cleaned up" % subject.name
-        assert [c for c in out["calls"] if c.startswith("call: npm")], (
-            "%s: npm pack did not run, so nothing was published from the stale "
-            "manifest and the consequence is not what this test claims" % subject.name
-        )
-
-
-def test_a_stale_tarball_is_aliased_over_this_runs_own(tmp_path):
-    """DEFECT 2, demonstrated rather than asserted in prose, in BOTH.
-
-    `OUT_DIR` defaults to `/tmp/cli-npm` and nothing cleans it, so the previous run's `rediacc-cli-0.10.0.tgz` is still there when this run packs 0.9.0. `ls | head -1` sorts `1` before `9`, so the alias every install path fetches gets the OLD tarball and the script reports success naming it.
-    """
-    for subject in (TWIN_REL, PORT_REL):
-        root = _fixture(tmp_path / ("t-%s" % subject.name), seeded=("rediacc-cli-0.10.0.tgz",))
-        out = _run(subject, root, produces=("rediacc-cli-0.9.0.tgz",))
-        assert out["exit"] == 0, "%s: %r" % (subject.name, out["exit"])
-        assert out["alias"] == "seeded:rediacc-cli-0.10.0.tgz\n", (
-            "%s: the alias no longer carries the STALE tarball, so the defect is gone "
-            "and this test is stale: %r" % (subject.name, out["alias"])
-        )
-        assert "Packed rediacc-cli-0.10.0.tgz" in out["stderr"], out["stderr"]
-
-
-def test_a_missing_packages_cli_names_the_program_that_could_not_proceed(tmp_path):
-    """DIVERGENCE 1, asserted in both directions with the prefix masked.
-
-    Both subjects fail the `cd` and exit 1. bash's diagnostic names the script and its line; the port's names the port and its line. Everything after that prefix -- `cd: <dir>: No such file or directory` -- is compared byte for byte, and the two paths are asserted to be DIFFERENT so this test still means something if someone ever makes the port print the twin's path.
-    """
-    root_a = _fixture(tmp_path / "ma")
-    shutil.rmtree(root_a / "packages")
-    old = _run(TWIN_REL, root_a)
-    root_b = _fixture(tmp_path / "mb")
-    shutil.rmtree(root_b / "packages")
-    new = _run(PORT_REL, root_b)
-
-    assert old["exit"] == 1, old["exit"]
-    assert new["exit"] == 1, new["exit"]
-    assert LINE_PREFIX.sub("<prog>: line N: ", new["stderr"]) == LINE_PREFIX.sub(
-        "<prog>: line N: ", old["stderr"]
-    ), "masked stderr diverged:\n twin: %r\n port: %r" % (old["stderr"], new["stderr"])
-    assert old["stderr"] != new["stderr"], (
-        "the two diagnostics are byte-identical, so the mask is hiding nothing and "
-        "this test should be folded into the parametrised cases"
+    code, _, stderr, _, tree = recorded("a-stale-tarball")
+    assert code == 0
+    assert tree_of(tree)["alias"] == "seeded:rediacc-cli-0.10.0.tgz\n", (
+        "the alias no longer carries the STALE tarball, so the defect is gone"
     )
-    assert old["calls"] == [], "the twin ran something after the cd failed"
-    assert new["calls"] == [], "the port ran something after the cd failed"
+    assert "Packed rediacc-cli-0.10.0.tgz" in stderr, stderr
+
+
+def test_two_tarballs_take_the_lexically_first() -> None:
+    """The same ordering rule with no stale file involved: `0.10.0` precedes `0.9.0` under `LC_ALL=C`, which is a version comparison nobody wrote."""
+    tree = tree_of(recorded("two-tarballs")[4])
+    assert tree["alias"] == "tarball-of:rediacc-cli-0.10.0.tgz\n", tree["alias"]
+
+
+def test_the_alias_being_the_only_match_is_a_refusal() -> None:
+    """`cp X X` on the alias itself: the subject names a tarball that is the alias, and the copy refuses rather than truncating the file."""
+    code, _, stderr, _, _ = recorded("the-alias-is-the-only-match")
+    assert code != 0 or "same file" in stderr or "Packed" in stderr, stderr
+
+
+def test_a_failing_npm_pack_is_propagated() -> None:
+    code, _, _, _, tree = recorded("a-failing-npm-pack")
+    assert code == 7, "npm's own status was flattened"
+    assert tree_of(tree)["alias"] is None
+
+
+def test_the_two_missing_tools() -> None:
+    """Each tool absent on its own, so the message names the one that is missing."""
+    for name in ("no-jq-on-the-path", "no-npm-on-the-path"):
+        code, _, stderr, _, _ = recorded(name)
+        assert code != 0, name
+        assert stderr.strip() != "", name
+
+
+def test_a_nested_out_dir_is_created() -> None:
+    code, _, _, calls, tree = recorded("a-nested-out-dir")
+    assert code == 0
+    assert "--pack-destination deep/nested/out" in calls
+    assert tree_of(tree)["alias"] is not None
+
+
+def test_a_non_ascii_manifest_survives_injection() -> None:
+    """The manifest is read and written as UTF-8 on both sides; a port that opened it in the locale's encoding would mangle a keyword nobody would notice until npm refused the tarball."""
+    code, _, _, _, tree = recorded("a-non-ascii-manifest")
+    assert code == 0
+    manifest = json.loads(tree_of(tree)["manifest"])
+    assert manifest["keywords"] == ["ä", "b"]
+    assert manifest["version"] == "2.0.0"
+
+
+# --------------------------------------------------------------------------- The two divergences, pinned rather than papered over ---------------------------------------------------------------------------
+
+
+def test_a_missing_packages_cli_names_the_program_that_could_not_proceed(
+    tmp_path: pathlib.Path,
+) -> None:
+    """DIVERGENCE 1, asserted with the prefix masked.
+
+    Both sides fail the `cd` and exit 1. bash's diagnostic named the script and its line; the port's names the port and its line. Everything after that prefix, `cd: <dir>: No such file or directory`, is compared byte for byte, and the two paths are asserted to be DIFFERENT so this still means something if someone ever makes the port print the twin's path.
+    """
+    name = "a-missing-packages-cli"
+    want = recorded(name)
+    got = port(tmp_path, name)
+    assert want[0] == got[0] == 1
+    assert LINE_PREFIX.sub("<prog>: line N: ", got[2]) == LINE_PREFIX.sub(
+        "<prog>: line N: ", want[2]
+    ), "masked stderr diverged:\n recorded: %r\n port: %r" % (want[2], got[2])
+    assert want[2] != got[2], (
+        "the two diagnostics are byte-identical, so the mask is hiding nothing and this "
+        "case should join the parametrised ones"
+    )
+    assert want[3] == got[3] == "", "something ran after the cd failed"
 
 
 def mkdir_is_gnu() -> bool:
@@ -459,59 +536,43 @@ def mkdir_is_gnu() -> bool:
     return "GNU coreutils" in proc.stdout
 
 
-def test_a_failing_mkdir_agrees_on_the_status_and_not_on_the_text(tmp_path):
-    """DIVERGENCE 2, pinned rather than asserted away -- and it depends on WHICH coreutils is installed, which is the part this case used to get wrong.
+def test_a_failing_mkdir_agrees_on_the_status_and_not_on_the_text(
+    tmp_path: pathlib.Path,
+) -> None:
+    """DIVERGENCE 2, pinned rather than asserted away, and it depends on WHICH coreutils is installed.
 
-    `mkdir -p` on an unwritable parent: the exit code is the script's and agrees. The diagnostic belongs to coreutils, and the port SYNTHESISES GNU's wording, so whether the two texts differ is a property of the host's mkdir:
+    `mkdir -p` on an unwritable parent: the exit code is the subject's and agrees with the recording. The diagnostic belongs to coreutils, and the port SYNTHESISES GNU's wording, so whether the two texts differ is a property of the host's mkdir.
 
-        GNU coreutils 9.7 (the CI runner)  -> identical; the divergence is CLOSED
-        uutils coreutils 0.8.0 (here)      -> different; the divergence is REAL
+    An unconditional `!=` passed on every machine in this tree and failed in CI run 34970782616, which was true where it ran and false where it was written.
 
-    An unconditional `!=` therefore passed on every machine in this tree and
-    failed in CI run 34970782616 with its own message -- "the coreutils diagnostic and the port's now match, so this divergence is closed" -- which was true where it ran and false where it was written.
-
-    The port's own text is asserted EXACTLY either way, so a port that drifted
-    from GNU's wording still reds here on any host.
+    The port's own text is asserted EXACTLY either way, so a port that drifted from GNU's wording still reds here on any host.
     """
-    outs = {}
-    for subject in (TWIN_REL, PORT_REL):
-        root = _fixture(tmp_path / ("k-%s" % subject.name))
-        denied = root / "packages" / "cli" / "denied"
-        denied.mkdir()
-        denied.chmod(0o500)
-        try:
-            outs[subject.name] = _run(subject, root, out_dir="denied/out")
-        finally:
-            denied.chmod(0o700)
-
-    old = outs[TWIN_REL.name]
-    new = outs[PORT_REL.name]
-    assert old["exit"] == new["exit"] == 1, (old["exit"], new["exit"])
-    assert old["calls"] == new["calls"] == [], "npm ran despite the mkdir failure"
-    assert "mkdir" in old["stderr"], old["stderr"]
-    assert "mkdir" in new["stderr"], new["stderr"]
-    # The PORT is pinned absolutely: it promises GNU's wording on every host.
-    assert new["stderr"] == "mkdir: cannot create directory 'denied/out': Permission denied\n", new[
-        "stderr"
-    ]
+    name = "an-unwritable-out-dir"
+    want = recorded(name)
+    got = port(tmp_path, name)
+    assert want[0] == got[0] == 1, (want[0], got[0])
+    assert want[3] == got[3] == "", "npm ran despite the mkdir failure"
+    assert "mkdir" in want[2], want[2]
+    assert got[2] == "mkdir: cannot create directory 'denied/out': Permission denied\n", got[2]
     if mkdir_is_gnu():
-        assert old["stderr"] == new["stderr"], (
-            "GNU coreutils and the port disagree, so the port no longer reproduces "
-            "the diagnostic it was written to reproduce: %r vs %r" % (old["stderr"], new["stderr"])
+        assert want[2] == got[2], (
+            "GNU coreutils and the port disagree, so the port no longer reproduces the "
+            "diagnostic it was written to reproduce: %r vs %r" % (want[2], got[2])
         )
     else:
-        assert old["stderr"] != new["stderr"], (
+        assert want[2] != got[2], (
             "this host's non-GNU mkdir now matches the port's GNU wording, so the "
-            "divergence this case documents is closed here too and the docstring "
-            "in pack_cli_npm.py is stale"
+            "divergence this case documents is closed here too"
         )
 
 
-def test_select_tarball_is_the_twins_ordering():
+# --------------------------------------------------------------------------- The shell's own ordering, deliberately NOT recorded ---------------------------------------------------------------------------
+
+
+def test_select_tarball_is_the_twins_ordering() -> None:
     """The pure half of DEFECT 2, driven directly against the SHELL's own answer.
 
-    A constant copied out of the port cannot contradict the port, so the expected order comes from bash running the twin's actual pipeline over the same names
-    under `LC_ALL=C`.
+    NOT RECORDED: a constant copied out of the port cannot contradict the port, so the expected order comes from bash running the twin's actual pipeline over the same names under `LC_ALL=C`, and bash is still here to ask.
     """
     names = [
         "rediacc-cli-0.9.0.tgz",
@@ -532,5 +593,79 @@ def test_select_tarball_is_the_twins_ordering():
             env={**os.environ, "LC_ALL": "C"},
         ).stdout.strip()
     assert expected == "rediacc-cli-0.10.0.tgz", "the twin's own pipeline said %r" % expected
-    assert pack_cli_npm.select_tarball(names) == expected
-    assert pack_cli_npm.select_tarball([]) is None
+    assert pcn.select_tarball(names) == expected
+    assert pcn.select_tarball([]) is None
+
+
+# --------------------------------------------------------------------------- The control: these goldens can actually fail ---------------------------------------------------------------------------
+
+
+def test_a_planted_alias_of_the_wrong_tarball_is_caught(tmp_path: pathlib.Path) -> None:
+    """THE CONTROL ON THE GOLDENS, aimed at the section that would otherwise be decoration.
+
+    `rediacc-cli-latest.tgz` is the artifact every install path fetches, and it is a COPY of whichever tarball the subject selected. The plant reverses the selection so the LAST name wins instead of the first, which on the two-tarball recording aliases `0.9.0` where the corpus holds `0.10.0`. The transcript still says `✓ Packed ...`, the exit code is still 0, and the directory
+    listing is still the same two names, so only the alias BYTES in the `--- tree ---` section see it.
+
+    THE PLANT IS A COPY WRITTEN AT THE SUBJECT'S OWN PATH INSIDE THE FIXTURE, which is where the module already runs from in every case here, so the root it derives from its own location is unchanged. The tracked file is never written.
+    """
+    original = PORT.read_text(encoding="utf-8")
+    anchor = "def select_tarball("
+    assert original.count(anchor) == 1, "the plant's anchor moved"
+
+    name = "two-tarballs"
+    want = recorded(name)
+    assert tree_of(want[4])["alias"] == "tarball-of:rediacc-cli-0.10.0.tgz\n", "the corpus moved"
+
+    where = tmp_path / "planted"
+    where.mkdir(parents=True)
+    root = fixture(where, name, PORT_REL)
+    (root / PORT_REL).write_text(
+        original.replace(
+            anchor,
+            "def select_tarball(names):  # noqa: ANN001, ANN201 - the plant\n"
+            "    ordered = sorted(n for n in names if n.startswith('rediacc-cli-'))\n"
+            "    return ordered[-1] if ordered else None\n"
+            "\n"
+            "\n"
+            "def _unreachable_select_tarball(",
+            1,
+        ),
+        encoding="utf-8",
+    )
+    log = where / "calls.txt"
+    proc = subprocess.run(
+        ["python3", str(root / PORT_REL)],
+        capture_output=True,
+        text=True,
+        env={
+            "PATH": binder(
+                where,
+                root,
+                log=log,
+                jq_rc=0,
+                npm_rc=0,
+                produces=CASE_KW[name]["produces"],
+                exclude=(),
+            ),
+            "HOME": str(where),
+            "PYTHONDONTWRITEBYTECODE": "1",
+            "LC_ALL": "C",
+            "LANG": "C",
+            "PYTHONPATH": str(ROOT / ".ci"),
+            "OUT_DIR": "out",
+        },
+        check=False,
+        timeout=120,
+    )
+    alias = root / "packages" / "cli" / "out" / "rediacc-cli-latest.tgz"
+    assert proc.returncode == want[0] == 0, proc.stderr
+    assert alias.read_text(encoding="utf-8") == "tarball-of:rediacc-cli-0.9.0.tgz\n", (
+        "the plant did not change which tarball was aliased"
+    )
+    assert (
+        sorted(p.name for p in (root / "packages" / "cli" / "out").iterdir())
+        == (tree_of(want[4])["out_dir"])
+    ), "the plant changed the directory listing too, so the alias is not the only evidence"
+
+    compare(tmp_path / "good", name)
+    assert PORT.read_text(encoding="utf-8") == original

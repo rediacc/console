@@ -1,0 +1,15 @@
+# twin .ci/scripts/docker/cleanup-staging.sh blob 86b359d6b2224d0e347315083323debfd2b8d0da
+exit: 0
+--- stdout ---
+Usage: <SELF> --tag STAGING_TAG [--dry-run]
+
+Delete staging Docker tags from GHCR registry.
+
+Options:
+  --tag TAG    Staging tag to delete (e.g., staging-abc123...)
+  --dry-run    Preview without executing
+
+Images to clean: renet rdc
+--- stderr ---
+--- calls ---
+

@@ -19,7 +19,7 @@ New file: `packages/e2e-tests/tests/NN-<name>.test.ts`. The prefix is the projec
 CI runs a five-distro matrix in ~40 minutes. Locally it is about a minute.
 
 ```bash
-.ci/scripts/env/create-e2e-env.sh --vm-workers 1
+PYTHONPATH=.ci python3 -m rediacc_ci.env.create_e2e_env --vm-workers 1
 .ci/scripts/test/run-e2e.sh --workers 1 --test 25-backup-chunk-store
 ```
 

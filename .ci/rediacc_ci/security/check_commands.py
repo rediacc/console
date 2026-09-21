@@ -24,6 +24,16 @@ CORPUS ENUMERATION SHELLS OUT TO THE REAL `find`, rather than reimplementing dir
 with the identical arguments sidesteps the question rather than arguing it.
 
 `[[:space:]]` IS TRANSLITERATED AS `[ \\t]`, not `\\s`, in the two branches that use it (`^[[:space:]]*`, `^[[:space:]]*if\\s+`). POSIX's space class includes more (`\\n \\v \\f \\r`), but these patterns run against single already-split lines with no embedded newline, so the only members that can ever appear are space and tab.
+
+THE `---- gate ----` HEADER MOVED HERE when the twin was retired, the way `rediacc_ci.quality.staging_tag_guard` carries its own. `scripts/gate-bind.ts` resolves a gate by where its header lives, and with the bash file gone this is the one file that can own it; the `run:` was already the module form, which is what the binder emits into the workflow.
+
+---- gate ----
+step: Shell commands exist on the runner image
+needs: none
+run: PYTHONPATH=.ci python3 -m rediacc_ci.security.check_commands
+id: check:ci-shell-commands
+selftest: true
+---- end gate ----
 """
 
 from __future__ import annotations

@@ -389,6 +389,10 @@ RETIRED_TWINS = {
     # Deleted by the 30-twin batch in 62599afc0 without an entry here, so this assertion was red in the tree until W7P5 batch M1 read it. The batch is named by its commit rather than by a label, because the label it carried is not written down anywhere the entry can cite.
     "w7p4b-cancel-older-runs": "the 30-twin batch in commit 62599afc0",
     "w7p4b-install-cli-global": "W7P5 batch M1",
+    "w7p4b-run-renet": "W7P5 batch M5",
+    "w7p4b-run-account": "W7P5 batch M5",
+    "w7p4b-compose-healthcheck-smoke-test": "W7P5 batch M5",
+    "w7p4b-scope-shadow": "W7P5 batch M6",
 }
 
 
@@ -444,16 +448,21 @@ def test_a_registered_gate_is_cut_over_everywhere_it_is_named(pair: str) -> None
             "cutover that moved one of the three leaves the gate running bash."
             % (rel, twin, REGISTERED_GATES[pair])
         )
-    header = (ROOT / twin).read_text(encoding="utf-8")
-    assert "# run: " in header, (
+    # THE HEADER FOLLOWS THE OWNER. While the twin existed the `---- gate ----` block stayed on it, because `scripts/gate-bind.ts` resolves a gate by where its header lives and two files claiming one id would give one gate two owners. A retired twin cannot carry it, so the block MOVED to the port, the way `rediacc_ci.quality.staging_tag_guard` carries its own; the assertion follows
+    # it rather than being dropped, which is the direction that keeps `gate:bind --write` from putting an old spelling back into the workflow.
+    owner = ROOT / twin
+    if pair in RETIRED_TWINS:
+        owner = ROOT / ".ci" / (module.replace(".", "/") + ".py")
+    header = owner.read_text(encoding="utf-8")
+    prefix = "" if pair in RETIRED_TWINS else "# "
+    assert ("%srun: " % prefix) in header, (
         "%s no longer carries a `---- gate ----` header `run:` line, which is what "
-        "`scripts/gate-bind.ts` emits into the workflow. The header stays on the bash "
-        "file deliberately (one gate, one owner); only its VALUE moves." % twin
+        "`scripts/gate-bind.ts` emits into the workflow." % owner
     )
     assert ("python3 -m %s" % module) in header, (
         "%s's gate header still runs something other than `python3 -m %s`, so "
         "`gate:bind --write` would put the old spelling back into the workflow the "
-        "next time anyone runs it." % (twin, module)
+        "next time anyone runs it." % (owner, module)
     )
 
 

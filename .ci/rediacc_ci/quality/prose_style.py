@@ -652,24 +652,29 @@ def extract(path, text, markers=DEFAULT_MARKERS):
 
 
 class Finding:
-    __slots__ = ("lineno", "path", "rule", "severity", "snippet", "text")
+    __slots__ = ("ident", "lineno", "path", "rule", "severity", "snippet", "text")
 
-    def __init__(self, path, lineno, rule, snippet, text, severity):
+    def __init__(self, path, lineno, rule, snippet, text, severity, ident=None):
         self.path = path
         self.lineno = lineno
         self.rule = rule
         self.snippet = snippet
         self.text = text
         self.severity = severity
+        #: The path the id is keyed on, when it differs from the one a reader opens. See `identity_path`.
+        self.ident = ident
 
     @property
     def fid(self):
         """The stable id: a hash of the PATH, the RULE and the TEXT.
 
         NOT the line number. See the module header; this is the half that lets a paragraph move without regenerating the whole baseline.
+
+        NOT THE PATH EITHER, when a plan has moved and left a stub. A plan moves exactly once, into `agent/plans/**`, and leaves a pointer at its old path so the 523 citations of it keep resolving. Keying frozen debt on the new spelling would have re-keyed 152 baselined findings into 122 brand-new ones in a change that did not rewrite a single sentence, which is a shrink-only
+        baseline reporting a regression it invented.
         """
         digest = hashlib.sha256(
-            ("%s\x1f%s\x1f%s" % (self.path, self.rule, self.text)).encode(
+            ("%s\x1f%s\x1f%s" % (self.ident or self.path, self.rule, self.text)).encode(
                 "utf-8", "surrogateescape"
             )
         )
@@ -705,6 +710,39 @@ def lint_line(line, rules, scope, max_len):
                 hits.append((rule, found.group(0)))
                 break
     return hits
+
+
+#: The three lines a plan stub carries, matched as a prefix so a whole plan is
+#: never read to answer the question. `plan_lifecycle` owns the grammar and this
+#: module does not import it: prose_style is the one gate the pre-edit hook runs
+#: on every write, and an import graph that reaches git and the config loader for
+#: a five-line header would be paid on every keystroke.
+_STUB_HEAD_RE = re.compile(
+    r"\AStatus:[ \t]*moved[ \t]*$.*?^Moved-To:[ \t]*(\S+)[ \t]*$",
+    re.MULTILINE | re.DOTALL,
+)
+_PLAN_MOVED_RE = re.compile(r"\Aagent/plans/(?:_done/|_removed/)?(PLAN-[^/]+\.md)\Z")
+
+
+def identity_path(root, rel):
+    """The path frozen debt about `rel` is keyed on: its pre-move path, or `rel`.
+
+    A plan moves exactly once, into `agent/plans/**`, and leaves a one-line stub at its old path. Nothing about the DOCUMENT changes, so nothing about its findings should: keying the baseline on the new spelling turns every frozen finding in every moved plan into an orphan and a matching brand-new violation on the same day, in a change that rewrote no prose at all.
+
+    The stub is READ and required to point back at `rel`, so a file that merely shares a basename with something at the legacy path proves nothing.
+    """
+    match = _PLAN_MOVED_RE.match(rel)
+    if not match:
+        return rel
+    origin = "agent/%s" % match.group(1)
+    try:
+        with open(pathlib.Path(root) / origin, "rb") as handle:
+            head = handle.read(1024).decode("utf-8", "replace")
+    except OSError:
+        return rel
+    body = head.split("\n", 1)[-1] if head.startswith("#") else head
+    found = _STUB_HEAD_RE.search(body)
+    return origin if found and found.group(1) == rel else rel
 
 
 def lint_text(path, text, rules, globals_, scope=None):
@@ -1175,6 +1213,10 @@ def run_check(
             notes.append(note)
             per_suffix_noted[suffix] += 1
         got, _ = lint_text(rel, text, rules, globals_)
+        stable = identity_path(root, rel)
+        if stable != rel:
+            for finding in got:
+                finding.ident = stable
         reason = exempt_for(rel, exempts)
         if reason is not None:
             # EXEMPT, AND COUNTED. The file is still read and still linted; only the VERDICT is suppressed, so the number below is real rather than an absence. A quiet exemption is how a gate stops meaning what its name says.
@@ -2122,6 +2164,54 @@ def selftest():
         first.fid != Finding("b.md", 3, "X1", "you", "Did you run it?", "error").fid,
         True,
     )
+    # A PLAN THAT MOVED KEEPS ITS ID, and the mirror is that nothing else does.
+    stubbed = Finding(
+        "agent/plans/PLAN-a.md",
+        3,
+        "X1",
+        "you",
+        "Did you run it?",
+        "error",
+        ident="agent/PLAN-a.md",
+    )
+    ctl.check(
+        "id: a moved plan keeps the id its pre-move path had",
+        stubbed.fid,
+        Finding("agent/PLAN-a.md", 3, "X1", "you", "Did you run it?", "error").fid,
+    )
+    ctl.check(
+        "id MIRROR: without the stub the new path is a different finding",
+        Finding("agent/plans/PLAN-a.md", 3, "X1", "you", "Did you run it?", "error").fid
+        != stubbed.fid,
+        True,
+    )
+    with tempfile.TemporaryDirectory() as _td:
+        _root = pathlib.Path(_td)
+        (_root / "agent" / "plans").mkdir(parents=True)
+        (_root / "agent" / "plans" / "PLAN-a.md").write_text("# a\n", encoding="utf-8")
+        ctl.check(
+            "identity MIRROR: no file at the legacy path means no re-keying",
+            identity_path(_root, "agent/plans/PLAN-a.md"),
+            "agent/plans/PLAN-a.md",
+        )
+        (_root / "agent" / "PLAN-a.md").write_text(
+            "# PLAN: a (moved)\nStatus: moved\nMoved-To: agent/plans/PLAN-a.md\n\nmoved\n",
+            encoding="utf-8",
+        )
+        ctl.check(
+            "identity: a stub pointing back re-keys to the legacy path",
+            identity_path(_root, "agent/plans/PLAN-a.md"),
+            "agent/PLAN-a.md",
+        )
+        (_root / "agent" / "PLAN-a.md").write_text(
+            "# PLAN: a (moved)\nStatus: moved\nMoved-To: agent/plans/PLAN-other.md\n\nmoved\n",
+            encoding="utf-8",
+        )
+        ctl.check(
+            "identity MIRROR: a stub pointing elsewhere re-keys nothing",
+            identity_path(_root, "agent/plans/PLAN-a.md"),
+            "agent/plans/PLAN-a.md",
+        )
 
     # ---- the baseline's composition guard -------------------------------
     old = {first.fid: {"id": first.fid}}

@@ -1,0 +1,41 @@
+# twin .ci/scripts/build/generate-cli-manifest.sh blob 65e5a49bf3a4b75569a2365724b01eb56bc7beba
+exit: 0
+--- stdout ---
+--- stderr ---
+→ Generating CLI manifest v2.0.0
+✓   Input: in
+✓   Output: out/manifest.json
+✓   Added linux-x64: aaaaaaaaaaaaaaaa...
+✓   Added linux-arm64: aaaaaaaaaaaaaaaa...
+✓   Added mac-x64: aaaaaaaaaaaaaaaa...
+✓   Added mac-arm64: aaaaaaaaaaaaaaaa...
+✓   Added win-x64: aaaaaaaaaaaaaaaa...
+✓   Added win-arm64: aaaaaaaaaaaaaaaa...
+✓ Manifest generated: out/manifest.json
+--- calls ---
+CALL date	-u	+%Y-%m-%dT%H:%M:%SZ
+CALL jq	-n	--arg	version	2.0.0	--arg	releaseDate	2026-09-14T00:00:00Z	--arg	releaseNotesUrl	https://github.com/rediacc/console/releases/tag/v2.0.0	--arg	commit	unknown	{version: $version, releaseDate: $releaseDate, releaseNotesUrl: $releaseNotesUrl, commit: $commit, binaries: {}}
+CALL awk	{print $1}	in/rdc-linux-x64.sha256
+CALL jq	--arg	key	linux-x64	--arg	url	https://releases.rediacc.com/cli/v2.0.0/rdc-linux-x64	--arg	sha256	aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa	.binaries[$key] = {url: $url, sha256: $sha256}
+CALL awk	{print $1}	in/rdc-linux-arm64.sha256
+CALL jq	--arg	key	linux-arm64	--arg	url	https://releases.rediacc.com/cli/v2.0.0/rdc-linux-arm64	--arg	sha256	aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa	.binaries[$key] = {url: $url, sha256: $sha256}
+CALL awk	{print $1}	in/rdc-mac-x64.sha256
+CALL jq	--arg	key	mac-x64	--arg	url	https://releases.rediacc.com/cli/v2.0.0/rdc-mac-x64	--arg	sha256	aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa	.binaries[$key] = {url: $url, sha256: $sha256}
+CALL awk	{print $1}	in/rdc-mac-arm64.sha256
+CALL jq	--arg	key	mac-arm64	--arg	url	https://releases.rediacc.com/cli/v2.0.0/rdc-mac-arm64	--arg	sha256	aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa	.binaries[$key] = {url: $url, sha256: $sha256}
+CALL awk	{print $1}	in/rdc-win-x64.exe.sha256
+CALL jq	--arg	key	win-x64	--arg	url	https://releases.rediacc.com/cli/v2.0.0/rdc-win-x64.exe	--arg	sha256	aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa	.binaries[$key] = {url: $url, sha256: $sha256}
+CALL awk	{print $1}	in/rdc-win-arm64.exe.sha256
+CALL jq	--arg	key	win-arm64	--arg	url	https://releases.rediacc.com/cli/v2.0.0/rdc-win-arm64.exe	--arg	sha256	aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa	.binaries[$key] = {url: $url, sha256: $sha256}
+CALL mkdir	-p	out
+CALL jq	.
+--- files ---
+{
+  "in/rdc-linux-arm64.sha256": "file:29654fdf715a7f2b",
+  "in/rdc-linux-x64.sha256": "file:11814d0e060824d9",
+  "in/rdc-mac-arm64.sha256": "file:b1250f1f501883ec",
+  "in/rdc-mac-x64.sha256": "file:572b10c2e5002023",
+  "in/rdc-win-arm64.exe.sha256": "file:2b3e0daa1b78c2c7",
+  "in/rdc-win-x64.exe.sha256": "file:c33ec818db09834c",
+  "out/manifest.json": "file:3f355feeff1858b3"
+}

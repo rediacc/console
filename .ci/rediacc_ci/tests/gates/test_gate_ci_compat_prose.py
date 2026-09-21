@@ -1,6 +1,6 @@
 """Port of `.ci/scripts/test/gates/test-ci-compat-prose.sh`, retired in W7 P5.
 
-`.ci/scripts/security/check-commands.sh` must not read its own documentation as code.
+`rediacc_ci.security.check_commands` must not read its own documentation as code.
 
 WHY THIS EXISTS. Three detectors in this repo have flagged text that merely RESEMBLED the construct they forbid, all within one wave (2026-08-26): check-toolchain-pins.sh A6 read an `echo` line PRINTING the shellcheck directive as an INVOCATION of shellcheck; check-control-vacuity.sh read `sed 's/^/ /'`,
 which indents a message for display, as a control built by pattern substitution;
@@ -32,14 +32,14 @@ import tempfile
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 
-SUT = paths.from_root(".ci", "scripts", "security", "check-commands.sh")
+SUT = paths.from_root(".ci", "rediacc_ci", "security", "check_commands.py")
 
 # See the docstring: built rather than written, so this file is invisible to the scanner it exercises.
 BANNED_SEQ = "s" + "eq"
 BANNED_MAPFILE = "map" + "file"
 
-# The anchor the control below cuts out. Named once so a rename reds the control loudly rather than making it a no-op.
-SKIP_ANCHOR = "# Skip if it's in a comment"
+# The anchor the control below cuts out. Named once so a rename reds the control loudly rather than making it a no-op. The twin cut a shell `if ... fi`; the port's branch is the two lines below, and the cut is the same edit made against the same behaviour.
+SKIP_ANCHOR = "        if _COMMENT_SKIP_RE.search(line_content):\n            continue\n"
 
 
 def build_root(gate, work: pathlib.Path, probe: str) -> pathlib.Path:
@@ -50,14 +50,18 @@ def build_root(gate, work: pathlib.Path, probe: str) -> pathlib.Path:
     if not SUT.is_file():
         gate.log_fail("subject under test is missing: %s" % paths.relative_to_root(SUT))
     root = pathlib.Path(tempfile.mkdtemp(dir=str(work)))
-    (root / ".ci" / "scripts" / "security").mkdir(parents=True)
-    shutil.copy2(SUT, root / ".ci" / "scripts" / "security" / "check-commands.sh")
+    (root / ".ci" / "rediacc_ci" / "security").mkdir(parents=True)
+    shutil.copy2(SUT, root / ".ci" / "rediacc_ci" / "security" / "check_commands.py")
     (root / ".ci" / "probe.sh").write_text(probe, encoding="utf-8")
     return root
 
 
 def run_in(root: pathlib.Path) -> int:
-    return harness.run(["./.ci/scripts/security/check-commands.sh"], cwd=root).rc
+    return harness.run(
+        ["python3", "./.ci/rediacc_ci/security/check_commands.py"],
+        cwd=root,
+        env={"PYTHONPATH": str(paths.from_root(".ci")), "PYTHONDONTWRITEBYTECODE": "1"},
+    ).rc
 
 
 def test_a_banned_command_in_code_is_caught(gate):
@@ -90,20 +94,18 @@ def test_control_the_probe_actually_reaches_the_skip_branch(gate):
     with harness.temp_dir() as work:
         probe = "#!/bin/bash\n# equivalent to: cmd | %s 1 10\necho ok\n" % BANNED_SEQ
         root = build_root(gate, work, probe)
-        copy = root / ".ci" / "scripts" / "security" / "check-commands.sh"
+        copy = root / ".ci" / "rediacc_ci" / "security" / "check_commands.py"
         rc_intact = run_in(root)
 
-        # The twin plants this cut with an inline python heredoc. Same edit, same anchors: from the comment marker through the end of the `fi` that closes it.
+        # The same edit the twin's version made, against the port's own two-line branch: the cut is the whole `if`, not a comment above it, so a rename reds this loudly rather than turning it into a no-op.
         source = copy.read_text(encoding="utf-8")
-        start = source.find(SKIP_ANCHOR)
-        if start < 0:
+        if source.count(SKIP_ANCHOR) != 1:
             gate.log_fail(
-                "could not plant the control: %r is not in %s, so the branch was renamed "
-                "and this control would silently assert nothing"
+                "could not plant the control: %r is not in %s exactly once, so the branch "
+                "was renamed and this control would silently assert nothing"
                 % (SKIP_ANCHOR, paths.relative_to_root(SUT))
             )
-        end = source.index("fi\n", start) + 3
-        copy.write_text(source[:start] + source[end:], encoding="utf-8")
+        copy.write_text(source.replace(SKIP_ANCHOR, ""), encoding="utf-8")
 
         rc_cut = run_in(root)
 

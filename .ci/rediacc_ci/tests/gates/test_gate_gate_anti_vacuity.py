@@ -54,8 +54,8 @@ REGISTRY: tuple[tuple[str, str], ...] = (
     # A mutation gate: it copies packages/cli into a sandbox, breaks the source, and requires the tests to fail. On an empty tree there is nothing to mutate, and "no source to mutate" must be a hard error - a mutation gate that reports success having mutated nothing is the purest form of the
     # class this meta-gate exists to catch.
     ("check-guard-mutations.ts", "required subject missing"),
-    # A bash gate, reachable only since this harness learned to run .sh. It used to `exit 0` when private/renet was absent, silently taking govulncheck, deadcode and golangci-lint with it.
-    (".ci/scripts/private/run-renet.sh", "required"),
+    # It used to `exit 0` when private/renet was absent, silently taking govulncheck, deadcode and golangci-lint with it. Registered as the bash twin until W7P5 batch M5 retired that file; the port keeps the same three-armed guard and the same refusal, which is what this row pins.
+    (".ci/rediacc_ci/private/run_renet.py", "required"),
     # Same submodule, same failure mode: with private/renet absent it would run `go test` over nothing and report that the licence tier map covers the
     # function registry. The CLI now derives its licence-issuance class from
     # that map, so a vacuous green here would launder a console defect too.

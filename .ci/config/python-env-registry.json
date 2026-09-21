@@ -1109,12 +1109,6 @@
     ".ci/rediacc_ci/tests/test_build_build_renet.py": [
       "HOME"
     ],
-    ".ci/rediacc_ci/tests/test_build_build_www.py": [
-      "HOME"
-    ],
-    ".ci/rediacc_ci/tests/test_build_buildx_push_web.py": [
-      "HOME"
-    ],
     ".ci/rediacc_ci/tests/test_build_cli_executables.py": [
       "HOME"
     ],
@@ -1126,9 +1120,6 @@
       "PATH"
     ],
     ".ci/rediacc_ci/tests/test_build_extract_renet_from_image.py": [
-      "HOME"
-    ],
-    ".ci/rediacc_ci/tests/test_build_generate_cli_manifest.py": [
       "HOME"
     ],
     ".ci/rediacc_ci/tests/test_build_linux_pkg.py": [
@@ -1494,9 +1485,6 @@
       "PLAN_CITATIONS_MAX_SHOWN",
       "PLAN_CITATIONS_OBJECT_MIN",
       "PLAN_CITATIONS_ROOT"
-    ],
-    ".ci/scripts/quality/check_plan_folders.py": [
-      "PLAN_FOLDERS_STRICT"
     ],
     ".ci/scripts/quality/check_plan_record.py": [
       "PLAN_RECORD_CENSUS_DAYS",

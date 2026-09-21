@@ -1,0 +1,14 @@
+# twin .ci/scripts/docker/cleanup-staging.sh blob 86b359d6b2224d0e347315083323debfd2b8d0da
+exit: 0
+--- stdout ---
+
+
+--- stderr ---
+→ Cleaning up staging tags: staging-second
+→ Deleting staging tag for renet: staging-second
+✓ [DRY-RUN] Would delete: ghcr.io/rediacc/renet:staging-second
+→ Deleting staging tag for rdc: staging-second
+✓ [DRY-RUN] Would delete: ghcr.io/rediacc/rdc:staging-second
+✓ Cleanup summary: 2 succeeded
+--- calls ---
+

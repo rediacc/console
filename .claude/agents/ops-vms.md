@@ -80,7 +80,7 @@ VMs are up and you just need Ceph.
 `bridge-global-setup` -> `resetVMs()` -> `renet ops up --force --parallel`, whose Ceph block fires on `ProvisionCeph` + `VMCephNodes`.
 
 ```bash
-.ci/scripts/env/create-e2e-env.sh \
+PYTHONPATH=.ci python3 -m rediacc_ci.env.create_e2e_env \
   --renet-path "$PWD/private/renet/bin/renet" --output packages/e2e-tests/.env \
   --vm-workers "11 12" --vm-ceph-nodes "21 22 23" \
   --vm-ram-worker 2560 --vm-ram-ceph 2560 --ceph-osd-memory-target 1717986918
@@ -93,7 +93,7 @@ The `RENET_DATA_DIR` line is the local-only delta: the generated `.env` sets `CI
 Three traps worth the ink:
 
 - **Topology comes ONLY from `--vm-workers` / `--vm-ceph-nodes`**
-(`create-e2e-env.sh:66-72`). An env prefix of `VM_CEPH_NODES=...` is INERT here and merely appears to work when it matches the defaults. (`VM_RAM_*` and `VM_IMAGE` do fall back to env; topology does not.)
+(`rediacc_ci.env.create_e2e_env`). An env prefix of `VM_CEPH_NODES=...` is INERT here and merely appears to work when it matches the defaults. (`VM_RAM_*` and `VM_IMAGE` do fall back to env; topology does not.)
 - **`--vm-ram-worker` / `--vm-ram-ceph` are mandatory for this topology.**
 `assert_ram_budget` caps at a hardcoded 14848 MB and the default 6-VM fleet computes to 21504 MB, so it exits 1 before writing anything. No env override for the ceiling.
 - **`KEEP_CLUSTER=1` / `BRIDGE_TEST_SKIP_RESET=1` skip `resetVMs`, and therefore skip

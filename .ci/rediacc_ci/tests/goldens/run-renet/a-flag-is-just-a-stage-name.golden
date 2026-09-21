@@ -1,0 +1,11 @@
+# twin .ci/scripts/private/run-renet.sh blob fc9910e7aa1ac53dcc07ece0f26fa68ee7ee6179
+exit: 0
+--- stdout ---
+renet ci stage output
+--- stderr ---
+→ Running renet CI (stage: --help)...
+renet ci stage warning
+--- calls ---
+[
+  "ci.sh\t<tmp>/elsewhere\tGOTOOLCHAIN=auto\t--help"
+]

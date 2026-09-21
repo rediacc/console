@@ -586,10 +586,14 @@ def test_a_planted_change_of_the_latch_label_is_caught(tmp_path: pathlib.Path) -
     `autopilot-blocked` is the label the loop watches; applying any other one ends the round having announced a latch that does not latch, and the campaign keeps running until a human notices a label nobody acts on. The fake answers the same bytes either way and the success line is a separate literal, so the exit code, stdout, stderr and the body are identical and only the `--- gh
     calls ---` section sees the change. The mutation runs from a throwaway copy of the module, and the tracked port is never touched.
     """
+    # ASSEMBLED, NEVER WRITTEN OUT. `check:ci-label-refs` scans the tree for exactly the shape `labels[]=<name>` and reads every literal it finds as a real label reference, so spelling the mutant's label here would have this instrument file report an undeclared label named after its own plant. The gate solves the same problem for itself the same way, at
+    # `label_references.py`'s `SELFTEST_LABEL`.
+    latch = "autopilot" + "-blocked"
+    other = "bl" + "ocked"
     original = PORT.read_text(encoding="utf-8")
-    anchor = '                "labels[]=autopilot-blocked",\n'
+    anchor = '                "labels[]=%s",\n' % latch
     assert original.count(anchor) == 1, "the plant's anchor moved"
-    mutant_source = original.replace(anchor, '                "labels[]=blocked",\n')
+    mutant_source = original.replace(anchor, '                "labels[]=%s",\n' % other)
 
     mutant = tmp_path / "plant" / "mutant.py"
     mutant.parent.mkdir(parents=True)
@@ -600,7 +604,7 @@ def test_a_planted_change_of_the_latch_label_is_caught(tmp_path: pathlib.Path) -
     assert LABEL_CALL in want[3], "the recorded corpus moved"
     planted = run(mutant, tmp_path / "planted", name)
     assert LABEL_CALL not in planted[3], "the plant did not change the call log"
-    assert "labels[]=blocked" in planted[3]
+    assert ("labels[]=%s" % other) in planted[3]
     for index in (0, 1, 2, 4):
         assert planted[index] == want[index], "the plant was supposed to be invisible here"
 

@@ -32,10 +32,8 @@ def _git(repo: pathlib.Path, *args: str, when: str | None = None) -> str:
     return result.out
 
 
-def _gate(root: pathlib.Path, *argv: str, strict: bool = False) -> harness.RunResult:
+def _gate(root: pathlib.Path, *argv: str) -> harness.RunResult:
     env = {"PLAN_FOLDERS_ROOT": str(root)}
-    if strict:
-        env["PLAN_FOLDERS_STRICT"] = "1"
     return harness.run([sys.executable, str(GATE), *argv], cwd=paths.repo_root(), env=env)
 
 
@@ -90,7 +88,7 @@ def test_the_subject_exists_and_is_executable(gate):
 
 def test_the_real_tree_passes_and_says_what_it_counted(gate):
     result = harness.run([sys.executable, str(GATE)], cwd=paths.repo_root())
-    gate.assert_exit_code(0, result.rc, "the real tree must be green while F1 is advisory")
+    gate.assert_exit_code(0, result.rc, "the real tree must be green with F1 fatal")
     gate.assert_contains(result.out, "✓ plan folders:", "the success line names the corpus")
     gate.assert_contains(result.out, "Blind spot:", "a green says what it did not check")
     gate.log_pass("the real tree passes and reports its corpus")
@@ -173,15 +171,34 @@ def test_a_config_without_the_retention_keys_is_a_setup_error(gate, tmp_path):
 # --------------------------------------------------------------------------- The findings, end to end.
 
 
-def test_a_legacy_plan_is_advisory_and_then_fatal(gate, tmp_path):
+def test_a_legacy_plan_is_fatal(gate, tmp_path):
+    """F1 stopped being an advisory when the 103 moved; the flag went with them."""
     root = _seed(tmp_path, {"agent/PLAN-old.md": "# PLAN: old\nStatus: in-progress\n"})
-    lax = _gate(root)
-    gate.assert_exit_code(0, lax.rc, "F1 is advisory until the migration lands")
-    gate.assert_contains(lax.out, "F1 agent/PLAN-old.md", "the advisory still names the file")
-    strict = _gate(root, strict=True)
-    gate.assert_exit_code(1, strict.rc, "PLAN_FOLDERS_STRICT makes the same finding fatal")
-    gate.assert_contains(strict.err, "F1 agent/PLAN-old.md", "the fatal form goes to stderr")
-    gate.log_pass("F1 is advisory by default and fatal under the strict flag")
+    result = _gate(root)
+    gate.assert_exit_code(1, result.rc, "a plan at the legacy path is a red, not a note")
+    gate.assert_contains(result.err, "F1 agent/PLAN-old.md", "the finding goes to stderr")
+    gate.assert_eq(
+        "PLAN_FOLDERS_STRICT" in GATE.read_text(encoding="utf-8"),
+        False,
+        "the escape hatch is gone rather than left behind switched off",
+    )
+    gate.log_pass("F1 is fatal, and the flag that made it advisory no longer exists")
+
+
+def test_a_stub_at_the_legacy_path_is_not_a_finding(gate, tmp_path):
+    """The mirror F1 needs now that it is fatal: the legacy path is where a stub LIVES."""
+    root = _seed(
+        tmp_path,
+        {
+            "agent/plans/PLAN-old.md": "# PLAN: old\nStatus: in-progress\n",
+            "agent/PLAN-old.md": (
+                "# PLAN: old (moved)\nStatus: moved\nMoved-To: agent/plans/PLAN-old.md\n\nmoved\n"
+            ),
+        },
+    )
+    result = _gate(root)
+    gate.assert_exit_code(0, result.rc, "a stub at the old path is the mechanism, not a defect")
+    gate.log_pass("a stubbed move is green under the strict rule")
 
 
 def test_a_finished_plan_in_the_active_folder_is_fatal(gate, tmp_path):
@@ -335,6 +352,31 @@ def test_move_refuses_a_plan_with_no_clock_to_carry(gate, tmp_path):
     gate.assert_exit_code(1, result.rc, "a move must not reset a clock it cannot read")
     gate.assert_contains(result.combined, "must not buy freshness", "the refusal names the risk")
     gate.log_pass("--move refuses a plan whose pre-move date cannot be read")
+
+
+def test_move_refuses_a_terminal_plan_with_no_ledger_row(gate, tmp_path):
+    """`moved_at` is CARRIED from the box ledger, so a row-less terminal move starts no clock.
+
+    Found by the migration's own retention test: `_record_move` re-keys an existing row and returns silently when there is none, which leaves a plan in `_done/` whose 40-day clock never starts and which `--sweep` can never reach. A move into an ACTIVE folder is spared, because nothing there reads `moved_at`.
+    """
+    root = _seed(
+        tmp_path,
+        {
+            "agent/PLAN-orphan.md": "# PLAN: orphan\nStatus: done\n\n- [x] a box\n",
+            "agent/PLAN-live.md": "# PLAN: live\nStatus: in-progress\n\n- [ ] a box\n",
+        },
+    )
+    _ledger(root, {})
+    result = _gate(root, "--move", "agent/PLAN-orphan.md")
+    gate.assert_exit_code(1, result.rc, "a terminal move that starts no clock is refused")
+    gate.assert_contains(result.combined, "retention clock would never start", "and says why")
+    gate.assert_eq((root / "agent/plans/_done/PLAN-orphan.md").exists(), False, "and nothing moved")
+    spared = _gate(root, "--move", "agent/PLAN-live.md")
+    gate.assert_exit_code(0, spared.rc, "an active plan needs no moved_at and is spared")
+    gate.assert_eq(
+        (root / "agent/plans/PLAN-live.md").is_file(), True, "so that one really did move"
+    )
+    gate.log_pass("--move refuses a terminal move whose retention clock would never start")
 
 
 def test_status_reports_without_a_verdict(gate, tmp_path):

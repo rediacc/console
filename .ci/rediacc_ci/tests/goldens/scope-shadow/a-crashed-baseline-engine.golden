@@ -1,0 +1,46 @@
+# twin .ci/scripts/ci/scope-shadow.sh blob 50ed7f024fb1321afc340a379bfeb08163142dec
+exit: 0
+--- stdout ---
+### Scope engine (LIVE: this decides which jobs run)
+
+shallow: `unknown`, grafts: `0` (grafts must be 0, or nothing below is meaningful)
+base: `unknown`  head: `deadbeefcafe`
+
+_skipped --classify: no base/head pair resolved_
+
+**--resolve-baseline** (THIS is the plan that gates jobs)
+
+```json
+```
+stderr:
+```
+engine: no baseline could be resolved
+```
+_no baseline plan was produced, so no run_* output was written: full round._
+
+--- stderr ---
+--- artifacts ---
+=== summary
+### Scope engine (LIVE: this decides which jobs run)
+
+shallow: `unknown`, grafts: `0` (grafts must be 0, or nothing below is meaningful)
+base: `unknown`  head: `deadbeefcafe`
+
+_skipped --classify: no base/head pair resolved_
+
+**--resolve-baseline** (THIS is the plan that gates jobs)
+
+```json
+```
+stderr:
+```
+engine: no baseline could be resolved
+```
+_no baseline plan was produced, so no run_* output was written: full round._
+
+=== gh-output
+(absent)
+=== plan.json
+(absent)
+=== greenlight.err
+(absent)

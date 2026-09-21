@@ -1,0 +1,7 @@
+# twin .ci/scripts/env/create-e2e-env.sh blob 0eec9b497b14624aa6cbdcd006042badbd2198a1
+exit: 1
+--- stdout ---
+--- stderr ---
+<prog>: line 116: abc123: unbound variable
+--- file ---
+null

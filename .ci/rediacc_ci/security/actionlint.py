@@ -121,6 +121,16 @@ PORT NOTES. Unless an item says otherwise the behaviour is REPRODUCED, not repai
      raising `SystemExit(status)` on it.
 
 ONE NAMED DIVERGENCE THIS PORT ADDS: `paths.repo_root()` honours `$REDIACC_CI_ROOT` and the twin's `SCRIPT_DIR/../../..` does not.
+
+THE `---- gate ----` HEADER MOVED HERE when the twin was retired, the way `rediacc_ci.quality.staging_tag_guard` carries its own. `scripts/gate-bind.ts` resolves a gate by where its header lives, and with the bash file gone this is the one file that can own it; the `run:` was already the module form, which is what the binder emits into the workflow.
+
+---- gate ----
+step: Workflow lint (actionlint)
+needs: none
+run: PYTHONPATH=.ci python3 -m rediacc_ci.security.actionlint
+selftest: true
+lane: quality-code
+---- end gate ----
 """
 
 from __future__ import annotations

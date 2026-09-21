@@ -24,13 +24,13 @@ resolve-version.sh --bump-type major      # 1.0.0
 
 renet's ldflags also bakes in the server's public key (`$KEY_LDFLAGS`) in the same `-ldflags` word — Go 1.18+ records `-ldflags` in `.go.buildinfo`, which is why the two values travel together rather than as separate flags.
 
-## `bump.sh`
+## `rediacc_ci.version.bump`
 
-`.ci/scripts/version/bump.sh --version <v>` updates version strings across package files independently (bash + `jq`, no Python). Two real call sites today, both gated to `github.event_name == 'push' && github.ref == 'refs/heads/main'` — never on a PR:
+`PYTHONPATH=.ci python3 -m rediacc_ci.version.bump --version <v>` updates version strings across package files independently. Three real call sites today, all gated to `github.event_name == 'push' && github.ref == 'refs/heads/main'` — never on a PR:
 
-- `.github/workflows/ci-build-docker.yml` (before `build-cli.sh`, for the CLI's npm pack
-tarball name)
-- `.github/workflows/ci-quality.yml` (a separate job in the same release path)
+- `.github/workflows/ci-build-docker.yml:65` and `:162` (before `build-cli.sh`, for the CLI's
+npm pack tarball name)
+- `.github/workflows/ci-quality.yml:865` (a separate job in the same release path)
 
 ## Why this is a separate file
 

@@ -585,7 +585,7 @@ Scans: every tracked non-source, non-prose file carrying a `BLOCKER:` line.
 | .ci/breakpoint/.breakpoint-drift-accept | 1 | prose only (no live entry) |
 | .ci/config/directive-quotes-allowlist.txt | 2 | prose only (no live entry) |
 | .ci/config/docker-npm-pin-exclusions.json | 3 | JSON value |
-| .ci/config/prose-style-rules.json | 4 | JSON value |
+| .ci/config/prose-style-rules.json | 5 | JSON value |
 | .ci/config/secret-supply.json | 2 | JSON value |
 | .ci/config/syncpack-source-exclusions.json | 8 | JSON value |
 | .ci/policy/.audit-allowlist | 1 | prose only (no live entry) |
@@ -690,6 +690,8 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/tests/goldens/branch | 2 | .golden 2 |
 | .ci/rediacc_ci/tests/goldens/build-json | 11 | .golden 11 |
 | .ci/rediacc_ci/tests/goldens/build-linux-packages | 14 | .golden 14 |
+| .ci/rediacc_ci/tests/goldens/build-www | 9 | .golden 9 |
+| .ci/rediacc_ci/tests/goldens/buildx-push-web | 18 | .golden 18 |
 | .ci/rediacc_ci/tests/goldens/cancel-older-runs | 28 | .golden 28 |
 | .ci/rediacc_ci/tests/goldens/check-commands | 12 | .golden 12 |
 | .ci/rediacc_ci/tests/goldens/ci-stop | 7 | .golden 7 |
@@ -699,23 +701,32 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/tests/goldens/cleanup-cf-preview | 22 | .golden 22 |
 | .ci/rediacc_ci/tests/goldens/cleanup-github-deployments | 14 | .golden 14 |
 | .ci/rediacc_ci/tests/goldens/cleanup-pr-environments | 17 | .golden 17 |
+| .ci/rediacc_ci/tests/goldens/cleanup-staging | 20 | .golden 20 |
 | .ci/rediacc_ci/tests/goldens/cleanup-stale-d1 | 19 | .golden 19 |
 | .ci/rediacc_ci/tests/goldens/collect-drill-diagnostics | 5 | .golden 5 |
+| .ci/rediacc_ci/tests/goldens/compose-healthcheck-smoke-test | 62 | .golden 62 |
 | .ci/rediacc_ci/tests/goldens/compose-prompt | 25 | .golden 25 |
 | .ci/rediacc_ci/tests/goldens/create-complete | 12 | .golden 12 |
+| .ci/rediacc_ci/tests/goldens/create-e2e-env | 98 | .golden 98 |
 | .ci/rediacc_ci/tests/goldens/create-manifest | 22 | .golden 22 |
 | .ci/rediacc_ci/tests/goldens/derive-image-tag | 40 | .golden 40 |
 | .ci/rediacc_ci/tests/goldens/dispatch-watchdog | 48 | .golden 48 |
+| .ci/rediacc_ci/tests/goldens/docker-prepull | 13 | .golden 13 |
 | .ci/rediacc_ci/tests/goldens/docker-pull-ghcr | 20 | .golden 20 |
 | .ci/rediacc_ci/tests/goldens/fetch-review-threads | 33 | .golden 33 |
 | .ci/rediacc_ci/tests/goldens/finish | 31 | .golden 31 |
+| .ci/rediacc_ci/tests/goldens/generate-cli-manifest | 36 | .golden 36 |
 | .ci/rediacc_ci/tests/goldens/git-op-conditionals | 10 | .golden 10 |
 | .ci/rediacc_ci/tests/goldens/hook-integrity | 3 | .golden 3 |
 | .ci/rediacc_ci/tests/goldens/install-cli-global | 15 | .golden 15 |
 | .ci/rediacc_ci/tests/goldens/label-inventory | 13 | .golden 13 |
 | .ci/rediacc_ci/tests/goldens/label-references | 6 | .golden 6 |
 | .ci/rediacc_ci/tests/goldens/linked-sub-prs | 21 | .golden 21 |
+| .ci/rediacc_ci/tests/goldens/pack-cli-npm | 15 | .golden 15 |
 | .ci/rediacc_ci/tests/goldens/post-escalation | 41 | .golden 41 |
+| .ci/rediacc_ci/tests/goldens/profiler-panel | 22 | .golden 22 |
+| .ci/rediacc_ci/tests/goldens/proxy-cli-manifest | 2 | .golden 2 |
+| .ci/rediacc_ci/tests/goldens/proxy-docker-prepull | 2 | .golden 2 |
 | .ci/rediacc_ci/tests/goldens/resolve-model-args | 72 | .golden 72 |
 | .ci/rediacc_ci/tests/goldens/resolved-threads | 6 | .golden 6 |
 | .ci/rediacc_ci/tests/goldens/restore-trusted-config | 12 | .golden 12 |
@@ -726,10 +737,14 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/tests/goldens/review-reply | 60 | .golden 60 |
 | .ci/rediacc_ci/tests/goldens/review-report-replies | 9 | .golden 9 |
 | .ci/rediacc_ci/tests/goldens/review-turn-capacity | 9 | .golden 9 |
+| .ci/rediacc_ci/tests/goldens/run-account | 24 | .golden 24 |
 | .ci/rediacc_ci/tests/goldens/run-external-gate | 21 | .golden 21 |
+| .ci/rediacc_ci/tests/goldens/run-renet | 19 | .golden 19 |
 | .ci/rediacc_ci/tests/goldens/scope-scripts-reachability | 7 | .golden 7 |
+| .ci/rediacc_ci/tests/goldens/scope-shadow | 11 | .golden 11 |
 | .ci/rediacc_ci/tests/goldens/set-image-tags | 10 | .golden 10 |
 | .ci/rediacc_ci/tests/goldens/shellcheck | 17 | .golden 17 |
+| .ci/rediacc_ci/tests/goldens/shfmt | 11 | .golden 11 |
 | .ci/rediacc_ci/tests/goldens/staging-tag-guard | 12 | .golden 12 |
 | .ci/rediacc_ci/tests/goldens/standing-orders-brief | 18 | .golden 18 |
 | .ci/rediacc_ci/tests/goldens/state-comment | 60 | .golden 60 |
@@ -738,38 +753,38 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/tests/goldens/sweep-collect | 18 | .golden 18 |
 | .ci/rediacc_ci/tests/goldens/update-state | 24 | .golden 24 |
 | .ci/rediacc_ci/tests/goldens/verify-ssh | 16 | .golden 16 |
+| .ci/rediacc_ci/tests/goldens/version-bump | 28 | .golden 28 |
 | .ci/rediacc_ci/tests/goldens/wait-for-vm-ssh | 16 | .golden 16 |
 | .ci/rediacc_ci/version | 5 | .py 5 |
 | .ci/scripts/autopilot | 3 | .cjs 2, .json 1 |
 | .ci/scripts/autopilot/prompts | 2 | .md 2 |
-| .ci/scripts/build | 15 | .sh 15 |
+| .ci/scripts/build | 11 | .sh 11 |
 | .ci/scripts/build/sea-inject | 7 | .mjs 7 |
-| .ci/scripts/ci | 17 | .cjs 9, .sh 7, .py 1 |
-| .ci/scripts/ci/profiler | 3 | .sh 2, .awk 1 |
+| .ci/scripts/ci | 16 | .cjs 9, .sh 6, .py 1 |
+| .ci/scripts/ci/profiler | 2 | .awk 1, .sh 1 |
 | .ci/scripts/deploy | 26 | .sh 26 |
 | .ci/scripts/docker | 5 | .py 4, .sh 1 |
 | .ci/scripts/docs | 2 | .mjs 2 |
-| .ci/scripts/env | 1 | .sh 1 |
 | .ci/scripts/housekeeping | 2 | .py 1, .sh 1 |
-| .ci/scripts/infra | 7 | .sh 7 |
+| .ci/scripts/infra | 6 | .sh 6 |
 | .ci/scripts/lib | 8 | .sh 8 |
 | .ci/scripts/pr | 1 | .sh 1 |
-| .ci/scripts/private | 9 | .sh 9 |
+| .ci/scripts/private | 6 | .sh 6 |
 | .ci/scripts/private/license-mint | 3 | .go 1, .mod 1, .sum 1 |
 | .ci/scripts/quality | 158 | .py 141, .sh 14, .json 2, .mjs 1 |
 | .ci/scripts/quality/lib | 1 | .py 1 |
 | .ci/scripts/release | 18 | .sh 18 |
 | .ci/scripts/review | 4 | .sh 4 |
 | .ci/scripts/review/prompts | 2 | .md 2 |
-| .ci/scripts/security | 3 | .sh 3 |
+| .ci/scripts/security | 2 | .sh 2 |
 | .ci/scripts/setup | 2 | .sh 2 |
 | .ci/scripts/test | 16 | .sh 15, .ts 1 |
 | .ci/scripts/test/fixtures/mutate-check | 2 | .py 1, .sh 1 |
 | .ci/scripts/test/gates | 12 | .sh 12 |
 | .ci/scripts/test/lib | 3 | .sh 3 |
 | .ci/scripts/test/manual | 1 | .sh 1 |
-| .ci/scripts/test/proxies | 10 | .sh 10 |
-| .ci/scripts/version | 4 | .sh 4 |
+| .ci/scripts/test/proxies | 8 | .sh 8 |
+| .ci/scripts/version | 3 | .sh 3 |
 | .ci/shadow | 292 | .jsonl 291, .json 1 |
 | .ci/tutorials | 21 | .sh 20, .md 1 |
 | .ci/tutorials/apps/demo-pgadmin | 2 | (none) 1, .yml 1 |
@@ -778,7 +793,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/tutorials/apps/secrets-demo | 2 | (none) 1, .yml 1 |
 | .ci/tutorials/lib | 4 | .sh 4 |
 
-146 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
+161 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
 
 <!-- <<< gen-docs -->
 ## Hook wiring, folded

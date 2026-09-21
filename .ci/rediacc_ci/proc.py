@@ -23,7 +23,7 @@ here, because that file has another writer:
 
 `retry_with_backoff`. `.ci/scripts/lib/common.sh:187-210`: exponential base 2, no jitter, no cap, delay taken from the caller, sleeps only BETWEEN attempts, retries on ANY non-zero exit. 8 call sites in two parameterisations (`3 2` in `cleanup-versions.sh` x6, `3 10` in `install-deps.sh` x2, `6 2` in `run-account-e2e.sh:194`). Beside it live seven hand-rolled loops with three
 different shapes -- linear `attempt * k` for k in {5, 15, 30}, and constant-delay
--- in `docker-prepull.sh:34`, `simulate-promotion.sh:79` and `:159`, `initialize.sh:233`, `verify-edge-endpoints.sh:63`, `test-install-methods.sh:840` and `wait-for-preview-worker.sh:99`.
+-- in `docker_prepull.py`'s retry loop, `simulate-promotion.sh:79` and `:159`, `initialize.sh:233`, `verify-edge-endpoints.sh:63`, `test-install-methods.sh:840` and `wait-for-preview-worker.sh:99`.
 
 THE EXIT-CODE CONTRACT, WHICH IS NOT AN INVENTION. Every producer in the tree already agrees, so this module adopts rather than proposes:
 

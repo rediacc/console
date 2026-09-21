@@ -1,0 +1,7 @@
+# twin .ci/scripts/private/compose-healthcheck-smoke-test.sh blob e4e7791a06abff74a9eb7048ea0e44be8d73d31d
+exit: 1
+--- stdout ---
+--- stderr ---
+<shell>: HOME: unbound variable
+--- calls ---
+[]

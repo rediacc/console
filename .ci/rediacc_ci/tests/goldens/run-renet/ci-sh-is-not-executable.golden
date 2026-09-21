@@ -1,0 +1,8 @@
+# twin .ci/scripts/private/run-renet.sh blob fc9910e7aa1ac53dcc07ece0f26fa68ee7ee6179
+exit: 126
+--- stdout ---
+--- stderr ---
+→ Running renet CI (stage: all)...
+<shell>: <root>/private/renet/.ci/ci.sh: Permission denied
+--- calls ---
+[]

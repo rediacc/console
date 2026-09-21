@@ -1,0 +1,10 @@
+# twin .ci/scripts/security/shfmt.sh blob 5a9fd57994b4a4b00e0b93dd17bf4b3cc83fbd94
+exit: 1
+--- stdout ---
+info: Checking shell script formatting
+v9.99.0
+--- stderr ---
+[0;31merror: VACUOUS: found 6 shell script(s), floor 9999.[0m
+[0;31merror: The enumeration lost its corpus; refusing to report formatting clean.[0m
+--- calls ---
+

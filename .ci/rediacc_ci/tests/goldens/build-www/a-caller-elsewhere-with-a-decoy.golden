@@ -1,0 +1,9 @@
+# twin .ci/scripts/build/build-www.sh blob 3382a9cc1ca7a01906efdb9b111e858f410a4958
+exit: 1
+--- stdout ---
+--- stderr ---
+→ Building www (Astro)...
+✓ www build completed
+✗ Required directory 'packages/www/dist' does not exist
+--- calls ---
+CALL npm	run	build:www

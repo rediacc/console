@@ -199,6 +199,40 @@ def test_58_control_a_citation_past_end_of_file_is_not_accepted(wl):  # noqa: F8
     wl.check("block", "has only 5 lines", "a fabricated line number is caught")
 
 
+def test_58b_a_citation_of_a_moved_plan_follows_its_stub(wl):  # noqa: F811
+    """A closed plan leaves a five-line pointer, and a `<path>:<line>` citation must hop it.
+
+    The stub keeps a bare path citation resolving. It does NOT keep a line citation resolving: the file is five lines, so every evidence line ever written against that plan would start reading as a fabricated line number. The control below is the same plan with a line past the TARGET's end, which must still block.
+    """
+    wl.brief_now()
+    wl.hand_now()
+    plans = wl.proj / "agent" / "plans"
+    plans.mkdir(parents=True, exist_ok=True)
+    (plans / "PLAN-moved.md").write_text("x\n" * 40, encoding="utf-8")
+    (wl.proj / "agent" / "PLAN-moved.md").write_text(
+        "# PLAN: moved (moved)\nStatus: moved\nMoved-To: agent/plans/PLAN-moved.md\n\nmoved\n",
+        encoding="utf-8",
+    )
+    wl.say("answer\n\n## Remaining\n| #12 | Wave C autopilot | blocked, agent/PLAN-moved.md:30 |")
+    wl.task(12, "pending", "Wave C autopilot")
+    wl.check("allow", "", "a line citation of a moved plan resolves through its stub")
+
+
+def test_58c_control_a_citation_past_the_moved_plan_end_still_blocks(wl):  # noqa: F811
+    wl.brief_now()
+    wl.hand_now()
+    plans = wl.proj / "agent" / "plans"
+    plans.mkdir(parents=True, exist_ok=True)
+    (plans / "PLAN-moved.md").write_text("x\n" * 40, encoding="utf-8")
+    (wl.proj / "agent" / "PLAN-moved.md").write_text(
+        "# PLAN: moved (moved)\nStatus: moved\nMoved-To: agent/plans/PLAN-moved.md\n\nmoved\n",
+        encoding="utf-8",
+    )
+    wl.say("answer\n\n## Remaining\n| #12 | Wave C autopilot | blocked, agent/PLAN-moved.md:900 |")
+    wl.task(12, "pending", "Wave C autopilot")
+    wl.check("block", "has only 40 lines", "the hop lands on the target, not on a free pass")
+
+
 def test_59_control_a_citation_to_a_file_that_does_not_exist_is_not_accepted(wl):  # noqa: F811
     wl.brief_now()
     wl.hand_now()

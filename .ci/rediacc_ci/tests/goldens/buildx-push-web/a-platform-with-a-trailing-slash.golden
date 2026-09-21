@@ -1,0 +1,9 @@
+# twin .ci/scripts/build/buildx-push-web.sh blob 38029ac1208fe352cee6f031ea808ac74f84a35c
+exit: 0
+--- stdout ---
+#1 [internal] load build definition
+--- stderr ---
+✓ Pushed ghcr.io/rediacc/server:1.2.3-
+--- calls ---
+CWD	<root>
+CALL docker	buildx	build	--file	Dockerfile	--target	onprem	--platform	linux/	--build-arg	VITE_APP_VERSION=1.2.3	--build-arg	ACCOUNT_ENTRY=on-premise	--build-arg	ACCOUNT_ED25519_PUBLIC_KEY=	--tag	ghcr.io/rediacc/server:1.2.3-	--push	.

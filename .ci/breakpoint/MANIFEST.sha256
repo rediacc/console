@@ -1,5 +1,5 @@
-# canonical: rediacc/console@3f2039ee136944aff0bc4f019b2203fc2e4d2231
-# generated: 2026-09-14T20:30:00Z
+# canonical: rediacc/console@1ea0c7340215d5468fac9e98de990c9092ddf121
+# generated: 2026-09-21T18:49:33Z
 7ee12fc903b5a3da597d5a87803119e276e7ce5cc69cdfda36ffa1eb88173443  docker/Caddyfile
 2025fcbb3384eb42d93caa2a4add6f9fce3c0a89dd81717b7b0fb46cc78f4077  lib/breakpoint-blocker.sh
 e70e63241b60a17671bd79c68b4e6022f396737ffdc5479fbc720b16ef15de03  lib/breakpoint-common.sh
@@ -20,7 +20,7 @@ cdf5d9b3251d2fd5f22977d54f0af282d51c47670dbd462cd4c4b519cdef6bcd  scripts/select
 4d3aa5794823055ea17616f87d09f821c3c4b69469095ec273bf02b358452985  scripts/start-origin.sh
 baecc1ab06eda6a6399af62ca350b937cee6c213635f10458b8f22f712211d12  scripts/start-shell.sh
 ffba6d164335b05dc6d439d9b2ed4e64d67806a429e30ab63bf513a99a3fd4ff  scripts/start-tunnel.sh
-4d6f17c55a3268348e096b2fb54018c533777c82dbd00602911f3a73fc8904cc  scripts/stop-breakpoint.sh
+485b9bc1ed88ad0b267e353dcac5e844dd9d0e5a9038cba6f4d0fdf93a9c3ccb  scripts/stop-breakpoint.sh
 20598e659231403549e381ddf10dfaa9060241bcd567f100470ac64ccf02ff2d  scripts/sync-breakpoint.sh
 09c2488cd886638918e52d2d6e89470b3cca0eb0cf324298e05c65f05e0268b9  scripts/test-breakpoint-lifecycle.sh
 a002a02494125dcb18834cc1e54cef8164a07321bf01f3ca117c61a2aab1e935  versions.sh

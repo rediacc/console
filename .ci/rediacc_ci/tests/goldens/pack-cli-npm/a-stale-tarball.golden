@@ -1,0 +1,20 @@
+# twin .ci/scripts/build/pack-cli-npm.sh blob d9231defb48d8d5b124492d1f43d41e74a5bc74a
+exit: 0
+--- stdout ---
+rediacc-cli-0.9.0.tgz
+--- stderr ---
+✓ Packed rediacc-cli-0.10.0.tgz (+ rediacc-cli-latest.tgz alias)
+--- calls ---
+call: npm pack --pack-destination out
+cwd: packages/cli
+--- tree ---
+{
+  "alias": "seeded:rediacc-cli-0.10.0.tgz\n",
+  "manifest": "{\n  \"name\": \"@rediacc/cli\",\n  \"version\": \"0.0.0-dev\",\n  \"private\": false\n}\n",
+  "out_dir": [
+    "rediacc-cli-0.10.0.tgz",
+    "rediacc-cli-0.9.0.tgz",
+    "rediacc-cli-latest.tgz"
+  ],
+  "tmp_left": false
+}

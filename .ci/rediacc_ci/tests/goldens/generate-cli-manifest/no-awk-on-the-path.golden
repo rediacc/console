@@ -1,0 +1,15 @@
+# twin .ci/scripts/build/generate-cli-manifest.sh blob 65e5a49bf3a4b75569a2365724b01eb56bc7beba
+exit: 127
+--- stdout ---
+--- stderr ---
+→ Generating CLI manifest v1.2.3
+✓   Input: in
+✓   Output: out/manifest.json
+<SELF>: line 116: awk: command not found
+--- calls ---
+CALL date	-u	+%Y-%m-%dT%H:%M:%SZ
+CALL jq	-n	--arg	version	1.2.3	--arg	releaseDate	2026-09-14T00:00:00Z	--arg	releaseNotesUrl	https://github.com/rediacc/console/releases/tag/v1.2.3	--arg	commit	unknown	{version: $version, releaseDate: $releaseDate, releaseNotesUrl: $releaseNotesUrl, commit: $commit, binaries: {}}
+--- files ---
+{
+  "in/rdc-linux-x64.sha256": "file:11814d0e060824d9"
+}

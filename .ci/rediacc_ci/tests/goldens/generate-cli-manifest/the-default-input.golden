@@ -1,0 +1,28 @@
+# twin .ci/scripts/build/generate-cli-manifest.sh blob 65e5a49bf3a4b75569a2365724b01eb56bc7beba
+exit: 0
+--- stdout ---
+--- stderr ---
+→ Generating CLI manifest v3.0.0
+✓   Input: <root>/dist/cli
+✓   Output: <root>/dist/cli/manifest.json
+✓   Skipping linux-x64 (no checksum file)
+✓   Skipping linux-arm64 (no checksum file)
+✓   Skipping mac-x64 (no checksum file)
+✓   Added mac-arm64: bbbbbbbbbbbbbbbb...
+✓   Skipping win-x64 (no checksum file)
+✓   Skipping win-arm64 (no checksum file)
+✓ Manifest generated: <root>/dist/cli/manifest.json
+--- calls ---
+CALL date	-u	+%Y-%m-%dT%H:%M:%SZ
+CALL jq	-n	--arg	version	3.0.0	--arg	releaseDate	2026-09-14T00:00:00Z	--arg	releaseNotesUrl	https://github.com/rediacc/console/releases/tag/v3.0.0	--arg	commit	unknown	{version: $version, releaseDate: $releaseDate, releaseNotesUrl: $releaseNotesUrl, commit: $commit, binaries: {}}
+CALL awk	{print $1}	<root>/dist/cli/rdc-mac-arm64.sha256
+CALL jq	--arg	key	mac-arm64	--arg	url	https://releases.rediacc.com/cli/v3.0.0/rdc-mac-arm64	--arg	sha256	bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb	.binaries[$key] = {url: $url, sha256: $sha256}
+CALL mkdir	-p	<root>/dist/cli
+CALL jq	.
+--- files ---
+{
+  "dist/cli": "dir",
+  "dist/cli/manifest.json": "file:fb2d835f8109fd97",
+  "dist/cli/rdc-mac-arm64.sha256": "file:ff27fea8834f0b9b",
+  "in/rdc-linux-x64.sha256": "file:11814d0e060824d9"
+}

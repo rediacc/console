@@ -81,18 +81,6 @@ proxy_need_exec() {
     [[ -x "$1" ]] || PROXY_MISSING+=("$1 is not an executable file -- fix: $2")
 }
 
-# A docker BINARY on PATH is not a docker DAEMON. Both are separate
-# requirements, because the failure text a developer needs differs.
-proxy_need_docker_daemon() {
-    PROXY_REQS=$((PROXY_REQS + 1))
-    if ! command -v docker >/dev/null 2>&1; then
-        PROXY_MISSING+=("docker is not on PATH -- fix: ./run.sh setup")
-        return
-    fi
-    docker info >/dev/null 2>&1 ||
-        PROXY_MISSING+=("the docker daemon is not reachable -- fix: start docker, or add yourself to the docker group and re-login")
-}
-
 proxy_need_passwordless_sudo() {
     PROXY_REQS=$((PROXY_REQS + 1))
     sudo -n true >/dev/null 2>&1 ||

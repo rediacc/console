@@ -49,6 +49,7 @@ import pathlib
 import re
 
 from rediacc_ci import paths
+from rediacc_ci.ci import scope_shadow
 from rediacc_ci.tests.gates import harness
 
 # The closure-path sweep, the two fake-gh CLI cases and the three cases reading scope-shadow.sh all read the tracked tree. The lock says `tree:repo` too. See the docstring.
@@ -56,7 +57,7 @@ REAL_TREE_TWIN = True
 
 ENGINE_REL = ".ci/scripts/ci/greenlight.cjs"
 ENGINE = paths.from_root(*ENGINE_REL.split("/"))
-SCOPE_SHADOW_REL = ".ci/scripts/ci/scope-shadow.sh"
+SCOPE_SHADOW_REL = ".ci/rediacc_ci/ci/scope_shadow.py"
 SCOPE_SHADOW = paths.from_root(*SCOPE_SHADOW_REL.split("/"))
 REPO_ROOT = paths.repo_root()
 
@@ -430,7 +431,7 @@ def test_cli_emit_is_false_only(gate):
 
         # CONTROL 2: one console-side closure blob moved, everything else identical.
         out = captured(
-            run_cli(gate, bindir, GL_REPO_ROOT=os.fspath(REPO_ROOT), GL_PERTURB="run-renet.sh")
+            run_cli(gate, bindir, GL_REPO_ROOT=os.fspath(REPO_ROOT), GL_PERTURB="run_renet.py")
         )
         gate.assert_eq(out, "", "a single changed closure file withdraws the greenlight")
 
@@ -795,16 +796,32 @@ const { CLOSURES } = require(process.argv[1]);
 process.stdout.write(Object.keys(CLOSURES).join(" "));
 """
 
-# `^\s*if ! bounded node "\$GREENLIGHT"`, the twin's grep. Written as a Python regex on purpose: CLAUDE.md records that ugrep's `-E` returns silent false zeros when `^` is alternated with a negated class, and a sweep that reports "no findings" for the wrong reason is exactly what this case exists to catch.
-INVOCATION_RE = re.compile(r'^\s*if ! bounded node "\$GREENLIGHT"')
+# The twin grepped its own `if ! bounded node "$GREENLIGHT"` line for the flag VALUES. The port builds that argv as a list and names the two numbers as module constants, so the reading moves from a line to the constants, which is what the flags are now.
+BUDGET_RE = re.compile(r'^GREENLIGHT_BUDGET = "([0-9]+)"$', re.MULTILINE)
+LIMIT_RE = re.compile(r'^GREENLIGHT_LIMIT = "([0-9]+)"$', re.MULTILINE)
 
 
 def read_scope_shadow(gate) -> str:
+    """The scope engine's own source.
+
+    WHY THE PORT AND NOT THE TWIN. `.ci/scripts/ci/scope-shadow.sh` was retired in W7P5 batch M6 against `goldens/scope-shadow/`, so the three cases below read the module that CI actually runs. Each reads a NAMED CONSTANT rather than a command line, which is the same claim made where the port states it.
+    """
     if not SCOPE_SHADOW.is_file():
         gate.log_fail(
             "%s is missing, so the three cases that read it would assert nothing" % SCOPE_SHADOW_REL
         )
     return SCOPE_SHADOW.read_text(encoding="utf-8")
+
+
+def scope_shadow_number(gate, pattern, label: str) -> int:
+    """One of the engine's two greenlight flag values, read off its constant.
+
+    A pattern that matches nothing is a REFUSAL, never an empty comparison: the constant being renamed away is exactly the drift this reading exists to catch.
+    """
+    match = pattern.search(read_scope_shadow(gate))
+    if match is None:
+        gate.log_fail("could not read %s out of %s" % (label, SCOPE_SHADOW_REL))
+    return int(match.group(1))
 
 
 def test_key_order_is_cost_descending(gate):
@@ -827,18 +844,16 @@ def test_key_order_is_cost_descending(gate):
     # CONTROL: the probe reads the real order rather than echoing its argument.
     gate.assert_not_contains(first, "unit", "the first key is not the last one")
 
-    # scope-shadow.sh must be the consumer of that order, and must ask for the raised budget. Asserted against the INVOCATION LINE, not the file: the first version of this grepped the whole file for '--budget 90', and the mutation proof caught it passing with the flag deleted from the command, because the comment ABOVE the command explains the flag and still says '--budget 90'. A
-    # gate satisfied by its own prose cannot fire.
-    invocation = "\n".join(
-        line for line in read_scope_shadow(gate).splitlines() if INVOCATION_RE.match(line)
-    )
-    gate.assert_contains(
-        invocation,
-        "--budget 90",
-        "the scope-shadow greenlight INVOCATION must raise the walk budget",
-    )
+    # The scope engine must be the consumer of that order, and must ask for the raised budget. Asserted against the NAMED CONSTANT, not against the file: the twin's version of this grepped the whole file for '--budget 90' and the mutation proof caught it passing with the flag deleted from the command, because the comment ABOVE the command explained the flag and still said
+    # '--budget 90'. A gate satisfied by its own prose cannot fire, and an anchored constant cannot be satisfied by a comment.
+    budget = scope_shadow_number(gate, BUDGET_RE, "GREENLIGHT_BUDGET")
+    if budget < 90:
+        gate.log_fail(
+            "GREENLIGHT_BUDGET is %d; the walk budget must stay raised or the window closes "
+            "silently" % budget
+        )
     gate.log_pass(
-        "the key order is cost-descending and scope-shadow.sh raises the budget (case 12)"
+        "the key order is cost-descending and the scope engine raises the budget (case 12)"
     )
 
 
@@ -846,124 +861,81 @@ def test_key_order_is_cost_descending(gate):
 # key, so sixteen keys' diagnostics were simply absent. scope-shadow.sh's greenlight_digest exists to condense it, and this case is what stops the digest silently dropping keys as the table grows again. ---------------------------------------------------------------------------
 
 
-def extract_digest_fn(gate) -> str:
-    """`sed -n '/^greenlight_digest() {/,/^}$/p'` over scope-shadow.sh."""
-    lines = read_scope_shadow(gate).splitlines()
-    out, inside = [], False
-    for line in lines:
-        if not inside and line.startswith("greenlight_digest() {"):
-            inside = True
-        if inside:
-            out.append(line)
-            if line == "}":
-                break
-    return "".join(line + "\n" for line in out)
+def run_digest(gate, raw_text: str) -> str:
+    """The engine's own `greenlight_digest`, called directly.
 
-
-def run_digest(gate, fn_file, raw_file) -> str:
-    """Source the extracted function and call it, exactly as the twin does.
-
-    BLOCKER: the function under test is defined in scope-shadow.sh, which cannot be sourced whole because sourcing it runs the scope engine.
+    THE TWIN'S VERSION OF THIS CASE sliced the function out of `scope-shadow.sh` with `sed` and sourced the slice, because sourcing the whole file would have run the scope engine. The port carries the same transliterated awk as a PURE function, so the slice and the subshell are both gone and what is exercised is the code CI runs rather than a copy of it.
     """
-    bash = harness.require_tool("bash", "install bash; greenlight_digest IS a shell function")
-    result = harness.run(
-        [
-            bash,
-            "-c",
-            'source "$1"; greenlight_digest "$2"',
-            "_",
-            os.fspath(fn_file),
-            os.fspath(raw_file),
-        ]
-    )
-    if result.rc != 0:
-        gate.log_fail(
-            "greenlight_digest could not be run at all (rc=%s): %s"
-            % (harness.describe_exit(result.rc), result.combined)
-        )
-    return result.out.rstrip("\n")
+    del gate
+    return scope_shadow.greenlight_digest(raw_text).rstrip("\n")
 
 
 def test_the_trail_digest_names_every_key(gate):
-    with harness.temp_dir() as work:
-        fn = work / "digest.sh"
-        body = extract_digest_fn(gate)
-        fn.write_text(body, encoding="utf-8")
-        gate.assert_contains(
-            body, "awk", "greenlight_digest must be extractable from scope-shadow.sh"
+    # A synthetic trail in the engine's exact debug shape: three keys, each
+    # with a header block and a multi-row candidate table.
+    chunks = ["greenlight: repo=owner/name candidates=3 budget=90s"]
+    for k in ("alpha", "beta", "gamma"):
+        chunks.extend(
+            [
+                "",
+                "greenlight[%s] jobs='Some Job'" % k,
+                "greenlight[%s] pins=private/renet=abcdef12" % k,
+                "greenlight[%s] closure=%s0000000000000000000000 (26 paths)" % (k, k),
+                "  run id        head      verdict",
+                "  900000001     11111111  pointer-differs",
+                "  900000002     22222222  closure-differs",
+                "  900000003     33333333  job-not-run@E2E Workers (oracle-10)",
+                "greenlight[%s] VERDICT: no (no-usable-candidate)" % k,
+                "greenlight[%s]: no greenlight (no-usable-candidate)" % k,
+            ]
         )
+    chunks.append("greenlight[delta]: local inputs unreadable (boom), nothing is greenlit")
+    raw_text = "".join(line + "\n" for line in chunks)
 
-        # A synthetic trail in the engine's exact debug shape: three keys, each
-        # with a header block and a multi-row candidate table.
-        raw = work / "trail.err"
-        chunks = ["greenlight: repo=owner/name candidates=3 budget=90s"]
-        for k in ("alpha", "beta", "gamma"):
-            chunks.extend(
-                [
-                    "",
-                    "greenlight[%s] jobs='Some Job'" % k,
-                    "greenlight[%s] pins=private/renet=abcdef12" % k,
-                    "greenlight[%s] closure=%s0000000000000000000000 (26 paths)" % (k, k),
-                    "  run id        head      verdict",
-                    "  900000001     11111111  pointer-differs",
-                    "  900000002     22222222  closure-differs",
-                    "  900000003     33333333  job-not-run@E2E Workers (oracle-10)",
-                    "greenlight[%s] VERDICT: no (no-usable-candidate)" % k,
-                    "greenlight[%s]: no greenlight (no-usable-candidate)" % k,
-                ]
-            )
-        chunks.append("greenlight[delta]: local inputs unreadable (boom), nothing is greenlit")
-        raw.write_text("".join(line + "\n" for line in chunks), encoding="utf-8")
+    digest = run_digest(gate, raw_text)
 
-        digest = run_digest(gate, fn, raw)
+    # Every key survives, with its verdict and the newest candidate's reason.
+    for k in ("alpha", "beta", "gamma"):
+        gate.assert_contains(digest, k, "the digest must name key %s" % k)
+    gate.assert_contains(digest, "walked=3", "and must say how many candidates were walked")
+    gate.assert_contains(
+        digest,
+        "newest 900000001 pointer-differs",
+        "and must carry the NEWEST candidate's reason, which is the one that matters",
+    )
 
-        # Every key survives, with its verdict and the newest candidate's reason.
-        for k in ("alpha", "beta", "gamma"):
-            gate.assert_contains(digest, k, "the digest must name key %s" % k)
-        gate.assert_contains(digest, "walked=3", "and must say how many candidates were walked")
-        gate.assert_contains(
-            digest,
-            "newest 900000001 pointer-differs",
-            "and must carry the NEWEST candidate's reason, which is the one that matters",
+    # A reason containing spaces (the matrix form) must survive whole.
+    wide = "".join(
+        line + "\n"
+        for line in (
+            "greenlight[m] closure=aaaa000000000000 (26 paths)",
+            "  run id        head      verdict",
+            "  900000009     99999999  job-not-run@E2E Workers (oracle-10)",
+            "greenlight[m] VERDICT: no (no-usable-candidate)",
         )
+    )
+    gate.assert_contains(
+        run_digest(gate, wide),
+        "job-not-run@E2E Workers (oracle-10)",
+        "a matrix refusal keeps the leg name, spaces and all",
+    )
 
-        # A reason containing spaces (the matrix form) must survive whole.
-        wide = work / "trail-matrix.err"
-        wide.write_text(
-            "".join(
-                line + "\n"
-                for line in (
-                    "greenlight[m] closure=aaaa000000000000 (26 paths)",
-                    "  run id        head      verdict",
-                    "  900000009     99999999  job-not-run@E2E Workers (oracle-10)",
-                    "greenlight[m] VERDICT: no (no-usable-candidate)",
-                )
-            ),
-            encoding="utf-8",
-        )
-        gate.assert_contains(
-            run_digest(gate, fn, wide),
-            "job-not-run@E2E Workers (oracle-10)",
-            "a matrix refusal keeps the leg name, spaces and all",
-        )
+    # An unrecognised line is PASSED THROUGH, never filtered into silence.
+    gate.assert_contains(
+        digest,
+        "local inputs unreadable (boom)",
+        "a line the digest does not recognise must survive verbatim",
+    )
 
-        # An unrecognised line is PASSED THROUGH, never filtered into silence.
-        gate.assert_contains(
-            digest,
-            "local inputs unreadable (boom)",
-            "a line the digest does not recognise must survive verbatim",
-        )
-
-        # CONTROL: the digest is a real reduction. Against the LIVE-shaped input it must be far smaller than the raw trail, or it is not solving the problem it was written for.
-        rawbytes = raw.stat().st_size
-        digestbytes = len(digest.encode("utf-8"))
-        gate.assert_eq(
-            1 if digestbytes < rawbytes else 0,
-            1,
-            "the digest must be smaller than the raw trail (%d vs %d bytes)"
-            % (digestbytes, rawbytes),
-        )
-        gate.log_pass("the trail digest names every key and survives a growing table (case 13)")
+    # CONTROL: the digest is a real reduction. Against the LIVE-shaped input it must be far smaller than the raw trail, or it is not solving the problem it was written for.
+    rawbytes = len(raw_text.encode("utf-8"))
+    digestbytes = len(digest.encode("utf-8"))
+    gate.assert_eq(
+        1 if digestbytes < rawbytes else 0,
+        1,
+        "the digest must be smaller than the raw trail (%d vs %d bytes)" % (digestbytes, rawbytes),
+    )
+    gate.log_pass("the trail digest names every key and survives a growing table (case 13)")
 
 
 # --------------------------------------------------------------------------- Case 15: THE CANDIDATE WINDOW MUST BE WIDER THAN THE DEFAULT.
@@ -1021,38 +993,19 @@ def limit_lines_control(text: str) -> int:
 
 
 def test_candidate_window_is_widened(gate):
-    lines = limit_lines(read_scope_shadow(gate))
-    if not lines:
-        gate.log_fail(
-            "scope-shadow.sh no longer passes --limit, so the engine falls back to 25 and the "
-            "window can silently close"
-        )
-
-    # `sed -E 's/.*--limit +([0-9]+).*/\1/'` over the whole capture. The twin feeds it every surviving line at once; there is exactly one today, and a second would make the value ambiguous, so that is asserted rather than silently resolved by taking the first.
-    gate.assert_eq(len(lines), 1, "exactly one GREENLIGHT invocation may carry --limit: %r" % lines)
-    match = LIMIT_VALUE_RE.match(lines[0])
-    if match is None:
-        gate.log_fail("could not read the --limit value from: %s" % lines[0])
-    limit = int(match.group(1))
+    limit = scope_shadow_number(gate, LIMIT_RE, "GREENLIGHT_LIMIT")
     if limit < 40:
         gate.log_fail(
-            "--limit is %d; the observed walk already reached 21 of 24, so anything near the "
-            "default reopens the cliff" % limit
+            "GREENLIGHT_LIMIT is %d; the observed walk already reached 21 of 24, so anything near "
+            "the default reopens the cliff" % limit
         )
 
-    # CONTROL, by construction: the same extractor must REFUSE an invocation that omits --limit. Without this the assertion above passes trivially the day someone drops the flag and the grep returns nothing... which is what the first branch checks, so prove that branch can actually distinguish.
-    if limit_lines('bounded node "$GREENLIGHT" --repo x --budget 90 --debug\n'):
-        gate.log_fail("CONTROL DID NOT FIRE: an invocation with no --limit read as compliant")
+    # CONTROL, by construction: the same reader must REFUSE a source that no longer carries the constant. Without it the assertion above passes trivially the day someone renames the name away, since a pattern that matches nothing would otherwise read as compliance.
+    if LIMIT_RE.search('GREENLIGHT_LMIT = "60"\n') is not None:
+        gate.log_fail("CONTROL DID NOT FIRE: a renamed constant read as compliant")
 
-    # CONTROL: the comment filter must actually EXCLUDE a comment. Without this it can rot back to dead code unnoticed -- the trailing GREENLIGHT match hides the rot until someone writes that literal in a comment near --limit, which is exactly how the first version shipped.
-    kept = limit_lines_control(
-        "    # note: pass --limit to GREENLIGHT here\n"
-        '    bounded node "$GREENLIGHT" --limit 60 --budget 90\n'
-    )
-    if kept != 1:
-        gate.log_fail(
-            "the comment filter is dead: expected 1 code line, kept %d (a comment slipped "
-            "through)" % kept
-        )
+    # CONTROL: a COMMENT carrying the same numbers must not satisfy the reading. The twin's version of this case shipped satisfied by its own prose once, which is why the pattern is anchored at the start of a line rather than searched for anywhere.
+    if LIMIT_RE.search('# see GREENLIGHT_LIMIT = "60" above\n') is not None:
+        gate.log_fail("the anchor is dead: a comment satisfied the constant reading")
 
     gate.log_pass("candidate window widened to %d (default 25 would close silently)" % limit)

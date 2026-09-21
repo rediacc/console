@@ -1,0 +1,100 @@
+# twin .ci/scripts/private/compose-healthcheck-smoke-test.sh blob e4e7791a06abff74a9eb7048ea0e44be8d73d31d
+exit: 1
+--- stdout ---
+--- stderr ---
+→ Registering worker 192.168.111.11 as machine 'worker-1'
+→ Provisioning renet on worker
+→ Cleanup (best-effort)
+→ Creating repo + applying app-postgres template
+→ Bringing repo up (db must converge to healthy via pg_isready)
+→ Polling db healthcheck (timeout 08s)
+<shell>: 08: value too great for base (error token is "08")
+<shell>: deadline: unbound variable
+→ Cleanup (best-effort)
+--- calls ---
+[
+  [
+    "rdc",
+    "config",
+    "ssh",
+    "set",
+    "--key",
+    "<tmp>/.ssh/id_ed25519"
+  ],
+  [
+    "rdc",
+    "machine",
+    "add",
+    "worker-1",
+    "--ip",
+    "192.168.111.11",
+    "--user",
+    "labuser"
+  ],
+  [
+    "rdc",
+    "machine",
+    "setup",
+    "worker-1"
+  ],
+  [
+    "rdc",
+    "repo",
+    "down",
+    "healthcheck-smoke@worker-1"
+  ],
+  [
+    "rdc",
+    "repo",
+    "delete",
+    "healthcheck-smoke@worker-1",
+    "--yes"
+  ],
+  [
+    "rdc",
+    "repo",
+    "create",
+    "healthcheck-smoke",
+    "-m",
+    "worker-1",
+    "--size",
+    "2G"
+  ],
+  [
+    "rdc",
+    "repo",
+    "admin",
+    "template",
+    "apply",
+    "healthcheck-smoke@worker-1",
+    "--template",
+    "app-postgres"
+  ],
+  [
+    "rdc",
+    "repo",
+    "up",
+    "healthcheck-smoke@worker-1"
+  ],
+  [
+    "date",
+    "+%s"
+  ],
+  [
+    "date",
+    "+%s"
+  ],
+  [
+    "rdc",
+    "repo",
+    "down",
+    "healthcheck-smoke@worker-1"
+  ],
+  [
+    "rdc",
+    "repo",
+    "delete",
+    "healthcheck-smoke@worker-1",
+    "--yes"
+  ]
+]

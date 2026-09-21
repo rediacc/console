@@ -13,7 +13,7 @@
 //
 // INTENT IS NOT OUTCOME. A candidate that was itself a REDUCED run is a perfectly good witness, because rule 1 asks whether the job RAN, not what the plan intended. A skipped job is refused precisely so evidence cannot chain across runs that skipped their way to green.
 //
-// FAIL-OPEN IS THE CONTRACT, identical to scope-shadow.sh:9-19. This engine may only ever cause a job to be SKIPPED that would otherwise RUN; it has no
+// FAIL-OPEN IS THE CONTRACT, identical to the scope engine's own. This engine may only ever cause a job to be SKIPPED that would otherwise RUN; it has no
 // path that turns a skip back into a run, because it emits `run_<key>=false`
 // and nothing else. Any error, any timeout, any absence of a match yields no emit line at all, which changes nothing, which is a full round.
 //
@@ -22,7 +22,7 @@
 // On stdout, ONLY on a greenlight, one pair of lines per greenlit key:
 //   run_<key>=false
 //   evidence_<key>=<candidate-run-id>
-// Everything else (the candidate table, every refusal reason) goes to stderr, so a caller reads stdout as instructions and never has to parse prose. Exit status is 0 on every path including failure: like scope-shadow.sh, this decides what runs and must never be the thing that fails.
+// Everything else (the candidate table, every refusal reason) goes to stderr, so a caller reads stdout as instructions and never has to parse prose. Exit status is 0 on every path including failure: like the scope engine, this decides what runs and must never be the thing that fails.
 
 'use strict';
 
@@ -38,7 +38,7 @@ const { createHash } = require('node:crypto');
 // - `jobNames` is a LIST because a matrix job is several API jobs. Every name must match exactly one job and every one of them must be `success`: a five-leg matrix with four green legs and one skipped leg proves nothing about the fifth, so partial evidence is refused outright. - `submodules` may be EMPTY, which is legal and means rule 2 is vacuous. `Unit` and `Linux Packages`
 // check out with no submodules at all, so there is no pointer for them to be pinned to.
 //
-// KEY ORDER IS COST-DESCENDING and load-bearing, not cosmetic. scope-shadow.sh derives its pending list from Object.keys(CLOSURES) (a JS insertion-order guarantee for string keys) and passes it through in that order, so if the walk budget runs out mid-list the keys that go unasked are the cheap ones. test_gate_greenlight.py pins the two ends of that order.
+// KEY ORDER IS COST-DESCENDING and load-bearing, not cosmetic. The scope engine derives its pending list from Object.keys(CLOSURES) (a JS insertion-order guarantee for string keys) and passes it through in that order, so if the walk budget runs out mid-list the keys that go unasked are the cheap ones. test_gate_greenlight.py pins the two ends of that order.
 // ---------------------------------------------------------------------------
 
 // The eight VM/E2E legs share ONE closure. They check out with `submodules: true`, run the same setup-workspace + build-cli + build-renet chain, and differ only in env and playwright config that live inside ct-tests.yml and packages/e2e-tests, both of which are in the closure. scope-map.cjs:243-264 already treats them as a single surface for the same reason. Sharing the list also
@@ -69,16 +69,16 @@ const VM_E2E_PATHS = [
   '.ci/scripts/setup/build-packages.sh',
   '.ci/scripts/build/build-cli.sh',
   '.ci/rediacc_ci/setup/install_cli_global.py',
-  '.ci/scripts/infra/docker-prepull.sh',
+  '.ci/rediacc_ci/infra/docker_prepull.py',
   '.ci/scripts/infra/build-renet.sh',
   '.ci/rediacc_ci/infra/wait_for_vm_ssh.py',
-  '.ci/scripts/env/create-e2e-env.sh',
+  '.ci/rediacc_ci/env/create_e2e_env.py',
   '.ci/scripts/test/run-e2e.sh',
   '.ci/rediacc_ci/ci_signal/create_complete.py',
   // Used by ONE leg each and carried by all eight: start-account-for-e2e.sh by e2e_k8s_multinode (ct-tests.yml:1080), the two private scripts by fork_isolation (:1423, :1436). Over-wide for the other seven, which is the safe direction and costs nothing extra: they are in the same listing.
   '.ci/scripts/test/start-account-for-e2e.sh',
   '.ci/scripts/private/concurrent-fork-isolation-test.sh',
-  '.ci/scripts/private/compose-healthcheck-smoke-test.sh',
+  '.ci/rediacc_ci/private/compose_healthcheck_smoke_test.py',
   '.ci/scripts/lib/common.sh',
   '.github/actions/setup-workspace',
   '.github/actions/app-token',
@@ -157,7 +157,7 @@ const CLOSURES = {
       '.ci/rediacc_ci',
       // The shadow-run step this job now carries: it `uses:` this local composite, which resolves from the WORKSPACE, so the closure must hold it or a change to the action does not re-run this key.
       '.github/actions/bws-secrets',
-      '.ci/scripts/private/run-renet.sh',
+      '.ci/rediacc_ci/private/run_renet.py',
       '.ci/scripts/private/renet-ebpf-e2e.sh',
       '.ci/scripts/private/renet-root-tests.sh',
       '.ci/scripts/private/renet-csi-sanity.sh',
@@ -335,7 +335,7 @@ const CLOSURES = {
       'packages/locales',
       'Dockerfile',
       '.ci/docker',
-      '.ci/scripts/build/buildx-push-web.sh',
+      '.ci/rediacc_ci/build/buildx_push_web.py',
       // set_image_tags and the derive_image_tag it calls in-process both live under '.ci/rediacc_ci', already the first entry of this list, so their two retired bash twins are no longer named here.
       '.ci/scripts/infra/ci-pull-images.sh',
       '.ci/scripts/infra/ci-start-elite.sh',
@@ -554,7 +554,7 @@ function evaluateCandidate(candidate, { jobNames, wantGitlinks, wantClosureHash 
 
 // The whole decision for one key. Returns the first usable candidate; the caller orders candidates newest-first, so "first" means "most recent proof".
 //
-// `trail` records every candidate examined with its refusal reason. It is the only thing that makes a non-greenlight diagnosable: without it, "no match" and "the API returned nothing" read identically in the job log, which is the unreadable-instrument failure scope-shadow.sh:96-104 was written to fix.
+// `trail` records every candidate examined with its refusal reason. It is the only thing that makes a non-greenlight diagnosable: without it, "no match" and "the API returned nothing" read identically in the job log, which is the unreadable-instrument failure the scope engine was written to fix.
 function evaluateGreenlight({ key, wantGitlinks, wantClosureHash, candidates }) {
   const trail = [];
   const closure = CLOSURES[key];

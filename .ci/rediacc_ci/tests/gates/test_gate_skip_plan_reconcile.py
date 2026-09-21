@@ -177,7 +177,7 @@ class World:
         return result.rc
 
     def annotate(self, source: pathlib.Path, name: str, conditions: dict) -> pathlib.Path:
-        """Run a plan through the REAL `annotatePlan`, the same entry point `scope-shadow.sh` calls. Going through the production writer rather than hand-writing the annotation is what makes these cases test the shipped writer instead of a paraphrase of it."""
+        """Run a plan through the REAL `annotatePlan`, the same entry point `rediacc_ci.ci.scope_shadow` calls. Going through the production writer rather than hand-writing the annotation is what makes these cases test the shipped writer instead of a paraphrase of it."""
         target = self.root / name
         node_eval(
             """
