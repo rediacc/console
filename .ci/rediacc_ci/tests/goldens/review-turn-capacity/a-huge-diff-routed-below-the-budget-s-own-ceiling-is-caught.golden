@@ -1,0 +1,13 @@
+# twin .ci/scripts/quality/check-review-turn-capacity.sh blob c29a748594eee4b8e0d02d89cb8582f3568dc6de
+exit: 1
+--- stdout ---
+--- stderr ---
+[0;31m✗[0m review turn budget can starve a review it routes:
+  MONOTONIC: size 30000 got 60 turns, fewer than size 29999 which got 140
+CEILING: 30000 lines is past the density-achievable range (6363 lines) yet gets only 60 turns, below the 140 the budget is willing to spend
+CEILING: 30001 lines is past the density-achievable range (6363 lines) yet gets only 60 turns, below the 140 the budget is willing to spend
+CEILING: 100000 lines is past the density-achievable range (6363 lines) yet gets only 60 turns, below the 140 the budget is willing to spend
+
+  Fix emit_review_turns() in .ci/scripts/review/claude-review-gate.sh.
+  A starved review burns its whole budget, posts nothing, and still spends an
+  attempt against a finite allowance -- it is the expensive outcome, not the cheap one.

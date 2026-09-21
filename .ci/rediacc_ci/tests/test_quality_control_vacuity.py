@@ -13,6 +13,7 @@ punctuation categories and excludes `$ + < = > ^ ` | ~`. The port uses the wider
 POSIX set. `test_the_port_and_the_live_grep_agree_on_every_gate` is what proves the difference is unobservable on the corpus that exists.
 """
 
+import glob
 import pathlib
 import subprocess
 
@@ -119,18 +120,46 @@ def test_has_control_agrees_with_the_live_grep_on_every_gate() -> None:
     assert disagreements == [], disagreements
 
 
-def test_both_classes_are_non_empty_across_the_real_corpus() -> None:
+def test_the_bash_classifier_still_discriminates_across_the_real_corpus() -> None:
     """A classifier that answered "yes" to everything, or "no" to everything, would pass both comparisons above only if the corpus happened to be uniform. It is not, and this says so with numbers.
 
-    THE CONTROLLED FLOOR TRACKS A SHRINKING CORPUS AND WAS FOUND ALREADY BREACHED. It read 5 while the W7 P5 twin retirements took `.ci/scripts/quality/check-*.sh` down with them, and the count reached 4 at `abda9690f` without anything going red in a lane that runs this file: measured there, `check-control-vacuity.sh`, `check-hook-integrity.sh`,
-    `check-review-turn-capacity.sh` and `check-toolchain-pins.sh`. Batches C1 and C2 retired two of those four, so the floor is the measured 2. It still refuses a classifier that answers "no" to everything, which is the property this case exists for; what it can no longer do is stand in for corpus SIZE, and the size floors live in
-    `scripts/gates/check-shape-duplication.ts`'s FAMILIES table instead.
+    THE CONTROLLED HALF OF THIS FLOOR IS GONE, AND SAYING WHY IS THE POINT. It read 5, then 4, then 2 as the W7 P5 retirements took `.ci/scripts/quality/check-*.sh` down with them, and on 2026-09-21 the last bash file carrying a control of any kind, `check-review-turn-capacity.sh`, was retired too. Measured that day over `.ci/scripts/**`, `.claude/**`, `scripts/**` and
+    `.github/**`: exactly one hit, that file. So a floor on `has_control` over this directory can only be zero now, and a zero floor is a check that cannot fail. The property it protected did not vanish with it, it moved: `test_the_python_arm_discriminates_across_the_real_corpus` below carries it, because that is where the controls are.
+
+    What survives here is the SUBSTITUTION classifier, which still has both classes in this directory and is still the thing the live-grep comparisons above depend on.
     """
     substituting = [p.name for p in _gate_files() if cv.builds_by_substitution(cv.read_lines(p))]
-    controlled = [p.name for p in _gate_files() if cv.has_control(cv.read_lines(p))]
     assert len(substituting) >= 3, substituting
-    assert len(controlled) >= 2, controlled
     assert len(substituting) < len(_gate_files()), "everything classified as substituting"
+    assert [p.name for p in _gate_files() if cv.has_control(cv.read_lines(p))] == [], (
+        "a bash control is back in the gate directory; restore the controlled floor here "
+        "and repoint the CONTROL at it rather than leaving this assertion inverted"
+    )
+
+
+def test_the_python_arm_discriminates_across_the_real_corpus() -> None:
+    """Both classes, non-empty, over the population the corpus moved to.
+
+    This is the case the bash `has_control` floor used to be. A detector that answered "plants" for every module would satisfy every fixture in the selftest and be worthless here, and one that answered "plants" for none would empty the corpus and be caught by the gate's own anti-vacuity refusal instead of by this. Both directions are asserted, and the proven count is asserted
+    to be the WHOLE corpus, because a single unproven module in this tree is a real finding rather than a tolerated one.
+    """
+    planting = []
+    quiet = []
+    for pattern in cv.PY_SCOPE:
+        for path in sorted(glob.glob(str(paths.repo_root() / pattern))):
+            code = cv.py_code_lines(cv.read_lines(pathlib.Path(path)))
+            (planting if cv.py_plants(code) else quiet).append(pathlib.Path(path).name)
+    assert len(planting) >= 10, planting
+    assert quiet, "every python gate classified as planting"
+    unproven = [
+        name
+        for pattern in cv.PY_SCOPE
+        for path in sorted(glob.glob(str(paths.repo_root() / pattern)))
+        for name in [pathlib.Path(path).name]
+        if cv.py_plants(cv.py_code_lines(cv.read_lines(pathlib.Path(path))))
+        and not cv.py_plant_is_proven(cv.py_code_lines(cv.read_lines(pathlib.Path(path))))
+    ]
+    assert unproven == [], unproven
 
 
 def test_strip_guard_matches_the_twins_sed(tmp_path: pathlib.Path) -> None:
@@ -156,13 +185,18 @@ def test_strip_guard_matches_the_twins_sed(tmp_path: pathlib.Path) -> None:
     assert cv.strip_guard(cv.read_lines(target)) == [line for line in out.split("\n") if line != ""]
 
 
-def test_strip_guard_on_the_real_control_source_keeps_its_substitution() -> None:
-    """The CONTROL's precondition, asserted directly: the stripped copy must still carry a substitution, or the control proves nothing and the gate says CONTROL IS VACUOUS. That branch firing on the real tree would be a finding about check-review-turn-capacity.sh, not about the port."""
-    source = paths.repo_root() / ".ci" / "scripts" / "quality" / cv.CONTROL_GATE
-    assert source.is_file(), "%s moved; retarget the control in BOTH implementations" % source
-    stripped = cv.strip_guard(cv.read_lines(source))
-    assert any(cv.CONTROL_STILL_SUBSTITUTES.search(line) for line in stripped)
-    assert not cv.proves_plant_landed(stripped), "the CONTROL cannot fire; it proves nothing"
+def test_stripping_the_real_control_source_keeps_its_plants() -> None:
+    """The CONTROL's precondition, asserted directly.
+
+    The stripped copy must still PLANT, or the control proves nothing and the gate says CONTROL IS VACUOUS; and it must stop being PROVEN, or the control cannot fire. Both branches firing on the real tree would be a finding about `review_turn_capacity.py`, not about this module, which is why they are asserted here where the failure can name the file.
+    """
+    source = paths.repo_root() / cv.CONTROL_GATE
+    assert source.is_file(), "%s moved; retarget CONTROL_GATE" % source
+    code = cv.py_code_lines(cv.read_lines(source))
+    assert cv.py_plant_is_proven(code), "the control source no longer plants through the harness"
+    stripped = cv.strip_harness_import(code)
+    assert cv.py_plants(stripped), "the stripped copy lost its plants; it proves nothing"
+    assert not cv.py_plant_is_proven(stripped), "the CONTROL cannot fire; it proves nothing"
 
 
 def test_prefix_substitutions_are_exempt_in_both_implementations(tmp_path: pathlib.Path) -> None:

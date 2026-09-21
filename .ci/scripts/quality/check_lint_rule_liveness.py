@@ -23,8 +23,8 @@ list is precisely the artefact that misses a config block -- and asserts set equ
 runs on ESLint's JS API in one process rather than spawning `npx eslint` per
 rule: 30 rules that way costs over 90 s, which is how a gate gets switched off. Measured end to end: about 10 s.
 
-THIS FILE STAYS THE ENTRY POINT and stays Python, because four places name this path: package.json, scripts/ci-runner/manifest.ts, .github/workflows/ci-quality.yml, and the anti-vacuity registry in .ci/scripts/test/gates/test-gate-anti-vacuity.sh. Its remaining job is the two vacuity preconditions BELOW, which must be answered before Node is spawned -- against the empty-tree
-fixture the anti-vacuity harness
+THIS FILE STAYS THE ENTRY POINT and stays Python, because four places name this path: package.json, scripts/ci-runner/manifest.ts, .github/workflows/ci-quality.yml, and the anti-vacuity registry in .ci/rediacc_ci/tests/gates/test_gate_gate_anti_vacuity.py. Its remaining job is the two vacuity preconditions BELOW, which must be answered before Node is spawned -- against the
+empty-tree fixture the anti-vacuity harness
 uses, an unguarded `import('eslint')` dies with ERR_MODULE_NOT_FOUND, a non-zero
 exit for an environment reason wearing a vacuity failure's exit code.
 

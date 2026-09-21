@@ -146,17 +146,22 @@ def test_a_lock_that_declares_nothing_parses_empty() -> None:
     assert gate.registered_writers("{}") == []
 
 
-def test_the_live_lock_still_declares_the_historical_writers() -> None:
-    """Every fixture above is synthetic. This one reads the REAL declaration.
+def test_the_live_declarations_still_name_a_serialised_real_tree_writer() -> None:
+    """Every fixture above is synthetic. This one reads the REAL declarations.
 
-    A parser that agreed with all of them while reading the live lock as empty would look perfect here and refuse on every real run, and the retarget is exactly the change that could have caused it.
+    A parser that agreed with all of them while reading the live files as empty would look perfect here and refuse on every real run, and a retarget is exactly the change that could cause it.
+
+    THE SUBJECT MOVED LANGUAGES ON 2026-09-21 AND THIS CASE MOVED WITH IT. It used to name `test-gate-anti-vacuity.sh` and `test-generate-tag-inputs.sh`, the last two lock entries carrying `mutex: ["tree:repo"]`. Both are retired; their pytest ports still overwrite tracked files, so the writers are the ports and the exclusive claim belongs to the lane that runs them. Asserting
+    the pair together is what makes this more than a spelling change: a port group with no exclusive lane claim behind it is the unserialised writer the whole gate exists to refuse.
     """
     live = pathlib.Path(diff.repo()) / "scripts" / "ci-runner" / "gates.lock.json"
-    declared = set(gate.registered_writers(live.read_text(encoding="utf-8")))
-    assert declared >= {
-        "test-gate-anti-vacuity.sh",
-        "test-generate-tag-inputs.sh",
-    }
+    lock_text = live.read_text(encoding="utf-8")
+    ports = gate.port_writers(pathlib.Path(diff.repo()).joinpath(*gate.PORTS_DIR_REL))
+    assert ports, "no port declares the real-tree xdist group, so the corpus collapsed"
+    assert gate.lane_claims_tree_exclusively(lock_text, gate.PYTEST_LANE_ID), (
+        "%s declares no exclusive tree: resource, so those ports run beside every other "
+        "reader of the same tree" % gate.PYTEST_LANE_ID
+    )
 
 
 def test_the_planted_controls_land_in_both_directions() -> None:
@@ -169,4 +174,4 @@ def test_selftest_passes_and_is_not_vacuous(capsys) -> None:
     assert gate.selftest() == 0
     out = capsys.readouterr().out
     assert "control(s) passed" in out
-    assert int(out.strip().split("\n")[-1].split()[0]) >= 24
+    assert int(out.strip().split("\n")[-1].split()[0]) >= 50

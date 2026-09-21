@@ -1,6 +1,6 @@
-"""Port of `.ci/scripts/test/gates/test-generate-tag-inputs.sh`.
+"""The build-config hash in `.ci/scripts/ci/generate-tag.sh`, both ways.
 
-Both-ways test for the build-config hash in `.ci/scripts/ci/generate-tag.sh`.
+PORTED FROM `.ci/scripts/test/gates/test-generate-tag-inputs.sh`, WHICH IS NOW RETIRED. The twin and this port agreed on every case over six recorded runs in `.ci/shadow/twin-parity.ledger.jsonl` before the bash file was deleted, and nothing here executes it any more: every invocation below drives the real `.ci/scripts/ci/generate-tag.sh`, which is the subject, not the twin.
 
 WHAT THE HASH IS FOR. `generate-tag.sh --submodule private/renet` mints the tag that names ghcr.io/rediacc/renet. `initialize.sh` asks the registry whether that
 tag already exists and, if it does, sets `renet_exists=true`, which skips the
@@ -11,13 +11,12 @@ exiting 0.
 
 WHY A FIXTURE TREE. The gate reads real files from the working directory, so the only way to plant a defect without touching a tracked file is to build a throwaway repo with the same shape and run the real script inside it. Nothing about the SUBJECT is reimplemented here: every invocation below is the real `bash .ci/scripts/ci/generate-tag.sh`.
 
-WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP, and it is the sharper reason of the two kinds. Most real-tree twins only READ the working tree. This one WRITES it: the last two cases overwrite the tracked `.ci/scripts/version/resolve-version.sh`
+WHY THIS MODULE IS SERIALISED, and it is the sharper reason of the two kinds. Most real-tree tests only READ the working tree. This one WRITES it: the last two cases overwrite the tracked `.ci/scripts/version/resolve-version.sh`
 with a stub resolver and restore it a second later, because `generate-tag.sh`
-gives them no fixture seam to do it in (the closure mode invokes the resolver via `cd "$REPO_ROOT"`). A gate reading that script inside the window sees a half-written file: on 2026-08-17 that reddened `gate-test:claude-hooks` with a bash syntax error in a file that parses clean. The twin carries `mutex: ["tree:repo"]` in `gates.lock.json`, which is what puts it in the battery's W
-set
-for exactly
-that reason, so the port must be serialised too. `REAL_TREE_TWIN = True` buys the
-serialisation, and it is honoured ONLY because this module declares no `XDIST_GROUP` of its own; see `real_tree_admission` in `test_twin_parity.py`, which refuses that combination and refuses over-claiming in the other direction.
+gives them no fixture seam to do it in (the closure mode invokes the resolver via `cd "$REPO_ROOT"`). A gate reading that script inside the window sees a half-written file: on 2026-08-17 that reddened `gate-test:claude-hooks` with a bash syntax error in a file that parses clean.
+
+THE DECLARATION MOVED WITH THE RETIREMENT, and it had to. While the twin existed the serialisation was bought by `REAL_TREE_TWIN = True`, which `xdist_groups.group_for` honours only by looking the twin's BASENAME up in the lock's `tree:` set. Delete the twin and its lock entry and that lookup answers no, so the attribute would promise an isolation the scheduler no longer
+gives: the port would distribute freely and write `resolve-version.sh` under a concurrent reader. `XDIST_GROUP` is the documented escape hatch for a resource no registry knows about, and after the retirement this module's write IS one. It names `xdist_groups.REAL_TREE_GROUP` rather than a literal so the two spellings cannot drift into two groups that run at once.
 
 WHAT THE PORT ADDS RATHER THAN DROPS. The twin restores the resolver with `cp` and then infers success from the tag coming back to baseline. This restores in a `finally` (so a raised assertion cannot strand the stub the way an `exit` from inside a bash function can) and additionally asserts the restored file is byte-identical by sha256 and keeps its mode. A tag that matches is good
 evidence the CONTENT came back; it says nothing about the permission bit, and a resolver left non-executable would fail somewhere else entirely.
@@ -29,13 +28,11 @@ import pathlib
 import re
 import shutil
 
-from rediacc_ci import paths
+from rediacc_ci import paths, xdist_groups
 from rediacc_ci.tests.gates import harness
 
-BASH_TWIN = ".ci/scripts/test/gates/test-generate-tag-inputs.sh"
-
 # Two cases overwrite the tracked `.ci/scripts/version/resolve-version.sh` in place and restore it. See the module docstring.
-REAL_TREE_TWIN = True
+XDIST_GROUP = xdist_groups.REAL_TREE_GROUP
 
 GATE_REL = ".ci/scripts/ci/generate-tag.sh"
 GATE = paths.from_root(*GATE_REL.split("/"))

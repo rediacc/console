@@ -115,10 +115,10 @@ interface Family {
 
 const FAMILIES: readonly Family[] = [
   { pathspec: 'scripts/gates/check-*.ts', floor: 100 },
-  { pathspec: '.ci/scripts/quality/check-*.sh', floor: 14 },
-  { pathspec: '.ci/scripts/test/gates/test-*.sh', floor: 15 },
-  // THE `.claude/hooks/pre-bash/block-*.sh` FAMILY IS GONE, and this note stands in its place rather than a row with a floor of zero, which no deletion could ever breach. It held 43 guards; W5 ported 42 to `.claude/rediacc_hooks/guards/block_*.py` and left one bash file, and W7 P6 ported that one too, so the pathspec now matches nothing and `git ls-files` on it would refuse
-  // the floor it used to carry. THE PYTHON SPELLING IS STILL NOT HERE, deliberately and with the cost measured: adding `.claude/rediacc_hooks/guards/block_*.py` on 2026-09-08 reported 26 new shapes, because the guards carry a shared scaffold of their own, so the widening is an extraction job like the quality half above and belongs in a commit of its own.
+  { pathspec: '.ci/scripts/quality/check-*.sh', floor: 13 },
+  { pathspec: '.ci/scripts/test/gates/test-*.sh', floor: 13 },
+  // THE `.claude/hooks/pre-bash/block-*.sh` FAMILY IS GONE, and this note stands in its place rather than a row with a floor of zero, which no deletion could ever breach. It held 43 guards; W5 ported 42 to `.claude/rediacc_hooks/guards/block_*.py` and left one bash file, and W7 P6 ported that one too, so the pathspec now matches nothing and `git ls-files` on it would refuse the
+  // floor it used to carry. THE PYTHON SPELLING IS STILL NOT HERE, deliberately and with the cost measured: adding `.claude/rediacc_hooks/guards/block_*.py` on 2026-09-08 reported 26 new shapes, because the guards carry a shared scaffold of their own, so the widening is an extraction job like the quality half above and belongs in a commit of its own.
 ];
 
 /** Exported for the index: the probe must scan the corpus this gate scans, and one list says so. */
@@ -1533,8 +1533,8 @@ function loadSeed(): { silent: Set<string>; accepted: string[] } {
 // WHY A BUNDLE AND NOT A SECOND IMPLEMENTATION. A pre-commit probe has to hash the STAGED bytes of a file, which means running `normalise`, `stripNoise` and `windows` over them. A Python guard that reimplemented those would be a second implementation of one decision, which is the class of defect this whole file exists to count -- and `isSharedHelperCall` derives its name set from
 // the WHOLE corpus, so the normalisation cannot be ported by reading a regex. So `--emit-index` bundles this file with esbuild and writes the bundle beside the index it was measured with; the guard spawns it. One implementation, two entry points, and the only thing left to disagree is the cache contents, which `.ci/rediacc_ci/tests/test_shape_probe_agreement.py` pins.
 //
-// WHAT THE PROBE IS ALLOWED TO ASSUME, measured rather than hoped: the full corpus scan is about 1.2s over 352 files and never belongs on a commit, while an esbuild bundle of this file starts in well under a tenth of a second. The gate fires at 3 distinct files, so the index keeps only the shapes ALREADY carried by 2 or more -- a staged file can only matter where two other
-// files already agree.
+// WHAT THE PROBE IS ALLOWED TO ASSUME, measured rather than hoped: the full corpus scan is about 1.2s over 352 files and never belongs on a commit, while an esbuild bundle of this file starts in well under a tenth of a second. The gate fires at 3 distinct files, so the index keeps only the shapes ALREADY carried by 2 or more -- a staged file can only matter where two other files
+// already agree.
 
 /** The index format. A probe that reads an older shape must refuse rather than guess, so this is checked before anything else in it is trusted. */
 export const INDEX_SCHEMA = 1;
@@ -1839,11 +1839,12 @@ async function main(): Promise<void> {
   const files = tracked();
   const { perFile, helpers } = scan(files);
 
-  // FLOORS. Either means the scan is broken, and a broken scan reports a confident green having verified nothing -- the exact failure this repo gates against. The corpus floor is the SUM of the family floors below it, so it moves with them: W7 P5 census batches B2 to B4 took the gate-test family from 40 to 23 and this from 200 to 184.
-  // Batches C1 and C2 took the quality family from 35 to 26 and this from 184 to 175. W7 P6 ported the last `.claude/hooks/pre-bash/block-*.sh`, which deleted that family's row above and took this from 175 to 174. Batch E1 froze two more `check-*.sh` against recorded goldens, taking the quality family to 24 and this to 172. Batch G1 froze five more the same way, taking the
-  // quality family to 19 and this to 167, and batch G2 froze three more, taking the quality family to 16 and this to 164. Census batch G2-B1 deleted five more bash gate tests whose pytest ports carry every case, taking the gate-test family from 23 to 18 and this from 164 to 159, and batch G2-B2 deleted three more, taking the family to 15 and this to 156.
-  // Batch G2-B3 froze `check-label-references.sh` and `check-label-inventory.sh` against recorded goldens, taking the quality family to 14 and the corpus to 154.
-  if (files.length < 154) {
+  // FLOORS. Either means the scan is broken, and a broken scan reports a confident green having verified nothing -- the exact failure this repo gates against. The corpus floor is the SUM of the family floors below it, so it moves with them: W7 P5 census batches B2 to B4 took the gate-test family from 40 to 23 and this from 200 to 184. Batches C1 and C2 took the quality family from
+  // 35 to 26 and this from 184 to 175. W7 P6 ported the last `.claude/hooks/pre-bash/block-*.sh`, which deleted that family's row above and took this from 175 to 174. Batch E1 froze two more `check-*.sh` against recorded goldens, taking the quality family to 24 and this to 172. Batch G1 froze five more the same way, taking the quality family to 19 and this to 167, and batch G2
+  // froze three more, taking the quality family to 16 and this to 164. Census batch G2-B1 deleted five more bash gate tests whose pytest ports carry every case, taking the gate-test family from 23 to 18 and this from 164 to 159, and batch G2-B2 deleted three more, taking the family to 15 and this to 156. Batch G2-B3 froze `check-label-references.sh` and `check-label-inventory.sh`
+  // against recorded goldens, taking the quality family to 14 and the corpus to 154. Batch H deleted the last two `mutex: ['tree:repo']` gate tests once their pytest ports carried the serialisation, taking the gate-test family from 15 to 13 and the corpus to 152, and froze `check-review-turn-capacity.sh`, the tree's last bash control, against recorded goldens, taking the quality
+  // family to 13 and the corpus to 151.
+  if (files.length < 151) {
     console.error(
       `${RED}✗${NC} only ${files.length} file(s) in the corpus; the globs are broken or the tree moved`
     );

@@ -16,11 +16,8 @@ NO `id:` IS CORRECT HERE: `derivedId` (`gate-header.ts:260`) maps this basename 
 
 THE RESOLVED NEED SET DOES NOT MOVE, verified by calling `bind()` on both files. Both infer `[]` and both resolve to the empty set `needs: none` declares.
 
-THIS TWIN IS ANOTHER GATE'S CONTROL SOURCE, which is the reason invariant 5 matters more here than usual. `check-control-vacuity.sh:159` pins `check-review-turn-capacity.sh` BY PATH, strips its
-`[[ "$MUTANT" == "$FN" ]]` proof-of-plant guard, and requires the stripped copy
-to be judged non-compliant; if that file were gone, control-vacuity would fail
-with "CONTROL SOURCE MISSING" rather than silently pass. The bash twin stays on
-disk, so the control keeps firing. This is stated here so that W7 P5's deletion pass finds the dependency written down at BOTH ends rather than only at the consumer.
+THIS GATE IS ANOTHER GATE'S CONTROL SOURCE, and the retirement moved that dependency rather than breaking it. `control_vacuity` used to pin `check-review-turn-capacity.sh` BY PATH, strip its `[[ "$MUTANT" == "$FN" ]]` proof-of-plant guard, and require the stripped copy to be judged non-compliant. W7 P5 retired the bash file on 2026-09-21 and repointed `CONTROL_GATE` at
+`.ci/rediacc_ci/quality/review_turn_capacity.py`, which plants the same defects through `rediacc_ci.controls.plant`; the strip is now the removal of that import. The dependency is written down at BOTH ends, here and at the consumer, so a future edit to the port's plants finds it.
 
 DRIVEN, on this tree, both streams captured SEPARATELY, `CI=true` on both:
 
@@ -53,7 +50,8 @@ The plant was reverted from a `cp` backup, verified back at its pre-plant sha256
 with `sha256sum -c`, and `git status --porcelain` diffed against its pre-plant
 capture with no difference.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-review-turn-capacity.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
+THE TWIN IS RETIRED, 2026-09-21. `.ci/scripts/quality/check-review-turn-capacity.sh` was the last bash file in the tree carrying a control, and it was deleted once `.ci/shadow/w7p2-review-turn-capacity.observations.jsonl` asserted equivalence over seven distinct trees. Its outputs for all nine differential cases are recorded under
+`.ci/rediacc_ci/tests/goldens/review-turn-capacity/`, each golden headed with the twin's blob sha.
 
 ---- gate ----
 step: Review turn budget cannot starve a routed review

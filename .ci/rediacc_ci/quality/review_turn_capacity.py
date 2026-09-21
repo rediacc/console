@@ -1,6 +1,8 @@
 r"""The Claude-review turn budget cannot starve a review it is willing to route.
 
-Ported from `.ci/scripts/quality/check-review-turn-capacity.sh`, which is NOT deleted; see `rediacc_ci.quality.__init__` for why both copies live.
+Ported from `.ci/scripts/quality/check-review-turn-capacity.sh`, retired 2026-09-21 once its ledger held at K=5 over seven trees. The twin's own bytes for every differential case are recorded under `.ci/rediacc_ci/tests/goldens/review-turn-capacity/`.
+
+THIS MODULE IS ALSO `control_vacuity`'s CONTROL SOURCE. That gate strips the harness import below and requires the stripped copy to be judged unproven, so the plants here are load-bearing for a second gate and must keep going through `rediacc_ci.controls.plant`.
 
 WHY THIS EXISTS, in the twin's own words, because the incident IS the design:
 

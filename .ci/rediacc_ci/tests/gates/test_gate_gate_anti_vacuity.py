@@ -1,6 +1,6 @@
-"""Port of `.ci/scripts/test/gates/test-gate-anti-vacuity.sh`.
+"""META-GATE: a validator that PASSES when given nothing is broken by definition.
 
-META-GATE: a validator that PASSES when given nothing is broken by definition.
+PORTED FROM `.ci/scripts/test/gates/test-gate-anti-vacuity.sh`, WHICH IS NOW RETIRED. The twin and this port agreed on every case over ten recorded runs in `.ci/shadow/twin-parity.ledger.jsonl` before the bash file was deleted, and nothing here reads or executes it any more.
 
 WHY THIS EXISTS. This repo accumulated about twelve quality gates that were green because they could not fail. Two root patterns, both reproducible by simply removing the input:
 
@@ -18,12 +18,10 @@ Both collapse to one testable property: point the validator at an EMPTY tree and
 REGISTRY POLICY. The registry below is explicit and hand-verified, NOT auto-discovered. Auto-discovery would sweep in generators, one-shot scripts and validators whose input genuinely is optional, producing exactly the kind of noise that gets a gate suppressed. Add a validator here only after confirming by hand that "no input" is a real failure for it rather than a legitimate
 no-op.
 
-TWO REGISTRIES ARE TWO ANSWERS TO ONE QUESTION, so this port does not simply carry a second copy and hope. `test_the_registry_agrees_with_the_twins` parses the twin's array and requires the SETS to be equal. Without it the two lists would drift silently -- each side judging its own -- and a validator dropped from one would still look covered because the other still names it. That
-control is the port's, not the twin's, and it exists because the port created the hazard.
+TWO REGISTRIES WERE TWO ANSWERS TO ONE QUESTION while both files existed, and `test_the_registry_agrees_with_the_twins` held them equal by parsing the twin's array. The retirement resolves the hazard by removing one of the two answers rather than by dropping a control: there is now a single REGISTRY, this one, and no second list for it to drift against.
 
-WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP. `gates.lock.json` records `mutex: ["tree:repo"]` for `gate-test:gate-anti-vacuity`: three cases PLANT a file inside `scripts/` or `.ci/scripts/` and remove it again, and every registry case copies `scripts/`, `.ci/scripts/` and `.ci/rediacc_ci/` while another gate may be
-walking them. `REAL_TREE_TWIN = True` buys the serialisation, and it is honoured
-only because this module declares no `XDIST_GROUP` of its own.
+WHY THIS MODULE IS SERIALISED. Three cases PLANT a file inside `scripts/` or `.ci/scripts/` and remove it again, and every registry case copies `scripts/`, `.ci/scripts/` and `.ci/rediacc_ci/` while another gate may be walking them. While the twin existed, `gates.lock.json` recorded `mutex: ["tree:repo"]` for `gate-test:gate-anti-vacuity` and `REAL_TREE_TWIN = True` bought
+the serialisation off that entry, through the basename lookup in `xdist_groups.group_for`. The entry went with the twin, so the lookup would now answer no and the attribute would promise an isolation the scheduler will not give. `XDIST_GROUP` is the documented escape hatch for a resource no registry knows about, and after the retirement this module's plants are one.
 
 THE PLANTED FIXTURES ARE PID-KEYED for the reason the battery's W/S/T schedule records about the `.gate-paths-exist` pair: this schedule serialises the writer tests WITHIN one battery, but two batteries (two sessions in one tree) collide on a fixed fixture name, each cleanup deleting the other's file, which reads as "the detector is broken" rather than as a collision.
 """
@@ -32,16 +30,11 @@ import os
 import pathlib
 import shutil
 
-from rediacc_ci import paths
+from rediacc_ci import paths, xdist_groups
 from rediacc_ci.tests.gates import harness
 
-BASH_TWIN = ".ci/scripts/test/gates/test-gate-anti-vacuity.sh"
-
 # Three cases plant inside the tracked tree and every registry case copies it.
-REAL_TREE_TWIN = True
-
-# The 42 registry entries each cost a fixture copy plus one gate invocation, and several of those gates are `npx tsx`. Measured 2026-09-09 on this tree; the default 600s would be tight if half a dozen more entries land.
-TWIN_TIMEOUT = 900
+XDIST_GROUP = xdist_groups.REAL_TREE_GROUP
 
 ROOT = paths.repo_root()
 
@@ -235,21 +228,6 @@ def registry_path(script: str) -> pathlib.Path:
         return ROOT / script
     gated = ROOT / "scripts" / "gates" / script
     return gated if gated.is_file() else ROOT / "scripts" / script
-
-
-def twin_registry() -> list[tuple[str, str]]:
-    """The twin's REGISTRY array, parsed. See the module docstring on drift."""
-    source = (ROOT / BASH_TWIN).read_text(encoding="utf-8").split("\n")
-    start = source.index("REGISTRY=(")
-    entries = []
-    for line in source[start + 1 :]:
-        if line == ")":
-            break
-        token = line.strip()
-        if token.startswith('"') and token.endswith('"'):
-            script, _, needle = token[1:-1].partition("|")
-            entries.append((script, needle))
-    return entries
 
 
 # ---------------------------------------------------------------------------
@@ -503,25 +481,18 @@ def test_validator_rejects_empty_tree(gate):
     gate.log_pass("all %d registered validator(s) reject an empty tree" % len(REGISTRY))
 
 
-def test_the_registry_agrees_with_the_twins(gate):
-    """ADDED BY THE PORT, because the port is what created the hazard.
+def test_the_registry_names_no_validator_twice(gate):
+    """WHAT REPLACED THE TWO-REGISTRY EQUALITY, and it is a weaker claim honestly stated.
 
-    Two hand-maintained registries are two answers to one question, and the expensive half is that both look right: a validator dropped from one still looks covered because the other names it. Set equality, both directions, with the difference printed rather than a count.
+    While the twin existed this case compared the two hand-maintained arrays, because a validator dropped from one still looked covered by the other. The twin is retired, so that hazard is gone with the second list and nothing is left to compare against. What the single surviving list can still get wrong on its own is a DUPLICATE: the same script registered twice, once with a
+    needle that is still current and once with one that has rotted. Both rows drive the same gate, the stale needle is answered by the live diagnostic, and the sweep above reports a clean pass over a registry that is quietly one entry shorter than it reads. Set size against row count catches that, and it needs no second source.
     """
-    theirs = twin_registry()
-    if not theirs:
+    scripts = [script for script, _needle in REGISTRY]
+    duplicates = sorted({name for name in scripts if scripts.count(name) > 1})
+    if duplicates:
         gate.log_fail(
-            "the twin's REGISTRY array parsed to nothing, so this comparison would admit "
-            "any drift at all. Fix the reader before trusting the equality below."
+            "%d validator(s) are registered more than once (%s), so the sweep above drives "
+            "fewer distinct gates than the registry appears to name."
+            % (len(duplicates), duplicates)
         )
-    mine, theirs_set = set(REGISTRY), set(theirs)
-    only_here = sorted(mine - theirs_set)
-    only_there = sorted(theirs_set - mine)
-    if only_here or only_there:
-        gate.log_fail(
-            "the two registries have drifted: %d entr(y/ies) only in the port (%s), %d only "
-            "in the twin (%s). They must name the same validators, or one side is judging a "
-            "shorter list and reporting a clean sweep."
-            % (len(only_here), only_here, len(only_there), only_there)
-        )
-    gate.log_pass("the port and the twin register the same %d validator(s)" % len(theirs))
+    gate.log_pass("all %d registered validator(s) are distinct" % len(scripts))

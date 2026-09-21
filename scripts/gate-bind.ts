@@ -74,9 +74,10 @@ const SUBJECT = /\.(py|sh|ts)$/;
  *      as a real declaration for `step: Dockerfile npm pins',` (trailing quote included).
  *      NOW: every gate test carries a REAL header of its own at the top, and the
  *      parser takes the first block, so quoted elements below it are never reached.
- *      Re-measured on test-gate-anti-vacuity.sh, which the control below now names
- *      because the header twin was retired in W7 P5: it parses as kind battery
- *      riding "Quality-gate unit tests", which is true of it.
+ *      Re-measured on test-claude-hooks.sh, which the control below now names
+ *      because the header twin was retired in W7 P5 and test-gate-anti-vacuity.sh
+ *      followed it on 2026-09-21: it parses as kind battery riding
+ *      "Quality-gate unit tests", which is true of it.
  *   2. WAS: all gate-tests share the single step 'Quality-gate unit tests' and none owns
  *      it, so none could legitimately declare one, and excluding the tree said that once
  *      instead of per file.
@@ -1296,7 +1297,7 @@ function selftest(): number {
   // declaration, so they are subjects now and this asserts the new truth.
   ck(
     'a gate-test IS in scope: it declares kind battery, so its header is read like any other',
-    !NOT_SUBJECT.test('.ci/scripts/test/gates/test-gate-anti-vacuity.sh')
+    !NOT_SUBJECT.test('.ci/scripts/test/gates/test-claude-hooks.sh')
   );
   ck(
     'CONTROL: a real gate under .ci/scripts is still in scope',

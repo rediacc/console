@@ -87,7 +87,7 @@
         ".ci/rediacc_ci/quality/probe_parity.py:92 PROBE = \"scripts/drills/transfer.sh\", hard fail at :176.",
         ".ci/rediacc_ci/quality/drill_verdicts.py:70 DRILL_LIB=\"scripts/drills/lib.sh\", hard fail at :236.",
         ".ci/rediacc_ci/quality/scope_scripts_reachability.py:443 uses scripts/drills/lib.sh as its positive control.",
-        ".ci/rediacc_ci/tests/gates/test_gate_scope_engine.py golden expectation, and test-gate-anti-vacuity.sh:61 fixture subject."
+        ".ci/rediacc_ci/tests/gates/test_gate_scope_engine.py golden expectation, and the anti-vacuity harness fixture subject."
       ]
     },
     {
@@ -219,7 +219,7 @@
       "home": "scripts/lint",
       "stays": false,
       "owner": "W7",
-      "why": "The ESLint-JS-API driver behind check_lint_rule_liveness.py. Its Python entry point STAYS at .ci/scripts/quality/, because four places name that path: package.json, scripts/ci-runner/manifest.ts, .github/workflows/ci-quality.yml, and the anti-vacuity registry in .ci/scripts/test/gates/test-gate-anti-vacuity.sh. Driver contract section 5d's rule applies: the ENTRY POINT lives where the binder can see it, the logic may live anywhere.",
+      "why": "The ESLint-JS-API driver behind check_lint_rule_liveness.py. Its Python entry point STAYS at .ci/scripts/quality/, because four places name that path: package.json, scripts/ci-runner/manifest.ts, .github/workflows/ci-quality.yml, and the anti-vacuity registry in .ci/rediacc_ci/tests/gates/test_gate_gate_anti_vacuity.py. Driver contract section 5d's rule applies: the ENTRY POINT lives where the binder can see it, the logic may live anywhere.",
       "notes": [
         "Do NOT add the .mjs to manifest.ts's `leaves` list. check-ci-parity.ts:488-495 derives `leaves` from the package.json command's shell structure and reports the extra entry as a hygiene finding, and scope-map.cjs:134 already forces the full harness scope on any .ci edit."
       ]

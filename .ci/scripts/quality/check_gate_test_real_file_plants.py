@@ -119,9 +119,12 @@ ALLOWLIST = {
         "avoids it' -- resolve-version.sh is invoked from the repo root, so "
         "moving the released version means moving that file). Not the "
         "accidental hazard this gate exists to catch: the restore is verified "
-        "by digest AND mode afterward, and the module is registered in "
-        "WRITER_TESTS specifically so it is excluded from parallel xdist "
-        "workers that would race it."
+        "by digest AND mode afterward, and the module declares "
+        "XDIST_GROUP = xdist_groups.REAL_TREE_GROUP specifically so it is "
+        "serialised against every other real-tree test rather than racing one "
+        "on a second xdist worker. That declaration replaced REAL_TREE_TWIN on "
+        "2026-09-21, when the bash twin whose lock entry used to buy the "
+        "serialisation was retired."
     ),
 }
 

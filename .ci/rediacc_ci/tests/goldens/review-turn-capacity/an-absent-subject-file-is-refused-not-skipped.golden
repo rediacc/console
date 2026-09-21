@@ -1,0 +1,5 @@
+# twin .ci/scripts/quality/check-review-turn-capacity.sh blob c29a748594eee4b8e0d02d89cb8582f3568dc6de
+exit: 1
+--- stdout ---
+--- stderr ---
+[0;31m✗[0m check-review-turn-capacity: <root>/.ci/scripts/review/claude-review-gate.sh not found; the gate cannot judge a function it cannot read

@@ -5067,50 +5067,6 @@
     }
   },
   {
-    "id": "gate-test:gate-anti-vacuity",
-    "run": ".ci/scripts/test/gates/test-gate-anti-vacuity.sh",
-    "mutex": [
-      "tree:repo"
-    ],
-    "slow": true,
-    "gate": true,
-    "paths": [
-      "scripts/**",
-      ".ci/scripts/**",
-      ".ci/config/**",
-      ".ci/rediacc_ci/**"
-    ],
-    "pathsOrigin": "declared",
-    "qualityGateTest": true,
-    "leaves": [
-      ".ci/scripts/test/gates/test-gate-anti-vacuity.sh"
-    ],
-    "ci": {
-      "kind": "step",
-      "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-security",
-      "step": "Quality-gate unit tests"
-    }
-  },
-  {
-    "id": "gate-test:generate-tag-inputs",
-    "run": ".ci/scripts/test/gates/test-generate-tag-inputs.sh",
-    "mutex": [
-      "tree:repo"
-    ],
-    "gate": true,
-    "qualityGateTest": true,
-    "leaves": [
-      ".ci/scripts/test/gates/test-generate-tag-inputs.sh"
-    ],
-    "ci": {
-      "kind": "step",
-      "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-security",
-      "step": "Quality-gate unit tests"
-    }
-  },
-  {
     "id": "gate-test:regions-sync",
     "run": ".ci/scripts/test/gates/test-regions-sync.sh",
     "gate": true,
@@ -5134,7 +5090,7 @@
     "leaves": [
       ".ci/rediacc_ci/check_pytest.py"
     ],
-    "reads": [
+    "mutex": [
       "tree:repo"
     ],
     "paths": [

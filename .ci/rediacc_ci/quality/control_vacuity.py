@@ -24,7 +24,7 @@ WHAT THE TWIN ENFORCES, carried over from its own header verbatim because the ar
     bad entry, injecting a key with python) cannot fail to apply, so it is exempt.
     The rule keys on how the mutant is BUILT, not on whether a control exists.
 
-    Control-first itself: the control below strips a real gate's guard and requires
+    Control-first itself: the control below strips a real gate's proof and requires
     this check to catch it.
 
 THE THREE EXCLUSIONS INSIDE `builds_by_substitution`, all carried, because each one was paid for by a false positive:
@@ -46,8 +46,8 @@ THE THREE EXCLUSIONS INSIDE `builds_by_substitution`, all carried, because each 
     `s///` appears on the line. "Missing the third mis-exempted the two gates
     that motivated this check."
 
-THE SCOPE IS STATED, NOT LEFT TO THE GLOB, and the twin's reason is carried with it: "This check parses BASH, so its enumeration is `check-*.sh` and every `check_*.py` gate is outside it. That is a real limit, and on 2026-08-28 it was invisible: a reader saw a green with no hint that 21 sibling gates had not been looked at. Measured the same day, which is why this is a printed
-COUNT and not new parsing: of the 21 Python gates, ZERO build a control mutant by substitution." So the number of unscanned gates is part of the green line.
+THE SCOPE IS STATED, NOT LEFT TO THE GLOBS, and the twin's reason for stating it is why the scope eventually MOVED: "This check parses BASH, so its enumeration is `check-*.sh` and every `check_*.py` gate is outside it. That is a real limit, and on 2026-08-28 it was invisible: a reader saw a green with no hint that 21 sibling gates had not been looked at." The limit was
+closed on 2026-09-21 rather than restated, when the last bash control in the tree was retired and the bash arm reached zero. The Python arm beside it is described where it is defined; the green line now counts both, so an arm that empties is visible instead of being a number nobody reads.
 
 -----------------------------------------------------------------------------
 PORT NOTES.
@@ -114,15 +114,43 @@ SUBSTITUTION = re.compile(r"\$\{[A-Za-z_][A-Za-z0-9_]*//|sed [^&]*%ss[/@|#]|sed 
 PROVES_IDENTICAL = re.compile(r'\[\[ "\$[A-Za-z_][A-Za-z0-9_]*" == "\$[A-Za-z_][A-Za-z0-9_]*" \]\]')
 PROVES_MARKER = re.compile(r"grep -[a-z]*q[a-z]* .+(\$TMP|\$MUTANT|mutant|broken)")
 
-# The gate the CONTROL mutilates, and the guard line it removes. Named as constants so the failure message and the strip cannot drift apart.
-CONTROL_GATE = "check-review-turn-capacity.sh"
+# The guard line the bash strip removes, kept because `strip_guard` is still the tested transliteration of `sed '/.../,+2d'`.
 CONTROL_GUARD = re.compile(r'\[\[ "\$MUTANT" == "\$FN" \]\]')
-
-# The substitution the stripped copy must still carry. Without this the control would "fire" against a copy that had lost the thing being tested.
-CONTROL_STILL_SUBSTITUTES = re.compile(r"\$\{[A-Za-z_][A-Za-z0-9_]*//")
 
 # This file is not its own subject.
 SELF = "check-control-vacuity.sh"
+
+# --------------------------------------------------------------------------- THE PYTHON ARM, ADDED 2026-09-21 WITH THE RETIREMENT OF THE LAST BASH CONTROL.
+#
+# WHAT HAPPENED. `check-review-turn-capacity.sh` was the only file in the whole tracked tree carrying a bash control of any kind, let alone one built by pattern substitution: measured that day over `.ci/scripts/**`, `.claude/**`, `scripts/**` and `.github/**`, one hit. Retiring it leaves the bash arm below scanning a real directory and finding nothing, which is the state its own
+# anti-vacuity refusal exists to announce. The subject did not disappear, it changed language, so the corpus follows it rather than the gate being re-floored to keep a green over nothing.
+#
+# WHAT THIS ARM ASKS, AND WHY IT IS NOT `check:ci-python-control-plants`. That gate asks whether the HARNESS was used, by AST, over control regions, and refuses a raw `X.replace(...)`. This one asks the question it has always asked, whether there is a PROOF the plant landed, and for Python the proof IS `rediacc_ci.controls.plant`, which raises `VacuousPlantError` on a needle
+# that is absent or a mutant byte-identical to its fixture. So the finding here is a module that PLANTS while its `plant` does not resolve to that harness: no import of it, or a local `def plant` shadowing it. That is the false negative the sibling gate names in its own header ("a gate that merely counted `plant(` would read those call sites as compliant while they use no
+# harness at all"), and it is the half an AST scan of control regions does not cover, because a shadowed `plant` is not a raw substitution.
+#
+# LINE SCANNING, WITH STRINGS AND DOCSTRINGS REMOVED FIRST, and the removal is not tidiness. This file's prose says plant(s) and plant(), `check_python_control_plants.py` embeds whole modules as triple-quoted fixtures including one that defines a local plant, and both read as code to a scanner that only drops comments. Measured across the corpus: with comments alone stripped,
+# one false positive; with string literals and triple-quoted blocks stripped too, zero.
+PY_SCOPE = (
+    os.path.join(".ci", "rediacc_ci", "quality", "*.py"),
+    os.path.join(".ci", "scripts", "quality", "check_*.py"),
+)
+
+# A triple-quote opener or closer, counted per line. An ODD count toggles the block; an even one is a single-line docstring and changes nothing.
+PY_TRIPLE = re.compile(r'"""|\'\'\'')
+
+# A single-line string literal, either quote, with escapes honoured.
+PY_STRING = re.compile(r'"(?:\\.|[^"\\])*"|\'(?:\\.|[^\'\\])*\'')
+
+# A CALL to the plant harness, not an attribute access on something else.
+PY_PLANT = re.compile(r"(?<![\w.])plant(?:_re)?\(")
+
+# The import that makes `plant` the harness, and the local definition that stops it being the harness.
+PY_HARNESS_IMPORT = re.compile(r"^%s*from rediacc_ci\.controls import [^#]*\bplant\b" % SPACE)
+PY_LOCAL_PLANT = re.compile(r"^%s*def plant(?:_re)?%s*\(" % (SPACE, SPACE))
+
+# The gate the CONTROL mutilates, relative to the repository root. The SUCCESSOR of the bash file this control used to name: `check-review-turn-capacity.sh` was retired in the same change, and its Python port carries the same seven plants through the harness.
+CONTROL_GATE = os.path.join(".ci", "rediacc_ci", "quality", "review_turn_capacity.py")
 
 BANNER = "check-control-vacuity: every pattern-substitution control proves its plant landed"
 
@@ -181,6 +209,52 @@ def strip_guard(lines: list[str]) -> list[str]:
     return out
 
 
+def py_code_lines(lines: list[str]) -> list[str]:
+    """`lines` with comments, docstrings and single-line string literals removed.
+
+    THE THREE REMOVALS ARE ORDERED AND EACH ONE WAS PAID FOR. A triple-quoted block is dropped whole, because `check_python_control_plants.py` carries entire Python modules as fixtures and one of them defines a local plant that is a fixture, not a shadow. A comment line goes for the reason the bash arm gives. A string literal is blanked rather than dropped, so a call spanning
+    the rest of the line still reads as code while the prose inside the quotes does not.
+    """
+    out: list[str] = []
+    inside = False
+    for line in lines:
+        marks = len(PY_TRIPLE.findall(line))
+        if inside:
+            if marks % 2:
+                inside = False
+            continue
+        if marks % 2:
+            inside = True
+            continue
+        if COMMENT_LINE.search(line):
+            continue
+        out.append(PY_STRING.sub('""', line))
+    return out
+
+
+def py_plants(code: list[str]) -> bool:
+    """Does this module build a mutant at all? A `plant()` or `plant_re()` call."""
+    return any(PY_PLANT.search(line) for line in code)
+
+
+def py_plant_is_proven(code: list[str]) -> bool:
+    """Does the `plant` it calls RESOLVE to the harness that refuses a no-op?
+
+    Two conditions, and the second is the one a token count cannot express: the harness must be imported, and no local definition may shadow it. A module that imports `plant` and then defines its own is calling the local one, and the import left behind reads as compliance.
+    """
+    if not any(PY_HARNESS_IMPORT.search(line) for line in code):
+        return False
+    return not any(PY_LOCAL_PLANT.search(line) for line in code)
+
+
+def strip_harness_import(lines: list[str]) -> list[str]:
+    """Drop the harness import. The Python analogue of the bash `sed '/guard/,+2d'`.
+
+    ONE LINE, NOT A RANGE, because the proof here is the RESOLUTION of a name rather than an assertion occupying several lines. The stripped copy keeps every plant call, which is what makes it a mutant of the thing under test rather than a different file.
+    """
+    return [line for line in lines if not PY_HARNESS_IMPORT.search(line)]
+
+
 class Failures:
     """The `fails` counter and the `fail()` that increments it.
 
@@ -193,6 +267,45 @@ class Failures:
     def fail(self, message: str) -> None:
         log.error(message)
         self.count += 1
+
+
+def audit_python(root: pathlib.Path, failures: Failures) -> tuple[int, int]:
+    """Walk the Python gate corpus and rule on each. Returns (checked, exempt).
+
+    SORTED WITHIN EACH GLOB, matching the bash arm and, more usefully, making the stderr of two runs comparable line by line.
+    """
+    checked = 0
+    exempt = 0
+    for pattern in PY_SCOPE:
+        for path in sorted(glob.glob(str(root / pattern))):
+            candidate = pathlib.Path(path)
+            if not candidate.is_file():
+                continue
+            code = py_code_lines(read_lines(candidate))
+            if not py_plants(code):
+                exempt += 1
+                continue
+            checked += 1
+            if py_plant_is_proven(code):
+                continue
+            failures.fail(
+                "%s plants a control mutant whose `plant` does not resolve to "
+                "rediacc_ci.controls, so nothing refuses a mutation that silently did "
+                "nothing." % candidate.name
+            )
+            print(
+                "      Import it (`from rediacc_ci.controls import plant`) and remove any local",
+                file=sys.stderr,
+            )
+            print(
+                "      definition of the same name. The harness raises VacuousPlantError on an",
+                file=sys.stderr,
+            )
+            print(
+                "      absent needle or an unchanged mutant; a local copy does not.",
+                file=sys.stderr,
+            )
+    return checked, exempt
 
 
 def self_prose_control() -> str | None:
@@ -283,39 +396,45 @@ def main(argv: list[str] | None = None) -> int:
     print(BANNER)
 
     failures = Failures()
-    checked, exempt = audit(gate_dir, failures)
+    sh_checked, sh_exempt = audit(gate_dir, failures)
+    py_checked, py_exempt = audit_python(root, failures)
+    checked = sh_checked + py_checked
 
-    # ANTI-VACUITY, per .claude/skills/testing/gates.md: discovering zero inputs must FAIL. A corpus that silently collapses to nothing is exactly how this check would stop protecting anything while still printing a tick.
+    # ANTI-VACUITY, per .claude/skills/testing/gates.md: discovering zero inputs must FAIL. A corpus that silently collapses to nothing is exactly how this check would stop protecting anything while still printing a tick. THE SUM, NOT EITHER ARM: the bash half reached zero on 2026-09-21 by a deliberate retirement rather than by a broken glob, and refusing on that alone would
+    # have turned a completed port into a red nobody could clear except by deleting the guard.
     if checked == 0:
         failures.fail(
             "no pattern-substitution controls found at all \u2014 the corpus collapsed to zero."
         )
         print(
-            "      Either the glob no longer matches the gate directory, or has_control/",
+            "      Either the globs no longer match the two gate directories, or has_control/",
             file=sys.stderr,
         )
         print(
-            "      builds_by_substitution stopped recognising the shapes in use.", file=sys.stderr
+            "      builds_by_substitution/py_plants stopped recognising the shapes in use.",
+            file=sys.stderr,
         )
 
-    # ----------------------------------------------------------------------- CONTROL: strip a real gate's vacuity guard and require this check to catch it. Without this, a green above could mean "every gate complies" OR "the detector stopped recognising the guard shape", and those look identical. -----------------------------------------------------------------------
-    control_src = gate_dir / CONTROL_GATE
+    # ----------------------------------------------------------------------- CONTROL: strip a real gate's proof and require this check to catch it. Without this, a green above could mean "every gate complies" OR "the detector stopped recognising the proof shape", and those look identical.
+    #
+    # THE CONTROL MOVED TO PYTHON WITH THE CORPUS. It used to strip the `[[ "$MUTANT" == "$FN" ]]` guard out of `check-review-turn-capacity.sh`; that file is retired and its port is the subject now. Removing the harness import leaves every `plant()` call standing while making none of them resolve to the thing that refuses a no-op, which is exactly the defect being detected.
+    # -----------------------------------------------------------------------
+    control_src = root / CONTROL_GATE
     if control_src.is_file():
-        stripped = strip_guard(read_lines(control_src))
-        if not any(CONTROL_STILL_SUBSTITUTES.search(line) for line in stripped):
+        stripped = strip_harness_import(py_code_lines(read_lines(control_src)))
+        if not py_plants(stripped):
             failures.fail(
-                "CONTROL IS VACUOUS: the stripped copy lost its substitution too, "
-                "so it proves nothing."
+                "CONTROL IS VACUOUS: the stripped copy lost its plants too, so it proves nothing."
             )
-        elif proves_plant_landed(stripped):
+        elif py_plant_is_proven(stripped):
             failures.fail(
-                "CONTROL DID NOT FIRE: a gate with its vacuity guard removed was still "
+                "CONTROL DID NOT FIRE: a gate with its harness import removed was still "
                 "judged compliant, so this check cannot detect the defect it exists for."
             )
     else:
         failures.fail(
             "CONTROL SOURCE MISSING: %s is gone; repoint the control at another "
-            "substitution-based gate." % control_src
+            "gate that plants through the harness." % control_src
         )
 
     if failures.count != 0:
@@ -326,16 +445,15 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 1
 
-    # STATE THE SCOPE, do not leave it to the glob. A future `.py` gate that mutates its own source by substitution would escape this check with nothing said, so the number of unscanned gates is part of the green line.
-    py_unscanned = sum(1 for p in glob.glob(str(gate_dir / "check_*.py")) if os.path.isfile(p))
-
+    # STATE THE SCOPE, do not leave it to the globs. Both arms are counted separately, because they answer the same question about two populations and a reader has to be able to see one of them reach zero.
     # STDOUT, NOT log.info. The twin's last line is
     # `echo "${GREEN}\u2713${NC} $checked ..."`, which lands on stdout, and
     # `rediacc_ci.log` writes every message to stderr by design. Both spellings are CHATTER to `scripts/lib/shadow-gate.ts`, so the differential would score the two as equivalent either way; that is exactly why it has to be got right by reading the twin rather than by watching the comparator.
     print(
-        "\u2713 %d pattern-substitution control(s) prove their plant landed; %d built by "
-        "construction (exempt); %d python gate(s) NOT scanned here -- check:ci-python-control-plants owns them"
-        % (checked, exempt, py_unscanned)
+        "\u2713 %d pattern-substitution control(s) prove their plant landed (%d bash, %d python); "
+        "%d built by construction or planting nothing (exempt); the raw-substitution half of the "
+        "python question belongs to check:ci-python-control-plants"
+        % (checked, sh_checked, py_checked, sh_exempt + py_exempt)
     )
     return 0
 
@@ -353,7 +471,7 @@ def selftest() -> int:
 
     BOTH DIRECTIONS FOR EVERY RULE. This gate's whole value is a DISTINCTION (substitution versus construction, code versus comment, prefix versus needle), and a distinction has two sides. A suite with only positive plants would be satisfied by a detector that answered "yes" to everything, which is the same gate as one that answered "no".
     """
-    ctl = Controls("control-vacuity", floor=24, verbose=True)
+    ctl = Controls("control-vacuity", floor=39, verbose=True)
 
     ctl.check("CONTROL: the self-prose control passes", self_prose_control(), None)
 
@@ -444,11 +562,68 @@ def selftest() -> int:
     )
     ctl.check("MIRROR: a file with no guard is unchanged", strip_guard(["a", "b"]), ["a", "b"])
 
-    # -- the whole gate, over a fixture gate directory ---------------------
+    # -- the PYTHON arm's three predicates, both directions each ----------
+    ctl.check("PY: a plant call registers", py_plants(['    m = plant(src, "a", "b")']), True)
+    ctl.check("PY: plant_re registers too", py_plants(["    m = plant_re(src, r'a', 'b')"]), True)
+    ctl.check(
+        "MIRROR: an attribute access of the same name is not a harness call",
+        py_plants(["    m = self.plant(src)"]),
+        False,
+    )
+    ctl.check("MIRROR: a module that plants nothing is exempt", py_plants(["x = 1"]), False)
+    ctl.check(
+        "PROOF: the harness import with no local shadow resolves",
+        py_plant_is_proven(["from rediacc_ci.controls import Controls, plant", "plant(a, b, c)"]),
+        True,
+    )
+    ctl.check(
+        "MIRROR: a plant with no harness import does not",
+        py_plant_is_proven(["plant(a, b, c)"]),
+        False,
+    )
+    # THE HALF A TOKEN COUNT CANNOT SEE, and the sibling gate's header names it as the false negative it would otherwise carry: the import is present AND a local definition shadows it, so every call goes somewhere that refuses nothing.
+    ctl.check(
+        "MIRROR: a LOCAL def of the same name shadows the harness",
+        py_plant_is_proven(
+            ["from rediacc_ci.controls import plant", "def plant(a, b):", "    return b"]
+        ),
+        False,
+    )
+    ctl.check(
+        "STRIP: the harness import is removed and the plants stay",
+        strip_harness_import(["from rediacc_ci.controls import plant", "plant(a, b, c)"]),
+        ["plant(a, b, c)"],
+    )
+
+    # -- py_code_lines, the three removals --------------------------------
+    ctl.check(
+        "CODE: a comment naming a plant is prose",
+        py_code_lines(["# plant(a, b, c)"]),
+        [],
+    )
+    ctl.check(
+        "CODE: a triple-quoted fixture defining a local plant is a fixture",
+        py_code_lines(['_FIXTURE = """', "def plant(a, b):", '"""', "x = 1"]),
+        ["x = 1"],
+    )
+    ctl.check(
+        "CODE: a plant named inside a string literal is prose",
+        py_code_lines(['    c.check("a plant(s) count", x)']),
+        ['    c.check("", x)'],
+    )
+    ctl.check(
+        "MIRROR: a real call beside a string literal survives the blanking",
+        py_plants(py_code_lines(['    m = plant(src, "a", "b")  # noqa'])),
+        True,
+    )
+
+    # -- the whole gate, over a fixture tree -------------------------------
     with tempfile.TemporaryDirectory() as tmp:
         root = pathlib.Path(tmp)
         gate_dir = root / ".ci" / "scripts" / "quality"
         gate_dir.mkdir(parents=True)
+        control_src = root / CONTROL_GATE
+        control_src.parent.mkdir(parents=True, exist_ok=True)
 
         def write(name: str, body: str) -> None:
             (gate_dir / name).write_text(body, encoding="utf-8")
@@ -464,18 +639,16 @@ def selftest() -> int:
                 else:
                     os.environ[paths.ROOT_ENV] = saved
 
-        # The control gate the CONTROL block strips. It must carry BOTH the substitution and the guard, or the control cannot fire.
-        write(
-            CONTROL_GATE,
+        # The control gate the CONTROL block strips. It must carry BOTH the plants and the harness import, or the control cannot fire.
+        control_src.write_text(
             _joined(
-                "#!/bin/bash",
-                "# CONTROL DID NOT FIRE is mentioned here",
-                'MUTANT="${FN//per_kloc=25/per_kloc=8}"',
-                'if [[ "$MUTANT" == "$FN" ]]; then',
-                '  fail "could not plant"',
-                "fi",
+                "from rediacc_ci.controls import Controls, plant",
+                "",
+                "def selftest():",
+                '    return plant(SRC, "per_kloc=25", "per_kloc=8")',
                 "",
             ),
+            encoding="utf-8",
         )
         write(
             "check-good.sh",
@@ -487,7 +660,7 @@ def selftest() -> int:
                 "",
             ),
         )
-        ctl.check("CONTROL: a compliant gate directory passes", run(), 0)
+        ctl.check("CONTROL: a compliant tree passes", run(), 0)
 
         write(
             "check-bad.sh",
@@ -502,13 +675,19 @@ def selftest() -> int:
         ctl.check("PLANT: a substitution control with no proof reds", run(), 1)
         (gate_dir / "check-bad.sh").unlink()
 
-        # THE VACUITY CASE. Remove every substituting gate and the corpus collapses; a gate that reported clean here would be reporting on nothing. The control gate stays so the CONTROL block still runs.
+        # THE PYTHON HALF OF THE SAME PLANT: a module that plants while its `plant` resolves to nothing.
+        unproven = gate_dir / "check_unproven.py"
+        unproven.write_text('def selftest():\n    return plant(SRC, "a", "b")\n', encoding="utf-8")
+        ctl.check("PLANT: a python plant that reaches no harness reds", run(), 1)
+        unproven.unlink()
+
+        # THE VACUITY CASE. Remove every substituting gate and every planting module and the corpus collapses; a gate that reported clean here would be reporting on nothing. The control source stays present but stops planting, which is the one state that empties the corpus without also tripping the missing-source refusal.
         (gate_dir / "check-good.sh").unlink()
-        write(CONTROL_GATE, "#!/bin/bash\n# CONTROL DID NOT FIRE\necho hi\n")
+        control_src.write_text("def selftest():\n    return 0\n", encoding="utf-8")
         ctl.check("VACUITY: a corpus that collapsed to zero reds", run(), 1)
 
         # And the control source going missing is its own refusal.
-        (gate_dir / CONTROL_GATE).unlink()
+        control_src.unlink()
         write(
             "check-good.sh",
             _joined(

@@ -22,11 +22,12 @@ THE RESOLVED NEED SET DOES NOT MOVE, verified by calling `bind()` on both files 
 
 PINNED BY PATH IN TWO HARNESSES, and the two rows take DIFFERENT arms.
 
-  - `.ci/scripts/test/gates/test-gate-anti-vacuity.sh:110` registers
-    `".ci/scripts/quality/check-python-lint.sh|VACUOUS INPUT"` and RUNS that
-    path against an empty tree, asserting the diagnostic. That is a
+  - `.ci/rediacc_ci/tests/gates/test_gate_gate_anti_vacuity.py` registers
+    `.ci/scripts/quality/check_python_lint.py` against `VACUOUS INPUT` and RUNS
+    that path against an empty tree, asserting the diagnostic. That is a
     run-in-place row, so if it is ever repointed it must be repointed at THIS
-    ENTRY POINT, never at the module.
+    ENTRY POINT, never at the module. The bash twin that carried the same
+    registry was retired 2026-09-21.
   - `.ci/rediacc_ci/tests/test_core_dockerx.py:562` reads the same path as TEXT
     and regex-matches a whole line of the form `exit <digits>`, asserting the
     cannot-run code 77 is among them. That is a behavioural needle in the

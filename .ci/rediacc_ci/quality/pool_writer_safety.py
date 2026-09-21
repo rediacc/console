@@ -11,9 +11,8 @@ The registration used to live in `.ci/scripts/test/run-all.sh`, as the hand-main
 
 So the subject moved with the runner. Left parsing run-all.sh this gate would have gone one of two ways once that file was deleted, and both are worse than a red: it would REFUSE ("runner not found", exit 1) and read as a bug in the deletion, or -- had anyone "fixed" that by treating an absent runner as clean -- it would pass forever while policing nothing.
 
-THE RETARGET IS NOT A WEAKENING, MEASURED RATHER THAN ASSERTED. On this tree, 2026-09-09 the old parse over run-all.sh returned 4 names (`test-docs-gen.sh`, `test-gate-anti-vacuity.sh`, `test-gate-paths-exist.sh`, `test-generate-tag-inputs.sh`, the first now retired) and the lock's `mutex` set returned those 4 plus `test-shrink-only-composition.sh`.
-`old - new` was EMPTY, so nothing that was being
-demanded stopped being demanded; the one addition was a test the lock already serialised and the hand list had never been updated to carry, which is itself the argument against hand lists. W7 P5 census batch A8 retired that fifth twin, so the set is 4 again -- by a deletion, not by this reader narrowing.
+THE RETARGET IS NOT A WEAKENING, MEASURED RATHER THAN ASSERTED. On this tree, 2026-09-09 the old parse over run-all.sh returned 4 names (`test-docs-gen.sh`, `test-gate-anti-vacuity.sh`, `test-gate-paths-exist.sh`, `test-generate-tag-inputs.sh`, the first now retired) and the lock's `mutex` set returned those 4 plus `test-shrink-only-composition.sh`. `old - new` was EMPTY, so
+nothing that was being demanded stopped being demanded; the one addition was a test the lock already serialised and the hand list had never been updated to carry, which is itself the argument against hand lists. W7 P5 census batch A8 retired that fifth twin, so the set is 4 again -- by a deletion, not by this reader narrowing.
 
 `reads` IS DELIBERATELY NOT ACCEPTED as a registration. A scanner is released to run beside other scanners; only `mutex` puts a test in the serial W chain, so a writer declared `reads` is exactly the flake this gate exists to catch.
 
@@ -141,12 +140,25 @@ LOCK_ENV = "POOL_SAFETY_LOCK"
 GATES_DIR_REL = (".ci", "scripts", "test", "gates")
 LOCK_REL = ("scripts", "ci-runner", "gates.lock.json")
 
+# THE THIRD SEAM, ADDED 2026-09-21 WITH THE PYTHON-SIDE CORPUS. Same shape as the two above, and for the same reason: a fixture-driven control that cannot move the ports directory would have to plant inside the real one.
+PORTS_DIR_ENV = "POOL_SAFETY_PORTS_DIR"
+PORTS_DIR_REL = (".ci", "rediacc_ci", "tests", "gates")
+
 # A lock entry is a gate test when its `run` names a script under this prefix. `run` is a command line in the general case, so the WORD that starts with the prefix is taken rather than the whole string.
 GATES_RUN_PREFIX = ".ci/scripts/test/gates/"
 
 # The claim strength that means "serialised writer". `reads` is NOT accepted: a scanner is released to run beside other scanners, so a writer hiding in that set is exactly the flake this gate exists for.
 WRITER_CLAIM = "mutex"
 TREE_RESOURCE_PREFIX = "tree:"
+
+# The lane every ported gate test runs in, and the group a port lands in when it writes the tracked tree. Named as constants so the finding text and the parse cannot drift apart.
+PYTEST_LANE_ID = "check:ci-pytest"
+REAL_TREE_GROUP = "real-tree"
+
+# A module-level `XDIST_GROUP = ...` naming the real-tree group, by the shared constant or by the literal. BOTH SPELLINGS, because `xdist_groups.REAL_TREE_GROUP` exists precisely so the literal is not written twice, and a gate that only recognised the import would read a hand-written literal as no declaration at all.
+PORT_GROUP_RE = re.compile(
+    r"^XDIST_GROUP\s*=.*(?:REAL_TREE_GROUP|\"%s\"|'%s')" % ((REAL_TREE_GROUP,) * 2)
+)
 
 # --------------------------------------------------------------------------- The awk scanner's patterns, one Python name per awk construct so a reader can put the two files side by side. ---------------------------------------------------------------------------
 
@@ -363,8 +375,8 @@ def registered_writers(lock_text: str) -> list[str]:
     run-all.sh. battery.py has no such array by design, so the registration it schedules by is the lock, and this is `battery.classify_from_lock(lock, "mutex")` transliterated -- the same algorithm run-all.sh itself carried as an inline python3 heredoc at run-all.sh:292. Reading the same declaration the runner schedules by is the point: a gate that read a SECOND list would be the
     third copy of one definition, and copies disagree.
 
-    MEASURED AT THE RETARGET, and it is the reason this is not a weakening: the old parse returned 4 names and this one returned those same 4 plus `test-shrink-only-composition.sh`, which run-all.sh's hand list had never been updated to carry. Set difference in the other direction was empty. W7 P5 census batch A8 then retired that fifth twin, so the derivation is back to 4
-    names by deletion rather than by a narrowing of this reader.
+    MEASURED AT THE RETARGET, and it is the reason this is not a weakening: the old parse returned 4 names and this one returned those same 4 plus `test-shrink-only-composition.sh`, which run-all.sh's hand list had never been updated to carry. Set difference in the other direction was empty. W7 P5 census batch A8 then retired that fifth twin, so the derivation is back to 4 names by
+    deletion rather than by a narrowing of this reader.
 
     An unparseable or non-list lock contributes NOTHING rather than raising, which is `battery.classify_from_lock`'s documented behaviour; the CALLER turns that into the anti-vacuity refusal, because "nothing is declared" and "the lock is broken" must not silently become "nothing needs isolating".
     """
@@ -391,6 +403,52 @@ def registered_writers(lock_text: str) -> list[str]:
                 names.add(os.path.basename(word))
                 break
     return sorted(names)
+
+
+def port_writers(ports_dir: pathlib.Path) -> list[str]:
+    """Ported gate tests that declare themselves into the real-tree xdist group.
+
+    WHY THIS CORPUS EXISTS AT ALL, and it is the 2026-09-21 retarget. The two bash gate tests that carried `mutex: ["tree:repo"]` are retired: their pytest ports (`test_gate_gate_anti_vacuity.py`, `test_gate_generate_tag_inputs.py`) carry every case and still overwrite tracked files while they run. So the real-tree WRITERS did not go away with the twins, they changed language, and
+    a gate that kept reading only the bash half would have gone on reporting a clean battery while the writers it exists for ran somewhere it no longer looked.
+
+    A DECLARATION, NOT A SCAN, and the asymmetry with the bash half is deliberate rather than an omission. The awk-transliterated scanner below decides taint from shell redirect syntax; Python writes through `pathlib.Path.write_text`, `shutil.copy2` and `os.replace`, which carry no such shape, and a detector guessing at them is the cry-wolf machine the twin's header already
+    rejected twice. What the ports DO have is the thing bash gate tests never had: a module-level declaration the scheduler itself reads (`rediacc_ci.xdist_groups.group_for`). Reading the same declaration the scheduler schedules by is the property that made the 2026-09-09 lock retarget right, applied again.
+
+    SORTED, for the same reason the bash glob is.
+    """
+    names = []
+    for path in sorted(ports_dir.glob("test_*.py")):
+        if not path.is_file():
+            continue
+        if any(PORT_GROUP_RE.search(line) for line in read_lines(path)):
+            names.append(path.name)
+    return names
+
+
+def lane_claims_tree_exclusively(lock_text: str, lane_id: str) -> bool:
+    """Does `lane_id`'s lock entry declare an EXCLUSIVE `tree:` resource?
+
+    `reads` is refused here for the same reason it is refused of a gate test: a shared claim releases the lane to run beside every other reader of the tree, and the ports inside it write that tree. `check:ci-pytest` carried `reads: ["tree:repo"]` until the two writers moved into it, which was correct while it only drove twins that read.
+    """
+    try:
+        entries = json.loads(lock_text)
+    except ValueError:
+        return False
+    if not isinstance(entries, list):
+        return False
+    for entry in entries:
+        if not isinstance(entry, dict) or entry.get("id") != lane_id:
+            continue
+        claimed = entry.get(WRITER_CLAIM)
+        if not isinstance(claimed, list):
+            return False
+        return any(isinstance(r, str) and r.startswith(TREE_RESOURCE_PREFIX) for r in claimed)
+    return False
+
+
+def read_lines(path: pathlib.Path) -> list[str]:
+    """A file's lines, decoded permissively. Nothing read here is written back out."""
+    return path.read_text(encoding="utf-8", errors="replace").split("\n")
 
 
 # The two planted control fixtures, byte for byte from the twin's heredocs. The temp-safe one uses the exact mktemp-into-a-root-shaped-name pair that broke the first draft of the scanner, and its INNER heredoc is a redirect that is text.
@@ -447,6 +505,7 @@ def main(argv: list[str] | None = None) -> int:
 
     repo_root = get_repo_root()
     gates_dir = pathlib.Path(os.environ.get(GATES_DIR_ENV) or repo_root.joinpath(*GATES_DIR_REL))
+    ports_dir = pathlib.Path(os.environ.get(PORTS_DIR_ENV) or repo_root.joinpath(*PORTS_DIR_REL))
     lock = pathlib.Path(os.environ.get(LOCK_ENV) or repo_root.joinpath(*LOCK_REL))
 
     with tempfile.TemporaryDirectory() as control_name:
@@ -477,11 +536,31 @@ def main(argv: list[str] | None = None) -> int:
             "measuring nothing" % lock
         )
 
-    registered = registered_writers(lock.read_text(encoding="utf-8", errors="replace"))
-    if not registered:
+    lock_text = lock.read_text(encoding="utf-8", errors="replace")
+    registered = registered_writers(lock_text)
+    ports = port_writers(ports_dir)
+    # THE ANTI-VACUITY REFUSAL, WIDENED WITH THE CORPUS RATHER THAN RELAXED. It used to read "no bash gate test declares a mutex tree: resource", which was the whole population of real-tree writers while they were all bash. Both halves must now be empty before it fires, because a tree with zero bash writers and two Python ones is a tree this gate still has a real verdict about.
+    if not registered and not ports:
         return _log_fail(
-            "check-pool-writer-safety: parsed ZERO mutex tree: writers out of %s; the declaration "
-            "shape changed and this gate would pass everything" % lock
+            "check-pool-writer-safety: parsed ZERO mutex tree: writers out of %s AND found no "
+            "port under %s declaring the %r xdist group; both declaration shapes changed and "
+            "this gate would pass everything" % (lock, ports_dir, REAL_TREE_GROUP)
+        )
+    if ports and not lane_claims_tree_exclusively(lock_text, PYTEST_LANE_ID):
+        return _log_fail(
+            "check-pool-writer-safety: %d port(s) declare the %r xdist group and therefore write "
+            "the tracked tree (%s), but %s declares no EXCLUSIVE mutex tree: resource in %s. "
+            "That group serialises those ports against each other INSIDE pytest and says nothing "
+            "to pool.ts, so the lane is released to run beside every other reader of the same "
+            "tree. Declare mutex: ['tree:repo'] on %s in scripts/ci-runner/manifest.ts."
+            % (
+                len(ports),
+                REAL_TREE_GROUP,
+                ", ".join(ports),
+                PYTEST_LANE_ID,
+                _strip_root(str(lock), str(repo_root)),
+                PYTEST_LANE_ID,
+            )
         )
 
     # `shopt -s nullglob; GATE_FILES=("$GATES_DIR"/test-*.sh)`. Sorted, because a
@@ -523,9 +602,10 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     log.info(
-        "every real-tree writer among %d gate tests declares a mutex tree: resource (%d declared, "
-        "controls fired in both directions, so this verdict is real)"
-        % (len(gate_files), len(registered))
+        "every real-tree writer among %d gate tests declares a mutex tree: resource (%d declared "
+        "in the lock, %d port(s) in the %r group behind %s's exclusive claim, controls fired in "
+        "both directions, so this verdict is real)"
+        % (len(gate_files), len(registered), len(ports), REAL_TREE_GROUP, PYTEST_LANE_ID)
     )
     return 0
 
@@ -541,7 +621,7 @@ def selftest() -> int:
 
     BOTH DIRECTIONS FOR EVERY RULE the scanner has, because a scanner that flagged everything would satisfy the positive controls perfectly while being useless, and that is the failure the twin's own negative control exists to catch.
     """
-    ctl = Controls("pool-writer-safety", floor=24, verbose=True)
+    ctl = Controls("pool-writer-safety", floor=50, verbose=True)
 
     ctl.check(
         "CONTROL: the planted real-tree writer is caught",
@@ -747,22 +827,115 @@ def selftest() -> int:
     ctl.check(
         "VACUITY: a JSON OBJECT rather than a list parses empty", registered_writers("{}"), []
     )
-    # THE REAL LOCK IS NOT EMPTY, and this is the case that would have caught the retarget landing against a lock whose shape had moved: every fixture above is synthetic, and a parser that agreed with all of them while reading the live file as empty would look perfect here.
-    ctl.check(
-        "REAL: the live lock declares at least the four historical writers",
-        set(
-            registered_writers(
-                (paths.repo_root() / "scripts" / "ci-runner" / "gates.lock.json").read_text(
-                    encoding="utf-8"
-                )
-            )
+    # -- the PYTHON half: which ports declare themselves into the real-tree group
+    with tempfile.TemporaryDirectory() as tmp:
+        ports = pathlib.Path(tmp)
+        (ports / "test_by_constant.py").write_text(
+            "XDIST_GROUP = xdist_groups.REAL_TREE_GROUP\n", encoding="utf-8"
         )
-        >= {
-            "test-gate-anti-vacuity.sh",
-            "test-generate-tag-inputs.sh",
-        },
+        (ports / "test_by_literal.py").write_text('XDIST_GROUP = "real-tree"\n', encoding="utf-8")
+        (ports / "test_another_group.py").write_text('XDIST_GROUP = "ports"\n', encoding="utf-8")
+        (ports / "test_quiet.py").write_text("import os\n", encoding="utf-8")
+        # THE VESTIGE, AND IT MUST NOT COUNT. About two dozen ported modules still carry `REAL_TREE_TWIN = True` from a twin that has since been retired. The attribute buys serialisation only through a lock lookup on the twin's basename, so with no twin and no lock entry it lands the module in no group at all. Counting it would inflate this corpus with modules the scheduler
+        # distributes freely, which is the over-declaration the twin's header warns costs nothing and therefore stops meaning anything.
+        (ports / "test_vestigial.py").write_text("REAL_TREE_TWIN = True\n", encoding="utf-8")
+        (ports / "helper_by_constant.py").write_text(
+            'XDIST_GROUP = "real-tree"\n', encoding="utf-8"
+        )
+        ctl.check(
+            "PORTS: both spellings of the real-tree declaration register, and nothing else does",
+            port_writers(ports),
+            ["test_by_constant.py", "test_by_literal.py"],
+        )
+        ctl.check("PORTS: an empty directory yields no writers", port_writers(ports / "gone"), [])
+
+    # -- the LANE claim: exclusive only -------------------------------------
+    ctl.check(
+        "LANE: an exclusive tree: claim on the named lane registers",
+        lane_claims_tree_exclusively(
+            '[{"id": "check:ci-pytest", "mutex": ["tree:repo"]}]', PYTEST_LANE_ID
+        ),
         True,
     )
+    ctl.check(
+        "MIRROR: a SHARED claim on the same resource does not",
+        lane_claims_tree_exclusively(
+            '[{"id": "check:ci-pytest", "reads": ["tree:repo"]}]', PYTEST_LANE_ID
+        ),
+        False,
+    )
+    ctl.check(
+        "MIRROR: an exclusive claim on a NON-tree resource does not",
+        lane_claims_tree_exclusively(
+            '[{"id": "check:ci-pytest", "mutex": ["renet-bin"]}]', PYTEST_LANE_ID
+        ),
+        False,
+    )
+    ctl.check(
+        "MIRROR: the claim must be on the named lane, not on any entry",
+        lane_claims_tree_exclusively(
+            '[{"id": "check:other", "mutex": ["tree:repo"]}]', PYTEST_LANE_ID
+        ),
+        False,
+    )
+    ctl.check(
+        "VACUITY: an unparseable lock claims nothing", lane_claims_tree_exclusively("{", ""), False
+    )
+
+    # THE REAL TREE IS NOT EMPTY, and this is the case that would have caught the retarget landing against declarations whose shape had moved: every fixture above is synthetic, and a parser that agreed with all of them while reading the live files as empty would look perfect here.
+    live_lock = (paths.repo_root() / "scripts" / "ci-runner" / "gates.lock.json").read_text(
+        encoding="utf-8"
+    )
+    ctl.check(
+        "REAL: the live ports directory declares at least one real-tree writer",
+        bool(port_writers(paths.repo_root().joinpath(*PORTS_DIR_REL))),
+        True,
+    )
+    ctl.check(
+        "REAL: the live lock gives the pytest lane an exclusive tree: claim",
+        lane_claims_tree_exclusively(live_lock, PYTEST_LANE_ID),
+        True,
+    )
+
+    # -- THE WHOLE GATE, over fixture trees reached through the three seams --- Planted rather than argued, because the two refusals above are the ones a retarget can silently turn off: an anti-vacuity guard nobody has watched fire is indistinguishable from one that cannot.
+    with tempfile.TemporaryDirectory() as tmp:
+        root = pathlib.Path(tmp)
+        gates = root / "gates"
+        ports = root / "ports"
+        gates.mkdir()
+        ports.mkdir()
+        (gates / "test-quiet.sh").write_text(
+            '#!/bin/bash\nT="$(mktemp -d)"\nprintf x >"$T/f"\n', encoding="utf-8"
+        )
+
+        def run(lock_body: str, with_port: bool) -> int:
+            lock_file = root / "lock.json"
+            lock_file.write_text(lock_body, encoding="utf-8")
+            target = ports / "test_planted_port.py"
+            if with_port:
+                target.write_text('XDIST_GROUP = "real-tree"\n', encoding="utf-8")
+            elif target.exists():
+                target.unlink()
+            saved = {
+                name: os.environ.get(name) for name in (GATES_DIR_ENV, PORTS_DIR_ENV, LOCK_ENV)
+            }
+            os.environ[GATES_DIR_ENV] = str(gates)
+            os.environ[PORTS_DIR_ENV] = str(ports)
+            os.environ[LOCK_ENV] = str(lock_file)
+            try:
+                return main([])
+            finally:
+                for name, value in saved.items():
+                    if value is None:
+                        del os.environ[name]
+                    else:
+                        os.environ[name] = value
+
+        exclusive = '[{"id": "check:ci-pytest", "mutex": ["tree:repo"]}]'
+        shared = '[{"id": "check:ci-pytest", "reads": ["tree:repo"]}]'
+        ctl.check("PLANT: a port plus an exclusive lane claim passes", run(exclusive, True), 0)
+        ctl.check("PLANT: the same port behind a SHARED lane claim reds", run(shared, True), 1)
+        ctl.check("VACUITY: no bash writer and no port reds", run(shared, False), 1)
 
     ctl.check("VACUITY: an empty file yields no hits", scan_text("", "t.sh"), [])
     ctl.check(

@@ -37,7 +37,7 @@ and their stderr agrees on all eight lines under the same port normalisation:
 The plant was reverted by its exact inverse, `.ci/lib/account.sh` verified back at sha256 6aef42c5c6120cbf... and `git status --porcelain` diffed against its pre-plant capture with no difference.
 
 INVARIANT 5 IS DISCHARGED: `.ci/scripts/quality/check-account-probes.sh` was the differential twin, and W7 P5 retired it; the shadow ledger under `.ci/shadow/` is the licence record. The anti-vacuity harness that pinned the twin BY PATH was repointed at this entry point first, so
-`.ci/scripts/test/gates/test-gate-anti-vacuity.sh` asserts the "nothing to check" diagnostic against this file and the retirement leaves no row exercising a file that is gone.
+`.ci/rediacc_ci/tests/gates/test_gate_gate_anti_vacuity.py` asserts the "nothing to check" diagnostic against this file and the retirement leaves no row exercising a file that is gone. That harness was itself a bash twin until 2026-09-21; the registry is now the port's alone.
 
 ---- gate ----
 step: Dev-stack liveness probes

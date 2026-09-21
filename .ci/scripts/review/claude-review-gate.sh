@@ -167,7 +167,7 @@ emit_review_turns() {
     # one survival is not a floor. MAX_TURNS is a real cost ceiling, so above
     # MAX_TURNS/TURNS_PER_KLOC*1000 lines (~5600) density necessarily decays -- there the
     # budget is simply the maximum, and breadth-first reading in the prompt is what carries
-    # it. check-review-turn-capacity.sh enforces exactly that split.
+    # it. check:ci-review-turn-capacity enforces exactly that split.
     local per_kloc=25 max_turns=140 min_turns=50
     local kloc=$(((${changed:-0} + 999) / 1000))
     local turns=$((kloc * per_kloc))
