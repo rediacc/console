@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-knip-blockers.sh`.
+"""Port of `.ci/scripts/test/gates/test-knip-blockers.sh`, retired in W7 P5.
 
 Behavioural test for `scripts/gates/check-knip-blockers.ts`, the validator that holds knip's suppression arrays to the repo-wide BLOCKER convention.
 
@@ -24,8 +24,6 @@ import re
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-knip-blockers.sh"
 
 # test_accepts_real_config runs the validator over the real knip.jsonc, and the validator git-greps the whole working tree for @public tags. See the docstring.
 REAL_TREE_TWIN = True

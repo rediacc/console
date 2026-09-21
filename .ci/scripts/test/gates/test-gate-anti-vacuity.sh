@@ -196,7 +196,6 @@ REGISTRY=(
     # closure is {} and the assertion must fail: registering it pins the fact
     # that moving or renaming the workflow tree cannot silently turn the
     # closure test into a tautology over an empty set.
-    ".ci/scripts/test/gates/test-scope-engine.sh|closure"
     # A DIFF gate with no baseline and no ledger measures nothing, and
     # "measured nothing" must never read as "found nothing". Against the empty
     # fixture both its inputs are gone, so it must refuse to run. Its first
@@ -266,8 +265,11 @@ REGISTRY=(
     # one-green-run-per-sha pick) each of which flips a different case red.
     #
     # NOT registered here either: .ci/scripts/test/gates/test-scope-gate-outputs.sh,
-    # measured the same way and with the same result: all 6 cases pass against
-    # the empty tree (exit 0). It BUILDS the tree it needs -- it copies
+    # retired in W7 P5 with its cases carried by
+    # .ci/rediacc_ci/tests/gates/test_gate_scope_gate_outputs.py, which this
+    # harness does not register because it registers bash gate tests only. It
+    # was measured the same way and with the same result: all 6 cases pass
+    # against the empty tree (exit 0). It BUILDS the tree it needs -- it copies
     # .ci/scripts/ci into a temp dir, `git init`s a repository there with the
     # branch shape a baseline walk requires, and shims `gh` on PATH -- so the
     # only repo input it has is the .ci/scripts/ tree this harness copies in

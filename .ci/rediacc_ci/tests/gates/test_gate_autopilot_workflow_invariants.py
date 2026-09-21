@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-autopilot-workflow-invariants.sh`.
+"""Port of `.ci/scripts/test/gates/test-autopilot-workflow-invariants.sh`, retired in W7 P5.
 
 Tests `.ci/scripts/security/check-autopilot-workflow-invariants.sh`, the static gate over `.github/workflows/autopilot.yml` -- the workflow that hands a model a shell over PR-authored code.
 
@@ -18,8 +18,6 @@ import re
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-autopilot-workflow-invariants.sh"
 
 # Reads and mutates copies of the real .github/workflows/autopilot.yml, and the first case drives the subject at the real file in place.
 REAL_TREE_TWIN = True

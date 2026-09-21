@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-ci-runner.sh`.
+"""Port of `.ci/scripts/test/gates/test-ci-runner.sh`, retired in W7 P5.
 
 Unit test for the parallel gate runner: `scripts/ci-runner/{run,pool,exec,report}.ts`.
 
@@ -60,8 +60,6 @@ import re
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-ci-runner.sh"
 
 # THE OPT-IN IS OWED, AND THE FIRST DRAFT OF THIS FILE GOT IT WRONG. The reasoning was that every case drives a synthetic manifest in a tempdir, so nothing here touches the real tree and the attribute would be an over-claim. The LOCK says otherwise: `gate-test:ci-runner` declares `reads: ["tree:repo"]`, which puts the twin in the real-tree set that `xdist_groups.real_tree_twins`
 # derives, and `real_tree_admission` refuses a member that does not opt in. The declaration is also right on the merits: the runner is driven FROM the repo root, case 11 reads

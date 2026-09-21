@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-docs-gen.sh`.
+"""Port of `.ci/scripts/test/gates/test-docs-gen.sh`, retired in W7 P5.
 
 Subject: `scripts/gen/gen-docs.ts`, the documentation generator, proved in both directions.
 
@@ -45,8 +45,6 @@ import pathlib
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-docs-gen.sh"
 
 # Case B perturbs a tracked file and case C runs `--write`. See the docstring.
 REAL_TREE_TWIN = True

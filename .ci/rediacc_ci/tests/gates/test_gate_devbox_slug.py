@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-devbox-slug.sh`.
+"""Port of `.ci/scripts/test/gates/test-devbox-slug.sh`, retired in W7 P5.
 
 Controls for the devbox HOSTNAME: the branch-derived slug, its drift against a running container, and the route label that reports it.
 
@@ -33,8 +33,6 @@ import subprocess
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-devbox-slug.sh"
 
 LIB = paths.from_root(".ci", "lib", "devbox.sh")
 

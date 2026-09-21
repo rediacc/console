@@ -27,7 +27,7 @@ GATE = paths.from_root(".ci", "scripts", "quality", "check_plant_proofs.py")
 BASH_SUBJECT = ".ci/scripts/test/gates/test-run-sh.sh"
 TS_SUBJECT = "scripts/gates/check-docs-browse-invariants.ts"
 # A REAL subject that is currently UNPROVEN, so the mirror's baseline is not empty. Without it every drain and trim case below asserted against a zero-row baseline, which is the vacuous-fixture shape this whole gate is about; the `if not obj[KEY]` guards caught it on the first run.
-DEBT_SUBJECT = ".ci/scripts/test/gates/test-ci-parity.sh"
+DEBT_SUBJECT = ".ci/scripts/test/gates/test-runner-advice.sh"
 
 # The proof pair this gate requires, lifted verbatim from the real bash subject.
 BASH_PROOF = """grep -q '^        clean) clean ;;$' "$ctl/legacy.sh" ||

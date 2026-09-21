@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-ci-workflow-invariants.sh`.
+"""Port of `.ci/scripts/test/gates/test-ci-workflow-invariants.sh`, retired in W7 P5.
 
 Both-ways test for `.ci/scripts/security/check-ci-workflow-invariants.sh`.
 
@@ -29,8 +29,6 @@ import pathlib
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-ci-workflow-invariants.sh"
 
 GATE = paths.from_root(".ci", "scripts", "security", "check-ci-workflow-invariants.sh")
 REAL = paths.from_root(".github", "workflows", "ci.yml")

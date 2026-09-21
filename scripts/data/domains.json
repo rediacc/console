@@ -87,7 +87,7 @@
         ".ci/rediacc_ci/quality/probe_parity.py:92 PROBE = \"scripts/drills/transfer.sh\", hard fail at :176.",
         ".ci/rediacc_ci/quality/drill_verdicts.py:70 DRILL_LIB=\"scripts/drills/lib.sh\", hard fail at :236.",
         ".ci/scripts/quality/check-scope-scripts-reachability.sh:196 uses scripts/drills/lib.sh as its positive control.",
-        ".ci/scripts/test/gates/test-scope-engine.sh:699 golden expectation, and test-gate-anti-vacuity.sh:61 fixture subject."
+        ".ci/rediacc_ci/tests/gates/test_gate_scope_engine.py golden expectation, and test-gate-anti-vacuity.sh:61 fixture subject."
       ]
     },
     {

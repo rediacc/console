@@ -5,7 +5,7 @@
  *
  * WHY THIS EXISTS AT ALL, GIVEN gate-test:docs-gen ALREADY RUNS THE GENERATOR.
  *
- * `.ci/scripts/test/gates/test-docs-gen.sh` case A runs `gen-docs` in verify mode and then
+ * `.ci/rediacc_ci/tests/gates/test_gate_docs_gen.py` case A runs `gen-docs` in verify mode and then
  * asserts one thing about the result: `grep -q '^ok '`, i.e. AT LEAST ONE target was named.
  * That is a floor of one over a discovery scan. gen-docs discovers its targets by scanning
  * markdown for a marker line (scripts/gen/gen-docs.ts:119-164) and refuses only when the target

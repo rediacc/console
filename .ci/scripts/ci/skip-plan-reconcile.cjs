@@ -234,7 +234,7 @@ function parseJobsPayload(payload) {
 //
 // honorPreexisting DEFAULTS TO FALSE, and the default is the interesting half, because the two consumers of this function want OPPOSITE things:
 //
-// - THE GATE (the CLI, via scope-reconcile-shadow.sh) must not red a run for a skip the workflow performs on every run of that shape. It passes true. - THE BASELINE READER (scope-engine.cjs's attestPlan, which calls this module's reconcile() over a plan downloaded from an EARLIER run) must not accept such a run as proof. A baseline is "the last run where everything
+// - THE GATE (the CLI, via rediacc_ci.ci.scope_reconcile_shadow) must not red a run for a skip the workflow performs on every run of that shape. It passes true. - THE BASELINE READER (scope-engine.cjs's attestPlan, which calls this module's reconcile() over a plan downloaded from an EARLIER run) must not accept such a run as proof. A baseline is "the last run where everything
 //     passed"; a pointer-bump run where all eighteen keys skipped passed
 // nothing, and treating it as a baseline would let the delta since then go unvalidated. It passes nothing, so it gets the strict reading and refuses the candidate with `reconcile:planned-run-but-skipped` exactly as before.
 //

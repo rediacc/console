@@ -1,7 +1,6 @@
 """A script that INSTALLS a Go tool must be able to FIND it.
 
-Ported from `.ci/scripts/quality/check-go-tool-path.sh`, which is NOT deleted;
-see `rediacc_ci.quality.__init__` for why both copies live side by side until a committed differential ledger says otherwise.
+Ported from `.ci/scripts/quality/check-go-tool-path.sh`, which W7 P5 batch B6 retired once `.ci/shadow/w7p2-gotoolpath.observations.jsonl` asserted equivalence over five distinct trees.
 
 WHY THE TWIN EXISTS, carried over from its header because the archaeology is the half of a gate that cannot be recovered from the code:
 

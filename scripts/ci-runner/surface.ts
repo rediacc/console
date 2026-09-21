@@ -26,7 +26,7 @@ const ENTRY_JOBS = ['quality', 'review-gate'];
  * closure of `uses: ./.github/workflows/*` reachable from ci.yml's `quality`
  * job, plus the `review-gate` job's own steps. Iterating `uses:` rather than
  * matching names is what stops a new lane workflow escaping the gate, and is
- * the same technique test-scope-engine.sh is registered in the anti-vacuity
+ * the same technique test_gate_scope_engine.py is registered in the anti-vacuity
  * harness for.
  *
  * An entry is a repo-relative workflow path, optionally suffixed `#<jobId>` to

@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-overrides-reasons.sh`.
+"""Port of `.ci/scripts/test/gates/test-overrides-reasons.sh`, retired in W7 P5.
 
 Integration test for `scripts/gates/check-overrides-reasons.ts`: the JSON-safe sibling of the BLOCKER convention. JSON allows no inline comments, so every entry in
 package.json's `overrides` carries its rationale in a parallel `_overridesReasons`
@@ -21,8 +21,6 @@ import shutil
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-overrides-reasons.sh"
 
 # Copies `scripts/` and reads `package.json` off the real working tree.
 REAL_TREE_TWIN = True

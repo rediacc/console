@@ -93,7 +93,7 @@ def real_tree_admission(module: object, twin: str, unsafe: set[str]) -> str | No
     """None when this module may drive its real-tree twin, else why not.
 
     THE BLANKET REFUSAL THIS REPLACES was correct about the danger and wrong about the remedy. It refused EVERY ported twin in the real-tree set, so the isolation machinery existed (`group_for` already returns `REAL_TREE_GROUP`) and the parity driver forbade using it -- leaving 27 of the 51 remaining twins, the largest blocked group in W7 P3, unportable by policy rather than by any
-    technical obstacle. Those 27 include the instruments this whole slice is measured by: `test-ci-parity.sh`, `test-language-policy.sh`, `test-gate-anti-vacuity.sh`, `test-dead-bash.sh`.
+    technical obstacle. Those 27 include the instruments this whole slice is measured by: `test-ci-parity.sh`, `test-language-policy.sh`, `test-gate-anti-vacuity.sh`, `test-dead-bash.sh` (the first and last were retired in W7 P5 census batch B2).
 
     An opt-in replaces it, and it is deliberately TWO conditions rather than
     one. A module that merely declares `REAL_TREE_TWIN = True` has stated an
@@ -148,7 +148,7 @@ def bash_cases(twin_source: str) -> set[str]:
     Declared-but-never-called is dead code in a shell script, and pinning a port against a case the twin does not run would demand coverage of something nothing covers. Requiring both halves is also how this notices a twin whose bottom-of-file call list lost an entry.
 
     A CALL IS NOT ALWAYS A BARE NAME ON ITS OWN LINE, and requiring that was a hole that failed OPEN. This predicate was a bare-name-on-its-own-line match, so a twin invoking its cases as `test_mapping_form_is_caught "$D/mapping"` or `with_temp_dir test_flags_runner` matched nothing at all. Measured 2026-09-07 across the 130 twins that declare cases: 43 had at least one case
-    invisible here, and 16 saw ZERO. A twin seeing zero does not fail; it falls through to the flat-twin floor (the twin's runtime `PASS:` count), so the SET comparison this module exists to perform silently did not happen for those 16, `test-ci-parity.sh` (22 cases) among them.
+    invisible here, and 16 saw ZERO. A twin seeing zero does not fail; it falls through to the flat-twin floor (the twin's runtime `PASS:` count), so the SET comparison this module exists to perform silently did not happen for those 16, `test-ci-parity.sh` (22 cases, since retired) among them.
 
     The two error directions are not symmetric, which is why widening is right. Over-admitting demands the port cover a case the twin does not run: noisy, and it fails CLOSED. Under-admitting drops the set check entirely and fails OPEN. So a name is called when it appears as a WORD on any line that is neither its own declaration nor a whole-line comment.
 

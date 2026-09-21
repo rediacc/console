@@ -32,12 +32,6 @@
       "text": "perl -pi -e \"s/^ options: \\['5', '10'.*/ options: ['5', '10']/\" \"$WORK/floor/ap.yml\""
     },
     {
-      "id": "a88dfca3fde37e15",
-      "lang": "bash",
-      "file": ".ci/scripts/test/gates/test-ci-parity.sh",
-      "text": "sed -i 's/^ quality:$/ quality-renamed:/' \"$d/.github/workflows/ci.yml\""
-    },
-    {
       "id": "8218bb8936f383ab",
       "lang": "bash",
       "file": ".ci/scripts/test/gates/test-runner-advice.sh",

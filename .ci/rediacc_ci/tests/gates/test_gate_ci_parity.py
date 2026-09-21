@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-ci-parity.sh`.
+"""Port of `.ci/scripts/test/gates/test-ci-parity.sh`, retired in W7 P5.
 
 Subject: `scripts/gates/check-ci-parity.ts`, the meta-gate whose promise is that the local gate set and the CI quality surface agree in BOTH directions -- a local run catches CI failures before a push, and nothing runs locally that CI never enforces. It replaced two gates that each covered one direction; the third relation (locally-run, never CI-run) had no gate at all, which is
 rediacc/console#549.
@@ -20,8 +20,6 @@ import pathlib
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-ci-parity.sh"
 
 # `gate-test:ci-parity` carries `reads: ["tree:repo"]`. See the docstring.
 REAL_TREE_TWIN = True

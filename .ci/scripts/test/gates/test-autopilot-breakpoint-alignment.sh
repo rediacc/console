@@ -11,7 +11,7 @@
 # originals.
 #
 # THE METHOD IS THE POINT (same doctrine as
-# test-autopilot-workflow-invariants.sh): a comparison that has only ever been
+# test_gate_autopilot_workflow_invariants.py): a comparison that has only ever been
 # seen to pass is indistinguishable from `true`. So every direction is proven:
 # the REAL tree passes, unmutated COPIES of the real files still pass (which is
 # what proves the env seams point somewhere real rather than at nothing), and a

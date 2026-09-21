@@ -19,7 +19,7 @@ NO `id:` IS CORRECT HERE: `derivedId` (`gate-header.ts:260`) maps this basename 
 
 `selftest: true` is inert for a `.py` gate (`gate-bind.ts:598`) and is carried because the twin declared it and because `go_deps.main(["--selftest"])` exits 0.
 
-PINNED BY PATH, and this is the one row in this batch that a harness names. `.ci/scripts/test/gates/test-swallowed-failures.sh:44` sets
+PINNED BY PATH, and this is the one row in this batch that a harness names. `.ci/rediacc_ci/tests/gates/test_gate_swallowed_failures.py`, which carries the retired bash harness's cases, sets
 `GO_DEPS="$REPO_ROOT/.ci/scripts/quality/check-go-deps.sh"` and at line 126
 counts `__PROBE_FAILED__` markers in it, asserting that the 2026-07-28 fix this gate's probe received is still present. That row does NOT run the file: it greps it. It asserts a BEHAVIOURAL NEEDLE in the source, and the needle is not in this three-line shim, so if it is ever repointed it must be repointed at the MODULE `.ci/rediacc_ci/quality/go_deps.py`, never at this entry point.
 Verified by reading lines 44 and 120-130 of the harness rather than assuming. It goes on passing unchanged after this cutover because invariant 5 keeps the twin on disk, and repointing is the driver's call. A second row used to be the other arm: `.ci/scripts/test/gates/test-go-deps-probe-failure.sh:47` copied the twin into a fixture and RAN the copy, a run-by-path row that

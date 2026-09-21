@@ -55,7 +55,7 @@ readonly AGE_WARN_DAYS="${AGE_WARN_DAYS:-180}"
 readonly AGE_FAIL_DAYS="${AGE_FAIL_DAYS:-365}"
 
 # PYTHONPATH rather than `cd`: every caller runs git against ITS OWN cwd (the
-# gate's checkout, or a temp fixture that test-age-check.sh cds into), and
+# gate's checkout, or a temp fixture that test_gate_age_check.py cds into), and
 # changing directory here would silently measure the wrong repository.
 _age_check_py() {
     PYTHONPATH="$AGE_CHECK_CI_DIR${PYTHONPATH:+:$PYTHONPATH}" \

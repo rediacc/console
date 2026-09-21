@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-resprofile.sh`.
+"""Port of `.ci/scripts/test/gates/test-resprofile.sh`, retired in W7 P5.
 
 Drives `.ci/scripts/quality/check_resprofile.py` through its three states and a mutant.
 
@@ -25,8 +25,6 @@ import shutil
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-resprofile.sh"
 
 GATE = paths.from_root(".ci", "scripts", "quality", "check_resprofile.py")
 HOOKS = paths.hooks_stop_dir()

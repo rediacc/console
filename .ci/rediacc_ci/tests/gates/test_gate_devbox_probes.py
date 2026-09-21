@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-devbox-probes.sh`.
+"""Port of `.ci/scripts/test/gates/test-devbox-probes.sh`, retired in W7 P5.
 
 Controls for `devbox_exec` and the three usability probes in `.ci/lib/devbox.sh`.
 
@@ -17,8 +17,6 @@ import stat
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-devbox-probes.sh"
 
 LIB = paths.from_root(".ci", "lib", "devbox.sh")
 

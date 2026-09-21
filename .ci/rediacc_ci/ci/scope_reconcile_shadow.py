@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Port of `.ci/scripts/ci/scope-reconcile-shadow.sh`.
+"""Ported from `.ci/scripts/ci/scope-reconcile-shadow.sh`, which W7 P5 batch B5 retired once `.ci/shadow/w7p6-scope-reconcile-shadow.observations.jsonl` asserted equivalence over five distinct trees.
 
 Skip-plan reconciliation for `ci-complete`. Polarity depends on `SCOPE_MODE`:
 when the scope step actually reduced this run (`SCOPE_MODE=reduced`), every
-way of failing to verify that reduction against the run's real per-job outcomes -- a missing plan artifact, an unreadable Jobs API, an absent `gh` or `node`, a reconciler that times out or disagrees -- is a HARD FAILURE (exit 1). Otherwise the same gaps are reported as gaps and the script exits 0. See the twin's own header for the measured argument for why this is safe across a
-rerun (the Jobs API's default `latest` filter materializes a complete job list per attempt) and for `PREEXISTING_CONDITIONS`.
+way of failing to verify that reduction against the run's real per-job outcomes -- a missing plan artifact, an unreadable Jobs API, an absent `gh` or `node`, a reconciler that times out or disagrees -- is a HARD FAILURE (exit 1). Otherwise the same gaps are reported as gaps and the script exits 0. Carried whole from the retired twin's header: this is safe across a rerun because the
+Jobs API's default `latest` filter materializes a complete job list per attempt, and `PREEXISTING_CONDITIONS` is what names the failures a reduction is not asked to account for.
 
 REQUIRED ENV: `GH_TOKEN`, `GITHUB_REPOSITORY`, `GITHUB_RUN_ID`, `SCOPE_MODE`. `GITHUB_STEP_SUMMARY` optional; falls back to stdout when running locally.
 
@@ -36,11 +36,11 @@ next iteration.
 for "killed the child" -- the twin's `rc -eq 124` branch depends on that exact
 number, not on some other characteristic of a timeout.
 
-ONE RESIDUAL DIVERGENCE, named rather than hidden, on the `GITHUB_STEP_SUMMARY` UNSET path only. Measured directly on this host: when `$SUMMARY` falls back to `/dev/stdout` AND the script's own stdout is redirected to a regular file (`bash scope-reconcile-shadow.sh > out.txt`, the documented LOCAL RUN shape), the twin's output is not a clean duplicate -- it is DETERMINISTICALLY
+ONE RESIDUAL DIVERGENCE WAS RECORDED WHILE BOTH COPIES EXISTED, named rather than hidden, on the `GITHUB_STEP_SUMMARY` UNSET path only. Measured directly on this host: when `$SUMMARY` fell back to `/dev/stdout` AND the script's own stdout was redirected to a regular file (the documented LOCAL RUN shape), the twin's output was not a clean duplicate -- it was DETERMINISTICALLY
 GARBLED (reproduced identically across three separate runs, byte for byte). The cause is a kernel-level file-offset race, not script logic: each `emit` spawns a fresh `tee -a /dev/stdout` process whose `-a` target reopens `/dev/stdout` (`/proc/self/fd/1`) as a SEPARATE open file description with its own `O_APPEND`-driven "seek to true end of file" on every write, while the same
 `tee` process's OWN stdout is the ONE inherited, offset-sharing descriptor threaded through every `emit` call across the whole script. Two descriptions racing to extend the same regular file corrupts interleaving in exactly the way observed. This port's `_dual_write` does NOT reproduce that: writing twice through Python's single buffered `sys.stdout` produces a clean,
-correctly-ordered duplicate (verified: the twin's corrupted output and the port's clean output diverge on this one path). Not fixed and not chased further, because production never takes it: `ci.yml:1781` runs this step inside GitHub Actions, which ALWAYS sets `GITHUB_STEP_SUMMARY` to a real file, so the fallback-to-`/dev/stdout` branch is unreachable in the wiring that actually
-calls this script. Every differential case in this port's test file therefore sets `GITHUB_STEP_SUMMARY` to a real path, matching production exactly, and the unset-SUMMARY case is exercised once, separately, as a named divergence rather than an equivalence claim.
+correctly-ordered duplicate (verified: the twin's corrupted output and the port's clean output diverged on this one path). Never chased further, because production never takes it: `.github/workflows/ci.yml` runs this step inside GitHub Actions, which ALWAYS sets `GITHUB_STEP_SUMMARY` to a real file, so the fallback-to-`/dev/stdout` branch is unreachable in the wiring that actually
+calls this module. Every case in this port's test file therefore sets `GITHUB_STEP_SUMMARY` to a real path, matching production exactly, and the unset-SUMMARY path is exercised once, separately, as this port's own doubling claim.
 """
 
 from __future__ import annotations

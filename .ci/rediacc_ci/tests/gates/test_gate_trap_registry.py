@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-trap-registry.sh`.
+"""Port of `.ci/scripts/test/gates/test-trap-registry.sh`, retired in W7 P5.
 
 Behavioural test for `.ci/scripts/quality/check-trap-registry.sh`, and for the corpus parser it shares with the Stop hook (`.claude/hooks/stop/wl_store.py`).
 
@@ -29,8 +29,6 @@ import re
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-trap-registry.sh"
 
 # The real-tree case runs the subject seam-free, and every scan resolves pointers against the live manifest, dispatcher, hook suite and settings. See the docstring.
 REAL_TREE_TWIN = True

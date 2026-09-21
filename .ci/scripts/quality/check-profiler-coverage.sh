@@ -356,7 +356,7 @@ got="$(covering_uses "$SELFTEST_DIR/block.txt" "./.github/actions/profiler")"
 got="$(covering_uses "$SELFTEST_DIR/caller.txt" "./.github/actions/profiler")"
 [ "$got" = "0" ] || selftest_fail "covering_uses(negative)" "$got" "0"
 
-# LC_ALL=C: same sibling risk as test-scope-gate-outputs.sh (see
+# LC_ALL=C: same sibling risk as test_gate_scope_gate_outputs.py (see
 # docs/agent-reference/TRAPS.md) -- a shell `sort` compared against a
 # hand-written literal is locale-dependent by construction. Currently correct
 # under en_US.UTF-8 only because 'i' < 'r' in both orderings; pinned so it stays

@@ -106,7 +106,7 @@ Scans: every tracked file in the policy directory, against `POLICY_FILES` in bot
 
 - **`.ci/scripts/ci/scope-map.cjs` `ROOT_MANIFESTS`** named ten of the fifteen by exact
 repo-relative path, and after the move those names matched nothing. Classification is preserved anyway -- `.ci/policy/<name>` is caught by the `ci-harness` rule (`matchPrefix('.ci/')` ⇒ `full: 'harness'`) -- so no delta stopped forcing full CI. What changed is the REASON string, from `root-manifest:<name>` to `harness:.ci/policy/<name>`. All fifteen names were DELETED from
-`ROOT_MANIFESTS` (five of them were never in it and fell through to `unclassified` ⇒ full, which is the same scope by a different route), and the pinned row in `.ci/scripts/test/gates/test-scope-engine.sh` was re-pinned to two rows: `.ci-trigger` keeps `root-manifest:` covered, and `.ci/policy/.audit-allowlist` pins the new `harness:` reason.
+`ROOT_MANIFESTS` (five of them were never in it and fell through to `unclassified` ⇒ full, which is the same scope by a different route), and the pinned row in `.ci/rediacc_ci/tests/gates/test_gate_scope_engine.py` was re-pinned to two rows: `.ci-trigger` keeps `root-manifest:` covered, and `.ci/policy/.audit-allowlist` pins the new `harness:` reason.
 - **`scripts/ci-runner/manifest.ts`** lists `.plan-housekeeping-allowlist` in the `paths:`
 array of `check:ci-plan-housekeeping`, and `scripts/ci-runner/gates.lock.json` mirrors it. Change detection for that gate breaks silently if the path is not updated. Both files are driver-owned (driver-contract 5e), so W4 P2 shipped the two lines as a patch fragment for the driver to apply rather than editing them itself.
 - **`scripts/lib/doc-providers.ts`** builds the generated suppressions table in
@@ -131,7 +131,7 @@ human forces a full CI round on a delta that would otherwise be scoped down. Tha
 - **Moving it would work and still be wrong.** `.ci/policy/.ci-trigger` would keep
 forcing full CI, through the generic `ci-harness` rule (`scope-map.cjs:144`) rather than the dedicated `root-manifest` rule. So the behaviour survives while the reason string silently changes and the file becomes undiscoverable for its only purpose: strictly worse on both counts, for no gain.
 
-Recorded either way, as asked: had the answer gone the other direction, the move would have needed the `ROOT_MANIFESTS` entry deleted and `test-scope-engine.sh` re-pinned, the same two edits section 2 already lists for the fifteen.
+Recorded either way, as asked: had the answer gone the other direction, the move would have needed the `ROOT_MANIFESTS` entry deleted and `test_gate_scope_engine.py` re-pinned, the same two edits section 2 already lists for the fifteen.
 
 ---
 

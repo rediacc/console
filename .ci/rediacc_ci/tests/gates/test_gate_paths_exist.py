@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-gate-paths-exist.sh`.
+"""Port of `.ci/scripts/test/gates/test-gate-paths-exist.sh`, retired in W7 P5.
 
 Gate: every hardcoded `packages/<name>/...` and `private/<name>/...` path constant in our tooling must resolve to something that exists in the tree.
 
@@ -36,8 +36,6 @@ import re
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-gate-paths-exist.sh"
 
 # Every case walks the real tree and two of them plant a file inside `.ci/scripts/`. See the module docstring.
 REAL_TREE_TWIN = True

@@ -1,6 +1,6 @@
 """`rediacc_ci.core.age` against real git fixtures, and against its bash shim.
 
-WHY THE FIXTURES ARE REAL REPOSITORIES WITH BACKDATED COMMITS. The subject is "how long ago was this line added", and there is no way to ask that of a mock that would also catch the defect the module exists for. `.ci/scripts/test/gates/ test-age-check.sh` -- which still passes UNCHANGED against the port, and is the end-to-end proof -- builds fixtures exactly this way; these cases
+WHY THE FIXTURES ARE REAL REPOSITORIES WITH BACKDATED COMMITS. The subject is "how long ago was this line added", and there is no way to ask that of a mock that would also catch the defect the module exists for. `.ci/rediacc_ci/tests/gates/ test_gate_age_check.py` -- the end-to-end proof -- builds fixtures exactly this way; these cases
 add the parts a bash harness cannot reach cheaply: the verdict table as a pure function, the shim's TAB-separated contract, and the shim's fail-closed behaviour.
 
 THE ONE DEFECT EVERY CASE HERE IS ABOUT, restated because it is easy to lose.

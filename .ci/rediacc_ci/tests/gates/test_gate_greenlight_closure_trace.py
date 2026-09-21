@@ -2,7 +2,7 @@
 
 Completeness gate for the cross-PR greenlight closure table, `.ci/scripts/ci/greenlight.cjs::CLOSURES`.
 
-WHAT THIS GUARDS, and why it is a different question from `test-greenlight.sh`. That file proves the ENGINE obeys its rules and that every path the table declares still exists. Neither property notices the failure that actually ships: a workflow gains a step, the job starts consuming an input nobody added to the table, and the greenlight keeps firing on evidence that no longer
+WHAT THIS GUARDS, and why it is a different question from `test_gate_greenlight.py`. That file proves the ENGINE obeys its rules and that every path the table declares still exists. Neither property notices the failure that actually ships: a workflow gains a step, the job starts consuming an input nobody added to the table, and the greenlight keeps firing on evidence that no longer
 covers what the job runs. Every declared path still exists, every rule still holds, and a PR editing that new input inherits a green it did not earn. That is a WRONG SKIP, the one failure class this design must not risk.
 
 THE PROPERTY. For each key, derive the set of repo paths its DEFINING workflow job block references, then assert the table COVERS every one of them, either as an exact entry or as an ancestor directory entry. The direction is one-way on purpose: derived must be a subset of declared.

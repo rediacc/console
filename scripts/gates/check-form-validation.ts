@@ -32,8 +32,8 @@
  * ---- gate ----
  * kind: test
  * needs: node
- * test: .ci/scripts/test/gates/test-form-validation.sh
- * blocker: BLOCKER: no quality lane inspects form submit handlers, and the defect is a MISSING guard rather than a present one, so nothing else can express it; test-form-validation.sh:59 runs the gate seam-free against the real components inside the gate-test battery (ci-quality.yml quality-security, "Quality-gate unit tests"), so the real scan of all six forms executes every CI run, and the mutant case beside it accepts a captcha guard as validation and requires the control to go red
+ * test: .ci/rediacc_ci/tests/gates/test_gate_form_validation.py
+ * blocker: BLOCKER: no quality lane inspects form submit handlers, and the defect is a MISSING guard rather than a present one, so nothing else can express it; test_gate_form_validation.py:100 runs the gate seam-free against the real components under check:ci-pytest, so the real scan of all six forms runs every CI run, and the mutant case beside it requires the control to go red
  * ---- end gate ----
  */
 import fs from 'node:fs';

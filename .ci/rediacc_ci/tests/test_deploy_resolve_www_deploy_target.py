@@ -1,12 +1,11 @@
-"""`rediacc_ci.deploy.resolve_www_deploy_target` against its bash twin.
+"""`rediacc_ci.deploy.resolve_www_deploy_target`, driven directly.
 
-Sibling of `test_deploy_resolve_account_deploy_config.py`; see that file for why `/dev/stdout` is not used as `$GITHUB_OUTPUT` and why the missing-env-var
-path is checked for exit code and substance, not bytes. The K=5 ledger is
-`.ci/shadow/w7p5a-resolve-www-deploy-target.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p5a-resolve-www-deploy-target --assert --k 5` -> "equivalence holds over 5 distinct trees").
+WHILE BOTH COPIES EXISTED every case below ran `.ci/scripts/deploy/resolve-www-deploy-target.sh` over the same environment and compared its `$GITHUB_OUTPUT` bytes, its stdout and its stderr against the port's. The K=5 ledger
+`.ci/shadow/w7p5a-resolve-www-deploy-target.observations.jsonl` recorded that verdict over five distinct trees (`npx tsx scripts/lib/shadow-gate.ts --pair w7p5a-resolve-www-deploy-target --assert --k 5` -> "equivalence holds over 5 distinct trees") and licensed the port; W7 P5 retired the twin and the cases that executed it went with it.
 
-BOTH VALID PATHS ARE BYTE-IDENTICAL, deliberately, same reasoning as the
-`resolve_account_deploy_config` sibling: pure computation, four `key=value`
-lines to `$GITHUB_OUTPUT`, nothing on stdout or stderr.
+THE GOLDEN BYTES BELOW ARE THE TWIN'S, KEPT VERBATIM. Both valid paths were byte-identical on purpose -- pure computation, four `key=value` lines to
+`$GITHUB_OUTPUT`, nothing on stdout or stderr -- so the literals that were once
+the twin's observed output are now the port's pinned contract.
 """
 
 from __future__ import annotations
@@ -18,63 +17,51 @@ from rediacc_ci.tests import differential as diff
 if TYPE_CHECKING:  # pathlib appears only in `tmp_path` annotations, never at runtime.
     import pathlib
 
-TWIN = ".ci/scripts/deploy/resolve-www-deploy-target.sh"
 MODULE = "resolve_www_deploy_target"
 
 
-def run_both(
-    tmp_path: pathlib.Path, env_extra: dict[str, str]
-) -> tuple[tuple[int, str, str], tuple[int, str, str], str, str]:
-    out_old = tmp_path / "old-output.txt"
-    out_new = tmp_path / "new-output.txt"
-    old_env = diff.env_for(**env_extra, GITHUB_OUTPUT=str(out_old))
-    new_env = diff.env_for(
+def run_port(tmp_path: pathlib.Path, env_extra: dict[str, str]) -> tuple[tuple[int, str, str], str]:
+    tmp_path.mkdir(parents=True, exist_ok=True)
+    out = tmp_path / "output.txt"
+    env = diff.env_for(
         **env_extra,
-        GITHUB_OUTPUT=str(out_new),
+        GITHUB_OUTPUT=str(out),
         PYTHONPATH=".ci",
         PYTHONDONTWRITEBYTECODE="1",
     )
-    old = diff.bash_streams("bash %s" % TWIN, env=old_env, timeout=30)
-    new = diff.bash_streams("python3 -m rediacc_ci.deploy.%s" % MODULE, env=new_env, timeout=30)
-    old_output = out_old.read_text(encoding="utf-8") if out_old.exists() else ""
-    new_output = out_new.read_text(encoding="utf-8") if out_new.exists() else ""
-    return old, new, old_output, new_output
+    result = diff.bash_streams("python3 -m rediacc_ci.deploy.%s" % MODULE, env=env, timeout=30)
+    written = out.read_text(encoding="utf-8") if out.exists() else ""
+    return result, written
 
 
 def test_stable_target_selects_the_stable_worker(tmp_path: pathlib.Path) -> None:
-    env = {"TARGET": "stable"}
-    (old_exit, old_out, old_err), (new_exit, new_out, new_err), old_output, new_output = run_both(
-        tmp_path, env
-    )
-    assert (old_exit, old_out, old_err) == (0, "", "")
-    assert (new_exit, new_out, new_err) == (0, "", "")
-    assert old_output == (
+    (exit_code, out, err), written = run_port(tmp_path, {"TARGET": "stable"})
+    assert (exit_code, out, err) == (0, "", "")
+    assert written == (
         "script=deploy-www.sh\nworker=rediacc-www\ndomain=www.rediacc.com\nsandbox=\n"
     )
-    assert new_output == old_output
 
 
 def test_edge_target_selects_the_edge_worker_and_sandbox(tmp_path: pathlib.Path) -> None:
-    env = {"TARGET": "edge"}
-    (old_exit, old_out, old_err), (new_exit, new_out, new_err), old_output, new_output = run_both(
-        tmp_path, env
-    )
-    assert (old_exit, old_out, old_err) == (0, "", "")
-    assert (new_exit, new_out, new_err) == (0, "", "")
-    assert old_output == (
+    (exit_code, out, err), written = run_port(tmp_path, {"TARGET": "edge"})
+    assert (exit_code, out, err) == (0, "", "")
+    assert written == (
         "script=deploy-edge.sh\nworker=edge-rediacc-www\ndomain=edge.rediacc.com\n"
         "sandbox=--sandbox\n"
     )
-    assert new_output == old_output
 
 
-def test_missing_target_fails_the_same_way_reworded(tmp_path: pathlib.Path) -> None:
-    """Exit codes and the identified variable agree; wording does not, and is not supposed to -- see the port's module docstring."""
-    env: dict[str, str] = {}
-    (old_exit, _, old_err), (new_exit, _, new_err), _, _ = run_both(tmp_path, env)
-    assert old_exit == 1
-    assert new_exit == 1
-    assert "TARGET" in old_err
-    assert "must be set" in old_err
-    assert "TARGET" in new_err
-    assert "must be set" in new_err
+def test_the_two_targets_do_not_resolve_to_the_same_thing(tmp_path: pathlib.Path) -> None:
+    """ANTI-VACUITY. Two golden blocks prove nothing if the gate ignores `TARGET` and prints one of them either way."""
+    _, stable = run_port(tmp_path / "a", {"TARGET": "stable"})
+    _, edge = run_port(tmp_path / "b", {"TARGET": "edge"})
+    assert stable != edge
+    assert stable != ""
+
+
+def test_missing_target_is_refused_and_names_the_variable(tmp_path: pathlib.Path) -> None:
+    (exit_code, _, err), written = run_port(tmp_path, {})
+    assert exit_code == 1
+    assert "TARGET" in err
+    assert "must be set" in err
+    assert written == ""

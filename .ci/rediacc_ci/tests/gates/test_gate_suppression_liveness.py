@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-suppression-liveness.sh`.
+"""Port of `.ci/scripts/test/gates/test-suppression-liveness.sh`, retired in W7 P5.
 
 Integration test for `scripts/gates/check-suppression-liveness.ts`, the gate that asks whether every allowlist / blocklist / override entry in this repo still suppresses something that exists.
 
@@ -43,8 +43,6 @@ import shutil
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-suppression-liveness.sh"
 
 # test_passes_on_real_repo and test_the_real_run_reports_a_non_trivial_corpus both drive the subject over the real tree. See the docstring.
 REAL_TREE_TWIN = True

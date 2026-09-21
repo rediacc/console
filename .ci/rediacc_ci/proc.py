@@ -3,7 +3,7 @@
 WHAT IT REPLACES, AND THE MEASUREMENT BEHIND EACH CLAIM (2026-09-06).
 
 `timeout(1)`. 12 invocation sites across 4 files: `.ci/lib/setup.sh:582,583,714, 768,787,837`, `.ci/scripts/test/gates/test-profiler-report.sh:399,410,467,491` (retired in W7 P5 census batch A8, its cases carried by `.ci/rediacc_ci/tests/gates/test_gate_profiler_report.py`), and a one-line `bounded()` wrapper in each of `.ci/scripts/ci/scope-shadow.sh:116` and
-`.ci/scripts/ci/scope-reconcile-shadow.sh:99`. Not one of the twelve guards
+`.ci/scripts/ci/scope-reconcile-shadow.sh:99` (retired in W7 P5 census batch B5, its `bounded()` carried by `rediacc_ci.ci.scope_reconcile_shadow`). Not one of the twelve guards
 for the binary's absence: there is no `gtimeout` fallback, no `command -v
 timeout`, no `TIMEOUT_BIN` anywhere in the tree. GNU coreutils is assumed, and macOS does not ship it.
 

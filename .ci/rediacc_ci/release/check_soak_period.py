@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/release/check-soak-period.sh`.
+"""Ported from `.ci/scripts/release/check-soak-period.sh`, which W7 P5 batch B5 retired once `.ci/shadow/w7p5a-check-soak-period.observations.jsonl` asserted equivalence over five distinct trees.
 
 Decides whether an edge release has soaked long enough to promote to stable,
 from the manifest's own `releaseDate` and the workflow's `SOAK_DAYS`. Emits
@@ -10,8 +10,7 @@ and would drift from it silently on some future EDGE_DATE this port never saw du
 THE SILENT-ABORT BEHAVIOUR IS REPRODUCED ON PURPOSE. In bash,
 `EDGE_EPOCH=$(cmd1 || cmd2)` is a simple command consisting only of a variable
 assignment, so its exit status is the exit status of the last command substitution performed -- and `set -e` therefore aborts the *whole script* right there if both date attempts fail, before any output is produced.
-Measured directly: `EDGE_DATE=not-a-date SOAK_DAYS=7 bash check-soak-period.sh`
-exits 1 with nothing on stdout, nothing on stderr, and `$GITHUB_OUTPUT` untouched. This port raises `SystemExit(1)` at the same point with the same silence, rather than "fixing" it with an error message the twin never printed.
+Measured directly against the twin while it existed, with `EDGE_DATE=not-a-date SOAK_DAYS=7`: it exited 1 with nothing on stdout, nothing on stderr, and `$GITHUB_OUTPUT` untouched. This port raises `SystemExit(1)` at the same point with the same silence, rather than "fixing" it with an error message the twin never printed.
 
 INTEGER ARITHMETIC MATCHES BASH'S TRUNCATION, NOT PYTHON'S FLOOR. Bash `$(())` trutruncates toward zero; Python's `//` floors toward negative infinity. The two differ only when `EDGE_DATE` is in the future (a negative age), which the scripts do not defend against either way, so this port uses `int(delta / 86400)` -- `int()` on a float also truncates toward zero -- to keep that
 (mis)behaviour identical rather than accidentally fixing it here.

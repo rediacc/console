@@ -18,7 +18,7 @@ WHY AN ENTRY POINT AT ALL: `check_npmrc.py` states both measured reasons. A port
 
 THE HEADER BELOW IS THE TWIN'S, FIELD FOR FIELD, including `emit: false`, its `blocker:`, `needs: none`, `selftest: true`, `lane:` and the whole `why:` block.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-go-tool-path.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5.
+INVARIANT 5 HELD UNTIL THE LEDGER LICENSED THIS PORT: `.ci/scripts/quality/check-go-tool-path.sh` stayed on disk as the differential twin until `.ci/shadow/w7p2-gotoolpath.observations.jsonl` asserted equivalence over five distinct trees. W7 P5 batch B6 retired it, and the header below is what the gate now runs from.
 
 ---- gate ----
 step: Go tool PATH

@@ -389,7 +389,7 @@ apply_greenlight() {
     # is per INVOCATION, not per key: a walk that runs out of time abandons the
     # tail of this list, and the tail is where the cheap keys are. Sorting here
     # instead would need a second copy of the cost ranking to drift out of
-    # step with the table. test-greenlight.sh pins both ends of the order.
+    # step with the table. test_gate_greenlight.py pins both ends of the order.
     local pending
     pending="$(bounded node -e '
 const fs = require("fs");

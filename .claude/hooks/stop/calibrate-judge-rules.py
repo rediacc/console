@@ -191,10 +191,11 @@ SHAPE_CASES = [
         # The rule above still stands -- when a fixture flips, the fix is the PROMPT --
         # but it assumes the fixture describes real code. VERIFY THE COORDINATES FIRST;
         # that check is one `sed -n` per line and it is the cheapest step here.
+        # COORDINATES MOVED AGAIN 2026-09-21, when W7 P5 census batch B2 retired the embed-asset-freshness and ci-workflow-invariants twins. Re-verified by `sed -n` on the three lines below rather than transcribed: each is the `mktemp -d` of a hand-rolled pair whose `trap` sits on the next line or three below it.
         [
-            ".ci/scripts/test/gates/test-embed-asset-freshness.sh:29",
-            ".ci/scripts/test/gates/test-ci-workflow-invariants.sh:28",
-            ".ci/scripts/test/gates/test-autopilot-breakpoint-alignment.sh:29",
+            ".ci/scripts/test/gates/test-autopilot-breakpoint-alignment.sh:40",
+            ".ci/scripts/test/gates/test-generate-tag-inputs.sh:46",
+            ".ci/scripts/test/gates/test-gate-anti-vacuity.sh:314",
         ],
     ),
     # A THIRD FIRE FIXTURE WAS REMOVED RATHER THAN GUESSED AGAIN. It cited check-em-dash-surfaces.ts:629 / check-dead-css.ts:181 / check-landmarks.ts:48 as one "selftest verdict tail" cluster. Checked line by line, they are not one shape: :629 is a `main()` argv preamble, a different cluster entirely. The model answered `already`, naming the real harness, with the divergence
@@ -205,10 +206,11 @@ SHAPE_CASES = [
     (
         "CONTROL: run_gate has three incompatible return contracts",
         "silent",
+        # RE-VERIFIED AND REPOINTED 2026-09-21 for the same retirement. Two of the three now name the Python ports that carry those twins' cases, which strengthens the control rather than weakening it: the three signatures are visibly incompatible (one takes the gate handle and a workflow path, one takes a tmp_path and a mapping, one is a bash function setting LAST_OUT).
         [
-            ".ci/scripts/test/gates/test-autopilot-breakpoint-alignment.sh:36",
-            ".ci/scripts/test/gates/test-ci-workflow-invariants.sh:33",
-            ".ci/scripts/test/gates/test-embed-asset-freshness.sh:80",
+            ".ci/scripts/test/gates/test-autopilot-breakpoint-alignment.sh:47",
+            ".ci/rediacc_ci/tests/gates/test_gate_ci_workflow_invariants.py:42",
+            ".ci/rediacc_ci/tests/gates/test_gate_embed_asset_freshness.py:92",
         ],
     ),
     (

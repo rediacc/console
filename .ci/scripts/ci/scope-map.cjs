@@ -64,7 +64,7 @@ const ROOT_MANIFESTS = new Set([
 
   // THE FIFTEEN ALLOW/BLOCK LISTS ARE GONE FROM HERE, and deliberately: W4 P2 moved them out of the repository root into `.ci/policy/`, so their names no longer match anything at the root and listing them would be a set that can never fire. Their classification is unchanged -- `.ci/policy/<name>` is
   // caught by the `ci-harness` rule below (matchPrefix('.ci/') => full), so a
-  // change to any of them still forces a full round. Only the REASON string moved with them, from `root-manifest:<name>` to `harness:.ci/policy/<name>`, which is what .ci/scripts/test/gates/test-scope-engine.sh pins.
+  // change to any of them still forces a full round. Only the REASON string moved with them, from `root-manifest:<name>` to `harness:.ci/policy/<name>`, which is what .ci/rediacc_ci/tests/gates/test_gate_scope_engine.py pins.
   //
   // `.ci-trigger` STAYS, above, and is the one member of that family still here: it is not policy (no entries, no BLOCKER lines, no parser) and its whole semantic is the root gesture `touch .ci-trigger` forcing a full round, which only works if a human can find it at the root. .ci/policy/README.md section 3 records that decision.
 ]);

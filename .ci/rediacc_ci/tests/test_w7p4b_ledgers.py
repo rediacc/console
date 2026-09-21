@@ -383,14 +383,34 @@ def test_the_call_site_was_actually_cut_over(pair: str) -> None:
     )
 
 
+# Pairs whose bash twin W7P5 has RETIRED, with the batch that did it. The ledger is then the whole of the evidence, which is what the K=5 assertion above exists to keep true; a re-record is no longer possible and is not supposed to be.
+RETIRED_TWINS = {
+    "w7p4b-check-rerun-attempt": "W7P5 batch B5",
+}
+
+
 @pytest.mark.parametrize("pair", sorted(PAIRS))
 def test_the_bash_twin_is_still_on_disk(pair: str) -> None:
-    """W7P5 retires the `.sh` files as its own step. Until then the twin is what a future re-record compares against, and deleting it would strand every ledger here."""
+    """W7P5 retires the `.sh` files one batch at a time. Until a pair's batch lands the twin is what a future re-record compares against, and deleting it would strand this pair's ledger without saying so."""
     twin, _, _ = PAIRS[pair]
+    if pair in RETIRED_TWINS:
+        assert not (ROOT / twin).is_file(), (
+            "%s is listed as retired by %s but is still on disk. An entry here excuses "
+            "the assertion below, so a stale one hides a twin nobody is checking."
+            % (twin, RETIRED_TWINS[pair])
+        )
+        return
     assert (ROOT / twin).is_file(), (
-        "%s has been deleted. The ledgers in this module compare against it, so its "
-        "removal retires the evidence for the cutover rather than completing it." % twin
+        "%s has been deleted without an entry in RETIRED_TWINS. The ledgers in this "
+        "module compare against it, so an unrecorded removal retires the evidence for "
+        "the cutover rather than completing it." % twin
     )
+
+
+def test_the_retired_twin_set_names_real_pairs() -> None:
+    """VACUITY FLOOR on the branch above, the same one `RETIRED_WITH_THEIR_WORKFLOW` carries: an entry for a pair nothing is filed under excuses nothing and reads as if it did."""
+    unknown = sorted(set(RETIRED_TWINS) - set(PAIRS))
+    assert not unknown, "RETIRED_TWINS names %s, which no pair is filed under" % unknown
 
 
 # Pairs whose script is a REGISTERED GATE, mapped to that gate's id. A gate's call site is not one line: it is the `package.json` script, the `---- gate ----` header's own `run:`, and the `scripts/ci-runner/manifest.ts` leaf that has to agree with both. The third family recorded that reach in prose and left it untested, which is how a half-finished cutover reads as a finished one

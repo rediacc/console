@@ -3,7 +3,8 @@
 WHY A DIFFERENTIAL AND NOT A TABLE OF EXPECTED STRINGS. The interesting half of this gate is three greps whose behaviour on the awkward inputs is decided by POSIX character classes and by the ORDER of the pipe stages, not by anything a reader could infer. In particular the numbering grep runs AFTER a comment filter, so its numbers do not count file lines -- a table of expected
 strings would be a table of what the port does, asserted against itself. Running the real pipeline under bash and comparing is the only form of this test that can fail for the right reason.
 
-The bash fragments below are lifted from `.ci/scripts/quality/check-go-tool-path.sh` lines 75-92 with `$GO_TOOLS` substituted, and nothing else changed. They are NOT the whole gate: the whole gate is what the committed shadow ledger `.ci/shadow/w7p2-gotoolpath.observations.jsonl` compares over five distinct trees. This file covers the seams that ledger cannot isolate.
+The bash fragments below were lifted verbatim from the three greps of `.ci/scripts/quality/check-go-tool-path.sh`, with `$GO_TOOLS` substituted and nothing else changed. They outlive that file: W7 P5 batch B6 retired it once `.ci/shadow/w7p2-gotoolpath.observations.jsonl` asserted equivalence over five distinct trees, and these fragments are the pipeline itself rather than a
+call into the script, so every case below still runs the real bash against the port. They are NOT the whole gate -- the ledger is what compared the whole gate over five trees, and this file covers the seams the ledger cannot isolate.
 """
 
 import pathlib
@@ -56,7 +57,7 @@ def _bash_fix(body: str, tmp_path: pathlib.Path) -> bool:
 
 
 def _bash_hits(body: str, tmp_path: pathlib.Path) -> list[str]:
-    """The twin's `hits` pipeline, verbatim, including `printf '%s'`."""
+    """The retired twin's `hits` pipeline, verbatim, including `printf '%s'`."""
     (tmp_path / "f").write_text(body, encoding="utf-8")
     script = (
         'body="$(cat f)"; printf \'%%s\' "$body" | '

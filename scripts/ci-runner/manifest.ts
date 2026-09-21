@@ -3990,9 +3990,9 @@ export const GATES: readonly GateSpec[] = [
     leaves: ['packages/www/scripts/list-tutorial-render-pairs.js'],
     ci: {
       kind: 'test',
-      test: '.ci/scripts/test/gates/test-tutorial-render-queue.sh',
+      test: '.ci/rediacc_ci/tests/gates/test_gate_tutorial_render_queue.py',
       blocker:
-        'BLOCKER: the predicate needs the render ledger and media manifest that only the tutorial pipeline writes, and test-tutorial-render-queue.sh:79 runs `node "$PREDICATE" --selftest` against the real tree inside the gate-test battery, so the real scan does execute in CI (ci-quality.yml quality-security, "Quality-gate unit tests")',
+        'BLOCKER: the predicate needs the render ledger and media manifest that only the tutorial pipeline writes, and test_gate_tutorial_render_queue.py:94 runs `node "$PREDICATE" --selftest` against the real tree under check:ci-pytest, so the real scan does execute in CI (ci-quality.yml quality-security, "Python package tests")',
     },
   },
   {
@@ -4213,9 +4213,9 @@ export const GATES: readonly GateSpec[] = [
     leaves: ['.ci/scripts/security/check-autopilot-workflow-invariants.sh'],
     ci: {
       kind: 'test',
-      test: '.ci/scripts/test/gates/test-autopilot-workflow-invariants.sh',
+      test: '.ci/rediacc_ci/tests/gates/test_gate_autopilot_workflow_invariants.py',
       blocker:
-        'BLOCKER: no quality lane can run this against the live ruleset, but test-autopilot-workflow-invariants.sh:23-24 points both GATE and REAL at the real .github/workflows/autopilot.yml, so the gate-test battery (ci-quality.yml quality-security, "Quality-gate unit tests") executes the real scan over the real tree every CI run',
+        'BLOCKER: no quality lane can run this against the live ruleset, but test_gate_autopilot_workflow_invariants.py:30,175 points both GATE and REAL at the real .github/workflows/autopilot.yml, so check:ci-pytest (ci-quality.yml quality-security, "Python package tests") executes the real scan over the real tree every CI run',
     },
   },
   // >>> gen-manifest: region 40
@@ -4252,9 +4252,9 @@ export const GATES: readonly GateSpec[] = [
     leaves: ['.ci/scripts/security/check-ci-workflow-invariants.sh'],
     ci: {
       kind: 'test',
-      test: '.ci/scripts/test/gates/test-ci-workflow-invariants.sh',
+      test: '.ci/rediacc_ci/tests/gates/test_gate_ci_workflow_invariants.py',
       blocker:
-        'BLOCKER: no quality lane runs this against the live workflow, but test-ci-workflow-invariants.sh points both GATE and REAL at the real .github/workflows/ci.yml, so the gate-test battery (ci-quality.yml quality-security, "Quality-gate unit tests") executes the real scan over the real tree every CI run',
+        'BLOCKER: no quality lane runs this against the live workflow, but test_gate_ci_workflow_invariants.py:35-36 points both GATE and REAL at the real .github/workflows/ci.yml, so check:ci-pytest (ci-quality.yml quality-security, "Python package tests") executes the real scan over the real tree every CI run',
     },
   },
   {
@@ -4404,13 +4404,12 @@ export const GATES: readonly GateSpec[] = [
     leaves: ['scripts/gates/check-layout-overflow.ts'],
     ci: {
       kind: 'test',
-      test: '.ci/scripts/test/gates/test-layout-overflow.sh',
+      test: '.ci/rediacc_ci/tests/gates/test_gate_layout_overflow.py',
       blocker:
-        'BLOCKER: no quality lane owns CSS overflow, and the two shapes this gate detects are invisible to a browser scan because ' +
-        'querySelectorAll returns no pseudo-elements; test-layout-overflow.sh:66 runs the gate seam-free against the real ' +
-        'stylesheets inside the gate-test battery (ci-quality.yml quality-security, "Quality-gate unit tests"), so the real parse of every ' +
-        'declaration block executes every CI run, and the mutant case beside it strips the nowrap detector and requires the ' +
-        "gate's own controls to go red",
+        'BLOCKER: no quality lane owns CSS overflow, and the two shapes it detects are invisible to a browser scan because ' +
+        'querySelectorAll returns no pseudo-elements; test_gate_layout_overflow.py:98 runs the gate seam-free against the real ' +
+        'stylesheets under check:ci-pytest, so every declaration block is parsed each CI run, and the mutant beside it reds the ' +
+        'controls',
     },
   },
   {
@@ -4420,12 +4419,12 @@ export const GATES: readonly GateSpec[] = [
     leaves: ['scripts/gates/check-hydration-clean.ts'],
     ci: {
       kind: 'test',
-      test: '.ci/scripts/test/gates/test-hydration-clean.sh',
+      test: '.ci/rediacc_ci/tests/gates/test_gate_hydration_clean.py',
       blocker:
         'BLOCKER: no quality lane reads React state initializers, and the defect is decidable only from the source pair (server ' +
-        'render, client render); test-hydration-clean.sh:60 runs the gate seam-free against the real packages/www components ' +
-        'inside the gate-test battery (ci-quality.yml quality-security, "Quality-gate unit tests"), so the real scan executes every CI run, ' +
-        'and the mutant case beside it blinds the one-hop lookup and requires the indirect control to go red',
+        'render, client render); test_gate_hydration_clean.py:92 runs the gate seam-free against the real packages/www components ' +
+        'under check:ci-pytest, so the real scan runs every CI run, and the mutant beside it requires the indirect control to go ' +
+        'red',
     },
   },
   {
@@ -4435,12 +4434,12 @@ export const GATES: readonly GateSpec[] = [
     leaves: ['scripts/gates/check-form-validation.ts'],
     ci: {
       kind: 'test',
-      test: '.ci/scripts/test/gates/test-form-validation.sh',
+      test: '.ci/rediacc_ci/tests/gates/test_gate_form_validation.py',
       blocker:
         'BLOCKER: no quality lane inspects form submit handlers, and the defect is a MISSING guard rather than a present one, so ' +
-        'nothing else can express it; test-form-validation.sh:59 runs the gate seam-free against the real components inside ' +
-        'the gate-test battery (ci-quality.yml quality-security, "Quality-gate unit tests"), so the real scan of all six forms executes ' +
-        'every CI run, and the mutant case beside it accepts a captcha guard as validation and requires the control to go red',
+        'nothing else can express it; test_gate_form_validation.py:100 runs the gate seam-free against the real components under ' +
+        'check:ci-pytest, so the real scan of all six forms runs every CI run, and the mutant case beside it requires the control ' +
+        'to go red',
     },
   },
 
@@ -4608,6 +4607,12 @@ export const GATES: readonly GateSpec[] = [
   // ISOLATION IS A HYPOTHESIS, NOT A GIVEN. test-claude-hooks.sh failed once Since 2026-08-08 the battery enforces this in-step: the two writers run as an exclusive serial chain and the real-tree scanners are held until it finishes. See its header. inside the SERIAL battery and could not be reproduced standalone (plan finding F8). Any red that appears only under parallelism gets a
   // named mutex group, never a retry.
   //
+  // THE THREE WRITERS NAMED BELOW ARE A RECORD OF 2026-07-31, and one of them,
+  // test-gate-paths-exist.sh, was retired in W7 P5 census batch B4; its detector,
+  // its fixtures and its controls are carried by
+  // .ci/rediacc_ci/tests/gates/test_gate_paths_exist.py, which writes into
+  // .ci/scripts for the same reason.
+  //
   // A HAZARD OF THIS CLASS, ONE INSTANCE FIXED AND TWO OPEN. Three gates write a file into the REAL working tree for the duration of their run, and a tree-scanning gate running concurrently trips over it. Observed live on 2026-07-31: FIXED .ci/scripts/test/gates/test-gate-paths-exist.sh
   //     wrote scripts/.gate-paths-exist{,-noise}-fixture.ts and broke check:lint
   //     with `ENOENT ... open '.../scripts/.gate-paths-exist-fixture.ts'`, exit 2
@@ -4637,19 +4642,6 @@ export const GATES: readonly GateSpec[] = [
   //
   // A mutex group binding the three writers against check:lint / check:format / lint:unused is the fallback, and it is expensive. It would serialise 511.7s of work against an observed 264.2s wall, a 1.94x regression that drops the run from about 9x to about 4.7x. It also binds the two LONGEST gates in the set to each other, because one of the writers is the critical path:
   // test-gate-paths-exist.sh measured 142.6s standalone on an idle tree and 264.1s under parallel load, against check:lint at 194.8s under the same load. (The plan's 116.7s for check:lint is stale; do not cost this from it.) No mutex is declared here, deliberately, because that trade wants an explicit decision rather than a silent default.
-  {
-    id: 'gate-test:age-check',
-    run: '.ci/scripts/test/gates/test-age-check.sh',
-    gate: true,
-    qualityGateTest: true,
-    leaves: ['.ci/scripts/test/gates/test-age-check.sh'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-security',
-      step: 'Quality-gate unit tests',
-    },
-  },
   {
     id: 'gate-test:autopilot-breakpoint-alignment',
     run: '.ci/scripts/test/gates/test-autopilot-breakpoint-alignment.sh',
@@ -4691,59 +4683,6 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
-    id: 'gate-test:ci-workflow-invariants',
-    run: '.ci/scripts/test/gates/test-ci-workflow-invariants.sh',
-    gate: true,
-    qualityGateTest: true,
-    leaves: ['.ci/scripts/test/gates/test-ci-workflow-invariants.sh'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-security',
-      step: 'Quality-gate unit tests',
-    },
-  },
-  {
-    id: 'gate-test:autopilot-workflow-invariants',
-    run: '.ci/scripts/test/gates/test-autopilot-workflow-invariants.sh',
-    reads: ['tree:repo'],
-    gate: true,
-    qualityGateTest: true,
-    leaves: ['.ci/scripts/test/gates/test-autopilot-workflow-invariants.sh'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-security',
-      step: 'Quality-gate unit tests',
-    },
-  },
-  {
-    id: 'gate-test:form-validation',
-    run: '.ci/scripts/test/gates/test-form-validation.sh',
-    gate: true,
-    qualityGateTest: true,
-    leaves: ['.ci/scripts/test/gates/test-form-validation.sh'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-security',
-      step: 'Quality-gate unit tests',
-    },
-  },
-  {
-    id: 'gate-test:hydration-clean',
-    run: '.ci/scripts/test/gates/test-hydration-clean.sh',
-    gate: true,
-    qualityGateTest: true,
-    leaves: ['.ci/scripts/test/gates/test-hydration-clean.sh'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-security',
-      step: 'Quality-gate unit tests',
-    },
-  },
-  {
     id: 'gate-test:language-policy',
     run: '.ci/scripts/test/gates/test-language-policy.sh',
     gate: true,
@@ -4758,37 +4697,11 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
-    id: 'gate-test:layout-overflow',
-    run: '.ci/scripts/test/gates/test-layout-overflow.sh',
-    gate: true,
-    qualityGateTest: true,
-    leaves: ['.ci/scripts/test/gates/test-layout-overflow.sh'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-security',
-      step: 'Quality-gate unit tests',
-    },
-  },
-  {
     id: 'gate-test:run-sh',
     run: '.ci/scripts/test/gates/test-run-sh.sh',
     gate: true,
     qualityGateTest: true,
     leaves: ['.ci/scripts/test/gates/test-run-sh.sh'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-security',
-      step: 'Quality-gate unit tests',
-    },
-  },
-  {
-    id: 'gate-test:devbox-probes',
-    run: '.ci/scripts/test/gates/test-devbox-probes.sh',
-    gate: true,
-    qualityGateTest: true,
-    leaves: ['.ci/scripts/test/gates/test-devbox-probes.sh'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -4822,19 +4735,6 @@ export const GATES: readonly GateSpec[] = [
         'empty file and invalid JSON to prove all three refusals fire; the two files are held together by hand (no build step ' +
         'syncs them, despite what index.ts used to claim) and data.json is the ONLY region list users get because ' +
         '${SITE_URL}/regions.json returns 404, so silent drift would ship to every install',
-    },
-  },
-  {
-    id: 'gate-test:devbox-hostname',
-    run: '.ci/scripts/test/gates/test-devbox-slug.sh',
-    gate: true,
-    qualityGateTest: true,
-    leaves: ['.ci/scripts/test/gates/test-devbox-slug.sh'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-security',
-      step: 'Quality-gate unit tests',
     },
   },
   {
@@ -4878,36 +4778,6 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
-    id: 'gate-test:ci-parity',
-    run: '.ci/scripts/test/gates/test-ci-parity.sh',
-    reads: ['tree:repo'],
-    slow: true, // 42.3s measured
-    gate: true,
-    qualityGateTest: true,
-    leaves: ['.ci/scripts/test/gates/test-ci-parity.sh'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-security',
-      step: 'Quality-gate unit tests',
-    },
-  },
-  {
-    id: 'gate-test:ci-runner',
-    run: '.ci/scripts/test/gates/test-ci-runner.sh',
-    reads: ['tree:repo'],
-    slow: true, // 16.9s measured
-    gate: true,
-    qualityGateTest: true,
-    leaves: ['.ci/scripts/test/gates/test-ci-runner.sh'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-security',
-      step: 'Quality-gate unit tests',
-    },
-  },
-  {
     id: 'gate-test:claude-hooks',
     run: '.ci/scripts/test/gates/test-claude-hooks.sh',
     slow: true, // 537.4s measured
@@ -4940,34 +4810,6 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
-    id: 'gate-test:dead-bash',
-    run: '.ci/scripts/test/gates/test-dead-bash.sh',
-    reads: ['tree:repo'],
-    slow: true, // 199.8s measured
-    gate: true,
-    qualityGateTest: true,
-    leaves: ['.ci/scripts/test/gates/test-dead-bash.sh'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-security',
-      step: 'Quality-gate unit tests',
-    },
-  },
-  {
-    id: 'gate-test:embed-asset-freshness',
-    run: '.ci/scripts/test/gates/test-embed-asset-freshness.sh',
-    gate: true,
-    qualityGateTest: true,
-    leaves: ['.ci/scripts/test/gates/test-embed-asset-freshness.sh'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-security',
-      step: 'Quality-gate unit tests',
-    },
-  },
-  {
     id: 'gate-test:gate-anti-vacuity',
     run: '.ci/scripts/test/gates/test-gate-anti-vacuity.sh',
     mutex: ['tree:repo'],
@@ -4986,55 +4828,12 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
-    id: 'gate-test:gate-paths-exist',
-    run: '.ci/scripts/test/gates/test-gate-paths-exist.sh',
-    mutex: ['tree:repo'],
-    gate: true,
-    qualityGateTest: true,
-    leaves: ['.ci/scripts/test/gates/test-gate-paths-exist.sh'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-security',
-      step: 'Quality-gate unit tests',
-    },
-  },
-  {
     id: 'gate-test:generate-tag-inputs',
     run: '.ci/scripts/test/gates/test-generate-tag-inputs.sh',
     mutex: ['tree:repo'],
     gate: true,
     qualityGateTest: true,
     leaves: ['.ci/scripts/test/gates/test-generate-tag-inputs.sh'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-security',
-      step: 'Quality-gate unit tests',
-    },
-  },
-  {
-    id: 'gate-test:greenlight',
-    run: '.ci/scripts/test/gates/test-greenlight.sh',
-    reads: ['tree:repo'],
-    slow: true, // 14.8s measured
-    gate: true,
-    qualityGateTest: true,
-    leaves: ['.ci/scripts/test/gates/test-greenlight.sh'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-security',
-      step: 'Quality-gate unit tests',
-    },
-  },
-  {
-    id: 'gate-test:knip-blockers',
-    run: '.ci/scripts/test/gates/test-knip-blockers.sh',
-    reads: ['tree:repo'],
-    gate: true,
-    qualityGateTest: true,
-    leaves: ['.ci/scripts/test/gates/test-knip-blockers.sh'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -5165,56 +4964,11 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
-    // The comparator that decides whether a ported gate kept its twin's verdict. It is on the critical path for W7's 74 bash gates, W4's blocker-validator collapse and W8, so the thing that must not happen is a comparator that cannot report a mismatch: it would not merely fail to help, it would launder every port that followed with a green artifact nobody re-reads. Hence the three
-    // MUTATION CONTROLS in this test, which break one load-bearing line each in a COPY of the module and require the module's own selftest to go red; and hence a real pilot pair rather than a fixture -- the two live blocker-validator implementations, plus the vendored breakpoint subset whose five recorded divergences are a mismatch nobody planted.
-    id: 'gate-test:shadow-gate',
-    run: '.ci/scripts/test/gates/test-shadow-gate.sh',
-    gate: true,
-    qualityGateTest: true,
-    // 12.6s/13.1s measured back to back in a feature worktree. Driver contract section 5 says no such number is admissible, so this is a placeholder that keeps the entry from being blank; the reference-worktree re-tiering box owns the final value and may drop `slow` entirely.
-    slow: true,
-    leaves: ['.ci/scripts/test/gates/test-shadow-gate.sh'],
-    paths: [
-      'scripts/lib/shadow-gate.ts',
-      '.ci/scripts/test/gates/test-shadow-gate.sh',
-      // The pilot pair it drives, and the file its corpus is lifted from. A change to any of these can move the recorded 5-old-only / 3-new-only divergence, which is an assertion in this test.
-      '.ci/scripts/lib/blocker-validator.sh',
-      'scripts/lib/blocker-validator.ts',
-      '.ci/breakpoint/lib/breakpoint-blocker.sh',
-      // The pilot pair are CLIENTS of this module as of 2026-09-09; it decides both sides' verdicts, so a change here can move the recorded divergence this test asserts, and `--changed` would not otherwise select the gate.
-      '.ci/rediacc_ci/core/allowlist.py',
-      '.ci/scripts/test/gates/test-blocker-golden-corpus.sh',
-    ],
-    pathsOrigin: 'declared',
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-security',
-      step: 'Quality-gate unit tests',
-    },
-  },
-  {
     id: 'gate-test:policy-path',
     run: '.ci/scripts/test/gates/test-policy-path.sh',
     gate: true,
     qualityGateTest: true,
     leaves: ['.ci/scripts/test/gates/test-policy-path.sh'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-security',
-      step: 'Quality-gate unit tests',
-    },
-  },
-  {
-    id: 'gate-test:docs-gen',
-    run: '.ci/scripts/test/gates/test-docs-gen.sh',
-    mutex: ['tree:repo'],
-    // 22.3s FLOOR over 5 runs (median 27.0s). Same shape as its sibling above: it drives the whole generator once per provider.
-    slow: true,
-    gate: true,
-    qualityGateTest: true,
-    leaves: ['.ci/scripts/test/gates/test-docs-gen.sh'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -5242,20 +4996,6 @@ export const GATES: readonly GateSpec[] = [
     gate: true,
     qualityGateTest: true,
     leaves: ['.ci/scripts/test/gates/test-label-references.sh'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-security',
-      step: 'Quality-gate unit tests',
-    },
-  },
-  {
-    id: 'gate-test:overrides-reasons',
-    run: '.ci/scripts/test/gates/test-overrides-reasons.sh',
-    reads: ['tree:repo'],
-    gate: true,
-    qualityGateTest: true,
-    leaves: ['.ci/scripts/test/gates/test-overrides-reasons.sh'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -5300,107 +5040,6 @@ export const GATES: readonly GateSpec[] = [
     gate: true,
     qualityGateTest: true,
     leaves: ['.ci/scripts/test/gates/test-review-status.sh'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-security',
-      step: 'Quality-gate unit tests',
-    },
-  },
-  {
-    id: 'gate-test:scope-engine',
-    run: '.ci/scripts/test/gates/test-scope-engine.sh',
-    slow: true, // 13.2s measured
-    gate: true,
-    qualityGateTest: true,
-    leaves: ['.ci/scripts/test/gates/test-scope-engine.sh'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-security',
-      step: 'Quality-gate unit tests',
-    },
-  },
-  {
-    id: 'gate-test:scope-gate-outputs',
-    run: '.ci/scripts/test/gates/test-scope-gate-outputs.sh',
-    reads: ['tree:repo'],
-    slow: true, // 11.5s measured
-    gate: true,
-    qualityGateTest: true,
-    leaves: ['.ci/scripts/test/gates/test-scope-gate-outputs.sh'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-security',
-      step: 'Quality-gate unit tests',
-    },
-  },
-  {
-    id: 'gate-test:shell-counter-increment',
-    run: '.ci/scripts/test/gates/test-shell-counter-increment.sh',
-    reads: ['tree:repo'],
-    gate: true,
-    qualityGateTest: true,
-    leaves: ['.ci/scripts/test/gates/test-shell-counter-increment.sh'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-security',
-      step: 'Quality-gate unit tests',
-    },
-  },
-  {
-    id: 'gate-test:suppression-liveness',
-    run: '.ci/scripts/test/gates/test-suppression-liveness.sh',
-    reads: ['tree:repo'],
-    slow: true, // 18.3s measured
-    gate: true,
-    qualityGateTest: true,
-    leaves: ['.ci/scripts/test/gates/test-suppression-liveness.sh'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-security',
-      step: 'Quality-gate unit tests',
-    },
-  },
-  {
-    id: 'gate-test:swallowed-failures',
-    run: '.ci/scripts/test/gates/test-swallowed-failures.sh',
-    reads: ['tree:repo'],
-    gate: true,
-    qualityGateTest: true,
-    leaves: ['.ci/scripts/test/gates/test-swallowed-failures.sh'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-security',
-      step: 'Quality-gate unit tests',
-    },
-  },
-  {
-    id: 'gate-test:trap-registry',
-    run: '.ci/scripts/test/gates/test-trap-registry.sh',
-    reads: ['tree:repo'],
-    slow: true, // 10.2s measured, five samples (reads corpus, manifest, dispatcher, suite, settings)
-    gate: true,
-    qualityGateTest: true,
-    leaves: ['.ci/scripts/test/gates/test-trap-registry.sh'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-security',
-      step: 'Quality-gate unit tests',
-    },
-  },
-  {
-    id: 'gate-test:tutorial-render-queue',
-    run: '.ci/scripts/test/gates/test-tutorial-render-queue.sh',
-    reads: ['tree:repo'],
-    gate: true,
-    qualityGateTest: true,
-    leaves: ['.ci/scripts/test/gates/test-tutorial-render-queue.sh'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -5491,48 +5130,6 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
-    // Lane capabilities are DERIVED from ci-quality.yml, and the derivation can be wrong in two opposite ways: too generous places a gate in a lane that lacks what it needs (the mis-placement that cost CI), too mean loses a lane entirely. Both are pinned, including the comment case this module itself got wrong first.
-    id: 'gate-test:gate-lanes',
-    run: '.ci/scripts/test/gates/test-gate-lanes.sh',
-    gate: true,
-    qualityGateTest: true,
-    leaves: ['.ci/scripts/test/gates/test-gate-lanes.sh'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-security',
-      step: 'Quality-gate unit tests',
-    },
-  },
-  {
-    // The binder's source of truth. A parser that silently returns null makes the binder emit nothing for that gate, which reads like "not declared yet" -- so its NEGATIVES (no block, unterminated block, no step) are the assertions that matter.
-    id: 'gate-test:gate-header',
-    run: '.ci/scripts/test/gates/test-gate-header.sh',
-    gate: true,
-    qualityGateTest: true,
-    leaves: ['.ci/scripts/test/gates/test-gate-header.sh'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-security',
-      step: 'Quality-gate unit tests',
-    },
-  },
-  {
-    // CHECK 6 of check-workflow-gates.sh is the rule that keeps the watchdog watching, and it had no test at all: its only evidence of working was that it was green. It now admits a step on two PROPERTIES rather than on a name, so both directions of that door need proving.
-    id: 'gate-test:watchdog-monitor-ordering',
-    run: '.ci/scripts/test/gates/test-watchdog-monitor-ordering.sh',
-    gate: true,
-    qualityGateTest: true,
-    leaves: ['.ci/scripts/test/gates/test-watchdog-monitor-ordering.sh'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-security',
-      step: 'Quality-gate unit tests',
-    },
-  },
-  {
     id: 'gate-test:plan-housekeeping',
     run: '.ci/scripts/test/gates/test-plan-housekeeping.sh',
     // 7.6s alone, ~20s in the pre-push lane, and the lane is what the tier is about. It drives the REAL gate against 13 fixture git repositories, so its cost is 13 process trees rather than anything it computes -- exactly the shape that stretches under 20x contention. It was already borderline (samples 19.9-23.0s) and a 13th case tipped it.
@@ -5553,22 +5150,6 @@ export const GATES: readonly GateSpec[] = [
     gate: true,
     qualityGateTest: true,
     leaves: ['.ci/scripts/test/gates/test-commit-identity.sh'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-security',
-      step: 'Quality-gate unit tests',
-    },
-  },
-  {
-    id: 'gate-test:resprofile',
-    noProfile: true,
-    // Pristine warns, seeded enforces a planted E6, seeding refuses a silent shrink, and a mutant with wall scaling removed reds the gate's own control.
-    run: '.ci/scripts/test/gates/test-resprofile.sh',
-    slow: true,
-    gate: true,
-    qualityGateTest: true,
-    leaves: ['.ci/scripts/test/gates/test-resprofile.sh'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',

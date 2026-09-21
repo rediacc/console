@@ -21,10 +21,9 @@ THE RESOLVED NEED SET DOES NOT MOVE, verified by calling `bind()` on both files.
 
 `TRAP_FLOOR` IS NOT TOUCHED BY THIS CHANGE. It is 79, it lives in BOTH `.ci/scripts/quality/check-trap-registry.sh` and `.ci/rediacc_ci/quality/trap_registry.py`, and `.ci/rediacc_ci/tests/test_quality_trap_registry.py` asserts the two agree. Neither number was edited here; this entry point adds no third copy.
 
-PINNED BY PATH IN THREE PLACES, split across two arms:
+PINNED BY PATH IN TWO PLACES, split across two arms:
 
   - RUN-IN-PLACE, so ENTRY POINT if repointed:
-    `.ci/scripts/test/gates/test-trap-registry.sh:34` (`GATE=`, then runs it)
     `.ci/rediacc_ci/tests/gates/test_gate_trap_registry.py:68` (`GATE_REL`)
   - DIFFERENTIAL, so it MUST KEEP NAMING THE TWIN:
     `.ci/rediacc_ci/tests/test_quality_trap_registry.py:21`

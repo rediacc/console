@@ -67,9 +67,10 @@ main() {
     # matches nothing runs shfmt on nothing and exits 0. A green then means "no
     # formatting problems" and "the enumeration lost its corpus" equally, which is
     # the shape check:ci-enumeration-vacuity exists to refuse. Measured 2026-09-21,
-    # after census batches A3 to A10 of W7 P5 retired ninety-seven bash gate-test twins:
-    # 458 .sh files across the four scopes, down from 568 on 2026-09-04. The floor is
-    # well under that so it catches a broken find, not today's file count.
+    # after census batches A3 to A10 and B1 to B4 of W7 P5 retired a hundred and
+    # twenty-six bash gate-test twins: 422 .sh files across the four scopes, down
+    # from 568 on 2026-09-04. The floor is well under that so it catches a broken
+    # find, not today's file count.
     MIN_SHELL_FILES="${SHFMT_MIN_FILES:-200}"
     shell_seen=$(find .ci .claude scripts -name "*.sh" -type f -not -path '.claude/worktrees/*' 2>/dev/null | wc -l || true)
     if [[ "$shell_seen" -lt "$MIN_SHELL_FILES" ]]; then

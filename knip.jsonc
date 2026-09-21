@@ -18,7 +18,7 @@
         // from Python, or by hand, and knip only follows TypeScript imports. It
         // reported all three as unused files, and acting on that would have been
         // destructive rather than tidy:
-        //   shadow-gate.ts            <- .ci/scripts/test/gates/test-shadow-gate.sh:56
+        //   shadow-gate.ts            <- .ci/rediacc_ci/tests/gates/test_gate_shadow_gate.py:70
         //     runs it as `LIB`. It is the comparator that proves the W7P6 bash->Python
         //     ports equivalent, so deleting it removes the instrument the port
         //     campaign is measured with.
@@ -47,9 +47,10 @@
       // AN EXPORT USED INSIDE ITS OWN FILE IS NOT DEAD, and in this repo it is
       // usually load-bearing. `check-doc-region-parity.ts:297` matches
       // /^export const (\w+Provider): Provider =/ -- the KEYWORD is part of the
-      // contract it verifies -- and `.ci/scripts/test/gates/test-gate-header.sh:40`
-      // imports `analyzeGateHeader` from a bash gate test, which knip cannot see at
-      // all. Dropping those `export`s to satisfy knip broke both gates.
+      // contract it verifies -- and the gate-header probe in
+      // `.ci/rediacc_ci/tests/gates/test_gate_gate_header.py` imports
+      // `analyzeGateHeader` from an embedded TypeScript snippet, which knip cannot
+      // see at all. Dropping those `export`s to satisfy knip broke both gates.
       // This setting keeps the finding that matters -- an export used NOWHERE, not
       // even in its own file, is still reported, which is how the genuinely dead
       // `rel` helper in scripts/lib/repo-root.ts was found and removed.

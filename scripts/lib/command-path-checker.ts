@@ -173,7 +173,7 @@ const SOURCE_PATTERN = /\brdc\s+([a-z][\w-]*(?:\s+[a-z][\w-]*)*)/g;
 // PY_CONTROL_DEF is the Python analogue of the `.ci/scripts/test/**` directory exclusion other gates use: a ported gate carries its controls INSIDE the module, so fixtures that must be deliberately wrong cannot be excluded by path. The names are a measured convention, not a guess -- across those 386 files the top-level control entry points are `selftest` (114), `run_controls`
 // (10), `controls` (7) and `control` (5).
 //
-// THE BODY IS BOUNDED BY INDENTATION, NOT BY END OF FILE, and that difference is load-bearing rather than tidiness. `.ci/scripts/test/gates/test-gate-paths-exist.sh`
+// THE BODY IS BOUNDED BY INDENTATION, NOT BY END OF FILE, and that difference is load-bearing rather than tidiness. `.ci/rediacc_ci/tests/gates/test_gate_paths_exist.sh`
 // grew the same skip as `in_self` and runs it to EOF; in this very file
 // `run_controls` is at line 174 and `main()` at 220, so a to-EOF skip would have swallowed `main()` and taken :221 with it -- the prose finding would have vanished into a green that merely looked like the fixtures had been handled. A control that stops firing for an unrelated reason is the vacuity this repo keeps paying for, so the body ends where Python says it ends: the first
 // non-blank line back at column 0. ---------------------------------------------------------------------------

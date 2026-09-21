@@ -36,8 +36,8 @@
  * ---- gate ----
  * kind: test
  * needs: node
- * test: .ci/scripts/test/gates/test-hydration-clean.sh
- * blocker: BLOCKER: no quality lane reads React state initializers, and the defect is decidable only from the source pair (server render, client render); test-hydration-clean.sh:60 runs the gate seam-free against the real packages/www components inside the gate-test battery (ci-quality.yml quality-security, "Quality-gate unit tests"), so the real scan executes every CI run, and the mutant case beside it blinds the one-hop lookup and requires the indirect control to go red
+ * test: .ci/rediacc_ci/tests/gates/test_gate_hydration_clean.py
+ * blocker: BLOCKER: no quality lane reads React state initializers, and the defect is decidable only from the source pair (server render, client render); test_gate_hydration_clean.py:92 runs the gate seam-free against the real packages/www components under check:ci-pytest, so the real scan runs every CI run, and the mutant beside it requires the indirect control to go red
  * ---- end gate ----
  */
 import fs from 'node:fs';

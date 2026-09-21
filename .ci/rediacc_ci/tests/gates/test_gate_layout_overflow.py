@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-layout-overflow.sh`.
+"""Port of `.ci/scripts/test/gates/test-layout-overflow.sh`, retired in W7 P5.
 
 `scripts/gates/check-layout-overflow.ts`, the CSS horizontal-overflow scan.
 
@@ -25,8 +25,6 @@ import shutil
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-layout-overflow.sh"
 
 GATE = paths.from_root("scripts", "gates", "check-layout-overflow.ts")
 LIB = paths.from_root("scripts", "lib")

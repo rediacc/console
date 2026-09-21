@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/release/backfill-write-sentinel.sh`.
+"""Ported from `.ci/scripts/release/backfill-write-sentinel.sh`, which W7 P5 batch B5 retired once `.ci/shadow/w7p5a-backfill-write-sentinel.observations.jsonl` asserted equivalence over five distinct trees.
 
 The only R2-mutating step of the backfill workflow, wrapped in a DRY_RUN
 preview so it stays trivially safe to re-run. `dry_run=true` prints the exact
@@ -24,7 +24,7 @@ SELF = "backfill-write-sentinel.py"
 
 # `.ci/rediacc_ci/release/backfill_write_sentinel.py` -> `.ci` -> repo root, exactly as the twin's `SCRIPT_DIR/../../..` (`.ci/scripts/release/../../..`) is the same three levels up, even though the two files live in different directories.
 _ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
-# The RELATIVE spelling the twin prints and invokes, once it has `cd`'d to the repo root (`.ci/scripts/release/backfill-write-sentinel.sh:33`). The dry-run preview line must show this exact relative path, not the absolute one this port resolves `_WRITER` to for the actual (non-dry-run) subprocess call.
+# The RELATIVE spelling the retired twin printed and invoked, once it had `cd`'d to the repo root. The dry-run preview line must show this exact relative path, not the absolute one this port resolves `_WRITER` to for the actual (non-dry-run) subprocess call.
 _WRITER_REL = os.path.join(".ci", "scripts", "deploy", "write-release-sentinel.sh")
 _WRITER = os.path.join(_ROOT, _WRITER_REL)
 

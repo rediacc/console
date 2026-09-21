@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-dead-bash.sh`.
+"""Port of `.ci/scripts/test/gates/test-dead-bash.sh`, retired in W7 P5.
 
 Subject: `scripts/gates/check-dead-bash.ts`, the detector for unreferenced shell scripts and uncalled shell functions.
 
@@ -19,8 +19,6 @@ import pathlib
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-dead-bash.sh"
 
 # Two cases read the real package.json and manifest.ts. See the docstring.
 REAL_TREE_TWIN = True

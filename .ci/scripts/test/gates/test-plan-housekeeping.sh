@@ -19,7 +19,7 @@
 # nothing; every "✓" it prints would be indistinguishable from a broken scan.
 #
 # The dates are set with GIT_AUTHOR_DATE/GIT_COMMITTER_DATE, the same technique
-# .ci/scripts/test/gates/test-age-check.sh already uses. PLAN_HK_ROOT re-points
+# .ci/rediacc_ci/tests/gates/test_gate_age_check.py already uses. PLAN_HK_ROOT re-points
 # the gate at each fixture, and the last case proves that override is not an
 # escape hatch.
 #

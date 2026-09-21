@@ -200,7 +200,7 @@ const deriveFor = (key) => {
 
   // A derived path that is not in the tree is a stale WORKFLOW reference, not
   // a table defect, and blaming the table for it would send the next session
-  // to the wrong file. Dropped here; test-greenlight.sh owns "declared paths
+  // to the wrong file. Dropped here; test_gate_greenlight.py owns "declared paths
   // must exist" from the other direction.
   return { required: [...required].filter(exists).sort(), checksOutSubmodules };
 };

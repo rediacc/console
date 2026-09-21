@@ -171,7 +171,7 @@ function unreachable(root: string, pkgs: Pkg[]): Pkg[] {
   }
   // A package no CI surface names and no omission documents MUST be reported.
   //
-  // The directory is JOINED rather than written as one literal, and that is not cosmetic: `test-gate-paths-exist.sh` reads a literal `packages/<name>` string as a claim that the path is real, and reports it as a dead path constant. This one must NOT exist -- a control that points at a real package proves nothing -- so the two gates would deadlock over it. Runtime-built paths are
+  // The directory is JOINED rather than written as one literal, and that is not cosmetic: `test_gate_paths_exist.py` reads a literal `packages/<name>` string as a claim that the path is real, and reports it as a dead path constant. This one must NOT exist -- a control that points at a real package proves nothing -- so the two gates would deadlock over it. Runtime-built paths are
   // out of that gate's scope by design (its own `test_detector_ignores_runtime_ and_glob_paths` case), which is the honest category for a synthetic fixture.
   const ghostDir = ['packages', '__ghost__'].join('/');
   const ghost: Pkg = { name: '@rediacc/__no_such_package__', dir: ghostDir, scripts: ['test'] };

@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/deploy/resolve-www-deploy-target.sh`.
+"""Ported from `.ci/scripts/deploy/resolve-www-deploy-target.sh`, which W7 P5 batch B5 retired once `.ci/shadow/w7p5a-resolve-www-deploy-target.observations.jsonl` asserted equivalence over five distinct trees.
 
 Picks the deploy-script name / Worker name / domain / sandbox flag for the www Worker and emits them as GitHub Actions step outputs. Pure computation, same shape as `rediacc_ci.deploy.resolve_account_deploy_config`: no network, no subprocess, one file write to `$GITHUB_OUTPUT`.
 

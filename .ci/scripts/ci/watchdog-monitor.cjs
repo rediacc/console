@@ -21,7 +21,7 @@
 // Optional env vars (chained mode; when unset the script monitors its own run, reading PR context from the event payload as it always did): WATCHDOG_TARGET_RUN_ID - CI run to monitor (a dispatched generation's own context.runId is the watchdog run, not the target) WATCHDOG_PR_NUMBER - PR number for live label reads WATCHDOG_DEADLINE_SECONDS - hand off to the next generation after
 // this long WATCHDOG_PENDING_RERUN - 'true' when a prior generation classified a
 //                                 failure as transient; wait + rerun mode
-// WATCHDOG_SKIP_RERUN - 'true' when check-rerun-attempt.sh (the dumb, deterministic attempt-cap backstop, run as a separate workflow step) refused the rerun
+// WATCHDOG_SKIP_RERUN - 'true' when rediacc_ci.ci.check_rerun_attempt (the dumb, deterministic attempt-cap backstop, run as a separate workflow step) refused the rerun
 //
 // Optional env vars (AI failure classification, DeepSeek V4 Pro via Cloudflare's OpenAI-compatible /ai/v1/chat/completions endpoint): CLOUDFLARE_API_TOKEN - Cloudflare API token with Workers AI permission CLOUDFLARE_ACCOUNT_ID - Cloudflare account ID
 //

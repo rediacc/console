@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/release/deployment-summary.sh`.
+"""Ported from `.ci/scripts/release/deployment-summary.sh`, which W7 P5 batch B5 retired once `.ci/shadow/w7p5a-deployment-summary.observations.jsonl` asserted equivalence over five distinct trees.
 
 Appends the release job's closing summary to `$GITHUB_STEP_SUMMARY`. Pure string emission: no network, no subprocess, one file append. Same shape as `rediacc_ci.deploy.resolve_account_deploy_config`, except this twin has nothing to decide between, so this port has no branch either -- the whole comparison surface is "did every line come out identical".
 

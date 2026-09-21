@@ -24,8 +24,8 @@ explicit arguments and documents which default hides which failure.
 ------------------------------------------------------------------------------
 TRAP 2: THE DEFAULT PATHSPEC `*` ALREADY CROSSES `/`, SO `a/**/*.sh` IS NARROWER.
 ------------------------------------------------------------------------------
-git's default wildmatch is NOT fnmatch: a bare `*` matches slashes. `.ci/*.sh` therefore reaches every depth under `.ci`, while `.ci/**/*.sh` requires at least one intermediate directory and SILENTLY SKIPS everything sitting directly under `.ci` -- `.ci/bootstrap.sh`, for one. `check-go-tool-path.sh:96-102` records the measurement: the two spellings return the same 453 tracked
-files, and only the second one drops bootstrap.sh.
+git's default wildmatch is NOT fnmatch: a bare `*` matches slashes. `.ci/*.sh` therefore reaches every depth under `.ci`, while `.ci/**/*.sh` requires at least one intermediate directory and SILENTLY SKIPS everything sitting directly under `.ci` -- `.ci/bootstrap.sh`, for one. The measurement is recorded by `rediacc_ci.quality.go_tool_path`, carried over from the bash gate W7 P5
+retired: the two spellings return the same 453 tracked files, and only the second one drops bootstrap.sh.
 
 The failure is silent in the narrowing direction, which is the dangerous one: a gate keeps passing while its corpus quietly shrinks. `.ci/scripts/quality/check_pathspec_scope.py:73` bans `**/` in a pathspec for exactly this reason, and `pathspec_warning()` below carries the same rule so a caller of this module is told before the answer is wrong rather than after.
 
@@ -103,7 +103,7 @@ def pathspec_warning(spec: str) -> str | None:
             "%r contains '**/', which in git's default wildmatch requires at least one "
             "intermediate directory and therefore SKIPS files sitting directly under the "
             "prefix. A bare '*' already crosses '/', so the wider spelling is the shorter "
-            "one. See check-go-tool-path.sh:96-102." % spec
+            "one. See rediacc_ci.quality.go_tool_path." % spec
         )
     return None
 

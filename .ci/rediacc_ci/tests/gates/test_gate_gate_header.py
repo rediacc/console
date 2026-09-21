@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-gate-header.sh`.
+"""Port of `.ci/scripts/test/gates/test-gate-header.sh`, retired in W7 P5.
 
 The per-gate DECLARATION parser in `scripts/lib/gate-header.ts`, proved in both directions.
 
@@ -28,8 +28,6 @@ NO `xdist_group`. Both cases are one short-lived `npx tsx` subprocess reading tw
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-gate-header.sh"
 
 MOD = paths.from_root("scripts", "lib", "gate-header.ts")
 
@@ -99,8 +97,8 @@ ck(
 );
 ck(
   'id derives for a gate-test',
-  derivedId('.ci/scripts/test/gates/test-watchdog-monitor-ordering.sh') ===
-    'gate-test:watchdog-monitor-ordering'
+  derivedId('.ci/scripts/test/gates/test-gate-anti-vacuity.sh') ===
+    'gate-test:gate-anti-vacuity'
 );
 ck(
   // THE PORTED SPELLING, which the case above cannot reach: it passes a hyphenated

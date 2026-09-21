@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-scope-engine.sh`.
+"""Port of `.ci/scripts/test/gates/test-scope-engine.sh`, retired in W7 P5.
 
 Unit test for the pure core of the CI scope engine: `.ci/scripts/ci/scope-map.cjs` and `.ci/scripts/ci/scope-engine.cjs`.
 
@@ -29,8 +29,6 @@ import subprocess
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-scope-engine.sh"
 
 ENGINE = paths.from_root(".ci", "scripts", "ci", "scope-engine.cjs")
 MAP = paths.from_root(".ci", "scripts", "ci", "scope-map.cjs")

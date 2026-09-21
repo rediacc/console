@@ -27,8 +27,9 @@ log_fail() {
 }
 log_test() { echo -e "${YELLOW}TEST:${NC} $*"; }
 # info/error were ASSUMED by callers before they existed here:
-# test-shell-counter-increment.sh called both under `set -uo pipefail` (no -e),
-# so every run printed `log_info: command not found` and its finding report
+# test-shell-counter-increment.sh (retired in W7 P5; its port is
+# test_gate_shell_counter_increment.py) called both under `set -uo pipefail`
+# (no -e), so every run printed `log_info: command not found` and its report
 # would have said the same instead of naming the offending file (found
 # 2026-08-08 by the run-all parallelization agent). Defined once, centrally.
 log_info() { echo -e "${YELLOW}INFO:${NC} $*"; }
@@ -253,7 +254,8 @@ fake_bin_record() {
 # THE RUNNING TALLY: `ok`, `no`, and one verdict.
 #
 # Three gate tests carried this byte-identical -- test-toolchain.sh,
-# test-run-sh.sh and test-devbox-probes.sh -- each with its own `fails=0`,
+# test-run-sh.sh and test-devbox-probes.sh, the last since retired -- each with
+# its own `fails=0`,
 # `count=0`, `ok()`, `no()` and a verdict block differing only in the subject
 # label. They were diffed before this was written; there is no divergence.
 #

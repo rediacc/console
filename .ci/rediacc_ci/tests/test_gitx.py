@@ -132,7 +132,7 @@ def test_ls_files_equals_raw_git_on_the_real_repository():
 
 
 def test_ls_files_with_a_pathspec_equals_raw_git():
-    """The `.ci/*.sh` spelling from check-go-tool-path.sh:103, both sides."""
+    """The `.ci/*.sh` spelling the go-tool-path gate scans with, both sides."""
     root = diff.repo()
     _, out, _ = diff.bash_streams("git ls-files -z -- '.ci/*.sh' 'scripts/*.sh'", cwd=root)
     raw = {p for p in out.split("\0") if p}
@@ -185,7 +185,7 @@ def test_recurse_submodules_with_untracked_is_refused_with_a_sentence(repo):
 
 
 def test_double_star_slash_silently_skips_files_at_the_top_level(repo):
-    """THE MEASUREMENT FROM check-go-tool-path.sh:96-102, reproduced.
+    """THE MEASUREMENT THE GO-TOOL-PATH GATE RECORDS, reproduced.
 
     `a/*.sh` reaches every depth because git's default `*` crosses `/`. `a/**/*.sh` requires at least one intermediate directory and drops `a/top.sh`. The narrower spelling looks more thorough and is not.
     """

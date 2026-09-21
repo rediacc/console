@@ -1,4 +1,4 @@
-r"""Port of `.ci/scripts/test/gates/test-swallowed-failures.sh`.
+r"""Port of `.ci/scripts/test/gates/test-swallowed-failures.sh`, retired in W7 P5.
 
 Both-ways test for `.ci/scripts/quality/check-swallowed-failures.sh`.
 
@@ -36,8 +36,6 @@ import re
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-swallowed-failures.sh"
 
 # test_silent_on_the_fixed_go_deps_probe, test_real_tree_is_clean, test_the_repaired_sites_stay_repaired and the added inertness control all read the real tree. See the docstring.
 REAL_TREE_TWIN = True

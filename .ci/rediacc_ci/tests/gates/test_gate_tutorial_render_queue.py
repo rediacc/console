@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-tutorial-render-queue.sh`.
+"""Port of `.ci/scripts/test/gates/test-tutorial-render-queue.sh`, retired in W7 P5.
 
 Tests `packages/www/scripts/list-tutorial-render-pairs.js`, the ONE readiness predicate for "which (tutorial, language) pairs still need rendering". Everything downstream trusts it: `run.sh`'s `www tutorials media` and `www tutorials watch` render exactly what it emits, so a predicate that silently answers "nothing" produces a green run that rendered nothing, and one that
 over-reports burns hours of CPU re-rendering finished work.
@@ -19,8 +19,6 @@ import os
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-tutorial-render-queue.sh"
 
 # Reads packages/www/scripts/, package.json and scripts/ci-runner/manifest.ts off the real working tree on every case. See the module docstring.
 REAL_TREE_TWIN = True

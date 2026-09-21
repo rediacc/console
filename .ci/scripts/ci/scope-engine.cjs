@@ -344,7 +344,7 @@ function resolveBaseline(opts, io) {
     return fail(`baseline:shallow-probe-failed:${msg(e)}`);
   }
 
-  // Two walk shapes, capability-detected. The MODERN one (createRepoIo) is candidate C: fenced at the merge boundary, one-shot run listing, lazy per-candidate attestation under GREEN_ATTEST_BUDGET. The LEGACY one keeps the eager listCandidates(head, limit) contract byte-for-byte, because injected-io consumers (test-scope-engine.sh's fail-open matrix) hold that
+  // Two walk shapes, capability-detected. The MODERN one (createRepoIo) is candidate C: fenced at the merge boundary, one-shot run listing, lazy per-candidate attestation under GREEN_ATTEST_BUDGET. The LEGACY one keeps the eager listCandidates(head, limit) contract byte-for-byte, because injected-io consumers (test_gate_scope_engine.py's fail-open matrix) hold that
   // interface and its reason strings.
   const modern = typeof io.walkShas === 'function' && typeof io.candidateFor === 'function';
   let baseline = null;

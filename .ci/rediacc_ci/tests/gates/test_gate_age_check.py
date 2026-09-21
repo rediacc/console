@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-age-check.sh`.
+"""Port of `.ci/scripts/test/gates/test-age-check.sh`, retired in W7 P5.
 
 Unit tests for `.ci/scripts/lib/age-check.sh`, the library that decides whether a suppression entry has outlived its re-review window.
 
@@ -17,8 +17,6 @@ import pathlib
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-age-check.sh"
 
 LIB = paths.from_root(".ci", "scripts", "lib", "age-check.sh")
 

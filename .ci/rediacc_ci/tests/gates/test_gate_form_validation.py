@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-form-validation.sh`.
+"""Port of `.ci/scripts/test/gates/test-form-validation.sh`, retired in W7 P5.
 
 Tests for `scripts/gates/check-form-validation.ts`.
 
@@ -18,8 +18,6 @@ would then be red for the opposite of its stated reason -- or, worse, an author 
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-form-validation.sh"
 
 GATE = paths.from_root("scripts/gates", "check-form-validation.ts")
 

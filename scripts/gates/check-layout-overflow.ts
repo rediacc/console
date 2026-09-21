@@ -35,8 +35,8 @@
  * ---- gate ----
  * kind: test
  * needs: node
- * test: .ci/scripts/test/gates/test-layout-overflow.sh
- * blocker: BLOCKER: no quality lane owns CSS overflow, and the two shapes this gate detects are invisible to a browser scan because querySelectorAll returns no pseudo-elements; test-layout-overflow.sh:66 runs the gate seam-free against the real stylesheets inside the gate-test battery (ci-quality.yml quality-security, "Quality-gate unit tests"), so the real parse of every declaration block executes every CI run, and the mutant case beside it strips the nowrap detector and requires the gate's own controls to go red
+ * test: .ci/rediacc_ci/tests/gates/test_gate_layout_overflow.py
+ * blocker: BLOCKER: no quality lane owns CSS overflow, and the two shapes it detects are invisible to a browser scan because querySelectorAll returns no pseudo-elements; test_gate_layout_overflow.py:98 runs the gate seam-free against the real stylesheets under check:ci-pytest, so every declaration block is parsed each CI run, and the mutant beside it reds the controls
  * ---- end gate ----
  */
 import fs from 'node:fs';

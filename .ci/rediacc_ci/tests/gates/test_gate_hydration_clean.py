@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-hydration-clean.sh`.
+"""Port of `.ci/scripts/test/gates/test-hydration-clean.sh`, retired in W7 P5.
 
 Tests for `scripts/gates/check-hydration-clean.ts`.
 
@@ -15,8 +15,6 @@ THE MUTANT IS BUILT IN A TEMPDIR AND THE REAL GATE IS NEVER WRITTEN TO, and the 
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-hydration-clean.sh"
 
 GATE = paths.from_root("scripts/gates", "check-hydration-clean.ts")
 

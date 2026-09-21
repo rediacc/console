@@ -8,7 +8,7 @@ from the code:
   greenlight decides whether a previous green run still covers this one by
   hashing the CONTENTS of a declared closure of paths. It reads the candidate
   side out of the REMOTE commit, which
-  `.ci/scripts/test/gates/test-greenlight.sh` models with `git ls-tree HEAD`.
+  `.ci/rediacc_ci/tests/gates/test_gate_greenlight.py` models with `git ls-tree HEAD`.
 
   So a closure path that is present on disk but NOT COMMITTED resolves to
   nothing on the candidate side: greenlight throws its named refusal, emits no

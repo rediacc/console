@@ -213,7 +213,7 @@ LAYER_FILES = (
     ".claude/hooks/stop/wl_profile.py",
     ".claude/hooks/profile/",
     ".ci/scripts/quality/check_resprofile.py",
-    ".ci/scripts/test/gates/test-resprofile.sh",
+    ".ci/rediacc_ci/tests/gates/test_gate_resprofile.py",
     ".devcontainer/bashcov-sup.c",
 )
 SUNSET_DAYS = 30

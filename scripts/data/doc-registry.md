@@ -2,8 +2,8 @@
 
 Every table below is rewritten from the tree by `scripts/gen/gen-docs.ts`. Nothing in a region is typed by hand, and `npx tsx scripts/gen/gen-docs.ts` (no flags) fails if any of it has drifted.
 
-`npm run gen:docs` runs VERIFY mode, not the writer. Regenerating is `npx tsx scripts/gen/gen-docs.ts --write`, spelled out rather than given a key, because a one-word way to overwrite every generated region is a way to overwrite them without reading the diff. The gate that runs all of this in CI is `gate-test:docs-gen` (`.ci/scripts/test/gates/test-docs-gen.sh`), which drives the
-generator in both directions: green on the tree as it stands, and red over a single perturbed row.
+`npm run gen:docs` runs VERIFY mode, not the writer. Regenerating is `npx tsx scripts/gen/gen-docs.ts --write`, spelled out rather than given a key, because a one-word way to overwrite every generated region is a way to overwrite them without reading the diff. The gate that runs all of this in CI is `check:ci-pytest`, through
+`.ci/rediacc_ci/tests/gates/test_gate_docs_gen.py`, which drives the generator in both directions: green on the tree as it stands, and red over a single perturbed row.
 
 This file is the phase 0 home for those regions. It is deliberately NOT one of the documents a reader is sent to: `CLAUDE.md`, `docs/agent-reference/ci-gates.md`, `docs/agent-reference/suppressions.md` and `docs/agent-reference/TRAPS.md` each have exactly one writer during the tooling transformation, and phase 0 is not that writer. Those documents opt in later by carrying the same
 markers, which needs no change to the generator: targets are discovered by scanning for the marker, not from a list.
@@ -45,7 +45,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-app-admin-perm | quality-code / App admin permission | yes | no | no |
 | check:ci-audit-coverage | quality-static / Check audit logging coverage for CLI operations | yes | no | no |
 | check:ci-autopilot-bp-align | test: .ci/scripts/test/gates/test-autopilot-breakpoint-alignment.sh | yes | no | no |
-| check:ci-autopilot-workflow | test: .ci/scripts/test/gates/test-autopilot-workflow-invariants.sh | yes | no | no |
+| check:ci-autopilot-workflow | test: .ci/rediacc_ci/tests/gates/test_gate_autopilot_workflow_invariants.py | yes | no | no |
 | check:ci-aws-credential-bridge | quality-code / AWS credential bridge | yes | no | no |
 | check:ci-backup-bucket-conformance | quality-code / Backup bucket conformance | yes | no | no |
 | check:ci-backup-manifest-shape-parity | quality-code / Backup manifest shape parity | yes | no | no |
@@ -114,7 +114,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-fetch-integrity | quality-code / CI fetch integrity | yes | no | no |
 | check:ci-fetch-retry | quality-code / Fetch retry | yes | no | no |
 | check:ci-fixture-event-timestamps | quality-code / Fixture event timestamps | yes | no | no |
-| check:ci-form-validation | test: .ci/scripts/test/gates/test-form-validation.sh | yes | no | no |
+| check:ci-form-validation | test: .ci/rediacc_ci/tests/gates/test_gate_form_validation.py | yes | no | no |
 | check:ci-format-scope | quality-code / Format command covers its config's scope | yes | yes | no |
 | check:ci-gate-bind | quality-code / Gate binding | yes | no | no |
 | check:ci-gate-cwd-independence | quality-code / Gate cwd independence | yes | no | no |
@@ -141,7 +141,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-hook-worklist-suite | quality-packages / Stop-hook worklist suite | yes | yes | no |
 | check:ci-hooks-resolvable | quality-static / Hooks resolvable | yes | no | no |
 | check:ci-host-toolchain-coverage | quality-code / Host toolchain runtime coverage | yes | no | no |
-| check:ci-hydration-clean | test: .ci/scripts/test/gates/test-hydration-clean.sh | yes | no | no |
+| check:ci-hydration-clean | test: .ci/rediacc_ci/tests/gates/test_gate_hydration_clean.py | yes | no | no |
 | check:ci-i18n-account-email-templates | quality-i18n / i18n | yes | no | no |
 | check:ci-i18n-cli-help-render | quality-i18n / i18n | yes | no | no |
 | check:ci-i18n-cli-key-usage | quality-i18n / i18n | yes | no | no |
@@ -181,7 +181,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-label-refs | test: .ci/scripts/test/gates/test-label-references.sh | yes | no | no |
 | check:ci-landmarks | quality-www-build / Landmarks | yes | yes | no |
 | check:ci-language-policy | quality-static / Language policy | yes | no | no |
-| check:ci-layout-overflow | test: .ci/scripts/test/gates/test-layout-overflow.sh | yes | no | no |
+| check:ci-layout-overflow | test: .ci/rediacc_ci/tests/gates/test_gate_layout_overflow.py | yes | no | no |
 | check:ci-lint-rule-liveness | quality-content / Enabled lint rules can actually fire | yes | yes | no |
 | check:ci-lint-rule-units | quality-content / Lint rule unit specs | yes | no | no |
 | check:ci-lint-scope-coverage | quality-code / Every source file reaches a linter | yes | yes | no |
@@ -318,7 +318,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-tutorial-no-skips | quality-content / Tutorials cannot skip themselves | yes | no | no |
 | check:ci-tutorial-noninteractive | quality-content / Validate tutorial commands are non-interactive | yes | no | no |
 | check:ci-tutorial-parity | quality-content / Validate tutorial cast/storyboard/transcript/mdx parity | yes | no | no |
-| check:ci-tutorial-render-queue | test: .ci/scripts/test/gates/test-tutorial-render-queue.sh | yes | no | no |
+| check:ci-tutorial-render-queue | test: .ci/rediacc_ci/tests/gates/test_gate_tutorial_render_queue.py | yes | no | no |
 | check:ci-typecheck-scope-coverage | quality-code / Typecheck scope coverage | yes | yes | no |
 | check:ci-unverified-downloads | quality-security / Check every Dockerfile download is cryptographically verified | yes | no | no |
 | check:ci-vendored-blocker-derivation | quality-static / Vendored blocker derivation | yes | no | no |
@@ -329,7 +329,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-worker-secret-names | quality-code / Worker secret names | yes | no | no |
 | check:ci-workflow-env-provision | quality-static / Workflow env provision | yes | no | no |
 | check:ci-workflow-gates | quality-code / Workflow structural gates | yes | no | no |
-| check:ci-workflow-invariants | test: .ci/scripts/test/gates/test-ci-workflow-invariants.sh | yes | no | no |
+| check:ci-workflow-invariants | test: .ci/rediacc_ci/tests/gates/test_gate_ci_workflow_invariants.py | yes | no | no |
 | check:ci-workflow-orphan-step-keys | quality-code / Workflow orphan step keys | yes | no | no |
 | check:ci-workflow-submodule-deps | quality-static / Workflow submodule deps | yes | no | no |
 | check:ci-workflows | quality-code / Workflow banned patterns | yes | yes | no |
@@ -357,65 +357,36 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:test:tutorial-player | quality-packages / Tutorial player release gate | yes | yes | no |
 | check:types | quality-code / TypeScript | yes | yes | no |
 | check:version | quality-code / Versions | yes | no | no |
-| gate-test:age-check | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:autopilot-breakpoint-alignment | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:autopilot-no-bypass | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:autopilot-workflow-invariants | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:blocker-golden-corpus | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:breakpoint-portability | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:ci-job-aggregation | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:ci-parity | quality-security / Quality-gate unit tests | yes | yes | yes |
-| gate-test:ci-runner | quality-security / Quality-gate unit tests | yes | yes | yes |
-| gate-test:ci-workflow-invariants | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:claude-hooks | quality-security / Quality-gate unit tests | yes | yes | yes |
 | gate-test:commit-identity | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:dead-bash | quality-security / Quality-gate unit tests | yes | yes | yes |
 | gate-test:dead-case-arms | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:devbox-hostname | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:devbox-probes | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:docs-gen | quality-security / Quality-gate unit tests | yes | yes | yes |
-| gate-test:embed-asset-freshness | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:form-validation | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:gate-anti-vacuity | quality-security / Quality-gate unit tests | yes | yes | yes |
-| gate-test:gate-header | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:gate-lanes | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:gate-paths-exist | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:generate-tag-inputs | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:go-module-sync | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:greenlight | quality-security / Quality-gate unit tests | yes | yes | yes |
-| gate-test:hydration-clean | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:knip-blockers | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:label-inventory | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:label-references | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:language-policy | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:layout-overflow | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:media-r2 | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:overrides-reasons | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:plan-housekeeping | quality-security / Quality-gate unit tests | yes | yes | yes |
 | gate-test:policy-path | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:profiler-coverage | quality-security / Quality-gate unit tests | yes | yes | yes |
 | gate-test:regions-sync | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:resprofile | quality-security / Quality-gate unit tests | yes | yes | yes |
 | gate-test:review-status | quality-security / Quality-gate unit tests | yes | yes | yes |
 | gate-test:run-sh | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:runner-advice | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:scope-engine | quality-security / Quality-gate unit tests | yes | yes | yes |
-| gate-test:scope-gate-outputs | quality-security / Quality-gate unit tests | yes | yes | yes |
-| gate-test:shadow-gate | quality-security / Quality-gate unit tests | yes | yes | yes |
-| gate-test:shell-counter-increment | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:suppression-liveness | quality-security / Quality-gate unit tests | yes | yes | yes |
-| gate-test:swallowed-failures | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:toolchain | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:trap-registry | quality-security / Quality-gate unit tests | yes | yes | yes |
-| gate-test:tutorial-render-queue | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:watchdog-monitor-ordering | quality-security / Quality-gate unit tests | yes | no | yes |
 | gen:docs | local-only | no | no | no |
 | gen:gates-lock | local-only | no | no | no |
 | lint:unused | quality-code / Unused exports (knip) | yes | yes | no |
 | test:install-script | quality-static / Install-script tests | yes | no | no |
 | test:write-once-guard | quality-static / Write-once guard tests | yes | no | no |
 
-390 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
+361 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
 
 <!-- <<< gen-docs -->
 
@@ -658,7 +629,7 @@ Scans: every tracked non-source, non-prose file carrying a `BLOCKER:` line.
 | knip.jsonc | 26 | // comment |
 | package.json | 28 | JSON value |
 | scripts/ci-runner/gates.lock.json | 25 | JSON value |
-| scripts/data/shape-duplication-seed.json | 12 | JSON value |
+| scripts/data/shape-duplication-seed.json | 8 | JSON value |
 
 34 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
 
@@ -727,9 +698,9 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/scripts/autopilot/prompts | 2 | .md 2 |
 | .ci/scripts/build | 17 | .sh 17 |
 | .ci/scripts/build/sea-inject | 7 | .mjs 7 |
-| .ci/scripts/ci | 25 | .sh 15, .cjs 9, .py 1 |
+| .ci/scripts/ci | 23 | .sh 13, .cjs 9, .py 1 |
 | .ci/scripts/ci/profiler | 3 | .sh 2, .awk 1 |
-| .ci/scripts/deploy | 27 | .sh 27 |
+| .ci/scripts/deploy | 26 | .sh 26 |
 | .ci/scripts/docker | 7 | .py 4, .sh 3 |
 | .ci/scripts/docs | 2 | .mjs 2 |
 | .ci/scripts/env | 1 | .sh 1 |
@@ -739,9 +710,9 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/scripts/pr | 1 | .sh 1 |
 | .ci/scripts/private | 9 | .sh 9 |
 | .ci/scripts/private/license-mint | 3 | .go 1, .mod 1, .sum 1 |
-| .ci/scripts/quality | 181 | .py 139, .sh 39, .json 2, .mjs 1 |
+| .ci/scripts/quality | 180 | .py 139, .sh 38, .json 2, .mjs 1 |
 | .ci/scripts/quality/lib | 1 | .py 1 |
-| .ci/scripts/release | 21 | .sh 21 |
+| .ci/scripts/release | 18 | .sh 18 |
 | .ci/scripts/review | 4 | .sh 4 |
 | .ci/scripts/review/prompts | 2 | .md 2 |
 | .ci/scripts/security | 8 | .sh 8 |
@@ -749,7 +720,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/scripts/signal | 1 | .sh 1 |
 | .ci/scripts/test | 17 | .sh 16, .ts 1 |
 | .ci/scripts/test/fixtures/mutate-check | 2 | .py 1, .sh 1 |
-| .ci/scripts/test/gates | 52 | .sh 52 |
+| .ci/scripts/test/gates | 23 | .sh 23 |
 | .ci/scripts/test/lib | 3 | .sh 3 |
 | .ci/scripts/test/manual | 1 | .sh 1 |
 | .ci/scripts/test/proxies | 10 | .sh 10 |

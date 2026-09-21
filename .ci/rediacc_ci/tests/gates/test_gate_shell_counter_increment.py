@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-shell-counter-increment.sh`.
+"""Port of `.ci/scripts/test/gates/test-shell-counter-increment.sh`, retired in W7 P5.
 
 Regression test for a bash defect that was silently disarming four gates.
 
@@ -38,8 +38,6 @@ import re
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-shell-counter-increment.sh"
 
 # Reads `.ci/scripts/quality/*.sh` and `.ci/scripts/security/*.sh` off the real working tree. See the module docstring.
 REAL_TREE_TWIN = True

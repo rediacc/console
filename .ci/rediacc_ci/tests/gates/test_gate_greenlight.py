@@ -1,4 +1,4 @@
-r"""Port of `.ci/scripts/test/gates/test-greenlight.sh`.
+r"""Port of `.ci/scripts/test/gates/test-greenlight.sh`, retired in W7 P5.
 
 Unit test for the cross-PR greenlight engine, `.ci/scripts/ci/greenlight.cjs`.
 
@@ -50,8 +50,6 @@ import re
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-greenlight.sh"
 
 # The closure-path sweep, the two fake-gh CLI cases and the three cases reading scope-shadow.sh all read the tracked tree. The lock says `tree:repo` too. See the docstring.
 REAL_TREE_TWIN = True

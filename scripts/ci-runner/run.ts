@@ -563,7 +563,7 @@ async function selftest(): Promise<number> {
     !globToRegExp('**/*.sh').test('packages/cli/src/index.ts'),
     'CONTROL: **/*.sh must NOT match a .ts, or the pattern matches everything'
   );
-  // The two paths below are ASSEMBLED rather than written out. They name files that do not exist -- that is the point of a glob fixture -- and test-gate-paths-exist.sh scans this source for path literals and requires every one to exist. Writing them plainly made that gate red, correctly.
+  // The two paths below are ASSEMBLED rather than written out. They name files that do not exist -- that is the point of a glob fixture -- and test_gate_paths_exist.py scans this source for path literals and requires every one to exist. Writing them plainly made that gate red, correctly.
   const dirA = ['private', 'account'].join('/');
   const dirB = ['private', 'renet'].join('/');
   require_(

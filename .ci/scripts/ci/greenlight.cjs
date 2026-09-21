@@ -38,7 +38,7 @@ const { createHash } = require('node:crypto');
 // - `jobNames` is a LIST because a matrix job is several API jobs. Every name must match exactly one job and every one of them must be `success`: a five-leg matrix with four green legs and one skipped leg proves nothing about the fifth, so partial evidence is refused outright. - `submodules` may be EMPTY, which is legal and means rule 2 is vacuous. `Unit` and `Linux Packages`
 // check out with no submodules at all, so there is no pointer for them to be pinned to.
 //
-// KEY ORDER IS COST-DESCENDING and load-bearing, not cosmetic. scope-shadow.sh derives its pending list from Object.keys(CLOSURES) (a JS insertion-order guarantee for string keys) and passes it through in that order, so if the walk budget runs out mid-list the keys that go unasked are the cheap ones. test-greenlight.sh pins the two ends of that order.
+// KEY ORDER IS COST-DESCENDING and load-bearing, not cosmetic. scope-shadow.sh derives its pending list from Object.keys(CLOSURES) (a JS insertion-order guarantee for string keys) and passes it through in that order, so if the walk budget runs out mid-list the keys that go unasked are the cheap ones. test_gate_greenlight.py pins the two ends of that order.
 // ---------------------------------------------------------------------------
 
 // The eight VM/E2E legs share ONE closure. They check out with `submodules: true`, run the same setup-workspace + build-cli + build-renet chain, and differ only in env and playwright config that live inside ct-tests.yml and packages/e2e-tests, both of which are in the closure. scope-map.cjs:243-264 already treats them as a single surface for the same reason. Sharing the list also
@@ -462,7 +462,7 @@ const CLOSURES = {
   },
 };
 
-// --------------------------------------------------------------------------- PURE CORE. No network, no git, no clock. Everything below the io line feeds this; the unit gate (.ci/scripts/test/gates/test-greenlight.sh) drives it directly with fixtures. ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- PURE CORE. No network, no git, no clock. Everything below the io line feeds this; the unit gate (.ci/rediacc_ci/tests/gates/test_gate_greenlight.py) drives it directly with fixtures. ---------------------------------------------------------------------------
 
 // The leaf of a reusable-workflow job name. See CLOSURES.renet.jobNames.
 function jobLeafName(name) {
@@ -673,7 +673,7 @@ function createLocalReader({ repoRoot, run = defaultRun }) {
       }
       return shas;
     },
-    // Throws on a path the table declares but the tree does not have. That is a STALE TABLE, not a missing greenlight, and it must be loud: silently hashing an absent path as empty would keep matching other equally stale candidates forever. test-greenlight.sh asserts every declared path exists, so this throw is a backstop rather than the primary detector.
+    // Throws on a path the table declares but the tree does not have. That is a STALE TABLE, not a missing greenlight, and it must be loud: silently hashing an absent path as empty would keep matching other equally stale candidates forever. test_gate_greenlight.py asserts every declared path exists, so this throw is a backstop rather than the primary detector.
     closureHash: (paths) => {
       const shas = {};
       for (const p of paths) {

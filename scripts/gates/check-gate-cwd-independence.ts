@@ -8,7 +8,9 @@
  * therefore passes in one of them and does something else in the others -- and
  * the failure is the expensive kind, because "it passed locally" is true.
  *
- * THE RECORDED INSTANCE, from .ci/scripts/test/gates/test-gate-lanes.sh's own
+ * THE RECORDED INSTANCE, from the header of the retired
+ * .ci/scripts/test/gates/test-gate-lanes.sh, whose cases now run as
+ * .ci/rediacc_ci/tests/gates/test_gate_gate_lanes.py:
  * header: "GitHub runs every step with the workspace as CWD, so a RELATIVE path
  * is correct there. This harness inherited its CWD instead, which meant it
  * passed when invoked by hand from the repo root and exited 127 under
@@ -222,7 +224,7 @@ function main(): void {
         '  `SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"`, or\n' +
         '  `pathlib.Path(__file__).resolve().parents[N]`. A gate runs from the\n' +
         '  workspace root under npm, from elsewhere under the runner, and from\n' +
-        '  wherever a session typed it -- test-gate-lanes.sh passed by hand and\n' +
+        '  wherever a session typed it -- test_gate_gate_lanes.py passed by hand and\n' +
         '  exited 127 under the gate-test battery for exactly this.'
     );
     process.exit(1);

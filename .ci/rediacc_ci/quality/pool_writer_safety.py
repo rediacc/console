@@ -11,7 +11,8 @@ The registration used to live in `.ci/scripts/test/run-all.sh`, as the hand-main
 
 So the subject moved with the runner. Left parsing run-all.sh this gate would have gone one of two ways once that file was deleted, and both are worse than a red: it would REFUSE ("runner not found", exit 1) and read as a bug in the deletion, or -- had anyone "fixed" that by treating an absent runner as clean -- it would pass forever while policing nothing.
 
-THE RETARGET IS NOT A WEAKENING, MEASURED RATHER THAN ASSERTED. On this tree, 2026-09-09: the old parse over run-all.sh returned 4 names (`test-docs-gen.sh`, `test-gate-anti-vacuity.sh`, `test-gate-paths-exist.sh`, `test-generate-tag-inputs.sh`) and the lock's `mutex` set returned those 4 plus `test-shrink-only-composition.sh`. `old - new` was EMPTY, so nothing that was being
+THE RETARGET IS NOT A WEAKENING, MEASURED RATHER THAN ASSERTED. On this tree, 2026-09-09 the old parse over run-all.sh returned 4 names (`test-docs-gen.sh`, `test-gate-anti-vacuity.sh`, `test-gate-paths-exist.sh`, `test-generate-tag-inputs.sh`, the first now retired) and the lock's `mutex` set returned those 4 plus `test-shrink-only-composition.sh`.
+`old - new` was EMPTY, so nothing that was being
 demanded stopped being demanded; the one addition was a test the lock already serialised and the hand list had never been updated to carry, which is itself the argument against hand lists. W7 P5 census batch A8 retired that fifth twin, so the set is 4 again -- by a deletion, not by this reader narrowing.
 
 `reads` IS DELIBERATELY NOT ACCEPTED as a registration. A scanner is released to run beside other scanners; only `mutex` puts a test in the serial W chain, so a writer declared `reads` is exactly the flake this gate exists to catch.
@@ -35,11 +36,11 @@ Two candidate signals were measured against the real battery and DROPPED for pre
   - `git tag` / `git commit` / `git add`: zero true positives (the one real
     tag-namespace risk, test-generate-tag-inputs.sh, deliberately drives the
     resolver instead of cutting a tag) and one guaranteed false positive at
-    test-age-check.sh:26-30, which runs git against a `git init` fixture in a temp
+    test_gate_age_check.py, which runs git against a `git init` fixture in a temp
     dir. Deciding that apart needs cwd tracking through a subshell.
   - a literal repo-relative redirect (`>.ci/...`): zero true positives, and its
     only match in the battery is a docs path inside a JS string literal at
-    test-scope-engine.sh:523. Matching inside strings is exactly the cry-wolf
+    test_gate_scope_engine.py. Matching inside strings is exactly the cry-wolf
     shape.
 The surviving signal alone flags all three registered writers and nothing else across all 93 gate tests: measured false-positive rate zero.
 
@@ -691,8 +692,8 @@ def selftest() -> int:
                 "mutex": ["tree:repo"],
             },
             {
-                "id": "gate-test:age-check",
-                "run": ".ci/scripts/test/gates/test-age-check.sh",
+                "id": "gate-test:both-resources",
+                "run": ".ci/scripts/test/gates/test-both-resources.sh",
                 "mutex": ["tree:repo", "npm:install"],
             },
             {
@@ -714,7 +715,7 @@ def selftest() -> int:
     ctl.check(
         "PARSE: a mutex tree: declaration registers the gate test",
         registered_writers(lock_text),
-        ["test-age-check.sh", "test-generate-tag-inputs.sh"],
+        ["test-both-resources.sh", "test-generate-tag-inputs.sh"],
     )
     ctl.check(
         "PARSE: the SCRIPT word is taken out of a `run` that is a command line",
@@ -757,9 +758,7 @@ def selftest() -> int:
             )
         )
         >= {
-            "test-docs-gen.sh",
             "test-gate-anti-vacuity.sh",
-            "test-gate-paths-exist.sh",
             "test-generate-tag-inputs.sh",
         },
         True,

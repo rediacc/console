@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-gate-lanes.sh`.
+"""Port of `.ci/scripts/test/gates/test-gate-lanes.sh`, retired in W7 P5.
 
 Lane capabilities are DERIVED from `.github/workflows/ci-quality.yml`, so the derivation is the thing to prove, and it can be wrong in two opposite ways.
 
@@ -25,8 +25,6 @@ import json
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-gate-lanes.sh"
 
 SUT = paths.from_root("scripts", "ci-runner", "lanes.ts")
 WORKFLOW = paths.from_root(".github", "workflows", "ci-quality.yml")
@@ -383,7 +381,8 @@ def test_the_sharder_read_a_real_lock(gate):
     """ANTI-VACUITY for the sharding half, and it comes first for the same reason the lane one does: an empty lock satisfies most of what follows."""
     gate.log_test("the lock the sharder reads is not empty")
     data = probe(gate)
-    if data["lockSize"] < 100 or len(data["laneSets"]["quality-security"]) < 100:
+    # 40, not 100: W7 P5 census batches B1 to B3 retired 26 of quality-security's gate-test entries and took the lane from 69 to 43. A floor guards against a collapsed read, so it sits below the live count rather than at it.
+    if data["lockSize"] < 100 or len(data["laneSets"]["quality-security"]) < 40:
         gate.log_fail(
             "the sharder saw %d lock entries and %d in quality-security. A plan over a "
             "collapsed lock emits shards that run nothing, and it would satisfy the "

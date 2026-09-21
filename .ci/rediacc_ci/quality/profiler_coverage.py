@@ -422,7 +422,7 @@ def inline_selftest() -> int:
     if covering_uses(caller, SAMPLE_REF) != 0:
         return _selftest_fail("covering_uses(negative)", covering_uses(caller, SAMPLE_REF), "0")
 
-    # LC_ALL=C: same sibling risk as test-scope-gate-outputs.sh (see
+    # LC_ALL=C: same sibling risk as test_gate_scope_gate_outputs.py (see
     # docs/agent-reference/TRAPS.md). A shell `sort` compared against a hand-written literal is locale-dependent by construction. Currently correct under en_US.UTF-8 only because 'i' < 'r' in both orderings; pinned
     # so it stays correct everywhere rather than by luck. `sorted(key=encode)`
     # is that byte sort.

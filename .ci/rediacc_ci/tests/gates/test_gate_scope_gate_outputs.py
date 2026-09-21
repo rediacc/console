@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-scope-gate-outputs.sh`.
+"""Port of `.ci/scripts/test/gates/test-scope-gate-outputs.sh`, retired in W7 P5.
 
 The scope gate's OUTPUT CONTRACT, driven end to end through the real `.ci/scripts/ci/scope-shadow.sh`.
 
@@ -51,8 +51,6 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-scope-gate-outputs.sh"
 
 # build_fixture copies the real .ci/scripts/ci and every case runs that copy. See the docstring.
 REAL_TREE_TWIN = True

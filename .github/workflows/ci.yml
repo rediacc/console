@@ -556,16 +556,6 @@ jobs:
       - name: run.sh entry-point controls
         run: .ci/scripts/test/gates/test-run-sh.sh
 
-      - name: devbox probe controls
-        # Hermetic: fake docker binaries on a temp PATH, never the real daemon,
-        # so these run on a bare runner with no container available.
-        run: .ci/scripts/test/gates/test-devbox-probes.sh
-
-      - name: devbox hostname controls
-        # Hermetic: pure string/slug functions plus a real git fixture for the
-        # detached-HEAD case. No docker daemon, no network.
-        run: .ci/scripts/test/gates/test-devbox-slug.sh
-
       - name: gate toolchain resolver controls
         run: .ci/scripts/test/gates/test-toolchain.sh
 

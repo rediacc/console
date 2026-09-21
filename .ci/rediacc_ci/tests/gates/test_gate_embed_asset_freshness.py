@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-embed-asset-freshness.sh`.
+"""Port of `.ci/scripts/test/gates/test-embed-asset-freshness.sh`, retired in W7 P5.
 
 Integration test for `scripts/gates/check-embed-asset-freshness.ts`.
 
@@ -17,8 +17,6 @@ import json
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-embed-asset-freshness.sh"
 
 VALIDATOR = paths.from_root("scripts/gates", "check-embed-asset-freshness.ts")
 SOURCES = paths.from_root("scripts", "lib", "embed-asset-sources.ts")

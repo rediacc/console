@@ -154,9 +154,7 @@ def test_the_live_lock_still_declares_the_historical_writers() -> None:
     live = pathlib.Path(diff.repo()) / "scripts" / "ci-runner" / "gates.lock.json"
     declared = set(gate.registered_writers(live.read_text(encoding="utf-8")))
     assert declared >= {
-        "test-docs-gen.sh",
         "test-gate-anti-vacuity.sh",
-        "test-gate-paths-exist.sh",
         "test-generate-tag-inputs.sh",
     }
 

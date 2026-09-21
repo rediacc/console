@@ -81,7 +81,7 @@ matched ZERO files there while the gate reported "71 shell file(s) scanned", and
 THE PORT DOES NOT REIMPLEMENT WILDMATCH. It hands the same two pathspecs to the same `git ls-files`, twice each (tracked, then `--others --exclude-standard`), exactly as the twin does. Reimplementing git's matcher in Python would be a second matcher to keep in step with the first, and the whole finding above is what happens when a matcher's behaviour is assumed rather than
 measured.
 
-UNTRACKED FILES ARE IN SCOPE HERE, unlike check-go-tool-path.sh. That is deliberate in the twin (`--others --exclude-standard` is spelled out) and it is right for this subject: a hook added but not yet committed is running on the developer's machine already.
+UNTRACKED FILES ARE IN SCOPE HERE, unlike `rediacc_ci.quality.go_tool_path`. That is deliberate in the twin (`--others --exclude-standard` is spelled out) and it is right for this subject: a hook added but not yet committed is running on the developer's machine already.
 
 `grep -o` CAN EMIT SEVERAL MATCHES FROM ONE LINE, all carrying that line's
 number, and the loop then re-reads the FULL line with `sed -n "${lineno}p"`. So

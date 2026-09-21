@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-shadow-gate.sh`.
+"""Port of `.ci/scripts/test/gates/test-shadow-gate.sh`, retired in W7 P5.
 
 The shadow comparator (`scripts/lib/shadow-gate.ts`) proves ports equivalent, so the question this file exists to answer is who proves the comparator.
 
@@ -63,8 +63,6 @@ import shutil
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-shadow-gate.sh"
 
 ROOT = paths.repo_root()
 LIB = ROOT / "scripts" / "lib" / "shadow-gate.ts"

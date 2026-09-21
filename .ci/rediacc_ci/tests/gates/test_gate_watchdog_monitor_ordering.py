@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-watchdog-monitor-ordering.sh`.
+"""Port of `.ci/scripts/test/gates/test-watchdog-monitor-ordering.sh`, retired in W7 P5.
 
 CHECK 6 of `check-workflow-gates.sh` had never been proven able to fail.
 
@@ -18,8 +18,6 @@ import re
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-watchdog-monitor-ordering.sh"
 
 GATE = paths.from_root(".ci", "scripts", "security", "check-workflow-gates.sh")
 WORKFLOW = paths.from_root(".github", "workflows", "watchdog-monitor.yml")
