@@ -21,7 +21,7 @@ import { accountServerFetch } from '../services/account/account-client.js';
 import { registerBackupStrategyCommands } from './backup-strategy.js';
 import { fetchBackupList, renderBackupList, type TaggedBackupEntry } from './repo-backup-list.js';
 
-/** `backup list [artifact-ref]` — list backup artifacts on a machine or storage. */
+/** `backup list [artifact-ref]`, list backup artifacts on a machine or storage. */
 function registerBackupList(backup: Command): void {
   backup
     .command('list')
@@ -110,7 +110,7 @@ async function resolveRestoreMachine(options: RestoreOptions): Promise<string> {
   throw new ValidationError(t('commands.backup.restore.placementRequired'));
 }
 
-/** `backup restore <artifact-ref>` — materialize a backup artifact into a live repo. */
+/** `backup restore <artifact-ref>`, materialize a backup artifact into a live repo. */
 function registerBackupRestore(backup: Command): void {
   backup
     .command('restore')
@@ -137,7 +137,7 @@ function registerBackupRestore(backup: Command): void {
         }
         const sourceType = 'machine';
 
-        // #74: `--datastore` was accepted, used to LOOK UP the holder machine, and then dropped — the pull ran against the machine's default, so a restore the operator asked to land on a named datastore landed somewhere else. Record the placement as the birth record (the same field `repo create` writes) so every later verb derives the right mount, and declare it on the transfer
+        // #74: `--datastore` was accepted, used to LOOK UP the holder machine, and then dropped, the pull ran against the machine's default, so a restore the operator asked to land on a named datastore landed somewhere else. Record the placement as the birth record (the same field `repo create` writes) so every later verb derives the right mount, and declare it on the transfer
         // below.
         const placement = options.datastore
           ? { datastore: options.datastore }
@@ -154,7 +154,7 @@ function registerBackupRestore(backup: Command): void {
           placement,
         });
 
-        // DR nudge: a restore into a config with no config-storage enrollment cannot recover the repo credential (the LUKS passphrase) on a fresh host — warn, never block (spec/02 decision 14).
+        // DR nudge: a restore into a config with no config-storage enrollment cannot recover the repo credential (the LUKS passphrase) on a fresh host, warn, never block (spec/02 decision 14).
         await warnIfConfigStorageUnenrolled();
 
         // `--at` selects a point in time, which only the CHUNK store can answer: it addresses a snapshot in a manifest chain, not an artifact on a machine or a storage remote. So the flag routes to `backup_restore` rather than `backup_pull`. It is a route, not a second user-facing command: growing `rdc backup restore-snapshot` beside this one would make the operator choose between
@@ -271,7 +271,7 @@ async function runRestorePull(args: {
 /**
  * A snapshot id as `MintSnapshotID` writes it: RFC3339-basic UTC, a dash, and
  * 16 hex. Anything else in `--at` is a TIME, and resolving a time is the CLI's
- * job by explicit contract — the `backup_restore` FunctionDef says so in the
+ * job by explicit contract, the `backup_restore` FunctionDef says so in the
  * parameter description, because the machine has no manifest index to search.
  */
 const SNAPSHOT_ID_RE = /^\d{8}T\d{6}Z-[0-9a-f]{16}$/;
@@ -389,7 +389,7 @@ async function restoreDeploy(
 }
 
 /**
- * `rdc backup` — one noun for named strategies, machine-scoped scheduled runs,
+ * `rdc backup`, one noun for named strategies, machine-scoped scheduled runs,
  * and the artifacts they produce (spec/03 §5.6). Unifies what used to live under
  * `machine backup`, `repo backup`, and `config backup-strategy`.
  */

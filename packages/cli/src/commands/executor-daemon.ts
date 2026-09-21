@@ -1,10 +1,10 @@
 /**
- * `rdc executor-daemon run|stop|status` — the executor daemon's operator surface.
+ * `rdc executor-daemon run|stop|status`, the executor daemon's operator surface.
  *
  * Hidden and internal: the daemon is started AUTOMATICALLY on first use by the
  * daemon-backed executor (client.ts) and idles itself out after five minutes, so
  * an operator never runs `run` by hand. These subcommands exist for control and
- * introspection — stopping a daemon, or checking what it has warmed.
+ * introspection, stopping a daemon, or checking what it has warmed.
  *
  * Text here is plain hardcoded English on purpose: this is a debug/ops surface
  * with no place in the translated help tree (mirroring the `run` escape hatch and

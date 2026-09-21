@@ -28,7 +28,7 @@ export interface RawAncestor {
 /**
  * Resolve a local renet binary without async I/O.
  * SEA: extract (or verify and reuse) the embedded host-platform binary.
- * Dev: PATH lookup via which/where — a missing or outdated renet means the
+ * Dev: PATH lookup via which/where, a missing or outdated renet means the
  * helper cannot run and the guards fail closed.
  */
 export function resolveRenetSyncPath(): string | null {

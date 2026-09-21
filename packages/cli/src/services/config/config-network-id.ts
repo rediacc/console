@@ -42,7 +42,7 @@ export async function allocateNetworkIdInStore(configName: string): Promise<numb
   return allocated;
 }
 
-// Find the initial network ID when the forward counter is missing or stale. Avoids `Math.max(...usedIds)` because JS engines cap function arguments around 65536 while the network ID space allows ~261000 IDs — a long-lived shared config can hit that cap before the MAX_NETWORK_ID ceiling.
+// Find the initial network ID when the forward counter is missing or stale. Avoids `Math.max(...usedIds)` because JS engines cap function arguments around 65536 while the network ID space allows ~261000 IDs, a long-lived shared config can hit that cap before the MAX_NETWORK_ID ceiling.
 function pickInitialNetworkId(usedIds: Set<number>): number {
   if (usedIds.size === 0) return MIN_NETWORK_ID;
   let maxId = -1;

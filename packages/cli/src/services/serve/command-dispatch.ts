@@ -108,7 +108,7 @@ export interface DispatchOutcome {
    * `functionName`. This is the ONLY reliable source under the §2.3 reshape: a
    * derived-machine repo verb (`repo status <ref>`) resolves its machine from
    * config placement inside the action body, so it never appears in the request
-   * — the audit would otherwise record `undefined` for it.
+   * the audit would otherwise record `undefined` for it.
    */
   machineName?: string;
 }
@@ -317,7 +317,7 @@ export async function dispatchCommand(args: DispatchArgs): Promise<DispatchOutco
   const { argv, entry } = args.prepared;
   const started = Date.now();
 
-  // Per-dispatch config freshness: configService memoizes a ResourceState view per process, which in a long-lived serve process freezes the repository/machine world at first use while clients may rewrite the config between dispatches — the same staleness class the executor daemon hit (it built vaults from a boot snapshot). Reset both layers up front.
+  // Per-dispatch config freshness: configService memoizes a ResourceState view per process, which in a long-lived serve process freezes the repository/machine world at first use while clients may rewrite the config between dispatches, the same staleness class the executor daemon hit (it built vaults from a boot snapshot). Reset both layers up front.
   configFileStorage.clearCache();
   configService.resetResourceView();
 

@@ -4,7 +4,7 @@
  * `machine.backupStrategies[]` is what `backup schedule` reads to decide which
  * systemd units to deploy, so a strategy bound to no machine is never deployed.
  * Until these existed the only writer in the codebase was config-refs-prune,
- * which only REMOVES entries — completing a strategy rename meant hand-editing
+ * which only REMOVES entries, completing a strategy rename meant hand-editing
  * the config file.
  *
  * Both helpers mutate the passed machines record and return whether anything
@@ -15,7 +15,7 @@ import type { MachineConfig } from '../../types/index.js';
 import { configService } from './config-resources.js';
 
 /**
- * Add a binding. Idempotent — returns false when it already exists.
+ * Add a binding. Idempotent, returns false when it already exists.
  *
  * Duplicates matter: `backup schedule` iterates this list to build unit names,
  * so a repeated entry would deploy the same unit twice.
@@ -38,7 +38,7 @@ export function addStrategyBinding(
  * Remove a binding. Returns false when it was not bound.
  *
  * An emptied list collapses to `undefined` rather than `[]`, matching what
- * config-refs-prune writes when it drops the last dangling reference —
+ * config-refs-prune writes when it drops the last dangling reference ,
  * otherwise the same logical state gets two on-disk spellings depending on
  * which code path emptied it.
  */

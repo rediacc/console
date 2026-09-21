@@ -3,7 +3,7 @@
  *
  * Everything in this module is deterministic: given the same inputs it
  * produces byte-identical output. That determinism is a contract the
- * reconciler depends on — SHA-256 hashes of the rendered content drive
+ * reconciler depends on, SHA-256 hashes of the rendered content drive
  * the unchanged/updated classification, so any hidden nondeterminism
  * (timestamps, iteration order) would reclassify every deploy as "updated"
  * and defeat idempotency.
@@ -15,7 +15,7 @@ import { isSensitiveKey } from '@rediacc/shared/telemetry';
 import type { BackupStrategyConfig, BackupStrategyDestination } from '../../types/index.js';
 import { envFilePath } from './backup-env-file.js';
 
-/** SHA-256 hex digest for UTF-8 content — used by the reconciler for diff. */
+/** SHA-256 hex digest for UTF-8 content, used by the reconciler for diff. */
 export function sha256Hex(content: string): string {
   return createHash('sha256').update(content, 'utf8').digest('hex');
 }
@@ -73,7 +73,7 @@ function toTimerField(value: string): string {
 }
 
 /**
- * Redact sensitive values in rendered commands — covers legacy argv form
+ * Redact sensitive values in rendered commands, covers legacy argv form
  * (`--rclone-param key=value`) and the `systemd-run --setenv=KEY=value`
  * form used by on-demand backups. Safe to print in dry-run, debug, and
  * agent contexts.
@@ -138,7 +138,7 @@ export function unschedulableDestinationReason(dest: {
  * `strategy.exclude` is REFUSED rather than dropped. `backup snapshot` filters
  * by repeated --repo and has no exclude flag, so honouring an exclude list
  * would mean silently backing up repositories the operator asked to leave out
- * — the same silent-wrong-scope failure this branch exists to fix.
+ * the same silent-wrong-scope failure this branch exists to fix.
  */
 function buildChunkStoreCommand(
   strategy: BackupStrategyConfig,
@@ -154,7 +154,7 @@ function buildChunkStoreCommand(
     );
   }
   const parts = [`${remoteRenetPath} backup snapshot`, `--datastore ${datastore}`];
-  // `mode: cold` was REFUSED here until 2026-08-15, because `backup snapshot` had no way to express it and scheduling one would have run a HOT snapshot where the operator asked for cold — their stated intent silently inverted. The verb now has --cold, so the mode is emitted instead of rejected.
+  // `mode: cold` was REFUSED here until 2026-08-15, because `backup snapshot` had no way to express it and scheduling one would have run a HOT snapshot where the operator asked for cold, their stated intent silently inverted. The verb now has --cold, so the mode is emitted instead of rejected.
   //
   // ORDERING HAZARD, and it bites inside a timer at 03:00: renet must be deployed to a machine BEFORE a unit carrying --cold is written to it. An older renet dies at cobra's flag parse, and the failure surfaces as a backup that silently never ran. `backup schedule` seeds the binary first, which is what keeps this in the right order.
   if ((strategy.mode ?? BACKUP_DEFAULTS.MODE) === 'cold') parts.push('--cold');
@@ -170,7 +170,7 @@ function buildChunkStoreCommand(
  * (config-schema/schemas.ts:434,505). `renet backup snapshot --bwlimit` is an
  * Int64 in BYTES PER SECOND (cmd/renet/backup_snapshot.go:132), so passing the
  * string through unchanged emits `--bwlimit 6M`, which dies at cobra's flag
- * parse — at RUN time, inside a systemd timer, not at deploy time.
+ * parse, at RUN time, inside a systemd timer, not at deploy time.
  *
  * Measured on the operator's live config 2026-08-15: both strategies carry
  * '6M', so every unit generated for them would have failed this way.
@@ -282,7 +282,7 @@ export function generateServiceUnit(
   // TimeoutStopSec is what systemd allows renet AFTER a SIGTERM before it SIGKILLs, and the two modes need very different budgets:
   //
   // hot (90s): renet aborts the transfer and deletes its datastore snapshot, bounded at 60s renet-side. Without a window systemd would SIGKILL mid-cleanup and orphan the snapshot. cold (960s): a SIGTERM inside the outage window leaves containers STOPPED, and renet's handler must bring every one of them back before it exits. That restart is bounded at 15 min renet-side
-  // (coldRestartTimeout), so a 90s window would SIGKILL mid-restart and leave the repositories down — converting a clean shutdown into the exact outage cold mode exists to keep brief. The budget is the renet bound plus a minute of slack.
+  // (coldRestartTimeout), so a 90s window would SIGKILL mid-restart and leave the repositories down, converting a clean shutdown into the exact outage cold mode exists to keep brief. The budget is the renet bound plus a minute of slack.
   //
   // Reconcile repairs a machine left in that state within a tick, but a backstop measured in minutes is not a reason to hand systemd a knife.
   const stopTimeout = (strategy.mode ?? BACKUP_DEFAULTS.MODE) === 'cold' ? 960 : 90;

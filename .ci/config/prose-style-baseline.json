@@ -16,13 +16,13 @@
   "that shrank by 29 can still hide one brand-new violation. Comparing sizes is not",
   "the same claim as diffing the sets."
  ],
- "count": 5676,
- "files": 1197,
+ "count": 5673,
+ "files": 1194,
  "by_rule": {
   "R1": 1676,
   "R11": 178,
   "R14": 1,
-  "R18": 2270,
+  "R18": 2267,
   "R19": 62,
   "R2": 958,
   "R7": 531
@@ -4961,13 +4961,13 @@
   },
   "packages/cli/src/adapters/config-field-crypto.ts": {
    "R7": [
-    "4aae6d3bd4582ebe"
+    "228f1b745ef535e3"
    ]
   },
   "packages/cli/src/commands/__tests__/backup-strategy.test.ts": {
    "R7": [
-    "393f3b230fba240d",
-    "3bbd48bbdba9f869"
+    "03a1e96ba1d63cdb",
+    "393f3b230fba240d"
    ]
   },
   "packages/cli/src/commands/__tests__/datastore-relocate.test.ts": {
@@ -4987,9 +4987,9 @@
   },
   "packages/cli/src/commands/backup-strategy.ts": {
    "R1": [
-    "4507ad7b3d7e6c8e",
     "5c5d0c8d1f1f2bf9",
-    "7ec8bfff0d77872c"
+    "7ec8bfff0d77872c",
+    "a9542010ac36c542"
    ]
   },
   "packages/cli/src/commands/datastore.ts": {
@@ -5024,8 +5024,8 @@
   },
   "packages/cli/src/commands/repo-push-stats.ts": {
    "R2": [
-    "9ba1680b85a4ef95",
-    "add7c9b32188fd2e"
+    "0ff05cbf2c3de755",
+    "d8a09f277e76f6b4"
    ]
   },
   "packages/cli/src/commands/repo-secret.ts": {
@@ -5048,8 +5048,8 @@
   },
   "packages/cli/src/config/command-metadata.ts": {
    "R2": [
+    "020923e0505bea65",
     "4b665ed94d89ba4e",
-    "72f2acaab2b87c91",
     "860ac989dd1feb91"
    ]
   },
@@ -5066,17 +5066,17 @@
   },
   "packages/cli/src/services/__tests__/config-strategy-binding.test.ts": {
    "R7": [
-    "670d767117997859"
+    "a70cb70b420a09a0"
    ]
   },
   "packages/cli/src/services/__tests__/local-executor.test.ts": {
    "R7": [
-    "a2802ef86e6ef46b"
+    "041a7c572f24db1e"
    ]
   },
   "packages/cli/src/services/account/account-client.ts": {
    "R1": [
-    "6940363c406ecfbe"
+    "66745f5f8ddcb747"
    ]
   },
   "packages/cli/src/services/account/license.ts": {
@@ -5101,12 +5101,12 @@
   },
   "packages/cli/src/services/cluster/__tests__/repo-replicate.test.ts": {
    "R7": [
-    "2b24241210a9115f"
+    "49d4605bbf7ddbe9"
    ]
   },
   "packages/cli/src/services/cluster/cluster-fork.ts": {
    "R1": [
-    "8b1a85665bc57d2a"
+    "4a3b3169dad46d62"
    ],
    "R7": [
     "e816402a8f228f88"
@@ -5137,7 +5137,7 @@
   },
   "packages/cli/src/services/core/audit.ts": {
    "R7": [
-    "cdbaea5f99e307ae"
+    "570ed6b004f12a4e"
    ]
   },
   "packages/cli/src/services/core/mutation-gate.ts": {
@@ -5181,7 +5181,7 @@
    "R7": [
     "03c66343696e4d9e",
     "7e6fe8ea63d8f815",
-    "a7dc8590dd69ddbe"
+    "86ca5056c25276e0"
    ]
   },
   "packages/cli/src/services/executor/output-lines.ts": {
@@ -11184,20 +11184,10 @@
     "a3ac67e2904313f4"
    ]
   },
-  "scripts/gates/check-form-validation.ts": {
-   "R18": [
-    "ce3c57cffb08f21b"
-   ]
-  },
   "scripts/gates/check-gate-manifest.ts": {
    "R7": [
     "f37d6a29aaa71d69",
     "f47d290673e129c6"
-   ]
-  },
-  "scripts/gates/check-hydration-clean.ts": {
-   "R18": [
-    "a50a6a18135f4967"
    ]
   },
   "scripts/gates/check-i18n-cross-locale.ts": {
@@ -11225,11 +11215,6 @@
    "R7": [
     "566271994b77bafa",
     "c4a401bd4baf2ce5"
-   ]
-  },
-  "scripts/gates/check-layout-overflow.ts": {
-   "R18": [
-    "60ac134a6a058d9e"
    ]
   },
   "scripts/gates/check-locale-de-contamination.ts": {

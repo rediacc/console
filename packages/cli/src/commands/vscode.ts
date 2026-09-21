@@ -154,7 +154,7 @@ async function configureVSCodeAndSettings(
     }
 
     if (connectionDetails.datastore) {
-      // Per-repo server install path so VS Code runs separate server instances. VS Code shares servers by resolved hostname — without separate paths, the second repo would reuse the first repo's sandboxed server. Uses the GUID-based mount path (colon-free) because VS Code rejects serverInstallPath values containing ':' (parsed as PATH-style separator), which breaks fork aliases
+      // Per-repo server install path so VS Code runs separate server instances. VS Code shares servers by resolved hostname, without separate paths, the second repo would reuse the first repo's sandboxed server. Uses the GUID-based mount path (colon-free) because VS Code rejects serverInstallPath values containing ':' (parsed as PATH-style separator), which breaks fork aliases
       // like "<parent>:<tag>".
       const serverPath =
         repositoryName && connectionDetails.repositoryGuid

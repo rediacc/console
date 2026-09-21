@@ -6,8 +6,8 @@
  * recovers the right CEK. This test keeps the crypto REAL: it stands up a genuine
  * password key-slot with the shared module (generateCek → newPasswordSlotParams →
  * derivePasswordSlotSecret → wrapCekForSlot), seals a real config blob under that
- * exact CEK, then drives the CLI's OWN unwrap path — `RemoteConfigAdapter.pull()`,
- * whose private `deriveCek` runs `deriveWrappingKey` + `cekUnwrap` — and asserts:
+ * exact CEK, then drives the CLI's OWN unwrap path, `RemoteConfigAdapter.pull()`,
+ * whose private `deriveCek` runs `deriveWrappingKey` + `cekUnwrap`, and asserts:
  *
  *   1. positive round-trip: the CEK the CLI unwraps is byte-identical to the CEK
  *      the slot was wrapped with (captured via a real-implementation spy on
@@ -42,7 +42,7 @@ vi.mock('../../services/config/config-server-client.js', () => ({
   },
 }));
 
-// Real crypto — do NOT mock @rediacc/shared/*.
+// Real crypto, do NOT mock @rediacc/shared/*.
 import * as configCrypto from '@rediacc/shared/config-crypto';
 import {
   derivePasswordSlotSecret,
@@ -83,7 +83,7 @@ const REMOTE: RemoteConfig = {
   storageKeyId: STORAGE_KEY_ID,
 };
 
-// ─── In-memory storage stubs (no module mock — passed to the constructor) ─
+// ─── In-memory storage stubs (no module mock, passed to the constructor) ─
 
 function createTokenStorage(entry: { token: string; wrappedCek: string } | null) {
   return {
@@ -237,7 +237,7 @@ describe('RemoteConfigAdapter — real crypto round-trip', () => {
   });
 
   it('rejects with RemoteStaleSlotError on a rotated/stale wrappedCek (generation mismatch)', async () => {
-    // The slot secret is CORRECT, but the stored wrappedCek was wrapped under a different server secret — i.e. the CEK was rotated and this device kept its old wrapping. The AES-GCM auth tag fails and the CLI surfaces its re-enroll error rather than a raw OperationError.
+    // The slot secret is CORRECT, but the stored wrappedCek was wrapped under a different server secret, i.e. the CEK was rotated and this device kept its old wrapping. The AES-GCM auth tag fails and the CLI surfaces its re-enroll error rather than a raw OperationError.
     const rotatedServerSecret = generateServerSecret();
     const f = await provision(PASSWORD, TEAM_ID, { wrapServerSecret: rotatedServerSecret });
     wireConfigApi(f.session, f.config);

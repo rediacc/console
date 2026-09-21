@@ -8,7 +8,7 @@
  * (`state.repos[name][tag]`). Command consumers therefore compile unchanged;
  * the structural-tag command reshape is P4.
  *
- * Encryption-at-rest is NOT handled here in v3 — it is a storage-layer transform
+ * Encryption-at-rest is NOT handled here in v3, it is a storage-layer transform
  * (adapters/config-field-crypto.ts, applied by ConfigFileStorage). LocalResource
  * State is a typed view that reads a decrypted config and persists plaintext
  * through the single `configFileStorage.update()` chokepoint, which re-encrypts
@@ -319,11 +319,11 @@ const REMOTE_PUSH_MAX_ATTEMPTS = 3;
 
 /**
  * ResourceState backed by the remote encrypted config store. Mutations push the
- * REAL on-disk config with `state` stripped (spec 04 §1.3) — never a
+ * REAL on-disk config with `state` stripped (spec 04 §1.3), never a
  * reconstructed subset, so no bucket can be dropped.
  *
  * Writes fail CLOSED when the server is unreachable (no local write, no queue
- * — a queued write would silently diverge from the server), and replay a 409
+ * a queued write would silently diverge from the server), and replay a 409
  * up to 3 times by re-pulling and re-applying ONLY the mutated bucket
  * (bucket-level last-write-wins; cross-bucket concurrent writes survive).
  */

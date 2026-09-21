@@ -1,9 +1,9 @@
-// CLI-specific types — re-exports from the v2 Zod schema plus non-config-shape enums/interfaces that remain hand-written.
+// CLI-specific types, re-exports from the v2 Zod schema plus non-config-shape enums/interfaces that remain hand-written.
 
 import type { PlatformKey } from '../utils/platform.js';
 
 // ============================================================================
-// Config types (derived from Zod v2 schema — single source of truth)
+// Config types (derived from Zod v2 schema, single source of truth)
 // ============================================================================
 
 import type { RdcConfig } from '@rediacc/shared/config-schema';
@@ -34,7 +34,7 @@ export type {
 export { createEmptyRdcConfig, hasRemoteConfig } from '@rediacc/shared/config-schema';
 
 /**
- * SSH credentials — derived from the Zod schema's `credentials.ssh` so that
+ * SSH credentials, derived from the Zod schema's `credentials.ssh` so that
  * schema changes propagate automatically. The name `SSHContent` is retained
  * for grep-continuity with existing call sites.
  */
@@ -137,7 +137,7 @@ export interface UpdateManifest {
 }
 
 // ============================================================================
-// Provider sub-types (still hand-written — not part of the top-level shape)
+// Provider sub-types (still hand-written, not part of the top-level shape)
 // ============================================================================
 
 export interface ProviderSSHKeyConfig {

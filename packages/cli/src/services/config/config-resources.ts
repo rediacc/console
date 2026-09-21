@@ -371,7 +371,7 @@ class ConfigService extends ConfigServiceBase {
    * - For a bare ref, refuses when more than one config key shares the base
    *   name, even if the `:latest` fallback would otherwise resolve.
    * - For a bare ref that resolves to a fork (grandGuid set and !== guid),
-   *   refuses — the operator must say `<name>:<tag>` explicitly so we do not
+   *   refuses, the operator must say `<name>:<tag>` explicitly so we do not
    *   destroy a fork registered in the grand slot by mistake.
    */
   async resolveDestructiveTarget(

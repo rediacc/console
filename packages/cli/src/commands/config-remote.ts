@@ -115,7 +115,7 @@ async function enableBrowser(
   const { port, waitForPayload, close } = await startCallbackServer();
 
   const callbackUrl = `http://localhost:${port}`;
-  // Portal route: private/account/web/src/pages/ConfigRemote.tsx, registered as /account/config-remote in web/src/router.tsx. Renaming that route strands this URL (and its two siblings below) — change them together.
+  // Portal route: private/account/web/src/pages/ConfigRemote.tsx, registered as /account/config-remote in web/src/router.tsx. Renaming that route strands this URL (and its two siblings below), change them together.
   const browserUrl = `${apiUrl}/account/config-remote?callback=${encodeURIComponent(callbackUrl)}&key=${encodeURIComponent(pubBase64)}`;
 
   outputService.info(t('commands.config.remote.enable.openBrowser'));
@@ -202,7 +202,7 @@ async function enableHeadless(
 
   const { deviceCode, userCode, interval, expiresIn } = initResult;
 
-  // Portal route: /account/config-remote (ConfigRemote.tsx) — the device-code leg of the same page enableBrowser drives; see the comment there.
+  // Portal route: /account/config-remote (ConfigRemote.tsx), the device-code leg of the same page enableBrowser drives; see the comment there.
   const remoteUrl = `${apiUrl}/account/config-remote?code=${encodeURIComponent(userCode)}&key=${encodeURIComponent(pubBase64)}`;
 
   outputService.info(t('commands.config.remote.enable.openBrowser'));
@@ -366,7 +366,7 @@ async function refreshRemote(configName: string): Promise<void> {
  *
  * The rotation itself CANNOT run headlessly. It re-encrypts every config in the
  * organization, so the server gates it behind a 2FA-backed, freshly
- * re-authenticated (elevated) portal session — and the CLI holds config tokens,
+ * re-authenticated (elevated) portal session, and the CLI holds config tokens,
  * never a portal session. So this command drives the browser, exactly as
  * `config remote enable` already does for the other session-gated config steps.
  *
@@ -409,7 +409,7 @@ export async function rotateCek(configName: string, apiUrl: string): Promise<voi
   const { port, waitForPayload, close } = await startCallbackServer();
 
   const callbackUrl = `http://localhost:${port}`;
-  // Portal route: /account/config-remote (ConfigRemote.tsx) — the existing-store re-handoff leg; see the comment in enableBrowser.
+  // Portal route: /account/config-remote (ConfigRemote.tsx), the existing-store re-handoff leg; see the comment in enableBrowser.
   const handoffUrl = `${apiUrl}/account/config-remote?callback=${encodeURIComponent(callbackUrl)}&key=${encodeURIComponent(pubBase64)}`;
 
   outputService.info(t('commands.config.rotateCek.resync'));
@@ -432,7 +432,7 @@ export async function rotateCek(configName: string, apiUrl: string): Promise<voi
       configId: stored.configId ?? config.remote.configId,
     };
 
-    // Prove the new key actually decrypts the freshly rotated blob before declaring success — a silent stale key is the whole failure mode here.
+    // Prove the new key actually decrypts the freshly rotated blob before declaring success, a silent stale key is the whole failure mode here.
     const { RemoteConfigAdapter } = await import('../adapters/remote-config-adapter.js');
     const { remoteTokenStorage } = await import('../adapters/remote-token-storage.js');
     const { getSecureStorage } = await import('../utils/secure-storage.js');

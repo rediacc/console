@@ -137,7 +137,7 @@ interface ResolvedDeps {
  * Redraw the CLI-side provision timeline the daemon could not show.
  *
  * "Config loaded / Connected / Renet provisioned / Machine verified" are NOT
- * renet events — the direct path draws them from its own spinners (timedStep),
+ * renet events, the direct path draws them from its own spinners (timedStep),
  * which in the daemon write to a /dev/null stdout. They survive in
  * result.cliSteps, so we synthesize a step_done event per entry and route it
  * through the SAME renderer the detached-job and serve paths use (renderJobEvent
@@ -260,7 +260,7 @@ async function runViaDaemon(options: ExecuteOptions, deps: ResolvedDeps): Promis
           else if (!options.captureOutput) {
             // Parity with the direct path, which echoes renet's stderr live (local-executor echoStderrLive): render EVERY log event to our stderr. renderJobEvent's replay filter (error/warning only)
             // exists for detached-job replays; hiding info-level diagnostics
-            // here made real failures unreadable — a renet child exited 1 and every explanatory line was an info-level log event.
+            // here made real failures unreadable, a renet child exited 1 and every explanatory line was an info-level log event.
             routeLogEvent(frame.event, rememberLog, shouldEchoRelayLive(options));
           }
           return;
@@ -313,7 +313,7 @@ async function runViaDaemon(options: ExecuteOptions, deps: ResolvedDeps): Promis
 
 /**
  * Send a control frame (`stop`/`status`) to a running daemon and return its first
- * substantive reply, or null when no daemon is listening. Never spawns one — a
+ * substantive reply, or null when no daemon is listening. Never spawns one, a
  * control command has nothing to warm.
  */
 export async function sendDaemonControl(

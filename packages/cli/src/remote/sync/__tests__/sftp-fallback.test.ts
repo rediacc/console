@@ -69,14 +69,14 @@ describe('compilePatterns + isExcludedCompiled (hot-path API)', () => {
   it('compiles once and matches consistently on subsequent calls', async () => {
     const { compilePatterns, isExcludedCompiled } = await import('../sftp-patterns.js');
     const compiled = compilePatterns(['*.log', 'node_modules/', '/build']);
-    // Compiled object identity is stable — important for hot loops that capture and reuse the result across many isExcludedCompiled calls.
+    // Compiled object identity is stable, important for hot loops that capture and reuse the result across many isExcludedCompiled calls.
     expect(compiled).toHaveLength(3);
     expect(isExcludedCompiled('foo.log', false, compiled)).toBe(true);
     expect(isExcludedCompiled('node_modules', true, compiled)).toBe(true);
     expect(isExcludedCompiled('node_modules', false, compiled)).toBe(false);
     expect(isExcludedCompiled('build', true, compiled)).toBe(true);
     expect(isExcludedCompiled('foo.txt', false, compiled)).toBe(false);
-    // Re-running with the same compiled list does not allocate new RegExp objects — that's the whole point of separating compile from match.
+    // Re-running with the same compiled list does not allocate new RegExp objects, that's the whole point of separating compile from match.
     expect(isExcludedCompiled('bar/foo.log', false, compiled)).toBe(true);
   });
 

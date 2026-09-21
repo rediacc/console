@@ -38,7 +38,7 @@ export interface BackupRunRecord {
  *
  * Best-effort: this is non-authoritative host-local convenience state (the server
  * ledger is the truth), so a failure to persist it must NEVER fail the backup or
- * restore it merely annotates — same doctrine as the DR nudge and telemetry.
+ * restore it merely annotates, same doctrine as the DR nudge and telemetry.
  */
 export async function recordBackupRun(
   repoName: string,

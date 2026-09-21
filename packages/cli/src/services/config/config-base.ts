@@ -42,7 +42,7 @@ export class ConfigServiceBase {
   /**
    * Drop the memoized resource view (and any remote snapshot) so the next
    * read re-materializes from the config file. A short-lived CLI process
-   * never needs this — the memo dies with the process — but a LONG-LIVED
+   * never needs this, the memo dies with the process, but a LONG-LIVED
    * process serving many commands (the executor daemon) must call it per
    * request: the memo otherwise freezes the repository/machine view at
    * boot time while clients rewrite the config underneath (observed live:
@@ -89,7 +89,7 @@ export class ConfigServiceBase {
 
   /**
    * Set a whole family's placement (spec/04 §1.2.1) via the version-bumping
-   * resources persist — a migrate is a DECLARED change of home (unlike
+   * resources persist, a migrate is a DECLARED change of home (unlike
    * reconcile's observation-only state writes). getResourceState throws if no
    * config is active.
    *
@@ -176,7 +176,7 @@ export class ConfigServiceBase {
    *
    * On success the on-disk offline cache is refreshed. On a network-class
    * failure (RemoteUnreachableError) the cached copy is served with a stderr
-   * warning; auth/semantic failures still throw — the cache must never mask a
+   * warning; auth/semantic failures still throw, the cache must never mask a
    * revoked enrollment.
    */
   private async loadRemote(localConfig: RdcConfig, configName: string): Promise<RdcConfig> {

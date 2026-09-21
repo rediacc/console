@@ -704,7 +704,7 @@ describe('proxy loopback', () => {
     expect(exitCode).toBe(0);
 
     // The CLI serialised <ref> into the positionals bag; the executor ran the real
-    // command, whose action body derived the machine and dispatched repository_cat through getExecutor(). None of that happened on the client — the fake saw the call because the command ran server-side, machine derived from placement.
+    // command, whose action body derived the machine and dispatched repository_cat through getExecutor(). None of that happened on the client, the fake saw the call because the command ran server-side, machine derived from placement.
     expect(calls).toHaveLength(1);
     expect(calls[0].functionName).toBe('repository_cat');
     expect(calls[0].machineName).toBe('hostinger');
@@ -746,7 +746,7 @@ describe('proxy loopback', () => {
         ),
     });
 
-    // repo cat names its repo POSITIONALLY ('shop'), which is not in the repos allowlist. Before targetFrom read the positionals bag, this resolved undefined and the repo-scoped rule silently stopped matching — the command ran unscoped. Now it is denied, and the executor is never called.
+    // repo cat names its repo POSITIONALLY ('shop'), which is not in the repos allowlist. Before targetFrom read the positionals bag, this resolved undefined and the repo-scoped rule silently stopped matching, the command ran unscoped. Now it is denied, and the executor is never called.
     const { status } = await postCommand({
       pathKey: 'repo cat',
       params: { 'remote-file': '/etc/hostname' },

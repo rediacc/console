@@ -6,7 +6,7 @@ import {
   isUpdateDisabled,
 } from '../../utils/platform.js';
 import { readAccountPointer } from '../account/account-pointer.js';
-// Note: startupUpdateCheck was removed — replaced by background-updater
+// Note: startupUpdateCheck was removed, replaced by background-updater
 import {
   checkForUpdate,
   compareVersions,

@@ -1,11 +1,11 @@
 /**
- * Handoff blob contract round-trip (CLI side) — REAL X25519 crypto.
+ * Handoff blob contract round-trip (CLI side), REAL X25519 crypto.
  *
  * This is the executable contract between the CLI and the portal enrollment
  * pages: the portal builds exactly this payload shape and seals it with
  * `cekHandoffEncrypt` to the X25519 public key from the URL; the CLI decrypts
  * with `decryptHandoff`. The web-side mirror fixture lives at
- * `private/account/web/src/lib/__tests__/config-handoff.test.ts` — keep the
+ * `private/account/web/src/lib/__tests__/config-handoff.test.ts`, keep the
  * two payload fixtures textually identical.
  */
 
@@ -24,7 +24,7 @@ async function seal(payload: HandoffPayload, publicKey: CryptoKey) {
   return cekHandoffEncrypt(bytes, publicKey);
 }
 
-// Mirror of the web fixture — keep textually identical with private/account/web/src/lib/__tests__/config-handoff.test.ts.
+// Mirror of the web fixture, keep textually identical with private/account/web/src/lib/__tests__/config-handoff.test.ts.
 const BASE_PAYLOAD = {
   passkey_secret: 'cGFzc2tleV9zZWNyZXRfMzJfYnl0ZXNfYjY0',
   token: 'rct_rotated_latest',

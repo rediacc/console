@@ -2,7 +2,7 @@
  * Offline read-cache for remote-enabled configs.
  *
  * The local config file of a remote-enabled config is a full-content,
- * read-only CACHE of the last successful pull/push — not a bare pointer.
+ * read-only CACHE of the last successful pull/push, not a bare pointer.
  * Content sections mirror the server copy; host-local sections (`remote`,
  * `state`, `encryption`, plus local `account`/`defaults` overrides) stay
  * host-local. One helper owns that merge so enable, read-refresh,
@@ -10,7 +10,7 @@
  * same shape.
  *
  * Cache writes never bump the local `version` counter (they are observations,
- * not declared intent — same rationale as `updateState`). The server's
+ * not declared intent, same rationale as `updateState`). The server's
  * envelope version is authoritative and tracked in `remote.cachedVersion`.
  */
 
@@ -22,7 +22,7 @@ import type { RdcConfig, RemoteConfig } from '../../types/index.js';
  * Merge a pulled (or just-pushed) server copy into the local cache file shape.
  * Pulled content sections win; `remote` (stamped with fresh cache metadata),
  * `state`, `encryption`, and the local `account`/`defaults` overrides are
- * re-applied from `local` — the same precedence `loadRemote` uses in memory.
+ * re-applied from `local`, the same precedence `loadRemote` uses in memory.
  */
 export function mergeRemoteIntoCache(
   local: RdcConfig,

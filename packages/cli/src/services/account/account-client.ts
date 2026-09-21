@@ -239,7 +239,7 @@ export async function accountServerFetch<T = unknown>(
   // Parse the decrypted response
   const parsed: T & { error?: string; code?: string } = body ? JSON.parse(body) : {};
 
-  // Handle CLI upgrade required (426). Pre-release builds (e.g. "0.0.0-dev") are developer artifacts — their channel governs suitability, not the server's numeric min-version gate. Swallow the 426 silently so callers treat it as a no-op instead of printing a nonsensical "upgrade your dev build" banner.
+  // Handle CLI upgrade required (426). Pre-release builds (e.g. "0.0.0-dev") are developer artifacts, their channel governs suitability, not the server's numeric min-version gate. Swallow the 426 silently so callers treat it as a no-op instead of printing a nonsensical "upgrade your dev build" banner.
   if (status === 426) {
     if (VERSION.includes('-')) {
       // Dev build: synthesize an empty result. `Object.create(null)` returns `any` so it's assignable to an arbitrary generic T without an object

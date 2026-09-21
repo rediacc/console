@@ -34,7 +34,7 @@ vi.mock('../config/config-base.js', () => ({
   },
 }));
 
-// Bump default 5s timeout — the per-test `await import('../config/config-resources.js')` triggers a cold load of the full module graph (commitments/canonical/walker/ config-base) which can exceed 5s on slower CI runners. A timeout on the first test then cascade-fails the remaining five (configService undefined).
+// Bump default 5s timeout, the per-test `await import('../config/config-resources.js')` triggers a cold load of the full module graph (commitments/canonical/walker/ config-base) which can exceed 5s on slower CI runners. A timeout on the first test then cascade-fails the remaining five (configService undefined).
 describe('getRepositoryGuidMap', { timeout: 30000 }, () => {
   beforeEach(() => {
     mockConfig = {};

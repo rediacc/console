@@ -129,7 +129,7 @@ export function registerRepoCommands(program: Command): void {
 
   registerRepoCreateDeleteCommands(repo);
 
-  // repo up [ref] — positional ref (single), or --all --machine <m> (batch).
+  // repo up [ref], positional ref (single), or --all --machine <m> (batch).
   repo
     .command('up')
     .summary(t('commands.repo.up.descriptionShort'))
@@ -181,7 +181,7 @@ export function registerRepoCommands(program: Command): void {
       }
     );
 
-  // repo down [ref] — positional ref (single), or --all --machine <m> (batch).
+  // repo down [ref], positional ref (single), or --all --machine <m> (batch).
   repo
     .command('down')
     .summary(t('commands.repo.down.descriptionShort'))
@@ -333,7 +333,7 @@ export function registerRepoCommands(program: Command): void {
       }
     );
 
-  // repo list — the whole config's repos, narrowed by where they LIVE. A datastore is the honest unit now (a repo lives in a datastore; the machine is wherever that datastore happens to be attached today), so --datastore joins --machine.
+  // repo list, the whole config's repos, narrowed by where they LIVE. A datastore is the honest unit now (a repo lives in a datastore; the machine is wherever that datastore happens to be attached today), so --datastore joins --machine.
   repo
     .command('list')
     .description(t('commands.repo.list.description'))

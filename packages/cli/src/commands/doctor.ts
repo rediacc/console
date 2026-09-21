@@ -241,7 +241,7 @@ async function checkMachineCount(checks: CheckResult[]): Promise<void> {
 }
 
 function checkSshKey(checks: CheckResult[], hasInlineKey: boolean): void {
-  // Keys live inline in the config (credentials.ssh.privateKey) — written by `config init --ssh-key` / `config ssh set`. There is no path to stat.
+  // Keys live inline in the config (credentials.ssh.privateKey), written by `config init --ssh-key` / `config ssh set`. There is no path to stat.
   if (hasInlineKey) {
     checks.push({ name: t('commands.doctor.checks.sshKey'), value: '(inline)', status: 'ok' });
     return;

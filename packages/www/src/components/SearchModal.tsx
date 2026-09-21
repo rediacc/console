@@ -228,7 +228,7 @@ const SearchModal: React.FC<SearchModalProps> = ({
     [fuse, allowedCategories, scope]
   );
 
-  // Re-run the active query when the user switches locale OR when the locale's Fuse index lands (so a query typed during the first fetch gets results as soon as the index arrives). Uses the previous-value pattern in render so we don't trip react-hooks/set-state-in-effect — calling handleSearch during render is legitimate derived state, the cycle converges in one extra render.
+  // Re-run the active query when the user switches locale OR when the locale's Fuse index lands (so a query typed during the first fetch gets results as soon as the index arrives). Uses the previous-value pattern in render so we don't trip react-hooks/set-state-in-effect, calling handleSearch during render is legitimate derived state, the cycle converges in one extra render.
   const [prevLang, setPrevLang] = useState(currentLang);
   const [prevFuse, setPrevFuse] = useState<Fuse<SearchItem> | null>(fuse);
   if (prevLang !== currentLang || prevFuse !== fuse) {

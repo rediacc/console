@@ -160,7 +160,7 @@ describe('runMigrations', () => {
       )
     );
 
-    // v3 in, v3 out — a no-op migration that must not touch the account fields.
+    // v3 in, v3 out, a no-op migration that must not touch the account fields.
     const result = await runMigrations(raw, throwingCtx);
     expect(result.migrated).toBe(false);
 

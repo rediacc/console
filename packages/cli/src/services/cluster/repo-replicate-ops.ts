@@ -7,7 +7,7 @@
  * the kube_apply bridge verb, and record the set as managed state (R2-F17).
  *
  * REFRESH is rolling, one replica at a time (N-1 keep serving): a fresh
- * snapshot, then per replica strip its node label (the scheduling gate — see
+ * snapshot, then per replica strip its node label (the scheduling gate, see
  * refreshReplicaSet), bounce the ordinal pod, discard + re-fork + re-attach its
  * datastore under the unchanged PV path, and re-stamp the label so kubelet
  * remounts and the readiness probe re-admits it. The old snapshot is deleted
@@ -57,7 +57,7 @@ export function __setReplicateClock(fn: () => number): void {
 }
 
 export interface ReplicateOptions {
-  /** The repo's config/renet key (`name` or `name:tag`) — the set's identity. */
+  /** The repo's config/renet key (`name` or `name:tag`), the set's identity. */
   repo: string;
   /** The repo's cluster, derived from its datastore's backref (spec §2.3). */
   cluster: string;
@@ -99,7 +99,7 @@ export async function replicateRepo(options: ReplicateOptions): Promise<void> {
   const nodes = await resolveReplicaNodes(options.cluster);
   const snapshot = replicaSnapshotName(setName);
 
-  // The repo's STORAGE identity (#93): the folder on the datastore — and on every byte-clone fork — is `repos/<guid>` (#83), so the datastore-plane verbs and the generated PV paths speak GUID while every k8s object keeps the name. A cluster repo without a config record cannot be replicated: the GUID is the only address its storage answers to.
+  // The repo's STORAGE identity (#93): the folder on the datastore, and on every byte-clone fork, is `repos/<guid>` (#83), so the datastore-plane verbs and the generated PV paths speak GUID while every k8s object keeps the name. A cluster repo without a config record cannot be replicated: the GUID is the only address its storage answers to.
   const repoGuid = (await configService.getRepository(options.repo))?.repositoryGuid;
   if (!repoGuid) {
     throw new Error(
@@ -182,7 +182,7 @@ export async function replicateRepo(options: ReplicateOptions): Promise<void> {
  *
  * Genuinely idempotent cleanups (LUKS close, label strip, snapshot delete) still
  * warn-and-continue, but they are COUNTED and reported; any step whose failure
- * would strand a holder — the fork discard, and the final verify — PROPAGATES.
+ * would strand a holder, the fork discard, and the final verify, PROPAGATES.
  * State is forgotten LAST, and never while a survivor remains.
  *
  * Bug #95 was a FALSE SUCCESS: the old teardown deleted the overlay and detached
@@ -191,7 +191,7 @@ export async function replicateRepo(options: ReplicateOptions): Promise<void> {
  * mount (remove never waited for pod termination), the discard-detach lost the
  * busy race, `tryStep` swallowed it, and remove reported "removed" while the
  * StatefulSet, both Services, both forks, both nodes' dm devices and a node label
- * all stayed live — and `replicate status` then said the set was gone. Removing a
+ * all stayed live, and `replicate status` then said the set was gone. Removing a
  * repo that has no set stays a no-op.
  */
 export async function removeReplicaSet(repoKey: string, debug?: boolean): Promise<void> {
@@ -205,7 +205,7 @@ export async function removeReplicaSet(repoKey: string, debug?: boolean): Promis
   const controlMount = controlDatastoreMount(set.cluster);
   const skipped: string[] = [];
 
-  // 1. Delete the whole overlay by set label. HARD, and captured: `kubectl delete` default-waits for the pods to terminate, so a delete that fires is ALSO the pod-termination wait that lets the fork discard win. Capture the output so a later failure can name whether the delete removed anything — bug #95 mechanism (b) was a silent no-op that left the StatefulSet (and so the pods)
+  // 1. Delete the whole overlay by set label. HARD, and captured: `kubectl delete` default-waits for the pods to terminate, so a delete that fires is ALSO the pod-termination wait that lets the fork discard win. Capture the output so a later failure can name whether the delete removed anything, bug #95 mechanism (b) was a silent no-op that left the StatefulSet (and so the pods)
   // running.
   const deleteLog = await captureStep(
     'kube_delete',
@@ -269,7 +269,7 @@ export async function removeReplicaSet(repoKey: string, debug?: boolean): Promis
 
 /**
  * Discard every fork of the set (bug #95 step 2): per fork, close its per-volume
- * LUKS images (best-effort mirror of provisioning, bug #49 — a fork holding a
+ * LUKS images (best-effort mirror of provisioning, bug #49, a fork holding a
  * live LUKS mapping is BUSY) then detach --discard, retrying through kubelet's
  * unmount lag exactly like the refresh path. The detach is HARD: on final failure
  * it THROWS (naming the fork + surfacing the delete log) so remove exits non-zero
@@ -310,7 +310,7 @@ async function discardForks(
 
 /**
  * The non-zero remove message: name the survivor, surface the captured
- * overlay-delete log (bug #95 mechanism b — so the next run names the cause
+ * overlay-delete log (bug #95 mechanism b, so the next run names the cause
  * instead of guessing), and spell out the manual repair. State is preserved on
  * this path, so the operator can finish the teardown and re-run.
  */
@@ -356,7 +356,7 @@ async function captureStep(
 }
 
 /**
- * The set's forks still attached on their nodes after the discard — the bug #95
+ * The set's forks still attached on their nodes after the discard, the bug #95
  * survivor probe. `datastore_detach --discard` removes the fork datastore, so a
  * fork still enumerated by `datastore_list` on its node means the discard did
  * nothing; a node we cannot query is itself unverifiable and counts as a survivor
@@ -391,7 +391,7 @@ async function findSurvivingForks(set: ReplicaSet, debug?: boolean): Promise<str
 }
 
 /**
- * Rolling refresh (spec 05 §1): fresh snapshot, then ONE replica at a time —
+ * Rolling refresh (spec 05 §1): fresh snapshot, then ONE replica at a time ,
  * hold the replica down, discard + re-fork + re-attach its datastore under the
  * same tag (so the PV path never changes), and let it back in. Readiness
  * auto-ejects the bouncing replica from -ro; N-1 keep serving.
@@ -399,7 +399,7 @@ async function findSurvivingForks(set: ReplicaSet, debug?: boolean): Promise<str
  * ★ EVICT-AND-HOLD (bug #41). Deleting the ordinal pod first does NOT work: the
  * StatefulSet recreates it within a second, kubelet re-mounts the OLD fork at
  * the unchanged PV path, and the discard-detach then loses to a busy mount
- * forever. The hold is the node label itself — a replica's PV pins via
+ * forever. The hold is the node label itself, a replica's PV pins via
  * nodeAffinity to `rediacc.io/ds-<datastore>-<tag>`, so STRIPPING that label
  * before the bounce leaves the recreated pod unschedulable (volume node affinity
  * conflict) and it never re-mounts the old fork. It stays Pending until
@@ -460,7 +460,7 @@ export async function refreshReplicaSet(repoKey: string, debug?: boolean): Promi
       debug
     );
     // 3. The mount is nobody's now; discard and re-fork under the same tag.
-    // Close the per-volume LUKS images first (bug #49's mirror): provisioning opened them, and a fork holding a live LUKS mapping plus its loop device is BUSY, so the discard below would burn its retries and then throw. Best-effort — a replica with nothing open is a no-op, and the retrying detach remains the real guard.
+    // Close the per-volume LUKS images first (bug #49's mirror): provisioning opened them, and a fork holding a live LUKS mapping plus its loop device is BUSY, so the discard below would burn its retries and then throw. Best-effort, a replica with nothing open is a no-op, and the retrying detach remains the real guard.
     await tryStep(
       'datastore_volumes_close',
       r.node,

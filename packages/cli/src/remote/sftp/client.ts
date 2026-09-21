@@ -88,7 +88,7 @@ export class SFTPClient {
 
       // Add host-key verification when known_hosts entries are provided.
       //
-      // On rejection ssh2 emits a generic transport error, which historically surfaced as an opaque "Host denied (verification failed)". Capture the offered key here so the error handler below can say what actually changed — a mismatch has several very different causes and the operator needs the fingerprints to tell them apart.
+      // On rejection ssh2 emits a generic transport error, which historically surfaced as an opaque "Host denied (verification failed)". Capture the offered key here so the error handler below can say what actually changed, a mismatch has several very different causes and the operator needs the fingerprints to tell them apart.
       let offeredKey: string | undefined;
       if (this.config.knownHosts) {
         const trustedKeys = parseKnownHosts(this.config.knownHosts);

@@ -128,7 +128,7 @@ describe('replicateRepo (create orchestrator)', () => {
       'kube_apply',
     ]);
     // ★ #93 (storage speaks GUID): the orchestrator resolves the repo's GUID
-    // from config and every storage-facing step speaks it — a create that
+    // from config and every storage-facing step speaks it, a create that
     // passes the NAME through (skipping resolution) turns this red.
     const opens = calls.filter((c) => c.functionName === 'datastore_volumes_open');
     expect(opens.every((c) => c.params?.repo === 'guid-sqldb')).toBe(true);
@@ -207,7 +207,7 @@ describe('removeReplicaSet (teardown orchestrator)', () => {
 
     const calls = exec.mock.calls.map((c) => c[0]);
     // ORDER is the safety property (bug #95): delete the WHOLE overlay FIRST so the replica pods terminate and release their fork mounts, THEN per fork close its LUKS volumes (#49 mirror) and detach --discard, THEN strip the labels, drop the snapshot, and VERIFY each fork is gone (datastore_list per node) before forgetting state. The old order stripped labels first and detached
-    // with a warn-and-continue swallow — the false-success the fix kills.
+    // with a warn-and-continue swallow, the false-success the fix kills.
     expect(calls.map((c) => c.functionName)).toEqual([
       'kube_delete',
       'datastore_volumes_close',
@@ -220,7 +220,7 @@ describe('removeReplicaSet (teardown orchestrator)', () => {
       'datastore_list',
       'datastore_list',
     ]);
-    // The overlay delete is replica-set scoped (whole-overlay form, no ordinal) and CAPTURED — a failure surfaces what it actually deleted (bug #95 mechanism b).
+    // The overlay delete is replica-set scoped (whole-overlay form, no ordinal) and CAPTURED, a failure surfaces what it actually deleted (bug #95 mechanism b).
     expect(calls[0]).toMatchObject({
       machineName: 'cp1',
       captureOutput: true,
@@ -258,7 +258,7 @@ describe('removeReplicaSet (teardown orchestrator)', () => {
 
   it('REJECTS and PRESERVES state when a fork detach stays busy (bug #95 — no false success)', async () => {
     mockState({ 'sqldb-replicas': seededSet });
-    // The replica pod outlived the detach, so datastore_detach never clears. The OLD teardown swallowed this (tryStep warn-and-continue) and forgot state anyway — the false success. Now the discard is HARD: it must propagate and NEVER reach the state-forget.
+    // The replica pod outlived the detach, so datastore_detach never clears. The OLD teardown swallowed this (tryStep warn-and-continue) and forgot state anyway, the false success. Now the discard is HARD: it must propagate and NEVER reach the state-forget.
     const forget = vi.spyOn(configService, 'setStateBucket');
     vi.spyOn(localExecutorService, 'execute').mockImplementation(({ functionName }) => {
       if (functionName === 'datastore_detach') {
@@ -272,7 +272,7 @@ describe('removeReplicaSet (teardown orchestrator)', () => {
 
     await expect(removeReplicaSet('sqldb')).rejects.toThrow(/NOT removed.*could not be discarded/s);
 
-    // The state-forget (the only setStateBucket call remove makes) never fired — reverting the discard to a swallow makes this go red (state cleared).
+    // The state-forget (the only setStateBucket call remove makes) never fired, reverting the discard to a swallow makes this go red (state cleared).
     expect(forget).not.toHaveBeenCalled();
     expect(stored).toEqual({ 'sqldb-replicas': seededSet });
   });

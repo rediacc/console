@@ -93,7 +93,7 @@ describe('JobLogCursor', () => {
     cursor.consume(resumed);
 
     expect(cursor.sinceLine).toBe(4);
-    // The renderer saw lines 1,2 then 3,4 — four lines, no gap, no duplicate.
+    // The renderer saw lines 1,2 then 3,4, four lines, no gap, no duplicate.
   });
 
   it('empty chunks do not advance the cursor', () => {
@@ -391,7 +391,7 @@ describe('backgroundStartedHint', () => {
     expect(hint).toContain('Started job');
     expect(hint).toContain('keeps running in the background');
     expect(hint).toContain(JOB_ID);
-    // Positional job id, NOT --id. These assertions previously encoded the broken form, so the hint shipped `--id` and following it produced "error: unknown option '--id'" — the test pinned the bug in place.
+    // Positional job id, NOT --id. These assertions previously encoded the broken form, so the hint shipped `--id` and following it produced "error: unknown option '--id'", the test pinned the bug in place.
     expect(hint).toContain(`rdc job logs ${JOB_ID} -m prod-1 --follow`);
     expect(hint).toContain(`rdc job status ${JOB_ID} -m prod-1`);
   });

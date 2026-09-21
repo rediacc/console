@@ -1,5 +1,5 @@
 /**
- * `rdc cluster snapshot` (spec 03 §5.5, R2-F13) — porcelain over the group
+ * `rdc cluster snapshot` (spec 03 §5.5, R2-F13), porcelain over the group
  * snapshot plumbing (`datastore snapshot --group`, landed in P1).
  *
  * A cluster snapshot is ONE crash-consistent instant across every rbd-backed

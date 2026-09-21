@@ -91,7 +91,7 @@ async function prepareBrowserConnection(
 
 /**
  * Report the ready tunnel. `--url-only` contract (consumed by the tutorial
- * video pipeline): exactly one line — the tokenized URL — is written to
+ * video pipeline): exactly one line, the tokenized URL, is written to
  * stdout; all progress goes to stderr.
  */
 function reportBrowserTunnel(

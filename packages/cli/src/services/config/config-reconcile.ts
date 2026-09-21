@@ -2,7 +2,7 @@
  * `config reconcile` service layer (spec 04 §4).
  *
  * Rebuilds the STATE half of the config from what the fleet actually reports
- * (`renet list all --json` per machine), and — for configs migrated from v2 —
+ * (`renet list all --json` per machine), and, for configs migrated from v2 ,
  * fills MISSING repository placement by matching each repository GUID against
  * the machines' inventories. It NEVER overwrites a declared placement: spec is
  * declaration, state is observation. A GUID seen on a machine that conflicts
@@ -33,7 +33,7 @@ interface ObservedRepo {
 }
 
 /**
- * @public BLOCKER: element type of ReconcileReport.conflicts — the P4 `config
+ * @public BLOCKER: element type of ReconcileReport.conflicts, the P4 `config
  * reconcile` command renders these per-repo conflicts; exported so that command
  * can type its conflict formatter without indexing ReconcileReport internals.
  */
@@ -66,7 +66,7 @@ export interface ReconcileReport {
 
 export interface ReconcileOptions {
   /**
-   * Overwrite a declared placement with the observed one — but ONLY for the
+   * Overwrite a declared placement with the observed one, but ONLY for the
    * unambiguous machine-arm drift class (grand GUID on exactly one machine that
    * differs from the declaration). Duplicates stay conflicts even with the flag
    * (spec/04 §4.3: ambiguity errors, never guesses).
@@ -117,7 +117,7 @@ function classifyDeclaredMachine(
     }
     return { conflict };
   }
-  // R4: the declared machine holds a copy, but the grand GUID also lives on OTHER machines — stray copies (interrupted migrate, `--keep-source`, or a pushed backup left mounted). spec/04 §4.3 lists "same GUID on two machines" as a conflict class; this is its declared-plus-strays case.
+  // R4: the declared machine holds a copy, but the grand GUID also lives on OTHER machines, stray copies (interrupted migrate, `--keep-source`, or a pushed backup left mounted). spec/04 §4.3 lists "same GUID on two machines" as a conflict class; this is its declared-plus-strays case.
   if (machines.length > 1) {
     const strays = machines.filter((m) => m !== declared);
     return {
@@ -262,7 +262,7 @@ export async function reconcileState(
     };
   });
 
-  // Spec-half rewrite (--accept-observed) — a SEPARATE, version-bumping write, kept visibly distinct from the state write above (spec/04 §4.3). Under --dry-run the command wires this to a no-op, so placementsAccepted still reports what WOULD change while nothing is written.
+  // Spec-half rewrite (--accept-observed), a SEPARATE, version-bumping write, kept visibly distinct from the state write above (spec/04 §4.3). Under --dry-run the command wires this to a no-op, so placementsAccepted still reports what WOULD change while nothing is written.
   if (pendingAccept.size > 0) {
     await deps.writeResources((cfg) => {
       const repositories = { ...(cfg.resources?.repositories ?? {}) };
@@ -320,7 +320,7 @@ export interface RoutingVerification {
  * Runtime twin of reconcile (spec §1.3 property 3). A derived-machine op that
  * resolved a datastore through `state.datastores[*].attachedTo` must call this
  * with the machine renet actually reports the datastore mounted on. A mismatch
- * is a hard error naming both sides plus the fix — never a retry elsewhere.
+ * is a hard error naming both sides plus the fix, never a retry elsewhere.
  */
 export function verifyRoutingHint(params: {
   datastore: string;

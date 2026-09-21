@@ -109,7 +109,7 @@ async function scanAllMachines(): Promise<void> {
   );
 }
 
-/** `machine add <name>` — register an existing SSH-reachable machine. */
+/** `machine add <name>`, register an existing SSH-reachable machine. */
 function registerAdd(machine: Command): void {
   machine
     .command('add')
@@ -156,7 +156,7 @@ function registerAdd(machine: Command): void {
     });
 }
 
-/** `machine remove <name>` — deregister a machine from the config. */
+/** `machine remove <name>`, deregister a machine from the config. */
 function registerRemove(machine: Command): void {
   machine
     .command('remove')
@@ -184,7 +184,7 @@ function registerRemove(machine: Command): void {
     });
 }
 
-/** `machine list` — list registered machines. */
+/** `machine list`, list registered machines. */
 function registerList(machine: Command, program: Command): void {
   machine
     .command('list')
@@ -239,7 +239,7 @@ function registerList(machine: Command, program: Command): void {
     });
 }
 
-/** `machine scan-keys [name]` — pin SSH host keys for one or all machines. */
+/** `machine scan-keys [name]`, pin SSH host keys for one or all machines. */
 function registerScanKeys(machine: Command): void {
   machine
     .command('scan-keys')
@@ -258,7 +258,7 @@ function registerScanKeys(machine: Command): void {
     });
 }
 
-/** `machine setup <name>` — install renet and prepare the machine. */
+/** `machine setup <name>`, install renet and prepare the machine. */
 function registerSetup(machine: Command): void {
   machine
     .command('setup')

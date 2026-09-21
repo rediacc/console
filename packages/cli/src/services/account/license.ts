@@ -304,7 +304,7 @@ async function readRepoSizeGb(
  * what placement it recorded, and the machine default is a guess that is only
  * right for a default-datastore repo. Trying them in order costs one extra
  * `stat` in the rare case where the better source is absent, and it removes the
- * failure mode that made this worth fixing — measuring the wrong mount and
+ * failure mode that made this worth fixing, measuring the wrong mount and
  * reporting the floor as though it were a measurement.
  */
 async function measureRepoSizeGb(
@@ -538,8 +538,8 @@ export async function refreshRepoLicenseIdentity(
      * The datastore identity the CALLER already resolved (the placement it just
      * provisioned into). A fallback, not an override: the scan below is the
      * better answer because it reads the repo's actual home. It matters when
-     * the scan cannot answer at all — an older renet, or a datastore it failed
-     * to read — where dropping to no identity would write the reissue to the
+     * the scan cannot answer at all, an older renet, or a datastore it failed
+     * to read, where dropping to no identity would write the reissue to the
      * unscoped path that renet does not read for a datastore-resident repo.
      */
     datastoreId?: string;
@@ -548,8 +548,8 @@ export async function refreshRepoLicenseIdentity(
      * it (`repo.placement`). A fallback, on the same terms as `datastoreId`
      * above: the scan reports the machine's own `datastorePath` and that wins.
      *
-     * It matters when the scan cannot price the repo — no licence installed
-     * yet, or a scan that failed — and the size probe has to measure the image
+     * It matters when the scan cannot price the repo, no licence installed
+     * yet, or a scan that failed, and the size probe has to measure the image
      * itself. The machine's DEFAULT datastore is the wrong guess there for any
      * repo created with `repo create --datastore <d>`: the image is at
      * `/mnt/rediacc-ds/<d>/repositories/<guid>`, the probe found nothing, and
@@ -584,7 +584,7 @@ export async function refreshRepoLicenseIdentity(
         scanned.requestedSizeGb ??
         (await measureRepoSizeGb(sftp, params.repositoryGuid, [
           // Most authoritative first: the machine's own answer, then the
-          // placement the caller recorded, then the machine default — which is
+          // placement the caller recorded, then the machine default, which is
           // right only for a repo that really is on the default datastore.
           scanned.datastorePath,
           datastoreMount,
@@ -658,7 +658,7 @@ async function writeRepoLicense(
     stdin: JSON.stringify(license, null, 2),
   });
   await sftp.exec(`sudo chmod 640 "${repoLicenseFile}"`);
-  // GC the legacy flat file only. Files for other keyIds are never touched —
+  // GC the legacy flat file only. Files for other keyIds are never touched ,
   // that no-clobber property is what lets universes coexist. The flat file
   // predates both the per-key layout and datastore scoping, so it is removed
   // from the unscoped root regardless of which population we just wrote to:
@@ -838,7 +838,7 @@ async function runRepoLicenseBatch(
   // points users at). invalid_signature no longer triggers a reissue: with the
   // per-signer license layout a foreign-universe file is simply never selected,
   // so a genuine invalid_signature means the machine's OWN key can't validate
-  // its own file — that must fail fast, not loop reissuing (matches
+  // its own file, that must fail fast, not loop reissuing (matches
   // subscription-licensing.md).
   const forceReissueGuids = new Set(
     licenseStatuses.filter((s) => s.status === 'machine_mismatch').map((s) => s.repositoryGuid)

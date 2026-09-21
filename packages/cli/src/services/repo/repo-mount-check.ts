@@ -8,8 +8,8 @@ import { getExecutor } from '../executor/executor-factory.js';
  *
  * `datastore` is the caller's answer to "which datastore is this repo recorded
  * on" (#74). It matters because `repository_list` enumerates exactly ONE
- * datastore — there is no `--all-datastores` on it the way there is on the
- * licence verbs — so a probe that declares nothing looks only at the machine's
+ * datastore, there is no `--all-datastores` on it the way there is on the
+ * licence verbs, so a probe that declares nothing looks only at the machine's
  * default, and a repo living on a NAMED datastore reads as absent. That is a
  * false negative in the worst direction: the mount probe files a live repo as
  * unmounted. Callers hold the repo key, so they pass
@@ -25,7 +25,7 @@ export interface ProbeOptions {
  * Throw a ValidationError if `repoGuid` is not currently mounted on `machineName`.
  *
  * Probe failures (machine unreachable, renet error, parse error) are treated as
- * silent passes — preflight must never block a command for a flaky probe.
+ * silent passes, preflight must never block a command for a flaky probe.
  */
 export async function assertRepoMountedOnMachine(
   repoName: string,
@@ -45,7 +45,7 @@ export async function assertRepoMountedOnMachine(
  * Probe whether `repoGuid` is mounted on `machineName`.
  *
  * Returns `undefined` when the probe itself fails (machine unreachable,
- * renet error, parse error) — callers decide the fallback.
+ * renet error, parse error), callers decide the fallback.
  */
 export async function probeRepoMounted(
   repoGuid: string,
@@ -81,11 +81,11 @@ export async function probeRepoMounted(
  *
  * This is the step-5 derived-machine check (spec/03 §2.3): the invariant a
  * mutating verb needs is "the derived machine knows this repo's image", NOT
- * "it is mounted" — a legitimately downed repo is unmounted and `repo up` must
+ * "it is mounted", a legitimately downed repo is unmounted and `repo up` must
  * still work. So it tests `entry !== undefined`, not `entry.mounted`.
  *
  * Returns `undefined` when the probe itself fails (machine unreachable, renet
- * error, parse error) — callers fail OPEN, per the convention above.
+ * error, parse error), callers fail OPEN, per the convention above.
  *
  * Honest limitation (design: derived-routing repair family, R6): With the stale
  * source image still present (pre-fix configs, --keep-source, interrupted

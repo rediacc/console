@@ -76,7 +76,7 @@ function privateIpFor(cidr: string, hostIndex: number): string {
   return octets.join('.');
 }
 
-// SSH key injection — inline on each instance for inline_list providers, or one shared key resource for the whole cluster for resource_id providers.
+// SSH key injection, inline on each instance for inline_list providers, or one shared key resource for the whole cluster for resource_id providers.
 function injectSshKey(
   attrs: Record<string, unknown>,
   member: Member,
@@ -117,7 +117,7 @@ function buildInstanceAttrs(
 
   // L2 inline interface (e.g. Linode VLAN): the private LAN is defined by the
   // interface label; no separate network resource exists. Linode config-profile
-  // interfaces are POSITIONAL — the first entry is eth0 — so a public interface must lead to keep the node reachable over SSH for bootstrap, and the VLAN follows as eth1. Neither `device` nor `mtu` is a valid config-interface argument (verified against linode provider v3): NIC ordering is positional, and MTU is stamped in-guest by the renet bootstrap from the network_mtu output
+  // interfaces are POSITIONAL, the first entry is eth0, so a public interface must lead to keep the node reachable over SSH for bootstrap, and the VLAN follows as eth1. Neither `device` nor `mtu` is a valid config-interface argument (verified against linode provider v3): NIC ordering is positional, and MTU is stamped in-guest by the renet bootstrap from the network_mtu output
   // (Linode VLANs cap at MTU 1500, the provider default).
   const net = mapping.network;
   if (net?.attachVia === 'interface') {
@@ -203,7 +203,7 @@ function parseVolumeSizeGb(size: string): number {
  * Emit one block-storage volume per member per pool disk (e.g. Linode Block
  * Storage for Ceph OSDs, since a vanilla instance has only its boot disk) and
  * attach it to the member instance. The in-guest device path is NOT chosen
- * here — it is the pool's disks[].purpose (uniform across the pool, consumed by
+ * here, it is the pool's disks[].purpose (uniform across the pool, consumed by
  * the Ceph install). Each volume's filesystem_path (the by-id device symlink)
  * is surfaced as an output so provisioning can verify the device before OSD
  * creation.

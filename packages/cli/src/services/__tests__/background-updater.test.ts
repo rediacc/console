@@ -671,7 +671,7 @@ describe('services/background-updater', () => {
   });
 
   // ==========================================================================
-  // applyPendingUpdate — staged binary missing
+  // applyPendingUpdate, staged binary missing
   //
   // When the staged file is missing at apply time, the updater must clear pendingUpdate and return false. Without this, a stale staged-update pointer could loop the apply path indefinitely on next startups.
   // ==========================================================================

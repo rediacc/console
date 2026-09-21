@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-// Mock configFileStorage — required by the module graph, unused by these tests.
+// Mock configFileStorage, required by the module graph, unused by these tests.
 let mockConfig: Record<string, unknown> = {};
 
 vi.mock('../../adapters/config-file-storage.js', () => ({
@@ -28,7 +28,7 @@ vi.mock('../config/config-base.js', () => ({
     getEffectiveConfigName() {
       return 'test';
     }
-    // ConfigService overrides requireSelfHosted() and resolves it through getCurrent(), so the strategies have to be reachable from HERE — mocking requireSelfHosted on the base class would never be consulted.
+    // ConfigService overrides requireSelfHosted() and resolves it through getCurrent(), so the strategies have to be reachable from HERE, mocking requireSelfHosted on the base class would never be consulted.
     getCurrent() {
       return Promise.resolve({ version: 1, resources: { backupStrategies: mockStrategies } });
     }

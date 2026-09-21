@@ -1,5 +1,5 @@
 /**
- * `rdc vscode serve status|stop <target>` — lifecycle for the in-sandbox browser
+ * `rdc vscode serve status|stop <target>`, lifecycle for the in-sandbox browser
  * VS Code server started by `rdc vscode connect --browser <target>` (spec/03
  * §5.9). The target grammar is `term connect`'s, but only the repo form can
  * carry a server: the browser server runs INSIDE a repo sandbox, so a place

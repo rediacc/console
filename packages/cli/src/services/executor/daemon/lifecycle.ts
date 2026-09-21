@@ -33,7 +33,7 @@ const SOCKET_NAME = 'executor-daemon.sock';
  * the default `rediacc`). A per-UID socket alone let a daemon spawned under
  * one HOME serve clients running under another (observed live: a real-HOME
  * daemon executed a scratch-HOME tutorial's template apply against a config
- * with no such repo — renet fell back to a name-keyed mount path and failed).
+ * with no such repo, renet fell back to a name-keyed mount path and failed).
  * Scoping the socket per (dir, name) gives each context its own daemon; the
  * client and server each derive the suffix from their own environment, so a
  * mismatch is structurally impossible rather than a checked error.

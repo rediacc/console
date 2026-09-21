@@ -6,7 +6,7 @@
  * `repo create --datastore <d>` lives at `/mnt/rediacc-ds/<d>/repositories/…`,
  * so the stat found nothing, the probe's `|| echo 0` turned that into 0 bytes,
  * and the licence was requested at the 1 GB floor. `repo fork` and
- * `repo commit` expose no `--size`, so for them that floor was not a fallback —
+ * `repo commit` expose no `--size`, so for them that floor was not a fallback ,
  * it was the only number ever sent, for a repo of any size.
  *
  * These assertions read the exact command the executor put on the wire, not its
@@ -118,8 +118,8 @@ function expectedProbe(mount: string, guid: string): string {
 /**
  * The DISTINCT `stat` commands that reached the machine.
  *
- * A provisioning verb probes twice — once for the pre-issuance and once for the
- * post-create identity refresh — and both must agree on the mount, so the set
+ * A provisioning verb probes twice, once for the pre-issuance and once for the
+ * post-create identity refresh, and both must agree on the mount, so the set
  * is the interesting object. `probeCount()` keeps the repetition visible.
  */
 function statCommands(): string[] {
@@ -153,7 +153,7 @@ function routeExec(statOutput: string): void {
 /**
  * A machine where the image exists on exactly ONE mount. Every other mount
  * answers with the sentinel, so a probe that looks in the wrong place cannot
- * accidentally read the right size — which is what makes the size assertion an
+ * accidentally read the right size, which is what makes the size assertion an
  * end-to-end control on the path, not just on the arithmetic.
  */
 function routeExecImageAt(mount: string, statOutput: string): void {

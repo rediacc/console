@@ -187,7 +187,7 @@ async function bootstrapMembers(
  */
 /**
  * Reports whether a ceph mon already answers on a member (i.e. ceph was already
- * bootstrapped — e.g. by the ops provisioning phase). Non-throwing: any failure
+ * bootstrapped, e.g. by the ops provisioning phase). Non-throwing: any failure
  * (mon unreachable, no ceph.conf) means "not bootstrapped", so the caller runs
  * the full bootstrap. A HEALTH_WARN mon still counts as bootstrapped.
  */
@@ -258,10 +258,10 @@ async function installCeph(
     );
   }
 
-  // 4. Create the application pool (pg_num omitted — let renet default it).
+  // 4. Create the application pool (pg_num omitted, let renet default it).
   const pool = cluster.ceph?.pool ?? DEFAULTS.CEPH.POOL;
   const poolParams: Record<string, unknown> = { pool, cluster: CEPH_CLUSTER_NAME };
-  // Small/test topologies (<3 OSDs) cannot satisfy the Ceph default size 3 — the pool would sit active+undersized+degraded (HEALTH_WARN) forever. When the cluster's own ceph spec has fewer than 3 OSDs, ask for size 2 / min_size
+  // Small/test topologies (<3 OSDs) cannot satisfy the Ceph default size 3, the pool would sit active+undersized+degraded (HEALTH_WARN) forever. When the cluster's own ceph spec has fewer than 3 OSDs, ask for size 2 / min_size
   // 1 so the pool is active+clean. A production topology (>=3 OSDs) passes
   // nothing and keeps Ceph's defaults untouched (finding #9; P2 gate ruling:
   // never change the product default).
@@ -298,7 +298,7 @@ function cephOsdCount(cephPools: ClusterPool[]): number {
  * Distribute ceph client config (/etc/ceph/ceph.conf + admin keyring) from the
  * first ceph mon to every k8s-role node so ANY node can attach an rbd-backed
  * datastore (datastore-mobility, spec 02 §3). cephadm places client config only
- * on ceph hosts; the datastore-centric model needs it on the k8s nodes too — the
+ * on ceph hosts; the datastore-centric model needs it on the k8s nodes too, the
  * control node to CREATE the rbd ds-control, a peer node to ATTACH a fork clone.
  * The (base64) conf+keyring are read off the mon and written into /etc/ceph on
  * each target.

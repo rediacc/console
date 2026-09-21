@@ -1,5 +1,5 @@
 /**
- * `rdc config edit` — open the active config in $EDITOR for hand-edit.
+ * `rdc config edit`, open the active config in $EDITOR for hand-edit.
  *
  * Flow:
  *   1. Refuse for AI agents unless REDIACC_ALLOW_CONFIG_EDIT scope grants access.
@@ -114,7 +114,7 @@ async function promptRotationConfirmation(paths: string[]): Promise<boolean> {
 
 /**
  * Strip JSONC comment lines (lines starting with `//` after optional whitespace).
- * Block comments and inline `//` are NOT supported — the renderer only emits
+ * Block comments and inline `//` are NOT supported, the renderer only emits
  * line comments before the JSON body, so the stripper handles only that form.
  */
 function stripComments(jsonc: string): string {
@@ -488,7 +488,7 @@ async function handleInteractiveMode(
     if (done) return;
   }
 
-  // Out of retries — preserve draft and abort.
+  // Out of retries, preserve draft and abort.
   const orig = `${configDir()}/${configName}.edit-${Date.now()}.orig`;
   if (existsSync(tmpFile)) copyFileSync(tmpFile, orig);
   rmSync(tmp, { recursive: true, force: true });
@@ -564,7 +564,7 @@ export function registerEditCommands(parent: Command, _program: Command): void {
           const agent = isAgentEnvironment();
           const reveal = options.reveal === true;
 
-          // Agent gate: block interactive editor + --apply + --reveal. --dump without --reveal is read-only redacted output — safe for agents.
+          // Agent gate: block interactive editor + --apply + --reveal. --dump without --reveal is read-only redacted output, safe for agents.
           const interactive = !options.dump && !options.apply;
           const needsAgentGate = interactive || Boolean(options.apply) || reveal;
           checkEditGates(config, agent, needsAgentGate, reveal);

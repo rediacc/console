@@ -9,7 +9,7 @@
  * been renamed, so the rule denies nothing and the forbidden command runs.
  *
  * These tests are written against the LIVE contract on purpose. `repo takeover`
- * is not a hypothetical stale name — it is the real pre-P4 name of what is now
+ * is not a hypothetical stale name, it is the real pre-P4 name of what is now
  * `repo promote` (spec 03 §5.4), so this is the rename that would have fired.
  */
 import type { RdcConfig } from '@rediacc/shared/config-schema';
@@ -67,7 +67,7 @@ describe('stale deny globs at the executor', () => {
   });
 
   it('tolerates a stale ALLOW glob, which already fails closed', () => {
-    // `machine query` was renamed to `machine status`. The allow glob is stale, but a stale allow refuses the command rather than permitting it — it is self-announcing. Refusing to start over one would turn a safe condition into a total executor outage, so only the deny side is fatal.
+    // `machine query` was renamed to `machine status`. The allow glob is stale, but a stale allow refuses the command rather than permitting it, it is self-announcing. Refusing to start over one would turn a safe condition into a total executor outage, so only the deny side is fatal.
     const config = configWithPolicy({
       version: 1,
       defaults: { commands: { allow: ['machine query', 'repo list'] } },

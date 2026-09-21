@@ -218,7 +218,7 @@ describe.each(['darwin', 'win32'])('helper-based ancestry on %s', (platform) => 
       { pid: 50, env: { CLAUDECODE: '1', REDIACC_ALLOW_CLUSTER_OPS: '*' } }, // boundary
     ]);
     expect(isOverrideLegitimate(OVERRIDE_VAR_CLUSTER)).toBe(true);
-    // The grand override was NOT at the boundary — it must not ride on cluster's.
+    // The grand override was NOT at the boundary, it must not ride on cluster's.
     expect(isOverrideLegitimate()).toBe(false);
   });
 

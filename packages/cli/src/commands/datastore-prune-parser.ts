@@ -1,7 +1,7 @@
 /**
  * Parser + flattener for `renet repository prune --output json` output.
  *
- * renet emits a single JSON object — `DatastorePrunableResources` (dry-run) or
+ * renet emits a single JSON object, `DatastorePrunableResources` (dry-run) or
  * `DatastorePruneResult` (real run). The captured stdout may carry incidental
  * noise (log prefixes / step events) around it, so we extract the last balanced
  * top-level object that parses. Field names match the Go `json:` tags.
@@ -53,7 +53,7 @@ export interface PrunePreviewRow {
  * Extract the prune JSON object from captured stdout. The renet relays
  * the sub-command's stdout with a `[repository_prune] ` prefix on every line
  * (same prefix shape repo-list-parser strips), so we drop that first, then parse
- * the cleaned JSON — falling back to the outermost `{`…`}` span to tolerate any
+ * the cleaned JSON, falling back to the outermost `{`…`}` span to tolerate any
  * stray log lines around the object.
  */
 export function parseDatastorePruneOutput(stdout: string): Record<string, unknown> {
@@ -62,7 +62,7 @@ export function parseDatastorePruneOutput(stdout: string): Record<string, unknow
     .map((line) => line.replace(/^\s*\[[^\]]+\]\s?/, ''))
     // Drop logrus text lines. The renet relay merges the sub-command's stderr
     // into stdout, so under load a `time="…" level=info msg="…"` line can land
-    // BETWEEN the pretty-printed JSON's lines — inside the brace span — and break the parse (observed intermittently on `repo trim` right after
+    // BETWEEN the pretty-printed JSON's lines, inside the brace span, and break the parse (observed intermittently on `repo trim` right after
     // heavy I/O; rediacc/console#424 sequence run).
     .filter((line) => !/^time="[^"]*" level=\w+/.test(line))
     .join('\n')

@@ -2,8 +2,8 @@
  * Tests for the `rdc job` command surface.
  *
  * These cover the WIRING, not the SSH: that every verb is registered, that the
- * flags an operator types are parsed into the right values, and — the part with
- * teeth — that the contract metadata says what the proxy and the MCP layer will
+ * flags an operator types are parsed into the right values, and, the part with
+ * teeth, that the contract metadata says what the proxy and the MCP layer will
  * act on. A `job cancel` that is not marked destructive is a command an agent
  * will happily run unprompted, and a `job list` mis-planed as `config` would be
  * offered for remote execution it cannot actually perform.
@@ -69,7 +69,7 @@ describe('rdc job command surface', () => {
    * `cancel` all name the job with a required POSITIONAL `<job-id>`; `list` and `gc`
    * act on the whole spool, so they take neither.
    *
-   * `cancel` was the odd one out — it alone still took `--id`, and this test asserted
+   * `cancel` was the odd one out, it alone still took `--id`, and this test asserted
    * that inconsistency rather than catching it: three leaves, one contract, two
    * implementations. It now asserts the contract instead.
    */

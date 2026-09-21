@@ -7,7 +7,7 @@
  * key and delegate here.
  *
  * Mutation gating (--current digest, agent allowlist) lives at the
- * command layer (commands/repo-secret.ts), not here — these helpers
+ * command layer (commands/repo-secret.ts), not here, these helpers
  * just touch the in-memory map and persist via setRepositories.
  */
 

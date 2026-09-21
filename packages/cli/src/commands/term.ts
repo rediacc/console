@@ -72,7 +72,7 @@ export function buildEnvPrefix(connectionDetails?: ConnectionDetails): string {
   return parts.length > 0 ? `${parts.join('; ')}; ` : '';
 }
 
-// Sandbox is enforced server-side via ForceCommand in authorized_keys. The CLI just sends the raw command — sandbox-gateway on the remote reads REDIACC_REPOSITORY from env and applies Landlock + OverlayFS.
+// Sandbox is enforced server-side via ForceCommand in authorized_keys. The CLI just sends the raw command, sandbox-gateway on the remote reads REDIACC_REPOSITORY from env and applies Landlock + OverlayFS.
 
 function buildRemoteCommand(
   options: TermConnectOptions,
@@ -411,7 +411,7 @@ async function runInlineSSH(
   quiet: boolean
 ): Promise<void> {
   if (!quiet) {
-    // Progress message on stderr — keeps stdout reserved for command output when -c piping is in play, matching the Unix convention used by ssh's own progress / banner messages.
+    // Progress message on stderr, keeps stdout reserved for command output when -c piping is in play, matching the Unix convention used by ssh's own progress / banner messages.
     process.stderr.write(`${t('commands.term.connectingTo', { title })}\n`);
   }
 

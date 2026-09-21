@@ -2,7 +2,7 @@
  * `repo gc` and `repo fsck` must enumerate EVERY datastore the config places
  * repos on, not just the machine's default (#74).
  *
- * `repository_list` lists exactly one datastore — there is no `--all-datastores`
+ * `repository_list` lists exactly one datastore, there is no `--all-datastores`
  * on it the way there is on the licence verbs (private/renet/cmd/renet/
  * license_scope.go:23 registers that flag for `repository license-status` and
  * `license-scan` only). Both commands compare that one listing against the WHOLE
@@ -58,7 +58,7 @@ const ORPHAN_GUID = 'dddddddd-dddd-dddd-dddd-dddddddddddd';
 
 /**
  * One family on a named datastore holding an unreachable, unmounted, immutable
- * commit — a gc candidate that only exists in that datastore's listing.
+ * commit, a gc candidate that only exists in that datastore's listing.
  */
 function configWithNamedDatastore(): void {
   mockGetCurrent.mockResolvedValue({

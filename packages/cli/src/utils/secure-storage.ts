@@ -62,7 +62,7 @@ class KeyctlStorage implements SecureStorage {
     // Remove existing key if present
     await this.delete(key);
     execFileSync('keyctl', ['add', 'user', key, value, '@u'], { encoding: 'utf-8' });
-    // No timeout — passkey_secret must persist across reboots/days. The user keyring (@u) lives for the session by default; keys without an explicit timeout persist until the session ends or the key is explicitly revoked, which matches what deriveCek() expects (a missing key is fatal and asks the user to re-setup).
+    // No timeout, passkey_secret must persist across reboots/days. The user keyring (@u) lives for the session by default; keys without an explicit timeout persist until the session ends or the key is explicitly revoked, which matches what deriveCek() expects (a missing key is fatal and asks the user to re-setup).
   }
 
   delete(key: string): Promise<void> {
@@ -75,7 +75,7 @@ class KeyctlStorage implements SecureStorage {
         execFileSync('keyctl', ['unlink', keyId, '@u']);
       }
     } catch {
-      // Key doesn't exist — ok
+      // Key doesn't exist, ok
     }
     return Promise.resolve();
   }
@@ -116,7 +116,7 @@ class KeychainStorage implements SecureStorage {
         stdio: ['ignore', 'pipe', 'ignore'],
       });
     } catch {
-      // Entry doesn't exist — ok
+      // Entry doesn't exist, ok
     }
     return Promise.resolve();
   }
@@ -229,7 +229,7 @@ class FileStorage implements SecureStorage {
  * Wraps any backend and rejects unsafe keys BEFORE they reach a native tool.
  * Every path that touches secure storage goes through `getSecureStorage()`, so
  * validating here guarantees no untrusted `storageKeyId` reaches keyctl,
- * security, or PowerShell — regardless of which backend is active.
+ * security, or PowerShell, regardless of which backend is active.
  */
 class ValidatingStorage implements SecureStorage {
   constructor(private readonly inner: SecureStorage) {}

@@ -140,7 +140,7 @@ describe('SessionStore.sessionForExec (the X-Config-Session selection rule)', ()
   });
 
   it('honours the NAMED session over the latest-grant index', async () => {
-    // Alice grants through two live sessions (say, a browser and a CLI). The index points at the newest, but a request that names the older one must get the older one — the client chose it.
+    // Alice grants through two live sessions (say, a browser and a CLI). The index points at the newest, but a request that names the older one must get the older one, the client chose it.
     const store = new SessionStore();
     const first = await openAndGrant(store, ALICE);
     const second = await openAndGrant(store, ALICE);

@@ -4,8 +4,8 @@
  * The daemon amortises per-process cold costs (SSH handshake, renet provision
  * checks, warm caches) across consecutive short-lived `rdc` invocations by
  * running the actual `localExecutorService.execute()` in one long-lived process
- * that consecutive clients talk to. This module holds the PURE half — the frame
- * shapes, the NDJSON codec, and the serializability gate — with no I/O, so it is
+ * that consecutive clients talk to. This module holds the PURE half, the frame
+ * shapes, the NDJSON codec, and the serializability gate, with no I/O, so it is
  * exercisable without a socket.
  *
  * The event payload is the very same `RenetEvent` the events-mode NDJSON contract
@@ -207,7 +207,7 @@ function containsNonSerializable(value: unknown, seen: Set<object> = new Set()):
 /**
  * Whether these options may cross the socket to the daemon.
  *
- * The two transported callbacks (`onEvent`, `onJobStarted`) are IGNORED here —
+ * The two transported callbacks (`onEvent`, `onJobStarted`) are IGNORED here ,
  * they become frames. Any OTHER non-serializable member (an unexpected callback,
  * a custom stream, a bigint) means the command carries something the daemon
  * cannot reproduce, so the caller must route it to the DIRECT executor instead.

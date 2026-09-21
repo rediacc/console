@@ -1,13 +1,13 @@
 /**
  * BUG #89, swept across its class.
  *
- * #22 established the principle — "state is observation; when the thing is gone, its state
- * goes with it" — and applied it to ONE field. #89 found the same hole in
+ * #22 established the principle, "state is observation; when the thing is gone, its state
+ * goes with it", and applied it to ONE field. #89 found the same hole in
  * `removeClusterFromStore`. These are its SIBLINGS: every other remover that drops a
  * `resources.*` declaration must drop the matching `state.*` observation too.
  *
  * It matters because `state.datastores[*].attachedTo` IS the derived-machine routing hint,
- * and `resolve-machine` throws only when the hint is ABSENT — a hint that is merely WRONG is
+ * and `resolve-machine` throws only when the hint is ABSENT, a hint that is merely WRONG is
  * followed. Machine names are deterministic, so a stale hint does not dangle: it re-aims at
  * a brand-new, same-named machine.
  */

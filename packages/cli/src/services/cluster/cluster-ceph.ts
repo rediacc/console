@@ -3,7 +3,7 @@
  *
  * createCluster (cluster-provision) distributes a cluster's OWN ceph client
  * config to its OWN k8s nodes; forkCluster (cluster-kube) must give the fork's
- * DEST — nodes of a DIFFERENT cluster — access to the SOURCE cluster's ceph so
+ * DEST, nodes of a DIFFERENT cluster, access to the SOURCE cluster's ceph so
  * they can attach the fork's rbd clone (finding #7). Both need the same three
  * primitives (member resolution, a throwing dispatch, config export), so they
  * live here instead of being duplicated or forcing a circular import between the

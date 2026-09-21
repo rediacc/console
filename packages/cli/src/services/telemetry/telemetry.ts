@@ -3,7 +3,7 @@
 // Credentials are fetched at runtime from the account server's `/telemetry/config` endpoint (unauthenticated), set via `setRuntimeOtlpCredentials()`, and used when constructing the OTel SDK exporter. No credentials are ever baked into the bundle.
 //
 // Opt-out: `REDIACC_TELEMETRY_DISABLED=1` or any truthy `CI` env var.
-// Use `isTelemetryDisabled()` (exported below) to check the state before doing any telemetry-related work — fetching credentials, spawning renet
+// Use `isTelemetryDisabled()` (exported below) to check the state before doing any telemetry-related work, fetching credentials, spawning renet
 // with OTLP env vars, or constructing an exporter. All three should skip
 // when this returns true.
 
@@ -32,7 +32,7 @@ import { buildUserAttributes, flattenAttributes } from './telemetry-attrs.js';
 /**
  * Pure env-var check for whether the user has opted out of telemetry.
  *
- * Callable before any service initialization — useful for gating
+ * Callable before any service initialization, useful for gating
  * preAction work (credential fetch) and SSH env injection so we never
  * leak OTLP credentials to renet when the user has disabled telemetry
  * on their workstation.
@@ -93,7 +93,7 @@ class CliTelemetryService {
   }
 
   private shouldDisable(config?: CliTelemetryConfig): boolean {
-    // Env-based opt-out (CI, REDIACC_TELEMETRY_DISABLED) is the single source of truth — see `isTelemetryDisabled()` at module scope. The in-memory `config.telemetryEnabled` override is an additional layer used by adapters that want to force-disable for a specific context.
+    // Env-based opt-out (CI, REDIACC_TELEMETRY_DISABLED) is the single source of truth, see `isTelemetryDisabled()` at module scope. The in-memory `config.telemetryEnabled` override is an additional layer used by adapters that want to force-disable for a specific context.
     if (isTelemetryDisabled()) return true;
     if (config?.telemetryEnabled === false) return true;
     return false;

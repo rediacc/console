@@ -9,9 +9,9 @@
  *
  * TWO SECRETS, TWO SOURCES, ON PURPOSE:
  *
- *   the config TOKEN  — "may fetch the bytes". Minted by the account server for
+ *   the config TOKEN , "may fetch the bytes". Minted by the account server for
  *                       the executor, against the executor's OWN credential.
- *   the config KEY    — "may open the bytes". Granted by the USER, per session,
+ *   the config KEY   , "may open the bytes". Granted by the USER, per session,
  *                       over X25519, held in RAM only.
  *
  * Neither half is sufficient. An executor holding a config token and no grant
@@ -21,7 +21,7 @@
  * WHY THE EXECUTOR MINTS ITS OWN TOKEN rather than the client handing one over:
  * config tokens ROTATE on use (three uses, then exhausted). Two holders of one
  * chain race each other and the loser's copy dies. A browser could absorb that
- * and re-bootstrap silently, but the CLI could not — bootstrap-session is
+ * and re-bootstrap silently, but the CLI could not, bootstrap-session is
  * 2FA-gated, so a CLI whose config token died would need a human at a browser to
  * get its own `config remote` access back. Lending the executor the client's
  * token would break the client as a side effect of using --proxy. Separate,
@@ -123,7 +123,7 @@ export function createContainerConfigLoader(
       hmac: pull.hmac ?? '',
     };
 
-    // The key is the SESSION's, never the executor's — it has none of its own.
+    // The key is the SESSION's, never the executor's, it has none of its own.
     const decrypted = await decryptConfigPullPayload(payload, {
       cek,
       sdkDerived: await importAesKey(fromBase64(pull.sdk_derived)),

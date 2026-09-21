@@ -1,5 +1,5 @@
 /**
- * editor-launcher tests — git-compatible resolution order, --wait injection,
+ * editor-launcher tests, git-compatible resolution order, --wait injection,
  * headless refusal.
  */
 

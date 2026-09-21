@@ -42,7 +42,7 @@ function decodeCatPayload(stdout: string): void {
 }
 
 /**
- * repo cat — bounded, pipeable single-file read inside the repo mount
+ * repo cat, bounded, pipeable single-file read inside the repo mount
  * (rediacc/console#490). Stdout = file bytes only; progress/diagnostics go to
  * stderr, so `rdc repo cat … | jq` / `| grep` / `> out` stay clean.
  */
@@ -76,7 +76,7 @@ export function registerRepoCatCommand(repo: Command): void {
         }
       ) => {
         try {
-          // Read-only verb: derive the machine from the ref, skipping step 5's remote round-trip (spec/03 §2.3 tail — the cat itself is the check).
+          // Read-only verb: derive the machine from the ref, skipping step 5's remote round-trip (spec/03 §2.3 tail, the cat itself is the check).
           const { name, repoKey, machineName, kubeCluster } = await resolveRepoRef(ref, {
             readOnly: true,
           });

@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { RepositoryConfig } from '../../types/index.js';
 import { CliExitError } from '../../utils/cli-exit-error.js';
 
-// i18n stub — return "key:{params}" so repo names interpolated into params are
+// i18n stub, return "key:{params}" so repo names interpolated into params are
 // assertable in the produced strings (mirrors repo-secret.test.ts).
 vi.mock('../../i18n/index.js', () => ({
   t: (key: string, params?: Record<string, unknown>) =>
@@ -109,7 +109,7 @@ describe('guardMachineRemoval', () => {
     // Warns that the surviving placements now dangle, naming them.
     expect(mockWarn).toHaveBeenCalledOnce();
     expect(String(mockWarn.mock.calls[0][0])).toContain('web, api');
-    // The guard never rewrote placements — they still point at the removed machine (dangling by construction).
+    // The guard never rewrote placements, they still point at the removed machine (dangling by construction).
     expect(reposPlacedOnMachine('srv-1', repos)).toEqual(['web', 'api']);
   });
 

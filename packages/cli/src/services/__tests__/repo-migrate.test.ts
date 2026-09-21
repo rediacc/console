@@ -4,7 +4,7 @@
  * The load-bearing assertion is RED-FIRST: after a successful `repo migrate
  * <name> --to <target>`, resolving the same ref must route to the TARGET. On the
  * pre-R1 code migrate never rewrote placement, so resolveMachine kept yielding
- * the SOURCE — the silent wrong-host redeploy bug, captured here in one assert.
+ * the SOURCE, the silent wrong-host redeploy bug, captured here in one assert.
  *
  * migrateRepo's collaborators are mocked (executor scripted green, config writes
  * tracked in-memory); the routing assertion runs the REAL resolveMachine over a

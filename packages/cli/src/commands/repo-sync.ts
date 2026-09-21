@@ -51,7 +51,7 @@ async function ensureRenetProvisioned(machineName: string): Promise<void> {
     const teamKey = localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
     await provisionRenetToRemote(localConfig, machine, teamKey, {});
   } catch {
-    // Non-fatal — sync may still work with existing renet on remote
+    // Non-fatal, sync may still work with existing renet on remote
   }
 }
 
@@ -137,7 +137,7 @@ interface ValidatedSyncOptions {
   machine: string;
   /** The config/renet identifier (name[:tag]) derived from the positional ref. */
   repository: string;
-  /** The repo family name (no tag) — the kube arm's on-datastore folder name. */
+  /** The repo family name (no tag), the kube arm's on-datastore folder name. */
   repoName: string;
   /**
    * Set ONLY for a kubernetes-placed repo: the named DATA datastore backing it.
@@ -154,7 +154,7 @@ async function validateSyncOptions(
   command: typeof CMD.REPO_SYNC_UPLOAD | typeof CMD.REPO_SYNC_DOWNLOAD,
   resolveOptions: Parameters<typeof resolveRepoRef>[1] = {}
 ): Promise<ValidatedSyncOptions> {
-  // Sync is a plain SSH/rsync/SFTP transfer against a machine's filesystem: no renet function call, so there is no executor sink to thread a kubeCluster marker into (and no control-node rerouting — the executor's kubeCluster override does not apply here). resolveRepoRef derives the machine that actually HOLDS the data (the datastore's attach machine), which is exactly the host
+  // Sync is a plain SSH/rsync/SFTP transfer against a machine's filesystem: no renet function call, so there is no executor sink to thread a kubeCluster marker into (and no control-node rerouting, the executor's kubeCluster override does not apply here). resolveRepoRef derives the machine that actually HOLDS the data (the datastore's attach machine), which is exactly the host
   // these bytes must land on for either runtime.
   const { name, repoKey, machineName, kubeCluster, datastore } = await resolveRepoRef(
     ref,

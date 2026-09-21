@@ -56,7 +56,7 @@ export function getWindowsHomeInWSL(): string | null {
     return null;
   }
 
-  // Try multiple cmd.exe locations — it may not be in PATH inside WSL
+  // Try multiple cmd.exe locations, it may not be in PATH inside WSL
   const cmdPaths = ['cmd.exe', '/mnt/c/Windows/System32/cmd.exe'];
 
   for (const cmdPath of cmdPaths) {

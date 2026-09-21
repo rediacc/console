@@ -96,7 +96,7 @@ async function checkEnvVSCodePath(isWSL = false): Promise<VSCodeInfo | null> {
  *
  * Inside WSL we set `DONT_PROMPT_WSL_INSTALL=1` so the Linux `code` script
  * doesn't pop its "Do you want to continue anyway?" advisory prompt during
- * detection — that prompt would either hang on stdin or exit with code 1
+ * detection, that prompt would either hang on stdin or exit with code 1
  * and make us think VS Code isn't installed.
  */
 function getVSCodeVersion(cmd: string): string | undefined {
@@ -166,18 +166,18 @@ function isRunningInsideWsl(): boolean {
  *
  * The Microsoft Linux VS Code package, when invoked from WSL, prints an
  * advisory and prompts "Do you want to continue anyway? [y/N]" on every
- * single invocation — including `--version`. With our detached spawn
+ * single invocation, including `--version`. With our detached spawn
  * (`stdio: 'ignore'`), the prompt reads /dev/null, defaults to N, and the
- * script exits without launching anything — while our 500ms timeout
+ * script exits without launching anything, while our 500ms timeout
  * assumes success.
  *
  * Microsoft's own script documents an env var to bypass: setting
  * `DONT_PROMPT_WSL_INSTALL=1` skips the advisory entirely. We set it for
  * every spawn call (detection AND launch) when running inside WSL so the
- * Linux `code` script behaves like a normal CLI — this is a fallback for
+ * Linux `code` script behaves like a normal CLI, this is a fallback for
  * the case where someone has Linux VS Code installed in WSL but Windows
  * VS Code is not accessible via /mnt/c (or interop is broken). The
- * preferred path is to find Windows VS Code under /mnt/c — see
+ * preferred path is to find Windows VS Code under /mnt/c, see
  * `findWindowsVSCodeFromWsl()` and the WSL branch in `findVSCode()`.
  */
 function wslCodeEnv(): NodeJS.ProcessEnv {
@@ -191,7 +191,7 @@ function wslCodeEnv(): NodeJS.ProcessEnv {
  * `WSLInterop` at boot to make Windows .exe files executable from Linux.
  * When systemd is enabled in /etc/wsl.conf, systemd remounts
  * /proc/sys/fs/binfmt_misc during init and the WSLInterop registration is
- * silently lost — Windows binaries (and Linux shell scripts under
+ * silently lost, Windows binaries (and Linux shell scripts under
  * /mnt/c/.../bin/code that exec them) then fail with "Exec format error".
  *
  * We check for the registration directly. If WSLInterop exists and the
@@ -220,7 +220,7 @@ function isWslInteropFunctional(): boolean {
  *   /mnt/c/Users/<name>/AppData/Local/Programs/Microsoft VS Code/bin/code  (per-user)
  *
  * That wrapper is a bash script that exec's `Code.exe` via the WSL/Windows
- * interop layer. It only works when WSLInterop is registered — see
+ * interop layer. It only works when WSLInterop is registered, see
  * `isWslInteropFunctional()`. Caller is responsible for that check.
  *
  * Returns the first existing path, or null if Windows VS Code isn't
@@ -231,7 +231,7 @@ function findWindowsVSCodeFromWsl(): string | null {
     '/mnt/c/Program Files/Microsoft VS Code/bin/code',
     '/mnt/c/Program Files/Microsoft VS Code Insiders/bin/code-insiders',
   ];
-  // Per-user installations under /mnt/c/Users/<name>/AppData/Local/... Windows username can differ from WSL username, so enumerate /mnt/c/Users and try each. We don't shell out — readdirSync over the 9p mount is fine.
+  // Per-user installations under /mnt/c/Users/<name>/AppData/Local/... Windows username can differ from WSL username, so enumerate /mnt/c/Users and try each. We don't shell out, readdirSync over the 9p mount is fine.
   try {
     const usersDir = '/mnt/c/Users';
     if (existsSync(usersDir)) {
@@ -243,7 +243,7 @@ function findWindowsVSCodeFromWsl(): string | null {
       }
     }
   } catch {
-    /* /mnt/c not accessible — fall through */
+    /* /mnt/c not accessible, fall through */
   }
   for (const c of candidates) {
     if (existsSync(c)) return c;
@@ -269,7 +269,7 @@ export async function findVSCode(): Promise<VSCodeInfo | null> {
   //
   // This block only runs when ALL three conditions are true:
   //   1. We're on Linux (platform === 'linux')
-  // 2. We're inside a WSL distro (not native Linux) 3. WSL interop is functional (binfmt_misc/WSLInterop registered) The third check matters because systemd-enabled WSL distros silently lose the interop registration during boot — see isWslInteropFunctional(). If interop is broken, we fall through to the Linux `code` with the DONT_PROMPT_WSL_INSTALL fallback.
+  // 2. We're inside a WSL distro (not native Linux) 3. WSL interop is functional (binfmt_misc/WSLInterop registered) The third check matters because systemd-enabled WSL distros silently lose the interop registration during boot, see isWslInteropFunctional(). If interop is broken, we fall through to the Linux `code` with the DONT_PROMPT_WSL_INSTALL fallback.
   if (platform === 'linux' && isRunningInsideWsl() && isWslInteropFunctional()) {
     const winVscode = findWindowsVSCodeFromWsl();
     if (winVscode) {
@@ -336,7 +336,7 @@ export async function launchVSCode(
         stdio: 'ignore',
       });
     } else {
-      // Launch native VS Code (Windows/macOS/Linux). - On Windows, VS Code CLI is a .cmd batch wrapper — spawn needs shell: true.
+      // Launch native VS Code (Windows/macOS/Linux). - On Windows, VS Code CLI is a .cmd batch wrapper, spawn needs shell: true.
       // - When running INSIDE WSL, we set DONT_PROMPT_WSL_INSTALL=1 so the
       // Linux `code` script doesn't pop its advisory prompt and exit silently when it reads /dev/null on stdin (we use stdio:'ignore').
       const isWindows = process.platform === 'win32';

@@ -3,11 +3,11 @@
  *
  * One file per config at `<configdir>/audit.log.jsonl`, mode 0600, rotated
  * at 10 MB (single rotation: `audit.log.jsonl.1` overwritten). Each line is
- * a JSON object; consecutive lines form a SHA-256 hash chain — tampering
+ * a JSON object; consecutive lines form a SHA-256 hash chain, tampering
  * with any line invalidates all subsequent `prevHash` values, detectable
  * via `verifyChain`.
  *
- * Entries never contain secret values — only pointers, outcomes, actor
+ * Entries never contain secret values, only pointers, outcomes, actor
  * signals. The CI gate `check:ci-audit-never-logs-values` is a lint rule
  * (Step 15) that forbids plaintext in audit emissions.
  */
@@ -156,7 +156,7 @@ function rotateIfNeeded(logPath: string): void {
       renameSync(logPath, `${logPath}.1`);
     }
   } catch {
-    /* ignore — best-effort */
+    /* ignore, best-effort */
   }
 }
 

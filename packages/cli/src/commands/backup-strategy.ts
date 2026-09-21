@@ -40,7 +40,7 @@ type DestinationKind = 'storage' | 'hosted-service';
  * 2026-08-15 this command could only make `storage` (rclone) destinations: it
  * hard-required `--storage`. Then the rclone emission was deleted from the unit
  * generator, and the two facts together left NO supported route from
- * `backup strategy set` to a deployable schedule — every path either threw at
+ * `backup strategy set` to a deployable schedule, every path either threw at
  * set time for want of `--storage`, or threw at deploy time because a `storage`
  * destination can no longer be rendered. Only a hand-edited config JSON could
  * produce a working strategy.
@@ -98,7 +98,7 @@ function definedOnly(o: Record<string, unknown>): Record<string, unknown> {
  * Build the destination record to store, from the flags plus whatever is
  * already there. Pure: no config reads, no writes, so a test can drive the
  * exact object the operator's flags produce and hand it straight to the unit
- * generator. That crossing is deliberate — the defects in this stack all came
+ * generator. That crossing is deliberate, the defects in this stack all came
  * from each side being tested against its own fake.
  */
 export function buildDestination(
@@ -160,7 +160,7 @@ async function upsertBackupDestination(o: UpsertDestOpts): Promise<void> {
   }
   await configService.addBackupDestination(o.strategyName, dest);
 
-  // Saved, then flagged. A `storage` destination is still legal to hold on disk and still legal to create — but no unit can be generated for one, and an operator who learns that at deploy time has already bound the strategy and walked away. Say it here, where the decision is.
+  // Saved, then flagged. A `storage` destination is still legal to hold on disk and still legal to create, but no unit can be generated for one, and an operator who learns that at deploy time has already bound the strategy and walked away. Say it here, where the decision is.
   const unschedulable = unschedulableDestinationReason(dest);
   if (unschedulable) {
     // Naming the two commands matters: omitting --storage PRESERVES an existing kind (see resolveDestinationKind), so there is no single flag that turns a storage destination into a chunk-store one. "Change it to a hosted-service destination" without the how is the same dead end in a friendlier voice.
@@ -172,7 +172,7 @@ async function upsertBackupDestination(o: UpsertDestOpts): Promise<void> {
   }
 }
 
-// parseRepoFilter turns a comma-separated --include/--exclude value into a repo list, or returns undefined to CLEAR the filter. An empty string or the literal "none" (and a value that is only separators/whitespace) clears it — that's how you drop a strategy's include/exclude entirely (e.g. make a cold backup cover
+// parseRepoFilter turns a comma-separated --include/--exclude value into a repo list, or returns undefined to CLEAR the filter. An empty string or the literal "none" (and a value that is only separators/whitespace) clears it, that's how you drop a strategy's include/exclude entirely (e.g. make a cold backup cover
 // all repos again). setBackupStrategy merges with `{...existing, ...update}`, and
 // an undefined value is dropped on JSON write, so the key is removed.
 export function parseRepoFilter(raw: string): string[] | undefined {
@@ -229,7 +229,7 @@ async function applyBackupStrategyOptions(
   const enabled = resolveEnabledFlag(options.enable, options.disable);
   const targetsDestination = Boolean(options.destination);
 
-  // Strategy fields and destination fields are applied in the SAME call. This used to be an either/or, so creating a strategy with a destination took two invocations — and the first one, `set <new> --destination …`, silently produced a strategy with an empty schedule.
+  // Strategy fields and destination fields are applied in the SAME call. This used to be an either/or, so creating a strategy with a destination took two invocations, and the first one, `set <new> --destination …`, silently produced a strategy with an empty schedule.
   //
   // `--bwlimit` and `--enable/--disable` stay scoped to the destination when one is named, which is what they have always meant there: `set s --destination d --disable` disables that destination, not the whole strategy.
   const update = buildStrategyUpdate(

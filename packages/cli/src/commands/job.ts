@@ -1,5 +1,5 @@
 /**
- * `rdc job` — manage detached machine operations.
+ * `rdc job`, manage detached machine operations.
  *
  * A detached job survives the connection that started it: the work runs under a
  * transient systemd unit on the machine, so a dropped SSH channel, a closed

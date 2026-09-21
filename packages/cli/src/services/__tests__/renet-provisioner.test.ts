@@ -5,7 +5,7 @@ import { compareVersions } from '../update/updater.js';
 // Declared via vi.hoisted so they exist BEFORE the vi.mock factories below.
 //
 // vitest hoists every vi.mock call above the module body, so a factory that closes over a plain `const` only works while nothing imports the mocked module during the hoisted import phase. This file imports ../update/updater.js at the top, and the moment updater's import graph reached node:fs/promises the factory at line ~55 ran before these bindings initialised and the whole file
-// failed to load with "Cannot access 'readFileMock' before initialization" — taking all of its tests with it while the suite still looked green. vi.hoisted removes the ordering dependency entirely.
+// failed to load with "Cannot access 'readFileMock' before initialization", taking all of its tests with it while the suite still looked green. vi.hoisted removes the ordering dependency entirely.
 const {
   readFileMock,
   writeFileMock,
@@ -36,7 +36,7 @@ const {
   removeTempSSHKeyFileMock: vi.fn(),
 }));
 
-// The persistent provision-state layer has its own suite (provision-state. test.ts); here it must be inert — its real config reads would wedge inside this file's blanket node:fs/promises mock.
+// The persistent provision-state layer has its own suite (provision-state. test.ts); here it must be inert, its real config reads would wedge inside this file's blanket node:fs/promises mock.
 vi.mock('../renet/provision-state.js', () => ({
   getFreshProvisionEntry: vi.fn(() => Promise.resolve(null)),
   recordProvisionVerified: vi.fn(() => Promise.resolve()),

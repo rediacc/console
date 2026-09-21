@@ -9,7 +9,7 @@
  *   resources.backupStrategies.<s>.include[]       → repository names
  *
  * This module walks each edge and produces a cleaned `RdcConfig` (mutating
- * the input is OK — the caller deep-clones before calling) plus a structured
+ * the input is OK, the caller deep-clones before calling) plus a structured
  * report of what was dropped and what raised a soft warning.
  *
  * Storage destinations (`backupStrategies.<s>.destinations[].storage`) are

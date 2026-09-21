@@ -1,5 +1,5 @@
 /**
- * Release ladder (spec 05 §2) — v1: rung 0 + canary weight templating.
+ * Release ladder (spec 05 §2), v1: rung 0 + canary weight templating.
  *
  *   0. SNAPSHOT   auto group-snap before any release-class mutation (undo)
  *   1. REHEARSE   `cluster rehearse` (landed in P3-w2)
@@ -9,7 +9,7 @@
  * RUNG 0: every release-class mutation here (canary create, weight change)
  * first takes a crash-consistent GROUP snapshot of the cluster's datastores
  * (`datastore_snapshot_create --group`, landed in P1) named
- * `release-undo-<epoch>` — the universal undo. Snapshots accumulate by design;
+ * `release-undo-<epoch>`, the universal undo. Snapshots accumulate by design;
  * retention is the operator's policy (`datastore snapshot list/delete`).
  *
  * CANARY deliberately does NOT fork data: canary users on forked data would
@@ -25,12 +25,12 @@
  * BLUE/GREEN (schema-BREAKING releases) composes the same primitives with a
  * fork instead of shared data: green = instant CoW fork of blue INCLUDING data
  * (`rdc repo fork` / `cluster fork`), pointed at via the same weight mechanism
- * at weight 100. Rollback = restart the untouched CoW parent — but the fork
+ * at weight 100. Rollback = restart the untouched CoW parent, but the fork
  * moment splits history: post-flip writes exist only in green, so the rollback
  * window is a POLICY decision, not magic. For zero-loss major DB upgrades,
  * logical replication (Postgres/MySQL native, cross-version) streams the delta
  * from blue to green until the flip. No `release --strategy` orchestrator in
- * v1 — the primitives compose.
+ * v1, the primitives compose.
  */
 
 import type { CanarySet } from '@rediacc/shared/config-schema';
@@ -67,7 +67,7 @@ export async function releaseUndoSnapshot(
 }
 
 export interface CanaryOptions {
-  /** The repo's config/renet key (`name` or `name:tag`) — the canary's identity. */
+  /** The repo's config/renet key (`name` or `name:tag`), the canary's identity. */
   repo: string;
   /** The repo's cluster, derived from its datastore's backref (spec §2.3). */
   cluster: string;
@@ -198,7 +198,7 @@ export async function createCanary(options: CanaryOptions): Promise<void> {
 }
 
 /**
- * The weight change — rung 2 nudge or the rung 3 flip (weight 100). Takes a
+ * The weight change, rung 2 nudge or the rung 3 flip (weight 100). Takes a
  * fresh rung-0 undo snapshot, re-applies the overlay with the new weight, and
  * updates the set. The router applies the new split on its refresh tick.
  */
@@ -232,7 +232,7 @@ export async function setCanaryWeight(
 
 /**
  * Remove a canary: delete its label-scoped overlay and forget the state. NO
- * datastores to discard — a canary shares the live data. Undo snapshots are
+ * datastores to discard, a canary shares the live data. Undo snapshots are
  * retained (operator policy; prune via "rdc datastore snapshot list/delete").
  */
 export async function removeCanary(repoKey: string, debug?: boolean): Promise<void> {

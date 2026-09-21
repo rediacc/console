@@ -6,7 +6,7 @@
  * chunk-store credential AND as its address book (the session URL is derived
  * from the blob's RenewalURL), so on a bare machine the verb refused exactly
  * where it is needed, and the only way through was creating a throwaway carrier
- * repo first — a trick no operator in a real DR situation would know.
+ * repo first, a trick no operator in a real DR situation would know.
  *
  * These tests drive `localExecutorService.execute()` directly, and that is the
  * point rather than a preference. EVERY command-level restore test mocks the
@@ -74,7 +74,7 @@ vi.mock('../config/config-resources.js', () => ({
   },
 }));
 
-// Only the network- and machine-facing licence verbs are stubbed. `isDatastoreScopedId` stays REAL, so the datastore identity these tests feed has to be one the licence writer — and the skip probe's scope comparison — would also accept.
+// Only the network- and machine-facing licence verbs are stubbed. `isDatastoreScopedId` stays REAL, so the datastore identity these tests feed has to be one the licence writer, and the skip probe's scope comparison, would also accept.
 vi.mock('../account/license.js', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../account/license.js')>()),
   refreshRepoLicensesBatch: mockRefreshRepoLicensesBatch,
@@ -226,7 +226,7 @@ describe('backup restore: licensing the target machine', () => {
     }
   });
 
-  // T1 — the required test. Delete the restore arm at the provisionAndVerify seam, or invert its predicate, and this goes red.
+  // T1, the required test. Delete the restore arm at the provisionAndVerify seam, or invert its predicate, and this goes red.
   it('issues a repo licence before renet runs, on a machine holding none', async () => {
     const result = await localExecutorService.execute(restoreOptions);
 
@@ -234,7 +234,7 @@ describe('backup restore: licensing the target machine', () => {
     expect(mockIssueRepoLicense).toHaveBeenCalledTimes(1);
   });
 
-  // T2 — T1 alone is satisfied by ANY implementation that calls the mint with anything at all. This pins WHICH licence, and it is the assertion that fails if the carrier-repo workaround is ever shipped as the product.
+  // T2, T1 alone is satisfied by ANY implementation that calls the mint with anything at all. This pins WHICH licence, and it is the assertion that fails if the carrier-repo workaround is ever shipped as the product.
   it('licenses the SOURCE guid, in the TARGET datastore scope', async () => {
     await localExecutorService.execute(restoreOptions);
 
@@ -248,7 +248,7 @@ describe('backup restore: licensing the target machine', () => {
     });
   });
 
-  // T2b — the lineage comes from `params.lineage`, and it MUST, because the restored config record carries no grandGuid at all. An implementation that read the record would send `kind: 'grand'` for a fork's restore.
+  // T2b, the lineage comes from `params.lineage`, and it MUST, because the restored config record carries no grandGuid at all. An implementation that read the record would send `kind: 'grand'` for a fork's restore.
   it('takes the lineage from the restore params, so a fork restores as a fork', async () => {
     mockGetRepository.mockResolvedValue({
       repositoryGuid: FORK_CHILD_GUID,
@@ -268,7 +268,7 @@ describe('backup restore: licensing the target machine', () => {
     });
   });
 
-  // T3 — the size cannot come from the machine: the image being licensed does not exist there yet. A stat-based fallback caps a restored 500 GB repo at the 1 GB floor for the rest of its life, because MaxRepositorySizeGb is signed into the payload.
+  // T3, the size cannot come from the machine: the image being licensed does not exist there yet. A stat-based fallback caps a restored 500 GB repo at the 1 GB floor for the rest of its life, because MaxRepositorySizeGb is signed into the payload.
   it('sizes the licence from the snapshot manifest, rounded up', async () => {
     await localExecutorService.execute(restoreOptions);
 
@@ -283,7 +283,7 @@ describe('backup restore: licensing the target machine', () => {
     ).toEqual([]);
   });
 
-  // T3b — control on the direction of the fallback. A manifest index that cannot answer must under-size and SAY so, never refuse: a failed size lookup is not a reason to fail a disaster recovery.
+  // T3b, control on the direction of the fallback. A manifest index that cannot answer must under-size and SAY so, never refuse: a failed size lookup is not a reason to fail a disaster recovery.
   it('falls back to the floor with a warning when the manifest index cannot answer', async () => {
     mockAccountServerFetch.mockRejectedValue(new Error('offline'));
 
@@ -296,7 +296,7 @@ describe('backup restore: licensing the target machine', () => {
     );
   });
 
-  // T4 — negative control. A predicate widened to "any backup verb" would make T1 pass for the wrong reason and would burn an issuance on every read.
+  // T4, negative control. A predicate widened to "any backup verb" would make T1 pass for the wrong reason and would burn an issuance on every read.
   it.each(['backup_list', 'backup_pull', 'backup_snapshot'])(
     'issues nothing for %s',
     async (functionName) => {
@@ -306,7 +306,7 @@ describe('backup restore: licensing the target machine', () => {
     }
   );
 
-  // T5 — the cost control. `claimRepoLicenseIssuanceSlot` dedupes by nothing: not by repo, not by machine. Without the skip probe a DR session that fails three times on an unrelated error spends four monthly issuances.
+  // T5, the cost control. `claimRepoLicenseIssuanceSlot` dedupes by nothing: not by repo, not by machine. Without the skip probe a DR session that fails three times on an unrelated error spends four monthly issuances.
   it('skips issuance when the target already holds a valid licence for the source guid', async () => {
     mockReadRuntimeRepoLicenseStatuses.mockResolvedValue([
       installedLicence(SOURCE_GUID, DATASTORE_ID),
@@ -320,7 +320,7 @@ describe('backup restore: licensing the target machine', () => {
     expect(mockAccountServerFetch).not.toHaveBeenCalled();
   });
 
-  // T5b — the probe must NOT be "any licence on the machine". That reading reproduces the carrier-repo bug from the other direction: issuance skipped, restore passes through renet's any-repo fallback, and the `--up` that follows fails for want of a licence for THIS guid.
+  // T5b, the probe must NOT be "any licence on the machine". That reading reproduces the carrier-repo bug from the other direction: issuance skipped, restore passes through renet's any-repo fallback, and the `--up` that follows fails for want of a licence for THIS guid.
   it('still issues when the machine holds only an unrelated repo licence', async () => {
     mockReadRuntimeRepoLicenseStatuses.mockResolvedValue([
       installedLicence(CARRIER_GUID, DATASTORE_ID),
@@ -332,7 +332,7 @@ describe('backup restore: licensing the target machine', () => {
     expect(mockIssueRepoLicense.mock.calls[0][2]).toMatchObject({ repositoryGuid: SOURCE_GUID });
   });
 
-  // T5c — nor is it "the right guid, anywhere". A blob in a different datastore population is one renet will not read for this restore.
+  // T5c, nor is it "the right guid, anywhere". A blob in a different datastore population is one renet will not read for this restore.
   it('still issues when the right guid is licensed in the WRONG datastore scope', async () => {
     mockReadRuntimeRepoLicenseStatuses.mockResolvedValue([
       installedLicence(SOURCE_GUID, OTHER_DATASTORE_ID),
@@ -343,7 +343,7 @@ describe('backup restore: licensing the target machine', () => {
     expect(mockIssueRepoLicense).toHaveBeenCalledTimes(1);
   });
 
-  // T5d — and an installed-but-invalid blob is not a licence. `runtimeValid` is the field that distinguishes "present" from "usable".
+  // T5d, and an installed-but-invalid blob is not a licence. `runtimeValid` is the field that distinguishes "present" from "usable".
   it('still issues when the installed licence for the guid is not runtime-valid', async () => {
     mockReadRuntimeRepoLicenseStatuses.mockResolvedValue([
       { ...installedLicence(SOURCE_GUID, DATASTORE_ID), status: 'expired', runtimeValid: false },
@@ -372,7 +372,7 @@ describe('backup restore: licensing the target machine', () => {
  * RECOVERY verb. A tier gate on it would mean an expired licence can lock a
  * customer out of their own backed-up data". The tempting shortcut for the fix
  * above is to fold restore into the repo-provisioning class so it inherits the
- * pre-flight for free — and that shortcut reintroduces exactly the lockout the
+ * pre-flight for free, and that shortcut reintroduces exactly the lockout the
  * fix exists to remove, silently, in a diff that looks like a simplification.
  */
 describe('backup_restore is licensed as a restore, never as a provisioning verb', () => {

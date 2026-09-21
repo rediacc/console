@@ -41,7 +41,7 @@ const resources = {
   it: { cli: itCli, [SHARED_NAMESPACE]: sharedTranslations.it },
 };
 
-// Initialize i18n synchronously at module load time so t() returns the right language for command descriptions registered during module import (e.g. `cli.command(...).description(t('...'))`). At this point we can only read synchronous sources — REDIACC_LANG env and CLI-arg sniffing. The richer precedence (config file -> system detect) runs later in cli.ts's preAction
+// Initialize i18n synchronously at module load time so t() returns the right language for command descriptions registered during module import (e.g. `cli.command(...).description(t('...'))`). At this point we can only read synchronous sources, REDIACC_LANG env and CLI-arg sniffing. The richer precedence (config file -> system detect) runs later in cli.ts's preAction
 // hook via configService.getLanguage() and applies to runtime t() calls;
 // help output, which is generated entirely from registration-time strings, only honors what's resolvable synchronously here.
 function detectInitialLanguage(): string {

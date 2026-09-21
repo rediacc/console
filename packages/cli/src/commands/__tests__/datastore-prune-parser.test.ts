@@ -41,7 +41,7 @@ describe('parseDatastorePruneOutput', () => {
   });
 
   it('survives logrus stderr lines interleaved INSIDE the JSON (relay merge)', () => {
-    // The renet relay merges the sub-command's stderr into stdout, so under load a logrus line can land between the pretty-printed JSON's lines — inside the brace span. Observed live on `repo trim` (#424 sequence run):
+    // The renet relay merges the sub-command's stderr into stdout, so under load a logrus line can land between the pretty-printed JSON's lines, inside the brace span. Observed live on `repo trim` (#424 sequence run):
     // parse failed with `time="…" level=info msg="Starting..."` in the capture.
     const pretty = JSON.stringify(JSON.parse(RESOURCES_JSON), null, 2).split('\n');
     const interleaved = [

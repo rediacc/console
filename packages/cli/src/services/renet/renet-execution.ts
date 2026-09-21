@@ -46,7 +46,7 @@ export interface RenetSpawnOptions {
  * path doesn't exist (e.g. stale config from another OS or worktree).
  */
 function resolveRenetPath(configuredPath: string): string {
-  // Absolute path — verify it exists before using it
+  // Absolute path, verify it exists before using it
   if (path.isAbsolute(configuredPath)) {
     try {
       fsSync.accessSync(configuredPath);
@@ -56,7 +56,7 @@ function resolveRenetPath(configuredPath: string): string {
     }
   }
 
-  // Bare name or missing absolute — resolve via PATH (handles .exe on Windows)
+  // Bare name or missing absolute, resolve via PATH (handles .exe on Windows)
   const cmd = process.platform === 'win32' ? 'where' : 'which';
   const name = path.isAbsolute(configuredPath) ? 'renet' : configuredPath;
   try {
@@ -153,7 +153,7 @@ export async function verifyMachineSetup(
   const cached = setupCache.get(cacheKey);
   if (cached && Date.now() - cached < SETUP_CACHE_TTL_MS) return;
 
-  // Persistent-state second: a recent rdc process may have verified setup on this machine already — skip both SSH round-trips (marker + btrfs check).
+  // Persistent-state second: a recent rdc process may have verified setup on this machine already, skip both SSH round-trips (marker + btrfs check).
   if (await isSetupVerifiedFresh(cacheKey).catch(() => false)) {
     setupCache.set(cacheKey, Date.now());
     return;

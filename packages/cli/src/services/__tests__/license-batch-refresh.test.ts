@@ -228,7 +228,7 @@ describe('refreshRepoLicensesBatch', () => {
   }
 
   it('does NOT force re-issuance for invalid_signature (dates preserved, no reissue loop)', async () => {
-    // Per the per-signer layout, a foreign file is never selected — so an invalid_signature means the machine's OWN key cannot validate its own file. That must fail fast at operate time, not loop reissuing here.
+    // Per the per-signer layout, a foreign file is never selected, so an invalid_signature means the machine's OWN key cannot validate its own file. That must fail fast at operate time, not loop reissuing here.
     seedSingleRepoWithStatus('invalid_signature');
 
     mockAccountServerFetch.mockResolvedValueOnce({
@@ -239,7 +239,7 @@ describe('refreshRepoLicensesBatch', () => {
 
     expect(result.invalidSignatureDetected).toBe(0);
 
-    // Dates are PRESERVED — the server is free to return "unchanged".
+    // Dates are PRESERVED, the server is free to return "unchanged".
     const repo = mockAccountServerFetch.mock.calls[0][1].body.repos[0];
     expect(repo.currentRefreshRecommendedAt).toBe('2099-01-01T00:00:00.000Z');
     expect(repo.currentHardExpiresAt).toBe('2099-02-01T00:00:00.000Z');
@@ -298,7 +298,7 @@ describe('refreshRepoLicensesBatch', () => {
 
     const result = await refreshRepoLicensesBatch(machine, 'dummy-key', '/usr/bin/renet');
 
-    // Should still work — dates are sent normally when license-status fails
+    // Should still work, dates are sent normally when license-status fails
     expect(result.invalidSignatureDetected).toBe(0);
     expect(result.issued).toBe(1);
   });

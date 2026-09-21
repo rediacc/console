@@ -207,7 +207,7 @@ export async function evictCluster(
   const held = await attachedDatastoresOn(machineName);
   if (held.length > 0) {
     // Single-mounter safety (spec 03 §5.5): refuse a node that still mounts a
-    // named datastore, unless --force — the honest path for a DEAD node whose
+    // named datastore, unless --force, the honest path for a DEAD node whose
     // datastore must be recovered/fenced separately (it will not detach cleanly).
     if (options.force) {
       outputService.warn(

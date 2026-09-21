@@ -14,14 +14,14 @@
  * `config reconcile` is what re-syncs the hint after the world moves underneath it.
  *
  * ★ AND HERE IS WHAT THE READS ACTUALLY DO, because this comment used to claim that
- * "every read here tolerates a stale hint instead of trusting it blindly" — and that is
+ * "every read here tolerates a stale hint instead of trusting it blindly", and that is
  * NOT TRUE. `resolve-machine.ts` throws `stateMismatch` when `attachedTo` is ABSENT; when
  * it is PRESENT it returns that machine with no check that the machine exists or that the
  * datastore is mounted there. A missing hint is caught. A LYING hint is trusted.
  *
  * `cluster destroy` no longer leaves one behind (#89 clears the observation for every
- * datastore the cluster owned), but any other source of staleness — a hand-deleted VM, a
- * crashed provision — still produces a hint the reads will follow. Hardening the read to
+ * datastore the cluster owned), but any other source of staleness, a hand-deleted VM, a
+ * crashed provision, still produces a hint the reads will follow. Hardening the read to
  * verify the machine/mount is P5. Until then: this comment describes the code, not the
  * intention. A comment that promises a mitigation the code does not implement is worse than
  * no comment, because it stops the next person from looking.
@@ -90,7 +90,7 @@ export async function listDatastoreState(): Promise<Record<string, DatastoreStat
  * `map[key]` lies: the repo does not enable `noUncheckedIndexedAccess`, so a missing
  * key is typed as present while yielding undefined at runtime. Every absence check in
  * this file guards a real runtime case, and going through this helper is what keeps
- * them type-legal — annotating the variable is not enough, because TypeScript narrows
+ * them type-legal, annotating the variable is not enough, because TypeScript narrows
  * a const back to the initializer's (lying) type.
  */
 export function at<T>(map: Record<string, T>, key: string): T | undefined {
@@ -149,7 +149,7 @@ export async function forgetDatastore(name: string): Promise<void> {
   await configFileStorage.update(configService.getEffectiveConfigName(), (cfg) => {
     const datastores = { ...(cfg.resources?.datastores ?? {}) };
     delete datastores[name];
-    // #89, swept: the observation goes with the declaration. The delete path happens to clear the hint first (via setDatastoreState) whenever the datastore is attached, so this was not reachable in practice — but that made it a trap, not a non-bug: it relied on every caller remembering, and `forget` means forget. Clearing both halves here is what makes the invariant hold no matter
+    // #89, swept: the observation goes with the declaration. The delete path happens to clear the hint first (via setDatastoreState) whenever the datastore is attached, so this was not reachable in practice, but that made it a trap, not a non-bug: it relied on every caller remembering, and `forget` means forget. Clearing both halves here is what makes the invariant hold no matter
     // who calls it.
     const stateDatastores = { ...(cfg.state?.datastores ?? {}) };
     delete stateDatastores[name];

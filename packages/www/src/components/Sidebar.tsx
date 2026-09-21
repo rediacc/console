@@ -64,7 +64,7 @@ const useSidebarBodyLock = (isOpen: boolean, sidebarRef: React.RefObject<HTMLEle
       document.body.classList.add('sidebar-active');
       document.body.style.overflow = 'hidden';
       window.plausible?.('sidebar_toggle', { props: { action: 'open' } });
-      // Focus the first interactive element in the visual order — usually the Account CTA at the top of the sidebar, not the first .sidebar-link.
+      // Focus the first interactive element in the visual order, usually the Account CTA at the top of the sidebar, not the first .sidebar-link.
       const firstTabbable = sidebarRef.current?.querySelector<HTMLElement>(FOCUSABLE_SELECTOR);
       firstTabbable?.focus();
     } else {

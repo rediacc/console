@@ -129,7 +129,7 @@ async function handleUpdateResult(
  * Handle the update execution flow.
  */
 async function handleUpdate(force: boolean): Promise<void> {
-  // applyPendingUpdate may already have replaced the on-disk binary at startup (index.ts:62). When that happened, the in-memory VERSION constant is the OLD version (baked into the binary that just got replaced), so a naive "VERSION vs manifest" comparison would falsely decide we are still outdated and run selfReplace again — that overwrites .old with the same new version, leaving
+  // applyPendingUpdate may already have replaced the on-disk binary at startup (index.ts:62). When that happened, the in-memory VERSION constant is the OLD version (baked into the binary that just got replaced), so a naive "VERSION vs manifest" comparison would falsely decide we are still outdated and run selfReplace again, that overwrites .old with the same new version, leaving
   // `current` and `.old` at the same bytes and turning `rdc update --rollback` into a silent no-op.
   //
   // We still call checkForUpdate() so that a release published AFTER the staged version (e.g. startup applied 1.0.7, manifest now at 1.0.8) is not silently missed. The decision uses the effective post-apply version (`appliedAtStartup ?? VERSION`) instead of the stale in-memory VERSION.
@@ -141,7 +141,7 @@ async function handleUpdate(force: boolean): Promise<void> {
 
   // Effective current = post-apply version if applyPendingUpdate ran this
   // process; otherwise the binary's compiled-in VERSION. checkResult's
-  // updateAvailable was computed against the stale in-memory VERSION, so recompute against the effective one — this is what catches "manifest is newer than what we just applied" without re-installing the same version.
+  // updateAvailable was computed against the stale in-memory VERSION, so recompute against the effective one, this is what catches "manifest is newer than what we just applied" without re-installing the same version.
   const effectiveCurrent = appliedAtStartup ?? VERSION;
   const newerAvailable =
     !!checkResult.latestVersion && compareVersions(effectiveCurrent, checkResult.latestVersion) < 0;

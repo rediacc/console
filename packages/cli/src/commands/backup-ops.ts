@@ -179,7 +179,7 @@ async function runBackupNow(
 
 /** Try to cancel a single systemd unit if active. Returns true if cancelled. */
 async function tryCancelUnit(sftp: SFTPClient, unit: string, debug?: boolean): Promise<boolean> {
-  // Only a running unit is worth stopping — a failed one has already exited, so `systemctl stop` on it would be a no-op reported as a cancellation.
+  // Only a running unit is worth stopping, a failed one has already exited, so `systemctl stop` on it would be a no-op reported as a cancellation.
   const state = await readServiceState(sftp, unit);
   if (state !== 'active' && state !== 'activating') return false;
   outputService.info(t('commands.backup.cancel.cancelling', { name: unit }));
@@ -248,7 +248,7 @@ async function cancelStrategyUnits(sftp: SFTPClient, name: string, debug?: boole
  * Returns the state verbatim rather than a boolean. Collapsing it to
  * active-or-not made a FAILED unit render exactly like a healthy idle one, which
  * is how a backup stayed broken for six days while this command kept reporting
- * "idle" — the string systemd hands back already said `failed`, and the old code
+ * "idle", the string systemd hands back already said `failed`, and the old code
  * threw it away one line later.
  */
 async function readServiceState(sftp: SFTPClient, serviceName: string): Promise<string> {

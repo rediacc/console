@@ -1,5 +1,5 @@
 /**
- * `rdc datastore` — named, mobile, single-mounter pools (spec 02 §1, 03 §5.3).
+ * `rdc datastore`, named, mobile, single-mounter pools (spec 02 §1, 03 §5.3).
  *
  * ★ #34: this family used to dispatch `datastore_init` / `datastore_ceph_init`,
  * which DO NOT EXIST in renet, and `fork`/`unfork` were leaves whose entire body
@@ -106,7 +106,7 @@ async function captureDatastoreRecord(
  * and adopt earns it: one registry row, no disk work, idempotent on a name
  * already present (adopt.go:61-62), so a resumed relocation converges. With the
  * adopt last, a malformed record or an unreachable target still strands the
- * datastore attached nowhere — the same bug, one step later.
+ * datastore attached nowhere, the same bug, one step later.
  */
 async function ferryDatastoreRecord(
   from: string,
@@ -115,7 +115,7 @@ async function ferryDatastoreRecord(
   debug?: boolean
 ): Promise<void> {
   const record = await captureDatastoreRecord(from, ref, debug);
-  // A local-backend datastore's bytes never leave their machine, so relocating one is not something that can be half-done — it is something that must not start. renet refuses it too (adopt.go:44-46), but only after this command would already have detached.
+  // A local-backend datastore's bytes never leave their machine, so relocating one is not something that can be half-done, it is something that must not start. renet refuses it too (adopt.go:44-46), but only after this command would already have detached.
   if (record.backend !== 'ceph') {
     const backend = record.backend ?? DEFAULTS.DATASTORE.BACKEND;
     throw new ValidationError(
@@ -355,7 +355,7 @@ function registerAttach(datastore: Command): void {
             await ferryDatastoreRecord(current, options.to, ref, options.debug);
             await dispatch('datastore_detach', current, { name: ref }, { debug: options.debug });
           } else if (entry?.lastHolder && entry.lastHolder !== options.to) {
-            // DETACHED relocation. Nothing holds the datastore, so there is no detach to do — but the registry row still exists only on the machine that last had it, so the attach below would fail "not registered" exactly as the attached case used to. `lastHolder` is recorded at
+            // DETACHED relocation. Nothing holds the datastore, so there is no detach to do, but the registry row still exists only on the machine that last had it, so the attach below would fail "not registered" exactly as the attached case used to. `lastHolder` is recorded at
             // detach time for this arm alone; without it the CLI has no idea which
             // registry to ferry from, and guessing is how you fence a live holder.
             await ferryDatastoreRecord(entry.lastHolder, options.to, ref, options.debug);
@@ -427,7 +427,7 @@ function registerAttach(datastore: Command): void {
           { name: ref, ...(options.discard && { discard: true }) },
           { debug: options.debug }
         );
-        // Remember WHO held it. renet's registry row — the ceph pool/image record a later relocation has to ferry — survives only on that machine, so a detached datastore that forgets its last holder cannot be attached anywhere else: `datastore attach --to <other>` fails "not registered on this machine" and the CLI has nowhere to fetch the row from. The whole entry is replaced
+        // Remember WHO held it. renet's registry row, the ceph pool/image record a later relocation has to ferry, survives only on that machine, so a detached datastore that forgets its last holder cannot be attached anywhere else: `datastore attach --to <other>` fails "not registered on this machine" and the CLI has nowhere to fetch the row from. The whole entry is replaced
         // rather than merged because every OTHER field describes an attachment that no longer exists. A --discard detach drops this again a line below: forgetDatastore clears both halves, which is right, since there is no longer a datastore to relocate.
         await setDatastoreState(ref, { lastHolder: host });
         if (options.discard) {

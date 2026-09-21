@@ -324,7 +324,7 @@ export function buildVSCodeSSHConfigEntry(options: BuildSSHConfigOptions): SSHCo
     });
   }
 
-  // Sandbox is enforced server-side via ForceCommand in authorized_keys. No client-side RemoteCommand needed for sandbox — the gateway reads REDIACC_REPOSITORY from SetEnv to determine which repo to sandbox.
+  // Sandbox is enforced server-side via ForceCommand in authorized_keys. No client-side RemoteCommand needed for sandbox, the gateway reads REDIACC_REPOSITORY from SetEnv to determine which repo to sandbox.
 
   const entry: SSHConfigEntry = {
     host: connectionHost,

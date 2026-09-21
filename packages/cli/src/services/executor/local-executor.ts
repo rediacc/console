@@ -243,7 +243,7 @@ interface DatastoreScopeOptions {
    * decides where a license nobody has minted yet will land, and a wrong guess
    * spends an activation on an unreadable blob. False on the POST-CREATE
    * refresh, where renet's own scan is the authority and this resolution is
-   * only a fallback for a scan that cannot answer — refusing there would fail
+   * only a fallback for a scan that cannot answer, refusing there would fail
    * an operation that has already succeeded.
    */
   required: boolean;
@@ -257,14 +257,14 @@ interface DatastoreScopeOptions {
  * touch does. `refreshRepoLicenseIdentity` reads the identity out of renet's
  * own license scan, which walks repos that exist; here the repo is about to be
  * created and the scan is empty by construction. The DATASTORE, however, does
- * exist, and it is the thing that carries the identity — so we ask the machine
+ * exist, and it is the thing that carries the identity, so we ask the machine
  * registry for it.
  *
  * Getting this wrong is expensive and silent, and it happened live: `repo
  * create --datastore <d>` minted the license (slot claimed, meter moved) and
  * wrote it to the unscoped `repos/<guid>/` path, while renet's create-tier
  * check for a datastore-resident repo reads ONLY
- * `datastores/<id>/repos/<guid>/` — a clean break, no dual read. renet exited
+ * `datastores/<id>/repos/<guid>/`, a clean break, no dual read. renet exited
  * 10 LICENSE_REQUIRED and the repo rolled back, having spent an issuance on a
  * blob nothing would ever read.
  *
@@ -360,7 +360,7 @@ async function resolveRepoLicenseContext(
   //
   // A `stat`-based fingerprint used to be computed on this path and it was dead code that was ALSO wrong: `storageFingerprint` is a signed payload field whose exact bytes renet re-derives (pkg/license/identity.go, `kind:size:mtime:mode` over Go's FileMode), and no `stat -c` format string produces them. One producer of those bytes now, and it is renet's scan.
   //
-  // The datastore identity is the exception, and it is resolved here rather than scanned: see resolveProvisioningDatastoreId. For a tag-targeted verb (fork, commit) the placement read is the SOURCE repo's, which is the right one — a fork lands in the datastore its parent lives in, and placement is a property of the family, not of the tag.
+  // The datastore identity is the exception, and it is resolved here rather than scanned: see resolveProvisioningDatastoreId. For a tag-targeted verb (fork, commit) the placement read is the SOURCE repo's, which is the right one, a fork lands in the datastore its parent lives in, and placement is a property of the family, not of the tag.
   const built = buildRepoLicenseContext(functionName, params, repo, requestedSizeGb);
   if (!built) return null;
   const ctx: RepoLicenseContext = { ...built, datastoreMount };
@@ -382,7 +382,7 @@ async function resolveRepoLicenseContext(
  *   the licence minted here is the one `repository_up` will look for after the
  *   restore, so `--up` works and nothing is orphaned.
  * - The lineage comes from `params.lineage`, NOT from the record. The restored
- *   record carries no `grandGuid` at all — `addRepository` is called with five
+ *   record carries no `grandGuid` at all, `addRepository` is called with five
  *   fields and that is not one of them, and `grandGuid` is stored, never
  *   derived (resource-state.ts). `params.lineage` is the same value the command
  *   computed (`source.grandGuid ?? source.repositoryGuid`) and hands to the
@@ -415,7 +415,7 @@ async function resolveRestoreLicenseContext(
   const lineage = typeof params.lineage === 'string' && params.lineage ? params.lineage : undefined;
   const grandGuid = lineage ?? repo.grandGuid ?? repositoryGuid;
 
-  // Size is deliberately NOT resolved here. It costs a round trip to the account server, and the caller's skip probe may decide no licence needs issuing at all — in which case that round trip buys nothing.
+  // Size is deliberately NOT resolved here. It costs a round trip to the account server, and the caller's skip probe may decide no licence needs issuing at all, in which case that round trip buys nothing.
   const ctx: Omit<RepoLicenseContext, 'requestedSizeGb'> = {
     repositoryGuid,
     grandGuid,
@@ -429,7 +429,7 @@ async function resolveRestoreLicenseContext(
 
 /**
  * Whether the target already holds a usable licence for the repo about to be
- * restored — in which case issuance is skipped entirely.
+ * restored, in which case issuance is skipped entirely.
  *
  * This is a cost control, and it is part of the fix rather than a refinement.
  * `claimRepoLicenseIssuanceSlot` is unconditional on the single-issue path and
@@ -462,7 +462,7 @@ async function restoreLicenseAlreadyInstalled(
     remoteRenetPath,
     sftp
   ).catch(() => []);
-  // Both sides normalised through the same predicate the licence WRITER uses, so an empty string, a missing field and a malformed id all collapse to the unscoped population — which is the population they would actually be written to.
+  // Both sides normalised through the same predicate the licence WRITER uses, so an empty string, a missing field and a malformed id all collapse to the unscoped population, which is the population they would actually be written to.
   const wanted = isDatastoreScopedId(ctx.datastoreId) ? ctx.datastoreId : undefined;
   return statuses.some(
     (entry) =>
@@ -477,7 +477,7 @@ async function restoreLicenseAlreadyInstalled(
  * restore is about to materialise.
  *
  * `resolveRequestedSizeGb` cannot answer this one: it `stat`s the repo image,
- * and on a restore that image does not exist yet — on a DR machine nothing
+ * and on a restore that image does not exist yet, on a DR machine nothing
  * does. It would fall back to the 1 GB floor and cap the restored repo at 1 GB
  * for the rest of its life, because `MaxRepositorySizeGb` is signed into the
  * payload and read back by renet's `repository_limits`.
@@ -572,7 +572,7 @@ function buildRepoLicenseContext(
  * `/mnt/rediacc-ds/<d>/repositories/<guid>`, and reading the machine default
  * for it is the same #74 mistake the dispatch path made: the config records one
  * place and the machine is asked about another. It was still live here, on the
- * size probe below, and it failed SILENTLY rather than loudly — the stat found
+ * size probe below, and it failed SILENTLY rather than loudly, the stat found
  * nothing, the old `|| echo ${REPO_SIZE_PROBE_UNKNOWN}` turned that into 0 bytes, and every fork or
  * commit of a named-datastore repo was pre-issued a licence for the 1 GB floor
  * regardless of the repo's real size. Neither verb exposes `--size`, so that
@@ -580,7 +580,7 @@ function buildRepoLicenseContext(
  *
  * Placement is a property of the FAMILY, and the flat per-tag records carry a
  * copy of it (resource-state.ts flattening), so `repo.placement` answers for a
- * fork's parent as well — which is the repo this probe measures.
+ * fork's parent as well, which is the repo this probe measures.
  */
 function repoImageDatastoreMount(
   repo: RepositoryConfig | null | undefined,
@@ -616,7 +616,7 @@ async function resolveRequestedSizeGb(
   // Sized from the PARENT image in every case, fork included: a fork has no image of its own yet, and it starts as a reflink of its parent.
   if (!repositoryGuid) return null;
   const imagePath = `${datastore}/repositories/${repositoryGuid}`;
-  // A sentinel, not `|| echo 0`. Under the old probe a stat that failed for ANY reason — wrong datastore, unreadable mount, missing image — produced the same bytes as a genuinely tiny image, and the caller then reported the 1 GB floor with the confidence of a measurement. The sentinel keeps "we did not measure" expressible, which is the whole point of the distinction.
+  // A sentinel, not `|| echo 0`. Under the old probe a stat that failed for ANY reason, wrong datastore, unreadable mount, missing image, produced the same bytes as a genuinely tiny image, and the caller then reported the 1 GB floor with the confidence of a measurement. The sentinel keeps "we did not measure" expressible, which is the whole point of the distinction.
   const probe = (
     await sftp.exec(
       `stat -c %s ${shellQuote(imagePath)} 2>/dev/null || echo ${REPO_SIZE_PROBE_UNKNOWN}`
@@ -633,7 +633,7 @@ async function resolveRequestedSizeGb(
 }
 
 /**
- * Say out loud that the licence size is a floor rather than a measurement —
+ * Say out loud that the licence size is a floor rather than a measurement ,
  * but only where the image was supposed to be there to measure.
  *
  * For `repository_create` the probe targets a repo that does not exist yet by
@@ -703,7 +703,7 @@ function extractStepsFromOutput(output: string): StepEntry[] | undefined {
 
 const MAX_FAILURE_REASON_CHARS = 300;
 
-// Parser patterns for renet output lines — not user-facing strings.
+// Parser patterns for renet output lines, not user-facing strings.
 const COBRA_ERROR_PREFIX = 'Error: ';
 const LOGRUS_LINE_PREFIX = 'time="';
 
@@ -746,7 +746,7 @@ function echoRenetFailure(exitCode: number, combined: string, options: ExecuteOp
  *
  * renet's output is otherwise echoed only on failure (above) or under --debug, so a
  * command that succeeded while warning that it had silently skipped half its job said
- * nothing at all to the operator — which is how a datastore could report "attached"
+ * nothing at all to the operator, which is how a datastore could report "attached"
  * while its CSI enablement had been skipped and every future PVC would hang Pending
  * (#86). A warning nobody can see is not a warning.
  *
@@ -773,14 +773,14 @@ function surfaceRenetWarnings(exitCode: number, combined: string, options: Execu
  * `renet datastore list --json`, ceph_client_config_export ->
  * `renet ceph client config export --json`) has its sub-process stdout RELAYED
  * by `renet functions once` with a `[function] ` line prefix, so the captured
- * `result.stdout` is `[datastore_list] [ ... ]`, not raw JSON — a plain
+ * `result.stdout` is `[datastore_list] [ ... ]`, not raw JSON, a plain
  * `JSON.parse` dies with `Unexpected token '['/'{'`. Strip the relay prefix per
  * line, then extract the JSON object/array payload (first `{`/`[` to its matching
  * last `}`/`]`), tolerating interleaved logrus lines outside the payload.
- * `cleanOutputLines` cannot be reused here — it deliberately DROPS JSON lines.
+ * `cleanOutputLines` cannot be reused here, it deliberately DROPS JSON lines.
  *
- * The prefix strip matches ONLY a bridge-function relay prefix — `[<name>] ` with
- * `<name>` a snake_case identifier — never a JSON array. An earlier `[^\]]+`
+ * The prefix strip matches ONLY a bridge-function relay prefix, `[<name>] ` with
+ * `<name>` a snake_case identifier, never a JSON array. An earlier `[^\]]+`
  * strip ate a whole single-line array payload `[{...},{...}]` (whose only `]` is
  * the closing bracket), turning a valid `datastore list --json` capture into "no
  * JSON payload"; anchoring to an identifier fixes that (a JSON array's first char
@@ -997,7 +997,7 @@ function createStdoutHandler(
  * renet subprocess launched over SSH. Shared by the `renet execute`
  * path (buildRemoteRenetCommand) and the `renet list all` path
  * (machine-status.ts) so both invocations get the same telemetry
- * handling — emit spans/metrics/logs when OTLP creds were fetched, or
+ * handling, emit spans/metrics/logs when OTLP creds were fetched, or
  * go default-deny when the user opted out via CI / REDIACC_TELEMETRY_DISABLED.
  *
  * Returns a trailing-space string ready to splice into the command, or
@@ -1015,7 +1015,7 @@ export function buildRenetEnvPrefix(params: {
    */
   envSecrets?: Record<string, string>;
   /**
-   * Remote KUBECONFIG path when the target is a cluster — the k8s analog of
+   * Remote KUBECONFIG path when the target is a cluster, the k8s analog of
    * DOCKER_HOST. The `renet kube` wrapper reads it to talk to the cluster.
    */
   kubeconfig?: string;
@@ -1030,7 +1030,7 @@ export function buildRenetEnvPrefix(params: {
     envParts.push(`KUBECONFIG=${shellQuote(kubeconfig)}`);
   }
   if (telemetryDisabled) {
-    // Propagate the opt-out to renet. When set, renet skips its OTel SDK setup entirely (see pkg/telemetry/telemetry.go:disabled). We deliberately do NOT pass OTLP creds in this branch — even if the caller passed `otlpCreds`, ignoring them here matches the user's intent to send zero telemetry from any process.
+    // Propagate the opt-out to renet. When set, renet skips its OTel SDK setup entirely (see pkg/telemetry/telemetry.go:disabled). We deliberately do NOT pass OTLP creds in this branch, even if the caller passed `otlpCreds`, ignoring them here matches the user's intent to send zero telemetry from any process.
     envParts.push('REDIACC_TELEMETRY_DISABLED=1');
   } else if (otlpCreds) {
     envParts.push(`REDIACC_OTLP_USER=${shellQuote(otlpCreds.user)}`);
@@ -1053,7 +1053,7 @@ export function buildRenetEnvPrefix(params: {
  * without constructing a full LocalExecutorService with SFTP mocks.
  *
  * When `telemetryDisabled` is true, `REDIACC_TELEMETRY_DISABLED=1` is
- * injected INSTEAD OF OTLP credentials — the user's opt-out takes
+ * injected INSTEAD OF OTLP credentials, the user's opt-out takes
  * precedence over any credentials the caller may have pre-fetched.
  */
 export function buildRemoteRenetCommand(params: {
@@ -1336,7 +1336,7 @@ class LocalExecutorService {
    *
    * Best-effort throughout. A machine can never refresh its own licences (renet
    * only verifies them; issuance is CLI-side), so this is the only proactive
-   * path — but it can only run where the operator's subscription token lives,
+   * path, but it can only run where the operator's subscription token lives,
    * and it stays silent when there is none.
    */
   private async maybeRefreshRepoLicenses(
@@ -1346,7 +1346,7 @@ class LocalExecutorService {
     remoteRenetPath: string,
     sftp: SFTPClient
   ): Promise<void> {
-    // The ENTIRE body is best-effort. This runs on every machine-touching command as a side-effect of doing something else, so nothing in here — token lookup, local state IO, the network call — may surface as a failure of the command the operator actually asked for.
+    // The ENTIRE body is best-effort. This runs on every machine-touching command as a side-effect of doing something else, so nothing in here, token lookup, local state IO, the network call, may surface as a failure of the command the operator actually asked for.
     try {
       if (getSubscriptionTokenState().kind !== 'ready') return;
 
@@ -1453,7 +1453,7 @@ class LocalExecutorService {
    * This is the disaster-recovery case, and it is the whole point: the target
    * of a real restore is a fresh replacement box. renet's `resolveRestoreLicense`
    * accepts ANY installed blob on the machine, so the pre-existing remedy was
-   * to create a throwaway carrier repo first — which no operator in a DR
+   * to create a throwaway carrier repo first, which no operator in a DR
    * situation would know, and which is precisely what this removes. The licence
    * is issued silently, as one timed step, exactly as provisioning renders one.
    *
@@ -1774,7 +1774,7 @@ class LocalExecutorService {
   /**
    * Resolve env-mode per-repo secrets for the focal repository, prefixed
    * `REDIACC_SECRET_<NAME>`. Returns undefined when no repo is targeted.
-   * File-mode secrets are out of band — they ride the vault stdin (Step 6),
+   * File-mode secrets are out of band, they ride the vault stdin (Step 6),
    * not the shell prefix, so they never appear in `ps`.
    */
   private async resolveEnvSecrets(
@@ -1801,7 +1801,7 @@ class LocalExecutorService {
     vault: string,
     options: ExecuteOptions
   ): Promise<ExecuteResult> {
-    // Fetch OTLP credentials so renet inherits them as env vars and its telemetry init picks them up. Skip the fetch entirely when telemetry is opted out — no wasted network round-trip, no credentials in memory to accidentally propagate downstream. `buildRemoteCommand`
+    // Fetch OTLP credentials so renet inherits them as env vars and its telemetry init picks them up. Skip the fetch entirely when telemetry is opted out, no wasted network round-trip, no credentials in memory to accidentally propagate downstream. `buildRemoteCommand`
     // still injects `REDIACC_TELEMETRY_DISABLED=1` for the remote end.
     const otlpCreds = isTelemetryDisabled() ? null : await fetchOtlpCredentials();
     const repoRef =
@@ -1822,7 +1822,7 @@ class LocalExecutorService {
     let stdout = '';
     let stderr = '';
     const stdoutHandler = createStdoutHandler(options, collector);
-    // Renet routes diagnostics (lifecycle brackets, relayed sub-command stderr) to ITS stderr so they can never interleave with parseable stdout. Echo them live in interactive text mode — to OUR stderr, same "stdout belongs to the command" rule as createStdoutHandler.
+    // Renet routes diagnostics (lifecycle brackets, relayed sub-command stderr) to ITS stderr so they can never interleave with parseable stdout. Echo them live in interactive text mode, to OUR stderr, same "stdout belongs to the command" rule as createStdoutHandler.
     const echoStderrLive = Boolean(!options.captureOutput && !options.eventsMode);
     // Quiet logrus lines are WITHHELD from the live terminal and replayed only if the command fails. They were 227-358 columns wide and wrapped into garbage in every tutorial recording; dropping them outright is worse and was tried (see daemon/client.ts), because a failing child explains itself at info level. REDIACC_DEBUG restores the old firehose.
     //
@@ -2060,7 +2060,7 @@ class LocalExecutorService {
     };
 
     if (isRepoProvisioningFunction(options.functionName)) {
-      // License issuance only needs the provisioned renet binary, not the verified machine setup — run it concurrently with verification.
+      // License issuance only needs the provisioned renet binary, not the verified machine setup, run it concurrently with verification.
       const runLicense = async () => {
         const licStart = Date.now();
         await timedStep(t('timing.step.activating'), 'timing.step.licenseActivated', () =>
@@ -2134,7 +2134,7 @@ class LocalExecutorService {
     const vault = buildLocalVault({
       functionName: options.functionName,
       machineName: options.machineName,
-      // #74: a caller that KNOWS the repo's placement declares its datastore here, and it must land in the MACHINE VAULT — that is the only datastore renet ever reads (`p.Datastore()` -> `machineDatastore`, set by WithMachineVault). A `datastore` PARAM would not do it: `repository_create` resolves the datastore through AddDatastore, which reads the vault, not the params bag. The
+      // #74: a caller that KNOWS the repo's placement declares its datastore here, and it must land in the MACHINE VAULT, that is the only datastore renet ever reads (`p.Datastore()` -> `machineDatastore`, set by WithMachineVault). A `datastore` PARAM would not do it: `repository_create` resolves the datastore through AddDatastore, which reads the vault, not the params bag. The
       // fallback below is untouched and still correct: a machine with no named datastore keeps its own default. This only lets a caller stop staying silent.
       machine: options.datastore ? { ...machine, datastore: options.datastore } : machine,
       sshPrivateKey,

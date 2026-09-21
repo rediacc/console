@@ -9,8 +9,8 @@
  *
  * The provider abstraction exists because the server implementation is
  * swappable (openvscode-server today, code-server or other OSS forks
- * tomorrow). Everything implementation-specific — artifact pins, launch
- * argv, auth mechanism, URL shape, ready probe, settings seeding — lives
+ * tomorrow). Everything implementation-specific, artifact pins, launch
+ * argv, auth mechanism, URL shape, ready probe, settings seeding, lives
  * behind this interface; install/launch/tunnel orchestration is shared.
  *
  * Licensing note: only redistributable servers belong here (openvscode and
@@ -23,7 +23,7 @@ export type ServerPlatform = 'linux-x64' | 'linux-arm64';
 export interface ServerArtifact {
   /** Pinned release URL (mirror to R2 by changing only this). */
   url: string;
-  /** sha256 of the tarball — verified by `renet vscode-server install`. */
+  /** sha256 of the tarball, verified by `renet vscode-server install`. */
   sha256: string;
   /** tar --strip-components depth so binaries land directly in installDir. */
   stripComponents: number;
@@ -79,7 +79,7 @@ export interface VSCodeServerProvider {
   seedSettings(options: { repoName: string }): SeededFile[];
 }
 
-/** Shared base for install paths — must stay under the sandbox-readable /usr. */
+/** Shared base for install paths, must stay under the sandbox-readable /usr. */
 export const VSCODE_SERVER_INSTALL_ROOT = '/usr/lib/rediacc/vscode';
 
 /** Default workbench settings shared by all providers. */

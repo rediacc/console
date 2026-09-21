@@ -56,7 +56,7 @@ const commandContext = new Map<string, { startTime: number }>();
  */
 let telemetryReady: Promise<void> = Promise.resolve();
 
-// formatDuration removed — timeline handles all timing display
+// formatDuration removed, timeline handles all timing display
 
 // Telemetry is initialized in the preAction hook after `fetchOtlpCredentials()` resolves so the OTel SDK is constructed with the correct per-region auth header from the start. Before that, any telemetry calls are no-ops.
 
@@ -245,7 +245,7 @@ export function createCli(): Command {
       // awaited here on EVERY invocation; it now runs CONCURRENTLY with the
       // command. Ordering inside the chain is unchanged (credentials before
       // `initialize()` so the exporter gets its auth header; user context
-      // after initialize). Executor paths that inject the credentials into renet env await the same memoized fetch, and the postAction hook awaits this chain before ending the command span, so no telemetry is lost — the span's duration comes from the startTime captured here.
+      // after initialize). Executor paths that inject the credentials into renet env await the same memoized fetch, and the postAction hook awaits this chain before ending the command span, so no telemetry is lost, the span's duration comes from the startTime captured here.
       const commandName = getFullCommandName(actionCommand);
       const startTime = Date.now();
       commandContext.set(commandName, { startTime });
@@ -276,7 +276,7 @@ export function createCli(): Command {
     .hook('postAction', async (_thisCommand, actionCommand) => {
       // Timeline rendering handles timing display for executor commands. No additional "Completed in X (total: Y)" message needed.
 
-      // The deferred telemetry chain from preAction must land before the command span is closed — for fast commands it may still be in flight.
+      // The deferred telemetry chain from preAction must land before the command span is closed, for fast commands it may still be in flight.
       await telemetryReady;
 
       // Stop profiling before ending telemetry

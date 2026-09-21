@@ -206,7 +206,7 @@ async function handleRepoCreateOnMachine(
 }
 
 /**
- * `repo create <name> --datastore <d>`: a repo on a NAMED datastore — docker
+ * `repo create <name> --datastore <d>`: a repo on a NAMED datastore, docker
  * tiering (backref unset) or the kubernetes cluster form (backref set). The #38
  * fix: a cluster repo lands on its DATA datastore, the one `repo replicate` forks.
  */
@@ -259,7 +259,7 @@ async function handleRepoCreateOnDatastore(
       functionName: 'repository_create',
       machineName: placement.machine,
       ...(placement.kubeCluster !== undefined && { kubeCluster: placement.kubeCluster }),
-      // #74: DISPATCH AGAINST THE DATASTORE WE JUST RECORDED. We resolved this placement above and then said nothing about it, so renet fell back to the machine's default docker datastore: the placement written to the config and the placement sent to the machine were two different things, silently. This is the executor's vault channel (ExecuteOptions.datastore), NOT a param —
+      // #74: DISPATCH AGAINST THE DATASTORE WE JUST RECORDED. We resolved this placement above and then said nothing about it, so renet fell back to the machine's default docker datastore: the placement written to the config and the placement sent to the machine were two different things, silently. This is the executor's vault channel (ExecuteOptions.datastore), NOT a param ,
       // `repository_create` reads its datastore from the machine vault.
       datastore: placement.mountPath,
       params: {
@@ -269,7 +269,7 @@ async function handleRepoCreateOnDatastore(
         mount_path: placement.mountPath,
         // #67: DECLARE the runtime for a cluster-placed repo, exactly as `repo up` does (the #39 assertion channel: renet honors `runtime` as an assertion and errors on a disagreement rather than silently falling to the docker arm).
         //
-        // Without it, this dispatch was incoherent with the validation eight lines above: the CLI knew the repo was kubernetes-placed, refused `--size` on exactly that ground, and then sent the DOCKER create — which requires a
+        // Without it, this dispatch was incoherent with the validation eight lines above: the CLI knew the repo was kubernetes-placed, refused `--size` on exactly that ground, and then sent the DOCKER create, which requires a
         // size. With --size the CLI refused; without it renet refused. No value of
         // the flag worked, and `repo create` was unusable on the cluster path. The declaration is what lets renet size the volumes from the PVCs instead.
         ...(isK8s ? { runtime: 'kube', cluster: placement.kubeCluster, start_docker: false } : {}),
@@ -290,7 +290,7 @@ async function handleRepoCreateOnDatastore(
 /**
  * Handle the repo create action body: the R2-F1 placement union (spec 03 §5.4).
  * Exactly one of `--machine` (docker, implicit default datastore) or
- * `--datastore` (named datastore — docker tiering, or the only kubernetes form).
+ * `--datastore` (named datastore, docker tiering, or the only kubernetes form).
  */
 export async function handleRepoCreate(
   name: string,
@@ -306,7 +306,7 @@ export async function handleRepoCreate(
   const hasMachine = !!options.machine;
   const hasDatastore = !!options.datastore;
   if (hasMachine === hasDatastore) {
-    // Both, or neither — the same teaching error either way (spec 02 §7).
+    // Both, or neither, the same teaching error either way (spec 02 §7).
     handleError(new ValidationError(t('commands.repo.create.placementRequired')));
     return;
   }
@@ -376,7 +376,7 @@ async function handleRepoDelete(
   }
 ): Promise<void> {
   try {
-    // Converge-to-absent (#45/#95): delete RETAINS the config family by design ("may exist on other machines"), so a delete whose image is already gone is a legitimate sequence — resolve with absentOk and skip the machine dispatch on a definite absence instead of refusing with exit 12.
+    // Converge-to-absent (#45/#95): delete RETAINS the config family by design ("may exist on other machines"), so a delete whose image is already gone is a legitimate sequence, resolve with absentOk and skip the machine dispatch on a definite absence instead of refusing with exit 12.
     const { name, repoKey, machineName, kubeCluster, imageAbsent } = await resolveRepoRef(ref, {
       absentOk: true,
     });
@@ -415,14 +415,14 @@ async function handleRepoDelete(
       t('commands.repo.delete.starting', { repository: target, machine: machineName })
     );
 
-    // Definite machine-arm absence: the image is already gone — converge straight to the config-side completion (retention/archive messaging).
+    // Definite machine-arm absence: the image is already gone, converge straight to the config-side completion (retention/archive messaging).
     const result: import('../services/executor/local-executor.js').ExecuteResult = imageAbsent
       ? { success: true, stdout: '', stderr: '', exitCode: 0, durationMs: 0 }
       : await getExecutor().execute({
           functionName: 'repository_delete',
           machineName,
           ...(kubeCluster !== undefined && { kubeCluster }),
-          // #74, the asymmetric half: `repository_create` above already declares the datastore it recorded, and delete said nothing — so a repo created on a named datastore could not be deleted from it, renet looking for the image on the machine's default.
+          // #74, the asymmetric half: `repository_create` above already declares the datastore it recorded, and delete said nothing, so a repo created on a named datastore could not be deleted from it, renet looking for the image on the machine's default.
           datastore: await recordedDatastoreMount(target),
           params: { repository: target },
           debug: options.debug,

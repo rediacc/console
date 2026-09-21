@@ -14,7 +14,7 @@
  * Regional routing: each regional account worker holds its own
  * `OBS_OTLP_CREDENTIALS` Worker secret. Clients get the correct
  * credential based on which regional URL their account-server config
- * points to — no per-client logic needed.
+ * points to, no per-client logic needed.
  *
  * Default-deny: if the endpoint returns `{otlp: null}`, the network fails,
  * or the account server is unreachable, this function returns `null` and
@@ -22,7 +22,7 @@
  * OTLP requests are ever sent.
  *
  * Security: credentials live in memory for the process lifetime only. They
- * are NEVER persisted to disk on the client side — not to `~/.config/rediacc`,
+ * are NEVER persisted to disk on the client side, not to `~/.config/rediacc`,
  * not to any temp file, not anywhere. The only place they can be stored is
  * in the memory of the process that fetched them and, transiently, in the
  * env vars of a spawned renet process (which is also memory-only).
@@ -40,7 +40,7 @@ interface TelemetryConfigResponse {
   otlp: OtlpCredentials | null;
 }
 
-/** In-process cache — `undefined` = not yet fetched, `null` = fetched & disabled. */
+/** In-process cache, `undefined` = not yet fetched, `null` = fetched & disabled. */
 let cached: OtlpCredentials | null | undefined;
 
 /**
@@ -59,7 +59,7 @@ let inflight: Promise<OtlpCredentials | null> | undefined;
  *   - The response is malformed
  *
  * Never throws. Telemetry failures must never interfere with the user's
- * actual command — the CLI must always degrade to "telemetry disabled"
+ * actual command, the CLI must always degrade to "telemetry disabled"
  * rather than surfacing an error.
  */
 export async function fetchOtlpCredentials(): Promise<OtlpCredentials | null> {
@@ -80,7 +80,7 @@ export async function fetchOtlpCredentials(): Promise<OtlpCredentials | null> {
 }
 
 /**
- * Reset the in-process cache. Used only in tests — production code should
+ * Reset the in-process cache. Used only in tests, production code should
  * never need to invalidate the cache since each CLI invocation is a fresh
  * process with a fresh cache.
  */

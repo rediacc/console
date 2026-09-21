@@ -147,7 +147,7 @@ export async function buildInitAccountUpdate(
 
 /**
  * Merge the pieces an `init` action collects into a single RdcConfig ready
- * for `configFileStorage.save`. Pure — no I/O — so unit tests can drive it
+ * for `configFileStorage.save`. Pure, no I/O, so unit tests can drive it
  * and assert the resulting shape, which is where the v1→v2 regression hid.
  */
 export function mergeInitUpdates(
@@ -580,7 +580,7 @@ ${t('help.examples')}
 
   registerConfigPruneCommand(config);
 
-  // config reconcile — rebuild the state bucket from machine truth (R2-F2).
+  // config reconcile, rebuild the state bucket from machine truth (R2-F2).
   config
     .command('reconcile')
     .description(t('commands.config.reconcile.description'))
@@ -589,7 +589,7 @@ ${t('help.examples')}
     .option('--accept-observed', t('commands.config.reconcile.optionAcceptObserved'))
     .action((options: ReconcileCliOptions) => runReconcile(program, options));
 
-  // config rotate-cek — destructive, org-wide (Q3): registered here, not under `config remote`, because it rotates the ORGANIZATION's key, not this device's link. The impl still lives in config-remote.ts alongside the store internals.
+  // config rotate-cek, destructive, org-wide (Q3): registered here, not under `config remote`, because it rotates the ORGANIZATION's key, not this device's link. The impl still lives in config-remote.ts alongside the store internals.
   config
     .command('rotate-cek')
     .description(t('commands.config.rotateCek.description'))

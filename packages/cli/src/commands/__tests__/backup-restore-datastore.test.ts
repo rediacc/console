@@ -5,7 +5,7 @@
  * The flag existed and was honoured only halfway: it was used to look up which
  * machine currently holds the datastore, and then dropped. The pull ran with no
  * datastore declared, so renet wrote the image into that machine's DEFAULT pool
- * — the operator named a datastore and the data landed somewhere else — and no
+ * the operator named a datastore and the data landed somewhere else, and no
  * placement was recorded either, so every later verb on the restored repo
  * derived the default too and the divergence was permanent.
  *
@@ -106,7 +106,7 @@ function callFor(fn: string) {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  // `tier1` is attached to m1 — the hint the restore already used to pick a machine.
+  // `tier1` is attached to m1, the hint the restore already used to pick a machine.
   mockGetCurrent.mockResolvedValue({
     state: { datastores: { tier1: { attachedTo: 'm1' } } },
     resources: { repositories: {} },

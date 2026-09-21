@@ -127,7 +127,7 @@ describe('ConfigServiceBase remote integration', () => {
     const mod = await import('../config/config-base.js');
     ConfigServiceBase = mod.ConfigServiceBase;
     service = new ConfigServiceBase();
-    // The config-name override is a module-level singleton (config-name.ts), so reset it between tests — a prior test's setRuntimeConfig would otherwise leak.
+    // The config-name override is a module-level singleton (config-name.ts), so reset it between tests, a prior test's setRuntimeConfig would otherwise leak.
     service.setRuntimeConfig(null);
 
     // Ensure we don't pick up env vars

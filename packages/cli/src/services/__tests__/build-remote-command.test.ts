@@ -1,5 +1,5 @@
 /**
- * Tests for `buildRemoteRenetCommand` — the function that builds the SSH
+ * Tests for `buildRemoteRenetCommand`, the function that builds the SSH
  * command string for spawning `renet execute` on a target machine.
  *
  * The goal is to verify every combination of inputs produces the exact

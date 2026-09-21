@@ -226,7 +226,7 @@ interface ForkPlan {
    * is actually asking: `renet repository fork` resolves the parent image under
    * `--datastore`, and the reflink lands beside it. It reads that flag from the
    * MACHINE VAULT, never from the params bag, so a caller that stays silent gets
-   * the machine's default docker datastore — and the fork of a repo living in a
+   * the machine's default docker datastore, and the fork of a repo living in a
    * named datastore then looks for its parent somewhere the parent has never
    * been.
    */
@@ -434,7 +434,7 @@ async function orchestrateFork(plan: ForkPlan): Promise<void> {
   const orchestrated: TimelineStep[] = [];
   const renetSteps: TimelineStep[] = [];
 
-  // DNS records need only names — fire the HTTP call before any SSH work.
+  // DNS records need only names, fire the HTTP call before any SSH work.
   const dnsPromise = options.up
     ? recordTimelineStep(orchestrated, 'dns', () => ensureDns(forkKey, options.machine), {
         parallel: true,
@@ -452,7 +452,7 @@ async function orchestrateFork(plan: ForkPlan): Promise<void> {
     return;
   }
 
-  // The fork exists from here on — identity refresh can run concurrently
+  // The fork exists from here on, identity refresh can run concurrently
   // with the up portion and the post-up tasks.
   const identityPromise = startIdentityRefresh(orchestrated, options, forkParams);
 
@@ -489,7 +489,7 @@ export async function handleForkAction(
     '../utils/config-schema.js'
   );
   let forkKey = '';
-  // Rollback must only ever remove the row THIS invocation registered — a catch-all rollback would delete a pre-existing fork's config row (credential included) when registerFork fails with "already exists".
+  // Rollback must only ever remove the row THIS invocation registered, a catch-all rollback would delete a pre-existing fork's config row (credential included) when registerFork fails with "already exists".
   let registered = false;
   try {
     // Refuse the reserved birth tag `base` (exit 2) and enforce the fork-tag label grammar before any config mutation; `latest` stays reserved as the grand pointer that a fork must not clobber (#495).

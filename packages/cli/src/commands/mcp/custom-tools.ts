@@ -10,7 +10,7 @@ import { READ_TIMEOUT } from '../../config/command-metadata.js';
 import type { ToolDef } from './tool-factory.js';
 
 /**
- * Virtual tools for `machine status` — each exposes a specific section flag as a
+ * Virtual tools for `machine status`, each exposes a specific section flag as a
  * dedicated MCP tool. The underlying CLI command is `machine status <name> --<flag>`.
  */
 const MACHINE_STATUS_VIEWS: ToolDef[] = [
@@ -46,7 +46,7 @@ const MACHINE_STATUS_VIEWS: ToolDef[] = [
   },
 ];
 
-// ★ machine_health is GONE. It claimed to "run health check on a machine" but its argv was `machine status <name> --system` — a raw system-stats dump that never called the health checker, so an agent asking for health got facts to interpret rather than the aggregated issues[] and exit code. `machine health` is no longer experimental, so the contract-derived tool of the same name
+// ★ machine_health is GONE. It claimed to "run health check on a machine" but its argv was `machine status <name> --system`, a raw system-stats dump that never called the health checker, so an agent asking for health got facts to interpret rather than the aggregated issues[] and exit code. `machine health` is no longer experimental, so the contract-derived tool of the same name
 // now runs the real command.
 
 /** All custom MCP tools that are not auto-derived from Commander. */

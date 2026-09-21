@@ -188,7 +188,7 @@ function getSections(
       getData: (r) => buildStorageHealthRows(r.storage_health, repoName),
     },
     {
-      // How long ago each repo was actually uploaded, read from the state the backup job merges across runs. A backup can report success while covering less than it used to — a repo loses its licence, or a transfer window closes before the largest images are reached — and the exit status says nothing. The growing age here is what reveals it.
+      // How long ago each repo was actually uploaded, read from the state the backup job merges across runs. A backup can report success while covering less than it used to, a repo loses its licence, or a transfer window closes before the largest images are reached, and the exit status says nothing. The growing age here is what reveals it.
       title: 'Backup Coverage',
       getData: (r) =>
         (r.backup_coverage?.repos ?? []).map((b) => ({
@@ -202,7 +202,7 @@ function getSections(
         })),
     },
     {
-      // Rendered by default, not only under --strict. The watchdog maintains this registry precisely to catch the slow silent failure — a container whose healthcheck has been failing for days — and it is worth nothing
+      // Rendered by default, not only under --strict. The watchdog maintains this registry precisely to catch the slow silent failure, a container whose healthcheck has been failing for days, and it is worth nothing
       // if seeing it requires already suspecting it and passing a flag. The
       // table is empty when nothing is drifting, so a healthy machine stays
       // quiet; --strict still controls the CI exit code.
@@ -440,7 +440,7 @@ interface StorageSummary {
 /**
  * Single source of truth for the derived storage summary. Returns null when the
  * system section is absent (e.g. renet error or older renet) so callers never
- * emit a fabricated "0.0G" — the storage summary must reflect real data or none.
+ * emit a fabricated "0.0G", the storage summary must reflect real data or none.
  */
 export function deriveStorageSummary(sys: SystemInfo | undefined): StorageSummary | null {
   if (!sys?.disk.available || !sys.datastore.available) return null;

@@ -52,7 +52,7 @@ import { SessionError } from './sessions.js';
  * CLI proxy clients, whose key is found by principal via sessionFor(). A
  * literal here and in the worker's console route, rather than a shared wire
  * constant, because this wave pins the wire module (CommandRequestSchema and
- * friends) untouched — no regen.
+ * friends) untouched, no regen.
  */
 const CONFIG_SESSION_HEADER = 'x-config-session';
 
@@ -168,10 +168,10 @@ export function createServeApp(deps: ServeDeps): Hono {
 
     // Policy is evaluated on the path the caller asked for, and the executor then runs THAT path. There is no second name for the client to disagree with. The target is read from both the flag and positional bindings, so a positional-addressed command scopes exactly as a flag-addressed one does.
     const trimmedSession = c.req.header(CONFIG_SESSION_HEADER)?.trim();
-    // A whitespace-only header collapses to "no session", not the empty string — `??` cannot express that, so the empty case is normalized explicitly.
+    // A whitespace-only header collapses to "no session", not the empty string, `??` cannot express that, so the empty case is normalized explicitly.
     const configSessionId = trimmedSession === '' ? undefined : trimmedSession;
     try {
-      // A named session must exist and belong to the REQUEST principal — the same ownership rule grantCek enforces — before it may select the config the command runs against. Validated here, above the loader, so the rule holds in every tier, including a daemon whose loader ignores sessions.
+      // A named session must exist and belong to the REQUEST principal, the same ownership rule grantCek enforces, before it may select the config the command runs against. Validated here, above the loader, so the rule holds in every tier, including a daemon whose loader ignores sessions.
       if (configSessionId) deps.sessions.sessionForExec(principal, configSessionId);
       const config = await deps.loadConfig(principal, configSessionId);
       deps.authorize({

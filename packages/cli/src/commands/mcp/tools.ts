@@ -94,7 +94,7 @@ function checkOverrideLegitimacy(
   return guardError(t(errorKey, { ...templateVars, platform: process.platform }));
 }
 
-/** Guard a grand (non-fork) repo — block unless a legitimate override is present. */
+/** Guard a grand (non-fork) repo, block unless a legitimate override is present. */
 function guardGrandRepo(repoName: string): ToolResult | null {
   if (!isRepoAllowedByGrandEnv(repoName)) {
     return guardError(t('errors.agent.mcpGrandGuard', { name: repoName }));
@@ -106,7 +106,7 @@ function guardGrandRepo(repoName: string): ToolResult | null {
   );
 }
 
-/** Guard a named repo — block grand repos or fork-blocked commands. */
+/** Guard a named repo, block grand repos or fork-blocked commands. */
 async function guardNamedRepo(
   tool: ToolDef,
   repoName: string,

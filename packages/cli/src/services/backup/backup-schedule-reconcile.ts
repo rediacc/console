@@ -1,7 +1,7 @@
 /**
  * Reconciliation core: read remote state + compute desired + diff + in-flight gate.
  *
- * This module is stateless w.r.t. the target machine — it issues read-only
+ * This module is stateless w.r.t. the target machine, it issues read-only
  * `find`/`sha256sum`/`systemctl show` commands and produces a typed diff
  * that the executor module consumes.
  */
@@ -136,7 +136,7 @@ async function captureStdout(
   return { exitCode, stdout };
 }
 
-// --------------------------------------------------------------------------- Phase A — Read remote state ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Phase A, Read remote state ---------------------------------------------------------------------------
 
 async function listRemoteUnitPaths(sftp: SFTPClient): Promise<string[]> {
   const cmd =
@@ -232,7 +232,7 @@ export async function readRemoteState(
   return result;
 }
 
-// --------------------------------------------------------------------------- Phase B — Compute desired units ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Phase B, Compute desired units ---------------------------------------------------------------------------
 
 // SYNCHRONOUS since 2026-08-15. Its only await was configService.getStorage, which existed to build rclone args; with the rclone path removed there is nothing async left. The single caller (backup-schedule.ts:204) still awaits it, which is harmless, so the signature change needs no caller edit.
 export function computeDesiredUnits(
@@ -269,7 +269,7 @@ export function computeDesiredUnits(
   return result;
 }
 
-// --------------------------------------------------------------------------- Phase C — Compute reconcile plan (pure) ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Phase C, Compute reconcile plan (pure) ---------------------------------------------------------------------------
 
 function envDrifted(
   desiredEnvHash: string | null,
@@ -362,7 +362,7 @@ export function computeReconcilePlan(
   return plan;
 }
 
-// --------------------------------------------------------------------------- Phase D — In-flight safety gate ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Phase D, In-flight safety gate ---------------------------------------------------------------------------
 
 function activeUnitName(diff: StrategyDiff): string | null {
   const state = diff.remote;

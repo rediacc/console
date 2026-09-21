@@ -83,7 +83,7 @@ interface MigrateOptions {
  * bag, so an execution that declares nothing is dispatched against the machine's
  * default docker datastore. Migrate declared nothing on any of its source-side
  * legs, so a repo living in a NAMED datastore failed at the first one with
- * `stat /mnt/rediacc/repositories/<guid>: no such file or directory` — renet
+ * `stat /mnt/rediacc/repositories/<guid>: no such file or directory`, renet
  * looking for the image where the repo has never been.
  *
  * It is captured ONCE, before finalizeCutover rewrites placement to `{machine: to}`,
@@ -302,7 +302,7 @@ async function executePhase3(
       await deployRepoKeyIfNeeded(name, to);
       // Target side: the push landed the image in the TARGET's default datastore (buildExtraMachines gives a peer with no recorded datastore the default
       // mount), and placement has already been rewritten to `{machine: to}` to
-      // match. So this leg declares no datastore ON PURPOSE — the source's named mount does not exist here.
+      // match. So this leg declares no datastore ON PURPOSE, the source's named mount does not exist here.
       await executeQuiet('repository_up', name, to, {}, undefined, debug);
     },
     t('commands.repo.migrate.targetStarted')
@@ -337,7 +337,7 @@ async function resolveMigrateEndpoint(name: string): Promise<string> {
 
 /**
  * R3 source disposition: delete the migrated image on the source machine after
- * a fully successful phase 3. Fails SAFE — the move already succeeded, so a
+ * a fully successful phase 3. Fails SAFE, the move already succeeded, so a
  * failed cleanup NEVER fails the migrate: it warns, leaves the image in place,
  * and names `machine prune` as the sweep. renet deletes an unmounted repo by
  * `name:tag` on the source (the `.interim` state mirror still resolves it after
@@ -379,12 +379,12 @@ async function deleteSourceImage(
 
 /**
  * R2 (fallback scope): migrate moves a whole FAMILY to one home (spec/04
- * §1.2.1 — placement is single-valued per family). Two refusals keep that
+ * §1.2.1, placement is single-valued per family). Two refusals keep that
  * invariant honest until the family-loop follow-up (grand-first + fork seeds,
  * gated on Open question #1: reflink preservation across backup_push with seeds,
  * a VM check the fleet cannot give this week):
- *   1. a ref naming a non-grand tag is a fork ref — exit 2, teaching push/promote;
- *   2. a family that has forks refuses wholesale — moving only the grand would
+ *   1. a ref naming a non-grand tag is a fork ref, exit 2, teaching push/promote;
+ *   2. a family that has forks refuses wholesale, moving only the grand would
  *      split the family across machines, the exact two-places bug being retired.
  * Exit 2 via ValidationError, the same precedent `repo promote` uses.
  */
@@ -413,7 +413,7 @@ function assertFamilyMigratable(name: string, tag: string, family: RepoFamily | 
  * must point there NOW, before phase 3. Rewriting here (not after phase 3) is
  * what makes a post-cutover failure safe: the data's home is the target, so the
  * operator's natural recovery (`rdc repo up <name>`) lands on the target, not on
- * the stale source copy — the exact wrong-host redeploy this closes. A
+ * the stale source copy, the exact wrong-host redeploy this closes. A
  * pre-cutover failure never reaches this function, so placement still names the
  * source (spec/03 §5.4 exit-14 row). placementUpdated is emitted before phase 3
  * so it stays on screen even if phase 3 then fails: both failure windows are
@@ -440,7 +440,7 @@ async function finalizeCutover(
     throw err;
   }
 
-  // R3: migrate is a MOVE. Only after phase 3 fully succeeds is the source image a nameless orphan (the target is a superset — final delta synced at cutover, source down since), so delete it here, strictly LAST. --keep-source opts out and warns the leftover is a stray reconcile will flag.
+  // R3: migrate is a MOVE. Only after phase 3 fully succeeds is the source image a nameless orphan (the target is a superset, final delta synced at cutover, source down since), so delete it here, strictly LAST. --keep-source opts out and warns the leftover is a stray reconcile will flag.
   if (from === to) return;
   if (keepSource) {
     outputService.warn(t('commands.repo.migrate.sourceRetained', { name, machine: from }));

@@ -51,7 +51,7 @@ describe('renet licence tiers (generated contract)', () => {
       // The class today, pinned literally so a wholesale regeneration that widens or empties it fails here instead of silently changing issuance.
       //
       // ACKNOWLEDGMENT of the Wave-2 tier flip: the commit verbs joined this list when renet reconciled repository_commit / repository_commit_meta to CREATE. The CLI's answer is deliberately NOT the same for both. `repository_commit` provisions: its new immutable commit is a repo that does not exist yet, and renet's cmd layer validates a licence against that commit's name before
-      // doing anything (cmd/renet/repository_commit.go), so the CLI pre-issues for it. `repository_commit_meta` provisions nothing: it rewrites an already pushed commit's out-of-volume state mirror, its cmd layer runs no licence check at all, and the only check it meets resolves the EXISTING repo — so pre-issuance is subtracted for it.
+      // doing anything (cmd/renet/repository_commit.go), so the CLI pre-issues for it. `repository_commit_meta` provisions nothing: it rewrites an already pushed commit's out-of-volume state mirror, its cmd layer runs no licence check at all, and the only check it meets resolves the EXISTING repo, so pre-issuance is subtracted for it.
       expect(createTier).toEqual([
         'repository_commit',
         'repository_commit_meta',

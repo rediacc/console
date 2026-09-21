@@ -15,14 +15,14 @@ import { resolveControlNode } from '../config/config-cluster-ops.js';
 import { controlDatastoreMount, NAMED_DS_BASE } from './cluster-kube.js';
 
 /**
- * Remote mount path of a NAMED datastore on the machine that attaches it —
+ * Remote mount path of a NAMED datastore on the machine that attaches it ,
  * `/mnt/rediacc-ds/<datastore>` (spec 02 §1). This is where a repo placed on a
  * named datastore lives (`repo create --datastore <d>`, the R2-F1 placement
  * union), whether it is a docker-tiering datastore or the k8s data datastore a
  * cluster repo is forked from (the #38 fix: a cluster repo lands on its DATA
  * datastore, not the control datastore replicate excludes).
  *
- * A datastore FORK ref (`name:tag`) mounts at `<name>-<tag>` — renet derives
+ * A datastore FORK ref (`name:tag`) mounts at `<name>-<tag>`, renet derives
  * the mount name with a hyphen (pkg/datastore/fork.go mountName), never with
  * the ref's colon.
  */
@@ -31,7 +31,7 @@ export function namedDatastoreMount(datastore: string): string {
 }
 
 export interface ExecutionTarget {
-  /** Effective machine to SSH to — the control node when the target is a cluster. */
+  /** Effective machine to SSH to, the control node when the target is a cluster. */
   machineName: string;
   /** Set when the target is a cluster. */
   cluster?: string;
@@ -40,7 +40,7 @@ export interface ExecutionTarget {
 }
 
 /**
- * Remote mount path of a cluster's k3s image on its control node — the
+ * Remote mount path of a cluster's k3s image on its control node, the
  * `--mount-path` the `renet kube namespace/pv` verbs consume (they cannot rely
  * on the injected KUBECONFIG env because the bridge runs them under `sudo`,
  * which strips it, so the mount path travels as an explicit param). The
@@ -52,7 +52,7 @@ export interface ExecutionTarget {
  * datastore-centric model the control-plane data-dir lives INSIDE the anchor
  * control datastore (`ds-control-<cluster>`), so the k3s distro backend writes
  * the kubeconfig at
- * `/mnt/rediacc-ds/ds-control-<cluster>/.rediacc/k3s/kubeconfig.yaml` — NOT the
+ * `/mnt/rediacc-ds/ds-control-<cluster>/.rediacc/k3s/kubeconfig.yaml`, NOT the
  * legacy per-node repo mount `/mnt/rediacc/mounts/<cluster>/…` (that mount is
  * the disposable agent image, which never holds the CP kubeconfig). Deriving it
  * from the control-datastore mount is the P3-w7 fix for finding #11: reading the
@@ -73,7 +73,7 @@ export function clusterKubeconfigRemotePath(cluster: string): string {
  * DOCKER_HOST + working-directory injection: it exports the control node's
  * remote KUBECONFIG path (same path the repo-verb funnel threads via
  * local-executor's buildRenetEnvPrefix) so `kubectl` is ready in the session,
- * and — when a repo is given — records the namespace to pin the kubectl
+ * and, when a repo is given, records the namespace to pin the kubectl
  * current-context to. A k8s repo IS namespace `<repo>` (kube_namespace_create),
  * so the `-r` value maps 1:1 to the namespace. v1 is the control-node view; a
  * `--node` selector is a documented later follow-up.

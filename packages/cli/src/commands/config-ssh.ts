@@ -7,7 +7,7 @@ import { handleError, ValidationError } from '../utils/errors.js';
 
 /**
  * SSH key management. In v2, SSH always persists as inline content under
- * `config.credentials.ssh`. Path-only storage is no longer supported —
+ * `config.credentials.ssh`. Path-only storage is no longer supported ,
  * `--key <path>` reads the file and inlines the content on save.
  */
 export function registerSSHCommands(config: Command, program: Command): void {

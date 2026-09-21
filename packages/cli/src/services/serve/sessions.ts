@@ -203,7 +203,7 @@ export class SessionStore {
    * The session a command should draw its config key from.
    *
    * When the request NAMES a session (the web console's X-Config-Session
-   * header), the named session must exist and belong to the request principal —
+   * header), the named session must exist and belong to the request principal ,
    * the same ownership rule grantCek enforces, refused with the same
    * deliberately indistinguishable message, so a caller cannot probe which
    * session ids exist. The named session wins over the grant index: a user with

@@ -48,7 +48,7 @@ function failureDetail(result: { stdout: string; stderr: string }): string {
 async function opsManagerFor(topology: KvmTopology, cephPool?: string): Promise<OpsManager> {
   const binaryPath = await opsExecutorService.getRenetPath();
   const groupEnv = buildGroupEnv(topology.network);
-  // Finding #17: make the ops phase create the SAME pool the cluster/datastore path uses (default `rbd`) instead of its own `rediacc_rbd_pool`. Otherwise ops makes `rediacc_rbd_pool` and installCeph makes `rbd` — a non-idempotent double pool that also blows the pg budget on small topologies. One pool named what downstream references keeps create/install idempotent and pg-safe.
+  // Finding #17: make the ops phase create the SAME pool the cluster/datastore path uses (default `rbd`) instead of its own `rediacc_rbd_pool`. Otherwise ops makes `rediacc_rbd_pool` and installCeph makes `rbd`, a non-idempotent double pool that also blows the pg budget on small topologies. One pool named what downstream references keeps create/install idempotent and pg-safe.
   if (cephPool) groupEnv.CEPH_POOL_NAME = cephPool;
   return new OpsManager({
     network: topology.network,
@@ -58,7 +58,7 @@ async function opsManagerFor(topology: KvmTopology, cephPool?: string): Promise<
 }
 
 /**
- * The ceph pool a cluster's ops phase should create — the cluster's own pool
+ * The ceph pool a cluster's ops phase should create, the cluster's own pool
  * (default `rbd`, what the datastore/fork path references), so ops and install
  * converge ONE pool. Undefined for a cluster with no ceph pool (nothing to name).
  */

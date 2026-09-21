@@ -135,7 +135,7 @@ export class ConfigFileStorage {
 
   /**
    * Execute an operation with exclusive file lock.
-   * Supports re-entrant calls — if we already hold the lock, skip acquisition.
+   * Supports re-entrant calls, if we already hold the lock, skip acquisition.
    */
   private async withLock<T>(
     name: string,
@@ -212,7 +212,7 @@ export class ConfigFileStorage {
       try {
         await this.withLock(name, () => this.saveUnlocked(config, name));
       } catch {
-        // Ignore — caller still gets the in-memory upgraded config.
+        // Ignore, caller still gets the in-memory upgraded config.
       }
     }
     return config;
@@ -307,14 +307,14 @@ export class ConfigFileStorage {
 
   /**
    * Update the STATE half of a config (runtime status). Does NOT bump the
-   * version counter — status churn must not create optimistic-version
+   * version counter, status churn must not create optimistic-version
    * conflicts or audit noise (spec 04 §1.3 property 1). The writer is
    * responsible for touching only `state.*`.
    */
   async updateState(name: string, updater: (config: RdcConfig) => RdcConfig): Promise<RdcConfig> {
     // A STATE write must never CREATE a config file. Status is subordinate to the config's existence: when the file is gone (the tutorial preambles
-    // `rm` it between runs; `config prune` removes it), a background writer —
-    // the executor daemon's post-request provision bookkeeping above all — must not resurrect an empty config. Observed live: the daemon recreated the file between a preamble's `rm` and its `config init`, which then died on "Config already exists" and cascaded through the whole tutorial sequence. Callers of updateState are best-effort by contract, so a missing config surfaces as a
+    // `rm` it between runs; `config prune` removes it), a background writer ,
+    // the executor daemon's post-request provision bookkeeping above all, must not resurrect an empty config. Observed live: the daemon recreated the file between a preamble's `rm` and its `config init`, which then died on "Config already exists" and cascaded through the whole tutorial sequence. Callers of updateState are best-effort by contract, so a missing config surfaces as a
     // rejected promise they already tolerate.
     try {
       await fs.access(this.getPath(name));
@@ -327,7 +327,7 @@ export class ConfigFileStorage {
   /**
    * Update a remote-enabled config's local CACHE (observation of the server
    * copy, not declared intent). Same contract as updateState: never bumps the
-   * version counter, never resurrects a deleted config — a cache refresh
+   * version counter, never resurrects a deleted config, a cache refresh
    * racing a `config delete` must not bring the file back from the dead.
    */
   async updateCache(name: string, updater: (config: RdcConfig) => RdcConfig): Promise<RdcConfig> {
@@ -352,7 +352,7 @@ export class ConfigFileStorage {
       throw new Error(`Config "${name}" already exists`);
     } catch (error) {
       if ((error as Error).message.includes('already exists')) throw error;
-      // File doesn't exist — good, create it
+      // File doesn't exist, good, create it
     }
 
     const config = createEmptyRdcConfig();

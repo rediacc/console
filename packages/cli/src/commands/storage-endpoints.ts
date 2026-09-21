@@ -52,7 +52,7 @@ async function applyStorageRevealGate(storageName: string): Promise<void> {
   }
 }
 
-/** `storage add <name>` — register an existing external endpoint. */
+/** `storage add <name>`, register an existing external endpoint. */
 function registerAdd(storage: Command): void {
   storage
     .command('add')
@@ -73,7 +73,7 @@ function registerAdd(storage: Command): void {
     });
 }
 
-/** `storage remove <name>` — deregister a storage endpoint. */
+/** `storage remove <name>`, deregister a storage endpoint. */
 function registerRemove(storage: Command): void {
   storage
     .command('remove')
@@ -104,7 +104,7 @@ function registerRemove(storage: Command): void {
     });
 }
 
-/** `storage list [name]` — list endpoints, or show one in full with --reveal. */
+/** `storage list [name]`, list endpoints, or show one in full with --reveal. */
 function registerList(storage: Command, program: Command): void {
   storage
     .command('list')
@@ -146,7 +146,7 @@ function registerList(storage: Command, program: Command): void {
     });
 }
 
-/** `storage import <file>` — import endpoints from an rclone config file. */
+/** `storage import <file>`, import endpoints from an rclone config file. */
 function registerImport(storage: Command): void {
   storage
     .command('import')

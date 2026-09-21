@@ -5,7 +5,7 @@
  * console session-token flow is built around. A console user's command reaches
  * the executor under a short-lived proxy:exec token minted for THEM. The executor
  * ships one audit event per command, authenticated with its OWN audit-write
- * credential — but the event must be ATTRIBUTED to the user's token, via
+ * credential, but the event must be ATTRIBUTED to the user's token, via
  * onBehalfOfTokenId, or the account server (which falls back to the
  * authenticating token's owner) would log every console action against the
  * executor fleet.
@@ -65,7 +65,7 @@ process.env.REDIACC_TELEMETRY_DISABLED = '1';
 const EXECUTOR_TOKEN = 'rdt_executor_fleet';
 /** The console user's short-lived proxy:exec token, as workers/proxy forwards it. */
 const SESSION_TOKEN = 'rdt_console_session';
-/** The id /proxy/introspect returns for that token — the attribution anchor. */
+/** The id /proxy/introspect returns for that token, the attribution anchor. */
 const SESSION_TOKEN_ID = 'tok-console-user';
 
 /** An owner with no policy document is allowed by MISSING_POLICY_DEFAULT. */

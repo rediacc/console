@@ -125,7 +125,7 @@ export async function addKeyToAgent(
     `key-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`
   );
 
-  // ssh-add uses libcrypto's stricter PEM parser — CRLF line endings or a missing trailing newline cause "error in libcrypto" even on keys that `ssh -i` accepts. Normalize before writing.
+  // ssh-add uses libcrypto's stricter PEM parser, CRLF line endings or a missing trailing newline cause "error in libcrypto" even on keys that `ssh -i` accepts. Normalize before writing.
   const normalizedKey = decodeSSHKey(privateKey);
 
   try {

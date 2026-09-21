@@ -2,7 +2,7 @@
  * `rdc backup restore --at` point-in-time RESOLUTION.
  *
  * WHY THIS FILE EXISTS. `resolveSnapshotAt` decides WHICH point in time gets
- * restored, and it had zero test references anywhere in the repo — the final
+ * restored, and it had zero test references anywhere in the repo, the final
  * testing-surface audit found that and it was right. The failure mode is the
  * nastiest kind: a boundary error restores the WRONG snapshot and the restore
  * SUCCEEDS, so nothing surfaces the mistake. The operator gets a healthy repo

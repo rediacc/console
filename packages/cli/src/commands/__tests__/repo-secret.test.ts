@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-// i18n stub — return key + interpolated params for assertable error strings
+// i18n stub, return key + interpolated params for assertable error strings
 vi.mock('../../i18n/index.js', () => ({
   t: (key: string, params?: Record<string, unknown>) =>
     params ? `${key}:${JSON.stringify(params)}` : key,
@@ -160,7 +160,7 @@ describe('rdc repo secret get/list', () => {
     restoreEnv(envBackup);
   });
 
-  // V2: write-only model. `get` returns digest only — no plaintext for anyone, no agent-vs-human asymmetry. The fork-vs-grand `grandGuard` is gone (mutation-gate is the actual safety property; reads are always safe because there's no plaintext to leak).
+  // V2: write-only model. `get` returns digest only, no plaintext for anyone, no agent-vs-human asymmetry. The fork-vs-grand `grandGuard` is gone (mutation-gate is the actual safety property; reads are always safe because there's no plaintext to leak).
   describe('agent on grand repo (V2: read-safe, no grandGuard)', () => {
     beforeEach(() => {
       process.env.REDIACC_AGENT = '1';
@@ -586,7 +586,7 @@ describe('rdc repo secret get/list', () => {
         // Second option should be the rotate-skip variant. The original command is reconstructed verbatim and ends with --rotate-secret.
         const rotateOption = next.options?.find((o) => o.run.includes('--rotate-secret'));
         expect(rotateOption).toBeDefined();
-        // First option's `run` is the i18n key stub (mocked t returns the key + params verbatim), so we assert the params interpolation reaches the structured payload — the test mocks t to return the key path, which is enough to confirm the helper wiring is correct.
+        // First option's `run` is the i18n key stub (mocked t returns the key + params verbatim), so we assert the params interpolation reaches the structured payload, the test mocks t to return the key path, which is enough to confirm the helper wiring is correct.
         const verifyOption = next.options?.find((o) =>
           o.run.startsWith('errors.precondition.next.options.confirm.run')
         );

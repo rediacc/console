@@ -1,6 +1,6 @@
 /**
  * The daemon-backed executor, driven against a REAL daemon server on a temp
- * socket with a fake executor injected — so the client, the server, and the wire
+ * socket with a fake executor injected, so the client, the server, and the wire
  * protocol are exercised together without touching SSH or a machine.
  *
  * The invariant under test is "never make a command worse": every trouble the

@@ -1,5 +1,5 @@
 /**
- * `rdc serve` — run this process as an executor.
+ * `rdc serve`, run this process as an executor.
  *
  * The same binary that operators run on a laptop becomes the thing that runs
  * commands on their behalf. Two placements, one artifact:

@@ -166,7 +166,7 @@ async function handleCheckout(
     // fork. The fork's config key uses a HUMAN base name when one is known: the --from working fork's base. A direct commit-GUID checkout keeps the commit's key as base (the caller addressed it by GUID anyway).
     const baseName = parseRepoRef(options.from ?? commitRef).name;
 
-    // Mutating verb: derive the execution machine from the SOURCE family's placement (spec/03 §2.3) — the working fork named by --from, else the base repo the commit belongs to. The shared handleForkAction accepts an optional
+    // Mutating verb: derive the execution machine from the SOURCE family's placement (spec/03 §2.3), the working fork named by --from, else the base repo the commit belongs to. The shared handleForkAction accepts an optional
     // kubeCluster, so a kubernetes-world source forks with KUBECONFIG threaded;
     // a docker source leaves it unset and forks against the machine's daemon.
     const { repoKey, machineName, kubeCluster } = await resolveRepoRef(options.from ?? baseName);
@@ -290,7 +290,7 @@ async function handleMerge(
       functionName: 'repository_merge',
       machineName,
       ...(kubeCluster !== undefined && { kubeCluster }),
-      // #74: merge reads BOTH sides from one datastore — `--from` names a GUID in the same family, which is why the target's placement covers it.
+      // #74: merge reads BOTH sides from one datastore, `--from` names a GUID in the same family, which is why the target's placement covers it.
       datastore: await recordedDatastoreMount(repoKey),
       params: {
         repository: repoKey,

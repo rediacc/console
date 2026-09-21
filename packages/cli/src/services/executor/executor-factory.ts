@@ -35,7 +35,7 @@ import type { Executor } from './types.js';
  * Built lazily on first use, not at module load. `getExecutor` already read
  * `localExecutorService` lazily; constructing the wrapper here at module-init
  * would instead read it EAGERLY, and this module sits in an import cycle where
- * `localExecutorService` is not yet initialised at that moment — capturing
+ * `localExecutorService` is not yet initialised at that moment, capturing
  * `undefined` as the fallback. One instance, since it holds no per-call state.
  */
 let daemonBackedExecutor: Executor | undefined;
@@ -93,7 +93,7 @@ export function backgroundDecorator(inner: Executor): Executor {
  * on the request context, so that wins. Outside a dispatch there is no context
  * and this is the daemon-backed executor, which transparently falls back to the
  * local executor whenever the daemon is unavailable or the work is not
- * daemon-eligible — so the effective behaviour on a laptop is unchanged.
+ * daemon-eligible, so the effective behaviour on a laptop is unchanged.
  * `--background` composes over whichever it is, and is inert inside a dispatch.
  */
 export function getExecutor(): Executor {

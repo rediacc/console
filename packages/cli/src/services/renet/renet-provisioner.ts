@@ -542,7 +542,7 @@ class RenetProvisionerService {
       const versionMatch = /\d+\.\d+\.\d+/.exec(lines.slice(1).join(' '));
       return { hash, version: versionMatch ? versionMatch[0] : null };
     } catch {
-      // Binary doesn't exist or exec failed — needs install, no version to guard
+      // Binary doesn't exist or exec failed, needs install, no version to guard
       return { hash: null, version: null };
     }
   }
@@ -553,7 +553,7 @@ class RenetProvisionerService {
    */
   private async restartRunningServices(sftp: SFTPClient): Promise<boolean> {
     try {
-      // Only restart if the service is active — is-active returns non-zero otherwise, so the && short-circuits and || true ensures the command always succeeds.
+      // Only restart if the service is active, is-active returns non-zero otherwise, so the && short-circuits and || true ensures the command always succeeds.
       const output = await sftp.exec(
         `sudo systemctl is-active --quiet ${ROUTER_SERVICE} && sudo systemctl restart ${ROUTER_SERVICE} && echo RESTARTED || true`
       );

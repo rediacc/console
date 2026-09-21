@@ -92,7 +92,7 @@ const REPO_LICENSE_FUNCTION_PREFIX = 'repository_';
  * state mirror on a machine the commit was just pushed to (repo-delta.ts
  * finalizePush). It makes no repository: renet's cmd layer runs no licence
  * check for it at all, and the only check it meets is the bridge dispatch's
- * create-tier one, which resolves `params.repository` — a repo that already
+ * create-tier one, which resolves `params.repository`, a repo that already
  * exists on that machine. So the licence it needs is the PUSHED repo's, which
  * the push path is responsible for, not a fresh one. Routing it through
  * pre-issuance would mint a second licence for an existing repo and burn an
@@ -151,7 +151,7 @@ export function isRepoProvisioningFunction(functionName: string): boolean {
  * what it exchanges for one (cmd/renet/backup_restore.go's
  * `resolveRestoreLicense`): it is the bearer credential AND the address book,
  * since the session URL is derived from the blob's `RenewalURL`. On a fresh DR
- * machine there is no blob at all, so the restore refuses — which is exactly
+ * machine there is no blob at all, so the restore refuses, which is exactly
  * the case the verb exists for.
  *
  * This is a SEPARATE classification from `isRepoProvisioningFunction`, and the
@@ -169,7 +169,7 @@ export function isRepoProvisioningFunction(functionName: string): boolean {
  *
  * So the name is written out rather than derived. The requirement it encodes is
  * an IMPLEMENTATION one (a session needs a bearer blob), not a TIER one, and
- * the two must not be conflated — which is why this cannot be, and must not
+ * the two must not be conflated, which is why this cannot be, and must not
  * become, a tier lookup.
  */
 export function isRestoreLicenseFunction(functionName: string): boolean {

@@ -6,7 +6,7 @@
  * It is deliberately thin: on an `execute` frame it calls the EXISTING
  * `localExecutorService.execute()` with the wired options plus an `onEvent` that
  * relays each renet event back as a frame, forcing events mode so the far
- * process's output streams as structured events (its own stdout is /dev/null —
+ * process's output streams as structured events (its own stdout is /dev/null ,
  * it was spawned detached). The client re-renders those events, so the operator
  * sees exactly what a direct run would show.
  *
@@ -70,7 +70,7 @@ export interface DaemonHandle {
  * returns; the listening socket keeps the process alive on its own.
  */
 export async function startExecutorDaemon(deps: DaemonServerDeps = {}): Promise<DaemonHandle> {
-  // The daemon is the one long-lived process that wants warm SSH sessions: enable the connection pool's idle linger for THIS process (default is 0 — an open SSH socket would keep a short-lived CLI from exiting).
+  // The daemon is the one long-lived process that wants warm SSH sessions: enable the connection pool's idle linger for THIS process (default is 0, an open SSH socket would keep a short-lived CLI from exiting).
   process.env.REDIACC_SSH_LINGER_MS ??= String(5 * 60 * 1000);
   const executor = deps.executor ?? localExecutorService;
   const socketPath = deps.socketPath ?? daemonSocketPath();
@@ -244,7 +244,7 @@ function runExecute(
 ): void {
   // Per-request config freshness. ConfigFileStorage memoizes parsed configs
   // with no mtime check, and daemon clients rewrite the config between
-  // requests (the tutorial preambles wipe + re-init it constantly) — serving a request from the first snapshot executed against deleted repos and machines (observed live: whole-sequence cascade). The fs.watch below is kept for the provisioner caches but is too coalesced/latent to be the
+  // requests (the tutorial preambles wipe + re-init it constantly), serving a request from the first snapshot executed against deleted repos and machines (observed live: whole-sequence cascade). The fs.watch below is kept for the provisioner caches but is too coalesced/latent to be the
   // correctness mechanism for wipe-then-execute patterns; a ~1ms re-read per
   // request is nothing next to the SSH/provision savings the daemon exists for.
   configFileStorage.clearCache();

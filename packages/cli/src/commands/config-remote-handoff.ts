@@ -5,7 +5,7 @@
  * payload shape and decrypt path without dragging in commander. The portal
  * side produces this payload (sealed with cekHandoffEncrypt to the X25519
  * public key the CLI puts in the URL); its mirror fixture lives at
- * `private/account/web/src/lib/__tests__/config-handoff.test.ts` — keep the
+ * `private/account/web/src/lib/__tests__/config-handoff.test.ts`, keep the
  * two textually identical.
  */
 
@@ -16,7 +16,7 @@ import { ValidationError } from '../utils/errors.js';
 
 /**
  * Decrypted handoff payload from the portal. `configId` is absent for a
- * fresh (zero-config) store — the CLI then mints one from the local config's
+ * fresh (zero-config) store, the CLI then mints one from the local config's
  * id and seeds the store on enable.
  */
 export interface HandoffPayload {

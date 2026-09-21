@@ -1,5 +1,5 @@
 /**
- * `rdc config field` — canonical pointer-addressed access to any config leaf.
+ * `rdc config field`, canonical pointer-addressed access to any config leaf.
  *
  * Subcommands:
  *   get <pointer>                          read a value (respects --reveal)
@@ -38,7 +38,7 @@ import { isAgentEnvironment } from '../../utils/agent-guard.js';
 import { handleError, ValidationError } from '../../utils/errors.js';
 
 function configDir(): string {
-  // configFileStorage exposes the directory via a private method indirectly —
+  // configFileStorage exposes the directory via a private method indirectly ,
   // for audit log placement we use $XDG_CONFIG_HOME/rediacc (same convention).
   const xdg = process.env.XDG_CONFIG_HOME ?? `${process.env.HOME ?? ''}/.config`;
   return `${xdg}/rediacc`;
@@ -56,7 +56,7 @@ function emit(draft: AuditEventDraft): void {
  * Apply a JSON-Pointer mutation to the in-memory config, returning the new
  * config. Operates on the v2 shape via getByPointer/setByPointer semantics.
  *
- * Set/unset are persisted by the caller via configFileStorage.update —
+ * Set/unset are persisted by the caller via configFileStorage.update ,
  * MutationGate validates first.
  */
 function applyMutation(config: unknown, pointer: string, newValue: unknown): unknown {

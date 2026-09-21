@@ -61,7 +61,7 @@ describe('background-updater: applyPendingUpdate signal API', () => {
  * fully in-process and offline.
  *
  * The critical invariant: when getAppliedAtStartup() returns a version,
- * checkForUpdate() and performUpdate() must NOT be called — otherwise we
+ * checkForUpdate() and performUpdate() must NOT be called, otherwise we
  * regress to the duplicate-apply bug that corrupts .old.
  */
 describe('handleUpdate short-circuit on appliedAtStartup', () => {
@@ -170,7 +170,7 @@ describe('handleUpdate short-circuit on appliedAtStartup', () => {
 
     // checkForUpdate IS called (so we can detect a NEWER release; see next test).
     expect(updaterMocks.checkForUpdate).toHaveBeenCalled();
-    // performUpdate is NOT — we are already at the latest after startup apply.
+    // performUpdate is NOT, we are already at the latest after startup apply.
     expect(updaterMocks.performUpdate).not.toHaveBeenCalled();
   });
 

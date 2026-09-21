@@ -25,7 +25,7 @@ const ARTIFACTS: Record<ServerPlatform, ServerArtifact> = {
 };
 
 /**
- * openvscode-server (Gitpod, MIT) — the default browser VS Code provider.
+ * openvscode-server (Gitpod, MIT), the default browser VS Code provider.
  * Token-in-URL auth makes it the best fit for `--url-only` automation: the
  * printed URL is self-contained and the loopback port rejects strangers.
  */

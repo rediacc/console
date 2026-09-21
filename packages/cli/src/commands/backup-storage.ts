@@ -1,10 +1,10 @@
 /**
- * `rdc backup usage | manifests | verify` — the read side of the content-addressed
+ * `rdc backup usage | manifests | verify`, the read side of the content-addressed
  * chunk-store backup (spec/02). `usage` and `manifests` are control-plane READS
  * through the account tunnel (`accountServerFetch`, so the request is
  * E2E-sealed); they need the `backup:read` scope
  * on the presented token. `verify` is executor-side: it runs the renet
- * `backup_verify` verb on the machine that holds the repo — the machine, not the
+ * `backup_verify` verb on the machine that holds the repo, the machine, not the
  * server, owns the anchor and the cell data.
  */
 
@@ -21,7 +21,7 @@ import { executeRepoFunction } from '../utils/repo-executor.js';
 import { resolveRepoRef, resolveRepoRefLocal } from '../utils/repo-target.js';
 import { parseBrowseResult, parseVerifyVerdict } from './backup-storage-parser.js';
 
-/** GET /backups/usage — subscription aggregate + per-lineage breakdown. */
+/** GET /backups/usage, subscription aggregate + per-lineage breakdown. */
 interface BackupUsageResponse {
   subscriptionId: string;
   storedBytes: number;
@@ -42,7 +42,7 @@ interface BackupUsageResponse {
   }[];
 }
 
-/** GET /backups/manifests — the server-side snapshot index. */
+/** GET /backups/manifests, the server-side snapshot index. */
 interface BackupManifestEntry {
   snapshotId: string;
   lineageGuid: string;
@@ -64,7 +64,7 @@ export interface BackupManifestsResponse {
   manifests: BackupManifestEntry[];
 }
 
-/** `backup usage` — quota vs stored bytes, plus per-repo (lineage) usage. */
+/** `backup usage`, quota vs stored bytes, plus per-repo (lineage) usage. */
 function registerBackupUsage(backup: Command): void {
   backup
     .command('usage')
@@ -136,7 +136,7 @@ async function resolveLineage(repoRef: string): Promise<string> {
   return repo.grandGuid ?? repo.repositoryGuid;
 }
 
-/** `backup manifests [repo-ref]` — the server snapshot index, optionally scoped. */
+/** `backup manifests [repo-ref]`, the server snapshot index, optionally scoped. */
 function registerBackupManifests(backup: Command): void {
   backup
     .command('manifests')
@@ -144,7 +144,7 @@ function registerBackupManifests(backup: Command): void {
     .description(t('commands.backup.manifests.description'))
     .action(async (repoRef: string | undefined) => {
       try {
-        // Scope to one lineage (grand GUID) when a repo is named. Config-local resolution only — the index lives on the server, not on a machine.
+        // Scope to one lineage (grand GUID) when a repo is named. Config-local resolution only, the index lives on the server, not on a machine.
         const lineage = repoRef ? await resolveLineage(repoRef) : undefined;
 
         outputService.info(t('commands.backup.manifests.fetching'));
@@ -281,7 +281,7 @@ function registerBackupBrowse(backup: Command): void {
     );
 }
 
-/** `backup verify <repo> [--deep]` — executor-side anchor verification. */
+/** `backup verify <repo> [--deep]`, executor-side anchor verification. */
 function registerBackupVerify(backup: Command): void {
   backup
     .command('verify')
@@ -336,7 +336,7 @@ function registerBackupVerify(backup: Command): void {
 const RENET_QUOTA_REFUSED_EXIT = 16;
 
 /**
- * `backup snapshot <repo> [--reseed] [--dry-run]` — upload a chunk-store
+ * `backup snapshot <repo> [--reseed] [--dry-run]`, upload a chunk-store
  * snapshot. This is the write side of the chunk path: the first run uploads the
  * full non-zero inventory, every run after it uploads only changed cells.
  */
@@ -426,7 +426,7 @@ const RETENTION_KNOBS = [
 ] as const;
 
 /**
- * `backup retention [repo-ref]` — show the policy the SERVER is enforcing.
+ * `backup retention [repo-ref]`, show the policy the SERVER is enforcing.
  *
  * Read back from the server rather than printed from the local config on
  * purpose: what is displayed is then always what is enforced. A policy shown
@@ -506,7 +506,7 @@ function registerBackupRetention(backup: Command): void {
           body[field] = n;
           declared++;
         }
-        // EVERY knob is replaced, never merged — the server says so at routes/backups.ts:167. So an empty set would silently clear the policy while reading like a no-op. Refuse instead.
+        // EVERY knob is replaced, never merged, the server says so at routes/backups.ts:167. So an empty set would silently clear the policy while reading like a no-op. Refuse instead.
         if (declared === 0) {
           throw new ValidationError(t('commands.backup.retention.noKnobs'));
         }

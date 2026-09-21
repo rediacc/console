@@ -14,9 +14,9 @@
  * re-queried to confirm they actually loaded.
  *
  * Implementation is split across:
- * - backup-schedule/unit-generator.ts — pure content generators
- * - backup-schedule/reconcile.ts      — read + diff + in-flight gate
- * - backup-schedule/execute.ts        — mutations + verification + summary
+ * - backup-schedule/unit-generator.ts, pure content generators
+ * - backup-schedule/reconcile.ts     , read + diff + in-flight gate
+ * - backup-schedule/execute.ts       , mutations + verification + summary
  */
 
 import { NETWORK_DEFAULTS } from '@rediacc/shared/config';
@@ -140,7 +140,7 @@ async function preDeployProvisioning(
  * exited 0, never mentioning that the other was configured but would never run.
  * The operator's only clue was a backup that silently did not happen.
  *
- * A warning rather than an error on purpose — a strategy staged before its
+ * A warning rather than an error on purpose, a strategy staged before its
  * machine exists is legitimate, and throwing here would block deploys to
  * unrelated machines over a strategy that has nothing to do with them.
  */

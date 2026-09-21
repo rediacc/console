@@ -4,7 +4,7 @@
  * This is the test that proves the convenience tier is actually functional. It
  * boots the real serve app in container mode, does a genuine X25519 CEK grant
  * over the real HTTP surface, and serves REAL ciphertext from a fake account
- * server — ciphertext produced by the same buildConfigPushPayload the CLI pushes
+ * server, ciphertext produced by the same buildConfigPushPayload the CLI pushes
  * with. Nothing about the crypto is stubbed.
  *
  * What that buys: if the executor could not truly decrypt, it would hold an

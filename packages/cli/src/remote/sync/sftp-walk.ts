@@ -17,13 +17,13 @@ export interface SftpFileEntry {
   remoteRelative: string;
   absolutePath: string;
   size: number;
-  /** Octal mode bits (rwxrwxrwx) — preserved on the remote via chmod. */
+  /** Octal mode bits (rwxrwxrwx), preserved on the remote via chmod. */
   mode: number;
 }
 
 export interface SftpSymlinkEntry {
   remoteRelative: string;
-  /** Target as recorded by readlink — may be relative or absolute. */
+  /** Target as recorded by readlink, may be relative or absolute. */
   target: string;
 }
 

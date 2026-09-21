@@ -10,7 +10,7 @@
  *
  * Event types are validated against the shared discriminated-union
  * schema at packages/shared/src/audit/event-schema.ts. Unrecognized
- * function names are silently dropped — they would fail server-side
+ * function names are silently dropped, they would fail server-side
  * validation anyway, and dropping locally keeps the queue clean.
  */
 
@@ -115,7 +115,7 @@ class AuditService {
    *
    * A failed attempt is retried exactly once. Every event carries an idempotency
    * key the server dedups on, so a retry can only ever store what the first
-   * attempt missed — it can never double-count. The retry is bounded to one
+   * attempt missed, it can never double-count. The retry is bounded to one
    * extra attempt because this runs at process exit: a losing network must not
    * hold the command open indefinitely.
    */

@@ -20,7 +20,7 @@ import { assertDetachable, assertProxyCapable, paramsFromCommand } from '../prox
 
 /**
  * Parse argv with a throwaway Commander tree and hand back the action command.
- * Modelled on `repo cat <ref>` — after the §2.3 reshape the repo verbs derive
+ * Modelled on `repo cat <ref>`, after the §2.3 reshape the repo verbs derive
  * their machine, so the flags that still travel are value flags (--remote-file,
  * --max-bytes) and switches (--stat, --skip-router-restart), not `-m`/`--name`.
  */

@@ -5,7 +5,7 @@
  * The executor's credential map is keyed by GUID (`buildCredentialsMap`), so
  * such a pair has only one slot between them. Nothing failed loudly: one
  * credential won, the other repo's LUKS image stopped unlocking, and which one
- * won depended on the iteration order over config keys — i.e. on where the name
+ * won depended on the iteration order over config keys, i.e. on where the name
  * the operator happened to type sorted. `backup restore` minted a fresh
  * credential onto the source's GUID and hit exactly this.
  *

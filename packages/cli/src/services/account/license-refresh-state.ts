@@ -7,7 +7,7 @@
  * so a refresh is attempted at most once per cooldown per machine.
  *
  * The cooldown is the whole rate-limiting mechanism. It is deliberately NOT a
- * check of "is any licence due" — answering that requires the same remote scan
+ * check of "is any licence due", answering that requires the same remote scan
  * a refresh performs, so probing first would cost what it saves. The server
  * already decides per repo whether to issue, refresh, or leave alone
  * (`/account/api/v1/licenses/activate-repo-batch`), so calling it on a slow
@@ -23,7 +23,7 @@
  * describes.
  *
  * Written through `updateState`, so cooldown churn never bumps the config's
- * version counter (R2-F2) — the same treatment `state.networkIds` gets.
+ * version counter (R2-F2), the same treatment `state.networkIds` gets.
  */
 
 import { configFileStorage } from '../../adapters/config-file-storage.js';

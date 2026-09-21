@@ -1,5 +1,5 @@
 /**
- * CliExitError — a thrown error that carries a stable error code and the process
+ * CliExitError, a thrown error that carries a stable error code and the process
  * exit code that goes with it (spec/03 §1). The P4 refusal classes (AMBIGUOUS,
  * STATE_MISMATCH, HEALTH_GATE_FAILED, INFRA_FAILED, BUSY, DETACHED) have no
  * bespoke Error subclass the way AuthError/ValidationError do; rather than one
@@ -21,8 +21,8 @@ export interface CliExitErrorOptions {
   /** Override the retryable flag; defaults to the code's class (§1 table). */
   retryable?: boolean;
   /**
-   * Override the derived exit code. Almost never needed — the whole point is
-   * that the code determines the exit code — but a couple of §1 deviations
+   * Override the derived exit code. Almost never needed, the whole point is
+   * that the code determines the exit code, but a couple of §1 deviations
    * (e.g. propagating a remote exit code verbatim) want an explicit value.
    */
   exitCode?: number;

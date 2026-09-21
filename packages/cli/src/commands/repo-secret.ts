@@ -4,7 +4,7 @@
  * **Write-only model (V2).** Mirrors GitHub Actions secrets:
  *   - `set` / `unset` write or delete.
  *   - `list` returns names + modes (never values, never digests).
- *   - `get` returns `{ key, mode, digest }` only — the plaintext value is
+ *   - `get` returns `{ key, mode, digest }` only, the plaintext value is
  *     never returned to anyone (human or agent). Use `--current` to verify
  *     a value you already know via passwd-style precondition.
  *
@@ -19,7 +19,7 @@
  * **Addressing (reshape P4).** Every verb takes a positional `<ref>` and
  * resolves the repo through `resolveRepoRefLocal`. Secret ops are config-local
  * (no remote round-trip, no machine dispatch), so they resolve the family/tag
- * WITHOUT deriving a placement machine — that keeps them working on a repo whose
+ * WITHOUT deriving a placement machine, that keeps them working on a repo whose
  * datastore is detached or whose placement is not yet reconciled. The composite
  * `name:tag` key the flat-view store indexes by is rebuilt from the resolved
  * `name` + `tag` (the flattened repositories map is always keyed that way).

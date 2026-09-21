@@ -2,7 +2,7 @@
  * OpenTofu .tf.json Generator
  *
  * Generates provider-agnostic .tf.json configurations from ProviderMapping.
- * No provider-specific branches — all differences are encoded in the mapping.
+ * No provider-specific branches, all differences are encoded in the mapping.
  */
 
 import type { ProviderMapping } from '../../types/index.js';

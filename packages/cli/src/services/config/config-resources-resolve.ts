@@ -141,7 +141,7 @@ export function assertNoCredentialCollision(
 }
 
 /**
- * Refuse to restore a fork under a bare `<name>` or `<name>:latest` key —
+ * Refuse to restore a fork under a bare `<name>` or `<name>:latest` key ,
  * either would shadow / collide with the grand and re-create the #495
  * ambiguity. No-op for non-fork archives.
  */

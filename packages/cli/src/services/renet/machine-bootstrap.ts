@@ -24,7 +24,7 @@ export async function waitForSSH(ip: string, port: number, timeoutMs = 120_000):
   const interval = 5_000;
 
   while (Date.now() - start < timeoutMs) {
-    // scanHostKeys returns '' rather than throwing on any failure, so an empty result — not an exception — is the "not up yet" signal.
+    // scanHostKeys returns '' rather than throwing on any failure, so an empty result, not an exception, is the "not up yet" signal.
     if (scanHostKeys(ip, port)) return;
     await sleep(interval);
   }

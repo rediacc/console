@@ -23,7 +23,7 @@ const ARTIFACTS: Record<ServerPlatform, ServerArtifact> = {
 };
 
 /**
- * code-server (Coder, MIT) — alternate provider. No URL-token mode: auth is
+ * code-server (Coder, MIT), alternate provider. No URL-token mode: auth is
  * a password fed via env (cookie session after the login page), so the CLI
  * prints the password on a separate line instead of embedding it in the URL.
  */

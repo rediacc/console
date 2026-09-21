@@ -170,7 +170,7 @@ async function handlePolicySet(ref: string | undefined, options: PolicySetOption
   await runPolicyFunction('repository_policy_set', target, options.debug);
 }
 
-/** Register `repo policy set|get` — automatic size management policy
+/** Register `repo policy set|get`, automatic size management policy
  * (rediacc/renet#76): online auto-grow + scheduled trim, applied by the
  * machine-side storage-maintain timer. There is deliberately no auto-shrink:
  * quota shrink stays the offline, operator-run `repo resize`. */

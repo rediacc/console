@@ -389,7 +389,7 @@ export async function executeRepoLicenseRefresh(ref: string): Promise<void> {
       const sshPrivateKey =
         localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
 
-      // #74: declare the datastore the repo is RECORDED on. This is the only caller that passes no requestedSizeGb, so it is the one that reaches the size probe — and without this it measured the machine's default datastore for a repo that lives on a named one, found nothing, and
+      // #74: declare the datastore the repo is RECORDED on. This is the only caller that passes no requestedSizeGb, so it is the one that reaches the size probe, and without this it measured the machine's default datastore for a repo that lives on a named one, found nothing, and
       // reissued at the 1 GB floor. Undefined for a {machine} placement, which
       // correctly leaves the machine's own default in place.
       const datastoreMount = await recordedDatastoreMount(repoKey);

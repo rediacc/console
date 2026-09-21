@@ -217,7 +217,7 @@ export async function postPushDeploy(
   const upResult = await getExecutor().execute({
     functionName: 'repository_up',
     machineName: targetName,
-    // NO datastore on purpose (#74). The push landed the image wherever the TARGET machine's own vault record points — `resolveExtraMachines` builds `--dest-path` from that record, not from the source's placement — and dispatching here without a declaration resolves to exactly the same place. Passing the source's named mount would name a path that need not exist here.
+    // NO datastore on purpose (#74). The push landed the image wherever the TARGET machine's own vault record points, `resolveExtraMachines` builds `--dest-path` from that record, not from the source's placement, and dispatching here without a declaration resolves to exactly the same place. Passing the source's named mount would name a path that need not exist here.
     params: { repository: repo, mount: true },
     debug: options.debug as boolean | undefined,
   });
@@ -261,7 +261,7 @@ async function preparePush(
   }
 
   // Storage layout is mode-scoped (hot = mounted at push time, cold =
-  // unmounted). Probe failure defaults to hot — pushes overwhelmingly target live repos.
+  // unmounted). Probe failure defaults to hot, pushes overwhelmingly target live repos.
   let storageMode: 'hot' | 'cold' | undefined;
   if (resolvedType === 'storage') {
     const mounted = await probeRepoMounted(repoConfig.repositoryGuid, options.machine as string, {

@@ -86,7 +86,7 @@ vi.mock('../../adapters/config-file-storage.js', () => ({
   configFileStorage: mockConfigFileStorage,
 }));
 
-// Real crypto — do NOT mock @rediacc/shared/*.
+// Real crypto, do NOT mock @rediacc/shared/*.
 import {
   derivePasswordSlotSecret,
   generateCek,

@@ -14,7 +14,7 @@ const GATEWAY_BIN = REMOTE_RENET_PATH;
 
 /**
  * Build the atomic authorized_keys deployment script for a repo key:
- * check if exists → replace or append. Exported for snapshot testing —
+ * check if exists → replace or append. Exported for snapshot testing ,
  * the script must stay byte-identical across transport changes.
  */
 export function buildKeyDeploymentScript(
@@ -43,7 +43,7 @@ export function buildKeyDeploymentScript(
 /**
  * Deploy a repo's SSH public key to a machine's authorized_keys over an
  * established shared SSH session (team key, unsandboxed).
- * Idempotent — replaces existing key if prefix matches.
+ * Idempotent, replaces existing key if prefix matches.
  */
 export async function deployRepoKey(
   sftp: SFTPClient,
@@ -57,7 +57,7 @@ export async function deployRepoKey(
 
 /**
  * Deploy a repo's key if it has one. Resolves machine config and team key automatically.
- * Non-fatal — logs warning on failure.
+ * Non-fatal, logs warning on failure.
  */
 export async function deployRepoKeyIfNeeded(repoName: string, machineName: string): Promise<void> {
   try {
@@ -82,7 +82,7 @@ export async function deployRepoKeyIfNeeded(repoName: string, machineName: strin
     }
     debugLog(`Deployed SSH key for ${repoName} to ${machineName}`);
   } catch (error) {
-    // Log visibly — silent failures here cause hard-to-debug connection issues
+    // Log visibly, silent failures here cause hard-to-debug connection issues
     console.warn(
       `Warning: failed to deploy SSH key for ${repoName}: ${error instanceof Error ? error.message : error}`
     );

@@ -66,7 +66,7 @@ interface ConnectionEntry {
  *
  * OFF by default on purpose: an open SSH socket is a ref'd libuv handle, so a
  * lingering connection prevents a short-lived CLI process from exiting until
- * the linger elapses (observed live — `machine setup` hung for minutes after
+ * the linger elapses (observed live, `machine setup` hung for minutes after
  * completing; unref'ing the TIMER does not unref the SOCKET). Only a
  * long-lived process wants this, and exactly one exists: the executor daemon,
  * whose server sets REDIACC_SSH_LINGER_MS for its own process at startup so

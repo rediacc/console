@@ -67,7 +67,7 @@ vi.mock('../config/config-resources.js', () => ({
   },
 }));
 
-// The three network-facing verbs are stubbed; everything else stays REAL. In particular `isDatastoreScopedId` — the executor asks it whether a resolved datastore identity will actually scope the write, and the licence writer asks it where to put the file. Stubbing it here would let the two answers drift, which is the exact class of bug this module is guarding against.
+// The three network-facing verbs are stubbed; everything else stays REAL. In particular `isDatastoreScopedId`, the executor asks it whether a resolved datastore identity will actually scope the write, and the licence writer asks it where to put the file. Stubbing it here would let the two answers drift, which is the exact class of bug this module is guarding against.
 vi.mock('../account/license.js', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../account/license.js')>()),
   refreshRepoLicensesBatch: mockRefreshRepoLicensesBatch,
@@ -75,7 +75,7 @@ vi.mock('../account/license.js', async (importOriginal) => ({
   refreshRepoLicenseIdentity: mockRefreshRepoLicenseIdentity,
 }));
 
-// The opportunistic licence refresh is gated by a COOLDOWN persisted to a real file under the user's state dir. Without this mock the test reads whatever that file happens to hold on the machine running it: on a developer box that has run `rdc` recently the cooldown suppresses the refresh and the test passes, while CI — with a clean state dir — takes the refresh path and gets a
+// The opportunistic licence refresh is gated by a COOLDOWN persisted to a real file under the user's state dir. Without this mock the test reads whatever that file happens to hold on the machine running it: on a developer box that has run `rdc` recently the cooldown suppresses the refresh and the test passes, while CI, with a clean state dir, takes the refresh path and gets a
 // different error code. It passed locally and failed in CI for exactly that reason. Point it at a per-process temp path so the test decides its own state.
 vi.mock('../account/license-refresh-state.js', () => ({
   isRefreshDue: vi.fn(() => Promise.resolve(false)),
@@ -788,11 +788,11 @@ describe('localExecutorService create/fork licensing flow', () => {
   //
   // renet reads the datastore from the MACHINE VAULT (`p.Datastore()` -> `machineDatastore`, set only by `WithMachineVault`), which the executor builds
   // from the config machine record. `repository_create` calls `AddDatastore`, which
-  // reads that vault — NOT the params bag. (The kube_* verbs DO read a `datastore` param, which is exactly how a caller comes to believe the param is heard: the same name is live on one verb and inert on another.)
+  // reads that vault, NOT the params bag. (The kube_* verbs DO read a `datastore` param, which is exactly how a caller comes to believe the param is heard: the same name is live on one verb and inert on another.)
   //
   // So a repo on a NAMED datastore had no way to say where it lived, and every dispatch silently used the machine's default docker datastore instead.
   //
-  // ★ THIS IS THE TEST THAT MAKES AN INERT FIX IMPOSSIBLE. It asks the CALLEE what it will accept, not the caller what it meant to send: it asserts the executor actually threads ExecuteOptions.datastore into the machine record handed to the vault builder — the one field renet ever reads. A test that only checked that some command set `params.datastore` would pass while the wire
+  // ★ THIS IS THE TEST THAT MAKES AN INERT FIX IMPOSSIBLE. It asks the CALLEE what it will accept, not the caller what it meant to send: it asserts the executor actually threads ExecuteOptions.datastore into the machine record handed to the vault builder, the one field renet ever reads. A test that only checked that some command set `params.datastore` would pass while the wire
   // carried the wrong datastore, which is precisely the bug this guards.
   describe('datastore override (#74)', () => {
     it('threads options.datastore into the machine record the vault is built from', async () => {
@@ -809,7 +809,7 @@ describe('localExecutorService create/fork licensing flow', () => {
     });
 
     it('leaves the machine default intact when no datastore is declared', async () => {
-      // The fallback is CORRECT for a machine with no named datastore, and #74 is that the caller stayed silent — not that the default exists. A caller that declares nothing must still get the machine's own datastore.
+      // The fallback is CORRECT for a machine with no named datastore, and #74 is that the caller stayed silent, not that the default exists. A caller that declares nothing must still get the machine's own datastore.
       mockGetLocalMachine.mockResolvedValue({
         machineName: 'hostinger',
         ip: '127.0.0.1',
@@ -833,7 +833,7 @@ describe('localExecutorService create/fork licensing flow', () => {
   //
   // Live on a real VM: `repo create <r> --datastore <d>` against an enforcing renet printed "License activated" (slot claimed, meter moved) and then died
   // with exit 10 LICENSE_REQUIRED, repo rolled back. The licence was real; it
-  // was in the wrong place. The CLI wrote it to the unscoped `license/repos/<guid>/`, while renet's create-tier check for a datastore-resident repo reads ONLY `license/datastores/<id>/repos/<guid>/` — a clean break with no dual read (pkg/license/store.go RepoLicenseBaseDir).
+  // was in the wrong place. The CLI wrote it to the unscoped `license/repos/<guid>/`, while renet's create-tier check for a datastore-resident repo reads ONLY `license/datastores/<id>/repos/<guid>/`, a clean break with no dual read (pkg/license/store.go RepoLicenseBaseDir).
   //
   // The identity was unavailable to the pre-issuance path for a structural reason: every LATER touch reads it from renet's licence scan, and the scan is empty here because the repo does not exist yet. The DATASTORE does exist, so the identity comes from the machine's datastore registry instead.
   //
@@ -934,14 +934,14 @@ describe('localExecutorService create/fork licensing flow', () => {
     it('re-issues with identity proofs under the same scope, so the proven blob lands scoped too', async () => {
       await localExecutorService.execute(datastoreCreate);
 
-      // The post-create refresh prefers renet's scan, which now sees the repo. The resolved id rides along as the fallback for a scan that cannot answer — without it the PROVEN reissue would land unscoped and undo the pre-issuance fix one step later.
+      // The post-create refresh prefers renet's scan, which now sees the repo. The resolved id rides along as the fallback for a scan that cannot answer, without it the PROVEN reissue would land unscoped and undo the pre-issuance fix one step later.
       expect(mockRefreshRepoLicenseIdentity.mock.calls[0][2]).toMatchObject({
         repositoryGuid: 'guid-1',
         datastoreId: DS_ID,
       });
     });
 
-    // Failing closed is the whole point: an unscoped write is INVISIBLE to renet's validation, so "issue anyway and hope" costs an activation and still fails the create. Refusing costs nothing — it runs before issuance.
+    // Failing closed is the whole point: an unscoped write is INVISIBLE to renet's validation, so "issue anyway and hope" costs an activation and still fails the create. Refusing costs nothing, it runs before issuance.
     describe('refuses rather than issuing into a scope it cannot name', () => {
       it('when the datastore is absent from the machine registry', async () => {
         registryReturns([{ name: 'other-ds', datastoreId: DS_ID }]);

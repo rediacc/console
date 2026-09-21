@@ -1,5 +1,5 @@
 /**
- * Audit log tests — append, chain verification, tamper detection.
+ * Audit log tests, append, chain verification, tamper detection.
  */
 
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';

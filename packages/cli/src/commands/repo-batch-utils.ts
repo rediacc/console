@@ -28,7 +28,7 @@ async function confirmBatch(action: string, count: number, machine: string): Pro
 }
 
 /**
- * Ensure DNS records exist for a repo's auto-route domain. Pure HTTP — needs
+ * Ensure DNS records exist for a repo's auto-route domain. Pure HTTP, needs
  * only names, so callers may fire it before (or concurrent with) SSH work.
  * Resolves to the machine's baseDomain (undefined when not configured or on
  * failure; DNS issues never block repo up).
@@ -54,7 +54,7 @@ export async function ensureDns(
 
 // Auto-sync the acme cert cache from the machine.
 //
-// Skipped if the cached entry for this baseDomain was updated within the last AUTO_SYNC_MIN_INTERVAL_HOURS window — this prevents a series of back-to-back `repo up` calls from SSH-thrashing the host for a file that Traefik refreshes only on renewal. When sync runs and actually changes something, we emit an
+// Skipped if the cached entry for this baseDomain was updated within the last AUTO_SYNC_MIN_INTERVAL_HOURS window, this prevents a series of back-to-back `repo up` calls from SSH-thrashing the host for a file that Traefik refreshes only on renewal. When sync runs and actually changes something, we emit an
 // info-level log so the behavior is visible; silent failures are swallowed as
 // before because cert cache is advisory.
 async function maybeSyncCertCache(
@@ -395,7 +395,7 @@ export async function handleRepoList(options: {
           kubeCluster: (await getDatastore(options.datastore)).cluster,
         }
       : await resolveRepoTarget(options);
-    // #74: `--datastore` resolved the HOLDER and then said nothing about the datastore itself, so `repo list --datastore tier1` dispatched at the right machine and listed its DEFAULT pool — the one place the operator did not ask about. `repository_list` enumerates exactly one datastore, so naming it
+    // #74: `--datastore` resolved the HOLDER and then said nothing about the datastore itself, so `repo list --datastore tier1` dispatched at the right machine and listed its DEFAULT pool, the one place the operator did not ask about. `repository_list` enumerates exactly one datastore, so naming it
     // is the whole fix; without --datastore the machine's default stays correct.
     const datastore = options.datastore ? namedDatastoreMount(options.datastore) : undefined;
     outputService.info(t('commands.repo.list.starting', { machine: machineName }));

@@ -16,7 +16,7 @@ interface PasswordEnrollResponse {
   wrappedCek: string;
   token: string;
   storeId: string;
-  /** null for a zero-config store — the CLI then mints an id and seeds it. */
+  /** null for a zero-config store, the CLI then mints an id and seeds it. */
   configId: string | null;
   /** The selected config's teamId; null for the default/org-level config. */
   teamId: string | null;
@@ -60,7 +60,7 @@ function describeEnrollForbidden(error: unknown): string {
 /**
  * Resolve the config master password for a headless password enrollment.
  * Order mirrors requireMasterPassword: REDIACC_CONFIG_PASSWORD env → interactive
- * prompt. There is nothing to verify it against locally — a wrong password fails
+ * prompt. There is nothing to verify it against locally, a wrong password fails
  * the probe pull below with a clear message.
  */
 async function resolveConfigPassword(): Promise<string> {
@@ -131,7 +131,7 @@ export async function enablePassword(
     // null (zero-config store) collapses to undefined so finalizeEnable mints a configId from the local config's id and seeds the store.
     configId: enroll.configId ?? undefined,
     storageKeyId,
-    // null (default/org config) collapses to undefined — RemoteConfig.teamId is an optional uuid, and a falsy teamId already means "no team filter" on pull.
+    // null (default/org config) collapses to undefined, RemoteConfig.teamId is an optional uuid, and a falsy teamId already means "no team filter" on pull.
     teamId: enroll.teamId ?? undefined,
   };
 

@@ -1,5 +1,5 @@
 /**
- * Command planes — where each command actually executes.
+ * Command planes, where each command actually executes.
  *
  * A plane is a claim the web console and the `rdc --proxy` thin client trust:
  * a machine-plane command is offered for remote execution on the operator's
@@ -9,16 +9,16 @@
  *
  * Kept separate from command-metadata.ts because planes resolve by ancestor
  * inheritance (a domain entry is the default, the rest are exceptions), which
- * none of the MCP or policy annotations do — and because that file is already
+ * none of the MCP or policy annotations do, and because that file is already
  * at its max-lines budget.
  */
 
 /**
- * - `machine`: reaches a customer machine — renet execute (services/executor/
+ * - `machine`: reaches a customer machine, renet execute (services/executor/
  *   local-executor), services/machine/*, remote/ssh, remote/sftp, or
  *   services/tofu.
  * - `config`: only reads or writes local CLI config and resource state.
- * - `other`: neither — local tooling (self-update, diagnostics, local KVM dev
+ * - `other`: neither, local tooling (self-update, diagnostics, local KVM dev
  *   VMs, the MCP server) and account-server HTTPS calls (licensing, the
  *   encrypted remote-config store). An account-server call is NOT `machine`.
  */
@@ -76,7 +76,7 @@ export const COMMAND_PLANES: Record<string, PlaneMeta> = {
 
   // ── backup: named strategy records are config-only; the rest reach a machine ─ `backup strategy set/remove/list/show` edit strategy records in the config (backup-strategy.ts imports no executor or SSH).
   'backup strategy': { plane: 'config' },
-  // `backup usage`/`backup manifests` are account-tunnel READS (accountServerFetch), not machine executor commands — control-plane, so `other` (like `subscription`). `backup verify` DOES reach a machine (backup_verify verb), so it keeps the backup-domain machine default.
+  // `backup usage`/`backup manifests` are account-tunnel READS (accountServerFetch), not machine executor commands, control-plane, so `other` (like `subscription`). `backup verify` DOES reach a machine (backup_verify verb), so it keeps the backup-domain machine default.
   'backup usage': { plane: 'other' },
   'backup manifests': { plane: 'other' },
   // `backup retention` (and its set/clear children) is the same shape: it reads and writes the policy through accountServerFetch and never touches a machine. Without these entries it inherits the backup-domain MACHINE default and becomes proxyCapable, which would offer a policy that decides what gets DELETED for execution against the wrong target.
@@ -92,8 +92,8 @@ export const COMMAND_PLANES: Record<string, PlaneMeta> = {
   'repo replicate status': { plane: 'config' },
   'repo canary status': { plane: 'config' },
   // Archived-record bookkeeping: list/restore/purge read and write the config's archive map and nothing else (repo-admin.ts imports no executor or SSH). These
-  // leaves were `config repository {list,restore,purge}-archived` — config-plane by
-  // their old domain's default — and the §5.4 relocation into `repo` silently flipped them to repo's MACHINE default, which made them proxyCapable. Through the proxy that is a wrong-target bug in the §4.9 sense: the effect is the CALLER's config, so a remote `archive purge` would permanently delete the proxy host's archived records instead. The plane gate cannot see this — it
+  // leaves were `config repository {list,restore,purge}-archived`, config-plane by
+  // their old domain's default, and the §5.4 relocation into `repo` silently flipped them to repo's MACHINE default, which made them proxyCapable. Through the proxy that is a wrong-target bug in the §4.9 sense: the effect is the CALLER's config, so a remote `archive purge` would permanently delete the proxy host's archived records instead. The plane gate cannot see this, it
   // checks domains, not leaves, and `repo` plainly reaches machines.
   'repo admin archive': { plane: 'config' },
   // Prints the compiled-in catalog (templates/embedded.generated.ts). No config, no machine. `repo admin template apply` inherits repo's machine default. Moved under `repo admin` with its command in w2b (§5.4).
@@ -103,13 +103,13 @@ export const COMMAND_PLANES: Record<string, PlaneMeta> = {
 
   // ── storage ───────────────────────────────────────────────────────────
   'storage prune': { plane: 'machine' },
-  // Lists a bucket by spawning the operator's local rclone against the vault credentials — it reaches the storage backend, never a machine.
+  // Lists a bucket by spawning the operator's local rclone against the vault credentials, it reaches the storage backend, never a machine.
   'storage browse': { plane: 'other' },
 
   // ── cluster ─────────────────────────────────────────────────────────── Prints the cluster's config block (configService.listClusters); it does not query the live cluster, so it is the one config-plane leaf in the domain.
   'cluster status': { plane: 'config' },
 
-  // ── config: machine/provider/infra/cert-cache moved to the `machine` noun ─ (their planes now live under `machine …` above). `config reconcile` reaches every machine (renet list all) to rebuild state, so it is honestly machine-plane — and it is config's ONLY machine leaf, which keeps Rule 2 satisfied now that the machine/infra leaves left. It is barred
+  // ── config: machine/provider/infra/cert-cache moved to the `machine` noun ─ (their planes now live under `machine …` above). `config reconcile` reaches every machine (renet list all) to rebuild state, so it is honestly machine-plane, and it is config's ONLY machine leaf, which keeps Rule 2 satisfied now that the machine/infra leaves left. It is barred
   // from the proxy (PROXY_EXCLUSIONS) because its effect is the CALLER's state.
   'config reconcile': { plane: 'machine' },
   // Rotates the ORGANIZATION's config-encryption key via the account server (HTTPS), not a machine.
@@ -144,7 +144,7 @@ export const COMMAND_PLANES: Record<string, PlaneMeta> = {
   // ── ops ─────────────────────────────────────────────────────────────── Spawns `ssh` with stdio inherited into a local dev VM.
   'ops ssh': { interactive: true },
 
-  // ── serve ───────────────────────────────────────────────────────────── The executor daemon. `plane: machine` is honest — running machine operations on a caller's behalf is its entire job, and it imports local-executor to do it. `interactive` because it listens until SIGINT and never returns, which is also what keeps it out of the proxy: forwarding `rdc serve` to an executor
+  // ── serve ───────────────────────────────────────────────────────────── The executor daemon. `plane: machine` is honest, running machine operations on a caller's behalf is its entire job, and it imports local-executor to do it. `interactive` because it listens until SIGINT and never returns, which is also what keeps it out of the proxy: forwarding `rdc serve` to an executor
   // would ask the executor to start another one.
   serve: { plane: 'machine', interactive: true },
 };
@@ -172,7 +172,7 @@ function resolveAncestor<T>(
  * Resolve a command's execution plane, inheriting from the nearest ancestor.
  *
  * "repo secret list" checks "repo secret list", then "repo secret", then
- * "repo" — so a domain entry supplies the default and only exceptions need an
+ * "repo", so a domain entry supplies the default and only exceptions need an
  * entry of their own.
  *
  * Throws on an unresolvable path: every command must declare a plane, directly

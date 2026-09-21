@@ -266,7 +266,7 @@ describe('generateServiceUnit', () => {
   it('emits --cold for a cold strategy, and nothing for a hot one', async () => {
     // This assertion used to say the opposite: cold was REFUSED, because the scheduled verb could only take a hot snapshot and deploying one would have handed back unquiesced snapshots of a database the operator asked to be stopped first. `backup snapshot --cold` closed that gap, so the flag is emitted rather than the strategy rejected.
     //
-    // Both directions are asserted deliberately. Checking only the cold case would pass just as happily against a generator that appended --cold to EVERY unit, which would impose a nightly outage on every hot strategy on the machine — the mirror image of the bug this replaced.
+    // Both directions are asserted deliberately. Checking only the cold case would pass just as happily against a generator that appended --cold to EVERY unit, which would impose a nightly outage on every hot strategy on the machine, the mirror image of the bug this replaced.
     const { _testing } = await import('../backup/backup-schedule.js');
     const gen = (mode: 'hot' | 'cold') =>
       _testing.generateServiceUnit(
@@ -284,7 +284,7 @@ describe('generateServiceUnit', () => {
   });
 
   it('gives a cold unit a stop window longer than renet needs to restart', async () => {
-    // A SIGTERM inside the cold window leaves containers STOPPED, and renet's handler has to bring them all back before it exits — bounded at 15 min renet-side. The hot budget of 90s would SIGKILL mid-restart and leave the repositories down, turning a clean `systemctl stop` into the outage cold mode exists to keep brief.
+    // A SIGTERM inside the cold window leaves containers STOPPED, and renet's handler has to bring them all back before it exits, bounded at 15 min renet-side. The hot budget of 90s would SIGKILL mid-restart and leave the repositories down, turning a clean `systemctl stop` into the outage cold mode exists to keep brief.
     const { _testing } = await import('../backup/backup-schedule.js');
     const stopSec = (mode: 'hot' | 'cold') => {
       const { serviceContent } = _testing.generateServiceUnit(
@@ -370,7 +370,7 @@ describe('generateServiceUnit', () => {
   });
 
   it('validates every destination, not just the first, before emitting a unit', async () => {
-    // Successor to the conflicting-env-var test: destinations no longer contribute env vars that could collide, but the multi-destination validation it protected still matters — a strategy must be rejected whole rather than half-rendered.
+    // Successor to the conflicting-env-var test: destinations no longer contribute env vars that could collide, but the multi-destination validation it protected still matters, a strategy must be rejected whole rather than half-rendered.
     const { _testing } = await import('../backup/backup-schedule.js');
     const call = () =>
       _testing.generateServiceUnit(
@@ -468,7 +468,7 @@ describe('sha256Hex', () => {
   it('is deterministic for the same UTF-8 input', async () => {
     const { _testing } = await import('../backup/backup-schedule.js');
     expect(_testing.sha256Hex('hello')).toBe(_testing.sha256Hex('hello'));
-    // Pinned against a known expected value — guards against an accidental encoding flip (bytes vs hex) that would silently turn every reconcile into "everything updated."
+    // Pinned against a known expected value, guards against an accidental encoding flip (bytes vs hex) that would silently turn every reconcile into "everything updated."
     expect(_testing.sha256Hex('hello')).toBe(
       '2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824'
     );
@@ -503,7 +503,7 @@ describe('parseStrategyFromPath', () => {
   });
 
   it('excludes -adhoc service files', async () => {
-    // `-adhoc` units belong to the on-demand backup path (`machine backup now`) and must not be reconciled as scheduled strategies — otherwise the reconciler would try to remove them as orphans on every run.
+    // `-adhoc` units belong to the on-demand backup path (`machine backup now`) and must not be reconciled as scheduled strategies, otherwise the reconciler would try to remove them as orphans on every run.
     const { _testing } = await import('../backup/backup-schedule.js');
     expect(
       _testing.parseStrategyFromPath('/etc/systemd/system/rediacc-backup-foo-adhoc.service')
@@ -706,7 +706,7 @@ describe('applyInFlightGate', () => {
   });
 });
 
-// --------------------------------------------------------------------------- Integration tests — pushBackupSchedule (full flow with scripted SSH) ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Integration tests, pushBackupSchedule (full flow with scripted SSH) ---------------------------------------------------------------------------
 
 describe('pushBackupSchedule (reconcile)', () => {
   beforeEach(() => {
@@ -762,7 +762,7 @@ describe('pushBackupSchedule (reconcile)', () => {
     const reloads = cmds.filter((c) => c === 'sudo systemctl daemon-reload');
     expect(reloads).toHaveLength(1);
     expect(cmds).toContain('sudo systemctl enable --now rediacc-backup-hourly-hot.timer');
-    // No legacy glob-remove — only orphan cleanup of *.new files.
+    // No legacy glob-remove, only orphan cleanup of *.new files.
     expect(cmds.some((c) => c.includes('rm -f') && c.includes('rediacc-backup-*.service'))).toBe(
       false
     );

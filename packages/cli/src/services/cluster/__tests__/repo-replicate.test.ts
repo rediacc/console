@@ -52,7 +52,7 @@ describe('renderReplicaSet (spec 05 §1 manifest plumbing)', () => {
     expect(yaml).toContain('name: sqldb-replicas-1-data');
     expect(yaml).toContain('name: sqldb-replicas-2-data');
     expect(yaml).toContain('key: rediacc.io/ds-ds-data-sqldb-replicas-r1');
-    // ★ #93 (storage speaks GUID, k8s objects speak name): the PV path into the fork mount is GUID-keyed — the fork is a byte-clone of the parent, whose volumes-open/CSI mount at mounts/volumes/<guid>/<vol>. A NAME-keyed path points at a directory that does not exist and the replica comes up EMPTY, so a regression back to the name must turn this red.
+    // ★ #93 (storage speaks GUID, k8s objects speak name): the PV path into the fork mount is GUID-keyed, the fork is a byte-clone of the parent, whose volumes-open/CSI mount at mounts/volumes/<guid>/<vol>. A NAME-keyed path points at a directory that does not exist and the replica comes up EMPTY, so a regression back to the name must turn this red.
     expect(yaml).toContain(
       'path: /mnt/rediacc-ds/ds-data-sqldb-replicas-r1/mounts/volumes/guid-sqldb/data'
     );
@@ -166,7 +166,7 @@ describe('provisionReplicaDatastores (datastore plane: snapshot + N fork-attach)
   it('ferries the fork record via datastore_adopt off-control, and skips adopt on the control node (finding #36)', async () => {
     vi.spyOn(outputService, 'warn').mockReturnValue(undefined);
     const exec = execMock();
-    // nodes = [control cp1, worker w1] — mirrors the live b1src layout where
+    // nodes = [control cp1, worker w1], mirrors the live b1src layout where
     // replica 1 lands on the control node and replica 2 on an agent node.
     await provisionReplicaDatastores({
       ...base,
@@ -186,7 +186,7 @@ describe('provisionReplicaDatastores (datastore plane: snapshot + N fork-attach)
     expect(adopts.map((c) => c.machineName)).toEqual(['w1']);
     expect(adopts[0].params?.name).toBe('ds-data:set1-r2');
     expect(typeof adopts[0].params?.record_b64).toBe('string');
-    // The adopt must PRECEDE the attach on that node (attach fails otherwise — "not registered on this machine", the live bug this fixes).
+    // The adopt must PRECEDE the attach on that node (attach fails otherwise, "not registered on this machine", the live bug this fixes).
     const w1Seq = calls
       .filter(
         (c) =>
@@ -216,7 +216,7 @@ describe('provisionReplicaDatastores (datastore plane: snapshot + N fork-attach)
 
   // ── bug #49: the per-volume LUKS images, and the trap ─────────────────────
 
-  // A datastore fork is a BLOCK-layer clone: it carries the ciphertext repos/<repo>/volumes/<pvc>.img AND the empty directory that image was mounted over. The replica's PV points at that directory. If nothing re-opens the image, the replica mounts the empty dir and comes up healthy, Ready, and EMPTY — the failure has NO symptom except missing data, which is why it must be pinned
+  // A datastore fork is a BLOCK-layer clone: it carries the ciphertext repos/<repo>/volumes/<pvc>.img AND the empty directory that image was mounted over. The replica's PV points at that directory. If nothing re-opens the image, the replica mounts the empty dir and comes up healthy, Ready, and EMPTY, the failure has NO symptom except missing data, which is why it must be pinned
   // here rather than left to a live suite.
   it('opens the repo volumes on each fork, AFTER attach and BEFORE the node label', async () => {
     vi.spyOn(outputService, 'warn').mockReturnValue(undefined);
@@ -236,13 +236,13 @@ describe('provisionReplicaDatastores (datastore plane: snapshot + N fork-attach)
     expect(opens.length).toBe(2);
     // Scoped to the fork AND the repo: the images live in one repo's folder, and an unscoped open would silently open nothing.
     expect(opens.map((c) => c.params?.name)).toEqual(['ds-data:set1-r1', 'ds-data:set1-r2']);
-    // ★ #93 MUTATION CONTROL (found live by B1): the folder on the fork is repos/<GUID> (#83), so the open must speak the GUID — a NAME-based dispatch stats repos/<name>, which does not exist, and aborts every replicate of a real kube repo. Both assertions must hold: reverting to the name turns this red.
+    // ★ #93 MUTATION CONTROL (found live by B1): the folder on the fork is repos/<GUID> (#83), so the open must speak the GUID, a NAME-based dispatch stats repos/<name>, which does not exist, and aborts every replicate of a real kube repo. Both assertions must hold: reverting to the name turns this red.
     expect(opens.every((c) => c.params?.repo === 'guid-sqldb')).toBe(true);
     expect(opens.some((c) => c.params?.repo === 'sqldb')).toBe(false);
     // Each open runs on the node that HOLDS the fork, not on the control plane.
     expect(opens.map((c) => c.machineName)).toEqual(['n1', 'n2']);
 
-    // The ordering is the safety property. The node label is the PV's nodeAffinity key and therefore the scheduling gate: opening BEFORE the label means a pod can never be scheduled onto a volume that is not yet mounted. Attaching before the open is likewise required — there is no mount to open the image on until the datastore is attached.
+    // The ordering is the safety property. The node label is the PV's nodeAffinity key and therefore the scheduling gate: opening BEFORE the label means a pod can never be scheduled onto a volume that is not yet mounted. Attaching before the open is likewise required, there is no mount to open the image on until the datastore is attached.
     const names = calls.map((c) => c.functionName);
     for (const [i, fork] of ['ds-data:set1-r1', 'ds-data:set1-r2'].entries()) {
       const attachAt = calls.findIndex(

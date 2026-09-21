@@ -1,5 +1,5 @@
 /**
- * `rdc datastore attach <ref> --to <other machine>` — the single-mounter relocation.
+ * `rdc datastore attach <ref> --to <other machine>`, the single-mounter relocation.
  *
  * renet's datastore registry is PER-MACHINE, and the record is the only place a
  * datastore's ceph pool and image are written down. The relocation branch used to
@@ -126,7 +126,7 @@ beforeEach(() => {
 });
 
 describe('datastore attach — cross-machine relocation', () => {
-  // The adopt comes before the DETACH, not merely before the attach. It writes one registry row, does no disk work, and is idempotent, so putting it first means nothing destructive has happened yet when a malformed record or an unreachable target fails the move — renet's own Adopt doc states this ordering rule for exactly this case (private/renet/pkg/datastore/adopt.go:22-28).
+  // The adopt comes before the DETACH, not merely before the attach. It writes one registry row, does no disk work, and is idempotent, so putting it first means nothing destructive has happened yet when a malformed record or an unreachable target fails the move, renet's own Adopt doc states this ordering rule for exactly this case (private/renet/pkg/datastore/adopt.go:22-28).
   it('adopts the record on the target before detaching the source', async () => {
     await runAttach('tier1', 'machine-b');
 
@@ -191,7 +191,7 @@ describe('datastore attach — cross-machine relocation', () => {
   });
 });
 
-// The DETACHED arm. A datastore that is attached nowhere still has its registry row on exactly one machine — the one that last held it — so attaching it somewhere else needs the same ferry, minus the detach there is nothing to do. Without `lastHolder` the CLI has no idea which registry to read, and the attach fails "not registered on this machine" exactly as the attached case used
+// The DETACHED arm. A datastore that is attached nowhere still has its registry row on exactly one machine, the one that last held it, so attaching it somewhere else needs the same ferry, minus the detach there is nothing to do. Without `lastHolder` the CLI has no idea which registry to read, and the attach fails "not registered on this machine" exactly as the attached case used
 // to.
 describe('datastore attach — relocation from a DETACHED state', () => {
   beforeEach(() => {
@@ -264,7 +264,7 @@ describe('datastore detach records the last holder', () => {
   it('forgets the datastore entirely on --discard', async () => {
     await runDetach('tier1', ['--discard', '-y']);
 
-    // forgetDatastore clears the resource record AND the state entry, so the lastHolder written a moment earlier goes with it — correct, because there is no longer a datastore to relocate.
+    // forgetDatastore clears the resource record AND the state entry, so the lastHolder written a moment earlier goes with it, correct, because there is no longer a datastore to relocate.
     expect(mockForgetDatastore).toHaveBeenCalledWith('tier1');
   });
 });

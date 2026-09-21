@@ -1,18 +1,18 @@
 /**
  * Curated per-command documentation registries: worked examples, palette
  * search keywords, and list-output tabulation hints. A separate module from
- * COMMAND_METADATA (which is at its max-lines budget) — this file is pure
+ * COMMAND_METADATA (which is at its max-lines budget), this file is pure
  * data with NO imports, so the contract generator AND the repo-root
  * scripts/gen/validate-cli-examples.ts can both load it without dragging in the
  * CLI. Keep it dependency-free.
  *
  * Every registry is keyed by a command's pathKey (e.g. "repo fork"). The
- * generator gates every key against the live tree — a stale key fails the
+ * generator gates every key against the live tree, a stale key fails the
  * regen loudly. Curation rules per registry:
  *
- * COMMAND_EXAMPLES — ~35 high-traffic commands, 1-3 examples each.
+ * COMMAND_EXAMPLES, ~35 high-traffic commands, 1-3 examples each.
  *   - `command`: the full line a laptop would type, positional-ref syntax,
- *     CONCRETE dummy values (shop, prod-1, test) — never `<placeholders>`.
+ *     CONCRETE dummy values (shop, prod-1, test), never `<placeholders>`.
  *   - `descriptionKey`: `commands.<path>.examples.<slug>`; the English string
  *     MUST exist in i18n/locales/en/cli.json (the generator resolves the label
  *     from it and fails when missing). The key shape makes the strings flow
@@ -22,12 +22,12 @@
  *     flag, bad arity, out-of-choices value, missing mandatory option, or
  *     missing required positional fails the regen.
  *
- * COMMAND_KEYWORDS — 3-8 lowercase english tokens per command, beyond the
+ * COMMAND_KEYWORDS, 3-8 lowercase english tokens per command, beyond the
  *   words already in the path and label. Untranslated by design (the palette
  *   scores against the operator's typing, which is language-neutral for CLI
  *   nouns). Gated: lowercase ascii ([a-z][a-z0-9-]*).
  *
- * COMMAND_OUTPUT_HINTS — the ~17 list-shaped commands. `columns` must be read
+ * COMMAND_OUTPUT_HINTS, the ~17 list-shaped commands. `columns` must be read
  *   from the command's REAL `-o json` output implementation (never guessed),
  *   in display order; `primaryKey` is the column that identifies a row and
  *   must be one of `columns` (gated).
@@ -514,5 +514,5 @@ export const COMMAND_OUTPUT_HINTS: Record<string, CommandOutputHintDef> = {
     primaryKey: 'pointer',
     columns: ['pointer', 'kind', 'redactAs', 'commit', 'encryptAtRest'],
   },
-  // SKIPPED (non-tabular / unstable output — deliberately no hint): backup strategy list — free-text `info` lines, not a table repo admin template list — padded `info` lines, not a table vscode list — custom connection renderer, not `-o json` datastore snapshot list — prints raw renet JSON verbatim cluster snapshot list — prints the raw snapshot array verbatim
+  // SKIPPED (non-tabular / unstable output, deliberately no hint): backup strategy list, free-text `info` lines, not a table repo admin template list, padded `info` lines, not a table vscode list, custom connection renderer, not `-o json` datastore snapshot list, prints raw renet JSON verbatim cluster snapshot list, prints the raw snapshot array verbatim
 };

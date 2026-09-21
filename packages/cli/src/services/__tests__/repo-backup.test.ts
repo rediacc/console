@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-// i18n stub — returns key:params so assertions can match on key fragments
+// i18n stub, returns key:params so assertions can match on key fragments
 vi.mock('../../i18n/index.js', () => ({
   t: (key: string, params?: Record<string, unknown>) =>
     params ? `${key}:${JSON.stringify(params)}` : key,

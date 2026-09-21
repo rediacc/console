@@ -1,5 +1,5 @@
 /**
- * Command Registry — single source of truth for domain grouping. Help tags and
+ * Command Registry, single source of truth for domain grouping. Help tags and
  * runtime guards are auto-generated from this registry.
  */
 export const COMMAND_DOMAINS = {

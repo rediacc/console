@@ -9,7 +9,7 @@
  *     sent renet hunting for the image under the machine's default;
  *   - the TARGET of a push is NOT. `resolveExtraMachines` builds `--dest-path`
  *     from the target machine's own vault record, so the image lands there, and
- *     the post-push `repository_up` must declare nothing — naming the source's
+ *     the post-push `repository_up` must declare nothing, naming the source's
  *     mount would name a path that need not exist on that host at all.
  *
  * Both directions are pinned, because a fix that "threads the datastore
@@ -172,7 +172,7 @@ describe('repo push / pull declare the SOURCE datastore (#74)', () => {
   });
 });
 
-// `repo list --datastore <name>` resolved the datastore's HOLDER machine and then listed that machine's DEFAULT pool — dispatching at the right host and answering about the one place the operator did not ask about.
+// `repo list --datastore <name>` resolved the datastore's HOLDER machine and then listed that machine's DEFAULT pool, dispatching at the right host and answering about the one place the operator did not ask about.
 describe('repo list --datastore lists that datastore (#74)', () => {
   it('names the datastore mount it was asked about', async () => {
     await handleRepoList({ datastore: 'tier1' });

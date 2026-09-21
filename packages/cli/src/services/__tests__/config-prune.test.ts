@@ -66,14 +66,14 @@ describe('classifyArchives', () => {
 
   it('splits at the grace boundary', () => {
     const archives: ArchivedRepository[] = [
-      // 10 days ago — expired (grace = 7)
+      // 10 days ago, expired (grace = 7)
       {
         name: 'old',
         tag: 'latest',
         repositoryGuid: '11111111-1111-1111-1111-111111111111',
         deletedAt: '2026-04-24T00:00:00Z',
       },
-      // 3 days ago — still in grace
+      // 3 days ago, still in grace
       {
         name: 'recent',
         tag: 'latest',
@@ -159,7 +159,7 @@ describe('pruneCertCacheBuckets — round-trip through gzip/base64', () => {
       [`*.${liveGuid}.hostinger.rediacc.io`, '*.hostinger.rediacc.io', 'cloud.rediacc.io'].sort()
     );
 
-    // The data blob should round-trip back to a parseable acme.json with the same kept domains. This is the bit that the dry-run path never exercises — gzip → filter → gzip → base64 must not corrupt the chain.
+    // The data blob should round-trip back to a parseable acme.json with the same kept domains. This is the bit that the dry-run path never exercises, gzip → filter → gzip → base64 must not corrupt the chain.
     const data = Array.isArray(bucket.data) ? bucket.data.join('') : bucket.data;
     const raw = gunzipSync(Buffer.from(data, 'base64')).toString('utf8');
     const parsed = JSON.parse(raw) as {
@@ -193,7 +193,7 @@ describe('pruneCertCacheBuckets — round-trip through gzip/base64', () => {
     const before = JSON.stringify(cfg);
 
     const removed = pruneCertCacheBuckets(cfg, buildConfigAnchors(cfg));
-    // Corrupt cache is left alone — better than risking data loss on a bug we don't understand.
+    // Corrupt cache is left alone, better than risking data loss on a bug we don't understand.
     expect(removed).toHaveLength(0);
     expect(JSON.stringify(cfg)).toBe(before);
   });

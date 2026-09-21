@@ -1,5 +1,5 @@
 /**
- * `rdc config audit {log, tail, verify}` — inspect the append-only
+ * `rdc config audit {log, tail, verify}`, inspect the append-only
  * hash-chained audit log at `<configdir>/audit.log.jsonl`.
  */
 

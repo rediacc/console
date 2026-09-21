@@ -1,11 +1,11 @@
 /**
- * `rdc config prune` — sweep stale leftovers from the local config file.
+ * `rdc config prune`, sweep stale leftovers from the local config file.
  *
  * Three buckets, all pure-local (no SSH/renet):
  *
  *   1. ACME cert-cache entries whose anchor (GUID / repo name / machine)
  *      is no longer in the active config.
- *   2. Expired archived repositories — `resources.deletedRepositories[]`
+ *   2. Expired archived repositories, `resources.deletedRepositories[]`
  *      entries whose `deletedAt` is older than `defaults.pruneGraceDays`
  *      (default 7). In-grace entries are kept for accidental-delete
  *      recovery.
@@ -65,11 +65,11 @@ export interface ConfigPruneAnalysis {
   staleCerts: CertPruneEntry[];
   /** Archived repos whose grace expired and would be (or were) purged. */
   expiredArchives: ArchivedRepository[];
-  /** Archived repos still in grace — kept, listed for visibility. */
+  /** Archived repos still in grace, kept, listed for visibility. */
   graceArchives: ArchiveGraceEntry[];
   /** Cross-reference values that would be (or were) dropped. */
   droppedRefs: DroppedRef[];
-  /** Soft warnings (storage destination references — flagged, not auto-removed). */
+  /** Soft warnings (storage destination references, flagged, not auto-removed). */
   warnings: string[];
   /**
    * Repository entries placed on no machine. Always reported; only removed when
@@ -97,7 +97,7 @@ export type OrphanStateRepo = string;
 
 /**
  * Build the set of live anchors from the active config. Archived repos are
- * intentionally treated as live so their certs survive the grace window —
+ * intentionally treated as live so their certs survive the grace window ,
  * an operator restoring an archive shouldn't have to re-issue certs.
  *
  * Exported for test access; the apply path also uses it via the closure.
@@ -278,7 +278,7 @@ export async function analyzeConfigPrune(
   const wantArchives = !options.certsOnly && !options.refsOnly;
   const wantRefs = !options.certsOnly && !options.archivesOnly;
 
-  // Deep-clone so the analysis pass leaves the in-memory config untouched — the apply path re-runs the same logic via `configFileStorage.update`.
+  // Deep-clone so the analysis pass leaves the in-memory config untouched, the apply path re-runs the same logic via `configFileStorage.update`.
   const clone = JSON.parse(JSON.stringify(config)) as RdcConfig;
   const graceDays = options.graceDays ?? clone.defaults?.pruneGraceDays ?? DEFAULT_GRACE_DAYS;
 
@@ -315,8 +315,8 @@ export async function analyzeConfigPrune(
  *
  * Placement is the config's record of which machine holds a repo's image. An
  * entry with none is either genuinely dead (the repo was deleted elsewhere) or
- * simply never reconciled. This check cannot tell those apart on its own —
- * `config prune` is a local-only command and does not reach out to machines —
+ * simply never reconciled. This check cannot tell those apart on its own ,
+ * `config prune` is a local-only command and does not reach out to machines ,
  * so the caller reports the list and points at `config reconcile`, which does
  * the machine-side scan, before offering to remove anything.
  */
@@ -325,7 +325,7 @@ export function findOrphanRepos(cfg: RdcConfig): OrphanRepoEntry[] {
   const orphans: OrphanRepoEntry[] = [];
 
   for (const [name, repo] of Object.entries(repos)) {
-    // Placement is a union: a repo may be pinned to a machine OR to a datastore. Only an entry with neither is unplaced — treating a datastore-placed repo as an orphan would delete a live repo's secrets.
+    // Placement is a union: a repo may be pinned to a machine OR to a datastore. Only an entry with neither is unplaced, treating a datastore-placed repo as an orphan would delete a live repo's secrets.
     const placement = repo.placement;
     const placed =
       placement !== undefined &&
@@ -345,7 +345,7 @@ export function findOrphanRepos(cfg: RdcConfig): OrphanRepoEntry[] {
  *
  * Also drops the matching `state.repos.<name>` runtime record. Per-repo runtime
  * status lives there rather than on the resource entry, and nothing else prunes
- * it — leaving it behind strands that repo's `networkId` in the allocation
+ * it, leaving it behind strands that repo's `networkId` in the allocation
  * space, so a later repo create can believe an ID is taken when no repo owns it.
  */
 function removeOrphanRepos(cfg: RdcConfig, orphans: OrphanRepoEntry[]): void {
@@ -362,7 +362,7 @@ function removeOrphanRepos(cfg: RdcConfig, orphans: OrphanRepoEntry[]): void {
  * Drop `state.repos` records that no repository entry owns, returning their
  * names.
  *
- * These are left behind whenever a repository entry is removed — by this
+ * These are left behind whenever a repository entry is removed, by this
  * command's own --orphan-repos pass, or by any earlier hand-edit. Nothing else
  * collects them, and each one strands a `networkId` in the allocation space
  * that no live repo owns.
@@ -406,7 +406,7 @@ function mutateAndExtractArchives(
 /**
  * Apply the prune. Writes the cleaned config atomically via
  * `configFileStorage.update`. Returns the same analysis the dry-run path
- * produces — callers can render either path identically.
+ * produces, callers can render either path identically.
  */
 export async function applyConfigPrune(
   options: ConfigPruneOptions = {}

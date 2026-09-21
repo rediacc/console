@@ -59,7 +59,7 @@ interface TutorialVideoPlayerProps {
   sources?: Record<string, TutorialSourceSet | undefined>;
 }
 
-// Shape mirrors the `.words.json` sidecar emitted by `packages/www/scripts/lib/vtt-emit.ts::emitWordTimingsJson` — keep in sync when extending either side.
+// Shape mirrors the `.words.json` sidecar emitted by `packages/www/scripts/lib/vtt-emit.ts::emitWordTimingsJson`, keep in sync when extending either side.
 interface WordEntry {
   start: number;
   end: number;
@@ -78,7 +78,7 @@ interface WordsDoc {
   cues: CueEntry[];
 }
 
-// HTMLVideoElement.currentTime tracks the displayed-frame clock, which trails audio output by ~30-50 ms in most browsers, and our RAF tick adds one more vsync interval (~16 ms) of jitter on top. A small constant look-ahead keeps the active word aligned with what the viewer hears. Leading the audio is worse than trailing — don't push this higher than ~80 ms.
+// HTMLVideoElement.currentTime tracks the displayed-frame clock, which trails audio output by ~30-50 ms in most browsers, and our RAF tick adds one more vsync interval (~16 ms) of jitter on top. A small constant look-ahead keeps the active word aligned with what the viewer hears. Leading the audio is worse than trailing, don't push this higher than ~80 ms.
 const HIGHLIGHT_LEAD_SEC = 0.06;
 
 function paintChapterOverlay(

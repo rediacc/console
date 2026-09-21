@@ -22,7 +22,7 @@ function getWSLVSCodeSettingsPaths(variant: 'Code' | 'Code - Insiders'): string[
   const paths: string[] = [];
   const home = process.env.HOME ?? '';
 
-  // Try Windows user home first — VS Code on Windows reads from AppData
+  // Try Windows user home first, VS Code on Windows reads from AppData
   const winHome = getWindowsHomeInWSL();
   if (winHome) {
     paths.push(join(winHome, 'AppData', 'Roaming', variant, 'User', 'settings.json'));

@@ -307,7 +307,7 @@ export function workloadSplit(
 /**
  * Attribution footer: separates the Rediacc pipeline from service startup,
  * which is defined by the repository's own Rediaccfile/containers. Factual
- * and neutral — when service startup dominates, an informational note makes
+ * and neutral, when service startup dominates, an informational note makes
  * clear which part the pipeline controls (and finished quickly).
  */
 export function buildAttribution(

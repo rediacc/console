@@ -9,7 +9,7 @@ vi.mock('../../i18n/index.js', () => ({
     params ? `${key}:${JSON.stringify(params)}` : key,
 }));
 
-// configService — capture addRepository payload to assert isolation
+// configService, capture addRepository payload to assert isolation
 const mockGetRepository = vi.hoisted(() => vi.fn());
 const mockAddRepository = vi.hoisted(() => vi.fn());
 const mockAllocateNetworkId = vi.hoisted(() => vi.fn().mockResolvedValue(99999));
@@ -32,7 +32,7 @@ vi.mock('../../services/config/config-resources.js', () => ({
   },
 }));
 
-// Renet executor — return success so handleForkAction reaches success path
+// Renet executor, return success so handleForkAction reaches success path
 const mockExecute = vi.hoisted(() =>
   vi.fn().mockResolvedValue({ success: true, allSteps: [], steps: [] })
 );
@@ -41,19 +41,19 @@ vi.mock('../../services/executor/local-executor.js', () => ({
   localExecutorService: { execute: mockExecute, refreshIdentityFor: mockRefreshIdentityFor },
 }));
 
-// Machine connection pool — outer lease taken by handleForkAction
+// Machine connection pool, outer lease taken by handleForkAction
 const mockLeaseRelease = vi.hoisted(() => vi.fn());
 const mockAcquire = vi.hoisted(() => vi.fn());
 vi.mock('../../services/machine/machine-connection.js', () => ({
   machineConnections: { acquire: mockAcquire },
 }));
 
-// Repo-key deployment — no-op
+// Repo-key deployment, no-op
 vi.mock('../../services/repo/repo-key-deployment.js', () => ({
   deployRepoKeyIfNeeded: vi.fn().mockResolvedValue(undefined),
 }));
 
-// Post-up tasks + early DNS — no-op
+// Post-up tasks + early DNS, no-op
 const mockPostRepoUpTasks = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
 const mockEnsureDns = vi.hoisted(() => vi.fn().mockResolvedValue('example.com'));
 vi.mock('../repo-batch-utils.js', () => ({
@@ -61,12 +61,12 @@ vi.mock('../repo-batch-utils.js', () => ({
   ensureDns: mockEnsureDns,
 }));
 
-// SSH keypair — deterministic for assertion
+// SSH keypair, deterministic for assertion
 vi.mock('../../utils/ssh-keygen.js', () => ({
   generateSSHKeyPair: () => ({ privateKey: 'mock-priv', publicKey: 'mock-pub' }),
 }));
 
-// Output / errors / local-execution-failure — silence
+// Output / errors / local-execution-failure, silence
 vi.mock('../../services/core/output.js', () => ({
   outputService: {
     info: vi.fn(),
@@ -217,7 +217,7 @@ describe('repo fork — orchestration', () => {
 
     await handleForkAction('app', 'staging', { machine: 'hostinger', up: true });
 
-    // ONE compound execute — no chained repository_up leg
+    // ONE compound execute, no chained repository_up leg
     expect(mockExecute).toHaveBeenCalledTimes(1);
     const call = mockExecute.mock.calls[0][0];
     expect(call.functionName).toBe('repository_fork');
@@ -328,7 +328,7 @@ describe('repo fork — orchestration', () => {
 // to declare it for up/down/status/validate/ownership/template; fork never did,
 // because it drives the executor directly instead of going through that helper. So a fork of a repo living in a named datastore hunted for its parent on the machine's default docker datastore, where the parent has never been.
 //
-// These assert on what reaches the EXECUTOR, which is the only channel renet reads. Asserting that the command "knew" the datastore would pass while the wire stayed wrong — the same trap #74 documents for repo create.
+// These assert on what reaches the EXECUTOR, which is the only channel renet reads. Asserting that the command "knew" the datastore would pass while the wire stayed wrong, the same trap #74 documents for repo create.
 describe('repo fork — datastore declaration (#74)', () => {
   /** A config whose `app` family is placed on a named datastore. */
   function placedOnDatastore(): void {

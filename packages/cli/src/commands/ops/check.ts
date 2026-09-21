@@ -250,7 +250,7 @@ export function registerOpsCheckCommand(ops: Command, program: Command): void {
         try {
           response = await opsExecutorService.runOpsJSON<HostCheckResponse>('host', ['check']);
         } catch {
-          // renet unavailable — fall back to local TypeScript checks
+          // renet unavailable, fall back to local TypeScript checks
         }
 
         const data = response ?? getLocalCheckData();

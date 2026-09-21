@@ -143,7 +143,7 @@ class OpsExecutorService {
       const child = spawn(renetPath, args, {
         env,
         stdio: options.capture ? ['ignore', 'pipe', 'pipe'] : ['inherit', 'pipe', 'pipe'],
-        // detached: renet spawns the VM process (QEMU/KVM) as its own child. A new process group makes `child.pid` the group leader, so a timeout can signal the WHOLE tree (renet + the VM grandchild) via a negative pid — killing renet alone would orphan the grandchild. renet ops runs non-interactively (-o json), so it never needs the controlling TTY this detaches from.
+        // detached: renet spawns the VM process (QEMU/KVM) as its own child. A new process group makes `child.pid` the group leader, so a timeout can signal the WHOLE tree (renet + the VM grandchild) via a negative pid, killing renet alone would orphan the grandchild. renet ops runs non-interactively (-o json), so it never needs the controlling TTY this detaches from.
         detached: true,
       });
 

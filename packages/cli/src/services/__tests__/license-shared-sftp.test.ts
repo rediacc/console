@@ -130,7 +130,7 @@ describe('license sharedSftp plumb-through', () => {
     expect(mockExecStreaming).toHaveBeenCalledTimes(1);
   });
 
-  // The identity refresh re-issues a repo licence WITH proofs, and it reads the datastore identity out of renet's own licence scan — the right source, because the scan reads where the repo actually lives. But the scan can come back empty (an older renet, a datastore it could not read), and dropping to "no identity" there writes the PROVEN reissue to the unscoped path that renet
+  // The identity refresh re-issues a repo licence WITH proofs, and it reads the datastore identity out of renet's own licence scan, the right source, because the scan reads where the repo actually lives. But the scan can come back empty (an older renet, a datastore it could not read), and dropping to "no identity" there writes the PROVEN reissue to the unscoped path that renet
   // does not read for a datastore-resident repo. That undoes the pre-issuance scoping one step later, so the caller's resolved identity stands in as a fallback.
   describe('datastore identity on the identity refresh', () => {
     const DS_ID = '06a4f728-4c53-4b0e-9f61-2f0a1d3e5c77';

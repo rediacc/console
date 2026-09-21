@@ -23,7 +23,7 @@ const k8sCluster: ClusterConfig = {
   ],
 };
 
-// A ceph-backed cluster (rbd control datastore) — required for cluster fork + in-Ceph migrate (both operate on the anchor rbd datastore).
+// A ceph-backed cluster (rbd control datastore), required for cluster fork + in-Ceph migrate (both operate on the anchor rbd datastore).
 const cephCluster: ClusterConfig = {
   provider: 'kvm',
   pools: [
@@ -43,7 +43,7 @@ const memberIps: Record<string, string> = {
 };
 
 // The source cluster's ceph datastores as `datastore list --json` would report. Captured through the bridge relay, so stdout carries the `[datastore_list] `
-// prefix (finding #10 — parseCapturedJson strips it); the mock uses the REAL
+// prefix (finding #10, parseCapturedJson strips it); the mock uses the REAL
 // relay-prefixed shape so the fork path exercises the true capture parser.
 function datastoreListJson(cluster: string): string {
   const arr = JSON.stringify([
@@ -403,7 +403,7 @@ describe('migrateCluster (P3 in-Ceph fenced remap, zero-copy)', () => {
       names.indexOf('datastore_attach')
     );
 
-    // The record is adopted PLAIN on the dest, and the adopt precedes the down — finding #18's failure mode (registry miss after the source is down) is excluded by construction.
+    // The record is adopted PLAIN on the dest, and the adopt precedes the down, finding #18's failure mode (registry miss after the source is down) is excluded by construction.
     const adopt = calls.find((c) => c.functionName === 'datastore_adopt');
     expect(adopt?.machineName).toBe('relocate-target');
     expect(adopt?.params).toMatchObject({ name: 'ds-control-prod', plain: true });
@@ -419,7 +419,7 @@ describe('migrateCluster (P3 in-Ceph fenced remap, zero-copy)', () => {
     const rewrite = calls.find((c) => c.functionName === 'kube_identity_rewrite');
     expect(rewrite?.machineName).toBe('relocate-target');
     expect(rewrite?.params).toMatchObject({ operation: 'migrate', mode: 'server' });
-    // networkID KEPT — migrate never mints a new one.
+    // networkID KEPT, migrate never mints a new one.
     expect(rewrite?.params?.new_network_id).toBeUndefined();
 
     // Single-mounter invariant: forget runs on the SOURCE, after the gate.
@@ -452,7 +452,7 @@ describe('migrateCluster (P3 in-Ceph fenced remap, zero-copy)', () => {
     await expect(migrateCluster('prod', { to: 'relocate-target' })).rejects.toThrow(
       /Refusing to down the source/
     );
-    // Nothing destructive ran — the source is never downed or detached.
+    // Nothing destructive ran, the source is never downed or detached.
     const names = exec.mock.calls.map((c) => c[0].functionName);
     expect(names).not.toContain('kube_prep_fork');
     expect(names).not.toContain('datastore_detach');

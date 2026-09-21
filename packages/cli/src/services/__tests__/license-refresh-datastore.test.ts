@@ -5,12 +5,12 @@
  * WHAT WAS ACTUALLY BROKEN, and what was not. The function derives ONE path,
  * `machine.datastore ?? /mnt/rediacc`, and feeds it to two consumers:
  *
- *   - the licence SCAN — NOT a bug. `licenseScanCommand` passes
+ *   - the licence SCAN, NOT a bug. `licenseScanCommand` passes
  *     `--all-datastores`, and renet's `licenseScanTargets`
  *     (cmd/renet/license_scope.go) then walks every ATTACHED named datastore on
  *     top of that path, tagging each entry with its own datastoreId and
  *     datastorePath. A named-datastore repo is found, priced and identified.
- *   - the SIZE probe — a real bug, reached only when the scan cannot price the
+ *   - the SIZE probe, a real bug, reached only when the scan cannot price the
  *     repo (no licence installed yet, or a scan that failed). It stat'd the
  *     machine default for a repo at /mnt/rediacc-ds/<d>/repositories/<guid>,
  *     the `else echo 0` turned the miss into 0 bytes, and the reissue asked for
@@ -72,7 +72,7 @@ function scanEntry(extra: Record<string, unknown>) {
 
 /**
  * A fake machine. `scan` is what `repository license-scan` returns; `images`
- * maps a datastore mount to the byte size found there — any mount not listed
+ * maps a datastore mount to the byte size found there, any mount not listed
  * answers the probe's unknown sentinel, which is what makes a probe of the
  * WRONG mount observably different from a probe of the right one.
  */

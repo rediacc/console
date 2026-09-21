@@ -233,11 +233,11 @@ function expectedRenetSha(metaKey: string): string | null {
  * that were injected. It is distinct from, and stronger than, the two checks
  * around it: the build-time container check (sea-inject/verify.mjs) re-parses the
  * file structurally without executing it, and `rdc --version` never touches an
- * asset at all — so a binary whose main script is intact but whose payload note
+ * asset at all, so a binary whose main script is intact but whose payload note
  * is corrupt, truncated, or unreachable at the loaded address would pass both
  * while failing here.
  *
- * Never throws — returns a structured result so callers (the `doctor` health
+ * Never throws, returns a structured result so callers (the `doctor` health
  * check, the CI build smoke test) report rather than crash.
  */
 export function verifyEmbeddedRenetIntegrity(): { ok: boolean; detail: string } {
@@ -317,7 +317,7 @@ export async function extractRenetToLocal(): Promise<string> {
 }
 
 /**
- * Synchronous variant of extractRenetToLocal for callers that cannot await —
+ * Synchronous variant of extractRenetToLocal for callers that cannot await ,
  * the agent-guard ancestry verification spawns renet with spawnSync inside a
  * synchronous guard chain. Same target path, verify-reuse, and atomic-rename
  * semantics as the async path.

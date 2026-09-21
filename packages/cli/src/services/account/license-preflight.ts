@@ -45,7 +45,7 @@ export function machineSlotLimitMessage(input: {
 }
 
 /**
- * Read live slot state. Returns null when it cannot be read at all — nobody
+ * Read live slot state. Returns null when it cannot be read at all, nobody
  * signed in, server unreachable, an older server without the field. A
  * pre-flight that cannot see the numbers must not invent a refusal: the server
  * still enforces the cap at issuance, so an unavailable check costs a later

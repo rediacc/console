@@ -47,7 +47,7 @@ describe('isTelemetryDisabled', () => {
   });
 
   it('returns false when REDIACC_TELEMETRY_DISABLED=true (not "1")', () => {
-    // Only exactly "1" disables — anything else is a no-op. This is consistent with how the existing shouldDisable() check reads the variable and matches the documented opt-out UX.
+    // Only exactly "1" disables, anything else is a no-op. This is consistent with how the existing shouldDisable() check reads the variable and matches the documented opt-out UX.
     process.env.REDIACC_TELEMETRY_DISABLED = 'true';
     expect(isTelemetryDisabled()).toBe(false);
   });

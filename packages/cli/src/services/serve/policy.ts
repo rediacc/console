@@ -47,7 +47,7 @@ export class PolicyDenied extends Error {
  *
  * A document with a STALE DENY GLOB is that same failure, one level subtler: it
  * is well-formed, it parses, and its deny rule protects NOTHING because the
- * command it names does not exist. That is how a rename fails open — the command
+ * command it names does not exist. That is how a rename fails open, the command
  * an organization explicitly forbade becomes permitted, silently. It is refused
  * here for the reason stated above, and the reason names the glob so the author
  * can re-key it (a rename is the likeliest cause, and a re-key the likeliest fix).

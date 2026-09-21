@@ -28,7 +28,7 @@ interface FetchStatusOptions {
 }
 
 /**
- * Build the `renet list all` invocation. Exported for unit testing — the
+ * Build the `renet list all` invocation. Exported for unit testing, the
  * caller-provided sections filter must propagate into `--sections`.
  */
 export function buildListCommand(params: {
@@ -70,7 +70,7 @@ export async function fetchMachineStatus(
       outputService.info(`Provisioning renet to ${machine.ip}...`);
     }
 
-    // Fetch OTLP creds the same way `rdc run` / `repo up` do via local-executor, so the spawned renet sends its own telemetry to otlp.rediacc.io — keeping `machine query` consistent with other paths that shell out to renet. This is an independent, unauthenticated HTTP round-trip to the account server: it depends on neither the machine nor renet provisioning, so run it concurrently
+    // Fetch OTLP creds the same way `rdc run` / `repo up` do via local-executor, so the spawned renet sends its own telemetry to otlp.rediacc.io, keeping `machine query` consistent with other paths that shell out to renet. This is an independent, unauthenticated HTTP round-trip to the account server: it depends on neither the machine nor renet provisioning, so run it concurrently
     // with provisioning rather than sequentially after it. It never throws (default-deny to null), so Promise.all cannot reject on the telemetry branch. Respect the opt-out short-circuit so we skip the fetch entirely when disabled.
     const telemetryOff = isTelemetryDisabled();
     const otlpCredsPromise = telemetryOff ? Promise.resolve(null) : fetchOtlpCredentials();

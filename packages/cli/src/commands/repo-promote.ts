@@ -74,7 +74,7 @@ async function handleRepoPromote(ref: string, options: PromoteOptions): Promise<
       functionName: 'repository_promote',
       machineName,
       // #74: both images are the same FAMILY, so one recorded placement answers
-      // for the grand and the fork alike — a fork lives beside its parent.
+      // for the grand and the fork alike, a fork lives beside its parent.
       datastore: await recordedDatastoreMount(grandEntry.name),
       params: {
         parent: grandEntry.config.repositoryGuid,

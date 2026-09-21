@@ -157,7 +157,7 @@ function renderTrimResult(parsed: TrimResult | null | undefined): void {
   }
 }
 
-/** Register `repo trim` — online pool-space reclamation (rediacc/renet#76). */
+/** Register `repo trim`, online pool-space reclamation (rediacc/renet#76). */
 export function registerRepoTrimCommand(repo: Command): void {
   repo
     .command('trim')

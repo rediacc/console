@@ -15,7 +15,7 @@
  *
  * The decision order is intentional: local config wins over the mirror
  * because the operator's CLI config is the source of truth for "what they
- * intend the repo to be" — the mirror is a server-side observation that's
+ * intend the repo to be", the mirror is a server-side observation that's
  * useful as a fallback only when the local registry is silent.
  */
 export type RepoTypeClassification = 'grand' | 'fork' | 'unknown';

@@ -59,7 +59,7 @@ export class RemoteTokenExpiredError extends Error {
 
 /**
  * Optimistic-version conflict (HTTP 409). Carries the server's message
- * verbatim — it names the real current version (config.service.ts builds it),
+ * verbatim, it names the real current version (config.service.ts builds it),
  * so no client-side guess is layered on top.
  */
 export class RemoteVersionConflictError extends Error {
@@ -96,7 +96,7 @@ const NETWORK_ERROR_CODES = new Set([
 
 /**
  * Classify an error as network-class (server unreachable / not answering).
- * Walks the `.cause` chain — fetch wraps the socket error in a TypeError, and
+ * Walks the `.cause` chain, fetch wraps the socket error in a TypeError, and
  * undici nests its own codes one level deeper.
  */
 export function isNetworkError(err: unknown): boolean {
@@ -125,7 +125,7 @@ export class RemotePasskeySecretMissingError extends Error {
 /**
  * The stored slot secret no longer unwraps the CEK. The most common cause is a
  * CEK rotation that bumped the store's generation while this device kept its old
- * wrapping — the AES-GCM auth tag then fails. Surfaced instead of the raw
+ * wrapping, the AES-GCM auth tag then fails. Surfaced instead of the raw
  * OperationError so the user gets an action (re-enroll) rather than a crypto
  * stack trace. Applies to every enrollment method (passkey and password).
  */

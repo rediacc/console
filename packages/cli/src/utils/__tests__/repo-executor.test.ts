@@ -57,7 +57,7 @@ describe('executeRepoFunction threads the cluster target into execute()', () => 
 });
 
 /**
- * ★ #74 — the datastore CHOKEPOINT.
+ * ★ #74, the datastore CHOKEPOINT.
  *
  * `executeRepoFunction` drives essentially the ENTIRE repo family (up, down, status,
  * validate, ownership, template, ...), and NOT ONE of those verbs declared the
@@ -68,7 +68,7 @@ describe('executeRepoFunction threads the cluster target into execute()', () => 
  * places, and nothing said so.
  *
  * The datastore is derived ONCE here, from the repo's recorded placement, instead of
- * asking N call sites to remember — because a future verb would forget, exactly as
+ * asking N call sites to remember, because a future verb would forget, exactly as
  * every existing one already had.
  *
  * ★ These are CHANNEL tests: they assert what actually REACHES the executor, not what
@@ -78,7 +78,7 @@ describe('executeRepoFunction threads the cluster target into execute()', () => 
  * ★★ And note WHY this was only ever caught on the kube path: #39's runtime assertion
  * made it AUDIBLE there (renet refuses when the declared runtime disagrees with the
  * datastore it resolves). In the DOCKER world there is no such assertion, so the same
- * divergence is silent — the kube path was not more broken, it was the only path that
+ * divergence is silent, the kube path was not more broken, it was the only path that
  * could tell us.
  */
 describe('executeRepoFunction declares the recorded datastore (#74)', () => {

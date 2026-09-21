@@ -120,15 +120,15 @@ interface ScanContext {
   totalSize: number;
   /**
    * weak checksum -> UNRESOLVED target block indices sharing it. Entries are
-   * pruned as blocks resolve — that pruning is load-bearing, see pruneResolved.
+   * pruned as blocks resolve, that pruning is load-bearing, see pruneResolved.
    */
   byWeak: Map<number, number[]>;
   /**
    * Fast reject table over the LOW half of the weak checksum (which is a % M).
    *
    * This is load-bearing for performance, not a micro-optimisation. The scan
-   * visits every byte offset of the local binary — ~600 million of them for a
-   * release-sized file — and a Map lookup at each one does not finish in any
+   * visits every byte offset of the local binary, ~600 million of them for a
+   * release-sized file, and a Map lookup at each one does not finish in any
    * reasonable time (measured: still running after 10 minutes). A single typed
    * array read rejects virtually every offset before the Map is ever consulted.
    */
@@ -144,7 +144,7 @@ interface ScanContext {
    * window), keyed by that byte. WHY: a large zero-padded (or any
    * repeated-byte) region makes every offset inside it produce the same weak
    * checksum. If that weak collides with an unresolved target block, the naive
-   * path computes a 64KiB sha256 at EVERY offset of the run — millions of
+   * path computes a 64KiB sha256 at EVERY offset of the run, millions of
    * hashes, tens of GB hashed. The memo reduces that to one hash per distinct
    * byte value.
    */
@@ -223,7 +223,7 @@ function pruneResolved(ctx: ScanContext, candidates: number[], weak: number, low
 /**
  * Settle a window that survived the `seen` fast reject: look up its full weak
  * checksum and, on a hit, confirm the candidates with the strong hash. Returns
- * how many target blocks this offset newly resolved — usually 0, since the low
+ * how many target blocks this offset newly resolved, usually 0, since the low
  * half alone is a coarse filter.
  */
 function confirmAtWindow(
@@ -260,7 +260,7 @@ function confirmAtWindow(
  * match. Returns that offset and how many blocks it resolved, or `hits: 0` once
  * the local buffer is exhausted.
  *
- * This is the hot loop — it runs once per byte of the local binary — so the
+ * This is the hot loop, it runs once per byte of the local binary, so the
  * tables it consults are lifted into locals and every offset is rejected by a
  * single typed-array read before anything more expensive is reached.
  */
@@ -289,7 +289,7 @@ function rollToNextMatch(ctx: ScanContext, start: number): { off: number; hits: 
 /**
  * Rolling scan over the full-size blocks.
  *
- * After every confirmed match the next window starts blockSize bytes later —
+ * After every confirmed match the next window starts blockSize bytes later ,
  * rsync's skip: those bytes are consumed by the match. Besides skipping
  * blockSize-1 pointless offsets per match, this is what makes a scan of an
  * identical file linear in blocks rather than bytes hashed. Windows overlapping
@@ -335,7 +335,7 @@ function tailHit(t: TailTarget, off: number, a: number, b: number, runLen: numbe
 
 /**
  * The trailing short block. It needs its own scan because a rolling window
- * of a different length has an unrelated checksum — but the index DOES store
+ * of a different length has an unrelated checksum, but the index DOES store
  * the tail's weak checksum (buildIndex computes it at the tail's length), so
  * the same weak-first rolling rejection applies here. The first version of
  * this loop went straight to the strong hash at every offset: a ~60KB sha256

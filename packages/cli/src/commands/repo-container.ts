@@ -1,5 +1,5 @@
 /**
- * `rdc repo logs` / `rdc repo exec` (spec 03 §5.4, R2-F14) — the two verbs that
+ * `rdc repo logs` / `rdc repo exec` (spec 03 §5.4, R2-F14), the two verbs that
  * replace `term connect`'s container side door.
  *
  * The old shape was `term connect -m <m> -r <repo> --container <c> --log-lines
@@ -94,7 +94,7 @@ export function registerRepoContainerCommands(repo: Command): void {
           const result = await getExecutor().execute({
             functionName: 'container_logs',
             machineName,
-            // #74: the container lives in the repo's compose project, which renet resolves through the repo's mount — the machine default is not it.
+            // #74: the container lives in the repo's compose project, which renet resolves through the repo's mount, the machine default is not it.
             datastore: await recordedDatastoreMount(repoKey),
             params: {
               repository: repoKey,
@@ -145,7 +145,7 @@ export function registerRepoContainerCommands(repo: Command): void {
           const result = await getExecutor().execute({
             functionName: 'container_exec',
             machineName,
-            // #74: same as container_logs — the exec target is resolved through the repo's mount, so the recorded datastore has to travel.
+            // #74: same as container_logs, the exec target is resolved through the repo's mount, so the recorded datastore has to travel.
             datastore: await recordedDatastoreMount(repoKey),
             params: {
               repository: repoKey,

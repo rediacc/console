@@ -49,7 +49,7 @@ describe('buildStrategyUpdate include/exclude', () => {
   it('accepts both modes now that the scheduled verb can express cold', () => {
     // The inverse of what this asserted until 2026-08-15. `--mode cold` was refused here because scheduling it would have promised a container
     // quiesce that `backup snapshot` could not perform; the verb grew --cold,
-    // so the refusal went with it. The schema's enum is exactly hot|cold, so there is no third value left for a guard to catch — one that survived would be a check that can never fire.
+    // so the refusal went with it. The schema's enum is exactly hot|cold, so there is no third value left for a guard to catch, one that survived would be a check that can never fire.
     expect(buildStrategyUpdate({ mode: 'cold' }, undefined).mode).toBe('cold');
     expect(buildStrategyUpdate({ mode: 'hot' }, undefined).mode).toBe('hot');
   });
@@ -73,8 +73,8 @@ describe('buildStrategyUpdate include/exclude', () => {
 /**
  * THE DEFECT THESE CLOSE: there was no supported way to schedule a backup.
  *
- * `backup strategy set` could only make `storage` (rclone) destinations — it
- * hard-required `--storage` — and on 2026-08-15 the unit generator stopped
+ * `backup strategy set` could only make `storage` (rclone) destinations, it
+ * hard-required `--storage`, and on 2026-08-15 the unit generator stopped
  * being able to render that kind at all. Every documented route from
  * "configure a strategy" to "deploy a timer" therefore ended in an exception,
  * and only a hand-edited config JSON could produce a working strategy.

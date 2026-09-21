@@ -307,7 +307,7 @@ function renderResult(mode: DiffMode, stdout: string, asJson: boolean): void {
 }
 
 /**
- * repo diff — git-style file-level diff between two copy-on-write forks.
+ * repo diff, git-style file-level diff between two copy-on-write forks.
  * Stdout carries the diff data; progress/diagnostics go to stderr so
  * `rdc repo diff … --json | jq` and `… --name-only | xargs` stay clean.
  */

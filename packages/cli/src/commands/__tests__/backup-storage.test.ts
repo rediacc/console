@@ -168,7 +168,7 @@ describe('backup manifests', () => {
 });
 
 /**
- * `backup retention` — the operator's ONLY handle on which snapshots the server
+ * `backup retention`, the operator's ONLY handle on which snapshots the server
  * DELETES, and it had no behavioural test at all until the testing-surface
  * audit named the gap. `check:ci-retention-knob-parity` compares spellings
  * across four layers; it says nothing about what the command actually sends.

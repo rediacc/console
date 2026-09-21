@@ -79,7 +79,7 @@ function compilePattern(pattern: string): CompiledPattern {
 /**
  * Compile a pattern set once. Pass the result to `isExcludedCompiled`
  * for every file/dir during a walk to avoid recompiling regexes on each
- * entry — a hot loop in large repositories.
+ * entry, a hot loop in large repositories.
  */
 export function compilePatterns(patterns: string[]): CompiledPattern[] {
   return patterns.map(compilePattern);

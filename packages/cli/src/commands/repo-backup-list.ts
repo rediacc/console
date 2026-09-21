@@ -82,7 +82,7 @@ async function assertBackupFromExists(fromName: string, sourceType: unknown): Pr
     await assertStorageExists(fromName);
     return;
   }
-  // Unknown source type — pass if it resolves as either machine or storage.
+  // Unknown source type, pass if it resolves as either machine or storage.
   const isMachine = await assertMachineExists(fromName).then(
     () => true,
     () => false

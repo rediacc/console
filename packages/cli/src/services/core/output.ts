@@ -212,7 +212,7 @@ class OutputService {
     this.state.operationDurationMs = ms;
   }
 
-  /** Mark that a timeline was rendered — suppresses the postAction "Completed" line */
+  /** Mark that a timeline was rendered, suppresses the postAction "Completed" line */
   setTimelineRendered(): void {
     this.state.timelineRendered = true;
   }

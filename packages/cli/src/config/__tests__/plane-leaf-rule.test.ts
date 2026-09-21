@@ -1,12 +1,12 @@
 /**
- * Per-leaf plane rule (Rule 3) — driven in BOTH directions.
+ * Per-leaf plane rule (Rule 3), driven in BOTH directions.
  *
  * The domain-granular plane gate cannot see the mistake this codebase actually
  * makes. A config-only leaf relocated into a machine-reaching noun inherits that
  * noun's `machine` default and becomes proxyCapable: Rule 1 does not fire (the
  * noun really does reach machines), Rule 2 does not fire (the noun has dozens of
  * other machine leaves), and no stale-entry test fires (there was no entry to go
- * stale). Bug #51 shipped through exactly that gap — `repo admin archive
+ * stale). Bug #51 shipped through exactly that gap, `repo admin archive
  * {list,restore,purge}` claimed plane `machine` after moving out of `config`,
  * which would have let a proxied `archive purge` permanently delete the PROXY
  * HOST's archived records instead of the caller's.

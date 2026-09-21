@@ -61,7 +61,7 @@ function getMcpPrefixes(paths: Set<string>): Set<string> {
 /**
  * Walk the REAL Commander tree to leaf command paths (same skip rules as
  * tool-factory: no help, no hidden). The registry is NOT the ground truth for
- * coverage — it only declares top-level domains, so registry-keyed checks let
+ * coverage, it only declares top-level domains, so registry-keyed checks let
  * unregistered leaves drift out of MCP silently.
  */
 function walkLeafPaths(): string[] {
