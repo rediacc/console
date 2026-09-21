@@ -41,7 +41,7 @@
 # divergence nobody planted. The corpus is lifted verbatim from that same file.
 #
 # NOTHING HERE WRITES TO THE TRACKED TREE. Every fixture, every mutated copy and
-# every ledger lives in a mktemp directory. `.ci/scripts/test/run-all.sh:398-427`
+# every ledger lives in a mktemp directory. The battery's clean-tree guard
 # snapshots git status around the battery and reds on any tracked change, and a
 # comparator whose test dirties the tree would also make its own rule-4 case
 # untestable.

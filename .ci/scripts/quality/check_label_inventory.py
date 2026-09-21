@@ -67,7 +67,7 @@ INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-label-inventory.sh` is NOT del
 ---- gate ----
 kind: test
 test: .ci/scripts/test/gates/test-label-inventory.sh
-blocker: BLOCKER: test-label-inventory.sh:191 runs the gate seam-free over the REAL .github/labels.yml inside run-all.sh (ci-quality.yml quality-security, "Quality-gate unit tests") with the live list injected, so the real parse, the declared floor and the create-on-demand allowlist verification execute every CI run, and the two controls beside it drop a real label and add an undeclared one to prove both fire directions; the live GitHub read is the one part that cannot run in that lane because it holds no label-read token, and it runs on the local npm invocation
+blocker: BLOCKER: test-label-inventory.sh:191 runs the gate seam-free over the REAL .github/labels.yml inside the gate-test battery (ci-quality.yml quality-security, "Quality-gate unit tests") with the live list injected, so the real parse, the declared floor and the create-on-demand allowlist verification execute every CI run, and the two controls beside it drop a real label and add an undeclared one to prove both fire directions; the live GitHub read is the one part that cannot run in that lane because it holds no label-read token, and it runs on the local npm invocation
 needs: none
 ---- end gate ----
 """

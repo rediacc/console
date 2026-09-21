@@ -130,7 +130,7 @@ export type CiCoverage =
   /** A workflow step runs it. Verified against the parsed workflow. */
   | { kind: 'step'; workflow: string; job: string; step: string }
   /** A gate test under .ci/scripts/test/gates/ drives its REAL scan against the
-   *  REAL tree, and run-all.sh runs in CI. Requires `test` plus a BLOCKER
+   *  REAL tree, and the battery runs in CI. Requires `test` plus a BLOCKER
    *  reason naming the line that proves the real scan runs. Never inferred. */
   | { kind: 'test'; test: string; blocker: string }
   /** Deliberately local-only. Requires a BLOCKER reason. */

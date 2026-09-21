@@ -45,7 +45,7 @@ export interface ExecOptions {
 
 /**
  * A PASS: line, optionally wrapped in the green escape that log_pass() emits.
- * Mirrors PASS_RE in .ci/scripts/test/run-all.sh:64, including the real ESC
+ * Mirrors PASS_RE in .ci/rediacc_ci/battery.py, including the real ESC
  * byte: an earlier version of that pattern spelled the byte '\x1b', which
  * POSIX ERE reads as the literal text "x1b", so the summary matched nothing at
  * all and every colour-emitting gate test contributed zero visible evidence.
@@ -54,7 +54,7 @@ export interface ExecOptions {
 const PASS_LINE = new RegExp(`^(?:${String.fromCharCode(27)}\\[0;32m)?PASS:`, 'm');
 
 /**
- * run-all.sh:74-81 counts a gate test that exits 0 without emitting a single
+ * The battery counts a gate test that exits 0 without emitting a single
  * PASS: line as a FAILURE, because it asserted nothing. Flattening the battery
  * into the pool would silently drop that rule and leave those 57 tests weaker
  * locally than they are in CI, so the runner carries it instead.

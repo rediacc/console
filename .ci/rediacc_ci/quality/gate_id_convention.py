@@ -184,7 +184,7 @@ def evaluate(lock_path: str, pkg_path: str, gates_dir: str) -> tuple[list[str], 
 
     # THE FLOOR IS CORPUS-DERIVED, per driver-contract section 6: "a floor must be set-based or corpus-derived, never a hand-typed count". The old floor was the literal 40, and 40 is the number that let a 373-of-420 read look healthy.
     #
-    # The corpus is the gate scripts ON DISK, deliberately not `git ls-files`. Section 5b of the contract records why: ls-files reads the INDEX, and this program keeps work uncommitted, so a newly written gate script is invisible to the index while being perfectly real to run-all.sh, which globs the directory exactly like this.
+    # The corpus is the gate scripts ON DISK, deliberately not `git ls-files`. Section 5b of the contract records why: ls-files reads the INDEX, and this program keeps work uncommitted, so a newly written gate script is invisible to the index while being perfectly real to `battery.py`, which globs the directory exactly like this.
     #
     # The direction is the safe one. A NEW script not yet registered lifts the floor and reds this gate, which is a true finding (check:ci-gate-manifest asserts the same set equality). A COLLAPSED reader drops `subjects` below the floor and reds, which is the failure that went unseen for a month: at 135 subjects against 147 scripts, this floor would have fired on the old regex the
     # day it was written.

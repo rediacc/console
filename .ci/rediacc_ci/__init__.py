@@ -5,7 +5,8 @@ WHAT THIS BECOMES. The tooling transformation moves the CI programs off bash and
   rediacc_ci.core.env      env-file loading, taken over from .ci/lib/local-common.sh
   rediacc_ci.core.output   the one place a gate formats a verdict
   rediacc_ci.gates         the gate registry and its ``---- gate ----`` headers
-  rediacc_ci.battery       the runner that finally replaces .ci/scripts/test/run-all.sh
+  rediacc_ci.battery       the gate-test battery runner, which replaced
+                           .ci/scripts/test/run-all.sh and outlived it
 
 WHY THE PACKAGE EXISTS ALREADY, EMPTY. Two things had to be true before any of that could be written, and neither is about code:
 

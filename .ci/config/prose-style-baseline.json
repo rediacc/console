@@ -16,13 +16,13 @@
   "that shrank by 29 can still hide one brand-new violation. Comparing sizes is not",
   "the same claim as diffing the sets."
  ],
- "count": 5677,
- "files": 1198,
+ "count": 5676,
+ "files": 1197,
  "by_rule": {
   "R1": 1676,
   "R11": 178,
   "R14": 1,
-  "R18": 2271,
+  "R18": 2270,
   "R19": 62,
   "R2": 958,
   "R7": 531
@@ -150,11 +150,6 @@
    "R1": [
     "089b9f3aafd43d39",
     "313197e1fae3ad5a"
-   ]
-  },
-  ".ci/policy/hook-exec-baseline.json": {
-   "R18": [
-    "cc1078fb71468958"
    ]
   },
   ".ci/policy/worklist-env-registry.json": {
@@ -1256,7 +1251,7 @@
   },
   ".ci/scripts/quality/check_label_inventory.py": {
    "R18": [
-    "355430e097b0e55b"
+    "128aa70c1e4797b0"
    ]
   },
   ".ci/scripts/quality/check_plan_boxes.py": {
@@ -1293,10 +1288,10 @@
   },
   ".ci/scripts/quality/check_profiler_coverage.py": {
    "R18": [
-    "59901789cc3d4759"
+    "d96cf036badc80fc"
    ],
    "R7": [
-    "5fd8f15c0d27512a"
+    "4db79f6f0dd811da"
    ]
   },
   ".ci/scripts/quality/check_python_control_plants.py": {
@@ -1311,7 +1306,7 @@
   },
   ".ci/scripts/quality/check_regions_sync.py": {
    "R18": [
-    "efd552b013ae8ae8"
+    "6ce138d0fc56bea5"
    ]
   },
   ".ci/scripts/quality/check_resprofile.py": {
@@ -11191,7 +11186,7 @@
   },
   "scripts/gates/check-form-validation.ts": {
    "R18": [
-    "58043741ad58ad47"
+    "ce3c57cffb08f21b"
    ]
   },
   "scripts/gates/check-gate-manifest.ts": {
@@ -11202,7 +11197,7 @@
   },
   "scripts/gates/check-hydration-clean.ts": {
    "R18": [
-    "ad55b7c1a17fe3e7"
+    "a50a6a18135f4967"
    ]
   },
   "scripts/gates/check-i18n-cross-locale.ts": {
@@ -11234,7 +11229,7 @@
   },
   "scripts/gates/check-layout-overflow.ts": {
    "R18": [
-    "49ad180327b6a956"
+    "60ac134a6a058d9e"
    ]
   },
   "scripts/gates/check-locale-de-contamination.ts": {

@@ -14,7 +14,7 @@ THE ONE DELIBERATE DIVERGENCE, and it is a verdict divergence, so it is stated r
         exit 0
     fi
 
-which is `exit 0` having asserted nothing. This port REFUSES instead. Two reasons, and the first is not a matter of taste: `.ci/scripts/test/run-all.sh` already scores an exit-0 run with no `PASS:` line as a FAILURE ("exited 0 but made no assertions"), so under the battery that actually runs these files the twin's skip is a red too -- it is only `bash <twin>` driven directly, which
+which is `exit 0` having asserted nothing. This port REFUSES instead. Two reasons, and the first is not a matter of taste: `.ci/rediacc_ci/battery.py` already scores an exit-0 run with no `PASS:` line as a FAILURE ("exited 0 but made no assertions"), so under the battery that actually runs these files the twin's skip is a red too -- it is only `bash <twin>` driven directly, which
 is what `test_twin_parity.py` does, that reads it as green. The second is the rule this whole directory is built on: a case that could not run has not been checked, and unchecked folded into fine is the shape being refused. `check:ci-pytest` runs in `quality-security`, which checks submodules out, so the absent-submodule state is not one CI reaches.
 
 NO `xdist_group`. Every case writes its fixtures into pytest's own `tmp_path` and runs one short-lived `bash -c`; nothing is bound, no module global is mutated, and the subject is only ever read.
@@ -48,7 +48,7 @@ def source_and_run(gate, code: str) -> harness.RunResult:
     if not DEADCODE_SH.is_file():
         gate.log_fail(
             "the subject is missing at %s, so not one case below could run -- which is a "
-            "FAILURE and not a pass. The twin exits 0 here; run-all.sh scores that same "
+            "FAILURE and not a pass. The twin exits 0 here; the battery scores that same "
             "run as 'exited 0 but made no assertions'. Fix: git submodule update --init "
             "private/renet" % paths.relative_to_root(DEADCODE_SH)
         )

@@ -632,7 +632,7 @@ CENSUS_PAYLOAD_KEYS = ("commit", "plans_examined", "records_examined", "by_statu
 def census_is_same_day_repeat(last, row):
     """True when `row` observes exactly what `last` observed, ON THE SAME UTC DAY.
 
-    WHY THE FILE IS NOT APPENDED TO ON EVERY SINGLE RUN, stated where the deviation is rather than in a report nobody re-reads. The census file is TRACKED, and three things in this repo react to a modified tracked file: `.ci/scripts/test/run-all.sh`'s clean-tree guard fails the whole gate battery on one, `wl_git.py`'s `dirt_verdict` counts it as uncommitted real work and blocks the
+    WHY THE FILE IS NOT APPENDED TO ON EVERY SINGLE RUN, stated where the deviation is rather than in a report nobody re-reads. The census file is TRACKED, and three things in this repo react to a modified tracked file: the battery runner's clean-tree guard fails the whole gate battery on one, `wl_git.py`'s `dirt_verdict` counts it as uncommitted real work and blocks the
     stop hook's rebase path, and nothing anywhere caps the size of an append-only file. A row per invocation would put a permanently-dirty file in a shared checkout and grow without bound, and the operator would learn to `git checkout` it -- which is how the two-week window quietly gets reset.
 
     THE COLLAPSE IS PER UTC DAY, NOT PER PAYLOAD, and that boundary is the load- bearing part. Collapsing on the payload alone would let a tree that does not change for a fortnight record ONE row, and `--census-report` would then compute a span of zero days over a window that really had elapsed. A day boundary always breaks the tie, so the file gains at least one row for every day

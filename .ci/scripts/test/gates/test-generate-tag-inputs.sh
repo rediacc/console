@@ -293,7 +293,8 @@ test_closure_tag_moves_when_the_released_version_moves() {
     # window sees a half-written file: this reddened gate-test:claude-hooks with
     # a bash syntax error in a file that parses clean and passes 884/0 serially.
     # The safety this comment asserted is why the test was classified T rather
-    # than W. It is now in WRITER_TESTS in run-all.sh -- keep it there.
+    # than W. Its `mutex: ["tree:repo"]` claim in gates.lock.json is what puts
+    # it in the battery's W set -- keep it there.
     local real="$REPO_ROOT/.ci/scripts/version/resolve-version.sh"
     local backup="$FIXTURE/resolve-version.real"
     mkdir -p "$FIXTURE"

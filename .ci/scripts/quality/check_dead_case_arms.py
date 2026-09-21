@@ -66,7 +66,7 @@ INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-dead-case-arms.sh` is NOT dele
 ---- gate ----
 kind: test
 test: .ci/scripts/test/gates/test-dead-case-arms.sh
-blocker: BLOCKER: the gate is CONTROL-FIRST -- it plants a dead case arm with a runtime-generated key and refuses to report on the real tree unless its scanner catches that arm, so a green IS the fire proof; test-dead-case-arms.sh:14 runs it seam-free against the real tree inside run-all.sh (ci-quality.yml quality-security, "Quality-gate unit tests")
+blocker: BLOCKER: the gate is CONTROL-FIRST -- it plants a dead case arm with a runtime-generated key and refuses to report on the real tree unless its scanner catches that arm, so a green IS the fire proof; test-dead-case-arms.sh:14 runs it seam-free against the real tree inside the gate-test battery (ci-quality.yml quality-security, "Quality-gate unit tests")
 needs: none
 ---- end gate ----
 """

@@ -205,7 +205,11 @@ def third_party_imports(script: pathlib.Path) -> set[str]:
     names = _imported_roots(body)
     stdlib = set(sys.stdlib_module_names)
     # LOCAL means anywhere in this repo, not just the script's own folder. check_agent_hint_liveness.py lives in .ci/scripts/quality and imports wl_agents from .claude/hooks/stop via a sys.path insert, so a same-directory test called a first-party module third-party and demanded somebody pip install it.
-    return {n for n in names if n not in stdlib and n not in first_party_modules(script, body)}
+    local = first_party_modules(script, body)
+    # A module under .ci/rediacc_ci runs as `PYTHONPATH=.ci python3 -m rediacc_ci.x`, so the package root is on the path without any sys.path hop in the file.
+    if script.is_relative_to(REPO / ".ci" / "rediacc_ci"):
+        local = local | {"rediacc_ci"}
+    return {n for n in names if n not in stdlib and n not in local}
 
 
 def scripts_a_step_runs(text: str) -> list[pathlib.Path]:

@@ -123,7 +123,7 @@ concurrently with it.
 | S5 | **done** | one real pair rendered through the watch, see below |
 | S6 | **BLOCKED on a measurement that costs GPU time** | see below |
 | S7 | **done** | the four shell gates + `check:ci-tutorial-render-queue` all exit 0; `shfmt -i 4 -ci -d run.sh` empty while `shfmt -i 4 -d run.sh` is 819 lines, which is the proof `-ci` was used |
-| S8 | **done** | `.ci/scripts/test/gates/test-tutorial-render-queue.sh`, auto-discovered by `run-all.sh`'s `gates/test-*.sh` glob — no registration line needed |
+| S8 | **done** | `.ci/scripts/test/gates/test-tutorial-render-queue.sh`, auto-discovered by the battery's `gates/test-*.sh` glob — no registration line needed |
 
 ### S5: the live render, and a better result than the plan asked for
 

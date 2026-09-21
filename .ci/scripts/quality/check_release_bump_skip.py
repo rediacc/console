@@ -18,7 +18,7 @@ moment the two implementations must still read as the same gate.
 
 `test:` NOW NAMES THIS FILE, because for this gate the gate IS the test and the blocker says so. Leaving it on the twin would claim the CI coverage of a file the registry no longer invokes.
 
-SEPARATELY, AND NOT CAUSED BY THIS CHANGE: nothing in CI actually runs this gate. `.ci/scripts/test/run-all.sh` globs `test-*.sh` inside `.ci/scripts/test/gates/`, this file is not in that directory under either name, no workflow step names `check:ci-release-bump-skip`, and the ci-runner composite is never invoked by a workflow. The blocker's "ci-quality.yml quality-security runs
+SEPARATELY, AND NOT CAUSED BY THIS CHANGE: nothing in CI actually runs this gate. `.ci/rediacc_ci/battery.py` globs `test-*.sh` inside `.ci/scripts/test/gates/`, this file is not in that directory under either name, no workflow step names `check:ci-release-bump-skip`, and the ci-runner composite is never invoked by a workflow. The blocker's "ci-quality.yml quality-security runs
 the real decision every CI run" is therefore not true today and was not true before the cutover either. Reported to the driver; the fix is a battery member, which is outside this change's file set.
 
 WHY AN ENTRY POINT AT ALL. A port cannot be run by path (`from rediacc_ci ...` fails with `.ci` off `sys.path`, which the insert below fixes), and the `-m` form that does work is unreadable to `check:ci-parity`'s tokenizer, which resolves its leaves to `[python3]`. `check_npmrc.py` records both measurements.

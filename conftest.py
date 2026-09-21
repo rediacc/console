@@ -14,7 +14,7 @@ WHAT IT DOES NOT DO. It does not turn parallelism on, and it does not decide the
 import pytest
 from rediacc_ci import xdist_groups
 
-# The lock plus run-all.sh join, read ONCE per process. A dict rather than a module-level rebind so no `global` statement is needed; the key names the reason the entry exists rather than being a bare index.
+# The lock's real-tree declarations, read ONCE per process. A dict rather than a module-level rebind so no `global` statement is needed; the key names the reason the entry exists rather than being a bare index.
 _CACHE: dict[str, set[str]] = {}
 
 
@@ -27,13 +27,11 @@ def _real_tree_twins() -> set[str]:
 def pytest_report_header() -> str:
     """PRINT THE SHAPE, so a collapse in the join is visible rather than silent.
 
-    The number that matters is how many real-tree gate tests the lock and run-all.sh between them know about. If it ever reads 0, the derivation below admits every twin to every worker and `test_twin_parity`'s own refusal is the thing that will go red -- but a reader seeing this line will already know why.
+    The number that matters is how many real-tree gate tests the lock declares. It is the only source since the shell battery runner was retired, so if it ever reads 0, the derivation below admits every twin to every worker and `test_twin_parity`'s own refusal is the thing that will go red -- but a reader seeing this line will already know why.
 
     Suppressed automatically under `-q` (pytest prints no header at negative verbosity), which is what keeps the nested parity runs' output unchanged.
     """
-    return "xdist groups: %d real-tree gate test(s) known to the lock+run-all.sh join" % len(
-        _real_tree_twins()
-    )
+    return "xdist groups: %d real-tree gate test(s) declared by the lock" % len(_real_tree_twins())
 
 
 # `tryfirst` IS LOAD-BEARING, NOT TIDINESS. Without it this hook does NOTHING and does it silently.

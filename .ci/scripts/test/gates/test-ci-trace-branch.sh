@@ -225,7 +225,7 @@ test_control_a_blind_caller_is_detected() {
     # WRITTEN TO $WORK, NOT THE REAL TREE. The first version put it under
     # .ci/scripts/quality/ so the untracked half of the enumeration would be
     # exercised for real; check-pool-writer-safety correctly rejected that. A
-    # test that writes into the tree while run-all.sh schedules it in the
+    # test that writes into the tree while the battery schedules it in the
     # PARALLEL pool corrupts a concurrent reader, and it does not fail cleanly:
     # it surfaces as an unrelated gate going red in a file that parses fine on
     # the serial re-run. Registering it in WRITER_TESTS would also have worked,

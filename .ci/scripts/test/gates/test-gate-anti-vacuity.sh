@@ -447,7 +447,7 @@ test_fixture_can_import_package() {
     # run in there at all. And it must resolve to the fixture's OWN copy of the
     # package rather than the repo's, or the case would stay green with the
     # copy-list line deleted; hence the last assertion.
-    # PID-KEYED, for the reason .ci/scripts/test/run-all.sh:19-27 records about
+    # PID-KEYED, for the reason the battery's W/S/T schedule records about
     # the .gate-paths-exist pair: this schedule serialises the writer tests
     # WITHIN one battery, but two batteries (two sessions in one tree) used to
     # collide on a fixed fixture name, each trap deleting the other's file,

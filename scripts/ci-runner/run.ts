@@ -13,7 +13,7 @@ import { createHash } from 'node:crypto';
  *     putting `!cancelled()` on every quality step; the runner defaults to
  *     keep-going for the same reason, and --fail-fast is the opt-in.
  *   - check:ci-quality-gates was 443 s of that total, 43%, as one opaque unit
- *     wrapping run-all.sh. Scheduling it whole caps the speedup at 2.4x no
+ *     wrapping the battery. Scheduling it whole caps the speedup at 2.4x no
  *     matter how many cores exist, which is why its 57 tests are individually
  *     scheduled manifest entries.
  *

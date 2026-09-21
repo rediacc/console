@@ -26,7 +26,7 @@ INVARIANT 5 IS DISCHARGED: W7 P5 retired the twin; the shadow ledger under `.ci/
 ---- gate ----
 kind: test
 test: .ci/scripts/test/gates/test-autopilot-breakpoint-alignment.sh
-blocker: BLOCKER: test-autopilot-breakpoint-alignment.sh:59 runs the gate seam-free against the real .ci/breakpoint/workflow/breakpoint.yml and .github/workflows/autopilot.yml inside run-all.sh (ci-quality.yml quality-security, "Quality-gate unit tests"), so the real comparison executes every CI run; the mutated-copy cases around it prove both fire directions
+blocker: BLOCKER: test-autopilot-breakpoint-alignment.sh:59 runs the gate seam-free against the real .ci/breakpoint/workflow/breakpoint.yml and .github/workflows/autopilot.yml inside the gate-test battery (ci-quality.yml quality-security, "Quality-gate unit tests"), so the real comparison executes every CI run; the mutated-copy cases around it prove both fire directions
 id: check:ci-autopilot-bp-align
 needs: none
 ---- end gate ----

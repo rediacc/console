@@ -374,8 +374,8 @@ def test_reads_shares_and_excludes(gate):
     """The OTHER claim strength. `reads` is the shared half of the isolation contract defined in pool.ts: any number of readers of a resource may overlap, none may overlap a writer of it. Case 4 above proves the exclusive half and would stay green if `reads` were ignored entirely, or if it were treated as a second exclusive group -- and those two mistakes fail in opposite
     directions, one losing the isolation and one serialising twenty-one read-only tests for nothing. Both have to be observed, so both are asserted here.
 
-    WHY IT MATTERS BEYOND THE SCHEDULER. Until 2026-09-06 the two schedulers over the gate-test battery decided isolation separately: .ci/scripts/test/run-all.sh carried hand-maintained W/S name lists while the manifest declared nothing, so `npm run ci` ran the three real-tree writers concurrently with the scanners that enumerate the same directories. run-all.sh now derives its
-    sets
+    WHY IT MATTERS BEYOND THE SCHEDULER. Until 2026-09-06 the two schedulers over the gate-test battery decided isolation separately: the shell runner then at .ci/scripts/test/run-all.sh carried hand-maintained W/S name lists while the manifest declared nothing, so `npm run ci` ran the three real-tree writers concurrently with the scanners that enumerate the same directories. The
+    battery derives its sets
     from the same `mutex`/`reads` declarations this case exercises.
     """
     with harness.temp_dir() as work:

@@ -4,9 +4,12 @@ WHAT IS ACTUALLY AT RISK HERE, because the obvious assertion is the wrong one. T
 
 What CAN go silently wrong, and is therefore what these tests hold:
 
-  * the JOIN going empty, which would make `test_twin_parity`'s real-tree refusal
-    admit every twin. Both sources going quiet at once is the state that must not
-    read as "nothing needs isolating";
+  * the DERIVATION going empty, which would make `test_twin_parity`'s real-tree
+    refusal admit every twin. A lock that has gone quiet, or has stopped being
+    readable, is the state that must not read as "nothing needs isolating".
+    That risk GREW when the shell runner's `*_FALLBACK` arrays were retired as a
+    second source: the lock is now the only source, so nothing else is left to
+    keep the answer non-empty when it fails;
   * the two readers DRIFTING, now that `test_twin_parity.real_tree_tests` and the
     scheduler ask the same question. They are asserted to give the same answer;
   * the marker never actually reaching an item. Every unit assertion below can
@@ -14,7 +17,7 @@ What CAN go silently wrong, and is therefore what these tests hold:
     drive a REAL pytest and ask it, in both directions, whether the items came
     out marked.
 
-EVERY FIXTURE IS BUILT BY CONSTRUCTION, never by substituting into real source, so rewording run-all.sh or the lock cannot silently void a control.
+EVERY FIXTURE IS BUILT BY CONSTRUCTION, never by substituting into real source, so rewording the lock cannot silently void a control.
 """
 
 import json
@@ -37,16 +40,6 @@ FIXTURE_LOCK = [
     {"id": "d", "run": "npx tsx scripts/check-elsewhere.ts", "mutex": ["tree:repo"]},
 ]
 
-FIXTURE_RUNNER = """#!/usr/bin/env bash
-WRITER_FALLBACK=(
-    test-from-runner.sh
-    # a comment, which is not a test name
-)
-EXTRA_TOOLS=(
-    test-must-not-be-read.sh
-)
-"""
-
 
 class _Module:
     """A stand-in for an imported test module. `group_for` reads attributes, so the smallest honest fixture is an object with attributes."""
@@ -55,78 +48,57 @@ class _Module:
         self.__dict__.update(attrs)
 
 
-def _write(tmp_path, lock=FIXTURE_LOCK, runner=FIXTURE_RUNNER):
+def _write(tmp_path, lock=FIXTURE_LOCK):
     lock_file = tmp_path / "gates.lock.json"
     lock_file.write_text(json.dumps(lock), encoding="utf-8")
-    runner_file = tmp_path / "run-all.sh"
-    runner_file.write_text(runner, encoding="utf-8")
-    return lock_file, runner_file
+    return lock_file
 
 
-# --------------------------------------------------------------------------- real_tree_twins: the union, both directions ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- real_tree_twins: both claims, and what is excluded ---------------------------------------------------------------------------
 
 
-def test_the_union_takes_both_claims_from_the_lock_and_the_runner_arrays(tmp_path) -> None:
-    lock, runner = _write(tmp_path)
-    assert xdist_groups.real_tree_twins(lock, runner) == {
-        "test-writes.sh",
-        "test-scans.sh",
-        "test-from-runner.sh",
-    }
+def test_both_claims_are_taken_from_the_lock(tmp_path) -> None:
+    """`mutex` (exclusive) and `reads` (shared) both put a twin in the set, and a reader overlapping a writer is the collision being prevented."""
+    lock = _write(tmp_path)
+    assert xdist_groups.real_tree_twins(lock) == {"test-writes.sh", "test-scans.sh"}
 
 
-def test_a_gate_declaring_no_tree_resource_is_not_in_the_union(tmp_path) -> None:
-    """CONTROL. Without this the union could be "every gate in the lock" and every assertion above would still pass."""
-    lock, runner = _write(tmp_path)
-    assert "test-quiet.sh" not in xdist_groups.real_tree_twins(lock, runner)
+def test_a_gate_declaring_no_tree_resource_is_not_in_the_set(tmp_path) -> None:
+    """CONTROL. Without this the set could be "every gate in the lock" and every assertion above would still pass."""
+    lock = _write(tmp_path)
+    assert "test-quiet.sh" not in xdist_groups.real_tree_twins(lock)
 
 
 def test_a_tree_claim_outside_the_gates_directory_is_not_a_gate_test(tmp_path) -> None:
     """CONTROL. Entry `d` claims `tree:repo` and is not a gate test at all."""
-    lock, runner = _write(tmp_path)
-    assert "check-elsewhere.ts" not in xdist_groups.real_tree_twins(lock, runner)
+    lock = _write(tmp_path)
+    assert "check-elsewhere.ts" not in xdist_groups.real_tree_twins(lock)
 
 
-def test_only_fallback_arrays_are_read_from_the_runner(tmp_path) -> None:
-    """CONTROL. The runner declares other arrays; reading them all would inflate the union with names that are not gate tests.
+def test_an_unreadable_lock_empties_the_set_cleanly_rather_than_raising(tmp_path) -> None:
+    """THE CASE THAT CHANGED WHEN THE SHELL RUNNER WAS RETIRED, and it is stated here rather than dropped.
 
-    THE FIRST SPELLING OF THIS FIXTURE WAS BROKEN, AND IT IS WORTH THE LINE. The non-fallback array was named `NOT_A_FALLBACK`, which `endswith("_FALLBACK")` is perfectly happy with, so the control fired against the control rather than against the reader. The name here must not end in `_FALLBACK` for the same reason a probe file must not be named so the glob matches it.
+    A broken lock used to leave the runner's `*_FALLBACK` arrays standing, so the answer stayed non-empty. The lock is the only source now, so a broken one empties the set -- and the contract that matters is that it does so CLEANLY: `classify_from_lock` contributes nothing and does not raise, which leaves the callers able to tell "nothing is declared" from "the reader crashed"
+    and to refuse on the first. `test_the_real_derivation_is_not_empty` below is that refusal, and this case is what makes it reachable.
     """
-    lock, runner = _write(tmp_path)
-    assert "test-must-not-be-read.sh" not in xdist_groups.real_tree_twins(lock, runner)
-
-
-def test_an_unreadable_lock_leaves_the_runner_half_standing(tmp_path) -> None:
-    """A broken lock must not empty the answer. It contributes nothing and does not raise, which is `classify_from_lock`'s documented contract."""
-    _lock, runner = _write(tmp_path)
-    assert xdist_groups.real_tree_twins(tmp_path / "absent.json", runner) == {"test-from-runner.sh"}
-
-
-def test_an_absent_runner_leaves_the_lock_half_standing(tmp_path) -> None:
-    lock, _runner = _write(tmp_path)
-    assert xdist_groups.real_tree_twins(lock, tmp_path / "absent.sh") == {
-        "test-writes.sh",
-        "test-scans.sh",
-    }
-
-
-def test_both_sources_absent_yields_an_empty_union_rather_than_an_exception(tmp_path) -> None:
-    """The empty case is REACHABLE and returns cleanly, because the refusal belongs to the callers -- who can tell an empty union apart from a crash and say which one happened."""
-    assert xdist_groups.real_tree_twins(tmp_path / "no.json", tmp_path / "no.sh") == set()
+    broken = tmp_path / "broken.json"
+    broken.write_text("{not json", encoding="utf-8")
+    assert xdist_groups.real_tree_twins(broken) == set()
+    assert xdist_groups.real_tree_twins(tmp_path / "absent.json") == set()
 
 
 # --------------------------------------------------------------------------- The real tree ---------------------------------------------------------------------------
 
 
-def test_the_real_join_is_not_empty() -> None:
+def test_the_real_derivation_is_not_empty() -> None:
     """ANTI-VACUITY, and it is the one floor that is honest today.
 
-    An empty union makes `test_no_ported_twin_is_a_real_tree_writer_or_scanner` admit every twin including the four that rewrite tracked files, and makes the group derivation unable to serialise anything. Zero GROUPS is the correct answer on this tree; zero KNOWN REAL-TREE TESTS is a broken reader.
+    An empty set makes `test_no_ported_twin_is_a_real_tree_writer_or_scanner` admit every twin including the four that rewrite tracked files, and makes the group derivation unable to serialise anything. Zero GROUPS is the correct answer on this tree; zero KNOWN REAL-TREE TESTS is a broken reader.
     """
     assert xdist_groups.real_tree_twins(REAL_LOCK) != set()
 
 
-def test_the_parity_test_and_the_scheduler_read_the_same_union() -> None:
+def test_the_parity_test_and_the_scheduler_read_the_same_set() -> None:
     """THE NO-DRIFT CLAIM, asserted rather than assumed.
 
     `test_twin_parity.real_tree_tests` is now a call into this module. If someone reinstates a local copy there, the two will agree on the day it is written and diverge later, which is the failure mode that made moving it worth doing.
@@ -137,7 +109,7 @@ def test_the_parity_test_and_the_scheduler_read_the_same_union() -> None:
 def test_the_ported_corpus_agrees_with_the_parity_test_about_who_is_unsafe() -> None:
     """SET-BASED, and green whether the answer is empty or not.
 
-    `test_twin_parity` fails the port when a ported module's twin is in the union; the scheduler sends exactly those modules to one worker. The two sets are computed here from opposite ends and must be equal -- so this stays true the day the first real-tree twin is ported, instead of being a hardcoded 0 that would have to be edited then.
+    `test_twin_parity` fails the port when a ported module's twin is in the set; the scheduler sends exactly those modules to one worker. The two sets are computed here from opposite ends and must be equal -- so this stays true the day the first real-tree twin is ported, instead of being a hardcoded 0 that would have to be edited then.
     """
     unsafe = xdist_groups.real_tree_twins(REAL_LOCK)
     from_parity = {
@@ -174,7 +146,7 @@ def test_an_explicit_group_beats_the_lock_join() -> None:
     assert xdist_groups.group_for(module, {"test-writes.sh"}) == "ports"
 
 
-def test_a_twin_in_the_union_gets_the_shared_real_tree_group() -> None:
+def test_a_twin_in_the_real_tree_set_gets_the_shared_group() -> None:
     module = _Module(BASH_TWIN=".ci/scripts/test/gates/test-writes.sh")
     assert xdist_groups.group_for(module, {"test-writes.sh"}) == xdist_groups.REAL_TREE_GROUP
 
@@ -187,7 +159,7 @@ def test_two_real_tree_twins_get_the_same_group_not_two_groups() -> None:
     assert first == second
 
 
-def test_a_twin_outside_the_union_is_ungrouped() -> None:
+def test_a_twin_outside_the_real_tree_set_is_ungrouped() -> None:
     """CONTROL, and the important one: ungrouped items distribute FREELY. A derivation that grouped everything would be green and serial."""
     module = _Module(BASH_TWIN=".ci/scripts/test/gates/test-quiet.sh")
     assert xdist_groups.group_for(module, {"test-writes.sh"}) is None

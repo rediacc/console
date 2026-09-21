@@ -1,6 +1,6 @@
 """The `gate` fixture, and the refusal that makes a green here mean something.
 
-THE RULE, LIFTED VERBATIM FROM THE RUNNER IT REPLACES. `.ci/scripts/test/run-all.sh` scores a bash gate test that exits 0 without emitting a single `PASS:` line as a FAILURE, not a pass -- "exited 0 but made no assertions". That refusal is the only thing standing between a gate test whose body stopped executing and a battery that simply got faster. pytest has no equivalent: a test
+THE RULE, LIFTED VERBATIM FROM THE BATTERY RUNNER. `.ci/rediacc_ci/battery.py` scores a bash gate test that exits 0 without emitting a single `PASS:` line as a FAILURE, not a pass -- "exited 0 but made no assertions". That refusal is the only thing standing between a gate test whose body stopped executing and a battery that simply got faster. pytest has no equivalent: a test
 function whose body is `pass` is a passing test, and a test whose fixture silently returned early looks identical to one that asserted forty things.
 
 So the fixture counts, and its teardown refuses a test that recorded nothing.
@@ -44,7 +44,7 @@ def gate(request):
         raise harness.GateAssertionError(
             "%s exited green without recording a single control. A test that asserts "
             "nothing reads exactly like one that asserts everything, which is the "
-            "shape run-all.sh refuses on the bash side ('exited 0 but made no "
+            "shape the battery refuses on the bash side ('exited 0 but made no "
             "assertions'). Call gate.log_pass() or gate.ok() for each thing proved."
             % request.node.name
         )

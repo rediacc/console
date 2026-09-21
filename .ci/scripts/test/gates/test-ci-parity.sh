@@ -503,11 +503,11 @@ test_unknown_wrapper_is_not_transparent() {
 }
 
 test_battery_equality_is_enforced() {
-    # Without this, flattening run-all.sh recreates #549 once per test: a new
+    # Without this, flattening the battery recreates #549 once per test: a new
     # test would run in CI via the battery and never locally.
     local d="$1"
     scaffold "$d" '      - name: Quality-gate unit tests
-        run: .ci/scripts/test/run-all.sh
+        run: .ci/rediacc_ci/battery.py
 '"$STEP_ALPHA"
     mkdir -p "$d/.ci/scripts/test/gates"
     touch "$d/.ci/scripts/test/gates/test-only-on-disk.sh"

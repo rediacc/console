@@ -181,7 +181,7 @@ def test_the_dispatch_floor_refusal_exits_127_on_both_sides(tmp_path):
     """The `log_fail` defect, pinned so a one-sided repair is a disagreement.
 
     The twin never sources `.ci/scripts/lib/common.sh`, and `log_fail` is defined only in `.ci/scripts/test/lib/test-helpers.sh` and four test scripts. Under `set -euo pipefail` the unknown command exits 127 at that line, so the three explanatory `echo`s and the `exit 1` beneath it never run. The identical defect is already on the record for the pool-writer-safety gate's own bash
-    twin at `.ci/scripts/test/run-all.sh:215-219`.
+    twin, the since-retired shell battery runner.
 
     NOT IN THE LEDGER: both sides print one shell diagnostic and no finding, so the comparator scores it VACUOUS_BOTH_EMPTY and refuses to record it. Byte equality can rule on it, which is why the case lives here.
     """

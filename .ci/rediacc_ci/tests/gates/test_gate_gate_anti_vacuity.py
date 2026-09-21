@@ -25,7 +25,7 @@ WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP. `gates.lock.json` records `mutex
 walking them. `REAL_TREE_TWIN = True` buys the serialisation, and it is honoured
 only because this module declares no `XDIST_GROUP` of its own.
 
-THE PLANTED FIXTURES ARE PID-KEYED for the reason `run-all.sh` records about the `.gate-paths-exist` pair: this schedule serialises the writer tests WITHIN one battery, but two batteries (two sessions in one tree) collide on a fixed fixture name, each cleanup deleting the other's file, which reads as "the detector is broken" rather than as a collision.
+THE PLANTED FIXTURES ARE PID-KEYED for the reason the battery's W/S/T schedule records about the `.gate-paths-exist` pair: this schedule serialises the writer tests WITHIN one battery, but two batteries (two sessions in one tree) collide on a fixed fixture name, each cleanup deleting the other's file, which reads as "the detector is broken" rather than as a collision.
 """
 
 import os

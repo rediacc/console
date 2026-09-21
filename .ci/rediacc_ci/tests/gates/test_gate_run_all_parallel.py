@@ -1,9 +1,12 @@
 """Port of `.ci/scripts/test/gates/test-run-all-parallel.sh`.
 
-Proof battery for the parallel scheduler inside `.ci/scripts/test/run-all.sh`.
+Proof battery for the parallel scheduler inside `.ci/rediacc_ci/battery.py`.
 
-WHY THIS EXISTS. run-all.sh is the runner for every OTHER gate test, so a defect in it does not fail loudly: it fails by running FEWER tests, or by shredding their output, or by reintroducing the real-tree collision the schedule exists to prevent. All three of those look like a green run. What is pinned here is the four properties that separate "fast" from "still a gate", and every
-timing assertion carries its own control, because a stopwatch that can only ever read "fast enough" measures nothing.
+RETARGETED WITH ITS SUBJECT. The four properties below were written against `.ci/scripts/test/run-all.sh`, which `battery.py` replaced as the battery runner and which was deleted once the shadow pair `w7p8-battery` held at K=5 over seven distinct trees. The properties are the runner's, not the shell's, so they moved rather than died: every case here was re-driven against
+`battery.py` before the twin was removed.
+
+WHY THIS EXISTS. The battery runner is the runner for every OTHER gate test, so a defect in it does not fail loudly: it fails by running FEWER tests, or by shredding their output, or by reintroducing the real-tree collision the schedule exists to prevent. All three of those look like a green run. What is pinned here is the four properties that separate "fast" from "still a gate",
+and every timing assertion carries its own control, because a stopwatch that can only ever read "fast enough" measures nothing.
 
   1. The pool really runs tests at the same time -- with the control that proves the
      measurement can FAIL (the same set at jobs=1 must be slow).
@@ -30,6 +33,7 @@ IT IS SLOW ON PURPOSE. The concurrency control needs the serial arm to take long
 
 import re
 import stat
+import sys
 import time
 
 from rediacc_ci import paths
@@ -37,9 +41,13 @@ from rediacc_ci.tests.gates import harness
 
 BASH_TWIN = ".ci/scripts/test/gates/test-run-all-parallel.sh"
 
-RUNNER = paths.from_root(".ci", "scripts", "test", "run-all.sh")
+RUNNER = paths.from_root(".ci", "rediacc_ci", "battery.py")
 
 BLOCK_LINE = re.compile(r"^(alpha|beta)-[0-9]", re.MULTILINE)
+
+# The one transcript line that is ALLOWED to differ between worker counts, and the reason it is allowed rather than normalised away everywhere: it REPORTS the worker count, so requiring it to match would require the runner to lie about what it did. The shell twin printed no such line, so the byte-identity assertion below is stated over the transcript with this line folded to a
+# constant, and the line itself is then asserted to carry the requested count. That is strictly more than the twin checked.
+SCHEDULE_LINE = re.compile(r"^  schedule: .*, jobs: \d+, .*$", re.MULTILINE)
 
 
 def mk_fixture(directory, name: str, *body: str) -> None:
@@ -58,10 +66,13 @@ def run_runner(gate, gates_dir, *args: str, env: dict[str, str] | None = None):
         gate.log_fail(
             "%s is missing; this gate has nothing to prove" % paths.relative_to_root(RUNNER)
         )
-    bash = harness.require_tool("bash", "install bash; the subject is a bash script")
+    # bash is still required, and not because the runner is written in it: every FIXTURE below is a bash script the runner executes, so an absent bash makes each case measure nothing.
+    harness.require_tool(
+        "bash", "install bash; every fixture this runner executes is a bash script"
+    )
     overlay = {"RUN_ALL_GATES_DIR": str(gates_dir)}
     overlay.update(env or {})
-    return harness.run([bash, str(RUNNER), *args], env=overlay, timeout=600)
+    return harness.run([sys.executable, str(RUNNER), *args], env=overlay, timeout=600)
 
 
 def test_pool_runs_tests_concurrently(gate, tmp_path):
@@ -106,7 +117,7 @@ def test_jobs_one_and_jobs_four_agree(gate, tmp_path):
     gates.mkdir()
     mk_fixture(gates, "test-a-green.sh", 'echo "PASS: green fixture asserted something"')
     mk_fixture(gates, "test-b-red.sh", 'echo "diagnostic line from the red fixture"', "exit 1")
-    # Exit 0 with no PASS: line at all. run-all.sh must score this as a FAILURE in both modes; a mode that scored it differently would mean the vacuity guard moved with the scheduler.
+    # Exit 0 with no PASS: line at all. The runner must score this as a FAILURE in both modes; a mode that scored it differently would mean the vacuity guard moved with the scheduler.
     mk_fixture(gates, "test-c-vacuous.sh", 'echo "this fixture asserts nothing"', "exit 0")
     mk_fixture(
         gates, "test-d-green.sh", "sleep 1", 'echo "PASS: slow green fixture asserted something"'
@@ -118,8 +129,13 @@ def test_jobs_one_and_jobs_four_agree(gate, tmp_path):
     gate.assert_eq(serial.rc, 1, "the mixed fixture set must exit 1 at jobs=1")
     gate.assert_eq(parallel.rc, serial.rc, "exit code must not depend on the worker count")
     gate.assert_eq(
-        parallel.combined, serial.combined, "the transcript must not depend on the worker count"
+        SCHEDULE_LINE.sub("  schedule:", parallel.combined),
+        SCHEDULE_LINE.sub("  schedule:", serial.combined),
+        "the transcript must not depend on the worker count",
     )
+    # AND THE FOLD IS NOT A BLIND SPOT. The one line held out above is asserted on directly, in both directions, so a runner that simply ignored the requested worker count could not hide inside the substitution.
+    gate.assert_contains(serial.combined, "jobs: 1,", "the serial run must report one worker")
+    gate.assert_contains(parallel.combined, "jobs: 4,", "the parallel run must report four workers")
     gate.assert_contains(
         serial.combined, "2 passed, 2 failed", "the mixed set must score 2 pass / 2 fail"
     )
@@ -128,7 +144,10 @@ def test_jobs_one_and_jobs_four_agree(gate, tmp_path):
         "test-c-vacuous.sh (exited 0 but made no assertions)",
         "the vacuity guard must still fire under the scheduler",
     )
-    gate.log_pass("jobs=1 and jobs=4 agree byte-for-byte on transcript, exit code and failure set")
+    gate.log_pass(
+        "jobs=1 and jobs=4 agree byte-for-byte on transcript, exit code and failure set, with "
+        "only the reported worker count differing"
+    )
 
 
 def test_output_blocks_never_interleave(gate, tmp_path):

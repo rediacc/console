@@ -17,7 +17,7 @@ for exactly that reason. A battery step reading either directory mid-plant is th
 flake that would be blamed on this port. `REAL_TREE_TWIN = True` buys the
 serialisation, and it is honoured only because this module declares no `XDIST_GROUP` of its own.
 
-THE PROBES ARE PID-KEYED, which the twin's are not. The twin uses fixed names, so two concurrent invocations plant the same path and each cleanup deletes the OTHER run's fixture -- the failure `.ci/scripts/test/run-all.sh` records for the `.gate-paths-exist` pair. Adding the pid costs nothing and removes a way for this port and its own twin to collide when both are driven from one
+THE PROBES ARE PID-KEYED, which the twin's are not. The twin uses fixed names, so two concurrent invocations plant the same path and each cleanup deletes the OTHER run's fixture -- the failure the battery's schedule records for the `.gate-paths-exist` pair. Adding the pid costs nothing and removes a way for this port and its own twin to collide when both are driven from one
 parity run.
 
 ANTI-VACUITY. Scanning zero files is a FAILURE, never a pass, and EACH CORPUS IS REFUSED SEPARATELY: with a single summed count the `.py` half could go to zero

@@ -20,7 +20,7 @@
  *     over .ci/scripts/test/gates (battery.py:111 and its discover() at :401), and
  *     run.sh iterates "$tutorials_dir"/tutorial-*.sh. Those files are never named
  *     individually. RE-KEYED 2026-09-09 (invariant 2): the glob used to live in
- *     .ci/scripts/test/run-all.sh as PATTERN="test-*.sh", and battery.py replaced
+ *     the since-deleted .ci/scripts/test/run-all.sh as PATTERN="test-*.sh", and battery.py replaced
  *     that runner. The MECHANISM is unchanged, which is the point of naming the
  *     mechanism rather than the file in .ci/policy/.dead-bash-allowlist.
  *   - dynamic dispatch: "phase_$p" builds a function name at runtime.

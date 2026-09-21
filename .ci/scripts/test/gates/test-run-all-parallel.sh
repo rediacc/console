@@ -6,13 +6,20 @@
 # lane: quality-security
 # blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
 # slow: true
-# why: Proof battery for the parallel scheduler inside .ci/scripts/test/run-all.sh
+# why: Proof battery for the parallel scheduler inside .ci/rediacc_ci/battery.py
 # ---- end gate ----
 
-# Proof battery for the parallel scheduler inside .ci/scripts/test/run-all.sh.
+# Proof battery for the parallel scheduler inside .ci/rediacc_ci/battery.py.
 #
-# WHY THIS EXISTS. run-all.sh is the runner for every other gate test, so a
-# defect in it does not fail loudly: it fails by running FEWER tests, or by
+# RETARGETED WITH ITS SUBJECT. These four properties were written against
+# .ci/scripts/test/run-all.sh, which battery.py replaced as the battery runner
+# and which was deleted once the shadow pair w7p8-battery held at K=5 over seven
+# distinct trees. The properties belong to the runner rather than to the shell,
+# so they moved rather than died, and each case was re-driven against battery.py
+# before the twin was removed.
+#
+# WHY THIS EXISTS. The battery runner is the runner for every other gate test,
+# so a defect in it does not fail loudly: it fails by running FEWER tests, or by
 # shredding their output, or by reintroducing the real-tree collision the
 # schedule exists to prevent. All three of those look like a green run. The
 # battery below pins the four properties that separate "fast" from "still a
@@ -40,11 +47,22 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
 # BLOCKER: shared test assertion / colour helpers
 source "$SCRIPT_DIR/../lib/test-helpers.sh"
 
-RUNNER="$REPO_ROOT/.ci/scripts/test/run-all.sh"
+RUNNER="$REPO_ROOT/.ci/rediacc_ci/battery.py"
 
 if [[ ! -x "$RUNNER" ]]; then
     log_fail "$RUNNER is missing or not executable; this gate has nothing to prove"
 fi
+
+# The one transcript line that is ALLOWED to differ between worker counts, and the
+# reason it is allowed rather than normalised away everywhere: it REPORTS the
+# worker count, so requiring it to match would require the runner to lie about
+# what it did. The shell runner this replaced printed no such line, so the
+# byte-identity assertion below is stated over the transcript with this line
+# folded to a constant, and the line itself is then asserted to carry the
+# requested count. That is strictly more than the shell runner allowed checking.
+fold_schedule_line() {
+    sed -E 's|^  schedule: .*, jobs: [0-9]+, .*$|  schedule:|'
+}
 
 # NOT `date +%s%3N`, and the reason is a whole class of host difference.
 #
@@ -133,7 +151,7 @@ test_jobs_one_and_jobs_four_agree() {
     mkdir -p "$gates"
     mk_fixture "$gates" "test-a-green.sh" 'echo "PASS: green fixture asserted something"'
     mk_fixture "$gates" "test-b-red.sh" 'echo "diagnostic line from the red fixture"' 'exit 1'
-    # Exit 0 with no PASS: line at all. run-all.sh must score this as a failure
+    # Exit 0 with no PASS: line at all. The runner must score this as a failure
     # in both modes; a mode that scored it differently would mean the vacuity
     # guard moved with the scheduler.
     mk_fixture "$gates" "test-c-vacuous.sh" 'echo "this fixture asserts nothing"' 'exit 0'
@@ -144,11 +162,18 @@ test_jobs_one_and_jobs_four_agree() {
 
     assert_eq "$rc_serial" "1" "the mixed fixture set must exit 1 at jobs=1"
     assert_eq "$rc_parallel" "$rc_serial" "exit code must not depend on the worker count"
-    assert_eq "$out_parallel" "$out_serial" "the transcript must not depend on the worker count"
+    assert_eq "$(printf '%s\n' "$out_parallel" | fold_schedule_line)" \
+        "$(printf '%s\n' "$out_serial" | fold_schedule_line)" \
+        "the transcript must not depend on the worker count"
+    # AND THE FOLD IS NOT A BLIND SPOT. The one line held out above is asserted on
+    # directly, in both directions, so a runner that simply ignored the requested
+    # worker count could not hide inside the substitution.
+    assert_contains "$out_serial" "jobs: 1," "the serial run must report one worker"
+    assert_contains "$out_parallel" "jobs: 4," "the parallel run must report four workers"
     assert_contains "$out_serial" "2 passed, 2 failed" "the mixed set must score 2 pass / 2 fail"
     assert_contains "$out_serial" "test-c-vacuous.sh (exited 0 but made no assertions)" \
         "the vacuity guard must still fire under the scheduler"
-    log_pass "jobs=1 and jobs=4 agree byte-for-byte on transcript, exit code and failure set"
+    log_pass "jobs=1 and jobs=4 agree byte-for-byte on transcript, exit code and failure set, with only the reported worker count differing"
 }
 
 # ---------------------------------------------------------------------------

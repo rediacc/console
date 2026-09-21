@@ -49,7 +49,7 @@ test_selftest_green() {
 # ── 2. THE MUTANT. The control that proves the controls can fail. ──────────
 test_mutant_reverts_the_fix() {
     # The mutant lives OUTSIDE the repo. Writing it to scripts/ was the first draft and
-    # check:ci-pool-writer-safety caught it: run-all.sh would then schedule this file in
+    # check:ci-pool-writer-safety caught it: the battery would then schedule this file in
     # the shared pool beside tests that read the same paths. The gate imports only node
     # builtins plus @rediacc/locales, so a symlinked node_modules is all it needs to
     # resolve -- the same trick test-gate-anti-vacuity.sh uses for its fixture tree.

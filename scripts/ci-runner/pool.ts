@@ -15,7 +15,7 @@
  *
  * ---------------------------------------------------------------------------
  * THE ISOLATION CONTRACT (W2.4b). Defined here ONCE and implemented identically
- * by the other scheduler in this repo, `.ci/scripts/test/run-all.sh`.
+ * by the other scheduler in this repo, `.ci/rediacc_ci/battery.py`.
  *
  *   A gate names the shared resources it touches. `mutex: [r]` is an EXCLUSIVE
  *   claim on r; `reads: [r]` is a SHARED claim on the same r. Two gates may
@@ -32,18 +32,18 @@
  * `set -euo pipefail`, so writer-versus-scanner must be excluded -- but
  * scanner-versus-scanner must NOT be, or twenty-one read-only tests serialise
  * for nothing. An exclusive-only mutex can express one of those or the other,
- * never both, which is precisely why run-all.sh grew a private three-set
+ * never both, which is precisely why the battery keeps a three-set
  * scheduler instead of declaring anything.
  *
  * WHAT THE TWO SCHEDULERS DID BEFORE THIS, and it is worth stating plainly
- * because they disagreed for months without anything noticing. run-all.sh
+ * because they disagreed for months without anything noticing. The battery
  * carried the membership as two hand-maintained NAME LISTS inside the runner
  * (WRITER_TESTS, SCANNER_TESTS) and honoured them. The manifest carried nothing:
  * measured 2026-09-06 at commit ac817a647, all three real-tree writers --
  * gate-test:gate-paths-exist, gate-test:gate-anti-vacuity,
  * gate-test:generate-tag-inputs -- are registered with NO mutex, and zero of the
  * 147 qualityGateTest entries carry one. So `npm run ci` schedules exactly the
- * combination run-all.sh's own header calls "a flake manufactured by the
+ * combination the battery's own header calls "a flake manufactured by the
  * runner", while the CI step that runs the same 147 tests is protected. The
  * isolation was real in one scheduler and absent in the other, and the only
  * thing keeping the difference invisible is that the two are rarely both hot.

@@ -21,7 +21,7 @@
 #
 # NO NETWORK. The live list is injected through LABEL_INVENTORY_LIVE_FILE, which
 # is also how the real-tree case below drives the REAL gate over the REAL
-# .github/labels.yml inside run-all.sh.
+# .github/labels.yml inside the gate-test battery.
 
 set -euo pipefail
 

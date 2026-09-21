@@ -17,7 +17,7 @@
  * MAINTENANCE IS BY RULE, NOT BY HAND. A wrong or stale entry fails
  * check-ci-parity rather than rotting: assertion 5 re-verifies every declared
  * `ci` pointer against the parsed workflow, and assertion 7 compares the
- * `qualityGateTest` set against the on-disk glob run-all.sh itself uses.
+ * `qualityGateTest` set against the on-disk glob the battery itself uses.
  */
 
 // RE-EXPORTED, not redefined: every existing importer of GateSpec/CiCoverage/ paritySurface keeps working unchanged, which is what makes this split non-behavioural and safe to land on its own.
@@ -2522,7 +2522,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-battery-clean-tree',
-    // run-all.sh's tree snapshot must not abort on a clean checkout. It extracts the REAL tree_state() rather than copying it, and refuses if that function is gone.
+    // The battery's tree snapshot must not abort on a clean checkout. It extracts the REAL tree_state() rather than copying it, and refuses if that function is gone.
     run: 'npm run check:ci-battery-clean-tree',
     gate: true,
     leaves: ['.ci/scripts/quality/check_battery_clean_tree.py'],
@@ -4020,7 +4020,7 @@ export const GATES: readonly GateSpec[] = [
       kind: 'test',
       test: '.ci/scripts/test/gates/test-tutorial-render-queue.sh',
       blocker:
-        'BLOCKER: the predicate needs the render ledger and media manifest that only the tutorial pipeline writes, and test-tutorial-render-queue.sh:79 runs `node "$PREDICATE" --selftest` against the real tree inside run-all.sh, so the real scan does execute in CI (ci-quality.yml quality-security, "Quality-gate unit tests")',
+        'BLOCKER: the predicate needs the render ledger and media manifest that only the tutorial pipeline writes, and test-tutorial-render-queue.sh:79 runs `node "$PREDICATE" --selftest` against the real tree inside the gate-test battery, so the real scan does execute in CI (ci-quality.yml quality-security, "Quality-gate unit tests")',
     },
   },
   {
@@ -4187,7 +4187,7 @@ export const GATES: readonly GateSpec[] = [
       kind: 'test',
       test: '.ci/scripts/test/gates/test-dead-case-arms.sh',
       blocker:
-        'BLOCKER: the gate is CONTROL-FIRST -- it plants a dead case arm with a runtime-generated key and refuses to report on the real tree unless its scanner catches that arm, so a green IS the fire proof; test-dead-case-arms.sh:14 runs it seam-free against the real tree inside run-all.sh (ci-quality.yml quality-security, "Quality-gate unit tests")',
+        'BLOCKER: the gate is CONTROL-FIRST -- it plants a dead case arm with a runtime-generated key and refuses to report on the real tree unless its scanner catches that arm, so a green IS the fire proof; test-dead-case-arms.sh:14 runs it seam-free against the real tree inside the gate-test battery (ci-quality.yml quality-security, "Quality-gate unit tests")',
     },
   },
   {
@@ -4199,7 +4199,7 @@ export const GATES: readonly GateSpec[] = [
       kind: 'test',
       test: '.ci/scripts/test/gates/test-label-references.sh',
       blocker:
-        'BLOCKER: test-label-references.sh:116 runs the gate seam-free against the real tree inside run-all.sh (ci-quality.yml quality-security, "Quality-gate unit tests"), so the real sweep over .github/.ci executes every CI run; the fixture cases around it prove both fire directions',
+        'BLOCKER: test-label-references.sh:116 runs the gate seam-free against the real tree inside the gate-test battery (ci-quality.yml quality-security, "Quality-gate unit tests"), so the real sweep over .github/.ci executes every CI run; the fixture cases around it prove both fire directions',
     },
   },
   {
@@ -4211,7 +4211,7 @@ export const GATES: readonly GateSpec[] = [
       kind: 'test',
       test: '.ci/scripts/test/gates/test-label-inventory.sh',
       blocker:
-        'BLOCKER: test-label-inventory.sh:191 runs the gate seam-free over the REAL .github/labels.yml inside run-all.sh ' +
+        'BLOCKER: test-label-inventory.sh:191 runs the gate seam-free over the REAL .github/labels.yml inside the gate-test battery ' +
         '(ci-quality.yml quality-security, "Quality-gate unit tests") with the live list injected, so the real parse, the ' +
         'declared floor and the create-on-demand allowlist verification execute every CI run, and the two controls beside it drop ' +
         'a real label and add an undeclared one to prove both fire directions; the live GitHub read is the one part that cannot ' +
@@ -4227,7 +4227,7 @@ export const GATES: readonly GateSpec[] = [
       kind: 'test',
       test: '.ci/scripts/test/gates/test-profiler-coverage.sh',
       blocker:
-        'BLOCKER: test-profiler-coverage.sh:584 runs the gate seam-free against the real tree inside run-all.sh (ci-quality.yml ' +
+        'BLOCKER: test-profiler-coverage.sh:584 runs the gate seam-free against the real tree inside the gate-test battery (ci-quality.yml ' +
         'quality-security, "Quality-gate unit tests") -- real .github/workflows, real .profiler-coverage-allowlist, real ' +
         '.github/actions/profiler/action.yml, real floors -- so the full 121-job parse and both relations execute every CI run; ' +
         'the 22 fixture cases around it prove every fire direction, including the anti-vacuity refusals (empty dir, missing dir, ' +
@@ -4243,7 +4243,7 @@ export const GATES: readonly GateSpec[] = [
       kind: 'test',
       test: '.ci/scripts/test/gates/test-autopilot-workflow-invariants.sh',
       blocker:
-        'BLOCKER: no quality lane can run this against the live ruleset, but test-autopilot-workflow-invariants.sh:23-24 points both GATE and REAL at the real .github/workflows/autopilot.yml, so run-all.sh (ci-quality.yml quality-security, "Quality-gate unit tests") executes the real scan over the real tree every CI run',
+        'BLOCKER: no quality lane can run this against the live ruleset, but test-autopilot-workflow-invariants.sh:23-24 points both GATE and REAL at the real .github/workflows/autopilot.yml, so the gate-test battery (ci-quality.yml quality-security, "Quality-gate unit tests") executes the real scan over the real tree every CI run',
     },
   },
   // >>> gen-manifest: region 40
@@ -4282,7 +4282,7 @@ export const GATES: readonly GateSpec[] = [
       kind: 'test',
       test: '.ci/scripts/test/gates/test-ci-workflow-invariants.sh',
       blocker:
-        'BLOCKER: no quality lane runs this against the live workflow, but test-ci-workflow-invariants.sh points both GATE and REAL at the real .github/workflows/ci.yml, so run-all.sh (ci-quality.yml quality-security, "Quality-gate unit tests") executes the real scan over the real tree every CI run',
+        'BLOCKER: no quality lane runs this against the live workflow, but test-ci-workflow-invariants.sh points both GATE and REAL at the real .github/workflows/ci.yml, so the gate-test battery (ci-quality.yml quality-security, "Quality-gate unit tests") executes the real scan over the real tree every CI run',
     },
   },
   {
@@ -4294,7 +4294,7 @@ export const GATES: readonly GateSpec[] = [
       kind: 'test',
       test: '.ci/scripts/test/gates/test-autopilot-breakpoint-alignment.sh',
       blocker:
-        'BLOCKER: test-autopilot-breakpoint-alignment.sh:59 runs the gate seam-free against the real .ci/breakpoint/workflow/breakpoint.yml and .github/workflows/autopilot.yml inside run-all.sh (ci-quality.yml quality-security, "Quality-gate unit tests"), so the real comparison executes every CI run; the mutated-copy cases around it prove both fire directions',
+        'BLOCKER: test-autopilot-breakpoint-alignment.sh:59 runs the gate seam-free against the real .ci/breakpoint/workflow/breakpoint.yml and .github/workflows/autopilot.yml inside the gate-test battery (ci-quality.yml quality-security, "Quality-gate unit tests"), so the real comparison executes every CI run; the mutated-copy cases around it prove both fire directions',
     },
   },
 
@@ -4310,7 +4310,7 @@ export const GATES: readonly GateSpec[] = [
   //   anchor-integrity        -> "Redirects"; both assert that a link in the BUILT output
   // resolves to something.
   //   client-bundle-budget    -> "SEO"; page weight is read from the same built HTML, and
-  // the step already sits behind build:www. The remaining three have no honest step to ride and are covered by a gate test that drives their REAL scan against the REAL tree inside run-all.sh. WAVE 1's gate, registered here because w2-i18n correctly did not touch the root
+  // the step already sits behind build:www. The remaining three have no honest step to ride and are covered by a gate test that drives their REAL scan against the REAL tree inside the gate-test battery. WAVE 1's gate, registered here because w2-i18n correctly did not touch the root
   // package.json or this file. Without it a STALE CLIENT CATALOG SHIPS SILENTLY: wave 1
   // replaced the thirteen static locale imports with generated per-locale bundles under
   // packages/www/src/i18n/{client,client-route}/, and those bundles are committed
@@ -4436,7 +4436,7 @@ export const GATES: readonly GateSpec[] = [
       blocker:
         'BLOCKER: no quality lane owns CSS overflow, and the two shapes this gate detects are invisible to a browser scan because ' +
         'querySelectorAll returns no pseudo-elements; test-layout-overflow.sh:66 runs the gate seam-free against the real ' +
-        'stylesheets inside run-all.sh (ci-quality.yml quality-security, "Quality-gate unit tests"), so the real parse of every ' +
+        'stylesheets inside the gate-test battery (ci-quality.yml quality-security, "Quality-gate unit tests"), so the real parse of every ' +
         'declaration block executes every CI run, and the mutant case beside it strips the nowrap detector and requires the ' +
         "gate's own controls to go red",
     },
@@ -4452,7 +4452,7 @@ export const GATES: readonly GateSpec[] = [
       blocker:
         'BLOCKER: no quality lane reads React state initializers, and the defect is decidable only from the source pair (server ' +
         'render, client render); test-hydration-clean.sh:60 runs the gate seam-free against the real packages/www components ' +
-        'inside run-all.sh (ci-quality.yml quality-security, "Quality-gate unit tests"), so the real scan executes every CI run, ' +
+        'inside the gate-test battery (ci-quality.yml quality-security, "Quality-gate unit tests"), so the real scan executes every CI run, ' +
         'and the mutant case beside it blinds the one-hop lookup and requires the indirect control to go red',
     },
   },
@@ -4467,7 +4467,7 @@ export const GATES: readonly GateSpec[] = [
       blocker:
         'BLOCKER: no quality lane inspects form submit handlers, and the defect is a MISSING guard rather than a present one, so ' +
         'nothing else can express it; test-form-validation.sh:59 runs the gate seam-free against the real components inside ' +
-        'run-all.sh (ci-quality.yml quality-security, "Quality-gate unit tests"), so the real scan of all six forms executes ' +
+        'the gate-test battery (ci-quality.yml quality-security, "Quality-gate unit tests"), so the real scan of all six forms executes ' +
         'every CI run, and the mutant case beside it accepts a captcha guard as validation and requires the control to go red',
     },
   },
@@ -4628,12 +4628,12 @@ export const GATES: readonly GateSpec[] = [
     },
   },
 
-  // --------------------------------------------------------------------------- The battery, flattened. run-all.sh runs these 57 serially behind one opaque npm key; scheduling them individually is what lifts the parallel ceiling
+  // --------------------------------------------------------------------------- The battery, flattened. The battery runner runs these 57 serially behind one opaque npm key; scheduling them individually is what lifts the parallel ceiling
   // from 2.4x to roughly 7x and what makes the summary name the failing test.
   //
-  // Assertion 7 pins this set against the on-disk glob run-all.sh:26,46 uses, so a newly added test cannot be silently omitted here -- without that rule this flattening would recreate #549 fifty-seven times over.
+  // Assertion 7 pins this set against the on-disk glob the battery uses, so a newly added test cannot be silently omitted here -- without that rule this flattening would recreate #549 fifty-seven times over.
   //
-  // ISOLATION IS A HYPOTHESIS, NOT A GIVEN. test-claude-hooks.sh failed once Since 2026-08-08 run-all.sh enforces this in-step: the two writers run as an exclusive serial chain and the real-tree scanners are held until it finishes. See its header. inside the SERIAL battery and could not be reproduced standalone (plan finding F8). Any red that appears only under parallelism gets a
+  // ISOLATION IS A HYPOTHESIS, NOT A GIVEN. test-claude-hooks.sh failed once Since 2026-08-08 the battery enforces this in-step: the two writers run as an exclusive serial chain and the real-tree scanners are held until it finishes. See its header. inside the SERIAL battery and could not be reproduced standalone (plan finding F8). Any red that appears only under parallelism gets a
   // named mutex group, never a retry.
   //
   // A HAZARD OF THIS CLASS, ONE INSTANCE FIXED AND TWO OPEN. Three gates write a file into the REAL working tree for the duration of their run, and a tree-scanning gate running concurrently trips over it. Observed live on 2026-07-31: FIXED .ci/scripts/test/gates/test-gate-paths-exist.sh
@@ -5035,7 +5035,7 @@ export const GATES: readonly GateSpec[] = [
       test: '.ci/scripts/test/gates/test-regions-sync.sh',
       blocker:
         'BLOCKER: test-regions-sync.sh drives the REAL gate over the REAL regions.json and packages/shared/src/regions/data.json ' +
-        'inside run-all.sh (ci-quality.yml quality-security, "Quality-gate unit tests"), and its controls plant a divergence, an ' +
+        'inside the gate-test battery (ci-quality.yml quality-security, "Quality-gate unit tests"), and its controls plant a divergence, an ' +
         'empty file and invalid JSON to prove all three refusals fire; the two files are held together by hand (no build step ' +
         'syncs them, despite what index.ts used to claim) and data.json is the ONLY region list users get because ' +
         '${SITE_URL}/regions.json returns 404, so silent drift would ship to every install',

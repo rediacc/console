@@ -5,7 +5,7 @@
 # source: .e2e-coverage-allowlist
 # corpus: corpus/e2e-coverage-allowlist.list
 # comment-char: #
-# corpus-sha256: f899b48820adea906f4d0c36c2db8228161b238dcdf72ed36515eec31537fee8
+# corpus-sha256: 543d18e94f73fcdfd4139950435313e6f2f989e2cb1f0dc9aad2c67a09585126
 # ---
 19	backup_delete	legacy renet functions that predate the packages/e2e-tests suite and
 20	backup_list	legacy renet functions that predate the packages/e2e-tests suite and

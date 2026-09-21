@@ -33,7 +33,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../.." && pwd)"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 FAIL=0
-# `PASS:` at line start, because run-all.sh:217 matches ^(\033\[0;32m)?PASS: and
+# `PASS:` at line start, because the battery's PASS predicate is anchored and
 # a battery that emits none is reported as "exited 0 without a single PASS: line".
 # This gate used an indented two-space form and was therefore INVISIBLE to the
 # runner -- it exited 0 having proven seven things nothing could see.

@@ -46,7 +46,7 @@ TRAP 4: "IS IT DIRTY" IS FOUR DIFFERENT QUESTIONS.
 Measured across 21 sites: `git status --porcelain` counts untracked;
 `git diff --quiet` sees only UNSTAGED changes to TRACKED files, so it calls a
 tree with staged changes clean; `git diff --cached --quiet` is the mirror image;
-and `.ci/scripts/test/run-all.sh:192` deliberately filters `^??` out because a scratch file is not a tree change. `scripts/dev/worktree.sh` pairs the two `--quiet` forms at four sites and therefore treats an untracked-only tree as clean at all four. All four are legitimate questions and this module makes the caller name which one it is asking.
+and the battery runner's `tree_state` deliberately filters `^??` out because a scratch file is not a tree change. `scripts/dev/worktree.sh` pairs the two `--quiet` forms at four sites and therefore treats an untracked-only tree as clean at all four. All four are legitimate questions and this module makes the caller name which one it is asking.
 
 ------------------------------------------------------------------------------
 TRAP 5: A PROBE THAT FAILED IS NOT AN ANSWER OF "NO".
@@ -232,8 +232,7 @@ def dirty_paths(
 ) -> list[str] | None:
     """Paths the working tree has changed. None when git could not be asked.
 
-    `untracked=False` reproduces `.ci/scripts/test/run-all.sh:192`'s
-    `grep -v '^??'` -- a scratch file is not a change to the tree -- which `.ci/scripts/quality/check-battery-clean-tree.sh:112` pins as a literal string.
+    `untracked=False` reproduces the battery runner's `grep -v '^??'` -- a scratch file is not a change to the tree -- which `.ci/rediacc_ci/quality/battery_clean_tree.py` pins.
     """
     entries = status_entries(root)
     if entries is None:

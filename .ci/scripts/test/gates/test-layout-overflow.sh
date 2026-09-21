@@ -61,7 +61,7 @@ test_the_control_can_actually_fail() {
     #
     # Writing the mutant beside the gate fixed the imports and broke something else: it
     # made this test a real-tree writer, which the pool-writer-safety gate correctly
-    # flagged, because run-all.sh would then schedule it in the pool next to tests that
+    # flagged, because the battery would then schedule it in the pool next to tests that
     # read the same paths.
     #
     # Copying the lib satisfies the imports without touching the tree, so the test stays

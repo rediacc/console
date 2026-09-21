@@ -31,7 +31,7 @@ Python rewrite is most likely to get subtly wrong, and a rewrite checked only ag
 
 IT DOES NOT DRIVE THE TWIN TO CHECK ITSELF, deliberately. Comparing the Python extractors against the awk ones at runtime would be the strongest possible check today and a broken test in W7 P5, which deletes the twin. The fixture above makes the same claim without borrowing the twin's lifetime.
 
-NO `REAL_TREE_TWIN`, AND IT IS CHECKED RATHER THAN ASSUMED. `test-run-sh.sh` is in neither `gates.lock.json`'s `mutex`/`reads` claims nor `run-all.sh`'s `WRITER_TESTS_FALLBACK` / `SCANNER_TESTS_FALLBACK` arrays, so the parity driver's `real_tree_admission` would REFUSE the declaration as an unearned serialisation slot. What this module does to the real tree is read three files and
+NO `REAL_TREE_TWIN`, AND IT IS CHECKED RATHER THAN ASSUMED. `test-run-sh.sh` makes no `mutex`/`reads` claim in `gates.lock.json`, the only source the real-tree set is derived from, so the parity driver's `real_tree_admission` would REFUSE the declaration as an unearned serialisation slot. What this module does to the real tree is read three files and
 run `./run.sh <verb>` four times; the only writes are into a `mktemp -d` holding copies.
 
 TWO PLACES THE PORT SAYS MORE THAN THE TWIN, both narrower than they look and neither of them a verdict change. Driven against a dozen planted defects the two sides went red together every time; these are the two states where the MESSAGE differs, and in both the port names the real cause and the twin does not.

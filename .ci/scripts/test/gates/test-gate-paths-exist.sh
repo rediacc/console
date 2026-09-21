@@ -83,7 +83,7 @@ FIXTURE_DIR="$REPO_ROOT/.ci/scripts"
 # -- planted the same two paths and each `trap rm -f` deleted the OTHER run's
 # fixture. On 2026-08-05 that surfaced as a false "detector broken": the
 # control's collect_dead_paths came back empty because its fixture had already
-# been removed by a neighbour. run-all.sh's W chain serialises this test WITHIN
+# been removed by a neighbour. The battery's W chain serialises this test WITHIN
 # one battery and cannot serialise across independent processes.
 #
 # The dotfile prefix is load-bearing (it is what keeps eslint, biome and knip

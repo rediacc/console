@@ -36,7 +36,7 @@
  * kind: test
  * needs: node
  * test: .ci/scripts/test/gates/test-layout-overflow.sh
- * blocker: BLOCKER: no quality lane owns CSS overflow, and the two shapes this gate detects are invisible to a browser scan because querySelectorAll returns no pseudo-elements; test-layout-overflow.sh:66 runs the gate seam-free against the real stylesheets inside run-all.sh (ci-quality.yml quality-security, "Quality-gate unit tests"), so the real parse of every declaration block executes every CI run, and the mutant case beside it strips the nowrap detector and requires the gate's own controls to go red
+ * blocker: BLOCKER: no quality lane owns CSS overflow, and the two shapes this gate detects are invisible to a browser scan because querySelectorAll returns no pseudo-elements; test-layout-overflow.sh:66 runs the gate seam-free against the real stylesheets inside the gate-test battery (ci-quality.yml quality-security, "Quality-gate unit tests"), so the real parse of every declaration block executes every CI run, and the mutant case beside it strips the nowrap detector and requires the gate's own controls to go red
  * ---- end gate ----
  */
 import fs from 'node:fs';

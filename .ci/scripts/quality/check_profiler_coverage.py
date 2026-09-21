@@ -65,7 +65,7 @@ INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-profiler-coverage.sh` is NOT d
 ---- gate ----
 kind: test
 test: .ci/scripts/test/gates/test-profiler-coverage.sh
-blocker: BLOCKER: test-profiler-coverage.sh:584 runs the gate seam-free against the real tree inside run-all.sh (ci-quality.yml quality-security, "Quality-gate unit tests") -- real .github/workflows, real .profiler-coverage-allowlist, real .github/actions/profiler/action.yml, real floors -- so the full 121-job parse and both relations execute every CI run; the 22 fixture cases around it prove every fire direction, including the anti-vacuity refusals (empty dir, missing dir, zero jobs, three floors, missing action.yml) that a real-tree-only case can never exercise
+blocker: BLOCKER: test-profiler-coverage.sh:584 runs the gate seam-free against the real tree inside the gate-test battery (ci-quality.yml quality-security, "Quality-gate unit tests") -- real .github/workflows, real .profiler-coverage-allowlist, real .github/actions/profiler/action.yml, real floors -- so the full 121-job parse and both relations execute every CI run; the 22 fixture cases around it prove every fire direction, including the anti-vacuity refusals (empty dir, missing dir, zero jobs, three floors, missing action.yml) that a real-tree-only case can never exercise
 needs: none
 ---- end gate ----
 """

@@ -22,7 +22,7 @@ DRIVEN, on this tree, both streams captured SEPARATELY:
 The three PASS lines are on STDOUT on both sides, which is unusual for this repo and is the twin's contract rather than an oversight: a caller reading this gate's stdout sees the whole tally. The port's own docstring states it.
 
 DRIVEN RED AS WELL, by planting the exact defect the gate exists for into
-`.ci/scripts/test/run-all.sh`: the `{ grep -v '^??' || true; }` in `tree_state`
+the shell runner then at `.ci/scripts/test/run-all.sh`: the `{ grep -v '^??' || true; }` in `tree_state`
 reduced to a bare `grep -v '^??'`, which under `set -euo pipefail` aborts the snapshot on a CLEAN tree. Both sides exit 1 with byte-identical stdout (242 bytes) and byte-identical stderr (43 bytes): the middle assertion reds with
 `rc=1 out=` while BOTH controls still pass, so the instrument is shown intact.
 Reverted by its exact inverse and the file verified byte-identical to its pre-plant state (it carried an unrelated modification from another session at baseline, so the comparison was against a `cp` taken immediately before the plant, not against HEAD), with the twin back at exit 0.

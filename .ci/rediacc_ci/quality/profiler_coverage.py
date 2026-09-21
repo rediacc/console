@@ -1,7 +1,7 @@
 """Every Linux job must be profiled, and every profiled job configured correctly.
 
-Ported from `.ci/scripts/quality/check-profiler-coverage.sh`, which is NOT deleted; see `rediacc_ci.quality.__init__` for why both copies live until W7 phase 5. The twin's own registration is `kind: test`, covered by `.ci/scripts/test/gates/test-profiler-coverage.sh`, whose BLOCKER reads: `test-profiler-coverage.sh:584 runs the gate seam-free against the real tree inside run-all.sh
-(ci-quality.yml quality-security, "Quality-gate unit tests")`
+Ported from `.ci/scripts/quality/check-profiler-coverage.sh`, which is NOT deleted; see `rediacc_ci.quality.__init__` for why both copies live until W7 phase 5. The twin's own registration is `kind: test`, covered by `.ci/scripts/test/gates/test-profiler-coverage.sh`, whose BLOCKER reads: `test-profiler-coverage.sh:584 runs the gate seam-free against the real tree inside the
+gate-test battery (ci-quality.yml quality-security, "Quality-gate unit tests")`
 with the real `.github/workflows`, the real `.profiler-coverage-allowlist`, the
 real `.github/actions/profiler/action.yml` and the real floors, so the full 121-job parse and both relations execute every CI run; the 22 fixture cases around it prove every fire direction, including the anti-vacuity refusals (empty dir, missing dir, zero jobs, three floors, missing action.yml) that a real-tree run can never exercise.
 

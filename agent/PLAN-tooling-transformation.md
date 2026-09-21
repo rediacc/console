@@ -774,6 +774,12 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       this document names the find-port shim at its old location and line -- left for
       the concurrent W7P5-b writer's own deletion to settle, since editing it now would
       race that writer's file.
+      **REAL RUNS DONE FROM THIS HOST 2026-09-21, the credential-free rows.** `verify-stable-endpoints.sh` rc=0
+      against production (install scripts baked to stable, worker fingerprints, R2 copies, three regional health
+      checks). `verify-edge-endpoints.sh` with VERSION=1.3.12, the live edge version, rc=0 (footer v1.3.12, latest.json
+      match, three edge health checks). `purge-media-cache.sh` without credentials refuses with rc=1 and
+      `cf-purge-urls.sh` skips with a warning, rc=0; neither can purge without a Cloudflare token, so their real
+      runs stay `door:operator-only` with the other credentialed rows.
       **RUNBOOK ROWS RE-DERIVED 2026-09-21, ZERO DRIFT.** The 32 table rows equal the 32 entries of
       `.ci/policy/.w7p5a-real-run-blocklist` in both directions, and every workflow site (searched by script
       stem in hyphen and underscore form under `.github/workflows`) still matches its row, including the rows

@@ -12,7 +12,7 @@
  * header: "GitHub runs every step with the workspace as CWD, so a RELATIVE path
  * is correct there. This harness inherited its CWD instead, which meant it
  * passed when invoked by hand from the repo root and exited 127 under
- * run-all.sh, which does `cd "$GATES_DIR"` first." Exit 127 is a gate that did
+ * the battery, which runs each test from the gates directory." Exit 127 is a gate that did
  * not run at all, reported as a red with no finding in it.
  *
  * THE RULE:
@@ -223,7 +223,7 @@ function main(): void {
         '  `pathlib.Path(__file__).resolve().parents[N]`. A gate runs from the\n' +
         '  workspace root under npm, from elsewhere under the runner, and from\n' +
         '  wherever a session typed it -- test-gate-lanes.sh passed by hand and\n' +
-        '  exited 127 under run-all.sh for exactly this.'
+        '  exited 127 under the gate-test battery for exactly this.'
     );
     process.exit(1);
   }

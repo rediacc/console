@@ -214,10 +214,11 @@ JSON
 # nothing. Both have to be observed, so both are asserted here.
 #
 # WHY IT MATTERS BEYOND THE SCHEDULER. Until 2026-09-06 the two schedulers over
-# the gate-test battery decided isolation separately: .ci/scripts/test/run-all.sh
-# carried hand-maintained W/S name lists while the manifest declared nothing, so
+# the gate-test battery decided isolation separately: the shell runner then at
+# .ci/scripts/test/run-all.sh carried hand-maintained W/S name lists while the
+# manifest declared nothing, so
 # `npm run ci` ran the three real-tree writers concurrently with the scanners
-# that enumerate the same directories. run-all.sh now derives its sets from the
+# that enumerate the same directories. The battery derives its sets from the
 # same `mutex`/`reads` declarations this case exercises.
 test_reads_shares_and_excludes() {
     local mf conc

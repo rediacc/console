@@ -110,7 +110,7 @@ THE DISPATCH-HALF ANTI-VACUITY REFUSAL CALLS A FUNCTION THAT DOES NOT EXIST. The
 `log_fail` is defined in `.ci/scripts/test/lib/test-helpers.sh` and in four test scripts, in NONE of the libraries this gate loads. Under `set -euo pipefail` an unknown command exits 127 immediately, so the three explanatory `echo` lines and the `exit 1` beneath it never run: the refusal prints `...: line N: log_fail: command not found` and exits 127.
 
 THIS IS THE SAME DEFECT, IN THE SAME SHAPE, AS ONE ALREADY RECORDED IN THIS TREE.
-`.ci/scripts/test/run-all.sh:215-219` says of the pool-writer-safety gate: "the anti-vacuity refusal that exists for exactly that case called a log_fail() that does not exist, so the gate exited 127 rather than refusing. Two failures had to be repaired before this one line became visible." That gate was given its own `log_fail` at its bash twin's line 76; this one was not.
+The shell battery runner, since retired, said of the pool-writer-safety gate: "the anti-vacuity refusal that exists for exactly that case called a log_fail() that does not exist, so the gate exited 127 rather than refusing. Two failures had to be repaired before this one line became visible." That gate was given its own `log_fail` at its bash twin's line 76; this one was not.
 
 The port reproduces the 127 and the diagnostic's shape, because invariant 5 says the twin is not edited in the change that ports it and the differential rules on behaviour. See `dispatch_floor_refusal` for exactly how far the reproduction goes and where it stops.
 

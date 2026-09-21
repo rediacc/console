@@ -1,6 +1,9 @@
-"""`rediacc_ci.battery` against `.ci/scripts/test/run-all.sh`, the runner it replaces.
+"""`rediacc_ci.battery`, the gate-test battery runner.
 
-WHAT IS WORTH TESTING HERE, and it is not "does it run 148 shell scripts". The scheduling is the cheap part; the VERDICT is where a runner goes silently wrong, and run-all.sh's header is a list of the ways it did:
+IT WAS A DIFFERENTIAL AND IT IS NOT ONE ANY MORE. This file was written against `.ci/scripts/test/run-all.sh`, the shell runner `battery.py` replaced, and one case drove a heredoc extracted from that file at runtime. The shell runner was deleted once the shadow pair `w7p8-battery` held at K=5 over seven distinct trees; only the cases that EXECUTED or READ it went with it, and
+every case that was ever about this runner's own behaviour is still here.
+
+WHAT IS WORTH TESTING HERE, and it is not "does it run 148 shell scripts". The scheduling is the cheap part; the VERDICT is where a runner goes silently wrong, and the retired runner's header was a list of the ways it did:
 
   * a test the scheduler lost, reported as a shorter green run rather than a red one,
   * a test that exits 0 having asserted nothing, indistinguishable from a good one,
@@ -26,7 +29,6 @@ import pytest
 from rediacc_ci import battery, paths
 
 BATTERY = paths.from_root(".ci", "rediacc_ci", "battery.py")
-TWIN = paths.from_root(".ci", "scripts", "test", "run-all.sh")
 
 
 def _fixture_battery(base: pathlib.Path, **scripts: str) -> tuple[pathlib.Path, pathlib.Path]:
@@ -91,7 +93,7 @@ def test_a_glob_that_matches_nothing_is_a_failure(tmp_path):
 
 
 def test_the_pass_predicate_sees_the_real_escape_byte(tmp_path):
-    # THE DEFECT THIS EXISTS FOR. run-all.sh once spelled the escape as the literal text "x1b", so every colour-emitting gate test contributed zero assertions
+    # THE DEFECT THIS EXISTS FOR. The shell runner this replaced once spelled the escape as the literal text "x1b", so every colour-emitting gate test contributed zero assertions
     # while the pass counter stayed right.
     gates, lock = _fixture_battery(
         tmp_path,
@@ -179,53 +181,38 @@ def test_the_env_seam_overrides_membership(tmp_path, monkeypatch):
     assert schedule.bucket("test-d.sh") == "T"
 
 
-def test_the_live_lock_is_read_by_the_same_code_the_twin_uses(tmp_path):
-    """THE CLAIM THIS FILE IS HERE TO KEEP HONEST: the two runners must not decide isolation separately. run-all.sh classifies with an inline python3 heredoc over the same lock; drive it and require the same answer on the REAL file."""
+def test_the_live_lock_is_read_and_the_declarations_are_still_there(tmp_path):
+    """THE CLAIM THIS FILE IS HERE TO KEEP HONEST, restated for a single runner.
+
+    THE COMPARISON THIS CASE USED TO MAKE IS GONE, AND SAYING WHY IS THE POINT. It drove a python3 heredoc EXTRACTED AT RUNTIME from `.ci/scripts/test/run-all.sh` and required the same answer, because for as long as two runners existed the real hazard was the two of them deciding isolation separately -- which they did, for months, until 2026-09-06. That runner was
+    retired once the shadow pair `w7p8-battery` held at K=5 over seven distinct trees, so there is no second reader left to disagree with, and a case that read a deleted file would raise rather than merely mis-point.
+
+    WHAT SURVIVES IS EVERY PART THAT WAS NEVER ABOUT THE TWIN, and those are the parts a green here still has to earn: the live lock's declarations are asserted NON-EMPTY, and the reader is driven over a synthetic lock carrying every shape it has to tell apart -- which the live lock does not, because it exercises only the shapes it happens to use today.
+    """
     lock = paths.from_root("scripts", "ci-runner", "gates.lock.json")
-    twin_source = TWIN.read_text(encoding="utf-8")
-    start = twin_source.index('python3 - "$GATES_LOCK" "$1" <<\'CLASSIFY\'')
-    program = twin_source[
-        twin_source.index("\n", start) + 1 : twin_source.index("\nCLASSIFY", start)
-    ]
-    script = tmp_path / "classify.py"
-    script.write_text(program, encoding="utf-8")
 
-    def twin_answer(lock_path, claim):
-        proc = subprocess.run(
-            [sys.executable, str(script), str(lock_path), claim],
-            capture_output=True,
-            text=True,
-            check=False,
-            timeout=120,
-        )
-        assert proc.returncode == 0, proc.stderr
-        return {ln for ln in proc.stdout.split() if ln}
-
-    for claim in ("mutex", "reads"):
-        assert battery.classify_from_lock(lock, claim) == twin_answer(lock, claim)
-
-    # THE AGREEMENT ABOVE WAS VACUOUS UNTIL 2026-09-07, and the assertion that used to sit here is what said so. Then: ZERO of the 148 gate-test entries in the live lock declared `mutex`, `reads`, `heavy` or `weight`, so both readers correctly answered with the empty set and "they agree" was a claim about nothing -- two readers returning nothing agree the way two broken clocks do.
+    # THE ASSERTIONS BELOW WERE VACUOUS UNTIL 2026-09-07, and the assertion that used to sit here is what said so.
+    # Then: ZERO of the 148 gate-test entries in the live lock declared `mutex`, `reads`, `heavy` or `weight`, so the reader correctly answered with the empty set and any claim of agreement was a claim about nothing -- two readers returning nothing agree the way two broken clocks do.
     # That state was pinned with `== set()` and a message telling whoever landed the
     # declarations to delete it.
     #
     # They landed. W2.4's missing half was a MISSING TYPE: `gate-spec.ts` declared
     # `mutex?: string[]` and had no `reads` field at all, so the 21 scanner gate tests were undeclarable while the battery asked `classify_from_lock` for exactly that claim. The lock now carries `mutex: ['tree:repo']` on the 4 real-tree writers and `reads: ['tree:repo']` on the 21 scanners.
     #
-    # So the live comparison now has an answer, and it is ASSERTED NON-EMPTY rather than assumed to be. A lock that silently lost its declarations again would otherwise slide back into the vacuous state while this test stayed green, which is the exact failure the old assertion existed to make visible.
+    # So the live read now has an answer, and it is ASSERTED NON-EMPTY rather than assumed to be. A lock that silently lost its declarations again would otherwise slide back into the vacuous state while this test stayed green, which is the exact failure the old assertion existed to make visible. It matters more now than it did with two runners: the lock is the only
+    # declaration anything schedules by, so an empty read degrades the whole battery to serial while reporting nothing at all.
     live_writers = battery.classify_from_lock(lock, "mutex")
     live_scanners = battery.classify_from_lock(lock, "reads")
     assert live_writers, (
-        "the live lock declares no `mutex: [tree:*]` gate test at all, so comparing "
-        "the two readers on it compares nothing. Restore the declarations before "
-        "trusting this test's green."
+        "the live lock declares no `mutex: [tree:*]` gate test at all, so reading it "
+        "here reads nothing. Restore the declarations before trusting this test's green."
     )
     assert live_scanners, (
-        "the live lock declares no `reads: [tree:*]` gate test at all, so comparing "
-        "the two readers on it compares nothing. Restore the declarations before "
-        "trusting this test's green."
+        "the live lock declares no `reads: [tree:*]` gate test at all, so reading it "
+        "here reads nothing. Restore the declarations before trusting this test's green."
     )
 
-    # The comparison is ALSO repeated on a SYNTHETIC lock carrying every shape the readers have to tell apart, because the live lock exercises only the shapes it happens to use today.
+    # The read is ALSO repeated on a SYNTHETIC lock carrying every shape the reader has to tell apart, because the live lock exercises only the shapes it happens to use today.
     synthetic = tmp_path / "synthetic.json"
     synthetic.write_text(
         json.dumps(
@@ -246,8 +233,8 @@ def test_the_live_lock_is_read_by_the_same_code_the_twin_uses(tmp_path):
         encoding="utf-8",
     )
     assert battery.classify_from_lock(synthetic, "mutex") == {"test-w.sh", "test-w2.sh"}
-    for claim in ("mutex", "reads"):
-        assert battery.classify_from_lock(synthetic, claim) == twin_answer(synthetic, claim)
+    # AND THE OTHER CLAIM, so the shapes above are told apart rather than merely accepted: `reads` selects exactly the one entry that declares it, which also shows a `mutex` entry does not leak into the shared set and that the malformed member is skipped rather than raising.
+    assert battery.classify_from_lock(synthetic, "reads") == {"test-s.sh"}
 
 
 # -- the program, driven as a program ----------------------------------------

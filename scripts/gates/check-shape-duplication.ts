@@ -115,7 +115,7 @@ interface Family {
 
 const FAMILIES: readonly Family[] = [
   { pathspec: 'scripts/gates/check-*.ts', floor: 100 },
-  { pathspec: '.ci/scripts/quality/check-*.sh', floor: 50 },
+  { pathspec: '.ci/scripts/quality/check-*.sh', floor: 36 },
   { pathspec: '.ci/scripts/test/gates/test-*.sh', floor: 100 },
   // FLOOR 1 IS A SCAR, NOT A TARGET. This family held 43 guards; W5 ported 42 of them to `.claude/rediacc_hooks/guards/block_*.py` and one bash file remains, so the gate has been scanning 1 of 43. Adding the Python spelling on 2026-09-08 reported 26 new shapes -- the guards carry a shared scaffold of their own -- so the widening is an extraction job like the quality half above,
   // not a line, and it belongs in the same commit 3. What this row buys TODAY is that the number is written down where the next reader sees it, instead of being a silent 1.

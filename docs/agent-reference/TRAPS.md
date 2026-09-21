@@ -620,7 +620,7 @@ This is now enforced by `check:ci-python-gate-deps`, which reads the imports of 
 ## A gate failure the serial rerun cannot reproduce is a CONCURRENCY artifact, not a flake
 Trap-Id: concurrency-artifact-not-a-flake
 Enforced-By: JUDGMENT-ONLY
-Residue: run-all.sh classifies gate tests T or W by hand, and a comment claiming isolation is not evidence of it. Diagnosing by mtime, and asking who else is working in the tree, stay human steps.
+Residue: the battery classifies gate tests T, S or W from `scripts/ci-runner/gates.lock.json`'s `mutex` and `reads` claims, so the classification is only ever as good as the declaration a gate makes about itself -- and a comment claiming isolation is not evidence of it. Diagnosing by mtime, and asking who else is working in the tree, stay human steps.
 
 `npm run ci` runs its gates ~8.7x parallel. Something in that pool rewrites tracked source files in place while other gates are reading them, so a reader can catch a half-written file. The 2026-08-17 battery failed `gate-test:claude-hooks` with
 
@@ -1439,14 +1439,16 @@ Found by a read-only investigator inside a compaction wave whose own briefing ta
 
 ## `set -e` re-armed inside `if ! fn` is still inert, so the control proves nothing
 Trap-Id: errexit-rearmed-in-a-tested-command
-Enforced-By: file:.ci/scripts/test/run-all.sh:149
-Residue: that control covers ONE function in ONE runner. Nothing decides, in general,
-whether a given assertion about `set -e` is running in a suppressed context -- the answer depends on how the enclosing function is called, which is a property of the caller, not of the assertion. Reading the call site stays a human step.
+Enforced-By: JUDGMENT-ONLY
+Residue: the one instance-level control this entry ever had died with the file that
+carried it. `.ci/scripts/test/run-all.sh:149`'s `guard_selftest` was retired when `.ci/rediacc_ci/battery.py` replaced that runner, and there is no counterpart to repoint at BY CONSTRUCTION: the replacement is Python and has no `set -e`, so a control there would prove nothing about the bash semantic this entry describes. The trap stays VALID for the roughly 620 tracked `.sh`
+still in the tree; what is gone is the single place it was mechanically checked. And the entry's own residue always said this was the honest disposition rather than a convenient one: that control covered ONE function in ONE runner, and nothing decides, in general, whether a given assertion about `set -e` is running in a suppressed context -- the answer depends on how the
+enclosing function is called, which is a property of the caller, not of the assertion. Reading the call site stays a human step.
 
 Bash suppresses errexit for the whole body of a command whose status is being tested -- `if ! fn`, `fn || handler`, `fn && next`, `! fn`. That much is documented. What is not obvious, and what cost a control here on 2026-09-08, is that **the suppression follows the call into subshells that re-arm `set -e` themselves**. Re-running `set -euo pipefail` inside a command substitution
 nested in such a function does not restore it.
 
-The shape that fooled the session, in `.ci/scripts/test/run-all.sh`. The guard it controls extracts changed paths with
+The shape that fooled the session, in the shell battery runner then at `.ci/scripts/test/run-all.sh`. The guard it controls extracts changed paths with
 
     { diff <(...) <(...) || true; } | sed ... | sort -u
 

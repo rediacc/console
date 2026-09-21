@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """The quality-gate battery: run every `.ci/scripts/test/gates/test-*.sh` and judge it.
 
-THE TWIN IT COEXISTS WITH IS `.ci/scripts/test/run-all.sh`, AND IT IS NOT DELETED. Invariant 5: a twin is never removed in the change that ports it. Both runners schedule the same 148 files and both must reach the same verdict; deleting the shell one here would remove the only thing that can contradict this one on a real tree.
+THE TWIN IT REPLACED WAS `.ci/scripts/test/run-all.sh`, AND IT IS NOW DELETED. Invariant 5 says a twin is never removed in the change that ports it, and it was not: the shell runner outlived this file by twelve days.
+
+While both existed, that runner was the only thing that could contradict this one on a real tree. It went when the shadow pair `w7p8-battery` held at K=5 over seven distinct trees, which is the licence that made the contradiction unnecessary rather than merely inconvenient.
 
 WHAT IT KEEPS FROM run-all.sh, deliberately byte-for-byte, because a reader will put the two transcripts side by side:
 
@@ -35,8 +37,8 @@ The degrade-to-serial path STAYS, because the reason for it is unchanged: this r
 the guess is wrong for at least four files.
 
     RUN_ALL_WRITERS / RUN_ALL_SCANNERS override membership, the same names and the
-    same meaning run-all.sh gives them, so a driver that already sets them gets the
-    same schedule from either runner rather than learning a second vocabulary.
+    same meaning the retired shell runner gave them, so a driver written against
+    that one gets the same schedule here rather than learning a second vocabulary.
 
 EXIT CODES
 
@@ -82,8 +84,8 @@ EXIT_FAIL = 1
 EXIT_CANNOT_RUN = 77
 
 ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
-# run-all.sh spells this `^(\033\[0;32m)?PASS:` -- it admits the ONE colour log_pass emits and the bare form `ok` emits. Stripping every escape first is the same predicate on content and is not fooled by a helper that changes colour, which is worth having: the shell version's previous spelling used a literal "x1b" and matched NOTHING, so every colour-emitting test contributed zero
-# visible evidence
+# The retired shell runner spelled this `^(\033\[0;32m)?PASS:` -- it admitted the ONE colour log_pass emits and the bare form `ok` emits. Stripping every escape first is the same predicate on content and is not fooled by a helper that changes colour, which is worth having: the shell version's previous spelling used a literal "x1b" and matched NOTHING, so every colour-emitting test
+# contributed zero visible evidence
 # while the counter stayed right.
 PASS_RE = re.compile(r"^PASS:", re.MULTILINE)
 

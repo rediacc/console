@@ -365,7 +365,6 @@
     ".ci/scripts/test/proxies/proxy-rdc-update.sh",
     ".ci/scripts/test/proxies/proxy-unit-tests.sh",
     ".ci/scripts/test/run-account-e2e.sh",
-    ".ci/scripts/test/run-all.sh",
     ".ci/scripts/test/run-e2e.sh",
     ".ci/scripts/test/run-unit.sh",
     ".ci/scripts/test/seed-smoke-test.sh",

@@ -7,9 +7,9 @@ diff cannot be read against its original, and a diff nobody can read is how a ve
 So `assert_eq(actual, expected, msg)` keeps its argument ORDER, and `assert_exit_code(expected, actual, msg)` keeps its OPPOSITE order, because that is what the bash pair does and swapping one of them silently inverts every use.
 
 WHY NOT BARE `assert`. Two reasons, and the first is the honest one: ruff's per-file S101 exemption in this repo is scoped to `**/tests/test_*.py`, which does NOT match a file one directory deeper (`tests/gates/test_*.py`). Rather than widen a repo-wide suppression to accommodate a subdirectory, the port uses the assertion vocabulary it was going to use anyway. The second reason is
-the one that would still hold if the glob matched: a bare `assert` is invisible to the tally, and the tally is what makes "this test exited 0 having asserted nothing" a FAILURE here, the same way `run-all.sh` makes it one for the bash side.
+the one that would still hold if the glob matched: a bare `assert` is invisible to the tally, and the tally is what makes "this test exited 0 having asserted nothing" a FAILURE here, the same way `battery.py` makes it one for the bash side.
 
-THE ANTI-VACUITY CONTRACT, restated in code rather than in memory. `run-all.sh` scores a bash gate test that exits 0 without emitting one `PASS:` line as a FAILURE ("exited 0 but made no assertions"). `conftest.py` in this directory enforces the identical rule for every ported test, from the tally this module keeps. A ported test that stops asserting therefore reds instead of
+THE ANTI-VACUITY CONTRACT, restated in code rather than in memory. `battery.py` scores a bash gate test that exits 0 without emitting one `PASS:` line as a FAILURE ("exited 0 but made no assertions"). `conftest.py` in this directory enforces the identical rule for every ported test, from the tally this module keeps. A ported test that stops asserting therefore reds instead of
 getting quieter.
 
 THE LEDGER. When `$GATE_HARNESS_LEDGER` names a file, every recorded control is appended to it as one JSON object per line. `test_twin_parity.py` uses that to compare the port's control count against the twin's `PASS:` line count on the same tree, which is the only floor here that is not hand-typed: it is derived from the bash original, and it moves when the original moves.
@@ -292,7 +292,7 @@ class Harness:
         return "%s %s" % (word, text)
 
     def log_pass(self, message: str) -> None:
-        """A control PASSED. This is the line `run-all.sh` counts, so it is the line the anti-vacuity refusal counts too."""
+        """A control PASSED. This is the line `battery.py` counts, so it is the line the anti-vacuity refusal counts too."""
         self.passes.append(message)
         self._record("pass", message)
         print(self._paint(GREEN, "PASS:", message))

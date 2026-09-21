@@ -564,11 +564,11 @@ def test_unknown_wrapper_is_not_transparent(gate):
 
 
 def test_battery_equality_is_enforced(gate):
-    """Without this, flattening run-all.sh recreates #549 once per test: a new test would run in CI via the battery and never locally."""
+    """Without this, flattening the battery recreates #549 once per test: a new test would run in CI via the battery and never locally."""
     with harness.temp_dir() as d:
         scaffold(
             d,
-            "      - name: Quality-gate unit tests\n        run: .ci/scripts/test/run-all.sh\n"
+            "      - name: Quality-gate unit tests\n        run: .ci/rediacc_ci/battery.py\n"
             + STEP_ALPHA,
         )
         (d / ".ci/scripts/test/gates").mkdir(parents=True, exist_ok=True)

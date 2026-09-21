@@ -224,14 +224,14 @@ run_harness() { # $1 name, $2 path
 # cost 977s wall-clock sequentially (stop-hook: ~802 assertions dominating at
 # roughly 900s; report-inbox: ~125 assertions for the remainder), and it is ONE
 # of ONLY TWO gate tests (its sibling test-claude-hooks.sh is the other) that
-# dominate run-all.sh's total wall-clock on an 8-core box — sampled every 20s
+# dominate the battery's total wall-clock on an 8-core box — sampled every 20s
 # during a full battery run, only 2 of 8 scheduler slots were ever occupied
 # after the first 20 seconds, because the other 112 gate tests finish in under
 # 20s combined while these two run for 15-20 minutes EACH, one core apiece.
-# run-all.sh's own scheduler is correct and already fully parallel; it has no
+# The battery's own scheduler is correct and already fully parallel; it has no
 # visibility into the fact that this ONE gate test is secretly two independent,
 # serially-run sub-harnesses. Backgrounding them here exposes that parallelism
-# without run-all.sh needing to know.
+# without the battery needing to know.
 #
 # THE WIN IS REAL BUT BOUNDED BY THE SLOWER HARNESS, and that is stated plainly
 # rather than oversold: concurrent time is max(A,B), not A+B, and the two are
@@ -250,7 +250,7 @@ run_harness() { # $1 name, $2 path
 # summaries in one buffer" hazard this file's own comment already names for the
 # sequential case. Printed back in ARRAY ORDER after both finish, so the
 # transcript is deterministic regardless of which harness finished first,
-# matching run-all.sh's own "strictly ascending... regardless of which worker
+# matching the battery's own "strictly ascending... regardless of which worker
 # finished first" convention one directory over.
 #
 # `run_harness` ITSELF IS UNCHANGED. Every guarantee it already made — the

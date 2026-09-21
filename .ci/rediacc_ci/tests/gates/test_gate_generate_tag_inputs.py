@@ -13,7 +13,8 @@ WHY A FIXTURE TREE. The gate reads real files from the working directory, so the
 
 WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP, and it is the sharper reason of the two kinds. Most real-tree twins only READ the working tree. This one WRITES it: the last two cases overwrite the tracked `.ci/scripts/version/resolve-version.sh`
 with a stub resolver and restore it a second later, because `generate-tag.sh`
-gives them no fixture seam to do it in (the closure mode invokes the resolver via `cd "$REPO_ROOT"`). A gate reading that script inside the window sees a half-written file: on 2026-08-17 that reddened `gate-test:claude-hooks` with a bash syntax error in a file that parses clean. The twin is in `WRITER_TESTS` in `run-all.sh` and carries `mutex: ["tree:repo"]` in `gates.lock.json`
+gives them no fixture seam to do it in (the closure mode invokes the resolver via `cd "$REPO_ROOT"`). A gate reading that script inside the window sees a half-written file: on 2026-08-17 that reddened `gate-test:claude-hooks` with a bash syntax error in a file that parses clean. The twin carries `mutex: ["tree:repo"]` in `gates.lock.json`, which is what puts it in the battery's W
+set
 for exactly
 that reason, so the port must be serialised too. `REAL_TREE_TWIN = True` buys the
 serialisation, and it is honoured ONLY because this module declares no `XDIST_GROUP` of its own; see `real_tree_admission` in `test_twin_parity.py`, which refuses that combination and refuses over-claiming in the other direction.

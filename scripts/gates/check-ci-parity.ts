@@ -32,7 +32,7 @@
  *      coverage -- it would make every other assertion vacuous.
  *   3. The control below runs before the real check on EVERY invocation.
  *
- * COVERAGE VIA A TEST IS DECLARED, NEVER INFERRED. run-all.sh runs every
+ * COVERAGE VIA A TEST IS DECLARED, NEVER INFERRED. The battery runs every
  * test-*.sh under .ci/scripts/test/gates/ (the glob is the live count), and
  * grepping them for a script name is precisely how #549 would have
  * been greenwashed: check-jq-boolean-default.ts is NAMED by
@@ -568,7 +568,7 @@ function analyze(inp: Inputs): Finding[] {
       continue;
     }
     const stepLeaves = resolveLeaves(step.run, inp.scripts);
-    // The 57 battery entries all point at the single check:ci-quality-gates step, which resolves to run-all.sh rather than to any one test. Verifying the pointer reaches the battery RUNNER is what proves run-all.sh executes in CI, which is the fact those entries depend on.
+    // The 57 battery entries all point at the single check:ci-quality-gates step, which resolves to the battery runner rather than to any one test. Verifying the pointer reaches the battery RUNNER is what proves the battery executes in CI, which is the fact those entries depend on.
     const want = g.qualityGateTest ? [BATTERY_RUNNER] : g.leaves;
     if (!want.some((l) => stepLeaves.includes(l))) {
       add(
@@ -635,7 +635,7 @@ function analyze(inp: Inputs): Finding[] {
   };
   for (const g of inp.gates) visit(g.id);
 
-  // --- 7. Flattened-battery equality -------------------------------------- Without this, flattening run-all.sh would recreate #549 fifty-seven times over: a new test would run in CI via the battery and never locally, or be listed locally and silently dropped.
+  // --- 7. Flattened-battery equality -------------------------------------- Without this, flattening the battery would recreate #549 fifty-seven times over: a new test would run in CI via the battery and never locally, or be listed locally and silently dropped.
   const declared = new Set(
     inp.gates.filter((g) => g.qualityGateTest).map((g) => path.posix.basename(g.leaves[0] ?? ''))
   );
@@ -643,7 +643,7 @@ function analyze(inp: Inputs): Finding[] {
     if (!declared.has(f)) {
       add(
         'battery',
-        `${BATTERY_DIR}/${f} exists on disk and run-all.sh runs it, but no manifest entry is tagged qualityGateTest for it, so a local run never schedules it.`
+        `${BATTERY_DIR}/${f} exists on disk and the battery runs it, but no manifest entry is tagged qualityGateTest for it, so a local run never schedules it.`
       );
     }
   }

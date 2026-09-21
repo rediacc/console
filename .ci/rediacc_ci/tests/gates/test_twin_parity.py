@@ -131,13 +131,13 @@ MODULES = ported_modules()
 
 
 def real_tree_tests() -> set[str]:
-    """Gate tests that touch the REAL tree while they run, from both sources.
+    """Gate tests that touch the REAL tree while they run.
 
     WHY THIS EXISTS, and it is the constraint the remaining batches will hit. Driving a bash twin from inside `check:ci-pytest` makes that gate a participant in the battery's isolation contract WITHOUT declaring anything to either scheduler. Four of the 148 write into the real tree (one of them rewrites CLAUDE.md and scripts/data/doc-registry.md and restores them) and about twenty
-    read it; a parity run overlapping one of those is the `cp: cannot stat` / grep-exit-2 flake that run-all.sh's W/S/T schedule exists to prevent, and it would be blamed on the port.
+    read it; a parity run overlapping one of those is the `cp: cannot stat` / grep-exit-2 flake the battery's W/S/T schedule exists to prevent, and it would be blamed on the port.
 
-    THE UNION ITSELF NOW LIVES IN `rediacc_ci.xdist_groups`, and this is a call into it rather than a copy of it. The parallel scheduler asks the SAME question this test asks -- which twins may not run beside another -- and two implementations of one question is two answers, the expensive half being that both look right. The reasons for the two sources, and for the anti-vacuity
-    refusal on their union, are written there.
+    THE DERIVATION ITSELF NOW LIVES IN `rediacc_ci.xdist_groups`, and this is a call into it rather than a copy of it. The parallel scheduler asks the SAME question this test asks -- which twins may not run beside another -- and two implementations of one question is two answers, the expensive half being that both look right. The source, and the anti-vacuity refusal on an
+    empty answer, are written there.
     """
     return xdist_groups.real_tree_twins(xdist_groups.lock_path())
 
@@ -405,12 +405,12 @@ def test_the_real_tree_opt_in_still_discriminates(gate):
 def test_no_ported_twin_is_a_real_tree_writer_or_scanner(gate):
     """A twin driven from here must be fixture-isolated. See `real_tree_tests`."""
     unsafe = real_tree_tests()
-    # ANTI-VACUITY, and it is the whole check: an empty set would make the loop below pass for every module forever. Both sources going quiet at once is exactly the state this refusal must not be satisfied by.
+    # ANTI-VACUITY, and it is the whole check: an empty set would make the loop below pass for every module forever. A lock that has gone quiet, or has stopped parsing, is exactly the state this refusal must not be satisfied by -- and it is the ONLY source now that the shell runner's `*_FALLBACK` arrays have been retired, so nothing else is left to keep the answer honest.
     if not unsafe:
         gate.log_fail(
-            "neither gates.lock.json nor run-all.sh's *_FALLBACK arrays name a single "
-            "real-tree test, so the refusal below would admit every twin including the "
-            "four that rewrite tracked files. Fix the reader before trusting this."
+            "gates.lock.json names not a single real-tree test, so the refusal below "
+            "would admit every twin including the four that rewrite tracked files. "
+            "Fix the reader before trusting this."
         )
     problems = []
     opted_in = 0
@@ -428,8 +428,8 @@ def test_no_ported_twin_is_a_real_tree_writer_or_scanner(gate):
             "%d real-tree admission problem(s):\n  %s" % (len(problems), "\n  ".join(problems))
         )
     gate.log_pass(
-        "all %d ported twin(s) are admissible against the %d real-tree test(s) known "
-        "to the lock and to run-all.sh; %d opted in via %s and land in %r"
+        "all %d ported twin(s) are admissible against the %d real-tree test(s) the "
+        "lock declares; %d opted in via %s and land in %r"
         % (len(MODULES), len(unsafe), opted_in, REAL_TREE_ATTR, xdist_groups.REAL_TREE_GROUP)
     )
 

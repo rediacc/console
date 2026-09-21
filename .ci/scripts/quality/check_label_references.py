@@ -12,7 +12,7 @@ this order: `kind`, `id`, `test`, `blocker`, `needs`. It carried NO `step:`, NO 
 
   `kind: test`   no workflow step invokes this gate directly. It is driven by
                  `.ci/scripts/test/gates/test-label-references.sh` inside
-                 run-all.sh, so there is no step to bind and no lane to place it
+                 the gate-test battery, so there is no step to bind and no lane to place it
                  in. Losing this field would turn the gate into one that CLAIMS a
                  CI step, which is exactly what the blocker below refuses.
   `id:`          THE BASENAME DOES NOT DERIVE THE MANIFEST ID. `derivedId`
@@ -70,7 +70,7 @@ INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-label-references.sh` is NOT de
 kind: test
 id: check:ci-label-refs
 test: .ci/scripts/test/gates/test-label-references.sh
-blocker: BLOCKER: test-label-references.sh:116 runs the gate seam-free against the real tree inside run-all.sh (ci-quality.yml quality-security, "Quality-gate unit tests"), so the real sweep over .github/.ci executes every CI run; the fixture cases around it prove both fire directions
+blocker: BLOCKER: test-label-references.sh:116 runs the gate seam-free against the real tree inside the gate-test battery (ci-quality.yml quality-security, "Quality-gate unit tests"), so the real sweep over .github/.ci executes every CI run; the fixture cases around it prove both fire directions
 needs: none
 ---- end gate ----
 """
