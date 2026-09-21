@@ -255,7 +255,7 @@ def test_f1_counts_every_legacy_plan_and_no_stub():
             "agent/PLAN-c.md", PL.stub_text("agent/PLAN-c.md", "agent/plans/PLAN-c.md", "c")
         ),
     ]
-    assert [f.rel for f in PL.finding_f1(plans, fatal=True)] == ["agent/PLAN-a.md"]
+    assert [f.rel for f in PL.finding_f1(plans)] == ["agent/PLAN-a.md"]
 
 
 def test_f2_is_silent_at_the_legacy_path_because_f1_already_owns_it():
@@ -307,7 +307,6 @@ def test_f9_short_circuits_every_other_finding():
             refs=[("agent/INDEX.md", "agent/PLAN-nope.md")],
             tombstones=[],
             blob_resolves=set(),
-            fatal_f1=True,
         )
     }
     assert codes == {"F9"}

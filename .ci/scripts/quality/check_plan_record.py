@@ -48,8 +48,8 @@ WHAT IS ASSERTED, one rule per planted control in `--selftest`:
 THE ADVISORY CENSUS (W12 P3.5), AND WHY IT REFUSES NOTHING. R1..R9 are the rules this gate ENFORCES; the file's docstring has promised R1..R10 since it was written, and the missing rungs are named in "WHAT IS DELIBERATELY NOT ASSERTED" below rather than in the list above -- they are rules that were considered and declined. Turning one on is a one-way door: the day it blocks, it
 blocks every open branch at once, and nobody knows today how many records it would refuse.
 
-So it is MEASURED first. Every real-tree run appends one row to `agent/census-plan-record.jsonl` recording what each CANDIDATE rule WOULD have refused, per record, with a UTC timestamp. After two weeks of rows, `--census-report` answers "has the window elapsed, and what would have been refused across it" from the rows alone -- not from anyone's memory of how the tree looked. The
-candidates:
+So it is MEASURED first. Every real-tree run appends one row to `agent/ledgers/census-plan-record.jsonl` recording what each CANDIDATE rule WOULD have refused, per record, with a UTC timestamp. After two weeks of rows, `--census-report` answers "has the window elapsed, and what would have been refused across it" from the rows alone -- not from anyone's memory of how the tree
+looked. The candidates:
 
   C9   HISTORY APPEND-ONLY. The `## History` bullets in the most recent
        COMMITTED version of this record must be a PREFIX of the ones on disk.
@@ -121,6 +121,7 @@ import tempfile
 import _cipath  # noqa: F401
 from rediacc_ci import paths
 from rediacc_ci.controls import plant
+from rediacc_ci.quality import plan_lifecycle as PL
 
 ROOT = pathlib.Path(
     os.environ.get("PLAN_RECORD_ROOT") or pathlib.Path(__file__).resolve().parents[3]
@@ -158,8 +159,10 @@ except ImportError as _exc:  # pragma: no cover -- exercised by test-gate-anti-v
 # Floor over the PLAN corpus, not over the records. Zero records is the correct state today (phase 1 builds the machinery; no real plan is compacted yet), so a floor on records would be a gate that cannot pass. A floor on the plans is what catches the glob losing the corpus -- the same number check_plan_boxes.py uses.
 MIN_PLAN_FILES = int(os.environ.get("PLAN_RECORD_MIN_PLANS", "20"))
 
-# THE ADVISORY CENSUS. `agent/census-*.jsonl` is globbed by `--census-report` so that a future per-branch split (the shape `agent/reggate/<branch>.jsonl` already uses, to keep an append-only log out of merge conflicts) needs no reader change.
-CENSUS_REL = "agent/census-plan-record.jsonl"
+# THE ADVISORY CENSUS. `agent/ledgers/census-*.jsonl` is globbed by `--census-report` so that a future per-branch split (the shape `agent/reggate/<branch>.jsonl` already uses, to keep an append-only log out of merge conflicts) needs no reader change. S5 of agent/PLAN-agent-tree-lifecycle.md moved it out of the agent root: a `.jsonl` at the top of a directory of documents reaches
+# nobody's eye, which is the class `check:ci-tree-shape` exists for. The DIRECTORY is the constant the glob is taken from, so the two cannot name different places.
+CENSUS_DIR = "agent/ledgers"
+CENSUS_REL = CENSUS_DIR + "/census-plan-record.jsonl"
 CENSUS_GLOB = "census-*.jsonl"
 
 # The POLICY window from the box this census exists to serve ("a two-week advisory census before any blocking rung"), not a floor. It is what `--census-report` compares the recorded span against; it never gates this run.
@@ -284,6 +287,52 @@ def ledger_at(root, commit):
     return _LEDGER_CACHE[key]
 
 
+def legacy_path_of(root, rel):
+    """The pre-move path of `rel`, proved by the stub sitting there, or "".
+
+    A stub is the only evidence a move happened that survives into a checkout: `git log` does not follow the rename, and the old path is still OCCUPIED, so nothing else can tell a move from an unrelated file of the same name. The pointer is read and required to name `rel` exactly.
+    """
+    if not PL.is_plan_path(rel) or PL.folder_of(rel) == PL.AGENT_DIR:
+        return ""
+    origin = "%s/%s" % (PL.AGENT_DIR, rel.rsplit("/", 1)[-1])
+    try:
+        probe = (root / origin).read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return ""
+    if not PL.looks_like_stub(probe) or PL.parse_plan(origin, probe).moved_to != rel:
+        return ""
+    return origin
+
+
+def attested_under_any_path(root, ledger, rel, sig):
+    """R4's lookup, under every path this record has ever had.
+
+    A COMMITTED LEDGER IS KEYED BY THE PATH THE PLAN HAD AT THAT COMMIT. The tree-lifecycle move re-keys the current ledger and cannot re-key the historical ones, so without this every `done=` proof in the corpus reads as asserted-and-absent on the day the plans move -- 21 of them did, measured 2026-09-21. The fallback is the stub, not the basename, so it cannot admit a proof
+    belonging to a different document.
+    """
+    if R.attested_at(ledger, rel, sig):
+        return True
+    origin = legacy_path_of(root, rel)
+    return bool(origin) and R.attested_at(ledger, origin, sig)
+
+
+def names_this_record(root, rel, path):
+    """Whether a `Full-Text:` path names THIS record, directly or through its stub.
+
+    A record keeps its plan's path precisely so citations resolve, and the tree-lifecycle move keeps that promise with a STUB at the old path rather than with the path itself. The pointer is NOT re-spelled at the move: the commit it names carries the text at the OLD path, so `agent/plans/...` would make R2's `git rev-parse <sha>:<path>` resolve to nothing and turn a correct record
+    into a red one.
+
+    The stub is READ rather than assumed. A bare legacy path with no pointer back is still somebody else's document, which is the case R1's third control plants.
+    """
+    if path == rel:
+        return True
+    try:
+        probe = (root / path).read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return False
+    return PL.looks_like_stub(probe) and PL.parse_plan(path, probe).moved_to == rel
+
+
 def problems_for(root, rel, text, current_ledger):
     """[str] -- every rule this one record breaks. Empty means it holds.
 
@@ -315,11 +364,11 @@ def problems_for(root, rel, text, current_ledger):
                 "with an expiry date -- omit the Full-Text line and let the blob carry it, "
                 "or re-derive it after the merge" % (rel, sha, why)
             )
-        elif path != rel:
+        elif not names_this_record(root, rel, path):
             out.append(
-                "%s: Full-Text names path %s, which is not this record's own path. A record "
-                "keeps its plan's path precisely so citations still resolve; pointing "
-                "elsewhere silently breaks that" % (rel, path)
+                "%s: Full-Text names path %s, which is neither this record's own path nor "
+                "a stub pointing back at it. A record keeps its plan's path precisely so "
+                "citations still resolve; pointing elsewhere silently breaks that" % (rel, path)
             )
         else:
             # ---- R2 blob equality ---------------------------------------
@@ -399,7 +448,7 @@ def problems_for(root, rel, text, current_ledger):
                 "%s: box %r records `done=%s`, but %s does not exist at that commit, so "
                 "nothing there attests the tick" % (rel, b["body"][:60], done, R.LEDGER_REL)
             )
-        elif not R.attested_at(ledger, rel, sig):
+        elif not attested_under_any_path(root, ledger, rel, sig):
             out.append(
                 "%s: box %r records `done=%s`, and the ledger AT THAT COMMIT does not carry "
                 "signature %s under done_sigs for %s. The proof is asserted, not present"
@@ -632,8 +681,8 @@ CENSUS_PAYLOAD_KEYS = ("commit", "plans_examined", "records_examined", "by_statu
 def census_is_same_day_repeat(last, row):
     """True when `row` observes exactly what `last` observed, ON THE SAME UTC DAY.
 
-    WHY THE FILE IS NOT APPENDED TO ON EVERY SINGLE RUN, stated where the deviation is rather than in a report nobody re-reads. The census file is TRACKED, and three things in this repo react to a modified tracked file: the battery runner's clean-tree guard fails the whole gate battery on one, `wl_git.py`'s `dirt_verdict` counts it as uncommitted real work and blocks the
-    stop hook's rebase path, and nothing anywhere caps the size of an append-only file. A row per invocation would put a permanently-dirty file in a shared checkout and grow without bound, and the operator would learn to `git checkout` it -- which is how the two-week window quietly gets reset.
+    WHY THE FILE IS NOT APPENDED TO ON EVERY SINGLE RUN, stated where the deviation is rather than in a report nobody re-reads. The census file is TRACKED, and three things in this repo react to a modified tracked file: the battery runner's clean-tree guard fails the whole gate battery on one, `wl_git.py`'s `dirt_verdict` counts it as uncommitted real work and blocks the stop
+    hook's rebase path, and nothing anywhere caps the size of an append-only file. A row per invocation would put a permanently-dirty file in a shared checkout and grow without bound, and the operator would learn to `git checkout` it -- which is how the two-week window quietly gets reset.
 
     THE COLLAPSE IS PER UTC DAY, NOT PER PAYLOAD, and that boundary is the load- bearing part. Collapsing on the payload alone would let a tree that does not change for a fortnight record ONE row, and `--census-report` would then compute a span of zero days over a window that really had elapsed. A day boundary always breaks the tie, so the file gains at least one row for every day
     the gate ran, which is exactly what the span is derived from.
@@ -745,7 +794,7 @@ def census_report(root, out=sys.stdout, err=sys.stderr):
 
     The elapsed span is derived from the recorded `ts` values, which is the whole reason a timestamp is on every row. Nothing here consults the clock for anything but "now", and nothing consults anyone's memory of when the census started.
     """
-    files = sorted((pathlib.Path(root) / "agent").glob(CENSUS_GLOB))
+    files = sorted((pathlib.Path(root) / CENSUS_DIR).glob(CENSUS_GLOB))
     rows = []
     for f in files:
         rows.extend(census_rows(f))
@@ -753,7 +802,7 @@ def census_report(root, out=sys.stdout, err=sys.stderr):
         print(
             "VACUOUS CENSUS: no rows in %s (%d file(s) globbed). There is nothing to "
             "report a window over; the census has not run, or its file was removed."
-            % (str(pathlib.Path(root) / "agent" / CENSUS_GLOB), len(files)),
+            % (str(pathlib.Path(root) / CENSUS_DIR / CENSUS_GLOB), len(files)),
             file=err,
         )
         return 1
@@ -965,8 +1014,47 @@ def selftest():
                 "Full-Text: %s %s" % (rec["full_text_sha"], rel),
                 "Full-Text: %s agent/PLAN-elsewhere.md" % rec["full_text_sha"],
             ),
-            "which is not this record's own path",
+            "neither this record's own path",
         )
+        # R1c MIRROR: the same pointer, through the STUB a tree-lifecycle move leaves behind. Only R1's needle is asserted absent, because the fixture's commit does not carry the text at the legacy path and R2 therefore fires on its own account.
+        legacy = "agent/PLAN-legacy-fixture.md"
+        (root / legacy).write_text(PL.stub_text(legacy, rel, "fixture"), encoding="utf-8")
+        through_stub = judge(
+            plant(
+                clean,
+                "Full-Text: %s %s" % (rec["full_text_sha"], rel),
+                "Full-Text: %s %s" % (rec["full_text_sha"], legacy),
+            )
+        )
+        ck(
+            "R1 CONTROL: a Full-Text path whose stub points back at this record is accepted",
+            not any("own path" in p for p in through_stub),
+            f"got {through_stub}",
+        )
+        (root / legacy).unlink()
+        # R4 THROUGH THE STUB, both directions. A committed ledger is keyed by the path the plan had at that commit, so without the hop the migration turns every `done=` proof in the corpus into "asserted, not present" on the day it lands.
+        moved_rel = "agent/plans/PLAN-moved-fixture.md"
+        legacy_rel = "agent/PLAN-moved-fixture.md"
+        (root / "agent" / "plans").mkdir(parents=True, exist_ok=True)
+        (root / moved_rel).write_text(clean, encoding="utf-8")
+        (root / legacy_rel).write_text(
+            PL.stub_text(legacy_rel, moved_rel, "fixture"), encoding="utf-8"
+        )
+        old_ledger = {"plans": {legacy_rel: {"done_sigs": ["abcd1234"]}}}
+        ck(
+            "R4: a proof recorded under the pre-move path is found through the stub",
+            attested_under_any_path(root, old_ledger, moved_rel, "abcd1234"),
+        )
+        ck(
+            "R4 CONTROL: a signature nothing attests is still not found",
+            not attested_under_any_path(root, old_ledger, moved_rel, "0badbeef"),
+        )
+        (root / legacy_rel).unlink()
+        ck(
+            "R4 CONTROL: with no stub at the old path the legacy proof does not count",
+            not attested_under_any_path(root, old_ledger, moved_rel, "abcd1234"),
+        )
+        (root / moved_rel).unlink()
         # R2: the commit is real and landed, and carries DIFFERENT bytes. Built by pointing Full-Text-Blob at the LEDGER's blob, which resolves (so R1 passes) and is not the plan's (so only R2 can fire).
         other = _git(root, "rev-parse", "HEAD:" + R.LEDGER_REL)
         expect_finding(

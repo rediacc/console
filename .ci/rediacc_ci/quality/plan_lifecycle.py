@@ -360,10 +360,10 @@ def age_days(when: dt.date | None, today: dt.date) -> int | None:
 # --------------------------------------------------------------------------- The findings. One function per code, all pure.
 
 
-def finding_f1(plans: list[Plan], *, fatal: bool) -> list[Finding]:
+def finding_f1(plans: list[Plan]) -> list[Finding]:
     """F1 -- a plan outside `agent/plans/**`.
 
-    ADVISORY UNTIL THE MIGRATION LANDS and fatal after, which is the one flag in this module rather than a second copy of the rule. A stub is exempt by construction: the legacy path is exactly where a stub must be.
+    FATAL SINCE THE 103 MOVED. It carried a `fatal` flag for exactly one stage, so the gate could land green over a tree where every plan was still at the legacy path; the flag went with the migration rather than staying behind switched off. A stub is exempt by construction: the legacy path is exactly where a stub must be.
     """
     out = []
     for plan in plans:
@@ -375,13 +375,7 @@ def finding_f1(plans: list[Plan], *, fatal: bool) -> list[Finding]:
                 plan.rel,
                 "%s sits at the legacy path. A plan lives under %s/ and moves once, at "
                 "close, into _done/ or _removed/, leaving a stub behind. Move it with "
-                "`check_plan_folders.py --move %s`.%s"
-                % (
-                    plan.rel,
-                    PLANS_DIR,
-                    plan.rel,
-                    "" if fatal else " Advisory until the migration lands.",
-                ),
+                "`check_plan_folders.py --move %s`." % (plan.rel, PLANS_DIR, plan.rel),
             )
         )
     return out
@@ -588,7 +582,6 @@ def findings(
     refs: list[tuple[str, str]],
     tombstones: list[Tombstone],
     blob_resolves: set[str],
-    fatal_f1: bool = False,
 ) -> list[Finding]:
     """Every finding, in code order. The whole verdict, and still pure."""
     vacuous = finding_f9(plans)
@@ -596,7 +589,7 @@ def findings(
         return vacuous
     tombstoned = {t.rel for t in tombstones}
     return [
-        *finding_f1(plans, fatal=fatal_f1),
+        *finding_f1(plans),
         *finding_f2(plans),
         *finding_f3(plans, config, today),
         *finding_f4(plans, config, today),
@@ -615,10 +608,16 @@ STUB_BODY = (
 )
 
 
+#: A `PLAN:` label the plan's own heading already carries. 86 of the 103 plans in
+#: this tree begin `# PLAN: ...`, and pasting that into the stub's own `# PLAN: `
+#: heading produced `# PLAN: PLAN: ...` on every one of them.
+TITLE_PREFIX_RE = re.compile(r"^PLAN:[ \t]*")
+
+
 def stub_text(old_rel: str, new_rel: str, title: str) -> str:
     """The whole of the file left behind at `old_rel`. Five lines, one claim."""
     return "# PLAN: %s (moved)\nStatus: %s\nMoved-To: %s\n\n%s\n" % (
-        title or old_rel.rsplit("/", 1)[-1],
+        TITLE_PREFIX_RE.sub("", title).strip() or old_rel.rsplit("/", 1)[-1],
         STUB_STATUS,
         new_rel,
         STUB_BODY % new_rel,

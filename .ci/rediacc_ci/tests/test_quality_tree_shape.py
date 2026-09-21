@@ -15,7 +15,7 @@ from rediacc_ci.quality import shrink_only
 from rediacc_ci.quality import tree_shape as TS
 
 ROOT = paths.repo_root()
-RESERVED = {"archive", "programs", "worklist", "reggate", "plans", "pr", "legacy"}
+RESERVED = {"archive", "programs", "worklist", "reggate", "plans", "ledgers", "pr", "legacy"}
 TOP_NAMES = {"agent", "docs", "scripts", ".ci", ".claude", "packages"}
 CALLEES = {"open", "os.listdir", "os.scandir"}
 FS_METHODS = {"glob", "is_dir", "read_text"}
@@ -74,10 +74,15 @@ def test_t2_fires_on_a_top_level_directory_nothing_declares(policy):
     assert [f.path for f in TS.finding_t2({"agent", "claude"}, policy)] == ["claude"]
 
 
-def test_t3_admits_the_three_patterns_and_refuses_anything_else(policy):
-    ok = {"PLAN-x.md", "REPORT-y.md", "census-plan-record.jsonl", "README.md", "INDEX.md"}
+def test_t3_admits_the_stub_pattern_and_refuses_anything_else(policy):
+    """S5 moved the report and the census out, so the two patterns that admitted them went too."""
+    ok = {"PLAN-x.md", "README.md", "INDEX.md", "RULES.md", "DECISIONS.md"}
     assert TS.finding_t3(ok, policy) == []
     assert [f.path for f in TS.finding_t3({"zz.jsonl"}, policy)] == ["agent/zz.jsonl"]
+    assert sorted(f.path for f in TS.finding_t3({"REPORT-y.md", "census-x.jsonl"}, policy)) == [
+        "agent/REPORT-y.md",
+        "agent/census-x.jsonl",
+    ]
 
 
 def test_t4_reads_a_session_slug_by_shape(policy):
@@ -90,7 +95,7 @@ def test_t4_reads_a_session_slug_by_shape(policy):
 def test_t5_fires_in_both_directions_and_names_the_missing_half(policy):
     declared = TS.policy_agent_dirs(policy)
     assert TS.finding_t5(policy, declared) == []
-    assert [f.path for f in TS.finding_t5(policy, declared | {"ledgers"})] == ["ledgers"]
+    assert [f.path for f in TS.finding_t5(policy, declared | {"invented"})] == ["invented"]
     assert [f.path for f in TS.finding_t5(policy, declared - {"pr"})] == ["pr"]
 
 
@@ -156,6 +161,7 @@ def _clean_listing() -> list[str]:
         "agent/archive/0815-1/STATE.md",
         "agent/worklist/abcd1234.jsonl",
         "agent/reggate/main.jsonl",
+        "agent/ledgers/census-plan-record.jsonl",
         "agent/pr/main.md",
         "agent/legacy/STATE.md",
         "agent/programs/thing/README.md",

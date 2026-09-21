@@ -102,15 +102,7 @@
     "patterns": [
       {
         "regex": "^PLAN-[A-Za-z0-9._-]+\\.md$",
-        "why": "The legacy plan location, and the stub namespace after the migration."
-      },
-      {
-        "regex": "^REPORT-[A-Za-z0-9._-]+\\.md$",
-        "why": "A session report. S5 of agent/PLAN-agent-tree-lifecycle.md moves these under agent/archive/ and this pattern goes with them."
-      },
-      {
-        "regex": "^census-[A-Za-z0-9._-]+\\.jsonl$",
-        "why": "The advisory plan-record census. S5 moves it to agent/ledgers/ and this pattern goes with it."
+        "why": "The STUB namespace, and nothing else since S5 of agent/plans/PLAN-agent-tree-lifecycle.md: every plan moved into agent/plans/ and left a one-line pointer here, and check:ci-plan-folders F1 refuses a real plan at this depth."
       }
     ]
   },
@@ -136,6 +128,10 @@
       {
         "name": "plans",
         "why": "Where a plan lives: active and backlog at the top, _done/ and _removed/ beneath. check:ci-plan-folders owns everything inside it."
+      },
+      {
+        "name": "ledgers",
+        "why": "Append-only measurement logs a gate writes and reads back, agent/ledgers/census-*.jsonl. A .jsonl at the top of a directory of documents reaches nobody's eye, which is the class this whole file exists for."
       },
       {
         "name": "pr",

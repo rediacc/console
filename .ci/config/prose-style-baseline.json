@@ -16,16 +16,16 @@
   "that shrank by 29 can still hide one brand-new violation. Comparing sizes is not",
   "the same claim as diffing the sets."
  ],
- "count": 5665,
- "files": 1193,
+ "count": 5661,
+ "files": 1192,
  "by_rule": {
-  "R1": 1675,
+  "R1": 1673,
   "R11": 178,
   "R14": 1,
   "R18": 2263,
   "R19": 62,
-  "R2": 957,
-  "R7": 529
+  "R2": 956,
+  "R7": 528
  },
  "findings": {
   ".ci/breakpoint/README.md": {
@@ -694,6 +694,11 @@
     "5039769417520f05"
    ]
   },
+  ".ci/rediacc_ci/tests/gates/test_gate_plan_folders.py": {
+   "R7": [
+    "962432affa142b51"
+   ]
+  },
   ".ci/rediacc_ci/tests/gates/test_gate_policy_liveness_floors.py": {
    "R7": [
     "66b9be8ebd4dc838"
@@ -878,6 +883,11 @@
     "d43dc5749eb5e905"
    ]
   },
+  ".ci/rediacc_ci/tests/test_env_create_e2e_env.py": {
+   "R7": [
+    "21611d060802c577"
+   ]
+  },
   ".ci/rediacc_ci/tests/test_infra_ci_start_elite.py": {
    "R7": [
     "2ce20239c0bbd1ef",
@@ -890,11 +900,6 @@
    ],
    "R2": [
     "c0cad3ae1a927751"
-   ]
-  },
-  ".ci/rediacc_ci/tests/test_private_compose_healthcheck_smoke_test.py": {
-   "R7": [
-    "7dd39b121ffb0960"
    ]
   },
   ".ci/rediacc_ci/tests/test_private_concurrent_fork_isolation_test.py": {
@@ -922,14 +927,9 @@
     "6a1c33a78ecc6257"
    ]
   },
-  ".ci/rediacc_ci/tests/test_private_run_account.py": {
-   "R7": [
-    "848d195a4f1dac6f"
-   ]
-  },
   ".ci/rediacc_ci/tests/test_private_run_renet.py": {
    "R7": [
-    "3f987702b81bc33f"
+    "58b90f504717a6f5"
    ]
   },
   ".ci/rediacc_ci/tests/test_proc.py": {
@@ -2697,299 +2697,6 @@
     "dd5c8b8a36862013"
    ]
   },
-  "agent/PLAN-b2-emit-matrix.md": {
-   "R7": [
-    "89720eadca96fcf3",
-    "c67fc67d01f2ac18"
-   ]
-  },
-  "agent/PLAN-bws-rotation-on-failure.md": {
-   "R18": [
-    "d28f690d333a3e57",
-    "dc86b31899c0a848",
-    "f2fef3c8bc18dd45"
-   ]
-  },
-  "agent/PLAN-chunk-store-browse-server.md": {
-   "R2": [
-    "ec23ab12b1bdd734"
-   ]
-  },
-  "agent/PLAN-ci-pr-head-ref-trigger-resolution.md": {
-   "R7": [
-    "43d1a88ee2a5f361"
-   ]
-  },
-  "agent/PLAN-ci-vacuity-baseline-registry.md": {
-   "R1": [
-    "815feb8743bc18ca"
-   ],
-   "R2": [
-    "6b7d523084acca8d",
-    "9a7e298263ee1ad6"
-   ],
-   "R7": [
-    "44344feb0d547400"
-   ]
-  },
-  "agent/PLAN-ci-watch-enforcement.md": {
-   "R1": [
-    "41a6cbc11582317c",
-    "44a4f4f460576457",
-    "7598f4288e86e505"
-   ],
-   "R11": [
-    "955b7d4c9e1c7e69"
-   ],
-   "R2": [
-    "3446114c76c6f1c8",
-    "9723b90a58a4283c",
-    "d0664a93b3353137"
-   ]
-  },
-  "agent/PLAN-citation-fragility.md": {
-   "R18": [
-    "0e93f2592b184a8c",
-    "d8bfd0bbe9ad075a"
-   ]
-  },
-  "agent/PLAN-cold-path.md": {
-   "R1": [
-    "22ea80e7062a3c17"
-   ]
-  },
-  "agent/PLAN-commit-author-identity.md": {
-   "R7": [
-    "39bbd40fbe081700"
-   ]
-  },
-  "agent/PLAN-env-to-bitwarden-v2.md": {
-   "R1": [
-    "3364cbbc5518d31f"
-   ],
-   "R7": [
-    "067d0c3e00264869",
-    "1d79cb013e44d3f9"
-   ]
-  },
-  "agent/PLAN-hook-inventory-warn-guards.md": {
-   "R11": [
-    "0d1b3d0dd0656967"
-   ]
-  },
-  "agent/PLAN-migrate-plan-doc-discovery.md": {
-   "R11": [
-    "61d0507f786b18b8"
-   ],
-   "R7": [
-    "5d6845cf3381f91c"
-   ]
-  },
-  "agent/PLAN-npm-ci-parallel-parity.md": {
-   "R18": [
-    "01b943bc949ca9ae"
-   ]
-  },
-  "agent/PLAN-pipefail-grep-q-renet-gate.md": {
-   "R11": [
-    "12d424df1f72b673"
-   ]
-  },
-  "agent/PLAN-plan-file-lifecycle.md": {
-   "R1": [
-    "20d4d8896f62de1e",
-    "bf8ae6a290e7fa3b"
-   ],
-   "R11": [
-    "b5241d1dfcbd343c"
-   ]
-  },
-  "agent/PLAN-printf-echo-pipefail-sweep.md": {
-   "R18": [
-    "95369cf74043108d"
-   ]
-  },
-  "agent/PLAN-pytest-parallelism.md": {
-   "R18": [
-    "f53f060292289ad7"
-   ]
-  },
-  "agent/PLAN-runtime-caller-identity.md": {
-   "R2": [
-    "74292b5071a24a2d"
-   ]
-  },
-  "agent/PLAN-secret-namespace-migration.md": {
-   "R1": [
-    "2d90d8d6d5068e90",
-    "39dc79f495daa19c",
-    "45531e25064186c6",
-    "7565565b272a93df",
-    "7f3d74bbb0952e8f",
-    "aee8628790b45ee2",
-    "c3e15814e9d4da59",
-    "f3e8b5a34959d4d5"
-   ],
-   "R11": [
-    "acfe80671aeed52f",
-    "d0567bc1c9795ac6"
-   ],
-   "R18": [
-    "14f2bdfa3e1a7ae5",
-    "163bc27fba027ab0",
-    "17aa9be3c80833b0",
-    "34588d12bb8047bf",
-    "c52d76c577d69b09"
-   ],
-   "R2": [
-    "0d4848ba1cba87cf",
-    "303e2f30a3be8c63",
-    "61e21146fb2a8bab",
-    "6dfd4245ec0d1dd5",
-    "6fed95c4d512028f",
-    "74545b67677f50c5",
-    "fd2fd7e43f29fefd"
-   ],
-   "R7": [
-    "01b70ebbc726cc6b",
-    "0d94f270aac66f70",
-    "6c9ec5c021cad7eb",
-    "a5c09d0e822a3449",
-    "c444acd948d54892",
-    "c5e3f8b4500fbb28",
-    "caa1822d5b468d64",
-    "ce9e7ca7de72cd08",
-    "d96aa31ae0f24978",
-    "f4bfd4bb024e2444"
-   ]
-  },
-  "agent/PLAN-session-onboarding-marker.md": {
-   "R1": [
-    "bfb623a5ffcc15b5"
-   ],
-   "R2": [
-    "499fa9c9046c68ef",
-    "de1aa8627a62fd34"
-   ],
-   "R7": [
-    "fc5a9a33bb4285be"
-   ]
-  },
-  "agent/PLAN-state-md-session-isolation.md": {
-   "R2": [
-    "939879a30d15c159"
-   ],
-   "R7": [
-    "e64c2f1a4a6be481"
-   ]
-  },
-  "agent/PLAN-stop-hook-overhaul.md": {
-   "R2": [
-    "12c4e0c93d49917d"
-   ]
-  },
-  "agent/PLAN-sync-docker-latest-tag-with-releases.md": {
-   "R7": [
-    "939756fc86994f08"
-   ]
-  },
-  "agent/PLAN-tooling-transformation.md": {
-   "R11": [
-    "2fd5c00b47dde545"
-   ],
-   "R18": [
-    "1ad561f7e18725e5",
-    "2342ee80ffde6669",
-    "2b254f6d89a95748",
-    "3563d3c9fe6b8415",
-    "39faed4eebfc7d07",
-    "3b4bc6402d2b039f",
-    "3ca7c41c3d1ef5bf",
-    "41e2b52afd5b7d10",
-    "45c2f7c6cc0dc378",
-    "488eac8d789bac1e",
-    "4ca1d8696a146367",
-    "4f7a2f719bd32f88",
-    "51d5ba99f81186d8",
-    "57cc33981045514f",
-    "5dc0b88ca1f5d9ce",
-    "66fe84e3a9861e5e",
-    "6778cb5ad269c7b5",
-    "6f0f930d890a3969",
-    "701e3bbfef773f1d",
-    "72c9b5568471de25",
-    "81c082a512e6da01",
-    "822763be34cc9019",
-    "83537fe567f48b21",
-    "83dcdadb8762b912",
-    "88c154d1a9e6d0fe",
-    "8c8ecc2e5c56b64b",
-    "9170f04b4a669d43",
-    "927ed05d89fa427f",
-    "9a39e60584c1a0d0",
-    "9bb856f738913ad2",
-    "a364ccef9ec98597",
-    "a98ecbeb58896a7e",
-    "b8396bb178623a89",
-    "c2886cd4b5a2bde2",
-    "cbb4755e0042a1a9",
-    "d0aad58d1be2f228",
-    "d82f8627f93b61a0",
-    "d9b4cf376ec82e45",
-    "d9f22166484e259d",
-    "e7f1018531aa6c28",
-    "ebe37c1b557b3c11",
-    "ed41d4e7568b7188"
-   ],
-   "R2": [
-    "2e992f0091928a2c",
-    "472ad282a839ab7a",
-    "7dda9fa659237537",
-    "9575ae6281792feb",
-    "9dd6cda13e1ce673",
-    "a41c711f09e5d458",
-    "aa7a92dfd4235202",
-    "bf13b68f4e22063c",
-    "cb46f85ebdc58754",
-    "d1253cf2a0543e93"
-   ],
-   "R7": [
-    "2d79f4ef66a65639"
-   ]
-  },
-  "agent/PLAN-trap-enforcement.md": {
-   "R1": [
-    "38e5be46904260fc",
-    "57eee30e13c8ec29",
-    "aade6aab98502aa8"
-   ],
-   "R11": [
-    "6c8aa9fb326d1561"
-   ],
-   "R2": [
-    "cc63da7d782abd42"
-   ],
-   "R7": [
-    "e8e1543331f6a271"
-   ]
-  },
-  "agent/PLAN-w9p2-script-relocation.md": {
-   "R18": [
-    "03543fc3c05bcc61",
-    "41f7bec55f45dc43",
-    "51532e5640083d2e",
-    "7f9661a20def97dd",
-    "a9009d9919798c17",
-    "b533f08a9a39d692",
-    "d084fdc8a2919aea",
-    "d3c1be666af13121",
-    "d46f130cde91322d",
-    "d8d186348f248e53",
-    "ddfe5872de8d4cef",
-    "eb21352db234f6ac",
-    "f6eea83f147ae25c"
-   ]
-  },
   "agent/README.md": {
    "R1": [
     "05fa3b3275402e76",
@@ -3002,18 +2709,6 @@
    ],
    "R7": [
     "8816c176cadaa686"
-   ]
-  },
-  "agent/REPORT-licensing-bigbang-2026-08-04.md": {
-   "R1": [
-    "1f4f93abbffd2f76",
-    "d112f2e8e94feb56"
-   ],
-   "R2": [
-    "092ba39331974c98"
-   ],
-   "R7": [
-    "3abbf2d644657668"
    ]
   },
   "agent/RULES.md": {
@@ -3310,6 +3005,299 @@
     "c9523b93b90b87f0",
     "cf2aabe40d207c7e",
     "e147dec3a3b4b3c0"
+   ]
+  },
+  "agent/plans/PLAN-b2-emit-matrix.md": {
+   "R7": [
+    "89720eadca96fcf3",
+    "c67fc67d01f2ac18"
+   ]
+  },
+  "agent/plans/PLAN-bws-rotation-on-failure.md": {
+   "R18": [
+    "d28f690d333a3e57",
+    "dc86b31899c0a848",
+    "f2fef3c8bc18dd45"
+   ]
+  },
+  "agent/plans/PLAN-chunk-store-browse-server.md": {
+   "R2": [
+    "ec23ab12b1bdd734"
+   ]
+  },
+  "agent/plans/PLAN-ci-pr-head-ref-trigger-resolution.md": {
+   "R7": [
+    "43d1a88ee2a5f361"
+   ]
+  },
+  "agent/plans/PLAN-ci-vacuity-baseline-registry.md": {
+   "R1": [
+    "815feb8743bc18ca"
+   ],
+   "R2": [
+    "6b7d523084acca8d",
+    "9a7e298263ee1ad6"
+   ],
+   "R7": [
+    "44344feb0d547400"
+   ]
+  },
+  "agent/plans/PLAN-ci-watch-enforcement.md": {
+   "R1": [
+    "41a6cbc11582317c",
+    "44a4f4f460576457",
+    "7598f4288e86e505"
+   ],
+   "R11": [
+    "955b7d4c9e1c7e69"
+   ],
+   "R2": [
+    "3446114c76c6f1c8",
+    "9723b90a58a4283c",
+    "d0664a93b3353137"
+   ]
+  },
+  "agent/plans/PLAN-citation-fragility.md": {
+   "R18": [
+    "0e93f2592b184a8c",
+    "d8bfd0bbe9ad075a"
+   ]
+  },
+  "agent/plans/PLAN-cold-path.md": {
+   "R1": [
+    "22ea80e7062a3c17"
+   ]
+  },
+  "agent/plans/PLAN-commit-author-identity.md": {
+   "R7": [
+    "39bbd40fbe081700"
+   ]
+  },
+  "agent/plans/PLAN-env-to-bitwarden-v2.md": {
+   "R1": [
+    "3364cbbc5518d31f"
+   ],
+   "R7": [
+    "067d0c3e00264869",
+    "1d79cb013e44d3f9"
+   ]
+  },
+  "agent/plans/PLAN-migrate-plan-doc-discovery.md": {
+   "R11": [
+    "61d0507f786b18b8"
+   ],
+   "R7": [
+    "5d6845cf3381f91c"
+   ]
+  },
+  "agent/plans/PLAN-npm-ci-parallel-parity.md": {
+   "R18": [
+    "01b943bc949ca9ae"
+   ]
+  },
+  "agent/plans/PLAN-pipefail-grep-q-renet-gate.md": {
+   "R11": [
+    "12d424df1f72b673"
+   ]
+  },
+  "agent/plans/PLAN-plan-file-lifecycle.md": {
+   "R1": [
+    "20d4d8896f62de1e",
+    "bf8ae6a290e7fa3b"
+   ],
+   "R11": [
+    "b5241d1dfcbd343c"
+   ]
+  },
+  "agent/plans/PLAN-printf-echo-pipefail-sweep.md": {
+   "R18": [
+    "95369cf74043108d"
+   ]
+  },
+  "agent/plans/PLAN-pytest-parallelism.md": {
+   "R18": [
+    "f53f060292289ad7"
+   ]
+  },
+  "agent/plans/PLAN-runtime-caller-identity.md": {
+   "R2": [
+    "74292b5071a24a2d"
+   ]
+  },
+  "agent/plans/PLAN-secret-namespace-migration.md": {
+   "R1": [
+    "2d90d8d6d5068e90",
+    "39dc79f495daa19c",
+    "45531e25064186c6",
+    "7565565b272a93df",
+    "7f3d74bbb0952e8f",
+    "aee8628790b45ee2",
+    "c3e15814e9d4da59",
+    "f3e8b5a34959d4d5"
+   ],
+   "R11": [
+    "acfe80671aeed52f",
+    "d0567bc1c9795ac6"
+   ],
+   "R18": [
+    "14f2bdfa3e1a7ae5",
+    "163bc27fba027ab0",
+    "17aa9be3c80833b0",
+    "34588d12bb8047bf",
+    "c52d76c577d69b09"
+   ],
+   "R2": [
+    "0d4848ba1cba87cf",
+    "303e2f30a3be8c63",
+    "61e21146fb2a8bab",
+    "6dfd4245ec0d1dd5",
+    "6fed95c4d512028f",
+    "74545b67677f50c5",
+    "fd2fd7e43f29fefd"
+   ],
+   "R7": [
+    "01b70ebbc726cc6b",
+    "0d94f270aac66f70",
+    "6c9ec5c021cad7eb",
+    "a5c09d0e822a3449",
+    "c444acd948d54892",
+    "c5e3f8b4500fbb28",
+    "caa1822d5b468d64",
+    "ce9e7ca7de72cd08",
+    "d96aa31ae0f24978",
+    "f4bfd4bb024e2444"
+   ]
+  },
+  "agent/plans/PLAN-session-onboarding-marker.md": {
+   "R1": [
+    "bfb623a5ffcc15b5"
+   ],
+   "R2": [
+    "499fa9c9046c68ef",
+    "de1aa8627a62fd34"
+   ],
+   "R7": [
+    "fc5a9a33bb4285be"
+   ]
+  },
+  "agent/plans/PLAN-state-md-session-isolation.md": {
+   "R2": [
+    "939879a30d15c159"
+   ],
+   "R7": [
+    "e64c2f1a4a6be481"
+   ]
+  },
+  "agent/plans/PLAN-stop-hook-overhaul.md": {
+   "R2": [
+    "12c4e0c93d49917d"
+   ]
+  },
+  "agent/plans/PLAN-sync-docker-latest-tag-with-releases.md": {
+   "R7": [
+    "939756fc86994f08"
+   ]
+  },
+  "agent/plans/PLAN-tooling-transformation.md": {
+   "R11": [
+    "2fd5c00b47dde545"
+   ],
+   "R18": [
+    "1ad561f7e18725e5",
+    "2342ee80ffde6669",
+    "2b254f6d89a95748",
+    "3563d3c9fe6b8415",
+    "39faed4eebfc7d07",
+    "3b4bc6402d2b039f",
+    "3ca7c41c3d1ef5bf",
+    "41e2b52afd5b7d10",
+    "45c2f7c6cc0dc378",
+    "488eac8d789bac1e",
+    "4ca1d8696a146367",
+    "4f7a2f719bd32f88",
+    "51d5ba99f81186d8",
+    "57cc33981045514f",
+    "5dc0b88ca1f5d9ce",
+    "66fe84e3a9861e5e",
+    "6778cb5ad269c7b5",
+    "6f0f930d890a3969",
+    "701e3bbfef773f1d",
+    "72c9b5568471de25",
+    "81c082a512e6da01",
+    "822763be34cc9019",
+    "83537fe567f48b21",
+    "83dcdadb8762b912",
+    "88c154d1a9e6d0fe",
+    "8c8ecc2e5c56b64b",
+    "9170f04b4a669d43",
+    "927ed05d89fa427f",
+    "9a39e60584c1a0d0",
+    "9bb856f738913ad2",
+    "a364ccef9ec98597",
+    "a98ecbeb58896a7e",
+    "b8396bb178623a89",
+    "c2886cd4b5a2bde2",
+    "cbb4755e0042a1a9",
+    "d0aad58d1be2f228",
+    "d82f8627f93b61a0",
+    "d9b4cf376ec82e45",
+    "d9f22166484e259d",
+    "e7f1018531aa6c28",
+    "ebe37c1b557b3c11",
+    "ed41d4e7568b7188"
+   ],
+   "R2": [
+    "2e992f0091928a2c",
+    "472ad282a839ab7a",
+    "7dda9fa659237537",
+    "9575ae6281792feb",
+    "9dd6cda13e1ce673",
+    "a41c711f09e5d458",
+    "aa7a92dfd4235202",
+    "bf13b68f4e22063c",
+    "cb46f85ebdc58754",
+    "d1253cf2a0543e93"
+   ],
+   "R7": [
+    "2d79f4ef66a65639"
+   ]
+  },
+  "agent/plans/PLAN-trap-enforcement.md": {
+   "R1": [
+    "38e5be46904260fc",
+    "57eee30e13c8ec29",
+    "aade6aab98502aa8"
+   ],
+   "R11": [
+    "6c8aa9fb326d1561"
+   ],
+   "R2": [
+    "cc63da7d782abd42"
+   ],
+   "R7": [
+    "e8e1543331f6a271"
+   ]
+  },
+  "agent/plans/PLAN-w9p2-script-relocation.md": {
+   "R18": [
+    "03543fc3c05bcc61",
+    "41f7bec55f45dc43",
+    "51532e5640083d2e",
+    "7f9661a20def97dd",
+    "a9009d9919798c17",
+    "b533f08a9a39d692",
+    "d084fdc8a2919aea",
+    "d3c1be666af13121",
+    "d46f130cde91322d",
+    "d8d186348f248e53",
+    "ddfe5872de8d4cef",
+    "eb21352db234f6ac",
+    "f6eea83f147ae25c"
+   ]
+  },
+  "agent/plans/_done/PLAN-hook-inventory-warn-guards.md": {
+   "R11": [
+    "0d1b3d0dd0656967"
    ]
   },
   "agent/programs/clarity-round6/01-verified-context.md": {

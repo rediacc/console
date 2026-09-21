@@ -17,8 +17,8 @@ NINE FINDINGS, EACH WITH A PLANTED CONTROL:
     F8  a tombstone whose blob does not resolve
     F9  the vacuity floor
 
-F1 IS ADVISORY UNTIL THE MIGRATION LANDS. It is the one finding whose severity is a flag rather than a rule, because the gate has to be green on a tree where every plan is still at the legacy path: a gate that reds the day it lands gets suppressed within a day, which is the failure docs/agent-reference/suppressions.md exists to prevent. `PLAN_FOLDERS_STRICT=1` flips it, and S5 of
-agent/PLAN-agent-tree-lifecycle.md makes that the default.
+F1 IS FATAL SINCE THE MIGRATION LANDED. It spent exactly one stage as an advisory, because a gate cannot red on the day it arrives over a tree where all 103 plans still sit at the legacy path: that is the shape that gets suppressed within a day, which is the failure docs/agent-reference/suppressions.md exists to prevent. The 103 moved in S4, so the escape hatch that made the
+advisory possible is gone rather than left behind switched off -- a flag whose only job is finished is a suppression waiting for a reader who does not know why it is there.
 
 THE VERBS.
 
@@ -46,7 +46,6 @@ why: a plan lives under agent/plans/, moves exactly once at close into _done/ or
 
 import datetime as dt
 import json
-import os
 import pathlib
 import sys
 
@@ -56,9 +55,6 @@ from rediacc_ci.controls import plant
 from rediacc_ci.quality import plan_lifecycle as PL
 
 CONTROL_FLOOR = 24
-
-#: How many advisory F1 lines are printed before the rest become a count.
-ADVISORY_SHOWN = 3
 
 
 class CannotRunError(RuntimeError):
@@ -133,18 +129,16 @@ def selftest() -> int:
 
     # F1. The path is the defect, so the path is what gets planted.
     clean_rel = "agent/plans/PLAN-sample.md"
-    tally.check(
-        "F1 clean", _codes(PL.finding_f1(_plans([(clean_rel, CLEAN_ACTIVE)]), fatal=True)), set()
-    )
+    tally.check("F1 clean", _codes(PL.finding_f1(_plans([(clean_rel, CLEAN_ACTIVE)]))), set())
     legacy_rel = plant(clean_rel, "agent/plans/", "agent/")
     tally.check(
         "F1 planted",
-        _codes(PL.finding_f1(_plans([(legacy_rel, CLEAN_ACTIVE)]), fatal=True)),
+        _codes(PL.finding_f1(_plans([(legacy_rel, CLEAN_ACTIVE)]))),
         {"F1"},
     )
     tally.check(
         "F1 spares a stub at the legacy path",
-        _codes(PL.finding_f1(_plans([("agent/PLAN-closed.md", CLEAN_STUB)]), fatal=True)),
+        _codes(PL.finding_f1(_plans([("agent/PLAN-closed.md", CLEAN_STUB)]))),
         set(),
     )
 
@@ -338,29 +332,18 @@ def run(root: pathlib.Path, config: dict) -> int:
         refs=PL.citation_refs(root),
         tombstones=stones,
         blob_resolves=PL.blob_resolves(root, {t.blob for t in stones}),
-        fatal_f1=os.environ.get("PLAN_FOLDERS_STRICT") == "1",
     )
-    advisory = [f for f in found if f.code == "F1" and os.environ.get("PLAN_FOLDERS_STRICT") != "1"]
-    fatal = [f for f in found if f not in advisory]
-    # THE ADVISORY LIST IS CAPPED AND THE COUNT IS NOT. 103 identical lines per run is
-    # a log nobody reads, and a finding nobody reads is a finding that is not reported.
-    for finding in advisory[:ADVISORY_SHOWN]:
-        print("  %s %s" % (finding.code, finding.message))
-    if len(advisory) > ADVISORY_SHOWN:
-        print("  ...and %d more at the legacy path" % (len(advisory) - ADVISORY_SHOWN))
-    for finding in fatal:
+    for finding in found:
         print("✗ %s %s" % (finding.code, finding.message), file=sys.stderr)
-    if fatal:
+    if found:
         return 1
     print(
-        "✓ plan folders: %d plan(s) and %d stub(s) across %s, %d tombstone(s), %d advisory "
-        "F1 finding(s) at the legacy path"
+        "✓ plan folders: %d plan(s) and %d stub(s) across %s, %d tombstone(s)"
         % (
             len([p for p in plans if not PL.is_stub(p)]),
             len([p for p in plans if PL.is_stub(p)]),
             ", ".join(PL.PLAN_DIRS),
             len(stones),
-            len(advisory),
         )
     )
     print(
@@ -475,7 +458,6 @@ def _write_tombstones(root: pathlib.Path, rows: list[PL.Tombstone]) -> None:
 
 def move(root: pathlib.Path, rel: str, config: dict) -> int:
     """`git mv` one plan into its folder, leave a stub, stamp both clocks."""
-    del config
     source = root / rel
     if not source.is_file():
         print("✗ %s is not a file" % rel, file=sys.stderr)
@@ -490,6 +472,15 @@ def move(root: pathlib.Path, rel: str, config: dict) -> int:
     if new_rel == rel:
         print("✓ %s is already in %s/" % (rel, target_dir))
         return 0
+    if target_dir in PL.TERMINAL_DIRS and rel not in PL.ledger_rows(root):
+        print(
+            "✗ %s has no row in %s, so the move would record no moved_at and the %d-day "
+            "retention clock would never start. Run `npm run check:ci-plan-boxes -- "
+            "--update` first; a terminal move that starts no clock is a file that lives "
+            "in _done/ for ever." % (rel, PL.LEDGER_REL, int(config["terminal_days"])),
+            file=sys.stderr,
+        )
+        return 1
     when = gitx.git(["log", "-1", "--format=%cI", "--", rel], root=root).stdout.strip()
     first_seen = (plan.first_seen or when)[:10]
     if not first_seen:

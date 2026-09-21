@@ -169,9 +169,9 @@ def agent_root(root):
 # per-branch effort-cap ledger (agent/reggate/<branch>.jsonl). It MUST be reserved: agent_session_dirs treats every other directory under agent/ as a session prefix, so omitting it makes the hook report a peer session named "reggate" that does not exist. That is the one silent failure the effort-cap change can cause, and it is why this name is here and not only in wl_reggate.
 #
 # THREE NAMES WERE MISSING, ADDED 2026-09-21. `pr` and `legacy` have been directories under agent/ for some time and were never reserved, so `agent_session_dirs` has been reporting two peer sessions named "pr" and "legacy" that do not exist -- the exact silent failure the paragraph above describes, already live. `plans` is the new plan home
-# (check:ci-plan-folders) and would have been the third the day it was created. The set is what `check:ci-tree-shape` DERIVES its agent-directory classes from rather than copying, so a name missing here is also a stray file there.
+# (check:ci-plan-folders) and would have been the third the day it was created. `ledgers` followed the same day, when the plan-record census moved out of the agent root. The set is what `check:ci-tree-shape` DERIVES its agent-directory classes from rather than copying, so a name missing here is also a stray file there.
 AGENT_RESERVED_DIRS = frozenset(
-    {"archive", "programs", "worklist", "reggate", "plans", "pr", "legacy"}
+    {"archive", "programs", "worklist", "reggate", "plans", "ledgers", "pr", "legacy"}
 )
 
 
@@ -246,12 +246,23 @@ def is_plan_stub(path):
 
     A stub is dropped at the enumeration rather than filtered by each caller, which is what keeps the census, the box ledger, the housekeeping clock and the stop advisory from each needing their own opinion about pointers. `False` on any read error: a file that cannot be read is not evidence that it is a pointer, and treating it as one would silently shrink the corpus.
     """
+    return bool(plan_stub_target(path))
+
+
+def plan_stub_target(path):
+    """The path a stub points FORWARD to, or "" when `path` is not a stub.
+
+    The same two-halves test `is_plan_stub` applies, returning the target instead of a bool, so a reader that has to FOLLOW the pointer does not parse the header a second time. `citation_state` is the reason it exists: a stub is five lines, so `agent/PLAN-x.md:3684` resolves to a real file and a line number past its end unless the hop is taken.
+    """
     try:
         with open(path, "rb") as handle:
             head = handle.read(STUB_PROBE_BYTES).decode("utf-8", errors="replace")
     except OSError:
-        return False
-    return bool(_STUB_STATUS_RE.search(head)) and bool(_STUB_TARGET_RE.search(head))
+        return ""
+    if not _STUB_STATUS_RE.search(head):
+        return ""
+    match = _STUB_TARGET_RE.search(head)
+    return match.group(1) if match else ""
 
 
 def agent_plan_files(root):

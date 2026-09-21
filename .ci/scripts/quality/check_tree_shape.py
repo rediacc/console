@@ -70,6 +70,7 @@ CLEAN_LISTING = "\n".join(  # noqa: FLY002 -- a LISTING to scan, not a sentence 
         "agent/archive/0815-1/STATE.md",
         "agent/worklist/abcd1234.jsonl",
         "agent/reggate/main.jsonl",
+        "agent/ledgers/census-plan-record.jsonl",
         "agent/pr/main.md",
         "agent/legacy/STATE.md",
         "agent/programs/thing/README.md",
@@ -89,7 +90,7 @@ CLEAN_SOURCE = (
     '    return paths.from_root("agent")\n'
 )
 
-RESERVED = {"archive", "programs", "worklist", "reggate", "plans", "pr", "legacy"}
+RESERVED = {"archive", "programs", "worklist", "reggate", "plans", "ledgers", "pr", "legacy"}
 TOP_NAMES = {"agent", "docs", "scripts", ".ci", ".claude", "packages"}
 CALLEES = {"open", "os.listdir", "os.scandir"}
 FS_METHODS = {"glob", "is_dir", "read_text"}
@@ -143,13 +144,18 @@ def selftest() -> int:
         "T3 planted", _codes(TS.finding_t3(TS.split_entries(_paths(loose))[2], policy)), {"T3"}
     )
     tally.check(
-        "T3 admits a plan, a report and a census by pattern",
+        "T3 admits a plan stub by pattern and the four named documents",
         _codes(
             TS.finding_t3(
-                {"PLAN-x.md", "REPORT-y.md", "census-plan-record.jsonl", "README.md"}, policy
+                {"PLAN-x.md", "README.md", "RULES.md", "INDEX.md", "DECISIONS.md"}, policy
             )
         ),
         set(),
+    )
+    tally.check(
+        "T3 refuses the two names S5 moved out, so the patterns cannot creep back",
+        _codes(TS.finding_t3({"REPORT-y.md", "census-plan-record.jsonl"}, policy)),
+        {"T3"},
     )
 
     # T4. A directory under agent/ that is neither reserved nor a session slug.
@@ -172,7 +178,7 @@ def selftest() -> int:
     tally.check("T5 clean", _codes(TS.finding_t5(policy, RESERVED)), set())
     tally.check(
         "T5 fires when the hook knows a directory the policy does not",
-        _codes(TS.finding_t5(policy, RESERVED | {"ledgers"})),
+        _codes(TS.finding_t5(policy, RESERVED | {"invented"})),
         {"T5"},
     )
     tally.check(

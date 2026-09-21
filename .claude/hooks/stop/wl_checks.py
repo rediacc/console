@@ -381,6 +381,13 @@ def citation_state(root, text):
     p = pathlib.Path(root) / rel
     if not p.is_file():
         return False, "cites %s, which does not exist" % rel
+    # ONE HOP THROUGH A PLAN STUB. A closed plan moves into `agent/plans/**` and leaves a five-line pointer at its old path, which is what keeps the 523 citations of that path resolving. A `<path>:<line>` citation is the case the pointer alone does NOT serve: the file exists and every line number past five is suddenly out of range, so an evidence line written months ago starts
+    # reading as a fabrication. The hop is taken here rather than in the regex so the citation keeps naming the path its author read. Exactly one hop: `check:ci-plan-folders` F5 refuses a stub that points at a stub.
+    moved_to = S.plan_stub_target(p)
+    if moved_to:
+        target = pathlib.Path(root) / moved_to
+        if target.is_file():
+            rel, p = moved_to, target
     try:
         n = len(p.read_text(errors="replace").splitlines())
     except OSError:

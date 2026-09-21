@@ -12,80 +12,80 @@ To read one in full:
 
 | Plan | Status | attested / open / abandoned | Full-Text-Blob |
 |---|---|---|---|
-| agent/PLAN-add-chunkstore-backup-verb.md | compacted | 0 / 0 / 0 | `5de64f0839c4781cfdef2f2f3249a695cc96d2ef` |
-| agent/PLAN-add-js-extensions-shared.md | compacted | 0 / 0 / 0 | `014f64c12a0ed8b7f90fef4df76be6e03b8ebeb2` |
-| agent/PLAN-agent-hints-implementation.md | compacted | 0 / 0 / 0 | `9e7c10012356718cff5eda813cae38e7287f31da` |
-| agent/PLAN-agent-hints-in-stop-hook.md | compacted | 0 / 0 / 0 | `1cc03bcbe8b95625789dabc41f2c5b84b83dd032` |
-| agent/PLAN-ask-flow-preemptive-settled-check.md | compacted | 0 / 0 / 0 | `2c5a6ce84c56d71b63bf8b2783dd7deafb025214` |
-| agent/PLAN-backup-list-executor-fix.md | compacted | 0 / 0 / 0 | `660292bf31cbeb875e0ba036c84015bb12632d5b` |
-| agent/PLAN-backup-quota-delta-gc.md | compacted | 0 / 0 / 0 | `d7d85100f0fb4a3a11edddfa56da1c3574dc3fe4` |
-| agent/PLAN-backup-restore-target-license.md | compacted | 0 / 0 / 0 | `65118820f452478aba55580152843d0a14188c75` |
-| agent/PLAN-bump-k3s-upstream-1-36-4.md | compacted | 0 / 0 / 0 | `eefe7025241c5f21ca0cc86305aec372fdad62b9` |
-| agent/PLAN-chunk-store-browse-DECISION.md | compacted | 0 / 0 / 0 | `e796b714f8f97399dbb122b10d0e684836a93c3d` |
-| agent/PLAN-chunk-store-browse-engine.md | compacted | 0 / 0 / 0 | `cf248906f1dd29b1206e9331c84bfcc95eee8314` |
-| agent/PLAN-chunk-store-browse-server.md | compacted | 0 / 0 / 0 | `d35bf9ec010014690d6e890ee6aa1e16f3c5c1fd` |
-| agent/PLAN-chunkstore-restore.md | compacted | 0 / 0 / 0 | `2b5bd24cd38dbb04b69cb118dfb5164fd26b3697` |
-| agent/PLAN-ci-trace-no-pr-branch.md | compacted | 0 / 0 / 0 | `fe0fb4ebc96721663e8496ccbc77ce1a9303342a` |
-| agent/PLAN-citation-fragility.md | compacted | 6 / 0 / 0 | `f439a5441017c0c19accc9ffebeea00394e3be5e` |
-| agent/PLAN-cli-em-dash-lint-gate.md | compacted | 0 / 0 / 0 | `629e12f4662163b2e5b78fecaa292abf7354ae6f` |
-| agent/PLAN-cold-path.md | compacted | 0 / 0 / 0 | `94817d485e814eefcb2a0fc24d339c9a8a974c48` |
-| agent/PLAN-completion-strategy.md | compacted | 0 / 0 / 0 | `08a8712b218e63ad5b3b42299abb6cd3f1d3ac16` |
-| agent/PLAN-consolidation-pressure.md | compacted | 10 / 0 / 0 | `a6ea9a9a7a15345da735ff30ad88810a8c2125a9` |
-| agent/PLAN-devbox-uid-derived-image.md | compacted | 0 / 0 / 0 | `5a48f54ad9b4a491828ee44e7c03922c334c05d2` |
-| agent/PLAN-docker-image-freshness-soak-filter.md | compacted | 0 / 0 / 0 | `8a20e7d7e8d59b4a066a2472883dc5be5aadaa0f` |
-| agent/PLAN-duplication-angle.md | compacted | 0 / 0 / 0 | `49d0c8831c5086a49590a8c127d9a4ebd5b15e6e` |
-| agent/PLAN-durable-reports-and-push-inbox.md | compacted | 0 / 0 / 0 | `a91ac53ed56cfecca406211ee76856603b192686` |
-| agent/PLAN-extension-shaped-matchers.md | compacted | 0 / 0 / 0 | `3408a63e57259f441d86892ee614934adcdc4a3c` |
-| agent/PLAN-fix-ci-contention-aware-timeouts.md | compacted | 0 / 0 / 0 | `c52485b570655e7c9ac98b3e84c13085c7d6e614` |
-| agent/PLAN-fix-german-translation-artifacts.md | compacted | 0 / 0 / 0 | `0ce3e39893deecb4e3e91cbfed5abdae0db3edd1` |
-| agent/PLAN-fix-in-session-rule.md | compacted | 0 / 0 / 0 | `de11703cc3f80d419da467c90f6da7494ade49e3` |
-| agent/PLAN-fix-tutorial-player-debug-hook-attachment.md | compacted | 0 / 0 / 0 | `42c5e4bdcf9adcefc94d87417cf982f920f7f7c5` |
-| agent/PLAN-gh-swallow-gates-audit.md | compacted | 6 / 0 / 0 | `0bc5643419d3a228acd5a16a7e47c6de6d393e0f` |
-| agent/PLAN-git-history-media-rewrite.md | compacted | 0 / 0 / 0 | `c7246f5aa5ed63e3e3898248401b4c776021c22d` |
-| agent/PLAN-git-ignore-aware-discover.md | compacted | 10 / 0 / 0 | `665806c8207762ab129e4425a19794d7359cef65` |
-| agent/PLAN-github-actions-workflow-run-trigger-fix.md | compacted | 0 / 0 / 0 | `5a72b31733f38380ee001b6361fbfba1b40657e5` |
-| agent/PLAN-greenlight-verify-at-read.md | compacted | 0 / 0 / 0 | `797d986ae411011b63c51b254fb17ebc0518d143` |
-| agent/PLAN-judge-gate-worthiness-and-surface-scope.md | compacted | 0 / 0 / 0 | `9fd5358ec06422c99edfb94e4c9473dfbf2fbc2a` |
-| agent/PLAN-judge-prompt-trap-conflation.md | compacted | 8 / 0 / 0 | `7b082ab92d12ab27ec933722ae1b9030c1febdaf` |
-| agent/PLAN-lint-css-ci-wiring.md | compacted | 0 / 0 / 0 | `e97837565b685d82e72fd542652a452a05df1e97` |
-| agent/PLAN-lint-rule-matrix-probe.md | compacted | 0 / 0 / 0 | `4470daee93042f1278a0e5a0589ff1c612a2e896` |
-| agent/PLAN-localize-cheat-sheet-rendering.md | compacted | 0 / 0 / 0 | `f109c90887d63c381f47f648b684bcf281a24c53` |
-| agent/PLAN-nightly-retry-and-watchdog-noise.md | compacted | 0 / 0 / 0 | `4a9cbc2c50de489738800acfa12a87f853130c27` |
-| agent/PLAN-npm-ci-parallel-parity.md | compacted | 0 / 0 / 0 | `579a43b2793afd84e1ec525e2c236f98ed11e94e` |
-| agent/PLAN-printf-echo-pipefail-sweep.md | compacted | 33 / 0 / 0 | `b78238643fecdaf894630b6245b3dc7244a1ccff` |
-| agent/PLAN-promote-mutation-runner.md | compacted | 0 / 0 / 0 | `81e70861b4491aafc5fcb60eac2ed77445c60c0e` |
-| agent/PLAN-pytest-parallelism.md | compacted | 10 / 0 / 0 | `043547f131a60caa448fcd8d07cc8d832d7e2f1e` |
-| agent/PLAN-rclone-decommission.md | compacted | 0 / 0 / 0 | `09c51ce36a58383f4f12ac17ed21fe99cdbcab29` |
-| agent/PLAN-reggate-effort-cap.md | compacted | 0 / 0 / 0 | `687dd4b63bfe7725667ff76f0a23cde9f613bd56` |
-| agent/PLAN-renet-fetch-hardening.md | parked | 0 / 0 / 0 | `0f714f0ac7271327eb51438deb66d7250cb4b174` |
-| agent/PLAN-require-testid-sweep.md | compacted | 0 / 0 / 0 | `d9c09956f72585468cd1af419f11a2077981748c` |
-| agent/PLAN-resprofile-wave2.md | compacted | 0 / 0 / 0 | `a36167a98560c5a625503e65cf881c45eefe6fe7` |
-| agent/PLAN-rest-graphql-guard-parity.md | compacted | 8 / 0 / 0 | `e93a81177de1dd3bb8e1c6a7f4a3979a2a846bcb` |
-| agent/PLAN-resumable-rebase-executor.md | compacted | 0 / 0 / 0 | `0de01ed0e941e9b219977dd009621b603df52b51` |
-| agent/PLAN-review-red-stop-hook-check.md | compacted | 0 / 0 / 0 | `bdf12c8a563f86d21082eed7b8475e6204fd2146` |
-| agent/PLAN-runtime-caller-identity.md | compacted | 0 / 0 / 0 | `61d22f80a7aa9243a0363a1e1245cd4ff7e3558a` |
-| agent/PLAN-scope-gate-sort-collation.md | compacted | 0 / 0 / 0 | `47c6717ec4575da4a682e5ed7b69a98a8b664cb3` |
-| agent/PLAN-scope-gates-split.md | compacted | 0 / 0 / 0 | `d1a4acd100bbcc1fbbace2d22f4d59663f7c2687` |
-| agent/PLAN-sentence-aware-wrapping.md | compacted | 0 / 0 / 0 | `9b66577af5e330a95f7b76d2f850475c49d4740d` |
-| agent/PLAN-shell-command-gate-regex-fix.md | compacted | 0 / 0 / 0 | `330e4e7fe9c7c52a3fb4e8de486624d83621ee04` |
-| agent/PLAN-shell-resource-profiling.md | compacted | 0 / 0 / 0 | `acfed5118c57313c4f59592e73370b780616f5ac` |
-| agent/PLAN-skip-release-gates-r2-manifest.md | compacted | 0 / 0 / 0 | `b9f4b3fbe9b685d698dbb4cba7919e82c20ecae1` |
-| agent/PLAN-ssr-nav-locale.md | compacted | 0 / 0 / 0 | `607afdb545574a449e1959a5adfa926879358bc0` |
-| agent/PLAN-staged-duplication-probe.md | compacted | 8 / 0 / 0 | `69a5cbc721dad210ccc92af94ac69ad7f5860e05` |
-| agent/PLAN-state-md-session-isolation.md | compacted | 0 / 0 / 0 | `bb261677a201d15fcc277f98ee32d489d091d269` |
-| agent/PLAN-stop-always-tier.md | compacted | 0 / 0 / 0 | `4117fa10f7f154c69832f9a53c7231a9ff2de6b3` |
-| agent/PLAN-stop-hook-cadence.md | compacted | 0 / 0 / 0 | `af70feee31f7c4646bb5fe3783be6bbfc4814871` |
-| agent/PLAN-stop-report-queue.md | compacted | 0 / 0 / 0 | `2d78c88a313dec8db7e5aaddf14a127f0119409e` |
-| agent/PLAN-subagent-idle-detection.md | compacted | 0 / 0 / 0 | `3eda61343415af897cc0d2c135836fb962e5cdd4` |
-| agent/PLAN-sync-docker-latest-tag-with-releases.md | compacted | 0 / 0 / 0 | `785e89eea1f5954063ba22f0fe60adc16ce7eed1` |
-| agent/PLAN-test-advisor.md | compacted | 0 / 0 / 0 | `2a9b231bbfe9745800132f1859ddda383771ae94` |
-| agent/PLAN-testing-surface-audit.md | compacted | 0 / 0 / 0 | `50958743b0369bf4807e1db656bb88a7a58464b5` |
-| agent/PLAN-unify-trap-corpus.md | compacted | 0 / 0 / 0 | `477232b48be389ccf464567572800f6dde8b0d5a` |
-| agent/PLAN-w7p4w-docker-cutover.md | compacted | 12 / 0 / 0 | `34d1153bbcf19cb076af1957dcb17306000a4c53` |
-| agent/PLAN-w7p5a-deploy-release-port.md | compacted | 8 / 0 / 0 | `64b41e3de247b051b0cfc19438f94e9c3a29bbc3` |
-| agent/PLAN-wire-account-vitest-ci.md | compacted | 0 / 0 / 0 | `5b450ce4f57e84c5814a44de44b81dc8d1d4c2a1` |
-| agent/PLAN-wl-report-liveness-oracle.md | compacted | 7 / 0 / 0 | `86b1b24713fdabbf33a7fe99552b46c994ae94b1` |
-| agent/PLAN-www-bundle-determinism.md | compacted | 0 / 0 / 0 | `16d1c4c5219f211e837df5055787fc2f3e22a99b` |
+| agent/plans/PLAN-add-chunkstore-backup-verb.md | compacted | 0 / 0 / 0 | `5de64f0839c4781cfdef2f2f3249a695cc96d2ef` |
+| agent/plans/PLAN-add-js-extensions-shared.md | compacted | 0 / 0 / 0 | `014f64c12a0ed8b7f90fef4df76be6e03b8ebeb2` |
+| agent/plans/PLAN-agent-hints-implementation.md | compacted | 0 / 0 / 0 | `9e7c10012356718cff5eda813cae38e7287f31da` |
+| agent/plans/PLAN-agent-hints-in-stop-hook.md | compacted | 0 / 0 / 0 | `1cc03bcbe8b95625789dabc41f2c5b84b83dd032` |
+| agent/plans/PLAN-ask-flow-preemptive-settled-check.md | compacted | 0 / 0 / 0 | `2c5a6ce84c56d71b63bf8b2783dd7deafb025214` |
+| agent/plans/PLAN-backup-list-executor-fix.md | compacted | 0 / 0 / 0 | `660292bf31cbeb875e0ba036c84015bb12632d5b` |
+| agent/plans/PLAN-backup-quota-delta-gc.md | compacted | 0 / 0 / 0 | `d7d85100f0fb4a3a11edddfa56da1c3574dc3fe4` |
+| agent/plans/PLAN-backup-restore-target-license.md | compacted | 0 / 0 / 0 | `65118820f452478aba55580152843d0a14188c75` |
+| agent/plans/PLAN-bump-k3s-upstream-1-36-4.md | compacted | 0 / 0 / 0 | `eefe7025241c5f21ca0cc86305aec372fdad62b9` |
+| agent/plans/PLAN-chunk-store-browse-DECISION.md | compacted | 0 / 0 / 0 | `e796b714f8f97399dbb122b10d0e684836a93c3d` |
+| agent/plans/PLAN-chunk-store-browse-engine.md | compacted | 0 / 0 / 0 | `cf248906f1dd29b1206e9331c84bfcc95eee8314` |
+| agent/plans/PLAN-chunk-store-browse-server.md | compacted | 0 / 0 / 0 | `d35bf9ec010014690d6e890ee6aa1e16f3c5c1fd` |
+| agent/plans/PLAN-chunkstore-restore.md | compacted | 0 / 0 / 0 | `2b5bd24cd38dbb04b69cb118dfb5164fd26b3697` |
+| agent/plans/PLAN-ci-trace-no-pr-branch.md | compacted | 0 / 0 / 0 | `fe0fb4ebc96721663e8496ccbc77ce1a9303342a` |
+| agent/plans/PLAN-citation-fragility.md | compacted | 6 / 0 / 0 | `f439a5441017c0c19accc9ffebeea00394e3be5e` |
+| agent/plans/PLAN-cli-em-dash-lint-gate.md | compacted | 0 / 0 / 0 | `629e12f4662163b2e5b78fecaa292abf7354ae6f` |
+| agent/plans/PLAN-cold-path.md | compacted | 0 / 0 / 0 | `94817d485e814eefcb2a0fc24d339c9a8a974c48` |
+| agent/plans/PLAN-completion-strategy.md | compacted | 0 / 0 / 0 | `08a8712b218e63ad5b3b42299abb6cd3f1d3ac16` |
+| agent/plans/PLAN-consolidation-pressure.md | compacted | 10 / 0 / 0 | `a6ea9a9a7a15345da735ff30ad88810a8c2125a9` |
+| agent/plans/PLAN-devbox-uid-derived-image.md | compacted | 0 / 0 / 0 | `5a48f54ad9b4a491828ee44e7c03922c334c05d2` |
+| agent/plans/PLAN-docker-image-freshness-soak-filter.md | compacted | 0 / 0 / 0 | `8a20e7d7e8d59b4a066a2472883dc5be5aadaa0f` |
+| agent/plans/PLAN-duplication-angle.md | compacted | 0 / 0 / 0 | `49d0c8831c5086a49590a8c127d9a4ebd5b15e6e` |
+| agent/plans/PLAN-durable-reports-and-push-inbox.md | compacted | 0 / 0 / 0 | `a91ac53ed56cfecca406211ee76856603b192686` |
+| agent/plans/PLAN-extension-shaped-matchers.md | compacted | 0 / 0 / 0 | `3408a63e57259f441d86892ee614934adcdc4a3c` |
+| agent/plans/PLAN-fix-ci-contention-aware-timeouts.md | compacted | 0 / 0 / 0 | `c52485b570655e7c9ac98b3e84c13085c7d6e614` |
+| agent/plans/PLAN-fix-german-translation-artifacts.md | compacted | 0 / 0 / 0 | `0ce3e39893deecb4e3e91cbfed5abdae0db3edd1` |
+| agent/plans/PLAN-fix-in-session-rule.md | compacted | 0 / 0 / 0 | `de11703cc3f80d419da467c90f6da7494ade49e3` |
+| agent/plans/PLAN-fix-tutorial-player-debug-hook-attachment.md | compacted | 0 / 0 / 0 | `42c5e4bdcf9adcefc94d87417cf982f920f7f7c5` |
+| agent/plans/PLAN-gh-swallow-gates-audit.md | compacted | 6 / 0 / 0 | `0bc5643419d3a228acd5a16a7e47c6de6d393e0f` |
+| agent/plans/PLAN-git-history-media-rewrite.md | compacted | 0 / 0 / 0 | `c7246f5aa5ed63e3e3898248401b4c776021c22d` |
+| agent/plans/PLAN-git-ignore-aware-discover.md | compacted | 10 / 0 / 0 | `665806c8207762ab129e4425a19794d7359cef65` |
+| agent/plans/PLAN-github-actions-workflow-run-trigger-fix.md | compacted | 0 / 0 / 0 | `5a72b31733f38380ee001b6361fbfba1b40657e5` |
+| agent/plans/PLAN-greenlight-verify-at-read.md | compacted | 0 / 0 / 0 | `797d986ae411011b63c51b254fb17ebc0518d143` |
+| agent/plans/PLAN-judge-gate-worthiness-and-surface-scope.md | compacted | 0 / 0 / 0 | `9fd5358ec06422c99edfb94e4c9473dfbf2fbc2a` |
+| agent/plans/PLAN-judge-prompt-trap-conflation.md | compacted | 8 / 0 / 0 | `7b082ab92d12ab27ec933722ae1b9030c1febdaf` |
+| agent/plans/PLAN-lint-css-ci-wiring.md | compacted | 0 / 0 / 0 | `e97837565b685d82e72fd542652a452a05df1e97` |
+| agent/plans/PLAN-lint-rule-matrix-probe.md | compacted | 0 / 0 / 0 | `4470daee93042f1278a0e5a0589ff1c612a2e896` |
+| agent/plans/PLAN-localize-cheat-sheet-rendering.md | compacted | 0 / 0 / 0 | `f109c90887d63c381f47f648b684bcf281a24c53` |
+| agent/plans/PLAN-nightly-retry-and-watchdog-noise.md | compacted | 0 / 0 / 0 | `4a9cbc2c50de489738800acfa12a87f853130c27` |
+| agent/plans/PLAN-npm-ci-parallel-parity.md | compacted | 0 / 0 / 0 | `579a43b2793afd84e1ec525e2c236f98ed11e94e` |
+| agent/plans/PLAN-printf-echo-pipefail-sweep.md | compacted | 33 / 0 / 0 | `b78238643fecdaf894630b6245b3dc7244a1ccff` |
+| agent/plans/PLAN-promote-mutation-runner.md | compacted | 0 / 0 / 0 | `81e70861b4491aafc5fcb60eac2ed77445c60c0e` |
+| agent/plans/PLAN-pytest-parallelism.md | compacted | 10 / 0 / 0 | `043547f131a60caa448fcd8d07cc8d832d7e2f1e` |
+| agent/plans/PLAN-rclone-decommission.md | compacted | 0 / 0 / 0 | `09c51ce36a58383f4f12ac17ed21fe99cdbcab29` |
+| agent/plans/PLAN-reggate-effort-cap.md | compacted | 0 / 0 / 0 | `687dd4b63bfe7725667ff76f0a23cde9f613bd56` |
+| agent/plans/PLAN-renet-fetch-hardening.md | parked | 0 / 0 / 0 | `0f714f0ac7271327eb51438deb66d7250cb4b174` |
+| agent/plans/PLAN-require-testid-sweep.md | compacted | 0 / 0 / 0 | `d9c09956f72585468cd1af419f11a2077981748c` |
+| agent/plans/PLAN-resprofile-wave2.md | compacted | 0 / 0 / 0 | `a36167a98560c5a625503e65cf881c45eefe6fe7` |
+| agent/plans/PLAN-rest-graphql-guard-parity.md | compacted | 8 / 0 / 0 | `e93a81177de1dd3bb8e1c6a7f4a3979a2a846bcb` |
+| agent/plans/PLAN-resumable-rebase-executor.md | compacted | 0 / 0 / 0 | `0de01ed0e941e9b219977dd009621b603df52b51` |
+| agent/plans/PLAN-review-red-stop-hook-check.md | compacted | 0 / 0 / 0 | `bdf12c8a563f86d21082eed7b8475e6204fd2146` |
+| agent/plans/PLAN-runtime-caller-identity.md | compacted | 0 / 0 / 0 | `61d22f80a7aa9243a0363a1e1245cd4ff7e3558a` |
+| agent/plans/PLAN-scope-gate-sort-collation.md | compacted | 0 / 0 / 0 | `47c6717ec4575da4a682e5ed7b69a98a8b664cb3` |
+| agent/plans/PLAN-scope-gates-split.md | compacted | 0 / 0 / 0 | `d1a4acd100bbcc1fbbace2d22f4d59663f7c2687` |
+| agent/plans/PLAN-sentence-aware-wrapping.md | compacted | 0 / 0 / 0 | `9b66577af5e330a95f7b76d2f850475c49d4740d` |
+| agent/plans/PLAN-shell-command-gate-regex-fix.md | compacted | 0 / 0 / 0 | `330e4e7fe9c7c52a3fb4e8de486624d83621ee04` |
+| agent/plans/PLAN-shell-resource-profiling.md | compacted | 0 / 0 / 0 | `acfed5118c57313c4f59592e73370b780616f5ac` |
+| agent/plans/PLAN-skip-release-gates-r2-manifest.md | compacted | 0 / 0 / 0 | `b9f4b3fbe9b685d698dbb4cba7919e82c20ecae1` |
+| agent/plans/PLAN-ssr-nav-locale.md | compacted | 0 / 0 / 0 | `607afdb545574a449e1959a5adfa926879358bc0` |
+| agent/plans/PLAN-staged-duplication-probe.md | compacted | 8 / 0 / 0 | `69a5cbc721dad210ccc92af94ac69ad7f5860e05` |
+| agent/plans/PLAN-state-md-session-isolation.md | compacted | 0 / 0 / 0 | `bb261677a201d15fcc277f98ee32d489d091d269` |
+| agent/plans/PLAN-stop-always-tier.md | compacted | 0 / 0 / 0 | `4117fa10f7f154c69832f9a53c7231a9ff2de6b3` |
+| agent/plans/PLAN-stop-hook-cadence.md | compacted | 0 / 0 / 0 | `af70feee31f7c4646bb5fe3783be6bbfc4814871` |
+| agent/plans/PLAN-stop-report-queue.md | compacted | 0 / 0 / 0 | `2d78c88a313dec8db7e5aaddf14a127f0119409e` |
+| agent/plans/PLAN-subagent-idle-detection.md | compacted | 0 / 0 / 0 | `3eda61343415af897cc0d2c135836fb962e5cdd4` |
+| agent/plans/PLAN-sync-docker-latest-tag-with-releases.md | compacted | 0 / 0 / 0 | `785e89eea1f5954063ba22f0fe60adc16ce7eed1` |
+| agent/plans/PLAN-test-advisor.md | compacted | 0 / 0 / 0 | `2a9b231bbfe9745800132f1859ddda383771ae94` |
+| agent/plans/PLAN-testing-surface-audit.md | compacted | 0 / 0 / 0 | `50958743b0369bf4807e1db656bb88a7a58464b5` |
+| agent/plans/PLAN-unify-trap-corpus.md | compacted | 0 / 0 / 0 | `477232b48be389ccf464567572800f6dde8b0d5a` |
+| agent/plans/PLAN-w7p4w-docker-cutover.md | compacted | 12 / 0 / 0 | `34d1153bbcf19cb076af1957dcb17306000a4c53` |
+| agent/plans/PLAN-w7p5a-deploy-release-port.md | compacted | 8 / 0 / 0 | `64b41e3de247b051b0cfc19438f94e9c3a29bbc3` |
+| agent/plans/PLAN-wire-account-vitest-ci.md | compacted | 0 / 0 / 0 | `5b450ce4f57e84c5814a44de44b81dc8d1d4c2a1` |
+| agent/plans/PLAN-wl-report-liveness-oracle.md | compacted | 7 / 0 / 0 | `86b1b24713fdabbf33a7fe99552b46c994ae94b1` |
+| agent/plans/PLAN-www-bundle-determinism.md | compacted | 0 / 0 / 0 | `16d1c4c5219f211e837df5055787fc2f3e22a99b` |
 
 74 record(s): 73 compacted, 1 parked. A parked record stays on the housekeeping clock on purpose -- its work is not finished, only its text is compacted.
 
@@ -95,367 +95,367 @@ What `--plan-why <path>` answers from. Each row is a path a compacted plan cited
 
 | File | Records |
 |---|---|
-| `.ci/config/constants.sh` | agent/PLAN-devbox-uid-derived-image.md, agent/PLAN-sync-docker-latest-tag-with-releases.md, agent/PLAN-w7p4w-docker-cutover.md |
-| `.ci/config/prose-style-rules.json` | agent/PLAN-git-ignore-aware-discover.md |
-| `.ci/docker/ci/docker-compose.yml` | agent/PLAN-fix-ci-contention-aware-timeouts.md |
-| `.ci/legacy/run-legacy.sh` | agent/PLAN-devbox-uid-derived-image.md |
-| `.ci/lib/account.sh` | agent/PLAN-shell-command-gate-regex-fix.md |
-| `.ci/lib/devbox.sh` | agent/PLAN-devbox-uid-derived-image.md, agent/PLAN-printf-echo-pipefail-sweep.md |
-| `.ci/lib/local-common.sh` | agent/PLAN-printf-echo-pipefail-sweep.md |
-| `.ci/rediacc_ci/battery.py` | agent/PLAN-pytest-parallelism.md |
-| `.ci/rediacc_ci/check_pytest.py` | agent/PLAN-pytest-parallelism.md |
-| `.ci/rediacc_ci/docker/cleanup_staging.py` | agent/PLAN-w7p4w-docker-cutover.md |
-| `.ci/rediacc_ci/docker/create_manifest.py` | agent/PLAN-w7p4w-docker-cutover.md |
-| `.ci/rediacc_ci/docker/retag_image.py` | agent/PLAN-w7p4w-docker-cutover.md |
-| `.ci/rediacc_ci/gitx.py` | agent/PLAN-git-ignore-aware-discover.md |
-| `.ci/rediacc_ci/paths.py` | agent/PLAN-git-ignore-aware-discover.md |
-| `.ci/rediacc_ci/quality/ci_scans_tracked_paths.py` | agent/PLAN-git-ignore-aware-discover.md |
-| `.ci/rediacc_ci/quality/dead_python.py` | agent/PLAN-git-ignore-aware-discover.md |
-| `.ci/rediacc_ci/quality/devbox_exec.py` | agent/PLAN-devbox-uid-derived-image.md |
-| `.ci/rediacc_ci/quality/editorconfig.py` | agent/PLAN-git-ignore-aware-discover.md |
-| `.ci/rediacc_ci/quality/gate_id_convention.py` | agent/PLAN-extension-shaped-matchers.md |
-| `.ci/rediacc_ci/quality/label_inventory.py` | agent/PLAN-gh-swallow-gates-audit.md |
-| `.ci/rediacc_ci/quality/pipefail_grep_q.py` | agent/PLAN-printf-echo-pipefail-sweep.md |
-| `.ci/rediacc_ci/quality/plant_proofs.py` | agent/PLAN-git-ignore-aware-discover.md |
-| `.ci/rediacc_ci/quality/pool_writer_safety.py` | agent/PLAN-extension-shaped-matchers.md |
-| `.ci/rediacc_ci/quality/pr_description.py` | agent/PLAN-gh-swallow-gates-audit.md |
-| `.ci/rediacc_ci/quality/prose_style.py` | agent/PLAN-git-ignore-aware-discover.md |
-| `.ci/rediacc_ci/quality/python_env_registry.py` | agent/PLAN-git-ignore-aware-discover.md |
-| `.ci/rediacc_ci/quality/script_exec_bit.py` | agent/PLAN-w7p4w-docker-cutover.md |
-| `.ci/rediacc_ci/quality/submodule_branches.py` | agent/PLAN-gh-swallow-gates-audit.md |
-| `.ci/rediacc_ci/quality/toolchain_pins.py` | agent/PLAN-extension-shaped-matchers.md |
-| `.ci/rediacc_ci/quality/workflows.py` | agent/PLAN-extension-shaped-matchers.md |
-| `.ci/rediacc_ci/security/check_commands.py` | agent/PLAN-shell-command-gate-regex-fix.md |
-| `.ci/rediacc_ci/tests/gates/harness.py` | agent/PLAN-extension-shaped-matchers.md |
-| `.ci/rediacc_ci/tests/gates/test_twin_parity.py` | agent/PLAN-pytest-parallelism.md |
-| `.ci/rediacc_ci/tests/test_battery.py` | agent/PLAN-extension-shaped-matchers.md |
-| `.ci/rediacc_ci/tests/test_core_ports.py` | agent/PLAN-pytest-parallelism.md |
-| `.ci/rediacc_ci/tests/test_gitx.py` | agent/PLAN-git-ignore-aware-discover.md |
-| `.ci/rediacc_ci/tests/test_quality_pipefail_grep_q.py` | agent/PLAN-printf-echo-pipefail-sweep.md |
-| `.ci/scripts/build/prepare-cli-assets.sh` | agent/PLAN-scope-gates-split.md |
-| `.ci/scripts/ci/ci-trace.py` | agent/PLAN-ci-trace-no-pr-branch.md |
-| `.ci/scripts/ci/scope-engine.cjs` | agent/PLAN-greenlight-verify-at-read.md |
-| `.ci/scripts/ci/scope-map.cjs` | agent/PLAN-backup-quota-delta-gc.md, agent/PLAN-npm-ci-parallel-parity.md, agent/PLAN-wire-account-vitest-ci.md |
-| `.ci/scripts/ci/scope-shadow.sh` | agent/PLAN-scope-gate-sort-collation.md |
-| `.ci/scripts/docker/cleanup-staging.sh` | agent/PLAN-w7p4w-docker-cutover.md |
-| `.ci/scripts/docker/cleanup_staging.py` | agent/PLAN-w7p4w-docker-cutover.md |
-| `.ci/scripts/docker/create-manifest.sh` | agent/PLAN-w7p4w-docker-cutover.md |
-| `.ci/scripts/env/create-e2e-env.sh` | agent/PLAN-fix-ci-contention-aware-timeouts.md |
-| `.ci/scripts/housekeeping/cleanup-versions.sh` | agent/PLAN-git-history-media-rewrite.md, agent/PLAN-nightly-retry-and-watchdog-noise.md, agent/PLAN-printf-echo-pipefail-sweep.md |
-| `.ci/scripts/infra/ci-start-account.sh` | agent/PLAN-fix-ci-contention-aware-timeouts.md |
-| `.ci/scripts/infra/ci-start-elite.sh` | agent/PLAN-fix-ci-contention-aware-timeouts.md, agent/PLAN-testing-surface-audit.md |
-| `.ci/scripts/infra/wait-for-vm-ssh.sh` | agent/PLAN-fix-ci-contention-aware-timeouts.md |
-| `.ci/scripts/lib/common.sh` | agent/PLAN-fix-ci-contention-aware-timeouts.md |
-| `.ci/scripts/private/run-account.sh` | agent/PLAN-backup-quota-delta-gc.md, agent/PLAN-testing-surface-audit.md, agent/PLAN-wire-account-vitest-ci.md |
-| `.ci/scripts/private/run-renet.sh` | agent/PLAN-testing-surface-audit.md |
-| `.ci/scripts/quality/check-cli-contract.sh` | agent/PLAN-npm-ci-parallel-parity.md |
-| `.ci/scripts/quality/check-command-tree.sh` | agent/PLAN-npm-ci-parallel-parity.md, agent/PLAN-scope-gates-split.md |
-| `.ci/scripts/quality/check-e2e-coverage.sh` | agent/PLAN-add-chunkstore-backup-verb.md |
-| `.ci/scripts/quality/check-go-deps.sh` | agent/PLAN-testing-surface-audit.md |
-| `.ci/scripts/quality/check-label-inventory.sh` | agent/PLAN-gh-swallow-gates-audit.md |
-| `.ci/scripts/quality/check-label-references.sh` | agent/PLAN-printf-echo-pipefail-sweep.md |
-| `.ci/scripts/quality/check-mutate-check.sh` | agent/PLAN-testing-surface-audit.md |
-| `.ci/scripts/quality/check-pipefail-grep-q.sh` | agent/PLAN-printf-echo-pipefail-sweep.md |
-| `.ci/scripts/quality/check-pr-description.sh` | agent/PLAN-gh-swallow-gates-audit.md |
-| `.ci/scripts/quality/check-probe-parity.sh` | agent/PLAN-unify-trap-corpus.md |
-| `.ci/scripts/quality/check-profiler-coverage.sh` | agent/PLAN-scope-gate-sort-collation.md |
-| `.ci/scripts/quality/check-renet-types.sh` | agent/PLAN-add-chunkstore-backup-verb.md |
-| `.ci/scripts/quality/check-tracked-sidecars.sh` | agent/PLAN-shell-resource-profiling.md |
-| `.ci/scripts/quality/check-workflows.sh` | agent/PLAN-extension-shaped-matchers.md |
-| `.ci/scripts/quality/check_gate_reachability_coverage.py` | agent/PLAN-agent-hints-implementation.md |
-| `.ci/scripts/quality/check_language_policy.py` | agent/PLAN-git-ignore-aware-discover.md |
-| `.ci/scripts/quality/check_npmrc.py` | agent/PLAN-extension-shaped-matchers.md |
-| `.ci/scripts/quality/check_plan_boxes.py` | agent/PLAN-completion-strategy.md |
-| `.ci/scripts/quality/check_secret_reachability.py` | agent/PLAN-completion-strategy.md |
-| `.ci/scripts/quality/check_tutorial_healthcheck_headroom.py` | agent/PLAN-fix-ci-contention-aware-timeouts.md |
-| `.ci/scripts/quality/lint-rule-liveness.mjs` | agent/PLAN-agent-hints-in-stop-hook.md |
-| `.ci/scripts/release/cleanup-channel-docker-tags.sh` | agent/PLAN-w7p4w-docker-cutover.md |
-| `.ci/scripts/release/mark-production.sh` | agent/PLAN-gh-swallow-gates-audit.md |
-| `.ci/scripts/review/claude-review-gate.sh` | agent/PLAN-github-actions-workflow-run-trigger-fix.md |
-| `.ci/scripts/review/review-status.sh` | agent/PLAN-github-actions-workflow-run-trigger-fix.md |
-| `.ci/scripts/security/check-commands.sh` | agent/PLAN-shell-command-gate-regex-fix.md |
-| `.ci/scripts/security/shellcheck.sh` | agent/PLAN-shell-resource-profiling.md |
-| `.ci/scripts/security/shfmt.sh` | agent/PLAN-extension-shaped-matchers.md |
-| `.ci/scripts/test/gates/test-autopilot-breakpoint-alignment.sh` | agent/PLAN-duplication-angle.md |
-| `.ci/scripts/test/gates/test-breakpoint-teardown.sh` | agent/PLAN-shell-resource-profiling.md |
-| `.ci/scripts/test/gates/test-claude-hooks.sh` | agent/PLAN-promote-mutation-runner.md |
-| `.ci/scripts/test/gates/test-embed-asset-freshness.sh` | agent/PLAN-rclone-decommission.md |
-| `.ci/scripts/test/gates/test-embed-credits.sh` | agent/PLAN-rclone-decommission.md |
-| `.ci/scripts/test/gates/test-gate-anti-vacuity.sh` | agent/PLAN-lint-rule-matrix-probe.md |
-| `.ci/scripts/test/gates/test-gate-paths-exist.sh` | agent/PLAN-testing-surface-audit.md |
-| `.ci/scripts/test/gates/test-installmethods-linuxpkg-idiom.sh` | agent/PLAN-printf-echo-pipefail-sweep.md |
-| `.ci/scripts/test/gates/test-media-shims.sh` | agent/PLAN-printf-echo-pipefail-sweep.md |
-| `.ci/scripts/test/gates/test-positional-detector.sh` | agent/PLAN-scope-gates-split.md |
-| `.ci/scripts/test/gates/test-profiler-report.sh` | agent/PLAN-shell-command-gate-regex-fix.md |
-| `.ci/scripts/test/gates/test-run-sh.sh` | agent/PLAN-printf-echo-pipefail-sweep.md |
-| `.ci/scripts/test/gates/test-scope-gate-outputs.sh` | agent/PLAN-scope-gate-sort-collation.md |
-| `.ci/scripts/test/gates/test-shadow-gate.sh` | agent/PLAN-printf-echo-pipefail-sweep.md |
-| `.ci/scripts/test/gates/test-tutorial-render-queue.sh` | agent/PLAN-testing-surface-audit.md |
-| `.ci/scripts/test/gates/test-verify-version.sh` | agent/PLAN-printf-echo-pipefail-sweep.md |
-| `.ci/scripts/test/gates/test-worklist-hooks.sh` | agent/PLAN-agent-hints-implementation.md, agent/PLAN-agent-hints-in-stop-hook.md |
-| `.ci/scripts/test/lib/test-helpers.sh` | agent/PLAN-printf-echo-pipefail-sweep.md |
-| `.ci/scripts/test/mutate-check.sh` | agent/PLAN-agent-hints-implementation.md, agent/PLAN-agent-hints-in-stop-hook.md |
-| `.ci/scripts/test/proxies/proxy-go-unit.sh` | agent/PLAN-printf-echo-pipefail-sweep.md |
-| `.ci/scripts/test/run-account-e2e.sh` | agent/PLAN-fix-ci-contention-aware-timeouts.md, agent/PLAN-testing-surface-audit.md |
-| `.ci/scripts/test/run-all.sh` | agent/PLAN-promote-mutation-runner.md, agent/PLAN-shell-resource-profiling.md |
-| `.ci/scripts/test/run-unit.sh` | agent/PLAN-testing-surface-audit.md, agent/PLAN-wire-account-vitest-ci.md |
-| `.ci/scripts/test/smoke-test-preview.ts` | agent/PLAN-fix-ci-contention-aware-timeouts.md |
-| `.ci/scripts/test/test-install-methods.sh` | agent/PLAN-printf-echo-pipefail-sweep.md |
-| `.ci/scripts/test/test-linux-packages.sh` | agent/PLAN-printf-echo-pipefail-sweep.md |
-| `.ci/tutorials/lib/stage-branching.sh` | agent/PLAN-shell-command-gate-regex-fix.md |
-| `.ci/tutorials/tutorial-add-server.sh` | agent/PLAN-shell-command-gate-regex-fix.md |
-| `.ci/tutorials/tutorial-backup-restore.sh` | agent/PLAN-chunk-store-browse-engine.md, agent/PLAN-shell-command-gate-regex-fix.md |
-| `.ci/tutorials/tutorial-branching.sh` | agent/PLAN-shell-command-gate-regex-fix.md |
-| `.ci/tutorials/tutorial-create-repo.sh` | agent/PLAN-shell-command-gate-regex-fix.md |
-| `.ci/tutorials/tutorial-delta-transfer.sh` | agent/PLAN-shell-command-gate-regex-fix.md |
-| `.ci/tutorials/tutorial-deploy-app.sh` | agent/PLAN-shell-command-gate-regex-fix.md |
-| `.ci/tutorials/tutorial-forking.sh` | agent/PLAN-shell-command-gate-regex-fix.md |
-| `.ci/tutorials/tutorial-managing-secrets.sh` | agent/PLAN-shell-command-gate-regex-fix.md |
-| `.ci/tutorials/tutorial-monitoring.sh` | agent/PLAN-shell-command-gate-regex-fix.md |
-| `.ci/tutorials/tutorial-networking.sh` | agent/PLAN-shell-command-gate-regex-fix.md |
-| `.ci/tutorials/tutorial-production-mode.sh` | agent/PLAN-shell-command-gate-regex-fix.md |
-| `.ci/tutorials/tutorial-vscode-browser.sh` | agent/PLAN-shell-command-gate-regex-fix.md |
-| `.ci/tutorials/tutorial-work-with-repo.sh` | agent/PLAN-shell-command-gate-regex-fix.md |
-| `.claude/agents/account-dev.md` | agent/PLAN-agent-hints-implementation.md |
-| `.claude/agents/pr-babysitter.md` | agent/PLAN-durable-reports-and-push-inbox.md |
-| `.claude/hooks/post-bash/refresh-pr-body.sh` | agent/PLAN-rest-graphql-guard-parity.md |
-| `.claude/hooks/pre-bash/block-cli-bundle.sh` | agent/PLAN-add-js-extensions-shared.md |
-| `.claude/hooks/pre-edit/block-agent-state-shape.sh` | agent/PLAN-unify-trap-corpus.md |
-| `.claude/hooks/stop/test-worklist-v5.sh` | agent/PLAN-shell-resource-profiling.md |
-| `.claude/hooks/stop/wl_admit.py` | agent/PLAN-ask-flow-preemptive-settled-check.md |
-| `.claude/hooks/stop/wl_ci.py` | agent/PLAN-ci-trace-no-pr-branch.md |
-| `.claude/hooks/stop/wl_classsweep.py` | agent/PLAN-judge-gate-worthiness-and-surface-scope.md |
-| `.claude/hooks/stop/wl_judge.py` | agent/PLAN-ask-flow-preemptive-settled-check.md |
-| `.claude/hooks/stop/wl_liveness.py` | agent/PLAN-wl-report-liveness-oracle.md |
-| `.claude/hooks/stop/wl_report.py` | agent/PLAN-wl-report-liveness-oracle.md |
-| `.claude/hooks/stop/wl_store.py` | agent/PLAN-completion-strategy.md, agent/PLAN-wl-report-liveness-oracle.md |
-| `.claude/hooks/stop/worklist.py` | agent/PLAN-completion-strategy.md |
-| `.claude/hooks/test-hooks.sh` | agent/PLAN-review-red-stop-hook-check.md |
-| `.claude/oracles/README.md` | agent/PLAN-printf-echo-pipefail-sweep.md |
-| `.claude/oracles/pre-bash/block-host-toolchain-run.sh` | agent/PLAN-devbox-uid-derived-image.md |
-| `.claude/rediacc_hooks/guards/block_host_toolchain_run.py` | agent/PLAN-devbox-uid-derived-image.md |
-| `.claude/rediacc_hooks/guards/warn_remote_drift.py` | agent/PLAN-extension-shaped-matchers.md |
-| `.claude/rediacc_hooks/shellscan.py` | agent/PLAN-extension-shaped-matchers.md |
-| `.claude/settings.json` | agent/PLAN-agent-hints-in-stop-hook.md, agent/PLAN-subagent-idle-detection.md, agent/PLAN-unify-trap-corpus.md |
-| `.claude/skills/testing/SKILL.md` | agent/PLAN-judge-gate-worthiness-and-surface-scope.md |
-| `.claude/skills/testing/gates.md` | agent/PLAN-judge-gate-worthiness-and-surface-scope.md |
-| `.devcontainer/devbox-entrypoint.sh` | agent/PLAN-devbox-uid-derived-image.md |
-| `.devcontainer/start-kvm.sh` | agent/PLAN-printf-echo-pipefail-sweep.md |
-| `.e2e-coverage-allowlist` | agent/PLAN-chunk-store-browse-engine.md |
-| `.github/actions/app-token/action.yml` | agent/PLAN-nightly-retry-and-watchdog-noise.md |
-| `.github/labels.yml` | agent/PLAN-skip-release-gates-r2-manifest.md |
-| `.github/workflows/cd-stage.yml` | agent/PLAN-w7p4w-docker-cutover.md |
-| `.github/workflows/cd-v2.yml` | agent/PLAN-w7p4w-docker-cutover.md |
-| `.github/workflows/ci-build-docker.yml` | agent/PLAN-w7p4w-docker-cutover.md |
-| `.github/workflows/ci-build-renet.yml` | agent/PLAN-bump-k3s-upstream-1-36-4.md |
-| `.github/workflows/ci-ops-test.yml` | agent/PLAN-chunk-store-browse-engine.md |
-| `.github/workflows/ci-quality.yml` | agent/PLAN-agent-hints-implementation.md, agent/PLAN-backup-quota-delta-gc.md, agent/PLAN-lint-css-ci-wiring.md, agent/PLAN-lint-rule-matrix-probe.md, agent/PLAN-localize-cheat-sheet-rendering.md, agent/PLAN-shell-command-gate-regex-fix.md, agent/PLAN-testing-surface-audit.md, agent/PLAN-wire-account-vitest-ci.md |
-| `.github/workflows/ci.yml` | agent/PLAN-fix-ci-contention-aware-timeouts.md |
-| `.github/workflows/ct-tests.yml` | agent/PLAN-fix-ci-contention-aware-timeouts.md |
-| `.github/workflows/review-status.yml` | agent/PLAN-review-red-stop-hook-check.md |
-| `.gitignore` | agent/PLAN-add-js-extensions-shared.md, agent/PLAN-bump-k3s-upstream-1-36-4.md, agent/PLAN-testing-surface-audit.md, agent/PLAN-unify-trap-corpus.md |
-| `.gitmodules` | agent/PLAN-rclone-decommission.md |
-| `CLAUDE.md` | agent/PLAN-ask-flow-preemptive-settled-check.md, agent/PLAN-completion-strategy.md, agent/PLAN-fix-in-session-rule.md, agent/PLAN-unify-trap-corpus.md |
-| `agent/PLAN-bws-rotation-on-failure.md` | agent/PLAN-completion-strategy.md |
-| `agent/PLAN-commit-author-identity.md` | agent/PLAN-completion-strategy.md |
-| `agent/PLAN-env-to-bitwarden-v2.md` | agent/PLAN-citation-fragility.md, agent/PLAN-completion-strategy.md |
-| `agent/PLAN-fix-ci-contention-aware-timeouts.md` | agent/PLAN-citation-fragility.md |
-| `agent/PLAN-fix-tutorial-player-debug-hook-attachment.md` | agent/PLAN-citation-fragility.md |
-| `agent/PLAN-git-history-media-rewrite.md` | agent/PLAN-citation-fragility.md |
-| `agent/PLAN-localize-cheat-sheet-rendering.md` | agent/PLAN-lint-css-ci-wiring.md |
-| `agent/PLAN-plan-file-lifecycle.md` | agent/PLAN-completion-strategy.md |
-| `agent/PLAN-plyr-css-on-demand-loading.md` | agent/PLAN-completion-strategy.md |
-| `agent/PLAN-promote-mutation-runner.md` | agent/PLAN-citation-fragility.md |
-| `agent/PLAN-review-red-stop-hook-check.md` | agent/PLAN-completion-strategy.md |
-| `agent/PLAN-secret-namespace-migration.md` | agent/PLAN-citation-fragility.md |
-| `agent/PLAN-session-onboarding-marker.md` | agent/PLAN-completion-strategy.md |
-| `agent/PLAN-stop-report-queue.md` | agent/PLAN-citation-fragility.md |
-| `agent/PLAN-subagent-idle-detection.md` | agent/PLAN-citation-fragility.md |
-| `agent/PLAN-tooling-transformation.md` | agent/PLAN-completion-strategy.md, agent/PLAN-w7p4w-docker-cutover.md, agent/PLAN-w7p5a-deploy-release-port.md |
-| `agent/PLAN-www-bundle-determinism.md` | agent/PLAN-citation-fragility.md |
-| `agent/archive/plans/PLAN-branch-aware-workflows.md` | agent/PLAN-completion-strategy.md |
-| `agent/archive/plans/PLAN-github-secrets-removal.md` | agent/PLAN-completion-strategy.md |
-| `agent/programs/www-simplification/research/RESEARCH-docs.md` | agent/PLAN-lint-css-ci-wiring.md |
-| `biome.json` | agent/PLAN-testing-surface-audit.md |
-| `docs/agent-reference/TRAPS.md` | agent/PLAN-promote-mutation-runner.md, agent/PLAN-shell-resource-profiling.md, agent/PLAN-unify-trap-corpus.md |
-| `docs/agent-reference/ci-gates.md` | agent/PLAN-npm-ci-parallel-parity.md |
-| `docs/agent-reference/local-env.md` | agent/PLAN-devbox-uid-derived-image.md |
-| `docs/agent-reference/suppressions.md` | agent/PLAN-npm-ci-parallel-parity.md |
-| `docs/backup-storage/02-design.md` | agent/PLAN-add-chunkstore-backup-verb.md, agent/PLAN-backup-quota-delta-gc.md |
-| `docs/backup-storage/05-docs-and-decommission.md` | agent/PLAN-chunk-store-browse-server.md, agent/PLAN-rclone-decommission.md |
-| `docs/backup-storage/README.md` | agent/PLAN-chunk-store-browse-server.md |
-| `docs/ci-overhaul/06-progress.md` | agent/PLAN-fix-ci-contention-aware-timeouts.md, agent/PLAN-resprofile-wave2.md |
-| `docs/design/06-cli-reshape.md` | agent/PLAN-add-chunkstore-backup-verb.md |
-| `eslint-rules/e2e-test-naming-convention.js` | agent/PLAN-lint-rule-matrix-probe.md |
-| `eslint-rules/i18n/index.js` | agent/PLAN-lint-rule-matrix-probe.md |
-| `eslint-rules/i18n/interpolation-match.js` | agent/PLAN-lint-rule-matrix-probe.md |
-| `eslint-rules/i18n/shared/require-path-option.js` | agent/PLAN-lint-rule-matrix-probe.md |
-| `eslint-rules/require-testid.js` | agent/PLAN-lint-rule-matrix-probe.md |
-| `eslint.config.js` | agent/PLAN-lint-rule-matrix-probe.md, agent/PLAN-require-testid-sweep.md |
-| `package.json` | agent/PLAN-add-js-extensions-shared.md, agent/PLAN-agent-hints-implementation.md, agent/PLAN-agent-hints-in-stop-hook.md, agent/PLAN-backup-quota-delta-gc.md, agent/PLAN-cli-em-dash-lint-gate.md, agent/PLAN-fix-ci-contention-aware-timeouts.md, agent/PLAN-fix-tutorial-player-debug-hook-attachment.md, agent/PLAN-judge-gate-worthiness-and-surface-scope.md, agent/PLAN-lint-rule-matrix-probe.md, agent/PLAN-localize-cheat-sheet-rendering.md, agent/PLAN-npm-ci-parallel-parity.md, agent/PLAN-promote-mutation-runner.md, agent/PLAN-shell-command-gate-regex-fix.md, agent/PLAN-skip-release-gates-r2-manifest.md, agent/PLAN-test-advisor.md, agent/PLAN-w7p4w-docker-cutover.md, agent/PLAN-wire-account-vitest-ci.md |
-| `packages/cli/scripts/check-command-planes.ts` | agent/PLAN-add-chunkstore-backup-verb.md |
-| `packages/cli/src/adapters/config-file-storage.ts` | agent/PLAN-chunk-store-browse-server.md |
-| `packages/cli/src/adapters/remote-config-adapter.ts` | agent/PLAN-chunk-store-browse-server.md |
-| `packages/cli/src/commands/__tests__/backup-restore-datastore.test.ts` | agent/PLAN-backup-list-executor-fix.md, agent/PLAN-backup-restore-target-license.md |
-| `packages/cli/src/commands/backup-storage.ts` | agent/PLAN-add-chunkstore-backup-verb.md, agent/PLAN-backup-quota-delta-gc.md |
-| `packages/cli/src/commands/backup.ts` | agent/PLAN-add-chunkstore-backup-verb.md, agent/PLAN-backup-list-executor-fix.md, agent/PLAN-backup-restore-target-license.md, agent/PLAN-chunkstore-restore.md |
-| `packages/cli/src/commands/config.ts` | agent/PLAN-chunk-store-browse-server.md |
-| `packages/cli/src/commands/config/field.ts` | agent/PLAN-cli-em-dash-lint-gate.md |
-| `packages/cli/src/commands/doctor.ts` | agent/PLAN-cli-em-dash-lint-gate.md |
-| `packages/cli/src/commands/machine/register.ts` | agent/PLAN-backup-list-executor-fix.md, agent/PLAN-backup-restore-target-license.md |
-| `packages/cli/src/commands/mcp/__tests__/mcp-coverage.test.ts` | agent/PLAN-add-chunkstore-backup-verb.md |
-| `packages/cli/src/commands/mcp/tools.ts` | agent/PLAN-cli-em-dash-lint-gate.md |
-| `packages/cli/src/commands/repo-backup-list.ts` | agent/PLAN-backup-list-executor-fix.md, agent/PLAN-chunk-store-browse-engine.md |
-| `packages/cli/src/commands/repo-backup.ts` | agent/PLAN-backup-list-executor-fix.md |
-| `packages/cli/src/commands/storage.ts` | agent/PLAN-backup-list-executor-fix.md, agent/PLAN-chunk-store-browse-engine.md, agent/PLAN-chunk-store-browse-server.md |
-| `packages/cli/src/commands/update.ts` | agent/PLAN-cli-em-dash-lint-gate.md |
-| `packages/cli/src/config/__tests__/plane-leaf-rule.test.ts` | agent/PLAN-scope-gates-split.md |
-| `packages/cli/src/config/command-docs.ts` | agent/PLAN-backup-list-executor-fix.md |
-| `packages/cli/src/config/command-metadata.ts` | agent/PLAN-add-chunkstore-backup-verb.md |
-| `packages/cli/src/data/third-party-credits.json` | agent/PLAN-rclone-decommission.md |
-| `packages/cli/src/remote/repository/bashFunctions.ts` | agent/PLAN-cli-em-dash-lint-gate.md |
-| `packages/cli/src/services/account/account-client.ts` | agent/PLAN-chunk-store-browse-server.md |
-| `packages/cli/src/services/account/license.ts` | agent/PLAN-backup-restore-target-license.md, agent/PLAN-chunkstore-restore.md |
-| `packages/cli/src/services/backup/backup-schedule-unit-generator.ts` | agent/PLAN-backup-list-executor-fix.md |
-| `packages/cli/src/services/cluster/cluster-fork.ts` | agent/PLAN-cli-em-dash-lint-gate.md |
-| `packages/cli/src/services/cluster/cluster-kube.ts` | agent/PLAN-cli-em-dash-lint-gate.md |
-| `packages/cli/src/services/cluster/cluster-membership.ts` | agent/PLAN-cli-em-dash-lint-gate.md |
-| `packages/cli/src/services/cluster/repo-replicate-ops.ts` | agent/PLAN-cli-em-dash-lint-gate.md |
-| `packages/cli/src/services/config/config-base.ts` | agent/PLAN-chunk-store-browse-server.md |
-| `packages/cli/src/services/config/config-resources-resolve.ts` | agent/PLAN-cli-em-dash-lint-gate.md |
-| `packages/cli/src/services/config/config-resources.ts` | agent/PLAN-backup-restore-target-license.md |
-| `packages/cli/src/services/config/remote-cache.ts` | agent/PLAN-chunk-store-browse-server.md |
-| `packages/cli/src/services/core/embedded-assets.ts` | agent/PLAN-cli-em-dash-lint-gate.md |
-| `packages/cli/src/services/executor/local-executor.ts` | agent/PLAN-backup-list-executor-fix.md, agent/PLAN-backup-restore-target-license.md, agent/PLAN-chunkstore-restore.md |
-| `packages/cli/src/services/provision/region-discovery.ts` | agent/PLAN-add-js-extensions-shared.md |
-| `packages/cli/src/services/renet/renet-license-contract.ts` | agent/PLAN-add-chunkstore-backup-verb.md, agent/PLAN-backup-restore-target-license.md |
-| `packages/cli/src/services/repo/prune.ts` | agent/PLAN-cli-em-dash-lint-gate.md |
-| `packages/cli/src/services/repo/repo-key-deployment.ts` | agent/PLAN-backup-list-executor-fix.md |
-| `packages/cli/src/services/repo/storage-browser.ts` | agent/PLAN-chunk-store-browse-server.md |
-| `packages/cli/src/services/tofu/provision.ts` | agent/PLAN-backup-list-executor-fix.md |
-| `packages/cli/src/services/update/background-updater.ts` | agent/PLAN-cli-em-dash-lint-gate.md |
-| `packages/cli/src/types/index.ts` | agent/PLAN-add-chunkstore-backup-verb.md |
-| `packages/cli/src/utils/local-execution-failures.ts` | agent/PLAN-backup-list-executor-fix.md |
-| `packages/cli/src/utils/process-ancestry.ts` | agent/PLAN-cli-em-dash-lint-gate.md |
-| `packages/cli/src/utils/repo-context-guard.ts` | agent/PLAN-cli-em-dash-lint-gate.md |
-| `packages/cli/src/utils/timeline.ts` | agent/PLAN-cli-em-dash-lint-gate.md |
-| `packages/cli/tsconfig.json` | agent/PLAN-add-js-extensions-shared.md |
-| `packages/e2e-tests/README.md` | agent/PLAN-testing-surface-audit.md |
-| `packages/e2e-tests/package.json` | agent/PLAN-add-js-extensions-shared.md |
-| `packages/e2e-tests/playwright.config.ts` | agent/PLAN-chunk-store-browse-engine.md, agent/PLAN-fix-ci-contention-aware-timeouts.md |
-| `packages/e2e-tests/tests/26-backup-storage-cli.test.ts` | agent/PLAN-chunkstore-restore.md |
-| `packages/e2e-tests/tests/migrate/18-dual-group-migrate.test.ts` | agent/PLAN-backup-list-executor-fix.md |
-| `packages/json/package.json` | agent/PLAN-wire-account-vitest-ci.md |
-| `packages/shared/package.json` | agent/PLAN-add-js-extensions-shared.md |
-| `packages/shared/src/config-schema/schemas.ts` | agent/PLAN-backup-quota-delta-gc.md, agent/PLAN-rclone-decommission.md |
-| `packages/shared/src/config/index.ts` | agent/PLAN-add-js-extensions-shared.md |
-| `packages/shared/src/i18n/index.ts` | agent/PLAN-add-js-extensions-shared.md |
-| `packages/shared/src/regions/index.ts` | agent/PLAN-add-js-extensions-shared.md |
-| `packages/shared/src/renet-contract/data/functions.generated.ts` | agent/PLAN-add-chunkstore-backup-verb.md |
-| `packages/shared/src/renet-contract/data/functions.schema.ts` | agent/PLAN-backup-list-executor-fix.md |
-| `packages/shared/src/renet-contract/index.ts` | agent/PLAN-add-js-extensions-shared.md |
-| `packages/shared/src/services/machine/index.ts` | agent/PLAN-add-js-extensions-shared.md |
-| `packages/shared/src/subscription/__tests__/crypto.test.ts` | agent/PLAN-add-js-extensions-shared.md |
-| `packages/shared/src/subscription/constants.ts` | agent/PLAN-backup-restore-target-license.md |
-| `packages/shared/src/subscription/types.ts` | agent/PLAN-backup-quota-delta-gc.md, agent/PLAN-chunkstore-restore.md |
-| `packages/shared/tsconfig.json` | agent/PLAN-add-js-extensions-shared.md |
-| `packages/shared/vitest.config.ts` | agent/PLAN-backup-quota-delta-gc.md |
-| `packages/www/package.json` | agent/PLAN-fix-tutorial-player-debug-hook-attachment.md, agent/PLAN-lint-css-ci-wiring.md, agent/PLAN-wire-account-vitest-ci.md |
-| `packages/www/scripts/generate-search-index.js` | agent/PLAN-localize-cheat-sheet-rendering.md |
-| `packages/www/scripts/lib/cli-reference-catalog.js` | agent/PLAN-localize-cheat-sheet-rendering.md |
-| `packages/www/scripts/validate-content-accuracy.js` | agent/PLAN-localize-cheat-sheet-rendering.md |
-| `packages/www/scripts/validate-docs-cli-usage.js` | agent/PLAN-localize-cheat-sheet-rendering.md |
-| `packages/www/src/components/solution-pages/SPHomePage.astro` | agent/PLAN-www-bundle-determinism.md |
-| `packages/www/src/components/solution-pages/SPHowItWorks.astro` | agent/PLAN-lint-css-ci-wiring.md |
-| `packages/www/src/components/solution-pages/SolutionPage.astro` | agent/PLAN-fix-tutorial-player-debug-hook-attachment.md |
-| `packages/www/src/content/docs/de/rdc-cheat-sheet.md` | agent/PLAN-localize-cheat-sheet-rendering.md |
-| `packages/www/src/content/docs/en/rdc-cheat-sheet.md` | agent/PLAN-localize-cheat-sheet-rendering.md |
-| `packages/www/src/content/docs/en/tutorial-production-mode.mdx` | agent/PLAN-fix-tutorial-player-debug-hook-attachment.md |
-| `packages/www/src/hooks/useLanguage.ts` | agent/PLAN-ssr-nav-locale.md |
-| `packages/www/src/layouts/BaseLayout.astro` | agent/PLAN-ssr-nav-locale.md |
-| `packages/www/src/layouts/DocsLayout.astro` | agent/PLAN-fix-tutorial-player-debug-hook-attachment.md, agent/PLAN-localize-cheat-sheet-rendering.md |
-| `packages/www/src/plugins/remark-tutorial-embed.ts` | agent/PLAN-fix-tutorial-player-debug-hook-attachment.md |
-| `packages/www/src/scripts/tutorial-video-hydrate.ts` | agent/PLAN-fix-tutorial-player-debug-hook-attachment.md |
-| `packages/www/src/styles/tutorial-video.css` | agent/PLAN-fix-tutorial-player-debug-hook-attachment.md |
-| `packages/www/src/utils/solution-video.ts` | agent/PLAN-scope-gates-split.md |
-| `private/account/e2e/tsconfig.json` | agent/PLAN-add-js-extensions-shared.md |
-| `private/account/package.json` | agent/PLAN-backup-quota-delta-gc.md, agent/PLAN-wire-account-vitest-ci.md |
-| `private/account/src/db/schema.ts` | agent/PLAN-backup-quota-delta-gc.md, agent/PLAN-chunk-store-browse-server.md, agent/PLAN-chunkstore-restore.md, agent/PLAN-testing-surface-audit.md |
-| `private/account/src/errors.ts` | agent/PLAN-add-chunkstore-backup-verb.md |
-| `private/account/src/middleware/api-token.ts` | agent/PLAN-chunk-store-browse-server.md |
-| `private/account/src/routes/backups.ts` | agent/PLAN-backup-restore-target-license.md, agent/PLAN-chunk-store-browse-engine.md, agent/PLAN-chunk-store-browse-server.md |
-| `private/account/src/routes/license.ts` | agent/PLAN-backup-restore-target-license.md |
-| `private/account/src/services/backup-chunk-store.ts` | agent/PLAN-backup-restore-target-license.md, agent/PLAN-chunk-store-browse-engine.md, agent/PLAN-chunk-store-browse-server.md, agent/PLAN-wire-account-vitest-ci.md |
-| `private/account/src/services/backup-gc.service.ts` | agent/PLAN-backup-quota-delta-gc.md, agent/PLAN-chunk-store-browse-engine.md, agent/PLAN-chunk-store-browse-server.md |
-| `private/account/src/services/backup-storage.service.ts` | agent/PLAN-backup-restore-target-license.md, agent/PLAN-chunk-store-browse-server.md |
-| `private/account/src/services/device-code.service.ts` | agent/PLAN-backup-quota-delta-gc.md |
-| `private/account/src/services/subscription.service.ts` | agent/PLAN-backup-restore-target-license.md |
-| `private/account/src/types/api-token.ts` | agent/PLAN-backup-quota-delta-gc.md |
-| `private/account/tests/integration/backup-gc.test.ts` | agent/PLAN-backup-quota-delta-gc.md |
-| `private/account/tsconfig.json` | agent/PLAN-add-js-extensions-shared.md |
-| `private/account/vitest.config.ts` | agent/PLAN-backup-quota-delta-gc.md, agent/PLAN-testing-surface-audit.md |
-| `private/account/web/tsconfig.json` | agent/PLAN-add-js-extensions-shared.md |
-| `private/elite/docker-compose.yml` | agent/PLAN-fix-ci-contention-aware-timeouts.md |
-| `private/renet/.ci/ci.sh` | agent/PLAN-testing-surface-audit.md |
-| `private/renet/.ci/scripts/quality/deadcode.sh` | agent/PLAN-testing-surface-audit.md |
-| `private/renet/.ci/scripts/quality/i18n.sh` | agent/PLAN-add-chunkstore-backup-verb.md, agent/PLAN-printf-echo-pipefail-sweep.md |
-| `private/renet/.ci/scripts/test/run-tests.sh` | agent/PLAN-backup-quota-delta-gc.md, agent/PLAN-testing-surface-audit.md |
-| `private/renet/cmd/renet/backup_list.go` | agent/PLAN-backup-list-executor-fix.md |
-| `private/renet/cmd/renet/backup_pull.go` | agent/PLAN-chunkstore-restore.md |
-| `private/renet/cmd/renet/backup_push.go` | agent/PLAN-backup-list-executor-fix.md |
-| `private/renet/cmd/renet/backup_restore.go` | agent/PLAN-backup-restore-target-license.md |
-| `private/renet/cmd/renet/functions_commands.go` | agent/PLAN-add-chunkstore-backup-verb.md |
-| `private/renet/pkg/chunkstore/grid.go` | agent/PLAN-chunk-store-browse-engine.md |
-| `private/renet/pkg/chunkstore/hash.go` | agent/PLAN-chunk-store-browse-server.md |
-| `private/renet/pkg/chunkstore/manifest.go` | agent/PLAN-chunk-store-browse-engine.md, agent/PLAN-chunk-store-browse-server.md |
-| `private/renet/pkg/chunkstore/pipeline_linux.go` | agent/PLAN-backup-quota-delta-gc.md, agent/PLAN-chunk-store-browse-server.md |
-| `private/renet/pkg/chunkstore/restore.go` | agent/PLAN-chunk-store-browse-engine.md |
-| `private/renet/pkg/chunkstore/session.go` | agent/PLAN-backup-restore-target-license.md |
-| `private/renet/pkg/chunkstore/uploader.go` | agent/PLAN-chunk-store-browse-server.md |
-| `private/renet/pkg/credentials/keyfile.go` | agent/PLAN-chunk-store-browse-engine.md |
-| `private/renet/pkg/daemon/start_foreground.go` | agent/PLAN-fix-ci-contention-aware-timeouts.md |
-| `private/renet/pkg/embed/embed.go` | agent/PLAN-chunk-store-browse-engine.md |
-| `private/renet/pkg/filesystem/ext4.go` | agent/PLAN-chunk-store-browse-engine.md |
-| `private/renet/pkg/functions/commands/backup.go` | agent/PLAN-add-chunkstore-backup-verb.md, agent/PLAN-backup-list-executor-fix.md |
-| `private/renet/pkg/functions/commands/registry.go` | agent/PLAN-backup-restore-target-license.md |
-| `private/renet/pkg/functions/executor_local.go` | agent/PLAN-backup-restore-target-license.md |
-| `private/renet/pkg/infra/ceph/provisioner.go` | agent/PLAN-backup-list-executor-fix.md |
-| `private/renet/pkg/infra/mesh/mesh.go` | agent/PLAN-backup-list-executor-fix.md |
-| `private/renet/pkg/kube/distro/k3s.go` | agent/PLAN-bump-k3s-upstream-1-36-4.md |
-| `private/renet/pkg/license/store.go` | agent/PLAN-backup-restore-target-license.md |
-| `private/renet/pkg/license/tiermap.go` | agent/PLAN-add-chunkstore-backup-verb.md, agent/PLAN-backup-restore-target-license.md |
-| `private/renet/pkg/list/repositories.go` | agent/PLAN-backup-list-executor-fix.md |
-| `private/renet/pkg/luks/luks.go` | agent/PLAN-chunk-store-browse-engine.md |
-| `private/renet/pkg/repodiff/mountset.go` | agent/PLAN-chunk-store-browse-engine.md |
-| `private/renet/pkg/repodiff/types.go` | agent/PLAN-chunk-store-browse-engine.md |
-| `private/renet/pkg/repodiff/walk.go` | agent/PLAN-chunk-store-browse-engine.md |
-| `private/renet/pkg/vaultcrypto/vault.go` | agent/PLAN-chunk-store-browse-engine.md |
-| `private/renet/scripts/ci-test.sh` | agent/PLAN-printf-echo-pipefail-sweep.md |
-| `pyproject.toml` | agent/PLAN-pytest-parallelism.md |
-| `run.sh` | agent/PLAN-scope-gates-split.md |
-| `scripts/ci-runner/exec.ts` | agent/PLAN-shell-resource-profiling.md |
-| `scripts/ci-runner/manifest.ts` | agent/PLAN-add-js-extensions-shared.md, agent/PLAN-agent-hints-implementation.md, agent/PLAN-agent-hints-in-stop-hook.md, agent/PLAN-backup-quota-delta-gc.md, agent/PLAN-cli-em-dash-lint-gate.md, agent/PLAN-fix-tutorial-player-debug-hook-attachment.md, agent/PLAN-judge-gate-worthiness-and-surface-scope.md, agent/PLAN-lint-css-ci-wiring.md, agent/PLAN-lint-rule-matrix-probe.md, agent/PLAN-promote-mutation-runner.md, agent/PLAN-scope-gate-sort-collation.md, agent/PLAN-testing-surface-audit.md, agent/PLAN-w7p4w-docker-cutover.md, agent/PLAN-wire-account-vitest-ci.md |
-| `scripts/ci-runner/pool.ts` | agent/PLAN-pytest-parallelism.md |
-| `scripts/ci-runner/run.ts` | agent/PLAN-promote-mutation-runner.md, agent/PLAN-pytest-parallelism.md |
-| `scripts/dev/lib/cf-auth.sh` | agent/PLAN-rclone-decommission.md |
-| `scripts/drills/backup.sh` | agent/PLAN-add-chunkstore-backup-verb.md, agent/PLAN-chunkstore-restore.md |
-| `scripts/gates/check-ci-parity.ts` | agent/PLAN-agent-hints-implementation.md, agent/PLAN-agent-hints-in-stop-hook.md, agent/PLAN-extension-shaped-matchers.md, agent/PLAN-promote-mutation-runner.md, agent/PLAN-testing-surface-audit.md |
-| `scripts/gates/check-client-bundle-budget.ts` | agent/PLAN-www-bundle-determinism.md |
-| `scripts/gates/check-dead-bash.ts` | agent/PLAN-promote-mutation-runner.md |
-| `scripts/gates/check-dead-css.ts` | agent/PLAN-sentence-aware-wrapping.md |
-| `scripts/gates/check-design-tree.ts` | agent/PLAN-add-chunkstore-backup-verb.md |
-| `scripts/gates/check-docker-image-freshness.ts` | agent/PLAN-docker-image-freshness-soak-filter.md |
-| `scripts/gates/check-e2e-coverage.ts` | agent/PLAN-add-chunkstore-backup-verb.md |
-| `scripts/gates/check-em-dash-surfaces.ts` | agent/PLAN-cli-em-dash-lint-gate.md |
-| `scripts/gates/check-embed-asset-versions.ts` | agent/PLAN-bump-k3s-upstream-1-36-4.md |
-| `scripts/gates/check-gate-manifest.ts` | agent/PLAN-pytest-parallelism.md |
-| `scripts/gates/check-shape-duplication.ts` | agent/PLAN-extension-shaped-matchers.md |
-| `scripts/gates/check-suppression-liveness.ts` | agent/PLAN-npm-ci-parallel-parity.md |
-| `scripts/gen/sync-translations.ts` | agent/PLAN-cli-em-dash-lint-gate.md |
-| `scripts/lib/command-path-checker.ts` | agent/PLAN-extension-shaped-matchers.md |
-| `scripts/lib/embed-asset-sources.ts` | agent/PLAN-rclone-decommission.md |
-| `scripts/lib/gate-header.ts` | agent/PLAN-extension-shaped-matchers.md |
-| `tsconfig.json` | agent/PLAN-add-js-extensions-shared.md |
+| `.ci/config/constants.sh` | agent/plans/PLAN-devbox-uid-derived-image.md, agent/plans/PLAN-sync-docker-latest-tag-with-releases.md, agent/plans/PLAN-w7p4w-docker-cutover.md |
+| `.ci/config/prose-style-rules.json` | agent/plans/PLAN-git-ignore-aware-discover.md |
+| `.ci/docker/ci/docker-compose.yml` | agent/plans/PLAN-fix-ci-contention-aware-timeouts.md |
+| `.ci/legacy/run-legacy.sh` | agent/plans/PLAN-devbox-uid-derived-image.md |
+| `.ci/lib/account.sh` | agent/plans/PLAN-shell-command-gate-regex-fix.md |
+| `.ci/lib/devbox.sh` | agent/plans/PLAN-devbox-uid-derived-image.md, agent/plans/PLAN-printf-echo-pipefail-sweep.md |
+| `.ci/lib/local-common.sh` | agent/plans/PLAN-printf-echo-pipefail-sweep.md |
+| `.ci/rediacc_ci/battery.py` | agent/plans/PLAN-pytest-parallelism.md |
+| `.ci/rediacc_ci/check_pytest.py` | agent/plans/PLAN-pytest-parallelism.md |
+| `.ci/rediacc_ci/docker/cleanup_staging.py` | agent/plans/PLAN-w7p4w-docker-cutover.md |
+| `.ci/rediacc_ci/docker/create_manifest.py` | agent/plans/PLAN-w7p4w-docker-cutover.md |
+| `.ci/rediacc_ci/docker/retag_image.py` | agent/plans/PLAN-w7p4w-docker-cutover.md |
+| `.ci/rediacc_ci/gitx.py` | agent/plans/PLAN-git-ignore-aware-discover.md |
+| `.ci/rediacc_ci/paths.py` | agent/plans/PLAN-git-ignore-aware-discover.md |
+| `.ci/rediacc_ci/quality/ci_scans_tracked_paths.py` | agent/plans/PLAN-git-ignore-aware-discover.md |
+| `.ci/rediacc_ci/quality/dead_python.py` | agent/plans/PLAN-git-ignore-aware-discover.md |
+| `.ci/rediacc_ci/quality/devbox_exec.py` | agent/plans/PLAN-devbox-uid-derived-image.md |
+| `.ci/rediacc_ci/quality/editorconfig.py` | agent/plans/PLAN-git-ignore-aware-discover.md |
+| `.ci/rediacc_ci/quality/gate_id_convention.py` | agent/plans/PLAN-extension-shaped-matchers.md |
+| `.ci/rediacc_ci/quality/label_inventory.py` | agent/plans/PLAN-gh-swallow-gates-audit.md |
+| `.ci/rediacc_ci/quality/pipefail_grep_q.py` | agent/plans/PLAN-printf-echo-pipefail-sweep.md |
+| `.ci/rediacc_ci/quality/plant_proofs.py` | agent/plans/PLAN-git-ignore-aware-discover.md |
+| `.ci/rediacc_ci/quality/pool_writer_safety.py` | agent/plans/PLAN-extension-shaped-matchers.md |
+| `.ci/rediacc_ci/quality/pr_description.py` | agent/plans/PLAN-gh-swallow-gates-audit.md |
+| `.ci/rediacc_ci/quality/prose_style.py` | agent/plans/PLAN-git-ignore-aware-discover.md |
+| `.ci/rediacc_ci/quality/python_env_registry.py` | agent/plans/PLAN-git-ignore-aware-discover.md |
+| `.ci/rediacc_ci/quality/script_exec_bit.py` | agent/plans/PLAN-w7p4w-docker-cutover.md |
+| `.ci/rediacc_ci/quality/submodule_branches.py` | agent/plans/PLAN-gh-swallow-gates-audit.md |
+| `.ci/rediacc_ci/quality/toolchain_pins.py` | agent/plans/PLAN-extension-shaped-matchers.md |
+| `.ci/rediacc_ci/quality/workflows.py` | agent/plans/PLAN-extension-shaped-matchers.md |
+| `.ci/rediacc_ci/security/check_commands.py` | agent/plans/PLAN-shell-command-gate-regex-fix.md |
+| `.ci/rediacc_ci/tests/gates/harness.py` | agent/plans/PLAN-extension-shaped-matchers.md |
+| `.ci/rediacc_ci/tests/gates/test_twin_parity.py` | agent/plans/PLAN-pytest-parallelism.md |
+| `.ci/rediacc_ci/tests/test_battery.py` | agent/plans/PLAN-extension-shaped-matchers.md |
+| `.ci/rediacc_ci/tests/test_core_ports.py` | agent/plans/PLAN-pytest-parallelism.md |
+| `.ci/rediacc_ci/tests/test_gitx.py` | agent/plans/PLAN-git-ignore-aware-discover.md |
+| `.ci/rediacc_ci/tests/test_quality_pipefail_grep_q.py` | agent/plans/PLAN-printf-echo-pipefail-sweep.md |
+| `.ci/scripts/build/prepare-cli-assets.sh` | agent/plans/PLAN-scope-gates-split.md |
+| `.ci/scripts/ci/ci-trace.py` | agent/plans/PLAN-ci-trace-no-pr-branch.md |
+| `.ci/scripts/ci/scope-engine.cjs` | agent/plans/PLAN-greenlight-verify-at-read.md |
+| `.ci/scripts/ci/scope-map.cjs` | agent/plans/PLAN-backup-quota-delta-gc.md, agent/plans/PLAN-npm-ci-parallel-parity.md, agent/plans/PLAN-wire-account-vitest-ci.md |
+| `.ci/scripts/ci/scope-shadow.sh` | agent/plans/PLAN-scope-gate-sort-collation.md |
+| `.ci/scripts/docker/cleanup-staging.sh` | agent/plans/PLAN-w7p4w-docker-cutover.md |
+| `.ci/scripts/docker/cleanup_staging.py` | agent/plans/PLAN-w7p4w-docker-cutover.md |
+| `.ci/scripts/docker/create-manifest.sh` | agent/plans/PLAN-w7p4w-docker-cutover.md |
+| `.ci/scripts/env/create-e2e-env.sh` | agent/plans/PLAN-fix-ci-contention-aware-timeouts.md |
+| `.ci/scripts/housekeeping/cleanup-versions.sh` | agent/plans/PLAN-git-history-media-rewrite.md, agent/plans/PLAN-nightly-retry-and-watchdog-noise.md, agent/plans/PLAN-printf-echo-pipefail-sweep.md |
+| `.ci/scripts/infra/ci-start-account.sh` | agent/plans/PLAN-fix-ci-contention-aware-timeouts.md |
+| `.ci/scripts/infra/ci-start-elite.sh` | agent/plans/PLAN-fix-ci-contention-aware-timeouts.md, agent/plans/PLAN-testing-surface-audit.md |
+| `.ci/scripts/infra/wait-for-vm-ssh.sh` | agent/plans/PLAN-fix-ci-contention-aware-timeouts.md |
+| `.ci/scripts/lib/common.sh` | agent/plans/PLAN-fix-ci-contention-aware-timeouts.md |
+| `.ci/scripts/private/run-account.sh` | agent/plans/PLAN-backup-quota-delta-gc.md, agent/plans/PLAN-testing-surface-audit.md, agent/plans/PLAN-wire-account-vitest-ci.md |
+| `.ci/scripts/private/run-renet.sh` | agent/plans/PLAN-testing-surface-audit.md |
+| `.ci/scripts/quality/check-cli-contract.sh` | agent/plans/PLAN-npm-ci-parallel-parity.md |
+| `.ci/scripts/quality/check-command-tree.sh` | agent/plans/PLAN-npm-ci-parallel-parity.md, agent/plans/PLAN-scope-gates-split.md |
+| `.ci/scripts/quality/check-e2e-coverage.sh` | agent/plans/PLAN-add-chunkstore-backup-verb.md |
+| `.ci/scripts/quality/check-go-deps.sh` | agent/plans/PLAN-testing-surface-audit.md |
+| `.ci/scripts/quality/check-label-inventory.sh` | agent/plans/PLAN-gh-swallow-gates-audit.md |
+| `.ci/scripts/quality/check-label-references.sh` | agent/plans/PLAN-printf-echo-pipefail-sweep.md |
+| `.ci/scripts/quality/check-mutate-check.sh` | agent/plans/PLAN-testing-surface-audit.md |
+| `.ci/scripts/quality/check-pipefail-grep-q.sh` | agent/plans/PLAN-printf-echo-pipefail-sweep.md |
+| `.ci/scripts/quality/check-pr-description.sh` | agent/plans/PLAN-gh-swallow-gates-audit.md |
+| `.ci/scripts/quality/check-probe-parity.sh` | agent/plans/PLAN-unify-trap-corpus.md |
+| `.ci/scripts/quality/check-profiler-coverage.sh` | agent/plans/PLAN-scope-gate-sort-collation.md |
+| `.ci/scripts/quality/check-renet-types.sh` | agent/plans/PLAN-add-chunkstore-backup-verb.md |
+| `.ci/scripts/quality/check-tracked-sidecars.sh` | agent/plans/PLAN-shell-resource-profiling.md |
+| `.ci/scripts/quality/check-workflows.sh` | agent/plans/PLAN-extension-shaped-matchers.md |
+| `.ci/scripts/quality/check_gate_reachability_coverage.py` | agent/plans/PLAN-agent-hints-implementation.md |
+| `.ci/scripts/quality/check_language_policy.py` | agent/plans/PLAN-git-ignore-aware-discover.md |
+| `.ci/scripts/quality/check_npmrc.py` | agent/plans/PLAN-extension-shaped-matchers.md |
+| `.ci/scripts/quality/check_plan_boxes.py` | agent/plans/PLAN-completion-strategy.md |
+| `.ci/scripts/quality/check_secret_reachability.py` | agent/plans/PLAN-completion-strategy.md |
+| `.ci/scripts/quality/check_tutorial_healthcheck_headroom.py` | agent/plans/PLAN-fix-ci-contention-aware-timeouts.md |
+| `.ci/scripts/quality/lint-rule-liveness.mjs` | agent/plans/PLAN-agent-hints-in-stop-hook.md |
+| `.ci/scripts/release/cleanup-channel-docker-tags.sh` | agent/plans/PLAN-w7p4w-docker-cutover.md |
+| `.ci/scripts/release/mark-production.sh` | agent/plans/PLAN-gh-swallow-gates-audit.md |
+| `.ci/scripts/review/claude-review-gate.sh` | agent/plans/PLAN-github-actions-workflow-run-trigger-fix.md |
+| `.ci/scripts/review/review-status.sh` | agent/plans/PLAN-github-actions-workflow-run-trigger-fix.md |
+| `.ci/scripts/security/check-commands.sh` | agent/plans/PLAN-shell-command-gate-regex-fix.md |
+| `.ci/scripts/security/shellcheck.sh` | agent/plans/PLAN-shell-resource-profiling.md |
+| `.ci/scripts/security/shfmt.sh` | agent/plans/PLAN-extension-shaped-matchers.md |
+| `.ci/scripts/test/gates/test-autopilot-breakpoint-alignment.sh` | agent/plans/PLAN-duplication-angle.md |
+| `.ci/scripts/test/gates/test-breakpoint-teardown.sh` | agent/plans/PLAN-shell-resource-profiling.md |
+| `.ci/scripts/test/gates/test-claude-hooks.sh` | agent/plans/PLAN-promote-mutation-runner.md |
+| `.ci/scripts/test/gates/test-embed-asset-freshness.sh` | agent/plans/PLAN-rclone-decommission.md |
+| `.ci/scripts/test/gates/test-embed-credits.sh` | agent/plans/PLAN-rclone-decommission.md |
+| `.ci/scripts/test/gates/test-gate-anti-vacuity.sh` | agent/plans/PLAN-lint-rule-matrix-probe.md |
+| `.ci/scripts/test/gates/test-gate-paths-exist.sh` | agent/plans/PLAN-testing-surface-audit.md |
+| `.ci/scripts/test/gates/test-installmethods-linuxpkg-idiom.sh` | agent/plans/PLAN-printf-echo-pipefail-sweep.md |
+| `.ci/scripts/test/gates/test-media-shims.sh` | agent/plans/PLAN-printf-echo-pipefail-sweep.md |
+| `.ci/scripts/test/gates/test-positional-detector.sh` | agent/plans/PLAN-scope-gates-split.md |
+| `.ci/scripts/test/gates/test-profiler-report.sh` | agent/plans/PLAN-shell-command-gate-regex-fix.md |
+| `.ci/scripts/test/gates/test-run-sh.sh` | agent/plans/PLAN-printf-echo-pipefail-sweep.md |
+| `.ci/scripts/test/gates/test-scope-gate-outputs.sh` | agent/plans/PLAN-scope-gate-sort-collation.md |
+| `.ci/scripts/test/gates/test-shadow-gate.sh` | agent/plans/PLAN-printf-echo-pipefail-sweep.md |
+| `.ci/scripts/test/gates/test-tutorial-render-queue.sh` | agent/plans/PLAN-testing-surface-audit.md |
+| `.ci/scripts/test/gates/test-verify-version.sh` | agent/plans/PLAN-printf-echo-pipefail-sweep.md |
+| `.ci/scripts/test/gates/test-worklist-hooks.sh` | agent/plans/PLAN-agent-hints-implementation.md, agent/plans/PLAN-agent-hints-in-stop-hook.md |
+| `.ci/scripts/test/lib/test-helpers.sh` | agent/plans/PLAN-printf-echo-pipefail-sweep.md |
+| `.ci/scripts/test/mutate-check.sh` | agent/plans/PLAN-agent-hints-implementation.md, agent/plans/PLAN-agent-hints-in-stop-hook.md |
+| `.ci/scripts/test/proxies/proxy-go-unit.sh` | agent/plans/PLAN-printf-echo-pipefail-sweep.md |
+| `.ci/scripts/test/run-account-e2e.sh` | agent/plans/PLAN-fix-ci-contention-aware-timeouts.md, agent/plans/PLAN-testing-surface-audit.md |
+| `.ci/scripts/test/run-all.sh` | agent/plans/PLAN-promote-mutation-runner.md, agent/plans/PLAN-shell-resource-profiling.md |
+| `.ci/scripts/test/run-unit.sh` | agent/plans/PLAN-testing-surface-audit.md, agent/plans/PLAN-wire-account-vitest-ci.md |
+| `.ci/scripts/test/smoke-test-preview.ts` | agent/plans/PLAN-fix-ci-contention-aware-timeouts.md |
+| `.ci/scripts/test/test-install-methods.sh` | agent/plans/PLAN-printf-echo-pipefail-sweep.md |
+| `.ci/scripts/test/test-linux-packages.sh` | agent/plans/PLAN-printf-echo-pipefail-sweep.md |
+| `.ci/tutorials/lib/stage-branching.sh` | agent/plans/PLAN-shell-command-gate-regex-fix.md |
+| `.ci/tutorials/tutorial-add-server.sh` | agent/plans/PLAN-shell-command-gate-regex-fix.md |
+| `.ci/tutorials/tutorial-backup-restore.sh` | agent/plans/PLAN-chunk-store-browse-engine.md, agent/plans/PLAN-shell-command-gate-regex-fix.md |
+| `.ci/tutorials/tutorial-branching.sh` | agent/plans/PLAN-shell-command-gate-regex-fix.md |
+| `.ci/tutorials/tutorial-create-repo.sh` | agent/plans/PLAN-shell-command-gate-regex-fix.md |
+| `.ci/tutorials/tutorial-delta-transfer.sh` | agent/plans/PLAN-shell-command-gate-regex-fix.md |
+| `.ci/tutorials/tutorial-deploy-app.sh` | agent/plans/PLAN-shell-command-gate-regex-fix.md |
+| `.ci/tutorials/tutorial-forking.sh` | agent/plans/PLAN-shell-command-gate-regex-fix.md |
+| `.ci/tutorials/tutorial-managing-secrets.sh` | agent/plans/PLAN-shell-command-gate-regex-fix.md |
+| `.ci/tutorials/tutorial-monitoring.sh` | agent/plans/PLAN-shell-command-gate-regex-fix.md |
+| `.ci/tutorials/tutorial-networking.sh` | agent/plans/PLAN-shell-command-gate-regex-fix.md |
+| `.ci/tutorials/tutorial-production-mode.sh` | agent/plans/PLAN-shell-command-gate-regex-fix.md |
+| `.ci/tutorials/tutorial-vscode-browser.sh` | agent/plans/PLAN-shell-command-gate-regex-fix.md |
+| `.ci/tutorials/tutorial-work-with-repo.sh` | agent/plans/PLAN-shell-command-gate-regex-fix.md |
+| `.claude/agents/account-dev.md` | agent/plans/PLAN-agent-hints-implementation.md |
+| `.claude/agents/pr-babysitter.md` | agent/plans/PLAN-durable-reports-and-push-inbox.md |
+| `.claude/hooks/post-bash/refresh-pr-body.sh` | agent/plans/PLAN-rest-graphql-guard-parity.md |
+| `.claude/hooks/pre-bash/block-cli-bundle.sh` | agent/plans/PLAN-add-js-extensions-shared.md |
+| `.claude/hooks/pre-edit/block-agent-state-shape.sh` | agent/plans/PLAN-unify-trap-corpus.md |
+| `.claude/hooks/stop/test-worklist-v5.sh` | agent/plans/PLAN-shell-resource-profiling.md |
+| `.claude/hooks/stop/wl_admit.py` | agent/plans/PLAN-ask-flow-preemptive-settled-check.md |
+| `.claude/hooks/stop/wl_ci.py` | agent/plans/PLAN-ci-trace-no-pr-branch.md |
+| `.claude/hooks/stop/wl_classsweep.py` | agent/plans/PLAN-judge-gate-worthiness-and-surface-scope.md |
+| `.claude/hooks/stop/wl_judge.py` | agent/plans/PLAN-ask-flow-preemptive-settled-check.md |
+| `.claude/hooks/stop/wl_liveness.py` | agent/plans/PLAN-wl-report-liveness-oracle.md |
+| `.claude/hooks/stop/wl_report.py` | agent/plans/PLAN-wl-report-liveness-oracle.md |
+| `.claude/hooks/stop/wl_store.py` | agent/plans/PLAN-completion-strategy.md, agent/plans/PLAN-wl-report-liveness-oracle.md |
+| `.claude/hooks/stop/worklist.py` | agent/plans/PLAN-completion-strategy.md |
+| `.claude/hooks/test-hooks.sh` | agent/plans/PLAN-review-red-stop-hook-check.md |
+| `.claude/oracles/README.md` | agent/plans/PLAN-printf-echo-pipefail-sweep.md |
+| `.claude/oracles/pre-bash/block-host-toolchain-run.sh` | agent/plans/PLAN-devbox-uid-derived-image.md |
+| `.claude/rediacc_hooks/guards/block_host_toolchain_run.py` | agent/plans/PLAN-devbox-uid-derived-image.md |
+| `.claude/rediacc_hooks/guards/warn_remote_drift.py` | agent/plans/PLAN-extension-shaped-matchers.md |
+| `.claude/rediacc_hooks/shellscan.py` | agent/plans/PLAN-extension-shaped-matchers.md |
+| `.claude/settings.json` | agent/plans/PLAN-agent-hints-in-stop-hook.md, agent/plans/PLAN-subagent-idle-detection.md, agent/plans/PLAN-unify-trap-corpus.md |
+| `.claude/skills/testing/SKILL.md` | agent/plans/PLAN-judge-gate-worthiness-and-surface-scope.md |
+| `.claude/skills/testing/gates.md` | agent/plans/PLAN-judge-gate-worthiness-and-surface-scope.md |
+| `.devcontainer/devbox-entrypoint.sh` | agent/plans/PLAN-devbox-uid-derived-image.md |
+| `.devcontainer/start-kvm.sh` | agent/plans/PLAN-printf-echo-pipefail-sweep.md |
+| `.e2e-coverage-allowlist` | agent/plans/PLAN-chunk-store-browse-engine.md |
+| `.github/actions/app-token/action.yml` | agent/plans/PLAN-nightly-retry-and-watchdog-noise.md |
+| `.github/labels.yml` | agent/plans/PLAN-skip-release-gates-r2-manifest.md |
+| `.github/workflows/cd-stage.yml` | agent/plans/PLAN-w7p4w-docker-cutover.md |
+| `.github/workflows/cd-v2.yml` | agent/plans/PLAN-w7p4w-docker-cutover.md |
+| `.github/workflows/ci-build-docker.yml` | agent/plans/PLAN-w7p4w-docker-cutover.md |
+| `.github/workflows/ci-build-renet.yml` | agent/plans/PLAN-bump-k3s-upstream-1-36-4.md |
+| `.github/workflows/ci-ops-test.yml` | agent/plans/PLAN-chunk-store-browse-engine.md |
+| `.github/workflows/ci-quality.yml` | agent/plans/PLAN-agent-hints-implementation.md, agent/plans/PLAN-backup-quota-delta-gc.md, agent/plans/PLAN-lint-css-ci-wiring.md, agent/plans/PLAN-lint-rule-matrix-probe.md, agent/plans/PLAN-localize-cheat-sheet-rendering.md, agent/plans/PLAN-shell-command-gate-regex-fix.md, agent/plans/PLAN-testing-surface-audit.md, agent/plans/PLAN-wire-account-vitest-ci.md |
+| `.github/workflows/ci.yml` | agent/plans/PLAN-fix-ci-contention-aware-timeouts.md |
+| `.github/workflows/ct-tests.yml` | agent/plans/PLAN-fix-ci-contention-aware-timeouts.md |
+| `.github/workflows/review-status.yml` | agent/plans/PLAN-review-red-stop-hook-check.md |
+| `.gitignore` | agent/plans/PLAN-add-js-extensions-shared.md, agent/plans/PLAN-bump-k3s-upstream-1-36-4.md, agent/plans/PLAN-testing-surface-audit.md, agent/plans/PLAN-unify-trap-corpus.md |
+| `.gitmodules` | agent/plans/PLAN-rclone-decommission.md |
+| `CLAUDE.md` | agent/plans/PLAN-ask-flow-preemptive-settled-check.md, agent/plans/PLAN-completion-strategy.md, agent/plans/PLAN-fix-in-session-rule.md, agent/plans/PLAN-unify-trap-corpus.md |
+| `agent/PLAN-bws-rotation-on-failure.md` | agent/plans/PLAN-completion-strategy.md |
+| `agent/PLAN-commit-author-identity.md` | agent/plans/PLAN-completion-strategy.md |
+| `agent/PLAN-env-to-bitwarden-v2.md` | agent/plans/PLAN-citation-fragility.md, agent/plans/PLAN-completion-strategy.md |
+| `agent/PLAN-fix-ci-contention-aware-timeouts.md` | agent/plans/PLAN-citation-fragility.md |
+| `agent/PLAN-fix-tutorial-player-debug-hook-attachment.md` | agent/plans/PLAN-citation-fragility.md |
+| `agent/PLAN-git-history-media-rewrite.md` | agent/plans/PLAN-citation-fragility.md |
+| `agent/PLAN-localize-cheat-sheet-rendering.md` | agent/plans/PLAN-lint-css-ci-wiring.md |
+| `agent/PLAN-plan-file-lifecycle.md` | agent/plans/PLAN-completion-strategy.md |
+| `agent/PLAN-plyr-css-on-demand-loading.md` | agent/plans/PLAN-completion-strategy.md |
+| `agent/PLAN-promote-mutation-runner.md` | agent/plans/PLAN-citation-fragility.md |
+| `agent/PLAN-review-red-stop-hook-check.md` | agent/plans/PLAN-completion-strategy.md |
+| `agent/PLAN-secret-namespace-migration.md` | agent/plans/PLAN-citation-fragility.md |
+| `agent/PLAN-session-onboarding-marker.md` | agent/plans/PLAN-completion-strategy.md |
+| `agent/PLAN-stop-report-queue.md` | agent/plans/PLAN-citation-fragility.md |
+| `agent/PLAN-subagent-idle-detection.md` | agent/plans/PLAN-citation-fragility.md |
+| `agent/PLAN-tooling-transformation.md` | agent/plans/PLAN-completion-strategy.md, agent/plans/PLAN-w7p4w-docker-cutover.md, agent/plans/PLAN-w7p5a-deploy-release-port.md |
+| `agent/PLAN-www-bundle-determinism.md` | agent/plans/PLAN-citation-fragility.md |
+| `agent/archive/plans/PLAN-branch-aware-workflows.md` | agent/plans/PLAN-completion-strategy.md |
+| `agent/archive/plans/PLAN-github-secrets-removal.md` | agent/plans/PLAN-completion-strategy.md |
+| `agent/programs/www-simplification/research/RESEARCH-docs.md` | agent/plans/PLAN-lint-css-ci-wiring.md |
+| `biome.json` | agent/plans/PLAN-testing-surface-audit.md |
+| `docs/agent-reference/TRAPS.md` | agent/plans/PLAN-promote-mutation-runner.md, agent/plans/PLAN-shell-resource-profiling.md, agent/plans/PLAN-unify-trap-corpus.md |
+| `docs/agent-reference/ci-gates.md` | agent/plans/PLAN-npm-ci-parallel-parity.md |
+| `docs/agent-reference/local-env.md` | agent/plans/PLAN-devbox-uid-derived-image.md |
+| `docs/agent-reference/suppressions.md` | agent/plans/PLAN-npm-ci-parallel-parity.md |
+| `docs/backup-storage/02-design.md` | agent/plans/PLAN-add-chunkstore-backup-verb.md, agent/plans/PLAN-backup-quota-delta-gc.md |
+| `docs/backup-storage/05-docs-and-decommission.md` | agent/plans/PLAN-chunk-store-browse-server.md, agent/plans/PLAN-rclone-decommission.md |
+| `docs/backup-storage/README.md` | agent/plans/PLAN-chunk-store-browse-server.md |
+| `docs/ci-overhaul/06-progress.md` | agent/plans/PLAN-fix-ci-contention-aware-timeouts.md, agent/plans/PLAN-resprofile-wave2.md |
+| `docs/design/06-cli-reshape.md` | agent/plans/PLAN-add-chunkstore-backup-verb.md |
+| `eslint-rules/e2e-test-naming-convention.js` | agent/plans/PLAN-lint-rule-matrix-probe.md |
+| `eslint-rules/i18n/index.js` | agent/plans/PLAN-lint-rule-matrix-probe.md |
+| `eslint-rules/i18n/interpolation-match.js` | agent/plans/PLAN-lint-rule-matrix-probe.md |
+| `eslint-rules/i18n/shared/require-path-option.js` | agent/plans/PLAN-lint-rule-matrix-probe.md |
+| `eslint-rules/require-testid.js` | agent/plans/PLAN-lint-rule-matrix-probe.md |
+| `eslint.config.js` | agent/plans/PLAN-lint-rule-matrix-probe.md, agent/plans/PLAN-require-testid-sweep.md |
+| `package.json` | agent/plans/PLAN-add-js-extensions-shared.md, agent/plans/PLAN-agent-hints-implementation.md, agent/plans/PLAN-agent-hints-in-stop-hook.md, agent/plans/PLAN-backup-quota-delta-gc.md, agent/plans/PLAN-cli-em-dash-lint-gate.md, agent/plans/PLAN-fix-ci-contention-aware-timeouts.md, agent/plans/PLAN-fix-tutorial-player-debug-hook-attachment.md, agent/plans/PLAN-judge-gate-worthiness-and-surface-scope.md, agent/plans/PLAN-lint-rule-matrix-probe.md, agent/plans/PLAN-localize-cheat-sheet-rendering.md, agent/plans/PLAN-npm-ci-parallel-parity.md, agent/plans/PLAN-promote-mutation-runner.md, agent/plans/PLAN-shell-command-gate-regex-fix.md, agent/plans/PLAN-skip-release-gates-r2-manifest.md, agent/plans/PLAN-test-advisor.md, agent/plans/PLAN-w7p4w-docker-cutover.md, agent/plans/PLAN-wire-account-vitest-ci.md |
+| `packages/cli/scripts/check-command-planes.ts` | agent/plans/PLAN-add-chunkstore-backup-verb.md |
+| `packages/cli/src/adapters/config-file-storage.ts` | agent/plans/PLAN-chunk-store-browse-server.md |
+| `packages/cli/src/adapters/remote-config-adapter.ts` | agent/plans/PLAN-chunk-store-browse-server.md |
+| `packages/cli/src/commands/__tests__/backup-restore-datastore.test.ts` | agent/plans/PLAN-backup-list-executor-fix.md, agent/plans/PLAN-backup-restore-target-license.md |
+| `packages/cli/src/commands/backup-storage.ts` | agent/plans/PLAN-add-chunkstore-backup-verb.md, agent/plans/PLAN-backup-quota-delta-gc.md |
+| `packages/cli/src/commands/backup.ts` | agent/plans/PLAN-add-chunkstore-backup-verb.md, agent/plans/PLAN-backup-list-executor-fix.md, agent/plans/PLAN-backup-restore-target-license.md, agent/plans/PLAN-chunkstore-restore.md |
+| `packages/cli/src/commands/config.ts` | agent/plans/PLAN-chunk-store-browse-server.md |
+| `packages/cli/src/commands/config/field.ts` | agent/plans/PLAN-cli-em-dash-lint-gate.md |
+| `packages/cli/src/commands/doctor.ts` | agent/plans/PLAN-cli-em-dash-lint-gate.md |
+| `packages/cli/src/commands/machine/register.ts` | agent/plans/PLAN-backup-list-executor-fix.md, agent/plans/PLAN-backup-restore-target-license.md |
+| `packages/cli/src/commands/mcp/__tests__/mcp-coverage.test.ts` | agent/plans/PLAN-add-chunkstore-backup-verb.md |
+| `packages/cli/src/commands/mcp/tools.ts` | agent/plans/PLAN-cli-em-dash-lint-gate.md |
+| `packages/cli/src/commands/repo-backup-list.ts` | agent/plans/PLAN-backup-list-executor-fix.md, agent/plans/PLAN-chunk-store-browse-engine.md |
+| `packages/cli/src/commands/repo-backup.ts` | agent/plans/PLAN-backup-list-executor-fix.md |
+| `packages/cli/src/commands/storage.ts` | agent/plans/PLAN-backup-list-executor-fix.md, agent/plans/PLAN-chunk-store-browse-engine.md, agent/plans/PLAN-chunk-store-browse-server.md |
+| `packages/cli/src/commands/update.ts` | agent/plans/PLAN-cli-em-dash-lint-gate.md |
+| `packages/cli/src/config/__tests__/plane-leaf-rule.test.ts` | agent/plans/PLAN-scope-gates-split.md |
+| `packages/cli/src/config/command-docs.ts` | agent/plans/PLAN-backup-list-executor-fix.md |
+| `packages/cli/src/config/command-metadata.ts` | agent/plans/PLAN-add-chunkstore-backup-verb.md |
+| `packages/cli/src/data/third-party-credits.json` | agent/plans/PLAN-rclone-decommission.md |
+| `packages/cli/src/remote/repository/bashFunctions.ts` | agent/plans/PLAN-cli-em-dash-lint-gate.md |
+| `packages/cli/src/services/account/account-client.ts` | agent/plans/PLAN-chunk-store-browse-server.md |
+| `packages/cli/src/services/account/license.ts` | agent/plans/PLAN-backup-restore-target-license.md, agent/plans/PLAN-chunkstore-restore.md |
+| `packages/cli/src/services/backup/backup-schedule-unit-generator.ts` | agent/plans/PLAN-backup-list-executor-fix.md |
+| `packages/cli/src/services/cluster/cluster-fork.ts` | agent/plans/PLAN-cli-em-dash-lint-gate.md |
+| `packages/cli/src/services/cluster/cluster-kube.ts` | agent/plans/PLAN-cli-em-dash-lint-gate.md |
+| `packages/cli/src/services/cluster/cluster-membership.ts` | agent/plans/PLAN-cli-em-dash-lint-gate.md |
+| `packages/cli/src/services/cluster/repo-replicate-ops.ts` | agent/plans/PLAN-cli-em-dash-lint-gate.md |
+| `packages/cli/src/services/config/config-base.ts` | agent/plans/PLAN-chunk-store-browse-server.md |
+| `packages/cli/src/services/config/config-resources-resolve.ts` | agent/plans/PLAN-cli-em-dash-lint-gate.md |
+| `packages/cli/src/services/config/config-resources.ts` | agent/plans/PLAN-backup-restore-target-license.md |
+| `packages/cli/src/services/config/remote-cache.ts` | agent/plans/PLAN-chunk-store-browse-server.md |
+| `packages/cli/src/services/core/embedded-assets.ts` | agent/plans/PLAN-cli-em-dash-lint-gate.md |
+| `packages/cli/src/services/executor/local-executor.ts` | agent/plans/PLAN-backup-list-executor-fix.md, agent/plans/PLAN-backup-restore-target-license.md, agent/plans/PLAN-chunkstore-restore.md |
+| `packages/cli/src/services/provision/region-discovery.ts` | agent/plans/PLAN-add-js-extensions-shared.md |
+| `packages/cli/src/services/renet/renet-license-contract.ts` | agent/plans/PLAN-add-chunkstore-backup-verb.md, agent/plans/PLAN-backup-restore-target-license.md |
+| `packages/cli/src/services/repo/prune.ts` | agent/plans/PLAN-cli-em-dash-lint-gate.md |
+| `packages/cli/src/services/repo/repo-key-deployment.ts` | agent/plans/PLAN-backup-list-executor-fix.md |
+| `packages/cli/src/services/repo/storage-browser.ts` | agent/plans/PLAN-chunk-store-browse-server.md |
+| `packages/cli/src/services/tofu/provision.ts` | agent/plans/PLAN-backup-list-executor-fix.md |
+| `packages/cli/src/services/update/background-updater.ts` | agent/plans/PLAN-cli-em-dash-lint-gate.md |
+| `packages/cli/src/types/index.ts` | agent/plans/PLAN-add-chunkstore-backup-verb.md |
+| `packages/cli/src/utils/local-execution-failures.ts` | agent/plans/PLAN-backup-list-executor-fix.md |
+| `packages/cli/src/utils/process-ancestry.ts` | agent/plans/PLAN-cli-em-dash-lint-gate.md |
+| `packages/cli/src/utils/repo-context-guard.ts` | agent/plans/PLAN-cli-em-dash-lint-gate.md |
+| `packages/cli/src/utils/timeline.ts` | agent/plans/PLAN-cli-em-dash-lint-gate.md |
+| `packages/cli/tsconfig.json` | agent/plans/PLAN-add-js-extensions-shared.md |
+| `packages/e2e-tests/README.md` | agent/plans/PLAN-testing-surface-audit.md |
+| `packages/e2e-tests/package.json` | agent/plans/PLAN-add-js-extensions-shared.md |
+| `packages/e2e-tests/playwright.config.ts` | agent/plans/PLAN-chunk-store-browse-engine.md, agent/plans/PLAN-fix-ci-contention-aware-timeouts.md |
+| `packages/e2e-tests/tests/26-backup-storage-cli.test.ts` | agent/plans/PLAN-chunkstore-restore.md |
+| `packages/e2e-tests/tests/migrate/18-dual-group-migrate.test.ts` | agent/plans/PLAN-backup-list-executor-fix.md |
+| `packages/json/package.json` | agent/plans/PLAN-wire-account-vitest-ci.md |
+| `packages/shared/package.json` | agent/plans/PLAN-add-js-extensions-shared.md |
+| `packages/shared/src/config-schema/schemas.ts` | agent/plans/PLAN-backup-quota-delta-gc.md, agent/plans/PLAN-rclone-decommission.md |
+| `packages/shared/src/config/index.ts` | agent/plans/PLAN-add-js-extensions-shared.md |
+| `packages/shared/src/i18n/index.ts` | agent/plans/PLAN-add-js-extensions-shared.md |
+| `packages/shared/src/regions/index.ts` | agent/plans/PLAN-add-js-extensions-shared.md |
+| `packages/shared/src/renet-contract/data/functions.generated.ts` | agent/plans/PLAN-add-chunkstore-backup-verb.md |
+| `packages/shared/src/renet-contract/data/functions.schema.ts` | agent/plans/PLAN-backup-list-executor-fix.md |
+| `packages/shared/src/renet-contract/index.ts` | agent/plans/PLAN-add-js-extensions-shared.md |
+| `packages/shared/src/services/machine/index.ts` | agent/plans/PLAN-add-js-extensions-shared.md |
+| `packages/shared/src/subscription/__tests__/crypto.test.ts` | agent/plans/PLAN-add-js-extensions-shared.md |
+| `packages/shared/src/subscription/constants.ts` | agent/plans/PLAN-backup-restore-target-license.md |
+| `packages/shared/src/subscription/types.ts` | agent/plans/PLAN-backup-quota-delta-gc.md, agent/plans/PLAN-chunkstore-restore.md |
+| `packages/shared/tsconfig.json` | agent/plans/PLAN-add-js-extensions-shared.md |
+| `packages/shared/vitest.config.ts` | agent/plans/PLAN-backup-quota-delta-gc.md |
+| `packages/www/package.json` | agent/plans/PLAN-fix-tutorial-player-debug-hook-attachment.md, agent/plans/PLAN-lint-css-ci-wiring.md, agent/plans/PLAN-wire-account-vitest-ci.md |
+| `packages/www/scripts/generate-search-index.js` | agent/plans/PLAN-localize-cheat-sheet-rendering.md |
+| `packages/www/scripts/lib/cli-reference-catalog.js` | agent/plans/PLAN-localize-cheat-sheet-rendering.md |
+| `packages/www/scripts/validate-content-accuracy.js` | agent/plans/PLAN-localize-cheat-sheet-rendering.md |
+| `packages/www/scripts/validate-docs-cli-usage.js` | agent/plans/PLAN-localize-cheat-sheet-rendering.md |
+| `packages/www/src/components/solution-pages/SPHomePage.astro` | agent/plans/PLAN-www-bundle-determinism.md |
+| `packages/www/src/components/solution-pages/SPHowItWorks.astro` | agent/plans/PLAN-lint-css-ci-wiring.md |
+| `packages/www/src/components/solution-pages/SolutionPage.astro` | agent/plans/PLAN-fix-tutorial-player-debug-hook-attachment.md |
+| `packages/www/src/content/docs/de/rdc-cheat-sheet.md` | agent/plans/PLAN-localize-cheat-sheet-rendering.md |
+| `packages/www/src/content/docs/en/rdc-cheat-sheet.md` | agent/plans/PLAN-localize-cheat-sheet-rendering.md |
+| `packages/www/src/content/docs/en/tutorial-production-mode.mdx` | agent/plans/PLAN-fix-tutorial-player-debug-hook-attachment.md |
+| `packages/www/src/hooks/useLanguage.ts` | agent/plans/PLAN-ssr-nav-locale.md |
+| `packages/www/src/layouts/BaseLayout.astro` | agent/plans/PLAN-ssr-nav-locale.md |
+| `packages/www/src/layouts/DocsLayout.astro` | agent/plans/PLAN-fix-tutorial-player-debug-hook-attachment.md, agent/plans/PLAN-localize-cheat-sheet-rendering.md |
+| `packages/www/src/plugins/remark-tutorial-embed.ts` | agent/plans/PLAN-fix-tutorial-player-debug-hook-attachment.md |
+| `packages/www/src/scripts/tutorial-video-hydrate.ts` | agent/plans/PLAN-fix-tutorial-player-debug-hook-attachment.md |
+| `packages/www/src/styles/tutorial-video.css` | agent/plans/PLAN-fix-tutorial-player-debug-hook-attachment.md |
+| `packages/www/src/utils/solution-video.ts` | agent/plans/PLAN-scope-gates-split.md |
+| `private/account/e2e/tsconfig.json` | agent/plans/PLAN-add-js-extensions-shared.md |
+| `private/account/package.json` | agent/plans/PLAN-backup-quota-delta-gc.md, agent/plans/PLAN-wire-account-vitest-ci.md |
+| `private/account/src/db/schema.ts` | agent/plans/PLAN-backup-quota-delta-gc.md, agent/plans/PLAN-chunk-store-browse-server.md, agent/plans/PLAN-chunkstore-restore.md, agent/plans/PLAN-testing-surface-audit.md |
+| `private/account/src/errors.ts` | agent/plans/PLAN-add-chunkstore-backup-verb.md |
+| `private/account/src/middleware/api-token.ts` | agent/plans/PLAN-chunk-store-browse-server.md |
+| `private/account/src/routes/backups.ts` | agent/plans/PLAN-backup-restore-target-license.md, agent/plans/PLAN-chunk-store-browse-engine.md, agent/plans/PLAN-chunk-store-browse-server.md |
+| `private/account/src/routes/license.ts` | agent/plans/PLAN-backup-restore-target-license.md |
+| `private/account/src/services/backup-chunk-store.ts` | agent/plans/PLAN-backup-restore-target-license.md, agent/plans/PLAN-chunk-store-browse-engine.md, agent/plans/PLAN-chunk-store-browse-server.md, agent/plans/PLAN-wire-account-vitest-ci.md |
+| `private/account/src/services/backup-gc.service.ts` | agent/plans/PLAN-backup-quota-delta-gc.md, agent/plans/PLAN-chunk-store-browse-engine.md, agent/plans/PLAN-chunk-store-browse-server.md |
+| `private/account/src/services/backup-storage.service.ts` | agent/plans/PLAN-backup-restore-target-license.md, agent/plans/PLAN-chunk-store-browse-server.md |
+| `private/account/src/services/device-code.service.ts` | agent/plans/PLAN-backup-quota-delta-gc.md |
+| `private/account/src/services/subscription.service.ts` | agent/plans/PLAN-backup-restore-target-license.md |
+| `private/account/src/types/api-token.ts` | agent/plans/PLAN-backup-quota-delta-gc.md |
+| `private/account/tests/integration/backup-gc.test.ts` | agent/plans/PLAN-backup-quota-delta-gc.md |
+| `private/account/tsconfig.json` | agent/plans/PLAN-add-js-extensions-shared.md |
+| `private/account/vitest.config.ts` | agent/plans/PLAN-backup-quota-delta-gc.md, agent/plans/PLAN-testing-surface-audit.md |
+| `private/account/web/tsconfig.json` | agent/plans/PLAN-add-js-extensions-shared.md |
+| `private/elite/docker-compose.yml` | agent/plans/PLAN-fix-ci-contention-aware-timeouts.md |
+| `private/renet/.ci/ci.sh` | agent/plans/PLAN-testing-surface-audit.md |
+| `private/renet/.ci/scripts/quality/deadcode.sh` | agent/plans/PLAN-testing-surface-audit.md |
+| `private/renet/.ci/scripts/quality/i18n.sh` | agent/plans/PLAN-add-chunkstore-backup-verb.md, agent/plans/PLAN-printf-echo-pipefail-sweep.md |
+| `private/renet/.ci/scripts/test/run-tests.sh` | agent/plans/PLAN-backup-quota-delta-gc.md, agent/plans/PLAN-testing-surface-audit.md |
+| `private/renet/cmd/renet/backup_list.go` | agent/plans/PLAN-backup-list-executor-fix.md |
+| `private/renet/cmd/renet/backup_pull.go` | agent/plans/PLAN-chunkstore-restore.md |
+| `private/renet/cmd/renet/backup_push.go` | agent/plans/PLAN-backup-list-executor-fix.md |
+| `private/renet/cmd/renet/backup_restore.go` | agent/plans/PLAN-backup-restore-target-license.md |
+| `private/renet/cmd/renet/functions_commands.go` | agent/plans/PLAN-add-chunkstore-backup-verb.md |
+| `private/renet/pkg/chunkstore/grid.go` | agent/plans/PLAN-chunk-store-browse-engine.md |
+| `private/renet/pkg/chunkstore/hash.go` | agent/plans/PLAN-chunk-store-browse-server.md |
+| `private/renet/pkg/chunkstore/manifest.go` | agent/plans/PLAN-chunk-store-browse-engine.md, agent/plans/PLAN-chunk-store-browse-server.md |
+| `private/renet/pkg/chunkstore/pipeline_linux.go` | agent/plans/PLAN-backup-quota-delta-gc.md, agent/plans/PLAN-chunk-store-browse-server.md |
+| `private/renet/pkg/chunkstore/restore.go` | agent/plans/PLAN-chunk-store-browse-engine.md |
+| `private/renet/pkg/chunkstore/session.go` | agent/plans/PLAN-backup-restore-target-license.md |
+| `private/renet/pkg/chunkstore/uploader.go` | agent/plans/PLAN-chunk-store-browse-server.md |
+| `private/renet/pkg/credentials/keyfile.go` | agent/plans/PLAN-chunk-store-browse-engine.md |
+| `private/renet/pkg/daemon/start_foreground.go` | agent/plans/PLAN-fix-ci-contention-aware-timeouts.md |
+| `private/renet/pkg/embed/embed.go` | agent/plans/PLAN-chunk-store-browse-engine.md |
+| `private/renet/pkg/filesystem/ext4.go` | agent/plans/PLAN-chunk-store-browse-engine.md |
+| `private/renet/pkg/functions/commands/backup.go` | agent/plans/PLAN-add-chunkstore-backup-verb.md, agent/plans/PLAN-backup-list-executor-fix.md |
+| `private/renet/pkg/functions/commands/registry.go` | agent/plans/PLAN-backup-restore-target-license.md |
+| `private/renet/pkg/functions/executor_local.go` | agent/plans/PLAN-backup-restore-target-license.md |
+| `private/renet/pkg/infra/ceph/provisioner.go` | agent/plans/PLAN-backup-list-executor-fix.md |
+| `private/renet/pkg/infra/mesh/mesh.go` | agent/plans/PLAN-backup-list-executor-fix.md |
+| `private/renet/pkg/kube/distro/k3s.go` | agent/plans/PLAN-bump-k3s-upstream-1-36-4.md |
+| `private/renet/pkg/license/store.go` | agent/plans/PLAN-backup-restore-target-license.md |
+| `private/renet/pkg/license/tiermap.go` | agent/plans/PLAN-add-chunkstore-backup-verb.md, agent/plans/PLAN-backup-restore-target-license.md |
+| `private/renet/pkg/list/repositories.go` | agent/plans/PLAN-backup-list-executor-fix.md |
+| `private/renet/pkg/luks/luks.go` | agent/plans/PLAN-chunk-store-browse-engine.md |
+| `private/renet/pkg/repodiff/mountset.go` | agent/plans/PLAN-chunk-store-browse-engine.md |
+| `private/renet/pkg/repodiff/types.go` | agent/plans/PLAN-chunk-store-browse-engine.md |
+| `private/renet/pkg/repodiff/walk.go` | agent/plans/PLAN-chunk-store-browse-engine.md |
+| `private/renet/pkg/vaultcrypto/vault.go` | agent/plans/PLAN-chunk-store-browse-engine.md |
+| `private/renet/scripts/ci-test.sh` | agent/plans/PLAN-printf-echo-pipefail-sweep.md |
+| `pyproject.toml` | agent/plans/PLAN-pytest-parallelism.md |
+| `run.sh` | agent/plans/PLAN-scope-gates-split.md |
+| `scripts/ci-runner/exec.ts` | agent/plans/PLAN-shell-resource-profiling.md |
+| `scripts/ci-runner/manifest.ts` | agent/plans/PLAN-add-js-extensions-shared.md, agent/plans/PLAN-agent-hints-implementation.md, agent/plans/PLAN-agent-hints-in-stop-hook.md, agent/plans/PLAN-backup-quota-delta-gc.md, agent/plans/PLAN-cli-em-dash-lint-gate.md, agent/plans/PLAN-fix-tutorial-player-debug-hook-attachment.md, agent/plans/PLAN-judge-gate-worthiness-and-surface-scope.md, agent/plans/PLAN-lint-css-ci-wiring.md, agent/plans/PLAN-lint-rule-matrix-probe.md, agent/plans/PLAN-promote-mutation-runner.md, agent/plans/PLAN-scope-gate-sort-collation.md, agent/plans/PLAN-testing-surface-audit.md, agent/plans/PLAN-w7p4w-docker-cutover.md, agent/plans/PLAN-wire-account-vitest-ci.md |
+| `scripts/ci-runner/pool.ts` | agent/plans/PLAN-pytest-parallelism.md |
+| `scripts/ci-runner/run.ts` | agent/plans/PLAN-promote-mutation-runner.md, agent/plans/PLAN-pytest-parallelism.md |
+| `scripts/dev/lib/cf-auth.sh` | agent/plans/PLAN-rclone-decommission.md |
+| `scripts/drills/backup.sh` | agent/plans/PLAN-add-chunkstore-backup-verb.md, agent/plans/PLAN-chunkstore-restore.md |
+| `scripts/gates/check-ci-parity.ts` | agent/plans/PLAN-agent-hints-implementation.md, agent/plans/PLAN-agent-hints-in-stop-hook.md, agent/plans/PLAN-extension-shaped-matchers.md, agent/plans/PLAN-promote-mutation-runner.md, agent/plans/PLAN-testing-surface-audit.md |
+| `scripts/gates/check-client-bundle-budget.ts` | agent/plans/PLAN-www-bundle-determinism.md |
+| `scripts/gates/check-dead-bash.ts` | agent/plans/PLAN-promote-mutation-runner.md |
+| `scripts/gates/check-dead-css.ts` | agent/plans/PLAN-sentence-aware-wrapping.md |
+| `scripts/gates/check-design-tree.ts` | agent/plans/PLAN-add-chunkstore-backup-verb.md |
+| `scripts/gates/check-docker-image-freshness.ts` | agent/plans/PLAN-docker-image-freshness-soak-filter.md |
+| `scripts/gates/check-e2e-coverage.ts` | agent/plans/PLAN-add-chunkstore-backup-verb.md |
+| `scripts/gates/check-em-dash-surfaces.ts` | agent/plans/PLAN-cli-em-dash-lint-gate.md |
+| `scripts/gates/check-embed-asset-versions.ts` | agent/plans/PLAN-bump-k3s-upstream-1-36-4.md |
+| `scripts/gates/check-gate-manifest.ts` | agent/plans/PLAN-pytest-parallelism.md |
+| `scripts/gates/check-shape-duplication.ts` | agent/plans/PLAN-extension-shaped-matchers.md |
+| `scripts/gates/check-suppression-liveness.ts` | agent/plans/PLAN-npm-ci-parallel-parity.md |
+| `scripts/gen/sync-translations.ts` | agent/plans/PLAN-cli-em-dash-lint-gate.md |
+| `scripts/lib/command-path-checker.ts` | agent/plans/PLAN-extension-shaped-matchers.md |
+| `scripts/lib/embed-asset-sources.ts` | agent/plans/PLAN-rclone-decommission.md |
+| `scripts/lib/gate-header.ts` | agent/plans/PLAN-extension-shaped-matchers.md |
+| `tsconfig.json` | agent/plans/PLAN-add-js-extensions-shared.md |
 
 ## Plan census
 
@@ -463,108 +463,108 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 
 | Plan | Status | lines | open | ticked | bytes |
 |---|---|---|---|---|---|
-| `agent/PLAN-add-chunkstore-backup-verb.md` | compacted | 63 | 0 | 0 | 5578 |
-| `agent/PLAN-add-js-extensions-shared.md` | compacted | 49 | 0 | 0 | 4262 |
-| `agent/PLAN-agent-hints-implementation.md` | compacted | 59 | 0 | 0 | 4594 |
-| `agent/PLAN-agent-hints-in-stop-hook.md` | compacted | 50 | 0 | 0 | 3624 |
-| `agent/PLAN-agent-tree-lifecycle.md` | in-progress | 63 | 7 | 0 | 8709 |
-| `agent/PLAN-ask-flow-preemptive-settled-check.md` | compacted | 37 | 0 | 0 | 2335 |
-| `agent/PLAN-b2-emit-matrix.md` | partially | 294 | 6 | 7 | 30948 |
-| `agent/PLAN-backup-list-executor-fix.md` | compacted | 54 | 0 | 0 | 5475 |
-| `agent/PLAN-backup-quota-delta-gc.md` | compacted | 57 | 0 | 0 | 5553 |
-| `agent/PLAN-backup-restore-target-license.md` | compacted | 55 | 0 | 0 | 5537 |
-| `agent/PLAN-breakpoint-secret-shape.md` | design | 46 | 0 | 0 | 3340 |
-| `agent/PLAN-bump-k3s-upstream-1-36-4.md` | compacted | 34 | 0 | 0 | 2397 |
-| `agent/PLAN-bws-rotation-on-failure.md` | draft | 101 | 18 | 0 | 11246 |
-| `agent/PLAN-chunk-store-browse-DECISION.md` | compacted | 36 | 0 | 0 | 2549 |
-| `agent/PLAN-chunk-store-browse-engine.md` | compacted | 55 | 0 | 0 | 5204 |
-| `agent/PLAN-chunk-store-browse-server.md` | compacted | 47 | 0 | 0 | 4854 |
-| `agent/PLAN-chunkstore-restore.md` | compacted | 54 | 0 | 0 | 4207 |
-| `agent/PLAN-ci-pr-head-ref-trigger-resolution.md` | draft | 252 | 15 | 0 | 26632 |
-| `agent/PLAN-ci-trace-no-pr-branch.md` | compacted | 37 | 0 | 0 | 2457 |
-| `agent/PLAN-ci-vacuity-baseline-registry.md` | ready | 168 | 1 | 14 | 16516 |
-| `agent/PLAN-ci-watch-enforcement.md` | draft | 188 | 0 | 0 | 15502 |
-| `agent/PLAN-citation-fragility.md` | compacted | 47 | 0 | 6 | 4822 |
-| `agent/PLAN-cli-em-dash-lint-gate.md` | compacted | 56 | 0 | 0 | 4317 |
-| `agent/PLAN-cold-path.md` | compacted | 51 | 0 | 0 | 4003 |
-| `agent/PLAN-commit-author-identity.md` | draft | 182 | 3 | 10 | 17970 |
-| `agent/PLAN-completion-strategy.md` | compacted | 38 | 0 | 0 | 3838 |
-| `agent/PLAN-consolidate-test-scaffolding.md` | done | 65 | 0 | 4 | 4452 |
-| `agent/PLAN-consolidation-pressure.md` | compacted | 57 | 0 | 10 | 4841 |
-| `agent/PLAN-devbox-uid-derived-image.md` | compacted | 35 | 0 | 0 | 2509 |
-| `agent/PLAN-docker-image-freshness-soak-filter.md` | compacted | 38 | 0 | 0 | 2692 |
-| `agent/PLAN-duplication-angle.md` | compacted | 36 | 0 | 0 | 2620 |
-| `agent/PLAN-durable-reports-and-push-inbox.md` | compacted | 51 | 0 | 0 | 3669 |
-| `agent/PLAN-env-to-bitwarden-v2.md` | draft | 494 | 5 | 4 | 44882 |
-| `agent/PLAN-extension-shaped-matchers.md` | compacted | 36 | 0 | 0 | 3081 |
-| `agent/PLAN-fix-ci-contention-aware-timeouts.md` | compacted | 37 | 0 | 0 | 3402 |
-| `agent/PLAN-fix-german-translation-artifacts.md` | compacted | 49 | 0 | 0 | 3094 |
-| `agent/PLAN-fix-in-session-rule.md` | compacted | 54 | 0 | 0 | 3554 |
-| `agent/PLAN-fix-tutorial-player-debug-hook-attachment.md` | compacted | 36 | 0 | 0 | 3125 |
-| `agent/PLAN-gh-swallow-gates-audit.md` | compacted | 48 | 0 | 6 | 4429 |
-| `agent/PLAN-git-history-media-rewrite.md` | compacted | 36 | 0 | 0 | 2935 |
-| `agent/PLAN-git-ignore-aware-discover.md` | compacted | 56 | 0 | 10 | 4707 |
-| `agent/PLAN-github-actions-workflow-run-trigger-fix.md` | compacted | 53 | 0 | 0 | 3904 |
-| `agent/PLAN-greenlight-verify-at-read.md` | compacted | 43 | 0 | 0 | 3583 |
-| `agent/PLAN-hook-inventory-warn-guards.md` | landed | 68 | 0 | 0 | 4088 |
-| `agent/PLAN-json-prose-scope-audit.md` | done | 78 | 0 | 9 | 8000 |
-| `agent/PLAN-judge-gate-worthiness-and-surface-scope.md` | compacted | 38 | 0 | 0 | 3209 |
-| `agent/PLAN-judge-prompt-trap-conflation.md` | compacted | 53 | 0 | 8 | 3805 |
-| `agent/PLAN-lint-css-ci-wiring.md` | compacted | 53 | 0 | 0 | 4342 |
-| `agent/PLAN-lint-rule-matrix-probe.md` | compacted | 49 | 0 | 0 | 3560 |
-| `agent/PLAN-local-ci-gate-prerequisites.md` | landed | 78 | 0 | 0 | 4660 |
-| `agent/PLAN-locale-techdiff-resync.md` | ready | 68 | 0 | 0 | 4513 |
-| `agent/PLAN-localize-cheat-sheet-rendering.md` | compacted | 49 | 0 | 0 | 4413 |
-| `agent/PLAN-migrate-plan-doc-discovery.md` | draft | 241 | 23 | 0 | 19549 |
-| `agent/PLAN-nightly-retry-and-watchdog-noise.md` | compacted | 38 | 0 | 0 | 2721 |
-| `agent/PLAN-npm-ci-parallel-parity.md` | compacted | 39 | 0 | 0 | 3211 |
-| `agent/PLAN-pipefail-grep-q-renet-gate.md` | draft | 252 | 16 | 0 | 22440 |
-| `agent/PLAN-plan-file-lifecycle.md` | ready | 346 | 3 | 10 | 28693 |
-| `agent/PLAN-plyr-css-on-demand-loading.md` | draft | 130 | 4 | 7 | 11025 |
-| `agent/PLAN-printf-echo-pipefail-sweep.md` | compacted | 102 | 0 | 33 | 10253 |
-| `agent/PLAN-promote-mutation-runner.md` | compacted | 38 | 0 | 0 | 2954 |
-| `agent/PLAN-prose-style-under-wrap.md` | draft | 233 | 12 | 1 | 21685 |
-| `agent/PLAN-pytest-parallelism.md` | compacted | 56 | 0 | 10 | 4621 |
-| `agent/PLAN-rclone-decommission.md` | compacted | 38 | 0 | 0 | 2996 |
-| `agent/PLAN-reflow-comments-boundary-wrapping.md` | done | 57 | 0 | 9 | 7994 |
-| `agent/PLAN-reggate-effort-cap.md` | compacted | 37 | 0 | 0 | 2563 |
-| `agent/PLAN-renet-fetch-hardening.md` | parked | 33 | 0 | 0 | 886 |
-| `agent/PLAN-require-testid-sweep.md` | compacted | 38 | 0 | 0 | 2488 |
-| `agent/PLAN-resprofile-wave2.md` | compacted | 38 | 0 | 0 | 3053 |
-| `agent/PLAN-rest-graphql-guard-parity.md` | compacted | 53 | 0 | 8 | 3987 |
-| `agent/PLAN-resumable-rebase-executor.md` | compacted | 35 | 0 | 0 | 2189 |
-| `agent/PLAN-review-red-stop-hook-check.md` | compacted | 38 | 0 | 0 | 2886 |
-| `agent/PLAN-rotation-gh-removal.md` | plan | 48 | 0 | 0 | 3878 |
-| `agent/PLAN-runtime-caller-identity.md` | compacted | 38 | 0 | 0 | 2519 |
-| `agent/PLAN-scope-gate-sort-collation.md` | compacted | 37 | 0 | 0 | 2761 |
-| `agent/PLAN-scope-gates-split.md` | compacted | 37 | 0 | 0 | 2585 |
-| `agent/PLAN-secret-namespace-migration.md` | partially | 1659 | 9 | 21 | 173102 |
-| `agent/PLAN-sentence-aware-wrapping.md` | compacted | 37 | 0 | 0 | 2781 |
-| `agent/PLAN-session-onboarding-marker.md` | draft | 129 | 5 | 5 | 11939 |
-| `agent/PLAN-shell-command-gate-regex-fix.md` | compacted | 38 | 0 | 0 | 3142 |
-| `agent/PLAN-shell-resource-profiling.md` | compacted | 37 | 0 | 0 | 3301 |
-| `agent/PLAN-skip-release-gates-r2-manifest.md` | compacted | 38 | 0 | 0 | 3133 |
-| `agent/PLAN-ssr-nav-locale.md` | compacted | 35 | 0 | 0 | 1953 |
-| `agent/PLAN-staged-duplication-probe.md` | compacted | 52 | 0 | 8 | 3358 |
-| `agent/PLAN-state-md-session-isolation.md` | compacted | 39 | 0 | 0 | 2527 |
-| `agent/PLAN-stop-always-tier.md` | compacted | 38 | 0 | 0 | 3122 |
-| `agent/PLAN-stop-hook-cadence.md` | compacted | 37 | 0 | 0 | 2599 |
-| `agent/PLAN-stop-hook-overhaul.md` | ready | 182 | 31 | 0 | 14546 |
-| `agent/PLAN-stop-report-queue.md` | compacted | 37 | 0 | 0 | 2509 |
-| `agent/PLAN-subagent-idle-detection.md` | compacted | 38 | 0 | 0 | 2673 |
-| `agent/PLAN-subscription-status-error-swallowing.md` | done | 88 | 0 | 5 | 4583 |
-| `agent/PLAN-sync-docker-latest-tag-with-releases.md` | compacted | 60 | 0 | 0 | 4148 |
-| `agent/PLAN-test-advisor.md` | compacted | 38 | 0 | 0 | 2708 |
-| `agent/PLAN-testing-surface-audit.md` | compacted | 37 | 0 | 0 | 3661 |
-| `agent/PLAN-tooling-transformation.md` | ready | 6895 | 4 | 150 | 645377 |
-| `agent/PLAN-trap-enforcement.md` | w | 503 | 0 | 0 | 48775 |
-| `agent/PLAN-typecheck-orphan-packages.md` | ready | 66 | 0 | 0 | 4499 |
-| `agent/PLAN-unify-trap-corpus.md` | compacted | 38 | 0 | 0 | 2749 |
-| `agent/PLAN-w7p4w-docker-cutover.md` | compacted | 61 | 0 | 12 | 4729 |
-| `agent/PLAN-w7p5a-deploy-release-port.md` | compacted | 52 | 0 | 8 | 3885 |
-| `agent/PLAN-w9p2-script-relocation.md` | draft | 166 | 10 | 0 | 25986 |
-| `agent/PLAN-wire-account-vitest-ci.md` | compacted | 38 | 0 | 0 | 3040 |
-| `agent/PLAN-wl-report-liveness-oracle.md` | compacted | 51 | 0 | 7 | 3642 |
-| `agent/PLAN-www-bundle-determinism.md` | compacted | 37 | 0 | 0 | 2569 |
+| `agent/plans/PLAN-add-chunkstore-backup-verb.md` | compacted | 64 | 0 | 0 | 5601 |
+| `agent/plans/PLAN-add-js-extensions-shared.md` | compacted | 50 | 0 | 0 | 4285 |
+| `agent/plans/PLAN-agent-hints-implementation.md` | compacted | 60 | 0 | 0 | 4617 |
+| `agent/plans/PLAN-agent-hints-in-stop-hook.md` | compacted | 51 | 0 | 0 | 3647 |
+| `agent/plans/PLAN-agent-tree-lifecycle.md` | in-progress | 64 | 7 | 0 | 8732 |
+| `agent/plans/PLAN-ask-flow-preemptive-settled-check.md` | compacted | 38 | 0 | 0 | 2358 |
+| `agent/plans/PLAN-b2-emit-matrix.md` | partially | 295 | 6 | 7 | 30971 |
+| `agent/plans/PLAN-backup-list-executor-fix.md` | compacted | 55 | 0 | 0 | 5498 |
+| `agent/plans/PLAN-backup-quota-delta-gc.md` | compacted | 58 | 0 | 0 | 5576 |
+| `agent/plans/PLAN-backup-restore-target-license.md` | compacted | 56 | 0 | 0 | 5560 |
+| `agent/plans/PLAN-breakpoint-secret-shape.md` | design | 47 | 0 | 0 | 3363 |
+| `agent/plans/PLAN-bump-k3s-upstream-1-36-4.md` | compacted | 35 | 0 | 0 | 2420 |
+| `agent/plans/PLAN-bws-rotation-on-failure.md` | draft | 102 | 18 | 0 | 11269 |
+| `agent/plans/PLAN-chunk-store-browse-DECISION.md` | compacted | 37 | 0 | 0 | 2572 |
+| `agent/plans/PLAN-chunk-store-browse-engine.md` | compacted | 56 | 0 | 0 | 5227 |
+| `agent/plans/PLAN-chunk-store-browse-server.md` | compacted | 48 | 0 | 0 | 4877 |
+| `agent/plans/PLAN-chunkstore-restore.md` | compacted | 55 | 0 | 0 | 4230 |
+| `agent/plans/PLAN-ci-pr-head-ref-trigger-resolution.md` | draft | 253 | 15 | 0 | 26655 |
+| `agent/plans/PLAN-ci-trace-no-pr-branch.md` | compacted | 38 | 0 | 0 | 2480 |
+| `agent/plans/PLAN-ci-vacuity-baseline-registry.md` | ready | 169 | 1 | 14 | 16539 |
+| `agent/plans/PLAN-ci-watch-enforcement.md` | draft | 189 | 0 | 0 | 15525 |
+| `agent/plans/PLAN-citation-fragility.md` | compacted | 48 | 0 | 6 | 4845 |
+| `agent/plans/PLAN-cli-em-dash-lint-gate.md` | compacted | 57 | 0 | 0 | 4340 |
+| `agent/plans/PLAN-cold-path.md` | compacted | 52 | 0 | 0 | 4026 |
+| `agent/plans/PLAN-commit-author-identity.md` | draft | 183 | 3 | 10 | 17993 |
+| `agent/plans/PLAN-completion-strategy.md` | compacted | 39 | 0 | 0 | 3861 |
+| `agent/plans/PLAN-consolidation-pressure.md` | compacted | 58 | 0 | 10 | 4864 |
+| `agent/plans/PLAN-devbox-uid-derived-image.md` | compacted | 36 | 0 | 0 | 2532 |
+| `agent/plans/PLAN-docker-image-freshness-soak-filter.md` | compacted | 39 | 0 | 0 | 2715 |
+| `agent/plans/PLAN-duplication-angle.md` | compacted | 37 | 0 | 0 | 2643 |
+| `agent/plans/PLAN-durable-reports-and-push-inbox.md` | compacted | 52 | 0 | 0 | 3692 |
+| `agent/plans/PLAN-env-to-bitwarden-v2.md` | draft | 495 | 5 | 4 | 44905 |
+| `agent/plans/PLAN-extension-shaped-matchers.md` | compacted | 37 | 0 | 0 | 3104 |
+| `agent/plans/PLAN-fix-ci-contention-aware-timeouts.md` | compacted | 38 | 0 | 0 | 3425 |
+| `agent/plans/PLAN-fix-german-translation-artifacts.md` | compacted | 50 | 0 | 0 | 3117 |
+| `agent/plans/PLAN-fix-in-session-rule.md` | compacted | 55 | 0 | 0 | 3577 |
+| `agent/plans/PLAN-fix-tutorial-player-debug-hook-attachment.md` | compacted | 37 | 0 | 0 | 3148 |
+| `agent/plans/PLAN-gh-swallow-gates-audit.md` | compacted | 49 | 0 | 6 | 4452 |
+| `agent/plans/PLAN-git-history-media-rewrite.md` | compacted | 37 | 0 | 0 | 2958 |
+| `agent/plans/PLAN-git-ignore-aware-discover.md` | compacted | 57 | 0 | 10 | 4730 |
+| `agent/plans/PLAN-github-actions-workflow-run-trigger-fix.md` | compacted | 54 | 0 | 0 | 3927 |
+| `agent/plans/PLAN-greenlight-verify-at-read.md` | compacted | 44 | 0 | 0 | 3606 |
+| `agent/plans/PLAN-judge-gate-worthiness-and-surface-scope.md` | compacted | 39 | 0 | 0 | 3232 |
+| `agent/plans/PLAN-judge-prompt-trap-conflation.md` | compacted | 54 | 0 | 8 | 3828 |
+| `agent/plans/PLAN-lint-css-ci-wiring.md` | compacted | 54 | 0 | 0 | 4365 |
+| `agent/plans/PLAN-lint-rule-matrix-probe.md` | compacted | 50 | 0 | 0 | 3583 |
+| `agent/plans/PLAN-locale-techdiff-resync.md` | ready | 69 | 0 | 0 | 4536 |
+| `agent/plans/PLAN-localize-cheat-sheet-rendering.md` | compacted | 50 | 0 | 0 | 4436 |
+| `agent/plans/PLAN-migrate-plan-doc-discovery.md` | draft | 242 | 23 | 0 | 19580 |
+| `agent/plans/PLAN-nightly-retry-and-watchdog-noise.md` | compacted | 39 | 0 | 0 | 2744 |
+| `agent/plans/PLAN-npm-ci-parallel-parity.md` | compacted | 40 | 0 | 0 | 3234 |
+| `agent/plans/PLAN-pipefail-grep-q-renet-gate.md` | draft | 253 | 16 | 0 | 22463 |
+| `agent/plans/PLAN-plan-file-lifecycle.md` | ready | 347 | 3 | 10 | 28716 |
+| `agent/plans/PLAN-plyr-css-on-demand-loading.md` | draft | 131 | 4 | 7 | 11048 |
+| `agent/plans/PLAN-printf-echo-pipefail-sweep.md` | compacted | 103 | 0 | 33 | 10276 |
+| `agent/plans/PLAN-promote-mutation-runner.md` | compacted | 39 | 0 | 0 | 2977 |
+| `agent/plans/PLAN-prose-style-under-wrap.md` | draft | 234 | 12 | 1 | 21708 |
+| `agent/plans/PLAN-pytest-parallelism.md` | compacted | 57 | 0 | 10 | 4644 |
+| `agent/plans/PLAN-rclone-decommission.md` | compacted | 39 | 0 | 0 | 3019 |
+| `agent/plans/PLAN-reggate-effort-cap.md` | compacted | 38 | 0 | 0 | 2586 |
+| `agent/plans/PLAN-renet-fetch-hardening.md` | parked | 34 | 0 | 0 | 909 |
+| `agent/plans/PLAN-require-testid-sweep.md` | compacted | 39 | 0 | 0 | 2511 |
+| `agent/plans/PLAN-resprofile-wave2.md` | compacted | 39 | 0 | 0 | 3076 |
+| `agent/plans/PLAN-rest-graphql-guard-parity.md` | compacted | 54 | 0 | 8 | 4010 |
+| `agent/plans/PLAN-resumable-rebase-executor.md` | compacted | 36 | 0 | 0 | 2212 |
+| `agent/plans/PLAN-review-red-stop-hook-check.md` | compacted | 39 | 0 | 0 | 2909 |
+| `agent/plans/PLAN-rotation-gh-removal.md` | plan | 49 | 0 | 0 | 3901 |
+| `agent/plans/PLAN-runtime-caller-identity.md` | compacted | 39 | 0 | 0 | 2542 |
+| `agent/plans/PLAN-scope-gate-sort-collation.md` | compacted | 38 | 0 | 0 | 2784 |
+| `agent/plans/PLAN-scope-gates-split.md` | compacted | 38 | 0 | 0 | 2608 |
+| `agent/plans/PLAN-secret-namespace-migration.md` | partially | 1660 | 9 | 21 | 173125 |
+| `agent/plans/PLAN-sentence-aware-wrapping.md` | compacted | 38 | 0 | 0 | 2804 |
+| `agent/plans/PLAN-session-onboarding-marker.md` | draft | 130 | 5 | 5 | 11962 |
+| `agent/plans/PLAN-shell-command-gate-regex-fix.md` | compacted | 39 | 0 | 0 | 3165 |
+| `agent/plans/PLAN-shell-resource-profiling.md` | compacted | 38 | 0 | 0 | 3324 |
+| `agent/plans/PLAN-skip-release-gates-r2-manifest.md` | compacted | 39 | 0 | 0 | 3156 |
+| `agent/plans/PLAN-ssr-nav-locale.md` | compacted | 36 | 0 | 0 | 1976 |
+| `agent/plans/PLAN-staged-duplication-probe.md` | compacted | 52 | 0 | 8 | 3323 |
+| `agent/plans/PLAN-state-md-session-isolation.md` | compacted | 40 | 0 | 0 | 2550 |
+| `agent/plans/PLAN-stop-always-tier.md` | compacted | 39 | 0 | 0 | 3145 |
+| `agent/plans/PLAN-stop-hook-cadence.md` | compacted | 38 | 0 | 0 | 2622 |
+| `agent/plans/PLAN-stop-hook-overhaul.md` | ready | 183 | 31 | 0 | 14569 |
+| `agent/plans/PLAN-stop-report-queue.md` | compacted | 38 | 0 | 0 | 2532 |
+| `agent/plans/PLAN-subagent-idle-detection.md` | compacted | 39 | 0 | 0 | 2696 |
+| `agent/plans/PLAN-sync-docker-latest-tag-with-releases.md` | compacted | 61 | 0 | 0 | 4171 |
+| `agent/plans/PLAN-test-advisor.md` | compacted | 39 | 0 | 0 | 2731 |
+| `agent/plans/PLAN-testing-surface-audit.md` | compacted | 38 | 0 | 0 | 3684 |
+| `agent/plans/PLAN-tooling-transformation.md` | ready | 6896 | 4 | 150 | 645408 |
+| `agent/plans/PLAN-trap-enforcement.md` | w | 504 | 0 | 0 | 48806 |
+| `agent/plans/PLAN-typecheck-orphan-packages.md` | ready | 67 | 0 | 0 | 4522 |
+| `agent/plans/PLAN-unify-trap-corpus.md` | compacted | 39 | 0 | 0 | 2772 |
+| `agent/plans/PLAN-w7p4w-docker-cutover.md` | compacted | 62 | 0 | 12 | 4752 |
+| `agent/plans/PLAN-w7p5a-deploy-release-port.md` | compacted | 53 | 0 | 8 | 3908 |
+| `agent/plans/PLAN-w9p2-script-relocation.md` | draft | 167 | 10 | 0 | 26009 |
+| `agent/plans/PLAN-wire-account-vitest-ci.md` | compacted | 39 | 0 | 0 | 3063 |
+| `agent/plans/PLAN-wl-report-liveness-oracle.md` | compacted | 52 | 0 | 7 | 3665 |
+| `agent/plans/PLAN-www-bundle-determinism.md` | compacted | 38 | 0 | 0 | 2592 |
+| `agent/plans/_done/PLAN-consolidate-test-scaffolding.md` | done | 66 | 0 | 4 | 4475 |
+| `agent/plans/_done/PLAN-hook-inventory-warn-guards.md` | landed | 69 | 0 | 0 | 4111 |
+| `agent/plans/_done/PLAN-json-prose-scope-audit.md` | done | 79 | 0 | 9 | 8023 |
+| `agent/plans/_done/PLAN-local-ci-gate-prerequisites.md` | landed | 79 | 0 | 0 | 4683 |
+| `agent/plans/_done/PLAN-reflow-comments-boundary-wrapping.md` | done | 58 | 0 | 9 | 8017 |
+| `agent/plans/_done/PLAN-subscription-status-error-swallowing.md` | done | 89 | 0 | 5 | 4606 |
 
 103 plan(s), 33 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.

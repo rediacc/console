@@ -277,6 +277,37 @@ def _head(path: pathlib.Path) -> list[str]:
     return text.split("\n")[:HEADER_LINES]
 
 
+_FIRST_SEEN_RE = re.compile(r"^First-Seen:[ \t]*(\d{4}-\d{2}-\d{2})[ \t]*$")
+
+
+def first_seen(path: pathlib.Path) -> str:
+    """The `First-Seen:` date a move stamped into the header, or "".
+
+    RISK 1 OF agent/PLAN-agent-tree-lifecycle.md, ON THIS CLOCK. `git log` does not follow renames, so the day every plan moved into `agent/plans/` the last-commit date of all 97 of them became the date of the move, and this gate's 33-day window silently restarted for the whole corpus. `check_plan_folders.py --move` writes the PRE-move committer date here, and `plan_age_date`
+    below takes the OLDER of the two, so neither a move nor a re-write of the header can buy a plan freshness.
+
+    The same anchors as every other header reader in this file: the first `HEADER_LINES` lines, anchored at both ends, so the word in prose is not a date.
+    """
+    for line in _head(path):
+        match = _FIRST_SEEN_RE.match(line)
+        if match:
+            return match.group(1)
+    return ""
+
+
+def plan_age_date(path: pathlib.Path, committed: str) -> str:
+    """The OLDER of `First-Seen:` and the last commit touching the path.
+
+    `committed` is the `%cI` this gate has always read; "" means git has no date for the path at all, which is the state of every plan between a `git mv` and the commit that lands it. Returning `First-Seen:` there is what keeps an in-flight migration measurable instead of dropping the whole corpus out of the age loop and reporting a clean tree for files nobody aged.
+    """
+    seen = first_seen(path)
+    if not seen:
+        return committed
+    if not committed:
+        return seen
+    return seen if seen < committed[:10] else committed
+
+
 def blob_is_real(blob: str, root: os.PathLike[str] | str | None = None) -> bool:
     """True when git has `blob` AS A BLOB, in the repository we are standing in."""
     if not blob:
@@ -574,20 +605,42 @@ def main(argv: list[str] | None = None) -> int:
     today = dt.datetime.now(dt.UTC).strftime("%Y-%m-%d")
 
     rows: list[tuple[str, int, str]] = []
+    undated: list[str] = []
     if not skip_ages:
         for plan in plans:
-            when = gitx.git(["log", "-1", "--format=%cI", "--", plan], root=root).stdout.strip()
+            committed = gitx.git(
+                ["log", "-1", "--format=%cI", "--", plan], root=root
+            ).stdout.strip()
+            when = plan_age_date(pathlib.Path(plan), committed)
             if not when:
+                undated.append(plan)
                 continue
             try:
                 then = dt.datetime.fromisoformat(when)
             except ValueError:
+                undated.append(plan)
                 continue
             if then.tzinfo is None:
                 then = then.replace(tzinfo=dt.UTC)
             days = (dt.datetime.now(dt.UTC) - then).days
             red_on = (then + dt.timedelta(days=delete_days)).date().isoformat()
             rows.append((plan, days, red_on))
+
+    # THE AGE LOOP HAS ITS OWN FLOOR, and it is the corpus floor rather than a second number. `plans` clearing the floor proves the GLOB found the tree; it says nothing about whether anything was aged, and a plan whose date cannot be read used to be dropped here in silence. Measured 2026-09-21 mid-migration: 97 plans renamed and not yet committed have no `%cI` at all, and this gate
+    # printed "none over 33 days" for a corpus in which it had aged nothing.
+    if not skip_ages and len(rows) < min_plans:
+        print(
+            "VACUOUS INPUT: %d of %d plan file(s) carry a readable date, floor is %d."
+            % (len(rows), len(plans), min_plans),
+            file=sys.stderr,
+        )
+        print(
+            "  The corpus was found and then not aged, which reads exactly like a clean tree. Refusing a verdict instead.",
+            file=sys.stderr,
+        )
+        for plan in undated[:10]:
+            print("    %s" % plan, file=sys.stderr)
+        return 1
 
     for plan, days, red_on in rows:
         path = pathlib.Path(plan)
@@ -840,6 +893,34 @@ def selftest() -> int:
 
         record.write_text("# t\nStatus: parked\n", encoding="utf-8")
         ctl.check("RECORD: parked is read, and is NOT compacted", record_status(record), "parked")
+
+        # -- The two-sided clock, which is risk 1 of the tree-lifecycle plan --
+        record.write_text("# t\nStatus: draft\nFirst-Seen: 2026-01-01\n", encoding="utf-8")
+        ctl.check("CLOCK: First-Seen is read from the header", first_seen(record), "2026-01-01")
+        ctl.check(
+            "CLOCK: a move cannot buy freshness -- the OLDER date wins",
+            plan_age_date(record, "2026-09-20T10:00:00+00:00"),
+            "2026-01-01",
+        )
+        ctl.check(
+            "CLOCK MIRROR: an OLDER commit still wins over a later First-Seen",
+            plan_age_date(record, "2025-05-05T10:00:00+00:00"),
+            "2025-05-05T10:00:00+00:00",
+        )
+        ctl.check(
+            "CLOCK: an uncommitted rename falls back to First-Seen rather than dropping out",
+            plan_age_date(record, ""),
+            "2026-01-01",
+        )
+        record.write_text("# t\nStatus: draft\n", encoding="utf-8")
+        ctl.check(
+            "CLOCK MIRROR: with no header date the committed one is used unchanged",
+            plan_age_date(record, "2026-09-20T10:00:00+00:00"),
+            "2026-09-20T10:00:00+00:00",
+        )
+        filler_seen = "".join("filler %d\n" % i for i in range(1, 11))
+        record.write_text("# t\n%sFirst-Seen: 2026-01-01\n" % filler_seen, encoding="utf-8")
+        ctl.check("CLOCK MIRROR: a First-Seen below line 10 is not read", first_seen(record), "")
 
         # -- The allowlist parser, both directions ---------------------------
         exempt, problems = parse_allowlist(

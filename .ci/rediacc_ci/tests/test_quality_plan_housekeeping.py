@@ -399,3 +399,70 @@ def test_record_states_reads_nothing_rather_than_guessing(tmp_path: pathlib.Path
     good = tmp_path / "good.json"
     good.write_text('{"record_states": ["compacted"]}', encoding="utf-8")
     assert hk.record_states(good) == ("compacted",)
+
+
+# --------------------------------------------------------------------------- The two-sided clock, which is risk 1 of agent/plans/PLAN-agent-tree-lifecycle.md ---------------------------------------------------------------------------
+
+
+def test_plan_age_date_takes_the_older_of_the_two_dates(tmp_path: pathlib.Path) -> None:
+    """`git log` does not follow renames, so a move would otherwise restart the window.
+
+    The day 97 plans moved into `agent/plans/`, every `%cI` in the corpus became the date of the move and this gate's 33-day clock silently restarted for all of them. `First-Seen:` carries the pre-move committer date and the older of the two wins, so neither the move nor a re-written header buys a plan freshness.
+    """
+    plan = tmp_path / "PLAN-x.md"
+    plan.write_text("# t\nStatus: draft\nFirst-Seen: 2026-01-01\n", encoding="utf-8")
+    assert hk.first_seen(plan) == "2026-01-01"
+    assert hk.plan_age_date(plan, "2026-09-20T10:00:00+00:00") == "2026-01-01"
+    assert hk.plan_age_date(plan, "2025-05-05T10:00:00+00:00") == "2025-05-05T10:00:00+00:00"
+    assert hk.plan_age_date(plan, "") == "2026-01-01"
+    plan.write_text("# t\nStatus: draft\n", encoding="utf-8")
+    assert hk.first_seen(plan) == ""
+    assert hk.plan_age_date(plan, "2026-09-20T10:00:00+00:00") == "2026-09-20T10:00:00+00:00"
+    assert hk.plan_age_date(plan, "") == ""
+
+
+def test_a_corpus_the_gate_cannot_age_refuses_rather_than_reporting_it_clean(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A plan found by the glob and dropped by the age loop used to vanish in silence.
+
+    Measured mid-migration: 97 renamed-and-uncommitted plans have no `%cI` at any path, so every one fell out of the loop and the gate printed "none over 33 days" for a corpus in which it had aged nothing. The age loop now carries the same floor the corpus does.
+    """
+    root = tmp_path / "tree"
+    (root / "agent" / "plans").mkdir(parents=True)
+    (root / ".ci" / "config").mkdir(parents=True)
+    (root / ".ci" / "config" / "plan-lifecycle.json").write_text(
+        CONFIG.read_text(encoding="utf-8"), encoding="utf-8"
+    )
+    for i in range(4):
+        (root / "agent" / "plans" / ("PLAN-%02d.md" % i)).write_text(
+            "# t\nStatus: draft\n", encoding="utf-8"
+        )
+    for args in (
+        ["init", "-q", "-b", "main", "."],
+        ["config", "user.email", "fixture@example.invalid"],
+        ["config", "user.name", "fixture"],
+        ["add", "-A"],
+        ["commit", "-qm", "base"],
+    ):
+        subprocess.run(["git", "-C", str(root), *args], check=True, capture_output=True)
+    monkeypatch.setenv(hk.ROOT_ENV, str(root))
+    monkeypatch.setenv(hk.MIN_FILES_ENV, "3")
+    monkeypatch.chdir(root)
+    assert hk.main([]) == 0, "a committed corpus is aged normally"
+    # RENAMED WITHIN `agent/plans/`, so the corpus floor cannot fire instead and the
+    # refusal under test is the only one left: four plans found, four of them undated.
+    for i in range(4):
+        subprocess.run(
+            [
+                "git",
+                "-C",
+                str(root),
+                "mv",
+                "agent/plans/PLAN-%02d.md" % i,
+                "agent/plans/PLAN-1%d.md" % i,
+            ],
+            check=True,
+            capture_output=True,
+        )
+    assert hk.main([]) == 1, "a corpus with no readable date must refuse"
