@@ -1196,6 +1196,11 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       toolchain checks fold into one bash file, `chain-head.sh`, and every other `.claude` bash file is to be ported
       where it can be: `bash_env.sh` cannot (BASH_ENV sources bash into the shell, and only the machine-local
       `~/.claude/settings.json` wires it), inline shell in settings.json was rejected as a policy loophole.
+      **FOUR MORE RULINGS, SAME DAY.** A licensed script whose differential executes the bash twin is retired by
+      freezing the twin's outputs as goldens (header carries the twin's blob sha) and deleting the bash; the 860
+      em dashes in `packages/cli/src` comment lines stay replaced by commas (d6edcdd13); the six moved pronoun
+      findings stay baselined under new hashes; and floors are lowered to the measured count in the same change
+      as a deletion.
       **THREE BLOCKERS ON `run-all.sh` SPECIFICALLY, each verified against the enforcing code
       on 2026-09-09, not inferred.** The wiring is done (W7P3-BAT) and the licence is granted
       at `27 == 27`; these are what still stops the file being removed.
