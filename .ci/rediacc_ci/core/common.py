@@ -64,7 +64,7 @@ QUIRK 1 -- `require_input` PASSES VACUOUSLY ON AN EMPTY PATH LIST, and it is the
     $ bash -c 'source common.sh; require_input -f "missing {}" "why"; echo "rc=$?"'
     reached rc=0
 
-`for p in "$@"` over zero arguments runs zero times and the function returns 0. Two of the three call sites pass named scalars and cannot be empty. The third, `.ci/scripts/quality/check-no-app-admin-perm.sh:56-58`, passes
+`for p in "$@"` over zero arguments runs zero times and the function returns 0. Two of the three call sites pass named scalars and cannot be empty. The third, in the twin `.ci/scripts/quality/check-no-app-admin-perm.sh` that W7 P5 has since deleted, passed
 `"${SCAN_DIRS[@]}"` -- an ARRAY -- and that array is two hard-coded literals
 today, so the defect is LATENT rather than live. It is exactly the shape that stops being latent the day someone builds that array from a glob or a `find`. `REQUIRE_INPUT_VACUOUS_IS_A_PASS` below records the twin's answer; this module's `require_input` refuses on an empty list, and both directions are pinned.
 

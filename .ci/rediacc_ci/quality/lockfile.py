@@ -1,6 +1,6 @@
 """Validate EVERY package-lock.json in the tree, on two independent properties.
 
-Ported from `.ci/scripts/quality/check-lockfile.sh`, which is NOT deleted; see `rediacc_ci.quality.__init__` for why both copies live side by side until a committed differential ledger says otherwise.
+Ported from `.ci/scripts/quality/check-lockfile.sh`, which W7 P5 batch C1 retired once `.ci/shadow/w7p2-lockfile.observations.jsonl` asserted equivalence over five distinct trees.
 
 WHY THE TWIN WAS REWRITTEN, carried over from its header because the archaeology is the half of a gate that cannot be recovered from the code:
 

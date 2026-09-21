@@ -22,7 +22,7 @@ WHY AN ENTRY POINT AT ALL, rather than registering the module directly. Two inde
      documents that exact trap for `.py`, which is why the registered command
      is the bare path to this file.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-npmrc.sh` is NOT deleted by this change. It stays on disk as the twin, and deleting it is W7 P5's job, in a later change. What moves here is only which of the two the registry invokes.
+INVARIANT 5 HELD UNTIL THE LEDGER LICENSED THIS PORT: `.ci/scripts/quality/check-npmrc.sh` stayed on disk as the differential twin until `.ci/shadow/w7p2-npmrc.observations.jsonl` asserted equivalence over five distinct trees. W7 P5 batch C1 retired it, and this entry point is what the gate runs from.
 
 A HEADER MOVE MUST CARRY EVERY FIELD, and this one did not on its first pass. The twin's header held `emit: false`, its blocker, `needs: none` and `selftest: true`; the port was written with only `step`, `lane` and `why`, and SEVEN GATES PASSED ANYWAY. They could not see it: `emit: false` suppresses only the three workflow-region checks (`gate-bind.ts:1724`), while the registration
 assertions above it still ran and still agreed. The loss would have surfaced first as damage -- on the next `gate:bind --write` a second copy of this step lands inside the emitted region, `gate-bind` reds with two steps of one name in `quality-code`, and the guard the blocker exists to protect is gone. Restored 2026-09-07, verbatim from the twin, by a reviewer reading the two

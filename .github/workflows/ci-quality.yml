@@ -76,7 +76,7 @@ on:
       # Three-state control for externally-dependent gates, computed by
       # ci.yml's initialize: 'hard' (normal PR: failures block), 'skip' (PR
       # with the no-external-quality label: steps do not run), 'soft'
-      # (schedule/dispatch: run-external-gate.sh downgrades a failure to a
+      # (schedule/dispatch: run_external_gate downgrades a failure to a
       # ::warning:: so external drift cannot redden the nightly). Default
       # 'hard' fails closed if a caller forgets to pass it.
       external_quality:
@@ -90,7 +90,7 @@ on:
       # inconsistent). No soft state and no wrapper: these gates read this
       # tree, not the outside world, so there is no drift to downgrade.
       # Default 'hard' fails closed if a caller forgets to pass it, and both
-      # consuming jobs run announce-gate-skips.sh so a skip is never silent.
+      # consuming jobs run announce_gate_skips so a skip is never silent.
       media_quality:
         type: string
         required: false

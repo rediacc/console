@@ -378,7 +378,7 @@ check_env_shell_vars
 # A job-level `environment:` makes GitHub create the environment OBJECT plus a
 # deployment record. ci.yml's deploy-preview job did that for every PR, and CI
 # cannot undo it: deleting an environment needs Administration:write, which
-# check-no-app-admin-perm.sh forbids the CI App from holding. 25 empty `pr-*`
+# check:ci-app-admin-perm forbids the CI App from holding. 25 empty `pr-*`
 # shells accumulated on /deployments before they were deleted by hand.
 #
 # BOTH SYNTACTIC FORMS, because only one of them is the obvious one:
@@ -427,7 +427,7 @@ check_pr_environment_names() {
             echo "$out" | sed 's/^/    /'
             echo "    GitHub creates the environment OBJECT for this, and no CI token can"
             echo "    delete it again (Administration:write is forbidden by"
-            echo "    check-no-app-admin-perm.sh). Drop the environment: block; the preview"
+            echo "    check:ci-app-admin-perm). Drop the environment: block; the preview"
             echo "    URL belongs in \$GITHUB_STEP_SUMMARY."
             echo ""
             ERRORS=$((ERRORS + 1))

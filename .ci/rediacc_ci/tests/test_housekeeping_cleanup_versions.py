@@ -1408,7 +1408,7 @@ def test_phase_5b_dry_run_says_would_be_deleted() -> None:
 
 
 def test_phase_6_is_a_403_by_design_and_stops_after_the_first_one() -> None:
-    """HAZARD 4. `check-no-app-admin-perm.sh` forbids the permission this needs, so the 403 arm logs at INFO and breaks rather than warning per environment."""
+    """HAZARD 4. `check:ci-app-admin-perm` forbids the permission this needs, so the 403 arm logs at INFO and breaks rather than warning per environment."""
     result = sides(
         "cleanup_environments",
         fixture={

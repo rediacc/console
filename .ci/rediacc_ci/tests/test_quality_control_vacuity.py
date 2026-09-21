@@ -120,11 +120,16 @@ def test_has_control_agrees_with_the_live_grep_on_every_gate() -> None:
 
 
 def test_both_classes_are_non_empty_across_the_real_corpus() -> None:
-    """A classifier that answered "yes" to everything, or "no" to everything, would pass both comparisons above only if the corpus happened to be uniform. It is not, and this says so with numbers."""
+    """A classifier that answered "yes" to everything, or "no" to everything, would pass both comparisons above only if the corpus happened to be uniform. It is not, and this says so with numbers.
+
+    THE CONTROLLED FLOOR TRACKS A SHRINKING CORPUS AND WAS FOUND ALREADY BREACHED. It read 5 while the W7 P5 twin retirements took `.ci/scripts/quality/check-*.sh` down with them, and the count reached 4 at `abda9690f` without anything going red in a lane that runs this file: measured there, `check-control-vacuity.sh`, `check-hook-integrity.sh`,
+    `check-review-turn-capacity.sh` and `check-toolchain-pins.sh`. Batches C1 and C2 retired two of those four, so the floor is the measured 2. It still refuses a classifier that answers "no" to everything, which is the property this case exists for; what it can no longer do is stand in for corpus SIZE, and the size floors live in
+    `scripts/gates/check-shape-duplication.ts`'s FAMILIES table instead.
+    """
     substituting = [p.name for p in _gate_files() if cv.builds_by_substitution(cv.read_lines(p))]
     controlled = [p.name for p in _gate_files() if cv.has_control(cv.read_lines(p))]
     assert len(substituting) >= 3, substituting
-    assert len(controlled) >= 5, controlled
+    assert len(controlled) >= 2, controlled
     assert len(substituting) < len(_gate_files()), "everything classified as substituting"
 
 
@@ -197,19 +202,13 @@ def test_selftest_is_green() -> None:
     assert cv.selftest() == 0
 
 
-def test_the_real_tree_passes_and_the_two_implementations_print_the_same_bytes() -> None:
-    """Byte comparison on the real tree, both streams, kept SEPARATE.
+def test_the_real_tree_passes_and_the_port_keeps_its_streams_apart() -> None:
+    """The real tree, both streams, kept SEPARATE.
 
-    Not a substitute for the ledger: this is one tree, and one tree is one observation (`scripts/lib/shadow-gate.ts`, invariant 5). It is here because the twin's output is short enough for a byte comparison to be meaningful, and a byte comparison catches a moved stream that a finding-set comparison calls chatter and ignores.
+    WHILE BOTH COPIES EXISTED this compared the twin's bytes against the port's on every stream, and `.ci/shadow/w7p2-control-vacuity.observations.jsonl` recorded that verdict over five distinct trees. W7 P5 batch C2 retired the twin once the ledger asserted, so the comparison that executed it went with it and what remains is the property the byte comparison was protecting: a
+    green real-tree run whose findings never leak onto the wrong stream.
     """
     root = str(paths.repo_root())
-    old = subprocess.run(
-        ["bash", ".ci/scripts/quality/check-control-vacuity.sh"],
-        cwd=root,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
     new = subprocess.run(
         ["python3", "-m", "rediacc_ci.quality.control_vacuity"],
         cwd=root,
@@ -218,6 +217,6 @@ def test_the_real_tree_passes_and_the_two_implementations_print_the_same_bytes()
         check=False,
         env={**diff.BASE_ENV, "PYTHONPATH": ".ci", "PYTHONDONTWRITEBYTECODE": "1"},
     )
-    assert old.returncode == new.returncode == 0, (old.stderr, new.stderr)
-    assert old.stdout == new.stdout
-    assert old.stderr == new.stderr
+    assert new.returncode == 0, new.stderr
+    assert new.stdout != "", "a green run still reports what it scanned"
+    assert "CONTROL DID NOT FIRE" not in new.stdout

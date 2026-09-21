@@ -1,0 +1,8 @@
+# twin .ci/scripts/quality/check-staging-tag-guard.sh blob 669c6953216a759054ab3d380c616444b2b45989
+exit: 0
+--- stdout ---
+  ok    cleanup-staging.sh still refuses a non-staging tag
+  ok    at least one executing call site was found
+  ok    .ci/scripts/release/x.sh guards its call against a non-staging tag
+✓ staging tag guard (1 call site(s)): 3 control(s) passed
+--- stderr ---

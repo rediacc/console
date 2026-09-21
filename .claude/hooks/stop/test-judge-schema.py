@@ -130,8 +130,8 @@ def answer(**kw):
     cs = {
         "applicable": True,
         "defect_class": "a guard that greps a script name without anchoring it to argv[0]",
-        "locus": ".claude/hooks/pre-bash/",
-        "search": "grep -rln 'block-' .claude/hooks/pre-bash/",
+        "locus": ".claude/rediacc_hooks/guards/",
+        "search": "grep -rln 'block_' .claude/rediacc_hooks/guards/",
         "evidence": "",
         "evidence_kind": "none",
         "swept": False,
@@ -188,7 +188,7 @@ control(
 )
 control(
     "PLANTED: the order carries the actual search command",
-    out["next_action"].startswith("Run: grep -rln 'block-'"),
+    out["next_action"].startswith("Run: grep -rln 'block_'"),
     True,
 )
 control("PLANTED: the demand is banked for the next stop", MARKER.exists(), True)
@@ -277,7 +277,7 @@ control(
 )
 control(
     "CONTROL: a command over a directory that DOES exist passes",
-    wl_classsweep.validate_search("grep -rln 'block-' .claude/hooks/pre-bash/"),
+    wl_classsweep.validate_search("grep -rln 'block_' .claude/rediacc_hooks/guards/"),
     (True, ""),
 )
 control(
@@ -1829,8 +1829,8 @@ out = wl_classsweep_answer = {
     "class_sweep": {
         "applicable": True,
         "defect_class": "a guard matching a mention instead of a target",
-        "locus": ".claude/hooks/pre-bash/",
-        "search": "grep -rln 'block-' .claude/hooks/pre-bash/",
+        "locus": ".claude/rediacc_hooks/guards/",
+        "search": "grep -rln 'block_' .claude/rediacc_hooks/guards/",
         "evidence": "",
         "evidence_kind": "none",
         "swept": False,
@@ -1933,11 +1933,11 @@ wl_classsweep.clear_outstanding(MARKER)
 # CONTROL: defect_class matches the fix-set, but locus/search legitimately point OUTSIDE it (the entire point of a sweep) -- grounding checks defect_class alone, never locus/search, so an unrelated locus/search must NOT trigger the caveat.
 out = answer(
     defect_class="a guard in block-example.sh missing anchoring",
-    locus=".claude/hooks/pre-bash/",
-    search="grep -rln 'block-' .claude/hooks/pre-bash/",
+    locus=".claude/rediacc_hooks/guards/",
+    search="grep -rln 'block_' .claude/rediacc_hooks/guards/",
 )
 kind, _note = wl_classsweep.apply_verdict(
-    out, path=MARKER, fixset_files=[".claude/hooks/pre-bash/block-example.sh"]
+    out, path=MARKER, fixset_files=[".claude/oracles/pre-bash/block-example.sh"]
 )
 control(
     "CONTROL: defect_class grounded, locus outside the fix-set is normal for a sweep, no caveat",

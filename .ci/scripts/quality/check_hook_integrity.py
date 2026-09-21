@@ -60,6 +60,10 @@ present after the fixture's was removed.
          Removing a guard is a deliberate act: drain the baseline in the same
          commit and say why.
 
+THE VICTIM HAS SINCE BEEN PORTED, and the record above is left as it was driven rather than rewritten, because a rewritten record of a run is not a record. W7 P6 turned `.claude/hooks/post-bash/cancel-old-ci.sh` into `cancel_old_ci.py`, so a re-drive needs a victim that satisfies the same two preconditions TODAY: present in `scripts/data/hook-inventory-baseline.json` and inside
+a directory declared in `hook-audit-scope.json`'s `guard_dirs`. `.claude/rediacc_hooks/guards/block_blanket_git_add.py` is one, and `.claude/hooks/trapguard/dispatch.py` is NOT, being in the inventory but in `guards_outside_chains`. The section-A arm the plant exercises is also covered by a live control in this gate's own selftest loop, which is what keeps the assertion running
+while this paragraph is only history.
+
 THE REAL TREE WAS NEVER WRITTEN TO for this gate.
 
 INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-hook-integrity.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.

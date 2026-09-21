@@ -1,0 +1,11 @@
+# twin .ci/scripts/quality/run-external-gate.sh blob 2fa64f11a3cedfd443307d5b179858bc970ab2e9
+exit: 0
+--- stdout ---
+::warning::external gate 'bash -c exit 7' failed (exit 7) in soft mode: external drift reported, run stays green (blocking on pull requests)
+--- stderr ---
+--- summary ---
+### External gate soft-failed: `bash -c exit 7` (exit 7)
+
+Scheduled runs report external drift (new upstream releases,
+new advisories) as a warning instead of a red; the identical
+failure blocks on a pull request. See docs/agent-reference/ci-gates.md.

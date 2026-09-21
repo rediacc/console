@@ -767,7 +767,7 @@ Contamination is SCOPED, so do not discard neighbouring results reflexively: the
 
 ## A detector can match its own prose
 Trap-Id: detector-matches-its-own-prose
-Enforced-By: file:.claude/hooks/pre-bash/lib/command-scan.sh
+Enforced-By: file:.claude/oracles/pre-bash/lib/command-scan.sh
 Residue: Only the HOOK half has a shared remedy, and two guards must deliberately not use it. The CI-gate half has three instances and no meta-gate: each needed a different fix, so there is nothing shared to enforce.
 
 **A gate that greps for a dangerous construct will eventually match text that merely LOOKS like that construct** — and it will name a file that is doing nothing wrong. Three instances now, all on this repo's own gates:

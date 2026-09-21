@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/quality/announce-gate-skips.sh`.
+"""Port of `.ci/scripts/quality/announce-gate-skips.sh`, deleted by W7 P5 batch E1.
 
 Announces, loudly, which gates a CI-control label removed from a run. The twin's own header carries the WHY and it is worth restating because it is the reason this file is not just a `case` statement: the repo's label opt-outs are STEP-level `if:` conditions, and a skipped step leaves the job `success` and prints NOTHING. A run whose media gates were all removed by
 `no-media-quality` therefore looks exactly like a run where they all passed. The announcer runs UNCONDITIONALLY, outside that `if:`, so the hold is visible in the log.

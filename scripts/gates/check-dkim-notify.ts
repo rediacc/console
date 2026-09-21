@@ -31,7 +31,7 @@
  * ---- gate ----
  * step: DKIM notify DNS
  * emit: false
- * blocker: BLOCKER: its `run:` goes through the `.ci/scripts/quality/run-external-gate.sh` WRAPPER, which the derived run does not produce, and its `env:` carries PROSE comments the grammar cannot hold.
+ * blocker: BLOCKER: its `run:` goes through the `rediacc_ci.quality.run_external_gate` WRAPPER, which the derived run does not produce, and its `env:` carries PROSE comments the grammar cannot hold.
  *     THE ENV REASON IS DEAD AND THIS LINE USED TO STATE IT. Box A1 taught the
  *     binder `env-<KEY>:` on 2026-09-08, so "gate-bind cannot emit an env block"
  *     stopped being true -- and a BLOCKER whose reason has quietly expired is the

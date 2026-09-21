@@ -1,0 +1,9 @@
+# twin .ci/scripts/quality/check-no-app-admin-perm.sh blob 1d226cfd22ff76dd1b4b4f75cc7bc3220495d12b
+exit: 1
+--- stdout ---
+.github/actions/app-token/action.yml:2:        permission-administration: write
+--- stderr ---
+→ Checking for permission-administration in workflows/actions...
+✗ Found permission-administration request above.
+✗ The rediacc-ci-cd App must not be granted administration:write.
+✗ See CLAUDE.md "App permission policy" for rationale.

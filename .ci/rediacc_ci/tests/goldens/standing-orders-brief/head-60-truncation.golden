@@ -1,0 +1,80 @@
+exit: 0
+--- stdout ---
+I am abcd1234 on branch ? at <ts>
+
+MY OPEN SLICE (the verb printed per item is the next command; base your report on this, not on memory):
+  - [ ] #00000000 line
+  - [ ] #00000001 line
+  - [ ] #00000002 line
+  - [ ] #00000003 line
+  - [ ] #00000004 line
+  - [ ] #00000005 line
+  - [ ] #00000006 line
+  - [ ] #00000007 line
+  - [ ] #00000008 line
+  - [ ] #00000009 line
+  - [ ] #00000010 line
+  - [ ] #00000011 line
+  - [ ] #00000012 line
+  - [ ] #00000013 line
+  - [ ] #00000014 line
+  - [ ] #00000015 line
+  - [ ] #00000016 line
+  - [ ] #00000017 line
+  - [ ] #00000018 line
+  - [ ] #00000019 line
+  - [ ] #00000020 line
+  - [ ] #00000021 line
+  - [ ] #00000022 line
+  - [ ] #00000023 line
+  - [ ] #00000024 line
+  - [ ] #00000025 line
+  - [ ] #00000026 line
+  - [ ] #00000027 line
+  - [ ] #00000028 line
+  - [ ] #00000029 line
+  - [ ] #00000030 line
+  - [ ] #00000031 line
+  - [ ] #00000032 line
+  - [ ] #00000033 line
+  - [ ] #00000034 line
+  - [ ] #00000035 line
+  - [ ] #00000036 line
+  - [ ] #00000037 line
+  - [ ] #00000038 line
+  - [ ] #00000039 line
+  - [ ] #00000040 line
+  - [ ] #00000041 line
+  - [ ] #00000042 line
+  - [ ] #00000043 line
+  - [ ] #00000044 line
+  - [ ] #00000045 line
+  - [ ] #00000046 line
+  - [ ] #00000047 line
+  - [ ] #00000048 line
+  - [ ] #00000049 line
+  - [ ] #00000050 line
+  - [ ] #00000051 line
+  - [ ] #00000052 line
+  - [ ] #00000053 line
+  - [ ] #00000054 line
+  - [ ] #00000055 line
+  - [ ] #00000056 line
+  - [ ] #00000057 line
+  - [ ] #00000058 line
+  - [ ] #00000059 line
+
+OWNERSHIP: 4 open in this repo, 90 mine, -86 a peer session's.
+  The hook blocks only on mine. A peer's items are REPORTED to the operator and never worked, never ticked.
+OPEN DEFERRALS OF MINE: 0. A queue of these is over-asking, not a backlog:
+  anything settleable from the code, the request, or a sensible default was mine to decide.
+
+ARE MY [>] LEASES BELIEVABLE:
+  (none: no in-flight background work claimed by me)
+
+WAITING FOR ME FROM PEER SESSIONS (silence means nothing is waiting):
+
+DURABLE CONTEXT: my STATE.md 2023-11-14 22:13:20; 3 plan file(s) under agent/
+  2 peer session folder(s) beside mine under agent/. Theirs to write, mine to read.
+  These survive a reboot. The worklist event log is tracked under agent/worklist/ and survives too; only locks, caches and briefs live under $TMPDIR.
+--- stderr ---

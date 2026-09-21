@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """check:ci-environment-names -- no workflow may mint an environment CI cannot clean up.
 
-WHY THIS EXISTS. A job-level `environment:` block makes GitHub create the environment OBJECT, and deleting one needs `Administration:write` -- a permission check-no-app-admin-perm.sh forbids the CI App from holding, on purpose. So an environment whose NAME varies per pull request produces one permanent object per PR that housekeeping cannot remove: measured 2026-09-03, 25 `pr-*`
+WHY THIS EXISTS. A job-level `environment:` block makes GitHub create the environment OBJECT, and deleting one needs `Administration:write` -- a permission check:ci-app-admin-perm forbids the CI App from holding, on purpose. So an environment whose NAME varies per pull request produces one permanent object per PR that housekeeping cannot remove: measured 2026-09-03, 25 `pr-*`
 environments with zero deployments between them, all cluttering /deployments long after their PRs merged.
 
 That was fixed by DELETING the `environment:` block from the preview job, by hand, and nothing stops it coming back. ci.yml:1247 carries a comment explaining its absence, which is a comment doing a gate's job -- and this repo has been here before: a comment that invites the deletion of the line it guards is a documented trap.
@@ -189,7 +189,7 @@ def main() -> int:
         for line in [
             "",
             "  A job-level `environment:` makes GitHub create the environment OBJECT, and",
-            "  deleting one needs Administration:write -- which check-no-app-admin-perm.sh",
+            "  deleting one needs Administration:write -- which check:ci-app-admin-perm",
             "  forbids the CI App from holding. A name that varies per PR therefore mints a",
             "  permanent object per PR that housekeeping cannot remove: 25 of them had",
             "  accumulated by 2026-09-03, every one with zero deployments.",

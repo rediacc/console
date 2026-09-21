@@ -87,9 +87,13 @@ PATTERNS = {
         "matcher": "Bash",
         "head": True,
         "collapsed": True,
+        # THE DISPATCHER CARRIES TWO BUDGETS, and that is what keeps the entry's timeout unchanged across the W7 P6 port. `block-pathspecless-git-commit.sh` was the last bash member of this pattern and ran after the dispatcher; it is `guards/block_pathspecless_git_commit.py` now, so it runs INSIDE the dispatcher at the same position it always held. `entry_timeout` sums the
+        # members, so folding a member in without folding in its 60 seconds would silently cut the pattern's budget from 240 to 180 for every session sharing this checkout.
         "members": _members(
-            "python3 " + _P % "rediacc_hooks/dispatch.py" + " --chain pre-bash",
-            "bash " + _P % "hooks/pre-bash/block-pathspecless-git-commit.sh",
+            {
+                "command": "python3 " + _P % "rediacc_hooks/dispatch.py" + " --chain pre-bash",
+                "timeout": 2 * DEFAULT_TIMEOUT,
+            },
         ),
     },
     "pre-edit": {
@@ -116,9 +120,10 @@ PATTERNS = {
         "matcher": "Bash",
         "head": True,
         "collapsed": True,
+        # PYTHON SINCE W7 P6, same order, same budgets, same stop-at-refusal semantics. Both were bash until the port; their originals are kept as `.claude/oracles/post-bash/*.sh` and `tests/test_post_bash_differential.py` runs each pair over one shared set of `git` and `gh` stubs. Neither ever exits 2, so nothing behind them was ever stopped and nothing is now.
         "members": _members(
-            "bash " + _P % "hooks/post-bash/cancel-old-ci.sh",
-            "bash " + _P % "hooks/post-bash/refresh-pr-body.sh",
+            "python3 " + _P % "hooks/post-bash/cancel_old_ci.py",
+            "python3 " + _P % "hooks/post-bash/refresh_pr_body.py",
             "python3 " + _P % "hooks/trapguard/dispatch.py" + " --posttool",
         ),
     },

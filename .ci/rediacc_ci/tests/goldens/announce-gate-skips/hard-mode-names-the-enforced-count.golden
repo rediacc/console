@@ -1,0 +1,7 @@
+# twin .ci/scripts/quality/announce-gate-skips.sh blob ce63a3e3be32ed0e25ed71a569e9e4fcbac9ceab
+exit: 0
+--- stdout ---
+gate-skips: none. 2 gate(s) enforced in this job (label 'no-media-quality' not applied): check:ci-tutorial-casts check:ci-tutorial-parity
+--- stderr ---
+--- summary ---
+(absent)

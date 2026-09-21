@@ -61,11 +61,13 @@ tree:.ci/tutorials/
 #
 # Ruling 7 names one-line shims as surviving bash, so the class has to exist for
 # the W1 P6 strict flip to have anywhere to put one. Measured 2026-09-07 across
-# the covered trees, exactly one tracked bash file has a single effective line
-# (.claude/oracles/pre-bash/lib/command-scan.sh) and it is ordinary debt, not a
-# frozen shim: nothing about it is claimed to be permanent. So it stays in the
-# baseline where a drain can reach it, rather than being promoted here to make
-# the number smaller.
+# the covered trees, exactly one tracked bash file had a single effective line
+# (.claude/oracles/pre-bash/lib/command-scan.sh), and it was ordinary debt rather
+# than a frozen shim, so it stayed in the baseline where a drain could reach it.
+# W7 P6 drained it by porting the last guard that sourced the library and moving
+# the real 303-line file onto that path, which deleted the forwarder. The
+# measurement now returns NOTHING, and the class is empty because no tracked bash
+# file in the covered trees is a one-line shim at all.
 
 # BLOCKER: this is the file that provisions the Python toolchain, so it is the root of the dependency graph every other Python file in these trees hangs from; check_pytest.py:389 shells out to it as its own remedy and rdc.sh:41 prints it as the way off a host with no uv and no pip, and a bootstrap written in Python would offer a broken Python estate a repair path that runs through the thing that is broken
 file:.ci/bootstrap.sh

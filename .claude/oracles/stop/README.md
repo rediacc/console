@@ -7,6 +7,8 @@ Two of the retired guards resolve a module through their own directory's PARENT:
 
 Both were moved here unchanged at the W5 P7 cutover and both say why they resolve that way rather than through `CLAUDE_PROJECT_DIR`. Neither module moved: `.claude/hooks/stop/` is the live worklist machinery, and duplicating any of it here would be a second copy of a 48-file package that drifts.
 
-So each file in this directory is a FORWARDER that executes the live module in place, exactly as `../lib/sanctioned.py` and `../pre-bash/lib/command-scan.sh` do. That keeps all 46 oracles byte-identical to the guards they were, which is what makes `tests/test_guards_differential.py` a comparison against the real file rather than against a transcription of it.
+So each file in this directory is a FORWARDER that executes the live module in place, exactly as `../lib/sanctioned.py` does. That keeps every oracle byte-identical to the guard it was, which is what makes `tests/test_guards_differential.py` a comparison against the real file rather than against a transcription of it.
+
+`../pre-bash/lib/command-scan.sh` was a third forwarder of the same shape until W7 P6 ported the last bash guard that sourced the live copy. With no reader left under `.claude/hooks/`, the library itself was moved onto that path and the forwarder went, so it is now the only file under `.claude/oracles/` that is neither a retired guard nor a forwarder.
 
 WHY NOT A SYMLINK TO `../hooks/stop`. A directory symlink is one git entry but it is traversable, so any gate globbing `.claude/**/*.py` would find all 48 modules a second time and report each one twice. Two named forwarders say exactly what is borrowed and nothing else appears.

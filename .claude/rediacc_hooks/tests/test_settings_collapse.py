@@ -155,8 +155,8 @@ def plan_duplicate_payload(tmp_path):
 def member_plant(member, prefix, pool, env, tmp_path):
     """`(payload, env)` on which this member, and no member ahead of it, refuses.
 
-    THE PREFIX MATTERS AND COST A ROUND OF THIS TEST. `block-pathspecless-git-commit.sh` runs last in the pre-bash pattern, and the first corpus payload it refuses is also refused by the dispatcher ahead of it. The chain stops at the first refusal, so deleting the last member changed nothing and the control reported it as unread. A plant has to be an input the members AHEAD of it
-    ALLOW.
+    THE PREFIX MATTERS AND COST A ROUND OF THIS TEST. `block-pathspecless-git-commit.sh` ran last in the pre-bash pattern, behind the dispatcher, and the first corpus payload it refused was also refused by the dispatcher ahead of it. The chain stops at the first refusal, so deleting the last member changed nothing and the control reported it as unread. A plant has to be an input
+    the members AHEAD of it ALLOW. W7 P6 ported that member into the dispatcher, so the pre-bash pattern has one member again and the lesson now applies to post-bash, whose three members sit in a row.
     """
     command = member["command"]
     for tool in lifecycle.head_checks():

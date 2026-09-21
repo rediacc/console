@@ -1,0 +1,10 @@
+# twin .ci/scripts/quality/check-staging-tag-guard.sh blob 669c6953216a759054ab3d380c616444b2b45989
+exit: 1
+--- stdout ---
+  ok    cleanup-staging.sh still refuses a non-staging tag
+  ok    at least one executing call site was found
+--- stderr ---
+  FAIL  .ci/scripts/release/cleanup-channel-docker-tags.sh guards its call against a non-staging tag (got '0' want '1')
+✗ staging tag guard (1 call site(s)): 1 of 3 control(s) failed
+  A caller that passes a non-staging tag can NEVER succeed, and the failure
+  reads as a token-scope problem. Guard the call; do not widen the rail.

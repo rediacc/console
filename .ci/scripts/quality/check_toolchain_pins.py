@@ -33,7 +33,7 @@ from one tail block, while the twin prints the two A8 controls between A8 and A6
 (twin lines 181-197) and the A9 control right after A9 (twin line 286). Same byte count, different bytes, and comparing lengths would have called it equal. `run_controls` was therefore split into `run_a8_controls`, `run_a9_control` and `run_controls`, called at the twin's positions, with the shared fixture-dir `mkdir` moved into the A8 function so the twin's own "mkdir first"
 property survives the split. Both sides -> exit 1, stdout 1239 bytes, sha256 43d6c2425a570014..., stderr 109 bytes, sha256 e22bbde06b531536....
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-toolchain-pins.sh` is NOT deleted by this change. It stays on disk as the differential twin that `.ci/rediacc_ci/tests/test_quality_toolchain_pins.py` compares this port against, and deleting it is W7 P5's job in a later change.
+INVARIANT 5 HELD UNTIL THE LEDGER LICENSED THIS PORT: `.ci/scripts/quality/check-toolchain-pins.sh` stayed on disk as the differential twin until `.ci/shadow/w7p2-toolchain-pins.observations.jsonl` asserted equivalence over five distinct trees. W7 P5 batch C1 retired it, and this entry point is what the gate runs from.
 
 ---- gate ----
 step: Toolchain pins

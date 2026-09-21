@@ -1,0 +1,32 @@
+exit: 0
+--- stdout ---
+I am abcd1234 on branch ? at <ts>
+
+MY OPEN SLICE (the verb printed per item is the next command; base your report on this, not on memory):
+WORKLIST GUIDE (derived from the store, not from memory):
+  - [>] #11112222 LEASE DEAD (quiet 104m) something ... LATEST: waiting
+        NEXT: finish it and --tick abcd1234 11112222 '<evidence>', or re-lease: --lease abcd1234 11112222 +60 worker:<bg-id>
+  - [>] #33334444 (quiet 2m, worker:deadbeefcafe1234, 86m left) campaign ... LATEST: moving
+        NEXT: --update abcd1234 33334444 '<one line of what moved>'
+  - [?] #55556666 should the driver pick branch A or B? DEFAULT: A
+
+OWNERSHIP: 4 open in this repo, 3 mine, 1 a peer session's.
+  The hook blocks only on mine. A peer's items are REPORTED to the operator and never worked, never ticked.
+OPEN DEFERRALS OF MINE: 1. A queue of these is over-asking, not a backlog:
+  anything settleable from the code, the request, or a sensible default was mine to decide.
+
+ARE MY [>] LEASES BELIEVABLE:
+  Cannot resolve this session's task directory, so no lease can be checked.
+  Treat every [>] below as UNVERIFIED and probe before believing it.
+    worker:
+    worker:deadbeefcafe1234
+
+WAITING FOR ME FROM PEER SESSIONS (silence means nothing is waiting):
+
+DURABLE CONTEXT: my STATE.md 2023-11-14 22:13:20; 0 plan file(s) under agent/
+  2 peer session folder(s) beside mine under agent/. Theirs to write, mine to read.
+  These survive a reboot. The worklist event log is tracked under agent/worklist/ and survives too; only locks, caches and briefs live under $TMPDIR.
+  ^ SUSPECT: agent/ holds 3 session dir(s) and
+    0 PLAN file(s). A zero here usually means this
+    brief is looking in the wrong place, not that the context is empty.
+--- stderr ---

@@ -4,7 +4,7 @@
 Deletes the staging Docker tags from GHCR after a Phase 1 staging failure or a Phase 2 commit. One GHCR package version per image in `PUBLISH_IMAGES`, found by listing the org's container package versions and picking the one whose tag list contains the staging tag.
 
 THE `staging-` PREFIX GUARD IS THE WHOLE SAFETY MODEL, so it is reproduced character for character rather than "improved". The twin refuses any tag that does not start with `staging-` before it reaches a single API call, which is what makes a stray invocation unable to delete `edge`, `stable`, `latest` or a semver. `rediacc_ci.release.cleanup_channel_docker_tags` documents the same
-guard from the caller's side, and `.ci/scripts/quality/check-staging-tag-guard.sh` is a gate whose subject is that this guard exists. A port that widened it would delete the rail three separate things are leaning on.
+guard from the caller's side, and `rediacc_ci.quality.staging_tag_guard` is a gate whose subject is that this guard exists. A port that widened it would delete the rail three separate things are leaning on.
 
 WHAT IS DELETED IS A PACKAGE VERSION, NOT A TAG. GHCR has no delete-one-tag API, so the twin resolves a version id and deletes the VERSION. A version carrying a second tag loses that tag too. Reproduced as-is and pinned by `test_a_version_carrying_a_second_tag_is_deleted_whole`; changing it is a cutover-box decision.
 

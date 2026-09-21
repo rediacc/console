@@ -251,8 +251,8 @@ def controls(root):
     if not verdicts(root, [".claude/hooks/__a_hook_that_does_not_exist__.sh"]):
         return "planted a nonexistent hook path and the detector stayed silent"
     # A .sh, deliberately: the control must not collide with the .py mode check below. Using a Python hook here made mutating ANY python hook trip the control instead of the finding, which refuses a verdict correctly but tests nothing. A GUARD THAT STILL EXISTS AS A .sh, RE-KEYED 2026-09-07. This was `block-admin-merge.sh`, which the W5 cutover moved to `.claude/oracles/`, and the
-    # `is_file()` guard then made this control SKIP SILENTLY: the gate stayed green while the case that proves a real hook is not reported broken stopped running at all. `block-pathspecless-git-commit.sh` is the one pre-bash guard with no Python port, so it is a .sh that is still wired.
-    real = ".claude/hooks/pre-bash/block-pathspecless-git-commit.sh"
+    # `is_file()` guard then made this control SKIP SILENTLY: the gate stayed green while the case that proves a real hook is not reported broken stopped running at all. RE-KEYED AGAIN 2026-09-21: `block-pathspecless-git-commit.sh` held the slot until W7 P6 ported it, and `chain-head.sh` is now the only tracked .sh that any chain still executes.
+    real = ".claude/hooks/chain-head.sh"
     if not (root / real).is_file():
         return f"the control's subject {real} is gone; re-key it rather than skipping"
     if verdicts(root, [real]):
@@ -269,7 +269,7 @@ def controls(root):
         }
 
     lead = 'bash "$CLAUDE_PROJECT_DIR/.claude/hooks/chain-head.sh" --check jq'
-    other = 'bash "$CLAUDE_PROJECT_DIR/.claude/hooks/pre-bash/block-pathspecless-git-commit.sh"'
+    other = 'python3 "$CLAUDE_PROJECT_DIR/.claude/rediacc_hooks/dispatch.py" --chain pre-bash'
     if first_guard_verdicts(_fixture([lead, other])):
         return f"a fixture with {FIRST_GUARD} FIRST in both chains was reported as misordered"
     if not first_guard_verdicts(_fixture([other, lead])):

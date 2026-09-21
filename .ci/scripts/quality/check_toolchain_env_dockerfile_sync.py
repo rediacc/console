@@ -33,7 +33,7 @@ The plant rewrites `GO_VERSION=1.26.6` to `GO_VERSION=9.9.9` in
 untouched, which is the exact divergence this gate exists to catch. THE CONTROL WAS PROVED BEFORE EITHER SIDE RAN: the planted value was read back out of the env file and the Dockerfile's ARG line was printed to confirm it still said 1.26.6, so the two files genuinely disagreed. The file was restored from a `cp` and its sha256 compared with the pre-plant value
 (99fa72aa0760f6b6...), identical. Both sides -> exit 1, stdout 724 bytes, sha256 977922f5a3bc2e7a..., stderr 453 bytes, sha256 ca485efa31cb8714....
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-toolchain-env-dockerfile-sync.sh` is NOT deleted by this change. It stays on disk as the differential twin that `.ci/rediacc_ci/tests/test_quality_toolchain_env_dockerfile_sync.py` compares this port against, and deleting it is W7 P5's job in a later change.
+INVARIANT 5 HELD UNTIL THE LEDGER LICENSED THIS PORT: `.ci/scripts/quality/check-toolchain-env-dockerfile-sync.sh` stayed on disk as the differential twin until `.ci/shadow/w7p2-toolchain-sync.observations.jsonl` asserted equivalence over five distinct trees. W7 P5 batch C1 retired it, and this entry point is what the gate runs from.
 
 ---- gate ----
 step: Toolchain env/Dockerfile sync

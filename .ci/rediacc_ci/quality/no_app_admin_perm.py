@@ -1,6 +1,6 @@
 """No workflow may ask the GitHub App for the `administration` permission.
 
-Ported from `.ci/scripts/quality/check-no-app-admin-perm.sh`, which is NOT deleted; see `rediacc_ci.quality.__init__` for why both copies live until a differential ledger row exists over K distinct trees. Its gate header registers it as step "App admin permission", id `check:ci-app-admin-perm`, lane quality-code.
+Ported from `.ci/scripts/quality/check-no-app-admin-perm.sh`, which W7 P5 batch E1 deleted once the ledger `.ci/shadow/w7p2-appadmin.observations.jsonl` held K=5 and the twin's bytes were recorded into `.ci/rediacc_ci/tests/goldens/app-admin-perm/`. Its gate header registers it as step "App admin permission", id `check:ci-app-admin-perm`, lane quality-code.
 
 WHY THIS EXISTS, carried from the twin because the rationale IS the gate:
 

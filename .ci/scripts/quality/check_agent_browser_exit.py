@@ -45,7 +45,7 @@ satisfies the `set -e` test the sweep applies next.
 
 The plant was removed with `rm` and `git status --porcelain` diffed against its pre-plant capture with no difference.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-agent-browser-exit.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
+INVARIANT 5 HELD UNTIL THE LEDGER LICENSED THIS PORT: `.ci/scripts/quality/check-agent-browser-exit.sh` stayed on disk as the differential twin until `.ci/shadow/w7p2-agent-browser-exit.observations.jsonl` asserted equivalence over five distinct trees. W7 P5 batch C1 retired it, and this entry point is what the gate runs from.
 
 ---- gate ----
 step: agent-browser exit status

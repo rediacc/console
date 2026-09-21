@@ -1,0 +1,7 @@
+# twin .ci/scripts/quality/check-no-app-admin-perm.sh blob 1d226cfd22ff76dd1b4b4f75cc7bc3220495d12b
+exit: 1
+--- stdout ---
+--- stderr ---
+→ Checking for permission-administration in workflows/actions...
+✗ cannot scan .github/workflows: it does not exist, so this gate would rule on part of its subject.
+✗ A partial scan that reports OK is worse than no scan. Refusing.

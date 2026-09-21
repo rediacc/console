@@ -1,6 +1,6 @@
 """Port of `.ci/scripts/test/gates/test-gate-skip-announcer.sh`, retired in W7 P5.
 
-`.ci/scripts/quality/announce-gate-skips.sh` is the step that makes a label-held gate VISIBLE.
+`rediacc_ci.quality.announce_gate_skips` is the step that makes a label-held gate VISIBLE. It is what `.github/workflows/ci-quality.yml` runs, and since the bash twin `.ci/scripts/quality/announce-gate-skips.sh` was deleted it is also what every case below drives.
 
 The thing under test is an INSTRUMENT, so every case here is really a question about the instrument rather than about the gates it announces: can it fire (skip), can it stay quiet when it should (hard), does it fail closed when the wiring breaks (unset), and does it refuse rather than guess when the wiring is wrong (unknown mode)? An announcer that silently announced nothing would
 restore exactly the invisible skip it exists to remove, so the QUIET-direction cases are the load-bearing ones here, not filler.
@@ -21,7 +21,9 @@ import re
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 
-ANNOUNCER = paths.from_root(".ci", "scripts", "quality", "announce-gate-skips.sh")
+ANNOUNCER = paths.from_root(".ci", "rediacc_ci", "quality", "announce_gate_skips.py")
+ANNOUNCER_ARGV = ["python3", str(ANNOUNCER)]
+CI_PACKAGE_ROOT = str(paths.from_root(".ci"))
 DEFAULT_WORKFLOW = paths.from_root(".github", "workflows", "ci-quality.yml")
 
 # The wiring floors, both of them counts of a KNOWN SET rather than thresholds picked for comfort: a third announcer is as much a change as a lost one, and the twin asserts the same two numbers.
@@ -39,14 +41,13 @@ def run_announcer(gate, mode: str | None, expected: int, label: str, *args: str)
     `mode=None` IS the twin's `env -u GATE_SKIP_MODE` case, which is the whole
     point of that case: a wiring break where the variable never reaches the step must read as "the gates ran", never as "the gates were held". The variable is removed from the overlay rather than set to the empty string, because those are different states to the script under test.
     """
-    if not (ANNOUNCER.is_file() and os.access(ANNOUNCER, os.X_OK)):
-        gate.log_fail(
-            "announcer not found or not executable: %s" % paths.relative_to_root(ANNOUNCER)
-        )
+    if not ANNOUNCER.is_file():
+        gate.log_fail("announcer not found: %s" % paths.relative_to_root(ANNOUNCER))
     env = {k: v for k, v in os.environ.items() if k != "GATE_SKIP_MODE"}
+    env["PYTHONPATH"] = CI_PACKAGE_ROOT
     if mode is not None:
         env["GATE_SKIP_MODE"] = mode
-    result = harness.run([str(ANNOUNCER), *args], env=env, env_replace=True)
+    result = harness.run([*ANNOUNCER_ARGV, *args], env=env, env_replace=True)
     if result.rc != expected:
         gate.log_fail(
             "%s: expected exit %d, got %d (output: %s)"
@@ -120,8 +121,12 @@ def test_skip_writes_step_summary(gate):
         summary = work / "summary.md"
         summary.write_text("", encoding="utf-8")
         result = harness.run(
-            [str(ANNOUNCER), "no-media-quality", "gate-alpha"],
-            env={"GATE_SKIP_MODE": "skip", "GITHUB_STEP_SUMMARY": str(summary)},
+            [*ANNOUNCER_ARGV, "no-media-quality", "gate-alpha"],
+            env={
+                "GATE_SKIP_MODE": "skip",
+                "GITHUB_STEP_SUMMARY": str(summary),
+                "PYTHONPATH": CI_PACKAGE_ROOT,
+            },
         )
         gate.assert_exit_code(0, result.rc, "skip with summary should still exit 0")
         written = summary.read_text(encoding="utf-8")
@@ -131,8 +136,12 @@ def test_skip_writes_step_summary(gate):
         # CONTROL: hard must not write a summary at all, or every green run would carry a "gates skipped" heading.
         summary.write_text("", encoding="utf-8")
         harness.run(
-            [str(ANNOUNCER), "no-media-quality", "gate-alpha"],
-            env={"GATE_SKIP_MODE": "hard", "GITHUB_STEP_SUMMARY": str(summary)},
+            [*ANNOUNCER_ARGV, "no-media-quality", "gate-alpha"],
+            env={
+                "GATE_SKIP_MODE": "hard",
+                "GITHUB_STEP_SUMMARY": str(summary),
+                "PYTHONPATH": CI_PACKAGE_ROOT,
+            },
         )
         gate.assert_eq(
             summary.read_text(encoding="utf-8"), "", "hard mode must write no step summary"

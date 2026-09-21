@@ -70,7 +70,7 @@ Comment lines are prose, not values -- housekeeping.yml:72 documents
 
 ANY shell-style variable, not a list of six. The six-name form (RUNNER_TEMP|RUNNER_OS|GITHUB_WORKSPACE|GITHUB_SHA|HOME|PWD) let `SECRET_X: $SOME_VAR` through -- the exact idiom a job-start secret fetch invites, and one that ships an EMPTY string because GitHub never expands it. Widened 2026-09-02.
 
-THE `pr-` ENVIRONMENT RULE. A job-level `environment:` makes GitHub create the environment OBJECT plus a deployment record. ci.yml's deploy-preview job did that for every PR, and CI cannot undo it: deleting an environment needs Administration:write, which check-no-app-admin-perm.sh forbids the CI App from holding. 25 empty `pr-*` shells accumulated on /deployments before they were
+THE `pr-` ENVIRONMENT RULE. A job-level `environment:` makes GitHub create the environment OBJECT plus a deployment record. ci.yml's deploy-preview job did that for every PR, and CI cannot undo it: deleting an environment needs Administration:write, which check:ci-app-admin-perm forbids the CI App from holding. 25 empty `pr-*` shells accumulated on /deployments before they were
 deleted by hand. BOTH SYNTACTIC FORMS, because only one of them is the obvious one:
 
     environment:            environment: pr-${{ ... }}
@@ -550,7 +550,7 @@ def check_pr_environment_names(errors: Errors, root: pathlib.Path, workflow_dir:
                 *["    %s" % hit for hit in hits],
                 "    GitHub creates the environment OBJECT for this, and no CI token can",
                 "    delete it again (Administration:write is forbidden by",
-                "    check-no-app-admin-perm.sh). Drop the environment: block; the preview",
+                "    check:ci-app-admin-perm). Drop the environment: block; the preview",
                 "    URL belongs in $GITHUB_STEP_SUMMARY.",
                 "",
             ],

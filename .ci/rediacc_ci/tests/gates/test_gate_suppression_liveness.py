@@ -2,7 +2,7 @@
 
 Integration test for `scripts/gates/check-suppression-liveness.ts`, the gate that asks whether every allowlist / blocklist / override entry in this repo still suppresses something that exists.
 
-WHAT IT GUARDS. The `BLOCKER:` convention proves a reason EXISTS; it cannot prove the reason is still TRUE. This gate closes the other half, and the twin's header names the two receipts for why it has to be provable in BOTH directions: `check_stale_entries` in `audit.sh` skipped the common staleness case for its whole life, and `check-no-app-admin-perm.sh` was never wired into a
+WHAT IT GUARDS. The `BLOCKER:` convention proves a reason EXISTS; it cannot prove the reason is still TRUE. This gate closes the other half, and the twin's header names the two receipts for why it has to be provable in BOTH directions: `check_stale_entries` in `audit.sh` skipped the common staleness case for its whole life, and the app-admin-perm gate was never wired into a
 job at all. A gate that has only ever been seen to pass is indistinguishable from `true`.
 
 EVERY FIXTURE CASE RUNS AGAINST A FIXTURE ROOT through `SUPPRESSION_LIVENESS_ROOT`, so no tracked file is ever mutated. The working tree routinely holds uncommitted work from other sessions, which is the reason the twin took that shape and the reason this port keeps it.

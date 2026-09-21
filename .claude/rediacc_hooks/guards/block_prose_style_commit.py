@@ -63,7 +63,12 @@ UNEXAMINED = (
 # `re.MULTILINE`, so `^` also anchors after a `\n` and not only at the start of the whole payload. Found live by review 2026-09-16: a `git commit` sitting on the SECOND line of a multi-line command (e.g. a `set -e` guard line before it) has a `\n` immediately to its left, which is neither position 0 nor one of `;&|(` -- `_is_target` returned False and the message went unexamined.
 # `block_worktree_add.py` does not have this bug because it matches per LINE via `hookio.grep_q`; this guard keeps its single-regex-over-the-whole-command shape and fixes the anchor instead, which is the smaller change for the same result. The `[^;&|\n]*` gap between the verb and `commit`/`pr` already never crosses a line, so `MULTILINE` cannot make the middle of the pattern bleed
 # across lines -- only `^` changes meaning.
-GIT_COMMIT = re.compile(r"(?:^|[;&|(])\s*(?:\S*/)?git\b[^;&|\n]*\bcommit\b", re.MULTILINE)
+# `commit` MUST BE A WHOLE TOKEN, not a substring with word boundaries around it, and that cost a round trip before it was fixed. `\bcommit\b` matches inside `block-pathspecless-git-commit.sh`, so `git mv <that path> <dest>` scored as `git commit`: measured 2026-09-21, a `git mv` of exactly that file was refused by `block_unproven_bulk_transform`, which shares this constant,
+# with a message about 28 staged files and a commit message that does not exist. `git log -- <any path with commit in it>` and `git add <the same>` were refused the same way. Requiring whitespace before the token and a terminator after it keeps every real spelling (`git commit`, `git -c k=v commit`, `git --no-pager commit -a`) and drops only `git commit-tree`, a plumbing verb
+# neither guard was reading a message or a staged set for.
+GIT_COMMIT = re.compile(
+    r"(?:^|[;&|(])\s*(?:\S*/)?git\b[^;&|\n]*?(?:\s|^)commit(?=$|[\s;&|])", re.MULTILINE
+)
 GH_PR = re.compile(
     r"(?:^|[;&|(])\s*(?:\S*/)?gh\b[^;&|\n]*\bpr\b[^;&|\n]*\b(?:create|edit|comment|review)\b",
     re.MULTILINE,

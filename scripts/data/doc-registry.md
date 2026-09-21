@@ -411,14 +411,10 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/hooks/context/precompact-floor.py | PreCompact | settings.json | py |
 | .claude/hooks/context/test-context-bands.py | (none) | via .claude/rediacc_hooks/tests/test_hooks_delegates.py | py |
 | .claude/hooks/lib/sanctioned.py | (none) | via .claude/rediacc_hooks/guards/block_adhoc_sanctioned.py | py |
-| .claude/hooks/post-bash/cancel-old-ci.sh | (none) | via .claude/rediacc_hooks/guards/block_unverified_push.py | sh |
-| .claude/hooks/post-bash/refresh-pr-body.sh | (none) | via .claude/rediacc_hooks/guards/block_raw_pr_body_edit.py | sh |
-| .claude/hooks/pre-bash/block-pathspecless-git-commit.sh | (none) | via .claude/rediacc_hooks/guards/warn_staged_shape_duplication.py | sh |
-| .claude/hooks/pre-bash/lib/command-scan.sh | (none) | via .claude/hooks/post-bash/cancel-old-ci.sh | sh |
+| .claude/hooks/post-bash/cancel_old_ci.py | (none) | via .claude/rediacc_hooks/lifecycle.py | py |
+| .claude/hooks/post-bash/refresh_pr_body.py | (none) | via .claude/rediacc_hooks/lifecycle.py | py |
 | .claude/hooks/profile/bash_env.sh | (none) | (nothing) | sh |
 | .claude/hooks/profile/py/sitecustomize.py | (none) | via .claude/hooks/stop/wl_resprofile.py | py |
-| .claude/hooks/require-jq.sh | (none) | via .claude/hooks/chain-head.sh | sh |
-| .claude/hooks/require-python.sh | (none) | via .claude/hooks/chain-head.sh | sh |
 | .claude/hooks/stop/calibrate-judge-rules.py | (none) | (nothing) | py |
 | .claude/hooks/stop/test-adhoc-watch.py | (none) | via .claude/rediacc_hooks/tests/test_hooks_delegates.py | py |
 | .claude/hooks/stop/test-always-tier.py | (none) | via .claude/rediacc_hooks/tests/test_hooks_delegates.py | py |
@@ -439,7 +435,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/hooks/stop/wl_checks.py | (none) | via .claude/hooks/stop/test-always-tier.py | py |
 | .claude/hooks/stop/wl_ci.py | (none) | via .claude/hooks/stop/test-adhoc-watch.py | py |
 | .claude/hooks/stop/wl_classsweep.py | (none) | via .claude/hooks/stop/test-judge-schema.py | py |
-| .claude/hooks/stop/wl_core.py | (none) | via .claude/hooks/post-bash/cancel-old-ci.sh | py |
+| .claude/hooks/stop/wl_core.py | (none) | via .claude/hooks/post-bash/cancel_old_ci.py | py |
 | .claude/hooks/stop/wl_epic.py | (none) | via .claude/hooks/stop/worklist.py | py |
 | .claude/hooks/stop/wl_git.py | (none) | via .claude/hooks/stop/worklist.py | py |
 | .claude/hooks/stop/wl_histfirst.py | (none) | via .claude/hooks/stop/wl_checks.py | py |
@@ -493,10 +489,10 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/hooks/stop/worklist.py | Stop, TeammateIdle | settings.json | py |
 | .claude/hooks/stop/worklist_messages.py | (none) | via .claude/hooks/stop/wl_agents.py | py |
 | .claude/hooks/test-hooks.sh | (none) | via .claude/hooks/stop/test-always-tier.py | sh |
-| .claude/hooks/trapguard/dispatch.py | (none) | via .claude/hooks/context/test-context-bands.py | py |
+| .claude/hooks/trapguard/dispatch.py | (none) | via .claude/hooks/chain-head.sh | py |
 | .claude/hooks/why-on-edit.py | (none) | via .claude/hooks/stop/test-planrec.py | py |
 | .claude/rediacc_hooks/__init__.py | (none) | via .claude/hooks/context/test-context-bands.py | py |
-| .claude/rediacc_hooks/dispatch.py | (none) | via .claude/hooks/context/test-context-bands.py | py |
+| .claude/rediacc_hooks/dispatch.py | (none) | via .claude/hooks/chain-head.sh | py |
 | .claude/rediacc_hooks/execcount.py | (none) | (nothing) | py |
 | .claude/rediacc_hooks/guards/__init__.py | (none) | via .claude/hooks/context/test-context-bands.py | py |
 | .claude/rediacc_hooks/guards/block_adhoc_sanctioned.py | (none) | via dispatch.py (glob) | py |
@@ -523,6 +519,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/guards/block_merge_with_unpushed.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_nondraft_pr_create.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_nonstandard_branch_name.py | (none) | via dispatch.py (glob) | py |
+| .claude/rediacc_hooks/guards/block_pathspecless_git_commit.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_plan_without_tasks.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_premature_ready.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_prose_style_commit.py | (none) | via dispatch.py (glob) | py |
@@ -557,9 +554,9 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/guards/warn_staged_shape_duplication.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/warn_stale_index.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/warn_submodule_deletions.py | (none) | via dispatch.py (glob) | py |
-| .claude/rediacc_hooks/hookio.py | (none) | via .claude/rediacc_hooks/dispatch.py | py |
+| .claude/rediacc_hooks/hookio.py | (none) | via .claude/hooks/post-bash/cancel_old_ci.py | py |
 | .claude/rediacc_hooks/lifecycle.py | PostCompact, PostToolUse, SessionStart | settings.json | py |
-| .claude/rediacc_hooks/proc.py | (none) | via .claude/hooks/stop/test-judge-schema.py | py |
+| .claude/rediacc_hooks/proc.py | (none) | via .claude/hooks/post-bash/cancel_old_ci.py | py |
 | .claude/rediacc_hooks/run_tests.py | (none) | via .claude/rediacc_hooks/hookio.py | py |
 | .claude/rediacc_hooks/shellscan.py | (none) | via .claude/rediacc_hooks/guards/block_adhoc_sanctioned.py | py |
 | .claude/rediacc_hooks/tests/__init__.py | (none) | via .claude/hooks/context/test-context-bands.py | py |
@@ -576,11 +573,12 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/tests/test_hooks_static.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_hooks_trapguard.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_hooks_wiring.py | (none) | via pytest (testpaths) | py |
+| .claude/rediacc_hooks/tests/test_post_bash_differential.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_proc.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_settings_collapse.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_shellscan_differential.py | (none) | via pytest (testpaths) | py |
 
-176 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
+174 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
 
 <!-- <<< gen-docs -->
 
@@ -612,7 +610,7 @@ Scans: every tracked non-source, non-prose file carrying a `BLOCKER:` line.
 | .ci/policy/.e2e-coverage-allowlist | 3 | # comment |
 | .ci/policy/.embed-assets-upgrade-blocklist | 2 | # comment |
 | .ci/policy/.go-deps-upgrade-blocklist | 3 | # comment |
-| .ci/policy/.language-policy-allowlist | 20 | # comment |
+| .ci/policy/.language-policy-allowlist | 18 | # comment |
 | .ci/policy/.plan-housekeeping-allowlist | 1 | prose only (no live entry) |
 | .ci/policy/.profiler-coverage-allowlist | 4 | # comment |
 | .ci/policy/.runner-advice-allowlist | 1 | prose only (no live entry) |
@@ -686,13 +684,18 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/review | 6 | .py 6 |
 | .ci/rediacc_ci/security | 11 | .py 11 |
 | .ci/rediacc_ci/setup | 12 | .py 12 |
-| .ci/rediacc_ci/tests | 288 | .py 288 |
+| .ci/rediacc_ci/tests | 289 | .py 289 |
 | .ci/rediacc_ci/tests/data | 2 | .json 1, .yml 1 |
 | .ci/rediacc_ci/tests/gates | 163 | .py 162, .fixture 1 |
 | .ci/rediacc_ci/tests/goldens/allowlist/bash-pairs | 17 | .golden 17 |
 | .ci/rediacc_ci/tests/goldens/allowlist/corpus | 17 | .list 17 |
 | .ci/rediacc_ci/tests/goldens/allowlist/reasons | 2 | .golden 2 |
 | .ci/rediacc_ci/tests/goldens/allowlist/ts-records | 17 | .golden 17 |
+| .ci/rediacc_ci/tests/goldens/announce-gate-skips | 13 | .golden 13 |
+| .ci/rediacc_ci/tests/goldens/app-admin-perm | 7 | .golden 7 |
+| .ci/rediacc_ci/tests/goldens/run-external-gate | 21 | .golden 21 |
+| .ci/rediacc_ci/tests/goldens/staging-tag-guard | 12 | .golden 12 |
+| .ci/rediacc_ci/tests/goldens/standing-orders-brief | 18 | .golden 18 |
 | .ci/rediacc_ci/version | 5 | .py 5 |
 | .ci/scripts/autopilot | 19 | .sh 16, .cjs 2, .json 1 |
 | .ci/scripts/autopilot/prompts | 2 | .md 2 |
@@ -710,7 +713,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/scripts/pr | 1 | .sh 1 |
 | .ci/scripts/private | 9 | .sh 9 |
 | .ci/scripts/private/license-mint | 3 | .go 1, .mod 1, .sum 1 |
-| .ci/scripts/quality | 180 | .py 139, .sh 38, .json 2, .mjs 1 |
+| .ci/scripts/quality | 167 | .py 139, .sh 25, .json 2, .mjs 1 |
 | .ci/scripts/quality/lib | 1 | .py 1 |
 | .ci/scripts/release | 18 | .sh 18 |
 | .ci/scripts/review | 4 | .sh 4 |
@@ -733,7 +736,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/tutorials/apps/secrets-demo | 2 | (none) 1, .yml 1 |
 | .ci/tutorials/lib | 4 | .sh 4 |
 
-87 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
+92 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
 
 <!-- <<< gen-docs -->
 ## Hook wiring, folded

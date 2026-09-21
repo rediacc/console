@@ -1,7 +1,6 @@
 r"""Every gate-tool version is defined ONCE, and nothing acquires unpinned.
 
-Ported from `.ci/scripts/quality/check-toolchain-pins.sh`, which is NOT deleted;
-see `rediacc_ci.quality.__init__`.
+Ported from `.ci/scripts/quality/check-toolchain-pins.sh`, which W7 P5 batch C1 retired once `.ci/shadow/w7p2-toolchain-pins.observations.jsonl` asserted equivalence over five distinct trees.
 
 -----------------------------------------------------------------------------
 THE TWIN'S HEADER, CARRIED ACROSS.

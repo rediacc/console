@@ -53,7 +53,7 @@ The added clause is the proof the plant landed: diffing the planted verdict agai
 else moved. The plant was reverted from a `cp` backup, verified back at its
 pre-plant sha256 with `sha256sum -c`, and `git status --porcelain` diffed against its pre-plant capture with no difference.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-lockfile.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
+INVARIANT 5 HELD UNTIL THE LEDGER LICENSED THIS PORT: `.ci/scripts/quality/check-lockfile.sh` stayed on disk as the differential twin until `.ci/shadow/w7p2-lockfile.observations.jsonl` asserted equivalence over five distinct trees. W7 P5 batch C1 retired it, and this entry point is what the gate runs from.
 
 ---- gate ----
 step: Lockfile

@@ -47,7 +47,7 @@ PLUS THE PROSE, which is direction 4 pointed at comments rather than code (W4 P4
      DOCSTRING: the first draft of this paragraph spelled the name out and the
      gate reported itself, correctly.
 
-PAST TENSE IS NOT AN ASSERTION, and rule 5 has to know the difference or it becomes a machine for deleting the repository's own record of what went wrong. `.claude/hooks/pre-bash/block-pathspecless-git-commit.sh:27` says HEAD "still
+PAST TENSE IS NOT AN ASSERTION, and rule 5 has to know the difference or it becomes a machine for deleting the repository's own record of what went wrong. `.claude/oracles/pre-bash/block-pathspecless-git-commit.sh:27` says HEAD "still
 read `const POLICY_DIR = '';`" while describing the half-landed state of
 2026-09-06. That sentence is true, is load-bearing history, and must not be a finding; `_PAST_MARKERS` is what keeps it out, and the control below drives that exact line.
 
@@ -489,7 +489,7 @@ def _strip_marker(text: str) -> str:
 def comment_blocks(rel: str, source: str) -> list[tuple[int, str, int]]:
     """(first line, text, line count) for every CONTIGUOUS run of comment lines.
 
-    BLOCKS, NOT LINES, and this is the correction that a real run forced. The first version of this gate yielded one line at a time, so the tense marker in `.claude/hooks/pre-bash/block-pathspecless-git-commit.sh` -- "policy-paths.ts still read" -- sat on the line ABOVE the value it qualifies, out of the lookbehind window, and the gate reported the repository's own historical
+    BLOCKS, NOT LINES, and this is the correction that a real run forced. The first version of this gate yielded one line at a time, so the tense marker in `.claude/oracles/pre-bash/block-pathspecless-git-commit.sh` -- "policy-paths.ts still read" -- sat on the line ABOVE the value it qualifies, out of the lookbehind window, and the gate reported the repository's own historical
     record as a stale claim. The unit-level control passed throughout, because it handed the predicate both lines as one string, which is the shape a per-line extractor never produces. Prose is a paragraph; judging it a line at a time asks a question no author was answering.
 
     Python is TOKENIZED rather than pattern-matched, because a `#` inside a string is not a comment and this gate must not rule on one. Docstrings are comments here: they are the prose that carries most of this repository's reasoning, and the stale claim this rule exists for lived in one.
@@ -813,7 +813,7 @@ def scan(root: pathlib.Path) -> Report:
 #
 # EVERY PREDICATE IS DRIVEN IN BOTH DIRECTIONS, and the fixtures below are real lines from this tree rather than invented ones, because the two defects this gate's own first run produced were both cases where an invented fixture had a shape the tree does not have:
 #
-# * `_HISTORY_BLOCK` is `.claude/hooks/pre-bash/block-pathspecless-git-commit.sh:26-27`. The first draft handed the predicate both lines glued into one string, the extractor handed it one line at a time, and the gate reported the repository's own record of the 2026-09-06 half-landed move as a stale claim. The control passed the whole time. * `_SH_TRAILING_SENTENCE` is
+# * `_HISTORY_BLOCK` is `.claude/oracles/pre-bash/block-pathspecless-git-commit.sh:26-27`. The first draft handed the predicate both lines glued into one string, the extractor handed it one line at a time, and the gate reported the repository's own record of the 2026-09-06 half-landed move as a stale claim. The control passed the whole time. * `_SH_TRAILING_SENTENCE` is
 # `audit.sh:256`, and `_SH_WRAPPED_JOIN` is `check-plan-housekeeping.sh:87`. The first tokenizer anchored on end of line, so it called the first a join (it is a message) and missed the second (it is a join). Both errors are invisible to a fixture that ends the line right after the path.
 
 _PY_WHOLE_JOIN = """
@@ -882,7 +882,7 @@ _STALE_BLOCK = (
     " * byte-identical to the joins it replaced, which is what keeps the seam\n"
     " * verifiable before the move rather than only after it.\n"
 )
-# `.claude/hooks/pre-bash/block-pathspecless-git-commit.sh:26-27`, verbatim.
+# `.claude/oracles/pre-bash/block-pathspecless-git-commit.sh:26-27`, verbatim.
 _HISTORY_BLOCK = (
     "#     files at their new paths while scripts/lib/policy-paths.ts still read\n"
     "#     `const POLICY_DIR = '';` -- the exact half-landed state that seam exists\n"

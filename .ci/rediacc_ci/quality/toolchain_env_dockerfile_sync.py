@@ -1,6 +1,6 @@
 """GO_VERSION, NODE_VERSION and NODE_VERSION_MIN must agree across four files.
 
-Ported from `.ci/scripts/quality/check-toolchain-env-dockerfile-sync.sh`, which is NOT deleted; see `rediacc_ci.quality.__init__`.
+Ported from `.ci/scripts/quality/check-toolchain-env-dockerfile-sync.sh`, which W7 P5 batch C1 retired once `.ci/shadow/w7p2-toolchain-sync.observations.jsonl` asserted equivalence over five distinct trees.
 
 -----------------------------------------------------------------------------
 THE TWIN'S HEADER, CARRIED ACROSS.

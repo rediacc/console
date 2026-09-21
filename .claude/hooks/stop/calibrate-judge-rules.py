@@ -99,9 +99,9 @@ SWEEP_CASES = [
         "silent",
         ["fix(hooks): the roundlog guard matched a mention, not a target"],
         (
-            "Fixed block-roundlog-truncate.sh. I then grepped every guard under "
-            "`.claude/hooks/pre-bash/` for the same unanchored-name pattern "
-            "(`grep -rn 'basename' .claude/hooks/pre-bash/`) -- 38 guards, and this is the "
+            "Fixed block_roundlog_truncate.py. I then grepped every guard under "
+            "`.claude/rediacc_hooks/guards/` for the same unanchored-name pattern "
+            "(`grep -rn 'basename' .claude/rediacc_hooks/guards/`) -- 51 guards, and this is the "
             "only other one; the rest already anchor on the redirect target."
         ),
     ),

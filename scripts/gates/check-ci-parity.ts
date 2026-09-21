@@ -136,10 +136,10 @@ interface ScriptUniverse {
 }
 
 /**
- * Is this program word the external-gate wrapper, in either of its spellings? The bash path and the dotted Python module name the same transparent wrapper, and the resolver has to see through both: a step that moves from one to the other changes the failure POLICY and not the command, so the leaf on either side is the wrapped command.
+ * Is this program word the external-gate wrapper? It is a transparent wrapper, and the resolver has to see through it: it changes the failure POLICY and not the command, so the leaf is the wrapped command. The bash spelling `run-external-gate.sh` was the other arm here until W7 P5 batch E1 deleted that twin; the module is the only spelling left.
  */
 function isExternalGateWrapper(prog: string): boolean {
-  return prog.endsWith('run-external-gate.sh') || prog.endsWith('.run_external_gate');
+  return prog.endsWith('.run_external_gate');
 }
 
 /**
@@ -270,7 +270,7 @@ function resolveLeaves(
       continue;
     }
 
-    // Transparent wrapper: run-external-gate.sh executes its arguments and only changes what a FAILURE means (soft on schedule vs hard on a PR), never what runs. The leaf is the wrapped command; reporting the wrapper itself would make every external gate's CI pointer "run something else" the moment it adopted the wrapper.
+    // Transparent wrapper: `rediacc_ci.quality.run_external_gate` executes its arguments and only changes what a FAILURE means (soft on schedule vs hard on a PR), never what runs. The leaf is the wrapped command; reporting the wrapper itself would make every external gate's CI pointer "run something else" the moment it adopted the wrapper.
     if (isExternalGateWrapper(prog)) {
       out.push(...resolveLeaves(rest.join(' '), u, curScope, seen));
       continue;
@@ -720,20 +720,16 @@ function control(): void {
     }
   }
 
-  // --- W7P4-W: the external-gate wrapper is transparent in BOTH spellings ---- The bash arm already saw through `run-external-gate.sh`; flipping the six CI steps to the Python port made every one of them resolve to the wrapper and report "runs something else". The leaf has to stay the WRAPPED command whichever spelling carries it.
+  // --- W7P4-W: the external-gate wrapper is transparent ---- Flipping the six CI steps to the Python port made every one of them resolve to the wrapper and report "runs something else". The leaf has to stay the WRAPPED command. The bash arm that used to sit beside this one went with the twin in W7 P5 batch E1.
   {
     const u = universeOf({ '': { 'check:x': 'tsx scripts/gates/check-x.ts' } }, {}, [
       '.ci/rediacc_ci/quality/run_external_gate.py',
       '.ci/rediacc_ci/quality/npmrc.py',
-      '.ci/scripts/quality/run-external-gate.sh',
       'scripts/gates/check-x.ts',
     ]);
     const leaves = (cmd: string): string[] => resolveLeaves(cmd, u);
 
     const wrapped = 'scripts/gates/check-x.ts';
-    if (leaves('.ci/scripts/quality/run-external-gate.sh npm run check:x')[0] !== wrapped) {
-      fail('the bash external-gate wrapper stopped resolving to the command it wraps');
-    }
     if (leaves('python3 -m rediacc_ci.quality.run_external_gate npm run check:x')[0] !== wrapped) {
       fail('the Python external-gate wrapper does not resolve to the command it wraps');
     }

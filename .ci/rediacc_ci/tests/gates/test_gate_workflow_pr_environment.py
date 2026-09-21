@@ -4,7 +4,7 @@ Both-ways test for the pr-environment rule in `.ci/scripts/quality/check-workflo
 
 THE BUG IT GUARDS. A job-level `environment:` makes GitHub create the environment OBJECT and a deployment record. ci.yml's deploy-preview job declared
 `pr-${{ github.event.pull_request.number }}`, and CI can never clean the objects
-up: deleting one needs Administration:write, which check-no-app-admin-perm.sh deliberately forbids the CI App from holding, so a leaked token cannot delete `edge` or `stable`. 25 empty `pr-*` shells accumulated on /deployments and had to be removed by hand on 2026-09-03.
+up: deleting one needs Administration:write, which check:ci-app-admin-perm deliberately forbids the CI App from holding, so a leaked token cannot delete `edge` or `stable`. 25 empty `pr-*` shells accumulated on /deployments and had to be removed by hand on 2026-09-03.
 
 THE POSITIVE CONTROL IS THE HISTORICAL DEFECT, VERBATIM: the exact three lines removed from ci.yml, not a synthetic mutation. That text is what created the 25. A rule that cannot reject it would not have caught the thing it exists for.
 

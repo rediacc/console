@@ -688,6 +688,12 @@
   "retired": {
     "ci-tree": {
       ".ci/docker/tts": "removed in 8243c3a97 (registry spine, gate and hook ports, three lane cutovers); confirmed with `git log --diff-filter=D -- .ci/docker/tts`."
+    },
+    "hook-guards": {
+      ".claude/hooks/pre-bash/block-pathspecless-git-commit.sh": "ported to .claude/rediacc_hooks/guards/block_pathspecless_git_commit.py by W7 P6; the bash original is kept as the differential's oracle at .claude/oracles/pre-bash/block-pathspecless-git-commit.sh, which this provider does not scan.",
+      ".claude/hooks/post-bash/cancel-old-ci.sh": "ported to .claude/hooks/post-bash/cancel_old_ci.py by W7 P6; the bash original is kept as the differential's oracle at .claude/oracles/post-bash/cancel-old-ci.sh, which this provider does not scan.",
+      ".claude/hooks/post-bash/refresh-pr-body.sh": "ported to .claude/hooks/post-bash/refresh_pr_body.py by W7 P6; the bash original is kept as the differential's oracle at .claude/oracles/post-bash/refresh-pr-body.sh, which this provider does not scan.",
+      ".claude/hooks/pre-bash/lib/command-scan.sh": "moved to .claude/oracles/pre-bash/lib/command-scan.sh by W7 P6, replacing the forwarder that stood there, once the last bash guard sourcing it was ported; this provider does not scan the oracle tree."
     }
   },
   "superseded": {

@@ -796,65 +796,65 @@ STATIC: list[Case] = [
         bash_json("git add :/"),
         "blanket-git-add: the repo-root magic pathspec",
     ),
-    # block-pathspecless-git-commit.sh -- the OTHER half of the blanket-add trap, and the half a correct `git add` does not protect you from. `git commit` writes the INDEX, so a peer session's staged work rides your commit. Added 2026-09-06 after it happened TWICE in one session: fifteen policy renames landed without their readers, then an hour later, after the trap was written
+    # block_pathspecless_git_commit.py -- the OTHER half of the blanket-add trap, and the half a correct `git add` does not protect against. `git commit` writes the INDEX, so a peer session's staged work rides the commit. Added 2026-09-06 after it happened TWICE in one session: fifteen policy renames landed without their readers, then an hour later, after the trap was written
     # down by the same session, 108 files landed where 33 were intended.
     case(
-        "check 2 pre-bash/block-pathspecless-git-commit.sh",
+        "check 2 guards/block_pathspecless_git_commit.py",
         bash_json('git commit -m "x"'),
         "pathspecless-commit: -m with no pathspec",
     ),
     case(
-        "check 2 pre-bash/block-pathspecless-git-commit.sh",
+        "check 2 guards/block_pathspecless_git_commit.py",
         bash_json("git commit"),
         "pathspecless-commit: the bare form",
     ),
     case(
-        "check 2 pre-bash/block-pathspecless-git-commit.sh",
+        "check 2 guards/block_pathspecless_git_commit.py",
         bash_json('git commit -a -m "x"'),
         "pathspecless-commit: -a stages every modified tracked file",
     ),
     case(
-        "check 2 pre-bash/block-pathspecless-git-commit.sh",
+        "check 2 guards/block_pathspecless_git_commit.py",
         bash_json('git commit -m "x" --'),
         "pathspecless-commit: a -- with nothing after it is the bare form in disguise",
     ),
     case(
-        "check 0 pre-bash/block-pathspecless-git-commit.sh",
+        "check 0 guards/block_pathspecless_git_commit.py",
         bash_json("git commit -F msg.txt -- a/b.ts"),
         "pathspecless-commit: ALLOW a named pathspec",
     ),
     case(
-        "check 0 pre-bash/block-pathspecless-git-commit.sh",
+        "check 0 guards/block_pathspecless_git_commit.py",
         bash_json("git commit -q -F - -- .ci/x.sh agent/y.md"),
         "pathspecless-commit: ALLOW several named paths",
     ),
     case(
-        "check 0 pre-bash/block-pathspecless-git-commit.sh",
+        "check 0 guards/block_pathspecless_git_commit.py",
         bash_json("git commit --amend --no-edit"),
         "pathspecless-commit: ALLOW an amend, which chooses no new content",
     ),
     case(
-        "check 0 pre-bash/block-pathspecless-git-commit.sh",
+        "check 0 guards/block_pathspecless_git_commit.py",
         bash_json("git add -- a.ts"),
         "pathspecless-commit: ALLOW a git add, which is a different guard's business",
     ),
     case(
-        "check 0 pre-bash/block-pathspecless-git-commit.sh",
+        "check 0 guards/block_pathspecless_git_commit.py",
         bash_json("git init -q && git add -A && git commit -qm seed"),
         "pathspecless-commit: ALLOW a throwaway fixture repo, which every port agent must seal",
     ),
     case(
-        "check 0 pre-bash/block-pathspecless-git-commit.sh",
+        "check 0 guards/block_pathspecless_git_commit.py",
         bash_json("cd /tmp/claude-1000/fx/r1; git add -A; git commit -qm seed"),
         "pathspecless-commit: ALLOW a commit inside /tmp, which is never this checkout",
     ),
     case(
-        "check 0 pre-bash/block-pathspecless-git-commit.sh",
+        "check 0 guards/block_pathspecless_git_commit.py",
         bash_json("git -C /tmp/claude-1000/fx/r1 commit -qm seed"),
         "pathspecless-commit: ALLOW git -C into a scratch repo",
     ),
     case(
-        "check 2 pre-bash/block-pathspecless-git-commit.sh",
+        "check 2 guards/block_pathspecless_git_commit.py",
         bash_json("git commit -F /tmp/claude-1000/msg.txt"),
         "pathspecless-commit: a /tmp MESSAGE FILE is not a /tmp repo, so this is still blocked",
     ),
@@ -1709,10 +1709,11 @@ STATIC: list[Case] = [
     ),
     # A HOOK-CHAIN SIBLING IS NOT A RUNNING JOB. Every pre-bash guard executes on every Bash call, so without this exclusion the guard blocked all four of the commands repairing it -- permanently, with no moment of quiet to wait for.
     #
-    # THE SUBJECT MOVED, the case did not. This named block-binary-deploy.sh until the W5 P7 cutover ported it to Python and moved the bash original out of the chain; the payload has to name a bash guard that is STILL registered in the pre-bash chain, or it stops being an instance of the exclusion it controls. block-pathspecless-git-commit.sh is the one that is left.
+    # THE SUBJECT MOVED TWICE, the case did not. It named block-binary-deploy.sh until the W5 P7 cutover ported that guard to Python, then block-pathspecless-git-commit.sh until W7 P6 ported the last bash guard out of the chain. The payload has to name a bash file the chain STILL executes, or it stops being an instance of the exclusion it controls, and `chain-head.sh` is the one
+    # that is left: it leads every chain, it is bash, and `HOOK_CHAIN` in the guard names it beside the four chain directories for that reason.
     case(
         "check 0 guards/block_bash_write_to_running_script.py",
-        bash_json("sed -i s/a/b/ %s/pre-bash/block-pathspecless-git-commit.sh" % HOOKS),
+        bash_json("sed -i s/a/b/ %s/chain-head.sh" % HOOKS),
         "bash-write CONTROL: a chain evaluator is not a job you can corrupt",
     ),
     case(

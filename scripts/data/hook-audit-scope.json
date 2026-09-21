@@ -59,8 +59,11 @@
     "to .claude/rediacc_hooks/oracles/ (see that directory's README). A declared",
     "directory that is not on disk is refused by the gate, deliberately, so this is not",
     "a silent narrowing -- dropping the two names and adding the one is the whole edit.",
-    ".claude/hooks/pre-bash stays: block-pathspecless-git-commit.sh is not ported and is",
-    "still registered as a file, and post-bash stays for its two hooks.",
+    ".claude/hooks/pre-bash LEAVES THE LIST AT W7 P6 for the same reason, one wave later:",
+    "block-pathspecless-git-commit.sh is now guards/block_pathspecless_git_commit.py, and",
+    "lib/command-scan.sh moved to the oracle tree with it, so the directory itself is gone.",
+    "post-bash stays: its two hooks are Python now (cancel_old_ci.py, refresh_pr_body.py)",
+    "and the directory still holds them, so the inventory still has a subject there.",
     "",
     "THE ORACLE TREE IS DELIBERATELY NOT A GUARD DIR. Nothing runs those files and",
     "nothing registers them; their absence would be caught by the pytest differential,",
@@ -98,7 +101,6 @@
   ],
   "guard_dirs": [
     ".claude/rediacc_hooks/guards",
-    ".claude/hooks/pre-bash",
     ".claude/hooks/post-bash"
   ],
   "guards_outside_chains": [

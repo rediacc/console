@@ -14,7 +14,7 @@ basename does not derive `check:ci-app-admin-perm`, so without the explicit `id:
 
 `selftest: true` IS INERT HERE and is carried anyway: `headerLines` emits that field only for `.ts` (`gate-bind.ts:598`), so for a `.py` gate it decides nothing. It is true of the port regardless.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-no-app-admin-perm.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
+THE TWIN IS GONE. `.ci/scripts/quality/check-no-app-admin-perm.sh` was the differential twin until W7 P5 batch E1 deleted it; its recorded bytes are `.ci/rediacc_ci/tests/goldens/app-admin-perm/`, each golden naming the blob sha the recording came from.
 
 ---- gate ----
 step: App admin permission

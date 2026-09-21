@@ -115,11 +115,10 @@ interface Family {
 
 const FAMILIES: readonly Family[] = [
   { pathspec: 'scripts/gates/check-*.ts', floor: 100 },
-  { pathspec: '.ci/scripts/quality/check-*.sh', floor: 35 },
+  { pathspec: '.ci/scripts/quality/check-*.sh', floor: 24 },
   { pathspec: '.ci/scripts/test/gates/test-*.sh', floor: 23 },
-  // FLOOR 1 IS A SCAR, NOT A TARGET. This family held 43 guards; W5 ported 42 of them to `.claude/rediacc_hooks/guards/block_*.py` and one bash file remains, so the gate has been scanning 1 of 43. Adding the Python spelling on 2026-09-08 reported 26 new shapes -- the guards carry a shared scaffold of their own -- so the widening is an extraction job like the quality half above,
-  // not a line, and it belongs in the same commit 3. What this row buys TODAY is that the number is written down where the next reader sees it, instead of being a silent 1.
-  { pathspec: '.claude/hooks/pre-bash/block-*.sh', floor: 1 },
+  // THE `.claude/hooks/pre-bash/block-*.sh` FAMILY IS GONE, and this note stands in its place rather than a row with a floor of zero, which no deletion could ever breach. It held 43 guards; W5 ported 42 to `.claude/rediacc_hooks/guards/block_*.py` and left one bash file, and W7 P6 ported that one too, so the pathspec now matches nothing and `git ls-files` on it would refuse
+  // the floor it used to carry. THE PYTHON SPELLING IS STILL NOT HERE, deliberately and with the cost measured: adding `.claude/rediacc_hooks/guards/block_*.py` on 2026-09-08 reported 26 new shapes, because the guards carry a shared scaffold of their own, so the widening is an extraction job like the quality half above and belongs in a commit of its own.
 ];
 
 /** Exported for the index: the probe must scan the corpus this gate scans, and one list says so. */
@@ -1841,7 +1840,8 @@ async function main(): Promise<void> {
   const { perFile, helpers } = scan(files);
 
   // FLOORS. Either means the scan is broken, and a broken scan reports a confident green having verified nothing -- the exact failure this repo gates against. The corpus floor is the SUM of the family floors below it, so it moves with them: W7 P5 census batches B2 to B4 took the gate-test family from 40 to 23 and this from 200 to 184.
-  if (files.length < 184) {
+  // Batches C1 and C2 took the quality family from 35 to 26 and this from 184 to 175. W7 P6 ported the last `.claude/hooks/pre-bash/block-*.sh`, which deleted that family's row above and took this from 175 to 174. Batch E1 froze two more `check-*.sh` against recorded goldens, taking the quality family to 24 and this to 172.
+  if (files.length < 172) {
     console.error(
       `${RED}✗${NC} only ${files.length} file(s) in the corpus; the globs are broken or the tree moved`
     );

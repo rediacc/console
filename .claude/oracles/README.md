@@ -1,6 +1,9 @@
 # The retired bash guards, kept as the differential's oracle
 
-These 46 files are NOT hooks. Nothing registers them, nothing runs them as guards, and `.claude/settings.json` does not name one of them. They are the bash originals that `.claude/rediacc_hooks/guards/*.py` were ported from, moved here by the W5 P7 cutover on 2026-09-06 from `.claude/hooks/{pre-bash,pre-edit,pre-ask}/`.
+These files are NOT hooks. Nothing registers them, nothing runs them as guards, and `.claude/settings.json` does not name one of them. They are the bash originals that `.claude/rediacc_hooks/guards/*.py` were ported from, moved here by the W5 P7 cutover on 2026-09-06 from `.claude/hooks/{pre-bash,pre-edit,pre-ask}/`.
+
+W7 P6 added the last three on 2026-09-21, from the two directories the cutover had left alone: `pre-bash/block-pathspecless-git-commit.sh`, whose port is `guards/block_pathspecless_git_commit.py` and is judged by the same differential as the other 46, and `post-bash/cancel-old-ci.sh` with `post-bash/refresh-pr-body.sh`, whose ports are
+`.claude/hooks/post-bash/{cancel_old_ci,refresh_pr_body}.py`. Those two were never guards and are judged instead by `tests/test_post_bash_differential.py`, which runs each pair over one shared set of scripted `git` and `gh` programs; the paragraph below about what may be done to these files applies to them unchanged.
 
 ## Why they are kept rather than deleted
 
@@ -24,4 +27,7 @@ exists for.
 
 ## What may and may not be done to them
 
-They are FROZEN. Do not fix a bug here; fix it in the port and let the differential report the divergence, which is what it is for. Do not add a file here that never was a registered guard. The one file that is not an original is `pre-bash/lib/command-scan.sh`, which forwards to the live library and says so.
+They are FROZEN. Do not fix a bug here; fix it in the port and let the differential report the divergence, which is what it is for. Do not add a file here that was never registered: the three W7 P6 arrivals qualify because `.claude/settings.json` really did run them, through the `pre-bash` and `post-bash` patterns, until the day they were ported.
+
+`pre-bash/lib/command-scan.sh` USED TO BE A FORWARDER and is now the library itself. It stood as three lines pointing back at `.claude/hooks/pre-bash/lib/command-scan.sh` while a live bash guard still sourced that copy; W7 P6 ported that guard, nothing under `.claude/hooks/` sourced the library any more, and the real 303-line file was moved onto this path. The 28 oracles beside
+it still open with the same unmodified `source "$(dirname "${BASH_SOURCE[0]}")/lib/command-scan.sh"` line, so they resolve it directly now instead of through a hop, and `tests/corpus.py` reads it here.

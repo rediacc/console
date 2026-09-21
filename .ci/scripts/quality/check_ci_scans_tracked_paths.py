@@ -26,7 +26,7 @@ DRIVEN, on this tree, both streams captured SEPARATELY:
 DRIVEN RED AS WELL, and the plant carried its own negative control. A throwaway `.ci/scripts/__gate_probe_scans.sh` was written with TWO mentions of the same gitignored path: one in a comment (PROSE, which must NOT be reported) and one in command position (`bash private/growth/nope.sh`). Both sides exit 1, both print a byte-identical 136-byte stdout and a byte-identical 486-byte
 stderr naming `.ci/scripts/__gate_probe_scans.sh:3` and quoting the command -- line 3, not line 2, so the prose control fired on both sides too. The probe file was then deleted and both sides returned to exit 0.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-ci-scans-tracked-paths.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
+INVARIANT 5 HELD UNTIL THE LEDGER LICENSED THIS PORT: `.ci/scripts/quality/check-ci-scans-tracked-paths.sh` stayed on disk as the differential twin until `.ci/shadow/w7p2-ci-scans-tracked-paths.observations.jsonl` asserted equivalence over five distinct trees. W7 P5 batch C1 retired it, and this entry point is what the gate runs from.
 """
 
 import sys

@@ -98,7 +98,8 @@ def test_wiring_agrees_in_both_directions():
     #
     # THE CONTROLS PLANT INTO THE REGISTRATION SET, not into a settings copy, and that is a re-key the collapse forced rather than a convenience. The old drop control filtered a command out of the file, and the command it filtered, `block-pathspecless-git-commit.sh`, is no longer spelled in the file at all -- it is a member of the pre-bash pattern. The filter would have matched
     # nothing, the fixture would have equalled the original, and the control would have reported the tree's own green as its own. Planting into the set the comparator reads keeps the plant landing wherever the wiring happens to live.
-    dropped_subject = "pre-bash/block-pathspecless-git-commit.sh"
+    # RE-KEYED AT W7 P6, which ported the last three bash hooks. `chain-head.sh` is the only bash file left on both sides of this comparison, so it is the only subject a drop can actually remove.
+    dropped_subject = "chain-head.sh"
     block.note(
         0,
         "wiring CONTROL: the drop fixture's subject is really registered",

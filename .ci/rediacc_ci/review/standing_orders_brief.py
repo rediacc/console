@@ -1,14 +1,16 @@
-"""Port of `.claude/lib/standing-orders-brief.sh` (120 lines).
+"""The live-state brief printed by the `/standing-orders` slash command, ported from a 120-line bash twin that W7 P6 deleted.
 
-The live-state brief printed by the `/standing-orders` slash command: who I am, my open worklist slice, the ownership split against peer sessions, whether my `[>]` leases are believable, what peers are waiting on, and the durable context under `agent/`.
+What it prints: the session identity, the open worklist slice, the ownership split against peer sessions, whether the `[>]` leases are believable, what peers are waiting on, and the durable context under `agent/`.
 
-LIVE CALLER OF THE TWIN, not repointed by this port:
-  * `.claude/commands/standing-orders.md:10` -- the `!`bash
-    .claude/lib/standing-orders-brief.sh`` block that renders the command.
-  * `.claude/commands/standing-orders.md:5` -- `allowed-tools: Bash(bash
-    .claude/lib/standing-orders-brief.sh)`, which pins the exact command STRING
-    the permission matcher will accept. Repointing the caller therefore means
-    editing two lines that must stay in lockstep, and it is not this port's job.
+THE ONLY LIVE CALLER, repointed onto this module when the twin went:
+  * `.claude/commands/standing-orders.md:10` -- the `!`python3
+    .ci/rediacc_ci/review/standing_orders_brief.py`` block that renders the
+    command.
+  * `.claude/commands/standing-orders.md:5` -- `allowed-tools: Bash(python3
+    .ci/rediacc_ci/review/standing_orders_brief.py)`, which pins the exact
+    command STRING the permission matcher will accept. The two lines must stay
+    in lockstep: a frontmatter that does not match the body is a permission
+    prompt on the operator's first invocation.
 
 READ-ONLY BY CONSTRUCTION, on both sides. Nothing here writes to the worklist store; `worklist.py` is invoked only with `--list` and `--poll`.
 

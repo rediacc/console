@@ -14,8 +14,8 @@ WHAT `--chain` IS FOR, AND IT IS LIVE. `--chain` runs every guard of one chain I
     PreToolUse/Edit   11 command entries -> 4, and  38 execs -> 12
     PreToolUse/Ask     3 command entries -> 3, and  13 execs -> 11
 
-Positions were preserved rather than renumbered: the jq and python3 toolchain checks still lead every chain as their own commands, and the one pre-bash guard that is still bash (block-pathspecless-git-commit.sh) sits AFTER the dispatcher entry, so it still runs 40th. `ORDER` in each guard module is that position, and `tests/test_dispatch.py` derives it from settings.json rather
-than trusting the number.
+Positions were preserved rather than renumbered: the jq and python3 toolchain checks still lead every chain as their own commands. One pre-bash guard stayed bash and sat AFTER the dispatcher entry until W7 P6 ported it; `guards/block_pathspecless_git_commit.py` declares the position it always ran at and now runs there inside the dispatcher, so nothing ahead of or behind it
+moved. `ORDER` in each guard module is that position, and `tests/test_dispatch.py` derives it from settings.json rather than trusting the number.
 
 WHY `sys.path` IS MANIPULATED HERE AND NOWHERE ELSE. `.claude/settings.json` invokes hooks as plain scripts, so there is no package context and no `pythonpath` from `pyproject.toml` (pytest supplies that, the harness does not). One hop, in the one file that is an entry point, is the alternative to every guard module carrying its own -- which is the arrangement `.claude/hooks/stop`
 has and the arrangement `rediacc_hooks/__init__.py` says this package exists to end.

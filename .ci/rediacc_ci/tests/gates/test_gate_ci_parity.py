@@ -528,19 +528,19 @@ def test_parity_surface_is_computed_not_named(gate):
 
 
 def test_external_wrapper_is_transparent(gate):
-    """`run-external-gate.sh` executes its arguments and only changes what a failure MEANS (soft on schedule, hard on a PR). The resolver must see through it to the wrapped gate, or every external gate's CI pointer breaks the moment it adopts the wrapper."""
+    """`rediacc_ci.quality.run_external_gate` executes its arguments and only changes what a failure MEANS (soft on schedule, hard on a PR). The resolver must see through it to the wrapped gate, or every external gate's CI pointer breaks the moment it adopts the wrapper."""
     with harness.temp_dir() as d:
         scaffold(
             d,
             "      - name: Alpha\n"
-            "        run: .ci/scripts/quality/run-external-gate.sh npm run check:ci-alpha",
+            "        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.run_external_gate npm run check:ci-alpha",
         )
         manifest(d, MANIFEST_ALPHA)
         result = run_gate(d)
         gate.assert_exit_code(
-            0, result.rc, "a gate wrapped in run-external-gate.sh must still count as CI-covered"
+            0, result.rc, "a gate wrapped in run_external_gate must still count as CI-covered"
         )
-    gate.log_pass("run-external-gate.sh is transparent to leaf resolution")
+    gate.log_pass("run_external_gate is transparent to leaf resolution")
 
 
 def test_unknown_wrapper_is_not_transparent(gate):

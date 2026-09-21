@@ -80,7 +80,7 @@ HAZARD 2 -- PHASE 3 COUNTS A DRY-RUN DELETE AND PHASE 1 DOES NOT. Phase 1's dry-
 
 HAZARD 3 -- PHASE 5b NEVER CALLS `record_delete`. It deletes Workers through the Cloudflare API and does not charge them to the global budget, so a run that deletes 40 Workers still believes it has deleted zero. Every other destructive arm in the file records. Pinned by `test_phase_5b_does_not_charge_the_delete_budget`.
 
-HAZARD 4 -- PHASE 6 CANNOT SUCCEED, BY DESIGN. Deleting an environment object needs Administration:write, which `check-no-app-admin-perm.sh` forbids the App
+HAZARD 4 -- PHASE 6 CANNOT SUCCEED, BY DESIGN. Deleting an environment object needs Administration:write, which `check:ci-app-admin-perm` forbids the App
 from ever holding. The phase's own banner says so. It is ported unchanged,
 including the `log_info` (not `log_warn`) on the 403 and the `break` that stops after the first one.
 
@@ -1829,7 +1829,7 @@ class Housekeeping:
     def cleanup_environments(self) -> None:
         """`cleanup_environments` (:766-839). HAZARD 4: IT CANNOT SUCCEED.
 
-        Deleting an environment OBJECT needs Administration:write, and `check-no-app-admin-perm.sh` is a BLOCKING gate that forbids granting it to the App -- so the 403 arm is the designed outcome, which is why it logs at INFO and stops after the first one rather than warning per environment. Ported exactly, including that choice.
+        Deleting an environment OBJECT needs Administration:write, and `check:ci-app-admin-perm` is a BLOCKING gate that forbids granting it to the App -- so the 403 arm is the designed outcome, which is why it logs at INFO and stops after the first one rather than warning per environment. Ported exactly, including that choice.
         """
         log.step("Phase 6: Cleaning up stale GitHub preview environments")
 

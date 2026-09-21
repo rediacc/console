@@ -53,7 +53,7 @@ The plant was reverted from a `cp` backup, verified back at its pre-plant sha256
 with `sha256sum -c`, and `git status --porcelain` diffed against its pre-plant
 capture with no difference.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-control-vacuity.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
+INVARIANT 5 HELD UNTIL THE LEDGER LICENSED THIS PORT: `.ci/scripts/quality/check-control-vacuity.sh` stayed on disk as the differential twin until `.ci/shadow/w7p2-control-vacuity.observations.jsonl` asserted equivalence over five distinct trees. W7 P5 batch C2 retired it, and this entry point is what the gate runs from.
 
 ---- gate ----
 step: Control-first gates prove their plant landed

@@ -304,7 +304,6 @@ CORPUS_GLOBS = (
     "scripts/gates/check-*.ts",
     ".ci/scripts/quality/check-*.sh",
     ".ci/scripts/test/gates/test-*.sh",
-    ".claude/hooks/pre-bash/block-*.sh",
 )
 
 

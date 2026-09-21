@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/quality/run-external-gate.sh`.
+"""Port of `.ci/scripts/quality/run-external-gate.sh`, deleted by W7 P5 batch E1.
 
 The wrapper that decides whether a gate depending on the OUTSIDE WORLD is allowed to redden today's run. The twin's header carries the measurement that justifies it: 5 of the 8 nightlies before 2026-08-04 failed on nothing but external drift -- a new rclone release, freshly published npm advisories, a new action version. The world moved, not this tree, and the `no-external-quality`
 label cannot help on a `schedule` event where no PR label can ever apply.
@@ -9,7 +9,7 @@ THE THREE-STATE FLAG, computed by ci.yml's initialize job as `external_quality`,
         kept, unchanged, including 126/127/128+N.
   skip  pull request WITH the label. The step does not run at all -- this is
         expressed in the step's `if:`, so this wrapper never sees the string
-        and deliberately does not accept it. `announce-gate-skips.sh` is what
+        and deliberately does not accept it. The announcer is what
         makes that skip visible; the two scripts are complements.
   soft  schedule / workflow_dispatch. The gate RUNS and REPORTS, but a failure
         becomes a `::warning::` plus a step summary and exit 0, so external
@@ -25,7 +25,7 @@ WHY A WRAPPER AND NOT `continue-on-error`: `check-workflows.sh` bans that key re
 NOT A REGISTERED GATE ITSELF; it is a transparent PREFIX on four registered ones. `grep -n run-external-gate package.json` matches nothing, and `scripts/gates/check-ci-parity.ts:262-268` special-cases it precisely so a gate wrapped in it still counts as CI-covered -- the leaf is the wrapped `npm run check:...`, not the wrapper. Live call sites: `ci-quality.yml:1084`
 (check:actions), `:1289` (check:ci-external-links), `:1299` (check:ci-dkim-notify), `:2083` (check:ci-go-deps), `:2150` (check:ci-embed-asset-freshness), `:2163` (check:ci-devcontainer-pins). Its own coverage is the gate test `.ci/rediacc_ci/tests/gates/test_gate_external_gate_wrapper.py`, which still drives the twin.
 
-THE CHILD IS EXECUTED, NOT SHELLED. `"$@"` runs the argument vector directly, so `run-external-gate.sh 'a b'` looks for a program literally named `a b` rather than running `a` with an argument. `subprocess.run(argv)` without
+THE CHILD IS EXECUTED, NOT SHELLED. `"$@"` runs the argument vector directly, so a single argument `'a b'` looks for a program literally named `a b` rather than running `a` with an argument. `subprocess.run(argv)` without
 `shell=True` is the same thing, and using `shell=True` here would be a
 behavioural change disguised as a convenience.
 

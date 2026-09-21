@@ -2,12 +2,12 @@
 description: The operator's standing orders for THIS session. States the posture (the Stop hook's worklist is an operator-sanctioned driver carrying real work, not noise to dispatch on the way back to the operator), prints the live picture (what is open, what is mine, what a peer's, which leases are believable), and fixes the tie-break between a live operator ask and hook-driven work. Free text after the command is absorbed as an operator hint and routed to a channel that survives compaction. With no arguments it writes nothing, costs one screen, and is safe to re-run after every compaction.
 argument-hint: "[hint or tip for this session; omit for a read-only re-orientation]"
 disable-model-invocation: true
-allowed-tools: Bash(bash .claude/lib/standing-orders-brief.sh)
+allowed-tools: Bash(python3 .ci/rediacc_ci/review/standing_orders_brief.py)
 ---
 
 ## Live state
 
-!`bash .claude/lib/standing-orders-brief.sh`
+!`python3 .ci/rediacc_ci/review/standing_orders_brief.py`
 
 ## Why the operator runs this
 

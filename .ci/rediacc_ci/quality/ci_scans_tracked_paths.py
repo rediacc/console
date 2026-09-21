@@ -1,6 +1,6 @@
 """CI CANNOT EXECUTE WHAT GIT DOES NOT TRACK.
 
-Ported from `.ci/scripts/quality/check-ci-scans-tracked-paths.sh`, which is NOT deleted; see `rediacc_ci.quality.__init__` for why both copies live.
+Ported from `.ci/scripts/quality/check-ci-scans-tracked-paths.sh`, which W7 P5 batch C1 retired once `.ci/shadow/w7p2-ci-scans-tracked-paths.observations.jsonl` asserted equivalence over five distinct trees.
 
 The twin's header, carried whole because the incident and the false-positive argument are both load-bearing:
 

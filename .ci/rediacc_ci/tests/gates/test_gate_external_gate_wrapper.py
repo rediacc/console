@@ -1,6 +1,8 @@
 """Port of `.ci/scripts/test/gates/test-external-gate-wrapper.sh`, retired in W7 P5.
 
-Tests for `.ci/scripts/quality/run-external-gate.sh`, the wrapper that gives externally-dependent quality gates their three-state behaviour: hard on a normal PR, absent on a labelled PR via the step `if:`, soft on schedule.
+Tests for `rediacc_ci.quality.run_external_gate`, the wrapper that gives externally-dependent quality gates their three-state behaviour: hard on a normal PR, absent on a labelled PR via the step `if:`, soft on schedule.
+
+IT IS WHAT THE SIX WRAPPED STEPS in `.github/workflows/ci-quality.yml` run, and since the bash twin `.ci/scripts/quality/run-external-gate.sh` was deleted it is also what every case below drives.
 
 Every direction is exercised with a REAL child process, and both failure directions are proven able to fire: a soft failure that exits non-zero, or a hard failure that exits zero, would each silently break the design in the dangerous direction -- a red nightly nobody wanted, or a green PR that should have blocked.
 
@@ -13,7 +15,9 @@ import os
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 
-WRAPPER = paths.from_root(".ci", "scripts", "quality", "run-external-gate.sh")
+WRAPPER = paths.from_root(".ci", "rediacc_ci", "quality", "run_external_gate.py")
+WRAPPER_ARGV = ["python3", str(WRAPPER)]
+CI_PACKAGE_ROOT = str(paths.from_root(".ci"))
 
 UNSET = object()
 
@@ -23,13 +27,14 @@ def run_wrapper(gate, mode, expected: int, label: str, *argv: str) -> str:
 
     `mode` is a string, or `UNSET` for "the variable never reached the step", which is the wiring break the fail-closed case exists for.
     """
-    if not os.access(WRAPPER, os.X_OK):
-        gate.log_fail("wrapper not found or not executable: %s" % WRAPPER)
+    if not WRAPPER.is_file():
+        gate.log_fail("wrapper not found: %s" % WRAPPER)
     env = dict(os.environ)
     env.pop("EXTERNAL_QUALITY_MODE", None)
+    env["PYTHONPATH"] = CI_PACKAGE_ROOT
     if mode is not UNSET:
         env["EXTERNAL_QUALITY_MODE"] = mode
-    proc = harness.run([str(WRAPPER), *argv], env=env)
+    proc = harness.run([*WRAPPER_ARGV, *argv], env=env)
     out = proc.combined
     if proc.rc != expected:
         gate.log_fail("%s: expected exit %d, got %d (output: %s)" % (label, expected, proc.rc, out))
@@ -81,8 +86,12 @@ def test_soft_failure_writes_step_summary(gate, tmp_path):
     summary = tmp_path / "step-summary.md"
     summary.write_text("", encoding="utf-8")
     proc = harness.run(
-        [str(WRAPPER), "false"],
-        env={"EXTERNAL_QUALITY_MODE": "soft", "GITHUB_STEP_SUMMARY": str(summary)},
+        [*WRAPPER_ARGV, "false"],
+        env={
+            "EXTERNAL_QUALITY_MODE": "soft",
+            "GITHUB_STEP_SUMMARY": str(summary),
+            "PYTHONPATH": CI_PACKAGE_ROOT,
+        },
     )
     gate.assert_exit_code(0, proc.rc, "soft failure with summary should still exit 0")
     gate.assert_contains(

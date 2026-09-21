@@ -231,7 +231,7 @@
     }
   },
   "ignoreDependencies": [
-    // BLOCKER: npx-invoked by .ci/scripts/quality/check-lockfile.sh; declared at root so the pinned version resolves from the workspace tree instead of a network fetch — no JS import exists for knip to see
+    // BLOCKER: npx-invoked by .ci/scripts/quality/check_lockfile.py; declared at root so the pinned version resolves from the workspace tree instead of a network fetch — no JS import exists for knip to see
     "lockfile-lint",
     // BLOCKER: TypeScript ambient type packages are compile-time inputs resolved by tsc, never imported as runtime modules
     "@types/*",

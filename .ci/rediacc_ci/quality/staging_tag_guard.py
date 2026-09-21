@@ -4,8 +4,8 @@
 THIS FILE IS THE GATE. It carries `check:ci-staging-tag-guard` outright: package.json, the `Staging tag guard` step in `.github/workflows/ci-quality.yml` and its `scripts/ci-runner/manifest.ts` leaf all name this path, and the `---- gate ----` header below moved here from the twin in the same change (W7P4-Q). The licence for the cutover is
 `.ci/shadow/w7p2-stagingtag.observations.jsonl`, which reads EQUIVALENT over 12 distinct clean trees at K=5, plus the differential in `.ci/rediacc_ci/tests/test_quality_staging_tag_guard.py`.
 
-`.ci/scripts/quality/check-staging-tag-guard.sh` IS STILL IN THE TREE, and is no longer registered anywhere. It is the SUBJECT of that differential: every case there runs the real twin over a fixture and compares both streams byte for byte against this file. Deleting it would mean rewriting those cases to literals captured from a twin nobody could re-run, so the deletion is a
-separate change with its own reason, not a side effect of this one.
+`.ci/scripts/quality/check-staging-tag-guard.sh` IS GONE, deleted by W7 P5 batch E1. Every case in that differential used to run the real twin over a fixture and compare both streams byte for byte against this file; each now compares against `.ci/rediacc_ci/tests/goldens/staging-tag-guard/`, which holds the twin's own bytes recorded on its last day in the tree. The
+provenance header of each golden names the blob sha, so `git cat-file -p <sha>` still yields the program that printed them.
 
 ---- gate ----
 step: Staging tag guard

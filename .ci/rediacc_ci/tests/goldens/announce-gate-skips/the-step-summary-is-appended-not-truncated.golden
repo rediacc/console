@@ -1,0 +1,17 @@
+# twin .ci/scripts/quality/announce-gate-skips.sh blob ce63a3e3be32ed0e25ed71a569e9e4fcbac9ceab
+exit: 0
+--- stdout ---
+::warning::label 'no-media-quality' removed 1 gate(s) from this job: check:ci-i18n-media
+gate-skips: 1 gate(s) NOT run in this job because the PR carries 'no-media-quality': check:ci-i18n-media
+gate-skips: this is a temporary hold. Remove the label to restore them.
+--- stderr ---
+--- summary ---
+### An earlier step wrote this
+### Gates skipped by `no-media-quality` (1 in this job)
+
+- `check:ci-i18n-media` -- did NOT run
+
+These gates are held, not exempt. Remove the `no-media-quality` label as
+soon as the work it is waiting on lands, and let the run go red
+if the underlying defect is still there.
+See docs/agent-reference/ci-gates.md.

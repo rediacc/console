@@ -123,7 +123,7 @@ BUDGET_EXPRESSION = "bridge_ram + worker_count * worker_ram + ceph_count * ceph_
 # Line numbers bash prints inside its own diagnostics, pinned so a drift in the twin is a test failure rather than a silent text change. Re-derived by `test_the_pinned_twin_line_numbers_still_point_at_the_right_lines`.
 ARITH_LINE = 116  # `local total=$((...))`
 HEREDOC_LINE = 132  # `cat >"$OUTPUT" <<EOF`
-PRINTF_LINE = 333  # common.sh's `printf -v "$key"`, inside parse_args
+PRINTF_LINE = 334  # common.sh's `printf -v "$key"`, inside parse_args
 
 # The twin's own path, as `${BASH_SOURCE[0]}` spells it in a diagnostic: the
 # script's directory, then the unnormalised `../lib/common.sh`.

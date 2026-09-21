@@ -39,7 +39,9 @@ def repo_root():
 
 
 SUITE = repo_root() / ".claude" / "hooks" / "test-hooks.sh"
-LIB = repo_root() / ".claude" / "hooks" / "pre-bash" / "lib" / "command-scan.sh"
+# MOVED TO THE ORACLE TREE BY W7 P6, which ported the last bash guard that sourced it. `.claude/hooks/pre-bash/` then held nothing and was removed, and the 20-line forwarder that stood at the oracle path was REPLACED by the real 303-line library, so the 28 oracles beside it resolve `lib/command-scan.sh` directly instead of through a hop. One copy, and this differential still runs
+# the real tracked bytes rather than a transcription of them.
+LIB = repo_root() / ".claude" / "oracles" / "pre-bash" / "lib" / "command-scan.sh"
 
 # The floor the harvest must clear. Corpus-derived floors are the rule (driver contract section 6), and this one is: it is a fraction of the `bash_json` call sites counted in the same pass, so adding cases to the suite raises it and a broken parser that recovers three payloads reds instead of quietly proving the port against three inputs.
 HARVEST_RATIO_FLOOR = 0.9

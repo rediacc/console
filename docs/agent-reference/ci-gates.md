@@ -241,11 +241,11 @@ renet's own `go.mod`, so no registry can make it fail. Putting it behind `extern
 - **skip** -- PR carrying the `no-external-quality` label: the steps do not run
 at all (offline branch work; the lookups cannot succeed).
 - **soft** -- schedule / workflow_dispatch: the gate RUNS and reports, but
-`.ci/scripts/quality/run-external-gate.sh` downgrades a failure to a `::warning::` + step summary + exit 0. The nightly's red then means "main is broken", never "the world moved" (5 of the 8 nightlies before 2026-08-04 were red on external drift alone, and the `nightly-red` issue cried wolf).
+`rediacc_ci.quality.run_external_gate` downgrades a failure to a `::warning::` + step summary + exit 0. The nightly's red then means "main is broken", never "the world moved" (5 of the 8 nightlies before 2026-08-04 were red on external drift alone, and the `nightly-red` issue cried wolf).
 
 `audit.py` deliberately gets only the skip half: a new production advisory against main's unchanged lockfile is a real signal about main, so it still reddens the nightly (operator decision 2026-08-04).
 
-Do not hand a new external gate its own `if:` expression or `continue-on-error` (banned by check-workflows.sh): give the step `inputs.external_quality != 'skip'`, route its command through `run-external-gate.sh`, and pass `EXTERNAL_QUALITY_MODE`. The wrapper fails closed (unset or unknown mode behaves as hard), check-ci-parity resolves through it (the wrapped command stays the
+Do not hand a new external gate its own `if:` expression or `continue-on-error` (banned by check-workflows.sh): give the step `inputs.external_quality != 'skip'`, route its command through `run_external_gate`, and pass `EXTERNAL_QUALITY_MODE`. The wrapper fails closed (unset or unknown mode behaves as hard), check-ci-parity resolves through it (the wrapped command stays the
 leaf), and test-external-gate-wrapper.sh pins all four directions.
 
 ### Tutorial-media gates and `media_quality` (hard / skip)
@@ -269,7 +269,7 @@ There are only two states, deliberately. `external_quality` has a third because 
 **What it deliberately does NOT hold**, because each still catches a real defect while media is being re-recorded: `check:ci-tutorial-commands`, `check:ci-tutorial-noninteractive`, `check:ci-tutorial-cli-validity` and `check:ci-tutorial-no-skips` (these read the `.sh` scripts and the live command tree, so a red is genuinely new), `check:ci-tutorial-caption-sync` (fetches PUBLISHED
 CDN content, so a red is a production defect until the new media is published), `check:ci-tutorial-card-fonts`, `check:ci-locale-tutorial-assets`, `check:ci-tutorial-healthcheck-headroom`, `check:ci-tutorial-render-queue`, and both solution-video gates (a different asset family entirely). Widening the set is not a convenience, it is coverage nobody asked to lose.
 
-**The label is a HOLD, not an exemption, and the log says so.** A skipped step leaves its job `success` and prints nothing, so both consuming jobs run `.ci/scripts/quality/announce-gate-skips.sh` UNCONDITIONALLY -- it is not behind the mode `if:`. In `skip` it emits a `::warning::` and a step summary naming every gate that did not run plus the instruction to remove the label; in
+**The label is a HOLD, not an exemption, and the log says so.** A skipped step leaves its job `success` and prints nothing, so both consuming jobs run `rediacc_ci.quality.announce_gate_skips` UNCONDITIONALLY -- it is not behind the mode `if:`. In `skip` it emits a `::warning::` and a step summary naming every gate that did not run plus the instruction to remove the label; in
 `hard` it prints the count of gates enforced, so a missing announcer and a silent one cannot look alike. It also refuses (exit 2) an unrecognised `media_quality` value, which is the only place a typo in that wiring is ever reported: the step `if:` treats anything it does not recognise as "run", which is fail-closed but completely silent. `test-gate-skip-announcer.sh` pins all of
 it, including the workflow wiring itself.
 

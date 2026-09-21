@@ -16,15 +16,15 @@
   "that shrank by 29 can still hide one brand-new violation. Comparing sizes is not",
   "the same claim as diffing the sets."
  ],
- "count": 5673,
+ "count": 5671,
  "files": 1194,
  "by_rule": {
-  "R1": 1676,
+  "R1": 1675,
   "R11": 178,
   "R14": 1,
   "R18": 2267,
   "R19": 62,
-  "R2": 958,
+  "R2": 957,
   "R7": 531
  },
  "findings": {
@@ -561,9 +561,6 @@
    ]
   },
   ".ci/rediacc_ci/review/standing_orders_brief.py": {
-   "R2": [
-    "107a3d1a23d2354f"
-   ],
    "R7": [
     "a02ad9474c49cc91"
    ]
@@ -2397,9 +2394,6 @@
    ]
   },
   ".claude/rediacc_hooks/tests/hookcases.py": {
-   "R1": [
-    "a7d1cbe5535bc71a"
-   ],
    "R2": [
     "f093bddb94daffa9"
    ],

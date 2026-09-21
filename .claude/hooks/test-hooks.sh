@@ -297,15 +297,19 @@ wiring_case 0 "$DIR/../settings.json" "$DIR" "" "" \
 # now and settings.json does not name it, so the jq filter would have matched
 # nothing, the fixture would have been identical to the real file, and the
 # control would have reported the tree's own green as its own. A control that
-# plants nothing proves nothing. block-pathspecless-git-commit.sh is the pre-bash
-# guard still registered as a file, so it is the one that can be dropped.
+# plants nothing proves nothing.
 #
 # AND THE PLANTS MOVED AGAIN at the 2026-09-21 collapse, into the registration
 # stream rather than into a copy of settings.json, for the same reason a second
-# time: that guard is now a member of the pre-bash pattern and the file does not
-# spell it either. A plant that lands wherever the wiring lives cannot stop
-# firing when the wiring moves.
-WIRE_DROP="pre-bash/block-pathspecless-git-commit.sh"
+# time: a guard that is a member of a pattern is not spelled in the file either.
+# A plant that lands wherever the wiring lives cannot stop firing when the
+# wiring moves.
+#
+# THE SUBJECT MOVED A THIRD TIME at W7 P6, which ported the last three bash
+# hooks. block-pathspecless-git-commit.sh, cancel-old-ci.sh and refresh-pr-body.sh
+# are Python now, so chain-head.sh is the only bash file left on both sides of
+# the comparison and therefore the only one a drop can remove.
+WIRE_DROP="chain-head.sh"
 if hook_registrations "$DIR/../settings.json" | grep -qxF -- "$WIRE_DROP"; then
     PASS=$((PASS + 1))
     printf 'ok   [0] wiring CONTROL: the drop fixture'"'"'s subject is really registered\n'
@@ -809,24 +813,24 @@ check 2 guards/block_blanket_git_add.py "$(bash_json 'git add --all')" "blanket-
 check 2 guards/block_blanket_git_add.py "$(bash_json 'git add .')" "blanket-git-add: a lone dot"
 check 2 guards/block_blanket_git_add.py "$(bash_json 'git add :/')" "blanket-git-add: the repo-root magic pathspec"
 
-# block-pathspecless-git-commit.sh -- the OTHER half of the blanket-add trap, and
+# block_pathspecless_git_commit.py -- the OTHER half of the blanket-add trap, and
 # the half a correct `git add` does not protect you from. `git commit` writes the
 # INDEX, so a peer session's staged work rides your commit. Added 2026-09-06
 # after it happened TWICE in one session: fifteen policy renames landed without
 # their readers, then an hour later, after the trap was written down by the same
 # session, 108 files landed where 33 were intended.
-check 2 pre-bash/block-pathspecless-git-commit.sh "$(bash_json 'git commit -m "x"')" "pathspecless-commit: -m with no pathspec"
-check 2 pre-bash/block-pathspecless-git-commit.sh "$(bash_json 'git commit')" "pathspecless-commit: the bare form"
-check 2 pre-bash/block-pathspecless-git-commit.sh "$(bash_json 'git commit -a -m "x"')" "pathspecless-commit: -a stages every modified tracked file"
-check 2 pre-bash/block-pathspecless-git-commit.sh "$(bash_json 'git commit -m "x" --')" "pathspecless-commit: a -- with nothing after it is the bare form in disguise"
-check 0 pre-bash/block-pathspecless-git-commit.sh "$(bash_json 'git commit -F msg.txt -- a/b.ts')" "pathspecless-commit: ALLOW a named pathspec"
-check 0 pre-bash/block-pathspecless-git-commit.sh "$(bash_json 'git commit -q -F - -- .ci/x.sh agent/y.md')" "pathspecless-commit: ALLOW several named paths"
-check 0 pre-bash/block-pathspecless-git-commit.sh "$(bash_json 'git commit --amend --no-edit')" "pathspecless-commit: ALLOW an amend, which chooses no new content"
-check 0 pre-bash/block-pathspecless-git-commit.sh "$(bash_json 'git add -- a.ts')" "pathspecless-commit: ALLOW a git add, which is a different guard's business"
-check 0 pre-bash/block-pathspecless-git-commit.sh "$(bash_json 'git init -q && git add -A && git commit -qm seed')" "pathspecless-commit: ALLOW a throwaway fixture repo, which every port agent must seal"
-check 0 pre-bash/block-pathspecless-git-commit.sh "$(bash_json 'cd /tmp/claude-1000/fx/r1; git add -A; git commit -qm seed')" "pathspecless-commit: ALLOW a commit inside /tmp, which is never this checkout"
-check 0 pre-bash/block-pathspecless-git-commit.sh "$(bash_json 'git -C /tmp/claude-1000/fx/r1 commit -qm seed')" "pathspecless-commit: ALLOW git -C into a scratch repo"
-check 2 pre-bash/block-pathspecless-git-commit.sh "$(bash_json 'git commit -F /tmp/claude-1000/msg.txt')" "pathspecless-commit: a /tmp MESSAGE FILE is not a /tmp repo, so this is still blocked"
+check 2 guards/block_pathspecless_git_commit.py "$(bash_json 'git commit -m "x"')" "pathspecless-commit: -m with no pathspec"
+check 2 guards/block_pathspecless_git_commit.py "$(bash_json 'git commit')" "pathspecless-commit: the bare form"
+check 2 guards/block_pathspecless_git_commit.py "$(bash_json 'git commit -a -m "x"')" "pathspecless-commit: -a stages every modified tracked file"
+check 2 guards/block_pathspecless_git_commit.py "$(bash_json 'git commit -m "x" --')" "pathspecless-commit: a -- with nothing after it is the bare form in disguise"
+check 0 guards/block_pathspecless_git_commit.py "$(bash_json 'git commit -F msg.txt -- a/b.ts')" "pathspecless-commit: ALLOW a named pathspec"
+check 0 guards/block_pathspecless_git_commit.py "$(bash_json 'git commit -q -F - -- .ci/x.sh agent/y.md')" "pathspecless-commit: ALLOW several named paths"
+check 0 guards/block_pathspecless_git_commit.py "$(bash_json 'git commit --amend --no-edit')" "pathspecless-commit: ALLOW an amend, which chooses no new content"
+check 0 guards/block_pathspecless_git_commit.py "$(bash_json 'git add -- a.ts')" "pathspecless-commit: ALLOW a git add, which is a different guard's business"
+check 0 guards/block_pathspecless_git_commit.py "$(bash_json 'git init -q && git add -A && git commit -qm seed')" "pathspecless-commit: ALLOW a throwaway fixture repo, which every port agent must seal"
+check 0 guards/block_pathspecless_git_commit.py "$(bash_json 'cd /tmp/claude-1000/fx/r1; git add -A; git commit -qm seed')" "pathspecless-commit: ALLOW a commit inside /tmp, which is never this checkout"
+check 0 guards/block_pathspecless_git_commit.py "$(bash_json 'git -C /tmp/claude-1000/fx/r1 commit -qm seed')" "pathspecless-commit: ALLOW git -C into a scratch repo"
+check 2 guards/block_pathspecless_git_commit.py "$(bash_json 'git commit -F /tmp/claude-1000/msg.txt')" "pathspecless-commit: a /tmp MESSAGE FILE is not a /tmp repo, so this is still blocked"
 
 # block-destructive-git-restore.sh -- the four commands that DISCARD uncommitted
 # work. Added 2026-08-14 after `git checkout -- <one file>`, run to tidy up a
@@ -1858,12 +1862,14 @@ check 0 guards/block_bash_write_to_running_script.py "$(bash_json 'python3 - "$S
 # every Bash call, so without this exclusion the guard blocked all four of the
 # commands repairing it -- permanently, with no moment of quiet to wait for.
 #
-# THE SUBJECT MOVED, the case did not. This named block-binary-deploy.sh until
-# the W5 P7 cutover ported it to Python and moved the bash original out of the
-# chain; the payload has to name a bash guard that is STILL registered in the
-# pre-bash chain, or it stops being an instance of the exclusion it controls.
-# block-pathspecless-git-commit.sh is the one that is left.
-check 0 guards/block_bash_write_to_running_script.py "$(bash_json "sed -i s/a/b/ $DIR/pre-bash/block-pathspecless-git-commit.sh")" "bash-write CONTROL: a chain evaluator is not a job you can corrupt"
+# THE SUBJECT MOVED TWICE, the case did not. It named block-binary-deploy.sh
+# until the W5 P7 cutover ported that guard to Python, then
+# block-pathspecless-git-commit.sh until W7 P6 ported the last bash guard out of
+# the chain. The payload has to name a bash file the chain STILL executes, or it
+# stops being an instance of the exclusion it controls, and chain-head.sh is the
+# one that is left: it leads every chain, it is bash, and HOOK_CHAIN in the
+# guard names it beside the four chain directories for that reason.
+check 0 guards/block_bash_write_to_running_script.py "$(bash_json "sed -i s/a/b/ $DIR/chain-head.sh")" "bash-write CONTROL: a chain evaluator is not a job you can corrupt"
 kill "$BW_PID" 2>/dev/null || true
 wait "$BW_PID" 2>/dev/null || true
 # THE CONTROL THAT MATTERS: liveness, not the filename. Without this the guard

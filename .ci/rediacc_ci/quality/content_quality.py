@@ -1,7 +1,6 @@
 """AI-slop patterns in markdown content, at two severities.
 
-Ported from `.ci/scripts/quality/check-content-quality.sh`, which is NOT deleted;
-see `rediacc_ci.quality.__init__` for why both copies live side by side until a committed differential ledger says otherwise.
+Ported from `.ci/scripts/quality/check-content-quality.sh`, which W7 P5 batch C1 retired once `.ci/shadow/w7p2-content-quality.observations.jsonl` asserted equivalence over five distinct trees.
 
 WHAT THE TWIN ENFORCES, carried over from its own header because the list is the gate and a paraphrase of it would be a different gate:
 

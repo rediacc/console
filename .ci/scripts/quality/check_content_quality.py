@@ -63,7 +63,7 @@ THE CONTROL WAS PROVED BEFORE EITHER SIDE RAN: the clean fixture was driven firs
 
 THE REAL TREE WAS NEVER WRITTEN TO for this gate.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-content-quality.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
+INVARIANT 5 HELD UNTIL THE LEDGER LICENSED THIS PORT: `.ci/scripts/quality/check-content-quality.sh` stayed on disk as the differential twin until `.ci/shadow/w7p2-content-quality.observations.jsonl` asserted equivalence over five distinct trees. W7 P5 batch C1 retired it, and this entry point is what the gate runs from.
 
 ---- gate ----
 step: Check content for AI slop patterns
