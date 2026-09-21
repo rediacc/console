@@ -14,7 +14,7 @@ HOOKS = hookcases.HOOKS
 # The live file, unless a proposed one is named through `lifecycle.SETTINGS_ENV`.
 SETTINGS = lifecycle.settings_path()
 
-# The chains a registration may name, plus a hook at the hooks ROOT such as require-jq.sh, which belongs to no single chain because it is registered first in several.
+# The chains a registration may name, plus a hook at the hooks ROOT such as chain-head.sh, which belongs to no single chain because it is registered first in several.
 #
 # WIDENED 2026-08-26 to cover two surfaces this was structurally blind to: `pre-ask/` (the AskUserQuestion chain) and the root. Before that, a hook in either place could be added, left unregistered, and reported as neither UNWIRED nor DANGLING -- the set comparison simply never saw it, which is the same cannot-fail shape the guards themselves exist to prevent.
 CHAINS = ("pre-bash", "pre-edit", "post-bash", "pre-ask")

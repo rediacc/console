@@ -13,10 +13,11 @@ WHAT IT CHECKS, for every command in settings.json's hook blocks:
   - a `.py` script carrying a shebang is executable IN GIT, because ruff's
     EXE001 reads the git mode and not the filesystem, and that mismatch has
     already cost two CI rounds this session
-  - require-jq.sh is the FIRST command of every PreToolUse block and of the
-    PostToolUse Bash block, because ORDER is load-bearing for that one hook and
-    order is invisible to every other check here (added 2026-09-06, see
-    first_guard_verdicts)
+  - .claude/hooks/chain-head.sh is the FIRST command of every PreToolUse block
+    and of the PostToolUse Bash block, and it still CONTAINS both toolchain
+    checks, because ORDER is load-bearing for those two and order is invisible
+    to every other check here (added 2026-09-06, see first_guard_verdicts and
+    head_verdicts)
 
 EVERY COMMAND MEANS THE FLATTENED ONE, since the 2026-09-21 collapse. settings.json names one command per (event, matcher) pattern and the commands that pattern used to name live in `.claude/rediacc_hooks/lifecycle.py`, so reading the file literally would resolve two scripts and stop checking the other twenty-eight. `expand_commands` walks through that table, which is also what
 keeps the ordering predicate below about the run order rather than about a wrapper's name.
@@ -155,12 +156,12 @@ def verdicts(root, refs):
     return out
 
 
-# The one hook whose POSITION is part of its contract, and the blocks it has to lead. Everything else in settings.json may sit in any order.
-FIRST_GUARD = "require-jq.sh"
+# The one hook whose POSITION is part of its contract, and the blocks it has to lead. Everything else in settings.json may sit in any order. It was two scripts (require-jq.sh then require-python.sh) until 2026-09-21; both checks are inlined in the head now, so leading is necessary and no longer sufficient, and `head_verdicts` carries the other half.
+FIRST_GUARD = "chain-head.sh"
 
 
 def guarded_blocks(settings, table=None):
-    """(label, commands) for every chain require-jq.sh must lead.
+    """(label, commands) for every chain the head must lead.
 
     Every PreToolUse block -- Bash, the Edit family, AskUserQuestion -- plus the PostToolUse block matched on Bash. The other PostToolUse blocks are matcher- less and fire for every tool; they are not jq-parsing Bash chains, so they are deliberately out of scope.
 
@@ -188,12 +189,12 @@ def guarded_blocks(settings, table=None):
 
 
 def first_guard_verdicts(settings, table=None):
-    """require-jq.sh must lead every jq-parsing chain. Pure, so controls drive it.
+    """The chain head must lead every jq-parsing chain. Pure, so controls drive it.
 
-    WHY POSITION, AND WHY NOTHING ELSE HERE CAN SEE IT. Every other verdict in this file is about a command in isolation: does the file exist, is it a file, is it non-empty, is its git mode right. `commands()` flattens the whole hooks tree precisely because that is all those checks need. Order survives none of that flattening, and order is the entire contract of require-jq.sh: it
-    fails closed when jq is missing so the hooks BEHIND it never get to parse an empty string and exit 0. Registered second, the hook it was meant to cover has already run and already returned ALLOW.
+    WHY POSITION, AND WHY NOTHING ELSE HERE CAN SEE IT. Every other verdict in this file is about a command in isolation: does the file exist, is it a file, is it non-empty, is its git mode right. `commands()` flattens the whole hooks tree precisely because that is all those checks need. Order survives none of that flattening, and order is the entire contract of the two toolchain
+    checks the head carries: they fail closed when jq or python3 is missing, so the hooks BEHIND them never get to parse an empty string and exit 0. Registered second, the hook they were meant to cover has already run and already returned ALLOW.
 
-    Measured 2026-09-06: require-jq.sh led all three PreToolUse chains and was absent from PostToolUse entirely, so both post-bash hooks (cancel-old-ci.sh and refresh-pr-body.sh, each parsing stdin with `jq -r ... 2>/dev/null`) failed OPEN on a machine without jq -- they ran, found nothing, said nothing. Registering it there is one line; keeping it FIRST there is this predicate.
+    Measured 2026-09-06: the jq check led all three PreToolUse chains and was absent from PostToolUse entirely, so both post-bash hooks (cancel-old-ci.sh and refresh-pr-body.sh, each parsing stdin with `jq -r ... 2>/dev/null`) failed OPEN on a machine without jq -- they ran, found nothing, said nothing. Registering it there is one line; keeping it FIRST there is this predicate.
 
     On PostToolUse it prevents nothing, the tool having already run. It converts a silent no-op into a visible one, which is the whole difference.
     """
@@ -215,9 +216,10 @@ def first_guard_verdicts(settings, table=None):
         at = next((i for i, c in enumerate(cmds) if FIRST_GUARD in c), None)
         if at is None:
             out.append(
-                f"{label} does not register {FIRST_GUARD} at all. Every hook in that chain "
-                f"parses its stdin with jq, and with no jq each one gets an empty string and "
-                f"exits 0 -- which means ALLOW on PreToolUse and a silent no-op on PostToolUse."
+                f"{label} does not register {FIRST_GUARD} at all, so neither toolchain check "
+                f"runs for it. Every hook in that chain parses its stdin with jq, and with no "
+                f"jq each one gets an empty string and exits 0 -- which means ALLOW on "
+                f"PreToolUse and a silent no-op on PostToolUse."
             )
         else:
             out.append(
@@ -227,6 +229,21 @@ def first_guard_verdicts(settings, table=None):
                 f"returned 0 by the time the guard fires."
             )
     return out
+
+
+def head_verdicts(text, checks):
+    """The head must still CONTAIN every check it leads with. Pure, so controls drive it.
+
+    LEADING IS NO LONGER SUFFICIENT, which is the half of this contract the predicate above cannot see. Until 2026-09-21 the two checks were scripts of their own, so `verdicts` resolved them by path and their absence was a missing file. Inlined, they are lines inside one script that already exists, is a regular file, is non-empty and leads every guarded chain: a head with the jq
+    arm deleted satisfies every other verdict in this gate while the entire guard set is back to failing OPEN on a machine without jq. Nothing else in CI reads the head's body.
+    """
+    return [
+        f"{LIFECYCLE} says the chain head checks for {tool}, but the head does not run "
+        f"`command -v {tool}` at all. Every hook behind it then runs on a machine missing "
+        f"{tool}, where each one gets an empty parse and exits 0 -- which means ALLOW."
+        for tool in checks
+        if not re.search(r"command -v %s\b" % re.escape(tool), text)
+    ]
 
 
 def controls(root):
@@ -251,7 +268,7 @@ def controls(root):
             }
         }
 
-    lead = 'bash "$CLAUDE_PROJECT_DIR/.claude/hooks/require-jq.sh"'
+    lead = 'bash "$CLAUDE_PROJECT_DIR/.claude/hooks/chain-head.sh" --check jq'
     other = 'bash "$CLAUDE_PROJECT_DIR/.claude/hooks/pre-bash/block-pathspecless-git-commit.sh"'
     if first_guard_verdicts(_fixture([lead, other])):
         return f"a fixture with {FIRST_GUARD} FIRST in both chains was reported as misordered"
@@ -272,6 +289,19 @@ def controls(root):
         return "planted an entry naming an unknown hook pattern and the detector stayed silent"
     if routing_verdicts({"hooks": {"Stop": [{"hooks": [{"command": entry}]}]}}, table):
         return f"a real collapsed entry ({key}) was reported as naming no pattern"
+
+    # The head's BODY, one plant per check. A single plant would certify whichever arm it did not touch, and dropping one of two inlined checks is exactly the edit this half of the contract exists to catch.
+    checks = table.head_checks()
+    if len(checks) < 2:
+        return f"{LIFECYCLE} declares {len(checks)} toolchain check(s); the head carries two"
+    head_text = (root / table.HEAD_SCRIPT).read_text(encoding="utf-8")
+    if head_verdicts(head_text, checks):
+        return f"the real {table.HEAD_SCRIPT} was reported as missing a check it runs"
+    for tool in checks:
+        # A suffix rather than a deletion: `command -v jqq` still CONTAINS `command -v jq`, so a substring detector would read the mutant as clean and the control would pass without asserting anything.
+        dropped = plant(head_text, "command -v %s" % tool, "command -v %s_gone" % tool)
+        if not head_verdicts(dropped, checks):
+            return f"dropped the {tool} check from the head and the detector stayed silent"
     return None
 
 
@@ -352,6 +382,22 @@ def main(argv=None):
             print(f"  - {p}", file=sys.stderr)
         return 1
 
+    hollow = head_verdicts(
+        (root / table.HEAD_SCRIPT).read_text(encoding="utf-8"), table.head_checks()
+    )
+    if hollow:
+        print(
+            f"{table.HEAD_SCRIPT} no longer runs a check the table says it does:", file=sys.stderr
+        )
+        for line in hollow:
+            print(f"  - {line}", file=sys.stderr)
+        print(
+            f"  Restore the check in the head, or take it out of HEAD in {LIFECYCLE}. A head "
+            "that leads every chain while checking nothing passes every other verdict here.",
+            file=sys.stderr,
+        )
+        return 1
+
     misordered = first_guard_verdicts(settings, table)
     if misordered:
         print(
@@ -387,7 +433,8 @@ def main(argv=None):
 
     print(
         f"{len(set(refs))} hook script(s) across {len(cmds)} command(s) all resolve, "
-        f"{FIRST_GUARD} leads all {len(guarded_blocks(settings, table))} chain(s) that need it, and "
+        f"{FIRST_GUARD} leads all {len(guarded_blocks(settings, table))} chain(s) that need it "
+        f"and still runs {', '.join(table.head_checks())}, and "
         f"every guard on disk is registered (controls fired in both directions)"
     )
     return 0

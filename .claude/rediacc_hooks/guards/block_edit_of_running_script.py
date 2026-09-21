@@ -40,7 +40,7 @@ DEFECT = (
     "if False:\n            continue",
 )
 
-HOOK_CHAIN = r"\.claude/hooks/(pre-bash|pre-edit|pre-ask|post-bash)/"
+HOOK_CHAIN = r"\.claude/hooks/((pre-bash|pre-edit|pre-ask|post-bash)/|chain-head\.sh)"
 
 # The characters `sed 's/[.[\*^$()+?{}|]/\\&/g'` escapes. Note that inside a
 # POSIX bracket expression a backslash is an ORDINARY character, so `\` is a member of the set rather than an escape.

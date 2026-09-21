@@ -87,7 +87,7 @@ def effective_order():
 
     Before the cutover `.claude/settings.json` named all 38 pre-bash guards as their own commands, so it was an INDEPENDENT oracle: a module could declare
     ORDER = 12 and the file said 13, and the mismatch was a fact about two
-    separate records disagreeing. On its first run that caught 27 of 35 declarations wrong by one, every module whose author counted the GUARDS in a chain rather than its COMMANDS, since require-jq.sh holds position 1 of all four.
+    separate records disagreeing. On its first run that caught 27 of 35 declarations wrong by one, every module whose author counted the GUARDS in a chain rather than its COMMANDS, since the head's jq check holds position 1 of all four.
 
     Settings.json now names ONE command per chain. It still fixes the BASE -- how many commands run before the dispatcher, and therefore what position the chain's first guard occupies -- but the order WITHIN the dispatcher is `by_chain`, which sorts on ORDER itself. So the remaining independent facts are: the base, the length, and that the declared numbers form a contiguous run
     with no gap and no duplicate. Those are exactly what changes when someone adds, removes or reorders a COMMAND entry, which is the mistake the original check was built for and the one the brief calls out. What is no longer checkable from outside is two guards SWAPPING ORDER values, because after the collapse ORDER is the definition of the run order rather than a claim about
@@ -167,7 +167,7 @@ def test_declared_order_is_the_chain_settings_json_runs():
             "%s declares a non-contiguous chain: %s" % (chain, declared)
         )
         assert declared[0] >= 2, (
-            "%s starts at position %d, so require-jq.sh and require-python.sh are not "
+            "%s starts at position %d, so the head's jq and python3 checks are not "
             "both ahead of it" % (chain, declared[0])
         )
 
@@ -218,7 +218,7 @@ def test_run_chain_allows_a_benign_command():
 def test_run_chain_stops_at_the_first_refusal():
     """The refusal, and the guards behind it never speaking.
 
-    STOPPING IS THE HARNESS'S BEHAVIOUR, not a shortcut: a non-zero exit refuses the tool call and the rest of the block does not run, which is why require-jq.sh's whole contract is about being FIRST. If this ever stops being true the chain runner and 38 separate registrations would disagree about what a session sees.
+    STOPPING IS THE HARNESS'S BEHAVIOUR, not a shortcut: a non-zero exit refuses the tool call and the rest of the block does not run, which is why the chain head's whole contract is about being FIRST. If this ever stops being true the chain runner and 38 separate registrations would disagree about what a session sees.
     """
     rc, _out, err = dispatch.run_chain("pre-bash", REFUSED)
     if rc == 0:

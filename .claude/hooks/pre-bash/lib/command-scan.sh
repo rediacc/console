@@ -146,7 +146,7 @@ _hook_strip_env_prefix() {
 # BOUNDED, because `$(cat)` and a bare `jq` reading stdin are not. Either one on
 # a stdin that stays open and silent blocks forever, and these run as PreToolUse
 # and PostToolUse hooks: a hang here is not a slow check, it is a tool call that
-# never returns. `require-python.sh:66` measured that arm directly -- stdin held
+# never returns. `chain-head.sh` records that measurement at its own read: stdin held
 # open by a writer that never writes gave exit 124 under an external timeout,
 # against exit 2 in 0s once stdin is closed -- and bounded itself; this is the
 # sweep of the same class across the four sites that read the payload the other

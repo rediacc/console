@@ -334,7 +334,7 @@ PY
 #   * a missing pre-bash/post-bash guard just stops blocking -- nothing says so,
 #     which is the entire reason this inventory exists
 #   * a missing trapguard/dispatch.py means traps stop firing, equally silent
-#   * a missing require-jq.sh means the precondition it enforces goes unchecked
+#   * a missing chain-head.sh means both toolchain preconditions go unchecked
 #
 # DELIBERATELY EXCLUDED, and this is the other half of the rule: stop/worklist.py,
 # stop/wl_wait.py, stop/wl_report.py and the context/*.py hooks are MACHINERY,

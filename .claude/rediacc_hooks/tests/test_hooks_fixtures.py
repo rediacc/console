@@ -532,15 +532,17 @@ def test_block_premature_ready(tmp_path):
     block.done()
 
 
-# --- require-jq.sh: the guard that only has an opinion on a BROKEN toolchain --- Every other case in the suite runs on a machine that has jq, where require-jq.sh exits 0 at its first line. These three are the only place it does any work at all.
+# --- the head's jq check: the guard that only has an opinion on a BROKEN toolchain --- Every other case in the suite runs on a machine that has jq, where the check is silent. These three are the only place it does any work at all.
 #
-# WHY A PostToolUse CASE EXISTS AS OF 2026-09-06. require-jq.sh was registered first in all three PreToolUse chains and NOWHERE on PostToolUse, while both post-bash hooks read stdin with `jq -r ... 2>/dev/null`. With no jq they got an empty string, matched nothing, and exited 0 -- failing OPEN and silently. The exit is not a block there: the Bash call has already run. It is the
+# WHY A PostToolUse CASE EXISTS AS OF 2026-09-06. The jq check was registered first in all three PreToolUse chains and NOWHERE on PostToolUse, while both post-bash hooks read stdin with `jq -r ... 2>/dev/null`. With no jq they got an empty string, matched nothing, and exited 0 -- failing OPEN and silently. The exit is not a block there: the Bash call has already run. It is the
 # only thing that makes the broken toolchain VISIBLE instead of letting two hooks quietly do nothing.
 #
-# THE SANDBOX HOLDS EXACTLY WHAT require-jq.sh USES, no more: `cat` to slurp stdin and `grep -qE` for the two carve-out matches. `command -v` and `printf` are bash builtins and need no binary on disk. jq is absent by construction, which is the entire point -- and bash itself is invoked by ABSOLUTE path.
+# THE SANDBOX HOLDS EXACTLY WHAT THE CHECK USES, no more: `cat` for the refusal heredoc and `grep -qE` for the two carve-out matches. `read`, `command -v` and `printf` are bash builtins and need no binary on disk. jq is absent by construction, which is the entire point, and bash itself is invoked by ABSOLUTE path.
+#
+# DRIVEN THROUGH `chain-head.sh --check jq` SINCE 2026-09-21, when the two toolchain checks were inlined into the head and their scripts deleted. `--check <tool>` runs that one check and stops, so this stays a test of the jq arm alone and the sandbox needs no python3 for the runner the head would otherwise exec.
 @pytest.mark.xdist_group("hooks-fixtures")
-def test_require_jq_only_speaks_when_jq_is_missing(tmp_path):
-    block = hookblocks.Block("require-jq")
+def test_the_head_jq_check_only_speaks_when_jq_is_missing(tmp_path):
+    block = hookblocks.Block("chain-head-jq")
     nojq, withjq = tmp_path / "nojq", tmp_path / "withjq"
     for sandbox in (nojq, withjq):
         sandbox.mkdir()
@@ -548,14 +550,14 @@ def test_require_jq_only_speaks_when_jq_is_missing(tmp_path):
             (sandbox / tool).symlink_to(shutil.which(tool))
     (withjq / "jq").symlink_to(shutil.which("jq"))
     bash = shutil.which("bash")
-    guard = HOOKS / "require-jq.sh"
+    guard = HOOKS / "chain-head.sh"
     # Payloads are built HERE, with jq on the PATH, and only then handed to a run under a PATH that has none.
     pre = bash_json("git push --force origin main")
     post = hookcases.inject_json("gh pr checks 42", "all checks passed")
 
     def nojq_case(expected: int, payload: str, label: str, needle: str, sandbox=nojq) -> None:
         done = subprocess.run(
-            [bash, str(guard)],
+            [bash, str(guard), "--check", "jq"],
             input=payload.encode(),
             stdout=subprocess.DEVNULL,
             stderr=subprocess.PIPE,
@@ -576,18 +578,18 @@ def test_require_jq_only_speaks_when_jq_is_missing(tmp_path):
     nojq_case(
         2,
         pre,
-        "require-jq: a PreToolUse Bash payload is REFUSED when jq is missing",
+        "chain-head jq: a PreToolUse Bash payload is REFUSED when jq is missing",
         "BLOCKED: jq is not installed",
     )
     nojq_case(
         2,
         post,
-        "require-jq: a PostToolUse Bash payload is REFUSED when jq is missing",
+        "chain-head jq: a PostToolUse Bash payload is REFUSED when jq is missing",
         "On PostToolUse the tool has ALREADY run",
     )
     # CONTROL, the direction that matters most: a guard that refuses everything would pass both cases above and be useless. With jq present it must be mute.
     nojq_case(
-        0, pre, "require-jq CONTROL: silent and exit 0 when jq IS present", "", sandbox=withjq
+        0, pre, "chain-head jq CONTROL: silent and exit 0 when jq IS present", "", sandbox=withjq
     )
     block.done()
 

@@ -110,17 +110,11 @@ file:.ci/scripts/infra/ci-env.sh
 # BLOCKER: a bound fixture, not a standalone tool, doubly tied to bash -- .ci/rediacc_ci/quality/mutate_check.py:105-106 hardcodes SUITE_NAME as this exact basename and mutate-check.sh:162,167 invokes it as `bash "$SUITE"` explicitly; a Python rewrite would need edits to another gate's live contract plus the already-exempted mutate-check.sh, neither owned by this box
 file:.ci/scripts/test/fixtures/mutate-check/fixture-suite.sh
 
-# BLOCKER: the head of every guarded hook pattern, admitted by operator ruling 2026-09-21 (option A of PLAN-tooling-transformation.md box D4) so .claude/settings.json can carry one command per (event, matcher) pattern; it runs .claude/hooks/require-python.sh, whose own header at lines 5-12 argues that check may never be ported because a Python implementation cannot start in the one condition it exists to report, so a head that leads it cannot be Python either
+# BLOCKER: the head of every guarded hook pattern, admitted by operator ruling 2026-09-21 (option A of PLAN-tooling-transformation.md box D4) so .claude/settings.json can carry one command per (event, matcher) pattern; it now CARRIES both toolchain checks inline, the jq one parsed without jq by design and the python3 one unable to start in Python at all, since a check for an interpreter written in that interpreter cannot run in the one condition it exists to report
 file:.claude/hooks/chain-head.sh
 
 # BLOCKER: the bash oracles that .claude/rediacc_hooks/tests/test_guards_differential.py executes byte for byte (`env -i bash "$ORACLES/$guard"`, driver at lines 341-364 and fixture at 401-422) as the reference for every ported guard, and .claude/oracles/README.md states why the tree is kept at exactly that depth; a Python oracle would be a second implementation of the thing under test, and retiring them would remove the comparison that 5844 of the 8467 hook cases rest on, a decision the operator deferred on 2026-09-08
 tree:.claude/oracles/
-
-# BLOCKER: the check that python3 exists, and its own header at lines 5-12 argues it may never be ported, since a Python implementation cannot start in the one condition it exists to report
-file:.claude/hooks/require-python.sh
-
-# BLOCKER: the check that jq exists, parsed WITHOUT jq by design (its header: "AND IT IS PARSED WITHOUT jq, which is the whole point"), so it must run as bash while the toolchain it reports on is missing
-file:.claude/hooks/require-jq.sh
 
 # BLOCKER: BASH_ENV is a bash-only mechanism, so the file the harness points BASH_ENV at has to be sourceable bash (header lines 1-8)
 file:.claude/hooks/profile/bash_env.sh

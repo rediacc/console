@@ -15,7 +15,7 @@ PORT NOTES
 =============================================================================
 
 `command -v jq` IS KEPT, AND IT NOW GUARDS NOTHING THIS FILE DOES. The bash reads the receipt with six `jq -r` calls, so it fails open when jq is missing: "FAIL OPEN ON A BROKEN ENVIRONMENT, never on a broken verdict". This port reads the receipt with `json.loads` and needs no jq at all, so the probe is now a pure environment test with no consumer. It is reproduced anyway, because
-the port is judged by AGREEMENT with its twin and a machine without jq is a case the differential can be handed. Deleting it is a BEHAVIOUR CHANGE and therefore P6's call, made when the last bash guard goes and `require-jq.sh` retires with it. Recorded here so that decision is a decision rather than an omission.
+the port is judged by AGREEMENT with its twin and a machine without jq is a case the differential can be handed. Deleting it is a BEHAVIOUR CHANGE and therefore P6's call, made when the last bash guard goes and the chain head's jq check retires with it. Recorded here so that decision is a decision rather than an omission.
 
 THE `jq` FILTERS, spelled out because their defaults are load-bearing: `.headTree // ""`, `.whole // false`, `.exitCode // 1`, `(.failed // []) | join(", ")`, `.dirtyDigest // ""`, `(.blocked // []) | join(", ")`. `//` is falsy-tested, not null-tested, so a `whole` of `false` and a `whole` that is absent produce the same string, which is what makes the narrowed-run refusal fail
 CLOSED on a receipt shape the runner has not written yet.

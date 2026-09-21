@@ -1,9 +1,8 @@
 [
+  ".claude/hooks/chain-head.sh",
   ".claude/hooks/post-bash/cancel-old-ci.sh",
   ".claude/hooks/post-bash/refresh-pr-body.sh",
   ".claude/hooks/pre-bash/block-pathspecless-git-commit.sh",
-  ".claude/hooks/require-jq.sh",
-  ".claude/hooks/require-python.sh",
   ".claude/hooks/trapguard/dispatch.py",
   ".claude/rediacc_hooks/dispatch.py",
   ".claude/rediacc_hooks/guards/__init__.py",

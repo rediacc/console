@@ -82,7 +82,7 @@ for RPID in $(pgrep -f -- "$PAT" 2>/dev/null); do
     esac
     RARGS=$(tr '\0' ' ' <"/proc/$RPID/cmdline" 2>/dev/null)
     printf '%s' "$RARGS" | cut -d' ' -f1-4 | grep -qE -- "$PAT" || continue
-    printf '%s' "$RARGS" | grep -qE '\.claude/hooks/(pre-bash|pre-edit|pre-ask|post-bash)/' && continue
+    printf '%s' "$RARGS" | grep -qE '\.claude/hooks/((pre-bash|pre-edit|pre-ask|post-bash)/|chain-head\.sh)' && continue
     RUNNING="$RUNNING$RPID $(printf '%s' "$RARGS" | cut -c1-80)
 "
 done

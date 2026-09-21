@@ -105,20 +105,27 @@ check_out() {
     fi
 }
 
-# check_nojq <expected-exit> <script> <json-stdin> <label> <must-contain> [<bin-dir>]
+# check_nojq <expected-exit> <script-and-args> <json-stdin> <label> <must-contain> [<bin-dir>]
 #
 # check_out(), but run against a HAND-BUILT PATH instead of this machine's. That
-# is the one condition require-jq.sh exists for, and it is the one condition no
-# other case in this file can express: every one of them runs with a healthy
-# toolchain, where require-jq.sh exits 0 on its first line and proves nothing.
+# is the one condition the head's jq check exists for, and it is the one
+# condition no other case in this file can express: every one of them runs with
+# a healthy toolchain, where that check is silent and proves nothing.
 # Until 2026-09-06 the only trace of that condition anywhere in this suite was
 # the prose comment above hook_files().
 #
-# THE SANDBOX HOLDS EXACTLY WHAT require-jq.sh USES, no more: `cat` to slurp
-# stdin and `grep -qE` for the two carve-out matches. `command -v` and `printf`
-# are bash builtins and need no binary on disk. jq is absent by construction,
-# which is the entire point -- and bash itself is invoked by ABSOLUTE path
-# rather than symlinked in, so the sandbox stays an honest statement of that set.
+# THE SANDBOX HOLDS EXACTLY WHAT THE CHECK USES, no more: `cat` for the refusal
+# heredoc and `grep -qE` for the two carve-out matches. `read`, `command -v` and
+# `printf` are bash builtins and need no binary on disk. jq is absent by
+# construction, which is the entire point, and bash itself is invoked by
+# ABSOLUTE path rather than symlinked in, so the sandbox stays an honest
+# statement of that set.
+#
+# THE SECOND FIELD CARRIES ARGUMENTS SINCE 2026-09-21, when the two toolchain
+# checks were inlined into chain-head.sh and their scripts deleted. The head
+# runs a whole pattern when handed a pattern key, so reaching one check alone
+# means `chain-head.sh --check jq`, and a single unsplit word would name a file
+# that does not exist.
 #
 # BUILD THE PAYLOAD FIRST, with bash_json/inject_json, BEFORE handing it here:
 # bash_json shells out to jq itself, so composing a payload under the restricted
@@ -143,7 +150,9 @@ nojq_sandboxes() {
 }
 check_nojq() {
     local expected="$1" script="$2" json="$3" label="$4" needle="$5" bin="${6:-$NOJQ_BIN}" rc out
-    out="$(printf '%s' "$json" | PATH="$bin" "$NOJQ_BASH" "$DIR/$script" 2>&1 >/dev/null)"
+    local -a sa
+    read -r -a sa <<<"$script"
+    out="$(printf '%s' "$json" | PATH="$bin" "$NOJQ_BASH" "$DIR/${sa[0]}" "${sa[@]:1}" 2>&1 >/dev/null)"
     rc=$?
     # An empty needle asserts SILENCE, not "no assertion": the jq-present arm's
     # whole claim is that the guard says nothing at all.
@@ -193,7 +202,7 @@ WF_THIN=$'      - name: Thin\n        run: |\n          echo hi\n          bash 
 #
 # WIDENED 2026-08-26 to cover two surfaces this was structurally blind to:
 # `pre-ask/` (the AskUserQuestion chain) and a hook at the hooks ROOT such as
-# require-jq.sh, which belongs to no single chain because it is registered first
+# chain-head.sh, which belongs to no single chain because it is registered first
 # in several. Before this, a hook in either place could be added, left
 # unregistered, and reported as neither UNWIRED nor DANGLING -- the set
 # comparison simply never saw it, which is the same can't-fail shape the guards
@@ -1357,12 +1366,12 @@ check 0 guards/block_premature_ready.py "$(bash_json 'gh pr view 531')" "prematu
 check 0 guards/block_premature_ready.py "$(bash_json $'cat >> log.md <<EOF\ngreen-gated `gh pr ready` + hook-banned --admin\nEOF')" "premature-ready: prose mention in heredoc ignored"
 check 0 guards/block_admin_merge.py "$(bash_json $'cat >> log.md <<EOF\nthe old flow used gh pr merge --admin, now banned\nEOF')" "admin-merge: prose mention in heredoc ignored"
 
-# --- require-jq.sh: the guard that only has an opinion on a BROKEN toolchain --
-# Everything above this line runs on a machine that has jq, where require-jq.sh
-# exits 0 at its first line. These three cases are the only place in the suite
-# where it does any work at all.
+# --- the head's jq check: only has an opinion on a BROKEN toolchain ---------
+# Everything above this line runs on a machine that has jq, where that check is
+# silent. These three cases are the only place in the suite where it does any
+# work at all, and they reach it through `chain-head.sh --check jq`.
 #
-# WHY A PostToolUse CASE EXISTS AS OF 2026-09-06. require-jq.sh was registered
+# WHY A PostToolUse CASE EXISTS AS OF 2026-09-06. The jq check was registered
 # first in all three PreToolUse chains and NOWHERE on PostToolUse, while both
 # post-bash hooks (cancel-old-ci.sh, refresh-pr-body.sh) read stdin with
 # `jq -r ... 2>/dev/null`. With no jq they got an empty string, matched nothing,
@@ -1375,16 +1384,16 @@ check 0 guards/block_admin_merge.py "$(bash_json $'cat >> log.md <<EOF\nthe old 
 nojq_sandboxes
 NOJQ_PRE_JSON="$(bash_json 'git push --force origin main')"
 NOJQ_POST_JSON="$(inject_json 'gh pr checks 42' 'all checks passed')"
-check_nojq 2 require-jq.sh "$NOJQ_PRE_JSON" \
-    "require-jq: a PreToolUse Bash payload is REFUSED when jq is missing" \
+check_nojq 2 "chain-head.sh --check jq" "$NOJQ_PRE_JSON" \
+    "chain-head jq: a PreToolUse Bash payload is REFUSED when jq is missing" \
     "BLOCKED: jq is not installed"
-check_nojq 2 require-jq.sh "$NOJQ_POST_JSON" \
-    "require-jq: a PostToolUse Bash payload is REFUSED when jq is missing" \
+check_nojq 2 "chain-head.sh --check jq" "$NOJQ_POST_JSON" \
+    "chain-head jq: a PostToolUse Bash payload is REFUSED when jq is missing" \
     "On PostToolUse the tool has ALREADY run"
 # CONTROL, the direction that matters most: a guard that refuses everything
 # would pass both cases above and be useless. With jq present it must be mute.
-check_nojq 0 require-jq.sh "$NOJQ_PRE_JSON" \
-    "require-jq CONTROL: silent and exit 0 when jq IS present" "" "$WITHJQ_BIN"
+check_nojq 0 "chain-head.sh --check jq" "$NOJQ_PRE_JSON" \
+    "chain-head jq CONTROL: silent and exit 0 when jq IS present" "" "$WITHJQ_BIN"
 rm -rf "$NOJQ_BIN" "$WITHJQ_BIN"
 
 # --- merging with unpushed commits ------------------------------------------

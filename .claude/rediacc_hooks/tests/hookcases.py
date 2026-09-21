@@ -65,7 +65,7 @@ def guard_cmd(key: str) -> list[str]:
 def _j(obj: object) -> str:
     """The suite's payloads, byte for byte.
 
-    `jq -Rn --arg c ... '$c'` emits COMPACT json and does not escape non-ASCII. Python's defaults do the opposite on both counts, and a guard that matches on raw text (require-jq.sh greps stdin; several guards scan the command string before parsing) would be handed different bytes than the suite handed it.
+    `jq -Rn --arg c ... '$c'` emits COMPACT json and does not escape non-ASCII. Python's defaults do the opposite on both counts, and a guard that matches on raw text (the chain head greps stdin; several guards scan the command string before parsing) would be handed different bytes than the suite handed it.
     """
     return json.dumps(obj, separators=(",", ":"), ensure_ascii=False)
 

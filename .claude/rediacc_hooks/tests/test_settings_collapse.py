@@ -159,10 +159,10 @@ def member_plant(member, prefix, pool, env, tmp_path):
     ALLOW.
     """
     command = member["command"]
-    if "require-jq.sh" in command:
-        return min(pool), without("jq", tmp_path)
-    if "require-python.sh" in command:
-        return min(pool), without("python3", tmp_path)
+    for tool in lifecycle.head_checks():
+        # The head's two checks are one script with two modes since 2026-09-21, so the plant is keyed on the MODE rather than on a filename. Both modes name the same file, and a plant keyed on that would hand the jq farm to the python3 check.
+        if command.endswith("--check " + tool):
+            return min(pool), without(tool, tmp_path)
     if "why-on-edit.py" in command:
         control_env = hook_env()
         control_env["CLAUDE_PROJECT_DIR"] = str(tmp_path)
@@ -222,44 +222,39 @@ def test_one_entry_per_pattern():
     )
 
 
-def test_the_head_script_runs_the_declared_head():
-    """`chain-head.sh` and `lifecycle.HEAD` name the same two checks, in the same order.
+@pytest.mark.parametrize("tool", lifecycle.head_checks())
+def test_the_head_script_runs_the_declared_check(tool, tmp_path):
+    """`chain-head.sh` really refuses when a tool `lifecycle.HEAD` declares is missing.
 
-    The head is bash and the table is Python, so nothing but this compares them. A head that quietly stopped running require-python.sh would leave the flattened view claiming it still does, and every reader of that view would then be wrong in the same direction.
+    The head is bash and the table is Python, so nothing but this compares them, and since the two checks were inlined on 2026-09-21 their absence is a missing LINE rather than a missing file: the head still exists, still leads every guarded chain, and would still be reported as resolving by `check_hooks_resolvable`. Driven rather than read, because a head that grepped right and
+    decided nothing is the shape this whole tree exists to refuse.
     """
-    body = HEAD_SCRIPT.read_text(encoding="utf-8")
-    line = [ln for ln in body.splitlines() if ln.strip().startswith("for check in ")]
-    assert len(line) == 1, "expected exactly one `for check in` loop in %s" % HEAD_SCRIPT
-    names = line[0].split("for check in ", 1)[1].split(";")[0].split()
-    declared = [h["command"].rsplit("/", 1)[1].rstrip('"') for h in lifecycle.HEAD]
-    assert names == declared, "%s runs %s but lifecycle.HEAD declares %s" % (
-        HEAD_SCRIPT.name,
-        names,
-        declared,
+    payload = min(CORPUS["pre-bash"])
+    rc, _out, err = run_collapsed("pre-bash", payload, without(tool, tmp_path))
+    assert rc == 2, "the head allowed a Bash payload with %s missing from PATH (rc %s)" % (tool, rc)
+    assert "BLOCKED: %s is not installed" % tool in err, (
+        "the head refused with %s missing but said something else: %r" % (tool, err[:400])
     )
 
 
 def test_every_head_pattern_leads_with_the_toolchain_checks():
-    """A pattern marked `head` starts with require-jq.sh then require-python.sh, and no other does.
+    """A pattern marked `head` starts with the jq check then the python3 check, and no other does.
 
-    Position is the whole contract of both checks, and the collapse moved that position out of the settings file and into this table. `require-python.sh` states it at its own lines 24-30; `check_hooks_resolvable.first_guard_verdicts` states it for the gate.
+    Position is the whole contract of both checks, and the collapse moved that position out of the settings file and into this table. `.claude/hooks/chain-head.sh` states it in its own header; `check_hooks_resolvable.first_guard_verdicts` states it for the gate.
     """
+    want = ["--check " + tool for tool in lifecycle.head_checks()]
     for key, pattern in lifecycle.PATTERNS.items():
         flat = [m["command"] for m in lifecycle.flat_commands(key)]
-        lead = [c for c in flat[:2] if "require-jq.sh" in c or "require-python.sh" in c]
+        lead = [c for c in flat[: len(want)] if "--check " in c]
         if pattern["head"]:
-            assert len(lead) == 2, "%s is a head pattern but does not lead with both checks: %s" % (
-                key,
-                flat[:2],
-            )
-            assert "require-jq.sh" in flat[0], "%s does not lead with require-jq.sh: %s" % (
-                key,
-                flat[:2],
+            assert [c.rsplit('" ', 1)[-1] for c in lead] == want, (
+                "%s is a head pattern but does not lead with both checks in order: %s"
+                % (key, flat[: len(want)])
             )
         else:
             assert not lead, "%s is not a head pattern but names a toolchain check: %s" % (
                 key,
-                flat[:2],
+                flat[: len(want)],
             )
 
 
@@ -300,7 +295,7 @@ def test_dropping_a_member_turns_the_differential_red(chain, tmp_path):
 
     A DIFFERENTIAL BETWEEN TWO RUNS OF ONE TABLE IS VACUOUS, and this is what stops it being that: each member is handed an input it refuses, and the comparison must then notice its absence. A member with no such input is reported as blind rather than skipped, because a control that plants nothing proves nothing.
 
-    THE PLANT IS BUILT PER MEMBER, not fished out of the corpus, and two of them could not have been fished out at all. `require-jq.sh` and `require-python.sh` refuse only when their tool is MISSING, so no payload distinguishes them on a machine that has both; they are driven against a PATH with that one tool taken out of it. `why-on-edit.py` refuses only a Write of a new plan
+    THE PLANT IS BUILT PER MEMBER, not fished out of the corpus, and two of them could not have been fished out at all. The head's jq and python3 checks refuse only when their tool is MISSING, so no payload distinguishes them on a machine that has both; they are driven against a PATH with that one tool taken out of it. `why-on-edit.py` refuses only a Write of a new plan
     whose slug duplicates an existing one, and the suite's `edit_json` builder emits neither a `tool_name` nor a `file_path`, so its refusal is unreachable from the whole harvested corpus. That is a gap in the corpus rather than in the collapse, and it is closed here.
     """
     env = hook_env()

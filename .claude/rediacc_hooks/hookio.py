@@ -102,7 +102,8 @@ def rx(pattern):
 class Event:
     """One hook invocation: the payload in, the three results out.
 
-    `payload` is the RAW stdin text and not a parsed document, because that is what the guards see. Two of them (`require-jq.sh`, and the `nojq` arm of `block-settled-questions.sh`) deliberately read the raw JSON body rather than a parsed value, on the stated grounds that they run exactly when the parser is missing. A class that only offered parsed access could not express them.
+    `payload` is the RAW stdin text and not a parsed document, because that is what the guards see. Two of them (the chain head's jq check, and the `nojq` arm of `block-settled-questions.sh`) deliberately read the raw JSON body rather than a parsed value, on the stated grounds that they run exactly when the parser is missing. A class that only offered parsed access could not
+    express them.
     """
 
     def __init__(self, payload, cwd=None, env=None):

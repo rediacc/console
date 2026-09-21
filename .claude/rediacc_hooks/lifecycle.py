@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """One hook command per (event, matcher) pattern, and the table that says what it runs.
 
-WHAT CHANGED AND WHY. `.claude/settings.json` used to register 30 command entries over 11 distinct (event, matcher) patterns: `require-jq.sh` and `require-python.sh` were copied into all three PreToolUse chains and into PostToolUse/Bash, and seven lifecycle hooks sat in groups of one under a null matcher. The harness forks a process per entry, so the cost was paid on every tool
-call. `PATTERNS` below is that wiring, moved out of the settings file: the file now names ONE command per pattern and this module runs the rest, in the order the file declared them.
+WHAT CHANGED AND WHY. `.claude/settings.json` used to register 30 command entries over 11 distinct (event, matcher) patterns: a jq check and a python3 check were copied into all three PreToolUse chains and into PostToolUse/Bash, and seven lifecycle hooks sat in groups of one under a null matcher. The harness forks a process per entry, so the cost was paid on every tool call.
+`PATTERNS` below is that wiring, moved out of the settings file: the file now names ONE command per pattern and this module runs the rest, in the order the file declared them.
 
 THE TABLE IS THE RECORD, so nothing about the old shape is lost. `flat_commands()` returns the exact command sequence a pattern ran before the collapse, which is what `.ci/scripts/quality/check_hooks_resolvable.py` resolves, what `tests/test_dispatch.py` derives guard positions from, and what `tests/test_settings_collapse.py` compares against the settings file. A member dropped
 from the table is therefore a failure in four places rather than a guard that quietly stopped running.
 
-WHY A BASH HEAD SITS IN FRONT OF FOUR OF THEM. `require-python.sh` is the check that python3 exists, so it may never be Python; its own header says so at lines 5-12. A pattern that begins with it therefore cannot begin with this module, and `.claude/hooks/chain-head.sh` is the minimum that can: the two checks, then this runner. The seven patterns that never ran those two checks are
-not given them here, because adding a refusal a pattern did not have is a behaviour change and this collapse is not one.
+WHY A BASH HEAD SITS IN FRONT OF FOUR OF THEM. One of the two checks is the check that python3 exists, so it may never be Python; `.claude/hooks/chain-head.sh` says so in its own header. A pattern that begins with it therefore cannot begin with this module, and that head is the minimum that can: the two checks inlined, then this runner. The seven patterns that never ran those two
+checks are not given them here, because adding a refusal a pattern did not have is a behaviour change and this collapse is not one.
 
 WHAT IT REPRODUCES, MEMBER FOR MEMBER. The harness runs the commands of a block in order, each with the event payload on stdin; exit 2 is a blocking refusal and stops the block, any other non-zero is a non-blocking error whose stderr is surfaced while the block continues. That is what `run_pattern` does. A member that raises, or that never returns inside its own timeout, is named
 loudly and the rest still run, which is the argument `dispatch.run_chain` makes for guards applied with more force, because one process now carries a whole pattern.
@@ -29,17 +29,26 @@ DEFAULT_TIMEOUT = 60
 # `$CLAUDE_PROJECT_DIR` is spelled by the settings file, so the members keep spelling it: the table has to read back as the commands that file used to carry, and `argv_of` is what expands it.
 _P = '"$CLAUDE_PROJECT_DIR/.claude/%s"'
 
-# The two commands `.claude/hooks/chain-head.sh` runs before this module, written here so the flattened view is complete. `tests/test_settings_collapse.py` reads the head script and refuses a table that has drifted from it.
+# What `.claude/hooks/chain-head.sh` decides before this module runs, so the flattened view is complete. The two checks were scripts of their own until 2026-09-21; they are inlined in the head now, and `--check <tool>` keeps each addressable as one command. Two members rather than one is what keeps every guard's ORDER the position it always was.
 HEAD = (
-    {"command": "bash " + _P % "hooks/require-jq.sh"},
-    {"command": "bash " + _P % "hooks/require-python.sh"},
+    {"command": "bash " + _P % "hooks/chain-head.sh" + " --check jq"},
+    {"command": "bash " + _P % "hooks/chain-head.sh" + " --check python3"},
 )
+
+
+def head_checks():
+    """The tools the head checks for, in order, as the members name them.
+
+    ONE RECORD, read by both the gate and the collapse test. The head is bash and this table is Python, so nothing but a reader of both can say they still agree; a head that quietly stopped checking one tool would leave every reader of the flattened view wrong in the same direction.
+    """
+    return tuple(member["command"].rsplit(" ", 1)[-1] for member in HEAD)
+
 
 HEAD_SCRIPT = ".claude/hooks/chain-head.sh"
 RUNNER_SCRIPT = ".claude/rediacc_hooks/lifecycle.py"
 
-# The seam every reader of the wiring shares, in the shape `TRAP_SETTINGS` and `HOOK_EXEC_COUNTER_DIR` already use. A wiring change cannot be checked by editing the live file first: a wrong second of `.claude/settings.json` is a wrong second for every concurrent session in a shared worktree, so the proposed file is driven through this and applied afterwards. Nothing on the
-# hook path reads it.
+# The seam every reader of the wiring shares, in the shape `TRAP_SETTINGS` and `HOOK_EXEC_COUNTER_DIR` already use. A wiring change cannot be checked by editing the live file first: a wrong second of `.claude/settings.json` is a wrong second for every concurrent session in a shared worktree, so the proposed file is driven through this and applied afterwards. Nothing on the hook
+# path reads it.
 SETTINGS_ENV = "REDIACC_HOOK_SETTINGS"
 
 
@@ -54,8 +63,8 @@ _SHELL_CHARS = ";&|<>()`*?[]{}!#~\n"
 def argv_of(command, env):
     """A member's argv, or None when it needs a shell.
 
-    WHY NOT ALWAYS A SHELL. The harness runs every hook command through one, and reproducing that literally costs an extra process per member: `bash -c 'python3 x.py'` forks a shell that immediately execs. Nine of the eleven patterns hold nothing but `<interpreter> "<path>" <flags>`, where the shell's only contribution is expanding `$CLAUDE_PROJECT_DIR` and removing the quotes,
-    and both of those are done here instead. The fallback keeps the faithful path available for anything else, and the collapse differential compares the two.
+    WHY NOT ALWAYS A SHELL. The harness runs every hook command through one, and reproducing that literally costs an extra process per member: `bash -c 'python3 x.py'` forks a shell that immediately execs. Nine of the eleven patterns hold nothing but `<interpreter> "<path>" <flags>`, where the shell's only contribution is expanding `$CLAUDE_PROJECT_DIR` and removing the quotes, and
+    both of those are done here instead. The fallback keeps the faithful path available for anything else, and the collapse differential compares the two.
     """
     if any(c in command for c in _SHELL_CHARS):
         return None
@@ -71,7 +80,7 @@ def argv_of(command, env):
 
 # Every (event, matcher) pattern the settings file wires, in the order the file lists them.
 #
-# `head` is True where the pattern began with require-jq.sh and require-python.sh before the collapse, and only there. `collapsed` is False for the four patterns that already carried a single command: wrapping one command in a runner adds a process instead of removing one, so those keep their entry verbatim and appear here only so this table is the whole picture.
+# `head` is True where the pattern began with the two toolchain checks before the collapse, and only there. `collapsed` is False for the four patterns that already carried a single command: wrapping one command in a runner adds a process instead of removing one, so those keep their entry verbatim and appear here only so this table is the whole picture.
 PATTERNS = {
     "pre-bash": {
         "event": "PreToolUse",
@@ -247,7 +256,7 @@ def expand(command):
     return flat_commands(key)
 
 
-# A pattern key this module does not know is the failure the whole collapse risks: one command now carries a whole pattern, so an unrecognised key is every hook of that pattern silently not running while the tool call still looks clean. Refusing is the same fail-closed answer `dispatch.EMPTY_CHAIN` and `require-jq.sh` give.
+# A pattern key this module does not know is the failure the whole collapse risks: one command now carries a whole pattern, so an unrecognised key is every hook of that pattern silently not running while the tool call still looks clean. Refusing is the same fail-closed answer `dispatch.EMPTY_CHAIN` and the head's jq check give.
 UNKNOWN_KEY = (
     "BLOCKED: %r is not a hook pattern this repo wires.\n"
     "\n"
