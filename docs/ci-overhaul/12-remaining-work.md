@@ -90,6 +90,8 @@ broken that reader for the other fourteen.
 nowhere near 11 entries; `WORKLIST_*` has 138 distinct names and no registry; and cross-OS reaches exactly one file, `.claude/rediacc_hooks/proc.py`, whose `/proc`-versus-`ps` seam landed back in P1. P7 is startable now and needs a `manifest.ts` fragment for the shard leaves. The dispatcher is live. settings.json went from 73 command entries to 30 (the brief said 144; 73 was the
 measured figure at HEAD) and a Bash tool call from 456 process executions to 35, counted with 6,394 shims rather than estimated.
 
+**Corrected again 2026-09-21.** The first of those four deliverables is closed by deletion rather than by sharding: `gate-test:claude-hooks` is no longer a manifest entry at all. Its subject, `.claude/hooks/test-hooks.sh`, was ported to pytest under `.claude/rediacc_hooks/tests/`, and the 785 s local floor it set went with it. The other three are still open and still unstaffed.
+
 THE BASH TWINS WERE MOVED TO `.claude/oracles/`, NOT DELETED, and a future sweep must not "finish the job" by removing them: they are what `test_guards_differential.py` compares each port against, 5,844 cases and the only proof a port answers what its twin answered. They sit at `.claude/oracles/` and not one level deeper inside the package because a third of these guards derive the
 repo root as `dirname/../../..`; at the deeper path the differential reported 30 divergences across five guards.
 

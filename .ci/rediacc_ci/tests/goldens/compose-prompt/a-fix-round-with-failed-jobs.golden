@@ -1,0 +1,9 @@
+# twin .ci/scripts/autopilot/compose-prompt.sh blob 235192d87c71bb898d08ca755e3097c9f894be3e
+exit: 0
+--- stdout ---
+--- stderr ---
+✓ composed the fix prompt (170 bytes) from round.md
+--- out file ---
+"You are the autopilot.\nRound template body.\n<autopilot_state>\n{\"decision\":\"fix\",\"note\":\"caf\u00e9\"}\n</autopilot_state>\n\n<failed_jobs>\nquality-code\nquality-i18n\n</failed_jobs>\n"
+--- github output ---
+"prompt<<<DELIM>\nYou are the autopilot.\nRound template body.\n<autopilot_state>\n{\"decision\":\"fix\",\"note\":\"caf\u00e9\"}\n</autopilot_state>\n\n<failed_jobs>\nquality-code\nquality-i18n\n</failed_jobs>\n<DELIM>\n"

@@ -1,9 +1,9 @@
 """The guard smoke suite, as data: every case `.claude/hooks/test-hooks.sh` asserts.
 
-WHY THIS IS A PYTHON MODULE AND NOT A SECOND SHELL SCRIPT. The obvious move for a 2,774-line bash suite is to shard it into several smaller ones. That is ILLEGAL in this tree and the refusal is mechanical, not stylistic: `check:ci-language-policy` freezes a SET of 521 bash paths under `.ci/` and `.claude/`
+WHY THIS IS A PYTHON MODULE AND NOT A SECOND SHELL SCRIPT. The obvious move for a 2,774-line bash suite is to shard it into several smaller ones. That is ILLEGAL in this tree and the refusal is mechanical, not stylistic: `check:ci-language-policy` freezes a SET of bash paths under `.ci/` and `.claude/`
 (`.ci/scripts/quality/check_language_policy.py:137` `COVERED_ROOTS = (".ci", ".claude")`),
-and a new tracked `.sh` under either root is a 522nd entry that `baseline_additions` refuses. `.claude/hooks/test-hooks.sh` is itself entry 472 of that 521. The precedent a shard would reach for -- `test-worklist-v5.sh` split into 27 files -- predates the freeze and cannot be repeated. So the suite is PORTED, which is what `.ci/rediacc_ci/tests/gates/test_gate_claude_hooks.py:31`
-already says in code, and pytest already collects this directory (`pyproject.toml` `testpaths`), so the destination needed no wiring.
+and a new tracked `.sh` under either root is one more entry that `baseline_additions` refuses. `.claude/hooks/test-hooks.sh` was itself a member of that set until this port retired it. The precedent a shard would reach for -- `test-worklist-v5.sh` split into 27 files -- predates the freeze and cannot be repeated. So the suite is PORTED, and pytest already collects this directory
+(`pyproject.toml` `testpaths`), so the destination needed no wiring.
 
 THE SPEC STRING IN COLUMN 1 IS LOAD-BEARING TEXT, NOT A LABEL. Read it before editing one. `hook_integrity.covmap` decides whether a guard still has a BLOCK case and an ALLOW case by scanning its declared `case_sources` for the literal shape
 

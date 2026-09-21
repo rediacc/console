@@ -1,0 +1,9 @@
+# twin .ci/scripts/autopilot/compose-prompt.sh blob 235192d87c71bb898d08ca755e3097c9f894be3e
+exit: 2
+--- stdout ---
+--- stderr ---
+✗ usage: compose-prompt.sh --prompts <dir> --fx <dir> --template <file> --mode <mode> --out <file>
+--- out file ---
+null
+--- github output ---
+""

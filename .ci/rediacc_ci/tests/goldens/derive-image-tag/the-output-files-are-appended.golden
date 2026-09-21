@@ -1,0 +1,9 @@
+# twin .ci/scripts/ci/derive-image-tag.sh blob 0a53801b98099cd3c88c9c952696f8368e17d2ed
+exit: 0
+--- stdout ---
+v1
+--- stderr ---
+✓ Using explicit version: v1
+✓ Set GITHUB_ENV: TAG=v1, WEB_TAG=v1, RENET_TAG=v1
+--- files ---
+{"github_env": "PRE=1\nTAG=v1\nWEB_TAG=v1\nRENET_TAG=v1\n", "github_output": "PRE=1\n"}

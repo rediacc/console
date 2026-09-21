@@ -168,15 +168,39 @@ def test_floorcheck_matches_the_twin_on_every_spelling(tmp_path: pathlib.Path) -
         assert hi.floorcheck(text) == _twin_floorcheck(str(target)), label
 
 
+HARNESS_RECORDING = (
+    "rediacc_ci",
+    "tests",
+    "goldens",
+    "claude-hooks",
+    "test-hooks.sh.golden",
+)
+
+
 def test_floorcheck_matches_the_twin_on_the_real_harness() -> None:
-    """The declared folding harness itself, which is section C's actual subject."""
-    root = paths.repo_root()
-    sources = hi.scope_list(root / hi.SCOPE_REL, "case_sources")
-    harnesses = [s for s in sources if hi.HARNESS_RE.search((root / s).read_text(encoding="utf-8"))]
-    assert harnesses, sources
-    for source in harnesses:
-        text = (root / source).read_text(encoding="utf-8")
-        assert hi.floorcheck(text) == _twin_floorcheck(str(root / source)), source
+    """The bash folding harness itself, read from the recording that replaced it.
+
+    THE SUBJECT IS A GOLDEN BECAUSE THE SUBJECT WAS DELETED. `.claude/hooks/test-hooks.sh` was section C's only bash case source; when it was ported to pytest this test's `assert harnesses` went empty and the comparison would have been retired or, worse, left to run over the Python sources, where both implementations return `[]` and agree about nothing. The harness's exact
+    bytes are kept at the path below, headed with its blob sha, so the two readers are still compared over the 2,779 lines they were written against -- eight real folds, each with a real floor -- rather than over a file with no folds in it.
+
+    THE HEADER IS NOT STRIPPED HERE, deliberately: both sides read the SAME file, so the one-line offset is common to both and equality is unaffected. Stripping it would mean writing a temporary copy, which is a second thing to be wrong about.
+    """
+    recording = paths.from_root(".ci", *HARNESS_RECORDING)
+    assert recording.is_file(), (
+        "%s is missing, so this differential would have no subject and would pass by "
+        "comparing nothing" % recording
+    )
+    text = recording.read_text(encoding="utf-8")
+    assert hi.HARNESS_RE.search(text), (
+        "the recording no longer carries an external PASS fold, so it is not the harness "
+        "this comparison was written for"
+    )
+    found = hi.floorcheck(text)
+    assert found == _twin_floorcheck(str(recording)), recording
+    assert found == [], (
+        "the recorded harness floored every fold on its last day; a non-empty result here "
+        "means the recording was altered, not that a floor was lost: %s" % found
+    )
 
 
 def test_scope_list_matches_the_twin_on_every_malformed_shape(

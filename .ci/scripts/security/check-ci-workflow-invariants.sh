@@ -13,7 +13,7 @@
 # just built and starts testing an old published one, while still asserting the
 # NEW version number.
 #
-# MEASURED, not theorised. `assert-channel-for-event.sh:24-31` requires an empty
+# MEASURED, not theorised. `rediacc_ci.ci.assert_channel_for_event` requires an empty
 # channel on `schedule`, and ci.yml's `scope` step is gated on
 # `github.event_name == 'pull_request'`, so its `run_install_methods` output is
 # empty on a nightly and the `!= 'false'` guard admits the job. Nightlies

@@ -336,9 +336,7 @@ const CLOSURES = {
       'Dockerfile',
       '.ci/docker',
       '.ci/scripts/build/buildx-push-web.sh',
-      '.ci/scripts/ci/set-image-tags.sh',
-      // set-image-tags.sh:25,27 shells out to it.
-      '.ci/scripts/ci/derive-image-tag.sh',
+      // set_image_tags and the derive_image_tag it calls in-process both live under '.ci/rediacc_ci', already the first entry of this list, so their two retired bash twins are no longer named here.
       '.ci/scripts/infra/ci-pull-images.sh',
       '.ci/scripts/infra/ci-start-elite.sh',
       '.ci/scripts/infra/ci-stop-elite.sh',

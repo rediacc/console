@@ -1,0 +1,10 @@
+# twin .ci/scripts/autopilot/fetch-review-threads.sh blob 2ddcd0454923bbb1e69b199b6d95fc259c4e70ed
+exit: 1
+--- stdout ---
+--- stderr ---
+✗ GraphQL query failed: Resource not accessible
+✗ cannot fetch review threads for the console PR; failing closed
+--- gh calls ---
+["api", "graphql", "-f", "query=\nquery($owner: String!, $repo: String!, $pr: Int!, $after: String) {\n  repository(owner: $owner, name: $repo) {\n    pullRequest(number: $pr) {\n      reviewThreads(first: 100, after: $after) {\n        pageInfo { hasNextPage endCursor }\n        nodes {\n          id\n          isResolved\n          isOutdated\n          path\n          line\n          comments(first: 20) {\n            nodes {\n              databaseId\n              body\n              author { login }\n            }\n          }\n        }\n      }\n    }\n  }\n}", "-f", "owner=acme", "-f", "repo=console", "-F", "pr=31"]
+--- out file ---
+<no file written>

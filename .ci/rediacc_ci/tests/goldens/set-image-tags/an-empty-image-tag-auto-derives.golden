@@ -1,0 +1,10 @@
+# twin .ci/scripts/ci/set-image-tags.sh blob 6922deff8d4d7a06c67586e73d09a392c4bf46d9
+exit: 0
+--- stdout ---
+4.5.6
+--- stderr ---
+✓ Auto-derived from git tags (local): 4.5.6
+✓ Set GITHUB_ENV: TAG=4.5.6, WEB_TAG=4.5.6, RENET_TAG=4.5.6
+✓ Image tags set (web=<derived> renet=<derived>)
+--- github env ---
+"TAG=4.5.6\nWEB_TAG=4.5.6\nRENET_TAG=4.5.6\n"

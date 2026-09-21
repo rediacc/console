@@ -4,6 +4,12 @@ WHAT THIS IS FOR. D3 moved a 2,774-line bash suite into pytest, and the acceptan
 function on both sides. A comparison of two hand-written inventories proves that two
 inventories agree; a comparison of two RUNS proves that every case executed.
 
+THE BASH SIDE IS A RECORDING NOW. `.claude/hooks/test-hooks.sh` was retired once the comparison came out even, so the right-hand argument is no longer a live run but the file that run produced: `.ci/rediacc_ci/tests/goldens/claude-hooks/label-multiset.golden`, 512 labels headed with the twin's blob sha. The extractor needs no change, because a recording of what a suite
+printed and the suite printing it are the same bytes to this reader.
+
+WHY THIS IS NOT ALSO A GATE, said plainly rather than left to be discovered. Thirty-six of those 512 labels carry a COUNT scraped out of a delegate's output ("stop/wl_git.py --selftest: 63 control(s) passed"), so a live comparison against the recording would go red on every control legitimately added to a delegated suite. A ledger somebody re-records to get past a red is not a
+ledger, and the delegated counts already have a floor each in `test_hooks_delegates.py`. So the recording is EVIDENCE of the cutover, drivable by hand with the invocation below, and the standing enforcement is the floors.
+
 WHY THE LINE, AND NOT THE SOURCE TEXT. Reading labels out of the two sources would need two different parsers -- the bash label is the fourth word-ish of a `check` call, the Python one is the third argument of `case(...)` -- and two parsers is two things that can be wrong in the same direction. Both suites PRINT the same line:
 
     ok   [0] raw-pr-body(blocked) (exit 0)
@@ -13,9 +19,13 @@ so one regex reads both, and a case that exists but never ran contributes nothin
 HOW THE PYTHON SIDE PRINTS IT. pytest captures stdout, so `record()` appends to a file named by $HOOK_LABEL_DIR instead. ONE FILE PER PROCESS, because the suite runs under `pytest -n <jobs> --dist loadgroup` and several workers append at once; a shared file would interleave partial lines and the extractor would read a corrupted label as a missing one.
 
     HOOK_LABEL_DIR=/tmp/labels <pytest ...>
-    python3 -m rediacc_hooks.tests.hooklabels /tmp/labels <baseline.out>
+    python3 -m rediacc_hooks.tests.hooklabels /tmp/labels \\
+        .ci/rediacc_ci/tests/goldens/claude-hooks/label-multiset.golden
 
 exits 0 when the two multisets are equal and 1 naming both differences.
+
+THE EXPECTED DELTA AT THE RETIREMENT, measured 2026-09-21 and recorded here so a later reader is not left wondering whether a difference is a regression. 511 of the recording's 512 labels are reproduced verbatim. The 512th, `stop suites: 27 ported module(s) collected by check:ci-pytest, not re-run here`, is the harness asserting its OWN delegation and is restated by the port
+as `rediacc_hooks/tests: reachable via check:ci-pytest`; the harness's self-reference died with it, the other links did not. Eleven labels appear only on the port's side, every one of them coverage added after the port (the REST and GraphQL bypass arms, the settled-question worktree cases, and the control that drives a collapsed settings entry through the expander).
 """
 
 import collections

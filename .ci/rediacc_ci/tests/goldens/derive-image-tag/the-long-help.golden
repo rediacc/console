@@ -1,0 +1,25 @@
+# twin .ci/scripts/ci/derive-image-tag.sh blob 0a53801b98099cd3c88c9c952696f8368e17d2ed
+exit: 0
+--- stdout ---
+Usage: /home/developer/console/.ci/scripts/ci/derive-image-tag.sh [OPTIONS]
+
+Derive Docker image tag from Git ref or explicit input.
+
+Options:
+  --version TAG      Use explicit version tag
+  --github-output    Write 'tag=VALUE' to GITHUB_OUTPUT
+  --env-file         Write TAG, WEB_TAG, RENET_TAG to GITHUB_ENV
+  -h, --help         Show this help message
+
+Auto-derivation (when --version not provided):
+  - Git tag (e.g., v1.2.3)  → uses tag name
+  - Branch (e.g., main)     → uses version from package.json
+
+Examples:
+  /home/developer/console/.ci/scripts/ci/derive-image-tag.sh                              # Auto-derive, output to stdout
+  /home/developer/console/.ci/scripts/ci/derive-image-tag.sh --version v1.2.3             # Explicit: v1.2.3
+  /home/developer/console/.ci/scripts/ci/derive-image-tag.sh --env-file                   # Auto-derive, set GITHUB_ENV vars
+  /home/developer/console/.ci/scripts/ci/derive-image-tag.sh --version latest --env-file  # Explicit with env export
+--- stderr ---
+--- files ---
+{}

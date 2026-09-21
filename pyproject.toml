@@ -176,8 +176,8 @@ ignore = [
     # N999 (invalid module name). These are per-guard control harnesses,
     # not modules: nothing imports them, `guards.stems()` admits only
     # `block_`/`warn_`/`require_` prefixes, and pytest's `test_*.py` glob does
-    # not match a hyphen either. They run as scripts, from
-    # `.claude/hooks/test-hooks.sh`.
+    # not match a hyphen either. They run as scripts, from the delegate table in
+    # `.claude/rediacc_hooks/tests/test_hooks_delegates.py`.
     #
     # THE HYPHEN IS REQUIRED BY A GATE, which is why this is a config entry and
     # not a rename. `.ci/scripts/quality/check-hook-integrity.sh` credits a

@@ -1,6 +1,9 @@
 """Port of `.ci/scripts/test/gates/test-channel-for-event.sh`, retired in W7 P5.
 
-Unit test for `.ci/scripts/ci/assert-channel-for-event.sh`.
+Unit test for `rediacc_ci.ci.assert_channel_for_event`.
+
+THE SUBJECT IS THE PORT, NOT THE BASH SCRIPT. `.ci/scripts/ci/assert-channel-for-event.sh` was retired once its K=5 ledger (`.ci/shadow/w7p6-assert-channel-for-event.observations.jsonl`) held and its differential became the recordings under `goldens/assert-channel-for-event/`. The command below is the one the ledger licensed, spelled as the ledger spells it, and
+`.github/workflows/ci.yml:295` runs the same one.
 
 WHAT THIS GUARDS, unchanged from the twin. The channel decides whether a run uploads to R2. A previous design resolved a `dryrun-<sha>` channel for non-publishing events and produced roughly 5 GB of orphan R2 bytes per trigger. This script is the assertion that stops that returning, so it is load-bearing for cost, not just for tidiness.
 
@@ -12,7 +15,7 @@ THE PORT CHANGES ONE THING AND IT IS NOT A VERDICT. The twin keeps the last run'
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 
-ASSERT = paths.from_root(".ci", "scripts", "ci", "assert-channel-for-event.sh")
+ASSERT_MODULE = "rediacc_ci.ci.assert_channel_for_event"
 CI_WORKFLOW = paths.from_root(".github", "workflows", "ci.yml")
 
 
@@ -21,7 +24,11 @@ def check(gate, event: str, channel: str) -> tuple[str, str]:
 
     Exit 2 is the script's USAGE code and is kept distinct from every other non-zero, because "you called me wrong" and "that channel is illegal for that event" are different findings and collapsing them would let a typo in this test read as a rejection it never made.
     """
-    result = harness.run(["bash", str(ASSERT), event, channel])
+    result = harness.run(
+        ["python3", "-m", ASSERT_MODULE, event, channel],
+        cwd=paths.repo_root(),
+        env={"PYTHONPATH": ".ci", "PYTHONDONTWRITEBYTECODE": "1"},
+    )
     if result.rc == 0:
         verdict = "ok"
     elif result.rc == 2:  # the script's own documented usage code

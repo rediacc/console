@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Stop the CI backend services and clean up after them.
 
-PORT OF `.ci/scripts/infra/ci-stop.sh` (ruling 7, W7P6). Behaviour-for-behaviour, including the parts that look like accidents and are not:
+PORT OF `.ci/scripts/infra/ci-stop.sh` (ruling 7, W7P6), which is now DELETED: its K=5 ledger `.ci/shadow/w7p6-ci-stop.observations.jsonl` held, its observable behaviour is frozen in `.ci/rediacc_ci/tests/goldens/ci-stop/`, and `git cat-file -p ba8f203d6863be2d5c92289cc6ecac210222f391` still yields the file. Behaviour-for-behaviour, including the parts that look like
+accidents and are not:
 
   * EVERY message goes to STDOUT, not stderr. The twin uses bare `echo`, and the
     workflow step that runs this reads the log as one stream; splitting them here

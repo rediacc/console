@@ -82,11 +82,12 @@
     "",
     "case_sources GREW ON 2026-09-09, and the entries are the D3 port of the harness.",
     ".claude/hooks/test-hooks.sh was 2,774 lines and one `run:` at 537s. It could not be",
-    "SHARDED, because check:ci-language-policy freezes a 521-path SET of bash files under",
-    ".ci and .claude and a 522nd is refused, so it was PORTED to pytest under",
-    ".claude/rediacc_hooks/tests/ instead. The three files listed beside it are where the",
-    "cases went: hookcases.py is the data corpus, and the two test modules hold the cases",
-    "that need a fixture (a temp git repo, a stubbed gh, a live process) and cannot be data.",
+    "SHARDED, because check:ci-language-policy freezes a SET of bash files under",
+    ".ci and .claude and one more is refused, so it was PORTED to pytest under",
+    ".claude/rediacc_hooks/tests/ instead. The files listed here are where the",
+    "cases went: hookcases.py is the data corpus, two test modules hold the cases",
+    "that need a fixture (a temp git repo, a stubbed gh, a live process) and cannot be data,",
+    "and test_hooks_delegates.py holds the folds section C reads.",
     "",
     "THE PORT DELIBERATELY KEEPS THE READER'S SPELLING. covmap scans a case source for the",
     "literal `check 2 guards/block_x.py`, so each ported case carries that string verbatim",
@@ -95,9 +96,17 @@
     "as newly UNCOVERED, whose cheapest fix is to baseline them, which retires section B",
     "for good. Adding a source here is the whole re-key; the gate's logic is untouched.",
     "",
-    "BOTH ERAS ARE LISTED WHILE BOTH EXIST. Double-counting a case is harmless -- section B",
+    "BOTH ERAS WERE LISTED WHILE BOTH EXISTED. Double-counting a case is harmless -- section B",
     "only asks whether a guard has at least one case in each direction -- and listing only",
-    "one side would make a case that MOVED read as a case that was DELETED."
+    "one side would have made a case that MOVED read as a case that was DELETED. The bash era",
+    "ended when the harness was deleted; its entry went with it, and the port's guard/rc pairs",
+    "were diffed against the harness's first and cover a superset of them.",
+    "",
+    "test_hooks_delegates.py IS HERE FOR SECTION C, not for section B: it declares no cases",
+    "and the coverage reader finds none in it. What it holds is the FOLD the harness used to",
+    "hold -- a sibling selftest's count, admitted only above a floor -- and section C reads a",
+    "case source for exactly that. Without this entry the Python arm would have had no subject",
+    "and section C would have refused as auditing nothing, one line after the harness left."
   ],
   "guard_dirs": [
     ".claude/rediacc_hooks/guards",
@@ -111,9 +120,9 @@
     ".claude/rediacc_hooks/shellscan.py"
   ],
   "case_sources": [
-    ".claude/hooks/test-hooks.sh",
     ".claude/rediacc_hooks/tests/hookcases.py",
     ".claude/rediacc_hooks/tests/test_hooks_fixtures.py",
-    ".claude/rediacc_hooks/tests/test_hooks_procs.py"
+    ".claude/rediacc_hooks/tests/test_hooks_procs.py",
+    ".claude/rediacc_hooks/tests/test_hooks_delegates.py"
   ]
 }

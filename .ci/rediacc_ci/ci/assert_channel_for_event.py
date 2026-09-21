@@ -1,12 +1,9 @@
 #!/usr/bin/env python3
-"""Port of `.ci/scripts/ci/assert-channel-for-event.sh` (65 lines).
+"""Port of `.ci/scripts/ci/assert-channel-for-event.sh` (65 lines), which is now DELETED.
 
-Asserts the resolved R2 staging CHANNEL matches the GitHub event type. The twin's own header carries the contract and the history (finding G, the dryrun-<sha> fallthrough, ~5 GB of orphan R2 bytes per schedule trigger); none of it is restated here.
+Asserts the resolved R2 staging CHANNEL matches the GitHub event type. The twin's own header carried the contract and the history (finding G, the dryrun-<sha> fallthrough, ~5 GB of orphan R2 bytes per schedule trigger); none of it is restated here, and `git cat-file -p 831b2f7740d4f1c066ec1a5fbd1168b8f5fcd330` still yields the file.
 
-LIVE CALLER, not repointed: `.github/workflows/ci.yml:295`
-`run: .ci/scripts/ci/assert-channel-for-event.sh "${{ github.event_name }}"
-"${{ steps.staging.outputs.channel }}"`. The bash twin stays the registered
-gate; this module is its verified-equivalent alternative, and the cutover is a separate, later, driver-only step.
+SOLE IMPLEMENTATION. `.github/workflows/ci.yml:295` runs this module, and so does `rediacc_ci.tests.gates.test_gate_channel_for_event`. The twin's observable behaviour is frozen in `.ci/rediacc_ci/tests/goldens/assert-channel-for-event/`, recorded from the tracked script on its last day in the tree.
 
 Ledger: `.ci/shadow/w7p6-assert-channel-for-event.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-assert-channel-for-event --assert --k 5`).
 
@@ -15,7 +12,7 @@ THE `*)` ARM FAILS OPEN, AND THAT IS REPRODUCED RATHER THAN REPAIRED
 -----------------------------------------------------------------------------
 An event name the `case` does not know -- a typo, or a genuinely new trigger such as `pull_request_target` -- WARNS and returns 0 with any channel at all:
 
-    $ .ci/scripts/ci/assert-channel-for-event.sh pull_request_target dryrun-abc
+    $ python3 -m rediacc_ci.ci.assert_channel_for_event pull_request_target dryrun-abc
     (warn) Unknown event: pull_request_target (channel: 'dryrun-abc') ...
     exit 0
 

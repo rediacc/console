@@ -1,0 +1,9 @@
+# twin .ci/scripts/ci/set-image-tags.sh blob 6922deff8d4d7a06c67586e73d09a392c4bf46d9
+exit: 1
+--- stdout ---
+--- stderr ---
+✓ Using explicit version: not a tag
+✗ Invalid tag format: not a tag
+✗ Tags must contain only alphanumeric characters, dots, hyphens, and underscores
+--- github env ---
+""

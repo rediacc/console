@@ -3,14 +3,14 @@
 
 Derive the base image tag into `$GITHUB_ENV`, then override the two per-image tags with the values the `initialize` job resolved, appending the `-amd64` suffix the fast single-arch build publishes. The twin's header owns the why; it is not restated here.
 
-LIVE CALLER, not repointed. The bash twin stays the registered gate; this module is its verified-equivalent alternative, and the cutover is a separate, later, driver-only step.
+SOLE IMPLEMENTATION. The bash twin is deleted; `.github/workflows/ci.yml:1113` runs this module, and the twin's observable behaviour is frozen in `.ci/rediacc_ci/tests/goldens/set-image-tags/`.
 
 Ledger: `.ci/shadow/w7p6-set-image-tags.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-set-image-tags --assert --k 5`).
 
 -----------------------------------------------------------------------------
 THE SIBLING IS CALLED, NOT REIMPLEMENTED
 -----------------------------------------------------------------------------
-This twin is the one live caller of `derive-image-tag.sh`, and the whole of its first half is that call with two arms. `rediacc_ci.ci.derive_image_tag` is
+The twin was the one live caller of `derive-image-tag.sh`, and the whole of its first half was that call with two arms, so the two were retired together. `rediacc_ci.ci.derive_image_tag` is
 already ported and already carries its own K=5 ledger
 (`.ci/shadow/w7p6-derive-image-tag.observations.jsonl`), so this module invokes that module rather than re-deriving anything: a second implementation of the
 `--sort=-v:refname` ladder is exactly the divergence the campaign exists to
@@ -23,7 +23,7 @@ IN PROCESS, NOT AS A SUBPROCESS, and the two observable consequences are stated 
     both sides.
   * The two diagnostics `derive_image_tag` prints with `sys.argv[0]` in them --
     the missing `--version` value, and a tag build with `GITHUB_REF_NAME` unset
-    -- now carry THIS module's name where the twin carries `derive-image-tag.sh`.
+    -- now carry THIS module's name where the twin carried the sibling's path.
     The first is unreachable from here (the argument is always supplied with a
     value). The second is reachable, and the differential normalises the program
     name exactly as `test_ci_derive_image_tag.py` already does for the same
@@ -34,7 +34,7 @@ DEFECT E -- WITH `$GITHUB_ENV` UNSET, THE SCRIPT REPORTS SUCCESS HAVING SET
 NOTHING
 -----------------------------------------------------------------------------
     $ IMAGE_TAG=v1.2.3 WEB_TAG=web-abc RENET_TAG=renet-abc \\
-        bash .ci/scripts/ci/set-image-tags.sh
+        python3 -m rediacc_ci.ci.set_image_tags
     ⚠ GITHUB_ENV not set, skipping --env-file
     v1.2.3
     ✓ Image tags set (web=web-abc renet=renet-abc)

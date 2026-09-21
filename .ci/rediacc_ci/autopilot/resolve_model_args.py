@@ -59,7 +59,7 @@ TURNS_DEFAULT = 60
 TURNS_FIX = 80
 MODE_FIX = "fix"
 
-# The GITHUB_OUTPUT heredoc marker. FIXED, unlike compose-prompt.sh's random one, and that asymmetry is correct rather than an oversight: nothing in this output is attacker-influenced. The values are a model id the gate already allowlisted, an integer this file chose, a constant, and an effort drawn from EFFORT_ALLOWED, so there is no text here an outsider can steer into producing
+# The GITHUB_OUTPUT heredoc marker. FIXED, unlike compose_prompt's random one, and that asymmetry is correct rather than an oversight: nothing in this output is attacker-influenced. The values are a model id the gate already allowlisted, an integer this file chose, a constant, and an effort drawn from EFFORT_ALLOWED, so there is no text here an outsider can steer into producing
 # the marker.
 ARGS_DELIM = "AUTOPILOT_ARGS_EOF"
 

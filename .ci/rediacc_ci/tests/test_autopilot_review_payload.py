@@ -56,7 +56,7 @@ def _thread(
     reply_author: str = "outsider",
     **extra: Any,
 ) -> dict[str, Any]:
-    """One review thread in the shape `fetch-review-threads.sh` emits."""
+    """One review thread in the shape `fetch_review_threads` emits."""
     bodies = bodies if bodies is not None else ["the finding"]
     nodes = []
     for i, body in enumerate(bodies):

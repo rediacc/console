@@ -57,8 +57,8 @@ already returns tri-state and says so in its own words: "None is NOT False". Thi
 ------------------------------------------------------------------------------
 TRAP 6: A HARDCODED SUBMODULE LIST GOES BLIND TO THE FIFTH SUBMODULE.
 ------------------------------------------------------------------------------
-`.gitmodules` declares four (`private/renet`, `private/homebrew-tap`, `private/elite`, `private/account`) and three independent hardcoded copies exist -- `check-submodule-branches.sh:418` and `:457`, `.ci/scripts/ci/scope-map.cjs:123`, `.ci/scripts/ci/greenlight.cjs:270` -- plus a repo-name list at `.ci/scripts/autopilot/linked-sub-prs.sh:43`. They all AGREE today; two of the files
-already document that as a live defect rather than a state of grace (`wl_git.py:115-119`: "READ, NEVER HARDCODE"; `linked-sub-prs.sh:41-42`: "A submodule missing here is invisible to this scan"). `submodules()` reads `.gitmodules`, and `test_gitx.py` asserts the hardcoded lists still match it, so the day one of them drifts is the day something says so.
+`.gitmodules` declares four (`private/renet`, `private/homebrew-tap`, `private/elite`, `private/account`) and three independent hardcoded copies exist -- `check-submodule-branches.sh:418` and `:457`, `.ci/scripts/ci/scope-map.cjs:123`, `.ci/scripts/ci/greenlight.cjs:270` -- plus a repo-name list at `linked_sub_prs.SUB_REPOS`. They all AGREE today; two of the files
+already document that as a live defect rather than a state of grace (`wl_git.py:115-119`: "READ, NEVER HARDCODE"; `linked_sub_prs.py`: "A submodule missing here is invisible to this scan"). `submodules()` reads `.gitmodules`, and `test_gitx.py` asserts the hardcoded lists still match it, so the day one of them drifts is the day something says so.
 
 AND ITS BLIND SPOT, stated because reading `.gitmodules` does not remove it: `private/growth` and `private/generative` are independent git repositories under `private/` that are gitignored and are NOT submodules, so no enumeration of any kind sees them. `.claude/hooks/stop/wl_git.py:149` `sibling_repos()` exists for that, and `sibling_repos()` here is its counterpart.
 

@@ -138,7 +138,7 @@ reusable input/secret contract both directions, CHECK 3 the `ubuntu-slim` 14-min
 `.ci/scripts/ci/`).
 - `scripts/gates/check-ci-parity.ts`: a gate wired into a workflow must also be in the
 `npm run ci` chain.
-- `.claude/hooks/test-hooks.sh` if any hook changed, and it must show a nonzero case count.
+- `.ci/cache/toolchain/uv-tools/bin/pytest -q .claude/rediacc_hooks/tests` if any hook changed, and it must show a nonzero collected count.
 
 **Known-environmental local reds that are not failures:** `validate:tutorial-audio`, `check:actions`.
 

@@ -171,7 +171,7 @@ diff-index --cached --name-status <branch>`. Same class as a failed existence ch
 
 ## Editing a shell script while a background job is RUNNING it
 Trap-Id: edit-of-a-running-shell-script
-Enforced-By: file:.claude/rediacc_hooks/guards/block_edit_of_running_script.py, file:.claude/rediacc_hooks/guards/block_bash_write_to_running_script.py
+Enforced-By: gate:check:ci-pytest
 Residue: Scope is `.sh` only, deliberately: a `.ts` or `.py` is read into memory once, so editing it mid-run is confusing rather than corrupting and the guards stay silent there.
 
 Bash reads a script LAZILY, by byte offset, not into memory. Rewrite the file while a job is executing it and the interpreter resumes at its old offset inside the new bytes, so it starts parsing mid-token. The error it prints names a line that is innocent, and often no longer exists at that number.
@@ -284,7 +284,7 @@ If an in-place mutation is genuinely unavoidable, say so out loud BEFORE running
 
 ## "Clean vs HEAD" is the wrong baseline in a tree that was already dirty
 Trap-Id: clean-vs-head-is-the-wrong-baseline
-Enforced-By: file:.claude/rediacc_hooks/guards/block_destructive_git_restore.py
+Enforced-By: gate:check:ci-pytest
 Residue: The guard refuses the command. It cannot repair a tree where the discard already happened, and "identical to what was there before I arrived" is not a state git can answer for.
 
 The forbidden-command rule (never `git checkout` / `restore` / `stash` / `clean`) is stated elsewhere. This entry is about why an agent that breaks it BELIEVES IT SUCCEEDED, which is what makes the damage silent.
@@ -548,7 +548,7 @@ Only visible because stderr was read separately. Define helpers at the top.
 
 ## A watch verdict is not evidence
 Trap-Id: a-watch-verdict-is-not-evidence
-Enforced-By: file:.claude/rediacc_hooks/guards/block_adhoc_sanctioned.py
+Enforced-By: gate:check:ci-pytest
 Residue: The guard refuses ad-hoc watch loops. It cannot make a session RE-READ the Jobs API before acting on a verdict it already holds, nor notice a run that grew from 42 to 48 jobs while being read.
 
 This whole class is why `.ci/scripts/ci/ci-trace.py` exists and why ad-hoc watch commands are now refused by `block-adhoc-sanctioned.sh`: the script keys on the PR head and reads `statusCheckRollup`, so a superseded run and a watchdog rerun are not mishandled, they are unrepresentable.
@@ -707,7 +707,7 @@ class your invariant does not cover.
 
 ## A `pgrep -f <pattern>` guard inside a shell whose own command line contains that pattern waits forever
 Trap-Id: pgrep-f-matches-its-own-command-line
-Enforced-By: file:.claude/rediacc_hooks/guards/block_self_matching_pgrep.py
+Enforced-By: gate:check:ci-pytest
 Residue: The second half is unguarded: a waiter whose condition has become true and which is still running is WEDGED, and liveness cannot tell it from patience. Only the exit CONDITION separates them.
 
 A background waiter written as
@@ -1206,12 +1206,13 @@ There is no `--force`, and if it refuses, the items are genuinely not yours.
 **The pitfall inside the fix**, worth knowing because it is silent: `wl_store.compact()` rewrites the event log to the minimal set reproducing the current fold. A `lineage` event is not an item event, so a naive implementation drops it and every adoption reverts to "a peer's" — the exact bug, reintroduced by a maintenance command nobody associates with ownership. Mutating the
 carry-forward out and re-running the case is what proves that control is real, and it reds correctly when you do.
 
-## `test-hooks.sh` buffers the worklist suite, so "no new output" is the NORMAL state
+## A delegating harness buffers its child suite, so "no new output" is the NORMAL state
 Trap-Id: buffered-suite-looks-hung
 Enforced-By: JUDGMENT-ONLY
-Residue: Any harness that captures a child's output with $( ). Silence is the design, so quietness is never evidence of a hang.
+Residue: Any harness that captures a child's output with $( ) or `capture_output=True`. Silence is the design, so quietness is never evidence of a hang.
 
-`test-hooks.sh:2328` runs the suite as `out="$(bash "$STOP_SUITE" 2>&1)"`. Command substitution means **nothing that suite prints reaches the log until it exits** — so the battery log sits at the same line count for the whole run, by design.
+The harness this was paid for was `.claude/hooks/test-hooks.sh`, which ran the suite as `out="$(bash "$STOP_SUITE" 2>&1)"`. It is retired, and the trap outlived it unchanged: its port, `.claude/rediacc_hooks/tests/test_hooks_delegates.py`, runs every delegate under `subprocess.run(..., capture_output=True)`, which buffers for exactly the same reason. Either way **nothing the
+child prints reaches the log until it exits** — so the log sits at the same line count for the whole run, by design.
 
 This looks exactly like a hang, and I treated it as one: two runs killed on a 10-minute timeout, a wrong first guess (a case file created mid-run — impossible, the case list is explicit rather than a glob), and a second wrong guess recorded here as fact (inherited stdin) before the evidence was in. What actually settled it was reading `/proc/<pid>/wchan` down the whole process
 chain rather than the top of it:
@@ -1233,14 +1234,15 @@ Residue: Any case helper driving a hook. A hook that READS its event from stdin 
 
 **This entry originally claimed inherited stdin caused a hang. That was wrong**, and the entry above it records what the evidence actually showed. The stdin point stands on its own merits and is kept for that reason, not as a post-mortem.
 
-`test-hooks.sh:2328` runs the worklist suite with no stdin redirect, so a helper that does not close its own stdin inherits the harness's. From a terminal that is harmless; from a backgrounded job stdin is a pipe nobody closes, and a helper that reads it would block. No case in this tree was observed doing so — the fix is prophylactic.
+The harness this was paid for, `.claude/hooks/test-hooks.sh`, ran the worklist suite with no stdin redirect, so a helper that did not close its own stdin inherited the harness's. From a terminal that is harmless; from a backgrounded job stdin is a pipe nobody closes, and a helper that reads it would block. No case in this tree was observed doing so — the fix is prophylactic, which
+is why it survives the harness: its port passes `stdin=subprocess.DEVNULL` per delegate, and the rule below is what that line is an instance of.
 
 What makes this expensive is that the symptom is *silence*, and silence is what a long suite looks like too. Measured while it was happening: 7 minutes elapsed, **5 seconds of CPU**, zero children, no new output — and the last line printed was a perfectly normal `ok`. Nothing says "stuck". Two full battery runs were killed on a 10-minute timeout before the cause was even suspected,
 and the first guess (a case file created mid-run) was wrong, because the suite's case list is explicit rather than a glob.
 
 **The diagnostic that actually settles it** is `/proc/<pid>/wchan`, which said `anon_pipe_read`, plus scanning `/proc/*/fd` for the pipe's other end — which nobody held. A blocked read on a pipe with no writer and no children is not a slow test.
 
-**The rule**: every case helper closes its own stdin (`</dev/null`) rather than trusting the caller. `18-identity.sh` already did this in three places; the case file that hung was the one that did not. Do not "fix" this by adding the redirect at the call site in `test-hooks.sh` only — that repairs one caller and leaves every helper still depending on an inherited fd.
+**The rule**: every case helper closes its own stdin (`</dev/null`) rather than trusting the caller. `18-identity.sh` already did this in three places; the case file that hung was the one that did not. Do not "fix" this by adding the redirect at the one call site only — that repairs one caller and leaves every helper still depending on an inherited fd.
 
 Related: the same "healthy-looking wait" failure mode is why
 `.claude/hooks/pre-bash/block-self-matching-pgrep.sh` exists. A loop that cannot exit and a loop that is being patient are indistinguishable from outside.
@@ -1548,8 +1550,8 @@ Residue: Nothing can tell a typo apart from a gate that failed for cause at the 
 
 `npm run --silent <name>` for a name `package.json` does not define exits **1 with ZERO bytes on both streams**. That is byte-for-byte what a gate failing for cause looks like when its output is suppressed, so the reflex it triggers -- "this gate is red, go fix the tree" -- sends a session debugging something that never ran.
 
-**The reason this is a trap and not just a typo is that the ids are real.** Most gates are both a `package.json` script and a `scripts/ci-runner/manifest.ts` entry, so the two namespaces look interchangeable. They are not. Some manifest entries have no npm script at all and carry a bare path in `run:` -- `gate-test:trap-registry`, `gate-test:docs-gen` and `gate-test:claude-hooks`
-are three -- and the ci-runner invokes them by that path. Reading the id out of the manifest and typing `npm run` in front of it therefore produces a plausible-looking red for a gate that is perfectly green.
+**The reason this is a trap and not just a typo is that the ids are real.** Most gates are both a `package.json` script and a `scripts/ci-runner/manifest.ts` entry, so the two namespaces look interchangeable. They are not. Some manifest entries have no npm script at all and carry a bare path in `run:` -- `gate-test:trap-registry` and `gate-test:docs-gen`
+are two, and `gate-test:claude-hooks` was a third until its subject was ported to pytest -- and the ci-runner invokes them by that path. Reading the id out of the manifest and typing `npm run` in front of it therefore produces a plausible-looking red for a gate that is perfectly green.
 
 Measured in one session on 2026-09-09: **four** such reds, on `check:ci-plan-lifecycle` (a name that does not exist anywhere; the real gate is `check:ci-plan-housekeeping`), on `gate-test:trap-registry`, and on `gate-test:docs-gen`. Every one of them was rc=0 when driven by its real invocation. Two earlier sessions lost time to the same shape on `check:ci-cli-examples`, whose real
 name is `check:cli-examples`.

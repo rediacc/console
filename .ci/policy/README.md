@@ -82,7 +82,7 @@ Scans: every tracked file in the policy directory, against `POLICY_FILES` in bot
 | `.audit-prod-allowlist` | name per line | 10 | 6 | both |
 | `.ci-parity-exempt` | name per line | 9 | 10 | both |
 | `.cli-i18n-orphan-allowlist` | name per line | 5 | 6 | both |
-| `.dead-bash-allowlist` | name per line | 14 | 15 | both |
+| `.dead-bash-allowlist` | name per line | 13 | 14 | both |
 | `.deps-upgrade-blocklist` | name per line | 17 | 18 | both |
 | `.devcontainer-upgrade-blocklist` | name per line | 0 | 1 | both |
 | `.e2e-coverage-allowlist` | name per line | 21 | 3 | both |
@@ -224,15 +224,14 @@ git blame --line-porcelain -- <file> \
 | 26 | `dispatch:phase_` | 2026-07-21 | 46 |
 | 36 | `manual:.ci/scripts/deploy/deploy-proxy.sh` | 2026-07-21 | 46 |
 | 39 | `manual:.ci/scripts/security/dependency-inventory.sh` | 2026-07-21 | 46 |
-| 42 | `manual:.claude/hooks/test-hooks.sh` | 2026-07-21 | 46 |
-| 45 | `manual:.devcontainer/start-vscode.sh` | 2026-07-21 | 46 |
-| 48 | `manual:scripts/ops/apply-cf-redirect-rules.sh` | 2026-07-21 | 46 |
-| 51 | `manual:scripts/ops/linode-cluster-validation.sh` | 2026-07-21 | 46 |
-| 54 | `manual:scripts/ops/r2-oneshot-scrub.sh` | 2026-07-21 | 46 |
-| 57 | `manual:scripts/pre-commit-check.sh` | 2026-07-21 | 46 |
-| 60 | `manual:.ci/breakpoint/scripts/sync-breakpoint.sh` | 2026-07-27 | 41 |
-| 63 | `manual:.ci/docker/run-in-web.sh` | 2026-08-28 | 9 |
-| 66 | `manual:.ci/scripts/test/manual/probe-receipt-stability.sh` | 2026-08-28 | 9 |
+| 42 | `manual:.devcontainer/start-vscode.sh` | 2026-07-21 | 46 |
+| 45 | `manual:scripts/ops/apply-cf-redirect-rules.sh` | 2026-07-21 | 46 |
+| 48 | `manual:scripts/ops/linode-cluster-validation.sh` | 2026-07-21 | 46 |
+| 51 | `manual:scripts/ops/r2-oneshot-scrub.sh` | 2026-07-21 | 46 |
+| 54 | `manual:scripts/pre-commit-check.sh` | 2026-07-21 | 46 |
+| 57 | `manual:.ci/breakpoint/scripts/sync-breakpoint.sh` | 2026-07-27 | 41 |
+| 60 | `manual:.ci/docker/run-in-web.sh` | 2026-08-28 | 9 |
+| 63 | `manual:.ci/scripts/test/manual/probe-receipt-stability.sh` | 2026-08-28 | 9 |
 
 #### `.deps-upgrade-blocklist`
 

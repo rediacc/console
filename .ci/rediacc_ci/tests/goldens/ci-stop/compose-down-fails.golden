@@ -1,0 +1,16 @@
+# twin .ci/scripts/infra/ci-stop.sh blob ba8f203d6863be2d5c92289cc6ecac210222f391
+exit: 0
+--- stdout ---
+Stopping Rediacc CI services...
+  Stopping Docker Compose services...
+  Docker compose down failed, forcing container removal
+  Force removing: rediacc-account-server
+All services stopped
+--- stderr ---
+--- calls ---
+.ci/docker/ci	compose	-f	docker-compose.yml	down	--volumes	--remove-orphans
+.	ps	-a	--format	{{.Names}}
+.	stop	rediacc-account-server
+.	rm	rediacc-account-server
+--- backend-state ---
+removed

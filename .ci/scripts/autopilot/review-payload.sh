@@ -25,7 +25,7 @@
 #   review-payload.sh --threads <file> [--author-filter <substring>]
 #                     [--max-bytes <n>] [--out <file>]
 #
-# <file> is fetch-review-threads.sh's output: a JSON array of
+# <file> is fetch_review_threads's output: a JSON array of
 # {id, isResolved, isOutdated, path, line, comments:{nodes:[{databaseId, body,
 # author:{login}}]}}.
 #

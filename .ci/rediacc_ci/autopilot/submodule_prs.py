@@ -6,7 +6,7 @@ Opens a PR for every submodule branch the round pushed, and links them from the 
 WHY THE LINK IS NOT COSMETIC. `.ci/scripts/quality/check-submodule-branches.sh` is a required gate and it reads the CONSOLE PR BODY to decide whether each submodule PR is accounted for: it accepts the full PR URL as a substring (check-submodule-branches.sh:251), or `owner/repo#N` / `owner/repo/pull/N` (:259). A round that pushes a submodule branch and does not link its PR leaves
 console red on a gate no later round can clear by editing code. So the link is part of the push, not a nicety after it.
 
-THE LINK FORMAT IS A SHARED CONTRACT WITH `linked-sub-prs.sh`, which is the READER of what this script writes: it greps the console body for `(https://github.com/)?<owner>/<repo>(/pull/|#)<digits>` and turns the links back into fetch targets so the review machinery can see findings raised in a submodule PR. Two consequences worth stating, since the two files are edited by different
+THE LINK FORMAT IS A SHARED CONTRACT WITH `linked_sub_prs`, which is the READER of what this script writes: it greps the console body for `(https://github.com/)?<owner>/<repo>(/pull/|#)<digits>` and turns the links back into fetch targets so the review machinery can see findings raised in a submodule PR. Two consequences worth stating, since the two files are edited by different
 hands: the URL written here must keep its `owner/repo/pull/N` shape (the `- \\`path\\` -> ` prefix is decoration, the URL is the contract), and the `--dry-run` placeholder `.../pull/DRY-RUN` deliberately does NOT match that grep, which is correct -- a dry run has no PR to fetch from. That file is not touched by this port; this paragraph exists so the coupling is written down
 somewhere both ends can find it.
 
@@ -101,7 +101,7 @@ GH_ATTEMPTS = 3
 # error. jq's `length` never emits a leading zero, so no octal case arises.
 COUNT_RE = re.compile(r"^[0-9]+$")
 
-# The URL a dry run pretends to have opened. Deliberately unmatchable by `linked-sub-prs.sh`'s digit-bounded grep; see the module docstring.
+# The URL a dry run pretends to have opened. Deliberately unmatchable by `linked_sub_prs`'s digit-bounded pattern; see the module docstring.
 DRY_RUN_URL = "https://github.com/%s/pull/DRY-RUN"
 
 
@@ -177,7 +177,7 @@ def rebuild_body(stripped: str, links: list[str]) -> str:
 
 
 def link_line(path: str, url: str) -> str:
-    """`printf -- '- \\`%s\\` -> %s\\n'`. The format `linked-sub-prs.sh` reads."""
+    """`printf -- '- \\`%s\\` -> %s\\n'`. The format `linked_sub_prs` reads."""
     return "- `%s` -> %s\n" % (path, url)
 
 

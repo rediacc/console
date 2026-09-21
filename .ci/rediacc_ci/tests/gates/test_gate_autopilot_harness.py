@@ -46,8 +46,8 @@ FINISH = AUTOPILOT / "finish.sh"
 PAYLOAD = AUTOPILOT / "review-payload.sh"
 REVIEW_REPLY = AUTOPILOT / "review-reply.sh"
 SWEEP = AUTOPILOT / "sweep-campaigns.sh"
-LINKED = AUTOPILOT / "linked-sub-prs.sh"
-COMPOSE = AUTOPILOT / "compose-prompt.sh"
+LINKED_MODULE = "rediacc_ci.autopilot.linked_sub_prs"
+COMPOSE_MODULE = "rediacc_ci.autopilot.compose_prompt"
 UPDATE_STATE = AUTOPILOT / "update-state.sh"
 POST_ESC = AUTOPILOT / "post-escalation.sh"
 MARGS = AUTOPILOT / "resolve-model-args.sh"
@@ -2783,7 +2783,6 @@ def test_review_payload_byte_cap(gate, tmp_path):
 
 
 def test_linked_sub_prs_only_recognises_the_four_submodules(gate, tmp_path):
-    require_subjects(gate, LINKED)
     body = tmp_path / "linked-body.md"
     body.write_text(
         "Some description a human wrote.\n\n"
@@ -2797,7 +2796,10 @@ def test_linked_sub_prs_only_recognises_the_four_submodules(gate, tmp_path):
 
     def linked(path: pathlib.Path) -> harness.RunResult:
         return harness.run(
-            [bash_bin(), str(LINKED), "--body", str(path)], env=clean_env(), timeout=180
+            ["python3", "-m", LINKED_MODULE, "--body", str(path)],
+            cwd=paths.repo_root(),
+            env=clean_env(PYTHONPATH=".ci", PYTHONDONTWRITEBYTECODE="1"),
+            timeout=180,
         )
 
     got = linked(body).out
@@ -3245,7 +3247,6 @@ def test_finish_check_done(gate, tmp_path):
 
 
 def test_compose_prompt_refuses_a_blind_review_round(gate, tmp_path):
-    require_subjects(gate, COMPOSE)
     fx = tmp_path / "compose" / "fx"
     fx.mkdir(parents=True)
     (fx / "decision.json").write_text(
@@ -3257,8 +3258,9 @@ def test_compose_prompt_refuses_a_blind_review_round(gate, tmp_path):
     def compose(template: str, mode: str, out: pathlib.Path) -> harness.RunResult:
         return harness.run(
             [
-                bash_bin(),
-                str(COMPOSE),
+                "python3",
+                "-m",
+                COMPOSE_MODULE,
                 "--prompts",
                 str(AUTOPILOT / "prompts"),
                 "--fx",
@@ -3270,7 +3272,8 @@ def test_compose_prompt_refuses_a_blind_review_round(gate, tmp_path):
                 "--out",
                 str(out),
             ],
-            env=clean_env(),
+            cwd=paths.repo_root(),
+            env=clean_env(PYTHONPATH=".ci", PYTHONDONTWRITEBYTECODE="1"),
             timeout=180,
         )
 

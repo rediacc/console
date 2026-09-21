@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Port of `.ci/scripts/ci/derive-image-tag.sh` (137 lines).
+"""Port of `.ci/scripts/ci/derive-image-tag.sh` (137 lines), which is now DELETED.
 
 Derive the Docker image tag from an explicit `--version`, from the git ref when the build is a tag build, or from the newest `v*` tag in the repository. The twin's header owns the three-step ladder; it is not restated here.
 
-LIVE CALLER, not repointed. The bash twin stays the registered gate; this module is its verified-equivalent alternative, and the cutover is a separate, later, driver-only step.
+SOLE IMPLEMENTATION. `rediacc_ci.ci.set_image_tags` was the twin's one live caller and calls this module in-process, and the twin's observable behaviour is frozen in `.ci/rediacc_ci/tests/goldens/derive-image-tag/`.
 
 Ledger: `.ci/shadow/w7p6-derive-image-tag.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-derive-image-tag --assert --k 5`).
 
@@ -24,7 +24,7 @@ DEFECT B -- `--version ''` IS SILENTLY IGNORED RATHER THAN REFUSED
 `VERSION="${2?--version requires an argument}"` refuses an ABSENT argument and
 accepts an EMPTY one, and the decision below is `if [[ -n "$VERSION" ]]`. So an empty value falls through to auto-derivation instead of failing:
 
-    $ bash .ci/scripts/ci/derive-image-tag.sh --version ''
+    $ python3 -m rediacc_ci.ci.derive_image_tag --version ''
     (info) Auto-derived from git tags (local): 1.3.12
     1.3.12
 

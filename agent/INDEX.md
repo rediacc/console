@@ -459,7 +459,7 @@ What `--plan-why <path>` answers from. Each row is a path a compacted plan cited
 
 ## Plan census
 
-Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans block can be printed from THIS file instead of opening all 102 of them. The hook checks freshness with `stat` alone (path set plus byte size) and falls back to reading the plans, loudly, when the two disagree.
+Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans block can be printed from THIS file instead of opening all 103 of them. The hook checks freshness with `stat` alone (path set plus byte size) and falls back to reading the plans, loudly, when the two disagree.
 
 | Plan | Status | lines | open | ticked | bytes |
 |---|---|---|---|---|---|
@@ -467,6 +467,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/PLAN-add-js-extensions-shared.md` | compacted | 49 | 0 | 0 | 4262 |
 | `agent/PLAN-agent-hints-implementation.md` | compacted | 59 | 0 | 0 | 4594 |
 | `agent/PLAN-agent-hints-in-stop-hook.md` | compacted | 50 | 0 | 0 | 3624 |
+| `agent/PLAN-agent-tree-lifecycle.md` | in-progress | 63 | 7 | 0 | 8709 |
 | `agent/PLAN-ask-flow-preemptive-settled-check.md` | compacted | 37 | 0 | 0 | 2335 |
 | `agent/PLAN-b2-emit-matrix.md` | partially | 294 | 6 | 7 | 30948 |
 | `agent/PLAN-backup-list-executor-fix.md` | compacted | 54 | 0 | 0 | 5475 |
@@ -566,4 +567,4 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/PLAN-wl-report-liveness-oracle.md` | compacted | 51 | 0 | 7 | 3642 |
 | `agent/PLAN-www-bundle-determinism.md` | compacted | 37 | 0 | 0 | 2569 |
 
-102 plan(s), 32 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.
+103 plan(s), 33 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.

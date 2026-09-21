@@ -99,6 +99,12 @@ TAILED = [
     "../rediacc_hooks/guards/test-block_git_amend.py",
     "../rediacc_hooks/guards/test-block_unverified_push.py",
     "../rediacc_hooks/guards/test-block_host_toolchain_run.py",
+    # THESE FOUR REACHED CI THROUGH THE BASH HARNESS AND NOTHING ELSE, which is how the drift was found: the label multiset of the last harness run carried them and the port's did not, so retiring the harness without this line would have orphaned four control suites the same week they were written. Each guard declares `TWIN = None`, so its per-guard suite IS its differential and
+    # `hook_integrity` credits both directions from the file's existence -- a suite nothing runs would keep crediting coverage it no longer demonstrates.
+    "../rediacc_hooks/guards/test-block_prose_style_edit.py",
+    "../rediacc_hooks/guards/test-block_prose_style_commit.py",
+    "../rediacc_hooks/guards/test-block_unproven_bulk_transform.py",
+    "../rediacc_hooks/guards/test-warn_staged_shape_duplication.py",
     "stop/test-completion-evidence.py",
     "stop/test-always-tier.py",
     "stop/test-planfile.py",
@@ -109,19 +115,20 @@ TAILED = [
 
 # THE TWO BASH SUB-SUITES ARE GONE, ported to pytest under this same directory: `stop/test-worklist-v5.sh` (26 case files, 944 assertions) and `stop/test-report-inbox.sh` (164 assertions) both drove PYTHON through a shell fixture layer, and the ports keep the same subprocess calls and the same assertions with `wlfix.py` in place of `_harness.sh`.
 #
-# WHAT REPLACES THEM HERE IS THE SAME CLAIM ABOUT A DIFFERENT ROUTE. The aggregate no longer runs them; `check:ci-pytest` collects them, because `.claude/rediacc_hooks/tests` is a pyproject `testpaths` root. That delegation is invisible when it breaks: a renamed or emptied root looks exactly like a root that ran and passed. So the three links are asserted directly, and the
-# control below strips each one.
+# WHAT REPLACES THEM HERE IS THE SAME CLAIM ABOUT A DIFFERENT ROUTE. `check:ci-pytest` collects them, because `.claude/rediacc_hooks/tests` is a pyproject `testpaths` root. That delegation is invisible when it breaks: a renamed or emptied root looks exactly like a root that ran and passed. So each link is asserted directly, and the control below strips each one.
+#
+# THE AGGREGATE LINK IS GONE, and its removal is the retirement of `.claude/hooks/test-hooks.sh` rather than a weakening. That link asserted that the bash harness still NAMED this root, which was only ever a proxy for "something outside pytest still watches the delegation". With the harness deleted the proxy has no subject: a string that no file contains cannot be checked, and a
+# link kept against a deleted file is the can't-fail shape this module exists to refuse. What it was standing in for -- that the root is collectable and still holds the ported modules -- is asserted directly by the two links that remain, and neither of those was ever mediated by the harness.
 PORT_ROOT = "rediacc_hooks/tests"
 PORT_FIXTURE = "wlfix.py"
 PORT_MODULE_FLOOR = 20
 
-# The aggregate that really runs both, itself gated by `gate-test:claude-hooks`.
-AGGREGATE = HOOKS / "test-hooks.sh"
 PACKAGE_JSON = HOOKS.parent.parent / "package.json"
 PYPROJECT = HOOKS.parent.parent / "pyproject.toml"
+FIXTURE = pathlib.Path(__file__).resolve().parent / PORT_FIXTURE
 
 
-def port_delegation_problem(aggregate_source: str, pyproject_source: str, module_count: int):
+def port_delegation_problem(fixture_present: bool, pyproject_source: str, module_count: int):
     """None when the ported suite is genuinely reachable, else the ONE link that broke.
 
     Returns the reason rather than raising so the control can observe a verdict.
@@ -131,11 +138,11 @@ def port_delegation_problem(aggregate_source: str, pyproject_source: str, module
             "FAIL[%s]: the directory is not a pyproject testpaths root, so check:ci-pytest "
             "no longer collects the ported Stop-hook suite and it runs NOWHERE." % PORT_ROOT
         )
-    if PORT_ROOT not in aggregate_source or PORT_FIXTURE not in aggregate_source:
+    if not fixture_present:
         return (
-            "FAIL[%s]: test-hooks.sh no longer names the ported suite, so the aggregate has "
-            "stopped checking that the delegation is live and a broken one runs NOWHERE."
-            % PORT_ROOT
+            "FAIL[%s]: %s is gone, so every ported case has lost its fixture layer and the "
+            "modules that import it collect as errors rather than running NOWHERE quietly."
+            % (PORT_ROOT, PORT_FIXTURE)
         )
     if module_count < PORT_MODULE_FLOOR:
         return (
@@ -211,7 +218,7 @@ def test_the_ported_stop_hook_suite_is_reachable():
     The reachability CLAIM still has to hold, and a broken one is invisible: a root the collector stopped seeing looks exactly like a root that ran and passed. So the claim is asserted directly and nothing is executed.
     """
     problem = port_delegation_problem(
-        AGGREGATE.read_text(encoding="utf-8"),
+        FIXTURE.is_file(),
         PYPROJECT.read_text(encoding="utf-8"),
         ported_module_count(),
     )
@@ -224,15 +231,14 @@ def test_the_reachability_assertion_fires_on_each_broken_link():
 
     Each of the three links is stripped in turn, on STRINGS and a COUNT, never on the real files, so no tracked file is written (T-12). All three are driven rather than one, because a predicate can be right about the link its author tested and blind to the other two.
     """
-    aggregate = AGGREGATE.read_text(encoding="utf-8")
     pyproject = PYPROJECT.read_text(encoding="utf-8")
-    assert PORT_ROOT in aggregate, "control could not strip what is not there"
     assert PORT_ROOT in pyproject, "control could not strip what is not there"
+    assert FIXTURE.is_file(), "control could not strip a fixture that is already absent"
 
     for label, args in (
-        ("testpaths", (aggregate, pyproject.replace(PORT_ROOT, "SOME/OTHER/ROOT"), 27)),
-        ("aggregate", (aggregate.replace(PORT_ROOT, "SOME/OTHER/ROOT"), pyproject, 27)),
-        ("floor", (aggregate, pyproject, 0)),
+        ("testpaths", (True, pyproject.replace(PORT_ROOT, "SOME/OTHER/ROOT"), 27)),
+        ("fixture", (False, pyproject, 27)),
+        ("floor", (True, pyproject, 0)),
     ):
         problem = port_delegation_problem(*args)
         assert problem is not None, (

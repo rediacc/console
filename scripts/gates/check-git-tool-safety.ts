@@ -219,7 +219,7 @@ const main = (): number => {
   // verified. The failure message even warned that "writes would happen without
   // --execute", a risk that could not exist.
   //
-  // So: the executor must EXIST and be REACHED. This is still a source check (the behavioural proof lives in wl_git.py --selftest, which test-hooks.sh now runs), but it keys on a call reaching a writer rather than on a string that happens to be present.
+  // So: the executor must EXIST and be REACHED. This is still a source check (the behavioural proof lives in wl_git.py --selftest, which the delegate table in .claude/rediacc_hooks/tests/test_hooks_delegates.py runs under a floor), but it keys on a call reaching a writer rather than on a string that happens to be present.
   const hasExecutor = /def run\(self, runner=None\)/.test(source);
   const reachesExecutor = code.some((l) => l.includes('plan.run('));
 

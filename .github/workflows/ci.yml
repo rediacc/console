@@ -29,7 +29,7 @@ on:
   # loop. A dispatch on main is schedule-equivalent BY CONSTRUCTION, not by
   # convention: `full_suite` is `github.event_name != 'push'` (true for both),
   # and "Generate channel context" yields an empty channel for anything that is
-  # not push or pull_request (both). assert-channel-for-event.sh has an explicit
+  # not push or pull_request (both). assert_channel_for_event has an explicit
   # workflow_dispatch arm asserting exactly that.
   workflow_dispatch:
 
@@ -1535,7 +1535,7 @@ jobs:
     # schedule run that step never executes, so the output is EMPTY, and empty
     # is not the string 'false' -- the guard reads like one and admits the job.
     #
-    # It then runs with channel='' (assert-channel-for-event.sh requires that
+    # It then runs with channel='' (assert_channel_for_event requires that
     # for schedule), so docker_tag is '' and constants.sh:27 rewrites it to
     # `latest`. The job pulls the last RELEASED image and asserts next_version
     # against it, which fails whenever main carries commits since the last tag.

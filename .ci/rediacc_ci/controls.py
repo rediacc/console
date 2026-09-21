@@ -18,7 +18,7 @@ WHY THE FLOOR IS A REQUIRED ARGUMENT AND NOT A DEFAULT. A default of 0 is a floo
 written to close. `Controls("name", floor=0)` is still writable -- for a suite
 genuinely built at runtime -- but it has to be typed, at the call site, where a reviewer sees it.
 
-WHY IT IS NOT pytest. It nearly is, and pytest is the runner this repo now provisions. But these are not test files in a testpath; they are programs the Stop hook and `.claude/hooks/test-hooks.sh` invoke directly, whose output shape ("N control(s) passed") the harness reads. This class keeps that contract exactly
+WHY IT IS NOT pytest. It nearly is, and pytest is the runner this repo now provisions. But these are not test files in a testpath; they are programs the Stop hook and the delegate table in `.claude/rediacc_hooks/tests/test_hooks_delegates.py` invoke directly, whose output shape ("N control(s) passed") the delegate reads. This class keeps that contract exactly
 while removing the copies. A file migrated to it is a `python3 file.py` away from
 behaving as it always did -- and it is also, being an ordinary object with no global state, directly assertable FROM pytest, which is how it is proven below in `.ci/rediacc_ci/tests/test_controls.py`.
 

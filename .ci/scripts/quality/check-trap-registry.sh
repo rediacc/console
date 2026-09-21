@@ -83,7 +83,7 @@ TRAP_CORPUS="${TRAP_CORPUS:-$REPO_ROOT/docs/agent-reference/TRAPS.md}"
 TRAP_MANIFEST="${TRAP_MANIFEST:-$REPO_ROOT/scripts/ci-runner/manifest.ts}"
 TRAP_PACKAGE_JSON="${TRAP_PACKAGE_JSON:-$REPO_ROOT/package.json}"
 TRAP_DISPATCH="${TRAP_DISPATCH:-$REPO_ROOT/.claude/hooks/trapguard/dispatch.py}"
-TRAP_HOOK_SUITE="${TRAP_HOOK_SUITE:-$REPO_ROOT/.claude/hooks/test-hooks.sh}"
+TRAP_HOOK_SUITE="${TRAP_HOOK_SUITE:-$REPO_ROOT/.claude/rediacc_hooks/tests/test_hooks_trapguard.py}"
 TRAP_SETTINGS="${TRAP_SETTINGS:-$REPO_ROOT/.claude/settings.json}"
 TRAP_FILE_ROOT="${TRAP_FILE_ROOT:-$REPO_ROOT}"
 

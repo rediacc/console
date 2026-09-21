@@ -1,8 +1,9 @@
-"""The differential corpus: real commands, harvested from the real suite.
+"""The differential corpus: real commands, harvested from the real suite's recorded bytes.
 
-WHY NOT A HAND-WRITTEN LIST. A port is judged by the inputs it was never imagined against. `.claude/hooks/test-hooks.sh` holds 339 `bash_json` / `bash_bg_json` payloads, each one a command some guard was actually built or
+WHY NOT A HAND-WRITTEN LIST. A port is judged by the inputs it was never imagined against. `.claude/hooks/test-hooks.sh` held 339 `bash_json` / `bash_bg_json` payloads, each one a command some guard was actually built or
 repaired against -- heredocs that hid an amend, `sh -c` wrappers, `FOO=bar `
-prefixes, quoted `/bin/bash` paths, multi-invocation `gh pr` lines. That file is the accumulated memory of every bypass this repo has paid for, so it is the corpus, and a list invented here would be a list of the cases the author of the port already had in mind.
+prefixes, quoted `/bin/bash` paths, multi-invocation `gh pr` lines. That file was the accumulated memory of every bypass this repo has paid for, so it is the corpus, and a list invented here would be a list of the cases the author of the port already had in mind. It was itself ported to pytest and deleted; its bytes are kept verbatim as a golden, and `suite_source()` below is
+where that is arranged.
 
 HOW THE PAYLOADS ARE RECOVERED. The suite writes them as shell words, so this module unquotes them the way bash would: single quotes literal, double quotes
 with backslash escapes, `$'...'` ANSI-C escapes, and adjacent segments
@@ -38,7 +39,41 @@ def repo_root():
     raise RuntimeError(msg)
 
 
-SUITE = repo_root() / ".claude" / "hooks" / "test-hooks.sh"
+# THE SUITE IS A RECORDING NOW, not a live file, and the recipe is `frozen.py`'s: on the twin's last day in the tree its exact bytes were written to a golden under a `# twin <path> blob <sha>` header, so the corpus below is still harvested from the real tracked bytes rather than from a transcription of them. `git cat-file -p <sha>` retrieves the program those bytes came from.
+#
+# WHY THE HEADER IS STRIPPED RATHER THAN TOLERATED. `guardcorpus.harvest_cases` labels each recovered case with the LINE it sat on, and a header left in place would shift every one of them by one against every earlier record of the same corpus. Stripping the first line hands the parsers the original file exactly, byte for byte and line for line.
+#
+# `frozen.py` ITSELF IS NOT IMPORTED, for the reason the root finder states next door: this package is reachable from `.claude/settings.json` with no pytest ini and no `pythonpath`, so a hook module that needed `.ci` on sys.path to read one file would be a new coupling bought for four lines.
+SUITE_GOLDEN = (
+    repo_root()
+    / ".ci"
+    / "rediacc_ci"
+    / "tests"
+    / "goldens"
+    / "claude-hooks"
+    / "test-hooks.sh.golden"
+)
+SUITE_TWIN = ".claude/hooks/test-hooks.sh"
+HEADER_PREFIX = "# twin "
+
+
+def suite_source():
+    """The retired twin's recorded bytes, with the provenance header removed.
+
+    A MISSING OR UNHEADED GOLDEN IS LOUD. A silent fallback to empty text would hand every harvester a zero-length corpus, and the ratio floors below divide by a call-site count that would also be zero, so the differential would pass having compared nothing.
+    """
+    text = SUITE_GOLDEN.read_text(encoding="utf-8")
+    if not text.startswith(HEADER_PREFIX):
+        msg = "%s has no `%s` provenance header, so it is not a recording of %s" % (
+            SUITE_GOLDEN,
+            HEADER_PREFIX,
+            SUITE_TWIN,
+        )
+        raise RuntimeError(msg)
+    return text.split("\n", 1)[1]
+
+
+SUITE = SUITE_GOLDEN
 # MOVED TO THE ORACLE TREE BY W7 P6, which ported the last bash guard that sourced it. `.claude/hooks/pre-bash/` then held nothing and was removed, and the 20-line forwarder that stood at the oracle path was REPLACED by the real 303-line library, so the 28 oracles beside it resolve `lib/command-scan.sh` directly instead of through a hop. One copy, and this differential still runs
 # the real tracked bytes rather than a transcription of them.
 LIB = repo_root() / ".claude" / "oracles" / "pre-bash" / "lib" / "command-scan.sh"
@@ -190,7 +225,7 @@ def harvest():
 
     Returns `(commands, stats)`; `stats` carries the call-site count and the recovery ratio so the floor above can be checked against the same pass that produced the corpus.
     """
-    src = SUITE.read_text(encoding="utf-8")
+    src = suite_source()
     names = _assignments(src)
     call_sites = 0
     commands = []

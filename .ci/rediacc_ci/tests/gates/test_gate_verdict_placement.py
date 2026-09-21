@@ -7,9 +7,8 @@ THE DEFECT, TWICE. The script-style suites under `.claude/hooks/stop/` count ass
         sys.exit(1)
     print(f"{Tally.count} control(s) passed")
 
-Anything appended BELOW that verdict still runs and still prints ` FAIL`, but nothing reads `Tally.fails` again, so the process exits 0. And `.claude/hooks/test-hooks.sh:2612` scores these files by their EXIT CODE --
-`if out="$(python3 ...)"; then` -- so it takes the success branch, scrapes the
-"N control(s) passed" line, and reports `ok`. The controls are decorative: they can print a failure and change nothing.
+Anything appended BELOW that verdict still runs and still prints ` FAIL`, but nothing reads `Tally.fails` again, so the process exits 0. And the delegate table in `.claude/rediacc_hooks/tests/test_hooks_delegates.py` scores these files by their EXIT CODE -- `assert done.returncode == 0` -- so it takes the success branch, scrapes the
+"N control(s) passed" line, and reports `ok`. The controls are decorative: they can print a failure and change nothing. THE READER MOVED, THE HAZARD DID NOT: the same scoring lived in `.claude/hooks/test-hooks.sh` until it was ported, and an exit code is an exit code in either language.
 
 It has happened twice. Two blocks were stranded in `test-judge-schema.py` on 2026-09-04 and stayed unfalsifiable until somebody noticed the control COUNT had not moved. On 2026-09-08 a second author appended seven more to the same file -- in a session spent hunting vacuous controls, into the one file whose own comment warns about this in capitals. Reading the warning is evidently
 not enough, which is the argument for a gate rather than a louder comment.
@@ -168,8 +167,8 @@ def test_no_suite_strands_a_control_below_its_verdict(gate):
         gate.log_fail(
             "%d suite(s) strand controls below their own exit verdict:\n  %s\n"
             "Such a control still prints `  FAIL` and the process still exits 0, and "
-            "`.claude/hooks/test-hooks.sh` scores these files by EXIT CODE -- so the "
-            "harness reports `ok`. Move them ABOVE the verdict."
+            "`.claude/rediacc_hooks/tests/test_hooks_delegates.py` scores these files by "
+            "EXIT CODE -- so the delegate reports `ok`. Move them ABOVE the verdict."
             % (len(problems), "\n  ".join(problems))
         )
 

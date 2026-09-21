@@ -1,7 +1,6 @@
 [
   ".ci/scripts/autopilot/autopilot-gate.sh\tjq",
   ".ci/scripts/autopilot/autopilot-push.sh\tjq",
-  ".ci/scripts/autopilot/fetch-review-threads.sh\tjq",
   ".ci/scripts/autopilot/finish.sh\tjq",
   ".ci/scripts/autopilot/post-escalation.sh\tjq",
   ".ci/scripts/autopilot/review-payload.sh\tjq",

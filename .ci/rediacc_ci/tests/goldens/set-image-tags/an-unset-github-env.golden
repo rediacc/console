@@ -1,0 +1,10 @@
+# twin .ci/scripts/ci/set-image-tags.sh blob 6922deff8d4d7a06c67586e73d09a392c4bf46d9
+exit: 0
+--- stdout ---
+v1.2.3
+--- stderr ---
+✓ Using explicit version: v1.2.3
+⚠ GITHUB_ENV not set, skipping --env-file
+✓ Image tags set (web=web-abc renet=renet-abc)
+--- github env ---
+null

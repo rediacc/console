@@ -12,7 +12,7 @@ Ledger: `.ci/shadow/w7p6-assert-job-succeeded.observations.jsonl` (`npx tsx scri
 -----------------------------------------------------------------------------
 THE UNKNOWN-RESULT ARM FAILS CLOSED, WHICH IS WHY THE PORT KEEPS IT VERBATIM
 -----------------------------------------------------------------------------
-Unlike its sibling `assert-channel-for-event.sh`, whose `*)` arm warns and ACCEPTS, this script's `*)` arm ERRORS and exits 1 -- including for an EMPTY
+Unlike its sibling `assert_channel_for_event`, whose `*)` arm warns and ACCEPTS, this script's `*)` arm ERRORS and exits 1 -- including for an EMPTY
 result, which is what `${{ needs.<job>.result }}` yields when the job name is
 misspelled in `needs:`. A renamed job therefore breaks loudly rather than passing, and that asymmetry between the two sentinels is deliberate on the twin's part.
 

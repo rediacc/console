@@ -5021,31 +5021,6 @@
     }
   },
   {
-    "id": "gate-test:claude-hooks",
-    "run": ".ci/scripts/test/gates/test-claude-hooks.sh",
-    "slow": true,
-    "gate": true,
-    "qualityGateTest": true,
-    "paths": [
-      ".claude/hooks/**",
-      ".claude/rediacc_hooks/**",
-      ".claude/settings.json",
-      ".ci/scripts/test/lib/git-fixture.sh",
-      ".ci/scripts/quality/check_inline_python.py",
-      ".ci/scripts/test/gates/test-claude-hooks.sh"
-    ],
-    "pathsOrigin": "declared",
-    "leaves": [
-      ".ci/scripts/test/gates/test-claude-hooks.sh"
-    ],
-    "ci": {
-      "kind": "step",
-      "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-security",
-      "step": "Quality-gate unit tests"
-    }
-  },
-  {
     "id": "gate-test:regions-sync",
     "run": ".ci/scripts/test/gates/test-regions-sync.sh",
     "gate": true,
@@ -5076,6 +5051,10 @@
       ".ci/rediacc_ci/**",
       ".claude/rediacc_hooks/**",
       ".ci/scripts/test/gates/**",
+      ".claude/hooks/**",
+      ".claude/settings.json",
+      ".ci/scripts/test/lib/git-fixture.sh",
+      ".ci/scripts/quality/check_inline_python.py",
       "pyproject.toml"
     ],
     "pathsOrigin": "declared",

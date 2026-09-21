@@ -1,30 +1,39 @@
-"""Differential: `.ci/rediacc_ci/infra/ci_stop.py` against its twin `ci-stop.sh`.
+"""`rediacc_ci.infra.ci_stop`, driven against the bytes and the docker calls its bash twin produced.
 
-WHY A DIFFERENTIAL AND NOT A UNIT TEST. The claim a port makes is not "the new code is correct", it is "the new code says what the old code said". Only running BOTH, on the same fixture, in the same run, can support that -- and it is the same argument `.ci/rediacc_ci/tests/gates/test_twin_parity.py` makes for the gate ports, applied to a non-gate script that has no gate harness to
-hang from.
+WHILE BOTH COPIES EXISTED this file ran `.ci/scripts/infra/ci-stop.sh` and the port over the same throwaway tree and compared four things: the exit code, stdout, the recording docker's ARGV SEQUENCE and whether `.backend-state` survived. The K=5 ledger `.ci/shadow/w7p6-ci-stop.observations.jsonl` recorded that comparison over five distinct trees. The twin has now been
+deleted and every case that executed it compares against `goldens/ci-stop/`, which holds the twin's OWN recorded bytes, captured from the tracked script on its last day in the tree. Each golden's provenance header carries the blob sha, so `git cat-file -p <sha>` still yields the program that produced them.
 
-HOW DOCKER IS FAKED, AND WHY IT IS A FAKE RATHER THAN A MOCK. The subject shells out to `docker`, so the seam that matters is PATH. Each case puts a recording `docker` on PATH ahead of any real one and compares the ARGV SEQUENCE both sides produced, not just their stdout. Two implementations can print identical text
-while calling different commands, and for a teardown script the commands ARE the
-behaviour: a port that printed "Force removing" and never ran `docker rm` would pass a stdout-only comparison and leave the container up.
+THE CALL LOG IS THE EVIDENCE, and it is recorded beside the streams rather than instead of them. Two implementations can print identical text while calling different commands, and for a teardown script the commands ARE the behaviour: a port that printed "Force removing" and never ran `docker rm` would pass a stdout-only comparison and leave the container up. Each recorded
+line is the fake's working directory relative to the fixture root, then argv, so the `(cd "$CI_DOCKER_DIR" && ...)` wrapper is visible in the recording too.
 
-ANTI-VACUITY. `test_the_fake_is_actually_reached` fails if the recording docker was never invoked at all. Without it every comparison below is "two programs that did nothing agree", which is the cleanest-looking green in this file.
+HOW DOCKER IS FAKED, AND WHY IT IS A FAKE RATHER THAN A MOCK. The subject shells out to `docker`, so the seam that matters is PATH. Each case puts a recording `docker` on PATH, and PATH is REPLACED rather than prepended, so a host with a real docker cannot occasionally talk to its own daemon.
 
-THE ONE DELIBERATE DIVERGENCE IS TESTED, NOT HIDDEN.
-`test_no_docker_diverges_and_that_is_the_point` asserts the twin's vacuous exit 0 and the port's exit 77 in the SAME case, so the difference is a recorded decision rather than a surprise the next reader has to rediscover. A port that quietly changed an exit code would otherwise look exactly like this one.
+THE ONE DELIBERATE DIVERGENCE IS RECORDED, NOT HIDDEN. With no `docker` on PATH the twin printed its whole transcript, removed nothing, and exited 0: a teardown that reported success having torn nothing down. The port answers 77 (CANNOT RUN) and names the fix. `no-docker` is recorded from the twin exactly as it behaved, and `test_no_docker_diverges_and_that_is_the_point`
+asserts both halves so the difference stays a decision on the record.
 """
 
+from __future__ import annotations
+
 import os
-import pathlib
 import shutil
 import subprocess
+import typing
 
 import pytest
 
 from rediacc_ci import paths
+from rediacc_ci.tests import frozen
+
+if typing.TYPE_CHECKING:
+    import pathlib
 
 ROOT = paths.repo_root()
-TWIN = ROOT / ".ci" / "scripts" / "infra" / "ci-stop.sh"
 PORT = ROOT / ".ci" / "rediacc_ci" / "infra" / "ci_stop.py"
+
+SLUG = "ci-stop"
+
+CALLS_MARKER = "--- calls ---\n"
+STATE_MARKER = "--- backend-state ---\n"
 
 # The recording `docker`. Written as Python, not bash: ruling 7 puts new instruments in Python, and an untracked fixture is not an excuse to write the one shape the ruling names.
 #
@@ -33,8 +42,6 @@ PORT = ROOT / ".ci" / "rediacc_ci" / "infra" / "ci_stop.py"
 # Python prose.
 #
 # So this is a simplification, not a fix: the fake is generated per case anyway, so its configuration belongs in its text, where a reader can see it without tracing an environment two processes deep. Recorded at length because the wrong reason is the kind a future author would re-derive and act on.
-#
-# ONE NEARBY FACT IS TRUE AND SEPARATE: `check_env_manifest.py`'s corpus is `git ls-files` with no `--others` (deliberately -- env_manifest.py:15), so a real `os.environ` read planted in THIS file fires nothing while the file is untracked. Verified by planting one. That is a property of the gate's corpus, not of this fixture, and it applies to every new file in the tree.
 FAKE_DOCKER = """#!/usr/bin/env python3
 import os, pathlib, sys
 LOG = %(log)r
@@ -54,15 +61,37 @@ if argv[:2] == ["ps", "-a"]:
 sys.exit(VERB_RC)
 """
 
+SERVER = ("rediacc-account-server",)
 
-def _fixture(tmp_path: pathlib.Path, *, compose_dir: bool, backend_state: bool) -> pathlib.Path:
-    """A tree shaped like the repository, holding COPIES of both subjects.
+# name -> the knobs the recording was taken under.
+CASE_KW: dict[str, dict[str, typing.Any]] = {
+    "happy-container-present": {"ps_names": SERVER},
+    "container-absent": {"ps_names": ()},
+    "compose-down-fails": {"ps_names": SERVER, "compose_rc": 1},
+    "near-miss-name-untouched": {"ps_names": ("rediacc-account-server-2",)},
+    "stop-and-rm-fail": {"ps_names": SERVER, "verb_rc": 1, "backend_state": False},
+    "no-compose-directory": {"ps_names": SERVER, "compose_dir": False},
+    "no-docker": {"docker": False},
+}
 
-    Copies, because each subject derives the console root from its own location (`BASH_SOURCE`/`__file__` then three directories up). Driving the tracked files with a `cwd` would point them at the real repository and this test would delete the real `.backend-state`.
+CASES = tuple(CASE_KW)
+
+# The one case the port does not reproduce, on purpose. Compared by shape, in its own test.
+DIVERGENT = "no-docker"
+
+# The tools the port needs with docker taken away. Named rather than derived: a restricted PATH built by copying "everything except docker" is a PATH nobody can state, and the first tool it forgot would look like a divergence in the subject.
+NEEDED = ("bash", "sh", "python3", "dirname", "grep", "rm", "cat", "env", "uname")
+
+
+def fixture(
+    where: pathlib.Path, *, compose_dir: bool = True, backend_state: bool = True
+) -> pathlib.Path:
+    """A tree shaped like the repository, holding a COPY of the subject.
+
+    A copy, because the subject derives the console root from its own location (`__file__` then three directories up). Driving the tracked file with a `cwd` would point it at the real repository and this test would delete the real `.backend-state`.
     """
-    root = tmp_path / "tree"
+    root = where / "tree"
     (root / ".ci" / "scripts" / "infra").mkdir(parents=True)
-    shutil.copy2(TWIN, root / ".ci" / "scripts" / "infra" / TWIN.name)
     shutil.copy2(PORT, root / ".ci" / "scripts" / "infra" / PORT.name)
     if compose_dir:
         (root / ".ci" / "docker" / "ci").mkdir(parents=True)
@@ -72,17 +101,16 @@ def _fixture(tmp_path: pathlib.Path, *, compose_dir: bool, backend_state: bool) 
     return root
 
 
-def _bin_with_fake_docker(
-    where: pathlib.Path,
+def bin_with_fake_docker(
+    binder: pathlib.Path,
     log: pathlib.Path,
     root: pathlib.Path,
     *,
     compose_rc: int,
-    ps_names: list[str],
+    ps_names: tuple[str, ...],
     verb_rc: int,
 ) -> pathlib.Path:
     """A directory holding one recording `docker`, configured by its own text."""
-    binder = where
     binder.mkdir(parents=True, exist_ok=True)
     fake = binder / "docker"
     fake.write_text(
@@ -91,7 +119,7 @@ def _bin_with_fake_docker(
             "log": str(log),
             "root": str(root),
             "compose_rc": compose_rc,
-            "ps_names": ps_names,
+            "ps_names": list(ps_names),
             "verb_rc": verb_rc,
         },
         encoding="utf-8",
@@ -100,12 +128,8 @@ def _bin_with_fake_docker(
     return binder
 
 
-# The tools BOTH subjects need with docker taken away. Named rather than derived: a restricted PATH built by copying "everything except docker" is a PATH nobody can state, and the first tool it forgot would look like a divergence in the subject.
-NEEDED = ("bash", "sh", "python3", "dirname", "grep", "rm", "cat", "env", "uname")
-
-
-def _bin_without_docker(where: pathlib.Path) -> pathlib.Path:
-    """A PATH that can run both subjects and CANNOT find docker.
+def bin_without_docker(where: pathlib.Path) -> pathlib.Path:
+    """A PATH that can run the subject and CANNOT find docker.
 
     THE ASSERTION AT THE BOTTOM IS THE CONTROL. An earlier draft set PATH to an empty directory, which removed `bash` as well: the twin then failed to launch at all and the case "proved" a divergence that was really a missing shell.
     """
@@ -121,138 +145,203 @@ def _bin_without_docker(where: pathlib.Path) -> pathlib.Path:
     assert shutil.which("docker", path=str(binder)) is None, (
         "the restricted bin still resolves docker; the divergence case would be vacuous"
     )
-    assert shutil.which("bash", path=str(binder)), "the restricted bin cannot run the twin"
+    assert shutil.which("bash", path=str(binder)), "the restricted bin cannot run a shell"
     assert shutil.which("python3", path=str(binder)), "the restricted bin cannot run the port"
     return binder
 
 
-def _run(
+def run(
+    where: pathlib.Path,
     subject: pathlib.Path,
-    root: pathlib.Path,
     *,
     docker: bool = True,
     compose_rc: int = 0,
     ps_names: tuple[str, ...] = (),
     verb_rc: int = 0,
-) -> tuple[subprocess.CompletedProcess[str], list[str]]:
+    compose_dir: bool = True,
+    backend_state: bool = True,
+) -> tuple[int, str, str, str, str]:
     """Drive one subject against a freshly generated fake docker.
 
-    THE BINDER IS PER-SUBJECT, not shared. Both sides of a differential run with the same knobs but must record into DIFFERENT logs, and the log path is baked into the fake, so one shared binder would have the two subjects appending to one file and the comparison would be of a list against itself.
+    THE BINDER IS PER-RUN, not shared: the log path is baked into the fake, so one shared binder would have two subjects appending to one file and the comparison would be of a list against itself.
     """
-    log = root.parent / ("dockerlog-%s.txt" % subject.name)
+    where.mkdir(parents=True, exist_ok=True)
+    root = fixture(where, compose_dir=compose_dir, backend_state=backend_state)
+    target = root / ".ci" / "scripts" / "infra" / subject.name
+    if subject != PORT:
+        shutil.copy2(subject, target)
+    log = where / "dockerlog.txt"
     log.write_text("", encoding="utf-8")
     env = dict(os.environ)
     env["PYTHONDONTWRITEBYTECODE"] = "1"
-    # PATH is REPLACED, not prepended. On a host that has a real docker a prepend would still pass while occasionally talking to the machine's daemon.
     if docker:
-        binder = _bin_with_fake_docker(
-            root.parent / ("fxbin-%s" % subject.name),
+        binder = bin_with_fake_docker(
+            where / "fxbin",
             log,
             root,
             compose_rc=compose_rc,
-            ps_names=list(ps_names),
+            ps_names=ps_names,
             verb_rc=verb_rc,
         )
-        env["PATH"] = "%s:%s" % (binder, env.get("PATH", ""))
+        env["PATH"] = str(binder)
+        for tool in NEEDED:
+            found = shutil.which(tool)
+            if found and not (binder / tool).exists():
+                (binder / tool).symlink_to(found)
     else:
-        env["PATH"] = str(_bin_without_docker(root.parent))
-    runner = ["bash"] if subject.suffix == ".sh" else ["python3"]
+        env["PATH"] = str(bin_without_docker(where))
+    runner = "bash" if subject.suffix == ".sh" else "python3"
+    # `cwd` IS PINNED TO THE FIXTURE ROOT, and it is the one thing freezing had to add. Neither subject reads its cwd -- both derive the console root from their own location -- but the recording `docker` logs its working directory RELATIVE to that root, so a run started from a deeper temporary directory writes `../../..` where a shallower one writes `../..`. While both
+    # implementations ran in the same second from the same cwd that cancelled out; a recording compared against a tree built months later under a different tempdir does not.
     proc = subprocess.run(
-        [*runner, str(root / ".ci" / "scripts" / "infra" / subject.name)],
+        [runner, str(target)],
+        cwd=str(root),
         capture_output=True,
         text=True,
         env=env,
         check=False,
         timeout=120,
     )
-    calls = [line for line in log.read_text(encoding="utf-8").splitlines() if line]
-    return proc, calls
+    calls = log.read_text(encoding="utf-8")
+    state = "present" if (root / ".backend-state").exists() else "removed"
+    return proc.returncode, proc.stdout, proc.stderr, calls, state
 
 
-SERVER = ("rediacc-account-server",)
-CASES = [
-    pytest.param(0, SERVER, 0, True, True, id="happy-container-present"),
-    pytest.param(0, (), 0, True, True, id="container-absent"),
-    pytest.param(1, SERVER, 0, True, True, id="compose-down-fails"),
-    pytest.param(0, ("rediacc-account-server-2",), 0, True, True, id="near-miss-name-untouched"),
-    pytest.param(0, SERVER, 1, True, False, id="stop-and-rm-fail"),
-    pytest.param(0, SERVER, 0, False, True, id="no-compose-directory"),
-]
+def render(returncode: int, stdout: str, stderr: str, calls: str, state: str) -> str:
+    body = frozen.render(returncode, stdout, stderr)
+    return body + CALLS_MARKER + calls + STATE_MARKER + state + "\n"
 
 
-@pytest.mark.parametrize(("compose_rc", "ps_names", "verb_rc", "compose_dir", "state"), CASES)
-def test_port_and_twin_agree(tmp_path, compose_rc, ps_names, verb_rc, compose_dir, state):
-    """Same fixture, both subjects: same exit, same stdout, same docker calls."""
-    kw = {"compose_rc": compose_rc, "ps_names": ps_names, "verb_rc": verb_rc}
-
-    root_a = _fixture(tmp_path / "a", compose_dir=compose_dir, backend_state=state)
-    old, old_calls = _run(TWIN, root_a, **kw)
-    old_state_gone = not (root_a / ".backend-state").exists()
-
-    root_b = _fixture(tmp_path / "b", compose_dir=compose_dir, backend_state=state)
-    new, new_calls = _run(PORT, root_b, **kw)
-    new_state_gone = not (root_b / ".backend-state").exists()
-
-    assert new.returncode == old.returncode, "exit code diverged: %r vs %r" % (
-        old.returncode,
-        new.returncode,
-    )
-    assert new.stdout == old.stdout, "stdout diverged:\n--- twin ---\n%s\n--- port ---\n%s" % (
-        old.stdout,
-        new.stdout,
-    )
-    assert new_calls == old_calls, "the docker CALLS diverged:\n twin: %s\n port: %s" % (
-        old_calls,
-        new_calls,
-    )
-    assert new_state_gone == old_state_gone, ".backend-state handling diverged"
+def recorded(name: str) -> tuple[int, str, str, str, str]:
+    text = frozen.read(SLUG, name)
+    exit_line, rest = text.split("\n", 1)
+    streams, tail = rest.split(CALLS_MARKER, 1)
+    stdout, stderr = streams.split("--- stdout ---\n", 1)[1].split("--- stderr ---\n", 1)
+    calls, state = tail.split(STATE_MARKER, 1)
+    return int(exit_line.removeprefix("exit: ")), stdout, stderr, calls, state.rstrip("\n")
 
 
-def test_the_fake_is_actually_reached(tmp_path):
-    """ANTI-VACUITY. Every comparison above is worthless if docker was never called."""
-    root = _fixture(tmp_path / "v", compose_dir=True, backend_state=True)
-    _, calls = _run(PORT, root, ps_names=("rediacc-account-server",))
+def drive(tmp_path: pathlib.Path, name: str, *, subject: pathlib.Path = PORT):
+    return run(tmp_path / name, subject, **CASE_KW[name])
+
+
+def compare(tmp_path: pathlib.Path, name: str) -> None:
+    want = recorded(name)
+    got = drive(tmp_path, name)
+    assert got[0] == want[0], "%s: the twin exited %d, the port %d" % (name, want[0], got[0])
+    assert got[1] == want[1], "%s: stdout diverged from the recorded bytes" % name
+    assert got[2] == want[2], "%s: stderr diverged from the recorded bytes" % name
+    assert got[3] == want[3], "%s: the docker calls diverged from the recording" % name
+    assert got[4] == want[4], "%s: .backend-state handling diverged" % name
+
+
+@pytest.mark.parametrize("name", [c for c in CASES if c != DIVERGENT])
+def test_port_matches_the_twins_recorded_behaviour(tmp_path: pathlib.Path, name: str) -> None:
+    compare(tmp_path, name)
+
+
+def test_every_case_has_a_golden_and_no_golden_is_orphaned() -> None:
+    """ANTI-VACUITY on the corpus: a case whose golden vanished would pass by never being compared, and a golden nothing reads is a recording of a case that stopped running."""
+    frozen.assert_corpus(SLUG, set(CASES))
+
+
+def test_the_fake_was_actually_reached() -> None:
+    """ANTI-VACUITY on the recordings. Every comparison above is worthless if docker was never called.
+
+    Read out of the RECORDING rather than re-run, because it is the twin's call sequence that the comparisons are against.
+    """
+    calls = recorded("happy-container-present")[3]
     assert calls, "the recording docker was never invoked; this file proves nothing"
-    verbs = [c.split("\t")[1] for c in calls]
+    verbs = [line.split("\t")[1] for line in calls.splitlines() if line]
     assert "compose" in verbs, "compose down was never attempted: %r" % verbs
     assert "rm" in verbs, "the container was never removed: %r" % verbs
 
 
-def test_the_force_removal_is_conditional(tmp_path):
+def test_the_force_removal_is_conditional() -> None:
     """CONTROL for the case above: with no matching container, nothing is removed.
 
-    A port that removed unconditionally would satisfy every positive assertion in this file and would `docker rm` a container that another job is using."""
-    root = _fixture(tmp_path / "c", compose_dir=True, backend_state=True)
-    _, calls = _run(PORT, root, ps_names=())
-    verbs = [c.split("\t")[1] for c in calls]
+    A port that removed unconditionally would satisfy every positive assertion in this file and would `docker rm` a container another job is using.
+    """
+    calls = recorded("container-absent")[3]
+    verbs = [line.split("\t")[1] for line in calls.splitlines() if line]
     assert "rm" not in verbs, "removed a container that docker ps did not name: %r" % verbs
 
 
-def test_compose_runs_in_the_compose_directory(tmp_path):
-    """The twin wraps the call in `(cd "$CI_DOCKER_DIR" && ...)`. Losing that runs compose against whatever the caller's cwd happened to be, which in CI is the repository root and a completely different stack."""
-    root = _fixture(tmp_path / "d", compose_dir=True, backend_state=False)
-    _, calls = _run(PORT, root)
-    compose = [c for c in calls if c.split("\t")[1] == "compose"]
+def test_a_near_miss_name_is_left_alone() -> None:
+    """`^<name>$` against `--format '{{.Names}}'`, so `rediacc-account-server-2` is a different container."""
+    calls = recorded("near-miss-name-untouched")[3]
+    verbs = [line.split("\t")[1] for line in calls.splitlines() if line]
+    assert "rm" not in verbs, "a near-miss name was removed: %r" % verbs
+
+
+def test_compose_ran_in_the_compose_directory() -> None:
+    """The twin wrapped the call in `(cd "$CI_DOCKER_DIR" && ...)`. Losing that runs compose against whatever the caller's cwd happened to be, which in CI is the repository root and a completely different stack."""
+    calls = recorded("happy-container-present")[3]
+    compose = [line for line in calls.splitlines() if line.split("\t")[1:2] == ["compose"]]
     assert compose, "compose was never called"
     assert compose[0].split("\t")[0] == ".ci/docker/ci", (
         "compose ran in %r, not the compose directory" % compose[0].split("\t")[0]
     )
 
 
-def test_no_docker_diverges_and_that_is_the_point(tmp_path):
+def test_a_failing_compose_down_is_not_fatal() -> None:
+    """`|| { echo ...; }` in the twin, and then the force-removal loop runs anyway."""
+    returncode, _, _, calls, _ = recorded("compose-down-fails")
+    assert returncode == 0
+    verbs = [line.split("\t")[1] for line in calls.splitlines() if line]
+    assert "rm" in verbs, "a failed compose down skipped the force removal: %r" % verbs
+
+
+def test_stop_and_rm_both_run_even_when_the_first_fails() -> None:
+    """`2>/dev/null || true` on each, so a failing `docker stop` must not skip `docker rm`."""
+    returncode, _, _, calls, _ = recorded("stop-and-rm-fail")
+    assert returncode == 0
+    verbs = [line.split("\t")[1] for line in calls.splitlines() if line]
+    assert verbs.count("stop") == 1
+    assert verbs.count("rm") == 1
+
+
+def test_no_docker_diverges_and_that_is_the_point(tmp_path: pathlib.Path) -> None:
     """THE ONE DELIBERATE DIVERGENCE, asserted in BOTH directions.
 
-    With no `docker` on PATH the twin prints its whole transcript, removes nothing, and exits 0 -- a teardown that reports success having torn nothing down. The port answers 77 (CANNOT RUN) and names the fix. This test exists so that the difference is a decision on the record: if either half ever changes, it reds here rather than in a CI job that quietly stopped cleaning up.
+    With no `docker` on PATH the twin printed its whole transcript, removed nothing, and exited 0 -- a teardown that reported success having torn nothing down. The port answers 77 (CANNOT RUN) and names the fix. This test exists so that the difference is a decision on the record: if either half ever changes, it reds here rather than in a CI job that quietly stopped cleaning up.
     """
-    root_a = _fixture(tmp_path / "e", compose_dir=True, backend_state=True)
-    old, _ = _run(TWIN, root_a, docker=False)
-    root_b = _fixture(tmp_path / "f", compose_dir=True, backend_state=True)
-    new, _ = _run(PORT, root_b, docker=False)
+    want_exit, want_out, _, want_calls, _ = recorded(DIVERGENT)
+    assert want_exit == 0, "the twin's vacuous success is the premise; it exited %d" % want_exit
+    assert "All services stopped" in want_out, "the twin claimed success: %r" % want_out
+    assert want_calls == "", "the twin called docker after all: %r" % want_calls
 
-    assert old.returncode == 0, "the twin's vacuous success is the premise; it exited %d" % (
-        old.returncode
-    )
-    assert "All services stopped" in old.stdout, "the twin claims success: %r" % old.stdout
-    assert new.returncode == 77, "the port must refuse, not agree; it exited %d" % new.returncode
-    assert "CANNOT RUN" in new.stderr, "and it must say so on stderr: %r" % new.stderr
-    assert "docker is not on PATH" in new.stderr, "naming the cause: %r" % new.stderr
+    returncode, _, stderr, _, _ = drive(tmp_path, DIVERGENT)
+    assert returncode == 77, "the port must refuse, not agree; it exited %d" % returncode
+    assert "CANNOT RUN" in stderr, "and it must say so on stderr: %r" % stderr
+    assert "docker is not on PATH" in stderr, "naming the cause: %r" % stderr
+
+
+# --------------------------------------------------------------------------- The control: these goldens can actually fail ---------------------------------------------------------------------------
+
+
+def test_a_planted_unconditional_removal_is_caught(tmp_path: pathlib.Path) -> None:
+    """THE CONTROL ON THE GOLDENS. Remove the container whether or not `docker ps -a` named it.
+
+    The recorded `container-absent` call log holds no `rm`, and a mutant that removes unconditionally reaches a container another job may be using. Every stdout line it prints is one the twin also printed in the container-PRESENT case, so the call log is the only witness. The mutation runs from a throwaway copy of the module file; the tracked port is never touched.
+    """
+    with open(PORT, encoding="utf-8") as fh:
+        original = fh.read()
+    anchor = "        if container in known:\n"
+    assert original.count(anchor) == 1, "the plant's anchor moved"
+    mutated = original.replace(anchor, "        if True:\n")
+
+    mutant_dir = tmp_path / "mutant"
+    mutant_dir.mkdir(parents=True, exist_ok=True)
+    mutant = mutant_dir / "ci_stop.py"
+    mutant.write_text(mutated, encoding="utf-8")
+
+    name = "container-absent"
+    _, _, _, calls, _ = run(tmp_path / "planted", mutant, **CASE_KW[name])
+    verbs = [line.split("\t")[1] for line in calls.splitlines() if line]
+    assert "rm" in verbs, "the plant did not change the calls"
+    assert recorded(name)[3].count("\trm\t") == 0, "the recorded corpus moved"
+
+    compare(tmp_path / "good", name)
+    with open(PORT, encoding="utf-8") as fh:
+        assert fh.read() == original

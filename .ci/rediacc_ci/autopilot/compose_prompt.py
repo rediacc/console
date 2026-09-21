@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/autopilot/compose-prompt.sh`.
+"""Port of `.ci/scripts/autopilot/compose-prompt.sh`, which is now DELETED.
 
 Composes one autopilot round's prompt from the trusted template plus the gate's fixtures, writes it to `--out`, and publishes it as a step output.
 

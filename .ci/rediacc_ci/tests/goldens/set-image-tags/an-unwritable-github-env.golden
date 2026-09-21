@@ -1,0 +1,8 @@
+# twin .ci/scripts/ci/set-image-tags.sh blob 6922deff8d4d7a06c67586e73d09a392c4bf46d9
+exit: 1
+--- stdout ---
+--- stderr ---
+✓ Using explicit version: v1.2.3
+<prog>: line 134: <root>/no-such-dir/env.txt: No such file or directory
+--- github env ---
+null

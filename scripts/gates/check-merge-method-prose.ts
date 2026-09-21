@@ -81,7 +81,8 @@ const files = (root: string): string[] =>
       .split('\n')
       .filter((f) => /\.(md|sh|ts|py)$/.test(f))
       // The gate's own controls quote the shapes it refuses.
-      .filter((f) => !f.endsWith('check-merge-method-prose.ts') && !f.includes('test-hooks.sh')),
+      // `test-hooks.sh` USED TO BE EXCLUDED HERE too, for the same reason: it quoted the refused shapes as case payloads. It was ported to pytest and deleted, and an exclusion naming a file that cannot appear is a filter nobody can tell is still needed, so it went with its subject rather than being left as decoration.
+      .filter((f) => !f.endsWith('check-merge-method-prose.ts')),
     `tracked .md, .sh, .ts and .py files under ${SURFACES.join(' and ')}`,
     'Either those directories moved or the extension filter no longer matches anything.'
   );

@@ -4722,38 +4722,9 @@ export const GATES: readonly GateSpec[] = [
       step: 'Quality-gate unit tests',
     },
   },
-  {
-    id: 'gate-test:claude-hooks',
-    run: '.ci/scripts/test/gates/test-claude-hooks.sh',
-    slow: true, // 537.4s measured
-    gate: true,
-    qualityGateTest: true,
-    // SCOPED 2026-09-06. This declared no `paths` at all, so the heaviest gate in the repository -- the local full-run floor -- was selected by every `--changed` set, including ones that touch nothing it reads.
-    //
-    // The set was DERIVED from what the harness actually opens, not guessed. The leaf is a 40-line wrapper; all verdict-bearing work is in .claude/hooks/test-hooks.sh, and two of its dependencies live OUTSIDE .claude: it sources .ci/scripts/test/lib/ git-fixture.sh, and its inline-python cases assert the verdicts of the detector .ci/scripts/quality/check_inline_python.py.
-    //
-    // `.claude/hooks/**`, NOT `.claude/hooks/**/*.sh`: the Python modules decide cases too (lib/sanctioned.py changes hook exit codes, and a ten-file loop runs the stop/ and pre-bash test modules). The leaf is listed explicitly because `.claude/hooks/**` does not cover it and the leaf oracle requires a gate's own leaves to be selectable.
-    //
-    // KNOWN RESIDUE, stated rather than implied: two inputs are not glob-capturable. The harness reads live git state (`git rev-parse HEAD`) and writes a phantom file into the repo root during its run, so working-tree and branch state can move the verdict without any file in this list changing. WIDENED 2026-09-16, and this is a gap that predates the prose-style guards rather than
-    // one they created. The `for mod in ...` loop in test-hooks.sh runs SIX per-guard harnesses that live at `.claude/rediacc_hooks/guards/test-block_*.py`, and `.claude/hooks/**` does not match `.claude/rediacc_hooks/**` -- the two directories are siblings, not parent and child. So editing any of those harnesses did not select the only gate that runs them, and `--changed` dropped
-    // it silently on exactly the commits that changed what it asserts. The guards themselves are in the same position, since the dispatcher loads them by directory scan.
-    paths: [
-      '.claude/hooks/**',
-      '.claude/rediacc_hooks/**',
-      '.claude/settings.json',
-      '.ci/scripts/test/lib/git-fixture.sh',
-      '.ci/scripts/quality/check_inline_python.py',
-      '.ci/scripts/test/gates/test-claude-hooks.sh',
-    ],
-    pathsOrigin: 'declared',
-    leaves: ['.ci/scripts/test/gates/test-claude-hooks.sh'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-security',
-      step: 'Quality-gate unit tests',
-    },
-  },
+  // RETIRED WITH ITS SUBJECT: gate-test:claude-hooks, the heaviest entry in this file at 537.4s, was a 40-line wrapper around `.claude/hooks/test-hooks.sh` and had no other work in it. The harness is gone, ported to pytest under `.claude/rediacc_hooks/tests/`, and its label multiset was compared run-against-run before the deletion rather than diff-against-diff. The ports are
+  // collected by check:ci-pytest, whose `paths` already carry `.claude/hooks/**` and `.claude/rediacc_hooks/**`, so nothing lost selection when this entry left.
+  //
   // RETIRED, AND THE LAST TWO `mutex: ['tree:repo']` ENTRIES WENT WITH THEM: gate-test:gate-anti-vacuity and gate-test:generate-tag-inputs. Their pytest ports (test_gate_gate_anti_vacuity.py, test_gate_generate_tag_inputs.py) carry every case and still write the tracked tree, so the exclusive claim moved to check:ci-pytest, which is where they now run.
   {
     id: 'gate-test:regions-sync',
@@ -4786,10 +4757,17 @@ export const GATES: readonly GateSpec[] = [
     // run beside every other `tree:repo` reader, which is exactly the overlap that reddened gate-test:claude-hooks in 2026-08-17 with a bash syntax error in a file that parses clean. The exclusive claim is what `check:ci-pool-writer-safety` now checks for, so a downgrade back to `reads` is a red rather than a silent flake.
     mutex: ['tree:repo'],
     // The old set was ['.ci/rediacc_ci/**', 'pyproject.toml'] and could not see two things this gate actually runs: `.claude/rediacc_hooks/**` is a testpaths root, and `.ci/scripts/test/gates/**` holds the twins test_twin_parity drives. Under `--changed` an edit to either did not select this gate, which is a path filter reporting a pass over code it never looked at.
+    //
+    // WIDENED AGAIN WHEN gate-test:claude-hooks WAS RETIRED, and the widening is the whole reason that retirement does not open a selection hole. The four entries below carried the SUBJECTS of the harness this gate now collects: the guards and the chain head under `.claude/hooks/**`, the wiring the settings file declares, the git fixture the trapguard cases source, and the
+    // inline-python detector whose verdicts those cases assert. The harness declared every one of them; dropping its entry without moving them would have left editing a guard select no gate that runs it, which is the same pass-over-unread-code this comment already records once.
     paths: [
       '.ci/rediacc_ci/**',
       '.claude/rediacc_hooks/**',
       '.ci/scripts/test/gates/**',
+      '.claude/hooks/**',
+      '.claude/settings.json',
+      '.ci/scripts/test/lib/git-fixture.sh',
+      '.ci/scripts/quality/check_inline_python.py',
       'pyproject.toml',
     ],
     pathsOrigin: 'declared',

@@ -79,7 +79,7 @@ def test_cancelled_and_failure_are_accepted_with_a_warning() -> None:
 
 
 def test_an_unknown_result_fails_closed() -> None:
-    """The opposite choice from assert-channel-for-event.sh's `*)` arm, on purpose."""
+    """The opposite choice from assert_channel_for_event's `*)` arm, on purpose."""
     old = assert_identical("housekeeping", "neutral", expect_exit=1)
     assert (
         "✗ housekeeping has unexpected result='neutral' "

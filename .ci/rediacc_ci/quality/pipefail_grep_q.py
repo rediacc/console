@@ -211,11 +211,14 @@ _GQ = "grep -q"
 #             with the daemon's state, not with a constant. THREE live console
 # sites, all of the same shape and all under `.ci/lib/`'s INHERITED pipefail (neither file sets it itself), so all three were invisible twice over -- once for the missing producer name and once for the per-file test: .ci/lib/account.sh:796 teardown of `account-server` .ci/lib/service.sh:156 teardown of four rediacc-service-* containers .ci/lib/service.sh:183 `service status`
 # reporting running/not Losing the race SKIPS a container teardown, or reports a running container as absent. A fourth site, `.ci/scripts/private/concurrent-fork-isolation-test.sh:266`, is the known FALSE-POSITIVE direction -- it lives inside an `_ssh "sudo bash -c '...'"` body whose remote shell sets no pipefail (its neighbour at :278 says exactly that in a comment) -- and was
-# converted anyway, for the same reason test-install-methods.sh:1129 was: an allowlist entry would be a suppression, and the conversion is defensively correct the day that remote body gains `-o pipefail`. TWO MORE SITES CARRY THE IDENTICAL SHAPE AND ARE NOT THE CLASS: `.ci/scripts/infra/ci-stop.sh:44` and `.ci/scripts/infra/ci-stop-elite.sh:35` are byte-for-byte the same
+# converted anyway, for the same reason test-install-methods.sh:1129 was: an allowlist entry would be a suppression, and the conversion is defensively correct the day that remote body gains `-o pipefail`. ONE MORE SITE CARRIES THE IDENTICAL SHAPE AND IS NOT THE CLASS: `.ci/scripts/infra/ci-stop-elite.sh:35` is
 #             `docker ps -a --format ... | grep -q "^${container}$"`, but both set
-# `set -e` ONLY (line 8 of each) and both are EXECUTED as subprocesses, never sourced -- so no sourcer's pipefail reaches them and the pipeline reports grep's status. Checked 2026-09-16 and left alone
-#             deliberately; the gate is silent on them by its own rule, and this
-# note exists so the next sweep does not re-derive the answer.
+# `set -e` ONLY (line 8) and it is EXECUTED as a subprocess, never sourced -- so no sourcer's pipefail reaches it and the pipeline reports grep's status. Checked 2026-09-16 and left alone
+#             deliberately; the gate is silent on it by its own rule, and this
+# note exists so the next sweep does not re-derive the answer. Its former twin
+# `.ci/scripts/infra/ci-stop.sh:44` carried the same shape and was retired with
+#             the rest of the bash ports; `rediacc_ci.infra.ci_stop` reads the
+# container list without a pipeline at all.
 #
 # ORDER IS THE TWIN'S ORDER (plain ASCII sort), because the twin interpolates this list into a `sort -u` and the two implementations are compared byte for byte.
 SCALING_PRODUCERS = (

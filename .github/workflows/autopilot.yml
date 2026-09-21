@@ -495,7 +495,7 @@ jobs:
       # wall 1), so everything the round needs rides in the prompt.
       # A review-response round also receives <review_payload>: the gate's
       # author-filtered thread set (03-v2-autonomy.md section 6, residual 1).
-      # compose-prompt.sh REFUSES a review round that finds no payload rather
+      # compose_prompt REFUSES a review round that finds no payload rather
       # than answering findings it never read.
       - name: Compose prompt
         id: prompt

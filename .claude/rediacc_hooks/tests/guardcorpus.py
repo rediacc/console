@@ -158,7 +158,7 @@ def harvest_cases():
 
     `guard` is the key `check-hook-integrity.sh` inventories the guard under -- `guards/block_x.py` for a port, `pre-bash/block-x.sh` for one still in bash -- because "two chains can never collide on one basename" is a property worth keeping in both places, and because one spelling driving the suite and keying the coverage gate is what stops the two drifting.
     """
-    src = SUITE.read_text(encoding="utf-8")
+    src = corpus.suite_source()
     names = corpus._assignments(src)
     sites = 0
     cases = []
@@ -197,7 +197,7 @@ def builder_shape_drift():
 
     The transcription above is the only place this corpus decides what event a suite case produces. If the suite changes a builder and this table does not, every payload for that builder is silently the wrong shape, both sides get it, and the differential goes on passing while testing something else.
     """
-    src = SUITE.read_text(encoding="utf-8")
+    src = corpus.suite_source()
     drift = []
     for name, shape in sorted(BUILDER_SHAPES.items()):
         m = re.search(r"(?m)^%s\(\) \{ printf '([^']*)'" % re.escape(name), src)

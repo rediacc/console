@@ -33,6 +33,22 @@
       "open_sigs": [],
       "done_sigs": []
     },
+    "agent/PLAN-agent-tree-lifecycle.md": {
+      "status": "in-progress",
+      "owner": "d778be9d",
+      "open": 7,
+      "done": 0,
+      "open_sigs": [
+        "21b3ff7d",
+        "31bd623c",
+        "45e45336",
+        "4d9e35fb",
+        "71b232cf",
+        "a97dd3b2",
+        "f14deb25"
+      ],
+      "done_sigs": []
+    },
     "agent/PLAN-ask-flow-preemptive-settled-check.md": {
       "status": "compacted",
       "owner": "9d92d9b6",

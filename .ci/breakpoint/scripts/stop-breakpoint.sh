@@ -239,7 +239,7 @@ if [[ "$KEEP_SERVICES" != "true" ]]; then
         REPO_ROOT="${GITHUB_WORKSPACE:-$(pwd)}"
         if [[ -x "$REPO_ROOT/.ci/scripts/infra/ci-stop-elite.sh" ]]; then
             log_step "stopping services ($SERVICES)..."
-            "$REPO_ROOT/.ci/scripts/infra/ci-stop-elite.sh" >/dev/null 2>&1 || log_warn "ci-stop.sh reported an error"
+            "$REPO_ROOT/.ci/scripts/infra/ci-stop-elite.sh" >/dev/null 2>&1 || log_warn "ci-stop-elite.sh reported an error"
         fi
     fi
 fi

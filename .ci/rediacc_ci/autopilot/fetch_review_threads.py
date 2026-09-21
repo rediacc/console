@@ -10,7 +10,7 @@ keeping the two apart is what makes the security decision -- whose text reaches 
 THE PAGINATION IS `check-resolved-threads.sh`'s, DELIBERATELY. That script already paid for the lesson that `reviewThreads(first: 100)` with no cursor silently truncates, so thread 101 being unresolved read as "all resolved". The query differs from it in ONE way -- `comments(first: 20)` instead of `first: 1` -- because the model needs the finding text, not just its author.
 
 LINKED SUBMODULE PRs ARE FETCHED TOO. `check-submodule-branches.sh` reds the console PR while a linked submodule PR still carries unresolved threads, but the round only ever saw console's own threads, so it could answer every console finding, resolve every console thread, and stay red on a complaint living in another repository. With `--body`, the console PR body is scanned by
-`linked-sub-prs.sh` (which recognises only the four known submodules) and each linked PR's threads are fetched as well. Every thread is TAGGED with the repo and PR it came from, so everything downstream can route its reply back.
+`rediacc_ci.autopilot.linked_sub_prs` (which recognises only the four known submodules) and each linked PR's threads are fetched as well. Every thread is TAGGED with the repo and PR it came from, so everything downstream can route its reply back.
 
 -----------------------------------------------------------------------------
 FAIL CLOSED MEANS THE OUTPUT FILE IS NEVER WRITTEN ON FAILURE
@@ -39,12 +39,11 @@ WHAT IS SPAWNED, AND WHY EACH ONE STAYS SPAWNED
     would agree today and would not carry jq's rule that `+` on objects is a
     RIGHT-biased shallow merge, so a node that already had a `repo` key would be
     overwritten by jq and could be kept by a naive port.
-  * `linked-sub-prs.sh` -- already ported next door as
-    `rediacc_ci.autopilot.linked_sub_prs`, and still spawned as the SHELL
-    script, because the twin spawns the shell script and the differential must
-    compare against what the twin does. When the cutover flips that script, this
-    line follows it; until then, importing the port here would mean the two
-    sides of the differential were running different code for the same step.
+  * NOTHING ELSE. `linked-sub-prs.sh` was the third spawn and is no longer
+    spawned at all: its bash twin is retired and `rediacc_ci.autopilot.linked_sub_prs`
+    is imported and called in-process. A second implementation of the submodule
+    allowlist is what that avoids, and the allowlist is the security boundary
+    deciding which repositories the gate fetches model-visible text from.
 
 `_gh_probe` IS TRANSLITERATED, NOT IMPORTED, for the reason `finish.py:51-59` records: `core.ghx` classifies failures, raises typed errors and does NOT retry three times with a `log_warn` between attempts. `gh_json` is `_gh_probe true`, so the body must also PARSE and must not be `null` or `false` -- jq -e's rule, not `json.loads`'.
 
@@ -65,12 +64,12 @@ from __future__ import annotations
 
 import json
 import os
-import pathlib
 import subprocess
 import sys
 import time
 
 from rediacc_ci import log
+from rediacc_ci.autopilot import linked_sub_prs
 from rediacc_ci.core import common
 
 SELF = "fetch-review-threads.py"
@@ -180,14 +179,6 @@ def gh_json(what: str, args: list[str], *, sleeper=time.sleep) -> tuple[bool, st
             print("    %s" % line, end=tail, file=sys.stderr)
         sys.stderr.flush()
     return False, ""
-
-
-def script_dir() -> pathlib.Path:
-    """The twin's `SCRIPT_DIR`: `.ci/scripts/autopilot`.
-
-    Not `rediacc_ci.paths.repo_root()`, which honours `$REDIACC_CI_ROOT` where the twin honours nothing. See `update_state.py:108-115`.
-    """
-    return pathlib.Path(__file__).resolve().parents[3] / ".ci" / "scripts" / "autopilot"
 
 
 def _jq(args: list[str], stdin: str | None = None) -> tuple[int, str]:
@@ -309,19 +300,25 @@ class Fetcher:
 
 
 def linked_targets(body: str) -> tuple[int, list[tuple[str, str]]]:
-    """`< <("$SCRIPT_DIR/linked-sub-prs.sh" --body "$BODY")`.
+    """`< <("$SCRIPT_DIR/linked-sub-prs.sh" --body "$BODY")`, now in-process.
 
-    Returns (exit code, [(target, number)]). THE EXIT CODE IS RETURNED AND IGNORED, exactly as the twin ignores it: a process substitution feeding a `while read` loop cannot fail the loop, so a `linked-sub-prs.sh` that died reads as "no linked PRs". Returned anyway so the differential can see it and the next reader can decide whether to keep ignoring it.
+    THE READER IS `rediacc_ci.autopilot.linked_sub_prs`, NOT A SUBPROCESS. Its bash twin was retired once the K=5 ledger held and its behaviour was frozen into `.ci/rediacc_ci/tests/goldens/linked-sub-prs/`, and a second implementation of the allowlist is exactly what neither file wants: that list decides which repositories the gate will fetch model-visible text from.
+    `scan` returns the same lines the twin's stdout carried, in the same order.
+
+    Returns (exit code, [(target, number)]). THE EXIT CODE IS RETURNED AND IGNORED, exactly as the twin ignored it: a process substitution feeding a `while read` loop cannot fail the loop, so a reader that died read as "no linked PRs". Returned anyway so the next reader can decide whether to keep ignoring it.
+
+    THE CALLER HAS ALREADY TESTED `-n` AND `-s` on this path, so the twin's own missing-file arm was unreachable from here and an unreadable body is answered the way a dead subprocess was: exit 1 and no targets.
 
     `read -r target number` splits on IFS, so a line with more than two fields puts the REMAINDER in `number`; a line with one field leaves `number` empty and is still fetched, as `<repo>#`. Both reproduced.
     """
-    proc = subprocess.run(
-        [str(script_dir() / "linked-sub-prs.sh"), "--body", body],
-        stdout=subprocess.PIPE,
-        check=False,
-    )
+    try:
+        with open(body, "rb") as handle:
+            raw_body = handle.read()
+    except OSError:
+        return 1, []
+    lines = linked_sub_prs.scan(raw_body, linked_sub_prs.DEFAULT_OWNER, body)
     out = []
-    for raw in (proc.stdout or b"").decode("utf-8", "surrogateescape").split("\n"):
+    for raw in b"\n".join(lines).decode("utf-8", "surrogateescape").split("\n"):
         fields = raw.split()
         if not fields:
             # `[[ -n "$target" ]] || continue`: a blank line is skipped.
@@ -329,7 +326,7 @@ def linked_targets(body: str) -> tuple[int, list[tuple[str, str]]]:
         target = fields[0]
         number = " ".join(fields[1:])
         out.append((target, number))
-    return proc.returncode, out
+    return 0, out
 
 
 def _non_empty(path: str) -> bool:

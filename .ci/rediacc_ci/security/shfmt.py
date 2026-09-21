@@ -79,7 +79,7 @@ from rediacc_ci.core import toolchain
 # `-i 4` four-space indent, `-ci` indent switch cases, `-d` diff mode (show what would change, exit non-zero if changes are needed). The twin keeps these in one space-separated `SHFMT_OPTS` string and word-splits it at four call sites, each carrying a `BLOCKER:` comment saying the splitting is intentional.
 SHFMT_OPTS = ("-i", "4", "-ci", "-d")
 
-# The vacuity floor's default. Measured 2026-09-04: 568 .sh files across the four scopes. The floor is well under that so it catches a broken enumeration, not today's file count.
+# The vacuity floor's default. Measured 2026-09-04: 568 .sh files across the four scopes; re-measured 2026-09-21 at 334 after the bash-retirement campaign, so the margin is 134 files and shrinking. The floor stays well under the count, to catch a broken enumeration rather than today's file count, and is restated on each retirement batch so a closing margin is visible early.
 DEFAULT_MIN_FILES = "200"
 
 # The three roots the floor counts, in the twin's argv order (order is irrelevant to a count and is kept so the two reads match on inspection).

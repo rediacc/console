@@ -24,8 +24,7 @@ Abridged — only the entry points most often edited by hand are listed. The ful
 │   ├── lib/
 │   │   └── common.sh        # Shared utilities (OS detection, logging)
 │   ├── ci/
-│   │   ├── generate-tag.sh  # Generate time-based CI tag (YYYYMMDD-HHMMSS)
-│   │   └── derive-image-tag.sh # Derive Docker image tag from branch/tag
+│   │   └── generate-tag.sh  # Generate time-based CI tag (YYYYMMDD-HHMMSS)
 │   ├── version/
 │   │   ├── bump.sh            # Semantic version bump (patch/minor/major)
 │   │   ├── detect-bump-type.sh # patch/minor/major from bump-* labels on merged PRs in <tag>..HEAD

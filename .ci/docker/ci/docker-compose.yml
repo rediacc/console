@@ -8,7 +8,7 @@
 #   docker compose -f .ci/docker/ci/docker-compose.yml up -d account-server
 #
 # Driven by .ci/scripts/infra/ci-start-account.sh (invoked from ci.yml) and torn
-# down by ci-stop.sh.
+# down by rediacc_ci.infra.ci_stop.
 #
 # A `web:` SERVICE WAS REMOVED FROM HERE, and issue #533 is why it looked like it
 # belonged. It was never started by anything: the live driver brings up

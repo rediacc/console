@@ -38,9 +38,6 @@ manual:.ci/scripts/deploy/deploy-proxy.sh
 # BLOCKER: NIS2/CRA supply-chain SBOM enumeration, run by the operator on demand when a dependency inventory is required for compliance evidence rather than on every build
 manual:.ci/scripts/security/dependency-inventory.sh
 
-# BLOCKER: smoke-tests every Claude Code guard hook; run by the operator after a /hooks reload, which is why nothing in CI references it
-manual:.claude/hooks/test-hooks.sh
-
 # BLOCKER: starts OpenVSCode Server for self-hosted browser access and refuses to run inside Codespaces; invoked by the operator on a self-hosted box, not by the devcontainer lifecycle
 manual:.devcontainer/start-vscode.sh
 

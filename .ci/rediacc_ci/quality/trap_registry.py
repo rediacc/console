@@ -149,7 +149,9 @@ SEAMS = {
     "TRAP_MANIFEST": ("scripts", "ci-runner", "manifest.ts"),
     "TRAP_PACKAGE_JSON": ("package.json",),
     "TRAP_DISPATCH": (".claude", "hooks", "trapguard", "dispatch.py"),
-    "TRAP_HOOK_SUITE": (".claude", "hooks", "test-hooks.sh"),
+    # THE SUITE MOVED, AND THE SPELLING DID NOT. `hook_is_live` asks whether a trapguard rule has both a firing and a silent `check_inject` case; those cases were ported out of `.claude/hooks/test-hooks.sh` into this module, which keeps `check_inject fires` / `check_inject silent` and the needle as the LAST quoted argument on the same line for exactly this reader. Its own
+    # docstring records the formatter accident that separated the two and turned all five rules one-sided, so the shape is deliberate on both ends.
+    "TRAP_HOOK_SUITE": (".claude", "rediacc_hooks", "tests", "test_hooks_trapguard.py"),
     "TRAP_SETTINGS": (".claude", "settings.json"),
     "TRAP_FILE_ROOT": (),
 }

@@ -165,9 +165,9 @@ The twin's header, carried whole. Every paragraph of it records a hole this gate
 
     C. THE ANTI-VACUITY FLOOR CANNOT BE REMOVED.
 
-    test-hooks.sh runs sibling modules' `--selftest` and folds their PASS count
-    into its own. Without a MINIMUM-COUNT floor, a selftest that prints nothing and
-    exits 0 reads as a passing suite -- and that is not hypothetical twice over:
+    A delegating harness runs sibling modules' `--selftest` and folds their reported
+    count into its own verdict. Without a MINIMUM-COUNT floor, a selftest that prints
+    nothing and exits 0 reads as a passing suite -- and that is not hypothetical twice over:
     `wl_git.py` and `wl_admit.py` carried 18 controls each that NOTHING ran for
     months, while `wl_reggate.py --selftest` exits 0 having no selftest at all,
     because running a library module as a script does nothing and succeeds.
@@ -203,6 +203,16 @@ The twin's header, carried whole. Every paragraph of it records a hole this gate
 
     A fold of a VARIABLE count. `PASS + 1` is a single case incrementing itself and
     needs no floor; `PASS + n` folds in a whole sibling suite's self-reported total.
+
+    THE FOLD MOVED TO PYTHON, and so did this section's reader. The harness that
+    wrote `PASS=$((PASS + n))` was `.claude/hooks/test-hooks.sh`; its port folds the
+    same sibling counts in `test_hooks_delegates.py`, where the fold is a `_count`
+    of the child's output and the floor is the `>= floor` beside it. A section that
+    kept looking only for the shell spelling would have gone to ZERO folding
+    harnesses at the retirement and had to be silenced, which is the narrowing the
+    paragraph above is about -- arriving through a port instead of a move. So BOTH
+    spellings qualify a case source as a folding harness, each with its own floor
+    reader, and zero of both is still the refusal.
 
     A minimum can be a named `floor` or a literal number -- `-lt 12` is exactly as
     much of a floor as `-lt "$floor"`, and demanding the variable reported two
@@ -320,6 +330,15 @@ HARNESS_RE = re.compile(r"PASS=\$\(\(PASS \+ [A-Za-z_]")
 
 # The floor line section C requires of every folding harness.
 FLOOR_LINE = 'lt "$floor"'
+
+# THE SAME TWO THINGS IN THE PORT'S SPELLING. `test_hooks_delegates.py` folds a sibling selftest by COUNTING what it printed and comparing that count against the row's floor, so the fold site is the count and the refusal is the comparison. Both are needed: the count alone is a fold with no floor, and a `>= floor` with nothing counted is a floor over nothing.
+PY_FOLD_RE = re.compile(r"(?m)^[ \t]*[A-Za-z_][A-Za-z0-9_]*[ \t]*=[ \t]*_count\(")
+
+# A minimum standing between the count and the verdict, in either spelling a Python fold uses: against the row's named floor, or against zero.
+PY_GUARD_RE = re.compile(r">=[ \t]*floor|>[ \t]*0|==[ \t]*0")
+
+# The floor line section C requires of every Python folding harness.
+PY_FLOOR_LINE = ">= floor"
 
 
 class ScopeError(ValueError):
@@ -448,6 +467,23 @@ def floorcheck(text: str) -> list[int]:
     return out
 
 
+def py_floorcheck(text: str) -> list[int]:
+    """`floorcheck` for the port's spelling: fold sites with no minimum above them.
+
+    THE SAME WINDOW AND THE SAME DIRECTION as the shell reader, deliberately. A Python fold reads `found = _count(...)` and its refusal follows on the next line or two rather than preceding it, so the window runs FORWARD from the fold; anchoring it backwards would report every correctly floored fold in the port as a defect, which is the cry-wolf failure the shell reader's own
+    history is a record of.
+    """
+    lines = text.splitlines()
+    out: list[int] = []
+    for index, line in enumerate(lines):
+        if not PY_FOLD_RE.search(line):
+            continue
+        window = lines[index : index + FOLD_WINDOW + 1]
+        if not any(PY_GUARD_RE.search(w) for w in window):
+            out.append(index + 1)
+    return out
+
+
 def read_json_list(path: pathlib.Path) -> list[str]:
     """A baseline file, as a list of strings. Raises on anything else."""
     with open(path, encoding="utf-8") as handle:
@@ -513,6 +549,17 @@ fi
 
 FIXTURE_UNFLOORED = """n=$(count)
 PASS=$((PASS + n))
+"""
+
+# THE PORT'S TWO SHAPES, and the planted defect the Python arm of section C exists to catch. The floored fixture carries BOTH refusals a real row uses, because a reader that accepted either one alone would credit a fold that refuses an empty count while ignoring the row's floor entirely.
+FIXTURE_PY_FLOORED = """    found = _count(counter, text)
+    ok = found >= floor and found > 0
+    assert found > 0, "a selftest that prints nothing and exits 0 is a vacuous green"
+    assert found >= floor, "%s: %d, expected >= %d" % (name, found, floor)
+"""
+
+FIXTURE_PY_UNFLOORED = """    found = _count(counter, text)
+    record(0, "%s: %d control(s) passed" % (name, found))
 """
 
 
@@ -785,15 +832,18 @@ def main(argv: list[str] | None = None) -> int:
 
         # ---- C. the anti-vacuity FLOOR cannot be removed ------------------
         harnesses = []
+        py_harnesses = []
         for source in case_sources:
             text = (root / source).read_text(encoding="utf-8", errors="replace")
             if HARNESS_RE.search(text):
                 harnesses.append((source, text))
-        if not harnesses:
+            if PY_FOLD_RE.search(text):
+                py_harnesses.append((source, text))
+        if not harnesses and not py_harnesses:
             fail(
-                "C. no declared case source folds an external PASS count, so the floor rule "
-                "audits NOTHING. Either the folding suite left $SCOPE's case_sources or it "
-                "stopped folding; both need saying out loud."
+                "C. no declared case source folds an external count in EITHER spelling, so the "
+                "floor rule audits NOTHING. Either the folding suite left $SCOPE's case_sources "
+                "or it stopped folding; both need saying out loud."
             )
         for source, text in harnesses:
             if FLOOR_LINE not in text:
@@ -818,6 +868,42 @@ def main(argv: list[str] | None = None) -> int:
                 note("     suite. That is how 36 orphaned controls hid for months.")
             else:
                 ok("every external PASS fold refuses a count too low to be real")
+
+        for source, text in py_harnesses:
+            if PY_FLOOR_LINE not in text:
+                fail(
+                    "%s lost its selftest minimum-count FLOOR. Without it a module whose "
+                    "--selftest prints nothing and exits 0 counts as a passing suite, which "
+                    "is how 36 orphaned controls hid for months." % os.path.basename(source)
+                )
+            else:
+                ok("the delegate table enforces a minimum control count")
+
+        for source, text in py_harnesses:
+            unfloored = py_floorcheck(text)
+            if unfloored:
+                fail(
+                    "%s folds a delegated count with NO minimum at line(s): %s"
+                    % (os.path.basename(source), "".join("%d " % n for n in unfloored))
+                )
+                note(
+                    "     A fold with no floor counts a selftest that printed nothing as a passing"
+                )
+                note("     suite. That is how 36 orphaned controls hid for months.")
+            else:
+                ok("every delegated fold refuses a count too low to be real")
+
+        if not py_floorcheck(FIXTURE_PY_FLOORED):
+            ok("control: a floored Python fold is not reported")
+        else:
+            fail("CONTROL DID NOT FIRE: a correctly floored Python fold was reported as unfloored")
+        if py_floorcheck(FIXTURE_PY_UNFLOORED):
+            ok("control: an unfloored Python fold is detected")
+        else:
+            fail(
+                "CONTROL DID NOT FIRE: an unfloored Python fold went unnoticed, so the delegate "
+                "check above proves nothing"
+            )
 
         if not floorcheck(FIXTURE_FLOORED):
             ok("control: a floored fold is not reported")
@@ -990,6 +1076,16 @@ def selftest() -> int:
             "PLANT: an unfloored fold is detected, by line number",
             floorcheck(FIXTURE_UNFLOORED),
             [2],
+        )
+        ctl.check(
+            "MIRROR: a floored Python fold is not reported",
+            py_floorcheck(FIXTURE_PY_FLOORED),
+            [],
+        )
+        ctl.check(
+            "PLANT: an unfloored Python fold is detected, by line number",
+            py_floorcheck(FIXTURE_PY_UNFLOORED),
+            [1],
         )
         ctl.check(
             "MIRROR: `PASS + 1` is a single case and needs no floor",
