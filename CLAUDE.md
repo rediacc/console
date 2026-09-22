@@ -124,14 +124,17 @@ as impossible without running the command that proves it is how work gets abando
 Reading and thinking parallelize well here; writing does not. Use them accordingly.
 
 - **Investigate with them by default.** Any question that means sweeping several files,
-packages, or naming conventions goes to `Explore` or `general-purpose` agents rather than into this session's own context. Read-only fan-out is cheap: run several at once. Ask each for conclusions with `file:line` evidence, never file dumps.
+packages, or naming conventions goes to `Explore` or `general-purpose` agents rather than into this session's own context. Read-only fan-out is cheap: run several at once.
+Ask each for conclusions with `file:line` evidence, never file dumps. This kind of dispatch defaults to `model: "haiku"`: the tree already holds the answer, and a citation that does not resolve is caught on sight.
 - **Plan with them on anything non-trivial.** For a design with real trade-offs, run
 `Plan` agents (up to 3, different angles) and synthesize. Their plans are proposals, not findings: check the load-bearing claims directly before acting (see rule 3).
 - **Writing agents: at most 2 at a time, with disjoint file ownership.** State the exact
 files each one owns and forbid it from touching any other. Two agents editing one file, or one agent running a repo-wide regenerate script, corrupts the tree. Also forbid `git checkout/restore/stash` and any `sync`/`regenerate` script in their prompts, for the reasons in rule 1.
 - **Spot-check every agent's output against the artifact.** Their reports are accurate
 about intent and quietly wrong about placement. Verify structure across the whole file set they touched, not just the keys or symbols they claimed to change.
-- **Model choice:** Opus for code and design, Sonnet for translation and naturalization.
+- **Model choice is by task SHAPE, never by language or domain.** Haiku when the
+work is derived (a port, a translation, a mechanical sweep, a read-only survey) AND a pre-existing oracle decides correctness without a human reading the diff (a K=5 shadow ledger, a golden differential, a gate that already reds on the old artifact) AND being wrong is loud (a red check, not a silent gap).
+Opus when the artifact created IS the oracle: new guards, new gates, schema design, multi-file planning, anything adversarial. Sonnet is an escalation tier, not a default. **[docs/agent-reference/model-routing.md](docs/agent-reference/model-routing.md)** carries the full rule, the oracle caveat, and worked examples.
 
 ## Architecture
 

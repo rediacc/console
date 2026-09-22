@@ -76,7 +76,9 @@ last, and **locale files are alphabetically sorted while en.json is authored-ord
 
 ## Model choice
 
-The ledger's `$meta.models` recording `claude-sonnet-5` across all twelve languages is DELIBERATE, not drift: translation runs are delegated to sub-agents on sonnet, which is cheaper in practice than the per-key model an older note implies. Do not "fix" it back.
+The ledger's `$meta.models` records `claude-haiku-4-5` across all twelve languages, matching `docs/i18n/CONVENTIONS.md` and CLAUDE.md's i18n section: the i18n gate battery (completeness, cross-locale, de-contamination, interpolation-consistency) is the pre-existing oracle that makes Haiku translation runs safe, per `docs/agent-reference/model-routing.md`.
+The ledger briefly read `claude-sonnet-5` across all twelve between commit `f7a5351a9` (2026-08-18) and `b8de2f586` (2026-08-20); an earlier version of this note described that window and was never updated once the migration back to Haiku landed.
+Locale sweeps run Haiku by default; diagnosing why a cross-locale gate fired is judgment work and runs the session default instead. Do not flip either casually -- the ledger's `$meta.models` field is the ground truth to check before changing this note again, not the other way around.
 
 ## Known hazards, each one paid for
 

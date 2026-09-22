@@ -559,35 +559,36 @@
       "done_sigs": []
     },
     "agent/plans/PLAN-haiku-model-routing.md": {
-      "status": "draft",
+      "status": "phase",
       "owner": "unowned",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 20,
-      "done": 0,
+      "open": 15,
+      "done": 5,
       "open_sigs": [
         "0f6b67f2",
         "194f5da2",
         "1a7591c6",
         "2bfd6f0a",
         "2e25dbeb",
-        "41548480",
         "4c1297a6",
-        "55fe1fbf",
-        "5bd1ecac",
         "61f2fc31",
         "7d0eb59a",
         "8ee9261e",
-        "972c0e48",
         "9c983aa3",
         "9d5e06fe",
         "b48dd4e3",
         "b4ba1890",
         "de3be853",
-        "df9c5a34",
-        "f219557d"
+        "df9c5a34"
       ],
-      "done_sigs": []
+      "done_sigs": [
+        "41548480",
+        "55fe1fbf",
+        "5bd1ecac",
+        "972c0e48",
+        "f219557d"
+      ]
     },
     "agent/plans/PLAN-judge-gate-worthiness-and-surface-scope.md": {
       "status": "compacted",

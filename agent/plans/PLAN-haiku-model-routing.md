@@ -1,6 +1,6 @@
 # PLAN: route the cheap-tier work to Haiku, by task shape
 
-Status: draft
+Status: phase 0-1 done, phase 2 (calibration batch) next
 First-Seen: 2026-09-22
 Operator ask: "we burn a lot of tokens with stop hook... investigate where we can use haiku model for sub-agents. Which task categories and which languages are better to leverage haiku... implement planned changes to encourage haiku model wherever possible. I suppose python and typescript could be the targets but not limited to them." <!-- style-ok -->
 
@@ -201,11 +201,11 @@ Beyond that, `agent/plans/PLAN-remove-autopilot.md` deletes the entire `.ci/redi
 
 ## 8. Tasks
 
-- [ ] Rewrite `CLAUDE.md:134` as the shape rule + pointer to the new doc.
-- [ ] Write `docs/agent-reference/model-routing.md` (rule, oracle caveat, section 5 examples, the 2026-08 i18n sonnet interlude note, and the empty measurement table phase 2 fills).
-- [ ] Add the read-only-fan-out-defaults-to-Haiku line to `CLAUDE.md:126`'s bullet (section 2a).
-- [ ] Run `npx tsx scripts/gen/gen-docs.ts --write`; confirm verify mode exits 0.
-- [ ] Rewrite `.claude/agents/i18n-guardian.md:77-79` to state haiku, with the `f7a5351a9` -> `b8de2f586` history.
+- [x] Rewrite `CLAUDE.md:134` as the shape rule + pointer to the new doc.
+- [x] Write `docs/agent-reference/model-routing.md` (rule, oracle caveat, section 5 examples, the 2026-08 i18n sonnet interlude note, and the empty measurement table phase 2 fills).
+- [x] Add the read-only-fan-out-defaults-to-Haiku line to `CLAUDE.md:126`'s bullet (section 2a).
+- [x] Run `npx tsx scripts/gen/gen-docs.ts --write`; confirm verify mode exits 0.
+- [x] Rewrite `.claude/agents/i18n-guardian.md:77-79` to state haiku, with the `f7a5351a9` -> `b8de2f586` history.
 - [ ] Run the phase-2 calibration batch: 5 bash-to-pytest ports on Haiku workers; record model, rounds, wall-clock, cost per port.
 - [ ] Hand-verify all 5 ports for case-count parity against their bash twins (the falsifying check).
 - [ ] Record the batch result, pass or fail, in the `model-routing.md` table, dated.
