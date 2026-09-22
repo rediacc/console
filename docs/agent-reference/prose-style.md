@@ -68,7 +68,9 @@ Beyond those, exemptions are by NAME with a `BLOCKER:` reason, and every run PRI
 .ci/scripts/quality/check_prose_style.py sync             the table above, on stdout
 ```
 
-`reflow` undoes hard-wrapping: a paragraph broken across several narrow lines becomes one line, re-wrapped only if it exceeds the limit. It is a DRY RUN by default, and it leaves fences, headings, tables, blockquotes, indented code, link definitions and list items alone.
+`reflow` undoes hard-wrapping: a paragraph broken across several narrow lines is joined into one, then re-wrapped only at a genuine sentence-ending period -- never at a plain word boundary.
+A joined paragraph with no such period, however far past the limit it runs, is left on one line: R18's own floor-not-ceiling contract (384 is where a break is ALLOWED, not required) applies to the tool that fixes a line exactly as it applies to the rule that checks one.
+It is a DRY RUN by default, and it leaves fences, headings, tables, blockquotes, indented code, link definitions and list items alone.
 
 It has never been run against this tree. As of 2026-09-16 it reports 399 of 447 markdown files and 36,784 lines that would rejoin.
 

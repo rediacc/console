@@ -53,7 +53,6 @@ import re
 import subprocess
 import sys
 import tempfile
-import textwrap
 import tokenize
 
 from rediacc_ci import gitx, log, paths
@@ -692,6 +691,19 @@ _SENTENCE_ABBREVIATION = re.compile(
 )
 
 
+def _is_genuine_sentence_period(raw, index):
+    """Whether `raw[index]` (a `.`) is a genuine sentence-ending period rather than a decimal, a dotted version, an ellipsis or a known abbreviation's own dot.
+
+    Factored out of `_sentence_break_offset` so `_iter_sentence_ends` (the reflow side's break-point walk) tests the exact same definition of "genuine" rather than a second, driftable copy of it -- the two used to disagree, which is how `reflow --write` kept mid-sentence-wrapping a line the R18 checker had already agreed needed no break at all.
+    """
+    if index > 0 and raw[index - 1] == ".":
+        return False  # the second (or later) dot of an ellipsis
+    following = raw[index + 1 : index + 2]
+    if following and not following.isspace():
+        return False  # "3.14", "v1.3.12": a decimal/version dot, never a candidate
+    return not _SENTENCE_ABBREVIATION.search(raw[:index])  # "e.g.", "Dr.", "etc." and friends
+
+
 def _sentence_break_offset(raw, limit):
     """The offset of the first GENUINE sentence-ending period in `raw` at or before `limit`, or `None` when there is none.
 
@@ -704,15 +716,54 @@ def _sentence_break_offset(raw, limit):
         index = match.start()
         if index > limit:
             break
-        if index > 0 and raw[index - 1] == ".":
-            continue  # the second (or later) dot of an ellipsis
-        following = raw[index + 1 : index + 2]
-        if following and not following.isspace():
-            continue  # "3.14", "v1.3.12": a decimal/version dot, never a candidate
-        if _SENTENCE_ABBREVIATION.search(raw[:index]):
-            continue  # "e.g.", "Dr.", "etc." and friends
-        return index
+        if _is_genuine_sentence_period(raw, index):
+            return index
     return None
+
+
+def _iter_sentence_ends(text):
+    """Every offset in `text` right after a genuine sentence-ending period and the single space (or end of string) that follows it -- the only points `_wrap_at_sentences` is allowed to break a line at.
+
+    No `limit` cutoff, unlike `_sentence_break_offset`: this walks the whole joined paragraph once, since the reflow packer below needs every break in the text, not just whether one exists before some floor.
+    """
+    for match in re.finditer(r"\.", text):
+        index = match.start()
+        if _is_genuine_sentence_period(text, index):
+            following = text[index + 1 : index + 2]
+            yield index + 2 if following else index + 1
+
+
+def _wrap_at_sentences(text, width):
+    """`text` packed into lines of at most `width` characters, breaking ONLY right after a genuine sentence-ending period -- never mid-sentence, and never at a plain word boundary.
+
+    This is `_join_and_wrap`'s width-exceeded path, and it exists because `textwrap.wrap`'s ordinary word-boundary wrapping reintroduced exactly the defect `7a13350d5` removed from the R18 CHECK side: an "arbitrary mid-thought split on a genuinely continuous single-clause explanation with nowhere sane to break". A period-free paragraph -- one continuous clause -- is returned as ONE
+    line here regardless of how far past `width` it runs, matching `_sentence_break_offset`'s own "never flagged, however long it runs" contract exactly, so the tool that FIXES a line and the rule that CHECKS it agree about where a break is allowed.
+
+    Sentences are packed greedily: as many whole sentences as fit accumulate onto one line, and a sentence that alone exceeds `width` becomes its own over-width line rather than being split.
+    """
+    ends = list(_iter_sentence_ends(text))
+    if not ends:
+        return [text]
+    segments = []
+    prev = 0
+    for end in ends:
+        segments.append(text[prev:end].rstrip())
+        prev = end
+    tail = text[prev:].strip()
+    if tail:
+        segments.append(tail)
+    lines = []
+    current = ""
+    for segment in segments:
+        candidate = "%s %s" % (current, segment) if current else segment
+        if current and len(candidate) > width:
+            lines.append(current)
+            current = segment
+        else:
+            current = candidate
+    if current:
+        lines.append(current)
+    return lines
 
 
 def lint_line(line, rules, scope, max_len):
@@ -1019,7 +1070,7 @@ def _join_and_wrap(buffer, width):
     joined = re.sub(r"\s{2,}", " ", joined).strip()
     if len(joined) <= width:
         return [joined]
-    return textwrap.wrap(joined, width=width, break_long_words=False, break_on_hyphens=False)
+    return _wrap_at_sentences(joined, width)
 
 
 # R19's own constants. Not `globals.max_line_length`-relative in the rules file, because they gate a SHAPE (uniform narrow columns), not a length -- see `_looks_hard_wrapped` for the measurement each one guards.
@@ -2387,21 +2438,30 @@ def selftest():
         reflow_markdown("# H\ntext\n", 40),
         "# H\ntext\n",
     )
-    long_para = reflow_markdown(("word " * 40).strip() + "\n", 40)
+    period_free = ("word " * 40).strip() + "\n"
+    long_para = reflow_markdown(period_free, 40)
     ctl.check(
-        "reflow: a joined paragraph over the width re-wraps UNDER the width",
-        max(len(x) for x in long_para.splitlines()) <= 40,
+        "reflow: a period-free paragraph over the width is left on one line, unsplit",
+        long_para,
+        period_free,
+    )
+    sentence_para = " ".join("Sentence %d ends." % i for i in range(1, 10)) + "\n"
+    wrapped = reflow_markdown(sentence_para, 40)
+    ctl.check(
+        "reflow: a paragraph over the width re-wraps UNDER the width AT A SENTENCE BREAK",
+        max(len(x) for x in wrapped.splitlines()) <= 40
+        and all(x.rstrip().endswith(".") for x in wrapped.splitlines()),
         True,
     )
     ctl.check(
         "reflow: and the re-wrap is still idempotent (the join reproduces it)",
-        reflow_markdown(long_para, 40),
-        long_para,
+        reflow_markdown(wrapped, 40),
+        wrapped,
     )
     ctl.check(
         "reflow: no word was lost to the wrap",
-        long_para.split(),
-        ["word"] * 40,
+        wrapped.split(),
+        sentence_para.split(),
     )
 
     # ---- reflow of comments: a LEXER decides what a comment is ----------- The regex version of this joined the docstring line below into the real comment paragraph under it, which moved the closing `"""` and rewrote the string. Measured over `git ls-files '*.py'` on 2026-09-17: 52 of 1051 files came back with a DIFFERENT `ast.dump`. The docstring has to END on the `#` line for

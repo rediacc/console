@@ -534,10 +534,24 @@ def test_reflow_is_idempotent(label, before, _after):
     assert ps.reflow_markdown(once, 384) == once, label
 
 
-def test_reflow_over_the_width_rewraps_and_loses_no_word():
+def test_reflow_leaves_a_period_free_paragraph_on_one_line_however_long():
+    """The reflow side of `7a13350d5`'s own contract: 384 is where a line is ALLOWED to break, never where it must, so a paragraph with no sentence-ending period anywhere is never split, however far past `width` it runs.
+    `textwrap.wrap`'s ordinary word-boundary wrapping used to do exactly the "arbitrary mid-thought split" that commit removed from the CHECK side -- this is the reflow-side regression control for it, added when `_join_and_wrap` was found still doing it.
+    """
     text = ("word " * 200).strip() + "\n"
     out = ps.reflow_markdown(text, 80)
-    assert max(len(line) for line in out.splitlines()) <= 80
+    assert out == text.strip() + "\n", "a period-free paragraph must not be split at all: %r" % out
+    assert ps.reflow_markdown(out, 80) == out
+
+
+def test_reflow_over_the_width_wraps_only_at_sentence_boundaries():
+    text = " ".join("Sentence number %d ends here." % i for i in range(1, 15)) + "\n"
+    out = ps.reflow_markdown(text, 80)
+    lines = out.splitlines()
+    assert len(lines) > 1, "the paragraph must actually wrap across several lines: %r" % out
+    assert max(len(line) for line in lines) <= 80
+    for line in lines:
+        assert line.rstrip().endswith("."), "a wrap landed mid-sentence: %r" % line
     assert out.split() == text.split()
     assert ps.reflow_markdown(out, 80) == out
 
@@ -724,11 +738,23 @@ def test_a_gate_header_is_never_folded_into_one_line():
     assert "one two three four" in out, "the prose below the block must still fold: %r" % out
 
 
-def test_reflow_comments_over_the_width_rewraps_and_loses_no_word():
+def test_reflow_comments_leaves_a_period_free_paragraph_on_one_line_however_long():
+    """The comment-scope twin of `test_reflow_leaves_a_period_free_paragraph_on_one_line_however_long`: a `#` comment paragraph with no sentence-ending period is never split, however far past `width` it runs."""
     text = "# " + ("word " * 200).strip() + "\n"
     out = ps.reflow_comments(text, ".py", 80)
-    assert max(len(line) for line in out.splitlines()) <= 80
-    assert out.replace("#", "").split() == ["word"] * 200
+    assert out == text, "a period-free comment paragraph must not be split at all: %r" % out
+    assert ps.reflow_comments(out, ".py", 80) == out
+
+
+def test_reflow_comments_over_the_width_wraps_only_at_sentence_boundaries():
+    text = "# " + " ".join("Sentence number %d ends here." % i for i in range(1, 15)) + "\n"
+    out = ps.reflow_comments(text, ".py", 80)
+    lines = out.splitlines()
+    assert len(lines) > 1, "the paragraph must actually wrap across several lines: %r" % out
+    assert max(len(line) for line in lines) <= 80
+    for line in lines:
+        assert line.rstrip().endswith("."), "a wrap landed mid-sentence: %r" % line
+    assert out.replace("#", "").split() == text.replace("#", "").split()
     assert ps.reflow_comments(out, ".py", 80) == out
 
 
@@ -964,19 +990,43 @@ def test_a_short_opening_line_widens_and_joins_the_next_line():
     )
 
 
-def test_an_opening_line_alone_over_width_is_wrapped():
-    """The other direction of the same gap: an opening line that alone exceeds width used to be emitted unchanged, since a `"raw"` segment is never passed through `_join_and_wrap`."""
+def test_an_opening_line_alone_over_width_is_left_unwrapped_without_a_period():
+    """The other direction of the same gap: an opening line that alone exceeds width used to be emitted unchanged entirely, since a `"raw"` segment was never passed through `_join_and_wrap` at all.
+    It now reaches the same wrap path everything else does, and -- carrying no sentence-ending period -- stays on its own line unsplit, by the same `7a13350d5` contract every other paragraph gets.
+    """
     text = 'def f():\n    """' + ("word " * 90).strip() + '\n    """\n'
     out = ps.reflow_comments(text, ".py", 80)
-    assert max(len(line) for line in out.splitlines()) <= 80
+    assert out == text, "a period-free opening line must not be split at all: %r" % out
     ast.parse(out)
 
 
-def test_a_closing_line_alone_over_width_is_wrapped():
-    """The closing-side twin of the previous control, gluing the closing delimiter back on after the wrap rather than before it."""
+def test_an_opening_line_alone_over_width_wraps_and_glues_at_a_sentence_break():
+    """The same opening-line path, now WITH sentence breaks to wrap at, proving the delimiter still glues to the first wrapped line rather than the raw segment silently passing through untouched."""
+    text = 'def f():\n    """' + " ".join("Sentence number %d ends here." % i for i in range(1, 20)) + '\n    """\n'
+    out = ps.reflow_comments(text, ".py", 80)
+    lines = out.splitlines()
+    assert max(len(line) for line in lines) <= 80
+    assert lines[1].startswith('    """'), "the opening delimiter must stay glued: %r" % out
+    ast.parse(out)
+
+
+def test_a_closing_line_alone_over_width_is_left_unwrapped_without_a_period():
+    """The closing-side twin: unwrapped and unsplit without a sentence break to wrap at."""
     text = 'def f():\n    """Summary.\n\n    ' + ("word " * 90).strip() + '"""\n'
     out = ps.reflow_comments(text, ".py", 80)
-    assert max(len(line) for line in out.splitlines()) <= 80
+    assert out == text, "a period-free closing line must not be split at all: %r" % out
+    ast.parse(out)
+
+
+def test_a_closing_line_alone_over_width_wraps_and_glues_at_a_sentence_break():
+    """The closing-side twin of the opening-line wrap control, gluing the closing delimiter back on after the wrap rather than before it."""
+    text = 'def f():\n    """Summary.\n\n    ' + " ".join(
+        "Sentence number %d ends here." % i for i in range(1, 20)
+    ) + '"""\n'
+    out = ps.reflow_comments(text, ".py", 80)
+    lines = out.splitlines()
+    assert max(len(line) for line in lines) <= 80
+    assert lines[-1].endswith('."""'), "the closing delimiter must stay glued: %r" % out
     ast.parse(out)
 
 
