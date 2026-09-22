@@ -114,22 +114,41 @@ def _stub_dir(tmp_path, stubs):
 FIXTURE_TOKEN = "{FIXTURE:%s}"  # noqa: S105
 
 
+def _git_env():
+    return dict(
+        os.environ,
+        GIT_AUTHOR_NAME="Fixture",
+        GIT_AUTHOR_EMAIL="fixture@example.invalid",
+        GIT_COMMITTER_NAME="Fixture",
+        GIT_COMMITTER_EMAIL="fixture@example.invalid",
+        GIT_CONFIG_GLOBAL="/dev/null",
+        GIT_CONFIG_SYSTEM="/dev/null",
+    )
+
+
 def _git(cwd, *args):
     subprocess.run(
         ["git", *args],
         cwd=str(cwd),
         check=True,
         capture_output=True,
-        env=dict(
-            os.environ,
-            GIT_AUTHOR_NAME="Fixture",
-            GIT_AUTHOR_EMAIL="fixture@example.invalid",
-            GIT_COMMITTER_NAME="Fixture",
-            GIT_COMMITTER_EMAIL="fixture@example.invalid",
-            GIT_CONFIG_GLOBAL="/dev/null",
-            GIT_CONFIG_SYSTEM="/dev/null",
-        ),
+        env=_git_env(),
     )
+
+
+def _git_read(cwd, *args):
+    """The stripped stdout of a git command that is ALLOWED to fail; `""` when it does.
+
+    A missing ref is an ANSWER here, not an error, which is why this is a second helper rather than a flag on `_git`: a snapshot of a branch whose remote-tracking ref does not exist has to reproduce that absence, and `check=True` would turn it into a collection error instead.
+    """
+    proc = subprocess.run(
+        ["git", *args],
+        cwd=str(cwd),
+        check=False,
+        capture_output=True,
+        env=_git_env(),
+    )
+    return proc.stdout.decode("utf-8", "surrogateescape").strip()
 
 
 def _build_repo(path, branch, ahead):
@@ -153,6 +172,40 @@ def _build_repo(path, branch, ahead):
     return path
 
 
+def _snapshot_this_worktree(path):
+    """A FROZEN clone of the checkout this suite is running in.
+
+    WHY A CLONE AND NOT THE CHECKOUT ITSELF, which is what four guards' `this-worktree` variant pointed `CLAUDE_PROJECT_DIR` at until 2026-09-22.
+    That variant exists because a synthetic `git init` fixture is not a real repository shape: it has one commit, no history, no epic snapshot, no receipt, and a guard judged only against it is judged against something trivially small.
+    Reading the LIVE checkout bought that realism at the price of determinism, and the price was paid repeatedly: this tree is shared, and a concurrent session's commit lands between the bash pass (one process, the whole corpus, at fixture setup) and the per-case Python side that follows it minutes later.
+    Both sides then read a DIFFERENT repository and the disagreement is reported as a port defect.
+
+    MEASURED, rather than argued. With a commit interleaved between the two sides, `block_merge_with_unpushed` reported "66 commit(s) ... are not pushed" from bash and "67" from the port, and `block_unverified_push` named two different `HEAD^{tree}` hashes in its refusal.
+    `block_unverified_push`'s own `FIXTURES` comment had already written the same race down for the receipt file; the `this-worktree` variant simply left the rest of the repository state exposed to it.
+
+    WHAT THE SNAPSHOT KEEPS. Real history, the real branch name, the real tracked tree (7,100-odd files, so `agent/pr/<branch>.md` and `.ci/config/*` are the repository's own rather than a stub's), and the real relationship between the branch and its remote.
+    `refs/remotes/origin/<branch>` is reset to whatever the live checkout's own remote-tracking ref says, because a plain clone would make every branch look fully pushed and quietly retire the ahead-of-remote arm the `this-worktree` case is there to exercise.
+    An absent remote-tracking ref is reproduced as an absent one for the same reason.
+
+    WHAT IT DELIBERATELY DOES NOT KEEP: uncommitted work, ignored files (`.ci/cache/prepush-receipt.json` among them) and initialised submodules. Those are the state a clone does not carry, and carrying them by hand would be re-creating the live tree rather than snapshotting it.
+
+    A DEPTH-1, DETACHED CHECKOUT IS THE CI SHAPE, and it was tried rather than assumed: `actions/checkout` leaves no local branch on a pull request, a `--shared` clone of that still lands a full working tree at the same commit, and `symbolic-ref` then answers nothing, so the remote-tracking fixup is skipped and every branch lookup fails open exactly as it does against the live runner checkout today.
+
+    `--shared` RATHER THAN THE DEFAULT HARDLINK CLONE. `tmp_path_factory` hands out paths under `/tmp`, which is a different filesystem from the repository here, and a `--local` clone across that boundary dies on `failed to create link ... Invalid cross-device link`. Alternates cost no object copy at all: measured 0.65s and 1 MB of `.git` against a 280 MB pack, once per session.
+    """
+    path.parent.mkdir(parents=True, exist_ok=True)
+    _git(path.parent, "clone", "--shared", "--quiet", str(ROOT), str(path))
+    branch = _git_read(path, "symbolic-ref", "--short", "-q", "HEAD")
+    if branch != "":
+        upstream = _git_read(ROOT, "rev-parse", "-q", "--verify", "refs/remotes/origin/%s" % branch)
+        ref = "refs/remotes/origin/%s" % branch
+        if upstream != "":
+            _git(path, "update-ref", ref, upstream)
+        else:
+            _git(path, "update-ref", "-d", ref)
+    return path
+
+
 # Exposed for a port module's own `FIXTURES` table: `build_repo(path, branch, ahead)` is the whole vocabulary most git guards need, and re-deriving it per module would be four copies of `git init` semantics.
 build_repo = _build_repo
 git_in = _git
@@ -164,6 +217,8 @@ FIXTURE_BUILDERS = {
     "git-synced": lambda p: _build_repo(p, "0831-1", 0),
     # On main, where /pr-merge deliberately ends.
     "git-main": lambda p: _build_repo(p, "main", 2),
+    # This checkout, frozen. Shared rather than declared per module because four guards name the same world; `_snapshot_this_worktree` above carries what it keeps, what it drops and the race that made a snapshot necessary.
+    "this-worktree-snapshot": _snapshot_this_worktree,
 }
 
 _FIXTURES = {}
@@ -517,6 +572,25 @@ def test_every_ported_guard_is_registered():
     exercised |= {stem for stem, _, _, _, _, _ in NATIVE_CASES}
     missing = sorted(set(guards.stems()) - exercised)
     assert not missing, "these guard modules exist but no case runs them: %s" % missing
+
+
+def test_this_worktree_cases_run_against_a_snapshot():
+    """No case may be judged against the LIVE checkout, however real that looks.
+
+    The `this-worktree` label means a real repository shape, and for four guards it meant the running session's own tree until a concurrent commit was shown to split one comparison into two experiments.
+    Restoring `("this-worktree", {}, {})` would restore that silently: the case would keep passing whenever nothing else committed, which is most runs and none of the ones that matter. This names the one property that has to hold instead of trusting the comment that says so.
+    """
+    live = []
+    for stem, label, _, env_label, extra, _ in list(CASES) + list(NATIVE_CASES):
+        if env_label != "this-worktree":
+            continue
+        if extra.get("CLAUDE_PROJECT_DIR", str(ROOT)) == str(ROOT):
+            live.append("%s|%s" % (stem, label))
+    assert not live, (
+        "these cases point CLAUDE_PROJECT_DIR at the live checkout, so a commit landing "
+        "between the bash pass and the Python side is reported as a port defect: %s"
+        % sorted({c.split("|")[0] for c in live})
+    )
 
 
 def test_every_port_has_a_present_twin():

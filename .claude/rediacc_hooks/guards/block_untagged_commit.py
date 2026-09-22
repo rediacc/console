@@ -116,7 +116,8 @@ FIXTURES = {"epic-snapshot": _fixture}
 
 ENVS = [
     ("snapshot", {"CLAUDE_PROJECT_DIR": "{FIXTURE:epic-snapshot}"}, {}),
-    ("this-worktree", {}, {}),
+    # A FROZEN clone of this checkout rather than the live one: the real branch and the real `agent/pr/<branch>.md` the clone carries, with no other session able to rewrite either between the differential's two sides. See block_merge_with_unpushed.py:31.
+    ("this-worktree", {"CLAUDE_PROJECT_DIR": "{FIXTURE:this-worktree-snapshot}"}, {}),
 ]
 
 EDGE_CASES = [

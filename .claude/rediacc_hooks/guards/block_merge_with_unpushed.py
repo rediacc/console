@@ -28,7 +28,9 @@ ENVS = [
     ("ahead", {"CLAUDE_PROJECT_DIR": "{FIXTURE:git-ahead}"}, {}),
     ("synced", {"CLAUDE_PROJECT_DIR": "{FIXTURE:git-synced}"}, {}),
     ("main", {"CLAUDE_PROJECT_DIR": "{FIXTURE:git-main}"}, {}),
-    ("this-worktree", {}, {}),
+    # A FROZEN clone of this checkout, never the checkout itself: a real branch with real history and a real remote-tracking ref, and immune to the commit a concurrent session lands between the differential's bash pass and its Python side. See `_snapshot_this_worktree` in test_guards_differential.py for the measured divergence (66 unpushed commits from bash, 67 from the port) that
+    # retired the live spelling on 2026-09-22.
+    ("this-worktree", {"CLAUDE_PROJECT_DIR": "{FIXTURE:this-worktree-snapshot}"}, {}),
 ]
 
 VERB = hookio.rx(r"(^|[|;&{S}])gh[{S}]+pr[{S}]+merge([{S}]|$)")

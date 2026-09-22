@@ -172,8 +172,10 @@ FIXTURES = {
     ),
 }
 
+# The last variant is a FROZEN clone of this checkout, and it closes the second half of the race the FIXTURES comment above names. Keying on `HEAD^{tree}` survives a dirty tree by design, but it does NOT survive a commit: with one interleaved between the differential's bash pass and its Python side, this guard named two different tree hashes in the same refusal, one per side. The
+# snapshot has a real history and a real branch and neither moves. See `_snapshot_this_worktree` in test_guards_differential.py.
 ENVS = [(name, {"CLAUDE_PROJECT_DIR": "{FIXTURE:%s}" % name}, {}) for name in sorted(FIXTURES)] + [
-    ("this-worktree", {}, {})
+    ("this-worktree", {"CLAUDE_PROJECT_DIR": "{FIXTURE:this-worktree-snapshot}"}, {})
 ]
 
 EDGE_CASES = [
