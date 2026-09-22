@@ -19,6 +19,9 @@ counted by grep in BYTES under LC_ALL=C, and by Python in CHARACTERS. The one
 prefix this clause exists for is a single emoji, which is four bytes and one character, so both sides admit it; a prefix of two emoji would be eight bytes and two characters and the two sides would disagree. No corpus case has one, the widening is in the direction of matching more, and narrowing it here would be a behaviour change made for tidiness rather than from a finding.
 """
 
+import contextlib
+import pathlib
+
 from rediacc_hooks import hookio
 
 CHAIN = "pre-bash"
@@ -52,6 +55,10 @@ TRAILER_OR_FOOTER = hookio.rx(
     r"Co-Authored-By[{S}]*[:=]|^[{S}]*([^0-9A-Za-z]{0,4}[{S}]*)?Generated with\b"
 )
 
+# THE COMMAND STRING IS NOT WHERE THE MESSAGE LIVES for `-F <file>` / `--file=<file>` / `--file <file>`. The established convention for a commit body long enough to need reflow (`git commit -q -F <file> -- <paths>`, written to dodge the heredoc/prose-wrapping trap) is exactly that shape: the trailer sat in the file's bytes, `cmd` never contained it.
+# Two commits carrying `Co-Authored-By: Claude Sonnet 5` reached a real push before this was caught. `block_untagged_commit.py` already solved this exact problem for its own trailer, so `FILE_ARGS` is that guard's pattern verbatim rather than a second, independently-drifting spelling of the same idea.
+FILE_ARGS = hookio.rx(r"(-F|--file)([{S}]+|=)[^{S};|&]+")
+
 MESSAGE = "❌ BLOCKED: Do not add Co-Authored-By or Generated with lines in commits."
 
 EDGE_CASES = [
@@ -71,6 +78,25 @@ EDGE_CASES = [
 ]
 
 
+def _commit_file_bodies(cmd, root):
+    """Every `-F <path>` / `--file[= ]<path>` target's bytes, read off disk. `-F -` (stdin) is skipped: stdin at hook time is the hook's OWN payload, not the commit's, so there is nothing here to read.
+
+    Each name is tried both as given (an absolute path, or one already relative to the caller's cwd) and rooted at `root` -- the same two candidates `block_untagged_commit.py` tries, for the identical reason.
+    """
+    bodies = []
+    for match in hookio.grep_o(FILE_ARGS, cmd):
+        name = hookio.sed_sub(hookio.rx(r"^(-F|--file)([{S}]+|=)"), "", match).rstrip("\n")
+        if name in {"", "-"}:
+            continue
+        for cand in (name, "%s/%s" % (root, name)):
+            path = pathlib.Path(cand)
+            if path.is_file():
+                with contextlib.suppress(OSError):
+                    bodies.append(path.read_text(encoding="utf-8", errors="surrogateescape"))
+                break
+    return bodies
+
+
 def run(ev):
     cmd = ev.raw("tool_input", "command")
     if cmd == "":
@@ -82,4 +108,13 @@ def run(ev):
     if hookio.grep_q(TRAILER_OR_FOOTER, cmd, ignore_case=True):
         ev.warn(MESSAGE)
         return hookio.DENY
+
+    root = ev.env("CLAUDE_PROJECT_DIR") or hookio.git_out(
+        ["rev-parse", "--show-toplevel"], cwd=ev.cwd
+    )
+    for body in _commit_file_bodies(cmd, root):
+        if hookio.grep_q(TRAILER_OR_FOOTER, body, ignore_case=True):
+            ev.warn(MESSAGE)
+            return hookio.DENY
+
     return hookio.ALLOW
