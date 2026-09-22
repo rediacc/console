@@ -403,6 +403,11 @@ const ACQUIRE: Record<string, string[]> = {
     '          python3 -m pip install --user --disable-pip-version-check "PyYAML==${PYYAML_VERSION}"',
     '          python3 -c "import yaml; print(\'PyYAML\', yaml.__version__)"',
   ],
+  // NO VERIFY LINE HERE, and the asymmetry with python-yaml above is deliberate.
+  // The PyYAML pair prints a version because a library's presence is otherwise invisible until a gate crashes importing it. mypy is a TOOL, and check:ci-toolchain-pins A8 refuses a workflow that invokes a gated tool directly; the gate resolves `python3 -m mypy` itself and refuses unless it answers AT THE PIN, which is a stronger check than an echoed version.
+  'python-mypy': [
+    '          python3 -m pip install --user --disable-pip-version-check "mypy==${MYPY_VERSION}"',
+  ],
 };
 
 /**

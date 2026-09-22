@@ -202,6 +202,113 @@ ignore = [
 docstring-code-format = false
 
 # =============================================================================
+# mypy -- static type checking
+# =============================================================================
+# Enforced by .ci/scripts/quality/check_python_types.py (npm run
+# check:ci-python-types), which is reachable from `npm run ci`.
+#
+# WHY IT EXISTS. ruff does not do type INFERENCE. `select = ["ALL"]` catches an
+# unused import and an undefined name, and stops exactly where TypeScript's
+# `tsc --noEmit` begins: a call with the wrong argument count, an attribute that
+# does not exist on the object, a `None` flowing into a parameter that cannot
+# take one, a three-tuple appended to a list of pairs. Until this table there was
+# no Python equivalent of that gate anywhere in this repo, while every TypeScript
+# tree in it has been type-checked since the beginning.
+#
+# WHY mypy AND NOT pyright, AND THE REASON IS MEASURED RATHER THAN CULTURAL.
+# pyright was the first candidate: this is an npm monorepo, `pyright` ships an
+# npm package that `npm ci` would install for free, and it reads as the sibling
+# of `npx tsc --noEmit`. It was installed at 1.1.414 and pointed at this tree,
+# and it analysed THREE files out of 1,126.
+#
+#     Auto-excluding **/.*
+#     Found 3 source files
+#
+# pyright's CLI unconditionally excludes every directory whose name starts with a
+# dot, and there is no config key or flag that turns that off (the escape hatch,
+# `useDefaultExcludes`, is settable only by a language-server host). Listing
+# `.ci` in `include` does not help, and neither does naming a file directly:
+#
+#     $ pyright .ci/rediacc_ci/paths.py
+#     No source files found.
+#     0 errors, 0 warnings, 0 informations        <- exit 0
+#
+# Every line of Python in this repository lives under `.ci/` or `.claude/`. So
+# the npm-native option is a gate that reports a clean tree having read none of
+# it, with exit 0 -- which is the precise failure this repo's gate-authoring
+# discipline exists to prevent, bought at the price of one config key. mypy has
+# no such rule, takes the file list it is given, and is what the ruff table above
+# was already quoting measurements from.
+#
+# THE COST IS ONE PIN AND ONE INSTALL LINE: MYPY_VERSION in
+# .devcontainer/toolchain.env, and `needs: python-mypy` on the gate header, which
+# scripts/gate-bind.ts turns into the pip install that precedes the gate in its
+# CI step. That is the same shape `needs: python-yaml` already has.
+#
+# THE LEAST STRICT SETTING THAT STILL FINDS BUGS, which is this repo's standing
+# posture for a new gate. The ruff table above already records the measurement
+# that rules out the other end: mypy --strict on this tree reported 1061 errors,
+# 96.7% of them no-untyped-def/no-untyped-call -- i.e. "this untyped program is
+# untyped", which is not a defect report and which no baseline can drain because
+# draining it means annotating 12.4k lines. Nothing here demands an annotation.
+# What it does do is check the bodies of functions that HAVE none, which is where
+# all the real findings in this tree are; see check_untyped_defs below.
+[tool.mypy]
+# Matching ruff's `target-version`. The stdlib stubs mypy compares against are
+# version-dependent, so this is part of what makes the finding set reproducible.
+python_version = "3.12"
+
+# THE ONE FLAG THAT MAKES THIS GATE WORTH RUNNING HERE. By default mypy skips the
+# BODY of any function with no annotations, which in this codebase is most of
+# them: without this the gate reads 1,126 files and reports almost nothing, i.e.
+# it is green because it looked away. It demands no annotations of anyone -- it
+# only says that the code inside an unannotated function must still be
+# self-consistent.
+check_untyped_defs = true
+
+# THIRD-PARTY RESOLUTION IS AN ENVIRONMENT FACT, NOT A TREE FACT, and a
+# shrink-only baseline must contain none of those. Whether `import yaml` resolves
+# depends on whether the interpreter mypy runs under happens to have PyYAML --
+# true on this host, not true in a lane that never pip-installed it, and not true
+# inside the uv tool venv that provisions pytest. A baselined finding that STOPS
+# firing FAILS this gate and demands a drain, so an environment-dependent finding
+# would make the gate flap between hosts over code nobody touched. These two keys
+# together make every non-stdlib import resolve to Any everywhere, identically.
+#
+# NOT A HOLE, because the class already has an owner: check:ci-python-gate-deps
+# reads the imports of every .py a workflow step runs and requires a `pip install`
+# earlier in the same job to name anything outside the standard library. That
+# gate asks "will this import exist at runtime"; this one asks "is this code
+# type-correct". Neither implies the other.
+ignore_missing_imports = true
+no_site_packages = true
+
+# WHERE THE FIRST-PARTY PACKAGES ARE, so `import rediacc_ci` and
+# `import rediacc_hooks` resolve to the real source rather than to Any -- which
+# is the difference between checking this repo's own call sites and skipping
+# them. Same fact `[tool.pytest.ini_options].pythonpath` states for pytest.
+mypy_path = ".ci,.claude"
+
+# private/ holds submodules and gitignored sibling repos with their own CI.
+# .ci/cache/ is this repo's gitignored scratch: uv tool venvs, the pytest cache,
+# and the control fixture this gate plants and deletes on every run.
+exclude = ['^private/', '^\.ci/cache/']
+
+# Gitignored and per-worktree, for the reason [tool.pytest.ini_options].cache_dir
+# states at length: the default would put an untracked directory in every
+# `git status` of a tree several sessions share.
+cache_dir = ".ci/cache/mypy"
+
+# The gate parses this output, so the shape is pinned here rather than passed on
+# the command line, where a future caller could quietly drop it. `pretty` in
+# particular reflows an error across several lines with a source excerpt and a
+# caret, which turns one finding into something no line-oriented parser can key.
+show_error_codes = true
+pretty = false
+color_output = false
+error_summary = false
+
+# =============================================================================
 # pytest -- the test runner .ci/bootstrap.sh provisions
 # =============================================================================
 # Run by .ci/rediacc_ci/check_pytest.py (the gate), which is what enforces the

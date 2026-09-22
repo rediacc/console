@@ -43,7 +43,7 @@ not as a description of the code today.
 | `.devcontainer-upgrade-blocklist` | `scripts/gates/check-devcontainer-pin-freshness.ts` `DEVCONTAINER_BLOCKLIST_FILE` | env seam over root join |
 | `.e2e-coverage-allowlist` | `scripts/gates/check-e2e-coverage.ts` `E2E_COV_ALLOWLIST` | env seam over root join |
 | `.embed-assets-upgrade-blocklist` | `scripts/gates/check-embed-asset-freshness.ts` `EMBED_BLOCKLIST_FILE` | env seam over root join |
-| `.go-deps-upgrade-blocklist` | `.ci/scripts/quality/check-go-deps.sh` `BLOCKLIST_FILE` | root join |
+| `.go-deps-upgrade-blocklist` | `.ci/rediacc_ci/quality/go_deps.py` `BLOCKLIST_REL` | `policy_rel`, over what was a root join in the deleted `check-go-deps.sh` |
 | `.plan-housekeeping-allowlist` | `.ci/scripts/quality/check-plan-housekeeping.sh` `ALLOWLIST` | env seam (`PLAN_HK_ALLOWLIST`) over root join |
 | `.profiler-coverage-allowlist` | `.ci/scripts/quality/check-profiler-coverage.sh` `ALLOWLIST` | **bare relative name**, correct only after the `cd "$REPO_ROOT"` above it |
 | `.runner-advice-allowlist` | `.ci/scripts/quality/check_runner_advice.py` `allowlist_path` | flag, then env (`RUNNER_ADVICE_ALLOWLIST`), then root join |
@@ -88,7 +88,7 @@ Scans: every tracked file in the policy directory, against `POLICY_FILES` in bot
 | `.e2e-coverage-allowlist` | name per line | 21 | 3 | both |
 | `.embed-assets-upgrade-blocklist` | name per line | 1 | 2 | both |
 | `.go-deps-upgrade-blocklist` | name per line | 2 | 3 | both |
-| `.language-policy-allowlist` | name per line | 17 | 18 | both |
+| `.language-policy-allowlist` | name per line | 18 | 19 | both |
 | `.plan-housekeeping-allowlist` | name per line | 0 | 1 | both |
 | `.profiler-coverage-allowlist` | name per line | 69 | 4 | both |
 | `.runner-advice-allowlist` | name per line | 0 | 1 | both |

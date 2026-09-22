@@ -160,6 +160,7 @@
     "check:ci-gate-reachability-coverage": ".ci/scripts/quality/check_gate_reachability_coverage.py",
     "check:ci-shell-format": "PYTHONPATH=.ci python3 -m rediacc_ci.security.shfmt",
     "check:ci-python-lint": ".ci/scripts/quality/check_python_lint.py",
+    "check:ci-python-types": ".ci/scripts/quality/check_python_types.py",
     "check:ci-python-control-plants": ".ci/scripts/quality/check_python_control_plants.py",
     "check:ci-bws-map": ".ci/scripts/quality/check_bws_map.py",
     "check:ci-actions-allowlist": ".ci/scripts/quality/check_actions_allowlist.py",

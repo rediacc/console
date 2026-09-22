@@ -399,6 +399,11 @@ jobs:
       - name: Python lint + format (ruff)
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_python_lint.py
+      - name: Python types (mypy)
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: |
+          python3 -m pip install --user --disable-pip-version-check "mypy==${MYPY_VERSION}"
+          .ci/scripts/quality/check_python_types.py
       - name: rdc.sh wrapper budget and --native arms
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_rdc_native.py

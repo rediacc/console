@@ -1621,6 +1621,21 @@
     }
   },
   {
+    "id": "check:ci-python-types",
+    "run": "npm run check:ci-python-types",
+    "slow": true,
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_python_types.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Python types (mypy)"
+    }
+  },
+  {
     "id": "check:ci-python-control-plants",
     "run": "npm run check:ci-python-control-plants",
     "gate": true,

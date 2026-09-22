@@ -1,0 +1,4072 @@
+{
+  "note": "SHRINK-ONLY and GENERATED. Every mypy finding, keyed by (file, code, message) so an id survives a MOVE, with occurrences as `count`. Only LOSING members or shrinking a count is allowed: a NEW id is refused even when the total falls. Drain with `check:ci-python-types --write-baseline` after fixing something, never to clear a red.",
+  "findings": [
+    {
+      "id": "9072b2fc7b126a6c",
+      "file": ".ci/rediacc_ci/battery.py",
+      "code": "arg-type",
+      "count": 2,
+      "message": "Argument 2 to \"_env_set\" has incompatible type \"dict[str, str] | None\"; expected \"dict[str, str]\""
+    },
+    {
+      "id": "5d25eaa4aa9514ca",
+      "file": ".ci/rediacc_ci/battery.py",
+      "code": "assignment",
+      "count": 1,
+      "message": "Incompatible types in assignment (expression has type \"_Environ[str] | dict[str, str]\", variable has type \"dict[str, str] | None\")"
+    },
+    {
+      "id": "e6b9e658a7c7f40f",
+      "file": ".ci/rediacc_ci/check_pytest.py",
+      "code": "str-format",
+      "count": 1,
+      "message": "Incompatible types in string interpolation (expression has type \"int | None\", placeholder has type \"int | float | SupportsInt\")"
+    },
+    {
+      "id": "12f62ec54c555ccf",
+      "file": ".ci/rediacc_ci/ci/scope_reconcile_shadow.py",
+      "code": "call-overload",
+      "count": 1,
+      "message": "No overload variant of \"run\" matches argument types \"list[str]\", \"float\", \"bool\", \"dict[str, object]\""
+    },
+    {
+      "id": "0a9348480df092b6",
+      "file": ".ci/rediacc_ci/ci/scope_shadow.py",
+      "code": "call-overload",
+      "count": 1,
+      "message": "No overload variant of \"run\" matches argument types \"list[str]\", \"bool\", \"dict[str, object]\""
+    },
+    {
+      "id": "d9b157be8feeb294",
+      "file": ".ci/rediacc_ci/core/allowlist.py",
+      "code": "no-redef",
+      "count": 1,
+      "message": "Name \"failures\" already defined on line 513"
+    },
+    {
+      "id": "3d13a95db51332ff",
+      "file": ".ci/rediacc_ci/core/bws_env.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument 1 to \"binary\" has incompatible type \"_Environ[str] | dict[Any, Any]\"; expected \"dict[Any, Any] | None\""
+    },
+    {
+      "id": "59a7501fb00c9d73",
+      "file": ".ci/rediacc_ci/core/bws_env.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument 1 to \"map_path\" has incompatible type \"_Environ[str] | dict[Any, Any]\"; expected \"dict[Any, Any] | None\""
+    },
+    {
+      "id": "03a44ab9bf466457",
+      "file": ".ci/rediacc_ci/core/bws_env.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument 2 to \"listing\" has incompatible type \"_Environ[str] | dict[Any, Any]\"; expected \"dict[Any, Any] | None\""
+    },
+    {
+      "id": "b63ad461a3ca43a3",
+      "file": ".ci/rediacc_ci/core/ports.py",
+      "code": "assignment",
+      "count": 2,
+      "message": "Incompatible types in assignment (expression has type \"int | None\", variable has type \"int\")"
+    },
+    {
+      "id": "3719d5df17028973",
+      "file": ".ci/rediacc_ci/core/review_budget.py",
+      "code": "union-attr",
+      "count": 1,
+      "message": "Item \"None\" of \"Match[str] | None\" has no attribute \"group\""
+    },
+    {
+      "id": "e00c83950e60327b",
+      "file": ".ci/rediacc_ci/housekeeping/cleanup_versions.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument 1 to \"extend\" of \"list\" has incompatible type \"object\"; expected \"Iterable[Any]\""
+    },
+    {
+      "id": "1efc7454377ae4f5",
+      "file": ".ci/rediacc_ci/housekeeping/cleanup_versions.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument 1 to \"jq_sort_by\" has incompatible type \"object\"; expected \"list[Any]\""
+    },
+    {
+      "id": "703c340d9a146031",
+      "file": ".ci/rediacc_ci/housekeeping/cleanup_versions.py",
+      "code": "assignment",
+      "count": 1,
+      "message": "Incompatible types in assignment (expression has type \"tuple[Any, ...]\", variable has type \"_Nothing\")"
+    },
+    {
+      "id": "ea4541b95d89d8c1",
+      "file": ".ci/rediacc_ci/housekeeping/cleanup_versions.py",
+      "code": "call-overload",
+      "count": 3,
+      "message": "No overload variant of \"search\" of \"Pattern\" matches argument type \"object\""
+    },
+    {
+      "id": "56e3dc902a220228",
+      "file": ".ci/rediacc_ci/housekeeping/cleanup_versions.py",
+      "code": "call-overload",
+      "count": 1,
+      "message": "No overload variant of \"sorted\" matches argument type \"object\""
+    },
+    {
+      "id": "842e2c5f56f80195",
+      "file": ".ci/rediacc_ci/housekeeping/cleanup_versions.py",
+      "code": "index",
+      "count": 1,
+      "message": "Value of type \"object\" is not indexable"
+    },
+    {
+      "id": "5c21ad8f789005c1",
+      "file": ".ci/rediacc_ci/housekeeping/cleanup_versions.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"rows\" (hint: \"rows: list[<type>] = ...\")"
+    },
+    {
+      "id": "e77e9bb1f48bba4f",
+      "file": ".ci/rediacc_ci/infra/ci_pull_images.py",
+      "code": "call-overload",
+      "count": 1,
+      "message": "No overload variant of \"run\" matches argument types \"list[str]\", \"bool\", \"object\""
+    },
+    {
+      "id": "33ba7875efcb68ca",
+      "file": ".ci/rediacc_ci/infra/ci_start_account.py",
+      "code": "call-overload",
+      "count": 1,
+      "message": "No overload variant of \"run\" matches argument types \"list[str]\", \"bool\", \"dict[str, object]\""
+    },
+    {
+      "id": "c899fa43bcf90ea6",
+      "file": ".ci/rediacc_ci/infra/ci_stop_elite.py",
+      "code": "call-overload",
+      "count": 1,
+      "message": "No overload variant of \"run\" matches argument types \"list[str]\", \"bool\", \"dict[str, object]\""
+    },
+    {
+      "id": "0df349105a4cbdfb",
+      "file": ".ci/rediacc_ci/proc.py",
+      "code": "return-value",
+      "count": 1,
+      "message": "Incompatible return value type (got \"object\", expected \"Result\")"
+    },
+    {
+      "id": "ff176d1f2d379ece",
+      "file": ".ci/rediacc_ci/proxies/linux_packages.py",
+      "code": "union-attr",
+      "count": 1,
+      "message": "Item \"None\" of \"Match[str] | None\" has no attribute \"groups\""
+    },
+    {
+      "id": "3ea753c86fbdb677",
+      "file": ".ci/rediacc_ci/quality/account_portal.py",
+      "code": "assignment",
+      "count": 1,
+      "message": "Incompatible types in assignment (expression has type \"str | None\", variable has type \"str\")"
+    },
+    {
+      "id": "84b83fa307981e89",
+      "file": ".ci/rediacc_ci/quality/autopilot_no_bypass.py",
+      "code": "assignment",
+      "count": 1,
+      "message": "Incompatible types in assignment (expression has type \"list[Never]\", target has type \"str\")"
+    },
+    {
+      "id": "f7590459c361d724",
+      "file": ".ci/rediacc_ci/quality/branch.py",
+      "code": "assignment",
+      "count": 1,
+      "message": "Incompatible types in assignment (expression has type \"str | None\", variable has type \"str\")"
+    },
+    {
+      "id": "a68fb84722897df4",
+      "file": ".ci/rediacc_ci/quality/dead_python.py",
+      "code": "union-attr",
+      "count": 1,
+      "message": "Item \"None\" of \"Match[str] | None\" has no attribute \"group\""
+    },
+    {
+      "id": "89c9d34810673f10",
+      "file": ".ci/rediacc_ci/quality/dead_python.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"found\" (hint: \"found: list[<type>] = ...\")"
+    },
+    {
+      "id": "ac882124a7f0d8e9",
+      "file": ".ci/rediacc_ci/quality/env_file_adoption.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"seen\" (hint: \"seen: set[<type>] = ...\")"
+    },
+    {
+      "id": "6c9da00e6330931a",
+      "file": ".ci/rediacc_ci/quality/env_manifest.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"both\""
+    },
+    {
+      "id": "3901bd01abfeffe6",
+      "file": ".ci/rediacc_ci/quality/env_manifest.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"dupe\""
+    },
+    {
+      "id": "0446a9eee2149183",
+      "file": ".ci/rediacc_ci/quality/env_manifest.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"findings\" (hint: \"findings: list[<type>] = ...\")"
+    },
+    {
+      "id": "c8f007876182d749",
+      "file": ".ci/rediacc_ci/quality/env_manifest.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"lists\""
+    },
+    {
+      "id": "bc984152ed57c5bc",
+      "file": ".ci/rediacc_ci/quality/env_manifest.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"per_names\""
+    },
+    {
+      "id": "8c68945dc6b931d7",
+      "file": ".ci/rediacc_ci/quality/env_manifest.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"seen_suppressed\""
+    },
+    {
+      "id": "677e3c94a67bc12e",
+      "file": ".ci/rediacc_ci/quality/env_manifest.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"unsorted_\""
+    },
+    {
+      "id": "2b858382ea282a4f",
+      "file": ".ci/rediacc_ci/quality/go_deps.py",
+      "code": "index",
+      "count": 1,
+      "message": "Unsupported target for indexed assignment (\"Collection[str]\")"
+    },
+    {
+      "id": "249f5538ac100b9a",
+      "file": ".ci/rediacc_ci/quality/go_deps.py",
+      "code": "union-attr",
+      "count": 1,
+      "message": "Item \"None\" of \"Match[str] | None\" has no attribute \"group\""
+    },
+    {
+      "id": "b5fb687f2eaf3c25",
+      "file": ".ci/rediacc_ci/quality/hook_cross_os.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"counts\" (hint: \"counts: dict[<type>, <type>] = ...\")"
+    },
+    {
+      "id": "9448e66b57eb91c1",
+      "file": ".ci/rediacc_ci/quality/label_inventory.py",
+      "code": "assignment",
+      "count": 1,
+      "message": "Incompatible types in assignment (expression has type \"int\", variable has type \"list[str]\")"
+    },
+    {
+      "id": "f7c0b65825b67524",
+      "file": ".ci/rediacc_ci/quality/label_inventory.py",
+      "code": "assignment",
+      "count": 1,
+      "message": "Incompatible types in assignment (expression has type \"list[tuple[str, str, str]]\", variable has type \"list[str]\")"
+    },
+    {
+      "id": "facffe342cf374a8",
+      "file": ".ci/rediacc_ci/quality/label_references.py",
+      "code": "attr-defined",
+      "count": 1,
+      "message": "\"object\" has no attribute \"findall\""
+    },
+    {
+      "id": "1eeec7d581b3baff",
+      "file": ".ci/rediacc_ci/quality/label_references.py",
+      "code": "attr-defined",
+      "count": 1,
+      "message": "\"object\" has no attribute \"search\""
+    },
+    {
+      "id": "d72704650b30972f",
+      "file": ".ci/rediacc_ci/quality/plan_housekeeping.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument 1 to \"_line_count\" has incompatible type \"Path | None\"; expected \"Path\""
+    },
+    {
+      "id": "b4acb3d960f985b3",
+      "file": ".ci/rediacc_ci/quality/plant_proofs.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"degraded\" (hint: \"degraded: list[<type>] = ...\")"
+    },
+    {
+      "id": "b29c49b9e676295f",
+      "file": ".ci/rediacc_ci/quality/plant_proofs.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"findings\" (hint: \"findings: list[<type>] = ...\")"
+    },
+    {
+      "id": "0f2671d6b617189a",
+      "file": ".ci/rediacc_ci/quality/plant_proofs.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"out\" (hint: \"out: list[<type>] = ...\")"
+    },
+    {
+      "id": "bf1a1e42cdd9b370",
+      "file": ".ci/rediacc_ci/quality/plant_proofs.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"seen\" (hint: \"seen: dict[<type>, <type>] = ...\")"
+    },
+    {
+      "id": "96ce3ad62b62332e",
+      "file": ".ci/rediacc_ci/quality/plant_proofs.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"tmpl\" (hint: \"tmpl: list[<type>] = ...\")"
+    },
+    {
+      "id": "69cd093aff6861a3",
+      "file": ".ci/rediacc_ci/quality/profiler_coverage.py",
+      "code": "union-attr",
+      "count": 1,
+      "message": "Item \"None\" of \"Match[str] | None\" has no attribute \"group\""
+    },
+    {
+      "id": "822883021b1c582c",
+      "file": ".ci/rediacc_ci/quality/prose_style.py",
+      "code": "assignment",
+      "count": 1,
+      "message": "Incompatible types in assignment (expression has type \"tuple[Any, Any, None, tuple[None, None]]\", target has type \"tuple[Any, Any, str, tuple[None, None]]\")"
+    },
+    {
+      "id": "6189424d1768c3e8",
+      "file": ".ci/rediacc_ci/quality/prose_style.py",
+      "code": "assignment",
+      "count": 1,
+      "message": "Incompatible types in assignment (expression has type \"tuple[Any, Any, None, tuple[None, str | Any]]\", target has type \"tuple[Any, Any, str, tuple[None, None]]\")"
+    },
+    {
+      "id": "df06ec1cfd2df1a8",
+      "file": ".ci/rediacc_ci/quality/prose_style.py",
+      "code": "assignment",
+      "count": 1,
+      "message": "Incompatible types in assignment (expression has type \"tuple[Any, Any, None, tuple[str | Any, None]]\", target has type \"tuple[Any, Any, str, tuple[None, None]]\")"
+    },
+    {
+      "id": "b04f94ce628fd243",
+      "file": ".ci/rediacc_ci/quality/prose_style.py",
+      "code": "union-attr",
+      "count": 1,
+      "message": "Item \"None\" of \"Match[str] | None\" has no attribute \"group\""
+    },
+    {
+      "id": "3ba8b0271784f176",
+      "file": ".ci/rediacc_ci/quality/prose_style.py",
+      "code": "var-annotated",
+      "count": 2,
+      "message": "Need type annotation for \"buffer\" (hint: \"buffer: list[<type>] = ...\")"
+    },
+    {
+      "id": "a9d0ea2be5574208",
+      "file": ".ci/rediacc_ci/quality/prose_style.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"by_rule\" (hint: \"by_rule: dict[<type>, <type>] = ...\")"
+    },
+    {
+      "id": "491fa6de194783ef",
+      "file": ".ci/rediacc_ci/quality/prose_style.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"exempted\" (hint: \"exempted: dict[<type>, <type>] = ...\")"
+    },
+    {
+      "id": "dac7d7279f363025",
+      "file": ".ci/rediacc_ci/quality/prose_style.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"grouped\" (hint: \"grouped: dict[<type>, <type>] = ...\")"
+    },
+    {
+      "id": "538568d9ec9e66db",
+      "file": ".ci/rediacc_ci/quality/prose_style.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"lines\" (hint: \"lines: list[<type>] = ...\")"
+    },
+    {
+      "id": "1558fe26a34d0556",
+      "file": ".ci/rediacc_ci/quality/prose_style.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"per_suffix_files\""
+    },
+    {
+      "id": "14467d50e97093c1",
+      "file": ".ci/rediacc_ci/quality/prose_style.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"per_suffix_lines\""
+    },
+    {
+      "id": "97a2ae4c5039f229",
+      "file": ".ci/rediacc_ci/quality/prose_style.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"per_suffix_noted\""
+    },
+    {
+      "id": "000c031f3391b9ee",
+      "file": ".ci/rediacc_ci/quality/python_env_registry.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"findings\" (hint: \"findings: list[<type>] = ...\")"
+    },
+    {
+      "id": "aca8ebd57c42a247",
+      "file": ".ci/rediacc_ci/quality/python_env_registry.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"not_a_read\" (hint: \"not_a_read: set[<type>] = ...\")"
+    },
+    {
+      "id": "e7e8c1449a800e23",
+      "file": ".ci/rediacc_ci/quality/regions_sync.py",
+      "code": "union-attr",
+      "count": 1,
+      "message": "Item \"list[Any]\" of \"dict[Any, Any] | list[Any]\" has no attribute \"get\""
+    },
+    {
+      "id": "5ad99679c0571aa0",
+      "file": ".ci/rediacc_ci/quality/review_comments.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument 1 to \"inline_findings\" has incompatible type \"list[object]\"; expected \"list[dict[Any, Any]]\""
+    },
+    {
+      "id": "167d53e9d2dfc8a1",
+      "file": ".ci/rediacc_ci/quality/review_comments.py",
+      "code": "assignment",
+      "count": 1,
+      "message": "Incompatible types in assignment (expression has type \"Any | None\", variable has type \"str\")"
+    },
+    {
+      "id": "6e060d0f374a0322",
+      "file": ".ci/rediacc_ci/quality/review_comments.py",
+      "code": "assignment",
+      "count": 1,
+      "message": "Incompatible types in assignment (expression has type \"int | None\", variable has type \"bool\")"
+    },
+    {
+      "id": "dc94e71f6628cd67",
+      "file": ".ci/rediacc_ci/quality/review_comments.py",
+      "code": "index",
+      "count": 3,
+      "message": "Value of type \"dict[Any, Any] | None\" is not indexable"
+    },
+    {
+      "id": "3de99c72fb1a8d5b",
+      "file": ".ci/rediacc_ci/quality/review_report_replies.py",
+      "code": "index",
+      "count": 1,
+      "message": "Value of type \"dict[Any, Any] | None\" is not indexable"
+    },
+    {
+      "id": "d18113b4606a22a6",
+      "file": ".ci/rediacc_ci/quality/script_exec_bit.py",
+      "code": "assignment",
+      "count": 1,
+      "message": "Incompatible types in assignment (expression has type \"bool\", variable has type \"str | None\")"
+    },
+    {
+      "id": "79deb6b8ea79cfc0",
+      "file": ".ci/rediacc_ci/quality/secret_supply.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument 1 to \"deepcopy\" has incompatible type \"dict[str, Collection[str]]\"; expected \"dict[str, dict[str, list[str]]]\""
+    },
+    {
+      "id": "88993d2dac43d097",
+      "file": ".ci/rediacc_ci/quality/secret_supply.py",
+      "code": "attr-defined",
+      "count": 1,
+      "message": "\"Collection[str]\" has no attribute \"__delitem__\""
+    },
+    {
+      "id": "e64277aac8820d33",
+      "file": ".ci/rediacc_ci/quality/secret_supply.py",
+      "code": "index",
+      "count": 7,
+      "message": "Unsupported target for indexed assignment (\"Collection[str]\")"
+    },
+    {
+      "id": "14e06ecb47ad367f",
+      "file": ".ci/rediacc_ci/quality/secret_supply.py",
+      "code": "index",
+      "count": 11,
+      "message": "Value of type \"Collection[str]\" is not indexable"
+    },
+    {
+      "id": "45c72c3cfc8d7804",
+      "file": ".ci/rediacc_ci/quality/secret_supply.py",
+      "code": "var-annotated",
+      "count": 3,
+      "message": "Need type annotation for \"findings\" (hint: \"findings: list[<type>] = ...\")"
+    },
+    {
+      "id": "26cf45312f821b8a",
+      "file": ".ci/rediacc_ci/quality/tree_shape.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"out\" (hint: \"out: list[<type>] = ...\")"
+    },
+    {
+      "id": "f29878f17cf173bc",
+      "file": ".ci/rediacc_ci/quality/workflows.py",
+      "code": "union-attr",
+      "count": 2,
+      "message": "Item \"None\" of \"Match[str] | None\" has no attribute \"group\""
+    },
+    {
+      "id": "c95eba762c8fedd7",
+      "file": ".ci/rediacc_ci/quality/worklist_env_registry.py",
+      "code": "attr-defined",
+      "count": 1,
+      "message": "\"object\" has no attribute \"get\""
+    },
+    {
+      "id": "33add2252734598c",
+      "file": ".ci/rediacc_ci/quality/worklist_env_registry.py",
+      "code": "index",
+      "count": 1,
+      "message": "Unsupported target for indexed assignment (\"object\")"
+    },
+    {
+      "id": "d0f5a1e3413c433d",
+      "file": ".ci/rediacc_ci/quality/worklist_env_registry.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"by_name\" (hint: \"by_name: dict[<type>, <type>] = ...\")"
+    },
+    {
+      "id": "f91b313d7ac01864",
+      "file": ".ci/rediacc_ci/quality/worklist_env_registry.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"findings\" (hint: \"findings: list[<type>] = ...\")"
+    },
+    {
+      "id": "4f9b58ed83afdf4c",
+      "file": ".ci/rediacc_ci/quality/worklist_env_registry.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"out\" (hint: \"out: list[<type>] = ...\")"
+    },
+    {
+      "id": "37e73b54bd36efe5",
+      "file": ".ci/rediacc_ci/quality/worklist_env_registry.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"written\" (hint: \"written: set[<type>] = ...\")"
+    },
+    {
+      "id": "3dbe36bc7af15785",
+      "file": ".ci/rediacc_ci/security/ci_workflow_invariants.py",
+      "code": "attr-defined",
+      "count": 1,
+      "message": "\"object\" has no attribute \"get\""
+    },
+    {
+      "id": "1c4725e5fcdd1b66",
+      "file": ".ci/rediacc_ci/security/workflow_gates.py",
+      "code": "attr-defined",
+      "count": 4,
+      "message": "\"object\" has no attribute \"get\""
+    },
+    {
+      "id": "93fbcaf7af721fc0",
+      "file": ".ci/rediacc_ci/security/workflow_gates.py",
+      "code": "call-overload",
+      "count": 2,
+      "message": "No overload variant of \"sorted\" matches argument type \"object\""
+    },
+    {
+      "id": "ff9ae7e5f458da06",
+      "file": ".ci/rediacc_ci/setup/ctx.py",
+      "code": "call-overload",
+      "count": 1,
+      "message": "No overload variant of \"run\" matches argument types \"list[str]\", \"int\", \"bool\", \"dict[str, object]\""
+    },
+    {
+      "id": "b898afa0566839c3",
+      "file": ".ci/rediacc_ci/setup/ctx.py",
+      "code": "call-overload",
+      "count": 1,
+      "message": "No overload variant of \"run\" matches argument types \"list[str]\", \"str\", \"bool\", \"dict[str, object]\""
+    },
+    {
+      "id": "696492d84eff5184",
+      "file": ".ci/rediacc_ci/setup/tools.py",
+      "code": "assignment",
+      "count": 1,
+      "message": "Incompatible types in assignment (expression has type \"Tool | None\", variable has type \"Tool\")"
+    },
+    {
+      "id": "f130a705e21bc91d",
+      "file": ".ci/rediacc_ci/tests/differential.py",
+      "code": "call-overload",
+      "count": 1,
+      "message": "No overload variant of \"Popen\" matches argument types \"list[str]\", \"str\", \"dict[str, str]\", \"bool\", \"dict[str, int]\""
+    },
+    {
+      "id": "31a2912fb610a890",
+      "file": ".ci/rediacc_ci/tests/gates/media_verify.py",
+      "code": "assignment",
+      "count": 1,
+      "message": "Incompatible types in assignment (expression has type \"str\", variable has type \"Path\")"
+    },
+    {
+      "id": "ef4b145abcbdaab4",
+      "file": ".ci/rediacc_ci/tests/gates/test_gate_assert_edge_tag_exists.py",
+      "code": "operator",
+      "count": 1,
+      "message": "Unsupported operand types for + (\"None\" and \"int\")"
+    },
+    {
+      "id": "81ae51da2e09ca9a",
+      "file": ".ci/rediacc_ci/tests/gates/test_gate_autopilot_guide_comment.py",
+      "code": "union-attr",
+      "count": 3,
+      "message": "Item \"None\" of \"Match[str] | None\" has no attribute \"group\""
+    },
+    {
+      "id": "dc75c1d71b6cdf4e",
+      "file": ".ci/rediacc_ci/tests/gates/test_gate_breakpoint_pins.py",
+      "code": "operator",
+      "count": 2,
+      "message": "Unsupported left operand type for >= (\"None\")"
+    },
+    {
+      "id": "2fa60437c69dccfd",
+      "file": ".ci/rediacc_ci/tests/gates/test_gate_breakpoint_pins.py",
+      "code": "operator",
+      "count": 2,
+      "message": "Unsupported operand types for <= (\"int\" and \"None\")"
+    },
+    {
+      "id": "13d0c71f60d13ee5",
+      "file": ".ci/rediacc_ci/tests/gates/test_gate_breakpoint_pins.py",
+      "code": "operator",
+      "count": 2,
+      "message": "Unsupported operand types for >= (\"int\" and \"None\")"
+    },
+    {
+      "id": "aa38ead9a3bbbdee",
+      "file": ".ci/rediacc_ci/tests/gates/test_gate_breakpoint_pins.py",
+      "code": "str-format",
+      "count": 4,
+      "message": "Incompatible types in string interpolation (expression has type \"int | None\", placeholder has type \"int | float | SupportsInt\")"
+    },
+    {
+      "id": "78a2d45fa7a022ad",
+      "file": ".ci/rediacc_ci/tests/gates/test_gate_breakpoint_portability.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"found\" (hint: \"found: list[<type>] = ...\")"
+    },
+    {
+      "id": "629ef0950ec5cf55",
+      "file": ".ci/rediacc_ci/tests/gates/test_gate_ci_job_aggregation.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"hard\" (hint: \"hard: list[<type>] = ...\")"
+    },
+    {
+      "id": "b28be155cd9a7c14",
+      "file": ".ci/rediacc_ci/tests/gates/test_gate_ci_job_aggregation.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"soft\" (hint: \"soft: list[<type>] = ...\")"
+    },
+    {
+      "id": "61f73354bd8e5830",
+      "file": ".ci/rediacc_ci/tests/gates/test_gate_ci_runner.py",
+      "code": "operator",
+      "count": 1,
+      "message": "Unsupported left operand type for <= (\"None\")"
+    },
+    {
+      "id": "338579663e8272e6",
+      "file": ".ci/rediacc_ci/tests/gates/test_gate_ci_runner.py",
+      "code": "operator",
+      "count": 1,
+      "message": "Unsupported operand types for <= (\"int\" and \"None\")"
+    },
+    {
+      "id": "b6144bb44d737140",
+      "file": ".ci/rediacc_ci/tests/gates/test_gate_ci_runner.py",
+      "code": "operator",
+      "count": 1,
+      "message": "Unsupported operand types for >= (\"int\" and \"None\")"
+    },
+    {
+      "id": "5f0de60fa6e83e21",
+      "file": ".ci/rediacc_ci/tests/gates/test_gate_ci_runner.py",
+      "code": "union-attr",
+      "count": 4,
+      "message": "Item \"None\" of \"Any | None\" has no attribute \"get\""
+    },
+    {
+      "id": "a4d45b7908082edc",
+      "file": ".ci/rediacc_ci/tests/gates/test_gate_ci_runner.py",
+      "code": "union-attr",
+      "count": 1,
+      "message": "Item \"None\" of \"Match[str] | None\" has no attribute \"group\""
+    },
+    {
+      "id": "f566ff775573e285",
+      "file": ".ci/rediacc_ci/tests/gates/test_gate_devbox_probes.py",
+      "code": "union-attr",
+      "count": 1,
+      "message": "Item \"None\" of \"Match[str] | None\" has no attribute \"group\""
+    },
+    {
+      "id": "9f6d1c290cf8455e",
+      "file": ".ci/rediacc_ci/tests/gates/test_gate_doc_region_parity.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument 1 to \"append\" of \"list\" has incompatible type \"Path | None\"; expected \"Path\""
+    },
+    {
+      "id": "6259527a4a3d3716",
+      "file": ".ci/rediacc_ci/tests/gates/test_gate_fanout_timeout_declarable.py",
+      "code": "arg-type",
+      "count": 2,
+      "message": "Argument 1 to \"_timeout_kw\" has incompatible type \"AST\"; expected \"Call\""
+    },
+    {
+      "id": "78d1cc4ccbd49975",
+      "file": ".ci/rediacc_ci/tests/gates/test_gate_fanout_timeout_declarable.py",
+      "code": "attr-defined",
+      "count": 1,
+      "message": "\"AST\" has no attribute \"lineno\""
+    },
+    {
+      "id": "d779001066e8d3ce",
+      "file": ".ci/rediacc_ci/tests/gates/test_gate_fanout_timeout_declarable.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"found\" (hint: \"found: set[<type>] = ...\")"
+    },
+    {
+      "id": "a19c4a724e83ceb6",
+      "file": ".ci/rediacc_ci/tests/gates/test_gate_fetch_depth_safety.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"offenders\" (hint: \"offenders: list[<type>] = ...\")"
+    },
+    {
+      "id": "6138d92d91485fca",
+      "file": ".ci/rediacc_ci/tests/gates/test_gate_generate_tag_inputs.py",
+      "code": "assignment",
+      "count": 1,
+      "message": "Incompatible types in assignment (expression has type \"Path\", variable has type \"str\")"
+    },
+    {
+      "id": "89ca29a6eaeb0798",
+      "file": ".ci/rediacc_ci/tests/gates/test_gate_knip_blockers.py",
+      "code": "union-attr",
+      "count": 1,
+      "message": "Item \"None\" of \"Match[str] | None\" has no attribute \"group\""
+    },
+    {
+      "id": "04bec725ca405b8d",
+      "file": ".ci/rediacc_ci/tests/gates/test_gate_label_guide_comment.py",
+      "code": "union-attr",
+      "count": 1,
+      "message": "Item \"None\" of \"Match[str] | None\" has no attribute \"group\""
+    },
+    {
+      "id": "5d7c0066709e9549",
+      "file": ".ci/rediacc_ci/tests/gates/test_gate_label_references.py",
+      "code": "union-attr",
+      "count": 1,
+      "message": "Item \"None\" of \"Match[str] | None\" has no attribute \"group\""
+    },
+    {
+      "id": "390a7913e5c7e6ab",
+      "file": ".ci/rediacc_ci/tests/gates/test_gate_media_docs.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument 1 to \"int\" has incompatible type \"str | None\"; expected \"str | Buffer | SupportsInt | SupportsIndex | SupportsTrunc\""
+    },
+    {
+      "id": "372c8ae6a13c6ace",
+      "file": ".ci/rediacc_ci/tests/gates/test_gate_media_shims.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument 1 to \"insert\" of \"list\" has incompatible type \"int | None\"; expected \"SupportsIndex\""
+    },
+    {
+      "id": "f0436c7ca0890e0b",
+      "file": ".ci/rediacc_ci/tests/gates/test_gate_media_shims.py",
+      "code": "index",
+      "count": 1,
+      "message": "Invalid index type \"int | None\" for \"list[str]\"; expected type \"SupportsIndex\""
+    },
+    {
+      "id": "a20174fe1877c01d",
+      "file": ".ci/rediacc_ci/tests/gates/test_gate_plan_boxes_never_delete.py",
+      "code": "list-item",
+      "count": 1,
+      "message": "List item 0 has incompatible type \"str | None\"; expected \"str | bytes | PathLike[str] | PathLike[bytes]\""
+    },
+    {
+      "id": "a8b4c8930ed1fb07",
+      "file": ".ci/rediacc_ci/tests/gates/test_gate_policy_liveness_floors.py",
+      "code": "union-attr",
+      "count": 1,
+      "message": "Item \"None\" of \"Match[str] | None\" has no attribute \"group\""
+    },
+    {
+      "id": "db63d6735efafce6",
+      "file": ".ci/rediacc_ci/tests/gates/test_gate_preview_worker_reaping.py",
+      "code": "union-attr",
+      "count": 2,
+      "message": "Item \"None\" of \"Match[str] | None\" has no attribute \"group\""
+    },
+    {
+      "id": "84ba5b313ed52689",
+      "file": ".ci/rediacc_ci/tests/gates/test_gate_releaseversion_closure_untagged.py",
+      "code": "union-attr",
+      "count": 1,
+      "message": "Item \"None\" of \"Match[str] | None\" has no attribute \"group\""
+    },
+    {
+      "id": "e8dca2994bde322e",
+      "file": ".ci/rediacc_ci/tests/gates/test_gate_review_status.py",
+      "code": "operator",
+      "count": 1,
+      "message": "Unsupported operand types for + (\"None\" and \"int\")"
+    },
+    {
+      "id": "2c4506fb4982ded7",
+      "file": ".ci/rediacc_ci/tests/gates/test_gate_shadow_gate.py",
+      "code": "operator",
+      "count": 2,
+      "message": "Unsupported operand types for + (\"None\" and \"int\")"
+    },
+    {
+      "id": "ecf31c3313150dc5",
+      "file": ".ci/rediacc_ci/tests/gates/test_gate_suppression_liveness.py",
+      "code": "union-attr",
+      "count": 1,
+      "message": "Item \"None\" of \"Match[str] | None\" has no attribute \"group\""
+    },
+    {
+      "id": "4a01cb105cb60815",
+      "file": ".ci/rediacc_ci/tests/gates/test_gate_trap_registry.py",
+      "code": "union-attr",
+      "count": 1,
+      "message": "Item \"None\" of \"Match[str] | None\" has no attribute \"group\""
+    },
+    {
+      "id": "185fec6f1bdd0281",
+      "file": ".ci/rediacc_ci/tests/gates/test_gate_watchdog_binary_exec_guard.py",
+      "code": "union-attr",
+      "count": 1,
+      "message": "Item \"None\" of \"Match[str] | None\" has no attribute \"group\""
+    },
+    {
+      "id": "37a61d7645769410",
+      "file": ".ci/rediacc_ci/tests/gates/test_gate_watchdog_designed_failure.py",
+      "code": "union-attr",
+      "count": 1,
+      "message": "Item \"None\" of \"Match[str] | None\" has no attribute \"group\""
+    },
+    {
+      "id": "11e3ae9b5bec83ac",
+      "file": ".ci/rediacc_ci/tests/gates/test_gate_worktree_devbox_teardown.py",
+      "code": "union-attr",
+      "count": 1,
+      "message": "Item \"None\" of \"Match[str] | None\" has no attribute \"group\""
+    },
+    {
+      "id": "8667bfb4f9b263c8",
+      "file": ".ci/rediacc_ci/tests/test_autopilot_fetch_review_threads.py",
+      "code": "arg-type",
+      "count": 5,
+      "message": "Argument 1 to \"loads\" has incompatible type \"bytes | None\"; expected \"str | bytes | bytearray\""
+    },
+    {
+      "id": "dc2ca8d83eb0b3ce",
+      "file": ".ci/rediacc_ci/tests/test_autopilot_finish.py",
+      "code": "assignment",
+      "count": 1,
+      "message": "Incompatible types in assignment (expression has type \"object\", target has type \"int\")"
+    },
+    {
+      "id": "c969763ccf5f218e",
+      "file": ".ci/rediacc_ci/tests/test_build_cli.py",
+      "code": "attr-defined",
+      "count": 2,
+      "message": "\"object\" has no attribute \"__iter__\"; maybe \"__dir__\" or \"__str__\"? (not iterable)"
+    },
+    {
+      "id": "0a2a64878cb92018",
+      "file": ".ci/rediacc_ci/tests/test_build_cli.py",
+      "code": "call-overload",
+      "count": 3,
+      "message": "No overload variant of \"sub\" of \"Pattern\" matches argument types \"str\", \"object\""
+    },
+    {
+      "id": "91bb244abf7cd1d3",
+      "file": ".ci/rediacc_ci/tests/test_build_cli.py",
+      "code": "operator",
+      "count": 5,
+      "message": "Unsupported right operand type for in (\"object\")"
+    },
+    {
+      "id": "0cf1dd9d8202afac",
+      "file": ".ci/rediacc_ci/tests/test_build_linux_packages.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument 1 to \"render\" has incompatible type \"object\"; expected \"int\""
+    },
+    {
+      "id": "e299932ecf4a6ee0",
+      "file": ".ci/rediacc_ci/tests/test_build_linux_packages.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument 2 to \"render\" has incompatible type \"object\"; expected \"str\""
+    },
+    {
+      "id": "d38d91b040a63dba",
+      "file": ".ci/rediacc_ci/tests/test_build_linux_packages.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument 3 to \"render\" has incompatible type \"object\"; expected \"str\""
+    },
+    {
+      "id": "4bb499e336ffde9d",
+      "file": ".ci/rediacc_ci/tests/test_build_linux_packages.py",
+      "code": "attr-defined",
+      "count": 4,
+      "message": "\"object\" has no attribute \"__iter__\"; maybe \"__dir__\" or \"__str__\"? (not iterable)"
+    },
+    {
+      "id": "f7c95a294373d4a6",
+      "file": ".ci/rediacc_ci/tests/test_build_linux_packages.py",
+      "code": "call-overload",
+      "count": 2,
+      "message": "No overload variant of \"sub\" of \"Pattern\" matches argument types \"str\", \"object\""
+    },
+    {
+      "id": "0e61a9e9fd3d221f",
+      "file": ".ci/rediacc_ci/tests/test_build_linux_packages.py",
+      "code": "operator",
+      "count": 2,
+      "message": "Unsupported right operand type for in (\"object\")"
+    },
+    {
+      "id": "208001e704cb13eb",
+      "file": ".ci/rediacc_ci/tests/test_build_pkg_repo.py",
+      "code": "attr-defined",
+      "count": 4,
+      "message": "\"object\" has no attribute \"__iter__\"; maybe \"__dir__\" or \"__str__\"? (not iterable)"
+    },
+    {
+      "id": "661c785b1b6545c0",
+      "file": ".ci/rediacc_ci/tests/test_build_pkg_repo.py",
+      "code": "attr-defined",
+      "count": 1,
+      "message": "\"object\" has no attribute \"get\""
+    },
+    {
+      "id": "1ec7290e45c32c82",
+      "file": ".ci/rediacc_ci/tests/test_build_pkg_repo.py",
+      "code": "attr-defined",
+      "count": 2,
+      "message": "\"object\" has no attribute \"startswith\""
+    },
+    {
+      "id": "21842a48e92c7ff9",
+      "file": ".ci/rediacc_ci/tests/test_build_pkg_repo.py",
+      "code": "call-overload",
+      "count": 2,
+      "message": "No overload variant of \"set\" matches argument type \"object\""
+    },
+    {
+      "id": "48522eeb02812064",
+      "file": ".ci/rediacc_ci/tests/test_build_pkg_repo.py",
+      "code": "call-overload",
+      "count": 3,
+      "message": "No overload variant of \"sorted\" matches argument type \"object\""
+    },
+    {
+      "id": "c6aada14e01c6994",
+      "file": ".ci/rediacc_ci/tests/test_build_pkg_repo.py",
+      "code": "call-overload",
+      "count": 2,
+      "message": "No overload variant of \"sub\" of \"Pattern\" matches argument types \"str\", \"object\""
+    },
+    {
+      "id": "8f336d153421ea43",
+      "file": ".ci/rediacc_ci/tests/test_build_pkg_repo.py",
+      "code": "index",
+      "count": 1,
+      "message": "Value of type \"object\" is not indexable"
+    },
+    {
+      "id": "342fb5c2c8153601",
+      "file": ".ci/rediacc_ci/tests/test_build_pkg_repo.py",
+      "code": "operator",
+      "count": 17,
+      "message": "Unsupported right operand type for in (\"object\")"
+    },
+    {
+      "id": "030b7c1fcfe77b76",
+      "file": ".ci/rediacc_ci/tests/test_ci_cancel_older_runs.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument 1 to \"env_for\" has incompatible type \"**dict[str, str | None]\"; expected \"str\""
+    },
+    {
+      "id": "d940bd5e4050dcf7",
+      "file": ".ci/rediacc_ci/tests/test_ci_derive_image_tag.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument 1 to \"env_for\" has incompatible type \"**dict[str, str | None]\"; expected \"str\""
+    },
+    {
+      "id": "5a851bf957e04aa1",
+      "file": ".ci/rediacc_ci/tests/test_ci_derive_image_tag.py",
+      "code": "operator",
+      "count": 1,
+      "message": "Unsupported right operand type for in (\"str | None\")"
+    },
+    {
+      "id": "7b86662cd22d2e93",
+      "file": ".ci/rediacc_ci/tests/test_ci_derive_image_tag.py",
+      "code": "union-attr",
+      "count": 1,
+      "message": "Item \"None\" of \"str | None\" has no attribute \"count\""
+    },
+    {
+      "id": "a05db6adb43d0422",
+      "file": ".ci/rediacc_ci/tests/test_ci_dispatch_watchdog.py",
+      "code": "call-overload",
+      "count": 1,
+      "message": "No overload variant of \"update\" of \"MutableMapping\" matches argument type \"object\""
+    },
+    {
+      "id": "ad0f68ce646a1452",
+      "file": ".ci/rediacc_ci/tests/test_ci_initialize.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument \"env_extra\" to \"run_both\" has incompatible type \"dict[str, str]\"; expected \"dict[str, str | None] | None\""
+    },
+    {
+      "id": "4069d54a7387a5d6",
+      "file": ".ci/rediacc_ci/tests/test_ci_initialize.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument 1 to \"env_for\" has incompatible type \"**dict[str, str | None]\"; expected \"str\""
+    },
+    {
+      "id": "b8a73d0c9cb92340",
+      "file": ".ci/rediacc_ci/tests/test_ci_initialize.py",
+      "code": "operator",
+      "count": 8,
+      "message": "Unsupported right operand type for in (\"str | None\")"
+    },
+    {
+      "id": "636d2aece9ffd282",
+      "file": ".ci/rediacc_ci/tests/test_ci_initialize.py",
+      "code": "union-attr",
+      "count": 3,
+      "message": "Item \"None\" of \"str | None\" has no attribute \"count\""
+    },
+    {
+      "id": "6187d1c19bba99c3",
+      "file": ".ci/rediacc_ci/tests/test_ci_scope_shadow.py",
+      "code": "arg-type",
+      "count": 2,
+      "message": "Argument 1 to \"_run_awk\" has incompatible type \"object\"; expected \"str\""
+    },
+    {
+      "id": "829553eb41ba1634",
+      "file": ".ci/rediacc_ci/tests/test_ci_scope_shadow.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument 1 to \"len\" has incompatible type \"object\"; expected \"Sized\""
+    },
+    {
+      "id": "72112c29c762ccc8",
+      "file": ".ci/rediacc_ci/tests/test_ci_scope_shadow.py",
+      "code": "call-overload",
+      "count": 1,
+      "message": "No overload variant of \"zip\" matches argument types \"object\", \"list[str]\", \"bool\""
+    },
+    {
+      "id": "7c3e4e9de19604b2",
+      "file": ".ci/rediacc_ci/tests/test_ci_scope_shadow.py",
+      "code": "index",
+      "count": 5,
+      "message": "Value of type \"object\" is not indexable"
+    },
+    {
+      "id": "91ef336c6ce163bc",
+      "file": ".ci/rediacc_ci/tests/test_ci_scope_shadow.py",
+      "code": "operator",
+      "count": 1,
+      "message": "Unsupported right operand type for in (\"object\")"
+    },
+    {
+      "id": "b5c3d97024abb07a",
+      "file": ".ci/rediacc_ci/tests/test_ci_set_image_tags.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument 1 to \"env_for\" has incompatible type \"**dict[str, str | None]\"; expected \"str\""
+    },
+    {
+      "id": "a0339a67a194c582",
+      "file": ".ci/rediacc_ci/tests/test_ci_set_image_tags.py",
+      "code": "operator",
+      "count": 2,
+      "message": "Unsupported right operand type for in (\"str | None\")"
+    },
+    {
+      "id": "6b8fe1c6b546981c",
+      "file": ".ci/rediacc_ci/tests/test_ci_set_image_tags.py",
+      "code": "union-attr",
+      "count": 3,
+      "message": "Item \"None\" of \"str | None\" has no attribute \"endswith\""
+    },
+    {
+      "id": "2042b75703b8a90d",
+      "file": ".ci/rediacc_ci/tests/test_core_allowlist.py",
+      "code": "arg-type",
+      "count": 2,
+      "message": "Argument 1 to \"parse_file\" has incompatible type \"Path | None\"; expected \"PathLike[str] | str\""
+    },
+    {
+      "id": "a5f4f6393e95636a",
+      "file": ".ci/rediacc_ci/tests/test_core_allowlist.py",
+      "code": "union-attr",
+      "count": 2,
+      "message": "Item \"None\" of \"Rejection | None\" has no attribute \"kind\""
+    },
+    {
+      "id": "ccb8da3ab3a341cd",
+      "file": ".ci/rediacc_ci/tests/test_core_blocker_validator.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument 1 to \"module_from_spec\" has incompatible type \"ModuleSpec | None\"; expected \"ModuleSpec\""
+    },
+    {
+      "id": "eb5087fcb4d59f6f",
+      "file": ".ci/rediacc_ci/tests/test_core_blocker_validator.py",
+      "code": "union-attr",
+      "count": 1,
+      "message": "Item \"None\" of \"Loader | Any | None\" has no attribute \"exec_module\""
+    },
+    {
+      "id": "2ba859baffd47ee6",
+      "file": ".ci/rediacc_ci/tests/test_core_blocker_validator.py",
+      "code": "union-attr",
+      "count": 1,
+      "message": "Item \"None\" of \"ModuleSpec | None\" has no attribute \"loader\""
+    },
+    {
+      "id": "7a100bf236604a7c",
+      "file": ".ci/rediacc_ci/tests/test_core_blocker_validator.py",
+      "code": "union-attr",
+      "count": 1,
+      "message": "Item \"None\" of \"Rejection | None\" has no attribute \"message\""
+    },
+    {
+      "id": "7d0a233797b0718e",
+      "file": ".ci/rediacc_ci/tests/test_core_dockerx.py",
+      "code": "attr-defined",
+      "count": 1,
+      "message": "\"def make(name: str = ..., *, stdout: str = ..., stderr: str = ..., rc: int = ..., per_verb: dict[Any, Any] | None = ...) -> Path\" has no attribute \"bindir\""
+    },
+    {
+      "id": "2674a17bc6388bac",
+      "file": ".ci/rediacc_ci/tests/test_core_dockerx.py",
+      "code": "attr-defined",
+      "count": 1,
+      "message": "\"def make(name: str = ..., *, stdout: str = ..., stderr: str = ..., rc: int = ..., per_verb: dict[Any, Any] | None = ...) -> Path\" has no attribute \"tmp\""
+    },
+    {
+      "id": "f3c90489d87c4249",
+      "file": ".ci/rediacc_ci/tests/test_core_gate_controls.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument 1 to \"program\" has incompatible type \"object\"; expected \"list[tuple[str, ...]]\""
+    },
+    {
+      "id": "b7b3445c4f24fc4a",
+      "file": ".ci/rediacc_ci/tests/test_core_ghx.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument 1 to \"secret_names\" has incompatible type \"**dict[str, str]\"; expected \"dict[str, str] | None\""
+    },
+    {
+      "id": "ddfae9ba7752fc89",
+      "file": ".ci/rediacc_ci/tests/test_core_ghx.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument 1 to \"secret_names\" has incompatible type \"**dict[str, str]\"; expected \"int\""
+    },
+    {
+      "id": "4e68a31cea70d79d",
+      "file": ".ci/rediacc_ci/tests/test_core_ghx.py",
+      "code": "attr-defined",
+      "count": 1,
+      "message": "\"def make(name: str, *, stdout: str = ..., stderr: str = ..., rc: int = ...) -> Path\" has no attribute \"bindir\""
+    },
+    {
+      "id": "ab71ac36ac1280e9",
+      "file": ".ci/rediacc_ci/tests/test_core_ghx.py",
+      "code": "attr-defined",
+      "count": 1,
+      "message": "\"def make(name: str, *, stdout: str = ..., stderr: str = ..., rc: int = ...) -> Path\" has no attribute \"tmp\""
+    },
+    {
+      "id": "5e61d2da6b53bddf",
+      "file": ".ci/rediacc_ci/tests/test_core_ghx.py",
+      "code": "attr-defined",
+      "count": 1,
+      "message": "\"def make(refs: list[str], *, rc: int = ..., stderr: str = ...) -> None\" has no attribute \"bindir\""
+    },
+    {
+      "id": "fa92c8929265b352",
+      "file": ".ci/rediacc_ci/tests/test_core_ghx.py",
+      "code": "call-overload",
+      "count": 1,
+      "message": "No overload variant of \"list\" matches argument type \"object\""
+    },
+    {
+      "id": "9d12060fd94974bb",
+      "file": ".ci/rediacc_ci/tests/test_core_release_age.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument 1 to \"module_from_spec\" has incompatible type \"ModuleSpec | None\"; expected \"ModuleSpec\""
+    },
+    {
+      "id": "de9c3c36880209a6",
+      "file": ".ci/rediacc_ci/tests/test_core_release_age.py",
+      "code": "union-attr",
+      "count": 1,
+      "message": "Item \"None\" of \"Loader | Any | None\" has no attribute \"exec_module\""
+    },
+    {
+      "id": "6b1bb78990b3ef80",
+      "file": ".ci/rediacc_ci/tests/test_core_release_age.py",
+      "code": "union-attr",
+      "count": 1,
+      "message": "Item \"None\" of \"ModuleSpec | None\" has no attribute \"loader\""
+    },
+    {
+      "id": "1a6c216004944e1d",
+      "file": ".ci/rediacc_ci/tests/test_core_release_state_validator.py",
+      "code": "misc",
+      "count": 1,
+      "message": "Generator has incompatible item type \"tuple[object, object, object, str, object]\"; expected \"tuple[str, str, str, str, str]\""
+    },
+    {
+      "id": "1fc050969b5a80e6",
+      "file": ".ci/rediacc_ci/tests/test_core_release_state_validator.py",
+      "code": "misc",
+      "count": 1,
+      "message": "Generator has incompatible item type \"tuple[str, str, object, object]\"; expected \"tuple[str, str, str, str | None]\""
+    },
+    {
+      "id": "521f341cd5267b4b",
+      "file": ".ci/rediacc_ci/tests/test_core_secrets.py",
+      "code": "list-item",
+      "count": 1,
+      "message": "List item 1 has incompatible type \"None\"; expected \"str\""
+    },
+    {
+      "id": "76f3e4cd40653f45",
+      "file": ".ci/rediacc_ci/tests/test_core_service.py",
+      "code": "index",
+      "count": 2,
+      "message": "Value of type \"tuple[str, list[str]] | None\" is not indexable"
+    },
+    {
+      "id": "94fc4e0abf443d6c",
+      "file": ".ci/rediacc_ci/tests/test_core_toolchain.py",
+      "code": "arg-type",
+      "count": 2,
+      "message": "Argument 1 to \"env_for\" has incompatible type \"**dict[str, None]\"; expected \"str\""
+    },
+    {
+      "id": "8ac616c68904a095",
+      "file": ".ci/rediacc_ci/tests/test_deploy_promote_r2_to_stable.py",
+      "code": "arg-type",
+      "count": 2,
+      "message": "Argument 3 to \"_run\" has incompatible type \"**dict[str, Sequence[str]]\"; expected \"Callable[[], None] | None\""
+    },
+    {
+      "id": "3fb806c18ce86ce1",
+      "file": ".ci/rediacc_ci/tests/test_deploy_promote_r2_to_stable.py",
+      "code": "arg-type",
+      "count": 2,
+      "message": "Argument 3 to \"_run\" has incompatible type \"**dict[str, Sequence[str]]\"; expected \"str\""
+    },
+    {
+      "id": "1fc3ea0bca6db39c",
+      "file": ".ci/rediacc_ci/tests/test_deploy_promote_r2_to_stable.py",
+      "code": "arg-type",
+      "count": 2,
+      "message": "Argument 3 to \"_run\" has incompatible type \"**dict[str, Sequence[str]]\"; expected \"tuple[str, ...]\""
+    },
+    {
+      "id": "e3e3b5ea11bf7247",
+      "file": ".ci/rediacc_ci/tests/test_deploy_promote_r2_to_stable_hotfix.py",
+      "code": "arg-type",
+      "count": 2,
+      "message": "Argument 3 to \"_run\" has incompatible type \"**dict[str, Sequence[str]]\"; expected \"Callable[[], None] | None\""
+    },
+    {
+      "id": "31a504841611c81c",
+      "file": ".ci/rediacc_ci/tests/test_deploy_promote_r2_to_stable_hotfix.py",
+      "code": "arg-type",
+      "count": 2,
+      "message": "Argument 3 to \"_run\" has incompatible type \"**dict[str, Sequence[str]]\"; expected \"str\""
+    },
+    {
+      "id": "2504dccea3f054da",
+      "file": ".ci/rediacc_ci/tests/test_deploy_promote_r2_to_stable_hotfix.py",
+      "code": "arg-type",
+      "count": 2,
+      "message": "Argument 3 to \"_run\" has incompatible type \"**dict[str, Sequence[str]]\"; expected \"tuple[str, ...]\""
+    },
+    {
+      "id": "f829cd73fecc004f",
+      "file": ".ci/rediacc_ci/tests/test_deploy_verify_edge_endpoints.py",
+      "code": "dict-item",
+      "count": 1,
+      "message": "Dict entry 0 has incompatible type \"str\": \"None\"; expected \"str\": \"str\""
+    },
+    {
+      "id": "3bacb33734a16640",
+      "file": ".ci/rediacc_ci/tests/test_deploy_wait_for_preview_worker.py",
+      "code": "arg-type",
+      "count": 2,
+      "message": "Argument \"PREVIEW_URL_OVERRIDE\" to \"env_for\" has incompatible type \"None\"; expected \"str\""
+    },
+    {
+      "id": "3b60425ce8158f94",
+      "file": ".ci/rediacc_ci/tests/test_deploy_wait_for_preview_worker.py",
+      "code": "arg-type",
+      "count": 4,
+      "message": "Argument \"PR_NUMBER\" to \"env_for\" has incompatible type \"None\"; expected \"str\""
+    },
+    {
+      "id": "b0a7d9477788a80a",
+      "file": ".ci/rediacc_ci/tests/test_deploy_write_release_sentinel.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument 1 to \"_normalise_payload\" has incompatible type \"str | None\"; expected \"str\""
+    },
+    {
+      "id": "6fb350d8b3cef3d8",
+      "file": ".ci/rediacc_ci/tests/test_deploy_write_release_sentinel.py",
+      "code": "arg-type",
+      "count": 2,
+      "message": "Argument 1 to \"loads\" has incompatible type \"str | None\"; expected \"str | bytes | bytearray\""
+    },
+    {
+      "id": "e5666728d0224bd5",
+      "file": ".ci/rediacc_ci/tests/test_deploy_write_release_sentinel.py",
+      "code": "operator",
+      "count": 1,
+      "message": "Unsupported right operand type for in (\"str | None\")"
+    },
+    {
+      "id": "208a94aa12641f91",
+      "file": ".ci/rediacc_ci/tests/test_docker_cleanup_staging.py",
+      "code": "call-overload",
+      "count": 1,
+      "message": "No overload variant of \"run\" matches argument types \"list[Any]\", \"bool\", \"bool\", \"dict[str, object]\""
+    },
+    {
+      "id": "36ff8f9375fc345c",
+      "file": ".ci/rediacc_ci/tests/test_docker_cleanup_staging.py",
+      "code": "call-overload",
+      "count": 1,
+      "message": "No overload variant of \"run\" matches argument types \"list[Any]\", \"int\", \"int\", \"bool\", \"dict[str, object]\""
+    },
+    {
+      "id": "b07aac48c42ae610",
+      "file": ".ci/rediacc_ci/tests/test_env_create_e2e_env.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument 1 to \"env_for\" has incompatible type \"**dict[str, str | None]\"; expected \"str\""
+    },
+    {
+      "id": "052ed35773b5d21b",
+      "file": ".ci/rediacc_ci/tests/test_gitx.py",
+      "code": "arg-type",
+      "count": 2,
+      "message": "Argument 1 to \"is_ancestor\" has incompatible type \"str | None\"; expected \"str\""
+    },
+    {
+      "id": "2f553a5a58e56328",
+      "file": ".ci/rediacc_ci/tests/test_gitx.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument 1 to \"len\" has incompatible type \"str | None\"; expected \"Sized\""
+    },
+    {
+      "id": "1b211db0e590f1fd",
+      "file": ".ci/rediacc_ci/tests/test_gitx.py",
+      "code": "arg-type",
+      "count": 2,
+      "message": "Argument 2 to \"is_ancestor\" has incompatible type \"str | None\"; expected \"str\""
+    },
+    {
+      "id": "9d3487e97113c33c",
+      "file": ".ci/rediacc_ci/tests/test_gitx.py",
+      "code": "operator",
+      "count": 1,
+      "message": "Unsupported right operand type for in (\"str | None\")"
+    },
+    {
+      "id": "1dba4b5b195a9e4f",
+      "file": ".ci/rediacc_ci/tests/test_infra_build_renet.py",
+      "code": "index",
+      "count": 1,
+      "message": "Value of type \"object\" is not indexable"
+    },
+    {
+      "id": "abecb1b27aaacdaf",
+      "file": ".ci/rediacc_ci/tests/test_infra_build_renet.py",
+      "code": "operator",
+      "count": 5,
+      "message": "Unsupported right operand type for in (\"object\")"
+    },
+    {
+      "id": "8813701d56a77d08",
+      "file": ".ci/rediacc_ci/tests/test_infra_ci_env.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument 1 to \"append\" of \"list\" has incompatible type \"tuple[str, None]\"; expected \"tuple[str, str]\""
+    },
+    {
+      "id": "adfd24c131c4a1ba",
+      "file": ".ci/rediacc_ci/tests/test_infra_ci_stop_elite.py",
+      "code": "arg-type",
+      "count": 2,
+      "message": "Argument 3 to \"_run\" has incompatible type \"**dict[str, object]\"; expected \"int\""
+    },
+    {
+      "id": "3b1fde99f4a0fb62",
+      "file": ".ci/rediacc_ci/tests/test_infra_ci_stop_elite.py",
+      "code": "arg-type",
+      "count": 2,
+      "message": "Argument 3 to \"_run\" has incompatible type \"**dict[str, object]\"; expected \"tuple[str, ...]\""
+    },
+    {
+      "id": "11cd30bcf83fb188",
+      "file": ".ci/rediacc_ci/tests/test_log.py",
+      "code": "arg-type",
+      "count": 9,
+      "message": "Argument \"CI\" to \"env_for\" has incompatible type \"None\"; expected \"str\""
+    },
+    {
+      "id": "0328892c88a9fdff",
+      "file": ".ci/rediacc_ci/tests/test_log.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument \"DEBUG\" to \"env_for\" has incompatible type \"str | None\"; expected \"str\""
+    },
+    {
+      "id": "a097ec5879d25191",
+      "file": ".ci/rediacc_ci/tests/test_log.py",
+      "code": "arg-type",
+      "count": 10,
+      "message": "Argument \"NO_COLOR\" to \"env_for\" has incompatible type \"None\"; expected \"str\""
+    },
+    {
+      "id": "f390e08f07c241b3",
+      "file": ".ci/rediacc_ci/tests/test_private_compose_healthcheck_smoke_test.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument 1 to \"render\" has incompatible type \"object\"; expected \"int\""
+    },
+    {
+      "id": "dd6a0f1392e1148b",
+      "file": ".ci/rediacc_ci/tests/test_private_compose_healthcheck_smoke_test.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument 2 to \"render\" has incompatible type \"object\"; expected \"str\""
+    },
+    {
+      "id": "8981d98ba722ebf2",
+      "file": ".ci/rediacc_ci/tests/test_private_compose_healthcheck_smoke_test.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument 3 to \"render\" has incompatible type \"object\"; expected \"str\""
+    },
+    {
+      "id": "0b77fa10dd8f5243",
+      "file": ".ci/rediacc_ci/tests/test_private_compose_healthcheck_smoke_test.py",
+      "code": "attr-defined",
+      "count": 11,
+      "message": "\"object\" has no attribute \"__iter__\"; maybe \"__dir__\" or \"__str__\"? (not iterable)"
+    },
+    {
+      "id": "db39a7f61fbc795f",
+      "file": ".ci/rediacc_ci/tests/test_private_compose_healthcheck_smoke_test.py",
+      "code": "attr-defined",
+      "count": 5,
+      "message": "\"object\" has no attribute \"count\""
+    },
+    {
+      "id": "ff83fc5bcec398d9",
+      "file": ".ci/rediacc_ci/tests/test_private_compose_healthcheck_smoke_test.py",
+      "code": "attr-defined",
+      "count": 2,
+      "message": "\"object\" has no attribute \"items\""
+    },
+    {
+      "id": "d4cc899fe868d46c",
+      "file": ".ci/rediacc_ci/tests/test_private_compose_healthcheck_smoke_test.py",
+      "code": "call-overload",
+      "count": 1,
+      "message": "No overload variant of \"sub\" of \"Pattern\" matches argument types \"str\", \"object\""
+    },
+    {
+      "id": "06d7502906dc611b",
+      "file": ".ci/rediacc_ci/tests/test_private_compose_healthcheck_smoke_test.py",
+      "code": "list-item",
+      "count": 1,
+      "message": "List item 0 has incompatible type \"object\"; expected \"str\""
+    },
+    {
+      "id": "570ffa787eadbe47",
+      "file": ".ci/rediacc_ci/tests/test_private_compose_healthcheck_smoke_test.py",
+      "code": "list-item",
+      "count": 1,
+      "message": "List item 1 has incompatible type \"object\"; expected \"str\""
+    },
+    {
+      "id": "34db2c9489ce6a64",
+      "file": ".ci/rediacc_ci/tests/test_private_compose_healthcheck_smoke_test.py",
+      "code": "operator",
+      "count": 29,
+      "message": "Unsupported right operand type for in (\"object\")"
+    },
+    {
+      "id": "957ba26a33eb8b6b",
+      "file": ".ci/rediacc_ci/tests/test_private_concurrent_fork_isolation_test.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument 1 to \"len\" has incompatible type \"object\"; expected \"Sized\""
+    },
+    {
+      "id": "210ee85f24ebe0b0",
+      "file": ".ci/rediacc_ci/tests/test_private_concurrent_fork_isolation_test.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument 1 to \"tuple\" has incompatible type \"object\"; expected \"Iterable[Any]\""
+    },
+    {
+      "id": "217f56e9bf2fc629",
+      "file": ".ci/rediacc_ci/tests/test_private_concurrent_fork_isolation_test.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument 1 to \"tuple\" has incompatible type \"object\"; expected \"Iterable[Never]\""
+    },
+    {
+      "id": "a599744606be2139",
+      "file": ".ci/rediacc_ci/tests/test_private_concurrent_fork_isolation_test.py",
+      "code": "assignment",
+      "count": 1,
+      "message": "Incompatible types in assignment (expression has type \"str\", variable has type \"list[dict[Any, Any]]\")"
+    },
+    {
+      "id": "d810777d2313135b",
+      "file": ".ci/rediacc_ci/tests/test_private_concurrent_fork_isolation_test.py",
+      "code": "attr-defined",
+      "count": 7,
+      "message": "\"object\" has no attribute \"__iter__\"; maybe \"__dir__\" or \"__str__\"? (not iterable)"
+    },
+    {
+      "id": "44558dc8f45ba89f",
+      "file": ".ci/rediacc_ci/tests/test_private_concurrent_fork_isolation_test.py",
+      "code": "attr-defined",
+      "count": 2,
+      "message": "\"object\" has no attribute \"count\""
+    },
+    {
+      "id": "2d81f55851876704",
+      "file": ".ci/rediacc_ci/tests/test_private_concurrent_fork_isolation_test.py",
+      "code": "operator",
+      "count": 18,
+      "message": "Unsupported right operand type for in (\"object\")"
+    },
+    {
+      "id": "0dd157188303618c",
+      "file": ".ci/rediacc_ci/tests/test_private_concurrent_fork_isolation_test.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"spines\" (hint: \"spines: set[<type>] = ...\")"
+    },
+    {
+      "id": "b27e4407384022c5",
+      "file": ".ci/rediacc_ci/tests/test_private_renet_csi_sanity.py",
+      "code": "attr-defined",
+      "count": 7,
+      "message": "\"object\" has no attribute \"__iter__\"; maybe \"__dir__\" or \"__str__\"? (not iterable)"
+    },
+    {
+      "id": "3735368eb82dcec1",
+      "file": ".ci/rediacc_ci/tests/test_private_renet_csi_sanity.py",
+      "code": "attr-defined",
+      "count": 1,
+      "message": "\"object\" has no attribute \"count\""
+    },
+    {
+      "id": "4190b543610ab7c4",
+      "file": ".ci/rediacc_ci/tests/test_private_renet_csi_sanity.py",
+      "code": "operator",
+      "count": 17,
+      "message": "Unsupported right operand type for in (\"object\")"
+    },
+    {
+      "id": "14cf90f21262c572",
+      "file": ".ci/rediacc_ci/tests/test_private_renet_ebpf_e2e.py",
+      "code": "attr-defined",
+      "count": 3,
+      "message": "\"object\" has no attribute \"__iter__\"; maybe \"__dir__\" or \"__str__\"? (not iterable)"
+    },
+    {
+      "id": "e8ab11ed1436ddae",
+      "file": ".ci/rediacc_ci/tests/test_private_renet_ebpf_e2e.py",
+      "code": "index",
+      "count": 3,
+      "message": "Value of type \"object\" is not indexable"
+    },
+    {
+      "id": "2e4e5a28803fb7c6",
+      "file": ".ci/rediacc_ci/tests/test_private_renet_ebpf_e2e.py",
+      "code": "operator",
+      "count": 5,
+      "message": "Unsupported right operand type for in (\"object\")"
+    },
+    {
+      "id": "9c32100b04bdfb00",
+      "file": ".ci/rediacc_ci/tests/test_private_renet_integration.py",
+      "code": "arg-type",
+      "count": 2,
+      "message": "Argument 1 to \"len\" has incompatible type \"object\"; expected \"Sized\""
+    },
+    {
+      "id": "700e60f70c8358ad",
+      "file": ".ci/rediacc_ci/tests/test_private_renet_integration.py",
+      "code": "index",
+      "count": 2,
+      "message": "Value of type \"object\" is not indexable"
+    },
+    {
+      "id": "b7a913506ad1d28d",
+      "file": ".ci/rediacc_ci/tests/test_private_renet_integration.py",
+      "code": "operator",
+      "count": 7,
+      "message": "Unsupported right operand type for in (\"object\")"
+    },
+    {
+      "id": "08628ee513084d2f",
+      "file": ".ci/rediacc_ci/tests/test_private_renet_root_tests.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument 1 to \"len\" has incompatible type \"object\"; expected \"Sized\""
+    },
+    {
+      "id": "8732fa6958ecedd1",
+      "file": ".ci/rediacc_ci/tests/test_private_renet_root_tests.py",
+      "code": "attr-defined",
+      "count": 1,
+      "message": "\"object\" has no attribute \"count\""
+    },
+    {
+      "id": "618f349cc8489502",
+      "file": ".ci/rediacc_ci/tests/test_private_renet_root_tests.py",
+      "code": "index",
+      "count": 1,
+      "message": "Value of type \"object\" is not indexable"
+    },
+    {
+      "id": "2dcff809afa89ed2",
+      "file": ".ci/rediacc_ci/tests/test_private_renet_root_tests.py",
+      "code": "operator",
+      "count": 6,
+      "message": "Unsupported right operand type for in (\"object\")"
+    },
+    {
+      "id": "09302162e87d44ef",
+      "file": ".ci/rediacc_ci/tests/test_private_run_account.py",
+      "code": "arg-type",
+      "count": 2,
+      "message": "Argument 1 to \"len\" has incompatible type \"object\"; expected \"Sized\""
+    },
+    {
+      "id": "0bc11a2dd44a3eb7",
+      "file": ".ci/rediacc_ci/tests/test_private_run_account.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument 1 to \"render\" has incompatible type \"object\"; expected \"int\""
+    },
+    {
+      "id": "81db7a31e5949649",
+      "file": ".ci/rediacc_ci/tests/test_private_run_account.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument 2 to \"render\" has incompatible type \"object\"; expected \"str\""
+    },
+    {
+      "id": "82a170a124e086b0",
+      "file": ".ci/rediacc_ci/tests/test_private_run_account.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument 3 to \"render\" has incompatible type \"object\"; expected \"str\""
+    },
+    {
+      "id": "3d1ece57bdff4817",
+      "file": ".ci/rediacc_ci/tests/test_private_run_account.py",
+      "code": "arg-type",
+      "count": 6,
+      "message": "Argument after ** must be a mapping, not \"object\""
+    },
+    {
+      "id": "4ab862efd960af7a",
+      "file": ".ci/rediacc_ci/tests/test_private_run_account.py",
+      "code": "attr-defined",
+      "count": 4,
+      "message": "\"object\" has no attribute \"__iter__\"; maybe \"__dir__\" or \"__str__\"? (not iterable)"
+    },
+    {
+      "id": "dd5eeeff5cfbc03d",
+      "file": ".ci/rediacc_ci/tests/test_private_run_account.py",
+      "code": "attr-defined",
+      "count": 1,
+      "message": "\"object\" has no attribute \"count\""
+    },
+    {
+      "id": "4373447b07c2d547",
+      "file": ".ci/rediacc_ci/tests/test_private_run_account.py",
+      "code": "list-item",
+      "count": 1,
+      "message": "List item 0 has incompatible type \"object\"; expected \"str\""
+    },
+    {
+      "id": "eba03fd10464fa0c",
+      "file": ".ci/rediacc_ci/tests/test_private_run_account.py",
+      "code": "list-item",
+      "count": 1,
+      "message": "List item 1 has incompatible type \"object\"; expected \"str\""
+    },
+    {
+      "id": "e4bf1d53740d1122",
+      "file": ".ci/rediacc_ci/tests/test_private_run_account.py",
+      "code": "operator",
+      "count": 8,
+      "message": "Unsupported right operand type for in (\"object\")"
+    },
+    {
+      "id": "d43674f2630b4f94",
+      "file": ".ci/rediacc_ci/tests/test_private_run_renet.py",
+      "code": "arg-type",
+      "count": 2,
+      "message": "Argument 1 to \"len\" has incompatible type \"object\"; expected \"Sized\""
+    },
+    {
+      "id": "b66f1b7d169fa80e",
+      "file": ".ci/rediacc_ci/tests/test_private_run_renet.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument 1 to \"render\" has incompatible type \"object\"; expected \"int\""
+    },
+    {
+      "id": "d46145ad2e2c1364",
+      "file": ".ci/rediacc_ci/tests/test_private_run_renet.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument 2 to \"render\" has incompatible type \"object\"; expected \"str\""
+    },
+    {
+      "id": "f430a58e7b963341",
+      "file": ".ci/rediacc_ci/tests/test_private_run_renet.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument 3 to \"render\" has incompatible type \"object\"; expected \"str\""
+    },
+    {
+      "id": "2b967d69ade25490",
+      "file": ".ci/rediacc_ci/tests/test_private_run_renet.py",
+      "code": "arg-type",
+      "count": 4,
+      "message": "Argument after ** must be a mapping, not \"object\""
+    },
+    {
+      "id": "39fc153e0d5e16b6",
+      "file": ".ci/rediacc_ci/tests/test_private_run_renet.py",
+      "code": "index",
+      "count": 6,
+      "message": "Value of type \"object\" is not indexable"
+    },
+    {
+      "id": "a29a1fe712940295",
+      "file": ".ci/rediacc_ci/tests/test_private_run_renet.py",
+      "code": "list-item",
+      "count": 1,
+      "message": "List item 0 has incompatible type \"object\"; expected \"str\""
+    },
+    {
+      "id": "d0021f9c70c67394",
+      "file": ".ci/rediacc_ci/tests/test_private_run_renet.py",
+      "code": "list-item",
+      "count": 1,
+      "message": "List item 1 has incompatible type \"object\"; expected \"str\""
+    },
+    {
+      "id": "4548b3d51222a9c8",
+      "file": ".ci/rediacc_ci/tests/test_private_run_renet.py",
+      "code": "operator",
+      "count": 6,
+      "message": "Unsupported right operand type for in (\"object\")"
+    },
+    {
+      "id": "b9073ba5461505a7",
+      "file": ".ci/rediacc_ci/tests/test_proc.py",
+      "code": "func-returns-value",
+      "count": 2,
+      "message": "\"append\" of \"list\" does not return a value (it only ever returns None)"
+    },
+    {
+      "id": "dd7df4b7bfa4da72",
+      "file": ".ci/rediacc_ci/tests/test_proc.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"falsy\""
+    },
+    {
+      "id": "bf9383fa831f7e1a",
+      "file": ".ci/rediacc_ci/tests/test_proc.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"slept\" (hint: \"slept: list[<type>] = ...\")"
+    },
+    {
+      "id": "6bb5968dd7fc05c3",
+      "file": ".ci/rediacc_ci/tests/test_quality_account_portal.py",
+      "code": "assignment",
+      "count": 1,
+      "message": "Incompatible types in assignment (expression has type \"str | None\", variable has type \"str\")"
+    },
+    {
+      "id": "6a768073c88e3885",
+      "file": ".ci/rediacc_ci/tests/test_quality_announce_gate_skips.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument 2 to \"run_port\" has incompatible type \"**dict[str, object]\"; expected \"list[str]\""
+    },
+    {
+      "id": "9f55f14727baddc4",
+      "file": ".ci/rediacc_ci/tests/test_quality_announce_gate_skips.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument 2 to \"run_port\" has incompatible type \"**dict[str, object]\"; expected \"str | None\""
+    },
+    {
+      "id": "3779d7b06d361ef0",
+      "file": ".ci/rediacc_ci/tests/test_quality_announce_gate_skips.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument 3 to \"run_port\" has incompatible type \"**dict[str, object]\"; expected \"list[str]\""
+    },
+    {
+      "id": "d148aeb13fa780f5",
+      "file": ".ci/rediacc_ci/tests/test_quality_announce_gate_skips.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument 3 to \"run_port\" has incompatible type \"**dict[str, object]\"; expected \"str | None\""
+    },
+    {
+      "id": "730744f0a6c503ac",
+      "file": ".ci/rediacc_ci/tests/test_quality_compose_env.py",
+      "code": "var-annotated",
+      "count": 2,
+      "message": "Need type annotation for \"empty\" (hint: \"empty: list[<type>] = ...\")"
+    },
+    {
+      "id": "e760a83832c1b33b",
+      "file": ".ci/rediacc_ci/tests/test_quality_compose_env.py",
+      "code": "var-annotated",
+      "count": 2,
+      "message": "Need type annotation for \"nonempty\" (hint: \"nonempty: list[<type>] = ...\")"
+    },
+    {
+      "id": "4e8aebbe5fe03749",
+      "file": ".ci/rediacc_ci/tests/test_quality_control_vacuity.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"planting\" (hint: \"planting: list[<type>] = ...\")"
+    },
+    {
+      "id": "cfb595b15777724e",
+      "file": ".ci/rediacc_ci/tests/test_quality_control_vacuity.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"quiet\" (hint: \"quiet: list[<type>] = ...\")"
+    },
+    {
+      "id": "d4f4d6c334da1fb4",
+      "file": ".ci/rediacc_ci/tests/test_quality_e2e_coverage.py",
+      "code": "union-attr",
+      "count": 2,
+      "message": "Item \"None\" of \"Match[str] | None\" has no attribute \"group\""
+    },
+    {
+      "id": "909259228c1ada6b",
+      "file": ".ci/rediacc_ci/tests/test_quality_profiler_coverage.py",
+      "code": "union-attr",
+      "count": 1,
+      "message": "Item \"None\" of \"Match[str] | None\" has no attribute \"group\""
+    },
+    {
+      "id": "006a0f1bf37214f8",
+      "file": ".ci/rediacc_ci/tests/test_quality_renet_tier_map.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument \"GOPATH\" to \"env_for\" has incompatible type \"None\"; expected \"str\""
+    },
+    {
+      "id": "c929959e81d69886",
+      "file": ".ci/rediacc_ci/tests/test_quality_renet_types.py",
+      "code": "arg-type",
+      "count": 2,
+      "message": "Argument \"CI\" to \"env_for\" has incompatible type \"None\"; expected \"str\""
+    },
+    {
+      "id": "c1f8958078314389",
+      "file": ".ci/rediacc_ci/tests/test_quality_review_comments.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"body\""
+    },
+    {
+      "id": "ec82a1a0327575fa",
+      "file": ".ci/rediacc_ci/tests/test_quality_review_report_replies.py",
+      "code": "index",
+      "count": 2,
+      "message": "Value of type \"dict[Any, Any] | None\" is not indexable"
+    },
+    {
+      "id": "e646ac9c3aa4cbfc",
+      "file": ".ci/rediacc_ci/tests/test_quality_review_turn_capacity.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"messages\" (hint: \"messages: set[<type>] = ...\")"
+    },
+    {
+      "id": "35f9ccd5731a8a17",
+      "file": ".ci/rediacc_ci/tests/test_quality_run_external_gate.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument 2 to \"run_port\" has incompatible type \"**dict[str, object]\"; expected \"list[str]\""
+    },
+    {
+      "id": "d5cd4fc36d2a408f",
+      "file": ".ci/rediacc_ci/tests/test_quality_run_external_gate.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument 2 to \"run_port\" has incompatible type \"**dict[str, object]\"; expected \"str | None\""
+    },
+    {
+      "id": "e8bb2397db403c13",
+      "file": ".ci/rediacc_ci/tests/test_quality_shape_cluster_diff.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument 1 to \"module_from_spec\" has incompatible type \"ModuleSpec | None\"; expected \"ModuleSpec\""
+    },
+    {
+      "id": "c83b096611c40c0a",
+      "file": ".ci/rediacc_ci/tests/test_quality_shape_cluster_diff.py",
+      "code": "union-attr",
+      "count": 1,
+      "message": "Item \"None\" of \"Loader | Any | None\" has no attribute \"exec_module\""
+    },
+    {
+      "id": "88e5d30109436478",
+      "file": ".ci/rediacc_ci/tests/test_quality_shape_cluster_diff.py",
+      "code": "union-attr",
+      "count": 1,
+      "message": "Item \"None\" of \"ModuleSpec | None\" has no attribute \"loader\""
+    },
+    {
+      "id": "63c4b0a8a14bc230",
+      "file": ".ci/rediacc_ci/tests/test_release_assert_edge_tag_exists.py",
+      "code": "arg-type",
+      "count": 3,
+      "message": "Argument 4 to \"_run\" has incompatible type \"**dict[str, str]\"; expected \"bool\""
+    },
+    {
+      "id": "1b7163ba650ea4a7",
+      "file": ".ci/rediacc_ci/tests/test_release_assert_edge_tag_exists.py",
+      "code": "arg-type",
+      "count": 3,
+      "message": "Argument 4 to \"_run\" has incompatible type \"**dict[str, str]\"; expected \"tuple[str, ...]\""
+    },
+    {
+      "id": "73802225c322664d",
+      "file": ".ci/rediacc_ci/tests/test_release_check_edge_manifest.py",
+      "code": "arg-type",
+      "count": 2,
+      "message": "Argument \"GITHUB_OUTPUT\" to \"env_for\" has incompatible type \"None\"; expected \"str\""
+    },
+    {
+      "id": "8975fbd5cb8311ca",
+      "file": ".ci/rediacc_ci/tests/test_release_mark_production.py",
+      "code": "arg-type",
+      "count": 3,
+      "message": "Argument 4 to \"_run\" has incompatible type \"**dict[str, str]\"; expected \"bool\""
+    },
+    {
+      "id": "36cae4f00786880d",
+      "file": ".ci/rediacc_ci/tests/test_review_claude_review_gate.py",
+      "code": "dict-item",
+      "count": 1,
+      "message": "Dict entry 1 has incompatible type \"str\": \"None\"; expected \"str\": \"str\""
+    },
+    {
+      "id": "6f2ac930601594b3",
+      "file": ".ci/rediacc_ci/tests/test_review_claude_review_gate.py",
+      "code": "return-value",
+      "count": 1,
+      "message": "No return value expected"
+    },
+    {
+      "id": "154db9828531d0e4",
+      "file": ".ci/rediacc_ci/tests/test_review_review_status.py",
+      "code": "dict-item",
+      "count": 1,
+      "message": "Dict entry 0 has incompatible type \"str\": \"None\"; expected \"str\": \"str\""
+    },
+    {
+      "id": "4eb603b5eb901b0e",
+      "file": ".ci/rediacc_ci/tests/test_review_review_status.py",
+      "code": "dict-item",
+      "count": 1,
+      "message": "Dict entry 1 has incompatible type \"str\": \"None\"; expected \"str\": \"str\""
+    },
+    {
+      "id": "fa73c3bc55b34daa",
+      "file": ".ci/rediacc_ci/tests/test_review_review_status.py",
+      "code": "dict-item",
+      "count": 2,
+      "message": "Dict entry 2 has incompatible type \"str\": \"None\"; expected \"str\": \"str\""
+    },
+    {
+      "id": "78a8ca127c051ea1",
+      "file": ".ci/rediacc_ci/tests/test_review_review_status.py",
+      "code": "dict-item",
+      "count": 2,
+      "message": "Dict entry 3 has incompatible type \"str\": \"None\"; expected \"str\": \"str\""
+    },
+    {
+      "id": "489bd975d8772253",
+      "file": ".ci/rediacc_ci/tests/test_review_review_status.py",
+      "code": "dict-item",
+      "count": 1,
+      "message": "Dict entry 4 has incompatible type \"str\": \"None\"; expected \"str\": \"str\""
+    },
+    {
+      "id": "3dc53a035e39e723",
+      "file": ".ci/rediacc_ci/tests/test_security_dependency_inventory.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument 1 to \"mask_generated\" has incompatible type \"str | None\"; expected \"str\""
+    },
+    {
+      "id": "e7c3bf2970dff6da",
+      "file": ".ci/rediacc_ci/tests/test_setup_build_packages.py",
+      "code": "assignment",
+      "count": 1,
+      "message": "Incompatible default for parameter \"args\" (default has type \"tuple[()]\", parameter has type \"list[str]\")"
+    },
+    {
+      "id": "64ef35945165861f",
+      "file": ".ci/rediacc_ci/tests/test_sibling_agreement.py",
+      "code": "var-annotated",
+      "count": 2,
+      "message": "Need type annotation for \"flow_by_kind\" (hint: \"flow_by_kind: dict[<type>, <type>] = ...\")"
+    },
+    {
+      "id": "a8f196ade57d90ee",
+      "file": ".ci/rediacc_ci/tests/test_sibling_agreement.py",
+      "code": "var-annotated",
+      "count": 2,
+      "message": "Need type annotation for \"lint_by_kind\" (hint: \"lint_by_kind: dict[<type>, <type>] = ...\")"
+    },
+    {
+      "id": "1390dd7321e4f896",
+      "file": ".ci/rediacc_ci/tests/test_signal_create_complete.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument 1 to \"env_for\" has incompatible type \"**dict[Any, Any | None]\"; expected \"str\""
+    },
+    {
+      "id": "f9a942e56c969d9d",
+      "file": ".ci/rediacc_ci/tests/test_wl_proc.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument 1 to \"module_from_spec\" has incompatible type \"ModuleSpec | None\"; expected \"ModuleSpec\""
+    },
+    {
+      "id": "a6aa829782076a09",
+      "file": ".ci/rediacc_ci/tests/test_wl_proc.py",
+      "code": "union-attr",
+      "count": 1,
+      "message": "Item \"None\" of \"Loader | Any | None\" has no attribute \"exec_module\""
+    },
+    {
+      "id": "6af8bb5f1953956f",
+      "file": ".ci/rediacc_ci/tests/test_wl_proc.py",
+      "code": "union-attr",
+      "count": 1,
+      "message": "Item \"None\" of \"ModuleSpec | None\" has no attribute \"loader\""
+    },
+    {
+      "id": "78614045e3adb4b8",
+      "file": ".ci/rediacc_ci/tests/test_workflows.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument 2 to \"Job\" has incompatible type \"None\"; expected \"dict[Any, Any]\""
+    },
+    {
+      "id": "1786cfb2594483ca",
+      "file": ".ci/rediacc_ci/tests/test_workflows.py",
+      "code": "union-attr",
+      "count": 5,
+      "message": "Item \"None\" of \"Job | None\" has no attribute \"steps\""
+    },
+    {
+      "id": "fb65d0237054f4cc",
+      "file": ".ci/rediacc_ci/tests/test_worklist_state_stdin.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument 1 to \"module_from_spec\" has incompatible type \"ModuleSpec | None\"; expected \"ModuleSpec\""
+    },
+    {
+      "id": "059c821ac86fd8da",
+      "file": ".ci/rediacc_ci/tests/test_worklist_state_stdin.py",
+      "code": "union-attr",
+      "count": 1,
+      "message": "Item \"None\" of \"Any | None\" has no attribute \"close\""
+    },
+    {
+      "id": "4b6322a5b68fb807",
+      "file": ".ci/rediacc_ci/tests/test_worklist_state_stdin.py",
+      "code": "union-attr",
+      "count": 1,
+      "message": "Item \"None\" of \"Loader | Any | None\" has no attribute \"exec_module\""
+    },
+    {
+      "id": "1b43e8076c2532e7",
+      "file": ".ci/rediacc_ci/tests/test_worklist_state_stdin.py",
+      "code": "union-attr",
+      "count": 1,
+      "message": "Item \"None\" of \"ModuleSpec | None\" has no attribute \"loader\""
+    },
+    {
+      "id": "4a716ef6a74bbf3c",
+      "file": ".ci/rediacc_ci/workflows.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"out\" (hint: \"out: dict[<type>, <type>] = ...\")"
+    },
+    {
+      "id": "7b6618fe8627a643",
+      "file": ".ci/rediacc_ci/workflows.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"out\" (hint: \"out: list[<type>] = ...\")"
+    },
+    {
+      "id": "562c1203f53f5929",
+      "file": ".ci/scripts/ci/ci-trace.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"cache\" (hint: \"cache: dict[<type>, <type>] = ...\")"
+    },
+    {
+      "id": "b977231237f57f77",
+      "file": ".ci/scripts/housekeeping/retire-shadowed-secrets.py",
+      "code": "assignment",
+      "count": 2,
+      "message": "Incompatible types in assignment (expression has type \"int\", variable has type \"str\")"
+    },
+    {
+      "id": "f89c94832c18e217",
+      "file": ".ci/scripts/housekeeping/retire-shadowed-secrets.py",
+      "code": "assignment",
+      "count": 3,
+      "message": "Incompatible types in assignment (expression has type \"str\", variable has type \"int\")"
+    },
+    {
+      "id": "404ebd6789236608",
+      "file": ".ci/scripts/housekeeping/retire-shadowed-secrets.py",
+      "code": "operator",
+      "count": 2,
+      "message": "Unsupported operand types for < (\"int\" and \"str\")"
+    },
+    {
+      "id": "865d76bec6e886ef",
+      "file": ".ci/scripts/housekeeping/retire-shadowed-secrets.py",
+      "code": "operator",
+      "count": 1,
+      "message": "Unsupported operand types for > (\"int\" and \"str\")"
+    },
+    {
+      "id": "0a8da9fad44a8227",
+      "file": ".ci/scripts/housekeeping/retire-shadowed-secrets.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"live\" (hint: \"live: dict[<type>, <type>] = ...\")"
+    },
+    {
+      "id": "6efd2240c3b9eae6",
+      "file": ".ci/scripts/quality/check_bws_map.py",
+      "code": "assignment",
+      "count": 4,
+      "message": "Incompatible types in assignment (expression has type \"list[str]\", variable has type \"list[tuple[int, str, str]]\")"
+    },
+    {
+      "id": "520556662e596c58",
+      "file": ".ci/scripts/quality/check_bws_map.py",
+      "code": "assignment",
+      "count": 1,
+      "message": "Incompatible types in assignment (expression has type \"str | None\", variable has type \"str\")"
+    },
+    {
+      "id": "944821c6096fbf25",
+      "file": ".ci/scripts/quality/check_checkout_cone.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument 1 to \"join\" of \"str\" has incompatible type \"list[str] | None\"; expected \"Iterable[str]\""
+    },
+    {
+      "id": "a3a936fb0c124599",
+      "file": ".ci/scripts/quality/check_ci_gate_prerequisites.py",
+      "code": "arg-type",
+      "count": 2,
+      "message": "Argument \"needs\" to \"Resource\" has incompatible type \"Callable[[str, int], bool]\"; expected \"Callable[[str], bool]\""
+    },
+    {
+      "id": "d0527dd230e09c35",
+      "file": ".ci/scripts/quality/check_decision_ids.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"hits\" (hint: \"hits: dict[<type>, <type>] = ...\")"
+    },
+    {
+      "id": "afc7d19e9bfd322a",
+      "file": ".ci/scripts/quality/check_decision_ids.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"seen\" (hint: \"seen: dict[<type>, <type>] = ...\")"
+    },
+    {
+      "id": "8db7673d1e9c0d0a",
+      "file": ".ci/scripts/quality/check_e2e_case_blind_assertions.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"failures\" (hint: \"failures: list[<type>] = ...\")"
+    },
+    {
+      "id": "66856fc44e347fe7",
+      "file": ".ci/scripts/quality/check_git_history_depth.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"out\" (hint: \"out: list[<type>] = ...\")"
+    },
+    {
+      "id": "2ae567dd1608c2f6",
+      "file": ".ci/scripts/quality/check_hooks_resolvable.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument 1 to \"module_from_spec\" has incompatible type \"ModuleSpec | None\"; expected \"ModuleSpec\""
+    },
+    {
+      "id": "30418650f0c4cdd0",
+      "file": ".ci/scripts/quality/check_hooks_resolvable.py",
+      "code": "union-attr",
+      "count": 1,
+      "message": "Item \"None\" of \"Loader | Any | None\" has no attribute \"exec_module\""
+    },
+    {
+      "id": "de360910f13ba8b1",
+      "file": ".ci/scripts/quality/check_hooks_resolvable.py",
+      "code": "union-attr",
+      "count": 1,
+      "message": "Item \"None\" of \"ModuleSpec | None\" has no attribute \"loader\""
+    },
+    {
+      "id": "6db8bb3c5b68132f",
+      "file": ".ci/scripts/quality/check_hooks_resolvable.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"out\" (hint: \"out: list[<type>] = ...\")"
+    },
+    {
+      "id": "a0659373f0c33a95",
+      "file": ".ci/scripts/quality/check_i18n_value_types.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"en_flat\" (hint: \"en_flat: dict[<type>, <type>] = ...\")"
+    },
+    {
+      "id": "d48a7394b2f325a6",
+      "file": ".ci/scripts/quality/check_i18n_value_types.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"flat\" (hint: \"flat: dict[<type>, <type>] = ...\")"
+    },
+    {
+      "id": "4888224a311a92e7",
+      "file": ".ci/scripts/quality/check_i18n_value_types.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"loc_flat\" (hint: \"loc_flat: dict[<type>, <type>] = ...\")"
+    },
+    {
+      "id": "22759f780bca58c3",
+      "file": ".ci/scripts/quality/check_job_timeout_headroom.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"found\" (hint: \"found: dict[<type>, <type>] = ...\")"
+    },
+    {
+      "id": "1343ed909f2f43e8",
+      "file": ".ci/scripts/quality/check_job_timeout_headroom.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"seen\" (hint: \"seen: dict[<type>, <type>] = ...\")"
+    },
+    {
+      "id": "eb78260d36b67887",
+      "file": ".ci/scripts/quality/check_plan_boxes.py",
+      "code": "assignment",
+      "count": 3,
+      "message": "Incompatible types in assignment (expression has type \"dict[str, dict[str, object]]\", variable has type \"str\")"
+    },
+    {
+      "id": "d86cad3e92056846",
+      "file": ".ci/scripts/quality/check_plan_boxes.py",
+      "code": "assignment",
+      "count": 1,
+      "message": "Incompatible types in assignment (expression has type \"object\", variable has type \"dict[str, bool]\")"
+    },
+    {
+      "id": "3fe1029a89c39da8",
+      "file": ".ci/scripts/quality/check_plan_boxes.py",
+      "code": "assignment",
+      "count": 1,
+      "message": "Incompatible types in assignment (expression has type \"set[str]\", variable has type \"str\")"
+    },
+    {
+      "id": "c240ffd577ff3eaa",
+      "file": ".ci/scripts/quality/check_plan_boxes.py",
+      "code": "assignment",
+      "count": 1,
+      "message": "Incompatible types in assignment (expression has type \"str\", variable has type \"set[str]\")"
+    },
+    {
+      "id": "2b9a7c854d141f85",
+      "file": ".ci/scripts/quality/check_plan_boxes.py",
+      "code": "dict-item",
+      "count": 1,
+      "message": "Dict entry 0 has incompatible type \"str\": \"dict[Never, Never]\"; expected \"str\": \"bool\""
+    },
+    {
+      "id": "35b669c4b799679c",
+      "file": ".ci/scripts/quality/check_plan_boxes.py",
+      "code": "dict-item",
+      "count": 3,
+      "message": "Dict entry 0 has incompatible type \"str\": \"dict[str, dict[str, object]]\"; expected \"str\": \"bool\""
+    },
+    {
+      "id": "db247db8a802885d",
+      "file": ".ci/scripts/quality/check_plan_boxes.py",
+      "code": "dict-item",
+      "count": 1,
+      "message": "Dict entry 0 has incompatible type \"str\": \"dict[str, dict[str, object]]\"; expected \"str\": \"str\""
+    },
+    {
+      "id": "23e595c493e994d4",
+      "file": ".ci/scripts/quality/check_plan_boxes.py",
+      "code": "dict-item",
+      "count": 1,
+      "message": "Dict entry 0 has incompatible type \"str\": \"dict[str, object]\"; expected \"str\": \"str\""
+    },
+    {
+      "id": "95c60246a5c88be8",
+      "file": ".ci/scripts/quality/check_plan_boxes.py",
+      "code": "list-item",
+      "count": 1,
+      "message": "List item 0 has incompatible type \"tuple[str, dict[str, dict[str, object]], dict[str, bool], str]\"; expected \"tuple[str, dict[str, str], dict[str, bool], set[str]]\""
+    },
+    {
+      "id": "10f03df6f66fdcc0",
+      "file": ".ci/scripts/quality/check_plan_boxes.py",
+      "code": "list-item",
+      "count": 1,
+      "message": "List item 1 has incompatible type \"tuple[str, dict[str, str], dict[str, str], str]\"; expected \"tuple[str, dict[str, str], dict[str, bool], set[str]]\""
+    },
+    {
+      "id": "411006270054c0aa",
+      "file": ".ci/scripts/quality/check_plan_boxes.py",
+      "code": "list-item",
+      "count": 1,
+      "message": "List item 2 has incompatible type \"tuple[str, dict[str, dict[str, object]], dict[str, bool], str]\"; expected \"tuple[str, dict[str, str], dict[str, bool], set[str]]\""
+    },
+    {
+      "id": "661b3e02e0a7328b",
+      "file": ".ci/scripts/quality/check_plan_boxes.py",
+      "code": "list-item",
+      "count": 1,
+      "message": "List item 3 has incompatible type \"tuple[str, dict[str, dict[str, object]], dict[str, bool], str]\"; expected \"tuple[str, dict[str, str], dict[str, bool], set[str]]\""
+    },
+    {
+      "id": "ab2fafa9a4c99d86",
+      "file": ".ci/scripts/quality/check_plan_boxes.py",
+      "code": "list-item",
+      "count": 1,
+      "message": "List item 4 has incompatible type \"tuple[str, dict[str, str], dict[str, bool], str]\"; expected \"tuple[str, dict[str, str], dict[str, bool], set[str]]\""
+    },
+    {
+      "id": "b596236a9af4b42a",
+      "file": ".ci/scripts/quality/check_plan_boxes.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"out\" (hint: \"out: list[<type>] = ...\")"
+    },
+    {
+      "id": "3b200af80ed88cb3",
+      "file": ".ci/scripts/quality/check_plan_citations.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"out\" (hint: \"out: list[<type>] = ...\")"
+    },
+    {
+      "id": "84325f43ecc1fecd",
+      "file": ".ci/scripts/quality/check_plan_citations.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"spans\" (hint: \"spans: list[<type>] = ...\")"
+    },
+    {
+      "id": "b942b23b972f95be",
+      "file": ".ci/scripts/quality/check_plan_record.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"_LEDGER_CACHE\" (hint: \"_LEDGER_CACHE: dict[<type>, <type>] = ...\")"
+    },
+    {
+      "id": "51b06686cabe9548",
+      "file": ".ci/scripts/quality/check_plan_record.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"by_status\" (hint: \"by_status: dict[<type>, <type>] = ...\")"
+    },
+    {
+      "id": "9097a31f73e2e97d",
+      "file": ".ci/scripts/quality/check_plan_record.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"flagged\""
+    },
+    {
+      "id": "9080432ebef02657",
+      "file": ".ci/scripts/quality/check_plan_record.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"out\" (hint: \"out: list[<type>] = ...\")"
+    },
+    {
+      "id": "d86790bdd6a872b4",
+      "file": ".ci/scripts/quality/check_policy_inventory.py",
+      "code": "assignment",
+      "count": 1,
+      "message": "Incompatible types in assignment (expression has type \"None\", variable has type \"str\")"
+    },
+    {
+      "id": "2b2d4a774cce6d74",
+      "file": ".ci/scripts/quality/check_policy_inventory.py",
+      "code": "assignment",
+      "count": 1,
+      "message": "Incompatible types in assignment (expression has type \"expr | None\", variable has type \"expr\")"
+    },
+    {
+      "id": "afac68d9825633f1",
+      "file": ".ci/scripts/quality/check_policy_inventory.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"out\" (hint: \"out: list[<type>] = ...\")"
+    },
+    {
+      "id": "59fd41023e147317",
+      "file": ".ci/scripts/quality/check_pr_head_ref_completeness.py",
+      "code": "operator",
+      "count": 1,
+      "message": "Unsupported left operand type for | (\"None\")"
+    },
+    {
+      "id": "fcf7d74e589764f8",
+      "file": ".ci/scripts/quality/check_pr_head_ref_completeness.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"out\" (hint: \"out: list[<type>] = ...\")"
+    },
+    {
+      "id": "6a7958a49d981b0e",
+      "file": ".ci/scripts/quality/check_python_control_plants.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument 1 to \"_has_own_vacuity_guard\" has incompatible type \"AST\"; expected \"Call\""
+    },
+    {
+      "id": "22dfe8315d8dc3f0",
+      "file": ".ci/scripts/quality/check_python_control_plants.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument 1 to \"_normalises_a_comparison\" has incompatible type \"AST\"; expected \"Call\""
+    },
+    {
+      "id": "089d2c1ed2903c97",
+      "file": ".ci/scripts/quality/check_python_control_plants.py",
+      "code": "assignment",
+      "count": 1,
+      "message": "Incompatible types in assignment (expression has type \"Any | None\", variable has type \"Call\")"
+    },
+    {
+      "id": "d45a565643f09799",
+      "file": ".ci/scripts/quality/check_python_control_plants.py",
+      "code": "attr-defined",
+      "count": 1,
+      "message": "\"AST\" has no attribute \"func\""
+    },
+    {
+      "id": "99d01f68df9fe2c3",
+      "file": ".ci/scripts/quality/check_python_control_plants.py",
+      "code": "attr-defined",
+      "count": 1,
+      "message": "\"AST\" has no attribute \"lineno\""
+    },
+    {
+      "id": "6183d9fd3dba0720",
+      "file": ".ci/scripts/quality/check_python_control_plants.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"findings\" (hint: \"findings: list[<type>] = ...\")"
+    },
+    {
+      "id": "5bb4083a8b257462",
+      "file": ".ci/scripts/quality/check_resprofile.py",
+      "code": "union-attr",
+      "count": 2,
+      "message": "Item \"None\" of \"dict[Any, Any] | None\" has no attribute \"get\""
+    },
+    {
+      "id": "a286a80be4b11ec6",
+      "file": ".ci/scripts/quality/check_resprofile.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"enforced\" (hint: \"enforced: list[<type>] = ...\")"
+    },
+    {
+      "id": "a37d3c8bb4cfbe46",
+      "file": ".ci/scripts/quality/check_resprofile.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"reported\" (hint: \"reported: list[<type>] = ...\")"
+    },
+    {
+      "id": "0d212b0844328e7a",
+      "file": ".ci/scripts/quality/check_runner_advice.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"contributing\" (hint: \"contributing: dict[<type>, <type>] = ...\")"
+    },
+    {
+      "id": "834555801fbd8197",
+      "file": ".ci/scripts/quality/check_runner_advice.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"found\" (hint: \"found: dict[<type>, <type>] = ...\")"
+    },
+    {
+      "id": "a7c1281f860d3592",
+      "file": ".ci/scripts/quality/check_runner_advice.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"merged\" (hint: \"merged: dict[<type>, <type>] = ...\")"
+    },
+    {
+      "id": "f06ff0b1173c7f9b",
+      "file": ".ci/scripts/quality/check_runner_advice.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"where\" (hint: \"where: dict[<type>, <type>] = ...\")"
+    },
+    {
+      "id": "3f0531cf7290ae9a",
+      "file": ".ci/scripts/quality/check_secret_reachability.py",
+      "code": "attr-defined",
+      "count": 2,
+      "message": "\"Collection[str]\" has no attribute \"values\""
+    },
+    {
+      "id": "aef8070105040846",
+      "file": ".ci/scripts/quality/check_secret_reachability.py",
+      "code": "index",
+      "count": 1,
+      "message": "Unsupported target for indexed assignment (\"Collection[str]\")"
+    },
+    {
+      "id": "aec49ada28e0aa36",
+      "file": ".ci/scripts/quality/check_secret_reachability.py",
+      "code": "misc",
+      "count": 2,
+      "message": "Generator has incompatible item type \"int\"; expected \"bool\""
+    },
+    {
+      "id": "44bf5f24d368c264",
+      "file": ".ci/scripts/quality/check_secret_reachability.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"OPTIONAL\" (hint: \"OPTIONAL: dict[<type>, <type>] = ...\")"
+    },
+    {
+      "id": "7ea64356d4c41c76",
+      "file": ".ci/scripts/quality/check_test_file_orphans.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"EXEMPT\" (hint: \"EXEMPT: dict[<type>, <type>] = ...\")"
+    },
+    {
+      "id": "0346b4a4f5ad36f7",
+      "file": ".ci/scripts/quality/check_test_file_orphans.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"out\" (hint: \"out: list[<type>] = ...\")"
+    },
+    {
+      "id": "e3c231b7bd436750",
+      "file": ".ci/scripts/quality/check_tutorial_cli_validity.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"found\" (hint: \"found: list[<type>] = ...\")"
+    },
+    {
+      "id": "1fb325d8e1df588e",
+      "file": ".ci/scripts/quality/check_workflow_env_provision.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"out\" (hint: \"out: list[<type>] = ...\")"
+    },
+    {
+      "id": "8cdd47bade337280",
+      "file": ".ci/scripts/quality/check_workflow_submodule_deps.py",
+      "code": "arg-type",
+      "count": 3,
+      "message": "Argument 1 to \"append\" of \"list\" has incompatible type \"tuple[str, str, bool]\"; expected \"tuple[str, str]\""
+    },
+    {
+      "id": "90e83e384703ba86",
+      "file": ".ci/scripts/quality/check_workflow_submodule_deps.py",
+      "code": "return-value",
+      "count": 1,
+      "message": "Incompatible return value type (got \"list[tuple[str, str]]\", expected \"list[tuple[str, str, bool]]\")"
+    },
+    {
+      "id": "0e948028da8a4c6c",
+      "file": ".ci/scripts/quality/check_workflow_submodule_deps.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"findings\" (hint: \"findings: list[<type>] = ...\")"
+    },
+    {
+      "id": "c0c9f3d8be6e0ead",
+      "file": ".ci/scripts/quality/shape_cluster_diff.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"counts\""
+    },
+    {
+      "id": "b71ea949cbc21b3d",
+      "file": ".ci/scripts/quality/shape_cluster_diff.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"totals_after\""
+    },
+    {
+      "id": "ee1a957c2d87fb60",
+      "file": ".ci/scripts/quality/shape_cluster_diff.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"totals_before\""
+    },
+    {
+      "id": "645579b3fb55e843",
+      "file": ".ci/scripts/quality/shape_cluster_diff.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"widths\""
+    },
+    {
+      "id": "0da429def69e32e9",
+      "file": ".claude/hooks/context/test-context-bands.py",
+      "code": "misc",
+      "count": 1,
+      "message": "\"None\" object is not iterable"
+    },
+    {
+      "id": "f28e52152c85ca57",
+      "file": ".claude/hooks/context/test-context-bands.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"FAILURES\" (hint: \"FAILURES: list[<type>] = ...\")"
+    },
+    {
+      "id": "744ee1db7c047b46",
+      "file": ".claude/hooks/stop/test-completion-evidence.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument 1 to \"module_from_spec\" has incompatible type \"ModuleSpec | None\"; expected \"ModuleSpec\""
+    },
+    {
+      "id": "53691b7f980053bb",
+      "file": ".claude/hooks/stop/test-completion-evidence.py",
+      "code": "union-attr",
+      "count": 1,
+      "message": "Item \"None\" of \"Loader | Any | None\" has no attribute \"exec_module\""
+    },
+    {
+      "id": "8754e8477fd9a19a",
+      "file": ".claude/hooks/stop/test-completion-evidence.py",
+      "code": "union-attr",
+      "count": 1,
+      "message": "Item \"None\" of \"ModuleSpec | None\" has no attribute \"loader\""
+    },
+    {
+      "id": "d1ec6595a58314af",
+      "file": ".claude/hooks/stop/test-completion-evidence.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"bad\" (hint: \"bad: list[<type>] = ...\")"
+    },
+    {
+      "id": "f899be72ac9bd908",
+      "file": ".claude/hooks/stop/test-judge-schema.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument 1 to \"module_from_spec\" has incompatible type \"ModuleSpec | None\"; expected \"ModuleSpec\""
+    },
+    {
+      "id": "df0b50601e630d6e",
+      "file": ".claude/hooks/stop/test-judge-schema.py",
+      "code": "assignment",
+      "count": 1,
+      "message": "Incompatible types in assignment (expression has type \"Path\", variable has type \"str\")"
+    },
+    {
+      "id": "a8b27d5691fb2eff",
+      "file": ".claude/hooks/stop/test-judge-schema.py",
+      "code": "assignment",
+      "count": 1,
+      "message": "Incompatible types in assignment (expression has type \"SimpleNamespace\", variable has type Module)"
+    },
+    {
+      "id": "47dcf6f2f0c06d82",
+      "file": ".claude/hooks/stop/test-judge-schema.py",
+      "code": "assignment",
+      "count": 1,
+      "message": "Incompatible types in assignment (expression has type \"def scripted(_cmd: Any, **_kw: Any) -> Any\", variable has type \"def run(argv: Any, **kwargs: Any) -> Any\")"
+    },
+    {
+      "id": "d04ffaa192d5ad3f",
+      "file": ".claude/hooks/stop/test-judge-schema.py",
+      "code": "call-overload",
+      "count": 1,
+      "message": "No overload variant of \"list\" matches argument type \"object\""
+    },
+    {
+      "id": "a441caf375be6208",
+      "file": ".claude/hooks/stop/test-judge-schema.py",
+      "code": "index",
+      "count": 4,
+      "message": "Value of type \"object\" is not indexable"
+    },
+    {
+      "id": "65cdd10732677b34",
+      "file": ".claude/hooks/stop/test-judge-schema.py",
+      "code": "no-redef",
+      "count": 1,
+      "message": "Name \"_envelope\" already defined on line 479"
+    },
+    {
+      "id": "769378b7512f40d2",
+      "file": ".claude/hooks/stop/test-judge-schema.py",
+      "code": "operator",
+      "count": 4,
+      "message": "Unsupported left operand type for / (\"str\")"
+    },
+    {
+      "id": "b6597912780ed99f",
+      "file": ".claude/hooks/stop/test-judge-schema.py",
+      "code": "operator",
+      "count": 4,
+      "message": "Unsupported right operand type for in (\"object\")"
+    },
+    {
+      "id": "5e455c6cb5ce1865",
+      "file": ".claude/hooks/stop/test-judge-schema.py",
+      "code": "union-attr",
+      "count": 1,
+      "message": "Item \"None\" of \"Loader | Any | None\" has no attribute \"exec_module\""
+    },
+    {
+      "id": "a40bcec4ed77ddf1",
+      "file": ".claude/hooks/stop/test-judge-schema.py",
+      "code": "union-attr",
+      "count": 1,
+      "message": "Item \"None\" of \"ModuleSpec | None\" has no attribute \"loader\""
+    },
+    {
+      "id": "5eea7c55980a7dc6",
+      "file": ".claude/hooks/stop/test-judge-schema.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"CAPTURED\" (hint: \"CAPTURED: dict[<type>, <type>] = ...\")"
+    },
+    {
+      "id": "482d43e726bd874d",
+      "file": ".claude/hooks/stop/test-judge-schema.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"_calls\" (hint: \"_calls: list[<type>] = ...\")"
+    },
+    {
+      "id": "42dc25547270bc98",
+      "file": ".claude/hooks/stop/test-judge-schema.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"_st\" (hint: \"_st: dict[<type>, <type>] = ...\")"
+    },
+    {
+      "id": "2748ce419cac1307",
+      "file": ".claude/hooks/stop/test-judge-schema.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"_st2\" (hint: \"_st2: dict[<type>, <type>] = ...\")"
+    },
+    {
+      "id": "0e1eb6b899b248e0",
+      "file": ".claude/hooks/stop/test-judge-schema.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"_st3\" (hint: \"_st3: dict[<type>, <type>] = ...\")"
+    },
+    {
+      "id": "bed430e6e9f1da43",
+      "file": ".claude/hooks/stop/test-planfile.py",
+      "code": "attr-defined",
+      "count": 1,
+      "message": "\"expr\" has no attribute \"value\""
+    },
+    {
+      "id": "68b32069d34dfe89",
+      "file": ".claude/hooks/stop/test-planindex.py",
+      "code": "method-assign",
+      "count": 2,
+      "message": "Cannot assign to a method"
+    },
+    {
+      "id": "a28f34cbd8b15b36",
+      "file": ".claude/hooks/stop/test-planrec.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument 1 to \"module_from_spec\" has incompatible type \"ModuleSpec | None\"; expected \"ModuleSpec\""
+    },
+    {
+      "id": "fcc23d7cd5385d1f",
+      "file": ".claude/hooks/stop/test-planrec.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument 1 to \"symlink_to\" of \"Path\" has incompatible type \"str | None\"; expected \"str | bytes | PathLike[str] | PathLike[bytes]\""
+    },
+    {
+      "id": "4cd114e10be33d88",
+      "file": ".claude/hooks/stop/test-planrec.py",
+      "code": "union-attr",
+      "count": 1,
+      "message": "Item \"None\" of \"Loader | Any | None\" has no attribute \"exec_module\""
+    },
+    {
+      "id": "8b0a4e50afa8e1b8",
+      "file": ".claude/hooks/stop/test-planrec.py",
+      "code": "union-attr",
+      "count": 1,
+      "message": "Item \"None\" of \"ModuleSpec | None\" has no attribute \"loader\""
+    },
+    {
+      "id": "9a87cbc83f469251",
+      "file": ".claude/hooks/stop/wl_admit.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"texts\" (hint: \"texts: list[<type>] = ...\")"
+    },
+    {
+      "id": "399454bad8697231",
+      "file": ".claude/hooks/stop/wl_admit.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"tools\" (hint: \"tools: list[<type>] = ...\")"
+    },
+    {
+      "id": "483a9f2788a68c56",
+      "file": ".claude/hooks/stop/wl_agents.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"corpus\" (hint: \"corpus: dict[<type>, <type>] = ...\")"
+    },
+    {
+      "id": "349422519e57d855",
+      "file": ".claude/hooks/stop/wl_agents.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"errors\" (hint: \"errors: list[<type>] = ...\")"
+    },
+    {
+      "id": "1d88b3e4c3d6d800",
+      "file": ".claude/hooks/stop/wl_agents.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"fields\" (hint: \"fields: dict[<type>, <type>] = ...\")"
+    },
+    {
+      "id": "4797f3dab9b36e65",
+      "file": ".claude/hooks/stop/wl_agents.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"seen\" (hint: \"seen: dict[<type>, <type>] = ...\")"
+    },
+    {
+      "id": "a04e3f7e18dc3c1d",
+      "file": ".claude/hooks/stop/wl_agents.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"terms\" (hint: \"terms: set[<type>] = ...\")"
+    },
+    {
+      "id": "9552c88bc1a61adf",
+      "file": ".claude/hooks/stop/wl_checklist.py",
+      "code": "assignment",
+      "count": 1,
+      "message": "Incompatible types in assignment (expression has type \"list[Any]\", variable has type \"str\")"
+    },
+    {
+      "id": "ae8f1fafed637f38",
+      "file": ".claude/hooks/stop/wl_checklist.py",
+      "code": "attr-defined",
+      "count": 1,
+      "message": "\"str\" has no attribute \"extend\""
+    },
+    {
+      "id": "7082ac1ff4fed3e5",
+      "file": ".claude/hooks/stop/wl_checklist.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"a\" (hint: \"a: list[<type>] = ...\")"
+    },
+    {
+      "id": "0a4737b321c24dc9",
+      "file": ".claude/hooks/stop/wl_checklist.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"rows\" (hint: \"rows: list[<type>] = ...\")"
+    },
+    {
+      "id": "73bf8edadf1aa909",
+      "file": ".claude/hooks/stop/wl_checklist.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"seen\" (hint: \"seen: dict[<type>, <type>] = ...\")"
+    },
+    {
+      "id": "a4176c698e261499",
+      "file": ".claude/hooks/stop/wl_checklist.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"v\" (hint: \"v: list[<type>] = ...\")"
+    },
+    {
+      "id": "77bffce329df3bd9",
+      "file": ".claude/hooks/stop/wl_checks.py",
+      "code": "assignment",
+      "count": 1,
+      "message": "Incompatible types in assignment (expression has type \"Callable[[], Any]\", target has type \"Callable[[Any], Any]\")"
+    },
+    {
+      "id": "5815692284d36da4",
+      "file": ".claude/hooks/stop/wl_checks.py",
+      "code": "assignment",
+      "count": 4,
+      "message": "Incompatible types in assignment (expression has type \"str\", variable has type \"list[str]\")"
+    },
+    {
+      "id": "ebd564763a84fc10",
+      "file": ".claude/hooks/stop/wl_checks.py",
+      "code": "misc",
+      "count": 1,
+      "message": "Cannot infer type of lambda"
+    },
+    {
+      "id": "bfef57e66cd8b42e",
+      "file": ".claude/hooks/stop/wl_checks.py",
+      "code": "union-attr",
+      "count": 1,
+      "message": "Item \"None\" of \"Match[str] | None\" has no attribute \"start\""
+    },
+    {
+      "id": "a6901582fa4ffc8a",
+      "file": ".claude/hooks/stop/wl_checks.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"counts\" (hint: \"counts: dict[<type>, <type>] = ...\")"
+    },
+    {
+      "id": "3c14099ee9008cb9",
+      "file": ".claude/hooks/stop/wl_checks.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"display_latch\" (hint: \"display_latch: dict[<type>, <type>] = ...\")"
+    },
+    {
+      "id": "9625eec069a2f562",
+      "file": ".claude/hooks/stop/wl_ci.py",
+      "code": "union-attr",
+      "count": 1,
+      "message": "Item \"None\" of \"Any | str | None\" has no attribute \"lower\""
+    },
+    {
+      "id": "33f723fcd0e18399",
+      "file": ".claude/hooks/stop/wl_ci.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"contexts\" (hint: \"contexts: list[<type>] = ...\")"
+    },
+    {
+      "id": "c2e19d6551b2f05c",
+      "file": ".claude/hooks/stop/wl_ci.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"hard\" (hint: \"hard: list[<type>] = ...\")"
+    },
+    {
+      "id": "2e6c017e80701683",
+      "file": ".claude/hooks/stop/wl_ci.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"soft\" (hint: \"soft: list[<type>] = ...\")"
+    },
+    {
+      "id": "21aa380873062a7a",
+      "file": ".claude/hooks/stop/wl_core.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"_LINEAGE\" (hint: \"_LINEAGE: dict[<type>, <type>] = ...\")"
+    },
+    {
+      "id": "bd42dfdcb64745ee",
+      "file": ".claude/hooks/stop/wl_core.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"_TASKS_DIR_CACHE\" (hint: \"_TASKS_DIR_CACHE: dict[<type>, <type>] = ...\")"
+    },
+    {
+      "id": "d50a51d2e3e21af6",
+      "file": ".claude/hooks/stop/wl_core.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"since_user\" (hint: \"since_user: list[<type>] = ...\")"
+    },
+    {
+      "id": "ba209f6b599fdc6c",
+      "file": ".claude/hooks/stop/wl_core.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"turn_texts\" (hint: \"turn_texts: list[<type>] = ...\")"
+    },
+    {
+      "id": "d2fdc0815bc96a88",
+      "file": ".claude/hooks/stop/wl_core.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"vals\" (hint: \"vals: set[<type>] = ...\")"
+    },
+    {
+      "id": "0ef9ad093056efb5",
+      "file": ".claude/hooks/stop/wl_epic.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"out\" (hint: \"out: dict[<type>, <type>] = ...\")"
+    },
+    {
+      "id": "19e6704bb5d96a01",
+      "file": ".claude/hooks/stop/wl_git.py",
+      "code": "assignment",
+      "count": 2,
+      "message": "Incompatible types in assignment (expression has type \"list[Never]\", variable has type \"dict[Any, Any]\")"
+    },
+    {
+      "id": "b33c5958dc434a2f",
+      "file": ".claude/hooks/stop/wl_git.py",
+      "code": "attr-defined",
+      "count": 2,
+      "message": "\"dict[Any, Any]\" has no attribute \"append\""
+    },
+    {
+      "id": "d98fe73b1bbdc9b4",
+      "file": ".claude/hooks/stop/wl_git.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"by_id\" (hint: \"by_id: dict[<type>, <type>] = ...\")"
+    },
+    {
+      "id": "9716a659ec8d3742",
+      "file": ".claude/hooks/stop/wl_git.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"found\" (hint: \"found: list[<type>] = ...\")"
+    },
+    {
+      "id": "e3934d558a88bea2",
+      "file": ".claude/hooks/stop/wl_git.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"paths\" (hint: \"paths: dict[<type>, <type>] = ...\")"
+    },
+    {
+      "id": "832f360f15ad8f6b",
+      "file": ".claude/hooks/stop/wl_git.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"reached\" (hint: \"reached: list[<type>] = ...\")"
+    },
+    {
+      "id": "4590ef226e8a7483",
+      "file": ".claude/hooks/stop/wl_judge.py",
+      "code": "index",
+      "count": 1,
+      "message": "Value of type \"object\" is not indexable"
+    },
+    {
+      "id": "4a081bad36a03f0a",
+      "file": ".claude/hooks/stop/wl_judge.py",
+      "code": "misc",
+      "count": 1,
+      "message": "Expected iterable as variadic argument"
+    },
+    {
+      "id": "60e9935bcf73dbb6",
+      "file": ".claude/hooks/stop/wl_judge.py",
+      "code": "operator",
+      "count": 1,
+      "message": "Unsupported right operand type for in (\"object\")"
+    },
+    {
+      "id": "0927a10f98edfff2",
+      "file": ".claude/hooks/stop/wl_liveness.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument 1 to \"append\" of \"list\" has incompatible type \"tuple[str, Any | str, None, int, bool]\"; expected \"tuple[str, Any | str, int, int, bool]\""
+    },
+    {
+      "id": "87afb6fa22721019",
+      "file": ".claude/hooks/stop/wl_liveness.py",
+      "code": "assignment",
+      "count": 1,
+      "message": "Incompatible types in assignment (expression has type \"Any | None\", variable has type \"int\")"
+    },
+    {
+      "id": "5f71067b05f7240b",
+      "file": ".claude/hooks/stop/wl_liveness.py",
+      "code": "assignment",
+      "count": 1,
+      "message": "Incompatible types in assignment (expression has type \"str\", variable has type \"int\")"
+    },
+    {
+      "id": "142faebda3fdc34c",
+      "file": ".claude/hooks/stop/wl_liveness.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"cold\" (hint: \"cold: list[<type>] = ...\")"
+    },
+    {
+      "id": "0819febef5b6a593",
+      "file": ".claude/hooks/stop/wl_liveness.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"hot\" (hint: \"hot: list[<type>] = ...\")"
+    },
+    {
+      "id": "274ef1c508f5bcc3",
+      "file": ".claude/hooks/stop/wl_planfid.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"hits\" (hint: \"hits: list[<type>] = ...\")"
+    },
+    {
+      "id": "fba631886c34fb90",
+      "file": ".claude/hooks/stop/wl_planrec.py",
+      "code": "union-attr",
+      "count": 1,
+      "message": "Item \"None\" of \"Match[str] | None\" has no attribute \"start\""
+    },
+    {
+      "id": "9ce66e538c729e27",
+      "file": ".claude/hooks/stop/wl_planrec.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"buf\" (hint: \"buf: list[<type>] = ...\")"
+    },
+    {
+      "id": "b6071f97f934bb35",
+      "file": ".claude/hooks/stop/wl_planrec.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"hits\" (hint: \"hits: list[<type>] = ...\")"
+    },
+    {
+      "id": "45540a6c59a41149",
+      "file": ".claude/hooks/stop/wl_planrec.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"kept\" (hint: \"kept: list[<type>] = ...\")"
+    },
+    {
+      "id": "b642bf5f85b6f127",
+      "file": ".claude/hooks/stop/wl_planrec.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"out\" (hint: \"out: dict[<type>, <type>] = ...\")"
+    },
+    {
+      "id": "1b65234207f45d27",
+      "file": ".claude/hooks/stop/wl_proc.py",
+      "code": "assignment",
+      "count": 1,
+      "message": "Incompatible types in assignment (expression has type \"None\", variable has type \"def run(argv: list[str], *, cwd: str | PathLike[str] | None = ..., env: dict[str, str] | None = ..., timeout: float = ..., input_text: str | None = ..., kill_group: bool = ...) -> Result\")"
+    },
+    {
+      "id": "e8656ee8e5327daa",
+      "file": ".claude/hooks/stop/wl_proc.py",
+      "code": "assignment",
+      "count": 1,
+      "message": "Incompatible types in assignment (expression has type \"None\", variable has type \"type[Result]\")"
+    },
+    {
+      "id": "5504bba9932804e1",
+      "file": ".claude/hooks/stop/wl_proc.py",
+      "code": "misc",
+      "count": 1,
+      "message": "Cannot assign to a type"
+    },
+    {
+      "id": "60bc16bf5f93230c",
+      "file": ".claude/hooks/stop/wl_profile.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument 1 to \"get\" of \"dict\" has incompatible type \"Any | None\"; expected \"int\""
+    },
+    {
+      "id": "9718b98fd59c18e2",
+      "file": ".claude/hooks/stop/wl_profile.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument 1 to \"get\" of \"dict\" has incompatible type \"int | None\"; expected \"int\""
+    },
+    {
+      "id": "738b5f640f1af2b5",
+      "file": ".claude/hooks/stop/wl_profile.py",
+      "code": "operator",
+      "count": 1,
+      "message": "Unsupported operand types for + (\"object\" and \"int\")"
+    },
+    {
+      "id": "e08dcf973d4ecfdc",
+      "file": ".claude/hooks/stop/wl_profile.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"found\" (hint: \"found: dict[<type>, <type>] = ...\")"
+    },
+    {
+      "id": "1aa304897b6d6de7",
+      "file": ".claude/hooks/stop/wl_reggate.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"units\" (hint: \"units: list[<type>] = ...\")"
+    },
+    {
+      "id": "fa8ea62a02ffb676",
+      "file": ".claude/hooks/stop/wl_report.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"marks\" (hint: \"marks: set[<type>] = ...\")"
+    },
+    {
+      "id": "490ba4a6e8f445ad",
+      "file": ".claude/hooks/stop/wl_report.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"out\" (hint: \"out: list[<type>] = ...\")"
+    },
+    {
+      "id": "36271e27007c5576",
+      "file": ".claude/hooks/stop/wl_requests.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"reqs\" (hint: \"reqs: dict[<type>, <type>] = ...\")"
+    },
+    {
+      "id": "716e77f197d440ca",
+      "file": ".claude/hooks/stop/wl_resprofile.py",
+      "code": "arg-type",
+      "count": 2,
+      "message": "Argument 1 to \"append\" has incompatible type \"dict[Any, Any] | None\"; expected \"dict[Any, Any]\""
+    },
+    {
+      "id": "39612f7f782fd67a",
+      "file": ".claude/hooks/stop/wl_resprofile.py",
+      "code": "index",
+      "count": 1,
+      "message": "Value of type \"dict[Any, Any] | None\" is not indexable"
+    },
+    {
+      "id": "547238573ed60a7c",
+      "file": ".claude/hooks/stop/wl_resprofile.py",
+      "code": "operator",
+      "count": 1,
+      "message": "Unsupported left operand type for / (\"None\")"
+    },
+    {
+      "id": "6b7a2b35ac0d5cf7",
+      "file": ".claude/hooks/stop/wl_ressample.py",
+      "code": "operator",
+      "count": 1,
+      "message": "Unsupported operand types for - (\"None\" and \"int\")"
+    },
+    {
+      "id": "f518dad6ffe3afcd",
+      "file": ".claude/hooks/stop/wl_store.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument 1 to \"write\" of \"_BufferedIOBase\" has incompatible type \"str\"; expected \"Buffer\""
+    },
+    {
+      "id": "109d6da7331e6923",
+      "file": ".claude/hooks/stop/wl_store.py",
+      "code": "assignment",
+      "count": 1,
+      "message": "Incompatible types in assignment (expression has type \"None\", variable has type Module)"
+    },
+    {
+      "id": "bb56c33c7a5a1949",
+      "file": ".claude/hooks/stop/wl_store.py",
+      "code": "assignment",
+      "count": 1,
+      "message": "Incompatible types in assignment (expression has type \"TextIOWrapper[_WrappedBuffer]\", variable has type \"BufferedRandom\")"
+    },
+    {
+      "id": "1fb41a0effb57cd1",
+      "file": ".claude/hooks/stop/wl_store.py",
+      "code": "assignment",
+      "count": 3,
+      "message": "Incompatible types in assignment (expression has type \"dict[str, Any] | None\", variable has type \"dict[str, Any]\")"
+    },
+    {
+      "id": "d0aee8846d677c62",
+      "file": ".claude/hooks/stop/wl_store.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"_BRANCH_CACHE\" (hint: \"_BRANCH_CACHE: dict[<type>, <type>] = ...\")"
+    },
+    {
+      "id": "a79066de5ed77213",
+      "file": ".claude/hooks/stop/wl_store.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"_HOST_CACHE\" (hint: \"_HOST_CACHE: dict[<type>, <type>] = ...\")"
+    },
+    {
+      "id": "445a859da95c0ff6",
+      "file": ".claude/hooks/stop/wl_store.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"adj\" (hint: \"adj: dict[<type>, <type>] = ...\")"
+    },
+    {
+      "id": "af3bc94cc10e2472",
+      "file": ".claude/hooks/stop/wl_store.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"by_owner\" (hint: \"by_owner: dict[<type>, <type>] = ...\")"
+    },
+    {
+      "id": "2b9af6cf1f1e15db",
+      "file": ".claude/hooks/stop/wl_store.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"counts\" (hint: \"counts: dict[<type>, <type>] = ...\")"
+    },
+    {
+      "id": "f764ddf0ab96724a",
+      "file": ".claude/hooks/stop/wl_store.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"first_at\" (hint: \"first_at: dict[<type>, <type>] = ...\")"
+    },
+    {
+      "id": "9a1c2fd4d3a5c7ef",
+      "file": ".claude/hooks/stop/wl_store.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"others\" (hint: \"others: dict[<type>, <type>] = ...\")"
+    },
+    {
+      "id": "ab908e0168ea4cc9",
+      "file": ".claude/hooks/stop/wl_store.py",
+      "code": "var-annotated",
+      "count": 2,
+      "message": "Need type annotation for \"out\" (hint: \"out: dict[<type>, <type>] = ...\")"
+    },
+    {
+      "id": "1b0a374ee2d05d1c",
+      "file": ".claude/hooks/stop/wl_store.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"reaped\" (hint: \"reaped: list[<type>] = ...\")"
+    },
+    {
+      "id": "2f10776ec8fa561e",
+      "file": ".claude/hooks/stop/wl_store.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"records\" (hint: \"records: dict[<type>, <type>] = ...\")"
+    },
+    {
+      "id": "43a95b98a5fbd1a3",
+      "file": ".claude/hooks/stop/wl_wait.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"woke_rq\""
+    },
+    {
+      "id": "5109558d9576f9ee",
+      "file": ".claude/hooks/stop/worklist.py",
+      "code": "assignment",
+      "count": 1,
+      "message": "Incompatible types in assignment (expression has type \"_BrokenModule\", target has type Module)"
+    },
+    {
+      "id": "c1a83037f78e4f81",
+      "file": ".claude/hooks/trapguard/dispatch.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"alive\" (hint: \"alive: list[<type>] = ...\")"
+    },
+    {
+      "id": "ebddf75a1f7f18e8",
+      "file": ".claude/rediacc_hooks/guards/block_adhoc_sanctioned.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument 1 to \"module_from_spec\" has incompatible type \"ModuleSpec | None\"; expected \"ModuleSpec\""
+    },
+    {
+      "id": "10089bb913423de6",
+      "file": ".claude/rediacc_hooks/guards/block_adhoc_sanctioned.py",
+      "code": "union-attr",
+      "count": 1,
+      "message": "Item \"None\" of \"Loader | Any | None\" has no attribute \"exec_module\""
+    },
+    {
+      "id": "e26443b1de8b3f9e",
+      "file": ".claude/rediacc_hooks/guards/block_adhoc_sanctioned.py",
+      "code": "union-attr",
+      "count": 1,
+      "message": "Item \"None\" of \"ModuleSpec | None\" has no attribute \"loader\""
+    },
+    {
+      "id": "1fec78f4c3d63680",
+      "file": ".claude/rediacc_hooks/guards/block_adhoc_sanctioned.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"_REGISTRY\" (hint: \"_REGISTRY: list[<type>] = ...\")"
+    },
+    {
+      "id": "a0384f7a943d4604",
+      "file": ".claude/rediacc_hooks/guards/block_bash_write_to_running_script.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"ENVS\""
+    },
+    {
+      "id": "b0617d16c4959970",
+      "file": ".claude/rediacc_hooks/guards/block_bash_write_to_running_script.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"_CHILDREN\" (hint: \"_CHILDREN: list[<type>] = ...\")"
+    },
+    {
+      "id": "a14e2c72f4b18620",
+      "file": ".claude/rediacc_hooks/guards/block_bash_write_to_running_script.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"_LOCK_FDS\" (hint: \"_LOCK_FDS: list[<type>] = ...\")"
+    },
+    {
+      "id": "d00cef61beb2917d",
+      "file": ".claude/rediacc_hooks/guards/block_compacted_plan_edit.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"ENVS\""
+    },
+    {
+      "id": "17ab6510f98331e8",
+      "file": ".claude/rediacc_hooks/guards/block_edit_of_running_script.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"ENVS\""
+    },
+    {
+      "id": "208ed77be858589f",
+      "file": ".claude/rediacc_hooks/guards/block_edit_of_running_script.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"_CHILDREN\" (hint: \"_CHILDREN: list[<type>] = ...\")"
+    },
+    {
+      "id": "3e3f2a8431488138",
+      "file": ".claude/rediacc_hooks/guards/block_edit_of_running_script.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"_LOCK_FDS\" (hint: \"_LOCK_FDS: list[<type>] = ...\")"
+    },
+    {
+      "id": "157d2bc5d0437352",
+      "file": ".claude/rediacc_hooks/guards/block_host_toolchain_run.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"ENVS\""
+    },
+    {
+      "id": "10cbc155d11de1b3",
+      "file": ".claude/rediacc_hooks/guards/block_inline_python.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"ENVS\""
+    },
+    {
+      "id": "86d7aad7d7b183e5",
+      "file": ".claude/rediacc_hooks/guards/block_inline_workflow_run.py",
+      "code": "union-attr",
+      "count": 1,
+      "message": "Item \"None\" of \"Match[str] | None\" has no attribute \"end\""
+    },
+    {
+      "id": "8dc7471bcb470521",
+      "file": ".claude/rediacc_hooks/guards/block_long_sleep.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"KNOWN_DIVERGENCES\" (hint: \"KNOWN_DIVERGENCES: list[<type>] = ...\")"
+    },
+    {
+      "id": "e1f746ddd3d883e9",
+      "file": ".claude/rediacc_hooks/guards/block_merge_with_unpushed.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"ENVS\""
+    },
+    {
+      "id": "f75bc2529b0be136",
+      "file": ".claude/rediacc_hooks/guards/block_plan_without_tasks.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"ENVS\""
+    },
+    {
+      "id": "6ee8f539f8307ce7",
+      "file": ".claude/rediacc_hooks/guards/block_premature_ready.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"ENVS\""
+    },
+    {
+      "id": "0fe0be787b71ce81",
+      "file": ".claude/rediacc_hooks/guards/block_prose_style_edit.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"errors\" (hint: \"errors: list[<type>] = ...\")"
+    },
+    {
+      "id": "c18a781ce4dd5a32",
+      "file": ".claude/rediacc_hooks/guards/block_prose_style_edit.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"warnings\" (hint: \"warnings: list[<type>] = ...\")"
+    },
+    {
+      "id": "cf3c4abad42fcb5f",
+      "file": ".claude/rediacc_hooks/guards/block_push_to_protected_branch.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"ENVS\""
+    },
+    {
+      "id": "a5bdc32563c4e497",
+      "file": ".claude/rediacc_hooks/guards/block_roundlog_write.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"ENVS\""
+    },
+    {
+      "id": "4d5a0a5279669ba2",
+      "file": ".claude/rediacc_hooks/guards/block_second_open_pr.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"ENVS\""
+    },
+    {
+      "id": "d39c816ce5c92aaf",
+      "file": ".claude/rediacc_hooks/guards/block_stale_pr_branch_date.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"ENVS\""
+    },
+    {
+      "id": "f630c37c9a8eecb1",
+      "file": ".claude/rediacc_hooks/guards/block_unproven_bulk_transform.py",
+      "code": "call-overload",
+      "count": 1,
+      "message": "No overload variant of \"run\" matches argument types \"list[Any]\", \"bool\", \"dict[str, object]\""
+    },
+    {
+      "id": "a12d89a25f7ce335",
+      "file": ".claude/rediacc_hooks/guards/block_unproven_bulk_transform.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"ENVS\""
+    },
+    {
+      "id": "8477b4f70fad4106",
+      "file": ".claude/rediacc_hooks/guards/block_untagged_commit.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"ENVS\""
+    },
+    {
+      "id": "7286eaf984ab81d5",
+      "file": ".claude/rediacc_hooks/guards/block_untagged_commit.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"heads\" (hint: \"heads: list[<type>] = ...\")"
+    },
+    {
+      "id": "c01275c8eb5c52a3",
+      "file": ".claude/rediacc_hooks/guards/block_unverified_push.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"ENVS\""
+    },
+    {
+      "id": "0dbaf7b5eccb3dbd",
+      "file": ".claude/rediacc_hooks/guards/test-warn_staged_shape_duplication.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument 1 to \"symlink\" has incompatible type \"str | None\"; expected \"str | bytes | PathLike[str] | PathLike[bytes]\""
+    },
+    {
+      "id": "0c9066fb2c1bb210",
+      "file": ".claude/rediacc_hooks/guards/warn_hook_change.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"ENVS\""
+    },
+    {
+      "id": "75eeaa528766801a",
+      "file": ".claude/rediacc_hooks/guards/warn_remote_drift.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"ENVS\""
+    },
+    {
+      "id": "58ca07ceac2867d1",
+      "file": ".claude/rediacc_hooks/guards/warn_stale_index.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"ENVS\""
+    },
+    {
+      "id": "1616f74189adbac3",
+      "file": ".claude/rediacc_hooks/guards/warn_submodule_deletions.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"ENVS\""
+    },
+    {
+      "id": "900b1a78aec9a55a",
+      "file": ".claude/rediacc_hooks/guards/warn_submodule_deletions.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"_SUBMODULES\""
+    },
+    {
+      "id": "77cb9c83f614380e",
+      "file": ".claude/rediacc_hooks/hookio.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"out\" (hint: \"out: list[<type>] = ...\")"
+    },
+    {
+      "id": "78ab4eb7c9c0c388",
+      "file": ".claude/rediacc_hooks/lifecycle.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"merged\" (hint: \"merged: dict[<type>, <type>] = ...\")"
+    },
+    {
+      "id": "4b20fd8d3c462c5f",
+      "file": ".claude/rediacc_hooks/lifecycle.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"out\" (hint: \"out: dict[<type>, <type>] = ...\")"
+    },
+    {
+      "id": "f131ab25a9cb07de",
+      "file": ".claude/rediacc_hooks/shellscan.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"out\" (hint: \"out: list[<type>] = ...\")"
+    },
+    {
+      "id": "4e346bd2a04fc3c0",
+      "file": ".claude/rediacc_hooks/tests/test_dispatch.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"out\" (hint: \"out: list[<type>] = ...\")"
+    },
+    {
+      "id": "8edfe6964bd34c1e",
+      "file": ".claude/rediacc_hooks/tests/test_dispatch.py",
+      "code": "var-annotated",
+      "count": 2,
+      "message": "Need type annotation for \"seen\" (hint: \"seen: dict[<type>, <type>] = ...\")"
+    },
+    {
+      "id": "0e192f5a4df0775f",
+      "file": ".claude/rediacc_hooks/tests/test_guards_differential.py",
+      "code": "operator",
+      "count": 1,
+      "message": "\"str\" not callable"
+    },
+    {
+      "id": "3febbda96157f75d",
+      "file": ".claude/rediacc_hooks/tests/test_guards_differential.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"_FIXTURES\" (hint: \"_FIXTURES: dict[<type>, <type>] = ...\")"
+    },
+    {
+      "id": "30047c6eae3ac695",
+      "file": ".claude/rediacc_hooks/tests/test_guards_differential.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"own\" (hint: \"own: dict[<type>, <type>] = ...\")"
+    },
+    {
+      "id": "95f59b734c70f71d",
+      "file": ".claude/rediacc_hooks/tests/test_guards_differential.py",
+      "code": "var-annotated",
+      "count": 2,
+      "message": "Need type annotation for \"seen\" (hint: \"seen: dict[<type>, <type>] = ...\")"
+    },
+    {
+      "id": "60c1bcc3d55f4e66",
+      "file": ".claude/rediacc_hooks/tests/test_hooks_fixtures.py",
+      "code": "list-item",
+      "count": 1,
+      "message": "List item 0 has incompatible type \"str | None\"; expected \"str | bytes | PathLike[str] | PathLike[bytes]\""
+    },
+    {
+      "id": "36e014e7f9dd1e0a",
+      "file": ".claude/rediacc_hooks/tests/test_settings_collapse.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"out\" (hint: \"out: dict[<type>, <type>] = ...\")"
+    },
+    {
+      "id": "9625c71b262d2100",
+      "file": ".claude/rediacc_hooks/tests/test_settings_collapse.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"routed\" (hint: \"routed: dict[<type>, <type>] = ...\")"
+    },
+    {
+      "id": "5d9429b7a435cf86",
+      "file": ".claude/rediacc_hooks/tests/test_shellscan_differential.py",
+      "code": "operator",
+      "count": 1,
+      "message": "\"str\" not callable"
+    },
+    {
+      "id": "2a2610498aed7dc2",
+      "file": ".claude/rediacc_hooks/tests/test_shellscan_differential.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"seen\" (hint: \"seen: dict[<type>, <type>] = ...\")"
+    },
+    {
+      "id": "d8839c0511735197",
+      "file": ".claude/rediacc_hooks/tests/test_wl_agent_docs_and_focus.py",
+      "code": "union-attr",
+      "count": 4,
+      "message": "Item \"None\" of \"Any | None\" has no attribute \"out\""
+    },
+    {
+      "id": "cff84cee54234973",
+      "file": ".claude/rediacc_hooks/tests/test_wl_ci_queue_and_mail.py",
+      "code": "union-attr",
+      "count": 2,
+      "message": "Item \"None\" of \"Any | None\" has no attribute \"out\""
+    },
+    {
+      "id": "061e5443a5a65bde",
+      "file": ".claude/rediacc_hooks/tests/test_wl_event_store.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"orphans\" (hint: \"orphans: list[<type>] = ...\")"
+    },
+    {
+      "id": "0adac913ea8714ce",
+      "file": ".claude/rediacc_hooks/tests/test_wl_poll_and_waiting.py",
+      "code": "arg-type",
+      "count": 1,
+      "message": "Argument 1 to \"module_from_spec\" has incompatible type \"ModuleSpec | None\"; expected \"ModuleSpec\""
+    },
+    {
+      "id": "4dab16c626ccc5a8",
+      "file": ".claude/rediacc_hooks/tests/test_wl_poll_and_waiting.py",
+      "code": "union-attr",
+      "count": 1,
+      "message": "Item \"None\" of \"Loader | Any | None\" has no attribute \"exec_module\""
+    },
+    {
+      "id": "8b1722d726edb8bb",
+      "file": ".claude/rediacc_hooks/tests/test_wl_poll_and_waiting.py",
+      "code": "union-attr",
+      "count": 1,
+      "message": "Item \"None\" of \"ModuleSpec | None\" has no attribute \"loader\""
+    },
+    {
+      "id": "e3f33fbc3373c14f",
+      "file": ".claude/rediacc_hooks/tests/test_wl_priority_ladder.py",
+      "code": "union-attr",
+      "count": 2,
+      "message": "Item \"None\" of \"Match[str] | None\" has no attribute \"group\""
+    },
+    {
+      "id": "0144d9a9aa17ec5d",
+      "file": ".claude/rediacc_hooks/tests/test_wl_report_inbox.py",
+      "code": "union-attr",
+      "count": 1,
+      "message": "Item \"None\" of \"IO[Any] | None\" has no attribute \"close\""
+    },
+    {
+      "id": "14c849c7844f7fc1",
+      "file": ".claude/rediacc_hooks/tests/test_wl_report_inbox.py",
+      "code": "union-attr",
+      "count": 1,
+      "message": "Item \"None\" of \"IO[Any] | None\" has no attribute \"write\""
+    },
+    {
+      "id": "42e2dd7840ed3c76",
+      "file": ".claude/rediacc_hooks/tests/test_wl_report_queue.py",
+      "code": "union-attr",
+      "count": 5,
+      "message": "Item \"None\" of \"Any | None\" has no attribute \"out\""
+    },
+    {
+      "id": "d7e2e3be2beba728",
+      "file": ".claude/rediacc_hooks/tests/test_wl_state_document.py",
+      "code": "assignment",
+      "count": 1,
+      "message": "Incompatible types in assignment (expression has type \"Popen[str]\", variable has type \"CompletedProcess[Any]\")"
+    },
+    {
+      "id": "48b94c9710e6232b",
+      "file": ".claude/rediacc_hooks/tests/test_wl_state_document.py",
+      "code": "attr-defined",
+      "count": 2,
+      "message": "\"CompletedProcess[Any]\" has no attribute \"communicate\""
+    },
+    {
+      "id": "269934d0880103d0",
+      "file": ".claude/rediacc_hooks/tests/test_wl_state_document.py",
+      "code": "attr-defined",
+      "count": 1,
+      "message": "\"CompletedProcess[Any]\" has no attribute \"kill\""
+    },
+    {
+      "id": "8c1d0c60764e5caa",
+      "file": ".claude/rediacc_hooks/tests/test_wl_stuck_and_blockers.py",
+      "code": "index",
+      "count": 2,
+      "message": "Value of type \"Any | None\" is not indexable"
+    },
+    {
+      "id": "de78831626e25503",
+      "file": ".claude/rediacc_hooks/tests/test_wl_stuck_and_blockers.py",
+      "code": "operator",
+      "count": 2,
+      "message": "Unsupported right operand type for in (\"Any | None\")"
+    },
+    {
+      "id": "e3ea20085661e999",
+      "file": ".claude/rediacc_hooks/tests/wlfix.py",
+      "code": "index",
+      "count": 1,
+      "message": "Unsupported target for indexed assignment (\"object\")"
+    },
+    {
+      "id": "63106ab946222353",
+      "file": ".claude/rediacc_hooks/tests/wlfix.py",
+      "code": "var-annotated",
+      "count": 1,
+      "message": "Need type annotation for \"parts\" (hint: \"parts: list[<type>] = ...\")"
+    },
+    {
+      "id": "acd4709d4b62a7d1",
+      "file": "packages/locales/site_locales.py",
+      "code": "attr-defined",
+      "count": 1,
+      "message": "\"object\" has no attribute \"__iter__\"; maybe \"__dir__\" or \"__str__\"? (not iterable)"
+    },
+    {
+      "id": "660a6e9dbca2216c",
+      "file": "scripts/ops/bws-map-refresh.py",
+      "code": "list-item",
+      "count": 1,
+      "message": "List item 0 has incompatible type \"Any | str | None\"; expected \"str | bytes | PathLike[str] | PathLike[bytes]\""
+    },
+    {
+      "id": "28574d94e7d8891d",
+      "file": "scripts/ops/secret-rename.py",
+      "code": "assignment",
+      "count": 1,
+      "message": "Incompatible types in assignment (expression has type \"Path\", variable has type \"list[str]\")"
+    },
+    {
+      "id": "62ada453e699633a",
+      "file": "scripts/ops/secret-rename.py",
+      "code": "assignment",
+      "count": 2,
+      "message": "Incompatible types in assignment (expression has type \"str\", variable has type \"int\")"
+    },
+    {
+      "id": "ce7783feaf23ae2e",
+      "file": "scripts/ops/secret-rename.py",
+      "code": "attr-defined",
+      "count": 2,
+      "message": "\"int\" has no attribute \"strip\""
+    },
+    {
+      "id": "8f3a81e1519da67e",
+      "file": "scripts/ops/secret-rename.py",
+      "code": "attr-defined",
+      "count": 1,
+      "message": "\"list[str]\" has no attribute \"is_file\""
+    },
+    {
+      "id": "beeeeecfd0443d35",
+      "file": "scripts/ops/secret-rename.py",
+      "code": "attr-defined",
+      "count": 1,
+      "message": "\"list[str]\" has no attribute \"name\""
+    },
+    {
+      "id": "12e099255cf95ed3",
+      "file": "scripts/ops/secret-rename.py",
+      "code": "attr-defined",
+      "count": 1,
+      "message": "\"list[str]\" has no attribute \"read_text\""
+    },
+    {
+      "id": "559eff8b0d84848f",
+      "file": "scripts/ops/secret-rename.py",
+      "code": "attr-defined",
+      "count": 1,
+      "message": "\"list[str]\" has no attribute \"with_name\""
+    },
+    {
+      "id": "4dc24736f3207660",
+      "file": "scripts/ops/secret-rename.py",
+      "code": "call-overload",
+      "count": 1,
+      "message": "No overload variant of \"search\" matches argument types \"str\", \"int\""
+    },
+    {
+      "id": "b52167e07d59af08",
+      "file": "scripts/ops/secret-rename.py",
+      "code": "call-overload",
+      "count": 1,
+      "message": "No overload variant of \"search\" of \"Pattern\" matches argument type \"int\""
+    },
+    {
+      "id": "8656f1b968c3db37",
+      "file": "scripts/ops/secret-rename.py",
+      "code": "operator",
+      "count": 2,
+      "message": "Unsupported right operand type for in (\"int\")"
+    }
+  ]
+}

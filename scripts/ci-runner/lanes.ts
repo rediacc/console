@@ -141,7 +141,7 @@ export function laneCapabilities(workflowText: string): Map<string, LaneCapabili
  * Kept as a NAMED SET rather than "anything not recognised": an unknown need must
  * still refuse placement, or a typo in a header would silently place a gate anywhere.
  */
-export const ACQUIRABLE: readonly string[] = ['python-yaml'];
+export const ACQUIRABLE: readonly string[] = ['python-yaml', 'python-mypy'];
 
 export function satisfies(lane: LaneCapabilities, needs: readonly string[]): boolean {
   return needs.every((need) => {

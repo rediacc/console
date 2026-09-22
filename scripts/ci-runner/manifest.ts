@@ -1551,6 +1551,20 @@ export const GATES: readonly GateSpec[] = [
   },
   // <<< gen-manifest: region 13
   {
+    id: 'check:ci-python-types',
+    run: 'npm run check:ci-python-types',
+    slow: true, // 34.8s measured COLD, 1.8s warm. CI is always cold: `.ci/cache/mypy` is gitignored and nothing restores it, so the number that matters here is the first one.
+    // NO `paths`, DELIBERATELY. mypy follows imports, so a change to any .py can move a finding in another one, and the pins file decides which mypy reaches the verdict at all. An entry without `paths` is ALWAYS selected, which is the safe half of that trade; a half-populated table here would make `--changed` drop the gate silently.
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_python_types.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-static',
+      step: 'Python types (mypy)',
+    },
+  },
+  {
     id: 'check:ci-python-control-plants',
     run: 'npm run check:ci-python-control-plants',
     gate: true,

@@ -660,6 +660,10 @@
       "REDIACC_TOOLCHAIN_LOADED",
       "RUFF_BIN"
     ],
+    ".ci/rediacc_ci/quality/python_types.py": [
+      "MYPY_BIN",
+      "PATH"
+    ],
     ".ci/rediacc_ci/quality/regions_sync.py": [
       "REGIONS_BAKED_FILE",
       "REGIONS_ROOT_FILE"
@@ -959,6 +963,9 @@
     ".ci/rediacc_ci/tests/gates/test_gate_assert_edge_tag_exists.py": [
       "PATH"
     ],
+    ".ci/rediacc_ci/tests/gates/test_gate_autopilot_no_bypass.py": [
+      "PATH"
+    ],
     ".ci/rediacc_ci/tests/gates/test_gate_backfill_commit_resolve.py": [
       "PATH"
     ],
@@ -987,6 +994,9 @@
     ".ci/rediacc_ci/tests/gates/test_gate_ci_trace_branch.py": [
       "PATH"
     ],
+    ".ci/rediacc_ci/tests/gates/test_gate_commit_identity.py": [
+      "PATH"
+    ],
     ".ci/rediacc_ci/tests/gates/test_gate_detect_bump_type.py": [
       "PATH"
     ],
@@ -997,6 +1007,9 @@
       "GATE_SKIP_WORKFLOW"
     ],
     ".ci/rediacc_ci/tests/gates/test_gate_go_deps_probe_failure.py": [
+      "PATH"
+    ],
+    ".ci/rediacc_ci/tests/gates/test_gate_go_module_sync.py": [
       "PATH"
     ],
     ".ci/rediacc_ci/tests/gates/test_gate_greenlight.py": [
@@ -1048,6 +1061,9 @@
       "PATH"
     ],
     ".ci/rediacc_ci/tests/gates/test_gate_skip_release_channel_pointer.py": [
+      "PATH"
+    ],
+    ".ci/rediacc_ci/tests/gates/test_gate_toolchain.py": [
       "PATH"
     ],
     ".ci/rediacc_ci/tests/gates/test_gate_worktree_devbox_teardown.py": [
