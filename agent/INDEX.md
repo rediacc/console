@@ -57,6 +57,7 @@ To read one in full:
 | agent/plans/PLAN-pytest-parallelism.md | compacted | 10 / 0 / 0 | `043547f131a60caa448fcd8d07cc8d832d7e2f1e` |
 | agent/plans/PLAN-rclone-decommission.md | compacted | 0 / 0 / 0 | `09c51ce36a58383f4f12ac17ed21fe99cdbcab29` |
 | agent/plans/PLAN-reggate-effort-cap.md | compacted | 0 / 0 / 0 | `687dd4b63bfe7725667ff76f0a23cde9f613bd56` |
+| agent/plans/PLAN-remove-autopilot.md | compacted | 0 / 0 / 30 | `d2f66802c91b406d26dcbf5a82eca82444b45c4b` |
 | agent/plans/PLAN-renet-fetch-hardening.md | parked | 0 / 0 / 0 | `0f714f0ac7271327eb51438deb66d7250cb4b174` |
 | agent/plans/PLAN-require-testid-sweep.md | compacted | 0 / 0 / 0 | `d9c09956f72585468cd1af419f11a2077981748c` |
 | agent/plans/PLAN-resprofile-wave2.md | compacted | 0 / 0 / 0 | `a36167a98560c5a625503e65cf881c45eefe6fe7` |
@@ -87,7 +88,7 @@ To read one in full:
 | agent/plans/PLAN-wl-report-liveness-oracle.md | compacted | 7 / 0 / 0 | `86b1b24713fdabbf33a7fe99552b46c994ae94b1` |
 | agent/plans/PLAN-www-bundle-determinism.md | compacted | 0 / 0 / 0 | `16d1c4c5219f211e837df5055787fc2f3e22a99b` |
 
-74 record(s): 73 compacted, 1 parked. A parked record stays on the housekeeping clock on purpose -- its work is not finished, only its text is compacted.
+75 record(s): 74 compacted, 1 parked. A parked record stays on the housekeeping clock on purpose -- its work is not finished, only its text is compacted.
 
 ## Files these records touch
 
@@ -229,7 +230,7 @@ What `--plan-why <path>` answers from. Each row is a path a compacted plan cited
 | `.claude/hooks/stop/wl_liveness.py` | agent/plans/PLAN-wl-report-liveness-oracle.md |
 | `.claude/hooks/stop/wl_report.py` | agent/plans/PLAN-wl-report-liveness-oracle.md |
 | `.claude/hooks/stop/wl_store.py` | agent/plans/PLAN-completion-strategy.md, agent/plans/PLAN-wl-report-liveness-oracle.md |
-| `.claude/hooks/stop/worklist.py` | agent/plans/PLAN-completion-strategy.md |
+| `.claude/hooks/stop/worklist.py` | agent/plans/PLAN-completion-strategy.md, agent/plans/PLAN-remove-autopilot.md |
 | `.claude/hooks/test-hooks.sh` | agent/plans/PLAN-review-red-stop-hook-check.md |
 | `.claude/oracles/README.md` | agent/plans/PLAN-printf-echo-pipefail-sweep.md |
 | `.claude/oracles/pre-bash/block-host-toolchain-run.sh` | agent/plans/PLAN-devbox-uid-derived-image.md |
@@ -256,29 +257,29 @@ What `--plan-why <path>` answers from. Each row is a path a compacted plan cited
 | `.gitignore` | agent/plans/PLAN-add-js-extensions-shared.md, agent/plans/PLAN-bump-k3s-upstream-1-36-4.md, agent/plans/PLAN-testing-surface-audit.md, agent/plans/PLAN-unify-trap-corpus.md |
 | `.gitmodules` | agent/plans/PLAN-rclone-decommission.md |
 | `CLAUDE.md` | agent/plans/PLAN-ask-flow-preemptive-settled-check.md, agent/plans/PLAN-completion-strategy.md, agent/plans/PLAN-fix-in-session-rule.md, agent/plans/PLAN-unify-trap-corpus.md |
-| `agent/PLAN-bws-rotation-on-failure.md` | agent/plans/PLAN-completion-strategy.md |
-| `agent/PLAN-commit-author-identity.md` | agent/plans/PLAN-completion-strategy.md |
-| `agent/PLAN-env-to-bitwarden-v2.md` | agent/plans/PLAN-citation-fragility.md, agent/plans/PLAN-completion-strategy.md |
-| `agent/PLAN-fix-ci-contention-aware-timeouts.md` | agent/plans/PLAN-citation-fragility.md |
-| `agent/PLAN-fix-tutorial-player-debug-hook-attachment.md` | agent/plans/PLAN-citation-fragility.md |
-| `agent/PLAN-git-history-media-rewrite.md` | agent/plans/PLAN-citation-fragility.md |
-| `agent/PLAN-localize-cheat-sheet-rendering.md` | agent/plans/PLAN-lint-css-ci-wiring.md |
-| `agent/PLAN-plan-file-lifecycle.md` | agent/plans/PLAN-completion-strategy.md |
-| `agent/PLAN-plyr-css-on-demand-loading.md` | agent/plans/PLAN-completion-strategy.md |
-| `agent/PLAN-promote-mutation-runner.md` | agent/plans/PLAN-citation-fragility.md |
-| `agent/PLAN-review-red-stop-hook-check.md` | agent/plans/PLAN-completion-strategy.md |
-| `agent/PLAN-secret-namespace-migration.md` | agent/plans/PLAN-citation-fragility.md |
-| `agent/PLAN-session-onboarding-marker.md` | agent/plans/PLAN-completion-strategy.md |
-| `agent/PLAN-stop-report-queue.md` | agent/plans/PLAN-citation-fragility.md |
-| `agent/PLAN-subagent-idle-detection.md` | agent/plans/PLAN-citation-fragility.md |
-| `agent/PLAN-tooling-transformation.md` | agent/plans/PLAN-completion-strategy.md, agent/plans/PLAN-w7p4w-docker-cutover.md, agent/plans/PLAN-w7p5a-deploy-release-port.md |
-| `agent/PLAN-www-bundle-determinism.md` | agent/plans/PLAN-citation-fragility.md |
 | `agent/archive/plans/PLAN-branch-aware-workflows.md` | agent/plans/PLAN-completion-strategy.md |
 | `agent/archive/plans/PLAN-github-secrets-removal.md` | agent/plans/PLAN-completion-strategy.md |
+| `agent/plans/PLAN-bws-rotation-on-failure.md` | agent/plans/PLAN-completion-strategy.md |
+| `agent/plans/PLAN-commit-author-identity.md` | agent/plans/PLAN-completion-strategy.md |
+| `agent/plans/PLAN-env-to-bitwarden-v2.md` | agent/plans/PLAN-citation-fragility.md, agent/plans/PLAN-completion-strategy.md |
+| `agent/plans/PLAN-fix-ci-contention-aware-timeouts.md` | agent/plans/PLAN-citation-fragility.md |
+| `agent/plans/PLAN-fix-tutorial-player-debug-hook-attachment.md` | agent/plans/PLAN-citation-fragility.md |
+| `agent/plans/PLAN-git-history-media-rewrite.md` | agent/plans/PLAN-citation-fragility.md |
+| `agent/plans/PLAN-localize-cheat-sheet-rendering.md` | agent/plans/PLAN-lint-css-ci-wiring.md |
+| `agent/plans/PLAN-plan-file-lifecycle.md` | agent/plans/PLAN-completion-strategy.md |
+| `agent/plans/PLAN-plyr-css-on-demand-loading.md` | agent/plans/PLAN-completion-strategy.md |
+| `agent/plans/PLAN-promote-mutation-runner.md` | agent/plans/PLAN-citation-fragility.md |
+| `agent/plans/PLAN-review-red-stop-hook-check.md` | agent/plans/PLAN-completion-strategy.md |
+| `agent/plans/PLAN-secret-namespace-migration.md` | agent/plans/PLAN-citation-fragility.md |
+| `agent/plans/PLAN-session-onboarding-marker.md` | agent/plans/PLAN-completion-strategy.md |
+| `agent/plans/PLAN-stop-report-queue.md` | agent/plans/PLAN-citation-fragility.md |
+| `agent/plans/PLAN-subagent-idle-detection.md` | agent/plans/PLAN-citation-fragility.md |
+| `agent/plans/PLAN-tooling-transformation.md` | agent/plans/PLAN-completion-strategy.md, agent/plans/PLAN-w7p4w-docker-cutover.md, agent/plans/PLAN-w7p5a-deploy-release-port.md |
+| `agent/plans/PLAN-www-bundle-determinism.md` | agent/plans/PLAN-citation-fragility.md |
 | `agent/programs/www-simplification/research/RESEARCH-docs.md` | agent/plans/PLAN-lint-css-ci-wiring.md |
 | `biome.json` | agent/plans/PLAN-testing-surface-audit.md |
 | `docs/agent-reference/TRAPS.md` | agent/plans/PLAN-promote-mutation-runner.md, agent/plans/PLAN-shell-resource-profiling.md, agent/plans/PLAN-unify-trap-corpus.md |
-| `docs/agent-reference/ci-gates.md` | agent/plans/PLAN-npm-ci-parallel-parity.md |
+| `docs/agent-reference/ci-gates.md` | agent/plans/PLAN-npm-ci-parallel-parity.md, agent/plans/PLAN-remove-autopilot.md |
 | `docs/agent-reference/local-env.md` | agent/plans/PLAN-devbox-uid-derived-image.md |
 | `docs/agent-reference/suppressions.md` | agent/plans/PLAN-npm-ci-parallel-parity.md |
 | `docs/backup-storage/02-design.md` | agent/plans/PLAN-add-chunkstore-backup-verb.md, agent/plans/PLAN-backup-quota-delta-gc.md |
@@ -292,7 +293,7 @@ What `--plan-why <path>` answers from. Each row is a path a compacted plan cited
 | `eslint-rules/i18n/shared/require-path-option.js` | agent/plans/PLAN-lint-rule-matrix-probe.md |
 | `eslint-rules/require-testid.js` | agent/plans/PLAN-lint-rule-matrix-probe.md |
 | `eslint.config.js` | agent/plans/PLAN-lint-rule-matrix-probe.md, agent/plans/PLAN-require-testid-sweep.md |
-| `package.json` | agent/plans/PLAN-add-js-extensions-shared.md, agent/plans/PLAN-agent-hints-implementation.md, agent/plans/PLAN-agent-hints-in-stop-hook.md, agent/plans/PLAN-backup-quota-delta-gc.md, agent/plans/PLAN-cli-em-dash-lint-gate.md, agent/plans/PLAN-fix-ci-contention-aware-timeouts.md, agent/plans/PLAN-fix-tutorial-player-debug-hook-attachment.md, agent/plans/PLAN-judge-gate-worthiness-and-surface-scope.md, agent/plans/PLAN-lint-rule-matrix-probe.md, agent/plans/PLAN-localize-cheat-sheet-rendering.md, agent/plans/PLAN-npm-ci-parallel-parity.md, agent/plans/PLAN-promote-mutation-runner.md, agent/plans/PLAN-shell-command-gate-regex-fix.md, agent/plans/PLAN-skip-release-gates-r2-manifest.md, agent/plans/PLAN-test-advisor.md, agent/plans/PLAN-w7p4w-docker-cutover.md, agent/plans/PLAN-wire-account-vitest-ci.md |
+| `package.json` | agent/plans/PLAN-add-js-extensions-shared.md, agent/plans/PLAN-agent-hints-implementation.md, agent/plans/PLAN-agent-hints-in-stop-hook.md, agent/plans/PLAN-backup-quota-delta-gc.md, agent/plans/PLAN-cli-em-dash-lint-gate.md, agent/plans/PLAN-fix-ci-contention-aware-timeouts.md, agent/plans/PLAN-fix-tutorial-player-debug-hook-attachment.md, agent/plans/PLAN-judge-gate-worthiness-and-surface-scope.md, agent/plans/PLAN-lint-rule-matrix-probe.md, agent/plans/PLAN-localize-cheat-sheet-rendering.md, agent/plans/PLAN-npm-ci-parallel-parity.md, agent/plans/PLAN-promote-mutation-runner.md, agent/plans/PLAN-remove-autopilot.md, agent/plans/PLAN-shell-command-gate-regex-fix.md, agent/plans/PLAN-skip-release-gates-r2-manifest.md, agent/plans/PLAN-test-advisor.md, agent/plans/PLAN-w7p4w-docker-cutover.md, agent/plans/PLAN-wire-account-vitest-ci.md |
 | `packages/cli/scripts/check-command-planes.ts` | agent/plans/PLAN-add-chunkstore-backup-verb.md |
 | `packages/cli/src/adapters/config-file-storage.ts` | agent/plans/PLAN-chunk-store-browse-server.md |
 | `packages/cli/src/adapters/remote-config-adapter.ts` | agent/plans/PLAN-chunk-store-browse-server.md |
@@ -434,7 +435,8 @@ What `--plan-why <path>` answers from. Each row is a path a compacted plan cited
 | `pyproject.toml` | agent/plans/PLAN-pytest-parallelism.md |
 | `run.sh` | agent/plans/PLAN-scope-gates-split.md |
 | `scripts/ci-runner/exec.ts` | agent/plans/PLAN-shell-resource-profiling.md |
-| `scripts/ci-runner/manifest.ts` | agent/plans/PLAN-add-js-extensions-shared.md, agent/plans/PLAN-agent-hints-implementation.md, agent/plans/PLAN-agent-hints-in-stop-hook.md, agent/plans/PLAN-backup-quota-delta-gc.md, agent/plans/PLAN-cli-em-dash-lint-gate.md, agent/plans/PLAN-fix-tutorial-player-debug-hook-attachment.md, agent/plans/PLAN-judge-gate-worthiness-and-surface-scope.md, agent/plans/PLAN-lint-css-ci-wiring.md, agent/plans/PLAN-lint-rule-matrix-probe.md, agent/plans/PLAN-promote-mutation-runner.md, agent/plans/PLAN-scope-gate-sort-collation.md, agent/plans/PLAN-testing-surface-audit.md, agent/plans/PLAN-w7p4w-docker-cutover.md, agent/plans/PLAN-wire-account-vitest-ci.md |
+| `scripts/ci-runner/gates.lock.json` | agent/plans/PLAN-remove-autopilot.md |
+| `scripts/ci-runner/manifest.ts` | agent/plans/PLAN-add-js-extensions-shared.md, agent/plans/PLAN-agent-hints-implementation.md, agent/plans/PLAN-agent-hints-in-stop-hook.md, agent/plans/PLAN-backup-quota-delta-gc.md, agent/plans/PLAN-cli-em-dash-lint-gate.md, agent/plans/PLAN-fix-tutorial-player-debug-hook-attachment.md, agent/plans/PLAN-judge-gate-worthiness-and-surface-scope.md, agent/plans/PLAN-lint-css-ci-wiring.md, agent/plans/PLAN-lint-rule-matrix-probe.md, agent/plans/PLAN-promote-mutation-runner.md, agent/plans/PLAN-remove-autopilot.md, agent/plans/PLAN-scope-gate-sort-collation.md, agent/plans/PLAN-testing-surface-audit.md, agent/plans/PLAN-w7p4w-docker-cutover.md, agent/plans/PLAN-wire-account-vitest-ci.md |
 | `scripts/ci-runner/pool.ts` | agent/plans/PLAN-pytest-parallelism.md |
 | `scripts/ci-runner/run.ts` | agent/plans/PLAN-promote-mutation-runner.md, agent/plans/PLAN-pytest-parallelism.md |
 | `scripts/dev/lib/cf-auth.sh` | agent/plans/PLAN-rclone-decommission.md |
@@ -459,64 +461,67 @@ What `--plan-why <path>` answers from. Each row is a path a compacted plan cited
 
 ## Plan census
 
-Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans block can be printed from THIS file instead of opening all 106 of them. The hook checks freshness with `stat` alone (path set plus byte size) and falls back to reading the plans, loudly, when the two disagree.
+Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans block can be printed from THIS file instead of opening all 110 of them. The hook checks freshness with `stat` alone (path set plus byte size) and falls back to reading the plans, loudly, when the two disagree.
 
 | Plan | Status | lines | open | ticked | bytes |
 |---|---|---|---|---|---|
 | `agent/plans/PLAN-add-chunkstore-backup-verb.md` | compacted | 64 | 0 | 0 | 5601 |
 | `agent/plans/PLAN-add-js-extensions-shared.md` | compacted | 50 | 0 | 0 | 4285 |
-| `agent/plans/PLAN-agent-hints-implementation.md` | compacted | 60 | 0 | 0 | 4617 |
-| `agent/plans/PLAN-agent-hints-in-stop-hook.md` | compacted | 51 | 0 | 0 | 3647 |
+| `agent/plans/PLAN-agent-hints-implementation.md` | compacted | 60 | 0 | 0 | 4623 |
+| `agent/plans/PLAN-agent-hints-in-stop-hook.md` | compacted | 51 | 0 | 0 | 3653 |
 | `agent/plans/PLAN-agent-tree-lifecycle.md` | in-progress | 64 | 7 | 0 | 8732 |
 | `agent/plans/PLAN-ask-flow-preemptive-settled-check.md` | compacted | 38 | 0 | 0 | 2358 |
-| `agent/plans/PLAN-b2-emit-matrix.md` | partially | 295 | 6 | 7 | 30971 |
+| `agent/plans/PLAN-b2-emit-matrix.md` | partially | 295 | 6 | 7 | 31001 |
 | `agent/plans/PLAN-backup-list-executor-fix.md` | compacted | 55 | 0 | 0 | 5498 |
 | `agent/plans/PLAN-backup-quota-delta-gc.md` | compacted | 58 | 0 | 0 | 5576 |
 | `agent/plans/PLAN-backup-restore-target-license.md` | compacted | 56 | 0 | 0 | 5560 |
 | `agent/plans/PLAN-breakpoint-secret-shape.md` | design | 47 | 0 | 0 | 3363 |
 | `agent/plans/PLAN-bump-k3s-upstream-1-36-4.md` | compacted | 35 | 0 | 0 | 2420 |
-| `agent/plans/PLAN-bws-rotation-on-failure.md` | draft | 102 | 18 | 0 | 11269 |
+| `agent/plans/PLAN-bws-rotation-on-failure.md` | draft | 102 | 18 | 0 | 11275 |
 | `agent/plans/PLAN-chunk-store-browse-DECISION.md` | compacted | 37 | 0 | 0 | 2572 |
-| `agent/plans/PLAN-chunk-store-browse-engine.md` | compacted | 56 | 0 | 0 | 5227 |
-| `agent/plans/PLAN-chunk-store-browse-server.md` | compacted | 48 | 0 | 0 | 4877 |
+| `agent/plans/PLAN-chunk-store-browse-engine.md` | compacted | 56 | 0 | 0 | 5233 |
+| `agent/plans/PLAN-chunk-store-browse-server.md` | compacted | 48 | 0 | 0 | 4889 |
 | `agent/plans/PLAN-chunkstore-restore.md` | compacted | 55 | 0 | 0 | 4230 |
 | `agent/plans/PLAN-ci-pr-head-ref-trigger-resolution.md` | draft | 253 | 15 | 0 | 26655 |
 | `agent/plans/PLAN-ci-trace-no-pr-branch.md` | compacted | 38 | 0 | 0 | 2480 |
 | `agent/plans/PLAN-ci-vacuity-baseline-registry.md` | ready | 169 | 1 | 14 | 16539 |
 | `agent/plans/PLAN-ci-watch-enforcement.md` | draft | 189 | 0 | 0 | 15525 |
-| `agent/plans/PLAN-citation-fragility.md` | compacted | 48 | 0 | 6 | 4845 |
+| `agent/plans/PLAN-citation-fragility.md` | compacted | 48 | 0 | 6 | 4905 |
 | `agent/plans/PLAN-cli-em-dash-lint-gate.md` | compacted | 57 | 0 | 0 | 4340 |
 | `agent/plans/PLAN-cold-path.md` | compacted | 52 | 0 | 0 | 4026 |
 | `agent/plans/PLAN-commit-author-identity.md` | draft | 183 | 3 | 10 | 17993 |
-| `agent/plans/PLAN-completion-strategy.md` | compacted | 39 | 0 | 0 | 3861 |
-| `agent/plans/PLAN-consolidation-pressure.md` | compacted | 58 | 0 | 10 | 4864 |
+| `agent/plans/PLAN-completion-strategy.md` | compacted | 39 | 0 | 0 | 3909 |
+| `agent/plans/PLAN-consolidation-pressure.md` | compacted | 58 | 0 | 10 | 4888 |
 | `agent/plans/PLAN-devbox-uid-derived-image.md` | compacted | 36 | 0 | 0 | 2532 |
 | `agent/plans/PLAN-docker-image-freshness-soak-filter.md` | compacted | 39 | 0 | 0 | 2715 |
 | `agent/plans/PLAN-duplication-angle.md` | compacted | 37 | 0 | 0 | 2643 |
 | `agent/plans/PLAN-durable-reports-and-push-inbox.md` | compacted | 52 | 0 | 0 | 3692 |
-| `agent/plans/PLAN-env-to-bitwarden-v2.md` | draft | 495 | 5 | 4 | 44905 |
+| `agent/plans/PLAN-env-to-bitwarden-v2.md` | draft | 496 | 5 | 4 | 44947 |
 | `agent/plans/PLAN-extension-shaped-matchers.md` | compacted | 37 | 0 | 0 | 3104 |
 | `agent/plans/PLAN-fix-ci-contention-aware-timeouts.md` | compacted | 38 | 0 | 0 | 3425 |
 | `agent/plans/PLAN-fix-german-translation-artifacts.md` | compacted | 50 | 0 | 0 | 3117 |
 | `agent/plans/PLAN-fix-in-session-rule.md` | compacted | 55 | 0 | 0 | 3577 |
+| `agent/plans/PLAN-fix-stop-hook-completion-evidence-refire.md` | draft | 108 | 9 | 0 | 11241 |
 | `agent/plans/PLAN-fix-tutorial-player-debug-hook-attachment.md` | compacted | 37 | 0 | 0 | 3148 |
 | `agent/plans/PLAN-gh-swallow-gates-audit.md` | compacted | 49 | 0 | 6 | 4452 |
 | `agent/plans/PLAN-git-history-media-rewrite.md` | compacted | 37 | 0 | 0 | 2958 |
 | `agent/plans/PLAN-git-ignore-aware-discover.md` | compacted | 57 | 0 | 10 | 4730 |
 | `agent/plans/PLAN-github-actions-workflow-run-trigger-fix.md` | compacted | 54 | 0 | 0 | 3927 |
 | `agent/plans/PLAN-greenlight-verify-at-read.md` | compacted | 44 | 0 | 0 | 3606 |
-| `agent/plans/PLAN-haiku-model-routing.md` | phase | 219 | 15 | 5 | 23933 |
+| `agent/plans/PLAN-haiku-model-routing.md` | phase | 215 | 15 | 5 | 24107 |
 | `agent/plans/PLAN-judge-gate-worthiness-and-surface-scope.md` | compacted | 39 | 0 | 0 | 3232 |
 | `agent/plans/PLAN-judge-prompt-trap-conflation.md` | compacted | 54 | 0 | 8 | 3828 |
-| `agent/plans/PLAN-lint-css-ci-wiring.md` | compacted | 54 | 0 | 0 | 4365 |
+| `agent/plans/PLAN-lint-css-ci-wiring.md` | compacted | 54 | 0 | 0 | 4377 |
 | `agent/plans/PLAN-lint-rule-matrix-probe.md` | compacted | 50 | 0 | 0 | 3583 |
 | `agent/plans/PLAN-locale-techdiff-resync.md` | ready | 69 | 0 | 0 | 4536 |
 | `agent/plans/PLAN-localize-cheat-sheet-rendering.md` | compacted | 50 | 0 | 0 | 4436 |
-| `agent/plans/PLAN-migrate-plan-doc-discovery.md` | draft | 242 | 23 | 0 | 19600 |
+| `agent/plans/PLAN-migrate-plan-doc-discovery.md` | draft | 242 | 23 | 0 | 19630 |
 | `agent/plans/PLAN-nightly-retry-and-watchdog-noise.md` | compacted | 39 | 0 | 0 | 2744 |
 | `agent/plans/PLAN-npm-ci-parallel-parity.md` | compacted | 40 | 0 | 0 | 3234 |
+| `agent/plans/PLAN-pid-fallback-liveness-check.md` | executing | 265 | 6 | 0 | 22452 |
 | `agent/plans/PLAN-pipefail-grep-q-renet-gate.md` | draft | 253 | 16 | 0 | 22463 |
-| `agent/plans/PLAN-plan-file-lifecycle.md` | ready | 347 | 3 | 10 | 28716 |
+| `agent/plans/PLAN-plan-file-lifecycle.md` | ready | 347 | 3 | 10 | 28734 |
+| `agent/plans/PLAN-plan-path-migration.md` | executing | 141 | 9 | 0 | 20559 |
 | `agent/plans/PLAN-plyr-css-on-demand-loading.md` | draft | 131 | 4 | 7 | 11048 |
 | `agent/plans/PLAN-printf-echo-pipefail-sweep.md` | compacted | 103 | 0 | 33 | 10276 |
 | `agent/plans/PLAN-promote-mutation-runner.md` | compacted | 39 | 0 | 0 | 2977 |
@@ -524,41 +529,42 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-pytest-parallelism.md` | compacted | 57 | 0 | 10 | 4644 |
 | `agent/plans/PLAN-rclone-decommission.md` | compacted | 39 | 0 | 0 | 3019 |
 | `agent/plans/PLAN-reggate-effort-cap.md` | compacted | 38 | 0 | 0 | 2586 |
-| `agent/plans/PLAN-remove-autopilot.md` | draft | 170 | 30 | 0 | 25092 |
+| `agent/plans/PLAN-remove-autopilot.md` | compacted | 90 | 0 | 30 | 6568 |
 | `agent/plans/PLAN-renet-fetch-hardening.md` | parked | 34 | 0 | 0 | 909 |
 | `agent/plans/PLAN-require-testid-sweep.md` | compacted | 39 | 0 | 0 | 2511 |
 | `agent/plans/PLAN-resprofile-wave2.md` | compacted | 39 | 0 | 0 | 3076 |
 | `agent/plans/PLAN-rest-graphql-guard-parity.md` | compacted | 54 | 0 | 8 | 4010 |
 | `agent/plans/PLAN-resumable-rebase-executor.md` | compacted | 36 | 0 | 0 | 2212 |
 | `agent/plans/PLAN-review-red-stop-hook-check.md` | compacted | 39 | 0 | 0 | 2909 |
-| `agent/plans/PLAN-rotation-gh-removal.md` | plan | 49 | 0 | 0 | 3901 |
+| `agent/plans/PLAN-rotation-gh-removal.md` | plan | 49 | 0 | 0 | 3907 |
 | `agent/plans/PLAN-runtime-caller-identity.md` | compacted | 39 | 0 | 0 | 2542 |
 | `agent/plans/PLAN-scope-gate-sort-collation.md` | compacted | 38 | 0 | 0 | 2784 |
 | `agent/plans/PLAN-scope-gates-split.md` | compacted | 38 | 0 | 0 | 2608 |
-| `agent/plans/PLAN-secret-namespace-migration.md` | partially | 1660 | 9 | 21 | 173125 |
+| `agent/plans/PLAN-secret-namespace-migration.md` | partially | 1660 | 9 | 21 | 173137 |
 | `agent/plans/PLAN-sentence-aware-wrapping.md` | compacted | 38 | 0 | 0 | 2804 |
 | `agent/plans/PLAN-session-onboarding-marker.md` | draft | 130 | 5 | 5 | 11962 |
 | `agent/plans/PLAN-shell-command-gate-regex-fix.md` | compacted | 39 | 0 | 0 | 3165 |
 | `agent/plans/PLAN-shell-resource-profiling.md` | compacted | 38 | 0 | 0 | 3324 |
 | `agent/plans/PLAN-skip-release-gates-r2-manifest.md` | compacted | 39 | 0 | 0 | 3156 |
 | `agent/plans/PLAN-ssr-nav-locale.md` | compacted | 36 | 0 | 0 | 1976 |
-| `agent/plans/PLAN-staged-duplication-probe.md` | compacted | 52 | 0 | 8 | 3323 |
+| `agent/plans/PLAN-staged-duplication-probe.md` | compacted | 52 | 0 | 8 | 3329 |
 | `agent/plans/PLAN-state-md-session-isolation.md` | compacted | 40 | 0 | 0 | 2550 |
 | `agent/plans/PLAN-stop-always-tier.md` | compacted | 39 | 0 | 0 | 3145 |
 | `agent/plans/PLAN-stop-hook-cadence.md` | compacted | 38 | 0 | 0 | 2622 |
 | `agent/plans/PLAN-stop-hook-overhaul.md` | ready | 183 | 31 | 0 | 14569 |
+| `agent/plans/PLAN-stop-hook-refactor-enforcement.md` | draft | 301 | 17 | 0 | 30563 |
 | `agent/plans/PLAN-stop-report-queue.md` | compacted | 38 | 0 | 0 | 2532 |
 | `agent/plans/PLAN-subagent-idle-detection.md` | compacted | 39 | 0 | 0 | 2696 |
 | `agent/plans/PLAN-sync-docker-latest-tag-with-releases.md` | compacted | 61 | 0 | 0 | 4171 |
 | `agent/plans/PLAN-test-advisor.md` | compacted | 39 | 0 | 0 | 2731 |
 | `agent/plans/PLAN-testing-surface-audit.md` | compacted | 38 | 0 | 0 | 3684 |
-| `agent/plans/PLAN-tooling-transformation.md` | ready | 6908 | 4 | 150 | 646613 |
-| `agent/plans/PLAN-trap-enforcement.md` | w | 504 | 0 | 0 | 48809 |
+| `agent/plans/PLAN-tooling-transformation.md` | ready | 6908 | 4 | 150 | 646649 |
+| `agent/plans/PLAN-trap-enforcement.md` | w | 504 | 0 | 0 | 48815 |
 | `agent/plans/PLAN-typecheck-orphan-packages.md` | ready | 67 | 0 | 0 | 4522 |
 | `agent/plans/PLAN-unify-trap-corpus.md` | compacted | 39 | 0 | 0 | 2772 |
-| `agent/plans/PLAN-w7p4w-docker-cutover.md` | compacted | 62 | 0 | 12 | 4752 |
-| `agent/plans/PLAN-w7p5a-deploy-release-port.md` | compacted | 53 | 0 | 8 | 3908 |
-| `agent/plans/PLAN-w9p2-script-relocation.md` | draft | 167 | 10 | 0 | 26009 |
+| `agent/plans/PLAN-w7p4w-docker-cutover.md` | compacted | 62 | 0 | 12 | 4758 |
+| `agent/plans/PLAN-w7p5a-deploy-release-port.md` | compacted | 53 | 0 | 8 | 3914 |
+| `agent/plans/PLAN-w9p2-script-relocation.md` | draft | 167 | 10 | 0 | 26027 |
 | `agent/plans/PLAN-wire-account-vitest-ci.md` | compacted | 39 | 0 | 0 | 3063 |
 | `agent/plans/PLAN-wl-report-liveness-oracle.md` | compacted | 52 | 0 | 7 | 3665 |
 | `agent/plans/PLAN-www-bundle-determinism.md` | compacted | 38 | 0 | 0 | 2592 |
@@ -570,4 +576,4 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-reflow-comments-boundary-wrapping.md` | done | 58 | 0 | 9 | 8017 |
 | `agent/plans/_done/PLAN-subscription-status-error-swallowing.md` | done | 89 | 0 | 5 | 4606 |
 
-106 plan(s), 36 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.
+110 plan(s), 40 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.

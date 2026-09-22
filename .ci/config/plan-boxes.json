@@ -80,8 +80,8 @@
         "305684a3",
         "38408011",
         "58c11652",
+        "92a973ec",
         "a43698e8",
-        "bd4ab20b",
         "c0d7264c"
       ],
       "done_sigs": [
@@ -299,8 +299,8 @@
         "46f5fd50",
         "65c3008d",
         "6f9c2842",
-        "911d45dd",
-        "c977c684"
+        "7536e52e",
+        "911d45dd"
       ]
     },
     "agent/plans/PLAN-cli-em-dash-lint-gate.md": {
@@ -370,12 +370,12 @@
         "13370e7f",
         "2a2b9199",
         "419a2340",
+        "43fc8f8f",
         "5b81afb3",
         "7a215db9",
         "a3446cbb",
         "a443e632",
         "a984dd31",
-        "b2486512",
         "f7d91e90"
       ]
     },
@@ -478,6 +478,26 @@
       "open": 0,
       "done": 0,
       "open_sigs": [],
+      "done_sigs": []
+    },
+    "agent/plans/PLAN-fix-stop-hook-completion-evidence-refire.md": {
+      "status": "draft",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 9,
+      "done": 0,
+      "open_sigs": [
+        "16cd049f",
+        "332f91dd",
+        "3a4b83e8",
+        "4fa1c3c6",
+        "580254fa",
+        "95aa2ed8",
+        "ada4b291",
+        "f1cb5023",
+        "fffff5b8"
+      ],
       "done_sigs": []
     },
     "agent/plans/PLAN-fix-tutorial-player-debug-hook-attachment.md": {
@@ -713,6 +733,23 @@
       "open_sigs": [],
       "done_sigs": []
     },
+    "agent/plans/PLAN-pid-fallback-liveness-check.md": {
+      "status": "executing",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 6,
+      "done": 0,
+      "open_sigs": [
+        "03906dcc",
+        "307053f8",
+        "6189ef3a",
+        "662affc2",
+        "7cd0fbbb",
+        "d581ca0d"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-pipefail-grep-q-renet-gate.md": {
       "status": "draft",
       "owner": "d778be9d",
@@ -764,6 +801,26 @@
         "e77bfe5f",
         "ff0c1fc4"
       ]
+    },
+    "agent/plans/PLAN-plan-path-migration.md": {
+      "status": "executing",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 9,
+      "done": 0,
+      "open_sigs": [
+        "2987e7cd",
+        "5c958896",
+        "66294c19",
+        "7d089114",
+        "86353c09",
+        "8943bac5",
+        "cac49b8f",
+        "d7f8350a",
+        "f6ca72e2"
+      ],
+      "done_sigs": []
     },
     "agent/plans/PLAN-plyr-css-on-demand-loading.md": {
       "status": "draft",
@@ -909,13 +966,14 @@
       "done_sigs": []
     },
     "agent/plans/PLAN-remove-autopilot.md": {
-      "status": "draft",
+      "status": "compacted",
       "owner": "unowned",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 30,
-      "done": 0,
-      "open_sigs": [
+      "open": 0,
+      "done": 30,
+      "open_sigs": [],
+      "done_sigs": [
         "082e0867",
         "0ab601ac",
         "12bb0cfa",
@@ -946,8 +1004,7 @@
         "dacbdfc9",
         "dd17aeba",
         "e3709674"
-      ],
-      "done_sigs": []
+      ]
     },
     "agent/plans/PLAN-renet-fetch-hardening.md": {
       "status": "parked",
@@ -1185,10 +1242,10 @@
         "2b3ca805",
         "5e32f0dd",
         "6240d9b4",
+        "7bcfd52b",
         "917f9086",
         "b1e665a6",
-        "b29ca7a9",
-        "bcb9cb4a"
+        "b29ca7a9"
       ]
     },
     "agent/plans/PLAN-state-md-session-isolation.md": {
@@ -1260,6 +1317,34 @@
         "ea9dc74a",
         "eb55a6bd",
         "edc40d5b"
+      ],
+      "done_sigs": []
+    },
+    "agent/plans/PLAN-stop-hook-refactor-enforcement.md": {
+      "status": "draft",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 17,
+      "done": 0,
+      "open_sigs": [
+        "085e0bd5",
+        "11e90e57",
+        "1f689a22",
+        "2749c722",
+        "37f7e4f1",
+        "3a5666d0",
+        "41f56150",
+        "44447d6c",
+        "522d7da0",
+        "646bad35",
+        "67ec65dc",
+        "6a41fd72",
+        "914d108a",
+        "a5cabf02",
+        "ac6d7f0f",
+        "bba54c8b",
+        "d54e3a5b"
       ],
       "done_sigs": []
     },
@@ -1372,7 +1457,6 @@
         "590a1cd0",
         "597434b4",
         "5998ffc1",
-        "5a992197",
         "5b6ec602",
         "5e188baa",
         "5e6c2abe",
@@ -1403,6 +1487,7 @@
         "8918d84c",
         "8a8b0d25",
         "8a9abc8e",
+        "8aa740b4",
         "8b9437ce",
         "8c197189",
         "8c252304",
