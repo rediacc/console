@@ -726,6 +726,27 @@ CONDITION distinguishes them, and nothing was checking it.
 Two rules. First, never put a string in a `pgrep -f` pattern that also appears in the command running it -- use `pgrep -f '[f]ilter-repo.*trial3'`, or match on a pid file, or check the artifact instead of the process. Second, a waiter whose condition has become true and which is still running is not "still working", it is WEDGED; when a wait outlives the thing it waits for by an
 order of magnitude, evaluate the condition by hand rather than trusting that it must still be false.
 
+## A `/proc/$(cat <pidfile> || echo <literal>)` liveness check with an always-alive fallback PID waits forever
+Trap-Id: proc-pid-fallback-always-alive
+Enforced-By: gate:check:ci-pytest
+Residue: v1 covers `/proc/<pid>` existence tests only, and only two fallbacks provably always alive by construction (`1`, init; `$$`, the shell's own PID). `kill -0 $(cat X || echo N)` is the same bug, uncovered. Any other literal PID is also uncovered -- the guard cannot prove it stays alive.
+
+A background wait loop's liveness check used this shape (task `b9fd3td29`, found by the agent that wrote it, wedged over 24 hours, during a Writer-F autopilot-removal batch on 2026-09-21/22):
+
+    until grep -q "ci-dead-bash" <out> && [ "$(tail -c 200 <out> | wc -c)" -gt 0 ] \
+          && ! [ -e /proc/$(cat <out>.pid 2>/dev/null || echo 1) ]; do sleep 5; done
+
+The third clause is unsatisfiable by construction. `<out>.pid` was never written, so `cat <out>.pid 2>/dev/null` fails every time, `||` falls back to the literal `echo 1`, and `/proc/1` (init) exists on every live Linux system. `! [ -e /proc/1 ]` is therefore permanently false, so the loop cannot exit, no matter what the first two clauses do.
+
+Nothing looked wrong from outside. The waiting shell's own OS process is genuinely alive and genuinely sleeping in a loop, so a liveness check on the PROCESS reports it as healthy -- correctly. Only the exit CONDITION distinguishes a wedged loop from a patient one, and this condition contained a sub-clause that was a disguised constant: `$(cat X || echo N)` reads as "the real PID,
+or a sensible fallback", but when `N` is a PID that is itself always alive (`1`, or `$$` -- the waiting shell's own PID, trivially alive for the whole time the loop could possibly run), the fallback branch is not a fallback at all. It is the answer, always, and the "real PID" branch never gets a chance to matter.
+
+This is the same class of trap as "a `pgrep -f <pattern>` guard inside a shell whose own command line contains that pattern waits forever" (above), and a different mechanism: that one is a pure text/regex self-reference; this one is a numeric/semantic question -- does a hardcoded fallback resolve to a PID that happens to be alive for the loop's entire possible lifetime. `echo 0` is
+the corresponding SAFE case and proves the difference: `/proc/0` never exists, so `cat X || echo 0` is an honest "assume not-yet-started" default, not a disguised constant.
+
+Two rules. First, never give a `$(cat <pidfile> || echo <N>)` substitution inside a `/proc/<pid>` or `kill -0` liveness test a fallback `N` that could itself be alive for as long as the loop can run -- `1` and `$$` both qualify and both must be treated as banned literals in this exact position, not just `1`. Second, write the wait correctly instead of defending the fallback: either
+write the pidfile BEFORE the loop starts and drop the `||` entirely (a missing pidfile is a hard error, not a value to guess), or treat a missing pidfile as "not started yet, keep waiting" (`[ ! -s <out>.pid ] || ! [ -e /proc/$(cat <out>.pid) ]`) rather than substituting a literal PID for it.
+
 ## A `cp -rs` mirror is a live handle on the real tree for every file you did not de-symlink
 Trap-Id: cp-rs-mirror-writes-through
 Enforced-By: JUDGMENT-ONLY
