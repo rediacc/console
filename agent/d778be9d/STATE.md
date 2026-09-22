@@ -1,14 +1,8 @@
-## SESSION d778be9d 2026-09-22T15:22:20Z
+## SESSION d778be9d 2026-09-22T15:44:05Z
 
-Working tree clean, all this-turn work landed. Worklist empty.
+Working tree clean except staged/committed session bookkeeping and the in-flight implementation of PLAN-eliminate-worklist-report-per-stop-env.md (not yet committed): wl_checks.py (OUTQ_PER_STOP=3 hardcoded, outq_drain randomized within-tier via new rng param), worklist_messages.py (N_OUTQ_MORE/N_OUTQ_BLOCKED reworded), wl_planfile.py (docstring fix), 4 registry/manifest files, .ci/policy/README.md + worklist_env_registry.py (sibling "three names" class fix), and ~18 test-site edits across 13 test files including a full test_wl_report_queue.py redesign (test_173/174/175/176 replaced, test_181/181_control added). Two genuine casualties beyond the plan's own table found and fixed: test_175 (competing items must arrive on the same stop, not pre-drained) and test_201 (padded to 4 competing items so the fixed-3 budget cannot trivially clear it). Targeted 279-test batch run already green; a second confirming run of the same 13 files is leased to worker b33wfjk6l, not yet returned.
 
-Claim-check (PLAN-stop-hook-task-verification.md) fully landed: T1 as 247367f86, T2-T11 as 581ca3550 (wl_claimcheck.py), verified with a clean isolated full pytest run (7547 passed, 1 pre-existing/environmental failure). Plan Status: done.
-
-Autopilot-secret cleanup landed as f0d39d72d: 10 dead GitHub Actions entries deleted, 2 Bitwarden secrets deleted, the live rediacc-autopilot GitHub App uninstalled after an exposed private key was caught mid-session, 4 config files cleaned and gate-verified. GitHub-to-Bitwarden migration audit confirmed clean across every active repo in the org.
-
-Two new Opus-designed plans landed as 3c88fa636, both Status: draft, neither implemented: PLAN-github-actions-to-bitwarden.md (every GitHub Actions variable moves to BWS, new check:ci-actions-vars gate, operator's GitLab-portability goal) and PLAN-stop-hook-behavioral-hints.md (rotating one-line reminder on the stop report, HINTS.md corpus, reuses the report-drain plan's rng seam).
-
-Backlog of designed-but-unimplemented plans now stands at five: the two above, PLAN-eliminate-worklist-report-per-stop-env.md, PLAN-stop-hook-refactor-enforcement.md (Commit 1 of 4 landed), and any earlier-session items not resurveyed this write.
+GitHub Actions AUTOPILOT cleanup, the claim-check mechanism (T1-T13), and three Opus-designed plans (GitHub-to-Bitwarden migration, rotating behavioral hints, Stop-hook backlog-implementation nudge) all landed and committed earlier this session -- see git log for commit shas, not repeated here since unchanged.
 
 ## Next action
-Surface the five-plan backlog to the operator and ask which to implement next, rather than unilaterally picking one. No open worklist items and no background jobs remain, so a fresh stop is genuinely clean.
+On worker b33wfjk6l returning: if the 13-file confirming run is green, run the FULL .claude/rediacc_hooks/tests/ suite once (the plan's own closing verification step, never yet run against this specific diff), commit the OUTQ_PER_STOP implementation, tick #e37d6d62, then move to the next plan in the backlog per DESC order (PLAN-github-actions-to-bitwarden.md or PLAN-stop-hook-behavioral-hints.md) rather than stopping to ask again -- the operator was explicit that asking which plan to implement next is itself the pattern to stop repeating.
