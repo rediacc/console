@@ -1353,6 +1353,9 @@ jobs:
       - name: Agent hints can actually fire
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_agent_hint_liveness.py
+      - name: Behavioral hints can actually fire
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_hint_corpus.py
       - name: Baseline key semantics
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-baseline-key-semantics

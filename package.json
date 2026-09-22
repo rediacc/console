@@ -219,6 +219,7 @@
     "check:ci-i18n-value-types": ".ci/scripts/quality/check_i18n_value_types.py",
     "check:ci-lint-rule-liveness": ".ci/scripts/quality/check_lint_rule_liveness.py",
     "check:ci-agent-hint-liveness": ".ci/scripts/quality/check_agent_hint_liveness.py",
+    "check:ci-hint-corpus": ".ci/scripts/quality/check_hint_corpus.py",
     "check:ci-lint-scope-coverage": ".ci/scripts/quality/check_lint_scope_coverage.py",
     "check:ci-test-file-orphans": ".ci/scripts/quality/check_test_file_orphans.py",
     "check:ci-sentence-wrapping": "tsx scripts/gates/check-sentence-wrapping.ts --selftest && tsx scripts/gates/check-sentence-wrapping.ts",

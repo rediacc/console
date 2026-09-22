@@ -29,7 +29,7 @@ CLAUDE.md's own worklist section states the store is per-repo and per-session, a
 
 ## Derived, mechanical work with a pre-existing oracle and a loud failure goes to a Haiku sub-agent, not inline
 Hint-Id: haiku-for-derived-work
-Source: file:CLAUDE.md:135, file:docs/agent-reference/model-routing.md
+Source: file:CLAUDE.md:135, file:docs/agent-reference/model-routing.md:1
 Status: active
 
 The model-routing rule is by task shape, never by language or domain: a port, a translation, a mechanical sweep or a read-only survey where a pre-existing oracle (a shadow ledger, a golden differential, a gate that already reds) decides correctness, and being wrong is loud rather than a silent gap.
@@ -43,7 +43,7 @@ Reading and thinking parallelize well; writing does not. Read-only fan-out is ch
 
 ## Before calling a bug fixed, grep for its siblings; one bad call site usually has several
 Hint-Id: sweep-the-class
-Source: file:CLAUDE.md:44, file:.claude/hooks/stop/wl_classsweep.py
+Source: file:CLAUDE.md:44, file:.claude/hooks/stop/wl_classsweep.py:1
 Status: active
 
 A fix that only shows its own instance fixed, with no evidence the same defect was searched for elsewhere, is exactly what the Stop hook's own class-sweep judge asks about on every fix-shaped commit or worklist tick.
@@ -99,7 +99,7 @@ A line belongs there only when it is a genuine operator deferral, a lease to a v
 
 ## A lesson this session paid for that is not in this corpus can be proposed with worklist.py --hint-propose
 Hint-Id: propose-a-hint
-Source: file:docs/agent-reference/HINTS.md
+Source: file:docs/agent-reference/HINTS.md:1
 Status: active
 
 This is the sole advertisement of the proposal channel: proposals land in an append-only ledger and are promoted into this file only by a reviewed edit, never automatically. Removing this entry silently kills the channel's only way of reaching a session at the moment a lesson is fresh.

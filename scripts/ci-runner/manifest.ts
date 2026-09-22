@@ -2389,6 +2389,18 @@ export const GATES: readonly GateSpec[] = [
       step: 'Agent hints can actually fire',
     },
   },
+  {
+    id: 'check:ci-hint-corpus',
+    run: 'npm run check:ci-hint-corpus',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_hint_corpus.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-content',
+      step: 'Behavioral hints can actually fire',
+    },
+  },
   // Answers the question the other two wiring gates cannot: not "is what we declared wired up?" but "did we forget to declare something?". A test file absent from the manifest is absent from BOTH sides of ci-parity, so parity agrees and reports success; gate-reachability can only ask about entries that registered. test-teammate-idle.py was committed with 20 controls and ran
   // nowhere, and this gate then found four more orphans of the same shape. Gate 1 of the sentence-wrapping pair. Source-level and sub-second, so it runs on every PR; the browser half (check:ci-sentence-lines) measures real line boxes and needs a build. Neither subsumes the other. Shrink-only baseline, seeded at 51 because the <Sentences> mechanism does not exist yet -- that is
   // what lets wave B land it incrementally without this gate being either useless or blocking. The half of www-round5's gate 3 the content schema does NOT cover. Per-doc subcategory legality moved into content/config.ts (z.enum + superRefine), where it cannot be bypassed; what is left is thumbnail coverage. The thumbnails are hand-authored and their generator was deleted, so a new
