@@ -33,6 +33,10 @@ BODY_FILE_PATH = _body_file.name
 # R18 is a FLOOR since the 2026-09-22 rewrite (prose_style.py:_sentence_break_offset): a line past 384 chars is only a finding when a genuine sentence-ending period sat at or before that floor. A run of one repeated character has no such break and is legal at any length, so a case meant to exercise R18 needs an early period followed by a long tail.
 R18_VIOLATION = "This starts with one short sentence. " + ("word " * 100)
 
+# R19 fires on a paragraph of 3+ lines hard-wrapped at a uniform width well under the limit -- the shape a heredoc body typed with manual line breaks produces. Since 2026-09-22 this also covers "commit" scope, matching R18: the same duplicated hardcoded scope check (prose_style.py's `underwrap_findings`) that would have left R18's fix vacuous for commit bodies if left
+# unfixed applies here too, so this case is the class-sweep proof that R19 was fixed alongside it, not left as the other half of the same gap.
+R19_VIOLATION = "This is a line that is deliberately\nkept narrow so that joining works\nas the paragraph intent shows here."
+
 CASES = [
     # (name, command, expect_blocked) ---- the block direction ------------------------------------------
     ("a subject addressing the reader", '%s -m "Did %s run the tests?"' % (COMMIT, Y), True),
@@ -87,6 +91,11 @@ CASES = [
         "a long commit body gets R18 too, since 2026-09-22, even chained after a short PR body",
         '%s -m "fix: x" -m "%s" && gh pr create --title "fix: x" --body "short body"'
         % (COMMIT, R18_VIOLATION),
+        True,
+    ),
+    (
+        "a heredoc commit body gets R19 too, since 2026-09-22, same as a PR body",
+        "%s -F - <<'EOF'\nfix: the thing\n\n%s\nEOF" % (COMMIT, R19_VIOLATION),
         True,
     ),
     # ---- the allow direction ------------------------------------------

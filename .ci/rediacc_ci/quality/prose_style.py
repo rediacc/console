@@ -1065,7 +1065,7 @@ def underwrap_findings(path, text, rule, scope, max_len):
     -- exactly the "a rewrite is when a human looks again" contract every other multi-line Finding in this module already uses.
     """
     findings = []
-    if scope in ("markdown", "pr"):
+    if scope in ("markdown", "pr", "commit"):
         for kind, start, payload in markdown_segments(text):
             if kind != "para":
                 continue
