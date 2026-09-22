@@ -15,6 +15,7 @@ import wl_admit
 import wl_agents as A
 import wl_checklist
 import wl_ci
+import wl_claimcheck
 import wl_core as C
 import wl_histfirst
 import wl_judge
@@ -4291,6 +4292,8 @@ def run_stop(event, event_ok, worklist, hook_file):
         with contextlib.suppress(Exception):
             reg_fixset_files = wl_reggate.fixset_files(root, reg_ids)
         reg_extra = ""
+        # v19: the claim-check profile for the ONE tick this fix-set is about, or None when no claim was put to the judge. `claim_prior` is the latch record as it stood BEFORE the ask, which is what makes the fire count increment by one rather than reset. See wl_claimcheck.
+        claim_prof, claim_prior = None, None
         if reg_signals:
             reg_extra = M.REGGATE_PROMPT % {
                 "fixset": "\n".join("  " + s for s in reg_signals[:12]),
@@ -4303,6 +4306,16 @@ def run_stop(event, event_ok, worklist, hook_file):
             with contextlib.suppress(Exception):
                 if wl_reggate.gate_only_fixset(root, reg_ids):
                     reg_extra += M.REGGATE_GATE_MAINTENANCE
+            # DOES THE EVIDENCE DEMONSTRATE THE CLAIM. One more question on the judge call the fix signal already forces, never a second call -- the same trade the class sweep and the proof obligation make. Asked ONLY on a TICK-based fix-set: a commit-only fix-set carries no completion claim, and the fix-set's own file list is reused rather than recomputed. The latch bounds the
+            # ask for the path where the regression gate BLOCKS instead of settling; a settled fix-set is absorbed above and never reaches here again. Suppressed on any failure: an advisory must never raise into the stop path.
+            with contextlib.suppress(Exception):
+                if reg_new_ticks and not wl_claimcheck.exhausted(reg_sig):
+                    _prof = wl_claimcheck.profile(root, reg_new_ticks[0][2], reg_fixset_files)
+                    _section = wl_claimcheck.prompt_section(_prof)
+                    if _section:
+                        reg_extra += _section
+                        claim_prof = _prof
+                        claim_prior = wl_claimcheck.demand_for(reg_sig).peek()
         audit_extra = ""
         if audit_batch:
             arows = []
@@ -4424,6 +4437,47 @@ def run_stop(event, event_ok, worklist, hook_file):
             )
             admit_hits = []  # handled; the standalone path below must not re-ask
 
+        # v19: THE CLAIM-CHECK VERDICT, read before the regression gate and entirely outside it. It cannot block, and it must not sit behind a path an earlier emit() exits past: the reggate's malformed and block arms both emit and END THE PROCESS, so an advisory computed after them would be lost on exactly the stops that carry the most evidence. Nothing here writes to
+        # `verdict`; the advisory reaches the session through the report queue, which drains on the allow path. See wl_claimcheck's ADVISORY, NEVER BLOCKING.
+        claim_record = None
+        if claim_prof is not None:
+            claim_kind, claim_note = wl_claimcheck.apply_verdict(verdict, claim_prof)
+            claim_record = {
+                "kind": claim_kind,
+                "shape": claim_prof["shape"],
+                "note": claim_note[:200],
+            }
+            # BANKED ON THE ASK, not on the answer. What this latch bounds is the ASKING, so a degraded answer that left the count untouched would make a malfunctioning judge the way to be asked forever.
+            with contextlib.suppress(Exception):
+                wl_claimcheck.demand_for(reg_sig).bank(
+                    {"sig": reg_sig, "kind": claim_kind}, claim_prior
+                )
+            # ONE ROW PER VERDICT, so the graduation criterion in wl_claimcheck's docstring is answerable from rows rather than from memory. Suppressed: a census must never raise into gating.
+            with contextlib.suppress(Exception):
+                wl_claimcheck.census(
+                    root,
+                    {
+                        "sig": reg_sig,
+                        "kind": claim_kind,
+                        "shape": claim_prof["shape"],
+                        "cites": [
+                            {"cite": c["cite"], "verdict": c["verdict"], "overlap": c["overlap"]}
+                            for c in claim_prof["citations"]
+                        ],
+                        "fixset_n": claim_prof["fixset_n"],
+                        "note": claim_note[:300],
+                    },
+                )
+            if claim_kind in ("yes", "degraded"):
+                # NEITHER OF THESE EARNS A REPORT SLOT, and the suite proved it rather than a reviewer: a degraded verdict queued at priority 2 pushed the regression gate's own "settled as one-off" line out of the per-stop drain window, so an advisory that had learned NOTHING displaced the outcome of the question that did. Both still reach the session, in the one field it always
+                # reads, exactly as wl_judge annotates a degraded class_sweep. The census row carries the verdict either way.
+                verdict["reason"] = (
+                    "%s [claim-check: %s]" % (verdict.get("reason", ""), claim_kind)
+                )[:400]
+            else:
+                # STICKY: the latch and the fixset record both suppress a re-ask, so this text cannot be regenerated on a later stop and a volatile entry would simply be lost. Priority 2, the same class as the other one-line outcomes, which keeps it behind every real violation.
+                outq_add(worklist, session_id, state_doc, "claim-check", claim_note, 2, sticky=True)
+
         # v7: the regression verdict is processed BEFORE the stop/continue verdict, so a settle persists (and a regression block fires) even when the judge would also say continue for other reasons.
         if reg_signals:
             kind, payload, detail = wl_reggate.apply_regression_verdict(
@@ -4457,6 +4511,9 @@ def run_stop(event, event_ok, worklist, hook_file):
                     # record. It had already misrouted a www DOM change to packages/e2e-tests, and nothing recorded that.
                     "surface": str(rg.get("surface", ""))[:20],
                     "artifact": str(rg.get("artifact", ""))[:200],
+                    # THE CLAIM VERDICT SETTLES WITH THE FIX-SET, on the same stop and under the same key, so a claim is asked about exactly once -- the identical mechanism that makes the regression gate cost-bounded. `None` when no claim was put (a commit-only fix-set, or the latch was already spent) and that is not the same as a claim that passed; the census rows carry the
+                    # verdicts, this field carries only the fact that this fix-set's claim was answered.
+                    "claim_check": claim_record,
                     "at": C.stamp_now(),
                 }
                 reg_state["head"] = reg_head or reg_state["head"]
@@ -4466,6 +4523,9 @@ def run_stop(event, event_ok, worklist, hook_file):
                     | set(reg_banked)
                 )
                 wl_reggate.save_reggate(reg_marker, reg_state)
+                # The fix-set is settled and is absorbed on every later stop, so the claim latch has nothing left to bound; dropping its marker keeps the judge's tmp directory from accumulating one file per fix-set ever seen.
+                with contextlib.suppress(Exception):
+                    wl_claimcheck.demand_for(reg_sig).clear()
                 reg_settled = (payload, detail)
                 # SPEND THE BUDGET, and only here. `proven` is the one settle that cost a real artifact and a real CI round; the cheap settles (covered/one-off/not-applicable/deferred) cost neither, and charging them would let a session farm the budget with five honest one-offs to buy a pass on the sixth, real gate. Suppressed on failure: the ledger must never raise into gating.
                 if payload == "proven":

@@ -14,6 +14,7 @@ import subprocess
 import time
 
 import wl_bravedefault as BD
+import wl_claimcheck as CC
 import wl_classsweep as CS
 import wl_proc
 import wl_proofcheck as PF
@@ -76,6 +77,9 @@ JUDGE_SCHEMA = {
         "brave_default": BD.BRAVE_DEFAULT_SCHEMA,
         # v18: rides the SAME fix-stop trigger as class_sweep, asking a different question about the same fix-set -- did a bulk mechanical transform inside it prove it did not destroy structure it does not know about. Same optional-at-the-top-level shape, same never-fails-closed semantics: the only thing this object can do is turn a stop into a continue. See wl_proofcheck.
         "proof_obligation": PF.PROOF_SCHEMA,
+        # v19: whether a completion claim's own evidence DEMONSTRATES it. Same optional-at-the-top-level shape and the same never-fails-closed semantics as class_sweep, and weaker still: this object cannot even turn a stop into a continue, so a missing or malformed one loses an advisory and nothing else. Asked on the claim-check marker, which rides the fix stop's tick. See
+        # wl_claimcheck.
+        "claim_check": CC.CLAIM_SCHEMA,
         "regression_gate": {
             "type": "object",
             "properties": {
@@ -675,8 +679,8 @@ def is_fix_stop(extra):
 def judge_schema_for(extra):
     """JUDGE_SCHEMA, with each optional object required iff the prompt asks for it.
 
-    ONE rule, applied per marker: regression_gate for _REGGATE_MARKER, class_sweep for CS.SWEEP_MARKER, brave_default for BD.BRAVE_MARKER, proof_obligation for PF.PROOF_MARKER. The markers are INDEPENDENT and must not collapse into one boolean: the sweep and proof sections are also appended on a carried-forward demand, and the brave section triggers on the remaining list, so any of
-    them can arrive on a stop where no fix landed at all. Requiring regression_gate on such a stop would fail the judge closed for a question nobody asked.
+    ONE rule, applied per marker: regression_gate for _REGGATE_MARKER, class_sweep for CS.SWEEP_MARKER, brave_default for BD.BRAVE_MARKER, proof_obligation for PF.PROOF_MARKER, claim_check for CC.CLAIM_MARKER. The markers are INDEPENDENT and must not collapse into one boolean: the sweep and proof sections are also appended on a carried-forward demand, the brave section triggers on
+    the remaining list, and the claim section is appended by wl_checks only when the fix-set has a TICK behind it, so any of them can arrive on a stop where the others did not. Requiring regression_gate on such a stop would fail the judge closed for a question nobody asked.
     """
     text = extra or ""
     wanted = []
@@ -688,6 +692,8 @@ def judge_schema_for(extra):
         wanted.append("brave_default")
     if PF.PROOF_MARKER in text:
         wanted.append("proof_obligation")
+    if CC.CLAIM_MARKER in text:
+        wanted.append("claim_check")
     missing = [k for k in wanted if k not in JUDGE_SCHEMA["required"]]
     if not missing:
         return JUDGE_SCHEMA

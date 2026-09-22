@@ -1,5 +1,5 @@
 # PLAN: Stop-hook task-completion verification (claim -> citation -> tree)
-Status: draft
+Status: done
 Owner: d778be9d
 First-Seen: 2026-09-22
 
@@ -201,22 +201,26 @@ The design therefore binds only claims that touch a tracked file, a worklist tic
 - [x] T1b. Add controls to `.claude/hooks/stop/test-completion-evidence.py` (or a sibling) for the live pair: `cited_excerpts('.', 'agent/PLAN-tooling-transformation.md:495')` must return non-empty text post-fix, and a CONTROL asserting the pre-fix code returns `''`, so the fixture cannot silently stop testing anything.
   Plus: a non-stub path unchanged; a genuinely out-of-range line still skipped.
 - [x] T1c. Re-run the 342-tick corpus measurement from section 1.3 and assert the empty-excerpt count falls from 9/186 to 0. This number is the acceptance criterion for T1. Live run against `agent/worklist/*.jsonl` (via `wl_store.load(sync=False)`, 693 closed items, 91 resolving citations): 0 empty excerpts.
-- [ ] T2. Write `.claude/hooks/stop/wl_claimcheck.py`: `CLAIM_MARKER`, `CLAIM_SCHEMA` (`supported`/`why`/`instruction`), `CLAIM_PROMPT`, `profile(root, evidence_text, fixset_files)`, `prompt_section(profile)`, `apply_verdict(out, profile)`.
+- [x] T2. Write `.claude/hooks/stop/wl_claimcheck.py`: `CLAIM_MARKER`, `CLAIM_SCHEMA` (`supported`/`why`/`instruction`), `CLAIM_PROMPT`, `profile(root, evidence_text, fixset_files)`, `prompt_section(profile)`, `apply_verdict(out, profile)`.
   Module docstring must state the section 2.1/2.2 measurements, the advisory decision (section 3.5), the graduation criterion, and the scope boundary (section 3.6) -- the reasons must live where the code is.
-- [ ] T3. `profile()` emits per-citation verdicts `resolved` / `resolved-untouched` / `commit` / `unverifiable-shape`, using `citation_state`, the fixed `cited_excerpts`, `wl_reggate._diff_tree_files` and `wl_reggate.fixset_files`. No new regex for paths, shas or citations -- reuse `CITE_RE`, `SHA_RE`, `_EVIDENCE_PATH`.
+- [x] T3. `profile()` emits per-citation verdicts `resolved` / `resolved-untouched` / `commit` / `unverifiable-shape`, using `citation_state`, the fixed `cited_excerpts`, `wl_reggate._diff_tree_files` and `wl_reggate.fixset_files`. No new regex for paths, shas or citations -- reuse `CITE_RE`, `SHA_RE`, `_EVIDENCE_PATH`.
   `check_plan_citations.py`'s header records why a fresh one re-opens five paid-for extension rounds; section 2's own first pass re-opened the dotfile one.
-- [ ] T4. `CLAIM_PROMPT` states the measured weakness of lexical overlap verbatim ("12.4% of genuine claims score 0"), carries the `FIXSET_GROUND_TRUTH`-style antidote sentence for `resolved-untouched` (work may predate this session), and asks exactly one question: does the quoted citation demonstrate the quoted claim?
-- [ ] T5. Wire `claim_check` into `wl_judge.JUDGE_SCHEMA` as optional-at-top-level, made required by `judge_schema_for` (`:675-698`) iff `CLAIM_MARKER` is in `extra`. Follow the `class_sweep`/`brave_default` precedent, not `regression_gate`'s: malformed or missing must never fail closed.
-- [ ] T6. Call site: compute the profile near `wl_checks.py:2952` for the tick that survives `fix_signals`' unit selection; append `prompt_section` to `reg_extra` near `:4290`. Pass the already-computed `reg_fixset_files` (`:4281`) rather than recomputing.
-- [ ] T7. Settle path: record the verdict in `reg_state["fixsets"][reg_sig]` on the same stop as the reggate settle (`:4441`) so a claim is asked about exactly once; add the `wl_rules.Demand("claimcheck-<sig12>", 120, 2)` latch. Control: the same `reg_sig` on a second stop produces no prompt section at all.
-- [ ] T8. Emit via `outq_add(..., prio=2, sticky=True)`. Assert in a test that `wl_claimcheck` never calls `wl_rules.apply_order` and never returns `decision: block` -- the advisory decision pinned as code, not as a comment.
-- [ ] T9. Adversarial control, the case this exists for: a fixture tick whose citation resolves but is unrelated (the `b328b9d3` shape from section 3.3 -- a real plan path, a real in-range line, a claim about `GITHUB_AUTOPILOT_APP_ID` that the line does not mention). Assert the profile marks it `resolved-untouched` and that the prompt section fires.
+- [x] T4. `CLAIM_PROMPT` states the measured weakness of lexical overlap verbatim ("12.4% of genuine claims score 0"), carries the `FIXSET_GROUND_TRUTH`-style antidote sentence for `resolved-untouched` (work may predate this session), and asks exactly one question: does the quoted citation demonstrate the quoted claim?
+- [x] T5. Wire `claim_check` into `wl_judge.JUDGE_SCHEMA` as optional-at-top-level, made required by `judge_schema_for` (`:675-698`) iff `CLAIM_MARKER` is in `extra`. Follow the `class_sweep`/`brave_default` precedent, not `regression_gate`'s: malformed or missing must never fail closed.
+- [x] T6. Call site: compute the profile near `wl_checks.py:2952` for the tick that survives `fix_signals`' unit selection; append `prompt_section` to `reg_extra` near `:4290`. Pass the already-computed `reg_fixset_files` (`:4281`) rather than recomputing.
+- [x] T7. Settle path: record the verdict in `reg_state["fixsets"][reg_sig]` on the same stop as the reggate settle (`:4441`) so a claim is asked about exactly once; add the `wl_rules.Demand("claimcheck-<sig12>", 120, 2)` latch. Control: the same `reg_sig` on a second stop produces no prompt section at all.
+- [x] T8. Emit via `outq_add(..., prio=2, sticky=True)`. Assert in a test that `wl_claimcheck` never calls `wl_rules.apply_order` and never returns `decision: block` -- the advisory decision pinned as code, not as a comment.
+- [x] T9. Adversarial control, the case this exists for: a fixture tick whose citation resolves but is unrelated (the `b328b9d3` shape from section 3.3 -- a real plan path, a real in-range line, a claim about `GITHUB_AUTOPILOT_APP_ID` that the line does not mention). Assert the profile marks it `resolved-untouched` and that the prompt section fires.
   Pair it with a CONTROL that must NOT fire: a tick citing a file the fix-set really touched, scoring silent.
-- [ ] T10. Vacuity control, per `check_plan_boxes.py` G-A6 and `wl_classsweep`'s precedent: a tick with no citations, a tree where `fixset_files` is empty, and an unreadable git must each yield `unverifiable-shape` and say so, never a clean profile. A check that cannot see must report that it cannot see.
-- [ ] T11. Append a `claim_check` row per verdict to `agent/ledgers/` (the `check_plan_record.py` census precedent, `.ci/scripts/quality/check_plan_record.py:52-58`) so the section 3.5 graduation criterion is answerable from rows rather than from memory.
-- [ ] T12. Run `.claude/hooks/stop/test-completion-evidence.py`, `test-reggate-ledger.py`, `test-judge-schema.py`, `.claude/rediacc_hooks/tests/test_wl_regression_gate.py`, then `check:ci-pytest`. Confirm `test_90_ticks_are_the_uncommitted_tree_signal`'s "I7 blocks before the reggate settle" invariant is untouched -- this plan adds a layer after I7 and must not reorder it.
-- [ ] T13. Dogfood before claiming: run the hook against the live `agent/worklist/d778be9d.jsonl` and confirm a real tick produces a profile whose excerpts are non-empty and whose `resolved-untouched` verdict matches `git status`.
-  Tick the boxes on this plan only with that run's output as evidence -- a plan about false completion claims closing on an unverified claim would be the joke writing itself.
+- [x] T10. Vacuity control, per `check_plan_boxes.py` G-A6 and `wl_classsweep`'s precedent: a tick with no citations, a tree where `fixset_files` is empty, and an unreadable git must each yield `unverifiable-shape` and say so, never a clean profile. A check that cannot see must report that it cannot see.
+- [x] T11. Append a `claim_check` row per verdict to `agent/ledgers/` (the `check_plan_record.py` census precedent, `.ci/scripts/quality/check_plan_record.py:52-58`) so the section 3.5 graduation criterion is answerable from rows rather than from memory.
+- [x] T12. Run `.claude/hooks/stop/test-completion-evidence.py`, `test-reggate-ledger.py`, `test-judge-schema.py`, `.claude/rediacc_hooks/tests/test_wl_regression_gate.py`, then `check:ci-pytest`. Confirm `test_90_ticks_are_the_uncommitted_tree_signal`'s "I7 blocks before the reggate settle" invariant is untouched -- this plan adds a layer after I7 and must not reorder it.
+  All re-run and independently verified (not just trusted from the implementing agent's report): `test-completion-evidence.py` 4/4+4/4+stub-hop+claim-check green, `test-judge-schema.py` 418/418, `test-planrec.py` 199/199, `test-planfile.py` 130/130, `test-planindex.py` 58/58, `test-reggate-ledger.py` 19/19, `test-adhoc-watch.py` 15/15, `test-plan-status-parse.py` 22/22,
+  `test-teammate-idle.py` 20/20, `test_wl_regression_gate.py`+`test_wl_idle_and_evidence.py`+`test_wl_core_blocking.py` 63/63 (includes `test_90_ticks_are_the_uncommitted_tree_signal`, passing). `ruff check`/`ruff format --check` clean on all 4 touched files. `check_prose_style.py` 0 new findings. `check_judged_rule_wiring.py` discovers `wl_claimcheck` (6 rules total, was 5).
+  `check_schema_call_sites.py`, `check_dead_python.py`, `check_worklist_env_registry.py` all green.
+- [x] T13. Dogfood before claiming: run the hook against the live `agent/worklist/d778be9d.jsonl` and confirm a real tick produces a profile whose excerpts are non-empty and whose `resolved-untouched` verdict matches `git status`.
+  Tick the boxes on this plan only with that run's output as evidence -- a plan about false completion claims closing on an unverified claim would be the joke writing itself. Run against the real store: a `commit`-shaped tick (`247367f86`) profiled correctly against `_diff_tree_files`' real 4-file list; a `resolved`-shaped tick (`.claude/commands/pr-merge.md:53`) produced a
+  non-empty excerpt whose text matches the claim's own subject. No `resolved-untouched` case occurred naturally in the live corpus sampled; T9's adversarial fixture covers that shape directly.
 
 ## Risks
 
@@ -225,6 +229,23 @@ The design therefore binds only claims that touch a tracked file, a worklist tic
 3. `resolved-untouched` fires on legitimate cross-session citations. Mitigated by the antidote sentence and by never blocking. Measured rate unknown until T11 has rows -- that is what the census is for.
 4. T1 changes `citation_state`'s shared resolver. It is called by I7, by `check_plan_citations.py` and by `completion_evidence`. T1a must be landed and run alone, with the full suite, before T2 starts.
 5. Advisory forever. Mitigated by the section 3.5 graduation criterion, written into the module docstring rather than into this plan, so a reader finds it where the decision lives.
+
+## Landed
+
+T1 landed and verified this session (247367f86). T2-T13 landed via a dispatched Opus writer agent and independently re-verified (not merely trusted) against the tree: every test count in T12 was re-run by this session, `wl_claimcheck.py`'s functions were read against the report's claims, and T13's dogfood used real production ticks rather than the agent's own fixtures.
+
+Five places where implementation diverged from the plan's own assumptions, each a genuine correction rather than a descope:
+
+1. T6's two cited locations could not both be true: the plan says compute the profile "near `:2952`" while also passing `reg_fixset_files` "already computed (`:4281`)" -- that list does not exist yet at `:2952`. The profile is computed at the later call site, where `reg_fixset_files` is live.
+  A plan's line-number claims about code it has not run are a hypothesis, and this is the concrete instance.
+2. The advisory's own queue slot displaced a real reggate report line: a `degraded` claim-check note at `prio=2` pushed the regression gate's "settled as one-off" line out of the per-stop drain window, caught by `test_90_ticks_are_the_uncommitted_tree_signal` going red, not by review.
+  Fixed by folding `yes`/`degraded` verdicts into `verdict["reason"]` instead of a queue slot, so only an actionable verdict (`resolved-untouched`, a real mismatch) takes report space.
+3. No `WORKLIST_CLAIM_*` env knobs exist, unlike the sibling latches: `check:ci-worklist-env-registry` reds on any undeclared `WORKLIST_*` name, and registering one was out of this plan's scope. The latch uses fixed constants (120 min, 2 fires) instead, with the reason recorded in code.
+4. The census lock lives under `TMPDIR`, not beside the ledger like the plan implied by analogy to `census-plan-record.jsonl`'s sidecar: `agent/ledgers/*.lock` has no `.gitignore` entry and none could be added within this plan's file ownership.
+5. `CLAIM_PROMPT` is deliberately excluded from `rubric-calibration.json`'s hashed `SOURCES` list -- that gate's own docstring forbids hashing a rubric with no live fixtures in `calibrate-judge-rules.py`, and none exist for this prompt yet.
+
+Two pre-existing, unrelated findings surfaced during verification and left alone, confirmed genuinely pre-existing (not touched by this session's diff): `check:ci-python-lint` red at HEAD on `S101`/`ISC004` findings in two test files last touched by `430b54ede`, weeks before this work. `check_hook_integrity.py`'s missing-from-inventory finding for `block_unsatisfiable_pid_wait.py`
+(added earlier this session by unrelated work, `470475d6e`) was fixed inline as a small, local, same-session finding (`scripts/data/hook-inventory-baseline.json`), per the fix-it-in-session rule rather than left as a residual.
 
 ## Notes for the implementer
 

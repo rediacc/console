@@ -10,10 +10,14 @@ The bug: completion_evidence delegated to citation_state, which uses CITE_RE.sea
 import importlib.util
 import inspect
 import pathlib
+import re
 import sys
+import tempfile
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 import wl_checks as W
+import wl_claimcheck as CC
+import wl_classsweep as CS
 
 ROOT = pathlib.Path(__file__).resolve().parents[3]
 
@@ -134,7 +138,6 @@ def _extra():
     return 0
 
 
-
 # =============================================================================
 # The stub-hop bug: cited_excerpts read the pre-move path raw and handed the judge an empty quote for exactly the citations that survived a plan move. PLAN-stop-hook-task-verification.md section 1.3 measured 9 of 186 resolving citations across the real worklist (4.8%) hit this, all plan-stub paths.
 # =============================================================================
@@ -143,15 +146,15 @@ def _extra():
 def _stub():
     bad = []
     # The live pair the plan named: a real stub, a real in-range line into the five-line pointer, past-EOF for the stub but in-range for the moved file.
-    STUB_CITE = "agent/PLAN-tooling-transformation.md:495"
+    stub_cite = "agent/PLAN-tooling-transformation.md:495"
 
-    excerpt = W.cited_excerpts(ROOT, f"see {STUB_CITE}")
+    excerpt = W.cited_excerpts(ROOT, f"see {stub_cite}")
     if not excerpt.strip():
         bad.append("cited_excerpts returned empty for a citation through a plan-move stub")
     elif "agent/plans/PLAN-tooling-transformation.md" not in excerpt:
         bad.append(f"excerpt did not resolve through the stub hop: {excerpt!r}")
 
-    ok, detail = W.citation_state(ROOT, f"see {STUB_CITE}")
+    ok, detail = W.citation_state(ROOT, f"see {stub_cite}")
     if not ok:
         bad.append(f"citation_state stopped resolving the stub citation: {detail}")
     elif "agent/plans/" not in detail:
@@ -173,17 +176,165 @@ def _stub():
     if "_resolve_cite_path" not in src_cs:
         bad.append("citation_state no longer calls the shared stub-hop resolver")
     if "_resolve_cite_path" not in src_ce:
-        bad.append("cited_excerpts no longer calls the shared stub-hop resolver -- the bug this pins")
+        bad.append(
+            "cited_excerpts no longer calls the shared stub-hop resolver -- the bug this pins"
+        )
 
     if bad:
         print(f"✗ stub-hop (cited_excerpts/citation_state): {len(bad)} failure(s)")
         for b in bad:
             print(f"    {b}")
         return 1
-    print("ok  stub-hop: cited_excerpts and citation_state share one resolver, both directions checked")
+    print(
+        "ok  stub-hop: cited_excerpts and citation_state share one resolver, both directions checked"
+    )
+    return 0
+
+
+# =============================================================================
+# The claim check: a citation that RESOLVES and does not demonstrate the claim. PLAN-stop-hook-task-verification.md section 3.3 names the live instance -- item b328b9d3 ticked citing a plan line about something the line does not mention, and every existing check behaved identically to a citation that did support it.
+# =============================================================================
+
+# The real shape from section 3.3, verbatim enough to stay recognisable: a real plan path, a real in-range line reached through the plan-move stub, and a claim about a token that line does not carry.
+ADVERSARIAL = (
+    "Explore agent re-verified all 8 boxes live: W7P4-Q "
+    "(agent/PLAN-tooling-transformation.md:495, GITHUB_AUTOPILOT_APP_ID unset)"
+)
+# The spelling the citation resolves TO, after the stub hop.
+MOVED = "agent/plans/PLAN-tooling-transformation.md"
+
+
+def _claim():
+    bad = []
+
+    # THE CASE THIS MODULE EXISTS FOR: it resolves, and git says the fix-set never touched it.
+    untouched = CC.profile(ROOT, ADVERSARIAL, ["packages/cli/src/index.ts"])
+    if untouched["shape"] != CC.UNTOUCHED:
+        bad.append(
+            f"the adversarial tick profiled as {untouched['shape']!r}, not resolved-untouched"
+        )
+    if [c["verdict"] for c in untouched["citations"]] != [CC.UNTOUCHED]:
+        bad.append(f"per-citation verdicts were {[c['verdict'] for c in untouched['citations']]}")
+    if not untouched["citations"] or not untouched["citations"][0]["excerpt"].strip():
+        bad.append(
+            "the cited line was not quoted at all, so the judge would be handed an empty block"
+        )
+    section = CC.prompt_section(untouched)
+    if CC.CLAIM_MARKER not in section:
+        bad.append(
+            "the prompt section carries no marker, so judge_schema_for would never require the object"
+        )
+    if MOVED not in section or "resolved-untouched" not in section:
+        bad.append("the prompt section names neither the resolved path nor the mismatch")
+
+    # CONTROL, and without it the case above passes against a function that flags everything: the SAME claim, against a fix-set that really did touch the cited file, must not be flagged.
+    touched = CC.profile(ROOT, ADVERSARIAL, [MOVED, "packages/cli/src/index.ts"])
+    if touched["shape"] != CC.RESOLVED:
+        bad.append(f"a citation to a file the fix-set touched profiled as {touched['shape']!r}")
+
+    # CONTROL: the PRE-MOVE spelling counts as touched too. The fix-set names whichever path the session actually edited, and comparing only the resolved spelling would report a file it did touch as untouched.
+    pre_move = CC.profile(ROOT, ADVERSARIAL, ["agent/PLAN-tooling-transformation.md"])
+    if pre_move["shape"] != CC.RESOLVED:
+        bad.append(f"the pre-move spelling was not recognised as touched: {pre_move['shape']!r}")
+
+    # VACUITY, per wl_classsweep's precedent and check_plan_boxes.py G-A6: a check that cannot see must SAY it cannot see, never report a clean profile.
+    for label, text, fixset in (
+        ("no citation, empty fix-set", "done, exit 0", []),
+        ("no citation, unknown fix-set", "finished, run id 1234567890", None),
+        ("a decorative hex that is no object", "landed as deadbeef", []),
+    ):
+        vac = CC.profile(ROOT, text, fixset)
+        if vac["shape"] != CC.VACUOUS:
+            bad.append(f"{label} profiled as {vac['shape']!r}, not unverifiable-shape")
+        if "nothing checkable" not in CC._render(vac):
+            bad.append(f"{label} rendered a profile that does not say it saw nothing")
+    if "could not be made at all" not in CC._render(CC.profile(ROOT, "done, exit 0", [])):
+        bad.append(
+            "an absent fix-set list is not stated, so the comparison reads as made and passed"
+        )
+
+    # An unreadable tree: every git call fails and every path is absent, which must still be unverifiable-shape rather than an exception or a clean answer.
+    with tempfile.TemporaryDirectory() as tmp:
+        nogit = CC.profile(tmp, ADVERSARIAL, [])
+        if nogit["shape"] != CC.VACUOUS:
+            bad.append(f"an unreadable tree profiled as {nogit['shape']!r}")
+
+    # No claim at all asks nothing. A commit-only fix-set has no completion claim, and a rule that fires on everything is a rule that gets skimmed.
+    if CC.prompt_section(CC.profile(ROOT, "", [])) != "":
+        bad.append("a fix-set with no tick behind it still produced a prompt section")
+
+    # PIN: ADVISORY, NEVER BLOCKING, asserted against the module's own source rather than against its behaviour on one input. The decision is in the docstring and a docstring cannot fail; this can.
+    src = inspect.getsource(CC)
+    # THE CALL, not the name. The module's own docstring names `wl_rules.apply_order` when it records the graduation criterion -- the one route by which this rule may ever start blocking -- so a bare-name search would red on the sentence that documents the decision it is pinning.
+    if "apply_order(" in src:
+        bad.append(
+            "wl_claimcheck calls wl_rules.apply_order -- the advisory decision has been reversed"
+        )
+    if re.search(r"""["']decision["']""", src):
+        bad.append("wl_claimcheck writes a `decision` key, which is how this hook blocks")
+    # CONTROL ON THE PIN ITSELF: both searches must be able to hit, or they pin nothing. wl_classsweep really does call apply_order, and a `decision` key really does appear in the driver.
+    if "apply_order(" not in inspect.getsource(CS):
+        bad.append(
+            "the apply_order search found nothing in a module that calls it -- the pin is vacuous"
+        )
+    if not re.search(r"""["']decision["']""", inspect.getsource(W)):
+        bad.append(
+            "the decision-key search found nothing in the driver that emits one -- the pin is vacuous"
+        )
+    if "wl_rules.Demand" not in src:
+        bad.append("the latch is gone, so an unsettled claim could be asked on every stop forever")
+
+    # THE LATCH, driven rather than grepped. A fix-set the regression gate keeps BLOCKING returns on every stop, and this is the only thing that stops the claim question riding along with it forever -- the failure mode two plans in this hook have already paid for.
+    with tempfile.TemporaryDirectory() as tmp:
+        latch, sig = pathlib.Path(tmp) / "claimcheck.json", "abcdef123456"
+        dem = CC.demand_for(sig)
+        if CC.exhausted(sig, latch):
+            bad.append("a fix-set nobody has asked about reads as already exhausted")
+        dem.bank({"sig": sig}, dem.peek(latch), latch)
+        if CC.exhausted(sig, latch):
+            bad.append("one ask exhausted the latch, so the question could never be repeated")
+        dem.bank({"sig": sig}, dem.peek(latch), latch)
+        if not CC.exhausted(sig, latch):
+            bad.append("the latch never exhausts, so an unsettled claim would be asked forever")
+
+    # The verdict reader: a missing or malformed object degrades, never raises, and never touches the verdict.
+    out = {"verdict": "stop", "reason": "r"}
+    if CC.apply_verdict(out, None)[0] != "degraded":
+        bad.append("a missing claim_check object did not degrade")
+    if (
+        CC.apply_verdict({"verdict": "stop", "claim_check": {"supported": "maybe"}}, None)[0]
+        != "degraded"
+    ):
+        bad.append("an out-of-enum `supported` did not degrade")
+    answered = {
+        "verdict": "stop",
+        "claim_check": {"supported": "no", "why": "w", "instruction": "i"},
+    }
+    kind, note = CC.apply_verdict(answered, untouched)
+    if kind != "no" or "supported=no" not in note:
+        bad.append(f"a `no` verdict did not surface as one: {kind!r} {note[:80]!r}")
+    if answered["verdict"] != "stop":
+        bad.append("apply_verdict mutated the judge's verdict -- this object may not block")
+
+    # The census: the graduation criterion is answerable only from rows, so a census that writes nothing is the whole rule going quietly advisory forever.
+    with tempfile.TemporaryDirectory() as tmp:
+        CC.census(tmp, {"sig": "abc", "kind": "no", "shape": CC.UNTOUCHED})
+        written = pathlib.Path(CC.census_path(tmp))
+        if not written.exists() or "resolved-untouched" not in written.read_text():
+            bad.append("the claim-check census wrote no readable row")
+
+    if bad:
+        print(f"✗ claim-check: {len(bad)} failure(s)")
+        for b in bad:
+            print(f"    {b}")
+        return 1
+    print(
+        "ok  claim-check: the adversarial resolved-untouched tick fires, a touched citation "
+        "does not, three vacuity shapes report they saw nothing, and the never-blocks pin holds"
+    )
     return 0
 
 
 # THE ENTRYPOINT IS LAST ON PURPOSE. It used to sit mid-file, so the cases appended below it never ran and the suite still exited 0 -- a test that cannot fail, caught only because its own output never appeared.
 if __name__ == "__main__":
-    sys.exit(main() or _extra() or _stub())
+    sys.exit(main() or _extra() or _stub() or _claim())
