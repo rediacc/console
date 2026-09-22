@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""check:ci-language-policy -- the bash surface under .ci and .claude may only shrink.
+"""check:ci-language-policy -- the bash surface under the trees ruling 7 covers may only shrink.
 
 WHY THIS EXISTS. docs/ci-overhaul/04-decisions.md ruling 7 (2026-09-06) settled one language per folder: Python in `.ci` and `.claude`, TypeScript in `scripts/`,
 JavaScript in `eslint-rules/`, and bash only as an allowlisted shim carrying a
@@ -46,7 +46,7 @@ step: Language policy
 needs: none
 lane: quality-static
 selftest: true
-why: ruling 7 makes .ci and .claude Python; the bash surface there may shrink, never grow
+why: ruling 7 makes .ci, .claude and the scripts/{ops,drills,dev} trees Python; the bash surface there may shrink, never grow
 ---- end gate ----
 """
 
@@ -87,7 +87,11 @@ VALIDATOR = pathlib.Path(
 )
 
 # The trees ruling 7 assigns to Python. Not configurable: a gate whose scope can be narrowed by an environment variable has a scope nobody can state.
-COVERED_ROOTS = (".ci", ".claude")
+#
+# WIDENED 2026-09-21 BY OPERATOR RULING, and a widening is its own wave rather than a drain. `scripts/ops/`, `scripts/drills/` and `scripts/dev/` hold 17 tracked bash files (7,244 lines) that source six libraries under `.ci/scripts/lib/`, `.ci/lib/` and `.ci/scripts/test/lib/`. While those callers sat outside the corpus the libraries they source could not retire: porting a
+# library whose only remaining consumers are un-scoped bash means either breaking them or granting the library a permanent exemption for a reason that is really "nothing scopes the caller". Naming the three directories here makes the callers debt, which is what a drain can reach. Their 17 files enter `.ci/config/language-policy-baseline.json` FROZEN in the same change, so this
+# widening refuses a NEW bash file under them from today while porting none of them.
+COVERED_ROOTS = (".ci", ".claude", "scripts/ops", "scripts/drills", "scripts/dev")
 
 KEY = "bashFiles"
 
@@ -425,16 +429,13 @@ def read_baseline(path: pathlib.Path) -> list[str] | None:
     return sorted(str(v) for v in value)
 
 
+# KEPT UNDER R18's 384-character ceiling, which the whole rendered JSON line has to clear: the baseline file is prose-style corpus, and the longer text this replaces was frozen debt there. The reasoning it used to carry (the goal state, the W1 P6 deletion, the same-commit drain) is in this module's header, which is where a reader who needs it is already standing.
 NOTE = (
-    "SHRINK-ONLY, AND GENERATED -- do not hand-edit. Tracked bash files under .ci and "
-    ".claude that ruling 7 (docs/ci-overhaul/04-decisions.md) says should be Python, "
-    "minus the permanent exemptions in .ci/policy/.language-policy-allowlist. This list "
-    "may only lose members. A NEW path here is refused by "
-    ".ci/scripts/quality/check_language_policy.py even when the total shrinks, because "
-    "composition is the claim and a total is not. The goal state is that this FILE does "
-    "not exist: W1 P6 deletes it, and its absence is what makes the gate strict. Drain it "
-    "with `.ci/scripts/quality/check_language_policy.py --write-baseline` in the same "
-    "commit that ports files, and never to make a red go away."
+    "SHRINK-ONLY and GENERATED. Tracked bash under the trees ruling 7 "
+    "(docs/ci-overhaul/04-decisions.md) assigns to Python (.ci, .claude, "
+    "scripts/{ops,drills,dev}), minus the .language-policy-allowlist exemptions. "
+    "It may only LOSE members: a new path is refused even when the total shrinks, "
+    "since composition is the claim. Drain with --write-baseline, not to clear a red."
 )
 
 
@@ -706,7 +707,8 @@ def run() -> int:
     if not corpus:
         print(
             "✗ VACUOUS: the enumeration found ZERO bash files under %s in %s.\n"
-            "  Measured 2026-09-07 there were 584. Zero means the scan did not see the\n"
+            "  Measured 2026-09-07 there were 584, and 296 after the 2026-09-21 widening\n"
+            "  and the drains between. Zero means the scan did not see the\n"
             "  tree, not that the port is finished, and its silence would mean nothing.\n"
             "  Check LANGUAGE_POLICY_ROOT and that this is a checkout of the console repo."
             % (", ".join(COVERED_ROOTS), ROOT),

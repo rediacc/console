@@ -1,0 +1,7 @@
+# twin .ci/lib/bws-env.sh blob 60766fb1b77e8bb7befab8a172c5a5ed6b58248c
+exit: 1
+--- stdout ---
+--- stderr ---
+bws-env: BWS_ACCESS_TOKEN is not set.
+  It is the one credential that cannot come from Bitwarden -- no bws verb
+  mints or rotates a machine-account token. Put it in private/account/.env.

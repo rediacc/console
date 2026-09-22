@@ -1,16 +1,20 @@
-"""`rediacc_ci.core.bws_env` against the live `.ci/lib/bws-env.sh`.
+"""`rediacc_ci.core.bws_env` against the bytes `.ci/lib/bws-env.sh` printed.
 
-NO REAL STORE IS EVER TOUCHED. `bws` is faked on PATH, exactly as `.ci/rediacc_ci/tests/gates/test_gate_bws_env.py` fakes it and for the same reason its header gives: the fake is the point, not a limitation, because an empty stored value and a missing name cannot be produced on demand against a live store. The fake also REFUSES if the caller omits `--color no`, so a port that
-dropped the
-flag fails here rather than in production against a bws that wraps its JSON in truecolor escapes.
+THE TWIN HAS BEEN DELETED. It had zero production sourcers, a fact re-measured three times and recorded in the port's own header; `.ci/shadow/w7p5b-bws-env.observations.jsonl` holds 5 rows of equivalence over 5 distinct trees, and the file was removed on the strength of them. `goldens/bws-env/` holds the helper's OWN recorded bytes, captured on its last day in the tree by
+driving it through the same `_drive` shell function this file used to run live, over the same ten fixtures. Each golden's provenance header carries the blob sha, so `git cat-file -p <sha>` still yields the program that printed them.
 
-THE PATH IS SCRUBBED ON BOTH SIDES, AND THAT IS NOT DECORATION. A real `bws` exists on this machine at `~/.local/bin/bws`. The first run of this differential compared a bash side that found the REAL binary through `command -v` against a Python side pinned to a fake path, and reported a stderr difference that looked like a port defect. It was an asymmetric harness. Every case below
-builds the environment ONCE and hands the identical mapping to both sides.
+NO REAL STORE WAS EVER TOUCHED, AND STILL IS NOT. `bws` is faked on PATH, exactly as `.ci/rediacc_ci/tests/gates/test_gate_bws_env.py` fakes it and for the same reason its header gives: the fake is the point, not a limitation, because an empty stored value and a missing name cannot be produced on demand against a live store. The fake also REFUSES if the caller omits `--color no`,
+so a port that dropped the flag fails here rather than in production against a bws that wraps its JSON in truecolor escapes.
 
-VALUES ARE NEVER COMPARED, NAMES ARE. Both drivers print the sorted NAMES that ended up resolved, which is the same assertion `test-bws-env.sh:72` makes from the other side ("NEVER prints a value"). A differential that compared values would have to put them on a stream to compare them, and this repository is public.
+THE PATH IS SCRUBBED, AND THAT IS NOT DECORATION. A real `bws` exists on the recording machine at `~/.local/bin/bws`. The first run of this differential compared a bash side that found the REAL binary through `command -v` against a Python side pinned to a fake path, and reported a stderr difference that looked like a port defect. It was an asymmetric harness. Every case below
+builds the environment ONCE, and the recording was taken through that same builder.
 
-THE ONE DELIBERATE DIVERGENCE IS PINNED, NOT PAPERED OVER. See `test_unparseable_listing_is_the_one_deliberate_divergence`: the twin leaks a Python traceback per name and then MISATTRIBUTES the failure to the store. The port refuses once and names the tool. Both behaviours are asserted, so a future reader cannot mistake the divergence for drift, and the ledger deliberately does not
-carry that case.
+THE FIXTURE ROOT IS THE ONLY MASKED TOKEN. A recording is compared against a tree built under a different temporary name, so `<root>` stands in for the fixture directory and nothing else is touched. Both streams stay separate throughout.
+
+VALUES ARE NEVER COMPARED, NAMES ARE. Both drivers print the sorted NAMES that ended up resolved, which is the same assertion `test-bws-env.sh:72` made from the other side ("NEVER prints a value"). A differential that compared values would have to put them on a stream to compare them, and this repository is public.
+
+THE ONE DELIBERATE DIVERGENCE IS PINNED, NOT PAPERED OVER. See `test_unparseable_listing_is_the_one_deliberate_divergence`: the twin leaked a Python traceback per name and then MISATTRIBUTED the failure to the store. The port refuses once and names the tool. Both behaviours are asserted against the recording, so a future reader cannot mistake the divergence for drift, and the
+ledger deliberately does not carry that case.
 """
 
 import json
@@ -23,8 +27,10 @@ import pytest
 
 from rediacc_ci.core import bws_env
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.tests import frozen
 
 TWIN = ".ci/lib/bws-env.sh"
+SLUG = "bws-env"
 
 BOTH = json.dumps(
     [{"key": "ALPHA_TOKEN", "value": "a-val"}, {"key": "BETA_TOKEN", "value": "b-val"}]
@@ -36,7 +42,7 @@ ONLY_ALPHA = json.dumps([{"key": "ALPHA_TOKEN", "value": "a-val"}])
 
 MAP = '{ "project": "p", "secrets": { "ALPHA_TOKEN": { "id": "1" }, "BETA_TOKEN": { "id": "2" } } }'
 
-# The bash driver: source the twin, load, then print the NAMES that are now set. `set +e` because the twin returns 1 on a partial load and the driver has to survive it to report anything at all.
+# The driver the recording was taken through, kept verbatim: source the twin, load, then print the NAMES that are now set. `set +e` because the twin returned 1 on a partial load and the driver had to survive it to report anything at all.
 BASH_DRIVER = textwrap.dedent(
     """
     _drive() {
@@ -92,13 +98,21 @@ def env_for(root, with_token: bool = True) -> dict:
     return diff.env_for(**overrides)
 
 
-def run_both(names: list[str], env: dict):
+def run_port(names: list[str], env: dict, root) -> tuple[int, str, str]:
+    """The port, over one fixture, with the fixture root masked out of both streams."""
     args = " ".join("'%s'" % n for n in names)
-    old = diff.bash_streams("%s\nBWS_TWIN=%s _drive %s" % (BASH_DRIVER, TWIN, args), env=env)
-    new = diff.bash_streams(
+    code, out, err = diff.bash_streams(
         "PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env names %s" % args, env=env
     )
-    return old, new
+    return code, frozen.mask_root(out, root), frozen.mask_root(err, root)
+
+
+def recorded(case_id: str) -> tuple[int, str, str]:
+    """One golden, split back into exit code, stdout and stderr."""
+    body = frozen.read(SLUG, case_id)
+    head, rest = body.split("\n--- stdout ---\n", 1)
+    out, err = rest.split("--- stderr ---\n", 1)
+    return int(head[len("exit: ") :]), out, err
 
 
 CASES = [
@@ -112,30 +126,43 @@ CASES = [
 ]
 
 
+# The three cases that are not in the parametrized table, each recorded under its own name because each needs a fixture the table cannot express: a removed map, a `bws` that exits 9, and a `bws` that exits 0 with bytes that are not JSON.
+MAP_MISSING = "map-missing"
+BWS_NON_ZERO = "bws-exits-non-zero"
+UNPARSEABLE = "unparseable-listing"
+
+GOLDEN_NAMES = {c[0] for c in CASES} | {MAP_MISSING, BWS_NON_ZERO, UNPARSEABLE}
+
+
 @pytest.mark.parametrize(
     ("case_id", "listing", "names", "with_bws", "with_token"), CASES, ids=[c[0] for c in CASES]
 )
-def test_port_matches_the_live_twin(
+def test_port_matches_the_twins_recorded_output(
     tmp_path, case_id, listing, names, with_bws, with_token
 ) -> None:
     root = fixture(tmp_path / case_id, listing, with_bws=with_bws)
-    old, new = run_both(names, env_for(root, with_token))
-    assert old == new, "case %s: bash %r vs python %r" % (case_id, old, new)
+    old = recorded(case_id)
+    new = run_port(names, env_for(root, with_token), root)
+    assert old == new, "case %s: recorded %r vs python %r" % (case_id, old, new)
 
 
 def test_map_missing(tmp_path) -> None:
     """Its own case because the refusal INTERPOLATES the path, which differs per run."""
-    root = fixture(tmp_path / "nomap", BOTH)
+    root = fixture(tmp_path / MAP_MISSING, BOTH)
     os.remove(root / ".ci" / "config" / "bws-secret-map.json")
-    old, new = run_both([], env_for(root))
+    old = recorded(MAP_MISSING)
+    new = run_port([], env_for(root), root)
     assert old == new
     assert "is missing; nothing can be resolved by name." in old[2]
-    assert str(root) in old[2]
+    assert "<root>/.ci/config/bws-secret-map.json" in old[2], (
+        "the interpolated path is the whole reason this case is recorded separately"
+    )
 
 
 def test_bws_exits_non_zero(tmp_path) -> None:
-    root = fixture(tmp_path / "rc9", BOTH, bws_body="#!/bin/bash\nexit 9\n")
-    old, new = run_both([], env_for(root))
+    root = fixture(tmp_path / BWS_NON_ZERO, BOTH, bws_body="#!/bin/bash\nexit 9\n")
+    old = recorded(BWS_NON_ZERO)
+    new = run_port([], env_for(root), root)
     assert old == new
     assert "bws secret list failed" in old[2]
 
@@ -144,10 +171,17 @@ def test_the_corpus_is_not_empty() -> None:
     assert len(CASES) >= 5, "the differential corpus collapsed to %d case(s)" % len(CASES)
 
 
-def test_the_differential_can_fail(tmp_path) -> None:
+def test_the_corpus_and_the_goldens_are_the_same_set() -> None:
+    """ANTI-VACUITY on the corpus: a case whose golden vanished would pass by never being compared, and a golden nothing reads is a recording of a case that stopped running."""
+    frozen.assert_corpus(SLUG, GOLDEN_NAMES)
+
+
+def test_the_comparison_can_fail(tmp_path) -> None:
     """One word changed in a refusal must turn the comparison red."""
-    root = fixture(tmp_path / "canfail", BETA_EMPTY)
-    old, new = run_both([], env_for(root))
+    case_id = "empty-value-is-absent"
+    root = fixture(tmp_path / case_id, BETA_EMPTY)
+    old = recorded(case_id)
+    new = run_port([], env_for(root), root)
     assert old == new
     assert old != (new[0], new[1], new[2].replace("absent or empty", "absent")), (
         "the comparison is not looking at stderr, where every refusal lives"
@@ -158,9 +192,11 @@ def test_the_differential_can_fail(tmp_path) -> None:
 
 
 def test_no_value_reaches_either_stream(tmp_path) -> None:
-    """The twin's first stated rule, asserted against BOTH implementations."""
-    root = fixture(tmp_path / "novalue", BOTH)
-    old, new = run_both([], env_for(root))
+    """The twin's first stated rule, asserted against the recording AND the port."""
+    case_id = "complete-store-every-name"
+    root = fixture(tmp_path / case_id, BOTH)
+    old = recorded(case_id)
+    new = run_port([], env_for(root), root)
     for stream in (old[1], old[2], new[1], new[2]):
         assert "a-val" not in stream
         assert "b-val" not in stream
@@ -180,7 +216,7 @@ def test_the_fake_bws_refuses_without_color_no(tmp_path) -> None:
 def test_unparseable_listing_is_the_one_deliberate_divergence(tmp_path) -> None:
     """A DEFECT IN THE TWIN, reproduced here and NOT reproduced in the port.
 
-    `bws` exiting 0 with output that is not JSON is exactly what `--color no` exists to prevent, so it is the live failure mode if bws ever changes its escaping again. The twin's per-name `python3 -c` then dies, its command substitution fails, and the name is filed as `absent or empty in the store`:
+    `bws` exiting 0 with output that is not JSON is exactly what `--color no` exists to prevent, so it is the live failure mode if bws ever changes its escaping again. The twin's per-name `python3 -c` then died, its command substitution failed, and the name was filed as `absent or empty in the store`:
 
       * 36 lines of Python TRACEBACK on stderr, two full copies, one per name
       * `bws-env: 2 name(s) absent or empty in the store: ALPHA_TOKEN BETA_TOKEN`
@@ -190,8 +226,9 @@ def test_unparseable_listing_is_the_one_deliberate_divergence(tmp_path) -> None:
 
     BOTH SIDES ARE ASSERTED so this is a pinned decision and not drift, and the shadow ledger deliberately omits this case: a ledger row is a claim of EQUIVALENCE and there is none to claim here.
     """
-    root = fixture(tmp_path / "garbage", "not json at all")
-    old, new = run_both([], env_for(root))
+    root = fixture(tmp_path / UNPARSEABLE, "not json at all")
+    old = recorded(UNPARSEABLE)
+    new = run_port([], env_for(root), root)
 
     assert old[0] == new[0] == 1, "both still fail; the exit code is not the divergence"
     assert old[1] == new[1] == "", "neither resolves a name"

@@ -30,10 +30,10 @@ The operator's statement of the problem: *"reading the trap file could be skippe
 
 **The recurrence evidence, verified:**
 
-- `agent/archive/REPORT-licensing-bigbang-2026-08-04.md:234`, under the heading
-"WHY KNOWING ABOUT IT DOES NOT PREVENT IT": *"The pull is not toward carelessness; it is toward the cheapest observable PROXY for the thing you actually need."* The same report at `:230-232` records an instrument built for this class, by an author who had spent the night on this class, failing the class, and being caught by a different pre-existing instrument.
-- `~/.claude/projects/-home-muhammed-monorepo-console/reports/pr-babysit-0804-1.md:1424`:
-*"authored by me, hours after writing the TRAPS.md entry about it. Writing the rule down does not confer immunity from it."*
+- `agent/archive/REPORT-licensing-bigbang-2026-08-04.md:130`, under the heading
+"WHY KNOWING ABOUT IT DOES NOT PREVENT IT": *"The pull is not toward carelessness; it is toward the cheapest observable PROXY for the thing you actually need."* <!-- style-ok --> The same report at `:127` records an instrument built for this class, by an author who had spent the night on this class, failing the class, and being caught by a different pre-existing instrument.
+- a pr-babysit round log outside this repository, line 1424:
+*"authored by me, hours after writing the TRAPS.md entry about it. Writing the rule down does not confer immunity from it."* <!-- style-ok -->
 - Same file `:113-114`: *"Nine instances of ONE pattern, across harness, product,
 gates, and the meta-gate, and not one was caught by its author re-reading it. Each was caught by a DIFFERENT instrument."*
 - `reports/pr-babysit-0807.md:290-292` and `:317-322`: four npm scripts that do not

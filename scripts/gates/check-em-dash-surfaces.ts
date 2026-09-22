@@ -135,7 +135,8 @@ const SURFACES: readonly Surface[] = [
   // `.ci/scripts` READ 300 UNTIL THE BASH RETIREMENT CAMPAIGN TOOK IT TO 299, at which point the floor was refusing the campaign's own success rather than a collapsed glob. Re-measured 2026-09-21 at 299 and lowered to 200, so the margin is 99 files and shrinking; it is restated on each retirement batch so a closing margin is visible early.
   { dir: '.ci/scripts', kind: 'source', exts: ['.sh', '.py'], minFiles: 200 },
   { dir: '.ci/rediacc_ci', kind: 'source', exts: ['.py'], minFiles: 200 },
-  { dir: '.ci/lib', kind: 'source', exts: ['.sh'], minFiles: 5 },
+  // `.ci/lib` READ 5 UNTIL THE BASH RETIREMENT CAMPAIGN RETIRED `bws-env.sh`, at which point the floor was refusing the campaign's own success rather than a collapsed glob. Re-measured 2026-09-21 at 4 and lowered to 4, so the margin is zero: the next retirement out of this directory has to lower it again in the same change, which is the point of restating the margin here.
+  { dir: '.ci/lib', kind: 'source', exts: ['.sh'], minFiles: 4 },
   // packages/cli. The first two join at ZERO (measured clean when they were added); the third rides the baseline, because 93 percent of its findings are prose inside JSDoc where the dash often does real syntactic work, and a mechanical pass over that changes documented meaning.
   //
   // THE NESTING IS LOAD-BEARING. `packages/cli/src/i18n/locales` sits INSIDE `packages/cli/src`, and they stay disjoint only because their extension sets do not intersect. Adding '.json' to the source surface would count every catalog finding twice. `nestedSurfaceOverlap()` below turns that from a comment into a check.

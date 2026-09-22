@@ -1,0 +1,8 @@
+# twin .ci/scripts/release/resolve-backfill-commit.sh blob f1fc79f71e60257cba27298658ec34738b8474dc
+exit: 1
+--- stdout ---
+→ using operator-supplied commit_sha: <off-main>
+::error::commit <off-main> is not reachable from origin/main
+::error::refusing to backfill a sentinel for a detached tag
+--- stderr ---
+--- github-output ---

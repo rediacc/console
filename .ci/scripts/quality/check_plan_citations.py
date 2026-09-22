@@ -266,37 +266,37 @@ def added_lines(base):
     return out
 
 
-def moved_from(root, rel):
-    """The path `rel` was moved FROM, proved by the stub left behind, or "".
+def _origin_last_content(origin):
+    """The newest blob at `origin` that is not itself a stub, or "".
 
-    A MOVE IS NOT AN ADDITION, and the stub is the evidence. `check_plan_folders.py --move` renames a plan into `agent/plans/**` and leaves a one-line pointer at the old path, so the old path still EXISTS and git's rename detection cannot fire: the new path is a pure add and every line of a document written months ago is attributed to whoever moved it. Measured 2026-09-21: the
-    103-plan migration turned 335 findings into 424 without a single new citation being written.
-
-    The stub is read rather than inferred from the basename, so a plan that merely shares a name with something at the legacy path proves nothing here.
+    `carried_lines` used only the blob at `base`, and on a long-lived branch `base` (the merge-base with main) can predate the plan entirely, or predate a reflow that rewrapped every line after `base` but before the move -- either way the base blob shares no verbatim lines with the moved file, and a move that carried no new citation reads as if it had written every line in the
+    document. Walking history from HEAD finds the content the move actually carried, regardless of how far behind `base` sits.
     """
-    name = rel.rsplit("/", 1)[-1]
-    if not PL.is_plan_path(rel) or PL.folder_of(rel) == PL.AGENT_DIR:
-        return ""
-    origin = "%s/%s" % (PL.AGENT_DIR, name)
-    try:
-        probe = (root / origin).read_text(encoding="utf-8", errors="replace")
-    except OSError:
-        return ""
-    if not PL.looks_like_stub(probe) or PL.parse_plan(origin, probe).moved_to != rel:
-        return ""
-    return origin
+    log = _git("log", "--format=%H", "--", origin)
+    for sha in log.split("\n"):
+        if not sha:
+            continue
+        raw = _git("show", "%s:%s" % (sha, origin))
+        if raw and not PL.looks_like_stub(raw):
+            return raw
+    return ""
 
 
 def carried_lines(root, base, rel):
-    """The lines `rel` already carried at `base`, under the path it moved from.
+    """The lines `rel` already carried, under the path it moved from.
 
-    A set of whole lines rather than a diff: the question is only whether THIS change wrote the citation, and a line that is verbatim in the pre-move document was not written here whatever moved around it. It errs in the safe direction -- a genuinely new citation line is in no base blob, so it is still judged.
+    A set of whole lines rather than a diff: the question is only whether THIS change wrote the citation, and a line that is verbatim in a pre-move document was not written here whatever moved around it. It errs in the safe direction -- a genuinely new citation line is in neither blob, so it is still judged.
+
+    UNION OF TWO READS, not one. `git show <base>:<origin>` is kept because it is cheap and correct on a short-lived branch; `_origin_last_content` is added because `base` alone is wrong whenever the origin predates `base` or a reflow already changed every line's text since `base` -- measured 2026-09-21, the 103-plan migration's own base blob excluded ONLY 3370 of the roughly
+    3650 lines it should have.
     """
-    origin = moved_from(root, rel)
+    origin = PL.moved_from(root, rel)
     if not origin:
         return frozenset()
-    raw = _git("show", "%s:%s" % (base, origin))
-    return frozenset(raw.split("\n")) if raw else frozenset()
+    from_base = _git("show", "%s:%s" % (base, origin))
+    lines = set(from_base.split("\n")) if from_base else set()
+    lines |= set(_origin_last_content(origin).split("\n"))
+    return frozenset(lines)
 
 
 def drop_moved_lines(root, base, rows):

@@ -4393,10 +4393,11 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-language-policy',
     run: 'npm run check:ci-language-policy',
     gate: true,
-    // The verdict depends on tracked files under .ci and .claude and on nothing
-    // else, so these two globs are the COMPLETE dependency set rather than a
+    // The verdict depends on tracked files under the gate's COVERED_ROOTS and on
+    // nothing else, so these globs are the COMPLETE dependency set rather than a
     // narrowing for speed. The allowlist, the baseline and the blocker-validator this gate shells out to all live under .ci/ and are covered by the first.
-    paths: ['.ci/**', '.claude/**'],
+    // The three scripts/ globs arrived with the 2026-09-21 widening of ruling 7; without them a new bash file under scripts/ops/ would land in a run that never scheduled the gate that refuses it.
+    paths: ['.ci/**', '.claude/**', 'scripts/ops/**', 'scripts/drills/**', 'scripts/dev/**'],
     pathsOrigin: 'declared',
     leaves: ['.ci/scripts/quality/check_language_policy.py'],
     ci: {
@@ -4520,9 +4521,9 @@ export const GATES: readonly GateSpec[] = [
   // and start with test-. They are invoked by path, not by an npm key, because the Static lane is a bare checkout with no node_modules -- the same reason ci-quality.yml:166-171 already gives for its sibling test-install-sh-config.sh.
   {
     id: 'test:write-once-guard',
-    run: '.ci/scripts/test/test-write-once-guard.sh',
+    run: 'PYTHONPATH=.ci python3 .ci/rediacc_ci/deploy/write_once_guard_check.py',
     gate: true,
-    leaves: ['.ci/scripts/test/test-write-once-guard.sh'],
+    leaves: ['.ci/rediacc_ci/deploy/write_once_guard_check.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -4532,9 +4533,9 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'test:install-script',
-    run: '.ci/scripts/test/test-install-script.sh',
+    run: 'PYTHONPATH=.ci python3 .ci/rediacc_ci/release/install_script_check.py',
     gate: true,
-    leaves: ['.ci/scripts/test/test-install-script.sh'],
+    leaves: ['.ci/rediacc_ci/release/install_script_check.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',

@@ -60,7 +60,7 @@ hook's `HANDOFF CANDIDATES` block, which asks the session to carry inherited wor
 
 ### What was checked and ruled out
 
-`agent/ledgers/census-plan-record.jsonl` (written by `check_plan_record.py:205`) is NOT the plan census this needs: it is a shadow-mode ledger of what candidate COMPACTION rules C9/C10/C11 would have flagged, keyed by record grammar, and it carries no open-box counts.
+`agent/ledgers/census-plan-record.jsonl` (written by `.ci/scripts/quality/check_plan_record.py:165`) is NOT the plan census this needs: it is a shadow-mode ledger of what candidate COMPACTION rules C9/C10/C11 would have flagged, keyed by record grammar, and it carries no open-box counts.
 
 The census that IS needed already exists and is already fresh: `## Plan census` in `agent/INDEX.md` (`.claude/hooks/stop/wl_planindex.py:98`), one row per plan as `(rel, status, lines, open, ticked, bytes)`, read by `wl_planindex.index_census` (`wl_planindex.py:301`) from ONE file read plus a `stat` per plan, with a loud slow-path fallback through `wl_planindex.census_rows`
 (`wl_planindex.py:164`) when it disagrees with disk. Verified live today: `index_census` returns `state=fresh`, 96 rows, 96 stats. The only field it lacks is `Owner:`, which `wl_checks.plan_owner` (`.claude/hooks/stop/wl_checks.py:1115`) reads from the first 10 header lines -- and it is only needed for the 15 plans with `open > 0`.

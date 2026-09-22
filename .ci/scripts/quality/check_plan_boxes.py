@@ -401,7 +401,19 @@ def _touched_plans(base: str) -> set[str]:
 
 
 def _added_plans(base: str) -> set[str]:
-    return {p for st, p in _name_status(base) if st == "A" and PL.is_plan_path(p)}
+    """Plans this branch genuinely adds, MOVES EXCLUDED.
+
+    `_name_status` reports an "A" for the new path of a moved plan too, because `check_plan_folders.py --move` leaves a stub at the old path rather than deleting it -- there is no delete for git's rename
+    detection to pair against, at any `-M` threshold. `PL.moved_from` reads the stub the same way `check_plan_citations.py` does, so a move is never mistaken for new, unowned content.
+    """
+    out = set()
+    for st, p in _name_status(base):
+        if st != "A" or not PL.is_plan_path(p):
+            continue
+        if PL.moved_from(ROOT, p):
+            continue
+        out.add(p)
+    return out
 
 
 def _content_age_days(rel: str, base: str) -> int | None:

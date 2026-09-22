@@ -279,6 +279,26 @@ def looks_like_stub(probe: str) -> bool:
     )
 
 
+def moved_from(root, rel: str) -> str:
+    """The path `rel` was moved FROM, proved by the stub left behind, or "".
+
+    Shared by every consumer that must not double-count a move as new content: `check_plan_citations.py`'s `carried_lines` and `check_plan_boxes.py`'s `_added_plans` both need this, because a moved plan is NEVER a git
+    rename. `--move` leaves a stub at the old path rather than deleting it, so git sees a MODIFY at the old path and an ADD at the new one, at any similarity threshold -- there is no delete for rename detection to
+    pair against. The stub is read rather than inferred from the basename, so a plan that merely shares a name with something at the legacy path proves nothing here.
+    """
+    name = rel.rsplit("/", 1)[-1]
+    if not is_plan_path(rel) or folder_of(rel) == AGENT_DIR:
+        return ""
+    origin = "%s/%s" % (AGENT_DIR, name)
+    try:
+        probe = (pathlib.Path(root) / origin).read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return ""
+    if not looks_like_stub(probe) or parse_plan(origin, probe).moved_to != rel:
+        return ""
+    return origin
+
+
 def folder_of(rel: str) -> str:
     """The plan directory `rel` sits in, or "" when it is not in one at all."""
     for candidate in PLAN_DIRS:

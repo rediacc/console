@@ -3,6 +3,16 @@
 
 Unit tests for the sentinel-aware `write_once_guard()` in `.ci/scripts/deploy/upload-to-r2.sh`. Mocks `aws` so the test runs offline.
 
+THIS FILE IS THE GATE'S RUN TARGET, so it carries the `---- gate ----` header the twin used to carry; the header moved here in the same change that deleted the twin, because a bare-path gate whose declarer is gone emits no step at all. `run:` is declared rather than derived for the reason `install_script_check.py` gives at its own header: `derivedRun` returns the bare path for a
+`.py`, nothing puts `.ci` on `sys.path` for a file inside the package, and `PYTHONPATH=.ci` is the exact form the K=5 ledger licensed.
+
+---- gate ----
+id: test:write-once-guard
+run: PYTHONPATH=.ci python3 .ci/rediacc_ci/deploy/write_once_guard_check.py
+step: Write-once guard tests
+lane: quality-static
+---- end gate ----
+
 The guard's behaviours (see `.ci/scripts/lib/release-state-validator.sh`):
   1. sentinel exists + binaries present  -> return 10 (SKIP: idempotent rerun)
   2. sentinel exists + NO binaries       -> exit 1 (FAIL: sealed-but-empty)

@@ -4729,7 +4729,10 @@
     "gate": true,
     "paths": [
       ".ci/**",
-      ".claude/**"
+      ".claude/**",
+      "scripts/ops/**",
+      "scripts/drills/**",
+      "scripts/dev/**"
     ],
     "pathsOrigin": "declared",
     "leaves": [
@@ -4846,10 +4849,10 @@
   },
   {
     "id": "test:write-once-guard",
-    "run": ".ci/scripts/test/test-write-once-guard.sh",
+    "run": "PYTHONPATH=.ci python3 .ci/rediacc_ci/deploy/write_once_guard_check.py",
     "gate": true,
     "leaves": [
-      ".ci/scripts/test/test-write-once-guard.sh"
+      ".ci/rediacc_ci/deploy/write_once_guard_check.py"
     ],
     "ci": {
       "kind": "step",
@@ -4860,10 +4863,10 @@
   },
   {
     "id": "test:install-script",
-    "run": ".ci/scripts/test/test-install-script.sh",
+    "run": "PYTHONPATH=.ci python3 .ci/rediacc_ci/release/install_script_check.py",
     "gate": true,
     "leaves": [
-      ".ci/scripts/test/test-install-script.sh"
+      ".ci/rediacc_ci/release/install_script_check.py"
     ],
     "ci": {
       "kind": "step",

@@ -16,15 +16,15 @@
   "that shrank by 29 can still hide one brand-new violation. Comparing sizes is not",
   "the same claim as diffing the sets."
  ],
- "count": 5661,
- "files": 1192,
+ "count": 5658,
+ "files": 1191,
  "by_rule": {
-  "R1": 1673,
+  "R1": 1672,
   "R11": 178,
   "R14": 1,
-  "R18": 2263,
+  "R18": 2262,
   "R19": 62,
-  "R2": 956,
+  "R2": 955,
   "R7": 528
  },
  "findings": {
@@ -81,11 +81,6 @@
     "7faceb803bb9ee4e",
     "8bb5a32b576a2a01",
     "8f56e43dd35785d7"
-   ]
-  },
-  ".ci/config/language-policy-baseline.json": {
-   "R18": [
-    "85bee0394d233ea8"
    ]
   },
   ".ci/config/plant-proof-baseline.json": {
@@ -3264,15 +3259,11 @@
   },
   "agent/plans/PLAN-trap-enforcement.md": {
    "R1": [
-    "38e5be46904260fc",
     "57eee30e13c8ec29",
     "aade6aab98502aa8"
    ],
    "R11": [
     "6c8aa9fb326d1561"
-   ],
-   "R2": [
-    "cc63da7d782abd42"
    ],
    "R7": [
     "e8e1543331f6a271"

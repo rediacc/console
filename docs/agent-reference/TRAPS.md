@@ -1586,7 +1586,7 @@ Do it in an order that cannot destroy the target:
 Write to a scratch path and `mv` into place, so a failure leaves the original untouched. Verify by digest afterwards, not by eye: a zero-byte file and a correctly restored one look identical in a directory listing.
 ## A gate that says "in the same commit" is almost never checking commits
 Trap-Id: same-commit-advice-is-not-enforcement
-Enforced-By: file:.ci/scripts/quality/check_language_policy.py:789
+Enforced-By: file:.ci/scripts/quality/check_language_policy.py:793
 Residue: the wording is fixed in ONE gate. Twelve files under `.ci/scripts/quality/`,
 `.ci/rediacc_ci/quality/` and `scripts/gates/` carry same-commit language, and the other eleven still promise more than they check. Nothing decides, in general, whether a given gate's atomicity claim is enforced -- that is a property of what the gate reads, and reading it is a human step.
 

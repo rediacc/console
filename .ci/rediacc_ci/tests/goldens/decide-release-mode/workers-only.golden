@@ -1,0 +1,8 @@
+# twin .ci/scripts/release/decide-release-mode.sh blob 3b39416df228abc1d54ce71430939b096fbe9b1f
+exit: 0
+--- stdout ---
+::notice::Workers-only mode -- deploy Workers without version bump or publish
+--- stderr ---
+--- github-output ---
+retry_mode=false
+workers_only=true

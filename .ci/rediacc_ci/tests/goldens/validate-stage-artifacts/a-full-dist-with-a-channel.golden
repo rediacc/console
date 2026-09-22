@@ -1,0 +1,19 @@
+# twin .ci/scripts/release/validate-stage-artifacts.sh blob 372e8680000449427b7d32653947b4495e985073
+exit: 0
+--- stdout ---
+--- stderr ---
+--- step-summary ---
+## Stage Artifacts Results
+
+| Artifact | Count/Size |
+|----------|------------|
+| CLI artifacts | 1 files |
+| Linux packages | 8 files (deb:2 rpm:2 apk:2 arch:2) |
+| Pages bundle | <du-size> |
+| APT metadata | 1 files |
+| RPM metadata | 1 files |
+
+**Version:** v1.2.3
+**Channel:** edge
+
+**Status:** All validation passed. Ready for publish.

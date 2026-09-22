@@ -43,7 +43,8 @@ pin are honoured here for free and cannot drift from what the bootstrap installs
     .ci/rediacc_ci/check_pytest.py              run the suite and judge it
     .ci/rediacc_ci/check_pytest.py --selftest   prove this gate can fail
 
-NOT YET REGISTERED. There is no `---- gate ----` header in this file on purpose: `scripts/gate-bind.ts` only scans `.ci/scripts/` and `scripts/` (its `inScope` regex is `^(\\.ci\\/scripts|scripts)\\/`), so a header here would be inert -- a declaration that reads as wired and is not. Registration is the root driver's, via package.json, scripts/ci-runner/manifest.ts and the workflow.
+NOT YET REGISTERED. There is no `---- gate ----` header in this file on purpose, and the reason is no longer the one first written here: `scripts/gate-bind.ts`'s `inScope` regex has since widened to `^(\\.ci\\/scripts|\\.ci\\/rediacc_ci|scripts)\\/`, and its own selftest pins this very path as in scope, so a header here would now bind rather than sit inert. What is still
+missing is the registration the header has to agree with, and that is the root driver's, via package.json, scripts/ci-runner/manifest.ts and the workflow.
 """
 
 import ast

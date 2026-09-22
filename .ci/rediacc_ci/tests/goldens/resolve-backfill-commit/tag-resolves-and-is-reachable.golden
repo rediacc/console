@@ -1,0 +1,8 @@
+# twin .ci/scripts/release/resolve-backfill-commit.sh blob f1fc79f71e60257cba27298658ec34738b8474dc
+exit: 0
+--- stdout ---
+→ resolved v1.0.0 → <main-tip>
+✓ commit reachable from origin/main
+--- stderr ---
+--- github-output ---
+commit_sha=<main-tip>

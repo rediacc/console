@@ -1,13 +1,15 @@
-"""`rediacc_ci.core.gate_controls` against the live `gate-controls.sh`.
+"""`rediacc_ci.core.gate_controls` against the bytes `gate-controls.sh` printed.
 
-THE TWIN IS LIVE HERE, NOT FROZEN, which is the opposite of `test_core_ports.py` and is correct for the opposite reason. `.ci/lib/find-port.sh` was shimmed, so "the bash original" no longer exists in the tree and had to be frozen into that file.
+THE TWIN HAS BEEN DELETED. `.ci/scripts/lib/gate-controls.sh` carried the implementation until W7 P5 retired the staging-tag-guard, release-signing-coverage and release-key-canonical bash gates that sourced it, leaving it with no sourcer at all; `.ci/shadow/w7p5b-gate-controls.observations.jsonl` holds 5 rows of equivalence over 5 distinct trees, and the file was removed on the
+strength of them.
 
-`.ci/scripts/lib/gate-controls.sh` still carries its implementation, and until W7 P5 retired their bash twins it was sourced by the staging-tag-guard, release-signing-coverage and release-key-canonical gates. Running the live file is therefore strictly better: a frozen copy could agree with a port while both had drifted away from what the library actually executes.
+`goldens/gate-controls/` holds the library's OWN recorded bytes, captured on its last day in the tree by driving it through the same `_drive` shell function this file used to run live, over the same seven cases. Each golden's provenance header carries the blob sha, so `git cat-file -p <sha>` still yields the program that printed them, and no byte here is a hand-written
+expectation.
 
-THE BASH DRIVER IS A STRING IN THIS FILE and not a script under `.ci/`. RULING 7 freezes the tracked `.sh` count, and a driver is exactly the kind of file that gets added without anyone deciding to. It is also the honest place for it: the driver is part of the TEST, not part of the tree under test.
+THE BASH DRIVER IS RECORDED IN THIS FILE and was never a script under `.ci/`. RULING 7 freezes the tracked `.sh` count, and a driver is exactly the kind of file that gets added without anyone deciding to. It is kept verbatim because a reader re-deriving a golden needs the program that produced it, not a description of one.
 
-WHAT THE PLANTED CONTROL PROVES, AND WHY IT IS NOT THE SELFTEST. Every case below could pass against a port that was byte-identical to nothing at all if the comparison were misassembled -- a helper comparing a string to itself, a case list that is empty, a `diff` whose exit code is discarded. `test_the_differential_can_fail` mutates ONE character of the port's output contract and
-asserts the same comparison goes red. It runs the real bash and the real Python; only the expected bytes move.
+WHAT THE PLANTED CONTROL PROVES, AND WHY IT IS NOT THE SELFTEST. Every case below could pass against a port that was byte-identical to nothing at all if the comparison were misassembled -- a helper comparing a string to itself, a case list that is empty, a `diff` whose exit code is discarded. `test_the_comparison_can_fail` mutates ONE character of the port's output contract and
+asserts the same comparison goes red. It runs the real Python against the real recording; only the expected bytes move.
 """
 
 import textwrap
@@ -16,12 +18,14 @@ import pytest
 
 from rediacc_ci.core import gate_controls as gc
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.tests import frozen
 
 TWIN = ".ci/scripts/lib/gate-controls.sh"
+SLUG = "gate-controls"
 
-# The driver, in both languages, reading the same US-separated program on stdin.
-# `IFS=$'\x1f'` and NOT `$'\t'`: tab is IFS WHITESPACE, so consecutive tabs
-# collapse and an empty field vanishes, shifting every later field left. That cost a false STDOUT-DIFF on this differential's first run and is recorded at `rediacc_ci.core.gate_controls`'s SEP.
+# The driver the recording was taken through, kept verbatim. `IFS=$'\x1f'` and
+# NOT `$'\t'`: tab is IFS WHITESPACE, so consecutive tabs collapse and an empty
+# field vanishes, shifting every later field left. That cost a false STDOUT-DIFF on this differential's first run and is recorded at `rediacc_ci.core.gate_controls`'s SEP.
 BASH_DRIVER = textwrap.dedent(
     """
     _drive() {
@@ -87,12 +91,18 @@ def program(rows: list[tuple[str, ...]]) -> str:
     return "".join(US.join(row) + "\n" for row in rows)
 
 
-def run_both(text: str) -> tuple[tuple[int, str, str], tuple[int, str, str]]:
-    """Feed identical bytes to both drivers. Streams stay separate throughout."""
+def run_port(text: str) -> tuple[int, str, str]:
+    """Feed the recorded bytes to the port's driver. Streams stay separate."""
     quoted = "printf '%%s' %s" % _shquote(text)
-    old = diff.bash_streams("%s\n%s | _drive" % (BASH_DRIVER, quoted))
-    new = diff.bash_streams("%s | %s" % (quoted, PY_DRIVER))
-    return old, new
+    return diff.bash_streams("%s | %s" % (quoted, PY_DRIVER))
+
+
+def recorded(case_id: str) -> tuple[int, str, str]:
+    """One golden, split back into exit code, stdout and stderr."""
+    body = frozen.read(SLUG, case_id)
+    head, rest = body.split("\n--- stdout ---\n", 1)
+    out, err = rest.split("--- stderr ---\n", 1)
+    return int(head[len("exit: ") :]), out, err
 
 
 def _shquote(text: str) -> str:
@@ -100,9 +110,10 @@ def _shquote(text: str) -> str:
 
 
 @pytest.mark.parametrize(("case_id", "rows"), CASES, ids=[c[0] for c in CASES])
-def test_port_matches_the_live_twin(case_id: str, rows: list[tuple[str, ...]]) -> None:
-    old, new = run_both(program(rows))
-    assert old == new, "case %s: bash %r vs python %r" % (case_id, old, new)
+def test_port_matches_the_twins_recorded_output(case_id: str, rows: list[tuple[str, ...]]) -> None:
+    old = recorded(case_id)
+    new = run_port(program(rows))
+    assert old == new, "case %s: recorded %r vs python %r" % (case_id, old, new)
 
 
 def test_the_corpus_is_not_empty() -> None:
@@ -110,13 +121,26 @@ def test_the_corpus_is_not_empty() -> None:
     assert len(CASES) >= 5, "the differential corpus collapsed to %d case(s)" % len(CASES)
 
 
-def test_the_differential_can_fail() -> None:
+def test_the_corpus_and_the_goldens_are_the_same_set() -> None:
+    """ANTI-VACUITY on the corpus: a case whose golden vanished would pass by never being compared, and a golden nothing reads is a recording of a case that stopped running."""
+    frozen.assert_corpus(SLUG, {case_id for case_id, _rows in CASES})
+
+
+def test_the_recording_carries_both_verdicts() -> None:
+    """A recording of refusals only agrees with a port that prints no green line at all, and a recording of greens only leaves the floor unexercised."""
+    codes = {recorded(case_id)[0] for case_id, _rows in CASES}
+    assert codes == {0, 1}, "the recording must hold a green and a red"
+
+
+def test_the_comparison_can_fail() -> None:
     """A one-character mutation of the port's contract must turn the comparison red.
 
-    THE MUTATION IS APPLIED TO THE EXPECTED BYTES, not to the tree. Editing `gate_controls.py` on disk and restoring it is the other way to write this, and it leaves the tree broken if the test aborts between the two. Here the real bash and the real Python both run unmodified and the ASSERTION is what moves, which proves the same thing: that these bytes are actually compared.
+    THE MUTATION IS APPLIED TO THE EXPECTED BYTES, not to the tree. Editing `gate_controls.py` on disk and restoring it is the other way to write this, and it leaves the tree broken if the test aborts between the two. Here the real recording and the real Python both stay unmodified and the ASSERTION is what moves, which proves the same thing: that these bytes are actually compared.
     """
-    old, new = run_both(program([("check", "one", "a", "a"), ("finish", "1", "s")]))
-    assert old == new
+    rows = dict(CASES)["all-green"]
+    old = recorded("all-green")
+    new = run_port(program(rows))
+    assert old == new, "the case this control mutates does not agree to begin with"
     poisoned = (new[0], new[1].replace("ok    ", "ok   "), new[2])
     assert old != poisoned, (
         "the comparison did not notice a deleted space in `  ok    <label>`, so it "

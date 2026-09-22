@@ -1,6 +1,9 @@
 """Port of `.ci/scripts/test/gates/test-bws-env.sh`, retired in W7 P5.
 
-Both-ways test for `.ci/lib/bws-env.sh`, the shared Bitwarden fetcher local scripts use instead of reading `private/account/.env`.
+Both-ways test for `rediacc_ci.core.bws_env`, the shared Bitwarden fetcher local scripts use instead of reading `private/account/.env`.
+
+THE SUBJECT MOVED WHEN ITS BASH TWIN WENT. This file drove `.ci/lib/bws-env.sh` until that helper was retired: it had zero sourcers, its equivalence with the port is recorded over five distinct trees in `.ci/shadow/w7p5b-bws-env.observations.jsonl`, and the helper's own bytes are frozen under `goldens/bws-env/`. The assertions below are UNCHANGED, which is the point of naming
+them after behaviour rather than after an implementation: every refusal, every count and every "rc=" line is the same string it was when a shell printed it.
 
 WHY THIS CLASS NEEDS A TEST. Every failure mode of a credential fetcher is quiet by nature: an empty value exports cleanly, a missing token looks like a network blip, and a silent fallback to a local file makes a broken fetch work on the author's machine and nowhere else. So the cases here are mostly REFUSALS, and each is planted rather than described.
 
@@ -8,9 +11,8 @@ WHY THIS CLASS NEEDS A TEST. Every failure mode of a credential fetcher is quiet
 
 THE FAKE ASSERTS ITS OWN CALLER. `bws 2.1.0` wraps `--output json` in truecolor escapes unless `--color no` is passed, and no JSON parser survives that. A fake that ignored the flag would let a regression in the caller go unnoticed, so this one exits 3 with a message naming the omission.
 
-WHY THE HELPER IS SOURCED IN A SUBPROCESS. `bws_env_load` EXPORTS into the shell that sourced it; that is its entire purpose. A Python port cannot be that shell, so each case runs one `bash -c` that sources the helper, calls it, and prints
-`rc=<code>` on the last line -- which is exactly the shape the twin's `run_load`
-produces, so the assertions transfer unchanged.
+WHY THE SUBJECT IS DRIVEN IN A SUBPROCESS. `bws_env_load` EXPORTED into the shell that sourced it; that was its entire purpose, and a child process cannot mutate its parent's environment, so the port resolves and REPORTS instead. Each case runs one `bash -c` that invokes the port's `names` verb and prints `rc=<code>` on the last line -- which is exactly the shape the twin's
+`run_load` produced, so the assertions transfer unchanged.
 """
 
 import json
@@ -20,7 +22,7 @@ import stat
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 
-HELPER = paths.from_root(".ci", "lib", "bws-env.sh")
+SUBJECT = paths.from_root(".ci", "rediacc_ci", "core", "bws_env.py")
 
 BOTH = json.dumps(
     [{"key": "ALPHA_TOKEN", "value": "a-val"}, {"key": "BETA_TOKEN", "value": "b-val"}]
@@ -58,15 +60,16 @@ def run_load(gate, directory, *names: str, no_token: bool = False) -> str:
     rather than as `token=None`. A parameter literally named `token` carrying a
     string default is an S107 finding here, and the honest fix is that the two modes are a mode, not a value: nothing in this file ever needs a token that is not the fixture's.
     """
-    if not HELPER.is_file():
-        gate.log_fail("subject under test is missing: %s" % HELPER)
-    script = 'source "$1"\nshift\nbws_env_load "$@" 2>&1\necho "rc=$?"\n'
+    if not SUBJECT.is_file():
+        gate.log_fail("subject under test is missing: %s" % SUBJECT)
+    script = 'python3 -m rediacc_ci.core.bws_env names "$@" 2>&1\necho "rc=$?"\n'
     env = {
         "BWS_ENV_ROOT": str(directory),
         "BWS_BIN": str(directory / "bin" / "bws"),
         "PATH": "%s:%s" % (directory / "bin", os.environ.get("PATH", "")),
+        "PYTHONPATH": str(paths.from_root(".ci")),
     }
-    argv = ["bash", "-c", script, "bws-env-port", str(HELPER), *names]
+    argv = ["bash", "-c", script, "bws-env-port", *names]
     if no_token:
         # A REPLACED environment, not an overlay: the operator's own shell may legitimately export BWS_ACCESS_TOKEN, and inheriting it would make this
         # case silently assert the opposite of what it says.
@@ -155,8 +158,8 @@ def test_the_fake_bws_is_load_bearing(gate, tmp_path):
     not, which is what makes every green above mean something.
     """
     gate.assert_contains(
-        HELPER.read_text(encoding="utf-8"),
-        "--color no",
+        SUBJECT.read_text(encoding="utf-8"),
+        '"--color", "no"',
         "the subject stopped passing --color no; bws would wrap its JSON in escapes",
     )
     fixture(tmp_path, BOTH)

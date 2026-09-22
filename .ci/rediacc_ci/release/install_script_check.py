@@ -12,7 +12,17 @@ Covers:
   - bin layout structure (no versions/ dir, staged-update cleared)
   - channel resolution (env > rediacc.json::account.updateChannel > 'stable')
 
-REGISTERED CI GATE: `test:install-script`, step "Install-script tests" in `.github/workflows/ci-quality.yml`, job `quality-static`. The twin carries its own `---- gate ----` header because it IS the gate's run target.
+REGISTERED CI GATE: `test:install-script`, step "Install-script tests" in `.github/workflows/ci-quality.yml`, job `quality-static`. THIS FILE IS THE GATE'S RUN TARGET, so it carries the `---- gate ----` header the twin used to carry; the header moved here in the same change that deleted the twin, because a bare-path gate whose declarer is gone emits no step at all.
+
+`run:` IS DECLARED RATHER THAN DERIVED, and the leading assignment is the reason. `derivedRun` returns the bare path for a `.py`, and a bare path cannot work here: nothing puts `.ci` on `sys.path` for a file INSIDE the package, and the `_cipath` shim resolves only for a script whose own directory holds it. `PYTHONPATH=.ci` is also the exact form the K=5 ledger licensed, and
+`check:ci-parity` resolves a leading assignment before reading the program, so the leaves still resolve to this file.
+
+---- gate ----
+id: test:install-script
+run: PYTHONPATH=.ci python3 .ci/rediacc_ci/release/install_script_check.py
+step: Install-script tests
+lane: quality-static
+---- end gate ----
 
 WHAT MOVES AND WHAT DOES NOT. Only the HARNESS moves: the fresh HOMEs, the no-jq PATH shim, the assertions, the PASS/FAIL lines and the exit code. The SUBJECT stays bash -- every case still sources the real `install.sh` in a real `bash` and calls the real function -- because a Python reimplementation of the installer would be a second instrument certifying itself.
 

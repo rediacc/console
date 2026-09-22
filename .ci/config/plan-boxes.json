@@ -239,6 +239,25 @@
       ],
       "done_sigs": []
     },
+    "agent/plans/PLAN-ci-stale-plan-citations-repair.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 0,
+      "done": 8,
+      "open_sigs": [],
+      "done_sigs": [
+        "63fc7842",
+        "71bee7a3",
+        "9f1d73f8",
+        "a58b842c",
+        "b0793f89",
+        "c76243a8",
+        "f0475c45",
+        "f62b61c2"
+      ]
+    },
     "agent/plans/PLAN-ci-trace-no-pr-branch.md": {
       "status": "compacted",
       "owner": "854ac1c6",

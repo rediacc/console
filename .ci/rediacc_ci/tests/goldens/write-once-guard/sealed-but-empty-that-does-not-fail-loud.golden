@@ -1,0 +1,6 @@
+# twin .ci/scripts/test/test-write-once-guard.sh blob 2676d8b3ce700128330bc648005b3bb09a5cfbd6 over .ci/scripts/deploy/upload-to-r2.sh blob 22c50e95172188e155dbbed4b9c79d27f60bbe23
+exit: 1
+--- stdout ---
+[0;32mPASS:[0m sealed + binaries → idempotent SKIP (rc=10)
+--- stderr ---
+[0;31mFAIL:[0m sealed + NO binaries (sealed-but-empty) should FAIL loud (rc=1); got rc=0

@@ -6,10 +6,10 @@ WHAT THIS IS FOR. `./run.sh` is a router with three destinations (the media entr
 
 so `run.sh` hands this file the WHOLE argv, verb included, and every ported verb arrives here. Until this file existed that arm named a module that was not on disk: `run.sh` said so out loud in its own header rather than letting the first port discover it as a ModuleNotFoundError.
 
-THE TABLE IS EMPTY TODAY, AND THAT IS THE HONEST STATE. Not one top-level `./run.sh` verb is served by Python yet: `.ci/legacy/run-legacy.sh` still owns all of them, and `.ci/rediacc_ci/setup/tools.py` is the install TABLE plus its audit gate, not the `setup` verb. Registering a name here that the legacy dispatcher also serves would create exactly the overlap the whole split exists
-to prevent -- the port looks like it works while the code it replaced is what actually ran -- so `VERBS` stays empty until a verb genuinely moves, in the same change that deletes its legacy arm and adds it to `PORTED_VERBS`.
+THE TABLE HOLDS ONE VERB TODAY, AND THAT IS THE HONEST STATE. `setup` has moved: it is the single row below and the single name in run.sh's `PORTED_VERBS`, and `.ci/legacy/run-legacy.sh` has no `setup` arm. Every other top-level verb is still the legacy dispatcher's. Registering a name here that the legacy dispatcher also serves would create exactly the overlap the whole
+split exists to prevent -- the port looks like it works while the code it replaced is what actually ran -- so a name arrives here only when the verb genuinely moves, in the same change that deletes its legacy arm and adds it to `PORTED_VERBS`.
 
-An empty CLI is therefore not a stub: `--help`, the no-verb path and the unknown-verb path are the parts a person meets first, they are the parts a stub would fake, and they are real here and tested against the real command.
+That invariant is checked rather than trusted: .ci/scripts/test/gates/test-run-sh.sh section 6 fails an orphan (a name here with no legacy arm removed) and an overlap (a name served twice) alike. `--help`, the no-verb path and the unknown-verb path are the parts a person meets first and the parts a stub would fake, and they are real here and tested against the real command.
 
 WHY A TABLE AND NOT A CHAIN OF `if verb == ...`. The verb set has to be
 INTROSPECTABLE. `--help` derives its listing from the table rather than from a second hand-maintained string (the legacy body's three inventories -- arms, `show_help`, per-verb `Usage:` -- disagreed with each other for months, which is what .ci/scripts/test/gates/test-run-sh.sh section 6 now refuses), and the next workstream's boxes read the set programmatically. `names()` is the

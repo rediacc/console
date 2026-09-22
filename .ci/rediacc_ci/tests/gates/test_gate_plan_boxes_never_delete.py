@@ -196,6 +196,30 @@ def test_an_aged_husk_whose_boxes_moved_is_still_free(gate, tmp_path):
     gate.log_pass("an aged husk whose box moved to a live plan is silent")
 
 
+def test_a_plan_folder_move_is_not_read_as_a_new_unowned_plan(gate, tmp_path):
+    """REGRESSION. `check_plan_folders.py --move` leaves a stub at the old path rather than deleting it, so a moved plan is a git ADD at its new path and a MODIFY at its old one, never a rename, at any
+    similarity threshold. Before `_added_plans` learned to read the stub, a plan with open boxes and no `Owner:` read as brand-new unowned content on every move -- real case: `PLAN-secret-namespace-migration.md`, unowned since it was written, reddened only once its 103-plan-migration move made it look new.
+    """
+    gate.log_test("a plan moved into agent/plans/ must not read as newly added, unowned content")
+    root, base = _seed(tmp_path, "PLAN-old.md", 999)
+    text = (root / "agent" / "PLAN-old.md").read_text(encoding="utf-8")
+    (root / "agent" / "plans").mkdir(parents=True, exist_ok=True)
+    (root / "agent" / "plans" / "PLAN-old.md").write_text(text, encoding="utf-8")
+    (root / "agent" / "PLAN-old.md").write_text(
+        "Status: moved\nMoved-To: agent/plans/PLAN-old.md\n\nThis plan moved to "
+        "`agent/plans/PLAN-old.md`.\n",
+        encoding="utf-8",
+    )
+    _regenerate_and_commit(root, "move PLAN-old.md into agent/plans/")
+
+    result = _gate(root, base)
+    gate.assert_exit_code(0, result.rc, "a move alone is not new unowned debt")
+    gate.assert_not_contains(
+        result.combined, "is NEW on this branch", "the moved plan is not misread as an add"
+    )
+    gate.log_pass("a plan-folder move is read as a move, not a new unowned plan")
+
+
 def test_the_selftest_runs_and_records_the_never_delete_controls(gate):
     """The rule table's own controls, driven as a process on the real tree.
 

@@ -362,7 +362,7 @@ jobs:
         run: .ci/rediacc_ci/setup/tools.py
       - name: Install-script tests
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/test/test-install-script.sh
+        run: PYTHONPATH=.ci python3 .ci/rediacc_ci/release/install_script_check.py
       - name: install.sh config tests
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.release.install_sh_config_check
@@ -461,7 +461,7 @@ jobs:
         run: .ci/scripts/quality/check_worklist_env_registry.py
       - name: Write-once guard tests
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/test/test-write-once-guard.sh
+        run: PYTHONPATH=.ci python3 .ci/rediacc_ci/deploy/write_once_guard_check.py
       # <<< gate-bind
 
 

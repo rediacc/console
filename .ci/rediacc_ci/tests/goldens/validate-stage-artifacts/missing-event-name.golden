@@ -1,0 +1,6 @@
+# twin .ci/scripts/release/validate-stage-artifacts.sh blob 372e8680000449427b7d32653947b4495e985073
+exit: 1
+--- stdout ---
+--- stderr ---
+<root>/.ci/scripts/release/validate-stage-artifacts.sh: line 43: EVENT_NAME: validate-stage-artifacts.sh: EVENT_NAME must be set
+--- step-summary ---

@@ -406,6 +406,8 @@ jobs:
             .ci/scripts
             .github/actions
             .ci/config
+            # .ci/rediacc_ci, because the step(s) below run `python3 -m rediacc_ci.*` and a cone that stops at .ci/scripts does not put that package on disk at all: the job dies with ModuleNotFoundError before judging anything, and a crash is not a verdict. Added 2026-09-21, sweeping the class the ci-complete cone was found in.
+            .ci/rediacc_ci
 
       - name: Cancel older runs
         if: github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'no-cancel-push')
@@ -1470,6 +1472,8 @@ jobs:
             package-lock.json
             tsconfig.json
             .ci/config
+            # .ci/rediacc_ci, because the step(s) below run `python3 -m rediacc_ci.*` and a cone that stops at .ci/scripts does not put that package on disk at all: the job dies with ModuleNotFoundError before judging anything, and a crash is not a verdict. Added 2026-09-21, sweeping the class the ci-complete cone was found in.
+            .ci/rediacc_ci
 
       - name: Fetch secrets from Bitwarden
         # LIVE: the BWS_ values below are read by this job's steps, flipped from
@@ -1739,11 +1743,20 @@ jobs:
       actions: read
     if: always() && !cancelled()
     steps:
-      # The tier logic now lives in .ci/scripts/ci/assert-ci-complete.sh, so the
-      # repo must be on disk. Sparse: this job needs only that script + its lib.
+      # The tier logic lives in rediacc_ci.ci.assert_ci_complete, so the repo
+      # must be on disk. Sparse, and BOTH entries are load-bearing.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          sparse-checkout: .ci/scripts
+          sparse-checkout: |
+            .ci/scripts
+            # .ci/rediacc_ci, because the step below runs `python3 -m
+            # rediacc_ci.ci.assert_ci_complete` and a cone that stops at
+            # .ci/scripts does not put that package on disk at all. The same
+            # class as the resolved-threads cone above: the job would die with
+            # ModuleNotFoundError before reading a single job result, and a
+            # crash is not a verdict. Added 2026-09-21, when the bash twin this
+            # cone was written for was already gone from the `run:` line.
+            .ci/rediacc_ci
 
       - name: Check all jobs passed
         run: PYTHONPATH=.ci python3 -m rediacc_ci.ci.assert_ci_complete
@@ -1831,6 +1844,8 @@ jobs:
             .ci/scripts
             .github/actions
             .ci/config
+            # .ci/rediacc_ci, because the step(s) below run `python3 -m rediacc_ci.*` and a cone that stops at .ci/scripts does not put that package on disk at all: the job dies with ModuleNotFoundError before judging anything, and a crash is not a verdict. Added 2026-09-21, sweeping the class the ci-complete cone was found in.
+            .ci/rediacc_ci
 
       - name: Fetch secrets from Bitwarden
         # SHADOW RUN: exports BWS_-prefixed copies that nothing consumes. The
@@ -1945,6 +1960,10 @@ jobs:
         with:
           sparse-checkout: |
             .ci/scripts
+            # .ci/rediacc_ci, for the reason the ci-complete cone above gives:
+            # the step below runs `python3 -m rediacc_ci.ci.assert_job_succeeded`
+            # and this cone did not put that package on disk.
+            .ci/rediacc_ci
       - name: Check finalize-release-sentinel conclusion (release channels only)
         if: needs.initialize.result == 'success' && (needs.initialize.outputs.channel == 'edge' || needs.initialize.outputs.channel == 'stable')
         run: PYTHONPATH=.ci python3 -m rediacc_ci.ci.assert_job_succeeded finalize-release-sentinel "${{ needs.finalize-release-sentinel.result }}"

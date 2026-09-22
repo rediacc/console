@@ -3,8 +3,8 @@
 WHY A DIFFERENTIAL AND NOT A TABLE OF EXPECTED STRINGS. Two of this gate's three moving parts are not readable: a `sed` BRE with a bracket expression containing a space and a pipe, and an eleven-line `awk` program with a stateful `inarm` flag. Their behaviour on the awkward inputs -- an arm with no space around the pipe, an arm that is only `)`, a guard sitting after the `esac`, a
 second one-line case arm further down -- is decided by POSIX bracket-expression rules and by awk's `sub` semantics rather than by anything a reader could infer. A table of expected strings would be a table of what the PORT does, asserted against itself.
 
-The bash fragments below are lifted from `.ci/scripts/quality/check-release-signing-coverage.sh` (the `formats_of` and `guarded_in` function bodies) and from `.ci/scripts/lib/gate-controls.sh`, with nothing changed but the substitution of their arguments. They are NOT the whole gate: the whole gate is what the committed shadow ledger
-`.ci/shadow/w7p2-signing-coverage.observations.jsonl` compares over five distinct trees. This file covers the seams that ledger cannot isolate, because a ledger row can only say the two sides agreed on THAT tree.
+The bash fragments below are lifted from `.ci/scripts/quality/check-release-signing-coverage.sh` (the `formats_of` and `guarded_in` function bodies), with nothing changed but the substitution of their arguments. The tally the gate prints its verdict through came from `.ci/scripts/lib/gate-controls.sh`, which has since been retired, so that half is compared against
+`goldens/gate-controls-tally/` rather than against a live library. They are NOT the whole gate: the whole gate is what the committed shadow ledger `.ci/shadow/w7p2-signing-coverage.observations.jsonl` compares over five distinct trees. This file covers the seams that ledger cannot isolate, because a ledger row can only say the two sides agreed on THAT tree.
 """
 
 import contextlib
@@ -15,6 +15,7 @@ import pytest
 
 from rediacc_ci.quality import release_signing_coverage as rsc
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.tests import frozen
 
 # The `formats_of` pipeline, verbatim from the twin with `"$1"` replaced by the fixture path. Four stages; the comment on each is in the port's docstring.
 _FORMATS_PIPELINE = (
@@ -143,28 +144,43 @@ def test_the_guard_table_exercises_both_directions() -> None:
     assert answers == {"yes", "no"}, "the guard table must contain both verdicts"
 
 
-# `gate_check` and `gate_finish`, sourced from the real library rather than transcribed, because the strings ARE the output contract the shadow comparator classifies on.
-_TALLY_SCRIPT = """
-source .ci/scripts/lib/gate-controls.sh
-gate_check "first" "a" "a"
-gate_check "second" "a" "b"
-gate_finish %d "subject line"
-"""
+# The tally cases, named by the arm they drive. The second value of each pair is what `gate_check` was given as `got`, so "mixed" runs one passing and one failing control and "green" runs two passing ones.
+TALLY_SLUG = "gate-controls-tally"
+TALLY_CASES: dict[str, tuple[str, int]] = {
+    "floor-1": ("mixed", 1),
+    "floor-2": ("mixed", 2),
+    "floor-9": ("mixed", 9),
+    "green-floor-1": ("green", 1),
+    "green-floor-9": ("green", 9),
+}
+TALLY_ARMS = {"mixed": ("a", "b"), "green": ("a", "a")}
 
 
-@pytest.mark.parametrize("floor", [1, 2, 9])
-def test_gate_tally_matches_gate_controls_sh(floor: int) -> None:
+def _recorded_tally(case: str) -> tuple[int, str, str]:
+    """One golden, split back into exit code, stdout and stderr."""
+    body = frozen.read(TALLY_SLUG, case)
+    head, rest = body.split("\n--- stdout ---\n", 1)
+    out, err = rest.split("--- stderr ---\n", 1)
+    return int(head[len("exit: ") :]), out, err
+
+
+@pytest.mark.parametrize("case", sorted(TALLY_CASES))
+def test_gate_tally_matches_the_twins_recorded_output(case: str) -> None:
     """The port's local copy of the tally, byte for byte against the original.
+
+    THE TWIN HAS BEEN DELETED. While `.ci/scripts/lib/gate-controls.sh` existed this ran it and the port side by side; `goldens/gate-controls-tally/` now holds the bash library's OWN bytes, captured on its last day in the tree, and each golden's provenance header carries the blob sha so `git cat-file -p <sha>` still yields the program that printed them.
 
     BOTH STREAMS, SEPARATELY. `gate_check` writes passes to stdout and failures to stderr, and `gate_finish` splits its verdict the same way. Merging them would hide exactly the swap this comparison exists to catch.
     """
-    code, out, err = diff.bash_streams(_TALLY_SCRIPT % floor)
+    arm, floor = TALLY_CASES[case]
+    second_got, second_want = TALLY_ARMS[arm]
+    code, out, err = _recorded_tally(case)
 
     tally = rsc.GateTally()
     py_out, py_err = io.StringIO(), io.StringIO()
     with contextlib.redirect_stdout(py_out), contextlib.redirect_stderr(py_err):
         tally.check("first", "a", "a")
-        tally.check("second", "a", "b")
+        tally.check("second", second_got, second_want)
         green = tally.finish(floor, "subject line")
 
     assert py_out.getvalue() == out
@@ -172,6 +188,17 @@ def test_gate_tally_matches_gate_controls_sh(floor: int) -> None:
     # `gate_finish` returns 1 on failure and the script's exit status is that
     # return, so the boolean and the exit code must agree.
     assert green is (code == 0)
+
+
+def test_the_tally_corpus_is_the_one_on_disk() -> None:
+    """ANTI-VACUITY on the corpus: a case whose golden vanished would pass by never being compared, and a golden nothing reads is a recording of a case that stopped running."""
+    frozen.assert_corpus(TALLY_SLUG, set(TALLY_CASES))
+
+
+def test_the_recorded_tally_carries_both_verdicts() -> None:
+    """A recording of failures only would agree with a port that never prints a green line, and the green line is the one the shadow comparator reads as a pass."""
+    codes = {_recorded_tally(case)[0] for case in TALLY_CASES}
+    assert codes == {0, 1}, "the recorded tally must hold a green and a red"
 
 
 def test_the_floor_message_is_the_battery_wording_not_the_file_wording() -> None:

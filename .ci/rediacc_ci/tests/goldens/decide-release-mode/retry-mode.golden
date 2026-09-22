@@ -1,0 +1,8 @@
+# twin .ci/scripts/release/decide-release-mode.sh blob 3b39416df228abc1d54ce71430939b096fbe9b1f
+exit: 0
+--- stdout ---
+::notice::Retry mode -- will re-deploy current version without bumping
+--- stderr ---
+--- github-output ---
+workers_only=false
+retry_mode=true

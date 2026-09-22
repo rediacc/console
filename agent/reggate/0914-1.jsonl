@@ -17,3 +17,60 @@
 {"kind":"charge","sig":"499ad48ca641","why":"proven","at":"2026-09-15T10:36:24Z","br":"0914-1"}
 {"kind":"debt","sig":"5fbcbc0a4a34","blind_spot":"No instrumentation detected redundant GitHub API calls in claude-attribution. Module was not verified to avoid requesting data already present in payload arguments.","surface":"gates","artifact":"","charged":15,"at":"2026-09-15T10:41:21Z","br":"0914-1"}
 {"kind":"charge","sig":"5fbcbc0a4a34","why":"capped","at":"2026-09-15T10:41:21Z","br":"0914-1"}
+{"kind":"charge","sig":"bc21d0721065","why":"proven","at":"2026-09-15T12:06:45Z","br":"0914-1"}
+{"kind":"debt","sig":"27920e6d290e","blind_spot":"Report function lacked environment context when go install fails, leaving error reporting incomplete","surface":"unit","artifact":"toolchain package test directory (exact path requires repository access)","charged":17,"at":"2026-09-15T13:33:12Z","br":"0914-1"}
+{"kind":"charge","sig":"27920e6d290e","why":"capped","at":"2026-09-15T13:33:12Z","br":"0914-1"}
+{"kind":"debt","sig":"15f7b1e994f1","blind_spot":"migrate_candidates() scanned only worklist items, missing STATE.md snapshots and similar secondary sources. Function implementation matched its apparent contract but that contract was incomplete by design.","surface":"unit","artifact":"packages/*/tests/migrations.test.ts or equivalent","charged":18,"at":"2026-09-15T17:42:22Z","br":"0914-1"}
+{"kind":"charge","sig":"15f7b1e994f1","why":"capped","at":"2026-09-15T17:42:22Z","br":"0914-1"}
+{"kind":"debt","sig":"46436fdf1556","blind_spot":"CI workflow run-time failures from missing tool prerequisites (ruff: command not found) are caught at execution time, but no static gate verifies that for every non-standard tool invocation in a workflow job, an installation step precedes it in the same job or job sequence.","surface":"gates","artifact":"check-ci-workflow-tool-prerequisites.ts or add to ci-quality.yml gates","charged":19,"at":"2026-09-15T17:46:54Z","br":"0914-1"}
+{"kind":"charge","sig":"46436fdf1556","why":"capped","at":"2026-09-15T17:46:54Z","br":"0914-1"}
+{"kind":"debt","sig":"ac5362d4dd62","blind_spot":"prior gates verified worktree state after provisioning but not base image recency during provisioning; base could be reused across sessions undetected","surface":"gates","artifact":".github/workflows/ci-quality.yml","charged":20,"at":"2026-09-15T19:04:04Z","br":"0914-1"}
+{"kind":"charge","sig":"ac5362d4dd62","why":"capped","at":"2026-09-15T19:04:04Z","br":"0914-1"}
+{"kind":"charge","sig":"52b0c3505046","why":"proven","at":"2026-09-15T19:38:10Z","br":"0914-1"}
+{"kind":"charge","sig":"88b77496b8b6","why":"proven","at":"2026-09-15T19:49:26Z","br":"0914-1"}
+{"kind":"charge","sig":"83047989880a","why":"proven","at":"2026-09-15T22:51:43Z","br":"0914-1"}
+{"kind":"charge","sig":"762c66a7fecc","why":"proven","at":"2026-09-16T00:13:22Z","br":"0914-1"}
+{"kind":"charge","sig":"3f76441686e3","why":"proven","at":"2026-09-16T01:45:39Z","br":"0914-1"}
+{"kind":"debt","sig":"34721cba7db9","blind_spot":"Parallel test execution order determines which worker receives npm notices first; no check isolated npm output from test isolation.","surface":"unit","artifact":"","charged":26,"at":"2026-09-16T03:10:27Z","br":"0914-1"}
+{"kind":"charge","sig":"34721cba7db9","why":"capped","at":"2026-09-16T03:10:27Z","br":"0914-1"}
+{"kind":"charge","sig":"47a87ec0e901","why":"proven","at":"2026-09-16T06:36:00Z","br":"0914-1"}
+{"kind":"debt","sig":"4f134d74c97b","blind_spot":"Code reading process.env.GITHUB_TOKEN without fallback. Existing credential gates verify exposure but not graceful degradation when env vars are missing in local contexts outside CI injection.","surface":"unit","artifact":"","charged":28,"at":"2026-09-16T06:40:23Z","br":"0914-1"}
+{"kind":"charge","sig":"4f134d74c97b","why":"capped","at":"2026-09-16T06:40:23Z","br":"0914-1"}
+{"kind":"charge","sig":"94487cc82f9a","why":"proven","at":"2026-09-16T07:14:27Z","br":"0914-1"}
+{"kind":"charge","sig":"4e0061d4ef4a","why":"proven","at":"2026-09-16T08:46:36Z","br":"0914-1"}
+{"kind":"debt","sig":"089aeea69baf","blind_spot":"Existing checks validated renet parity battery behavior but not its implementation language. A bash battery could pass behavioral gates while violating Ruling 7.","surface":"gates","artifact":"ci-runner/tests/ci-renet.ts","charged":31,"at":"2026-09-16T09:08:52Z","br":"0914-1"}
+{"kind":"charge","sig":"089aeea69baf","why":"capped","at":"2026-09-16T09:08:52Z","br":"0914-1"}
+{"kind":"debt","sig":"5621c2be83ba","blind_spot":"Fix converted 4 console twin+port sites to support docker+tee but no evidence a search enumerated all such sites. Blind spot: other sites with same pattern may exist and were not found.","surface":"gates","artifact":"ci-quality.yml, in check:ci-console-twin-port-* gate or new gate","charged":32,"at":"2026-09-16T09:26:54Z","br":"0914-1"}
+{"kind":"charge","sig":"5621c2be83ba","why":"capped","at":"2026-09-16T09:26:54Z","br":"0914-1"}
+{"kind":"debt","sig":"552bdee17128","blind_spot":"E2E and quality gates detect runtime failures but cannot verify that static dead-code analysis did not incorrectly mark still-used code paths as unreachable. Defect surfaced only when live tests hit supposedly-dead code.","surface":"e2e","artifact":"","charged":33,"at":"2026-09-16T10:47:32Z","br":"0914-1"}
+{"kind":"charge","sig":"552bdee17128","why":"capped","at":"2026-09-16T10:47:32Z","br":"0914-1"}
+{"kind":"charge","sig":"d03ed2da75d9","why":"proven","at":"2026-09-16T13:31:24Z","br":"0914-1"}
+{"kind":"debt","sig":"0fe0673b94cd","blind_spot":"Existing content-quality gates check spelling and grammar but not pronoun voice. The 2nd-person pronouns violating work-not-person style pass all existing checks.","surface":"gates","artifact":".ci/rediacc_ci/quality/prose_style.py","charged":35,"at":"2026-09-16T13:41:56Z","br":"0914-1"}
+{"kind":"charge","sig":"0fe0673b94cd","why":"capped","at":"2026-09-16T13:41:56Z","br":"0914-1"}
+{"kind":"charge","sig":"d5ff1ff2b0e7","why":"proven","at":"2026-09-16T15:53:40Z","br":"0914-1"}
+{"kind":"debt","sig":"360bae918d62","blind_spot":"A filesystem walk (os.walk) has no built-in gitignore awareness, so code using os.walk to discover files for linting or baseline output will include gitignored files that should never be committed or baselined.","surface":"gates","artifact":".ci/quality/checks/ci-prose-style.ts or new check:ci-baseline-gitignore-clean.ts","charged":37,"at":"2026-09-16T16:30:55Z","br":"0914-1"}
+{"kind":"charge","sig":"360bae918d62","why":"capped","at":"2026-09-16T16:30:55Z","br":"0914-1"}
+{"kind":"debt","sig":"17d3deb8f805","blind_spot":"Prose-style guards did not validate scope context when filtering .ci references; guards that should have exempted scoped hops were catching them.","surface":"hooks","artifact":".ci/hooks/","charged":38,"at":"2026-09-16T17:24:31Z","br":"0914-1"}
+{"kind":"charge","sig":"17d3deb8f805","why":"capped","at":"2026-09-16T17:24:31Z","br":"0914-1"}
+{"kind":"debt","sig":"c9b50a53262b","blind_spot":"Existing gate configuration validators check syntax and manifest wiring but do not verify semantic completeness of file-type scopes, so scope definitions can omit file types while configuration syntax remains valid.","surface":"gates","artifact":".ci/scripts/check/check-scope-completeness.sh","charged":39,"at":"2026-09-16T18:46:58Z","br":"0914-1"}
+{"kind":"charge","sig":"c9b50a53262b","why":"capped","at":"2026-09-16T18:46:58Z","br":"0914-1"}
+{"kind":"debt","sig":"7061df1090af","blind_spot":"Hook guard tests that verify output format do not detect input source confusion. A guard reading the wrong variable still produces syntactically valid output, invisible to format validators.","surface":"hooks","artifact":".claude/hooks/prose-style","charged":40,"at":"2026-09-17T07:27:39Z","br":"0914-1"}
+{"kind":"charge","sig":"7061df1090af","why":"capped","at":"2026-09-17T07:27:39Z","br":"0914-1"}
+{"kind":"charge","sig":"1aaaaa411c36","why":"proven","at":"2026-09-17T12:13:27Z","br":"0914-1"}
+{"kind":"charge","sig":"a35332e05895","why":"proven","at":"2026-09-17T13:26:25Z","br":"0914-1"}
+{"kind":"charge","sig":"7026cfcd0543","why":"proven","at":"2026-09-17T14:17:07Z","br":"0914-1"}
+{"kind":"debt","sig":"551908412301","blind_spot":"Coverage metrics tracking aggregate percentages without per-type breakdown. Comments covered, docstrings invisible.","surface":"gates","artifact":"tools/checks/check-ci-python-control-plants.ts","charged":44,"at":"2026-09-17T14:30:15Z","br":"0914-1"}
+{"kind":"charge","sig":"551908412301","why":"capped","at":"2026-09-17T14:30:15Z","br":"0914-1"}
+{"kind":"charge","sig":"8fad9c846152","why":"proven","at":"2026-09-20T10:32:19Z","br":"0914-1"}
+{"kind":"charge","sig":"bd29c823c752","why":"proven","at":"2026-09-20T10:49:44Z","br":"0914-1"}
+{"kind":"charge","sig":"e742e12b8b82","why":"proven","at":"2026-09-20T11:26:27Z","br":"0914-1"}
+{"kind":"charge","sig":"d2d9e8eaa0c8","why":"proven","at":"2026-09-20T12:01:38Z","br":"0914-1"}
+{"kind":"charge","sig":"f20a605186a9","why":"proven","at":"2026-09-20T12:44:20Z","br":"0914-1"}
+{"kind":"debt","sig":"811e9d8d8614","blind_spot":"No check monitored CLAUDE.md byte size against its documented 30720-byte upper limit; structural checks do not enforce file-size constraints.","surface":"gates","artifact":".ci/scripts/quality/check-claude-md-size.sh","charged":50,"at":"2026-09-20T12:52:01Z","br":"0914-1"}
+{"kind":"charge","sig":"811e9d8d8614","why":"capped","at":"2026-09-20T12:52:01Z","br":"0914-1"}
+{"kind":"charge","sig":"ba9e9e0276cf","why":"proven","at":"2026-09-20T13:53:54Z","br":"0914-1"}
+{"kind":"charge","sig":"ab76b8a13f03","why":"proven","at":"2026-09-20T15:16:25Z","br":"0914-1"}
+{"kind":"charge","sig":"5435e938e867","why":"proven","at":"2026-09-20T15:49:26Z","br":"0914-1"}
+{"kind":"charge","sig":"3c693ca79df8","why":"proven","at":"2026-09-20T20:11:49Z","br":"0914-1"}
+{"kind":"charge","sig":"1f14824a561a","why":"proven","at":"2026-09-21T01:38:42Z","br":"0914-1"}
+{"kind":"charge","sig":"50af56769bf9","why":"proven","at":"2026-09-21T15:19:12Z","br":"0914-1"}

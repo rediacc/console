@@ -646,7 +646,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/docs | 2 | .md 2 |
 | .ci/keys | 1 | .asc 1 |
 | .ci/legacy | 1 | .sh 1 |
-| .ci/lib | 5 | .sh 5 |
+| .ci/lib | 4 | .sh 4 |
 | .ci/media | 11 | .sh 11 |
 | .ci/media/tools | 2 | .sh 2 |
 | .ci/media/tts | 2 | (none) 1, .toml 1 |
@@ -674,7 +674,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/setup | 12 | .py 12 |
 | .ci/rediacc_ci/tests | 291 | .py 291 |
 | .ci/rediacc_ci/tests/data | 2 | .json 1, .yml 1 |
-| .ci/rediacc_ci/tests/gates | 163 | .py 162, .fixture 1 |
+| .ci/rediacc_ci/tests/gates | 164 | .py 163, .fixture 1 |
 | .ci/rediacc_ci/tests/goldens/actionlint | 17 | .golden 17 |
 | .ci/rediacc_ci/tests/goldens/allowlist/bash-pairs | 17 | .golden 17 |
 | .ci/rediacc_ci/tests/goldens/allowlist/corpus | 17 | .list 17 |
@@ -692,6 +692,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/tests/goldens/build-linux-packages | 14 | .golden 14 |
 | .ci/rediacc_ci/tests/goldens/build-www | 9 | .golden 9 |
 | .ci/rediacc_ci/tests/goldens/buildx-push-web | 18 | .golden 18 |
+| .ci/rediacc_ci/tests/goldens/bws-env | 10 | .golden 10 |
 | .ci/rediacc_ci/tests/goldens/cancel-older-runs | 28 | .golden 28 |
 | .ci/rediacc_ci/tests/goldens/check-commands | 12 | .golden 12 |
 | .ci/rediacc_ci/tests/goldens/ci-stop | 7 | .golden 7 |
@@ -709,16 +710,20 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/tests/goldens/create-complete | 12 | .golden 12 |
 | .ci/rediacc_ci/tests/goldens/create-e2e-env | 98 | .golden 98 |
 | .ci/rediacc_ci/tests/goldens/create-manifest | 22 | .golden 22 |
+| .ci/rediacc_ci/tests/goldens/decide-release-mode | 4 | .golden 4 |
 | .ci/rediacc_ci/tests/goldens/derive-image-tag | 40 | .golden 40 |
 | .ci/rediacc_ci/tests/goldens/dispatch-watchdog | 48 | .golden 48 |
 | .ci/rediacc_ci/tests/goldens/docker-prepull | 13 | .golden 13 |
 | .ci/rediacc_ci/tests/goldens/docker-pull-ghcr | 20 | .golden 20 |
 | .ci/rediacc_ci/tests/goldens/fetch-review-threads | 33 | .golden 33 |
 | .ci/rediacc_ci/tests/goldens/finish | 31 | .golden 31 |
+| .ci/rediacc_ci/tests/goldens/gate-controls | 7 | .golden 7 |
+| .ci/rediacc_ci/tests/goldens/gate-controls-tally | 5 | .golden 5 |
 | .ci/rediacc_ci/tests/goldens/generate-cli-manifest | 36 | .golden 36 |
 | .ci/rediacc_ci/tests/goldens/git-op-conditionals | 10 | .golden 10 |
 | .ci/rediacc_ci/tests/goldens/hook-integrity | 3 | .golden 3 |
 | .ci/rediacc_ci/tests/goldens/install-cli-global | 15 | .golden 15 |
+| .ci/rediacc_ci/tests/goldens/install-script | 9 | .golden 9 |
 | .ci/rediacc_ci/tests/goldens/label-inventory | 13 | .golden 13 |
 | .ci/rediacc_ci/tests/goldens/label-references | 6 | .golden 6 |
 | .ci/rediacc_ci/tests/goldens/linked-sub-prs | 21 | .golden 21 |
@@ -727,6 +732,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/tests/goldens/profiler-panel | 22 | .golden 22 |
 | .ci/rediacc_ci/tests/goldens/proxy-cli-manifest | 2 | .golden 2 |
 | .ci/rediacc_ci/tests/goldens/proxy-docker-prepull | 2 | .golden 2 |
+| .ci/rediacc_ci/tests/goldens/resolve-backfill-commit | 5 | .golden 5 |
 | .ci/rediacc_ci/tests/goldens/resolve-model-args | 72 | .golden 72 |
 | .ci/rediacc_ci/tests/goldens/resolved-threads | 6 | .golden 6 |
 | .ci/rediacc_ci/tests/goldens/restore-trusted-config | 12 | .golden 12 |
@@ -752,9 +758,11 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/tests/goldens/sweep-campaigns | 16 | .golden 16 |
 | .ci/rediacc_ci/tests/goldens/sweep-collect | 18 | .golden 18 |
 | .ci/rediacc_ci/tests/goldens/update-state | 24 | .golden 24 |
+| .ci/rediacc_ci/tests/goldens/validate-stage-artifacts | 3 | .golden 3 |
 | .ci/rediacc_ci/tests/goldens/verify-ssh | 16 | .golden 16 |
 | .ci/rediacc_ci/tests/goldens/version-bump | 28 | .golden 28 |
 | .ci/rediacc_ci/tests/goldens/wait-for-vm-ssh | 16 | .golden 16 |
+| .ci/rediacc_ci/tests/goldens/write-once-guard | 7 | .golden 7 |
 | .ci/rediacc_ci/version | 5 | .py 5 |
 | .ci/scripts/autopilot | 3 | .cjs 2, .json 1 |
 | .ci/scripts/autopilot/prompts | 2 | .md 2 |
@@ -767,18 +775,18 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/scripts/docs | 2 | .mjs 2 |
 | .ci/scripts/housekeeping | 2 | .py 1, .sh 1 |
 | .ci/scripts/infra | 6 | .sh 6 |
-| .ci/scripts/lib | 8 | .sh 8 |
+| .ci/scripts/lib | 7 | .sh 7 |
 | .ci/scripts/pr | 1 | .sh 1 |
 | .ci/scripts/private | 6 | .sh 6 |
 | .ci/scripts/private/license-mint | 3 | .go 1, .mod 1, .sum 1 |
 | .ci/scripts/quality | 158 | .py 141, .sh 14, .json 2, .mjs 1 |
 | .ci/scripts/quality/lib | 1 | .py 1 |
-| .ci/scripts/release | 18 | .sh 18 |
+| .ci/scripts/release | 15 | .sh 15 |
 | .ci/scripts/review | 4 | .sh 4 |
 | .ci/scripts/review/prompts | 2 | .md 2 |
 | .ci/scripts/security | 2 | .sh 2 |
 | .ci/scripts/setup | 2 | .sh 2 |
-| .ci/scripts/test | 16 | .sh 15, .ts 1 |
+| .ci/scripts/test | 14 | .sh 13, .ts 1 |
 | .ci/scripts/test/fixtures/mutate-check | 2 | .py 1, .sh 1 |
 | .ci/scripts/test/gates | 12 | .sh 12 |
 | .ci/scripts/test/lib | 3 | .sh 3 |
@@ -793,7 +801,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/tutorials/apps/secrets-demo | 2 | (none) 1, .yml 1 |
 | .ci/tutorials/lib | 4 | .sh 4 |
 
-161 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
+169 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
 
 <!-- <<< gen-docs -->
 ## Hook wiring, folded
@@ -927,7 +935,7 @@ Scans: every tracked `.json`/`.jsonc` file in the four homes the driver contract
 | `tsconfig.json` | root | wiring: `.github/workflows/ci.yml` | yes -- repoint in `.github/workflows/ci.yml` |
 | `.ci/config/actions-allowlist.json` | .ci/config | code: `.ci/scripts/quality/check_actions_allowlist.py` | no -- hardcoded in `.ci/scripts/quality/check_actions_allowlist.py` |
 | `.ci/config/bws-secret-map.json` | .ci/config | wiring: `.github/actions/bws-secrets/action.yml` | yes -- repoint in `.github/actions/bws-secrets/action.yml` |
-| `.ci/config/bws-token-expiry.json` | .ci/config | code: `.ci/lib/bws-env.sh` | no -- hardcoded in `.ci/lib/bws-env.sh` |
+| `.ci/config/bws-token-expiry.json` | .ci/config | code: `.ci/rediacc_ci/core/bws_env.py` | no -- hardcoded in `.ci/rediacc_ci/core/bws_env.py` |
 | `.ci/config/bws-unrequested.json` | .ci/config | code: `.ci/rediacc_ci/tests/gates/test_gate_bws_map.py` | no -- hardcoded in `.ci/rediacc_ci/tests/gates/test_gate_bws_map.py` |
 | `.ci/config/carried-reds.json` | .ci/config | code: `.claude/oracles/pre-bash/block-unverified-push.sh` | no -- hardcoded in `.claude/oracles/pre-bash/block-unverified-push.sh` |
 | `.ci/config/commit-identity.json` | .ci/config | code: `.ci/rediacc_ci/quality/commit_identity.py` | no -- hardcoded in `.ci/rediacc_ci/quality/commit_identity.py` |

@@ -1,6 +1,7 @@
 """Bitwarden Secrets Manager fetch, ported from `.ci/lib/bws-env.sh`.
 
-PORTED FROM `.ci/lib/bws-env.sh` (111 lines). The twin still exists and is untouched by this file. This module does NOT shim it, and the shim is not merely deferred here: see the next section, because for THIS library the shim is the hard part and it is not a detail of scheduling.
+PORTED FROM `.ci/lib/bws-env.sh` (111 lines), which was retired on 2026-09-21 with zero sourcers and five recorded rows of equivalence. This module never shimmed it, and the shim was not merely deferred: see the next section, because for THIS library the shim is the hard part and it is not a detail of scheduling. The twin's own bytes survive under
+`.ci/rediacc_ci/tests/goldens/bws-env/`, headed by its blob sha.
 
 --------------------------------------------------------------------------
 THE HALF THAT CANNOT BE PORTED OUT OF PROCESS, SAID FIRST BECAUSE IT DECIDES
