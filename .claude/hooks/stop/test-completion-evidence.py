@@ -134,6 +134,56 @@ def _extra():
     return 0
 
 
+
+# =============================================================================
+# The stub-hop bug: cited_excerpts read the pre-move path raw and handed the judge an empty quote for exactly the citations that survived a plan move. PLAN-stop-hook-task-verification.md section 1.3 measured 9 of 186 resolving citations across the real worklist (4.8%) hit this, all plan-stub paths.
+# =============================================================================
+
+
+def _stub():
+    bad = []
+    # The live pair the plan named: a real stub, a real in-range line into the five-line pointer, past-EOF for the stub but in-range for the moved file.
+    STUB_CITE = "agent/PLAN-tooling-transformation.md:495"
+
+    excerpt = W.cited_excerpts(ROOT, f"see {STUB_CITE}")
+    if not excerpt.strip():
+        bad.append("cited_excerpts returned empty for a citation through a plan-move stub")
+    elif "agent/plans/PLAN-tooling-transformation.md" not in excerpt:
+        bad.append(f"excerpt did not resolve through the stub hop: {excerpt!r}")
+
+    ok, detail = W.citation_state(ROOT, f"see {STUB_CITE}")
+    if not ok:
+        bad.append(f"citation_state stopped resolving the stub citation: {detail}")
+    elif "agent/plans/" not in detail:
+        bad.append(f"citation_state resolved but not through the stub hop: {detail}")
+
+    # CONTROL: an ordinary, non-stub citation must be unaffected by the hop.
+    plain_excerpt = W.cited_excerpts(ROOT, f"see {REAL}")
+    if not plain_excerpt.strip():
+        bad.append("cited_excerpts regressed on an ordinary, non-stub citation")
+
+    # CONTROL: a line genuinely out of range even after the hop stays skipped, not resolved through a second one -- check:ci-plan-folders F5 forbids a stub that points at a stub.
+    oor = W.cited_excerpts(ROOT, "see agent/PLAN-tooling-transformation.md:99999999")
+    if oor.strip():
+        bad.append(f"an out-of-range line past the moved file's own end still excerpted: {oor!r}")
+
+    # PIN: the coupling that made the two functions drift in the first place. One reads `citation_state` used to hop and `cited_excerpts` did not; a future edit reintroducing a private hop in either one un-shares them.
+    src_cs = inspect.getsource(W.citation_state)
+    src_ce = inspect.getsource(W.cited_excerpts)
+    if "_resolve_cite_path" not in src_cs:
+        bad.append("citation_state no longer calls the shared stub-hop resolver")
+    if "_resolve_cite_path" not in src_ce:
+        bad.append("cited_excerpts no longer calls the shared stub-hop resolver -- the bug this pins")
+
+    if bad:
+        print(f"✗ stub-hop (cited_excerpts/citation_state): {len(bad)} failure(s)")
+        for b in bad:
+            print(f"    {b}")
+        return 1
+    print("ok  stub-hop: cited_excerpts and citation_state share one resolver, both directions checked")
+    return 0
+
+
 # THE ENTRYPOINT IS LAST ON PURPOSE. It used to sit mid-file, so the cases appended below it never ran and the suite still exited 0 -- a test that cannot fail, caught only because its own output never appeared.
 if __name__ == "__main__":
-    sys.exit(main() or _extra())
+    sys.exit(main() or _extra() or _stub())

@@ -197,10 +197,10 @@ The design therefore binds only claims that touch a tracked file, a worklist tic
 
 ## Tasks
 
-- [ ] T1a. Extract `_resolve_cite_path(root, rel)` in `.claude/hooks/stop/wl_checks.py` carrying the `S.plan_stub_target` hop currently inline at `:386-390`; call it from both `citation_state` and `cited_excerpts:413`. One definition, so the two cannot drift again.
-- [ ] T1b. Add controls to `.claude/hooks/stop/test-completion-evidence.py` (or a sibling) for the live pair: `cited_excerpts('.', 'agent/PLAN-tooling-transformation.md:495')` must return non-empty text post-fix, and a CONTROL asserting the pre-fix code returns `''`, so the fixture cannot silently stop testing anything.
+- [x] T1a. Extract `_resolve_cite_path(root, rel)` in `.claude/hooks/stop/wl_checks.py` carrying the `S.plan_stub_target` hop currently inline at `:386-390`; call it from both `citation_state` and `cited_excerpts:413`. One definition, so the two cannot drift again.
+- [x] T1b. Add controls to `.claude/hooks/stop/test-completion-evidence.py` (or a sibling) for the live pair: `cited_excerpts('.', 'agent/PLAN-tooling-transformation.md:495')` must return non-empty text post-fix, and a CONTROL asserting the pre-fix code returns `''`, so the fixture cannot silently stop testing anything.
   Plus: a non-stub path unchanged; a genuinely out-of-range line still skipped.
-- [ ] T1c. Re-run the 342-tick corpus measurement from section 1.3 and assert the empty-excerpt count falls from 9/186 to 0. This number is the acceptance criterion for T1.
+- [x] T1c. Re-run the 342-tick corpus measurement from section 1.3 and assert the empty-excerpt count falls from 9/186 to 0. This number is the acceptance criterion for T1. Live run against `agent/worklist/*.jsonl` (via `wl_store.load(sync=False)`, 693 closed items, 91 resolving citations): 0 empty excerpts.
 - [ ] T2. Write `.claude/hooks/stop/wl_claimcheck.py`: `CLAIM_MARKER`, `CLAIM_SCHEMA` (`supported`/`why`/`instruction`), `CLAIM_PROMPT`, `profile(root, evidence_text, fixset_files)`, `prompt_section(profile)`, `apply_verdict(out, profile)`.
   Module docstring must state the section 2.1/2.2 measurements, the advisory decision (section 3.5), the graduation criterion, and the scope boundary (section 3.6) -- the reasons must live where the code is.
 - [ ] T3. `profile()` emits per-citation verdicts `resolved` / `resolved-untouched` / `commit` / `unverifiable-shape`, using `citation_state`, the fixed `cited_excerpts`, `wl_reggate._diff_tree_files` and `wl_reggate.fixset_files`. No new regex for paths, shas or citations -- reuse `CITE_RE`, `SHA_RE`, `_EVIDENCE_PATH`.

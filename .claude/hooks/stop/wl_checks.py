@@ -366,6 +366,20 @@ CITE_RE = re.compile(
 )
 
 
+def _resolve_cite_path(root, rel, p):
+    """One hop through a plan-move stub, shared by `citation_state` and `cited_excerpts`.
+
+    A closed plan moves into `agent/plans/**` and leaves a five-line pointer at its old path, which is what keeps citations of that path resolving. A `<path>:<line>` citation is the case the pointer alone does NOT serve: the file exists and every line number past five is suddenly out of range, so an evidence line written months ago starts reading as a fabrication. Two
+    callers used to take this hop separately, and one of them drifted: `cited_excerpts` read `p` raw and handed the judge an empty quote for exactly the citations that survived a plan move. One definition now, so the two cannot diverge again. Exactly one hop: `check:ci-plan-folders` F5 refuses a stub that points at a stub.
+    """
+    moved_to = S.plan_stub_target(p)
+    if moved_to:
+        target = pathlib.Path(root) / moved_to
+        if target.is_file():
+            return moved_to, target
+    return rel, p
+
+
 def citation_state(root, text):
     """(ok, detail) -- does this line cite a source that REALLY says so?
 
@@ -381,13 +395,7 @@ def citation_state(root, text):
     p = pathlib.Path(root) / rel
     if not p.is_file():
         return False, "cites %s, which does not exist" % rel
-    # ONE HOP THROUGH A PLAN STUB. A closed plan moves into `agent/plans/**` and leaves a five-line pointer at its old path, which is what keeps the 523 citations of that path resolving. A `<path>:<line>` citation is the case the pointer alone does NOT serve: the file exists and every line number past five is suddenly out of range, so an evidence line written months ago starts
-    # reading as a fabrication. The hop is taken here rather than in the regex so the citation keeps naming the path its author read. Exactly one hop: `check:ci-plan-folders` F5 refuses a stub that points at a stub.
-    moved_to = S.plan_stub_target(p)
-    if moved_to:
-        target = pathlib.Path(root) / moved_to
-        if target.is_file():
-            rel, p = moved_to, target
+    rel, p = _resolve_cite_path(root, rel, p)
     try:
         n = len(p.read_text(errors="replace").splitlines())
     except OSError:
@@ -411,6 +419,9 @@ def cited_excerpts(root, message, limit=3, span=4):
             continue
         seen.add((rel, line))
         p = pathlib.Path(root) / rel
+        if not p.is_file():
+            continue
+        rel, p = _resolve_cite_path(root, rel, p)
         try:
             lines = p.read_text(errors="replace").splitlines()
         except OSError:
