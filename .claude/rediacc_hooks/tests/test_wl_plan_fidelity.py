@@ -410,8 +410,9 @@ def test_219g_a_docs_only_tick_is_banked_not_rediscovered_every_stop():
         ["git", "rev-parse", "HEAD"], cwd=root, capture_output=True, text=True, check=True
     ).stdout.strip()
     line = "- [x] fixed a typo in docs/agent-reference/TRAPS.md"
+    items = [{"state": "x", "owner": None, "line": line, "lastnote": ""}]
     state = {"head": head, "seen_ticks": [], "fixsets": {}, "gate_runs": {}}
-    _, ids, ticks, _, banked = reggate.fix_signals(root, [line], "sess", state)
+    _, ids, ticks, _, banked = reggate.fix_signals(root, items, "sess", state)
     assert ids == [], "a docs-only tick was asked about: %r" % (ids,)
     assert ticks == [], "a docs-only tick was asked about: %r" % (ticks,)
     tid = reggate._tick_id(line)
@@ -421,7 +422,7 @@ def test_219g_a_docs_only_tick_is_banked_not_rediscovered_every_stop():
     )
     # CONVERGENCE: once banked, the SAME tick must not reappear on the next pass.
     state["seen_ticks"] = banked
-    _, _, _, _, banked2 = reggate.fix_signals(root, [line], "sess", state)
+    _, _, _, _, banked2 = reggate.fix_signals(root, items, "sess", state)
     assert banked2 == [], "a banked docs-only tick was rediscovered: %r" % (banked2,)
 
 

@@ -221,13 +221,12 @@ def _tick_id(line):
     return hashlib.sha1(line.strip().encode("utf-8", "replace")).hexdigest()[:12]
 
 
-def mine_tick_ids(lines, session_id):
-    out = []
-    for line in lines:
-        m = C.ITEM.match(line)
-        if m and m.group("state") == "x" and C.owned_by_me(m.group("owner"), session_id):
-            out.append(_tick_id(line))
-    return out
+def mine_tick_ids(items, session_id):
+    return [
+        _tick_id(rec["line"])
+        for rec in items
+        if rec["state"] == "x" and C.owned_by_me(rec.get("owner"), session_id)
+    ]
 
 
 def _hash_file(path):
@@ -361,16 +360,18 @@ def gate_only_fixset(root, shas):
     return seen
 
 
-def fix_signals(root, lines, session_id, state):
-    """(descriptions, ids, new_tick_pairs, current_head, banked_only_ids).
+def fix_signals(root, items, session_id, state):
+    """(descriptions, ids, new_tick_triples, current_head, banked_only_ids).
 
     ARTIFACTS, never prose. Primary: commit subjects matching FIX_SUBJECT in marker-head..HEAD. Secondary: newly ticked `- [x]` lines owned by this session, covering the uncommitted-tree default. The skip filter is deliberately narrow: a fix commit touching only docs/** and **/*.md never asks; everything else does, and the judge's four questions sort the one-offs out. A rewound or
     unreachable old head yields an empty log, which reads as no signals and lets head self-heal by advancing.
 
-    `banked_only_ids` is a SEPARATE list from `new_tick_pairs`, deliberately: a docs-only tick must be marked seen so it stops being rediscovered every stop, but it must NOT be asked about and must NOT be subjected to the I7 completion-evidence check that `new_tick_pairs` feeds elsewhere. Folding it into `new_tick_pairs` instead (the first version of this fix) would have made that
-    evidence check run over ticks nobody is asking about -- a docs-only tick with a bare `- [x]` line and no evidence would then fail I7
-    for a reason unrelated to what it actually is. Found in review, not by a
-    control: no `- [x]` docs-only fixture exercised that path."""
+    `banked_only_ids` is a SEPARATE list from `new_tick_triples`, deliberately: a docs-only tick must be marked seen so it stops being rediscovered every stop, but it must NOT be asked about and must NOT be subjected to the I7 completion-evidence check that `new_tick_triples` feeds elsewhere.
+    Folding it into `new_tick_triples` instead (the first version of this fix) would have made that evidence check run over ticks nobody is asking about -- a docs-only tick with a bare `- [x]` line and no evidence would then fail I7 for a reason unrelated to what it actually is. Found in review, not by a control: no `- [x]` docs-only fixture exercised that path.
+
+    `new_tick_triples` is `(tid, line, evidence_text)`, not `(tid, line)`: `evidence_text` is `rec["lastnote"]` when present, the closing note that actually carries the fix's proof, falling back to the full `line` only for markdown-origin items with no structured note.
+    `line` stays the FULL rendered text (accumulated history included) because `tick_touches_code` genuinely needs to scan it all for a path; only the I7 evidence check needs the narrower, unpolluted slice.
+    Before this, both consumers shared one accumulated blob, and a tick whose history grew past a few dozen lease/update notes buried its own closing sha under longer worker-id-shaped tokens that a "5 longest hex candidates" heuristic picked first -- the real evidence sat there, unchecked."""
     head = C._git(root, "rev-parse", "HEAD")
     commits, new_ticks = [], []
     if state["head"] and head and state["head"] != head:
@@ -386,12 +387,13 @@ def fix_signals(root, lines, session_id, state):
             if files and all(f.startswith("docs/") or f.endswith(".md") for f in files):
                 continue
             commits.append((sha, "%s %s" % (sha[:7], subj)))
-    for line in lines:
-        m = C.ITEM.match(line)
-        if m and m.group("state") == "x" and C.owned_by_me(m.group("owner"), session_id):
+    for rec in items:
+        if rec["state"] == "x" and C.owned_by_me(rec.get("owner"), session_id):
+            line = rec["line"]
             tid = _tick_id(line)
             if tid not in state["seen_ticks"]:
-                new_ticks.append((tid, line.strip()))
+                evidence_text = rec.get("lastnote") or line
+                new_ticks.append((tid, line.strip(), evidence_text))
     # ONE UNIT PER STOP, oldest first. Until now every commit and every new tick of a stop were hashed into a SINGLE fix-set, so one verdict had to cover unrelated fixes and the judge's answers wandered across the bundle. Asking per item is what the operator asked for; asking about ALL of them at once would wall a busy stop in behind eight simultaneous demands, so the rest stay
     # unbanked and the next stop picks up the next one.
     #
@@ -399,8 +401,8 @@ def fix_signals(root, lines, session_id, state):
     # and the very first historical tick blocked instead. Caught by the suite's own tick-flood case, not by review.
     if len(new_ticks) > TICK_FLOOD:
         return (
-            ["tick: " + t[:120] for _, t in new_ticks],
-            sorted([t for t, _ in new_ticks]),
+            ["tick: " + t[:120] for _, t, _ev in new_ticks],
+            sorted([t for t, _, _ev in new_ticks]),
             new_ticks,
             head,
             [],
@@ -409,12 +411,12 @@ def fix_signals(root, lines, session_id, state):
     banked_only = []
     if commits:
         units.append(([s for s, _ in commits], [d for _, d in commits], []))
-    for tid, line in new_ticks:
+    for tid, line, evidence_text in new_ticks:
         if not tick_touches_code(line):
             # SEEN, NOT ASKED. Without this the id is never added to seen_ticks (the caller only banks what THIS function returns), so it is rediscovered as "new" and re-filtered on every future stop, forever. It still must not enter `ticks`/`ids`: those feed both the ask and the I7 evidence check, and a docs-only tick is neither being asked about nor required to carry evidence.
             banked_only.append(tid)
             continue
-        units.append(([tid], ["tick: " + line[:120]], [(tid, line)]))
+        units.append(([tid], ["tick: " + line[:120]], [(tid, line, evidence_text)]))
     if not units:
         return [], [], [], head, banked_only
     ids, descriptions, ticks = units[0]
@@ -423,7 +425,7 @@ def fix_signals(root, lines, session_id, state):
             *descriptions,
             "(%d more fix(es) queued for later stops; this one is asked alone)" % (len(units) - 1),
         ]
-    # ticks stays (id, line) pairs: I7 needs the LINE to check evidence, the absorb/settle sites need the id. Returning ids only here once made the I7 unpack crash, and a crashed hook reads as ALLOW -- fail-open.
+    # ticks stays (id, line, evidence_text) triples: tick_touches_code needs the FULL line, I7 needs the narrower evidence_text, the absorb/settle sites need the id. Returning ids only here once made the I7 unpack crash, and a crashed hook reads as ALLOW -- fail-open.
     return descriptions, sorted(ids), ticks, head, banked_only
 
 

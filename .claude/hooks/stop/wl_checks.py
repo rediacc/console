@@ -2370,7 +2370,7 @@ def run_stop(event, event_ok, worklist, hook_file):
             # FAIL SAFE: first sight (or a corrupt marker just discarded) initialises to the present and asks nothing this stop. Seeding the check-script hashes here is what keeps prove_new_gate from ever treating the ~90 pre-existing gates as candidates, and seeding task statuses is what keeps I7 from demanding evidence
             # for completions that predate the marker.
             reg_state["head"] = C._git(root, "rev-parse", "HEAD")
-            reg_state["seen_ticks"] = wl_reggate.mine_tick_ids(lines, session_id)
+            reg_state["seen_ticks"] = wl_reggate.mine_tick_ids(fold.items, session_id)
             reg_state["gate_runs"] = wl_reggate.seed_gate_hashes(root)
             reg_state["task_status"] = {i: st for i, (st, _s) in reg_cur_tasks.items()}
             wl_reggate.save_reggate(reg_marker, reg_state)
@@ -2383,16 +2383,16 @@ def run_stop(event, event_ok, worklist, hook_file):
                 if st == "completed" and prev_ts.get(i) in ("pending", "in_progress")
             ]
             reg_signals, reg_ids, reg_new_ticks, reg_head, reg_banked = wl_reggate.fix_signals(
-                root, lines, session_id, reg_state
+                root, fold.items, session_id, reg_state
             )
             if len(reg_new_ticks) > wl_reggate.TICK_FLOOD:
                 # The v10 upgrade guard: a flood of "new" ticks is rendering drift, not a burst of fixes. Absorb, say so once, keep any commit-derived signals.
                 reg_flood = len(reg_new_ticks)
                 reg_state["seen_ticks"] = sorted(
-                    set(reg_state["seen_ticks"]) | {t for t, _ln in reg_new_ticks}
+                    set(reg_state["seen_ticks"]) | {t for t, _ln, _ev in reg_new_ticks}
                 )
                 wl_reggate.save_reggate(reg_marker, reg_state)
-                tick_ids = {t for t, _ln in reg_new_ticks}
+                tick_ids = {t for t, _ln, _ev in reg_new_ticks}
                 reg_new_ticks = []
                 reg_ids = [i for i in reg_ids if i not in tick_ids]
                 reg_signals = [s for s in reg_signals if not s.startswith("tick: ")]
@@ -2426,7 +2426,9 @@ def run_stop(event, event_ok, worklist, hook_file):
                 # Already settled: absorb and never re-ask. The whole cost story.
                 reg_state["head"] = reg_head or reg_state["head"]
                 reg_state["seen_ticks"] = sorted(
-                    set(reg_state["seen_ticks"]) | {t for t, _ln in reg_new_ticks} | set(reg_banked)
+                    set(reg_state["seen_ticks"])
+                    | {t for t, _ln, _ev in reg_new_ticks}
+                    | set(reg_banked)
                 )
                 wl_reggate.save_reggate(reg_marker, reg_state)
                 reg_signals, reg_ids = [], []
@@ -2946,7 +2948,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                 )
         vadd("answers", False, M.V_ANSWERS_UNACKED % ("\n".join(rows), me8))
     # ---- I7: a completion claim must leave a RECORD (see wl_reggate) --------
-    ev_ticks = [line[:150] for _tid, line in reg_new_ticks if not completion_evidence(root, line)]
+    ev_ticks = [ev[:150] for _tid, _line, ev in reg_new_ticks if not completion_evidence(root, ev)]
     ev_tasks = []
     for i, sub in reg_done_tasks:
         row = next(
@@ -4447,7 +4449,9 @@ def run_stop(event, event_ok, worklist, hook_file):
                 }
                 reg_state["head"] = reg_head or reg_state["head"]
                 reg_state["seen_ticks"] = sorted(
-                    set(reg_state["seen_ticks"]) | {t for t, _ln in reg_new_ticks} | set(reg_banked)
+                    set(reg_state["seen_ticks"])
+                    | {t for t, _ln, _ev in reg_new_ticks}
+                    | set(reg_banked)
                 )
                 wl_reggate.save_reggate(reg_marker, reg_state)
                 reg_settled = (payload, detail)

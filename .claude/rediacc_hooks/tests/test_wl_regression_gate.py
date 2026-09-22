@@ -415,3 +415,84 @@ def test_95a_the_gate_maintenance_hint_is_artifact_derived_and_never_skips(wl): 
         "A FIX LANDED",
         "a gate-maintenance fix STILL asks; the hint informs, it does not skip",
     )
+
+
+def test_96_a_ticks_evidence_is_its_closing_note_not_the_whole_accumulated_history(wl):  # noqa: F811
+    """Found live: item 4954f598 blocked roughly 10 consecutive stops although its own closing note carried a real, resolving sha.
+
+    `rec["text"]` accumulates every lease/update note an item ever received, forever; a handful of leases carrying worker-id-shaped hex notes (17-20 chars) outrank a real 9-char commit sha under the evidence scan's "5 longest hex candidates" rule, so the real sha never gets tried. The fix is scope, not the scan: I7 must see the tick's own closing note, not its whole history.
+    """
+    reggate = wlfix.import_wl("wl_reggate")
+    checks = wlfix.import_wl("wl_checks")
+    store = wlfix.import_wl("wl_store")
+    wl.reg_repo()
+    wl.fixcommit("src.ts", "fix: a real defect")
+    real_sha = short_head_of(wl)
+    stamp = "2026-09-22T08:00:00Z"
+    events: list[dict[str, object]] = [
+        {
+            "ev": "add",
+            "id": "poison1",
+            "at": stamp,
+            "by": wlfix.ME,
+            "s": " ",
+            "o": wlfix.ME,
+            "t": "a tick whose history will grow long",
+        },
+    ]
+    # Several leases, each carrying a worker-id-shaped note LONGER than the real sha below -- the exact shape that outranked it live.
+    events.extend(
+        {
+            "ev": "lease",
+            "id": "poison1",
+            "at": stamp,
+            "by": wlfix.ME,
+            "until": stamp,
+            "worker": worker,
+            "note": "leased to worker:%s" % worker,
+            "worker_verified": True,
+        }
+        for worker in (
+            "af61cd805486b8e9f",
+            "a6f203ba2d1dad4df",
+            "a3eb1f38776140810",
+            "a2e744ce62808099b",
+            "aef4695176ce25a76",
+        )
+    )
+    events.append(
+        {
+            "ev": "state",
+            "id": "poison1",
+            "at": stamp,
+            "by": wlfix.ME,
+            "s": "x",
+            "note": "%s committed: a real defect fixed" % real_sha,
+        }
+    )
+    with wl.events.open("a", encoding="utf-8") as handle:
+        for ev in events:
+            handle.write(json.dumps(ev) + "\n")
+
+    fold = store.load(wl.wl, sync=False)
+    rec = fold.by_id["poison1"]
+    assert len(rec["line"]) > 250, "fixture did not accumulate a long enough history: %r" % (
+        rec["line"],
+    )
+    # CONTROL: the full accumulated line, scanned alone, still misses the real sha -- pins the underlying "5 longest hex candidates" fragility so this fixture cannot silently stop testing anything.
+    assert checks.completion_evidence(str(wl.proj), rec["line"]) is False, (
+        "CONTROL: the full accumulated history unexpectedly carried recognisable evidence"
+    )
+
+    state = {"head": head_of(wl), "seen_ticks": [], "fixsets": {}, "gate_runs": {}}
+    _descs, _ids, ticks, _head, _banked = reggate.fix_signals(
+        str(wl.proj), fold.items, wlfix.ME, state
+    )
+    assert len(ticks) == 1, "the poisoned tick was not surfaced as a fix signal: %r" % (ticks,)
+    _tid, _line, evidence_text = ticks[0]
+    assert evidence_text == rec["lastnote"], (
+        "evidence_text did not carry the tick's own closing note: %r" % (evidence_text,)
+    )
+    assert checks.completion_evidence(str(wl.proj), evidence_text) is True, (
+        "the real sha in the closing note was not recognised once scoped to it alone"
+    )
