@@ -113,6 +113,8 @@ EXEMPT: dict[str, str] = {
 BASELINE: dict[str, tuple[str, ...]] = {
     ".ci/rediacc_ci/battery.py": ("068d93dec96d",),
     ".ci/rediacc_ci/check_pytest.py": ("068d93dec96d",),
+    ".ci/rediacc_ci/dev/shadow_driver.py": ("c1e552fa19e9",),  # FRESH
+    ".ci/rediacc_ci/docker/shadow_driver.py": ("c1e552fa19e9",),  # FRESH
     ".ci/rediacc_ci/setup/port_parity.py": ("c1e552fa19e9",),
     ".ci/rediacc_ci/setup/shadow_driver.py": ("c1e552fa19e9",),
     ".ci/rediacc_ci/setup/tools.py": ("c1e552fa19e9",),
@@ -127,6 +129,8 @@ BASELINE: dict[str, tuple[str, ...]] = {
     ".claude/hooks/context/onboard.py": ("0f4656206187",),
     ".claude/hooks/context/precompact-floor.py": ("0f4656206187",),
     ".claude/hooks/context/test-context-bands.py": ("0f4656206187",),
+    ".claude/hooks/post-bash/cancel_old_ci.py": ("c1e552fa19e9",),  # FRESH
+    ".claude/hooks/post-bash/refresh_pr_body.py": ("c1e552fa19e9",),  # FRESH
     ".claude/hooks/stop/calibrate-judge-rules.py": ("cac5257d3f9d",),
     ".claude/hooks/stop/test-adhoc-watch.py": ("cac5257d3f9d",),
     ".claude/hooks/stop/test-always-tier.py": ("5163c1cfecb6",),
@@ -157,8 +161,12 @@ BASELINE: dict[str, tuple[str, ...]] = {
 #: `paths`. DRAIN THESE FIRST.
 FRESH: frozenset[str] = frozenset(
     {
+        ".ci/rediacc_ci/dev/shadow_driver.py",
+        ".ci/rediacc_ci/docker/shadow_driver.py",
         ".ci/rediacc_ci/tests/test_wl_proc.py",
         ".ci/rediacc_ci/tests/test_worklist_state_stdin.py",
+        ".claude/hooks/post-bash/cancel_old_ci.py",
+        ".claude/hooks/post-bash/refresh_pr_body.py",
         ".claude/hooks/stop/wl_proc.py",
     }
 )

@@ -24,6 +24,7 @@ import sys
 import time
 
 import pytest
+from rediacc_ci import paths
 
 # The hook under test, and the directory `wl_*` imports resolve against.
 STOP_DIR = pathlib.Path(__file__).resolve().parents[2] / "hooks" / "stop"
@@ -60,6 +61,7 @@ RESET_KNOBS = (
     "WORKLIST_AGENT_HINT_MIN_SCORE",
     "WORKLIST_AGENT_HINT_MIN_MARGIN",
     "WORKLIST_FOCUS",
+    "WORKLIST_HINTS_FILE",
 )
 
 BIN_ONLY = ("python3", "sh", "bash", "cat", "date")
@@ -106,8 +108,7 @@ def section_now(owner: str, body: str) -> str:
 
 def import_wl(name: str):
     """Import a `wl_*` module from the hook directory, as the bash `python3 -c` did."""
-    if str(STOP_DIR) not in sys.path:
-        sys.path.insert(0, str(STOP_DIR))
+    paths.on_sys_path(STOP_DIR)
     return __import__(name)
 
 
