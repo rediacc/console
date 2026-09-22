@@ -83,6 +83,11 @@ EDGE_CASES = [
     # A submodule of this tree IS judged; an independent checkout is not.
     ("a commit in a submodule", 'cd private/renet && git commit -m "x"'),
     ("a commit in an independent checkout", 'cd /tmp && git commit -m "x"'),
+    # A `-c` override, not a submodule's own state, so this arm is exercised deterministically. `[bot]` in the exemption pattern is a bracket, and `hookio.case_glob` once read it as a character class rather than a literal -- silently un-exempting every bot address until a poisoned submodule config surfaced it.
+    (
+        "a bot committer override is exempt",
+        'git -c user.email="github-actions[bot]@users.noreply.github.com" commit -m "x"',
+    ),
 ]
 
 
@@ -236,8 +241,9 @@ def run(ev):
     for field, email in (("author", author_email), ("committer", committer_email)):
         if email == "":
             continue
-        # Bot addresses attribute on GitHub and are never this guard's business.
-        if hookio.case_glob(email, "*[bot]@users.noreply.github.com"):
+        # Bot addresses attribute on GitHub and are never this guard's business. NOT hookio.case_glob: its `_glob_to_re` reads a bracketed literal like `[bot]` as a character class, so `*[bot]@users.noreply.github.com` never matches the literal string it names. The oracle avoids this because a quoted `case` pattern has no bracket semantics -- `*'[bot]@users.noreply.github.com'`
+        # is a plain suffix there. Found live: private/renet's local git identity was left set to a bot address by tag-submodules.sh, and this guard refused a normal commit there as a result.
+        if email.endswith("[bot]@users.noreply.github.com"):
             continue
         if _allowed(email, identity if isinstance(identity, dict) else {}):
             continue
