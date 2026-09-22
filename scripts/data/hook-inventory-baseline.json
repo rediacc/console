@@ -35,6 +35,7 @@
   ".claude/rediacc_hooks/guards/block_prose_style_commit.py",
   ".claude/rediacc_hooks/guards/block_prose_style_edit.py",
   ".claude/rediacc_hooks/guards/block_protected_files.py",
+  ".claude/rediacc_hooks/guards/block_push_to_protected_branch.py",
   ".claude/rediacc_hooks/guards/block_raw_pr_body_edit.py",
   ".claude/rediacc_hooks/guards/block_roundlog_truncate.py",
   ".claude/rediacc_hooks/guards/block_roundlog_write.py",
