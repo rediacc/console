@@ -1208,18 +1208,35 @@ def _r18(name: str, text: str) -> list:
     return [f for f in findings if f.rule == "R18"]
 
 
+#: A line that both exceeds 384 AND ran past a genuine sentence-ending break sitting well before the floor -- the shape that must still fire once the break is not table/Touched-exempted. The lead sentence ends at a low, fixed offset; the filler after it is what pushes the line past 384 with no upper limit of its own.
+_LONG_WITH_EARLY_BREAK = "A short lead-in sentence ends here. " + ("x" * 400)
+
+
 def test_a_long_table_row_and_a_touched_list_are_not_width_findings():
-    """A table cannot wrap a row and the plan-record parser reads one line of `Touched:`, so R18 has nothing to fold there."""
-    long = ", ".join("agent/PLAN-%03d.md" % n for n in range(40))
+    """A table cannot wrap a row and the plan-record parser reads one line of `Touched:`, so R18 has nothing to fold there -- even when the line carries a sentence break it could otherwise be flagged for skipping."""
+    long = _LONG_WITH_EARLY_BREAK
     assert len(long) > 384
     assert _r18("a.md", "| `package.json` | %s |\n" % long) == []
     assert _r18("a.md", "Touched: %s\n" % long) == []
 
 
 def test_the_same_length_in_ordinary_prose_is_still_a_width_finding():
-    """CONTROL for the case above: the exemption is the row and the key, not the length."""
+    """CONTROL for the case above: the exemption is the row and the key, not the length. The line runs well past 384, and its lead sentence ended long before that -- an available break the author ran past, which R18's floor still catches."""
+    assert len(_r18("a.md", "Prose that is far too long: %s\n" % _LONG_WITH_EARLY_BREAK)) == 1
+
+
+def test_a_long_line_with_no_sentence_break_anywhere_is_not_a_width_finding():
+    """384 is a FLOOR, not a ceiling: a comma-joined list of `.md` paths has no `. ` anywhere (every period is immediately followed by a filename character, never whitespace), so however far past 384 it runs, there was nowhere sane to break it -- and R18 must not flag it."""
     long = ", ".join("agent/PLAN-%03d.md" % n for n in range(40))
-    assert len(_r18("a.md", "Prose that is far too long: %s\n" % long)) == 1
+    assert len(long) > 384
+    assert _r18("a.md", "Prose that is far too long: %s\n" % long) == []
+
+
+def test_a_break_that_only_arrives_past_the_floor_does_not_count():
+    """The MIRROR half of `_LONG_WITH_EARLY_BREAK`: the line's only sentence-ending period sits PAST 384, so there was no break available AT OR BEFORE the floor to skip, and the line is not flagged even though it plainly runs long and does end in a real sentence eventually."""
+    text = ("x" * 400) + ". Trailing sentence that arrives after the floor.\n"
+    assert len(text) > 384
+    assert _r18("a.md", "Prose that is far too long: %s" % text) == []
 
 
 def test_the_loader_accepts_the_real_file():

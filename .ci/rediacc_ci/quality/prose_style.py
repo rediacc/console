@@ -684,6 +684,37 @@ class Finding:
         return "%s:%d  %s  %s" % (self.path, self.lineno, self.rule, self.snippet)
 
 
+# R18's abbreviations: a word run immediately before a candidate period that must NOT read as a sentence end -- Latin shorthand (`e.g.`, `i.e.`, `etc.`, `et al.`), honorifics (`Mr.`, `Dr.`, `Prof.`), and reference/unit short forms (`vs.`, `approx.`, `fig.`, `no.`, `vol.`, `p.`/`pp.`). A DECIMAL (`3.14`) or a dotted VERSION (`v1.3.12`) never reaches this list at
+# all -- `_sentence_break_offset` below only considers a period a CANDIDATE when it is immediately followed by whitespace or the end of the line, and the period inside either of those is followed by a digit, never a space. The `(?<![A-Za-z0-9])` lookbehind is the word-boundary half: it keeps "no" from matching inside "piano" and "st" from matching inside "last".
+_SENTENCE_ABBREVIATION = re.compile(
+    r"(?i)(?<![A-Za-z0-9])(?:e\.g|i\.e|etc|et\s+al|vs|approx|fig|no|vol|ch|eq|pp|p|"
+    r"inc|ltd|corp|cf|mr|mrs|ms|dr|prof|sr|jr|st)\Z"
+)
+
+
+def _sentence_break_offset(raw, limit):
+    """The offset of the first GENUINE sentence-ending period in `raw` at or before `limit`, or `None` when there is none.
+
+    R18's floor (see the module header and `.ci/config/prose-style-rules.json`): 384 is where a line is ALLOWED to break, not where it is required to stop, so a line past the limit is only a finding when it ran past a break it could have taken. A period only counts when it is immediately followed by whitespace or the end of the line -- which is what excludes a decimal and a
+    dotted version number, since the period inside either is followed by a digit -- is not the second dot of an ellipsis, and is not the tail of `_SENTENCE_ABBREVIATION`.
+
+    Scans `raw`, the same untouched line R18 measures, so an offset returned here lines up with the character count the length check already reports; `line.text` (code spans/URLs scrubbed, stripped) has no stable relationship to that count.
+    """
+    for match in re.finditer(r"\.", raw):
+        index = match.start()
+        if index > limit:
+            break
+        if index > 0 and raw[index - 1] == ".":
+            continue  # the second (or later) dot of an ellipsis
+        following = raw[index + 1 : index + 2]
+        if following and not following.isspace():
+            continue  # "3.14", "v1.3.12": a decimal/version dot, never a candidate
+        if _SENTENCE_ABBREVIATION.search(raw[:index]):
+            continue  # "e.g.", "Dr.", "etc." and friends
+        return index
+    return None
+
+
 def lint_line(line, rules, scope, max_len):
     """Every rule that fires on ONE extracted line.
 
@@ -698,7 +729,16 @@ def lint_line(line, rules, scope, max_len):
             if TABLE_ROW.match(line.raw) or line.raw.startswith(MACHINE_LIST_KEYS):
                 continue
             if max_len is not None and len(line.raw) > max_len:
-                hits.append((rule, "line is %d characters, limit %d" % (len(line.raw), max_len)))
+                # 384 is a FLOOR, not a ceiling (see `_sentence_break_offset`): a line past it is only a finding when a genuine sentence-ending period sat at or before the floor and the line ran past it anyway. A line with no such break -- one continuous clause with nowhere sane to stop -- is not flagged regardless of how long it runs.
+                break_at = _sentence_break_offset(line.raw, max_len)
+                if break_at is not None:
+                    hits.append(
+                        (
+                            rule,
+                            "line is %d characters; a sentence break was available at %d, at or before the %d floor"
+                            % (len(line.raw), break_at, max_len),
+                        )
+                    )
             continue
         if not rule.patterns:
             continue
@@ -2039,8 +2079,22 @@ def selftest():
         _ids(lint_message("Send the file.", rules, globals_, "comment")),
         [],
     )
-    ctl.check("PLANT: a long line fires", md("x" * 60), ["X3"])
+    ctl.check(
+        "PLANT: a long line that ran past an available sentence break fires",
+        md(("x" * 30) + ". " + ("y" * 30)),
+        ["X3"],
+    )
     ctl.check("MIRROR: a short line does not", md("x" * 10), [])
+    ctl.check(
+        "MIRROR: a long line with NO sentence break anywhere does not fire, however long",
+        md("x" * 60),
+        [],
+    )
+    ctl.check(
+        "MIRROR: a long line whose only break sits PAST the floor does not fire",
+        md(("x" * 50) + ". " + ("y" * 5)),
+        [],
+    )
 
     # ---- extraction: the part that decides whether a green means anything
     ctl.check("fence: a violation inside ``` is not prose", md("```\nDid you run it?\n```"), [])

@@ -16,13 +16,13 @@
   "that shrank by 29 can still hide one brand-new violation. Comparing sizes is not",
   "the same claim as diffing the sets."
  ],
- "count": 5658,
- "files": 1191,
+ "count": 5605,
+ "files": 1177,
  "by_rule": {
   "R1": 1672,
   "R11": 178,
   "R14": 1,
-  "R18": 2262,
+  "R18": 2209,
   "R19": 62,
   "R2": 955,
   "R7": 528
@@ -149,7 +149,6 @@
   },
   ".ci/policy/worklist-env-registry.json": {
    "R18": [
-    "0a5d3d94b0f9dddf",
     "74c2ea36dcf397c3",
     "83b6278ab7f8e361"
    ],
@@ -1262,11 +1261,6 @@
     "91ce3889851d89d6"
    ]
   },
-  ".ci/scripts/quality/check_regions_sync.py": {
-   "R18": [
-    "6ce138d0fc56bea5"
-   ]
-  },
   ".ci/scripts/quality/check_resprofile.py": {
    "R2": [
     "562504b34fefa180"
@@ -1666,8 +1660,6 @@
     "1e4e0eb833801098",
     "75d81cede5e2960b",
     "9d5f73c1fc958eb9",
-    "daa7c7e51d22d650",
-    "e873d3680d3bffdf",
     "ea508a56bd36bbcd"
    ],
    "R2": [
@@ -1698,7 +1690,6 @@
     "31c0f7ddb4cbdecf",
     "3d72d84966910493",
     "5a1c55471f70de0c",
-    "7d1b894aca298a58",
     "825aaddb15480d5d",
     "8bd1b33581323106",
     "c19680f03bbc5b9f"
@@ -2901,11 +2892,8 @@
     "5aeff3f1184f8574",
     "69ae13425931d401",
     "7c77c868242de625",
-    "7e19781a58aef2ef",
     "8eaa5bbc9e177e9d",
     "921c35faeaf3de4c",
-    "9c0d262f9ca34803",
-    "aa1d1f97f3384413",
     "b077e4facb66cb61",
     "c11aa8066309818a",
     "db3884def4417fb0",
@@ -3085,11 +3073,6 @@
     "5d6845cf3381f91c"
    ]
   },
-  "agent/plans/PLAN-npm-ci-parallel-parity.md": {
-   "R18": [
-    "01b943bc949ca9ae"
-   ]
-  },
   "agent/plans/PLAN-pipefail-grep-q-renet-gate.md": {
    "R11": [
     "12d424df1f72b673"
@@ -3206,12 +3189,10 @@
     "3b4bc6402d2b039f",
     "3ca7c41c3d1ef5bf",
     "41e2b52afd5b7d10",
-    "45c2f7c6cc0dc378",
     "488eac8d789bac1e",
     "4ca1d8696a146367",
     "4f7a2f719bd32f88",
     "51d5ba99f81186d8",
-    "57cc33981045514f",
     "5dc0b88ca1f5d9ce",
     "66fe84e3a9861e5e",
     "6778cb5ad269c7b5",
@@ -3236,7 +3217,6 @@
     "d0aad58d1be2f228",
     "d82f8627f93b61a0",
     "d9b4cf376ec82e45",
-    "d9f22166484e259d",
     "e7f1018531aa6c28",
     "ebe37c1b557b3c11",
     "ed41d4e7568b7188"
@@ -3273,15 +3253,9 @@
    "R18": [
     "03543fc3c05bcc61",
     "41f7bec55f45dc43",
-    "51532e5640083d2e",
     "7f9661a20def97dd",
-    "a9009d9919798c17",
-    "b533f08a9a39d692",
     "d084fdc8a2919aea",
-    "d3c1be666af13121",
     "d46f130cde91322d",
-    "d8d186348f248e53",
-    "ddfe5872de8d4cef",
     "eb21352db234f6ac",
     "f6eea83f147ae25c"
    ]
@@ -4142,9 +4116,6 @@
     "146833a5f06b9671",
     "8faa4e0cf48019a4",
     "b04ab5424a606e8e"
-   ],
-   "R18": [
-    "e9c344c9ceb8e779"
    ]
   },
   "docs/agent-reference/worklist-v10-brief.md": {
@@ -5682,7 +5653,6 @@
     "60079425dfa0dc0d",
     "66ca9c032f690df9",
     "70ffbb4e7cb62a42",
-    "9b2c53de379d5ab8",
     "a258a775739ea427",
     "a95331e97683fbb8",
     "b4986209842e8e10",
@@ -5935,7 +5905,6 @@
     "4bb91256d9b16b7b",
     "4f26aa77d786eff5",
     "79696e617f681011",
-    "84edb6c2ae0208f0",
     "981c0bbcd1520c6b",
     "9ca9425679a3f6da",
     "a28fb07a9cd7ce53",
@@ -5993,8 +5962,7 @@
     "e9d5f168d47172f1",
     "ec006eff4492d177",
     "f1dfd9c9b3dd439b",
-    "f99005c62f4a33a0",
-    "ffedeff25ff9ed28"
+    "f99005c62f4a33a0"
    ]
   },
   "packages/www/src/content/blog/es/welcome.md": {
@@ -6029,7 +5997,6 @@
     "46fd510a80ec11b3",
     "48db55f4f362a621",
     "4e7d112d604b00af",
-    "98609f364f730810",
     "9c3c30d55938f92f",
     "a9e3853d0b3270fa",
     "b1061e31521bd1ec",
@@ -6119,7 +6086,6 @@
     "868a61a24c3926ab",
     "88d5f64107f2e7e5",
     "99a9c664f42a55c7",
-    "9a4b6ba444b7e376",
     "add5ef9ff8922b60",
     "ae8c81aba0c33976",
     "aee961d49105d00f",
@@ -6159,7 +6125,6 @@
   },
   "packages/www/src/content/blog/fr/nis2-the-real-bill.md": {
    "R18": [
-    "0a05c6b37f70de69",
     "1596119776b00e63",
     "16c73f4717d99270",
     "32364009f79ad8f3",
@@ -6224,7 +6189,6 @@
     "1e7a3f177c00fec0",
     "2fe56a62bd75e23d",
     "48ba00ae0b7ddea8",
-    "91cdad531019b54f",
     "956aeecb6328c2cb",
     "96ef5cc4b5730f51",
     "a99e57ce44221763",
@@ -6314,8 +6278,6 @@
   },
   "packages/www/src/content/blog/ja/nis2-the-real-bill.md": {
    "R18": [
-    "299b1266bcb7eb6e",
-    "301f2c5a426b55fd",
     "34d4d4496aed4353"
    ]
   },
@@ -6360,7 +6322,6 @@
     "48e1d829b380dbbc",
     "53ff2a9054fdfef9",
     "56ece97eca10b467",
-    "5eccb681865c5fce",
     "74e0a47eb5c2b40e",
     "84cedbd9dde8295f",
     "a0eed01698e9720e",
@@ -6395,7 +6356,6 @@
     "191b8c6928883d1e",
     "295e3574d8e500d7",
     "348b77b62517283d",
-    "35035f1608bab48b",
     "36d7d3971a1c25a5",
     "7f8181a093cc6839",
     "9043ff9080d58905",
@@ -6451,8 +6411,7 @@
     "c848c8df939de2da",
     "d33d725fcf5bb3c6",
     "e782b0147e62766f",
-    "f559c60bafde17d9",
-    "fa764de3d8f8110a"
+    "f559c60bafde17d9"
    ]
   },
   "packages/www/src/content/blog/ru/nis2-supply-chain-self-hosted.md": {
@@ -6958,7 +6917,6 @@
     "6850ef35b182f1a6",
     "6f614f451bfa83e4",
     "79a483c891244f42",
-    "9b925c65b4a79417",
     "e6d85a6d6f804795"
    ]
   },
@@ -8352,7 +8310,6 @@
     "054304af8b963752",
     "3f00cb532a48668b",
     "6bdeb6ecf74b6c19",
-    "72e5e9cbcddbadb5",
     "7862411a4d5157cc",
     "b72b229abface90d",
     "f50df2fea019bcda"
@@ -8662,7 +8619,6 @@
   },
   "packages/www/src/content/docs/et/on-premise.md": {
    "R18": [
-    "cd053783ce8ccfec",
     "e9d80d0404482931"
    ],
    "R2": [
@@ -8911,8 +8867,7 @@
   },
   "packages/www/src/content/docs/fr/legal-gdpr.md": {
    "R18": [
-    "02ae8bd5ba3daa2a",
-    "e996ac34a8437074"
+    "02ae8bd5ba3daa2a"
    ]
   },
   "packages/www/src/content/docs/fr/legal-hipaa.md": {
@@ -9002,8 +8957,7 @@
     "619ec0e779fa6730",
     "9a8b4fe6e5f4d86b",
     "9b3d5bfc4ebfe7b2",
-    "a5d5c6a749937d33",
-    "d4fb908784c1d212"
+    "a5d5c6a749937d33"
    ]
   },
   "packages/www/src/content/docs/fr/proxy-and-executor.md": {
@@ -9571,7 +9525,6 @@
     "537877ef695f79bc",
     "8c726f53efdab8f8",
     "8ced8bf1fe8b05eb",
-    "b196559b4fdc3cae",
     "da11bef8499626e3"
    ],
    "R2": [
@@ -9856,60 +9809,9 @@
     "f397ba22f5bfdb57"
    ]
   },
-  "packages/www/src/content/docs/ja/account-management.md": {
-   "R18": [
-    "ccf8a9161390456d"
-   ]
-  },
-  "packages/www/src/content/docs/ja/account-security.md": {
-   "R18": [
-    "92068c2fb3a6f9fd"
-   ]
-  },
-  "packages/www/src/content/docs/ja/ai-agents-safety.md": {
-   "R18": [
-    "a5fa479bcb5eb63c"
-   ]
-  },
-  "packages/www/src/content/docs/ja/license-chain.md": {
-   "R18": [
-    "8bb0b3dba7a7b192"
-   ]
-  },
-  "packages/www/src/content/docs/ja/monitoring.md": {
-   "R18": [
-    "890f3f696366041b"
-   ]
-  },
-  "packages/www/src/content/docs/ja/repo-branching.md": {
-   "R18": [
-    "fbe085071faa6eca"
-   ]
-  },
-  "packages/www/src/content/docs/ja/repo-diff.md": {
-   "R18": [
-    "37bee75b2dc3f579",
-    "4409d8979449a74b"
-   ]
-  },
-  "packages/www/src/content/docs/ja/repositories.md": {
-   "R18": [
-    "d0ae564964a8de53"
-   ]
-  },
-  "packages/www/src/content/docs/ja/rules-of-rediacc.md": {
-   "R18": [
-    "9d81c005f88f9d7d"
-   ]
-  },
   "packages/www/src/content/docs/ja/services.md": {
    "R19": [
     "1a315b7689649f47"
-   ]
-  },
-  "packages/www/src/content/docs/ja/troubleshooting.md": {
-   "R18": [
-    "389b3cb44d7c5049"
    ]
   },
   "packages/www/src/content/docs/ko/account-management.md": {
@@ -10186,7 +10088,6 @@
    "R18": [
     "0bef1fbeeb2048f1",
     "0ca444c02272c99a",
-    "4ca568e189be2b4a",
     "c54d88cd430be9bf",
     "d7e7e6d02006e5bc",
     "ffe788acb3b50a99"
@@ -10530,7 +10431,6 @@
     "1361bff6af055bce",
     "a2894633bf7399a5",
     "a522be5007751049",
-    "a6292516258f5a9a",
     "b3fe0fb95ba769fd"
    ]
   },
@@ -10824,7 +10724,6 @@
    "R18": [
     "164ac679a4967f73",
     "2415927390b93a01",
-    "72ae3b83abc42789",
     "93a1829b714ec7f8",
     "a135304aa255251c"
    ]
@@ -10943,11 +10842,6 @@
     "f380460508f486ba"
    ]
   },
-  "packages/www/src/content/docs/zh/account-security.md": {
-   "R18": [
-    "d5241a7e774ac7a1"
-   ]
-  },
   "packages/www/src/content/docs/zh/ai-agents-mcp.md": {
    "R19": [
     "f2f8e786c4a6983b"
@@ -10956,11 +10850,6 @@
   "packages/www/src/content/docs/zh/backup-restore.md": {
    "R11": [
     "4704444d58c978c5"
-   ]
-  },
-  "packages/www/src/content/docs/zh/rules-of-rediacc.md": {
-   "R18": [
-    "eec79bfaefba02bc"
    ]
   },
   "packages/www/src/plugins/heading-anchors.mjs": {

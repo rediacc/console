@@ -118,7 +118,7 @@ def test_attributed_passes(gate, tmp_path):
     gate.log_pass("CONTROL: an attributed commit passes, so case 1 means something")
 
 
-# -- 3. Bots attribute, and must not need a special case --------------------- main carries github-actions[bot] commits. If they failed, the gate could never run on main and someone would add an exemption for a non-problem.
+# -- 3. Bots attribute, and must not need a special case --------------------- main carries github-actions[bot] commits. If they failed, the gate would not run on main and someone would add an exemption for a non-problem.
 
 
 def test_bot_passes(gate, tmp_path):

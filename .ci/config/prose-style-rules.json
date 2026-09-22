@@ -838,7 +838,7 @@
     {
       "id": "R18",
       "title": "Line length",
-      "description": "Prose lines stay at or under about 384 characters. Paragraphs are not hard-wrapped at any narrower width, which is what the reflow subcommand exists to undo.",
+      "description": "A line past the 384-character floor is flagged only when a genuine sentence-ending period sat at or before that floor and the line ran past it anyway; a line with no such break anywhere before its own end may run to any length, since 384 is where wrapping is allowed, not where it must happen, and R19 already polices wrapping narrower than a paragraph's natural width from the other direction.",
       "severity": "error",
       "scopes": [
         "markdown",
@@ -848,9 +848,16 @@
       "patterns": [],
       "detection": "measured",
       "detection_why": [
-        "Length is counted, not matched, so this rule carries no regex. The limit lives in",
-        "`globals.max_line_length` because the reflow subcommand needs the same number and two",
-        "copies of a width is how a reflow starts producing lines its own linter refuses."
+        "Length is counted, not matched. The floor lives in `globals.max_line_length` because",
+        "the reflow subcommand needs the same number, and two copies of a width is how a reflow",
+        "starts producing lines its own linter refuses.",
+        "A second, small piece of matching runs only on a line already over that floor: a search",
+        "for the first genuine sentence-ending period at or before it. A period only counts when",
+        "immediately followed by whitespace or the line's own end, which is what rules out a",
+        "decimal and a dotted version number, since the period inside either is followed by a",
+        "digit; the remaining candidates are filtered against a short abbreviation list (\"e.g.\",",
+        "\"i.e.\", \"etc.\", \"Dr.\" and the like) so those do not read as sentence ends either. No",
+        "such break at or before the floor means no finding, however long the line runs."
       ],
       "exceptions": [],
       "examples": [
@@ -858,6 +865,16 @@
           "text": "A line well under the limit.",
           "expect": "clean",
           "kind": "good"
+        },
+        {
+          "text": "One continuous clause that never finds a place to pause before it finally reaches its own natural end after running for quite a very long while indeed and just keeps right on going without a single earlier stopping point anywhere in it at all, no comma or dash offering a real place to break it either, and it keeps extending further still, word after word, with nowhere sane to stop early, until it finally, at long last, reaches its own true conclusion.",
+          "expect": "clean",
+          "kind": "good"
+        },
+        {
+          "text": "This sentence is short and ends quickly right here. xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+          "expect": "flag",
+          "kind": "bad"
         }
       ]
     },
