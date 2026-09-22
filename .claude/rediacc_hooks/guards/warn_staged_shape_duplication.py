@@ -52,7 +52,8 @@ from rediacc_hooks.guards import block_prose_style_commit as PSC
 
 CHAIN = "pre-bash"
 TWIN = None
-ORDER = 42
+# Re-keyed from 42 to 43 on 2026-09-22 by the insertion of block_push_to_protected_branch.py at 39.
+ORDER = 43
 
 # THE WHOLE BUDGET, measured from the moment the command matches. The plan's ceiling is a 200 ms increment on a chain whose baseline is about 129 ms; everything this guard does after the match -- two git calls, a 200 KB index, and the probe -- lives inside this.
 DEADLINE_S = 0.3

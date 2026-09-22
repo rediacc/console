@@ -27,7 +27,8 @@ from rediacc_hooks.guards import block_unverified_push as PUSH
 
 CHAIN = "pre-bash"
 TWIN = None
-ORDER = 41
+# Re-keyed from 41 to 42 on 2026-09-22 by the insertion of block_push_to_protected_branch.py at 39.
+ORDER = 42
 
 # The one branch the differential must be able to see: a commit at bulk scale whose own message quotes no proof. Planting `if False:` there lets every such commit through, which is the whole failure this guard exists to refuse.
 DEFECT = (

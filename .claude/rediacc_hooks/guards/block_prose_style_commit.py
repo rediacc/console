@@ -46,7 +46,8 @@ from rediacc_hooks import hookio, shellscan
 
 CHAIN = "pre-bash"
 TWIN = None
-ORDER = 40
+# Re-keyed from 40 to 41 on 2026-09-22 by the insertion of block_push_to_protected_branch.py at 39.
+ORDER = 41
 
 # THE HEREDOC ARM, which is the one this repository's commits actually travel through: `git commit -F - <<'EOF' ... EOF` puts the whole body somewhere argv parsing cannot see it, so losing this loop means every multi-paragraph message goes UNEXAMINED while the guard still reports as installed.
 #

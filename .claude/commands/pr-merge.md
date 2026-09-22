@@ -143,8 +143,9 @@ If that prints `pure fast-forward`, the sanctioned recovery is a **direct fast-f
   ```
   git push origin origin/<branch>:main
   ```
-This is git-level identical to what a rebase-merge would have produced (nothing to replay: `main` is already an ancestor, so this is a plain fast-forward, not a force-push -- `block-git-force-push.sh` does not apply and this needs no mediation). GitHub auto-detects the PR's commits landing in `main` and flips it to `MERGED` on its own; verify with `gh pr view <console-pr> --json
-state,mergedAt` same as the normal path. The head branch is still auto-deleted (`delete_branch_on_merge` is a repo setting, not something the merge mechanism controls).
+This is git-level identical to what a rebase-merge would have produced (nothing to replay: `main` is already an ancestor, so this is a plain fast-forward, not a force-push -- `block-git-force-push.sh` does not apply). Since 2026-09-22 `block_push_to_protected_branch.py` refuses EVERY direct push to `main` from this tool's own Bash access, this one included: the operator runs this
+line directly with the `!` prefix, which bypasses the hook, rather than it being typed here. GitHub auto-detects the PR's commits landing in `main` and flips it to `MERGED` on its own; verify with `gh pr view <console-pr> --json state,mergedAt` same as the normal path. The head branch is still auto-deleted (`delete_branch_on_merge` is a repo setting, not something the merge
+mechanism controls).
 
 If the ancestry check does NOT print "pure fast-forward" (main has moved ahead of this branch), this fallback does not apply -- rebase the branch onto `origin/main` for real first (a normal, non-empty rebase), or fall back to the operator: this is genuinely a case the size-limited `--rebase` API and the fast-forward shortcut both fail to cover, and picking `--merge`/`--squash`
 unilaterally changes `main`'s permanent history against documented policy.

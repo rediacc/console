@@ -33,7 +33,9 @@ from rediacc_hooks import hookio, shellscan
 
 CHAIN = "pre-bash"
 TWIN = "pre-bash/block-unverified-push.sh"
-ORDER = 39
+# Re-keyed from 39 to 40 on 2026-09-22 to make room for block_push_to_protected_branch.py at
+# 39: "this branch may not be pushed to at all" is checked before "is this tree gate-verified".
+ORDER = 40
 
 # The tree comparison is the whole guard. Without it any receipt at all authorises any push, which is the state that let five CI rounds happen on PR #579.
 DEFECT = ("if r_tree != tree:", "if False:")
