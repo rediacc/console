@@ -48,14 +48,6 @@
       "kind": "no-github-twin",
       "reason": "no OAuth or web flow exists in console, account, renet or elite; CI authenticates as the App with its private key. Stored so the App's credential set lives in one place."
     },
-    "GITHUB_AUTOPILOT_APP_ID": {
-      "kind": "no-github-twin",
-      "reason": "an Actions VARIABLE (vars.AUTOPILOT_APP_ID), not a secret, and unshadowable by construction: the comparator fails on an empty side, so a request line would turn the shadow RED. See autopilot.yml:58-62."
-    },
-    "GITHUB_AUTOPILOT_PRIVATE_KEY": {
-      "kind": "no-github-twin",
-      "reason": "the only requester was .github/workflows/autopilot.yml, itself retired; the credential stays vault-tracked pending the separate submodule-side retirement of AUTOPILOT_PRIVATE_KEY noted in agent/plans/PLAN-remove-autopilot.md section 4."
-    },
     "OBS_OTLP_CREDENTIALS": {
       "kind": "no-github-twin",
       "reason": "pre-regional leftover holding ONE region's value; the deploy uses the regional trio below. One stored value cannot be compared against three genuinely different regional secrets."
