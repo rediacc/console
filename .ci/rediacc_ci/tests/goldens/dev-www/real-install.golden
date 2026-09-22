@@ -1,0 +1,17 @@
+# twin .ci/legacy/run-legacy.sh blob a4731cdf5eecb8d53216b1027aaa2f01353dfabb
+exit: 0
+--- stdout ---
+[fake npm] install
+[fake npm] run install:natives
+[fake npm] run dev -w @rediacc/www
+--- stderr ---
+→ Starting www development server
+→ Installing dependencies...
+[fake npm] starting
+→ Compiling native modules (blocked at install by ignore-scripts)...
+[fake npm] starting
+[fake npm] starting
+--- trace ---
+npm cwd=<sandbox> argv=install
+npm cwd=<sandbox> argv=run install:natives
+npm cwd=<sandbox> argv=run dev -w @rediacc/www

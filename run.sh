@@ -15,10 +15,10 @@
 # across the whole program (docs/ci-overhaul/08-driver-contract.md section 3).
 # Here, porting a verb is one line in PORTED_VERBS and nothing else moves.
 #
-# PORTED_VERBS IS EMPTY TODAY, a statement rather than an oversight: `.ci/rediacc_ci`
-# has a `__main__.py` now, but no verb has MOVED off bash, so every verb but the two
-# media ones goes to the legacy file and `./run.sh` behaves as it did the day before
-# the split. Not taken on trust -- .ci/scripts/test/gates/test-run-sh.sh asserts that
+# PORTED_VERBS NAMES WHAT HAS ACTUALLY MOVED, and nothing else: `setup` and `dev` are
+# served by `python3 -m rediacc_ci`, every other verb but the two media ones still goes
+# to the legacy file, and each name arrived here in the same change that deleted its
+# bash body. Not taken on trust -- .ci/scripts/test/gates/test-run-sh.sh asserts that
 # this file's arms and the legacy dispatcher PARTITION the verb set `show_help`
 # documents, in both directions: a verb cannot be ported into a gap or served twice.
 #
@@ -34,7 +34,7 @@ LEGACY_RUNNER="$ROOT_DIR/.ci/legacy/run-legacy.sh"
 # in the SAME change that deletes its arm from the legacy dispatcher: the gate
 # test refuses an orphan and an overlap alike, so a half-done port is red rather
 # than ambiguous.
-PORTED_VERBS=(setup)
+PORTED_VERBS=(setup dev)
 
 # `.ci` on PYTHONPATH, not an install: the package directory is `.ci/rediacc_ci`, so
 # the importable name is `rediacc_ci` with `.ci` on the path, which is what pyproject

@@ -67,23 +67,6 @@ check_docker() {
 }
 
 # =============================================================================
-# DEVELOPMENT COMMANDS
-# =============================================================================
-
-dev() {
-    check_node_version
-
-    log_step "Starting www development server"
-
-    # Same reasoning as setup(): ensure_deps carries the hash stamp, and its
-    # mtime test here was a weaker duplicate of it.
-    ensure_deps
-
-    # Start dev server (marketing site)
-    npm run dev -w @rediacc/www
-}
-
-# =============================================================================
 # QUALITY COMMANDS
 # =============================================================================
 
@@ -461,8 +444,8 @@ main() {
             account_rotation "$@"
             ;;
 
-        # Development
-        dev) dev ;;
+        # Development. `dev` is NOT here: it is served by `python3 -m rediacc_ci`
+        # and named in the router's PORTED_VERBS table.
         worktree)
             shift
             "$ROOT_DIR/scripts/dev/worktree.sh" "$@"
