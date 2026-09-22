@@ -423,6 +423,7 @@ def drive_l1(fix) -> L1Drive:
         ("--plan-revive", "--plan-revive @WHO@", "plan records on disk"),
         # Same listing rule, same reason. --plan-tick's write mode needs a plan AND a committed box ledger; its listing mode is where a caller gets the box SIGNATURE the write mode wants, so the read is a prerequisite of the write rather than a convenience, and it runs the identical argv parse.
         ("--plan-tick", "--plan-tick @WHO@", "open boxes that --plan-tick can flip"),
+        ("--hint-propose", "--hint-propose @WHO@ l1-table-hint", "proposed:"),
     ]
 
     for verb, template, needle in table:

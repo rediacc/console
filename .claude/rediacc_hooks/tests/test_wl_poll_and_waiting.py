@@ -405,6 +405,9 @@ ARITY = {
     "N_OUTQ_BLOCKED": (3, 3),
     "N_AGENT_HINT": ("a", "a", "t, t"),
     "N_AGENT_CORPUS_ERR": ("rows",),
+    "N_BEHAVIOR_HINT": (1, 12, "heading", "hint-id", "file:CLAUDE.md:1"),
+    "N_HINT_CORPUS_ERR": ("rows",),
+    "N_HINT_PROPOSALS_PENDING": (3,),
     # (claims, agent, matched terms): the give-up push-back.
     "V_AGENT_PUSHBACK": ("does-not-reproduce", "ops-vms", "ceph, ops, vms"),
     "N_POLL_BACKOFF": (25, 5, "*/5 * * * *", "*/10 * * * *", 10),
