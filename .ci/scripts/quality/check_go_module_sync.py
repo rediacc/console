@@ -15,7 +15,8 @@ declared side identical; what the twin inferred for free is discussed under DRIV
 
 `selftest: true` IS INERT HERE and is carried anyway: `headerLines` emits that field only for `.ts` (`gate-bind.ts:598`, `selftestIsReal`), so for a `.py` gate it decides nothing. It is true of the port regardless -- `go_module_sync.main(["--selftest"])` runs a real control battery.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-go-module-sync.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
+INVARIANT 5 IS DISCHARGED, W7 P5. `.ci/scripts/quality/check-go-module-sync.sh` and its gate test `.ci/scripts/test/gates/test-go-module-sync.sh` are both deleted: the fixture behaviour the test proved is now carried by `.ci/rediacc_ci/tests/gates/test_gate_go_module_sync.py`, retargeted at this entry point through the `REDIACC_CI_ROOT` seam and checked to reach the same 3
+verdicts on the same 3 fixtures before the twin left.
 
 ---- gate ----
 step: Check Go module sync against the renet worktree

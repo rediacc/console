@@ -4609,8 +4609,8 @@
     ],
     "ci": {
       "kind": "test",
-      "test": ".ci/scripts/test/gates/test-autopilot-breakpoint-alignment.sh",
-      "blocker": "BLOCKER: test-autopilot-breakpoint-alignment.sh:59 runs the gate seam-free against the real .ci/breakpoint/workflow/breakpoint.yml and .github/workflows/autopilot.yml inside the gate-test battery (ci-quality.yml quality-security, \"Quality-gate unit tests\"), so the real comparison executes every CI run; the mutated-copy cases around it prove both fire directions"
+      "test": ".ci/rediacc_ci/tests/gates/test_gate_autopilot_breakpoint_alignment.py",
+      "blocker": "BLOCKER: test_gate_autopilot_breakpoint_alignment.py:52 runs the gate seam-free against the real .ci/breakpoint/workflow/breakpoint.yml and .github/workflows/autopilot.yml, and check:ci-pytest (ci-quality.yml quality-security, \"Python package tests\") executes that real comparison every CI run; the mutated-copy cases around it prove both fire directions"
     }
   },
   {
@@ -4942,54 +4942,6 @@
     }
   },
   {
-    "id": "gate-test:autopilot-breakpoint-alignment",
-    "run": ".ci/scripts/test/gates/test-autopilot-breakpoint-alignment.sh",
-    "reads": [
-      "tree:repo"
-    ],
-    "gate": true,
-    "qualityGateTest": true,
-    "leaves": [
-      ".ci/scripts/test/gates/test-autopilot-breakpoint-alignment.sh"
-    ],
-    "ci": {
-      "kind": "step",
-      "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-security",
-      "step": "Quality-gate unit tests"
-    }
-  },
-  {
-    "id": "gate-test:autopilot-no-bypass",
-    "run": ".ci/scripts/test/gates/test-autopilot-no-bypass.sh",
-    "gate": true,
-    "qualityGateTest": true,
-    "leaves": [
-      ".ci/scripts/test/gates/test-autopilot-no-bypass.sh"
-    ],
-    "ci": {
-      "kind": "step",
-      "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-security",
-      "step": "Quality-gate unit tests"
-    }
-  },
-  {
-    "id": "gate-test:go-module-sync",
-    "run": ".ci/scripts/test/gates/test-go-module-sync.sh",
-    "gate": true,
-    "qualityGateTest": true,
-    "leaves": [
-      ".ci/scripts/test/gates/test-go-module-sync.sh"
-    ],
-    "ci": {
-      "kind": "step",
-      "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-security",
-      "step": "Quality-gate unit tests"
-    }
-  },
-  {
     "id": "gate-test:run-sh",
     "run": ".ci/scripts/test/gates/test-run-sh.sh",
     "gate": true,
@@ -5026,8 +4978,8 @@
     ],
     "ci": {
       "kind": "test",
-      "test": ".ci/scripts/test/gates/test-regions-sync.sh",
-      "blocker": "BLOCKER: test-regions-sync.sh drives the REAL gate over the REAL regions.json and packages/shared/src/regions/data.json inside the gate-test battery (ci-quality.yml quality-security, \"Quality-gate unit tests\"), and its controls plant a divergence, an empty file and invalid JSON to prove all three refusals fire; the two files are held together by hand (no build step syncs them, despite what index.ts used to claim) and data.json is the ONLY region list users get because ${SITE_URL}/regions.json returns 404, so silent drift would ship to every install"
+      "test": ".ci/rediacc_ci/tests/gates/test_gate_regions_sync.py",
+      "blocker": "BLOCKER: test_gate_regions_sync.py drives the REAL gate over the REAL regions.json and packages/shared/src/regions/data.json, and check:ci-pytest (ci-quality.yml quality-security, \"Python package tests\") runs it every CI run; its controls plant a divergence, an empty file and invalid JSON to prove all three refusals fire; the two files are held together by hand (no build step syncs them, despite what index.ts used to claim) and data.json is the ONLY region list users get because ${SITE_URL}/regions.json returns 404, so silent drift would ship to every install"
     }
   },
   {
@@ -5037,36 +4989,6 @@
     "qualityGateTest": true,
     "leaves": [
       ".ci/scripts/test/gates/test-toolchain.sh"
-    ],
-    "ci": {
-      "kind": "step",
-      "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-security",
-      "step": "Quality-gate unit tests"
-    }
-  },
-  {
-    "id": "gate-test:ci-job-aggregation",
-    "run": ".ci/scripts/test/gates/test-ci-job-aggregation.sh",
-    "gate": true,
-    "qualityGateTest": true,
-    "leaves": [
-      ".ci/scripts/test/gates/test-ci-job-aggregation.sh"
-    ],
-    "ci": {
-      "kind": "step",
-      "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-security",
-      "step": "Quality-gate unit tests"
-    }
-  },
-  {
-    "id": "gate-test:regions-sync",
-    "run": ".ci/scripts/test/gates/test-regions-sync.sh",
-    "gate": true,
-    "qualityGateTest": true,
-    "leaves": [
-      ".ci/scripts/test/gates/test-regions-sync.sh"
     ],
     "ci": {
       "kind": "step",
@@ -5270,37 +5192,6 @@
       "workflow": ".github/workflows/ci-quality.yml",
       "job": "quality-code",
       "step": "Dockerfile npm pins"
-    }
-  },
-  {
-    "id": "gate-test:plan-housekeeping",
-    "run": ".ci/scripts/test/gates/test-plan-housekeeping.sh",
-    "slow": true,
-    "gate": true,
-    "qualityGateTest": true,
-    "leaves": [
-      ".ci/scripts/test/gates/test-plan-housekeeping.sh"
-    ],
-    "ci": {
-      "kind": "step",
-      "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-security",
-      "step": "Quality-gate unit tests"
-    }
-  },
-  {
-    "id": "gate-test:commit-identity",
-    "run": ".ci/scripts/test/gates/test-commit-identity.sh",
-    "gate": true,
-    "qualityGateTest": true,
-    "leaves": [
-      ".ci/scripts/test/gates/test-commit-identity.sh"
-    ],
-    "ci": {
-      "kind": "step",
-      "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-security",
-      "step": "Quality-gate unit tests"
     }
   },
   {

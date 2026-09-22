@@ -16,7 +16,7 @@ is never scanned here.
     git -c user.email=x@y.z var GIT_AUTHOR_IDENT      -> x@y.z
     GIT_AUTHOR_EMAIL=e@e.e git var GIT_AUTHOR_IDENT   -> e@e.e
 
-The allowed set is .ci/config/commit-identity.json, GENERATED from GitHub by `.ci/scripts/quality/check-commit-identity.sh --refresh` and never hand-authored. It cannot be used to smuggle a bad address past CI: the CI gate never consults it to PASS a commit -- its verdict is GitHub's own `.author`.
+The allowed set is .ci/config/commit-identity.json, GENERATED from GitHub by `.ci/scripts/quality/check_commit_identity.py --refresh` and never hand-authored. It cannot be used to smuggle a bad address past CI: the CI gate never consults it to PASS a commit -- its verdict is GitHub's own `.author`.
 
 =============================================================================
 PORT NOTES
@@ -168,7 +168,7 @@ def run(ev):
         ev.warn("")
         ev.warn("It is a tracked file; inside this tree its absence means a broken checkout.")
         ev.warn("Regenerate it from GitHub:")
-        ev.warn("    .ci/scripts/quality/check-commit-identity.sh --refresh")
+        ev.warn("    .ci/scripts/quality/check_commit_identity.py --refresh")
         return hookio.DENY
 
     # Collect overrides from the region BEFORE the `commit` verb. Structural, because git requires `-c` there, and it keeps a `-m` message body out of the parse.

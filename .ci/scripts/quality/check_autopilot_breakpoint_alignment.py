@@ -17,16 +17,15 @@ that cannot fail.
 
 WHY AN ENTRY POINT AT ALL. A port cannot be run by path (`from rediacc_ci ...` fails with `.ci` off `sys.path`, which the insert below fixes), and the `-m` form that does work is unreadable to `check:ci-parity`'s tokenizer, which resolves its leaves to `[python3]`. `check_npmrc.py` records both measurements.
 
-THE `blocker:` BELOW NAMES A HARNESS THAT WAS RETARGETED IN THE SAME CHANGE. `.ci/scripts/test/gates/test-autopilot-breakpoint-alignment.sh` sets its `GATE` to this file.
-That harness IS this gate's
-whole CI coverage -- no lane invokes it directly -- so had the registration moved here while the harness still drove the twin, CI would have stopped running the registered gate and the blocker below would be false.
+THE `blocker:` BELOW NAMES A HARNESS THAT WAS RETARGETED IN THE SAME CHANGE. `.ci/rediacc_ci/tests/gates/test_gate_autopilot_breakpoint_alignment.py` (the pytest port of the retired `test-autopilot-breakpoint-alignment.sh`, W7 P5) sets its `GATE` to this file. That harness IS this gate's whole CI coverage -- no lane invokes it directly -- so had the registration moved here while
+the harness still drove the twin, CI would have stopped running the registered gate and the blocker below would be false.
 
-INVARIANT 5 IS DISCHARGED: W7 P5 retired the twin; the shadow ledger under `.ci/shadow/` is the licence record.
+INVARIANT 5 IS DISCHARGED, TWICE. W7 P5 retired the bash GATE twin; the shadow ledger under `.ci/shadow/` is the licence record. The bash TEST twin (`test-autopilot-breakpoint-alignment.sh`) was retired in the same wave, once its pytest port reached the same verdict on the same tree, case for case.
 
 ---- gate ----
 kind: test
-test: .ci/scripts/test/gates/test-autopilot-breakpoint-alignment.sh
-blocker: BLOCKER: test-autopilot-breakpoint-alignment.sh:59 runs the gate seam-free against the real .ci/breakpoint/workflow/breakpoint.yml and .github/workflows/autopilot.yml inside the gate-test battery (ci-quality.yml quality-security, "Quality-gate unit tests"), so the real comparison executes every CI run; the mutated-copy cases around it prove both fire directions
+test: .ci/rediacc_ci/tests/gates/test_gate_autopilot_breakpoint_alignment.py
+blocker: BLOCKER: test_gate_autopilot_breakpoint_alignment.py:52 runs the gate seam-free against the real .ci/breakpoint/workflow/breakpoint.yml and .github/workflows/autopilot.yml, and check:ci-pytest (ci-quality.yml quality-security, "Python package tests") executes that real comparison every CI run; the mutated-copy cases around it prove both fire directions
 id: check:ci-autopilot-bp-align
 needs: none
 ---- end gate ----

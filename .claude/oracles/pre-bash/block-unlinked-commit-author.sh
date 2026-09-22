@@ -28,7 +28,7 @@
 #     GIT_AUTHOR_EMAIL=e@e.e git var GIT_AUTHOR_IDENT   -> e@e.e
 #
 # The allowed set is .ci/config/commit-identity.json, GENERATED from GitHub by
-# `.ci/scripts/quality/check-commit-identity.sh --refresh` and never hand-authored.
+# `.ci/scripts/quality/check_commit_identity.py --refresh` and never hand-authored.
 # It cannot be used to smuggle a bad address past CI: the CI gate never consults it
 # to PASS a commit -- its verdict is GitHub's own `.author`.
 
@@ -65,7 +65,7 @@ if [ ! -r "$IDENTITY_FILE" ]; then
     echo "" >&2
     echo "It is a tracked file; inside this tree its absence means a broken checkout." >&2
     echo "Regenerate it from GitHub:" >&2
-    echo "    .ci/scripts/quality/check-commit-identity.sh --refresh" >&2
+    echo "    .ci/scripts/quality/check_commit_identity.py --refresh" >&2
     exit 2
 fi
 

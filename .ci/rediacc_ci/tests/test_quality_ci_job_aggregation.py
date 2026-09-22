@@ -13,11 +13,26 @@ Each program is run through the real awk on the same input and compared, and the
 
 import subprocess
 
-from rediacc_ci import paths
 from rediacc_ci.core import allowlist
 from rediacc_ci.quality import ci_job_aggregation as ja
 
-TWIN = paths.from_root(".ci", "scripts", "quality", "check-ci-job-aggregation.sh")
+# The twin's EXEMPT_BLOCK, byte-for-byte, frozen here after `check-ci-job-aggregation.sh` and its gate test were retired in W7 P5 (the K=5 ledger under `.ci/shadow/` already licensed the equivalence). Captured from the tracked history the day the twin left, so this stays a comparison against what the twin actually said rather than a description of what the port currently does.
+TWIN_EXEMPT_BLOCK = """
+# BLOCKER: this IS the aggregator; a job listed in its own needs is a self-edge and GitHub rejects the workflow at parse time, so the exemption is structural rather than a judgment call
+ci-complete
+
+# BLOCKER: runs downstream of the aggregator (needs: [initialize, ci-complete]), so aggregating it would close a cycle; its conclusion is asserted instead by pipeline-sentinel via assert-job-succeeded.sh
+finalize-release-sentinel
+
+# BLOCKER: transitively downstream of the aggregator (needs finalize-release-sentinel, which needs ci-complete), so aggregating it would close a cycle; it is the terminal assertion of the release DAG and has nothing above it to report to
+pipeline-sentinel
+
+# BLOCKER: designed to be force-cancelled by a newer run (its if: is !cancelled(), and cancel-older-runs.sh cancels peers), so a cancelled conclusion is the routine outcome; the soft tier accepts only success or skipped, so aggregating it would turn every superseded push red
+cancel-watchdog
+
+# BLOCKER: its failure already reaches the aggregator, but only INDIRECTLY and by accident. build-docker, build-docker-fast and build-cli each gate on needs.build-renet.result == 'success', so a red build-renet skips all three, and all three are HARD_REQUIRED where a skip is red. ops-tests runs under always() and then dies fetching the missing renet artifact, which is a second, equally accidental path. The outcome is correct today and nothing pins it: dropping the build-renet clause from any of those four ifs, or moving one job to the soft tier, silently makes a red build-renet read as green. Aggregate it directly when the pointer-bump tier logic is next touched, and delete this entry.
+build-renet
+"""
 
 TOP_LEVEL_JOBS_AWK = r"""
     /^jobs:[[:space:]]*$/ { in_jobs = 1; next }
@@ -160,15 +175,11 @@ def test_result_var_for_matches_tr() -> None:
 
 
 def test_the_exempt_set_matches_the_twins_block_entry_for_entry() -> None:
-    """The five exempt job names, and their reasons, taken from the twin's own text.
+    """The five exempt job names, and their reasons, pinned against the twin's frozen text.
 
     A port that dropped one would silently widen the gate by one job. A port that ADDED one would silently narrow it, which is worse, so the comparison is a set equality against the twin rather than a floor.
     """
-    body = TWIN.read_text(encoding="utf-8")
-    start = body.index("read -r -d '' EXEMPT_BLOCK <<'EXEMPT'")
-    end = body.index("\nEXEMPT\n", start)
-    twin_block = body[body.index("\n", start) + 1 : end + 1]
-    twin_pairs = allowlist.pairs(allowlist.parse_text(twin_block))
+    twin_pairs = allowlist.pairs(allowlist.parse_text(TWIN_EXEMPT_BLOCK))
     assert ja.exempt_entries() == twin_pairs
     assert len(twin_pairs) == 5
 

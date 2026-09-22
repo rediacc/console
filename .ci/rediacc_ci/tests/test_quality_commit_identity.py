@@ -16,13 +16,16 @@ against the PR's own commit count; the row named for the cap records what the pa
 Each is run through the real jq, sort, uniq and grep and compared.
 """
 
+import inspect
 import json
 import subprocess
 
-from rediacc_ci import paths
 from rediacc_ci.quality import commit_identity as ci
 
-TWIN = paths.from_root(".ci", "scripts", "quality", "check-commit-identity.sh")
+# The three strings that decided WHAT the bash twin read, frozen here after it and its gate test were retired in W7 P5 (the K=5 ledger under `.ci/shadow/` already licensed the equivalence). Captured from tracked history the day the twin left, a comparison against what the twin actually said rather than a description of what the port currently does.
+TWIN_COMPARE_CALL = 'api "repos/${repo}/compare/${base}...${head}?per_page=100" --paginate'
+TWIN_OLD_CAPPED_ENDPOINT = "pulls/${pr}/commits"
+TWIN_COMMIT_PROJECTION = "{sha: .sha, author: .author.login, committer: .committer.login,"
 
 BAD_JQ = (
     'select(.author == null or .committer == null) | "    \\(.sha[0:7])  \\(.name) <\\(.email)>"'
@@ -176,17 +179,16 @@ def test_the_shape_filter_matches_the_twins_grep() -> None:
 
 
 def test_the_endpoints_and_the_projection_still_match_the_twin() -> None:
-    """The three strings that decide WHAT this gate reads, checked against the twin.
+    """The three strings that decide WHAT this gate reads, pinned against the twin's frozen text.
 
-    Read from the twin's source rather than remembered, because a change to any of them silently re-scopes the gate. The compare endpoint is here by name:
-    reverting it to `pulls/{n}/commits` would reintroduce the 250 cap that made
-    this gate unable to report on a 254-commit PR, and that regression would otherwise be invisible to every other test in this file.
+    Compared against the FROZEN twin strings rather than remembered, because a change to any of them silently re-scopes the gate. The compare endpoint is here by name: reverting it to `pulls/{n}/commits` would reintroduce the 250 cap that made this gate unable to report on a 254-commit PR, and that regression would otherwise be invisible to every other test in this file.
     """
-    body = TWIN.read_text(encoding="utf-8")
-    assert 'api "repos/${repo}/compare/${base}...${head}?per_page=100" --paginate' in body
-    assert "pulls/${pr}/commits" not in body
-    assert "{sha: .sha, author: .author.login, committer: .committer.login," in body
+    source = inspect.getsource(ci)
+    assert "repos/%s/compare/%s...%s?per_page=100" in source
+    assert TWIN_OLD_CAPPED_ENDPOINT not in source
     assert ci.PROJECTION.startswith(".commits[] | {sha: .sha,")
+    assert TWIN_COMMIT_PROJECTION in ci.PROJECTION
+    assert TWIN_COMPARE_CALL.endswith("--paginate")
 
 
 def test_the_metadata_line_is_read_the_way_bash_reads_it() -> None:

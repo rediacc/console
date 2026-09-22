@@ -124,3 +124,6 @@ tree:.claude/oracles/
 
 # BLOCKER: BASH_ENV is a bash-only mechanism, so the file the harness points BASH_ENV at has to be sourceable bash (header lines 1-8)
 file:.claude/hooks/profile/bash_env.sh
+
+# BLOCKER: invoked directly by .github/workflows/ci.yml:562 (job run-sh-tests, a bare-checkout ubuntu-slim runner that installs no toolchain -- no node, no Python, no pytest -- so it reports in under a minute); .ci/rediacc_ci/tests/gates/test_gate_toolchain.py reaches the identical 15 controls and runs as additional coverage under check:ci-pytest, but cannot replace this file because pytest is not on that runner's PATH without a setup step the job exists to avoid
+file:.ci/scripts/test/gates/test-toolchain.sh

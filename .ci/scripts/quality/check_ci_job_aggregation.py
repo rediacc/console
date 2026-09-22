@@ -9,9 +9,10 @@ sides is absent from the comparison. Found 2026-09-08 while cutting W7 P4 over: 
 
 So this is not a cutover, it is a FIRST registration, and it goes in through a `---- gate ----` header plus one driver `gate:bind --write` rather than by hand. Driven against the real tree before registering: exit 0.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-ci-job-aggregation.sh` is NOT deleted by this change. It stays as the twin this port is proven against; deletion is W7 P5.
+INVARIANT 5 IS DISCHARGED, W7 P5. `.ci/scripts/quality/check-ci-job-aggregation.sh` and its gate test `.ci/scripts/test/gates/test-ci-job-aggregation.sh` are both deleted: the fixture behaviour the test proved is now carried by `.ci/rediacc_ci/tests/gates/test_gate_ci_job_aggregation.py`, retargeted at this Python entry point and checked to reach the same 15 verdicts on the same 15
+fixtures before the twin left.
 
-THE LEDGER CONDITION IS MET. Driven 2026-09-08:
+THE LEDGER CONDITION WAS MET. Driven 2026-09-08:
 
     npx tsx scripts/lib/shadow-gate.ts --pair w7p2-ci-job-aggregation --assert --k 5
     -> equivalence holds over 5 distinct trees

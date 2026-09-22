@@ -8,9 +8,10 @@ The three-line hop below is what makes a path invocation work at all: nothing pu
 NO `---- gate ----` HEADER, deliberately. `.ci/scripts/quality/check-commit-identity.sh` carries none either: this pair is hand-registered in `.github/workflows/ci-quality.yml` and excused from the local gate set by `.ci/policy/.ci-parity-exempt`, and `check:ci-parity` is what holds those two ends together. Writing a header here would hand the step to `gate:bind`, which is a
 different change from moving which file the step runs.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-commit-identity.sh` is NOT deleted by this change. It stays on disk as the twin this port is proven against; deleting it is W7 P5's job, in a later change.
+INVARIANT 5 IS DISCHARGED, W7 P5. `.ci/scripts/quality/check-commit-identity.sh` and its gate test `.ci/scripts/test/gates/test-commit-identity.sh` are both deleted: the fixture behaviour the test proved is now carried by `.ci/rediacc_ci/tests/gates/test_gate_commit_identity.py`, retargeted at this entry point and checked to reach the same 10 verdicts on the same 10
+fixtures before the twin left.
 
-THE LEDGER CONDITION IS MET. Driven 2026-09-08:
+THE LEDGER CONDITION WAS MET. Driven 2026-09-08:
 
     npx tsx scripts/lib/shadow-gate.ts --pair w7p2-commit-identity --assert --k 5
     -> equivalence holds over 5 distinct trees

@@ -4273,9 +4273,9 @@ export const GATES: readonly GateSpec[] = [
     leaves: ['.ci/scripts/quality/check_autopilot_breakpoint_alignment.py'],
     ci: {
       kind: 'test',
-      test: '.ci/scripts/test/gates/test-autopilot-breakpoint-alignment.sh',
+      test: '.ci/rediacc_ci/tests/gates/test_gate_autopilot_breakpoint_alignment.py',
       blocker:
-        'BLOCKER: test-autopilot-breakpoint-alignment.sh:59 runs the gate seam-free against the real .ci/breakpoint/workflow/breakpoint.yml and .github/workflows/autopilot.yml inside the gate-test battery (ci-quality.yml quality-security, "Quality-gate unit tests"), so the real comparison executes every CI run; the mutated-copy cases around it prove both fire directions',
+        'BLOCKER: test_gate_autopilot_breakpoint_alignment.py:52 runs the gate seam-free against the real .ci/breakpoint/workflow/breakpoint.yml and .github/workflows/autopilot.yml, and check:ci-pytest (ci-quality.yml quality-security, "Python package tests") executes that real comparison every CI run; the mutated-copy cases around it prove both fire directions',
     },
   },
 
@@ -4654,46 +4654,6 @@ export const GATES: readonly GateSpec[] = [
   // A mutex group binding the three writers against check:lint / check:format / lint:unused is the fallback, and it is expensive. It would serialise 511.7s of work against an observed 264.2s wall, a 1.94x regression that drops the run from about 9x to about 4.7x. It also binds the two LONGEST gates in the set to each other, because one of the writers is the critical path:
   // test-gate-paths-exist.sh measured 142.6s standalone on an idle tree and 264.1s under parallel load, against check:lint at 194.8s under the same load. (The plan's 116.7s for check:lint is stale; do not cost this from it.) No mutex is declared here, deliberately, because that trade wants an explicit decision rather than a silent default.
   {
-    id: 'gate-test:autopilot-breakpoint-alignment',
-    run: '.ci/scripts/test/gates/test-autopilot-breakpoint-alignment.sh',
-    reads: ['tree:repo'],
-    gate: true,
-    qualityGateTest: true,
-    leaves: ['.ci/scripts/test/gates/test-autopilot-breakpoint-alignment.sh'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-security',
-      step: 'Quality-gate unit tests',
-    },
-  },
-  {
-    id: 'gate-test:autopilot-no-bypass',
-    run: '.ci/scripts/test/gates/test-autopilot-no-bypass.sh',
-    gate: true,
-    qualityGateTest: true,
-    leaves: ['.ci/scripts/test/gates/test-autopilot-no-bypass.sh'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-security',
-      step: 'Quality-gate unit tests',
-    },
-  },
-  {
-    id: 'gate-test:go-module-sync',
-    run: '.ci/scripts/test/gates/test-go-module-sync.sh',
-    gate: true,
-    qualityGateTest: true,
-    leaves: ['.ci/scripts/test/gates/test-go-module-sync.sh'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-security',
-      step: 'Quality-gate unit tests',
-    },
-  },
-  {
     id: 'gate-test:run-sh',
     run: '.ci/scripts/test/gates/test-run-sh.sh',
     gate: true,
@@ -4725,15 +4685,17 @@ export const GATES: readonly GateSpec[] = [
     leaves: ['.ci/scripts/quality/check_regions_sync.py'],
     ci: {
       kind: 'test',
-      test: '.ci/scripts/test/gates/test-regions-sync.sh',
+      test: '.ci/rediacc_ci/tests/gates/test_gate_regions_sync.py',
       blocker:
-        'BLOCKER: test-regions-sync.sh drives the REAL gate over the REAL regions.json and packages/shared/src/regions/data.json ' +
-        'inside the gate-test battery (ci-quality.yml quality-security, "Quality-gate unit tests"), and its controls plant a divergence, an ' +
+        'BLOCKER: test_gate_regions_sync.py drives the REAL gate over the REAL regions.json and packages/shared/src/regions/data.json, ' +
+        'and check:ci-pytest (ci-quality.yml quality-security, "Python package tests") runs it every CI run; its controls plant a divergence, an ' +
         'empty file and invalid JSON to prove all three refusals fire; the two files are held together by hand (no build step ' +
         'syncs them, despite what index.ts used to claim) and data.json is the ONLY region list users get because ' +
         '${SITE_URL}/regions.json returns 404, so silent drift would ship to every install',
     },
   },
+  // NOT RETIRED, AND THE ONE EXCEPTION IN THIS BATCH. test-toolchain.sh is invoked directly by `.github/workflows/ci.yml:562` (job `run-sh-tests`, step "gate toolchain resolver controls"), a BARE-CHECKOUT `ubuntu-slim` job that deliberately installs no toolchain -- no node, no Python, no `.ci/cache/toolchain/uv-tools/bin/pytest` -- so it can report in under a minute.
+  // `.ci/rediacc_ci/tests/gates/test_gate_toolchain.py` reaches the identical 15 controls (verified: same case set, same PASS count) and runs as ADDITIONAL coverage under check:ci-pytest, but it cannot REPLACE this entry: pytest is not on that runner's PATH without a setup step this job exists to avoid. The twin stays registered here permanently, not pending a later deletion.
   {
     id: 'gate-test:toolchain',
     run: '.ci/scripts/test/gates/test-toolchain.sh',
@@ -4747,36 +4709,10 @@ export const GATES: readonly GateSpec[] = [
       step: 'Quality-gate unit tests',
     },
   },
-  {
-    id: 'gate-test:ci-job-aggregation',
-    run: '.ci/scripts/test/gates/test-ci-job-aggregation.sh',
-    gate: true,
-    qualityGateTest: true,
-    leaves: ['.ci/scripts/test/gates/test-ci-job-aggregation.sh'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-security',
-      step: 'Quality-gate unit tests',
-    },
-  },
   // RETIRED WITH ITS SUBJECT: gate-test:claude-hooks, the heaviest entry in this file at 537.4s, was a 40-line wrapper around `.claude/hooks/test-hooks.sh` and had no other work in it. The harness is gone, ported to pytest under `.claude/rediacc_hooks/tests/`, and its label multiset was compared run-against-run before the deletion rather than diff-against-diff. The ports are
   // collected by check:ci-pytest, whose `paths` already carry `.claude/hooks/**` and `.claude/rediacc_hooks/**`, so nothing lost selection when this entry left.
   //
   // RETIRED, AND THE LAST TWO `mutex: ['tree:repo']` ENTRIES WENT WITH THEM: gate-test:gate-anti-vacuity and gate-test:generate-tag-inputs. Their pytest ports (test_gate_gate_anti_vacuity.py, test_gate_generate_tag_inputs.py) carry every case and still write the tracked tree, so the exclusive claim moved to check:ci-pytest, which is where they now run.
-  {
-    id: 'gate-test:regions-sync',
-    run: '.ci/scripts/test/gates/test-regions-sync.sh',
-    gate: true,
-    qualityGateTest: true,
-    leaves: ['.ci/scripts/test/gates/test-regions-sync.sh'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-security',
-      step: 'Quality-gate unit tests',
-    },
-  },
   {
     id: 'check:ci-pytest',
     run: 'npm run check:ci-pytest',
@@ -4975,34 +4911,6 @@ export const GATES: readonly GateSpec[] = [
       workflow: '.github/workflows/ci-quality.yml',
       job: 'quality-code',
       step: 'Dockerfile npm pins',
-    },
-  },
-  {
-    id: 'gate-test:plan-housekeeping',
-    run: '.ci/scripts/test/gates/test-plan-housekeeping.sh',
-    // 7.6s alone, ~20s in the pre-push lane, and the lane is what the tier is about. It drives the REAL gate against 13 fixture git repositories, so its cost is 13 process trees rather than anything it computes -- exactly the shape that stretches under 20x contention. It was already borderline (samples 19.9-23.0s) and a 13th case tipped it.
-    slow: true,
-    gate: true,
-    qualityGateTest: true,
-    leaves: ['.ci/scripts/test/gates/test-plan-housekeeping.sh'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-security',
-      step: 'Quality-gate unit tests',
-    },
-  },
-  {
-    id: 'gate-test:commit-identity',
-    run: '.ci/scripts/test/gates/test-commit-identity.sh',
-    gate: true,
-    qualityGateTest: true,
-    leaves: ['.ci/scripts/test/gates/test-commit-identity.sh'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-security',
-      step: 'Quality-gate unit tests',
     },
   },
   // W3 P2 heavy-job proxies. Each runs the SAME script a heavy CI job runs, on a reduced input, and returns 77 (pool.ts CANNOT_RUN -> `blocked`) when its toolchain is absent. Every one is `local-only`: their subjects run in ci.yml's
