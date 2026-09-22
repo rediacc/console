@@ -1,8 +1,0 @@
-# twin .ci/scripts/autopilot/submodule-prs.sh blob e613fefe9d8660a4e2f922e880edf40d24802edc
-exit: 2
---- stdout ---
---- stderr ---
-✗ usage: submodule-prs.sh --verdict <file> --repo <owner/name> --pr <n> --branch <name> [--dry-run]
---- gh calls ---
---- gh bodies ---
-{}

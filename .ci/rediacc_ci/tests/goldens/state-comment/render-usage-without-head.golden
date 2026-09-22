@@ -1,5 +1,0 @@
-# twin .ci/scripts/autopilot/state-comment.sh blob 8e2824ffbb16ae3acc60af3c8520f7aeccc1f233
-exit: 2
---- stdout ---
---- stderr ---
-✗ usage: state-comment.sh render --body <file> --state <s> --round <r/cap> --head <sha> --last-run <id/attempt handled> [--ledger <line>] [--ruled-out <line>] [--decision <line>] [--ruled-out-file <file>] [--decisions-file <file>] [--campaign <c>] [--model <id>] [--rounds-max <n>] [--last-sig <hex8>] [--sig-count <n>]

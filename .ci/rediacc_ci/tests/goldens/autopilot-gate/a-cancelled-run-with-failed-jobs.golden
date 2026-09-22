@@ -1,7 +1,0 @@
-# twin .ci/scripts/autopilot/autopilot-gate.sh blob a0eb5eaa1794385f9b5e166b00d4f0099a7bac77
-exit: 0
---- stdout ---
-{"decision":"go","mode":"fix","reason":"watchdog-kill: cancelled with 2 failed job(s)","round":1,"push_allowed":false,"armed_by":"label","model":"claude-sonnet-5","rounds_max":25,"campaign":"none","dispatch_trusted":false,"sig":"6002dfd3","sig_count":1}
---- stderr ---
---- calls ---
-[]

@@ -1,9 +1,0 @@
-# twin .ci/scripts/autopilot/compose-prompt.sh blob 235192d87c71bb898d08ca755e3097c9f894be3e
-exit: 1
---- stdout ---
---- stderr ---
-✗ Required directory 'nope' does not exist
---- out file ---
-null
---- github output ---
-""

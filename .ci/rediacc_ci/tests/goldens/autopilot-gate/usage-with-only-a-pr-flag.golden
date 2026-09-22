@@ -1,8 +1,0 @@
-# twin .ci/scripts/autopilot/autopilot-gate.sh blob a0eb5eaa1794385f9b5e166b00d4f0099a7bac77
-exit: 2
---- stdout ---
---- stderr ---
-✗ usage: autopilot-gate.sh --classify --event <file> --pr <file> [--state <file>] [--failed-jobs <file>] [--watchdog <file>]
-✗ the gate is fixtures-only by design; the calling workflow gathers the fixtures (see header)
---- calls ---
-[]

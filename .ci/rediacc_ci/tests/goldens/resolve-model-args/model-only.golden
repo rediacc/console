@@ -1,7 +1,0 @@
-# twin .ci/scripts/autopilot/resolve-model-args.sh blob c77054b040287f6ad2c8420ef1aa0aa91de2170d
-exit: 2
---- stdout ---
---- stderr ---
-✗ usage: resolve-model-args.sh --model <id> --mode <mode> [--effort <dispatch>] [--effort-var <variable>]
---- github output ---
-

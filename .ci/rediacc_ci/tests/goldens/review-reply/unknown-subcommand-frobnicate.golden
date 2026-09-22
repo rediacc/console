@@ -1,9 +1,0 @@
-# twin .ci/scripts/autopilot/review-reply.sh blob f3a9f6676f7027d2acc3fa53d311fb0fe33107db
-exit: 2
---- stdout ---
---- stderr ---
-✗ unknown subcommand 'frobnicate' (plan|apply)
---- calls ---
-[]
---- plan-file ---
-null

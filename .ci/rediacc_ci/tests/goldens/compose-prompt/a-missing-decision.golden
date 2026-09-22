@@ -1,9 +1,0 @@
-# twin .ci/scripts/autopilot/compose-prompt.sh blob 235192d87c71bb898d08ca755e3097c9f894be3e
-exit: 1
---- stdout ---
---- stderr ---
-cat: fx/decision.json: No such file or directory
---- out file ---
-"You are the autopilot.\nRound template body.\n<autopilot_state>\n"
---- github output ---
-""

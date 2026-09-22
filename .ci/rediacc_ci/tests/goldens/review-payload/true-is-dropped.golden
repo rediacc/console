@@ -1,8 +1,0 @@
-# twin .ci/scripts/autopilot/review-payload.sh blob f794c4b741afd63ff389bccfa70f70d3741ae824
-exit: 0
---- stdout ---
-{"threads":[],"kept":0,"dropped":0,"bytes":2}
---- stderr ---
-✓ review payload: 0 thread(s), 2 bytes, rooted by an author matching 'github-actions'
---- out file ---
-<no file>

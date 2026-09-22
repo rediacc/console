@@ -1,7 +1,0 @@
-# twin .ci/scripts/autopilot/sweep-campaigns.sh blob 0191d2fdc465409a67f4973eb261f972ada0c93f
-exit: 0
---- stdout ---
-5
-5
---- stderr ---
-✓ sweep-campaigns: 2 open campaign(s) across 2 scanned PR(s)

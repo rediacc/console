@@ -1,9 +1,0 @@
-# twin .ci/scripts/autopilot/compose-prompt.sh blob 235192d87c71bb898d08ca755e3097c9f894be3e
-exit: 1
---- stdout ---
---- stderr ---
-✗ review-response round with no review payload fixture at fx/review-payload.json; refusing to run a review round blind
---- out file ---
-"You are the autopilot.\nRound template body.\n<autopilot_state>\n{\"decision\":\"fix\",\"note\":\"caf\u00e9\"}\n</autopilot_state>\n\n<failed_jobs>\n</failed_jobs>\n"
---- github output ---
-""

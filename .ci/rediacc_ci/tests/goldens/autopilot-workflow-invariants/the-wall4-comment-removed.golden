@@ -1,6 +1,0 @@
-# twin .ci/scripts/security/check-autopilot-workflow-invariants.sh blob 98d2acc3abe81dbdcf5fd5f4a94be0bab49c7478
-exit: 1
---- stdout ---
---- stderr ---
-✗ INVARIANT-FAIL: wall4-comment-missing: no 'WALL 4' comment explains the trusted checkout (<work>/wf.yml)
-✗ autopilot workflow invariants FAILED (docs/ci-overhaul/03-v2-autonomy.md is the design source)

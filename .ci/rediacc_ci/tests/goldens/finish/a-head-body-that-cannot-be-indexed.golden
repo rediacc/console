@@ -1,7 +1,0 @@
-# twin .ci/scripts/autopilot/finish.sh blob bbd07cd04054c2a832b2393721d680966ef32ade
-exit: 5
---- stdout ---
---- stderr ---
-jq: error (at <stdin>:0): Cannot index array with string "sha"
---- gh calls ---
-api	repos/r/c/pulls/5	--jq	{sha: .head.sha}

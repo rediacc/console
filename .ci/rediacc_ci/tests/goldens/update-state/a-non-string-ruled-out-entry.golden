@@ -1,8 +1,0 @@
-# twin .ci/scripts/autopilot/update-state.sh blob 86b03e9eba69476079c0a1ca26711a02b532e21d
-exit: 5
---- stdout ---
---- stderr ---
-jq: error (at verdict.json:0): number (7) cannot be matched, as it is not a string
---- gh calls ---
---- gh body ---
-<no body>

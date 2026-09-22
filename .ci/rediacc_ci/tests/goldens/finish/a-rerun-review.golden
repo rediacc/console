@@ -1,9 +1,0 @@
-# twin .ci/scripts/autopilot/finish.sh blob bbd07cd04054c2a832b2393721d680966ef32ade
-exit: 0
---- stdout ---
---- stderr ---
-✓ review run 4242 rerun requested for PR #5
---- gh calls ---
-api	repos/rediacc/console/pulls/5	--jq	{sha: .head.sha}
-api	repos/rediacc/console/actions/runs?head_sha=deadbeef&event=pull_request	--jq	{id: ([.workflow_runs[] | select(.name | test("[Rr]eview"))] | first | .id)}
-run	rerun	4242	--repo	rediacc/console	--failed

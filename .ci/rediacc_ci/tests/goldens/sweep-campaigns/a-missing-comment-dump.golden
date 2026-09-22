@@ -1,7 +1,0 @@
-# twin .ci/scripts/autopilot/sweep-campaigns.sh blob 0191d2fdc465409a67f4973eb261f972ada0c93f
-exit: 0
---- stdout ---
-5
---- stderr ---
-⚠ sweep-campaigns: no comment dump for PR #6 at comments/6.json; skipping (an unreadable PR is not a closed campaign)
-✓ sweep-campaigns: 1 open campaign(s) across 1 scanned PR(s)

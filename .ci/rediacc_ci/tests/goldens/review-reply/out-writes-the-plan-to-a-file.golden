@@ -1,9 +1,0 @@
-# twin .ci/scripts/autopilot/review-reply.sh blob f3a9f6676f7027d2acc3fa53d311fb0fe33107db
-exit: 0
---- stdout ---
---- stderr ---
-✓ review-reply plan: 1 reply/resolve pair(s) planned
---- calls ---
-[]
---- plan-file ---
-"{\"replies\":[{\"thread_id\":\"T_acme1\",\"body\":\"thanks, fixed\",\"repo\":\"acme/console\"}],\"skipped\":[],\"flagged\":false}\n"

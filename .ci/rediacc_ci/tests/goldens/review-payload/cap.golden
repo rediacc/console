@@ -1,8 +1,0 @@
-# twin .ci/scripts/autopilot/review-payload.sh blob f794c4b741afd63ff389bccfa70f70d3741ae824
-exit: 0
---- stdout ---
-{"threads":[{"id":"T-new","repo":null,"pr":null,"path":"packages/cli/src/x.ts","line":42,"comments":[{"author":"github-actions","body":"short","id":1000}]}],"kept":1,"dropped":1,"bytes":145}
---- stderr ---
-⚠ review payload capped at 400 bytes: 1 oldest thread(s) dropped, 1 kept
---- out file ---
-<no file>

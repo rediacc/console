@@ -1,5 +1,0 @@
-# twin .ci/scripts/autopilot/linked-sub-prs.sh blob f01bedf46b2b90c142abbfda408eb009836692a3
-exit: 2
---- stdout ---
---- stderr ---
-/home/developer/console/.ci/scripts/autopilot/../lib/common.sh: line 342: printf: `ARG_A.B': not a valid identifier
