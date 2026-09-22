@@ -765,21 +765,21 @@
       "done_sigs": []
     },
     "agent/plans/PLAN-pid-fallback-liveness-check.md": {
-      "status": "executing",
+      "status": "done",
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 6,
-      "done": 0,
-      "open_sigs": [
+      "open": 0,
+      "done": 6,
+      "open_sigs": [],
+      "done_sigs": [
         "03906dcc",
         "307053f8",
         "6189ef3a",
         "662affc2",
         "7cd0fbbb",
         "d581ca0d"
-      ],
-      "done_sigs": []
+      ]
     },
     "agent/plans/PLAN-pipefail-grep-q-renet-gate.md": {
       "status": "draft",

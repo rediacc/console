@@ -1,5 +1,5 @@
 # PLAN: block_unsatisfiable_pid_wait.py -- a /proc/$(cat X || echo <always-alive-PID>) liveness-check guard
-Status: executing
+Status: done
 Owner: d778be9d
 Updated: 2026-09-22
 
@@ -250,12 +250,12 @@ Two rules. First, never give a `$(cat <pidfile> || echo <N>)` substitution insid
 
 ## Tasks
 
-- [ ] Write `.claude/rediacc_hooks/guards/block_unsatisfiable_pid_wait.py` per the design above.
-- [ ] Write `.claude/rediacc_hooks/guards/test-block_unsatisfiable_pid_wait.py`, transcribing all 20 adversarial cases, modeled on `test-block_push_to_protected_branch.py`.
-- [ ] Insert the TRAPS.md entry between lines 727 and 729.
-- [ ] Run the new standalone test directly (`python3 .claude/rediacc_hooks/guards/test-block_unsatisfiable_pid_wait.py`), confirm 20/20 with a non-trivial block/allow split.
-- [ ] Run `.claude/rediacc_hooks/tests/test_hooks_delegates.py` and `.claude/rediacc_hooks/tests/test_dispatch.py` (ORDER contiguity) and `.claude/rediacc_hooks/tests/test_guards_differential.py` (TWIN=None coverage), confirm all green with no manual wiring needed.
-- [ ] Confirm the new test file is auto-discovered by `test_hooks_delegates.py`'s TAILED glob (case count should increase by one, matching the pattern already proven for `test-block_push_to_protected_branch.py`).
+- [x] Write `.claude/rediacc_hooks/guards/block_unsatisfiable_pid_wait.py` per the design above.
+- [x] Write `.claude/rediacc_hooks/guards/test-block_unsatisfiable_pid_wait.py`, transcribing all 20 adversarial cases, modeled on `test-block_push_to_protected_branch.py`.
+- [x] Insert the TRAPS.md entry between lines 727 and 729.
+- [x] Run the new standalone test directly (`python3 .claude/rediacc_hooks/guards/test-block_unsatisfiable_pid_wait.py`), confirm 20/20 with a non-trivial block/allow split.
+- [x] Run `.claude/rediacc_hooks/tests/test_hooks_delegates.py` and `.claude/rediacc_hooks/tests/test_dispatch.py` (ORDER contiguity) and `.claude/rediacc_hooks/tests/test_guards_differential.py` (TWIN=None coverage), confirm all green with no manual wiring needed.
+- [x] Confirm the new test file is auto-discovered by `test_hooks_delegates.py`'s TAILED glob (case count should increase by one, matching the pattern already proven for `test-block_push_to_protected_branch.py`).
 
 ## Acceptance criteria
 
