@@ -8,6 +8,7 @@ import hashlib
 import json
 import os
 import pathlib
+import random
 import re
 import time
 
@@ -1312,7 +1313,9 @@ BACKOFF_NOTE_MIN = int(os.environ.get("WORKLIST_BACKOFF_NOTE_MIN", "60"))
 # ---- the allow-report OUTPUT QUEUE ------------------------------------------ The diet above deduplicated sections; this bounds how many reach one stop. Sections are ENQUEUED AT COMPUTE TIME, at their producer's call site, never in the emit block -- because emit() exits the process, and three producers (the liveness ladder, dead-session archiving, request escalation) spend a
 # one-shot budget BEFORE the block emit at run_stop's violations branch. Their text was only ever appended on the allow path, so a stop that blocked for an unrelated reason swallowed them for good: the rung is recorded, the item is already [~], the [?] is already appended, and nothing re-fires. An entry that lands in the state doc the moment its producer spends that budget survives
 # a block, a judge block, a crash and a restart.
-OUTQ_PER_STOP = int(os.environ.get("WORKLIST_REPORT_PER_STOP", "1"))
+# Fixed at 3, not tunable. A prior env knob (WORKLIST_REPORT_PER_STOP) let a session widen the drain to see everything at once, which is exactly the emergency valve that made the queue's own backlog invisible. The two tests pinning this number -- test_181 (tier order) and the padded test_201/209K fixtures (randomization robustness) -- assume this exact value; raising it again
+# reopens the vacuity those tests were rescued from.
+OUTQ_PER_STOP = 3
 OUTQ_MAX = int(os.environ.get("WORKLIST_OUTQ_MAX", "40"))
 
 
@@ -1411,14 +1414,32 @@ def outq_add(
     return added
 
 
-def outq_drain(worklist, session_id, state_doc, n):
-    """(texts, remaining): the n highest-priority entries, FIFO inside a class.
+def outq_drain(worklist, session_id, state_doc, n, rng=None):
+    """(texts, remaining): up to n entries, TIER ORDER preserved, same-tier choice randomized.
+
+    Priority tiers are still released strictly ascending (a priority-3 item never displaces a priority-1 one), but which entries fill a tier's share of the budget is now picked at random rather than FIFO by `seq`. This is deliberate: at a fixed budget of `OUTQ_PER_STOP`, FIFO meant an old same-tier item could sit queued indefinitely behind a stream of newer arrivals at
+    the same priority, which is exactly the starvation shape `test_176`'s planted-defect control exists to catch -- randomization spreads that risk across every same-tier entry instead of concentrating it on whichever one happened to queue first.
+
+    `rng` is the whole determinism seam: `None` resolves to the module-level `random` for real stops, and a test passes `random.Random(seed)` to drive the same code path in-process rather than trying to reach a subprocess's random state.
 
     Removes exactly those entries BY IDENTITY (never by slicing or clearing -- a clear silently eats every one-shot that had not reached its turn), records shown[] for the volatile ones, and persists before returning, because the caller emits and emit() exits the process."""
     q = _outq(state_doc)
-    take = sorted(q["items"], key=lambda e: (int(e.get("prio") or 0), int(e.get("seq") or 0)))[
-        : max(0, n)
-    ]
+    r = rng if rng is not None else random
+    tiers = {}
+    for e in q["items"]:
+        tiers.setdefault(int(e.get("prio") or 0), []).append(e)
+    take = []
+    budget = max(0, n)
+    for prio in sorted(tiers):
+        if budget <= 0:
+            break
+        pool = tiers[prio]
+        if len(pool) <= budget:
+            take.extend(pool)
+            budget -= len(pool)
+        else:
+            take.extend(r.sample(pool, budget))
+            budget = 0
     # A DIGEST, NOT A QUEUE OF FACTS. Every settled regression-gate outcome is a sticky one-line fact that is not asked again; released one per stop they took a stop each, and a long session accumulated twenty-five of them. When one comes due, ALL of its siblings ride the same stop as one section, so the queue holds at most one of them however many fixes settled.
     is_settled = lambda e: str(e.get("key", "")).startswith("reg-settled:")  # noqa: E731
     if any(is_settled(e) for e in take):
@@ -1444,8 +1465,8 @@ def agent_hint_queue(worklist, session_id, state_doc, haystack):
     ADVISORY, never a block. `vadd` (46 call sites) stops the session; blocking a session for not consulting a specialist is the fastest possible way to get this feature switched off, and it would compete for the single focused slot with real violations.
 
     PRIORITY 3, which is the whole noise control and it costs nothing: every
-    existing advisory is 2 or better and outq_drain releases OUTQ_PER_STOP=1 of
-    them per stop, so a hint is only ever emitted on a stop that has nothing more important to say. The per-agent key plus REFRESH_MIN then means the same specialist cannot be suggested twice inside the window, and the state-doc ledger enforces MAX_PER_SESSION across all agents.
+    existing advisory is 2 or better and outq_drain releases OUTQ_PER_STOP=3 of
+    them per stop, so a hint is only ever emitted on a stop that has room left after everything more important. The per-agent key plus REFRESH_MIN then means the same specialist cannot be suggested twice inside the window, and the state-doc ledger enforces MAX_PER_SESSION across all agents.
 
     The cap counts ADDS, not matches: outq_add absorbs a hint that is already queued or still inside its refresh window, and counting an absorbed hint would spend the session's budget on lines nobody ever saw.
     """
@@ -3081,7 +3102,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     # agent/plans/PLAN-secret-namespace-migration.md on 2026-09-02.
     #
     # AN ADVISORY, NOT A `vadd`, and the reason is a deadlock rather than politeness: a plan carrying 18 open tasks would, as a block, refuse every turn of every session in this repo until a multi-week migration finished. See wl_planfile's design note 1. The queue also supplies the whole noise
-    # policy for free -- OUTQ_PER_STOP=1, plus outq_add's content signature,
+    # policy for free -- OUTQ_PER_STOP=3, plus outq_add's content signature,
     # which re-fires the moment the untracked set changes and otherwise stays quiet for REPORT_REFRESH_MIN.
     #
     # PRIORITY 2, alongside the other real advisories and above the agent hint at 3: the operator asked for this specifically, so it should not queue behind a suggestion, but it must not outrank a report a peer is blocked on at 1. ONE plan per stop, the newest with findings, remainder counted.
@@ -3575,7 +3596,7 @@ def run_stop(event, event_ok, worklist, hook_file):
         pass
     # v19 L2: identities that write to this store but have never stopped. The CLI check refuses them at the door from now on; this is the backstop for what it cannot reach -- history already written, and the deliberate hole where the environment cannot name the caller.
     #
-    # PRIORITY 1, not 2, and the reason is mechanical: OUTQ_PER_STOP defaults to 1 and outq_drain is highest-priority-first, so a priority-2 note can queue behind others for many stops. An identity split is not something to ration. REPORT-ONLY: this runs on every session's Stop path and the repair is not always this session's to make.
+    # PRIORITY 1, not 2, and the reason is mechanical: OUTQ_PER_STOP is 3 and outq_drain is highest-priority-first, so a priority-2 note can still queue behind others for many stops on a busy branch. An identity split is not something to ration. REPORT-ONLY: this runs on every session's Stop path and the repair is not always this session's to make.
     try:
         _phantoms, _blind = phantom_identities(worklist, session_id, fold, all_reqs)
         _wp = str(pathlib.Path(hook_file).resolve())
@@ -4114,7 +4135,7 @@ def run_stop(event, event_ok, worklist, hook_file):
         # 2026-09-17, ten parsed boxes in a freshly written plan went unseen across roughly twenty consecutive blocked stops, and the operator noticed before the hook said anything. Only the COUNT rides along here, never a body, on the same reasoning `ci_report` and `queue_note` above already use: a body would displace the focused violation this block exists to deliver.
         pending_outq = len(_outq(state_doc).get("items") or [])
         if pending_outq:
-            extras += "\n\n" + M.N_OUTQ_BLOCKED % (pending_outq, pending_outq)
+            extras += "\n\n" + M.N_OUTQ_BLOCKED % (pending_outq, OUTQ_PER_STOP)
         if os.environ.get("WORKLIST_FOCUS", "on").lower() in ("off", "0", "no"):
             # EVERY violation is rendered on this path, so every display latch is genuinely spent. Saved explicitly because this branch emits (and therefore exits) without reaching the save below -- the same trap the queue's compute-time persistence was moved for.
             spend_display_latches([k for k, _a, _t in violations])
@@ -4840,7 +4861,7 @@ def run_stop(event, event_ok, worklist, hook_file):
             state_doc,
             (last_msg or "") + "\n" + "\n".join(remaining_lines),
         )
-    # ONE section per stop by default, highest priority first and FIFO inside a priority class. The "+N more" tail is MANDATORY for the reason spelled out at the guide's own truncation: a silent cap reads as "that is everything", and a session that can see three are waiting can raise WORKLIST_REPORT_PER_STOP for one turn.
+    # UP TO OUTQ_PER_STOP sections per stop, highest priority first and randomized inside a priority class. The "+N more" tail is MANDATORY for the reason spelled out at the guide's own truncation: a silent cap reads as "that is everything", and there is no knob left to widen it for one turn.
     texts, remaining = outq_drain(worklist, session_id, state_doc, OUTQ_PER_STOP)
     parts.extend(texts)
     if remaining:

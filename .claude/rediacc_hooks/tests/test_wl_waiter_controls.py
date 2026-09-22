@@ -276,6 +276,8 @@ def test_163y_unread_sub_agent_reports_are_surfaced_on_an_ordinary_stop(wl):  # 
         + "\n",
         encoding="utf-8",
     )
+    # A fresh, not-yet-shown peer note, so SOMETHING else is queued once the unread-report section clears -- otherwise the fixed 3-per-stop budget can drain everything queued by this point in the fixture, leaving check_quiet with no non-vacuous evidence the hook ran at all.
+    wl.brief_other("cafe5678")
     wl.newturn()
     wl.say(SAID_DONE)
     wl.check_quiet(

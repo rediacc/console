@@ -420,13 +420,14 @@
       "done_sigs": []
     },
     "agent/plans/PLAN-eliminate-worklist-report-per-stop-env.md": {
-      "status": "draft",
+      "status": "done",
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 20,
-      "done": 0,
-      "open_sigs": [
+      "open": 0,
+      "done": 20,
+      "open_sigs": [],
+      "done_sigs": [
         "005ec1ee",
         "09f3d27f",
         "0a85b234",
@@ -434,21 +435,20 @@
         "2be0cd08",
         "356b7ff4",
         "3b332409",
-        "4563d1bd",
         "4deb8d61",
         "66e6f871",
         "71e1c727",
         "721d9837",
         "8c384889",
         "93689cf4",
+        "b3c4a804",
         "b60bcb92",
         "bc9cc635",
         "c8224436",
         "ca866b29",
         "e136a3fe",
         "f281ea08"
-      ],
-      "done_sigs": []
+      ]
     },
     "agent/plans/PLAN-env-to-bitwarden-v2.md": {
       "status": "draft",
@@ -1327,7 +1327,7 @@
       "done_sigs": []
     },
     "agent/plans/PLAN-stop-hook-behavioral-hints.md": {
-      "status": "draft",
+      "status": "executing",
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",

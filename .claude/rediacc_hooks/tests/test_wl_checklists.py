@@ -368,9 +368,8 @@ def test_195_a_foreign_producing_checklist_is_reported_never_blocked_on(wl):  # 
     wl.say("done for now")
     wl.brief_now()
     wl.hand_now()
-    per_stop = {"WORKLIST_REPORT_PER_STOP": "6"}
     clfile(wl, "demo", CL_PRODUCING_FOREIGN)
-    got = wl.run(per_stop)
+    got = wl.run()
     misjudged = "195: a foreign producing checklist was mis-adjudicated: %s" % got.out[:400]
     assert got.rc == 0, misjudged
     assert '"decision": "block"' not in got.out, misjudged
@@ -384,7 +383,7 @@ def test_195_a_foreign_producing_checklist_is_reported_never_blocked_on(wl):  # 
     dead.write_text("", encoding="utf-8")
     old = time.time() - 48 * 3600
     os.utime(dead, (old, old))
-    got = wl.run(per_stop)
+    got = wl.run()
     orphan = "195b: no adoption hint for an abandoned handoff: %s" % got.out[:500]
     assert "adopt it by editing the 'Owner:' line" in got.out, orphan
     assert "agent/programs/demo/CHECKLIST.md" in got.out, orphan
@@ -564,12 +563,20 @@ def test_200_the_shape_gate_collects_every_defect_and_scopes_itself_to_the_bad_f
 
 
 def test_201_the_poll_fast_path_forfeits_on_a_live_checklist(wl):  # noqa: F811
-    """STAT-ONLY. The banked pollbase carries clsig and cl_live (wl_checks.bank_pollbase). This leg banks a LIVE-but-non-blocking world (wave claimed by a peer), so cl_live=1 with an unchanged signature, which is the only thing that can make the silent path forfeit here. The two controls below are the same dance with no checklist at all, and with a settled one."""
+    """STAT-ONLY. The banked pollbase carries clsig and cl_live (wl_checks.bank_pollbase). This leg banks a LIVE-but-non-blocking world (wave claimed by a peer), so cl_live=1 with an unchanged signature, which is the only thing that can make the silent path forfeit here. The two controls below are the same dance with no checklist at all, and with a settled one.
+
+    PADDED to at least 4 competing advisory sections (the checklist plus a foreign brief, a stale peer transcript and an orphaned item) so the assertion holds regardless of which 3 the fixed-3-per-stop randomized drain releases: at least one of the 4 always survives into the poll's own stop, keeping output non-empty."""
     wl.brief_now()
     wl.hand_now()
     cldeliver(wl, "docs/demo/README.md", "the readme")
     clfile(wl, "demo", CL_EXECUTING)
     wl.cli_as("cafe0000", "--add", "cafe0000", "cl:demo/w1 Wave A: wire the thing")
+    wl.brief_other("cafe1234")
+    peer = wl.base / "cafe1234.jsonl"
+    peer.write_text("", encoding="utf-8")
+    aged = time.time() - 48 * 3600
+    os.utime(peer, (aged, aged))
+    wl.add_item("- [ ] (cafe1234) their abandoned item")
     wl.say(CL_LIVE_ANSWER)
     wl.check("allow", "", "201: the full stop allows and banks the checklist world")
 

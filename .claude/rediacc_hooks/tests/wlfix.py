@@ -48,7 +48,6 @@ DEFAULT_CRONS = [
 
 # Reset by `setup()` for the reason the bash comment gave: a plain assignment in one case leaked into the next two and silently suppressed a check.
 RESET_KNOBS = (
-    "WORKLIST_REPORT_PER_STOP",
     "WORKLIST_OUTQ_MAX",
     "WORKLIST_BG_OUTPUT_DIR",
     "WORKLIST_HARNESS_PID",

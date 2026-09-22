@@ -556,7 +556,6 @@ def test_150_the_judge_audits_sitting_justifications_and_do_now_reopens_the_item
 
 def test_151_a_valid_audit_verdict_is_banked_and_an_untouched_item_is_asked_once(wl):  # noqa: F811
     """The `[?]` item is also an operator-only mail candidate, so the unconfigured email channel queues a class-1 note ahead of the audit note. Both are one-shots and neither is lost; this case asserts the audit note is produced, so it drains wide rather than waiting a stop for its turn."""
-    wl.env["WORKLIST_REPORT_PER_STOP"] = "9"
     wl.brief_now()
     wl.hand_now()
     plant_event(

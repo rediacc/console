@@ -180,7 +180,6 @@ def test_205_control_one_foreign_handoff_one_advisory_and_betas_needle_can_be_ab
     wl.say("done for now")
     wl.brief_now()
     wl.hand_now()
-    wl.env["WORKLIST_REPORT_PER_STOP"] = "6"
     clfile(wl, "alpha", CL_ALPHA_PRODUCING_FOREIGN)
     got = wl.run()
     baseline = (
@@ -195,7 +194,6 @@ def test_205_two_foreign_advisories_two_keys_the_second_no_longer_eats_the_first
     wl.say("done for now")
     wl.brief_now()
     wl.hand_now()
-    wl.env["WORKLIST_REPORT_PER_STOP"] = "6"
     clfile(wl, "alpha", CL_ALPHA_PRODUCING_FOREIGN)
     clfile(wl, "beta", CL_BETA_PRODUCING_FOREIGN)
     got = wl.run()
@@ -210,7 +208,6 @@ def test_206_a_foreign_drift_advisory_reports_it_and_issues_no_order(wl):  # noq
     wl.say("done for now")
     wl.brief_now()
     wl.hand_now()
-    wl.env["WORKLIST_REPORT_PER_STOP"] = "6"
     clfile(wl, "demo", CL_DEMO_DRIFT_FOREIGN)
     got = wl.run()
     ordered = "206: the foreign drift advisory still issues the owner's order: rc=%d %s" % (
@@ -312,9 +309,8 @@ def test_209a_a_matching_last_message_produces_the_hint_on_an_allow_stop(wl):  #
 
     EVERY CASE BELOW USES INVENTED NOUNS against the fixture corpus that `WORKLIST_AGENTS_DIR` pins. A fixture borrowing the real agents' vocabulary would go red when somebody edits a description, which is prose nobody thinks of as test data.
 
-    THE HINT IS PRIORITY 3 and `OUTQ_PER_STOP` is 1, so on any stop carrying another advisory the hint correctly loses the slot. That is the single most important noise control in the design (209K proves it), and it is why every case that wants to SEE a hint widens the drain first.
+    THE HINT IS PRIORITY 3 and `OUTQ_PER_STOP` is 3, so a stop carrying three or more sections at priority 2 or better still crowds the hint out entirely. That is the single most important noise control in the design (209K proves it), and most cases below simply queue fewer than 3 competing sections so the hint gets a chance to show.
     """
-    wl.env["WORKLIST_REPORT_PER_STOP"] = "4"
     wl.mk_agent("fixtureagent", HINT_DESC)
     hint_fixture(wl)
     wl.check(
@@ -326,7 +322,6 @@ def test_209a_a_matching_last_message_produces_the_hint_on_an_allow_stop(wl):  #
 
 def test_209a_control_neutral_text_earns_no_hint(wl):  # noqa: F811
     """CONTROL, and it leads with a POSITIVE PRESENCE check rather than the absence alone. This suite documents the trap at case 208: a mutation that suppressed a whole block made an absence-only assertion PASS, because with no feature there is nothing to find. So the stop must be shown to have spoken at all first."""
-    wl.env["WORKLIST_REPORT_PER_STOP"] = "4"
     wl.mk_agent("fixtureagent", HINT_DESC)
     wl.say("done for now, the meeting notes are filed")
     wl.brief_now()
@@ -339,7 +334,6 @@ def test_209a_control_neutral_text_earns_no_hint(wl):  # noqa: F811
 
 def test_209b_the_hint_rides_an_allow_and_never_blocks(wl):  # noqa: F811
     """ADVISORY, NEVER A BLOCK. `vadd` has 46 call sites and every one of them stops the session; blocking a session for not consulting a specialist is the fastest possible way to get this feature switched off."""
-    wl.env["WORKLIST_REPORT_PER_STOP"] = "4"
     wl.mk_agent("fixtureagent", HINT_DESC)
     hint_fixture(wl)
     got = wl.run()
@@ -355,7 +349,6 @@ def test_209c_a_tie_is_silence_by_construction(wl):  # noqa: F811
 
     The CONTROL continues on the same fixture with a haystack naming only ONE of the two agents. Without it, the silence above would pass just as well on a matcher that had simply stopped working.
     """
-    wl.env["WORKLIST_REPORT_PER_STOP"] = "4"
     wl.mk_agent("tiealpha", "Zorbium recalibration with the widget gearbox lattice.")
     wl.mk_agent("tiebeta", "Zorbium recalibration with the sprocket flywheel lattice.")
     wl.say("done for now, the widget gearbox and the sprocket flywheel both wait on me")
@@ -376,7 +369,6 @@ def test_209c_a_tie_is_silence_by_construction(wl):  # noqa: F811
 
 def test_209d_the_same_specialist_is_not_suggested_twice(wl):  # noqa: F811
     """RATE LIMIT: the same specialist is not suggested twice. A hint that fires on every stop is wallpaper, and wallpaper gets ignored."""
-    wl.env["WORKLIST_REPORT_PER_STOP"] = "4"
     wl.mk_agent("fixtureagent", HINT_DESC)
     hint_fixture(wl)
     out = wl.run().out
@@ -393,7 +385,6 @@ def test_209e_a_deleted_agent_cannot_be_recommended(wl):  # noqa: F811
 
     The second stop matches a DIFFERENT agent on the same text, deliberately. A case that merely re-ran the deleted agent's own haystack would pass on the refresh window alone, proving nothing about the corpus being re-read.
     """
-    wl.env["WORKLIST_REPORT_PER_STOP"] = "4"
     wl.mk_agent("gonesoon", HINT_DESC)
     hint_fixture(wl)
     out = wl.run().out
@@ -411,7 +402,6 @@ def test_209e_a_deleted_agent_cannot_be_recommended(wl):  # noqa: F811
 
 def test_209f_the_hint_is_independent_of_the_judge(wl):  # noqa: F811
     """INDEPENDENT OF THE JUDGE. `wl_judge` spends one haiku call per eventful stop at 4.9 to 20.0 seconds and has BLOCKED a stop on a timeout; a second model call was refused. This pins that the hint is deterministic and does not ride that call: the judge is off and the fixture PATH holds no `claude` at all."""
-    wl.env["WORKLIST_REPORT_PER_STOP"] = "4"
     wl.mk_agent("fixtureagent", HINT_DESC)
     hint_fixture(wl)
     got = wl.run()
@@ -422,7 +412,6 @@ def test_209f_the_hint_is_independent_of_the_judge(wl):  # noqa: F811
 
 def test_209g_a_malformed_corpus_is_loud_and_degrades_rather_than_disables(wl):  # noqa: F811
     """A file that cannot be parsed is an agent that has silently stopped being reachable, which is the exact failure this whole feature exists to end, so it is reported, while every sibling that IS well-formed keeps matching."""
-    wl.env["WORKLIST_REPORT_PER_STOP"] = "4"
     wl.mk_agent("goodagent", HINT_DESC)
     (wl.base / "agents" / "brokenagent.md").write_text(BROKEN_AGENT, encoding="utf-8")
     hint_fixture(wl)
@@ -455,7 +444,6 @@ def test_209h_control_an_off_domain_briefing_still_arrives_without_a_hint(wl):  
 
 def test_209i_the_kill_switch_silences_the_hint_and_nothing_else(wl):  # noqa: F811
     """THE KILL SWITCH. Positive presence first, for the reason case 208 records."""
-    wl.env["WORKLIST_REPORT_PER_STOP"] = "4"
     wl.env["WORKLIST_AGENT_HINT"] = "off"
     wl.mk_agent("fixtureagent", HINT_DESC)
     hint_fixture(wl)
@@ -467,7 +455,6 @@ def test_209i_the_kill_switch_silences_the_hint_and_nothing_else(wl):  # noqa: F
 
 def test_209j_the_per_session_cap_holds_across_two_different_agents(wl):  # noqa: F811
     """THE PER-SESSION CAP, across DIFFERENT agents. The refresh window in 209D only bounds one agent; without a cap, eight specialists could each get a turn."""
-    wl.env["WORKLIST_REPORT_PER_STOP"] = "4"
     wl.env["WORKLIST_AGENT_HINT_MAX_PER_SESSION"] = "1"
     wl.mk_agent("alphaagent", HINT_DESC)
     wl.mk_agent("betaagent", "Quixotic pumpjack telemetry and the marlinspike ledger.")
@@ -483,7 +470,6 @@ def test_209j_the_per_session_cap_holds_across_two_different_agents(wl):  # noqa
 
 def test_209j_control_raise_the_cap_by_one_and_the_second_specialist_lands(wl):  # noqa: F811
     """CONTROL: one planted fact differs, the cap. The second agent must then land, or 209J was measuring a matcher that could only ever hit once."""
-    wl.env["WORKLIST_REPORT_PER_STOP"] = "4"
     wl.env["WORKLIST_AGENT_HINT_MAX_PER_SESSION"] = "2"
     wl.mk_agent("alphaagent", HINT_DESC)
     wl.mk_agent("betaagent", "Quixotic pumpjack telemetry and the marlinspike ledger.")
@@ -510,7 +496,7 @@ def test_209k_priority_3_never_displaces_a_real_section(wl):  # noqa: F811
     aged = time.time() - 48 * 3600
     os.utime(peer, (aged, aged))
     wl.add_item("- [ ] (cafe1234) their abandoned item")
-    # WORKLIST_REPORT_PER_STOP unset, so exactly one section is released.
+    # The fixture queues 4 priority-2 sections plus this priority-3 hint; the fixed 3-per-stop budget fills entirely from the priority-2 tier, so the hint stays queued behind the one priority-2 leftover -- outranked, not lost.
     got = wl.run()
     displaced = "209K the hint displaced a real section, or nothing was queued: %s" % got.out[:400]
     assert hint_n(got.out) == 0, displaced
@@ -519,7 +505,6 @@ def test_209k_priority_3_never_displaces_a_real_section(wl):  # noqa: F811
     ), displaced
     assert "more report section(s) queued" in got.out, displaced
 
-    wl.env["WORKLIST_REPORT_PER_STOP"] = "6"
     wl.newturn()
     wl.say(HINT_SAY)
     got2 = wl.run()
@@ -541,7 +526,6 @@ def test_209l_the_operators_own_sentence_fires_on_a_description_without_deployme
 
     THE CONTROL is what makes this a measurement of MORPHOLOGY rather than of the word `bench`: `bench` on its own scores 1.0, below MIN_SCORE, and stays silent. So the hit that carried the first leg over the floor can only have come from `deployment` folding onto the description's `deploy`.
     """
-    wl.env["WORKLIST_REPORT_PER_STOP"] = "4"
     wl.mk_agent(
         "benchops", "The bench rig: deploy the account worker to the bench box and reset its store."
     )
@@ -577,7 +561,6 @@ def test_209m_counting_words_never_route_a_dismissal_to_a_specialist(wl):  # noq
 
     CONTROL, POSITIVE PRESENCE FIRST, per the trap at case 208: an absence-only assertion passes just as well when the whole feature is suppressed. So the pushback is proved to still fire for the SAME fixture on genuinely discriminative vocabulary before the silence above is trusted.
     """
-    wl.env["WORKLIST_REPORT_PER_STOP"] = "4"
     wl.mk_agent("zorbops", "Zorbium ledger reconciliation and the total sprocket cap.")
     wl.newturn()
     wl.say("the remaining failures are pre-existing: 32 errors total, none of them mine")

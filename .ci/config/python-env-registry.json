@@ -1520,7 +1520,6 @@
       "WORKLIST_PROGRAM_SURFACE",
       "WORKLIST_PROJECTS_DIR",
       "WORKLIST_QUIET_WAKES",
-      "WORKLIST_REPORT_PER_STOP",
       "WORKLIST_REPORT_REFRESH_MIN",
       "WORKLIST_REQUEST_DEAD_MIN",
       "WORKLIST_SOLO_MIN",
@@ -1542,6 +1541,9 @@
       "WORKLIST_CI_RETRY_PATTERNS",
       "WORKLIST_PUBLISH_REF",
       "WORKLIST_REVIEW_MAX_BLOCKS"
+    ],
+    ".claude/hooks/stop/wl_claimcheck.py": [
+      "TMPDIR"
     ],
     ".claude/hooks/stop/wl_classsweep.py": [
       "WORKLIST_SWEEP_MAX_FIRES",

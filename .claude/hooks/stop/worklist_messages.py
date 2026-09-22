@@ -1336,9 +1336,9 @@ N_JUDGE_STAMP = "Stop-gate judge (%s) %s."
 N_JUDGE_STAMP_FULL = "Stop-gate judge (%s) %s: %s"
 
 N_OUTQ_MORE = (
-    "(%d more report section(s) queued; one is released per stop, highest "
-    "priority first, oldest first inside a priority. Raise "
-    "WORKLIST_REPORT_PER_STOP to drain faster.)"
+    "(%d more report section(s) queued; up to 3 release per stop, highest "
+    "priority first, randomized among same-priority sections. The rest "
+    "surface on later stops, no knob to widen the drain.)"
 )
 
 # THE QUEUE DRAINS ON THE ALLOW PATH ONLY, so a session blocked at every stop never sees a word of it. That starves the advisories in exactly the sessions doing the most work, and the plan-task census is the one it hurts most, because a plan's open boxes are invisible for as long as the session stays productive. Measured 2026-09-17: ten parsed boxes in a freshly written plan stayed
@@ -1346,8 +1346,9 @@ N_OUTQ_MORE = (
 N_OUTQ_BLOCKED = (
     "%d advisory section(s) are queued and CANNOT be shown while stops keep blocking -- the "
     "queue drains only on a clean stop. A plan's open task boxes are surfaced this way, so a "
-    "plan can look untracked purely because this session has been busy. To read them now: set "
-    "WORKLIST_REPORT_PER_STOP=%d before the next stop."
+    "plan can look untracked purely because this session has been busy. A clean stop releases "
+    "up to %d of them, oldest priority first; there is no knob to widen the drain -- fix the "
+    "block and they surface over the following stops."
 )
 
 # ---- the specialist-agent hint (wl_agents) ---------------------------------- NAMING THE MATCHED TERMS is what makes a wrong hint self-refuting: a reader who sees "Matched on: fork, cap" dismisses it in one second instead of opening a 9 KB agent file to find out why it was suggested. It is also what makes the matcher debuggable in the field without a debug flag.

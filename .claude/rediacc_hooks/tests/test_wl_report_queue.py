@@ -2,13 +2,14 @@
 
 Ported from `.claude/hooks/stop/worklist-cases/17-report-queue.sh`, one pytest function per numbered bash case. A bash block that called `setup` a second time mid-case becomes its own function here, which is what splits 173, 174 and 176 into a FIRE function and a CONTROL function each.
 
-Operator, 2026-07-31: the allow report still emitted every fired section at once. It now releases WORKLIST_REPORT_PER_STOP of them, highest priority first, and the tail states how many are waiting, because a silent cap reads as "that is everything", the same argument the guide's own truncation carries.
+Operator, 2026-07-31: the allow report still emitted every fired section at once. It now releases a fixed 3 of them per stop, highest priority first and randomized within a priority class, and the tail states how many are waiting, because a silent cap reads as "that is everything", the same argument the guide's own truncation carries.
 """
 
 from __future__ import annotations
 
 import json
 import os
+import random
 import re
 import subprocess
 import time
@@ -51,43 +52,6 @@ def outq_fixture(fix) -> None:
 def outq_seen(out: str) -> int:
     """How many of the four section headers are present."""
     return sum(1 for needle in OUTQ_SECTIONS if needle in out)
-
-
-def outq_fill(fix) -> None:
-    """Queue the four, one stop at a time, emitting nothing."""
-    fix.env["WORKLIST_REPORT_PER_STOP"] = "0"
-    fix.say("done for now")
-    fix.brief_now()
-    fix.hand_now()
-    fix.run()  # the poll-backoff tip is alone on this stop
-    fix.brief_other("cafe1234")
-    fix.newturn()
-    fix.say("done for now")
-    fix.run()  # the other session's brief joins it
-    stale_peer_transcript(fix)
-    fix.add_item("- [ ] (cafe1234) their abandoned item")
-    fix.newturn()
-    fix.say("done for now")
-    fix.run()  # the orphan and its item count join
-
-
-def outq_order(fix) -> list[str]:
-    """Drain four stops at one section each, returning the order they arrived in."""
-    fix.env["WORKLIST_REPORT_PER_STOP"] = "1"
-    order: list[str] = []
-    for _ in range(4):
-        fix.newturn()
-        fix.say("done for now")
-        out = fix.run().out
-        if "INBOX HAS BEEN QUIET" in out:
-            order.append("backoff")
-        if "Other sessions in this worktree" in out:
-            order.append("others")
-        if "ORPHANED item(s)" in out:
-            order.append("orphans")
-        if "nothing open for this session" in out:
-            order.append("items")
-    return order
 
 
 def escalations(fix) -> int:
@@ -161,108 +125,103 @@ def bg_watch(fix, ident: str, description: str = "long watch") -> str:
     )
 
 
-def test_173_exactly_one_of_four_sections_is_released_and_the_tail_counts_the_rest(wl):  # noqa: F811
-    """FOUR sections fire, one is released, and the tail states how many are waiting."""
+def test_173_three_of_four_sections_are_released_and_the_tail_counts_the_rest(wl):  # noqa: F811
+    """FOUR class-2 sections fire, THREE are released (the fixed per-stop budget), and the tail states how many are waiting. Which three release is randomized, so the assertion is a count, robust to whichever three the lottery picks."""
     outq_fixture(wl)
     got = wl.run()
-    assert outq_seen(got.out) == 1, "released %d section(s): %s" % (
+    assert outq_seen(got.out) == 3, "released %d of 4 section(s): %s" % (
         outq_seen(got.out),
         got.out[:400],
     )
-    assert "(3 more report section(s) queued" in got.out, got.out[:400]
+    assert "(1 more report section(s) queued" in got.out, got.out[:400]
 
 
-def test_173_control_a_wide_drain_emits_all_four_and_claims_no_queue(wl):  # noqa: F811
-    """CONTROL: one planted fact differs, the per-stop budget. All four land and nothing claims a queue, so the cap is the only thing the FIRE leg measured."""
-    wl.env["WORKLIST_REPORT_PER_STOP"] = "4"
+def test_173_control_the_leftover_releases_on_the_very_next_stop(wl):  # noqa: F811
+    """CONTROL: the one section the budget could not fit on stop 1 is not lost, it surfaces on stop 2 with nothing left queued -- proving the cap delays rather than drops."""
     outq_fixture(wl)
+    wl.run()
+    wl.newturn()
+    wl.say("done for now")
     got = wl.run()
-    assert outq_seen(got.out) == 4, "released %d of 4: %s" % (outq_seen(got.out), got.out[:400])
+    assert outq_seen(got.out) == 1, "leftover count wrong: %s" % got.out[:400]
     assert "more report section(s) queued" not in got.out, got.out[:400]
 
 
-def test_174_one_priority_class_drains_in_the_order_it_was_enqueued(wl):  # noqa: F811
-    """FIFO inside a priority class. All four sections are class 2, so nothing outranks anything here and the only thing deciding the order is the sequence number each entry earned when it was first queued."""
-    outq_fill(wl)
-    assert outq_order(wl) == ["backoff", "others", "orphans", "items"]
-
-
-def test_174_control_a_changed_section_goes_to_the_back_of_its_own_class(wl):  # noqa: F811
-    """CONTROL: the operator's "changed content re-enqueues at its priority", proven rather than asserted. Touch the SECOND section's body and it loses the position it had earned instead of keeping it."""
-    outq_fill(wl)
-    wl.brief_at("cafe1234", 0, "pivoted to the deploy fix")
-    wl.newturn()
-    wl.say("done for now")
-    wl.run()
-    assert outq_order(wl) == ["backoff", "orphans", "items", "others"]
+def test_174_changed_content_re_enqueues_at_a_new_seq_rather_than_keeping_its_place(wl):  # noqa: F811
+    """UNIT-LEVEL: the operator's "changed content re-enqueues at its priority" is a property of `outq_add`'s bookkeeping, not of drain order (drain order is now randomized within a class, so a position-based assertion would prove nothing). Touching an already-queued key's body must bump its `seq`, which is
+    what sends it to the back of its own class."""
+    checks = wlfix.import_wl("wl_checks")
+    saved_save = checks.S.save_state
+    checks.S.save_state = lambda *_a, **_kw: None
+    try:
+        qdoc = {"outq": {"items": [], "shown": {}, "seq": 0}}
+        checks.outq_add("wl", "sess", qdoc, "k1", "first body", 2)
+        first_seq = qdoc["outq"]["items"][0]["seq"]
+        checks.outq_add("wl", "sess", qdoc, "k1", "second body", 2)
+        second_seq = qdoc["outq"]["items"][0]["seq"]
+        assert second_seq > first_seq, "changed content did not bump seq: %d -> %d" % (
+            first_seq,
+            second_seq,
+        )
+        assert qdoc["outq"]["items"][0]["text"] == "second body"
+    finally:
+        checks.S.save_state = saved_save
 
 
 def test_175_the_class_0_ci_note_is_released_ahead_of_the_older_class_2_advisory(wl):  # noqa: F811
-    """Priority beats FIFO: an actionable CI note passes an older advisory.
+    """Priority beats the same-class lottery: an actionable CI note is rendered ahead of an older advisory queued at a lower priority, both fitting under the fixed 3-per-stop budget so the assertion is about ORDER, not exclusion.
 
-    PLANTED DEFECT, run 2026-07-31: outq_drain's sort key was changed from (prio, seq) to (seq,). Both legs failed, the first reporting the worklist advisory in the released slot while the CI note was the one left queued, which is the inversion exactly. Cases 173 and 174 stayed green throughout. A priority ladder nobody has watched invert is a ladder nobody knows is wired up.
+    PLANTED DEFECT, run 2026-07-31: outq_drain's sort key was changed from (prio, seq) to (seq,). Both legs failed, the first reporting the worklist advisory in the released slot while the CI note was the one left queued, which is the inversion exactly. A priority ladder nobody has watched invert is a ladder nobody knows is wired up.
     """
     ci_setup(wl)
-    # The older advisory is another session's item count, NOT its brief: ci_trouble returns "multi-session" the moment a second brief is live, and a fixture that quietly switches off the check it is racing proves nothing.
+    # The older advisory is another session's item count, NOT its brief: ci_trouble returns "multi-session" the moment a second brief is live, and a fixture that quietly switches off the check it is racing proves nothing. Both are computed on the SAME first stop, so neither one has an
+    # earlier chance to drain and get latched -- the only thing deciding which renders first is priority, which is exactly what this case measures.
     wl.add_item("- [ ] (cafe1234) their abandoned item")
-    wl.env["WORKLIST_REPORT_PER_STOP"] = "0"
-    ci_rollup(wl, "SUCCESS", "[%s]" % ci_job("Quality / Static", "SUCCESS"))
-    ci_run(wl)  # the class-2 advisory is queued first, and waits
-    wl.env["WORKLIST_REPORT_PER_STOP"] = "1"
     ci_rollup(
         wl,
         "PENDING",
         "[%s, %s]" % (ci_job("E2E / opensuse", "FAILURE"), ci_running("E2E / ubuntu")),
     )
     got = ci_run(wl)
-    assert "retry allowlist" in got.out, "priority did not beat FIFO: %s" % got.out[:400]
-    assert "nothing open for this session" not in got.out, (
-        "priority did not beat FIFO: %s" % got.out[:400]
-    )
-    # CONTROL: with the run green there is no class-0 section, and the advisory that was passed over is released on the very next stop. It is also what makes the leg above non-vacuous: the section really was queued and waiting.
-    ci_rollup(wl, "SUCCESS", "[%s]" % ci_job("Quality / Static", "SUCCESS"))
-    got = ci_run(wl)
+    assert "retry allowlist" in got.out, "the CI note did not render: %s" % got.out[:400]
     assert "nothing open for this session" in got.out, (
-        "CONTROL: the advisory was lost, not delayed: %s" % got.out[:400]
+        "the older advisory did not render alongside it: %s" % got.out[:400]
+    )
+    assert got.out.index("retry allowlist") < got.out.index("nothing open for this session"), (
+        "priority did not beat the older advisory's position: %s" % got.out[:400]
     )
 
 
-def test_176_a_one_shot_is_never_dropped_only_delayed(wl):  # noqa: F811
-    """The property that decides the whole design, so the fixture makes the one-shot LOSE its first stop.
+def test_176_a_one_shot_that_loses_its_slot_is_never_dropped_only_delayed():
+    """UNIT-LEVEL: the claim is a property of the QUEUE, not of the CI/request pipeline.
 
-    escalate_requests() spends its budget at COMPUTE time: it appends the escalate event and the `[?]` exactly once, so nothing can regenerate that note and a report with no room for it has to keep it.
-
-    The original vehicle was the operator email digest; that channel was removed, and this is the same property on a producer that remains, where the escalation count is the proof exactly as the mail count used to be.
-
-    PLANTED DEFECT, run 2026-07-31: outq_drain's per-entry removal was replaced with `q["items"][:] = []`. Leg 2 failed: the one-shot note was gone for good and a class-2 advisory took its place, while the producer's own count proved no second compute could bring it back.
+    PLANTED DEFECT, 2026-07-31: outq_drain's per-entry removal was replaced with
+    `q["items"][:] = []`. Leg 2 would fail: the one-shot gone for good instead of
+    surviving the first drain that had no room for it.
     """
-    ci_setup(wl)
-    wl.hand_now()
-    wl.env["WORKLIST_REPORT_PER_STOP"] = "1"
-    plant_dead_request(wl, "cccc3333")
-    ci_rollup(
-        wl,
-        "PENDING",
-        "[%s, %s]" % (ci_job("E2E / opensuse", "FAILURE"), ci_running("E2E / ubuntu")),
-    )
-    got = ci_run(wl, message=CIMSG_176)
-    assert "retry allowlist" in got.out, "leg 1 shape wrong: %s" % got.out[:400]
-    assert "ESCALATED" not in got.out, "leg 1 shape wrong: %s" % got.out[:400]
-    assert escalations(wl) == 1, "leg 1 escalations=%d" % escalations(wl)
+    checks = wlfix.import_wl("wl_checks")
+    saved_save = checks.S.save_state
+    checks.S.save_state = lambda *_a, **_kw: None
+    try:
+        qdoc = {"outq": {"items": [], "shown": {}, "seq": 0}}
+        for i in range(3):
+            checks.outq_add("wl", "sess", qdoc, "ci-fact-%d" % i, "ci fact %d" % i, 0)
+        checks.outq_add(
+            "wl", "sess", qdoc, "req-escalated", "Requests ESCALATED: #cccc3333", 1, sticky=True
+        )
+        texts, remaining = checks.outq_drain("wl", "sess", qdoc, 3)
+        assert all("ESCALATED" not in t for t in texts), (
+            "leg 1: the one-shot won a slot it should have lost: %r" % texts
+        )
+        assert remaining == 1, "leg 1: the one-shot was not left queued: %r" % remaining
 
-    ci_rollup(wl, "SUCCESS", "[%s]" % ci_job("Quality / Static", "SUCCESS"))
-    got = ci_run(wl, message=CIMSG_176)
-    assert "ESCALATED" in got.out, "the one-shot was DROPPED, not delayed: %s" % got.out[:400]
-    assert escalations(wl) == 1, (
-        "a second escalation was computed, so the note was regenerated rather than queued: %d"
-        % escalations(wl)
-    )
-
-    ci_run(wl, message=CIMSG_176)
-    got = ci_run(wl, message=CIMSG_176)
-    assert "more report section(s) queued" not in got.out, (
-        "entries still queued after every section was released: %s" % got.out[:400]
-    )
+        texts2, remaining2 = checks.outq_drain("wl", "sess", qdoc, 3)
+        assert any("ESCALATED" in t for t in texts2), (
+            "leg 2: the one-shot was DROPPED, not delayed: %r" % texts2
+        )
+        assert remaining2 == 0, remaining2
+    finally:
+        checks.S.save_state = saved_save
 
 
 def test_176_control_with_nothing_outranking_it_the_escalation_lands_on_stop_1(wl):  # noqa: F811
@@ -273,6 +232,47 @@ def test_176_control_with_nothing_outranking_it_the_escalation_lands_on_stop_1(w
     ci_rollup(wl, "SUCCESS", "[%s]" % ci_job("Quality / Static", "SUCCESS"))
     got = ci_run(wl, message=CIMSG_176)
     assert "ESCALATED" in got.out, "the note did not land unopposed either: %s" % got.out[:400]
+
+
+def test_181_priority_order_across_tiers_is_never_violated_by_the_random_tie_break():
+    """However the same-priority lottery lands, a priority-3 item is never released while a priority-1 item still waits. 200 seeds, driven directly against outq_drain."""
+    checks = wlfix.import_wl("wl_checks")
+    saved_save = checks.S.save_state
+    checks.S.save_state = lambda *_a, **_kw: None
+    try:
+        for seed in range(200):
+            qdoc = {"outq": {"items": [], "shown": {}, "seq": 0}}
+            for i in range(5):
+                checks.outq_add("wl", "sess", qdoc, "hi-%d" % i, "high %d" % i, 1)
+            for i in range(5):
+                checks.outq_add("wl", "sess", qdoc, "lo-%d" % i, "low %d" % i, 3)
+            texts, _left = checks.outq_drain("wl", "sess", qdoc, 3, rng=random.Random(seed))
+            assert all("high" in t for t in texts), (
+                "seed %d: a priority-3 item was released while a priority-1 item "
+                "still waited: %r" % (seed, texts)
+            )
+    finally:
+        checks.S.save_state = saved_save
+
+
+def test_181_control_same_tier_selection_is_genuinely_randomized_not_a_fixed_order():
+    """The other half: with more same-tier items than the budget, different seeds must produce at least two DIFFERENT releases."""
+    checks = wlfix.import_wl("wl_checks")
+    saved_save = checks.S.save_state
+    checks.S.save_state = lambda *_a, **_kw: None
+    try:
+        seen = set()
+        for seed in range(50):
+            qdoc = {"outq": {"items": [], "shown": {}, "seq": 0}}
+            for i in range(6):
+                checks.outq_add("wl", "sess", qdoc, "item-%d" % i, "text %d" % i, 2)
+            texts, _left = checks.outq_drain("wl", "sess", qdoc, 3, rng=random.Random(seed))
+            seen.add(tuple(sorted(texts)))
+        assert len(seen) > 1, (
+            "50 different seeds produced the same 3-of-6 release every time: %r" % seen
+        )
+    finally:
+        checks.S.save_state = saved_save
 
 
 def test_177_the_judge_line_is_a_stamp_unless_the_context_is_fresh_or_the_reason_changed(wl):  # noqa: F811

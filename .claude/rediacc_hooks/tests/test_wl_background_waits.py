@@ -412,7 +412,6 @@ def drained_setup(fix) -> None:
     fix.brief_now()
     fix.hand_now()
     bgout(fix)
-    fix.env["WORKLIST_REPORT_PER_STOP"] = "6"
 
 
 def test_163q_a_drained_session_is_told_to_stop_its_waiter(wl):  # noqa: F811

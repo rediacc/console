@@ -824,7 +824,6 @@ def test_223h_the_refusal_ledger_records_a_refusal_and_then_surfaces_it(wl):  # 
     assert passed.returncode == 0, design
     assert rows.count("\n") == 1, design
 
-    wl.env["WORKLIST_REPORT_PER_STOP"] = "9"
     got = wl.run()
     surfaced = "223h: the ledger advisory did not surface: %s" % got.out[:300]
     assert "were REFUSED by" in got.out, surfaced
@@ -837,5 +836,4 @@ def test_223i_control_no_refusals_means_no_advisory(wl):  # noqa: F811
     wl.brief_now()
     wl.hand_now()
     wl.say("done\n\n## Remaining\n- nothing outstanding")
-    wl.env["WORKLIST_REPORT_PER_STOP"] = "9"
     wl.check_quiet("were REFUSED by", "223i CONTROL: an empty ledger says nothing")

@@ -129,7 +129,6 @@ def test_67_control_my_own_open_request_never_blocks_me_and_is_reported(wl):  # 
 
     The fixture produces TWO class-2 sections (the other session's brief and the open request), and the output queue releases one per stop by default. This case is about the request being reported at all, not about rationing, so it drains wide; cases 173 to 177 own the rationing behaviour.
     """
-    wl.env["WORKLIST_REPORT_PER_STOP"] = "9"
     wl.say("done for now")
     wl.brief_now()
     wl.brief_other("cafe1234")

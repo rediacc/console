@@ -22,7 +22,7 @@ THE FOUR DESIGN CHOICES, each of which had a worse obvious alternative.
    stop by construction: it is drained on the allow path and survives a block.
 
 2. THE NOISE CONTROL IS THE QUEUE'S OWN, PLUS A CAP, NOT A NEW LATCH.
-   `OUTQ_PER_STOP` is 1, so at most one advisory section reaches any stop at
+   `OUTQ_PER_STOP` is 3, so at most three advisory sections reach any stop at
    all; `outq_add`'s content signature suppresses an unchanged body inside
    `REPORT_REFRESH_MIN` (6h) and re-fires IMMEDIATELY when the body changes.
    That is exactly the "only when the plan changed" policy, for free and

@@ -206,7 +206,6 @@ def test_29k_a_peer_directory_is_named_on_an_ordinary_stop(wl):  # noqa: F811
     wl.state_as("cafe1234", PEER_29K)
     wl.say("answer\n\n## Remaining\n- #7 thing (pending)")
     wl.task(7, "pending", "thing")
-    wl.env["WORKLIST_REPORT_PER_STOP"] = "9"
     out = wl.run().out
     assert "under agent/" in out, "29k: the peer went invisible after the split: %s" % out[:400]
     assert re.search(r"cafe1234 +[0-9]+ min old", out), (
@@ -220,7 +219,6 @@ def test_29k_control_a_session_alone_on_its_branch_is_told_about_no_peers(wl):  
     wl.hand_now()
     wl.say("answer\n\n## Remaining\n- #7 thing (pending)")
     wl.task(7, "pending", "thing")
-    wl.env["WORKLIST_REPORT_PER_STOP"] = "9"
     wl.check_quiet("under agent/", "29k CONTROL: a peers note appeared with no peer directory")
 
 
@@ -236,7 +234,6 @@ def test_29k_a_peer_past_the_dead_horizon_is_marked_abandoned(wl):  # noqa: F811
     wl.age_state("cafe1234", 1800)  # 30 hours, past WORKLIST_DEAD_HOURS, no transcript
     (wl.base / "projects").mkdir(parents=True, exist_ok=True)
     wl.env["WORKLIST_PROJECTS_DIR"] = str(wl.base / "projects")
-    wl.env["WORKLIST_REPORT_PER_STOP"] = "9"
     wl.say("answer\n\n## Remaining\n- #7 thing (pending)")
     wl.task(7, "pending", "thing")
     out = wl.run().out
@@ -257,7 +254,6 @@ def test_29k_control_a_fresh_peer_is_listed_without_the_marker(wl):  # noqa: F81
     wl.age_state("cafe1234", 5)  # minutes, so the owner is alive by any horizon
     (wl.base / "projects").mkdir(parents=True, exist_ok=True)
     wl.env["WORKLIST_PROJECTS_DIR"] = str(wl.base / "projects")
-    wl.env["WORKLIST_REPORT_PER_STOP"] = "9"
     wl.say("answer\n\n## Remaining\n- #7 thing (pending)")
     wl.task(7, "pending", "thing")
     out = wl.run().out

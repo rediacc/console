@@ -334,8 +334,7 @@ def test_172_allow_report_diet_the_guide_is_the_single_source_and_advisories_lat
 
     The allow report's in-flight section duplicated the guide's own in-flight rows, and week-stable advisories (other sessions' briefs) repeated on every full stop. Now the guide says it once, and slow-moving sections re-show only on content change or after the refresh window.
     """
-    # The default two-cron shape also produces a poll-backoff tip, which is another class-2 section and would take the single per-stop slot. The latch is what this case is about, so it drains wide, and the per-stop rationing has its own cases in the report-queue module.
-    wl.env["WORKLIST_REPORT_PER_STOP"] = "9"
+    # The default two-cron shape also produces a poll-backoff tip, which is another class-2 section; the fixed 3-per-stop budget already covers both, and the per-stop rationing has its own cases in the report-queue module.
     wl.brief_now()
     wl.hand_now()
     iid = added_id(wl.cli("--add", "deadbeef", "carry the CI watch to green"))

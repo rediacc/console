@@ -101,7 +101,6 @@ def test_104_control_poll_only_from_the_start_never_trips_loop_death(wl):  # noq
 
 def test_105_waiting_cross_session_with_a_verified_open_ask_passes(wl):  # noqa: F811
     """v9. Same two-class-2-sections shape as case 67: the brief and the open request both queue, and one is released per stop by default."""
-    wl.env["WORKLIST_REPORT_PER_STOP"] = "9"
     wl.brief_now()
     wl.hand_now()
     wl.brief_other("cafe1234")

@@ -21,11 +21,11 @@ WHAT IS DERIVED AND WHAT IS AUTHORED, because a registry whose every field is de
   the pin the moment it appears.
 
   AUTHORED, and not derivable: the KIND. The derivation cannot tell `'1'` the
-  boolean from `'1'` the count, and it gets that wrong for three names in this
-  tree today (`WORKLIST_REPORT_PER_STOP`, `WORKLIST_AGENT_HINT_MIN_MARGIN`,
-  `WORKLIST_AGENT_PUSHBACK_MIN_SCORE` all default to "1" and none of them is a
-  flag). So the kind is a human's claim, and the gate checks it for CONSISTENCY
-  with the default shape rather than for equality with a guess.
+  boolean from `'1'` the count, and it gets that wrong for two names in this
+  tree today (`WORKLIST_AGENT_HINT_MIN_MARGIN`, `WORKLIST_AGENT_PUSHBACK_MIN_SCORE`
+  both default to "1" and neither is a flag). So the kind is a human's claim,
+  and the gate checks it for CONSISTENCY with the default shape rather than
+  for equality with a guess.
 
   AUTHORED AND REQUIRED for `flag`, `handle` and `corpus`: a `why`. Those are
   the three kinds where a typo turns something OFF or narrows what is looked at,

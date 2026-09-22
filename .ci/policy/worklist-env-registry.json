@@ -630,12 +630,6 @@
         "str(4 * 1024 * 1024)"
       ]
     },
-    "WORKLIST_REPORT_PER_STOP": {
-      "kind": "tuning",
-      "defaults": [
-        "'1'"
-      ]
-    },
     "WORKLIST_REPORT_REFRESH_MIN": {
       "kind": "tuning",
       "defaults": [

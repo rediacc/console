@@ -205,7 +205,7 @@ def test_159_operator_requests_are_asked_once_and_relayed_then_answered_and_acke
     rids = wl.askid("deadbeef", "cafe1234", "restart the ceph leg? DEFAULT: restart it")
     wl.newturn()
     wl.say("answer\n\n## Remaining\n- the tier map question and a session request")
-    session_req = wl.run({"WORKLIST_REPORT_PER_STOP": "9"})
+    session_req = wl.run()
     assert rids, "159 CONTROL: the ask to a briefed peer was refused, so nothing was planted"
     assert rids in session_req.out, (
         "159 CONTROL: the session request vanished: %s" % session_req.out[:400]

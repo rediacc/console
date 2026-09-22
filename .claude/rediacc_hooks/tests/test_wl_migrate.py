@@ -276,7 +276,7 @@ def test_199_a_stopped_peers_work_is_reported_never_blocked_on(wl):  # noqa: F81
         "allow",
         "HANDOFF CANDIDATES",
         "a stopped peer's work is reported",
-        result=wl.run({"WORKLIST_REPORT_PER_STOP": "6"}),
+        result=wl.run(),
     )
 
 
@@ -286,7 +286,7 @@ def test_199_control_a_live_peer_is_never_offered_for_handoff(wl):  # noqa: F811
     wl.brief_now()
     mig_peer(wl, "handoff2", "(handoff2) work of a running session")
     wl.stem(".lastevent-handoff2.json").write_text("", encoding="utf-8")
-    got = wl.run({"WORKLIST_REPORT_PER_STOP": "6"})
+    got = wl.run()
     assert got.out.strip(), "the hook produced no output, so the absence below means nothing"
     assert "HANDOFF CANDIDATES" not in got.out, "offered a live session's work for adoption"
 

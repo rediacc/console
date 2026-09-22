@@ -405,7 +405,7 @@ W5's target is "2 processes per Bash tool call". It is 12 today, and until 2026-
 Every `WORKLIST_*` environment name the program reads: 133 of them, across 28 files that READ one (60 mention one at all, the difference being 30 shell fixtures that only ASSIGN them), at 181 read sites. Measured 2026-09-09; there was no registry and no schema before that date.
 
 * **A decision, not data.** The `kind` of each name is a human's claim that the derivation
-is right, and the derivation is wrong for three names in this tree today: the default `"1"` cannot distinguish a boolean from a count, and `WORKLIST_REPORT_PER_STOP`, `WORKLIST_AGENT_HINT_MIN_MARGIN` and `WORKLIST_AGENT_PUSHBACK_MIN_SCORE` are all counts.
+is right, and the derivation is wrong for two names in this tree today: the default `"1"` cannot distinguish a boolean from a count, and `WORKLIST_AGENT_HINT_MIN_MARGIN` and `WORKLIST_AGENT_PUSHBACK_MIN_SCORE` are both counts.
 * **BLOCKER-gated in substance if not in spelling.** Its suppression surface is the
 `exclusions` block, and each prefix carries the reason it is excluded rather than the gate hardcoding it. An exclusion that matches zero tracked paths is a finding, which is the liveness half. Three of the five kinds (`flag`, `handle`, `corpus`) additionally require a substantive `why`, because those are the three where a typo turns something OFF or narrows what is looked at.
 * **It has a parser.** `worklist_env_registry.load_registry()`, which refuses an empty

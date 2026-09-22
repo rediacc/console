@@ -178,7 +178,6 @@ def test_181_isolation_the_suite_can_never_reach_the_live_worklist(wl):  # noqa:
         "WORKLIST_BG_OUTPUT_DIR",
         "WORKLIST_HARNESS_PID",
         "WORKLIST_BG_REPORT_MIN",
-        "WORKLIST_REPORT_PER_STOP",
         "WORKLIST_FOCUS",
         "WORKLIST_STUCK_ROUNDS",
         "WORKLIST_JUDGE_CACHE_MIN",
