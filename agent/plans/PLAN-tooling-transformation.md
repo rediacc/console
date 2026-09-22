@@ -785,12 +785,24 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       `.ci/policy/.w7p5a-real-run-blocklist` in both directions, and every workflow site (searched by script
       stem in hyphen and underscore form under `.github/workflows`) still matches its row, including the rows
       that read `no workflow site`.
-      **REAL-RUN RUNBOOK 2026-09-20, `door:operator-only`.** The 32 blocklisted scripts each need one real run
-      before their bash twin may be deleted, and this host has no production credentials. The table lists, per
-      script, the external tools its code calls, the credential that implies, and the workflow step to copy the
-      command from (the workflow step is the exact invocation; run it with the real inputs against a staging
-      target, then record the observable in the script's status row). It was derived by reading each script, so
-      confirm the credential against the script before running it. The dry-run ledgers do not substitute.
+      **CORRECTED 2026-09-22: the credential claim below was wrong.** `door:operator-only` was carried for the
+      wrong reason. `BWS_ACCESS_TOKEN` sits in `private/account/.env` (never exported into the shell by default,
+      which is what made a `env | grep` look empty); sourced, `bws secret list` resolves all 58 store secrets,
+      covering `CLOUDFLARE_API_TOKEN` and the R2 key pairs used below. `CLOUDFLARE_ACCOUNT_ID` is not a secret at
+      all -- it is the `vars.CLOUDFLARE_ACCOUNT_ID` GitHub Actions variable, fetched with `gh api
+      repos/rediacc/console/actions/variables/CLOUDFLARE_ACCOUNT_ID`. `gh` is already authenticated on this host
+      with `repo`, `workflow` and `write:packages` scopes, covering every `GH_TOKEN`, git-push and GHCR-registry
+      row. So every credential column this table names is retrievable on this host today; this box is not
+      blocked on credential availability. What remains a genuine operator call is DIFFERENT: several rows are
+      live production writes with real blast radius (a GitHub release, a Docker/R2 promotion to stable, an
+      overwrite of a live Worker's secrets, a submodule tag push) rather than a credential gap, and that is an
+      authorization question, asked separately below.
+      **REAL-RUN RUNBOOK 2026-09-20 (credential claim above superseded).** The 32 blocklisted scripts each need
+      one real run before their bash twin may be deleted. The table lists, per script, the external tools its
+      code calls, the credential that implies, and the workflow step to copy the command from (the workflow step
+      is the exact invocation; run it with the real inputs, then record the observable in the script's status
+      row). It was derived by reading each script, so confirm the credential against the script before running
+      it. The dry-run ledgers do not substitute.
       | Script (under .ci/scripts/) | External tools | Credential | Workflow step |
       |---|---|---|---|
       | `deploy/cf-purge-urls.sh` | curl | none unless the URL is private | no workflow site |
