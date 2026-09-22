@@ -1,5 +1,5 @@
 # PLAN: a rotating behavioral-hint line on the stop report
-Status: executing
+Status: done
 Owner: d778be9d
 Updated: 2026-09-22
 
@@ -270,8 +270,8 @@ Two more are grounded and held back only to keep the first cut at twelve: `one-o
 - [x] Queue the `hint-proposals` advisory (priority 3, `refresh_min` 720) counting proposals whose text is absent from the corpus, printing the promotion command.
 - [x] Register `WORKLIST_HINTS_FILE` in `.ci/policy/worklist-env-registry.json` (`kind: path`, `defaults: ["NONE"]`) and in `.ci/config/env-manifest.json`'s harness shard.
 - [x] Run `python3 .ci/scripts/quality/check_python_env_registry.py --write-baseline` and `npx tsx scripts/gen/gen-docs.ts --write` for the new name.
-- [ ] Write `.ci/scripts/quality/check_hint_corpus.py` with assertions H1-H7 from section 6.3, control-first.
-- [ ] Wire `check:ci-hint-corpus` at all three points (`---- gate ----` header block, `package.json`, `scripts/ci-runner/manifest.ts`) and confirm `scripts/gates/check-ci-parity.ts` is green.
+- [x] Write `.ci/scripts/quality/check_hint_corpus.py` with assertions H1-H7 from section 6.3, control-first.
+- [x] Wire `check:ci-hint-corpus` at all three points (`---- gate ----` header block, `package.json`, `scripts/ci-runner/manifest.ts`) and confirm `scripts/gates/check-ci-parity.ts` is green.
 - [x] Add in-process unit tests in `.claude/rediacc_hooks/tests/test_wl_hints.py` driving `hint_pick` with `random.Random(seed)`: full-cycle coverage, no repeat inside a cycle, no back-to-back repeat across a cycle boundary, and at least two distinct first-picks across 50 seeds (the entropy control, mirroring `test_181_control`).
 - [x] Add a subprocess test proving the line appears on a loud allow stop AND is absent from a silent clean stop (the zero-byte case at `wl_checks.py:4852`), and absent from a blocked stop.
 - [x] Add the negative control: point `WORKLIST_HINTS_FILE` at an empty corpus and assert the stop output is byte-identical to the run without the feature, proving the corpus drives the line.
