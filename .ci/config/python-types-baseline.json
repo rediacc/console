@@ -170,13 +170,6 @@
       "message": "Incompatible types in assignment (expression has type \"str | None\", variable has type \"str\")"
     },
     {
-      "id": "84b83fa307981e89",
-      "file": ".ci/rediacc_ci/quality/autopilot_no_bypass.py",
-      "code": "assignment",
-      "count": 1,
-      "message": "Incompatible types in assignment (expression has type \"list[Never]\", target has type \"str\")"
-    },
-    {
       "id": "f7590459c361d724",
       "file": ".ci/rediacc_ci/quality/branch.py",
       "code": "assignment",
@@ -653,13 +646,6 @@
       "message": "Unsupported operand types for + (\"None\" and \"int\")"
     },
     {
-      "id": "81ae51da2e09ca9a",
-      "file": ".ci/rediacc_ci/tests/gates/test_gate_autopilot_guide_comment.py",
-      "code": "union-attr",
-      "count": 3,
-      "message": "Item \"None\" of \"Match[str] | None\" has no attribute \"group\""
-    },
-    {
       "id": "dc75c1d71b6cdf4e",
       "file": ".ci/rediacc_ci/tests/gates/test_gate_breakpoint_pins.py",
       "code": "operator",
@@ -910,20 +896,6 @@
       "code": "union-attr",
       "count": 1,
       "message": "Item \"None\" of \"Match[str] | None\" has no attribute \"group\""
-    },
-    {
-      "id": "8667bfb4f9b263c8",
-      "file": ".ci/rediacc_ci/tests/test_autopilot_fetch_review_threads.py",
-      "code": "arg-type",
-      "count": 5,
-      "message": "Argument 1 to \"loads\" has incompatible type \"bytes | None\"; expected \"str | bytes | bytearray\""
-    },
-    {
-      "id": "dc2ca8d83eb0b3ce",
-      "file": ".ci/rediacc_ci/tests/test_autopilot_finish.py",
-      "code": "assignment",
-      "count": 1,
-      "message": "Incompatible types in assignment (expression has type \"object\", target has type \"int\")"
     },
     {
       "id": "c969763ccf5f218e",

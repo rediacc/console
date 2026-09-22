@@ -80,11 +80,7 @@ Additionally, **prove D9 actually fires**: a pointer-bump-only commit must now p
 
 ### Wave C: PR-C, the autopilot
 
-Contents in [03](03-v2-autonomy.md). Lands with **every stage flag off**.
-
-**Do not enable a stage until Wave B has been observed on real traffic**, concretely: at least one PR where the scope line reported `reduced` and the skipped jobs were the expected ones, and one where D9's fast path fired on a pointer bump. Two observations, not a fixed number of days.
-
-Then progress S1 to S6 as in [03](03-v2-autonomy.md) section 8, one at a time, each with its canary.
+Built, then removed completely per direct operator request; see `agent/plans/PLAN-remove-autopilot.md`.
 
 ---
 

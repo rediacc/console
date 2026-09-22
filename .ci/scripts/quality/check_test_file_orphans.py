@@ -11,13 +11,18 @@ THE DEFECT THIS CLOSES, paid for on 2026-08-23. `.claude/hooks/stop/ test-teamma
 
 Both answer "is what we declared wired up?". Neither answers "is there anything here we forgot to declare?" -- and that second question is the one an orphan fails. A test nobody runs is worse than no test: it reports 20/20 to whoever runs it by hand, and it is counted as coverage in review.
 
-WHAT COUNTS AS REACHED, deliberately generous. This gate is not trying to model the runner; it is trying to catch a file with NO path to CI at all. There are three ways in, and they are checked in this order:
+WHAT COUNTS AS REACHED, deliberately generous. This gate is not trying to model the runner; it is trying to catch a file with NO path to CI at all. There are four ways in, and they are checked in this order:
 
   1. the file sits under a pytest root the ini collects (collected_roots),
   2. a gate manifest entry NAMES it, read structurally from gates.lock.json
      rather than text-matched in manifest.ts (manifest_tokens),
   3. its basename appears outside itself, on a non-comment line, in a shell
-     script, a workflow, or package.json (referencing_files).
+     script, a workflow, or package.json (referencing_files),
+  4. it sits directly in a directory `test_hooks_delegates.py` globs `test-*.py`
+     from at runtime (delegate_globbed).
+
+Way 4 exists because way 3 stopped being true for a class of file on 2026-09-22: `test_hooks_delegates.py`'s TAILED table moved from a hand-maintained list of literal filenames to a runtime glob, closing the gap that let `test-block_push_to_protected_branch.py` ship wired to nothing for a full session (its test file existed, passed by hand, and was never in the list). A
+glob has no literal basenames for `referencing_files` to find, so the files it now discovers need their own "collected, not mentioned" criterion -- the same shape as `collected_roots()` for pytest.
 
 That admits a reference from an unreachable caller -- but a caller that is itself unreachable is a manifest problem, which is precisely what the other two gates DO see. The gaps are complementary on purpose.
 
@@ -191,6 +196,23 @@ def collected_roots():
     return tuple(p.rstrip("/") + "/" for p in listed)
 
 
+# Directories `test_hooks_delegates.py`'s TAILED table globs `test-*.py` from at runtime, since 2026-09-22.
+# Kept as a plain directory tuple rather than importing that module: it pulls in pytest, and this gate must not gain a pytest dependency to answer a reachability question a directory listing already answers.
+# `test_hooks_delegates.py`'s own `test_tailed_discovery_meets_its_floor` is the anti-vacuity check on THAT side of the same claim -- this gate checks that a discovered file is REACHED, that one checks that discovery still finds ENOUGH; neither substitutes for the other.
+DELEGATE_GLOBBED_DIRS = (
+    ".claude/hooks/context/",
+    ".claude/hooks/stop/",
+    ".claude/rediacc_hooks/guards/",
+)
+
+
+def delegate_globbed(rel):
+    """True when `rel` sits DIRECTLY (not nested further) in a globbed directory and is a `.py` file -- the same shape `pathlib.Path.glob("test-*.py")` matches, non-recursive."""
+    return rel.endswith(".py") and any(
+        rel.startswith(d) and "/" not in rel[len(d) :] for d in DELEGATE_GLOBBED_DIRS
+    )
+
+
 def discover():
     out = []
     for d in SEARCH_DIRS:
@@ -250,7 +272,7 @@ def main():
         print("  or manifest_tokens() before trusting anything below.")
         return 1
 
-    orphans, checked, exempted, collected = [], 0, 0, 0
+    orphans, checked, exempted, collected, delegated = [], 0, 0, 0, 0
     registered = 0
     for f in files:
         rel = f.relative_to(REPO).as_posix()
@@ -264,6 +286,10 @@ def main():
         # Reached by REGISTRATION. `npm run ci` dispatches every manifest entry through scripts/ci-runner, so an entry naming this file IS a path to CI, and it is the path 115 of the 164 subjects take.
         if manifest_reached(f.name, toks):
             registered += 1
+            continue
+        # Reached by DELEGATE DISCOVERY: test_hooks_delegates.py globs this directory at runtime rather than naming files by hand.
+        if delegate_globbed(rel):
+            delegated += 1
             continue
         checked += 1
         refs = referencing_files(f.name)
@@ -310,9 +336,16 @@ def main():
 
     print(
         "✓ all %d test file(s) are reached by something CI runs "
-        "(%d registered in the gate manifest, %d collected by pytest, %d exempt, "
-        "%d reached by mention)"
-        % (registered + collected + exempted + checked, registered, collected, exempted, checked)
+        "(%d registered in the gate manifest, %d collected by pytest, %d delegate-globbed, "
+        "%d exempt, %d reached by mention)"
+        % (
+            registered + collected + delegated + exempted + checked,
+            registered,
+            collected,
+            delegated,
+            exempted,
+            checked,
+        )
     )
     return 0
 

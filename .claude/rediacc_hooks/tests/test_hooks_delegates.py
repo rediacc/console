@@ -13,6 +13,7 @@ TWO MODULES CARRIED SELFTESTS THAT NOTHING RAN, found 2026-08-26: wl_git.py and 
 from a suite that never executed.
 """
 
+import os
 import pathlib
 import re
 import subprocess
@@ -92,26 +93,30 @@ COUNTED = [
 #
 # Empty output still fails: a suite that prints nothing has not demonstrated it did anything, and exit 0 alone is what a stub returns.
 #
-# Each of these was committed, each passes, and each ran only when somebody invoked it by hand until 2026-08-23.
-TAILED = [
-    "context/test-context-bands.py",
-    "../rediacc_hooks/guards/test-block_destructive_git_restore.py",
-    "../rediacc_hooks/guards/test-block_git_amend.py",
-    "../rediacc_hooks/guards/test-block_unverified_push.py",
-    "../rediacc_hooks/guards/test-block_host_toolchain_run.py",
-    # THESE FOUR REACHED CI THROUGH THE BASH HARNESS AND NOTHING ELSE, which is how the drift was found: the label multiset of the last harness run carried them and the port's did not, so retiring the harness without this line would have orphaned four control suites the same week they were written. Each guard declares `TWIN = None`, so its per-guard suite IS its differential and
-    # `hook_integrity` credits both directions from the file's existence -- a suite nothing runs would keep crediting coverage it no longer demonstrates.
-    "../rediacc_hooks/guards/test-block_prose_style_edit.py",
-    "../rediacc_hooks/guards/test-block_prose_style_commit.py",
-    "../rediacc_hooks/guards/test-block_unproven_bulk_transform.py",
-    "../rediacc_hooks/guards/test-warn_staged_shape_duplication.py",
-    "stop/test-completion-evidence.py",
-    "stop/test-always-tier.py",
-    "stop/test-planfile.py",
-    "stop/test-planindex.py",
-    "stop/test-planrec.py",
-    "stop/test-reggate-ledger.py",
-]
+# DISCOVERED, NOT HAND-MAINTAINED, since 2026-09-22. A hand-maintained list needs a second commit to reach a new script, and the gap is silent: `test-block_push_to_protected_branch.py` was committed, passed its own standalone run, and sat unreached by this module for a full session before anyone noticed. `COUNTED` above stays explicit on purpose -- its counter regex and floor
+# are genuine per-module metadata a filename cannot supply -- but TAILED's contract is uniform (no argv, exit 0, non-empty output), which is exactly what a glob can enforce without a human remembering to.
+_TAILED_ROOTS = (
+    HOOKS / "context",
+    HOOKS / "stop",
+    HOOKS.parent / "rediacc_hooks" / "guards",
+)
+
+
+def _discover_tailed(roots=_TAILED_ROOTS) -> list[str]:
+    """Every `test-*.py` standalone script under the hook trees, minus whatever `COUNTED` already claims with its own argv/counter/floor."""
+    counted_names = {pathlib.Path(row[0]).name for row in COUNTED}
+    found = []
+    for root in roots:
+        for path in sorted(root.glob("test-*.py")):
+            if path.name in counted_names:
+                continue
+            found.append(pathlib.Path(os.path.relpath(path, HOOKS)).as_posix())
+    return found
+
+
+TAILED = _discover_tailed()
+# Measured 2026-09-22: 16 (9 guards + 6 stop/ + 1 context/), against COUNTED's 4 -- 20 total hyphenated scripts. A floor well below that, re-measured the same way COUNTED's floors are, catches a renamed or emptied root rather than pinning today's exact count.
+TAILED_FLOOR = 14
 
 # THE TWO BASH SUB-SUITES ARE GONE, ported to pytest under this same directory: `stop/test-worklist-v5.sh` (26 case files, 944 assertions) and `stop/test-report-inbox.sh` (164 assertions) both drove PYTHON through a shell fixture layer, and the ports keep the same subprocess calls and the same assertions with `wlfix.py` in place of `_harness.sh`.
 #
@@ -203,6 +208,24 @@ def test_an_orphan_control_suite_runs_and_says_something(relative):
     hooklabels.record(0, "%s: %s" % (relative, last[:90]), ok=ok)
     assert done.returncode == 0, "%s exited %d:\n%s" % (relative, done.returncode, text[-2000:])
     assert text.strip() != "", "%s printed nothing, which is what a stub returns" % relative
+
+
+def test_tailed_discovery_meets_its_floor():
+    """The glob replacing a hand-maintained list is a claim, not a formality: a renamed root or a broken glob would silently shrink `TAILED` to whatever it still finds, and a parametrized suite over a short list just runs fewer tests rather than failing loudly."""
+    assert len(TAILED) >= TAILED_FLOOR, (
+        "only %d test-*.py script(s) discovered under the hook trees, expected >= %d; "
+        "a root may have been renamed, or the glob broken" % (len(TAILED), TAILED_FLOOR)
+    )
+
+
+def test_tailed_discovery_control_an_emptied_root_finds_nothing():
+    """CONTROL, on an explicit empty root tuple rather than a renamed real directory (T-12): proves the floor check above would have caught a broken discovery root instead of passing vacuously over zero scripts."""
+    broken = _discover_tailed(roots=())
+    assert broken == [], "control setup: an empty roots tuple found %r" % (broken,)
+    assert len(broken) < TAILED_FLOOR, (
+        "CONTROL FAILED: an emptied root's result still met the floor, so the floor check "
+        "cannot detect the disappearance it exists to detect"
+    )
 
 
 def ported_module_count() -> int:

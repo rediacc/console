@@ -28,12 +28,6 @@ profiler-probe.yml:post-nested-slim
 
 # BLOCKER: rollout ledger for the runner profiler, which landed 2026-08-05 with one live job (profiler-probe.yml:post-direct-latest) and 90 jobs still unwired. Enumerated rather than waived so the gate is BLOCKING for every job added from today on, and so the burn-down is a visible diff instead of a habit: each line is deleted by the commit that adds the profiler step to that job, and the gate rejects the line the moment the job is covered, so a forgotten deletion is a build failure rather than dead weight. Phase 1 landed 2026-08-08 and burned 25 of these lines at once: profiler-probe.yml run 31252148469 proved on real runners that a JavaScript action's post: hook DOES fire from inside a composite, so one uses: in .github/actions/setup-workspace plus one verified wrapper in the gate covered every job that already calls it. What remains here is the jobs that do NOT call setup-workspace -- they set up their own toolchain, or run nothing that needs node -- and each of those still needs its own edit.
 #
-# autopilot.yml
-autopilot.yml:finish
-autopilot.yml:gate
-autopilot.yml:model
-autopilot.yml:sweeper
-#
 # backfill-release-sentinel.yml
 backfill-release-sentinel.yml:backfill
 #

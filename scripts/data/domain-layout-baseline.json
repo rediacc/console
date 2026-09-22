@@ -1,8 +1,6 @@
 {
   "note": "W9 P2.0. Files whose domain rule names a home they are not in yet. SHRINK ONLY: W9 P2 drains this to empty as it moves them, and --write-baseline refuses to add.",
   "outOfPlace": [
-    ".ci/scripts/autopilot/exfil-tripwire.cjs",
-    ".ci/scripts/autopilot/validate-handoff.cjs",
     ".ci/scripts/build/sea-inject/cli.mjs",
     ".ci/scripts/build/sea-inject/common.mjs",
     ".ci/scripts/build/sea-inject/elf.mjs",
@@ -10,7 +8,6 @@
     ".ci/scripts/build/sea-inject/macho.mjs",
     ".ci/scripts/build/sea-inject/pe.mjs",
     ".ci/scripts/build/sea-inject/verify.mjs",
-    ".ci/scripts/ci/autopilot-guide-comment.cjs",
     ".ci/scripts/ci/greenlight.cjs",
     ".ci/scripts/ci/label-guide-comment.cjs",
     ".ci/scripts/ci/report-nightly-status.cjs",

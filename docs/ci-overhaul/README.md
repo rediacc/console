@@ -19,8 +19,8 @@ is proven, and which statements in the documents below have been corrected.
 1. **[01-verified-context.md](01-verified-context.md)** next. Every measurement and
 every defect, with `file:line` and run ids. Section 8b corrects earlier sections; trust 8b.
 2. **[02-v1-economics.md](02-v1-economics.md)** for PR-A and PR-B.
-3. **[03-v2-autonomy.md](03-v2-autonomy.md)** for PR-C. Read walls 1 to 5 before designing
-anything; wall 4 is the dangerous one.
+3. **03-v2-autonomy.md** for PR-C, the autopilot design. Removed completely along with the
+autopilot itself; see `agent/plans/PLAN-remove-autopilot.md`.
 4. **[04-decisions.md](04-decisions.md)** for what is locked, what is open, and the scored
 ledger. Ask the open decision points early, in one round.
 5. **[05-execution-guide.md](05-execution-guide.md)** last, when you are ready to move.
@@ -66,8 +66,6 @@ mechanisms, and getting the base-moved case wrong silently weakens CI.
 assertions are structurally blind here; the reconciler is the only thing that is not.
 3. The **D5 content hash** (02 section B3). Under-inclusion causes stale image reuse, and the
 renet-pointer trap is subtle.
-4. The **autopilot harness** `rediacc_ci.autopilot.autopilot_push` (03). It is a security boundary. Keep it
-tiny and boring.
 
 ---
 
@@ -77,7 +75,7 @@ tiny and boring.
 
 **Wave B (PR-B, ~2.6 to 3.2K lines).** The baseline engine and incremental scoping (fixing D9 in the same stroke), the attested skip-plan, the policy cuts, the defect sweep D3 to D7 plus D10, the four in-scope issues, the testing pillar, labels, metadata and milestones.
 
-**Wave C (PR-C, ~1.5 to 2.5K lines).** The autopilot, landing with every stage flag off. Enable stages only after Wave B has been observed on real traffic.
+**Wave C (PR-C, ~1.5 to 2.5K lines).** The autopilot. Built, then removed completely per direct operator request; see `agent/plans/PLAN-remove-autopilot.md`.
 
 ### Explicitly OUT
 

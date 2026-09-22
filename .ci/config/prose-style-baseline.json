@@ -16,16 +16,16 @@
   "that shrank by 29 can still hide one brand-new violation. Comparing sizes is not",
   "the same claim as diffing the sets."
  ],
- "count": 5605,
- "files": 1177,
+ "count": 5570,
+ "files": 1169,
  "by_rule": {
-  "R1": 1672,
-  "R11": 178,
+  "R1": 1647,
+  "R11": 176,
   "R14": 1,
   "R18": 2209,
   "R19": 62,
-  "R2": 955,
-  "R7": 528
+  "R2": 953,
+  "R7": 522
  },
  "findings": {
   ".ci/breakpoint/README.md": {
@@ -167,21 +167,6 @@
    "R18": [
     "0daa098de6f21d28",
     "c62aca69156257aa"
-   ]
-  },
-  ".ci/rediacc_ci/autopilot/autopilot_gate.py": {
-   "R2": [
-    "12e201e3b3577c2a"
-   ]
-  },
-  ".ci/rediacc_ci/autopilot/compose_prompt.py": {
-   "R7": [
-    "ad0c2ea4b42a014c"
-   ]
-  },
-  ".ci/rediacc_ci/autopilot/state_comment.py": {
-   "R7": [
-    "a9ce6e473374f55c"
    ]
   },
   ".ci/rediacc_ci/battery.py": {
@@ -585,12 +570,6 @@
   ".ci/rediacc_ci/tests/differential.py": {
    "R7": [
     "d3dd778196f6c5f9"
-   ]
-  },
-  ".ci/rediacc_ci/tests/gates/test_gate_autopilot_harness.py": {
-   "R7": [
-    "7444420c271885d0",
-    "ba649a6d6ce65151"
    ]
   },
   ".ci/rediacc_ci/tests/gates/test_gate_breakpoint_drift.py": {
@@ -1047,48 +1026,6 @@
   ".ci/rediacc_ci/workflows.py": {
    "R2": [
     "676810cd8865644e"
-   ]
-  },
-  ".ci/scripts/autopilot/prompts/fix-round.md": {
-   "R1": [
-    "13d13e6c5ad600e0",
-    "2a071738fd17ba80",
-    "430c0369abf28b48",
-    "4f83e5c7e1c53f67",
-    "6005c0e26703a5b7",
-    "606251d49efdbdf6",
-    "8367b8e2c239e457",
-    "86bba2d4260ea3c2",
-    "8fe6527c6691b731",
-    "94d83b8c4c867773",
-    "c24602a2c0ec1557"
-   ],
-   "R11": [
-    "3b4cde31a8e0fdad"
-   ]
-  },
-  ".ci/scripts/autopilot/prompts/review-response.md": {
-   "R1": [
-    "07448911736d9df8",
-    "0a5956d032cc867e",
-    "18d6a16816bfb004",
-    "2f2c2d42f33eef21",
-    "3b9018c1e440fa31",
-    "44b428abde83b1ec",
-    "45417ceafba770dc",
-    "6d9762b8674670b5",
-    "f3fd3817db7d56e5"
-   ],
-   "R11": [
-    "efb86ca84dc49219"
-   ]
-  },
-  ".ci/scripts/autopilot/validate-handoff.cjs": {
-   "R2": [
-    "5d19bfbf12247473"
-   ],
-   "R7": [
-    "1c06d3d7945e9a84"
    ]
   },
   ".ci/scripts/ci/ci-trace.py": {
@@ -4225,18 +4162,6 @@
     "78dafa43816a8179",
     "addaa4fa6d1d242e",
     "b302a95e8ae56538"
-   ]
-  },
-  "docs/ci-overhaul/03-v2-autonomy.md": {
-   "R1": [
-    "5812bcb6bcdaea57",
-    "6084ca381d673724",
-    "613811dac8ece8a0",
-    "8df99511f16b4da5",
-    "9219766d7b6e8495"
-   ],
-   "R7": [
-    "0b83c6b6e0e3dc33"
    ]
   },
   "docs/ci-overhaul/04-decisions.md": {

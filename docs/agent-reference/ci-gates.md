@@ -125,7 +125,7 @@ Two ways this step lies to you, both observed on 0804-1:
 4. **The automated Claude review fires when CI is green AND the PR is non-draft**: first at the babysitter's ready-flip, then again after each green push while the PR stays ready. It never runs on a draft, a red head, or a pointer-bump-only delta. When it posts (inline threads plus one summary comment), fetch `gh api repos/<owner>/<repo>/pulls/<N>/comments`, fix what's real, reply substantively to every comment, and resolve the threads via GraphQL. Unreplied/unresolved threads still fail `Review Gate` (console PR) and `Quality / Submodule Branches` (submodule PRs); clear them before the gate re-runs.
 
 **A pass that posts NO report does not always cost you the head.** When it dies for an infrastructure reason (`error_max_turns`, `error_during_execution`), the attempt marker records `attempts: N of 3` and the head keeps its budget for two re-attempts — re-run them on the SAME head, no push required: `gh workflow run claude-review.yml --ref <branch> -f pr_number=<N>`. The third
-reportless attempt on one head, and any failure the pipeline cannot classify, are terminal: the marker then says "push a change to earn another pass" and it means it. This exists because a fully-green autopilot-driven PR has no legitimate change to push, so the old single-shot rule stalled the loop behind a human (PR #560).
+reportless attempt on one head, and any failure the pipeline cannot classify, are terminal: the marker then says "push a change to earn another pass" and it means it. This exists because a fully-green PR with nothing left to push has no legitimate change to make, so the old single-shot rule stalled the loop behind a human (PR #560).
 5. **Fix, commit, push, repeat**: Fix the issue, commit, push, and watch again. Batch pending fixes into one push — each push restarts the whole pipeline. Continue until green.
 
 ### Quality lanes and the ubuntu-slim cap
@@ -287,7 +287,7 @@ because the alternative is one attempt per 24 hours, which is not a feedback loo
 
 ### Labels: the chain from a code reference to a PR comment
 
-Labels in this repo are kill switches (`full-ci` bypasses the scope engine's skips, `no-cancel-push` disarms the watchdog, `autopilot-blocked` latches the babysit loop off, `rollback` blocks stable promotion), and nothing about a label is self-documenting. Four links now connect a label reference to a human who can understand it, each enforced by a different thing:
+Labels in this repo are kill switches (`full-ci` bypasses the scope engine's skips, `no-cancel-push` disarms the watchdog, `rollback` blocks stable promotion), and nothing about a label is self-documenting. Four links now connect a label reference to a human who can understand it, each enforced by a different thing:
 
 | Link | Enforced by |
 |------|-------------|

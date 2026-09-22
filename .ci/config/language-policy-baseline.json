@@ -69,7 +69,6 @@
     ".ci/scripts/private/renet-ebpf-e2e.sh",
     ".ci/scripts/private/renet-integration.sh",
     ".ci/scripts/private/renet-root-tests.sh",
-    ".ci/scripts/quality/check-autopilot-no-bypass.sh",
     ".ci/scripts/quality/check-dead-case-arms.sh",
     ".ci/scripts/quality/check-plan-housekeeping.sh",
     ".ci/scripts/quality/check-profiler-coverage.sh",

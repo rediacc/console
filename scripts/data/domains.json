@@ -183,9 +183,9 @@
       "home": "scripts/ci",
       "stays": false,
       "owner": "W7",
-      "why": "Nine .cjs helpers W7 relocates so .ci becomes single-language: autopilot-guide-comment, greenlight, label-guide-comment, report-nightly-status, scope-engine, scope-map, skip-plan-reconcile, validate-pr, watchdog-monitor.",
+      "why": "Eight .cjs helpers W7 relocates so .ci becomes single-language: greenlight, label-guide-comment, report-nightly-status, scope-engine, scope-map, skip-plan-reconcile, validate-pr, watchdog-monitor. (A ninth, autopilot-guide-comment, was removed completely along with the rest of the Autopilot subsystem; see agent/plans/PLAN-remove-autopilot.md.)",
       "notes": [
-        "scope-map.cjs is a single-writer file (driver contract section 3) and rule ORDER inside it is semantics. It moves last of the nine, and whoever moves it states where its rules sit.",
+        "scope-map.cjs is a single-writer file (driver contract section 3) and rule ORDER inside it is semantics. It moves last of the eight, and whoever moves it states where its rules sit.",
         "greenlight.cjs:421-423 lists 'scripts/drills', 'run.sh' and '.ci/legacy' in its own cache-key closure; relocating the file does not change those strings but relocating anything they name does."
       ]
     },
@@ -204,14 +204,6 @@
       "stays": false,
       "owner": "W7",
       "why": "compress-cast-idle.mjs and process-cast-markers.mjs, the tutorial cast post-processors."
-    },
-    {
-      "id": "incoming-autopilot",
-      "paths": [".ci/scripts/autopilot/*.cjs"],
-      "home": "scripts/autopilot",
-      "stays": false,
-      "owner": "W7",
-      "why": "exfil-tripwire.cjs and validate-handoff.cjs."
     },
     {
       "id": "incoming-lint-driver",

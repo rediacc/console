@@ -215,7 +215,6 @@ Deleting a passthrough is a workflow-graph edit, so it must not land while a rel
 | 01:00 – ~02:00 | `ci.yml` nightly cron `'0 1 * * *'` |
 | 03:00 | `housekeeping.yml` cron `'0 3 * * *'` |
 | 06:00 – ~07:00 | `promote-stable.yml` cron `'0 6 * * *'` — **production**, calls `cd-deploy-worker`/`cd-deploy-account` at `:165`/`:177` |
-| `:17` of every even hour | `autopilot.yml` cron `'17 */2 * * *'` |
 | any merge to `main` | `cd-v2.yml` "Release to Edge" is dispatched from CI's finalize job (`workflow_dispatch`, not `workflow_run` — `cd-v2.yml:7-14`), so every merge opens an edge-deploy window |
 
 Land Box 2 outside those, and let the following CI-to-edge cycle go green before anything else in W8 moves.

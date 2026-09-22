@@ -7,7 +7,9 @@ Your mission is to execute the CI overhaul program. Start by reading `docs/ci-ov
 **Ask the nine operator decision points early, in one round**, using the RECOMMENDED defaults in `04-decisions.md` section C. Anything unanswered takes its default and gets logged. There are also two cheap spikes in `05-execution-guide.md` to run before committing to the designs that depend on them.
 
 **Staffing.** Opus is the default for coding sub-agents. **Fable for the challenging pieces and for all planning agents.** Sonnet for translation and naturalisation. At most **2 concurrent writers**, with disjoint file ownership stated verbatim in every prompt; investigation agents may fan out freely. Spot-check every sub-agent report against the artifact before building on it,
-because in the source session three of five verification sweeps corrected the orchestrator on load-bearing claims. The Fable-tier pieces are named in the README's Staffing section: the baseline-and-net-delta engine, the attested skip-plan reconciliation, the D5 content hash, and the autopilot harness.
+because in the source session three of five verification sweeps corrected the orchestrator on load-bearing claims. The Fable-tier pieces are named in the README's Staffing section: the baseline-and-net-delta engine, the attested skip-plan reconciliation, and the D5 content hash.
+
+A fourth Fable-tier piece, the autopilot harness, was built and then removed completely per direct operator request; see `agent/plans/PLAN-remove-autopilot.md`.
 
 **Program state** lives at `~/.claude/projects/-home-muhammed-monorepo-console/programs/ci-overhaul/`. Update `MANIFEST.md` at every wave boundary. Every writing or planning sub-agent names its working report `reports/<phase>-<agent>.md` (and its brief `reports/<phase>-<agent>-brief.md` when one is used); read those reports and the artifacts, never bare summaries. Drop periodic
 uncommitted-tree patches into `checkpoints/`, because a host reboot once destroyed a `/tmp` scratchpad and that is why this directory is durable.

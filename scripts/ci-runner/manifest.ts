@@ -4229,18 +4229,6 @@ export const GATES: readonly GateSpec[] = [
         'BLOCKER: test_gate_profiler_coverage.py:test_real_tree_seam_free runs the gate seam-free against the real tree under check:ci-pytest (ci-quality.yml quality-security) -- real workflows, real allowlist, real action.yml, real floors -- so the full job parse and both relations execute every CI run; the 22 fixture cases around it prove every fire direction',
     },
   },
-  {
-    id: 'check:ci-autopilot-workflow',
-    run: 'npm run check:ci-autopilot-workflow',
-    gate: true,
-    leaves: ['.ci/rediacc_ci/security/autopilot_workflow_invariants.py'],
-    ci: {
-      kind: 'test',
-      test: '.ci/rediacc_ci/tests/gates/test_gate_autopilot_workflow_invariants.py',
-      blocker:
-        'BLOCKER: no quality lane can run this against the live ruleset, but test_gate_autopilot_workflow_invariants.py:30,175 points both GATE and REAL at the real .github/workflows/autopilot.yml, so check:ci-pytest (ci-quality.yml quality-security, "Python package tests") executes the real scan over the real tree every CI run',
-    },
-  },
   // >>> gen-manifest: region 40
   {
     id: 'check:ci-go-module-sync',
@@ -4278,18 +4266,6 @@ export const GATES: readonly GateSpec[] = [
       test: '.ci/rediacc_ci/tests/gates/test_gate_ci_workflow_invariants.py',
       blocker:
         'BLOCKER: no quality lane runs this against the live workflow, but test_gate_ci_workflow_invariants.py:35-36 points both GATE and REAL at the real .github/workflows/ci.yml, so check:ci-pytest (ci-quality.yml quality-security, "Python package tests") executes the real scan over the real tree every CI run',
-    },
-  },
-  {
-    id: 'check:ci-autopilot-bp-align',
-    run: 'npm run check:ci-autopilot-bp-align',
-    gate: true,
-    leaves: ['.ci/scripts/quality/check_autopilot_breakpoint_alignment.py'],
-    ci: {
-      kind: 'test',
-      test: '.ci/rediacc_ci/tests/gates/test_gate_autopilot_breakpoint_alignment.py',
-      blocker:
-        'BLOCKER: test_gate_autopilot_breakpoint_alignment.py:52 runs the gate seam-free against the real .ci/breakpoint/workflow/breakpoint.yml and .github/workflows/autopilot.yml, and check:ci-pytest (ci-quality.yml quality-security, "Python package tests") executes that real comparison every CI run; the mutated-copy cases around it prove both fire directions',
     },
   },
 

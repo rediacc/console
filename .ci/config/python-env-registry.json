@@ -1,39 +1,6 @@
 {
   "note": "SHRINK-ONLY, AND GENERATED -- do not hand-edit except to re-key a moved module. Every `<module>: [NAME, ...]` here is one environment variable a tracked Python module reads, derived from the AST by .ci/scripts/quality/check_python_env_registry.py. A `*` prefix means the name is not a literal at the call site and the EXPRESSION is recorded instead. The gate asserts SET EQUALITY with the tree in both directions: a read missing from here reds, and so does an entry here that nothing reads -- so this file can neither be trimmed to escape a finding nor pre-loaded with one. Drain it with `--write-baseline`, which refuses any reseed that would ADD a pair even when the total shrinks. A genuinely new read must be typed: `--write-baseline --allow-new <module>:<NAME>`.",
   "modules": {
-    ".ci/rediacc_ci/autopilot/autopilot_gate.py": [
-      "AUTOPILOT_ALLOW_PUSH",
-      "AUTOPILOT_APPLIER_ALLOWLIST",
-      "AUTOPILOT_AUTHOR_ALLOWLIST",
-      "AUTOPILOT_ENABLED",
-      "AUTOPILOT_LABEL",
-      "AUTOPILOT_MAX_ROUNDS"
-    ],
-    ".ci/rediacc_ci/autopilot/autopilot_push.py": [
-      "AUTOPILOT_ALLOW_PUSH",
-      "AUTOPILOT_ALLOW_SUBMODULES"
-    ],
-    ".ci/rediacc_ci/autopilot/compose_prompt.py": [
-      "GITHUB_OUTPUT"
-    ],
-    ".ci/rediacc_ci/autopilot/finish.py": [
-      "AUTOPILOT_ALLOW_PUSH"
-    ],
-    ".ci/rediacc_ci/autopilot/post_escalation.py": [
-      "AUTOPILOT_ALLOW_STATE"
-    ],
-    ".ci/rediacc_ci/autopilot/resolve_model_args.py": [
-      "GITHUB_OUTPUT"
-    ],
-    ".ci/rediacc_ci/autopilot/review_reply.py": [
-      "AUTOPILOT_ALLOW_PUSH"
-    ],
-    ".ci/rediacc_ci/autopilot/submodule_prs.py": [
-      "AUTOPILOT_ALLOW_PUSH"
-    ],
-    ".ci/rediacc_ci/autopilot/update_state.py": [
-      "AUTOPILOT_ALLOW_STATE"
-    ],
     ".ci/rediacc_ci/battery.py": [
       "CI",
       "RUN_ALL_GATES_DIR",
@@ -479,14 +446,6 @@
     ".ci/rediacc_ci/quality/audit_coverage.py": [
       "REDIACC_CI_ROOT"
     ],
-    ".ci/rediacc_ci/quality/autopilot_breakpoint_alignment.py": [
-      "AUTOPILOT_BP_ALIGN_AUTOPILOT_FILE",
-      "AUTOPILOT_BP_ALIGN_BREAKPOINT_FILE"
-    ],
-    ".ci/rediacc_ci/quality/autopilot_no_bypass.py": [
-      "GITHUB_AUTOPILOT_APP_ID",
-      "RULESET_REPO"
-    ],
     ".ci/rediacc_ci/quality/battery_clean_tree.py": [
       "BATTERY_CLEAN_TREE_ROOT"
     ],
@@ -919,9 +878,6 @@
       "CI",
       "HOME"
     ],
-    ".ci/rediacc_ci/security/autopilot_workflow_invariants.py": [
-      "WORKFLOW_FILE"
-    ],
     ".ci/rediacc_ci/security/check_commands.py": [
       "CI"
     ],
@@ -961,9 +917,6 @@
       "MEDIA_COVERAGE_FILE"
     ],
     ".ci/rediacc_ci/tests/gates/test_gate_assert_edge_tag_exists.py": [
-      "PATH"
-    ],
-    ".ci/rediacc_ci/tests/gates/test_gate_autopilot_no_bypass.py": [
       "PATH"
     ],
     ".ci/rediacc_ci/tests/gates/test_gate_backfill_commit_resolve.py": [
@@ -1076,53 +1029,6 @@
       "TWIN_PARITY_ALWAYS_DRIVE"
     ],
     ".ci/rediacc_ci/tests/pathmask.py": [
-      "PATH"
-    ],
-    ".ci/rediacc_ci/tests/test_autopilot_compose_prompt.py": [
-      "HOME",
-      "PATH"
-    ],
-    ".ci/rediacc_ci/tests/test_autopilot_fetch_review_threads.py": [
-      "PATH"
-    ],
-    ".ci/rediacc_ci/tests/test_autopilot_gate.py": [
-      "PATH"
-    ],
-    ".ci/rediacc_ci/tests/test_autopilot_linked_sub_prs.py": [
-      "HOME",
-      "PATH"
-    ],
-    ".ci/rediacc_ci/tests/test_autopilot_post_escalation.py": [
-      "PATH"
-    ],
-    ".ci/rediacc_ci/tests/test_autopilot_push.py": [
-      "PATH"
-    ],
-    ".ci/rediacc_ci/tests/test_autopilot_resolve_model_args.py": [
-      "HOME",
-      "PATH"
-    ],
-    ".ci/rediacc_ci/tests/test_autopilot_restore_trusted_config.py": [
-      "HOME",
-      "PATH"
-    ],
-    ".ci/rediacc_ci/tests/test_autopilot_review_payload.py": [
-      "HOME",
-      "PATH"
-    ],
-    ".ci/rediacc_ci/tests/test_autopilot_review_reply.py": [
-      "PATH"
-    ],
-    ".ci/rediacc_ci/tests/test_autopilot_state_comment.py": [
-      "PATH"
-    ],
-    ".ci/rediacc_ci/tests/test_autopilot_submodule_prs.py": [
-      "PATH"
-    ],
-    ".ci/rediacc_ci/tests/test_autopilot_sweep_campaigns.py": [
-      "PATH"
-    ],
-    ".ci/rediacc_ci/tests/test_autopilot_update_state.py": [
       "PATH"
     ],
     ".ci/rediacc_ci/tests/test_build_build_json.py": [

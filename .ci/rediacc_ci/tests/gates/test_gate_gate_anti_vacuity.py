@@ -96,11 +96,7 @@ REGISTRY: tuple[tuple[str, str], ...] = (
     # An empty tree tracks no js/ts at all, so "every file reaches a linter" is trivially true over zero files -- indistinguishable from full coverage.
     (".ci/scripts/quality/check_lint_scope_coverage.py", "VACUOUS INPUT"),
     # NOT registered here: .ci/breakpoint/scripts/check-breakpoint-drift.sh. This harness's fixture copies scripts/ and .ci/scripts/ but not .ci/breakpoint/, so the drift gate would fail with "No such file or directory" -- non-zero for a reason that has nothing to do with vacuity, which is precisely the false signal the REGISTRY POLICY above warns about. Its missing-manifest
-    # behaviour is proven in test_gate_breakpoint_portability.py instead, where an isolated copy of the folder genuinely exists. NOT registered here either: .ci/scripts/quality/check-autopilot-no-bypass.sh. Its sibling check-autopilot-workflow-invariants.sh IS registered below, and the asymmetry is deliberate rather than an oversight. That one reads the workflow tree, so an empty
-    # fixture makes it vacuous and it must say so. This one never touches the tree at all: it is three `gh api` calls against the live ruleset (:52, :71). An empty-tree run would exit non-zero on the absent GITHUB_AUTOPILOT_APP_ID, which is an ENVIRONMENT failure wearing a vacuity failure's exit code, and pinning it would assert nothing about the gate.
-    # Verified live instead, 2026-07-30: with GITHUB_AUTOPILOT_APP_ID=4409539 it exits 0
-    # and reports ruleset 12344707 bypass actors [RepositoryRole:5, Integration:2772000] with autopilot absent, which is the property it exists to defend. The harness fixture copies scripts/ and .ci/scripts/ but nothing that REFERENCES them (no workflows, no docs, no allowlist), so the gate must report the resulting orphans loudly rather than pass. The "ZERO shell files" guard
-    # covers the stricter case of no shell tree at all.
+    # behaviour is proven in test_gate_breakpoint_portability.py instead, where an isolated copy of the folder genuinely exists. The former autopilot-no-bypass / autopilot-workflow-invariants pair that used to be discussed here is gone along with the whole Autopilot subsystem (agent/plans/PLAN-remove-autopilot.md).
     ("check-dead-bash.ts", "dead shell symbol"),
     # Both of its checks walk .github/workflows. The empty tree has no workflow YAML, so every invariant it asserts is over an empty set. It used to `exit 0` on a missing directory, which meant renaming the workflow tree would silently retire the gate.
     (".ci/scripts/security/check-workflow-gates.sh", "blind"),
@@ -112,7 +108,6 @@ REGISTRY: tuple[tuple[str, str], ...] = (
     # A DIFF gate with no baseline and no ledger measures nothing, and "measured nothing" must never read as "found nothing". Against the empty fixture both its inputs are gone, so it must refuse to run. Its first draft did the opposite: a wrong ledger path made the protected set empty, so it reported OK on a planted fabrication. Only a control caught that.
     ("check-locale-only-edits.ts", "Refusing to run"),
     ("check-jq-boolean-default.ts", "Refusing to run"),
-    (".ci/rediacc_ci/security/autopilot_workflow_invariants.py", "INVARIANT-FAIL"),
     # Its DOCS_DIR is a hardcoded path constant, so this is root pattern 1 verbatim: point it at a tree without packages/www/src/content/docs and the glob returns zero files, every loop iterates zero times, and it printed "All external links are valid". Measured on the empty fixture before the guard was added, not inferred from reading it.
     ("check-external-links.ts", "Refusing to run"),
     # Root pattern 1 with a baseline bolted on, which makes it worse: with the locale trees absent it finds zero contamination AND every one of its 379 baselined findings looks fixed, so an unguarded version would either print a checkmark or fail for the wrong reason. It must refuse instead.
