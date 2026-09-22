@@ -75,7 +75,7 @@ SCOPE_BY_SUFFIX = {
     ".cjs": "comment",
     ".mjs": "comment",
     ".go": "comment",
-    # REUSES "comment" RATHER THAN A NEW SCOPE NAMED "config". A JSON `_comment`/`why`/`reason` block is the same register, by the same authors, as a source-file comment -- and a "config" scope would silently disable R18, since R18's own `scopes` list is `["markdown", "comment", "pr"]` and does not name one.
+    # REUSES "comment" RATHER THAN A NEW SCOPE NAMED "config". A JSON `_comment`/`why`/`reason` block is the same register, by the same authors, as a source-file comment -- and a "config" scope would silently disable R18, since R18's own `scopes` list is `["markdown", "comment", "pr", "commit"]` and does not name one.
     ".json": "comment",
 }
 
