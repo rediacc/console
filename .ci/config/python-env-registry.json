@@ -354,6 +354,9 @@
       "DRY_RUN",
       "PUBLISH_DOCKER_REGISTRY"
     ],
+    ".ci/rediacc_ci/docker/run_in_image.py": [
+      "REDIACC_NO_DOCKER"
+    ],
     ".ci/rediacc_ci/env/create_e2e_env.py": [
       "*name",
       "BRIDGE_TIMEOUT",

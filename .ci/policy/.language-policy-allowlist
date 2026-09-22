@@ -84,15 +84,19 @@ file:.ci/docker/service/env.sh
 # BLOCKER: a two-line forwarder whose PATH is spelled by step4000_voiceover.py in private/generative and tts_bridge.py in private/growth, gitignored repositories this checkout cannot open or commit to, so the name including its extension is frozen by callers no change here can reach; the real wrapper it execs is .ci/media/tools/run-in-tts.sh, already exempt under tree:.ci/media/
 file:.ci/docker/run-in-tts.sh
 
-# DELIBERATELY ABSENT, and this note is the record of the decision.
+# DELIBERATELY ABSENT, and this note is the record of the decision AND of its outcome.
 #
-# .ci/docker/run-in-render.sh and .ci/docker/run-in-web.sh are NOT exempt. The plan
+# .ci/docker/run-in-render.sh and .ci/docker/run-in-web.sh were NOT exempt. The plan
 # box that scoped this work called them "container entrypoints" along with the three
-# above; they are not. Both are HOST-side launchers that assemble a `docker run`
-# command line (22 effective lines each) and both carry a REDIACC_NO_DOCKER=1 arm
-# that runs on the host instead. Nothing about either is structurally bash, so they
-# stay in the baseline where a drain can reach them. Recorded here because "the five
-# .ci/docker entrypoints" is the phrase a future reader will arrive with.
+# above; they were not. Both were HOST-side launchers that assembled a `docker run`
+# command line (22 effective lines each) and both carried a REDIACC_NO_DOCKER=1 arm
+# that ran on the host instead. Nothing about either was structurally bash, so they
+# stayed in the baseline where a drain could reach them, and the drain reached them:
+# both are gone, replaced by .ci/rediacc_ci/docker/run_in_image.py behind the K=5
+# ledgers .ci/shadow/w7p5c-run-in-{web,render}.observations.jsonl and the recorded
+# bytes under .ci/rediacc_ci/tests/goldens/docker-run-in-image/. Kept here because
+# "the five .ci/docker entrypoints" is the phrase a future reader will arrive with,
+# and three is now the whole of it.
 
 # BLOCKER: driven by 3 committed Python callers (test_gate_rebase_resolve.py, test_gate_shadow_gate.py, and a hooks trapguard test) whose own docstrings say the fixture library is driven, not reimplemented -- a Python port here would be a second copy of the fixtures and this gate would then certify the wrong one
 file:.ci/scripts/test/lib/git-fixture.sh

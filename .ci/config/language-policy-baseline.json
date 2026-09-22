@@ -1,8 +1,6 @@
 {
   "note": "SHRINK-ONLY and GENERATED. Tracked bash under the trees ruling 7 (docs/ci-overhaul/04-decisions.md) assigns to Python (.ci, .claude, scripts/{ops,drills,dev}), minus the .language-policy-allowlist exemptions. It may only LOSE members: a new path is refused even when the total shrinks, since composition is the claim. Drain with --write-baseline, not to clear a red.",
   "bashFiles": [
-    ".ci/docker/run-in-render.sh",
-    ".ci/docker/run-in-web.sh",
     ".ci/legacy/run-legacy.sh",
     ".ci/lib/account.sh",
     ".ci/lib/devbox.sh",

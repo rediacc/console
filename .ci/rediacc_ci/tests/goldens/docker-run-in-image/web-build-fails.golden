@@ -1,0 +1,11 @@
+# twin .ci/docker/run-in-web.sh blob 471f42e09b48310dfbe892adb5066dd5c3098e81
+exit: 5
+--- stdout ---
+[fake docker] build
+--- stderr ---
+building rediacc/web:local (first run only)
+[fake docker] building
+--- trace ---
+docker cwd=<root> argv=image inspect rediacc/web:local
+docker cwd=<root> argv=build -t rediacc/web:local <root>/.ci/docker/web
+docker build-context-dockerfile=<sha256>
