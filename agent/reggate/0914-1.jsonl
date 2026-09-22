@@ -74,3 +74,9 @@
 {"kind":"charge","sig":"3c693ca79df8","why":"proven","at":"2026-09-20T20:11:49Z","br":"0914-1"}
 {"kind":"charge","sig":"1f14824a561a","why":"proven","at":"2026-09-21T01:38:42Z","br":"0914-1"}
 {"kind":"charge","sig":"50af56769bf9","why":"proven","at":"2026-09-21T15:19:12Z","br":"0914-1"}
+{"kind":"charge","sig":"a4e1b93f60a6","why":"proven","at":"2026-09-22T09:20:15Z","br":"0914-1"}
+{"kind":"debt","sig":"f70ca50c7474","blind_spot":"Existing hook test coverage did not enumerate all syntactic variations of git commands the guards are meant to block (e.g. git push origin main vs other forms), leaving incomplete guard logic undetected.","surface":"hooks","artifact":".claude/rediacc_hooks/guards/test-block_push_to_protected_branch.py","charged":58,"at":"2026-09-22T09:25:48Z","br":"0914-1"}
+{"kind":"charge","sig":"f70ca50c7474","why":"capped","at":"2026-09-22T09:25:48Z","br":"0914-1"}
+{"kind":"charge","sig":"2d08d88dbd3e","why":"proven","at":"2026-09-22T10:14:23Z","br":"0914-1"}
+{"kind":"debt","sig":"acbd5301a817","blind_spot":"Path construction logic in CI inspection that does not verify all code paths account for configurable gates-subdir configuration","surface":"gates","artifact":".ci/rediacc_ci/quality/pool_writer_safety.py","charged":60,"at":"2026-09-22T10:17:08Z","br":"0914-1"}
+{"kind":"charge","sig":"acbd5301a817","why":"capped","at":"2026-09-22T10:17:08Z","br":"0914-1"}
