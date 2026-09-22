@@ -332,9 +332,9 @@ N_OK = (
     "found the evidence supports it. Mechanical profile: %(shape)s. %(why)s"
 )
 N_ADVISORY = (
-    "CLAIM CHECK (advisory, never blocking): a completion claim was checked against its own "
-    "evidence and the judge answered supported=%(supported)s. WHY: %(why)s NEXT: %(instruction)s "
-    "Mechanical profile: %(shape)s."
+    "A completion claim was checked against its own evidence and the judge answered "
+    "supported=%(supported)s. Mechanical profile: %(shape)s. CLAIM CHECK: WHY: %(why)s "
+    "NEXT: %(instruction)s"
 )
 N_DEGRADED = (
     "Claim check: a completion claim was put to the judge and no usable claim_check came "
