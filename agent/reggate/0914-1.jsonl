@@ -92,3 +92,4 @@
 {"kind":"charge","sig":"a64d5c5e0a28","why":"capped","at":"2026-09-22T14:19:18Z","br":"0914-1"}
 {"kind":"debt","sig":"3807fa1b20c6","blind_spot":"Citation path resolution with stub entries and indirection was not observable by existing checks because citation excerpt verification did not exist before this system was built.","surface":"gates","artifact":".claude/hooks/stop/test-completion-evidence.py","charged":67,"at":"2026-09-22T15:06:12Z","br":"0914-1"}
 {"kind":"charge","sig":"3807fa1b20c6","why":"capped","at":"2026-09-22T15:06:12Z","br":"0914-1"}
+{"kind":"charge","sig":"fe0655f2220e","why":"proven","at":"2026-09-22T15:51:23Z","br":"0914-1"}
