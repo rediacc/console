@@ -732,7 +732,7 @@ CLI_MIGRATE_USAGE = (
     "List sessions whose remaining work is not live here, then continue the ones\n"
     "you name: their open, in-flight and deferred items are re-tagged to you and\n"
     "the originals are ticked 'migrated to'. Nothing is deleted; a LIVE session is\n"
-    "refused. A candidate can also be a committed agent/PLAN-*.md carrying open\n"
+    "refused. A candidate can also be a committed agent/plans/PLAN-*.md carrying open\n"
     "boxes whose declared owner is idle -- --plan re-stamps that plan's Owner:\n"
     "line to you (no box is touched); a store migration never does this on its\n"
     "own, it only prints the command. Use it after a restart or a machine switch\n"
@@ -1672,11 +1672,11 @@ CLI_TRIAGE_SELF = (
     "INLINE if small and local: fix it now, then\n"
     "    .claude/hooks/stop/worklist.py --tick %(me)s %(id)s '<evidence>'\n"
     "PLAN+SUBAGENT if bigger: a Plan agent writes the design to "
-    "agent/PLAN-<slug>.md with a 'Status: draft' header, you "
-    "flip it to executing, and you implement it THIS session (a writer "
-    "sub-agent when the file set is disjoint or the context is heavy, at most "
-    "2, inline otherwise), riding the current PR when the risk is compatible "
-    "or its own branch when it is not.\n"
+    "agent/plans/PLAN-<slug>.md with a 'Status: draft' header, then the "
+    "header flips to executing and implementation happens THIS session (a "
+    "writer sub-agent when the file set is disjoint or the context is heavy, "
+    "at most 2, inline otherwise), riding the current PR when the risk is "
+    "compatible or its own branch when it is not.\n"
     "OPERATOR-ONLY only through a door:\n"
     + _DOORS
     + "A finding is fixed in the session that finds it. Filing an issue "
@@ -1702,7 +1702,8 @@ CTX_SESSION_START_STALE = (
     "were last updated. Reconcile them early, not at the end."
 )
 
-# v16: the plan-file convention. agent/PLAN-<slug>.md is the DURABLE design record, committed, as opposed to the per-session agent/<me>/ directories whose STATE.md is the volatile cursor. A plan survives compaction and a machine loss, so a session that never reads them re-litigates decisions that were already paid for.
+# v16: the plan-file convention. agent/plans/PLAN-<slug>.md is the DURABLE design record, committed, as opposed to the per-session agent/<me>/ directories whose STATE.md is the volatile cursor.
+# A plan survives compaction and a machine loss, so a session that never reads them re-litigates decisions that were already paid for. agent/PLAN-<slug>.md is the legacy location, now a stub-only namespace after the migration to agent/plans/ -- see agent/README.md.
 CTX_PLANS = (
     "DURABLE PLANS, committed under agent/ and written to survive compaction "
     "and a lost machine:\n%s\n\n"
@@ -2064,7 +2065,7 @@ Plan records (W12):
                                 would refuse (oldest first). No path, no write.
   --plan-revive <me>            LIST the records on disk and whether each
                                 one's blob still resolves
-  --plan-compact <me> <agent/PLAN-x.md> [--write] [--park]
+  --plan-compact <me> <agent/plans/PLAN-x.md> [--write] [--park]
                  [--why author|auto|model]
                                 turn a FINISHED plan into an attested record
                                 that keeps its own path. The full text stays
@@ -2075,7 +2076,7 @@ Plan records (W12):
                                 puts it on disk. --park records a plan whose
                                 work is unfinished: its text shrinks, its
                                 housekeeping clock does not stop.
-  --plan-revive <me> <agent/PLAN-x.md> [--write]
+  --plan-revive <me> <agent/plans/PLAN-x.md> [--write]
                                 restore a record's full text from its blob
 
 Maintenance:
@@ -2355,9 +2356,9 @@ list plausibly covers the plan, say so.
 CLI_PLANREC_USAGE = (
     "usage: worklist.py --plan-compact <me>            list the candidates\n"
     "       worklist.py --plan-revive  <me>            list the records\n"
-    "       worklist.py --plan-compact <me> <agent/PLAN-x.md> [--write] [--park]\n"
+    "       worklist.py --plan-compact <me> <agent/plans/PLAN-x.md> [--write] [--park]\n"
     "                   [--why author|auto|model]\n"
-    "       worklist.py --plan-revive  <me> <agent/PLAN-x.md> [--write]\n"
+    "       worklist.py --plan-revive  <me> <agent/plans/PLAN-x.md> [--write]\n"
     "\n"
     "A plan file that nobody has touched for delete_days goes RED in\n"
     "check:ci-plan-housekeeping, and the operator's rule is that nothing is\n"
@@ -2439,7 +2440,7 @@ CLI_PLANWHY_NO_INDEX = (
 )
 
 CLI_PLANTICK_USAGE = (
-    "usage: worklist.py --plan-tick <me> <agent/PLAN-x.md> <box> <evidence...> [--write]\n"
+    "usage: worklist.py --plan-tick <me> <agent/plans/PLAN-x.md> <box> <evidence...> [--write]\n"
     "\n"
     "Tick ONE box in a plan and update the committed box ledger in the same run.\n"
     "\n"

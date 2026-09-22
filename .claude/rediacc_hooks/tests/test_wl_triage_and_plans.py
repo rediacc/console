@@ -101,7 +101,7 @@ def test_165_triage_degrades_to_a_self_assessment_and_claims_no_verdict(wl):  # 
     got = triage(wl, "off", "deadbeef", "the fork path copies .env into the child repo")
     merged = got.out + got.err
     assert got.rc == 0, "degraded triage wrong (rc=%d): %s" % (got.rc, merged[:300])
-    for needle in ("INLINE", "PLAN+SUBAGENT", "OPERATOR-ONLY", "agent/PLAN-<slug>.md"):
+    for needle in ("INLINE", "PLAN+SUBAGENT", "OPERATOR-ONLY", "agent/plans/PLAN-<slug>.md"):
         assert needle in merged, "degraded triage is missing %r: %s" % (needle, merged[:300])
 
     events = wl.wl_events()
@@ -140,10 +140,10 @@ def test_167_the_triage_judge_path_records_its_verdict_and_spends_one_call(wl): 
     merged = got.out + got.err
     assert got.rc == 0, "plan-subagent recipe wrong (rc=%d): %s" % (got.rc, merged[:300])
     assert "PLAN+SUBAGENT" in merged, "no recipe: %s" % merged[:300]
-    assert "agent/PLAN-fix-x.md" in merged, "no prefilled plan path: %s" % merged[:300]
+    assert "agent/plans/PLAN-fix-x.md" in merged, "no prefilled plan path: %s" % merged[:300]
 
     events = wl.wl_events()
-    for needle in ('"ev":"triage"', '"v":"plan-subagent"', '"plan":"agent/PLAN-fix-x.md"'):
+    for needle in ('"ev":"triage"', '"v":"plan-subagent"', '"plan":"agent/plans/PLAN-fix-x.md"'):
         assert needle in events, "triage event missing %r: %s" % (needle, events[-300:])
 
     assert judge_calls(wl) == 1, "judge called %d times" % judge_calls(wl)

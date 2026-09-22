@@ -366,7 +366,7 @@ def _triage_cli(argv, worklist, me, die):
     if kind == "plan-subagent":
         slug = PLAN_SLUG_RE.sub("-", str(verdict.get("plan_slug", "")).lower()).strip("-")
         slug = slug[:60] or item_id
-        plan = "agent/PLAN-%s.md" % slug
+        plan = "agent/plans/PLAN-%s.md" % slug
         S.triage_item(worklist, me, item_id, kind, reason, plan)
         print(
             M.CLI_TRIAGE_PLAN
