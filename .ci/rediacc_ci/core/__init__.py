@@ -18,15 +18,22 @@ THE SHIM CONTRACT, stated once here rather than in each module. For every module
   2. The bash function BODY becomes one call into this package. Not a
      reimplementation kept in sync -- there is exactly one implementation and
      bash reaches it.
-  3. The twin is NOT deleted. `08-driver-contract.md` section 3 names the
-     conditions under which each bash file may finally go, and none of them is
-     "the Python works".
-  4. THE DELEGATION IS PROVED BY THE ORIGINAL CALLERS, driven end to end, not
-     by a new test written alongside the port. `.ci/rediacc_ci/tests/gates/
-     test_gate_age_check.py` and `.ci/scripts/quality/check_setup_idempotency.py`
-     already exercise these two libraries against real git fixtures and real
-     port probes; they are the proof, and they had to keep passing unedited
-     except where the port moved the line a planted-defect control mutates.
+  3. The twin is NOT deleted WHILE IT HAS A SOURCER. `08-driver-contract.md`
+     section 3 names the conditions under which each bash file may finally go,
+     and none of them is "the Python works" -- `.ci/scripts/lib/find-port.sh`
+     (clause 1) and `.ci/scripts/lib/age-check.sh` both waited for their last
+     caller to be ported away rather than for their own port to land, and both
+     were deleted in the same change that removed that caller (W7P5-b and
+     W7P5-c respectively).
+  4. THE DELEGATION WAS PROVED BY THE ORIGINAL CALLERS, driven end to end, not
+     by a new test written alongside the port. `.ci/scripts/quality/check_setup_idempotency.py`
+     still exercises `core.ports` this way. `.ci/rediacc_ci/tests/gates/test_gate_age_check.py`
+     did too, against real git fixtures and real port probes, for as long as
+     `age-check.sh` existed for it to drive; once W7P5-c deleted the shim it
+     was EDITED, not kept passing unedited, to drive the surviving composition
+     (`rediacc_ci.quality.go_deps.check_entry_age` over `rediacc_ci.core.age`)
+     directly instead. The git fixtures and the age arithmetic they prove are
+     unchanged; only the seam between the test and the subject moved.
 
 WHY EACH MODULE ALSO HAS A `python3 -m` ENTRY POINT. A bash function cannot
 import Python; it can only run it. Every module here therefore ends with a tiny

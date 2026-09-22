@@ -331,7 +331,7 @@ const PROBES: Probe[] = [
     goRequires,
     5,
     (entry, u) =>
-      `no go.mod requires "${entry}" (oracle: ${u.source}); .ci/scripts/quality/check-go-deps.sh can never consult this entry.`,
+      `no go.mod requires "${entry}" (oracle: ${u.source}); .ci/scripts/quality/check_go_deps.py can never consult this entry.`,
     (entry, line) => [
       `remove line ${line} ("${entry}") from .ci/policy/.go-deps-upgrade-blocklist, then: npm run check:ci-renet`,
     ]

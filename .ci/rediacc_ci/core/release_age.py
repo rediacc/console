@@ -1,7 +1,7 @@
 """Release-age freshness deferral, ported from `.ci/scripts/lib/release-age.sh`.
 
-PORTED FROM `.ci/scripts/lib/release-age.sh` (237 lines), which still exists, is untouched by this file, and had TWO real sourcers when measured on 2026-09-10 (`grep -rnP '^\\s*(source|\\.)\\s+.*release-age\\.sh'`): `audit.sh:39` and `check-go-deps.sh:43`. W7P5-b deleted the first, so ONE remains. That agrees with the twin's own "Consumed by:" line at `release-age.sh:41`, and
-it is NOT the "237" in the programme plan, which is this file's LINE COUNT rather than its fan-in.
+PORTED FROM `.ci/scripts/lib/release-age.sh` (237 lines), which had TWO real sourcers when measured on 2026-09-10 (`grep -rnP '^\\s*(source|\\.)\\s+.*release-age\\.sh'`): `audit.sh:39` and `check-go-deps.sh:43`. W7P5-b deleted the first; W7P5-c deleted the second, and with it the shim itself, since `check-go-deps.sh` was its only remaining sourcer. This module is the sole
+implementation of the rule's transport now. The "237" above is the deleted twin's LINE COUNT, not its fan-in, and is kept for the same reason the rest of this docstring keeps bash line numbers: they are archaeology, pointing into a file retrievable from git history rather than one on disk.
 
 A PORT OF A SHIM IS ANOTHER SHIM, NOT A THIRD COPY OF THE RULE. The rule collapsed into `scripts/lib/release-age.ts` on 2026-09-06 and lives nowhere else:
 
@@ -28,9 +28,9 @@ swap under a ledger is a separate change. The differences between the two are re
     twin's.
 
 --------------------------------------------------------------------------
-DEFECT 1, MEASURED: THE RUNNER MEMO NEVER PERSISTS. N+1 PROBES, NOT ONE.
+DEFECT 1, MEASURED WHILE THE TWIN LIVED: THE RUNNER MEMO NEVER PERSISTED. N+1 PROBES, NOT ONE.
 --------------------------------------------------------------------------
-`release-age.sh:95-97` says the file picks between the three runners "ONCE per shell process", and `:140-147` explains at length that a value written inside a command substitution dies with the subshell. The RUNNER falls into precisely that trap while the comment is busy diagnosing it for the caches: `__release_age_resolve_runner` assigns `__RELEASE_AGE_RUNNER` at `:120`/`:125`/
+`release-age.sh:95-97` said the file picks between the three runners "ONCE per shell process", and `:140-147` explained at length that a value written inside a command substitution dies with the subshell. The RUNNER fell into precisely that trap while the comment was busy diagnosing it for the caches: `__release_age_resolve_runner` assigned `__RELEASE_AGE_RUNNER` at `:120`/`:125`/
 `:128`, but it is only ever reached from `__release_age_delegate`, which is only
 ever reached from `answer=$(__release_age_delegate ...)` at `:159` and `:178`.
 Both are command substitutions, so the assignment is discarded every time.
@@ -48,13 +48,14 @@ Seven `--window-seconds` runs for one window: one real query plus SIX probes. Wi
                echo "runner=[$__RELEASE_AGE_RUNNER]"'
     runner=[]
 
-THIS PORT CACHES THE RUNNER, which is a DIVERGENCE and is why it is written down here in full rather than inherited quietly. Three reasons it is the right side to come down on: no verdict moves, because all three rungs execute the same file and the ladder is deterministic; the twin's stated intent is the cached behaviour, so reproducing the loss would be reproducing a comment's
-contradiction rather than a contract; and `go_deps.py:319` already caches it, so a port that did not would disagree with the Python sibling it is supposed to replace. `test_core_release_age.py` COUNTS the delegate invocations on both sides and pins the N+1 against the 1, so the divergence cannot quietly change size. THE BASH IS NOT FIXED HERE; it is not this box's file.
+THIS PORT CACHES THE RUNNER, which was a DIVERGENCE from the twin and is why it is written down here in full rather than inherited quietly. Three reasons it was the right side to come down on: no verdict moved, because all three rungs execute the same file and the ladder is deterministic; the twin's stated intent was the cached behaviour, so reproducing the loss would have been
+reproducing a comment's contradiction rather than a contract; and `go_deps.py:319` already caches it, so a port that did not would disagree with the Python sibling it is supposed to replace. `test_core_release_age.py` used to COUNT the delegate invocations on both sides and pin the N+1 against the 1; that comparison drove the twin directly and was retired with it (W7P5-c). The
+port-only half survives as `test_the_port_probes_exactly_once`, which still measures the port's OWN count on the same instrument. THE BASH WAS NEVER FIXED; it was deleted instead.
 
 --------------------------------------------------------------------------
-DEFECT 2, MEASURED: `now` IS UNVALIDATED, AND ITS FAILURE IS FAIL-OPEN
+DEFECT 2, MEASURED WHILE THE TWIN LIVED: `now` WAS UNVALIDATED, AND ITS FAILURE WAS FAIL-OPEN
 --------------------------------------------------------------------------
-`is_release_deferred` validates `publish_epoch` against `^[0-9]+$` and documents a fail-CLOSED policy: "a lookup hiccup must never turn into a false 'must upgrade' gate failure" (`release-age.sh:221-223`). The second argument gets no such check and goes straight into `((now < __RELEASE_AGE_ELIGIBLE))` at `:236`, where bash arithmetic decides. Measured 2026-09-10 against a real
+`is_release_deferred` validated `publish_epoch` against `^[0-9]+$` and documented a fail-CLOSED policy: "a lookup hiccup must never turn into a false 'must upgrade' gate failure" (`release-age.sh:221-223`). The second argument got no such check and went straight into `((now < __RELEASE_AGE_ELIGIBLE))` at `:236`, where bash arithmetic decided. Measured 2026-09-10 against a real
 delegate:
 
     now="abc"          -> DEFERRED   (bare word resolves as a variable, unset, 0)
@@ -62,11 +63,11 @@ delegate:
     now="0x10"         -> DEFERRED   (16)
     now="1756100000x"  -> ELIGIBLE   (arith error, `(( ))` returns 1)
 
-and under the `set -u` the two real callers run with, `now="abc"` prints
-`abc: unbound variable` and also yields ELIGIBLE. So the one shape most likely to arrive from a broken date parse, a number with a stray suffix, resolves to the exact false "must upgrade" the fail-closed rule exists to prevent, and does it silently.
+and under the `set -u` the two real callers ran with, `now="abc"` printed
+`abc: unbound variable` and also yielded ELIGIBLE. So the one shape most likely to arrive from a broken date parse, a number with a stray suffix, resolved to the exact false "must upgrade" the fail-closed rule exists to prevent, and did it silently.
 
-LATENT, NOT LIVE, and the difference is worth stating: the one surviving call site passes one argument (`is_release_deferred "$epoch"` at `check-go-deps.sh:151`), so `now` is always `date -u +%s` today. THIS PORT TAKES `now` AS AN `int | None` AND REFUSES ANYTHING ELSE, which is a divergence on inputs no live caller produces; `test_core_release_age.py` drives the TWIN for
-each of the four rows above so the defect is pinned as a fact about the bash rather than as a claim in a docstring.
+LATENT, NOT LIVE, EVEN WHILE IT EXISTED: the one surviving call site passed one argument (`is_release_deferred "$epoch"` at `check-go-deps.sh:151`, itself deleted by W7P5-c), so `now` was always `date -u +%s`. THIS PORT TAKES `now` AS AN `int | None` AND REFUSES ANYTHING ELSE, which was a divergence on inputs no live caller produced. `test_core_release_age.py` used to drive the
+TWIN for each of the four rows above so the defect was pinned as a fact about the bash rather than as a claim in a docstring; that case was retired with the twin (W7P5-c), and the port-only half survives as `test_the_port_refuses_a_now_it_cannot_read`.
 
 --------------------------------------------------------------------------
 WHAT IS FAITHFULLY REPRODUCED

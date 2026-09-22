@@ -21,6 +21,7 @@ So each case below runs the REAL bash or the REAL jq against the Python.
 import json
 import pathlib
 import subprocess
+import time
 
 import pytest
 
@@ -248,6 +249,62 @@ def test_module_record_projection_matches_the_gates_own_json_helper() -> None:
     assert record["Update"]["Version"] == "v2"
     assert record["Update"]["Time"] == "2024-01-01T00:00:00Z"
     assert "Time" not in json.loads(go_deps._module_json("a", "v1", "v2"))["Update"]
+
+
+# --------------------------------------------------------------------------- check_entry_age: the age-based blocklist rot check, end to end ---------------------------------------------------------------------------
+
+# The same isolation `test_core_age.py`'s git fixtures use: without it a fixture inherits the developer's `init.defaultBranch`, commit template and gpg signing, and passes or fails per machine.
+_GIT_ISOLATED_ENV = {
+    "GIT_CONFIG_GLOBAL": "/dev/null",
+    "GIT_CONFIG_SYSTEM": "/dev/null",
+    "GIT_AUTHOR_NAME": "Fixture",
+    "GIT_AUTHOR_EMAIL": "fixture@example.invalid",
+    "GIT_COMMITTER_NAME": "Fixture",
+    "GIT_COMMITTER_EMAIL": "fixture@example.invalid",
+}
+
+
+def _age_fixture(tmp_path: pathlib.Path, name: str, age_days: int, content: str) -> pathlib.Path:
+    """A repository whose `listfile` line was added `age_days` ago.
+
+    `check_entry_age`'s own contract -- verdict, then `emit_advisory`, then the exit-code-as-return-value split -- used to be proved here through the now-deleted `.ci/scripts/lib/age-check.sh` shim (`test_core_age.py`'s `test_shim_emits_through_emit_advisory_and_returns_one` and its control). That shim's only caller, `check-go-deps.sh`, was deleted in W7P5-c, and the shim went
+    with it. This is the same fixture shape, driving the SURVIVING Python composition directly rather than through bash.
+    """
+    repo = tmp_path / name
+    repo.mkdir()
+    env = dict(_GIT_ISOLATED_ENV)
+    subprocess.run(["git", "init", "-q"], cwd=repo, env=env, check=True)
+    (repo / "listfile").write_text(content + "\n", encoding="utf-8")
+    subprocess.run(["git", "add", "listfile"], cwd=repo, env=env, check=True)
+    stamp = time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime(time.time() - age_days * 86400))
+    commit_env = dict(env, GIT_AUTHOR_DATE=stamp, GIT_COMMITTER_DATE=stamp)
+    subprocess.run(["git", "commit", "-q", "-m", "fixture"], cwd=repo, env=commit_env, check=True)
+    return repo
+
+
+def test_check_entry_age_an_old_entry_fails_and_emits(tmp_path, capsys, monkeypatch) -> None:
+    monkeypatch.delenv("CI", raising=False)
+    log.reset()
+    repo = _age_fixture(tmp_path, "old", 400, "ENTRY_OLD")
+    failed = go_deps.check_entry_age("listfile", "ENTRY_OLD", "test-id", "name", root=repo)
+    assert failed is True
+    combined = "".join(capsys.readouterr())
+    assert "days old" in combined
+    assert "yearly re-review required" in combined
+
+
+def test_check_entry_age_control_a_fresh_entry_is_silent_and_passes(
+    tmp_path, capsys, monkeypatch
+) -> None:
+    """CONTROL for the case above: an emitter that always emits passes that one too."""
+    monkeypatch.delenv("CI", raising=False)
+    log.reset()
+    repo = _age_fixture(tmp_path, "fresh", 5, "ENTRY_FRESH")
+    failed = go_deps.check_entry_age("listfile", "ENTRY_FRESH", "test-id", "name", root=repo)
+    assert failed is False
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert captured.err == ""
 
 
 def test_selftest_passes() -> None:

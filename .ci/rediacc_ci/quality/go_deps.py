@@ -1,6 +1,9 @@
 """Go direct dependencies must be up to date across every Go submodule.
 
-Ported from `.ci/scripts/quality/check-go-deps.sh`, which is NOT deleted; see `rediacc_ci.quality.__init__` for why both copies live until W7 phase 5.
+Ported from `.ci/scripts/quality/check-go-deps.sh`, deleted in W7 phase 5 (batch c) once its K=5 shadow ledger (`.ci/shadow/w7p2-go-deps.observations.jsonl`) licensed the retirement; see `rediacc_ci.quality.__init__` for the general rule both copies lived under until then.
+
+`.ci/scripts/lib/release-age.sh` and `.ci/scripts/lib/age-check.sh`, the twin's two sourced libraries, were deleted in the same change: `check-go-deps.sh` was the last real sourcer of each (verified `grep -rlP '^\\s*(source|\\.)\\s+.*<lib>\\.sh' .ci .claude scripts` before deletion), and their Python successors (`rediacc_ci.core.release_age`, `rediacc_ci.core.age`) are what this module's own
+`ReleaseAge` class and `check_entry_age` below already called.
 
 -----------------------------------------------------------------------------
 THE TWIN'S ARCHAEOLOGY, CARRIED. Everything down to PORT NOTES is the bash file's own prose, transliterated rather than summarised.
@@ -47,8 +50,10 @@ ZERO GO SUBMODULES EXITS 0, AND THAT IS THE TWIN'S BEHAVIOUR, NOT A CHOICE MADE
 HERE. `log_info "No Go submodules found to check"; exit 0` is a vacuity hole: a `private/` that lost its submodules, or a checkout where `git submodule update --init` was never run, reports a clean bill of health having probed nothing. This port reproduces it EXACTLY, because a port that fixes a bug changes the verdict and the differential would rule MISMATCH on the tree that
 proves the fix right. It is reported as a defect in the twin, and whoever retires the twin owns the fix. The `--selftest` below pins the current behaviour with a control that NAMES it as a hole, so the day it is closed the control fails and says why.
 
-`jq` BECOMES `json`, IN TWO PLACES, AND THE ERROR PATH IS KEPT. The twin runs `jq -rs 'length'` and then `jq -rs '.[] | select(...) | "..."'`, and reports a failure of the second as `__PROBE_FAILED__ jq failed to parse go-list output`. Python parses the same concatenated JSON stream itself, and a stream it cannot read produces the same sentinel with the same prefix, so the
-aggregation and the message a developer reads are unchanged. `-s` (slurp) over a stream of back-to-back objects is what `go list -json` emits; the reader below implements exactly that and nothing more general.
+`jq` BECOMES `json`, AND THE TWIN'S TWO-STAGE FOLD IS KEPT. The twin runs `jq -rs 'length'` first, and `|| echo 0` folds ANY failure of that call -- a totally unparseable stream included -- into the same `seen -eq 0` branch an empty array takes: `__PROBE_FAILED__ go-list returned no modules at all`. Only a stream that parses but then fails the SECOND, more specific `jq -rs '.[] |
+select(...) | "..."'` (a field interpolated as a string turning out to be an array or object, never seen from real `go list -json`) reaches the twin's other sentinel, `jq failed to parse go-list output`. Driven 2026-09-22: a garbage stream ("this is not json") fails the FIRST call too and therefore records as "no modules at all" on the twin, not as a parse-failure message -- an
+earlier draft of this port used ONE parse stage and reported the wrong sentinel for exactly that input, caught by `test_gate_go_deps_probe_failure.py`'s recorded bytes. The reader below folds a raised `ValueError` into the same empty-list path the "no modules" check already owns, which is the twin's own fold and not a second one invented here. `-s` (slurp) over a stream of
+back-to-back objects is what `go list -json` emits; the reader implements exactly that and nothing more general.
 
 THE TIMESTAMP IS STILL PARSED BY `date -u -d`, DELIBERATELY. Python's `datetime.fromisoformat` accepts a different set of strings from GNU date, and this value comes from `go list`'s `.Update.Time`, i.e. from a tool this repo does not control. A port that parsed it differently would defer a module the twin demands, or demand one the twin defers, on some future Go release and
 nowhere in any fixture. Shelling out keeps ONE parser. It also keeps the twin's GNU-only dependency, which is worth stating out loud rather than discovering on macOS: `date -u -d` is not BSD date, and this gate has always been that way.
@@ -115,9 +120,8 @@ RELEASE_AGE_TS = "scripts/lib/release-age.ts"
 # The wire format between the probe and the aggregation loop.
 PROBE_SENTINEL = "__PROBE_FAILED__"
 
-# `head -c 300` on the probe's stderr and `head -c 200` on jq's complaint. Both are TRUNCATIONS, not summaries: a 4 KB Go error shows its first 300 bytes on both sides, and dropping the truncation would make the port noisier than the twin on exactly the tree where the gate fires.
+# `head -c 300` on the probe's stderr. A TRUNCATION, not a summary: a 4 KB Go error shows its first 300 bytes, and dropping the truncation would make the port noisier than the twin on exactly the tree where the gate fires.
 PROBE_STDERR_BYTES = 300
-PARSE_ERROR_BYTES = 200
 
 # U+2014 appears in three of the twin's messages. Written as an escape rather than as the character so this file stays ASCII: the repo's prose rules forbid the literal, and the byte still has to reach the output because the message text is what the differential compares.
 _EM_DASH = "\u2014"
@@ -402,9 +406,10 @@ def check_go_dir(
 
     try:
         modules = slurp_json(proc.stdout)
-    except ValueError as exc:
-        detail = str(exc).replace("\n", " ")[:PARSE_ERROR_BYTES]
-        return ["%s jq failed to parse go-list output: %s" % (PROBE_SENTINEL, detail)]
+    except ValueError:
+        # THE TWIN NEVER REACHES ITS OWN "jq failed to parse" TEXT HERE. Its first jq call (`jq -rs 'length'`) fails identically whenever the stream cannot be parsed as JSON at all -- jq's parser and this one's `raw_decode` loop are both standard readers, so one failing structurally means the other does too -- and `|| echo 0` folds that failure into `seen -eq 0` BEFORE the second
+        # jq call (the one whose own failure the twin's distinct message names) ever runs. Driven 2026-09-22: a totally unparseable stream ("this is not json") records as "go-list returned no modules at all" on the twin, not as a parse-failure message. Reproduced here as an empty module list, which the check right below turns into the same sentinel.
+        modules = []
 
     if not modules:
         return ["%s go-list returned no modules at all" % PROBE_SENTINEL]

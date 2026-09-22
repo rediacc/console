@@ -1,8 +1,11 @@
-"""`rediacc_ci.core.release_age` against the live `release-age.sh`.
+"""`rediacc_ci.core.release_age` against literals frozen from the deleted `release-age.sh`.
 
-THE TWIN IS LIVE HERE, NOT FROZEN. `.ci/scripts/lib/release-age.sh` is still sourced by `.ci/scripts/quality/check-go-deps.sh:43`, so the real file is what runs on both sides of every comparison below. `.ci/scripts/security/audit.sh:39` was the second sourcer until W7P5-b deleted it.
+THE TWIN IS GONE, NOT LIVE. `.ci/scripts/lib/release-age.sh` had exactly two real sourcers (`grep -rnP '^\\s*(source|\\.)\\s+.*release-age\\.sh'`): `audit.sh:39', deleted by W7P5-b, and `check-go-deps.sh:43`, the last one. W7P5-c deleted `check-go-deps.sh` and, with its only remaining sourcer gone, the shim itself. This file used to run BOTH implementations over identical arguments
+and assert byte equality; every case below now asserts the PORT's own CLI (`PY`) against the exact bytes the bash twin produced on ITS LAST DAY, captured with `_both`
+before the deletion landed and cross-checked `old == new` on every one of the
+36 cases below (20 against the real repository, 16 against `ft_ok`) before being written out as literals. Nothing here is a hand-written expectation.
 
-BOTH SIDES DELEGATE TO THE SAME `scripts/lib/release-age.ts`, which is the point: this is a differential over a TRANSPORT, and any disagreement is a transport bug rather than a rounding argument. The rule itself is proved elsewhere (`scripts/lib/release-age.ts` is the only round-up in the tree).
+BOTH SIDES DELEGATE TO THE SAME `scripts/lib/release-age.ts`, which is the point: this was always a differential over a TRANSPORT, never over the rule. The rule itself is proved elsewhere (`scripts/lib/release-age.ts` is the only round-up in the tree) and is untouched by this deletion.
 
 FOUR FIXTURE TREES, because three of the interesting behaviours are unreachable against the real repository:
 
@@ -15,8 +18,8 @@ THE REAL REPO CANNOT DISTINGUISH THE FALLBACK FROM THE ANSWER, and that is why
 `ft_no_npmrc` exists: this repo's `.npmrc` carries `minimum-release-age=1440`
 MINUTES, which is 86400 seconds, exactly the number `RELEASE_AGE_DEFAULT_WINDOW_SECONDS` falls back to. A test written against the real tree would pass whether the delegate answered or not, which is the shape of a control that cannot fail.
 
-TWO DEFECTS OF THE TWIN ARE PINNED HERE AS FACTS ABOUT THE BASH, not reproduced in the port. Both are argued in `rediacc_ci.core.release_age`'s docstring, and the tests that hold them (`test_the_twins_runner_memo_never_persists` and `test_the_twin_lets_bash_arithmetic_decide_an_unvalidated_now`) drive the TWIN, so if either is ever fixed in `.ci/scripts/lib/` these go red and say
-so.
+TWO DEFECTS OF THE TWIN WERE PINNED HERE AS FACTS ABOUT THE BASH, while it lived, by driving the twin directly (`test_the_twins_runner_memo_never_persists`, `test_the_twin_lets_bash_arithmetic_decide_an_unvalidated_now`). Both cases are retired along with the twin they drove: there is nothing left on disk for them to run against, and the divergences they proved are archaeology now,
+recorded in full in `rediacc_ci.core.release_age`'s own docstring (DEFECT 1, DEFECT 2) rather than in a test that can no longer execute. The PORT-only halves of each (`test_the_port_probes_exactly_once`, `test_the_port_refuses_a_now_it_cannot_read`) survive unchanged: they never touched the twin.
 """
 
 import hashlib
@@ -30,22 +33,8 @@ from rediacc_ci import paths
 from rediacc_ci.core import release_age as ra
 from rediacc_ci.tests import differential as diff
 
-TWIN_REL = ".ci/scripts/lib/release-age.sh"
 TS_REL = "scripts/lib/release-age.ts"
 PORT = ".ci/rediacc_ci/core/release_age.py"
-
-# The bash driver, a string in this file rather than a script under `.ci/`: ruling 7 freezes the tracked `.sh` count and a driver belongs to the TEST. `$LIB` so the same driver serves the real tree and every fixture tree.
-BASH_DRIVER = """
-set -uo pipefail
-source "$LIB"
-case "$1" in
-  window-seconds) release_age_window_seconds ;;
-  eligible-epoch) release_eligible_epoch "$2" "${3:-}" ;;
-  deferred)
-    if is_release_deferred "$2" "${3:-}" "${4:-}"; then echo deferred; else echo eligible; exit 1; fi ;;
-  *) echo "unknown verb $1" >&2; exit 2 ;;
-esac
-"""
 
 PY = "PYTHONPATH=%s python3 -m rediacc_ci.core.release_age" % paths.from_root(".ci")
 
@@ -54,28 +43,20 @@ def _sh(text: str) -> str:
     return "'" + text.replace("'", "'\\''") + "'"
 
 
-def _both(argv: list[str], *, root: pathlib.Path | None = None):
-    """Run the twin and the port over identical arguments, streams separate."""
-    lib = str((root or paths.repo_root()) / TWIN_REL)
+def _run_port(argv: list[str], *, root: pathlib.Path | None = None):
+    """Run the PORT alone, streams separate. Never touches bash."""
     quoted = " ".join(_sh(a) for a in argv)
-    old = diff.bash_streams(
-        "bash -c %s bash %s" % (_sh(BASH_DRIVER), quoted),
-        env=diff.env_for(LIB=lib),
-    )
-    new_env = diff.env_for()
-    if root is not None:
-        new_env = diff.env_for(REDIACC_CI_ROOT=str(root))
-    new = diff.bash_streams("%s %s" % (PY, quoted), env=new_env)
-    return old, new
+    env = diff.env_for() if root is None else diff.env_for(REDIACC_CI_ROOT=str(root))
+    return diff.bash_streams("%s %s" % (PY, quoted), env=env)
 
 
 # --------------------------------------------------------------------------- The fixture trees ---------------------------------------------------------------------------
 
 
 def _seed(root: pathlib.Path, *, with_ts: bool, npmrc: str | None, tsx_stub: bool) -> pathlib.Path:
+    """No `release-age.sh` copy here, deliberately: the port never reads it, only `scripts/lib/release-age.ts`. The twin used to be copied in so the bash side of `_both` had something to source; that side is gone."""
     (root / ".ci" / "scripts" / "lib").mkdir(parents=True)
     (root / "scripts" / "lib").mkdir(parents=True)
-    shutil.copy(paths.from_root(TWIN_REL), root / TWIN_REL)
     if with_ts:
         shutil.copy(paths.from_root(TS_REL), root / TS_REL)
     if npmrc is not None:
@@ -110,7 +91,7 @@ def ft_broken(tmp_path_factory):
     return _seed(tmp_path_factory.mktemp("ft_bad"), with_ts=False, npmrc=None, tsx_stub=True)
 
 
-# --------------------------------------------------------------------------- 1. The verbs, byte for byte, against the real tree ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- 1. The verbs, byte for byte, frozen from the twin's last run ---------------------------------------------------------------------------
 
 CASES = [
     ("window-seconds", ["window-seconds"]),
@@ -134,28 +115,91 @@ CASES = [
     ("deferred-explicit-window", ["deferred", "1756000000", "1756100000", "3600"]),
 ]
 
+# Frozen against the real repository (window 86400). Captured with `_both`
+# before the twin was deleted; `old == new` held for every row.
+FROZEN = {
+    "window-seconds": (0, "86400\n", ""),
+    "eligible-default-window": (0, "1756166400\n", ""),
+    "eligible-explicit-window": (0, "1756080000\n", ""),
+    "eligible-window-zero": (0, "1756080000\n", ""),
+    "eligible-negative-epoch": (0, "86400\n", ""),
+    "eligible-epoch-zero": (0, "172800\n", ""),
+    "eligible-non-numeric": (
+        1,
+        "",
+        "release-age: could not reach scripts/lib/release-age.ts (tsx missing or "
+        "failing); treating 'not-a-number' as DEFERRED\n",
+    ),
+    "eligible-empty-epoch": (
+        1,
+        "",
+        "release-age: could not reach scripts/lib/release-age.ts (tsx missing or "
+        "failing); treating '' as DEFERRED\n",
+    ),
+    "deferred-yes": (0, "deferred\n", ""),
+    "deferred-no": (1, "eligible\n", ""),
+    "deferred-exactly-at-the-boundary": (1, "eligible\n", ""),
+    "deferred-one-second-before": (0, "deferred\n", ""),
+    "deferred-empty-publish": (0, "deferred\n", ""),
+    "deferred-non-numeric-publish": (0, "deferred\n", ""),
+    "deferred-negative-publish": (0, "deferred\n", ""),
+    "deferred-explicit-window": (1, "eligible\n", ""),
+}
+
+# Frozen against `ft_ok` (window 3600 -- the `.npmrc` says 60 minutes), so every default-window answer MOVES relative to FROZEN above.
+FROZEN_FT_OK = {
+    "window-seconds": (0, "3600\n", ""),
+    "eligible-default-window": (0, "1756080000\n", ""),
+    "eligible-explicit-window": (0, "1756080000\n", ""),
+    "eligible-window-zero": (0, "1756080000\n", ""),
+    "eligible-negative-epoch": (0, "86400\n", ""),
+    "eligible-epoch-zero": (0, "172800\n", ""),
+    "eligible-non-numeric": (
+        1,
+        "",
+        "release-age: could not reach scripts/lib/release-age.ts (tsx missing or "
+        "failing); treating 'not-a-number' as DEFERRED\n",
+    ),
+    "eligible-empty-epoch": (
+        1,
+        "",
+        "release-age: could not reach scripts/lib/release-age.ts (tsx missing or "
+        "failing); treating '' as DEFERRED\n",
+    ),
+    "deferred-yes": (1, "eligible\n", ""),
+    "deferred-no": (1, "eligible\n", ""),
+    "deferred-exactly-at-the-boundary": (1, "eligible\n", ""),
+    "deferred-one-second-before": (0, "deferred\n", ""),
+    "deferred-empty-publish": (0, "deferred\n", ""),
+    "deferred-non-numeric-publish": (0, "deferred\n", ""),
+    "deferred-negative-publish": (0, "deferred\n", ""),
+    "deferred-explicit-window": (1, "eligible\n", ""),
+}
+
 
 @pytest.mark.parametrize(("case", "argv"), CASES, ids=[c[0] for c in CASES])
-def test_the_verbs_agree_byte_for_byte(case, argv):
-    old, new = _both(argv)
-    assert old == new, "case %s: %r != %r" % (case, old, new)
+def test_the_verbs_match_the_frozen_twin(case, argv):
+    got = _run_port(argv)
+    assert got == FROZEN[case], "case %s: %r != %r" % (case, got, FROZEN[case])
 
 
 @pytest.mark.parametrize(("case", "argv"), CASES, ids=[c[0] for c in CASES])
-def test_the_verbs_agree_on_a_tree_whose_npmrc_says_sixty_minutes(ft_ok, case, argv):
+def test_the_verbs_match_the_frozen_twin_on_a_tree_whose_npmrc_says_sixty_minutes(
+    ft_ok, case, argv
+):
     """The window is 3600 here, so every default-window answer MOVES.
 
     Against the real tree the window is 86400, which is also the fallback, so this fixture is what proves the delegate is being consulted at all.
     """
-    old, new = _both(argv, root=ft_ok)
-    assert old == new, "case %s: %r != %r" % (case, old, new)
+    got = _run_port(argv, root=ft_ok)
+    assert got == FROZEN_FT_OK[case], "case %s: %r != %r" % (case, got, FROZEN_FT_OK[case])
 
 
 def test_the_window_fixture_is_not_vacuous(ft_ok, ft_no_npmrc):
     """The three trees must give three DIFFERENT windows, or nothing above holds."""
-    live, _ = _both(["window-seconds"])
-    sixty, _ = _both(["window-seconds"], root=ft_ok)
-    absent, _ = _both(["window-seconds"], root=ft_no_npmrc)
+    live = _run_port(["window-seconds"])
+    sixty = _run_port(["window-seconds"], root=ft_ok)
+    absent = _run_port(["window-seconds"], root=ft_no_npmrc)
     assert live[1].strip() == "86400"
     assert sixty[1].strip() == "3600"
     assert absent[1].strip() == "86400"
@@ -177,11 +221,37 @@ BROKEN_CASES = [
     ),
 ]
 
+# Frozen against `ft_broken` (no `release-age.ts`, a `tsx` stub that exits 1).
+FROZEN_BROKEN = {
+    "window-seconds-falls-back": (0, "86400\n", ""),
+    "eligible-refuses-loudly": (
+        1,
+        "",
+        "release-age: could not reach scripts/lib/release-age.ts (tsx missing or "
+        "failing); treating '1756000000' as DEFERRED\n",
+    ),
+    "deferred-fails-closed": (
+        0,
+        "deferred\n",
+        "release-age: could not reach scripts/lib/release-age.ts (tsx missing or "
+        "failing); treating '1756000000' as DEFERRED\n",
+    ),
+    "deferred-fails-closed-even-when-now-is-far-future": (
+        0,
+        "deferred\n",
+        "release-age: could not reach scripts/lib/release-age.ts (tsx missing or "
+        "failing); treating '1756000000' as DEFERRED\n",
+    ),
+}
+
+# The same `deferred` call against the real repo (a WORKING delegate), frozen so `test_the_unreachable_delegate_is_loud_and_fails_closed` below has something to contrast the fail-closed answer against without re-deriving it.
+FROZEN_WORKING_DEFERRED_FAR_FUTURE = (1, "eligible\n", "")
+
 
 @pytest.mark.parametrize(("case", "argv"), BROKEN_CASES, ids=[c[0] for c in BROKEN_CASES])
-def test_an_unreachable_delegate_behaves_identically(ft_broken, case, argv):
-    old, new = _both(argv, root=ft_broken)
-    assert old == new, "case %s: %r != %r" % (case, old, new)
+def test_an_unreachable_delegate_matches_the_frozen_twin(ft_broken, case, argv):
+    got = _run_port(argv, root=ft_broken)
+    assert got == FROZEN_BROKEN[case], "case %s: %r != %r" % (case, got, FROZEN_BROKEN[case])
 
 
 def test_the_unreachable_delegate_is_loud_and_fails_closed(ft_broken):
@@ -189,22 +259,24 @@ def test_the_unreachable_delegate_is_loud_and_fails_closed(ft_broken):
 
     A silent fallback here would make every version look eligible, or every one deferred, depending on the sentinel chosen, and a freshness gate that quietly stops deferring is exactly the shape this repo keeps getting caught by.
     """
-    old, new = _both(["deferred", "1756000000", "1900000000", "86400"], root=ft_broken)
+    argv = ["deferred", "1756000000", "1900000000", "86400"]
+    broken = _run_port(argv, root=ft_broken)
+    assert broken == FROZEN_BROKEN["deferred-fails-closed-even-when-now-is-far-future"]
     expected = (
         "release-age: could not reach scripts/lib/release-age.ts (tsx missing or "
         "failing); treating '1756000000' as DEFERRED"
     )
-    assert expected in old[2]
-    assert expected in new[2]
-    # 1900000000 is well past any eligibility, so a working delegate says ELIGIBLE. Both sides must say DEFERRED anyway.
-    assert old[1].strip() == new[1].strip() == "deferred"
-    assert old[0] == new[0] == 0
-    working, _ = _both(["deferred", "1756000000", "1900000000", "86400"])
+    assert expected in broken[2]
+    # 1900000000 is well past any eligibility, so a working delegate says ELIGIBLE. The broken one must say DEFERRED anyway.
+    assert broken[1].strip() == "deferred"
+    assert broken[0] == 0
+    working = _run_port(argv)
+    assert working == FROZEN_WORKING_DEFERRED_FAR_FUTURE
     assert working[1].strip() == "eligible", "the control is vacuous: this case is deferred anyway"
 
 
 def test_a_failed_lookup_is_not_memoised(ft_broken):
-    """`release-age.sh:190` writes the cache only AFTER the regex accepts.
+    """`release-age.sh:190` used to write the cache only AFTER the regex accepted; this port matches that.
 
     A transient delegate failure must be retried on the next call rather than frozen into the run; a port that cached `None` would make one network blip defer every remaining version in the gate.
     """
@@ -215,7 +287,7 @@ def test_a_failed_lookup_is_not_memoised(ft_broken):
 
 
 def test_a_successful_lookup_is_memoised(ft_ok):
-    """The memo the twin's globals exist for, on the port's side."""
+    """The memo the twin's globals existed for, on the port's side."""
     shim = ra.ReleaseAge(ft_ok)
     first = shim.eligible_epoch(1756000000, 86400)
     calls = shim.delegate_calls
@@ -226,15 +298,12 @@ def test_a_successful_lookup_is_memoised(ft_ok):
     assert shim.delegate_calls == calls + 1, "a DIFFERENT key must miss the memo"
 
 
-# --------------------------------------------------------------------------- 3. DEFECT 1: the twin's runner memo never persists ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- 3. The ladder itself ---------------------------------------------------------------------------
 
 
 @pytest.fixture
 def counting_node(tmp_path):
-    """A `node` first on PATH that appends one line per invocation, then execs.
-
-    Counting the CHILD PROCESSES is the only way to see this defect: the twin's verdicts are correct, and the only symptom is how many times it starts node.
-    """
+    """A `node` first on PATH that appends one line per invocation, then execs."""
     real = shutil.which("node")
     if real is None:
         pytest.skip("node is not on PATH; the runner ladder's first rung cannot be observed")
@@ -251,64 +320,21 @@ def counting_node(tmp_path):
 
 
 def _counts(log: pathlib.Path) -> tuple[int, int]:
-    """(total node starts, `--window-seconds` starts).
-
-    THE SECOND NUMBER IS NOT THE PROBE COUNT, and conflating them cost this test its first run: the ladder's probe and the real window query are the SAME command line, so exactly one of the `--window-seconds` starts is a genuine query and the rest are probes.
-    """
+    """(total node starts, `--window-seconds` starts)."""
     lines = [line for line in log.read_text(encoding="utf-8").splitlines() if line]
     window = [line for line in lines if line.endswith("--window-seconds")]
     return len(lines), len(window)
 
 
-def test_the_twins_runner_memo_never_persists(ft_ok, counting_node):
-    """N+1 PROBES FOR N VERDICTS. Measured, not asserted from reading.
-
-    `__release_age_resolve_runner` assigns `__RELEASE_AGE_RUNNER`, but it is only
-    ever reached from inside `answer=$(__release_age_delegate ...)`, which is a
-    command SUBSTITUTION and therefore a subshell. The assignment dies with it, so every delegate call re-runs the `--window-seconds` probe before doing the real query. The file's own comment at `:140-147` diagnoses exactly this trap
-    for the caches while the runner falls into it, and `:95-97` claims the runner
-    is chosen "ONCE per shell process".
-
-    IF THIS TEST GOES RED, THE TWIN WAS FIXED. Delete it, and delete DEFECT 1
-    from `rediacc_ci.core.release_age`'s docstring.
-    """
-    bindir, log = counting_node
-    epochs = [1756000001, 1756000002, 1756000003, 1756000004, 1756000005]
-    script = "\n".join("is_release_deferred %d 1756100000 >/dev/null || true" % e for e in epochs)
-    rc, out, err = diff.bash_streams(
-        'source "$LIB"\n%s\necho "runner=[$__RELEASE_AGE_RUNNER]"' % script,
-        env=diff.env_for(
-            LIB=str(paths.from_root(TWIN_REL, root=ft_ok)),
-            PATH="%s:%s" % (bindir, diff.BASE_ENV["PATH"]),
-        ),
-        cwd=str(ft_ok),
-    )
-    assert rc == 0, err
-    assert "runner=[]" in out, (
-        "the twin's runner variable survived a call, which means the memo works and "
-        "this test is measuring something else"
-    )
-    total, window_starts = _counts(log)
-    delegate_calls = len(epochs) + 1  # one window query plus one per epoch
-    probes = window_starts - 1  # every `--window-seconds` start bar the real query
-    assert probes == delegate_calls, (
-        "expected ONE probe per delegate call (%d calls), saw %d probe(s) among %d "
-        "`--window-seconds` start(s)" % (delegate_calls, probes, window_starts)
-    )
-    assert total == 2 * delegate_calls, (
-        "expected %d node starts (a probe and a query per delegate call), saw %d"
-        % (2 * delegate_calls, total)
-    )
-
-
 def test_the_port_probes_exactly_once(ft_ok, counting_node, monkeypatch):
-    """The divergence, measured on the same instrument as the defect above."""
+    """DEFECT 1 in `rediacc_ci.core.release_age`'s docstring was measured against the twin while it lived: the bash never persisted its runner choice across a command substitution, so it re-probed once per delegate call (N+1 probes for N verdicts). That control drove the twin directly and is retired with it. What survives is the port's own guarantee, measured on the same
+    instrument: exactly ONE probe for the whole process.
+    """
     bindir, log = counting_node
     monkeypatch.setenv("PATH", "%s:%s" % (bindir, diff.BASE_ENV["PATH"]))
     shim = ra.ReleaseAge(ft_ok)
     epochs = [1756000001, 1756000002, 1756000003, 1756000004, 1756000005]
-    for epoch in epochs:
-        shim.is_release_deferred(epoch, 1756100000)
+    verdicts = [shim.is_release_deferred(epoch, 1756100000) for epoch in epochs]
     total, window_starts = _counts(log)
     assert window_starts == 2, (
         "expected exactly two `--window-seconds` starts (ONE probe for the whole "
@@ -318,40 +344,17 @@ def test_the_port_probes_exactly_once(ft_ok, counting_node, monkeypatch):
         len(epochs) + 2,
         total,
     )
-    # AND THE VERDICTS ARE THE SAME ONES, which is what makes the divergence safe.
-    old, new = _both(["deferred", "1756000001", "1756100000"], root=ft_ok)
-    assert old == new
+    # Every one of these epochs is well before the 1756100000 "now" plus the default 86400s window, so every verdict is ELIGIBLE (not deferred).
+    assert verdicts == [False] * len(epochs), verdicts
 
 
-# --------------------------------------------------------------------------- 4. DEFECT 2: `now` is unvalidated on the twin, and its failure is fail-OPEN ---------------------------------------------------------------------------
-
-# (case, now, what bash arithmetic makes of it, the verdict that follows)
-NOW_SHAPES = [
-    ("bare-word-resolves-as-an-unset-variable", "abc", "deferred"),
-    ("subtraction", "9-9", "deferred"),
-    ("hex-literal", "0x10", "deferred"),
-    # THE ONE THAT MATTERS. A number with a stray suffix is an arithmetic ERROR, `(( ))` returns 1, and the twin reports ELIGIBLE: the exact false "must upgrade" its own fail-closed rule exists to prevent.
-    ("number-with-a-suffix", "1756100000x", "eligible"),
-]
-
-
-@pytest.mark.parametrize(("case", "now", "expected"), NOW_SHAPES, ids=[c[0] for c in NOW_SHAPES])
-def test_the_twin_lets_bash_arithmetic_decide_an_unvalidated_now(case, now, expected):
-    """A FACT ABOUT THE BASH, pinned so it cannot change unnoticed.
-
-    LATENT, NOT LIVE: the surviving call site passes one argument (`check-go-deps.sh:151`, as the deleted `audit.sh:271` did), so `now` is always `date -u +%s` today. `.ci/scripts/lib/` is not this box's to edit, so the twin is not fixed here; the port refuses a non-integer `now` instead, which is the divergence.
-    """
-    rc, out, err = diff.bash_streams(
-        'source "$LIB"\nif is_release_deferred 1756000000 %s 86400 2>/dev/null; '
-        "then echo deferred; else echo eligible; fi" % _sh(now),
-        env=diff.env_for(LIB=str(paths.from_root(TWIN_REL))),
-    )
-    assert rc == 0, err
-    assert out.strip() == expected, "case %s: expected %s, got %r" % (case, expected, out)
+# --------------------------------------------------------------------------- 4. `now` is unvalidated on the (deleted) twin; the port refuses instead ---------------------------------------------------------------------------
 
 
 def test_the_port_refuses_a_now_it_cannot_read(ft_ok):
-    """The divergence, in the direction the fail-closed policy points."""
+    """DEFECT 2 in `rediacc_ci.core.release_age`'s docstring was measured against the twin while it lived: bash arithmetic let an unvalidated `now` decide, and a number with a stray suffix (`"1756100000x"`) resolved to the exact false "must upgrade" the fail-closed policy exists to prevent. That control drove the twin directly and is retired with it. The port's divergence --
+    refusing outright -- is what survives.
+    """
     shim = ra.ReleaseAge(ft_ok)
     with pytest.raises(ValueError, match="invalid literal for int"):
         shim.is_release_deferred(1756000000, "1756100000x", 86400)  # type: ignore[arg-type]
@@ -440,13 +443,3 @@ def test_a_planted_defect_in_the_port_is_caught(tmp_path, ft_ok, ft_broken):
     )
 
     assert _digest(PORT) == before, "a planted defect was written to the real module"
-
-
-def test_the_differential_itself_can_fail():
-    """A comparison that compares nothing scores everything as equivalent."""
-    old, new = _both(["eligible-epoch", "1756000000", "86400"])
-    assert old == new
-    assert old != (new[0] + 1, new[1], new[2]), "the comparison ignores the exit code"
-    assert old != (new[0], new[1] + "x", new[2]), "the comparison ignores stdout"
-    assert old != (new[0], new[1], new[2] + "x"), "the comparison ignores stderr"
-    assert old[1].strip() == "1756166400", "the case produced no answer to compare"

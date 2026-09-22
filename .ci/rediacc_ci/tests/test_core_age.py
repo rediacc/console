@@ -1,13 +1,17 @@
-"""`rediacc_ci.core.age` against real git fixtures, and against its bash shim.
+"""`rediacc_ci.core.age` against real git fixtures.
 
-WHY THE FIXTURES ARE REAL REPOSITORIES WITH BACKDATED COMMITS. The subject is "how long ago was this line added", and there is no way to ask that of a mock that would also catch the defect the module exists for. `.ci/rediacc_ci/tests/gates/ test_gate_age_check.py` -- the end-to-end proof -- builds fixtures exactly this way; these cases
-add the parts a bash harness cannot reach cheaply: the verdict table as a pure function, the shim's TAB-separated contract, and the shim's fail-closed behaviour.
+WHY THE FIXTURES ARE REAL REPOSITORIES WITH BACKDATED COMMITS. The subject is "how long ago was this line added", and there is no way to ask that of a mock that would also catch the defect the module exists for. `.ci/rediacc_ci/tests/gates/test_gate_age_check.py` -- the end-to-end proof -- builds fixtures exactly this way; these cases add the parts a subprocess harness cannot
+reach cheaply: the verdict table as a pure function and the shim's TAB-separated CLI contract.
 
 THE ONE DEFECT EVERY CASE HERE IS ABOUT, restated because it is easy to lose.
 Measured 2026-09-03: `git log --diff-filter=A` on a TRUNCATED history attributes
 every line at the graft boundary to the boundary commit. The real entry github.com/docker/docker in .go-deps-upgrade-blocklist read 195 days on a full clone (added 2026-02-20) and 2 days on a truncated one (added 2026-09-01). With AGE_WARN_DAYS at 180 that entry silently stopped warning, and at
 AGE_FAIL_DAYS=365 it could never fail. So `test_truncated_history_cannot_verify`
 below is not an edge case, it is the whole point, and it carries its control: the SAME fixture cloned fully must still measure the real age, or a -1 would only mean the fixture was broken.
+
+THREE CASES USED TO SOURCE `.ci/scripts/lib/age-check.sh` DIRECTLY and drive `check_entry_age` through it: the shim's full verdict-then-`emit_advisory`-then-exit-code contract. That shim's only caller (`check-go-deps.sh`) was deleted in W7P5-c, and the shim went with it -- nothing else sourced it. Its Python
+successor is `rediacc_ci.quality.go_deps.check_entry_age`, which calls `entry_age_days`/`verdict` below in-process and reproduces the narrow `emit_advisory` shape itself; that function has its own coverage in `test_quality_go_deps.py`. The three retired cases are not replaced here: what they proved about THIS module (the verdict table, the CLI's TAB-separated line and exit code)
+is still proved by `test_verdict_boundaries` and `test_shim_verdict_line_is_tab_separated_and_carries_the_exit_code` below, neither of which ever touched the bash shim.
 """
 
 import subprocess
@@ -19,8 +23,6 @@ import pytest
 from rediacc_ci import paths
 from rediacc_ci.core import age
 from rediacc_ci.tests import differential as diff
-
-SHIM = ".ci/scripts/lib/age-check.sh"
 
 # Ambient git configuration is switched OFF, not merely overridden: /dev/null is a valid empty config file to git. Without this the fixture inherits the developer's init.defaultBranch, commit template and gpg signing, and passes or fails per machine.
 ISOLATED = {
@@ -156,40 +158,9 @@ def test_shim_verdict_line_is_tab_separated_and_carries_the_exit_code(
     assert "BLOCKER" in remedy
 
 
-def test_shim_emits_through_emit_advisory_and_returns_one(tmp_path) -> None:
-    """End to end through the real bash entry point, on a real fixture."""
-    repo = _fixture(tmp_path / "old", 400, "ENTRY_OLD")
-    shim = str(paths.from_root(SHIM))
-    rc, out, err = diff.bash_streams(
-        f"cd {_q(str(repo))}; source {_q(shim)}; check_entry_age listfile ENTRY_OLD test-id 'name'",
-        env=diff.env_for(),
-    )
-    assert rc == 1
-    assert "400 days old" in out + err
-
-
-def test_shim_control_a_fresh_entry_emits_nothing_and_returns_zero(tmp_path) -> None:
-    """CONTROL for the case above: an emitter that always emits passes that one."""
-    repo = _fixture(tmp_path / "fresh", 5, "ENTRY_FRESH")
-    shim = str(paths.from_root(SHIM))
-    rc, out, err = diff.bash_streams(
-        f"cd {_q(str(repo))}; source {_q(shim)}; check_entry_age listfile ENTRY_FRESH test-id 'name'",
-        env=diff.env_for(),
-    )
-    assert rc == 0, err
-    assert out.strip() == ""
-
-
-def test_shim_fails_closed_when_the_package_is_unreachable(tmp_path) -> None:
-    """No package, no answer. See the ports shim for why there is no fallback."""
-    shim = str(paths.from_root(SHIM))
-    rc, out, err = diff.bash_streams(
-        f"source {_q(shim)}; entry_age_days listfile ENTRY",
-        env=diff.env_for(REDIACC_CI_ROOT=str(tmp_path)),
-    )
-    assert rc != 0
-    assert out.strip() == ""
-    assert "cannot find rediacc_ci" in err
+# `check_entry_age`'s own contract -- verdict, then `emit_advisory`, then the exit-code-as-return-value split -- used to be proved here three ways, through the bash shim: end-to-end on an old entry, the control on a fresh one, and fail-closed when the package could not be found. `.ci/scripts/lib/age-check.sh`'s only caller, `check-go-deps.sh`, was deleted in W7P5-c, and the shim
+# went with it. Its Python successor, `rediacc_ci.quality.go_deps.check_entry_age`, carries the same three cases directly in `test_quality_go_deps.py` (`test_check_entry_age_an_old_entry_fails_and_emits` and its control), driving the surviving composition rather than bash. The fail-closed-on-an-unreachable-package case has no successor to carry it: the port never resolves a
+# separate package root the way the bash shim's `REDIACC_CI_ROOT` probe did, so there is nothing left to fail closed on.
 
 
 def _q(value: str) -> str:

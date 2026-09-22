@@ -1,0 +1,8 @@
+# twin .ci/scripts/quality/check-go-deps.sh blob d8d7166e61dcc7e1d5f0d7f8e62908edc1c4c887
+exit: 1
+--- stdout ---
+
+  fakemod: github.com/some/dep v1.0.0 -> v1.1.0
+--- stderr ---
+→ Checking Go deps in fakemod...
+⚠ Outdated Go direct dependencies (minor/patch - must upgrade):

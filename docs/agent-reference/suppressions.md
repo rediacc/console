@@ -30,7 +30,7 @@ so a grep for `.deps-upgrade-blocklist` will find the name in code that is corre
 | Prod npm audit allowlist | `.ci/policy/.audit-prod-allowlist` | `.ci/rediacc_ci/security/audit.py` |
 | Dev npm audit allowlist | `.ci/policy/.audit-allowlist` | same |
 | npm dep upgrade blocklist | `.ci/policy/.deps-upgrade-blocklist` | `scripts/gates/check-deps.ts` |
-| Go dep upgrade blocklist | `.ci/policy/.go-deps-upgrade-blocklist` | `.ci/scripts/quality/check-go-deps.sh` |
+| Go dep upgrade blocklist | `.ci/policy/.go-deps-upgrade-blocklist` | `.ci/scripts/quality/check_go_deps.py` |
 | Embed-asset upgrade blocklist | `.ci/policy/.embed-assets-upgrade-blocklist` | `scripts/gates/check-embed-asset-freshness.ts` |
 | GitHub Actions upgrade blocklist | `.ci/policy/.actions-upgrade-blocklist` | `scripts/gates/check-actions.ts` |
 | Breakpoint drift acceptance | `.ci/breakpoint/.breakpoint-drift-accept` | `.ci/breakpoint/scripts/check-breakpoint-drift.sh` |
@@ -115,7 +115,7 @@ checkout, so a verdict can only change in the same commit that changes the repo.
 
 ### Age policy (planned, not yet enforced)
 
-The shared library `.ci/scripts/lib/age-check.sh` provides `check_entry_age` which warns at 180 days and fails at 365 days. Not yet wired into every reader — planned for a follow-up.
+`rediacc_ci.core.age` (formerly the shared bash library `.ci/scripts/lib/age-check.sh`, deleted once its last caller ported away) provides `entry_age_days` / `verdict`, which warn at 180 days and fail at 365; the Go dep blocklist reader composes them through `check_entry_age` in `.ci/rediacc_ci/quality/go_deps.py`. Not yet wired into every reader — planned for a follow-up.
 
 ### Running the gate tests locally
 

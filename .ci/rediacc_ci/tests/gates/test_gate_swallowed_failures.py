@@ -9,9 +9,9 @@ WHY THE TWO HISTORICAL CASES ARE THE CENTRE OF THIS FILE. A lint of this shape i
 
 CALIBRATION IS PART OF THE CONTRACT. `test_real_tree_is_clean` pins the count on the live tree at ZERO. The gate opened at 16 findings; all 16 were fixed, none waived. Pinning zero is what stops the class regrowing one call site at a time, which is how it reached 16 in the first place.
 
-WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP. Three cases drive the subject over the REAL tree: `test_silent_on_the_fixed_go_deps_probe` points it at the real `.ci/scripts/quality`, `test_real_tree_is_clean` runs it seam-free, and `test_the_repaired_sites_stay_repaired` greps nine real files. A battery step rewriting any of those mid-sweep is a divergence that would be blamed on
-this
-port. `REAL_TREE_TWIN = True` buys the serialisation, and it is honoured only
+WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP. Two cases drive the subject over the REAL tree: `test_real_tree_is_clean` runs it seam-free, and `test_the_repaired_sites_stay_repaired` greps the real files in REPAIRS. A battery step rewriting either mid-sweep is a divergence that would be blamed on this port. A third case, `test_silent_on_the_fixed_go_deps_probe`, used to point
+the subject at the real `.ci/scripts/quality` to prove it stayed silent about the fixed probe in `check-go-deps.sh`; that file was deleted in W7P5-c and the case retired with it, since the subject here only ever scanned `.sh` files and the survivor, `rediacc_ci.quality.go_deps`, is `.py`. What the case proved about the FIX is now a REPAIRS row instead, naming the surviving
+module. `REAL_TREE_TWIN = True` buys the serialisation, and it is honoured only
 because this module declares no `XDIST_GROUP` of its own; see `real_tree_admission` in `test_twin_parity.py`.
 
 --------------------------------------------------------------------------
@@ -37,13 +37,11 @@ import re
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 
-# test_silent_on_the_fixed_go_deps_probe, test_real_tree_is_clean, test_the_repaired_sites_stay_repaired and the added inertness control all read the real tree. See the docstring.
+# test_real_tree_is_clean, test_the_repaired_sites_stay_repaired and the added inertness control all read the real tree. See the docstring.
 REAL_TREE_TWIN = True
 
 GATE_REL = ".ci/scripts/quality/check-swallowed-failures.sh"
 GATE = paths.from_root(*GATE_REL.split("/"))
-GO_DEPS_REL = ".ci/scripts/quality/check-go-deps.sh"
-GO_DEPS = paths.from_root(*GO_DEPS_REL.split("/"))
 HERE_REL = ".ci/rediacc_ci/tests/gates"
 
 # `<file>.sh:<line>: $<var>` -- the finding line shape test_real_tree_is_clean counts. `grep -cE '^.*\.sh:[0-9]+: \$'` in the twin; `-P`-equivalent here because Python's `re` has no ugrep's alternated-anchor defect.
@@ -61,8 +59,15 @@ OUT_OF_SCOPE = ".ci/scripts/deploy"
 # registered `.py` for the OTLP gate is a three-line shim that imports the port;
 # the behaviour this row asserts lives in the module. Repointing it at the entry point (the obvious move, and the one recommended when the cutover landed) made the row grep a shim and fail with "lost its fix" against a fix that was never there.
 #
-# AND AFTER A RETIREMENT A ROW MUST NAME THE SURVIVOR. W7 P5 batch G1 deleted the bash twins behind the review-comments, resolved-threads and attribution rows; each now names the module that carries the fix, for the same reason the OTLP row does. The remaining `.sh` rows still name live files, and a row whose file is gone fails LOUDLY here rather than quietly passing.
+# AND AFTER A RETIREMENT A ROW MUST NAME THE SURVIVOR. W7 P5 batch G1 deleted the bash twins behind the review-comments, resolved-threads and attribution rows; each now names the module that carries the fix, for the same reason the OTLP row does. W7P5-c deleted `check-go-deps.sh` the same way; the row below used
+# to be a standalone case, `test_silent_on_the_fixed_go_deps_probe`, that pointed the subject at the real bash file directly (a `.sh`-only scanner CAN see a `.sh` fix). Its survivor, `rediacc_ci.quality.go_deps`, is `.py` and the subject never scans it, so the row moved here instead, where `PROBE_FAILED` is the
+# sentinel the fix's whole point is to emit. The remaining `.sh` rows still name live files, and a row whose file is gone fails LOUDLY here rather than quietly passing.
 REPAIRS = (
+    (
+        ".ci/rediacc_ci/quality/go_deps.py",
+        "PROBE_FAILED",
+        "the go-deps probe reports a failed probe with a sentinel rather than reading as clean",
+    ),
     (
         ".ci/rediacc_ci/quality/review_comments.py",
         "gh_json",
@@ -185,39 +190,6 @@ def test_fires_on_the_prefix_go_deps_probe(gate):
         gate.log_pass(
             "fires on the historical pre-fix check-go-deps probe (multi-line shape included)"
         )
-
-
-def test_silent_on_the_fixed_go_deps_probe(gate):
-    """The other half of the control, run against the REAL current file rather than a copy of it. The remediated probe captures the status into
-    `status=$?`, keeps stderr in a file, and reports __PROBE_FAILED__ when the
-    module list is empty. None of that may read as a swallowed failure, or the gate punishes the fix it is supposed to reward."""
-    bash = require_gate(gate)
-    result = harness.run(
-        [bash, os.fspath(GATE)],
-        cwd=paths.repo_root(),
-        env={
-            "SWALLOWED_SCAN_ROOT": os.fspath(paths.repo_root()),
-            "SWALLOWED_SCAN_DIRS": ".ci/scripts/quality",
-        },
-    )
-    gate.assert_not_contains(
-        result.combined, "$raw", "the fixed probe's captured output must not be flagged"
-    )
-    gate.assert_not_contains(
-        result.combined, "$seen", "the fixed probe's emptiness guard must not be flagged"
-    )
-    # Anti-vacuity for this case: the two assertions above are absences, and an absence is also what a deleted file produces. Confirm the remediated probe is still there to be silent about.
-    if not GO_DEPS.is_file():
-        gate.log_fail(
-            "%s is gone; the fix this case asserts silence about cannot be found" % GO_DEPS_REL
-        )
-    markers = GO_DEPS.read_text(encoding="utf-8").count("PROBE_FAILED")
-    if markers < 3:
-        gate.log_fail(
-            "check-go-deps.sh carries only %d __PROBE_FAILED__ marker(s); the fix this "
-            "case asserts silence about is gone" % markers
-        )
-    gate.log_pass("stays silent on the remediated check-go-deps probe (real file, not a copy)")
 
 
 # --------------------------------------------------------------------------- The trigger, one shape at a time. ---------------------------------------------------------------------------

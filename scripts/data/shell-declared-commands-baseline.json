@@ -18,7 +18,6 @@
   ".ci/scripts/lib/common.sh\tjq",
   ".ci/scripts/private/concurrent-fork-isolation-test.sh\tdocker",
   ".ci/scripts/private/license-e2e.sh\tjq",
-  ".ci/scripts/quality/check-go-deps.sh\tjq",
   ".ci/scripts/quality/check-submodule-branches.sh\tgh",
   ".ci/scripts/quality/check-submodule-branches.sh\tjq",
   ".ci/scripts/release/update-homebrew-tap.sh\tcurl",

@@ -1,6 +1,6 @@
 """Age-based rot detection for suppression entries.
 
-PORTED FROM `.ci/scripts/lib/age-check.sh`, which still exists and now delegates here. The bash file's own header, preserved:
+PORTED FROM `.ci/scripts/lib/age-check.sh`, which delegated here for the whole time it existed. Its only caller, `.ci/scripts/quality/check-go-deps.sh`, was deleted in W7P5-c, and the shim went with it since nothing else sourced it. The bash file's own header, preserved:
 
     Every allowlist / blocklist entry carries an implicit re-review cadence:
       - <= AGE_WARN_DAYS:  silently accepted
@@ -36,14 +36,15 @@ of them is ever wrong, both are.)
 WHY THE PORT KEEPS emit_advisory IN BASH
 --------------------------------------------------------------------------
 The decision and the emission are split here, and that split is the design. `emit_advisory` is a separate bash library with its own contract -- eight optional associative arrays a caller may populate by advisory id, and a `::error::` / `::warning::` GitHub-Actions form -- and porting it was not this phase's job. So this module answers WHAT the verdict is and the shim performs it.
-The caller that matters (`.ci/scripts/quality/check-go-deps.sh`) keeps populating those arrays exactly as it does today and does not change. `.ci/scripts/security/audit.sh` was the second until W7P5-b deleted it; its port reaches this module directly.
+The caller that mattered, `.ci/scripts/quality/check-go-deps.sh`, populated those arrays until W7P5-c deleted it along with the bash shim; its Python successor, `rediacc_ci.quality.go_deps`, reproduces the same narrow `emit_advisory` shape directly rather than importing it, and calls this module's `entry_age_days`/`verdict` in-process. `.ci/scripts/security/audit.sh` was the
+other caller until W7P5-b deleted it; its port also reaches this module directly.
 
 That also keeps the CI-versus-local branch honest: the level is decided here
 from the CI flag the shim passes in, so the verdict is testable without a
 GitHub runner, while the WORDING of the emission stays where the other advisories are worded.
 
 --------------------------------------------------------------------------
-COMMAND-LINE ENTRY POINT (what the bash shim calls)
+COMMAND-LINE ENTRY POINT (what the now-deleted bash shim called)
 --------------------------------------------------------------------------
     python3 -m rediacc_ci.core.age days <file> <pattern>
         prints the integer age in days, or -1 for CANNOT VERIFY. Always
