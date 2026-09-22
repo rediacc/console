@@ -31,7 +31,7 @@ exit for an environment reason wearing a vacuity failure's exit code.
 DO NOT ADD lint-rule-liveness.mjs TO THE manifest.ts `leaves` LIST. The plan called for that, and it is wrong on two counts, both measured. `leaves` is a DERIVED field: check-ci-parity.ts:488-495 resolves the package.json command's own shell structure and fails when the declared list differs, so the extra entry is reported as a hygiene finding ("declares leaves [...] but
 package.json resolves to [...]"). And it buys nothing anyway -- scope-map.cjs:134 matches the whole of `.ci/` with `full: 'harness'`, so ANY edit under this directory already forces the full harness scope and reselects this gate.
 
-Design: agent/PLAN-lint-rule-matrix-probe.md
+Design: agent/plans/PLAN-lint-rule-matrix-probe.md
 
 ---- gate ----
 step: Enabled lint rules can actually fire

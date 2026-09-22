@@ -9,7 +9,7 @@ THE TWIN'S HEADER, CARRIED ACROSS.
 
 Gate: every `## ` entry declares which instrument enforces it, that pointer resolves, and that instrument is LIVE.
 
-WHY THIS EXISTS. A trap that names no enforcement is indistinguishable from one that is fully mechanized, so the unprotected surface cannot be measured and the stop-hook judge briefs every session from headings it is already protected against. `agent/PLAN-trap-enforcement.md` section 3 is the specification; this is its W1.
+WHY THIS EXISTS. A trap that names no enforcement is indistinguishable from one that is fully mechanized, so the unprotected surface cannot be measured and the stop-hook judge briefs every session from headings it is already protected against. `agent/plans/PLAN-trap-enforcement.md` section 3 is the specification; this is its W1.
 
 THE HAZARD THE PLAN NAMES, AND WHY LIVENESS IS THE POINT (plan section 3.2): "a gate that demands every trap name an enforced_by creates pressure to name one, and the cheapest thing to name is a grep that pattern-matches the trap's title." A gate that only checked PRESENCE would industrialize the corpus's own most expensive entry, manufacturing checks that cannot fail at a rate of
 one per trap and reporting 100% coverage while doing it. So every pointer is checked twice: it must RESOLVE (F4) and it must be LIVE (F5).
@@ -149,8 +149,8 @@ SEAMS = {
     "TRAP_MANIFEST": ("scripts", "ci-runner", "manifest.ts"),
     "TRAP_PACKAGE_JSON": ("package.json",),
     "TRAP_DISPATCH": (".claude", "hooks", "trapguard", "dispatch.py"),
-    # THE SUITE MOVED, AND THE SPELLING DID NOT. `hook_is_live` asks whether a trapguard rule has both a firing and a silent `check_inject` case; those cases were ported out of `.claude/hooks/test-hooks.sh` into this module, which keeps `check_inject fires` / `check_inject silent` and the needle as the LAST quoted argument on the same line for exactly this reader. Its own
-    # docstring records the formatter accident that separated the two and turned all five rules one-sided, so the shape is deliberate on both ends.
+    # THE SUITE MOVED, AND THE SPELLING DID NOT. `hook_is_live` asks whether a trapguard rule has both a firing and a silent `check_inject` case; those cases were ported out of `.claude/hooks/test-hooks.sh` into this module, which keeps `check_inject fires` / `check_inject silent` and the needle as the LAST quoted argument on the same line for exactly this reader. Its own docstring
+    # records the formatter accident that separated the two and turned all five rules one-sided, so the shape is deliberate on both ends.
     "TRAP_HOOK_SUITE": (".claude", "rediacc_hooks", "tests", "test_hooks_trapguard.py"),
     "TRAP_SETTINGS": (".claude", "settings.json"),
     "TRAP_FILE_ROOT": (),

@@ -22,7 +22,7 @@
 #
 #     $ git rev-parse --is-shallow-repository
 #     true
-#     $ git log -1 --format=%cI -- agent/PLAN-cold-path.md
+#     $ git log -1 --format=%cI -- agent/plans/PLAN-cold-path.md
 #     2026-09-01T14:25:23+02:00     # the GRAFT commit, not the file's
 #
 # Every one of the 70 tracked plans reports one day old, because `git log` on a

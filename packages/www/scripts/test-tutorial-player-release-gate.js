@@ -323,8 +323,8 @@ async function stopDevServer() {
 
 // PLAYER SELECTORS, verified against packages/www/src/components/TutorialVideoPlayer.tsx at HEAD (2026-08-28): the player root is `.tvp-shell > .tvp-root`, hydrated by tutorial-video-hydrate.ts onto `.tutorial-video-container[data-video-src]` (docs) or `.video-player-mount[data-video-src]` (solution-page hero). Plyr wraps the real
 // `<video>` and renders standard `[data-plyr="X"]` control buttons (controls list at
-// TutorialVideoPlayer.tsx:362-376 includes 'play' and 'fullscreen'), toggling `.plyr--playing` / `.plyr--fullscreen-active` on the `.plyr` wrapper it inserts. This replaces the TerminalPlayer-era `.ap-control-bar`/`.terminal-tutorial`/ `window.__tutorialDebug` surface, deleted wholesale in 80a000965 (2026-05-27) -- see agent/PLAN-fix-tutorial-player-debug-hook-attachment.md for
-// the full trace.
+// TutorialVideoPlayer.tsx:362-376 includes 'play' and 'fullscreen'), toggling `.plyr--playing` / `.plyr--fullscreen-active` on the `.plyr` wrapper it inserts. This replaces the TerminalPlayer-era `.ap-control-bar`/`.terminal-tutorial`/ `window.__tutorialDebug` surface, deleted wholesale in 80a000965 (2026-05-27) -- see agent/plans/PLAN-fix-tutorial-player-debug-hook-attachment.md
+// for the full trace.
 
 /**
  * A click dispatched via `evalInPage(...).click()` is NOT a trusted user gesture --
@@ -523,8 +523,8 @@ function scenarioFullscreenAndLayering() {
   const exitState = evalInPage(`(() => ({ fullscreen: Boolean(document.fullscreenElement) }))()`);
   assertCondition(!exitState.fullscreen, 'fullscreen did not exit', exitState);
 
-  // The docs-vs-heading-share layering comparison from the deleted TerminalPlayer era is retired, not adapted: `.heading-share` does not exist anywhere in the current site (verified: grep -rn "heading-share" packages/www/src -> no hits), and the layout it belonged to is gone. See agent/PLAN-fix-tutorial-player-debug-hook-attachment.md, scenario 5, for why no replacement invariant
-  // was invented here.
+  // The docs-vs-heading-share layering comparison from the deleted TerminalPlayer era is retired, not adapted: `.heading-share` does not exist anywhere in the current site (verified: grep -rn "heading-share" packages/www/src -> no hits), and the layout it belonged to is gone. See agent/plans/PLAN-fix-tutorial-player-debug-hook-attachment.md, scenario 5, for why no replacement
+  // invariant was invented here.
   const docsZ = evalInPage(`(() => {
     const s = (el, prop) => el ? getComputedStyle(el)[prop] : null;
     return {

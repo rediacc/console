@@ -34,5 +34,5 @@ npm pack tarball name)
 
 ## Why this is a separate file
 
-`CLAUDE.md`'s rule is to cut what already has a home (`agent/PLAN-tooling-transformation.md`, box W11 P5b). `__CLI_VERSION__`'s injection table had no home before this file — the only prior mentions of `resolve-version.sh` in `docs/` are scattered, incidental references inside `docs/ci-overhaul/06-progress.md`'s running investigation log, not a stable description of how versioning
-works. Verified against the four real injection sites directly, not copied from `CLAUDE.md`'s prior wording.
+`CLAUDE.md`'s rule is to cut what already has a home (`agent/plans/PLAN-tooling-transformation.md`, box W11 P5b). `__CLI_VERSION__`'s injection table had no home before this file — the only prior mentions of `resolve-version.sh` in `docs/` are scattered, incidental references inside `docs/ci-overhaul/06-progress.md`'s running investigation log, not a stable description of how
+versioning works. Verified against the four real injection sites directly, not copied from `CLAUDE.md`'s prior wording.

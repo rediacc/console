@@ -3,8 +3,8 @@
 
 WHY THIS GATE EXISTS, and it has a measurement rather than an opinion.
 
-Three id schemes collided on the same-looking token and two ADJACENT boxes of `agent/PLAN-tooling-transformation.md` ended up pointing at OPPOSITE FILES. `W12 P2.7` cited "A5 in `docs/ci-overhaul/04-decisions.md`"; `grep` for that token in that file returns 0, because it meant the GATE RULE at `.ci/scripts/quality/check_plan_boxes.py:41`. Box X0.1 fixed the source on 2026-09-08 by
-PREFIXING: gate rules became `G-A<n>`, operator decisions `D-A<n>`. A prefix stops the collision recurring by transcription. It does not, on its own, stop a `D-` id from naming nothing at all, which is the same failure one step later: a pointer that looks authoritative and resolves to no row.
+Three id schemes collided on the same-looking token and two ADJACENT boxes of `agent/plans/PLAN-tooling-transformation.md` ended up pointing at OPPOSITE FILES. `W12 P2.7` cited "A5 in `docs/ci-overhaul/04-decisions.md`"; `grep` for that token in that file returns 0, because it meant the GATE RULE at `.ci/scripts/quality/check_plan_boxes.py:41`. Box X0.1 fixed the source on
+2026-09-08 by PREFIXING: gate rules became `G-A<n>`, operator decisions `D-A<n>`. A prefix stops the collision recurring by transcription. It does not, on its own, stop a `D-` id from naming nothing at all, which is the same failure one step later: a pointer that looks authoritative and resolves to no row.
 
 So this gate is the other half of X0.1. `agent/DECISIONS.md` holds the rows; this holds the rows and their citations to each other.
 

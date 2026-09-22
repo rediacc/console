@@ -108,7 +108,7 @@
           "session report is frozen when it is written; rewriting one to satisfy a",
           "line-length or a pronoun rule would falsify the record it exists to be. Its",
           "findings were already frozen debt at agent/REPORT-<slug>.md and re-keyed when S5",
-          "of agent/PLAN-agent-tree-lifecycle.md moved the file into the archive class the",
+          "of agent/plans/PLAN-agent-tree-lifecycle.md moved the file into the archive class the",
           "operator ruled it belongs to, so this entry silences nothing that was being",
           "reported before the move."
         ]
@@ -898,7 +898,7 @@
         "`globals.max_line_length`, and the shared reflow primitive actually producing fewer",
         "lines when applied. A naive \"would joining change anything\" test fires on 99.99% of",
         "this repository's real markdown corpus, measured live 2026-09-17, and is therefore not",
-        "a debt detector at all -- see agent/PLAN-prose-style-under-wrap.md."
+        "a debt detector at all -- see agent/plans/PLAN-prose-style-under-wrap.md."
       ],
       "exceptions": [],
       "examples": [

@@ -100,7 +100,7 @@ Stripe credentials are rotated manually via the Stripe dashboard, so the one-sho
 > established in the Stripe dashboard that the three regions are ONE Stripe account
 > (`acct_1ONIroAH2UKrsSNm`), so there is one `STRIPE_SECRET_KEY` and nothing per-region
 > to migrate into environments. Only the webhook secrets differ per region, and they stay
-> org secrets. See `agent/PLAN-secret-namespace-migration.md` Part 10, Stripe.
+> org secrets. See `agent/plans/PLAN-secret-namespace-migration.md` Part 10, Stripe.
 
 ### 3b. SES (US/Asia) — rotation tool handles env-scope automatically
 

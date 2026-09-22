@@ -554,7 +554,7 @@ Investigation parallelises here; writing does not. Spawn these read-only, then i
 
 **Agent A — mechanical rename inventory**
 > Repo /home/developer/console. Produce the exact sed-able rename table for a secret-name
-> migration. For each of the 44 names in `agent/PLAN-secret-namespace-migration.md`, list
+> migration. For each of the 44 names in `agent/plans/PLAN-secret-namespace-migration.md`, list
 > every file:line where it appears as a LITERAL, grouped by surface. EXCLUDE the seven
 > runtime-constructed sites listed in Part 7 of that plan — those are hand-edited. Flag any
 > occurrence inside a string that is concatenated, interpolated, or passed to `${!…}`.
@@ -1653,8 +1653,8 @@ What ends this plan for good: the operator re-seeds the three, every compare ste
 
 ## Part 26 — two operator-gated boxes carried over from the archived GitHub-secrets plan (2026-09-09)
 
-The GitHub-secrets removal plan was archived byte-identical to `agent/archive/plans/PLAN-github-secrets-removal.md` (11 of its 13 open boxes retired there; see `agent/PLAN-completion-strategy.md` section 2). Its two operator-only boxes are carried forward here so they stay open and actionable rather than buried in the archive (full original wording, including its own citations, is
-at `agent/archive/plans/PLAN-github-secrets-removal.md:551` and `:578`):
+The GitHub-secrets removal plan was archived byte-identical to `agent/archive/plans/PLAN-github-secrets-removal.md` (11 of its 13 open boxes retired there; see `agent/plans/PLAN-completion-strategy.md` section 2). Its two operator-only boxes are carried forward here so they stay open and actionable rather than buried in the archive (full original wording, including its own
+citations, is at `agent/archive/plans/PLAN-github-secrets-removal.md:551` and `:578`):
 
 - [ ] **(operator, Q2)** `./run.sh rotation rotate otlp-{eu,us,asia}`, closing row O3 and the deferred exemptions in `.ci/config/bws-unrequested.json`
 - [ ] **(operator, irreversible)** Delete 44 GitHub secrets; keep `BWS_ACCESS_TOKEN` in `console`, `account`, `renet`

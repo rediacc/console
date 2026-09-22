@@ -1,7 +1,7 @@
 """Refuse a plan file that carries no task list the Stop hook can parse.
 
-WHY THIS EXISTS, from this session rather than from theory. The plan-fidelity check (.claude/hooks/stop/wl_planfid.py) blocks a stop while "a plan task nothing tracks" exists, and it finds those tasks with a MARKDOWN parser. A plan written in prose is not seen as having zero tasks -- it is seen as having the WRONG ones. Measured on agent/PLAN-secret-namespace-migration.md before
-this guard existed: plan_tasks() returned 21 "tasks", of which 8 were the operator's locked DECISIONS and 5 were open QUESTIONS, while every real unit of work (the two rotation defects, the atomic rename, the four cleanup items) was invisible. The session was then told to decompose a list that did not describe its work, twice, and could not tell why.
+WHY THIS EXISTS, from this session rather than from theory. The plan-fidelity check (.claude/hooks/stop/wl_planfid.py) blocks a stop while "a plan task nothing tracks" exists, and it finds those tasks with a MARKDOWN parser. A plan written in prose is not seen as having zero tasks -- it is seen as having the WRONG ones. Measured on agent/plans/PLAN-secret-namespace-migration.md
+before this guard existed: plan_tasks() returned 21 "tasks", of which 8 were the operator's locked DECISIONS and 5 were open QUESTIONS, while every real unit of work (the two rotation defects, the atomic rename, the four cleanup items) was invisible. The session was then told to decompose a list that did not describe its work, twice, and could not tell why.
 
 So the failure is not "the plan is badly written". It is that the author and the enforcement layer are reading two different documents, and nothing says so until a stop is refused for a reason the author cannot act on.
 

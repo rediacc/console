@@ -27,7 +27,7 @@ check:ci-plan-citations gate.
     (record) sig=65c3008d done=c6e9c84c2
 - [x] Add inline notes at the dead-on-purpose / cross-repo citations. Done for all 4 plus the 2 stale "see git log" pointers below, plus 2 more found while doing this work (`c05edbba`, `f020473e`) that needed the same treatment.
     (record) sig=911d45dd done=c6e9c84c2
-- [x] Repoint or note the 2 stale "see git log" pointers in `agent/PLAN-stop-report-queue.md:8`. Done (noted, truncated below the citation threshold).
+- [x] Repoint or note the 2 stale "see git log" pointers in `agent/plans/PLAN-stop-report-queue.md:8`. Done (noted, truncated below the citation threshold).
     (record) sig=c977c684 done=c6e9c84c2
 - [x] Leave the 62 healthy commit-identity citations and 53 `Full-Text-Blob:` citations untouched. Done — none were touched.
     (record) sig=46f5fd50 done=c6e9c84c2
@@ -39,7 +39,7 @@ Compacted-By: d778be9d
 Compacted-At: 2026-09-20T18:10:29Z
 Boxes: 6 attested, 0 open, 0 abandoned
 Epics: e87fa3ce
-Touched: agent/PLAN-stop-report-queue.md, agent/PLAN-git-history-media-rewrite.md, agent/PLAN-fix-ci-contention-aware-timeouts.md, agent/PLAN-fix-tutorial-player-debug-hook-attachment.md, agent/PLAN-secret-namespace-migration.md, agent/PLAN-www-bundle-determinism.md, agent/PLAN-env-to-bitwarden-v2.md, agent/PLAN-promote-mutation-runner.md, agent/PLAN-subagent-idle-detection.md
+Touched: agent/plans/PLAN-stop-report-queue.md, agent/plans/PLAN-git-history-media-rewrite.md, agent/plans/PLAN-fix-ci-contention-aware-timeouts.md, agent/plans/PLAN-fix-tutorial-player-debug-hook-attachment.md, agent/plans/PLAN-secret-namespace-migration.md, agent/plans/PLAN-www-bundle-determinism.md, agent/plans/PLAN-env-to-bitwarden-v2.md, agent/plans/PLAN-promote-mutation-runner.md, agent/plans/PLAN-subagent-idle-detection.md
 Gates: check:ci-plan-citations, check:ci-shape-duplication
 Why-Source: model
 Read-History: `git show f439a5441017c0c19accc9ffebeea00394e3be5e` recovers the text; `git log --find-object=f439a5441017c0c19accc9ffebeea00394e3be5e --all` names the commit

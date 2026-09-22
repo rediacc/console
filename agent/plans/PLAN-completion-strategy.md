@@ -30,7 +30,7 @@ Compacted-By: d778be9d
 Compacted-At: 2026-09-20T17:54:19Z
 Boxes: 0 attested, 0 open, 0 abandoned
 Epics: e87fa3ce
-Touched: agent/PLAN-tooling-transformation.md, .ci/scripts/quality/check_plan_boxes.py, .claude/hooks/stop/worklist.py, agent/PLAN-plan-file-lifecycle.md, agent/PLAN-env-to-bitwarden-v2.md, .ci/scripts/quality/check_secret_reachability.py, agent/archive/plans/PLAN-github-secrets-removal.md, .claude/hooks/stop/wl_store.py, CLAUDE.md, agent/PLAN-review-red-stop-hook-check.md, agent/PLAN-commit-author-identity.md, agent/PLAN-plyr-css-on-demand-loading.md, agent/PLAN-session-onboarding-marker.md, agent/archive/plans/PLAN-branch-aware-workflows.md, agent/PLAN-bws-rotation-on-failure.md
+Touched: agent/plans/PLAN-tooling-transformation.md, .ci/scripts/quality/check_plan_boxes.py, .claude/hooks/stop/worklist.py, agent/plans/PLAN-plan-file-lifecycle.md, agent/plans/PLAN-env-to-bitwarden-v2.md, .ci/scripts/quality/check_secret_reachability.py, agent/archive/plans/PLAN-github-secrets-removal.md, .claude/hooks/stop/wl_store.py, CLAUDE.md, agent/plans/PLAN-review-red-stop-hook-check.md, agent/plans/PLAN-commit-author-identity.md, agent/plans/PLAN-plyr-css-on-demand-loading.md, agent/plans/PLAN-session-onboarding-marker.md, agent/archive/plans/PLAN-branch-aware-workflows.md, agent/plans/PLAN-bws-rotation-on-failure.md
 Gates: check:ci-language-policy, check:ci-plan-citations, check:ci-plan-housekeeping
 Why-Source: model
 Read-History: `git show 08a8712b218e63ad5b3b42299abb6cd3f1d3ac16` recovers the text; `git log --find-object=08a8712b218e63ad5b3b42299abb6cd3f1d3ac16 --all` names the commit

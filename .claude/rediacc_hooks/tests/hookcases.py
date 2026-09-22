@@ -796,8 +796,8 @@ STATIC: list[Case] = [
         bash_json("git add :/"),
         "blanket-git-add: the repo-root magic pathspec",
     ),
-    # block_pathspecless_git_commit.py -- the OTHER half of the blanket-add trap, and the half a correct `git add` does not protect against. `git commit` writes the INDEX, so a peer session's staged work rides the commit. Added 2026-09-06 after it happened TWICE in one session: fifteen policy renames landed without their readers, then an hour later, after the trap was written
-    # down by the same session, 108 files landed where 33 were intended.
+    # block_pathspecless_git_commit.py -- the OTHER half of the blanket-add trap, and the half a correct `git add` does not protect against. `git commit` writes the INDEX, so a peer session's staged work rides the commit. Added 2026-09-06 after it happened TWICE in one session: fifteen policy renames landed without their readers, then an hour later, after the trap was written down
+    # by the same session, 108 files landed where 33 were intended.
     case(
         "check 2 guards/block_pathspecless_git_commit.py",
         bash_json('git commit -m "x"'),
@@ -1454,7 +1454,7 @@ STATIC: list[Case] = [
         "admin-merge: sibling gh --repo does not donate to the merge segment",
     ),
     # NOT asserted here: per-segment --auto and per-segment PR selectors on block-admin-merge. Both only change behavior once a rediacc repo is resolved, which puts them on the network path this offline harness cannot drive (same limitation as the NOTE above). They are covered by the hook's live proofs, not by a case that would pass either way -- a green assertion that cannot fail
-    # is worse than no assertion. REST/GraphQL parity (agent/PLAN-rest-graphql-guard-parity.md): the same three guards also police the REST or GraphQL call that reaches the identical GitHub mutation as the `gh pr` verb they already gate. One BLOCK and one ALLOW per guard, mirrored here because hook_integrity.covmap reads coverage off this exact "check <rc> guards/<module>.py"
+    # is worse than no assertion. REST/GraphQL parity (agent/plans/PLAN-rest-graphql-guard-parity.md): the same three guards also police the REST or GraphQL call that reaches the identical GitHub mutation as the `gh pr` verb they already gate. One BLOCK and one ALLOW per guard, mirrored here because hook_integrity.covmap reads coverage off this exact "check <rc> guards/<module>.py"
     # shape.
     case(
         "check 2 guards/block_admin_merge.py",

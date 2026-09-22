@@ -1,6 +1,6 @@
 """wl_planfile: keep a committed `agent/PLAN-*.md` checkbox list and the worklist IN STEP, so a plan survives compaction as something traceable rather than as eighteen boxes nobody can account for.
 
-WHY THIS EXISTS, from a measurement rather than from theory. On 2026-09-02 `agent/PLAN-secret-namespace-migration.md` carried 18 open `- [ ]` lines and 4 ticked ones, and its own `## Tasks` section stated the contract in as many words:
+WHY THIS EXISTS, from a measurement rather than from theory. On 2026-09-02 `agent/plans/PLAN-secret-namespace-migration.md` carried 18 open `- [ ]` lines and 4 ticked ones, and its own `## Tasks` section stated the contract in as many words:
 
     "Checkbox lines are what `wl_planfid.plan_tasks` parses, so this list and
      the worklist must stay in step: one `worklist.py --add` item per line."

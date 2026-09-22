@@ -6,7 +6,7 @@ WHY A LEDGER AND NOT A GREP. Two reasons, both measured on this tree.
 1. A NAIVE GREP REDS ON NON-TASKS. `grep -F -- '- [ ]'` finds 93 hits; the anchored
    line count finds 89; `wl_planfid.plan_tasks` -- the parser the Stop hook actually
    uses -- finds 88. The five differences are four bits of PROSE ABOUT the checkbox
-   grammar and one fenced CODE SAMPLE at agent/PLAN-fix-in-session-rule.md:352, which
+   grammar and one fenced CODE SAMPLE at agent/plans/PLAN-fix-in-session-rule.md:352, which
    depicts a line the hook prints. A CI gate built on grep fails the build on a code
    sample. So this gate IMPORTS the real parser rather than reimplementing it, which
    makes the fence rule a structural property instead of a test: there is no second
@@ -20,7 +20,7 @@ WHY A LEDGER AND NOT A GREP. Two reasons, both measured on this tree.
    AGREES WITH THE TREE, and leaves the stock visible in one reviewable file where
    `open: 22 -> 21` beside a `- [x]` is the whole story in two lines.
 
-WHAT IS ASSERTED (agent/PLAN-plan-file-lifecycle.md's G-A0..G-A6):
+WHAT IS ASSERTED (agent/plans/PLAN-plan-file-lifecycle.md's G-A0..G-A6):
 
 THE `G-` PREFIX IS LOAD-BEARING, ADOPTED 2026-09-08 (box X0.1). Three id schemes collided on the same-looking token, and two adjacent plan boxes ended up pointing at OPPOSITE FILES because of it: `A5`/`A6` here are GATE RULES, while `docs/ci-overhaul/04-decisions.md` section A item 6 (`:22-23`, "Do not stick on what I say. Better ideas are welcomed") is an OPERATOR RULING. W12 P2.7
 cited "A5 in 04-decisions.md", where `grep -cE 'A5'` on that file returns 0 -- it meant this file all along. So gate rules are `G-A<n>`, operator decisions are `D-A<n>`, and a bare `A5` is now wrong in both directions rather than ambiguous in both.
@@ -161,8 +161,8 @@ def loose_sig(task: str) -> str:
 def prior_rows() -> dict:
     """The rows in the COMMITTED ledger, or {}. Read for one key only.
 
-    `moved_at` is the only thing carried forward: it is the date a plan was moved into a terminal folder, which nothing in the tree can be read back out of once a later commit touches the new path. Recomputing it here would reset the 40-day retention clock on every regeneration, which is risk 1 of agent/PLAN-agent-tree-lifecycle.md in its quietest form. `check:ci-plan-folders` F6
-    is what stops the carried value drifting away from git.
+    `moved_at` is the only thing carried forward: it is the date a plan was moved into a terminal folder, which nothing in the tree can be read back out of once a later commit touches the new path. Recomputing it here would reset the 40-day retention clock on every regeneration, which is risk 1 of agent/plans/PLAN-agent-tree-lifecycle.md in its quietest form.
+    `check:ci-plan-folders` F6 is what stops the carried value drifting away from git.
     """
     try:
         return (json.loads(LEDGER.read_text(encoding="utf-8")) or {}).get("plans") or {}
@@ -403,8 +403,7 @@ def _touched_plans(base: str) -> set[str]:
 def _added_plans(base: str) -> set[str]:
     """Plans this branch genuinely adds, MOVES EXCLUDED.
 
-    `_name_status` reports an "A" for the new path of a moved plan too, because `check_plan_folders.py --move` leaves a stub at the old path rather than deleting it -- there is no delete for git's rename
-    detection to pair against, at any `-M` threshold. `PL.moved_from` reads the stub the same way `check_plan_citations.py` does, so a move is never mistaken for new, unowned content.
+    `_name_status` reports an "A" for the new path of a moved plan too, because `check_plan_folders.py --move` leaves a stub at the old path rather than deleting it -- there is no delete for git's rename detection to pair against, at any `-M` threshold. `PL.moved_from` reads the stub the same way `check_plan_citations.py` does, so a move is never mistaken for new, unowned content.
     """
     out = set()
     for st, p in _name_status(base):

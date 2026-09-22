@@ -1,6 +1,6 @@
 """Differential: `rediacc_ci.release.cleanup_channel_docker_tags` against its twin `.ci/scripts/release/cleanup-channel-docker-tags.sh`.
 
-NEITHER SIDE RUNS IN THIS CHECKOUT. The twin resolves the deleter as `$SCRIPT_DIR/../docker/cleanup_staging.py` (agent/PLAN-w7p4w-docker-cutover.md Stage 5 cut the twin's own call site from `cleanup-staging.sh` over to this Python entry point; the fixture below tracks that, not the pre-cutover name),
+NEITHER SIDE RUNS IN THIS CHECKOUT. The twin resolves the deleter as `$SCRIPT_DIR/../docker/cleanup_staging.py` (agent/plans/PLAN-w7p4w-docker-cutover.md Stage 5 cut the twin's own call site from `cleanup-staging.sh` over to this Python entry point; the fixture below tracks that, not the pre-cutover name),
 with no override hook, and that script talks to GHCR through `gh api --method
 DELETE`. So every case builds a throwaway console tree per side at the real relative depths, drops a RECORDING STUB at `.ci/scripts/docker/cleanup_staging.py`, and runs the subject out of that tree. The real deleter is never on any path either side can reach.
 

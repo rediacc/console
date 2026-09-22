@@ -3,7 +3,7 @@
  * Gate: no credential material may sit in a TRACKED file.
  *
  * WHY THIS EXISTS. On 2026-09-05 the operator asked whether AWS access key IDs were
- * sitting in the clear in agent/PLAN-secret-namespace-migration.md. Four of them were,
+ * sitting in the clear in agent/plans/PLAN-secret-namespace-migration.md. Four of them were,
  * plus a Cloudflare token id, committed 2026-09-03 into a PUBLIC repo. The secret halves
  * were never there and an access key id cannot authenticate alone -- but it names the
  * account, pairs with any leaked secret half, and is what GitHub's own scanning alerts
@@ -237,8 +237,7 @@ function selftest(): number {
   // finding in its OWN scan the moment the file is tracked -- which is exactly what
   // happened on the first run after `git add`, and the baseline note forbids the easy
   // way out ("rotate it, do not baseline it") for a reason. It also states this gate's
-  // honest limit out loud: it matches LITERALS, so a credential split across a concatenation evades it here and anywhere else. Every scanner of this kind shares
-  // that limit; the gate is a floor against carelessness, not against intent.
+  // honest limit out loud: it matches LITERALS, so a credential split across a concatenation evades it here and anywhere else. Every scanner of this kind shares that limit; the gate is a floor against carelessness, not against intent.
   const plantedAwsId = 'AKIA' + 'WXE5TUDQ4T2EY5KV';
   check('an AWS access key id is detected', AWS_RE.test(`key ${plantedAwsId} here`));
   // CONTROL: without this the gate would fire on every document discussing AWS, and the next person to trip on it would delete the pattern rather than narrow it.
@@ -250,8 +249,7 @@ function selftest(): number {
   const ghp = 'ghp' + '_' + 'A1b2C3d4E5f6G7h8I9j0K1l2M3n4O5p6Q7r8';
   check('a GitHub token is detected', TOKEN_RE.test(`token ${ghp} here`));
   check('a Slack token is detected', TOKEN_RE.test('xox' + 'b-1234567890-abcdef'));
-  // CONTROL: the prefix alone is a word people write in prose and in docs; only the
-  // full shape is a credential.
+  // CONTROL: the prefix alone is a word people write in prose and in docs; only the full shape is a credential.
   check('CONTROL: the bare prefix is not a finding', !TOKEN_RE.test('a ghp_ style token'));
   check('CONTROL: a short xox- string is not a finding', !TOKEN_RE.test('xox-abc'));
   // The three the sweep found missing, each assembled from parts so this file is not itself a finding.
@@ -295,9 +293,7 @@ function selftest(): number {
     !hasPemBody('the private key is in Bitwarden')
   );
 
-  // THE TWO LISTS MUST NOT DRIFT APART AGAIN. This gate covered 4 of the 7 shapes in wl_store.py::_SECRET_SHAPES for months, while that redactor -- whose own comment says the shapes "must never reach a TRACKED file" -- caught all 7 at
-  // its door. Aligning them once fixes today; this keeps them aligned, by reading
-  // the redactor's list rather than a copy of it.
+  // THE TWO LISTS MUST NOT DRIFT APART AGAIN. This gate covered 4 of the 7 shapes in wl_store.py::_SECRET_SHAPES for months, while that redactor -- whose own comment says the shapes "must never reach a TRACKED file" -- caught all 7 at its door. Aligning them once fixes today; this keeps them aligned, by reading the redactor's list rather than a copy of it.
   //
   // BEHAVIOURAL, not textual. Comparing pattern SOURCES said this gate did not cover `ghp_`, because it spells that alternation `(ghp|gho|ghu|ghs|ghr)_` -- a false alarm about a shape it has always caught. So each shape gets a sample and the question is whether the gate DETECTS it.
   const redactor = join(ROOT, '.claude', 'hooks', 'stop', 'wl_store.py');

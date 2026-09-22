@@ -4,8 +4,8 @@
 THIS FILE IS THE GATE. It carries `check:ci-staging-tag-guard` outright: package.json, the `Staging tag guard` step in `.github/workflows/ci-quality.yml` and its `scripts/ci-runner/manifest.ts` leaf all name this path, and the `---- gate ----` header below moved here from the twin in the same change (W7P4-Q). The licence for the cutover is
 `.ci/shadow/w7p2-stagingtag.observations.jsonl`, which reads EQUIVALENT over 12 distinct clean trees at K=5, plus the differential in `.ci/rediacc_ci/tests/test_quality_staging_tag_guard.py`.
 
-`.ci/scripts/quality/check-staging-tag-guard.sh` IS GONE, deleted by W7 P5 batch E1. Every case in that differential used to run the real twin over a fixture and compare both streams byte for byte against this file; each now compares against `.ci/rediacc_ci/tests/goldens/staging-tag-guard/`, which holds the twin's own bytes recorded on its last day in the tree. The
-provenance header of each golden names the blob sha, so `git cat-file -p <sha>` still yields the program that printed them.
+`.ci/scripts/quality/check-staging-tag-guard.sh` IS GONE, deleted by W7 P5 batch E1. Every case in that differential used to run the real twin over a fixture and compare both streams byte for byte against this file; each now compares against `.ci/rediacc_ci/tests/goldens/staging-tag-guard/`, which holds the twin's own bytes recorded on its last day in the tree. The provenance
+header of each golden names the blob sha, so `git cat-file -p <sha>` still yields the program that printed them.
 
 ---- gate ----
 step: Staging tag guard
@@ -108,7 +108,7 @@ DEFAULT_TARGET_REL = ".ci/scripts/docker/cleanup-staging.sh"
 SCAN_DIRS = (".ci", ".github")
 SCAN_SUFFIXES = (".sh", ".yml")
 
-# `.py` callers are scoped to `.ci/scripts` ONLY, not all of SCAN_DIRS, and this is NOT what agent/PLAN-w7p4w-docker-cutover.md §3 literally says ("widen the
+# `.py` callers are scoped to `.ci/scripts` ONLY, not all of SCAN_DIRS, and this is NOT what agent/plans/PLAN-w7p4w-docker-cutover.md §3 literally says ("widen the
 # `grep --include` list to add `--include='*.py'`"). Doing that literally --
 # scanning ALL of `.ci` for `.py` -- was tried first and turned 1 real call site into 18: `.ci/rediacc_ci` is this package's OWN implementation, tests and regex constants, and it is FULL of self-referential mentions of this exact needle (this module's own NEEDLE_RE/CALL_RE source, the synthetic caller fixtures in test_quality_staging_tag_guard.py, the `cleanup-staging.sh` mention
 # in `cleanup_staging.py`'s own docstring, the cleanup_channel_docker_tags.py port's prose). That is the SAME "extension-shaped matcher" class of bug this gate's own header warns about, just for `.py` instead of `.sh`. `.ci/scripts` is the directory that actually holds executable entry points and release forwarders (mirroring what `.sh` already is for the twin), so `.py` scanning
@@ -122,7 +122,7 @@ RAIL_RE = re.compile(r"\^staging-")
 # `grep -vE ':[0-9]+:[[:space:]]*#'` -- a grep hit whose matched line is a comment. Unanchored, exactly as the twin's is.
 COMMENT_HIT_RE = re.compile(r":[0-9]+:[ \t\n\r\f\v]*#")
 
-# `grep -E 'cleanup[-_]staging\.(sh|py)["\']?[[:space:]]+(--tag|"\$)'` -- an EXECUTING call, not a mention in prose. Widened to match either the bash twin's name or the Python port's, per agent/PLAN-w7p4w-docker-cutover.md §3.
+# `grep -E 'cleanup[-_]staging\.(sh|py)["\']?[[:space:]]+(--tag|"\$)'` -- an EXECUTING call, not a mention in prose. Widened to match either the bash twin's name or the Python port's, per agent/plans/PLAN-w7p4w-docker-cutover.md §3.
 CALL_RE = re.compile(r"cleanup[-_]staging\.(sh|py)[\"']?[ \t\n\r\f\v]+(--tag|\"\$)")
 
 # `grep -qE '\^staging-|--tag[[:space:]]+["\']?staging-'` -- a caller proves it cannot pass a tag the guard rejects, either by testing the prefix itself or by passing a literal.

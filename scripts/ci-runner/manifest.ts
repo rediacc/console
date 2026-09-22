@@ -7,7 +7,7 @@
  * package.json `scripts.ci`. Two gates parsed that string as their input, so
  * the moment `scripts.ci` became a runner invocation they would have read an
  * empty chain and gone green over everything -- the exact failure class of
- * rediacc/console#549, at scale. See agent/PLAN-npm-ci-parallel-parity.md
+ * rediacc/console#549, at scale. See agent/plans/PLAN-npm-ci-parallel-parity.md
  * section 6.1.
  *
  * Precedent for the shape is .ci/scripts/ci/scope-map.cjs: a hand-verified
@@ -1268,8 +1268,8 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
-    // WHERE A FILE MAY BE, at the repository root and under agent/. Two defects in one week were the same missing rule rather than two bugs: debris from the retired bash worklist suites sat untracked at the root, and a second reggate ledger appeared under .claude/hooks/stop/agent/ because a fallback root was cwd-relative. The classes are data in .ci/policy/tree-shape.json.
-    // Lane quality-static for the reason its neighbours are there: the verdict reads the git index and a handful of Python sources, never a merge-base, so it reaches the same answer on a push and on a PR. No `paths`: the subject is the WHOLE listing, and a half-populated path table would drop the gate from --changed exactly when a stray had just been added.
+    // WHERE A FILE MAY BE, at the repository root and under agent/. Two defects in one week were the same missing rule rather than two bugs: debris from the retired bash worklist suites sat untracked at the root, and a second reggate ledger appeared under .claude/hooks/stop/agent/ because a fallback root was cwd-relative. The classes are data in .ci/policy/tree-shape.json. Lane
+    // quality-static for the reason its neighbours are there: the verdict reads the git index and a handful of Python sources, never a merge-base, so it reaches the same answer on a push and on a PR. No `paths`: the subject is the WHOLE listing, and a half-populated path table would drop the gate from --changed exactly when a stray had just been added.
     id: 'check:ci-tree-shape',
     run: 'npm run check:ci-tree-shape',
     gate: true,
@@ -1569,7 +1569,7 @@ export const GATES: readonly GateSpec[] = [
     run: 'npm run check:ci-python-control-plants',
     gate: true,
     // The verdict depends only on the Python gate sources under these two trees. TWO GLOBS AND NOT A FILE LIST, deliberately: a W7 P4 cutover landing a port under the first one is in scope the moment it exists, with no registration and no baseline row to hand-edit. That is the property a shrink-only baseline would have cost, and it is argued in
-    // agent/PLAN-ci-vacuity-baseline-registry.md section 5.
+    // agent/plans/PLAN-ci-vacuity-baseline-registry.md section 5.
     paths: ['.ci/rediacc_ci/**', '.ci/scripts/quality/**'],
     pathsOrigin: 'declared',
     leaves: ['.ci/scripts/quality/check_python_control_plants.py'],
@@ -4383,10 +4383,8 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-language-policy',
     run: 'npm run check:ci-language-policy',
     gate: true,
-    // The verdict depends on tracked files under the gate's COVERED_ROOTS and on
-    // nothing else, so these globs are the COMPLETE dependency set rather than a
-    // narrowing for speed. The allowlist, the baseline and the blocker-validator this gate shells out to all live under .ci/ and are covered by the first.
-    // The three scripts/ globs arrived with the 2026-09-21 widening of ruling 7; without them a new bash file under scripts/ops/ would land in a run that never scheduled the gate that refuses it.
+    // The verdict depends on tracked files under the gate's COVERED_ROOTS and on nothing else, so these globs are the COMPLETE dependency set rather than a narrowing for speed. The allowlist, the baseline and the blocker-validator this gate shells out to all live under .ci/ and are covered by the first. The three scripts/ globs arrived with the 2026-09-21 widening of ruling 7;
+    // without them a new bash file under scripts/ops/ would land in a run that never scheduled the gate that refuses it.
     paths: ['.ci/**', '.claude/**', 'scripts/ops/**', 'scripts/drills/**', 'scripts/dev/**'],
     pathsOrigin: 'declared',
     leaves: ['.ci/scripts/quality/check_language_policy.py'],
@@ -4607,20 +4605,15 @@ export const GATES: readonly GateSpec[] = [
   // ISOLATION IS A HYPOTHESIS, NOT A GIVEN. test-claude-hooks.sh failed once Since 2026-08-08 the battery enforces this in-step: the two writers run as an exclusive serial chain and the real-tree scanners are held until it finishes. See its header. inside the SERIAL battery and could not be reproduced standalone (plan finding F8). Any red that appears only under parallelism gets a
   // named mutex group, never a retry.
   //
-  // THE THREE WRITERS NAMED BELOW ARE A RECORD OF 2026-07-31, and one of them,
-  // test-gate-paths-exist.sh, was retired in W7 P5 census batch B4; its detector,
-  // its fixtures and its controls are carried by
-  // .ci/rediacc_ci/tests/gates/test_gate_paths_exist.py, which writes into
-  // .ci/scripts for the same reason.
+  // THE THREE WRITERS NAMED BELOW ARE A RECORD OF 2026-07-31, and one of them, test-gate-paths-exist.sh, was retired in W7 P5 census batch B4; its detector, its fixtures and its controls are carried by .ci/rediacc_ci/tests/gates/test_gate_paths_exist.py, which writes into .ci/scripts for the same reason.
   //
   // A HAZARD OF THIS CLASS, ONE INSTANCE FIXED AND TWO OPEN. Three gates write a file into the REAL working tree for the duration of their run, and a tree-scanning gate running concurrently trips over it. Observed live on 2026-07-31: FIXED .ci/scripts/test/gates/test-gate-paths-exist.sh
   //     wrote scripts/.gate-paths-exist{,-noise}-fixture.ts and broke check:lint
   //     with `ENOENT ... open '.../scripts/.gate-paths-exist-fixture.ts'`, exit 2
   //     (eslint enumerated the file, then the control deleted it). Its fixtures
   // now go to .ci/scripts, which that gate's own scan_targets() walks and no linter does. Re-run green with both controls firing and zero dotfiles observed in scripts/ for the whole 142s run. OPEN the config-migrations gate (its bash twin's line 68, now `rediacc_ci.quality.config_migrations`) -> packages/cli/.config-migrations-check.tmp.ts, which broke check:format. Cannot use the
-  // same fix: biome covers packages/**/*.ts, and the script must stay under packages/cli for node to resolve @rediacc/shared. OPEN the anti-vacuity meta-gate (its bash twin's line 255, now `.ci/rediacc_ci/tests/gates/test_gate_gate_anti_vacuity.py`) -> scripts/.gate-anti-vacuity-fixture.ts, same shape, no victim observed. Cannot use the same fix either: the empty-tree run
-  // builds its fixture tree with `cp -r "$REPO_ROOT/scripts"`, so the
-  // file has to exist under the real scripts/ at copy time to reach the harness at all. The hazard PREDATES the runner: `npm run check:lint` in one terminal while `npm run check:ci-quality-gates` runs in another hits the same ENOENT, and that is how it was first seen here, not through the pool.
+  // same fix: biome covers packages/**/*.ts, and the script must stay under packages/cli for node to resolve @rediacc/shared. OPEN the anti-vacuity meta-gate (its bash twin's line 255, now `.ci/rediacc_ci/tests/gates/test_gate_gate_anti_vacuity.py`) -> scripts/.gate-anti-vacuity-fixture.ts, same shape, no victim observed. Cannot use the same fix either: the empty-tree run builds
+  // its fixture tree with `cp -r "$REPO_ROOT/scripts"`, so the file has to exist under the real scripts/ at copy time to reach the harness at all. The hazard PREDATES the runner: `npm run check:lint` in one terminal while `npm run check:ci-quality-gates` runs in another hits the same ENOENT, and that is how it was first seen here, not through the pool.
   //
   // `mktemp` is NOT the fix, which is the trap: test-gate-paths-exist.sh's scan_targets() (:62-64) hardcodes `cd $REPO_ROOT` and `find scripts`, so a fixture outside the real tree stops being scanned and its control at :178-192 silently stops firing; and the config-migrations gate's generated script must sit under packages/cli for node to resolve @rediacc/shared and its relative
   // fixtures dir. Both files have to stay in the tree.
@@ -4717,8 +4710,8 @@ export const GATES: readonly GateSpec[] = [
     // THIS GATE DRIVES REAL BASH TWINS AGAINST THE REAL TREE and declared no isolation while doing it, so pool.ts was free to schedule the `tree:repo` writers -- one of which rewrites CLAUDE.md -- alongside it. test_twin_parity.py:203-208 names this hazard in prose and cannot fix it
     // from inside pytest, because the claim has to be made HERE.
     //
-    // `mutex` AND NOT `reads` SINCE THE LAST TWO tree:repo GATE TESTS WERE RETIRED, and the upgrade is the whole reason those retirements are safe. `gate-test:gate-anti-vacuity` and `gate-test:generate-tag-inputs` each carried `mutex: ['tree:repo']` and each wrote the tracked tree; their pytest ports still do, and the ports run HERE. A shared claim releases this gate to
-    // run beside every other `tree:repo` reader, which is exactly the overlap that reddened gate-test:claude-hooks in 2026-08-17 with a bash syntax error in a file that parses clean. The exclusive claim is what `check:ci-pool-writer-safety` now checks for, so a downgrade back to `reads` is a red rather than a silent flake.
+    // `mutex` AND NOT `reads` SINCE THE LAST TWO tree:repo GATE TESTS WERE RETIRED, and the upgrade is the whole reason those retirements are safe. `gate-test:gate-anti-vacuity` and `gate-test:generate-tag-inputs` each carried `mutex: ['tree:repo']` and each wrote the tracked tree; their pytest ports still do, and the ports run HERE. A shared claim releases this gate to run beside
+    // every other `tree:repo` reader, which is exactly the overlap that reddened gate-test:claude-hooks in 2026-08-17 with a bash syntax error in a file that parses clean. The exclusive claim is what `check:ci-pool-writer-safety` now checks for, so a downgrade back to `reads` is a red rather than a silent flake.
     mutex: ['tree:repo'],
     // The old set was ['.ci/rediacc_ci/**', 'pyproject.toml'] and could not see two things this gate actually runs: `.claude/rediacc_hooks/**` is a testpaths root, and `.ci/scripts/test/gates/**` holds the twins test_twin_parity drives. Under `--changed` an edit to either did not select this gate, which is a path filter reporting a pass over code it never looked at.
     //

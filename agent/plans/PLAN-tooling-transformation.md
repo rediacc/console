@@ -1273,7 +1273,7 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       re-running the sweep that measures it. (2) The ledger count this box's own precondition
       rests on has grown far past its own baseline: `ls .ci/shadow/*.observations.jsonl` is
       **258** today (77 w7p2, 16 w7p5a, 10 w7p5b, 153 w7p6, plus 2 singletons), not the "82"
-      this census and `agent/PLAN-extension-shaped-matchers.md`'s repeated re-checks assume --
+      this census and `agent/plans/PLAN-extension-shaped-matchers.md`'s repeated re-checks assume --
       consistent with that plan's own newly-flagged w7p5a-/w7p6- prefix ambiguity. Neither
       number is re-derived here: the actual COVERAGE claim ("0 of 149 gate tests have a
       ledger") needs the real census tool re-run against the current tree, not a raw ledger
@@ -1329,7 +1329,7 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       otherwise read as licensed. **Deleting it without repointing `.github/workflows/autopilot.yml:252` breaks
       autopilot**, and the repoint is a driver-only workflow edit. This is the shape C3
       exists to catch and a reminder that a ledger licences EQUIVALENCE, never reachability.
-      **PRECONDITION STATUS 2026-09-08, measured not claimed.** `agent/PLAN-extension-shaped-matchers.md`
+      **PRECONDITION STATUS 2026-09-08, measured not claimed.** `agent/plans/PLAN-extension-shaped-matchers.md`
       commits 1 and 2 are LANDED: the duplication counter's coordinates, per-family floors and
       four exclusion predicates, plus `_cipath.py` and `harness.watchdog_subject()`. Of the five
       extension-shaped matchers, one is FIXED with its bash twin mirrored so the port does not
@@ -1540,7 +1540,7 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       CI-compatible"). Triaged by the driver as `#18906e44`, verdict PLAN+SUBAGENT
       (fix touches a live security gate's regex + must re-sync the Python port/tests in
       lockstep, and could surface new real violations repo-wide) -- design going to
-      `agent/PLAN-shell-command-gate-regex-fix.md`, not folded into this box.
+      `agent/plans/PLAN-shell-command-gate-regex-fix.md`, not folded into this box.
       **FIFTH WAVE 2026-09-10: 2 more standalone files ported, 12 total ports today.**
       `.ci/scripts/ci/profiler/panel.sh` -> `ci/profiler_panel.py` and
       `.ci/scripts/test/test-write-once-guard.sh` -> `deploy/write_once_guard_check.py`.
@@ -6231,7 +6231,7 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       385-387 after) and were trimmed editorially rather than re-wrapped; `reflow` is the wrong
       instrument here, since it widens.
       **`knip.jsonc` needed the OPPOSITE of what this plan predicted.** Section 6a of
-      `agent/PLAN-w9p2-script-relocation.md` says both files must be added as explicit entries
+      `agent/plans/PLAN-w9p2-script-relocation.md` says both files must be added as explicit entries
       once out from under the `scripts/*.ts` glob. Adding them reds knip with "Remove redundant
       entry pattern": knip resolves a file named by a package.json script as an entry by itself,
       and these two are named by `gen:docs`, `gen:gates-lock` and `check:ci-gates-lock`. The
@@ -6631,9 +6631,9 @@ Goal: land every fix later workstreams silently assume, each box one worktree, e
 - [x] C `.gitignore`: add `.env.*` with negations for the three tracked example files.
 - [x] C Pin the five `go install ...@latest` at `.devcontainer/Dockerfile:285-289` as `ARG X_VERSION=` lines and register the watchable ones.
 - [x] C One Node floor: `NODE_VERSION_MIN=22.13.0` in `toolchain.env`, read by `.ci/config/constants.sh:45` with `:?`, bound to both `engines.node` fields by a new sync control. Removes the masking fallbacks in `run.sh` and `setup.sh`.
-- [x] C Redact the four AKIA ids in `agent/PLAN-secret-namespace-migration.md:1615-1616`. The `:1617` value is a token id under a "new id" header, not a bearer, so no rotation.
+- [x] C Redact the four AKIA ids in `agent/plans/PLAN-secret-namespace-migration.md:1615-1616`. The `:1617` value is a token id under a "new id" header, not a bearer, so no rotation.
 - [x] C Make three count-bearing stale lines count-free so they cannot re-stale, and fix two narrow stale lines.
-- [x] C Record ruling 7 in `docs/ci-overhaul/04-decisions.md` section A: the single-language rule, what bash survives, and that it supersedes `agent/PLAN-shell-resource-profiling.md:7`. Mark that line superseded.
+- [x] C Record ruling 7 in `docs/ci-overhaul/04-decisions.md` section A: the single-language rule, what bash survives, and that it supersedes `agent/plans/PLAN-shell-resource-profiling.md:7`. Mark that line superseded.
 
 #### W0.1 Bitwarden token schema and cutover (serial, after W0.0 and W0.4a)
 - [x] S Restructure `.ci/config/bws-token-expiry.json` to a `tokens[]` array and update its only reader. **DONE, box was simply never ticked:** the file carries warn_days plus tokens[], and the sole reader consumes the array at scripts/dev/bws-map-refresh.py:87. NOTE the plan's old path for that reader (.ci/scripts/quality/bws-map-refresh.py) does not exist and never did.

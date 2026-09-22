@@ -1,6 +1,6 @@
 // Source of truth for the bashcov supervisor. Built into the devbox image by the Dockerfile
 // and onto the host by run.sh setup (both to bashcov-sup on PATH). See
-// agent/PLAN-shell-resource-profiling.md section 1c for what it survives and why.
+// agent/plans/PLAN-shell-resource-profiling.md section 1c for what it survives and why.
 // bashcov candidate F: supervisor. Usage: bashcov-sup -- cmd args...
 // fork+exec the command; forward termination signals; sample /proc/<pid>/wchan
 // while it runs; wait4 for tree rusage; write one JSON record; exit like the child.

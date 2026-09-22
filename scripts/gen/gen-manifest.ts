@@ -6,7 +6,7 @@
  * building it from its leaf's `---- gate ----` header ALONE reproduces the entry
  * that is there, field for field AND byte for byte, so that emitting it can lose
  * nothing. Five conditions, each one paid for by a measurement recorded in
- * `agent/PLAN-tooling-transformation.md`'s C1 box:
+ * `agent/plans/PLAN-tooling-transformation.md`'s C1 box:
  *
  *   1. No hand-only field. `qualityGateTest`, `paths`, `reads`, `heavy`, `mutex`,
  *      `weight`, `noProfile` -- the last of which the box's own list omits, and

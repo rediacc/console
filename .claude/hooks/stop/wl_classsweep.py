@@ -384,7 +384,7 @@ def enforce(out, payload, fixset_files=None):
     the exact second-door shape the comment two lines below was written about for `instruction` and left open here. Found by this module's own sibling, `wl_proofcheck`, planting the identical case against an `instruction` field and noticing `search` had never been asked the same question.
 
     `fixset_files` checks the TRIGGERING FIX's own claim (`defect_class`), never `locus`/`search`: those legitimately point OUTSIDE the touched files by design (that is the entire point of a sweep), so grounding them against the fix-set would flag every real sweep as ungrounded. Annotates `reason` only, mirroring `wl_proofcheck.enforce` exactly (see
-    agent/PLAN-judge-prompt-trap-conflation.md).
+    agent/plans/PLAN-judge-prompt-trap-conflation.md).
     """
     reason = V_REASON % (payload["defect_class"], V_ASSERTED if payload["asserted"] else "")
     if not wl_rules.scope_grounded(payload.get("defect_class", ""), fixset_files):

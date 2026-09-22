@@ -22,7 +22,7 @@ for normal `npm run dev` browsing). Credentials: `CLOUDFLARE_R2_MEDIA_ACCESS_KEY
 
 **Corrected 2026-09-06, and it was wrong twice.** This paragraph said the three credentials were "org secrets, scoped to `console`" and that the bucket and domain were "org variables `R2_MEDIA_BUCKET`/`MEDIA_CDN_DOMAIN`". Neither store holds them. `gh api orgs/rediacc/actions/secrets` returns `{"total_count":0,"secrets":[]}`: the org SECRET store is unused, not merely empty, and
 every workflow pulls from Bitwarden through `./.github/actions/bws-secrets` with `.ci/config/bws-secret-map.json` as the map, where all three credentials are listed. `gh api orgs/rediacc/actions/variables` returns 14 names and neither `R2_MEDIA_BUCKET` nor `MEDIA_CDN_DOMAIN` is among them, nor among the 21 repository variables. The bucket is a literal in the sync script itself
-(`BUCKET="rediacc-www-media"`), and `R2_MEDIA_BUCKET` was already found dead, with zero readers anywhere, in `agent/PLAN-env-to-bitwarden-v2.md` D2, which named this very sentence as the doc asserting the opposite. Looking in the org store and finding nothing reads as "the secret was deleted" when the truth is "you are looking in the wrong store".
+(`BUCKET="rediacc-www-media"`), and `R2_MEDIA_BUCKET` was already found dead, with zero readers anywhere, in `agent/plans/PLAN-env-to-bitwarden-v2.md` D2, which named this very sentence as the doc asserting the opposite. Looking in the org store and finding nothing reads as "the secret was deleted" when the truth is "you are looking in the wrong store".
 
 **The git-history rewrite LANDED on 2026-08-23** ([#532](https://github.com/rediacc/console/issues/532)), so `.git` itself finally shrank: `size-pack` went **5.64 GiB to 182 MiB**, and a fresh `git clone --filter=blob:none` is now **49 MB of `.git` in about 10 seconds**. It removed the four media prefixes above and, in the same pass, 78 AI co-author trailers and 16 robot footers
 from 73 commit messages.
@@ -34,4 +34,4 @@ notes, R2 `.released` sentinels, older `agent/` and `docs/` prose) no longer res
 - **GitHub's reported repository size will lag**, because the old objects become
 unreachable rather than deleted until GitHub's own gc runs. An unchanged size is not a failed push; the check that matters is that a fresh clone's `HEAD^{tree}` still equals what it was before the rewrite.
 
-CI never paid for the dead blobs anyway: all 11 `fetch-depth: 0` checkouts pass `filter: blob:none`. Note that worktrees SHARE one object store, so `.git` was never a per-worktree cost. The full procedure, the controls, and the two traps it cost to get right are in `agent/PLAN-git-history-media-rewrite.md`.
+CI never paid for the dead blobs anyway: all 11 `fetch-depth: 0` checkouts pass `filter: blob:none`. Note that worktrees SHARE one object store, so `.git` was never a per-worktree cost. The full procedure, the controls, and the two traps it cost to get right are in `agent/plans/PLAN-git-history-media-rewrite.md`.

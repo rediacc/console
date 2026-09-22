@@ -116,8 +116,8 @@ def names_operator_reserved(text):
 def scope_grounded(text, fixset_files):
     """True when `text` plausibly names something in the real fix-set, or when there is nothing to check against.
 
-    Written for wl_proofcheck/wl_classsweep's own fired findings, ANNOTATING never SUPPRESSING (see agent/PLAN-judge-prompt-trap-conflation.md): a judge fabricated a "bulk transform" naming files that did not exist in the tree, twice in one session, pattern-matching a worked example instead of the actual diff. `fixset_files is None` means the computation was UNAVAILABLE and must
-    never be read as "ungrounded" -- only a SUCCESSFULLY COMPUTED empty list counts as "nothing changed", so a caller that has not adopted the parameter yet, or hit a git error, gets the pre-existing behavior (no caveat) rather than a false accusation.
+    Written for wl_proofcheck/wl_classsweep's own fired findings, ANNOTATING never SUPPRESSING (see agent/plans/PLAN-judge-prompt-trap-conflation.md): a judge fabricated a "bulk transform" naming files that did not exist in the tree, twice in one session, pattern-matching a worked example instead of the actual diff. `fixset_files is None` means the computation was UNAVAILABLE and
+    must never be read as "ungrounded" -- only a SUCCESSFULLY COMPUTED empty list counts as "nothing changed", so a caller that has not adopted the parameter yet, or hit a git error, gets the pre-existing behavior (no caveat) rather than a false accusation.
     """
     if fixset_files is None:
         return True

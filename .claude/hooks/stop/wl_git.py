@@ -1025,7 +1025,7 @@ def main(argv):
                 plan.note("")
                 plan.note("gitlink   -> --git resolve-gitlinks decides it; no judgement needed")
                 plan.note("registry  -> a union is safe ONLY behind an invariant; see")
-                plan.note("             agent/PLAN-resumable-rebase-executor.md")
+                plan.note("             agent/plans/PLAN-resumable-rebase-executor.md")
                 plan.note("judgement -> yours. NEVER `git rebase --skip`: it drops the commit.")
                 plan.note("recover   -> git rebase --abort, then the step-0 tips")
 
@@ -1228,7 +1228,7 @@ def main(argv):
     # force-push: the one command Bash genuinely cannot run, because block-git-force-push refuses it unconditionally. Irreversible, so it prints an UNDO block first. resolve-gitlinks: local and reversible -- a `checkout <sha>` inside a submodule and an `add -- <path>` in the parent, both undone by `git rebase --abort`. The CHOICE is made by an oracle, not a guess, and verified by
     # the containment check afterwards. Proven in anger twice on branch 0826-3, where it named a commit in NEITHER conflict stage.
     #
-    # Everything else still refuses. A rebase halts mid-list and needs a decision this module cannot make; see agent/PLAN-resumable-rebase-executor.md.
+    # Everything else still refuses. A rebase halts mid-list and needs a decision this module cannot make; see agent/plans/PLAN-resumable-rebase-executor.md.
     if sub not in EXECUTABLE:
         sys.stderr.write(
             "\nREFUSED: --execute is implemented for %s only.\n"

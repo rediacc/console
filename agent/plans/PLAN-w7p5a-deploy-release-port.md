@@ -44,7 +44,7 @@ Compacted-By: d778be9d
 Compacted-At: 2026-09-20T18:06:46Z
 Boxes: 8 attested, 0 open, 0 abandoned
 Epics: e87fa3ce
-Touched: agent/PLAN-tooling-transformation.md
+Touched: agent/plans/PLAN-tooling-transformation.md
 Gates: check:ci-policy-inventory, check:ci-w7p5a-real-run-blockers
 Why-Source: model
 Read-History: `git show 64b41e3de247b051b0cfc19438f94e9c3a29bbc3` recovers the text; `git log --find-object=64b41e3de247b051b0cfc19438f94e9c3a29bbc3 --all` names the commit

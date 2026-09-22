@@ -15,7 +15,7 @@ TWO REAL BUGS IN THE TWIN WERE FIXED 2026-09-10 IN LOCKSTEP WITH THE PORT, and t
   1. `$(cmd)` used to be invisible. A double-quote escaping mistake turned the intended `\\$\\(` into a bare `$\\(` once bash's quote rules stripped the backslash before `$`; ugrep's `-E` then treated that `$` as a real anchor even mid-alternation, making the whole branch permanently unmatchable. `command-substitution-is-caught` is the recording that locks the fix down.
   2. `if <cmd>; then` used to be invisible. The wide per-file filter has a fifth branch (`^[[:space:]]*if\\s+`) that the narrow per-command check never had, so a line caught ONLY by that branch matched no per-command regex and nothing was ever reported. `an-if-guarded-form` is the recording for that one.
 
-Both were fixed in the twin and the port in the same change, applying the 46-finding corpus fix documented in `agent/PLAN-shell-command-gate-regex-fix.md`. `test_planted_defect_is_caught` still reintroduces each bug into the port alone and requires the recording to catch it.
+Both were fixed in the twin and the port in the same change, applying the 46-finding corpus fix documented in `agent/plans/PLAN-shell-command-gate-regex-fix.md`. `test_planted_defect_is_caught` still reintroduces each bug into the port alone and requires the recording to catch it.
 
 WHAT IS NORMALISED: nothing. Every path a message names is relative to the fixture tree the subject was run from, so the recorded bytes carry no absolute path at all, and that was checked by eye over the whole corpus rather than assumed.
 """

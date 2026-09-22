@@ -3,8 +3,8 @@
 THE FILE WAS DEAD ON ARRIVAL, caught by `test_shadow_route_is_parsed_from_the_real_ledger` the first time the full suite ran after it was added: no gate wires it, no other module imports it, so `rediacc_ci.quality.dead_python` reported it correctly. The honest fix is not a `MANUAL_ENTRY_POINTS` entry, since that table is reserved for a script genuinely invoked another way that this
 scanner's import graph cannot see (a workflow `run:` target, a differential's module-name-string dispatch) -- this script has no such invoker yet. `check_prose_style.py`'s own route is a `package.json` gate PLUS a test module that imports its engine directly; this module is the same shape for a diagnostic that has no gate of its own.
 
-WHY NOT A GATE. The tool is a proof obligation a bulk transform attaches to itself before committing, per `agent/PLAN-consolidation-pressure.md`, not a standing tree-wide check with a baseline. Running it on every CI invocation would compare the working tree to whatever `HEAD` happens to be at that moment, which is not a stable signal; it earns its keep at the moment a transform is
-about to be reviewed, driven by hand or by a sub-agent, not on a schedule.
+WHY NOT A GATE. The tool is a proof obligation a bulk transform attaches to itself before committing, per `agent/plans/PLAN-consolidation-pressure.md`, not a standing tree-wide check with a baseline. Running it on every CI invocation would compare the working tree to whatever `HEAD` happens to be at that moment, which is not a stable signal; it earns its keep at the moment a
+transform is about to be reviewed, driven by hand or by a sub-agent, not on a schedule.
 """
 
 import importlib.util

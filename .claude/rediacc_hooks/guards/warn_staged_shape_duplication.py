@@ -6,8 +6,8 @@ cheapest to act on: the commit that introduces the third copy. The operator's ru
 ONE IMPLEMENTATION, TWO ENTRY POINTS. Hashing a staged file means running the gate's `normalise`, `stripNoise` and `windows` over its bytes, and `isSharedHelperCall` derives its name set from the whole corpus, so the normalisation cannot be ported by reading a regex. A Python reimplementation of those would be a second implementation of ONE decision, which is the class of defect
 the gate itself exists to count. So the gate bundles itself into `.ci/cache/shape-index/probe.mjs` under `--emit-index`, and this guard spawns that bundle. Nothing is left to disagree except the cache contents, which `.ci/rediacc_ci/tests/test_shape_probe_agreement.py` pins against the gate's own answer.
 
-IT NEVER DENIES. "Is this the Nth copy" is a judgement with an escape hatch (the seed's `accepted` block, with a BLOCKER reason), the probe has the known approximation gaps listed below, and the CI gate owns the refusal. A warning must be SEEN, so it is written to stderr and, as a `systemMessage` plus `additionalContext`, to stdout. Whether a PreToolUse exit-0 JSON body reaches
-the operator is unverified here; the stderr copy is what makes the message unconditional.
+IT NEVER DENIES. "Is this the Nth copy" is a judgement with an escape hatch (the seed's `accepted` block, with a BLOCKER reason), the probe has the known approximation gaps listed below, and the CI gate owns the refusal. A warning must be SEEN, so it is written to stderr and, as a `systemMessage` plus `additionalContext`, to stdout. Whether a PreToolUse exit-0 JSON body reaches the
+operator is unverified here; the stderr copy is what makes the message unconditional.
 
 TWIN = None, the same sentinel and for the same reason as `block_unproven_bulk_transform`: a fresh guard authored directly, with no bash original to port from and nothing to differential-test against. `test-warn_staged_shape_duplication.py` beside it stands in for that differential.
 
@@ -30,7 +30,7 @@ cache still says so once. That window is short -- `wl_shapedup.py` writes the in
 
 `-a` TAKES THE WORKING TREE FOR EVERY MODIFIED TRACKED FILE, which is a set this guard would have to compute a second way, and the repository already refuses that form at `block-pathspecless-git-commit.sh` ("it stages every modified tracked file in a tree that holds other sessions' work"). A notice rather than silence, so a commit that skipped the check says so.
 
-A PATHSPEC COMMIT IS NOT SKIPPED, AND THAT IS A DELIBERATE DEPARTURE from the plan this guard was built from (`agent/PLAN-staged-duplication-probe.md`, "known gaps"). The plan skips it with a notice; that would make the guard inert on this repository, because `block-pathspecless-git-commit.sh` BLOCKS every commit that does not carry one, so `git commit -F <msg> -- <paths>` is
+A PATHSPEC COMMIT IS NOT SKIPPED, AND THAT IS A DELIBERATE DEPARTURE from the plan this guard was built from (`agent/plans/PLAN-staged-duplication-probe.md`, "known gaps"). The plan skips it with a notice; that would make the guard inert on this repository, because `block-pathspecless-git-commit.sh` BLOCKS every commit that does not carry one, so `git commit -F <msg> -- <paths>` is
 the only form a commit here ever takes. A check that cannot fire on any sanctioned command is the instrument-that-never-ran failure `docs/agent-reference/TRAPS.md` is about. What a pathspec commit captures is the WORKING TREE for those paths rather than the index, so that is what the probe is handed; the index form is still read from the index.
 
 KNOWN GAPS, stated rather than discovered later. The helper set is the cached one, so a staged file that newly makes a module shared changes the answer only at CI. The seed is read at PROBE time, so editing it does not stale the cache. A `.gitattributes` filter that rewrites content on checkout would show up as corpus drift, loudly rather than silently.
@@ -158,8 +158,8 @@ def _corpus_moved(index, cwd, committing):
 
     The blob sha per path, which is what git already has computed: content, not mtime. A tree whose corpus has moved is one where the cached neighbour counts are about files that are no longer there.
 
-    THE EXCLUSION IS WHAT MAKES THE CHECK USABLE, and its absence made the guard report drift on precisely the commits it exists to advise. `git ls-files -s` reports the INDEX, so staging the very file being committed changes that listing -- every real commit would have looked like corpus drift, and the finding beyond it was unreachable. What has to be unchanged is the REST
-    of the corpus, which is what the cached neighbour counts are about.
+    THE EXCLUSION IS WHAT MAKES THE CHECK USABLE, and its absence made the guard report drift on precisely the commits it exists to advise. `git ls-files -s` reports the INDEX, so staging the very file being committed changes that listing -- every real commit would have looked like corpus drift, and the finding beyond it was unreachable. What has to be unchanged is the REST of the
+    corpus, which is what the cached neighbour counts are about.
     """
     out = hookio.git_out(["ls-files", "-s", "--", *index["pathspecs"]], cwd=cwd, want_rc=True)
     if out is None:
@@ -249,8 +249,7 @@ def _run_probe(root, probe, index_path, files, budget):
     try:
         out, err = child.communicate(request.encode("utf-8"), timeout=budget)
     except subprocess.TimeoutExpired:
-        # THE GROUP, not the pid. The probe is node, node spawns nothing today, and a
-        # deadline that killed only the parent would leave whatever it spawned tomorrow running past the commit it was meant to advise.
+        # THE GROUP, not the pid. The probe is node, node spawns nothing today, and a deadline that killed only the parent would leave whatever it spawned tomorrow running past the commit it was meant to advise.
         try:
             os.killpg(os.getpgid(child.pid), signal.SIGKILL)
         except OSError:

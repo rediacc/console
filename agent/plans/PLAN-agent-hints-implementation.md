@@ -8,7 +8,7 @@ Record-Sig: 6a4a8866
 
 ## Why
 The repo had accumulated specialist agents under `.claude/agents/` and sessions kept not using them; the operator had to point at them by hand twice in one day. The diagnosis was measured rather than argued: the word "bench" appeared zero times across the seven agent `description` fields and exactly once anywhere in the directory, in `account-dev.md`'s body. The knowledge existed
-and the matching surface did not. This plan is the implementation half; it supersedes the design half of `agent/PLAN-agent-hints-in-stop-hook.md` and corrects that file's numbers by measurement.
+and the matching surface did not. This plan is the implementation half; it supersedes the design half of `agent/plans/PLAN-agent-hints-in-stop-hook.md` and corrects that file's numbers by measurement.
 
 ## Outcome
 SHIPPED, verified by RUNNING the gate on 2026-09-06.

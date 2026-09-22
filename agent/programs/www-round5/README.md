@@ -17,7 +17,7 @@ planning session got wrong and corrected.
 2. The wave document you are on: `02-marketing-comprehension.md`,
 `03-chrome-and-surfaces.md`, `04-docs-surface.md`, `05-gates.md`.
 3. `06-execution-guide.md` before writing anything.
-4. `agent/PLAN-sentence-aware-wrapping.md` before touching item 4.
+4. `agent/plans/PLAN-sentence-aware-wrapping.md` before touching item 4.
 5. `evidence/*` only when you need the underlying `file:line` detail. Those four reports
 cost about forty minutes of sweeping and every claim in them is citation-backed.
 

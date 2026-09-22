@@ -3,7 +3,7 @@ First-Seen: 2026-09-17
 Owner: 74de73ca
 Date: 2026-09-02
 Supersedes: the classification in `agent/archive/plans/PLAN-env-to-bitwarden.md` Part 1
-(archived byte-identical 2026-09-09; see `agent/PLAN-completion-strategy.md` section 2). That plan's Parts 2-7 (consumer map, fetch helper, clone protocol, gate retargets, migration order) still stand except where Part 6 below amends them.
+(archived byte-identical 2026-09-09; see `agent/plans/PLAN-completion-strategy.md` section 2). That plan's Parts 2-7 (consumer map, fetch helper, clone protocol, gate retargets, migration order) still stand except where Part 6 below amends them.
 Scope: design. The two-way mapping in Part 2 was RUN (read-only, names only). Nothing was
 written to Bitwarden, AWS, Cloudflare or GitHub. No value of any secret was read or printed.
 
@@ -72,8 +72,8 @@ against v1's implied 0. Alias handling is still needed, but for **three** names,
 
 ### 0.3 The rename broke a consumer that no console-side scan can see
 
-`private/growth` is its own git repository. `git grep --recurse-submodules` from console is blind to it — the trap `agent/PLAN-secret-namespace-migration.md` Part 18 records paying for once already — and `secret-rename.py`'s file walk never reaches it. So the rename updated `.env` and left `private/growth/video_pipeline/publish-solutions.sh:55` asserting the old names against a
-file that no longer has them. Details and severity in Part 3, D1.
+`private/growth` is its own git repository. `git grep --recurse-submodules` from console is blind to it — the trap `agent/plans/PLAN-secret-namespace-migration.md` Part 18 records paying for once already — and `secret-rename.py`'s file walk never reaches it. So the rename updated `.env` and left `private/growth/video_pipeline/publish-solutions.sh:55` asserting the old names against
+a file that no longer has them. Details and severity in Part 3, D1.
 
 **This is not a migration risk. It is a live outage, today, in the publish pipeline.**
 
@@ -82,8 +82,8 @@ file that no longer has them. Details and severity in Part 3, D1.
 v1 declined to route `ACCOUNT_ED25519_PUBLIC_KEY`, `ACCOUNT_X25519_PUBLIC_KEY` and `UPSTREAM_PUBLIC_KEY` through Bitwarden because four build-time readers need them offline (`private/renet/build.sh:411-416`, `.ci/lib/local-common.sh:758-759`, `scripts/docker/build-server.sh:41-42`, `rdc.sh:246-248`), and "a build that needs the network to read a *public* key is a regression". That
 reasoning is correct and survives.
 
-But it argues for a **cache**, not for a second source of truth. Two of the three are already in the store (`ACCOUNT_ED25519_PUBLIC_KEY`, `ACCOUNT_X25519_PUBLIC_KEY`), so v1's design would have left the store and the local file both claiming to be authoritative for the same value with nothing comparing them — the exact shape of `agent/PLAN-secret-namespace-migration.md` Part 16's
-"a generated file hand-edited to match a rename is a lie with a timer on it".
+But it argues for a **cache**, not for a second source of truth. Two of the three are already in the store (`ACCOUNT_ED25519_PUBLIC_KEY`, `ACCOUNT_X25519_PUBLIC_KEY`), so v1's design would have left the store and the local file both claiming to be authoritative for the same value with nothing comparing them — the exact shape of `agent/plans/PLAN-secret-namespace-migration.md` Part
+16's "a generated file hand-edited to match a rename is a lie with a timer on it".
 
 v2: the store is authoritative. `./run.sh setup` writes `private/account/.cache/public-keys.env` (gitignored, mode 0644 — these are public) from `bws_export`, and the four readers `sed` that file instead of `.env`. `rdc.sh` still never sources anything and still passes `.ci/scripts/test/test-rdc-sh-env.sh:55,61-68`. A cache with one writer and a named refresh command is not a
 second home.
@@ -150,8 +150,8 @@ half-update. It also keeps the store's entry count honest — adding nine rows f
 
 ### (d) MOVE, admin-tier — 4 names, destination is `## Remaining` Q2
 
-`AWS_IAM_ADMIN_ACCESS_KEY_ID`, `AWS_IAM_ADMIN_SECRET_ACCESS_KEY`, `CF_GLOBAL_API_KEY`, `CF_EMAIL`. These are in **no store at all** today (`agent/PLAN-secret-namespace-migration.md` Part 17b calls them "a larger hole than the 18"). They authenticate the rotation tool itself (`private/account/scripts/rotation/lib/credentials.ts:59-71,86-106`) and are strictly more powerful than the
-four SES sending keys that *are* stored. They MOVE; the only question is into which project, and that is a security-posture call, not a classification one.
+`AWS_IAM_ADMIN_ACCESS_KEY_ID`, `AWS_IAM_ADMIN_SECRET_ACCESS_KEY`, `CF_GLOBAL_API_KEY`, `CF_EMAIL`. These are in **no store at all** today (`agent/plans/PLAN-secret-namespace-migration.md` Part 17b calls them "a larger hole than the 18"). They authenticate the rotation tool itself (`private/account/scripts/rotation/lib/credentials.ts:59-71,86-106`) and are strictly more powerful
+than the four SES sending keys that *are* stored. They MOVE; the only question is into which project, and that is a security-posture call, not a classification one.
 
 ### (e) MOVE, on-prem upstream — 3 names, one of which is an ASK
 
@@ -255,7 +255,8 @@ Method: name-only set algebra over `sed -n 's/=.*//p' private/account/.env` (50)
 | unattributed | `R2_TOKEN_AUTH_API` | identified in Part 17b as the raw bearer value of a CF R2 token; dead as a stored entry, pending dashboard confirmation before revoking |
 | SMTP endpoint | `AWS_SES_HOST` | the account server talks to SES over the API |
 
-One name is worth flagging as a **near-miss rather than a gap**: `CLOUDFLARE_API_TOKEN` is in the store and in `.env.example` but not in `.env`, and `agent/PLAN-secret-namespace-migration.md` Part 2 records that its absence is what makes every local Cloudflare consumer fall through to `CF_GLOBAL_API_KEY` — the full-account Global API Key. That is the substance of `## Remaining` Q2.
+One name is worth flagging as a **near-miss rather than a gap**: `CLOUDFLARE_API_TOKEN` is in the store and in `.env.example` but not in `.env`, and `agent/plans/PLAN-secret-namespace-migration.md` Part 2 records that its absence is what makes every local Cloudflare consumer fall through to `CF_GLOBAL_API_KEY` — the full-account Global API Key. That is the substance of `##
+Remaining` Q2.
 
 ### 2.3 The third direction nobody was comparing: `.env` vs `.env.example`
 
@@ -291,7 +292,7 @@ this session's write access (`door:no-write-access` for a design-only agent) —
 
 Zero readers. `.ci/scripts/deploy/sync-media-to-r2.sh:35` hardcodes `BUCKET="rediacc-www-media"`. The only mentions anywhere are prose: `CLAUDE.md:649` (calls it an org *variable*), and `.claude/agents/media-pipeline.md:343`, which says **"`R2_MEDIA_BUCKET` is not in `private/account/.env`"** — it is, at line 41.
 
-This falsifies `agent/PLAN-secret-namespace-migration.md` Part 18's measurement that "**all 50 keys** in `private/account/.env` have live readers". 49 do. The one that does not is the one whose readers were assumed from a CLAUDE.md sentence rather than grepped.
+This falsifies `agent/plans/PLAN-secret-namespace-migration.md` Part 18's measurement that "**all 50 keys** in `private/account/.env` have live readers". 49 do. The one that does not is the one whose readers were assumed from a CLAUDE.md sentence rather than grepped.
 
 **Disposition: DELETE from `.env` and `.env.example`. Do not seed it.** Migrating a dead key
 into a shared store is how a store accumulates entries nobody can retire, which is the `R2_TOKEN_AUTH_API` situation reproduced deliberately.
@@ -442,7 +443,7 @@ RED. *(the folklore class)*
 silently. This is the control that a naive implementation fails.
 6. Flip an `opt-in` entry's line in `.env.example` from commented to active → RED.
 
-Each must be run against the **real tree**, not only fixtures, and every touched file restored byte-identical afterwards — the discipline `agent/PLAN-secret-namespace-migration.md` Part 17c records for the nine defects planted against assertions 5-7.
+Each must be run against the **real tree**, not only fixtures, and every touched file restored byte-identical afterwards — the discipline `agent/plans/PLAN-secret-namespace-migration.md` Part 17c records for the nine defects planted against assertions 5-7.
 
 Wiring: none new. It rides `check:ci-bws-map`, which is already three-point wired.
 

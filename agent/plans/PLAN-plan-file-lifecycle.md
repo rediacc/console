@@ -68,12 +68,12 @@ about the word `draft` is not.
 ```
 $ git diff --name-status <merge-base>...HEAD -- agent/
 A  agent/PLAN-branch-aware-workflows.md
-A  agent/PLAN-env-to-bitwarden-v2.md
+A  agent/plans/PLAN-env-to-bitwarden-v2.md
 A  agent/PLAN-env-to-bitwarden.md
 A  agent/PLAN-github-secrets-removal.md
 A  agent/PLAN-handoff-sequence.md
 A  agent/PLAN-secret-names-one-to-one.md
-A  agent/PLAN-secret-namespace-migration.md
+A  agent/plans/PLAN-secret-namespace-migration.md
 A  agent/PLAN-stop-plan-box-enforcement.md
 ```
 
@@ -85,7 +85,7 @@ boxes on files your branch touched" gate would be red on 8 files and 88 boxes on
 ```
 $ git rev-parse --is-shallow-repository
 true
-$ git log -1 --format='%h %cI' -- agent/PLAN-cold-path.md
+$ git log -1 --format='%h %cI' -- agent/plans/PLAN-cold-path.md
 1cf2a3733 2026-09-01T14:25:23+02:00        # the GRAFT, not the file's commit
 ```
 

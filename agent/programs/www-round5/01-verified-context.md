@@ -21,7 +21,7 @@ migration:2 security:2 operations:4`. The probe read empty text only because the
 in the source: there was a time when five `:root` blocks existed, the last in document order silently won, and two rules were provably dead because of it. Today there is exactly one unconditional `:root` (`main.css:79-442`, about 200 tokens) plus a dark overlay (`:466-538`), reduced-motion (`:555-562`), increased-contrast (`:652-656`), an RTL single token (`:446-448`), the
 announcement bar height (`AnnouncementBar.astro:32`) and one a11y string (`BaseLayout.astro:303`). **Plan against the single-`:root` model, and note that a token ladder already exists.**
 
-A fourth correction, from the typography planning agent: the operator's literal wrapping rule is unsatisfiable. See `02-marketing-comprehension.md` and `agent/PLAN-sentence-aware-wrapping.md`.
+A fourth correction, from the typography planning agent: the operator's literal wrapping rule is unsatisfiable. See `02-marketing-comprehension.md` and `agent/plans/PLAN-sentence-aware-wrapping.md`.
 
 ## Measured facts by area
 

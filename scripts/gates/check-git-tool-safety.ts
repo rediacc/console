@@ -85,7 +85,7 @@ const BANNED: ReadonlyArray<{ rule: string; re: RegExp }> = [
   // silently lose work during a rebase, and it looks like progress: the halt
   // clears and the rebase runs on. wl_git.py's messages name it repeatedly so
   // a reader does not reach for it -- this rule is what stops the tool itself
-  // ever emitting it. Required by agent/PLAN-resumable-rebase-executor.md,
+  // ever emitting it. Required by agent/plans/PLAN-resumable-rebase-executor.md,
   // which automates the loop around exactly this hazard.
   { rule: 'rebase --skip (drops the replayed commit entirely)', re: /"--skip"/ },
 ];

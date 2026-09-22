@@ -129,7 +129,7 @@ establishes a containing block and silently breaks the `position: fixed` mega-me
 Fourteen components call that hook and six islands are SSR'd from `BaseLayout`. If you are adding or moving an island that shows locale text, pass `lang` explicitly: `BaseLayout` already computes `currentLang` and simply does not hand it down.
 
 **Two gates that look like they cover this and do not.** `check:ci-hydration-clean` fails on a `useState` INITIALIZER that reads `window`; this read is at module scope inside a store factory, a different shape of the same family, and the gate is blind to it. `check:ci-browser-smoke` drives a real browser, where hydration has already corrected the text before it looks. The defect is
-only visible in the built HTML, which is exactly what a crawler and a no-JS visitor get. Plan and gate design: `agent/PLAN-ssr-nav-locale.md`.
+only visible in the built HTML, which is exactly what a crawler and a no-JS visitor get. Plan and gate design: `agent/plans/PLAN-ssr-nav-locale.md`.
 
 ## The gate surface you are working against
 

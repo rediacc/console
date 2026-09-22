@@ -254,11 +254,11 @@ jobs:
       # Restoring it is not a matter of fetching the key from Bitwarden: a later
       # step in this job hands a human a shell, and GITHUB_ENV/GITHUB_OUTPUT are
       # files any step can read, so the key would be readable by that human. The
-      # shape that would work is in agent/PLAN-breakpoint-secret-shape.md.
+      # shape that would work is in agent/plans/PLAN-breakpoint-secret-shape.md.
       - name: Refuse services, which needs a credential this job must not hold
         if: inputs.services != 'none'
         run: |
-          echo "::error::services='${{ inputs.services }}' is unavailable: it needs an app token minted from APP_PRIVATE_KEY to clone the private elite repo, and that org secret was deleted on 2026-09-05. This job deliberately holds no long-lived credential, because a later step hands a human a shell. Re-run with services=none, or see agent/PLAN-breakpoint-secret-shape.md."
+          echo "::error::services='${{ inputs.services }}' is unavailable: it needs an app token minted from APP_PRIVATE_KEY to clone the private elite repo, and that org secret was deleted on 2026-09-05. This job deliberately holds no long-lived credential, because a later step hands a human a shell. Re-run with services=none, or see agent/plans/PLAN-breakpoint-secret-shape.md."
           exit 1
 
       - name: Install desktop packages
@@ -340,7 +340,7 @@ jobs:
           # this step was actually doing. Fetching them from Bitwarden instead is
           # NOT the fix: a later step in this job hands a human a shell, and
           # GITHUB_ENV/GITHUB_OUTPUT are files any step can read. See
-          # agent/PLAN-breakpoint-secret-shape.md.
+          # agent/plans/PLAN-breakpoint-secret-shape.md.
           AWS_DEFAULT_REGION: ${{ vars.AWS_SES_REGION_EU }}
           AWS_SES_FROM: ${{ vars.AWS_SES_FROM }}
           GITHUB_ACTOR: ${{ github.actor }}

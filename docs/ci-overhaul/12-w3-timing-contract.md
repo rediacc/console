@@ -26,8 +26,8 @@ So an admissible cost figure for a gate is `min` of five passing runs. A single 
 
 ### Line numbers in this section will drift, and two citations already have
 
-`scripts/ci-runner/manifest.ts:5818` cites `check-gate-manifest.ts:503` for the floor ruling and `agent/PLAN-tooling-transformation.md:792` cites `:511-520`. The ruling is at `:518` to `:527` as of 2026-09-09. Both citations were correct when written. Cite the SYMBOL as well as the line when it matters: the ruling is the `const floor = ... ? Math.min(...recent) : ewma` assignment,
-and `MIN_SAMPLES_TO_TIER` is the gate on whether it is applied at all.
+`scripts/ci-runner/manifest.ts:5818` cites `check-gate-manifest.ts:503` for the floor ruling and `agent/plans/PLAN-tooling-transformation.md:792` cites `:511-520`. The ruling is at `:518` to `:527` as of 2026-09-09. Both citations were correct when written. Cite the SYMBOL as well as the line when it matters: the ruling is the `const floor = ... ? Math.min(...recent) : ewma`
+assignment, and `MIN_SAMPLES_TO_TIER` is the gate on whether it is applied at all.
 
 ---
 
@@ -48,7 +48,7 @@ Against that window, every figure in the tree resolves:
 | Figure | Where it is written | What it actually is |
 |---|---|---|
 | **367.9s** | `scripts/ci-runner/manifest.ts:5817` | `min(recent)` rounded. The one admissible number, and the reason `slow: true` is on the entry. |
-| 396s | `scripts/ci-runner/manifest.ts:5822`, `agent/PLAN-pytest-parallelism.md:226` | One wall-clock run of the `-n 8 --dist loadgroup` cutover (823.93s serial to 396s, 2.08x). It sits between the 394.649s and 401.145s samples in the same window. A SAMPLE. |
+| 396s | `scripts/ci-runner/manifest.ts:5822`, `agent/plans/PLAN-pytest-parallelism.md:226` | One wall-clock run of the `-n 8 --dist loadgroup` cutover (823.93s serial to 396s, 2.08x). It sits between the 394.649s and 401.145s samples in the same window. A SAMPLE. |
 | 381.41s | `.ci/rediacc_ci/check_pytest.py:154` | One instrumented run answering a DIFFERENT question: how many workers to buy. Serial 823.93s, `-n 8` 381.41s (2.16x), `-n 16` 377.18s. Its own sub-measurement, the 294.65s guards fixture pinned to one worker, is the floor that makes 16 workers pointless. |
 | 318.2s | `docs/ci-overhaul/11-timing-baseline.md` | The same gate inside the 2026-09-06 full-run baseline, before later port batches grew the corpus. Older corpus, so not comparable to the four above at all. |
 

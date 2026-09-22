@@ -5,7 +5,7 @@ Owner: f4da5c2e
 
 ## Why
 
-`agent/PLAN-tooling-transformation.md:5730` (box "W9 P2 S, ALONE IN ITS WAVE") is HALF DONE as of its last edit, 2026-09-09 (`1ae84c3e3`). The `scripts/gates/` leg (125 `check-*.ts` files) and 8 of 10 generators are done and verified. What remains, measured directly against the live tree on 2026-09-14, is smaller and more precisely scoped than the box's original text implies:
+`agent/plans/PLAN-tooling-transformation.md:5730` (box "W9 P2 S, ALONE IN ITS WAVE") is HALF DONE as of its last edit, 2026-09-09 (`1ae84c3e3`). The `scripts/gates/` leg (125 `check-*.ts` files) and 8 of 10 generators are done and verified. What remains, measured directly against the live tree on 2026-09-14, is smaller and more precisely scoped than the box's original text implies:
 
 - **`scripts/gen/` leg, remaining subject: 2 files.** `scripts/gen-docs.ts` and `scripts/gen-gates-lock.ts` are still at `scripts/` root. `scripts/data/domains.json:143` (`generators` rule) blocks them explicitly: "Same merge queue as `gates`. scripts/gen-docs.ts, scripts/gen-gates-lock.ts, scripts/lib/doc-providers.ts and scripts/lib/doc-regions.ts are W11 and W2 files under active concurrent edit; they move only once those workstreams have handed over."
 - **`scripts/ops/` leg, remaining subject: 15 files.** 13 under `scripts/dev/`, 1 under `scripts/docker/` (`build-server.sh`), and `scripts/backup-cutover-preflight.sh` at root. `scripts/data/domains.json:94` (`operator-bash` rule) blocks this on "Driver contract section 2, the `scripts/dev` ownership row: W8 deletes its dead script, W0 and W8 make their edits at the current path, THEN W9 moves the directory. Not before."
@@ -13,7 +13,7 @@ Owner: f4da5c2e
 
 This plan covers only the two legs with a real subject. It answers the six cross-reference questions the box was assigned, with everything below independently re-measured against the tree at commit range through 2026-09-14 rather than trusted from the box's prior notes.
 
-Campaign context: `agent/PLAN-tooling-transformation.md:5730` (the box), `:5704` (W9 P2.0, the enforcement gate this leans on), `scripts/gates/check-domain-partition.ts` (clause 1/2/3 enforcement), `scripts/data/domains.json` (the partition), `scripts/data/domain-layout-baseline.json` (the shrink-only baseline, currently 39 entries).
+Campaign context: `agent/plans/PLAN-tooling-transformation.md:5730` (the box), `:5704` (W9 P2.0, the enforcement gate this leans on), `scripts/gates/check-domain-partition.ts` (clause 1/2/3 enforcement), `scripts/data/domains.json` (the partition), `scripts/data/domain-layout-baseline.json` (the shrink-only baseline, currently 39 entries).
 
 ## 0. The baseline's 39 entries are two unrelated problems, not one
 
@@ -123,7 +123,7 @@ line numbers:
 - `scripts/gates/check-worker-secret-names.ts:66` -- `{ file: 'scripts/dev/deploy-bench.sh', floor: 20 }` -- functional, loud failure (file-not-found) if not updated, but still required.
 - `.ci/scripts/quality/check_bws_map.py:121` -- `RENAME_TABLE = ROOT / "scripts" / "dev" / "secret-rename.py"` -- functional, loud failure if not updated.
 - `.ci/scripts/test/gates/test-scrub-sentinel-empty.sh:40,56`, `.ci/scripts/test/gates/test-worktree-devbox-teardown.sh:42`, `.ci/scripts/test/gates/test-bws-map.sh:40,58`, `.ci/scripts/test/gates/test-vacuity-floors.sh:115` -- all invoke or reference `scripts/dev/*` by literal path; functional, must move with the files.
-- `.ci/legacy/run-legacy.sh:488-489` (a **second**, independent shfmt-style sweep: `if [[ -d "scripts/dev" ]]; then find scripts/dev -name "*.sh" ...`) and `:793` (`"$ROOT_DIR/scripts/dev/worktree.sh" "$@"`, a live dispatch target, not dead code -- `domains.json`'s own `operator-bash` exceptions note this dispatch but cites a stale line number (`:1066`; actual is `:793` today, itself a small instance of the citation-drift problem `agent/PLAN-citation-fragility.md` documents). Both need updating; the `:488-489` block is a second silently-green candidate not previously called out anywhere in the campaign text.
+- `.ci/legacy/run-legacy.sh:488-489` (a **second**, independent shfmt-style sweep: `if [[ -d "scripts/dev" ]]; then find scripts/dev -name "*.sh" ...`) and `:793` (`"$ROOT_DIR/scripts/dev/worktree.sh" "$@"`, a live dispatch target, not dead code -- `domains.json`'s own `operator-bash` exceptions note this dispatch but cites a stale line number (`:1066`; actual is `:793` today, itself a small instance of the citation-drift problem `agent/plans/PLAN-citation-fragility.md` documents). Both need updating; the `:488-489` block is a second silently-green candidate not previously called out anywhere in the campaign text.
 - `Dockerfile:12,32` -- comment-only references to `scripts/docker/build-server.sh`; update for accuracy, no functional effect (this is also the thing that keeps `build-server.sh` out of `check-dead-bash`'s findings today, per `domains.json`'s own note -- worth re-verifying `check-dead-bash` still sees a live caller after the move, since a dead-bash false-positive here would be a new, self-inflicted finding).
 - Prose-only (comments, no functional effect, should move for hygiene): `scripts/gates/check-dead-bash.ts:13`, `scripts/gates/check-env-credential-drift.ts:41`, `scripts/gates/check-builder-env-contract.ts:57,661`, `scripts/lib/env-file.sh:38`.
 

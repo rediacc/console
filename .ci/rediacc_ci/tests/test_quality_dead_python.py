@@ -103,7 +103,7 @@ def test_prose_is_not_an_admission_route_on_the_real_tree():
 
     Pinned against the real tree because the fixture version of this control cannot show the SIZE of the hole it closes: the referrer corpus excludes 3489 minus the prose files, and if that exclusion were dropped the gate would go permanently green.
     """
-    assert dp.is_prose("agent/PLAN-tooling-transformation.md")
+    assert dp.is_prose("agent/plans/PLAN-tooling-transformation.md")
     assert dp.is_prose("docs/agent-reference/ci-gates.md")
     assert dp.is_prose(".ci/shadow/twin-parity.ledger.jsonl")
     assert not dp.is_prose("package.json")

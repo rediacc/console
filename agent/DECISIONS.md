@@ -8,8 +8,8 @@ Enforced by `check:ci-decision-ids` (`.ci/scripts/quality/check_decision_ids.py`
 
 ## Why this file exists, and the collision that paid for it
 
-Three id schemes collided on the same-looking token and two adjacent boxes of `agent/PLAN-tooling-transformation.md` ended up pointing at OPPOSITE FILES because of it. `W12 P2.7` cited "A5 in `docs/ci-overhaul/04-decisions.md`", and `grep` for that token in that file returns 0: it meant the GATE RULE in `.ci/scripts/quality/check_plan_boxes.py:41`. Box X0.1 fixed the source on
-2026-09-08 by prefixing: gate rules are `G-A<n>`, operator decisions are `D-A<n>`, and a bare `A5` is now wrong in both directions rather than ambiguous in both. This file is the other half: the rows those `D-` ids resolve to.
+Three id schemes collided on the same-looking token and two adjacent boxes of `agent/plans/PLAN-tooling-transformation.md` ended up pointing at OPPOSITE FILES because of it. `W12 P2.7` cited "A5 in `docs/ci-overhaul/04-decisions.md`", and `grep` for that token in that file returns 0: it meant the GATE RULE in `.ci/scripts/quality/check_plan_boxes.py:41`. Box X0.1 fixed the source
+on 2026-09-08 by prefixing: gate rules are `G-A<n>`, operator decisions are `D-A<n>`, and a bare `A5` is now wrong in both directions rather than ambiguous in both. This file is the other half: the rows those `D-` ids resolve to.
 
 ## The id grammar, and the one shape it deliberately cannot express
 
@@ -19,13 +19,13 @@ An id is `D-<SRC><n>`. `<SRC>` is a source key declared in the table below, `<n>
   |---|---|
   | `A` | `docs/ci-overhaul/04-decisions.md` section A, locked by the operator |
   | `B` | `docs/ci-overhaul/04-decisions.md` section B, decided by recommendation |
-  | `S` | `agent/PLAN-secret-namespace-migration.md`, locked by the operator 2026-09-02 |
+  | `S` | `agent/plans/PLAN-secret-namespace-migration.md`, locked by the operator 2026-09-02 |
 
 **The `D-1`..`D-9` labels in `docs/ci-overhaul/04-decisions.md:57-112` are NOT register ids and must never be read as one.** They label section C, "Open decision points", which are questions carrying a recommended default rather than decisions. They have no letter, so the grammar below cannot read `D-6` as a register id at all; only a hurried reader can. The same file's section F
 then uses `D8`, `D9` and `D10` (`docs/ci-overhaul/04-decisions.md:184-201`) for something else again, defect ids from an earlier plan, and `docs/ci-overhaul/04-decisions.md:93` carries both on one line (`**D-6. D6: how does a submodule draft PR get flipped ready?**`). Those are left exactly as they are: renumbering a document to suit a register is how a register starts lying about
 its sources.
 
-**`agent/PLAN-secret-namespace-migration.md:158`, `:170` and `:193` carry three further rounds of operator rulings numbered `8quater`, `8ter` and `8bis`.** They are rulings, not decisions, and the grammar has no room for them because `<n>` is a number. They hang off `D-S8`'s Notes column with their line numbers rather than being silently dropped, and one of them is the reason
+**`agent/plans/PLAN-secret-namespace-migration.md:158`, `:170` and `:193` carry three further rounds of operator rulings numbered `8quater`, `8ter` and `8bis`.** They are rulings, not decisions, and the grammar has no room for them because `<n>` is a number. They hang off `D-S8`'s Notes column with their line numbers rather than being silently dropped, and one of them is the reason
 `D-S10` exists at all: `8ter` accepted the naming table with `BACKUP_S3_* -> CLOUDFLARE_R2_BACKUP_*`, and `D-S10` overturned that row the same day.
 
 ## What a gate can and cannot enforce here
@@ -49,21 +49,21 @@ The last one is the licence half. It cannot stop a bad substitution and does not
 | D-A4 | Projects v2 is deferred to a v2 issue, with the reasons recorded | docs/ci-overhaul/04-decisions.md:17 | live | | |
 | D-A5 | Three merges from one approval, not one bundle and not three asks | docs/ci-overhaul/04-decisions.md:20 | live | | |
 | D-A6 | Standing licence to substitute a better design, provided the substitution is stated out loud | docs/ci-overhaul/04-decisions.md:22 | live | | The licence every `Licence` column below points at |
-| D-A7 | One language per folder, reached by a staged port; bash survives only as an allowlisted shim carrying a BLOCKER reason | docs/ci-overhaul/04-decisions.md:24 | live | D-A6 | Stated out loud under the licence because it overturns an earlier ruling of the operator's own, recorded at agent/PLAN-shell-resource-profiling.md:7 |
+| D-A7 | One language per folder, reached by a staged port; bash survives only as an allowlisted shim carrying a BLOCKER reason | docs/ci-overhaul/04-decisions.md:24 | live | D-A6 | Stated out loud under the licence because it overturns an earlier ruling of the operator's own, recorded at agent/plans/PLAN-shell-resource-profiling.md:7 |
 | D-B1 | Do not buy GitHub Team | docs/ci-overhaul/04-decisions.md:45 | live | | Merge queue on private repos needs Enterprise Cloud; draft PRs are free everywhere |
 | D-B2 | The babysit trigger is `workflow_run`; the label is a state flag | docs/ci-overhaul/04-decisions.md:46 | live | | `pull_request.labeled` carries no author identity |
 | D-B3 | The E2E matrix is cut from five to two in v1 | docs/ci-overhaul/04-decisions.md:47 | live | | Wall-neutral; safety leans on the nightly |
 | D-B4 | Delete coverage rather than revive it | docs/ci-overhaul/04-decisions.md:48 | live | | Reviving needs a baseline store that does not exist |
-| D-S1 | Provider-named prefixes; component prefixes stay for values a component owns | agent/PLAN-secret-namespace-migration.md:136 | live | | The vendor is the namespace, because minting and revoking is what you do with these |
-| D-S2 | Unify the namespaces: one name everywhere, and the `SECRET_*` shim goes away | agent/PLAN-secret-namespace-migration.md:140 | live | | |
-| D-S3 | Bitwarden gets the clean names; GitHub keeps the old ones transitionally | agent/PLAN-secret-namespace-migration.md:143 | live | | No org-secret flag-day, so the rename never needs `admin:org` |
-| D-S4 | Backup bucket region-suffixing is fixed standalone, ahead of the rename | agent/PLAN-secret-namespace-migration.md:146 | live | | |
-| D-S5 | The two rotation defects fold into the rename PR, not a standalone submodule PR | agent/PLAN-secret-namespace-migration.md:148 | live | | Until it lands, `rotate cf-breakpoint` reports success while pushing nothing |
-| D-S6 | `private/growth`'s six uncovered secrets are in scope | agent/PLAN-secret-namespace-migration.md:152 | live | | Needs a coordinated commit on the GitLab remote |
-| D-S7 | The leaked `AUTOPILOT_PRIVATE_KEY` stays closed as accepted risk | agent/PLAN-secret-namespace-migration.md:156 | live | | The GPG half of the same round was overturned at agent/PLAN-secret-namespace-migration.md:991, which is a premise, not this ruling |
-| D-S8 | R2 token `backup-s3-20260901T103133Z` is kept, then narrowed to the backup buckets only | agent/PLAN-secret-namespace-migration.md:210 | live | | Three further ruling rounds sit at agent/PLAN-secret-namespace-migration.md:158, :170 and :193 and have no id of their own |
-| D-S9 | Mint the five; ASIA stays absent on purpose | agent/PLAN-secret-namespace-migration.md:1570 | live | | |
-| D-S10 | Both backup families are renamed and `CLOUDFLARE_` comes off the S3 family | agent/PLAN-secret-namespace-migration.md:1745 | live | | Overturns the `BACKUP_S3_* -> CLOUDFLARE_R2_BACKUP_*` row that ruling round `8ter` had accepted the same day |
+| D-S1 | Provider-named prefixes; component prefixes stay for values a component owns | agent/plans/PLAN-secret-namespace-migration.md:136 | live | | The vendor is the namespace, because minting and revoking is what you do with these <!-- style-ok --> |
+| D-S2 | Unify the namespaces: one name everywhere, and the `SECRET_*` shim goes away | agent/plans/PLAN-secret-namespace-migration.md:140 | live | | |
+| D-S3 | Bitwarden gets the clean names; GitHub keeps the old ones transitionally | agent/plans/PLAN-secret-namespace-migration.md:143 | live | | No org-secret flag-day, so the rename never needs `admin:org` |
+| D-S4 | Backup bucket region-suffixing is fixed standalone, ahead of the rename | agent/plans/PLAN-secret-namespace-migration.md:146 | live | | |
+| D-S5 | The two rotation defects fold into the rename PR, not a standalone submodule PR | agent/plans/PLAN-secret-namespace-migration.md:148 | live | | Until it lands, `rotate cf-breakpoint` reports success while pushing nothing |
+| D-S6 | `private/growth`'s six uncovered secrets are in scope | agent/plans/PLAN-secret-namespace-migration.md:152 | live | | Needs a coordinated commit on the GitLab remote |
+| D-S7 | The leaked `AUTOPILOT_PRIVATE_KEY` stays closed as accepted risk | agent/plans/PLAN-secret-namespace-migration.md:156 | live | | The GPG half of the same round was overturned at agent/plans/PLAN-secret-namespace-migration.md:991, which is a premise, not this ruling |
+| D-S8 | R2 token `backup-s3-20260901T103133Z` is kept, then narrowed to the backup buckets only | agent/plans/PLAN-secret-namespace-migration.md:210 | live | | Three further ruling rounds sit at agent/plans/PLAN-secret-namespace-migration.md:158, :170 and :193 and have no id of their own |
+| D-S9 | Mint the five; ASIA stays absent on purpose | agent/plans/PLAN-secret-namespace-migration.md:1570 | live | | |
+| D-S10 | Both backup families are renamed and `CLOUDFLARE_` comes off the S3 family | agent/plans/PLAN-secret-namespace-migration.md:1745 | live | | Overturns the `BACKUP_S3_* -> CLOUDFLARE_R2_BACKUP_*` row that ruling round `8ter` had accepted the same day |
 
 ## Adding a row
 

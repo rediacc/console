@@ -12,7 +12,7 @@ wanted it) and F3b is not implemented (the dispatcher has no block tier). W2 and
 
 **2026-08-23: two TRAPS.md entries and one trapguard rule (`rule_history_rewrite_controls`) landed OUTSIDE this plan -- individual instruments again, NOT this plan starting; it is still `draft` and still unowned.**
 
-Supersedes `agent/PLAN-unify-trap-corpus.md` (§9 says exactly which parts are kept and which are replaced). Nothing in this plan is implemented.
+Supersedes `agent/plans/PLAN-unify-trap-corpus.md` (§9 says exactly which parts are kept and which are replaced). Nothing in this plan is implemented.
 
 **2026-08-18: STILL UNIMPLEMENTED, VERIFIED RATHER THAN ASSUMED, AND UNOWNED.** Checked directly: no trap script exists under `.ci/scripts/quality/`, no `check:` id in `package.json` mentions traps, and `docs/agent-reference/TRAPS.md` carries no ledger table (zero table rows). Individual traps HAVE become instruments in the meantime -- TRAPS.md:537 says "This one is now an
 instrument, not just a lesson" -- which is easy to mistake for this plan having landed. It has not: the thing specified here is the SYSTEMATIC gate that reds when a trap has neither an instrument nor a stated reason it cannot have one, and that gate does not exist.

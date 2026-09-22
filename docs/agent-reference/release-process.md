@@ -65,5 +65,5 @@ Promotes the current edge release to the stable channel (`eu`/`us`/`asia`), serv
 
 ## Why this is a separate file
 
-`CLAUDE.md`'s own rule is to stay under budget by cutting what already has a home elsewhere (`agent/PLAN-tooling-transformation.md`, box W11 P5b). `release_mode`'s semantics, the three less-visible dispatch inputs and the soak-skip behavior did not exist in any `docs/` file before this one -- deleting them from `CLAUDE.md` without first writing them somewhere would have discarded
-their only record. Verified against the two release workflows directly (`.github/workflows/cd-v2.yml`, `.github/workflows/promote-stable.yml`), not copied from `CLAUDE.md`'s prior wording.
+`CLAUDE.md`'s own rule is to stay under budget by cutting what already has a home elsewhere (`agent/plans/PLAN-tooling-transformation.md`, box W11 P5b). `release_mode`'s semantics, the three less-visible dispatch inputs and the soak-skip behavior did not exist in any `docs/` file before this one -- deleting them from `CLAUDE.md` without first writing them somewhere would have
+discarded their only record. Verified against the two release workflows directly (`.github/workflows/cd-v2.yml`, `.github/workflows/promote-stable.yml`), not copied from `CLAUDE.md`'s prior wording.

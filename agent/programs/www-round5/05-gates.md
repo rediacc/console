@@ -23,7 +23,7 @@ CI has a hard 15-minute cap on the slim runner. Budget accordingly and say what 
 
 ## Gate 1 and 2: sentence wrapping
 
-Designed in full in `agent/PLAN-sentence-aware-wrapping.md`. Two gates, deliberately.
+Designed in full in `agent/plans/PLAN-sentence-aware-wrapping.md`. Two gates, deliberately.
 
 **`check:ci-sentence-wrapping`** (static, `quality-content`, under 2s). Every multi-sentence catalog value rendered in text position must go through the `<Sentences>` mechanism. Shrink-only baseline. **Control: stub the sentence counter to always return 1 and require the positive fixture to flip green** - that proves the finding comes from detection rather than from a file
 existing.

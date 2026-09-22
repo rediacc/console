@@ -23,7 +23,7 @@ import { createHash } from 'node:crypto';
  *                                [--changed] [--json] [--list]
  *                                [--merge-output] [--verbose] [--selftest]
  *
- * See agent/PLAN-npm-ci-parallel-parity.md section 4.
+ * See agent/plans/PLAN-npm-ci-parallel-parity.md section 4.
  */
 import fs from 'node:fs';
 import os from 'node:os';
@@ -36,7 +36,7 @@ import { createReporter } from './report';
 import { type ChangeSet, ChangeSetRefusal, selectChanged } from './select';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
-// Per-gate process-tree profiling (agent/PLAN-shell-resource-profiling.md). ON by default: captures land in .ci/cache/profiles (untracked), and the previous run's set is rotated to profiles.prev at start so check:ci-resprofile judges COMPLETE captures,
+// Per-gate process-tree profiling (agent/plans/PLAN-shell-resource-profiling.md). ON by default: captures land in .ci/cache/profiles (untracked), and the previous run's set is rotated to profiles.prev at start so check:ci-resprofile judges COMPLETE captures,
 // never the torn files of gates still running. CI_PROFILE=off disables it; CI_PROFILE_DIR
 // redirects it. One run id per process so the E4 cross-gate join can pair captures.
 const PROFILE_OPTS = ((): { profileDir?: string; profileRunId?: string } => {

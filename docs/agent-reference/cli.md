@@ -1,7 +1,7 @@
 # CLI reference for agents
 
-What used to live inline in CLAUDE.md under `## CLI (`packages/cli/`)`: the everyday `rdc` invocations and the shape of `packages/cli/src/`. It moved here to keep CLAUDE.md inside its size budget (`agent/PLAN-tooling-transformation.md`, box W11 P5b); the machine-readable truth is `packages/cli/scripts/command-tree.json` and `rdc --help`, and this file only carries the examples that
-are worth reading before guessing.
+What used to live inline in CLAUDE.md under `## CLI (`packages/cli/`)`: the everyday `rdc` invocations and the shape of `packages/cli/src/`. It moved here to keep CLAUDE.md inside its size budget (`agent/plans/PLAN-tooling-transformation.md`, box W11 P5b); the machine-readable truth is `packages/cli/scripts/command-tree.json` and `rdc --help`, and this file only carries the
+examples that are worth reading before guessing.
 
 ## Common commands
 

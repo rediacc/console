@@ -16,7 +16,7 @@
  * So the enforced rule is: a sentence occupying more than one line must not share either of
  * those lines with an adjacent sentence. Two whole sentences on one line is fine. A long
  * sentence wrapping onto several lines of its own is fine. Do not "simplify" this back to
- * the literal wording later; see agent/PLAN-sentence-aware-wrapping.md section 1.
+ * the literal wording later; see agent/plans/PLAN-sentence-aware-wrapping.md section 1.
  *
  * WHAT THIS GATE CHECKS, which is the source-level half of that. Line boxes only exist in a
  * browser, so this gate cannot see a line at all. It asserts the PRECONDITION instead: every

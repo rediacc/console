@@ -36,7 +36,7 @@ GUARDED = (
 UNGUARDED = '#!/bin/bash\n"$SCRIPT_DIR/../docker/cleanup-staging.sh" --tag "$CHANNEL"\n'
 LITERAL = '#!/bin/bash\n"$SCRIPT_DIR/../docker/cleanup-staging.sh" --tag staging-abc123\n'
 
-# The `.py`-caller shape the scanner was widened for (agent/PLAN-w7p4w-docker-cutover.md §3): same unguarded-call shape as UNGUARDED, naming the Python entry point instead of the bash twin.
+# The `.py`-caller shape the scanner was widened for (agent/plans/PLAN-w7p4w-docker-cutover.md §3): same unguarded-call shape as UNGUARDED, naming the Python entry point instead of the bash twin.
 UNGUARDED_PY = '"$SCRIPT_DIR/../docker/cleanup_staging.py" --tag "$CHANNEL"\n'
 
 
@@ -246,7 +246,7 @@ def test_grep_hits_only_reads_sh_and_yml(tmp_path: pathlib.Path) -> None:
 def test_grep_hits_scopes_py_to_ci_scripts(tmp_path: pathlib.Path) -> None:
     """`.py` is read under `.ci/scripts`, and NOWHERE else in `.ci`.
 
-    Scanning ALL of `.ci` for `.py` (a literal reading of agent/PLAN-w7p4w-docker-cutover.md §3's "add `--include='*.py'`") turned 1 real call site into 18 at widening time: `.ci/rediacc_ci` is this package's own implementation and tests tree, full of self-referential mentions of this exact needle.
+    Scanning ALL of `.ci` for `.py` (a literal reading of agent/plans/PLAN-w7p4w-docker-cutover.md §3's "add `--include='*.py'`") turned 1 real call site into 18 at widening time: `.ci/rediacc_ci` is this package's own implementation and tests tree, full of self-referential mentions of this exact needle.
 
     This pins the fix: a `.py` file under `.ci/scripts` is read, the SAME needle under `.ci/rediacc_ci` is not.
     """

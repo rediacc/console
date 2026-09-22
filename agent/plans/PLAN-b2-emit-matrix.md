@@ -6,10 +6,10 @@ Owner: f4da5c2e
 
 ## Why
 
-`agent/PLAN-tooling-transformation.md:3684` (box "B2 S, driver-only, long pole") asks to "emit the matrix" for `.github/workflows/ci-quality.yml`'s quality lanes. The box's own text went through two design revisions in place (2026-09-08 design note, then a 2026-09-09 refutation of part of that note, then a 2026-09-14 read-only re-verification wave). This plan re-measures everything
-against the tree at commit `22746ac3e` (2026-09-15) rather than trusting the box's prose, and turns the box's own "Five pieces, in order, all driver-only" (D1-D5) into an executable task list, plus one gap the box itself never closed: a real completeness check for its stated acceptance criterion.
+`agent/plans/PLAN-tooling-transformation.md:3684` (box "B2 S, driver-only, long pole") asks to "emit the matrix" for `.github/workflows/ci-quality.yml`'s quality lanes. The box's own text went through two design revisions in place (2026-09-08 design note, then a 2026-09-09 refutation of part of that note, then a 2026-09-14 read-only re-verification wave). This plan re-measures
+everything against the tree at commit `22746ac3e` (2026-09-15) rather than trusting the box's prose, and turns the box's own "Five pieces, in order, all driver-only" (D1-D5) into an executable task list, plus one gap the box itself never closed: a real completeness check for its stated acceptance criterion.
 
-Campaign context: `agent/PLAN-tooling-transformation.md:3684` (the box, read in full through `:3972`, the line before B3 opens), `:6043` (invariant 11's canonical definition), `:3973` (B3, DONE, the aggregator this box's shards report to), `:3994` (B4, the sibling box that landed `ci-quick` on 2026-09-14 and changed the lane count this box reasons over).
+Campaign context: `agent/plans/PLAN-tooling-transformation.md:3684` (the box, read in full through `:3972`, the line before B3 opens), `:6043` (invariant 11's canonical definition), `:3973` (B3, DONE, the aggregator this box's shards report to), `:3994` (B4, the sibling box that landed `ci-quick` on 2026-09-14 and changed the lane count this box reasons over).
 
 ## 1. What "the matrix" concretely is, and why the box's own opening paragraph is describing
 a design that was abandoned
@@ -46,7 +46,7 @@ exists is scaffolding from an earlier, narrower wave (leg lookup + conjunct emis
 
 ## 3. Invariant 11: still accurate, but its own canonical text is stale on lane count
 
-Canonical definition, `agent/PLAN-tooling-transformation.md:6043`: "A gate-bind region may only be emitted into a lane that has an `- id: setup` step. Verified: eight of ten lanes have one; `quality-branch:507` and `quality-submodule-branches:587` do not... Gates needing `fetch-depth: 0` and the PR head ref stay hand-registered in `quality-branch`."
+Canonical definition, `agent/plans/PLAN-tooling-transformation.md:6043`: "A gate-bind region may only be emitted into a lane that has an `- id: setup` step. Verified: eight of ten lanes have one; `quality-branch:507` and `quality-submodule-branches:587` do not... Gates needing `fetch-depth: 0` and the PR head ref stay hand-registered in `quality-branch`."
 
 "Handled by construction" means: `laneCanEmit()` (`scripts/gate-bind.ts:308-315`) is a pure scan of a job's block for a literal `- id: setup` line, and `--write`'s emission path (`:1757`) refuses to place a region in a job where that returns false. That mechanism is unchanged and still correct today.
 
@@ -160,7 +160,7 @@ region) is a distinct, larger effort not named as one of the box's five D-pieces
 Section 4's new completeness gate only requires that decision be made *explicit*, not that it be made *here*.
 - **`.github/workflows/**` is a MUTEX file per the driver contract** (W8 P1, W3 P3, W7 P4, E2 all
 collide on it). Confirm no concurrent writer holds it before starting D3/D4.
-- **Serialization with C2 -- CLEARED.** C2 (`agent/PLAN-tooling-transformation.md:4638`,
+- **Serialization with C2 -- CLEARED.** C2 (`agent/plans/PLAN-tooling-transformation.md:4638`,
 `pathsOrigin` required whenever `paths` is present) is now `[x]`, landed at `bfb8630dd` and ticked 2026-09-15T07:53:05Z by f4da5c2e, full green battery recorded in the box. Both boxes touched `scripts/gate-bind.ts`; C2 is done, so this is no longer a live serialization concern -- checked directly against the master plan on 2026-09-15, not assumed from this section's own prior text
 (the `:4426` line this section used to cite was already stale drift from earlier content added above it, not the box itself).
 
@@ -275,7 +275,7 @@ collide on it). Confirm no concurrent writer holds it before starting D3/D4.
       lane in the allowlist has `- id: setup` unless it carries a recorded `why:`. Surfaces
       `ci-quick`, `quality-packages`, `quality-go` as an explicit open decision rather than a
       silent gap.
-- [ ] Update invariant 11's prose (`agent/PLAN-tooling-transformation.md:6043`, "eight of ten
+- [ ] Update invariant 11's prose (`agent/plans/PLAN-tooling-transformation.md:6043`, "eight of ten
       lanes") to match the current 9-of-11 count, or reword to not hardcode a count.
 - [ ] Correct B4's status note about `ci-quick` (box `:4029-4033` says it stays `[ ]` "until it
       lands in the primary tree" -- `git log` shows commit `6b1a1b060` on 2026-09-14 landed it

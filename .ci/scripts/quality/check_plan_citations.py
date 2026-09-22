@@ -188,7 +188,7 @@ UUID_TAIL_RE = re.compile(
 #: it really is. `sha256:` is that marker, and nothing in this repository's
 #: history is addressed that way.
 #:
-#: Measured 2026-09-15, on `agent/PLAN-w7p4w-docker-cutover.md` as committed by
+#: Measured 2026-09-15, on `agent/plans/PLAN-w7p4w-docker-cutover.md` as committed by
 #: 696a45bf9: four findings, all of them container image digests cited as the
 #: EVIDENCE that a canary image shared no layers with `:edge`/`:stable` --
 #: `sha256:27bb0e6e2c...b7f2d` (x3) and `sha256:a77e698892cc...`. None resolves
@@ -287,8 +287,8 @@ def carried_lines(root, base, rel):
 
     A set of whole lines rather than a diff: the question is only whether THIS change wrote the citation, and a line that is verbatim in a pre-move document was not written here whatever moved around it. It errs in the safe direction -- a genuinely new citation line is in neither blob, so it is still judged.
 
-    UNION OF TWO READS, not one. `git show <base>:<origin>` is kept because it is cheap and correct on a short-lived branch; `_origin_last_content` is added because `base` alone is wrong whenever the origin predates `base` or a reflow already changed every line's text since `base` -- measured 2026-09-21, the 103-plan migration's own base blob excluded ONLY 3370 of the roughly
-    3650 lines it should have.
+    UNION OF TWO READS, not one. `git show <base>:<origin>` is kept because it is cheap and correct on a short-lived branch; `_origin_last_content` is added because `base` alone is wrong whenever the origin predates `base` or a reflow already changed every line's text since `base` -- measured 2026-09-21, the 103-plan migration's own base blob excluded ONLY 3370 of the roughly 3650
+    lines it should have.
     """
     origin = PL.moved_from(root, rel)
     if not origin:
@@ -415,7 +415,7 @@ def commit_is_reachable(root, token) -> bool:
     PRESENCE IS THE WRONG QUESTION FOR A COMMIT, and asking it has now cost two CI rounds. A rewrite -- `filter-branch`, a rebase, `gh pr merge --rebase` -- leaves the pre-rewrite commits sitting in the object database, reachable from reflogs and `refs/original`. `git cat-file -t` happily answers `commit` for every one of them on the machine that did the rewrite, and a FRESH CLONE
     has none of them. So a citation to an orphan passes locally and fails in CI, which is the worst of both: green where it is cheap to fix, red where it is expensive.
 
-    Round 43 of this wave recorded exactly this after the operator-authorised history rewrite -- 149 stale shas all resolved locally while not one was an ancestor of HEAD -- and named `git merge-base --is-ancestor` as the honest test. It was written down and not wired in; measured 2026-09-15, six orphaned citations in agent/PLAN-b2-emit-matrix.md passed this gate locally and
+    Round 43 of this wave recorded exactly this after the operator-authorised history rewrite -- 149 stale shas all resolved locally while not one was an ancestor of HEAD -- and named `git merge-base --is-ancestor` as the honest test. It was written down and not wired in; measured 2026-09-15, six orphaned citations in agent/plans/PLAN-b2-emit-matrix.md passed this gate locally and
     reddened `Quality / Branch` in CI.
 
     ONLY COMMITS GET THIS TEST, and the asymmetry is the design rather than an exception. A blob or tree is CONTENT-addressed: it is an ancestor of nothing, `--is-ancestor` is meaningless for it, and demanding reachability would flag every correctly-cited blob. That is also precisely why this gate's own advice

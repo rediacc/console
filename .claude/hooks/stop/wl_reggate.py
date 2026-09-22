@@ -293,7 +293,7 @@ GATE_NEUTRAL_PREFIXES = ("agent/", "docs/")
 def _diff_tree_files(root, sha):
     """The real files one commit touched, root-commit safe. `[]` on any git failure or an unresolvable ref.
 
-    FACTORED OUT of `gate_only_fixset` and `fix_signals`, which each carried this exact root-commit-retry shape independently -- the third copy of one pattern, found while grounding the judge's prompt in real data rather than narrated claims (agent/PLAN-judge-prompt-trap-conflation.md). `C._git` itself never raises (it returns `""` on any failure), so the `try/except` here is
+    FACTORED OUT of `gate_only_fixset` and `fix_signals`, which each carried this exact root-commit-retry shape independently -- the third copy of one pattern, found while grounding the judge's prompt in real data rather than narrated claims (agent/plans/PLAN-judge-prompt-trap-conflation.md). `C._git` itself never raises (it returns `""` on any failure), so the `try/except` here is
     belt-and-suspenders against a future change to that contract, matching the caller this replaces.
     """
     try:
@@ -316,7 +316,7 @@ def fixset_files(root, ids):
     """The real files THIS fix-set touched, computed by git, never narrated.
 
     `ids` are fix_signals' own ids: commit shas for a commit-based fix-set, a single tick id for a tick-based one. A tick id is not a tree-ish, so `_diff_tree_files` answers `[]` for it -- correct, because a tick-based fix-set's evidence is necessarily still UNCOMMITTED. Falls back to `git status --porcelain`, the same ground truth `gate_only_fixset`'s own docstring already calls
-    out as the honest answer for that shape, so a hallucinated bulk transform can be checked against what git ACTUALLY shows changed rather than trusted from the judge's own prose (agent/PLAN-judge-prompt-trap-conflation.md).
+    out as the honest answer for that shape, so a hallucinated bulk transform can be checked against what git ACTUALLY shows changed rather than trusted from the judge's own prose (agent/plans/PLAN-judge-prompt-trap-conflation.md).
     """
     files = set()
     for i in ids or []:
@@ -366,12 +366,12 @@ def fix_signals(root, items, session_id, state):
     ARTIFACTS, never prose. Primary: commit subjects matching FIX_SUBJECT in marker-head..HEAD. Secondary: newly ticked `- [x]` lines owned by this session, covering the uncommitted-tree default. The skip filter is deliberately narrow: a fix commit touching only docs/** and **/*.md never asks; everything else does, and the judge's four questions sort the one-offs out. A rewound or
     unreachable old head yields an empty log, which reads as no signals and lets head self-heal by advancing.
 
-    `banked_only_ids` is a SEPARATE list from `new_tick_triples`, deliberately: a docs-only tick must be marked seen so it stops being rediscovered every stop, but it must NOT be asked about and must NOT be subjected to the I7 completion-evidence check that `new_tick_triples` feeds elsewhere.
-    Folding it into `new_tick_triples` instead (the first version of this fix) would have made that evidence check run over ticks nobody is asking about -- a docs-only tick with a bare `- [x]` line and no evidence would then fail I7 for a reason unrelated to what it actually is. Found in review, not by a control: no `- [x]` docs-only fixture exercised that path.
+    `banked_only_ids` is a SEPARATE list from `new_tick_triples`, deliberately: a docs-only tick must be marked seen so it stops being rediscovered every stop, but it must NOT be asked about and must NOT be subjected to the I7 completion-evidence check that `new_tick_triples` feeds elsewhere. Folding it into `new_tick_triples` instead (the first version of this fix) would have made
+    that evidence check run over ticks nobody is asking about -- a docs-only tick with a bare `- [x]` line and no evidence would then fail I7 for a reason unrelated to what it actually is. Found in review, not by a control: no `- [x]` docs-only fixture exercised that path.
 
-    `new_tick_triples` is `(tid, line, evidence_text)`, not `(tid, line)`: `evidence_text` is `rec["lastnote"]` when present, the closing note that actually carries the fix's proof, falling back to the full `line` only for markdown-origin items with no structured note.
-    `line` stays the FULL rendered text (accumulated history included) because `tick_touches_code` genuinely needs to scan it all for a path; only the I7 evidence check needs the narrower, unpolluted slice.
-    Before this, both consumers shared one accumulated blob, and a tick whose history grew past a few dozen lease/update notes buried its own closing sha under longer worker-id-shaped tokens that a "5 longest hex candidates" heuristic picked first -- the real evidence sat there, unchecked."""
+    `new_tick_triples` is `(tid, line, evidence_text)`, not `(tid, line)`: `evidence_text` is `rec["lastnote"]` when present, the closing note that actually carries the fix's proof, falling back to the full `line` only for markdown-origin items with no structured note. `line` stays the FULL rendered text (accumulated history included) because `tick_touches_code` genuinely needs
+    to scan it all for a path; only the I7 evidence check needs the narrower, unpolluted slice. Before this, both consumers shared one accumulated blob, and a tick whose history grew past a few dozen lease/update notes buried its own closing sha under longer worker-id-shaped tokens that a "5 longest hex candidates" heuristic picked first -- the real evidence sat there,
+    unchecked."""
     head = C._git(root, "rev-parse", "HEAD")
     commits, new_ticks = [], []
     if state["head"] and head and state["head"] != head:
@@ -700,9 +700,8 @@ def apply_regression_verdict(rg, scripts, root, state, sig, lines, me8):
         # gate-test:ci-trace-branch) was unconditionally reported as hallucinated. Verified live 2026-08-27: `npx tsx scripts/ci-runner/run.ts --only gate-test:ci-trace-branch` actually executes and passes it.
         if eg in _manifest_gate_ids(root):
             return "settle", "covered", eg
-        # A citation is at least as often a FILE PATH (optionally with "::test_name") as it is a manifest id -- both a human rebuttal and the judge itself reach for the path visible in the tree. Observed live 2026-08-27: three consecutive REBUTs, each naming a real, already-passing case in test_gate_ci_trace_branch.py by path/function, kept reporting hallucinated because only
-        # the bare
-        # id was checked.
+        # A citation is at least as often a FILE PATH (optionally with "::test_name") as it is a manifest id -- both a human rebuttal and the judge itself reach for the path visible in the tree. Observed live 2026-08-27: three consecutive REBUTs, each naming a real, already-passing case in test_gate_ci_trace_branch.py by path/function, kept reporting hallucinated because only the
+        # bare id was checked.
         if _citation_matches_gate(eg, root):
             return "settle", "covered", eg
         hall = eg

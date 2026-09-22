@@ -1,6 +1,6 @@
 """Every blocker-reason implementation in this tree, and what each one is allowed to be.
 
-WHY THIS MODULE EXISTS, AND WHY `test_core_allowlist.py` CANNOT DO ITS JOB. `test_core_allowlist` proves that `rediacc_ci.core.allowlist` reproduces the two shared readers BYTE FOR BYTE over a frozen corpus. That is a strong claim and it has a hole with a precise shape, recorded in `agent/PLAN-tooling-transformation.md`:
+WHY THIS MODULE EXISTS, AND WHY `test_core_allowlist.py` CANNOT DO ITS JOB. `test_core_allowlist` proves that `rediacc_ci.core.allowlist` reproduces the two shared readers BYTE FOR BYTE over a frozen corpus. That is a strong claim and it has a hole with a precise shape, recorded in `agent/plans/PLAN-tooling-transformation.md`:
 
     nothing asserts a phrase present in the BASH or TS list but absent from the
     Python canonical, because test_core_allowlist.py:370 generates its corpus

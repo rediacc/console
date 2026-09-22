@@ -23,7 +23,7 @@ Operator ask: *"plan for removing gh cli tool usage there since we don't keep th
 
 ## The one that stays, and why
 
-`cf-breakpoint` → `BREAKPOINT_TUNNEL_TOKEN` is a REPO-level secret that survived the org deletion, and `breakpoint.yml` deliberately reads it from GitHub because a later step in that job hands a human a shell (see `agent/PLAN-breakpoint-secret-shape.md`). Removing its push path would leave that token un-rotatable. So this is a NARROWING of `gh` usage from 10 refs to 1, not an
+`cf-breakpoint` → `BREAKPOINT_TUNNEL_TOKEN` is a REPO-level secret that survived the org deletion, and `breakpoint.yml` deliberately reads it from GitHub because a later step in that job hands a human a shell (see `agent/plans/PLAN-breakpoint-secret-shape.md`). Removing its push path would leave that token un-rotatable. So this is a NARROWING of `gh` usage from 10 refs to 1, not an
 elimination, and the plan should not pretend otherwise.
 
 ## Sequence

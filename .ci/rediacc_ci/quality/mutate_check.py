@@ -5,7 +5,7 @@ Ported from `.ci/scripts/quality/check-mutate-check.sh`, which W7 P5 batch A2 re
 WHAT THIS DOES AND DOES NOT PROTECT, carried whole from the twin because the distinction is the entire reason the gate is small:
 
     It does NOT force anyone to run a mutation for every new test case; that is
-    not gateable (see the rebuttal in agent/PLAN-promote-mutation-runner.md,
+    not gateable (see the rebuttal in agent/plans/PLAN-promote-mutation-runner.md,
     section "Gate or tool?"). What it protects is the INSTRUMENT: mutate-check.sh
     must keep producing the right verdict for each of its four outcomes, so it
     cannot silently rot into something that always says OK. An instrument nobody

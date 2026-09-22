@@ -22,7 +22,7 @@
  * `secrets.X` references are reachable from the repo, and all three of
  * promote-stable's R2 secrets are. The gap is one layer below the workflow,
  * inside the script body, where the name changes. This is the same class as the
- * runtime-constructed names in agent/PLAN-secret-namespace-migration.md Part 7:
+ * runtime-constructed names in agent/plans/PLAN-secret-namespace-migration.md Part 7:
  * a find-and-replace on `CLOUDFLARE_R2_ACCESS_KEY_ID` sees the consumer and never sees the
  * `AWS_*` name it turns into.
  *

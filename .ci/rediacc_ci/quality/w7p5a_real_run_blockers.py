@@ -2,7 +2,7 @@
 with a thin entry point at .ci/scripts/quality/check_w7p5a_real_run_blockers.py
 (see check_go_deps.py / check_worklist_env_registry.py for the split).
 
-WHAT THIS CLOSES. W7P5-a's acceptance ("agent/PLAN-tooling-transformation.md") requires every one of the 48 deploy/release bash scripts under port to carry
+WHAT THIS CLOSES. W7P5-a's acceptance ("agent/plans/PLAN-tooling-transformation.md") requires every one of the 48 deploy/release bash scripts under port to carry
 either a K=5 shadow-gate ledger or an allowlist entry with a BLOCKER -- no
 third state. The 39 real-run-blocked paths had BLOCKER-shaped reasons that validated, but only inside .ci/shadow/w7p5a-status.json, a status file nothing in CI reads. This gate reads .ci/policy/.w7p5a-real-run-blocklist instead (BLOCKER-gated through the canonical rediacc_ci.core.allowlist validator, same as every other .ci/policy/ mechanism) and checks it in BOTH directions
 against the box's own tracker, so the "no third state" acceptance is an assertion a machine makes, not a claim a status file's prose makes on its own behalf.

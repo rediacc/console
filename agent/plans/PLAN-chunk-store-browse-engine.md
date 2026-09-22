@@ -27,7 +27,7 @@ and the reference the retention fix still owed" (2026-08-18): `registerBackupBro
 STAGE 2 AND STAGE 3 DO NOT EXIST, and they are the stages that carried the security risk. `private/renet/pkg/backupindex/` is absent, so there is no index encryption and no fail-closed negative test for it; the account server has no index key column and no index prefix. The registered CLI command takes only `--path`, `--depth`, `--limit` and `--debug`, with no `--at`, so historical
 browse is not reachable. The section 9 tutorial scene was never added. Those two hazards are dormant, not resolved.
 
-RELATED RECORD: `agent/PLAN-chunk-store-browse-DECISION.md` already records this same conclusion and flags that this plan's stale header caused it to be misread as live design work eighteen days after stage 1 was built.
+RELATED RECORD: `agent/plans/PLAN-chunk-store-browse-DECISION.md` already records this same conclusion and flags that this plan's stale header caused it to be misread as live design work eighteen days after stage 1 was built.
 
 ## Lessons
 - Read the struct, not the design doc. The whole shape of this work follows from one

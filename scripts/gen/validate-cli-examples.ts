@@ -65,9 +65,8 @@ const TARGET_GLOBS = [
   'private/account/web/src/data/study-content/**/*.ts',
   // NOT tutorial-storyboard/**: each step carries BOTH `command` (an abbreviated display label, e.g. "rdc machine add") and `commandFull` (the runnable form with its arguments). This extractor reads raw strings and cannot tell the two apart, so it reports the label as missing positional
   // args. The storyboards' real stale commands WERE fixed in this campaign;
-  // gating them needs a field-aware extractor that reads only `commandFull`. NOT exam-question-bank.json: its answers discuss commands in prose ("rdc repo delete cryptographically erases the LUKS volume, and ..."), which this extractor reads as a command with 14 positional args. Precision over recall -- a gate that cries wolf gets suppressed, which is the exact
-  // failure this campaign removed. Its one real defect is fixed by hand; gating
-  // it needs an extractor that distinguishes a command from a sentence.
+  // gating them needs a field-aware extractor that reads only `commandFull`. NOT exam-question-bank.json: its answers discuss commands in prose ("rdc repo delete cryptographically erases the LUKS volume, and ..."), which this extractor reads as a command with 14 positional args. Precision over recall -- a gate that cries wolf gets suppressed, which is the exact failure this
+  // campaign removed. Its one real defect is fixed by hand; gating it needs an extractor that distinguishes a command from a sentence.
 
   // Account submodule
   'private/account/web/src/**/*.tsx',
@@ -104,9 +103,8 @@ const COMMAND_PATH_GLOBS = [
   // THE PORTED GATES, added 2026-09-08. `.ci/scripts/**/*.sh` was the whole of this scan's `.ci` coverage, and W7 P4 has moved 120 quality gates to `check_*.py` -- 45 of them with no `.sh` twin left. A tool that names its subject by a `.sh` extension stops seeing that subject the moment it is ported, and stops SILENTLY: a matcher that matches nothing reports nothing and still
   // exits 0. `*.sh` at the root stays as it is: that one is `run.sh` and `rdc.sh` by intent, not a family.
   //
-  // NO EXTRACTOR CHANGE IS NEEDED and that is deliberate rather than an omission. The router at the scan site picks `scanShellText` for `.sh` and `scanSourceText`
-  // otherwise; a Python gate embeds a command in a string literal exactly as the
-  // TypeScript sources do, so the source extractor is the right one, and it also brings `scanSourceOptions` -- the flag check `.sh` files deliberately skip. What the two source scanners DID need is in `command-path-checker.ts`: a `#` skip the option scanner was missing, a control-function skip, and a prose-position test.
+  // NO EXTRACTOR CHANGE IS NEEDED and that is deliberate rather than an omission. The router at the scan site picks `scanShellText` for `.sh` and `scanSourceText` otherwise; a Python gate embeds a command in a string literal exactly as the TypeScript sources do, so the source extractor is the right one, and it also brings `scanSourceOptions` -- the flag check `.sh` files
+  // deliberately skip. What the two source scanners DID need is in `command-path-checker.ts`: a `#` skip the option scanner was missing, a control-function skip, and a prose-position test.
   //
   // THE COST WAS MEASURED DOWN TO ZERO, not argued away. Driven 2026-09-08 with these two globs in place: 17 errors, then 7 once `COMMAND_PATH_IGNORE` below learned Python's test naming, then 6 once `scanSourceText`'s comment skip learned `#`, then 5 once `scanSourceOptions` learned it too, then 1 once control-function bodies were skipped, then 0 once mid-sentence prose stopped
   // being read as an invocation.
@@ -153,9 +151,9 @@ const COMMAND_PATH_IGNORE =
  */
 const EXCLUDED_FILES = new Set<string>([
   'docs/design/spec/11-p4-gate-review.md',
-  'agent/PLAN-lint-rule-matrix-probe.md',
-  'agent/PLAN-agent-hints-implementation.md',
-  'agent/PLAN-agent-hints-in-stop-hook.md',
+  'agent/plans/PLAN-lint-rule-matrix-probe.md',
+  'agent/plans/PLAN-agent-hints-implementation.md',
+  'agent/plans/PLAN-agent-hints-in-stop-hook.md',
 ]);
 
 /**

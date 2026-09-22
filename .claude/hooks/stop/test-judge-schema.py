@@ -1861,7 +1861,7 @@ wl_classsweep.clear_outstanding(MARKER)
 wl_proofcheck.clear_outstanding(PROOF_MARKER_PATH)
 
 
-# --------------------------------------------------------------------------- PART 3h -- grounding a fired finding in the real fix-set (agent/PLAN-judge-prompt-trap-conflation.md).
+# --------------------------------------------------------------------------- PART 3h -- grounding a fired finding in the real fix-set (agent/plans/PLAN-judge-prompt-trap-conflation.md).
 
 
 control(

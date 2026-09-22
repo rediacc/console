@@ -15,7 +15,7 @@
 # WHY THIS EXISTS. A trap that names no enforcement is indistinguishable from
 # one that is fully mechanized, so the unprotected surface cannot be measured
 # and the stop-hook judge briefs every session from headings it is already
-# protected against. `agent/PLAN-trap-enforcement.md` section 3 is the
+# protected against. `agent/plans/PLAN-trap-enforcement.md` section 3 is the
 # specification; this is its W1.
 #
 # THE HAZARD THE PLAN NAMES, AND WHY LIVENESS IS THE POINT (plan section 3.2):

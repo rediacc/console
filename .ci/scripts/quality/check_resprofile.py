@@ -126,7 +126,11 @@ def selftest() -> int:
     check(
         "acted-on: the layer PLUS prose about the layer still does NOT count",
         not acts_outside(
-            [".claude/hooks/stop/wl_profile.py", "agent/PLAN-resprofile-wave2.md", "README.md"]
+            [
+                ".claude/hooks/stop/wl_profile.py",
+                "agent/plans/PLAN-resprofile-wave2.md",
+                "README.md",
+            ]
         ),
     )
     check(
@@ -223,7 +227,7 @@ ACTED_ON_FLOOR = 2
 def acts_outside(files: list[str]) -> bool:
     """Did this commit change something the ranking could plausibly have DRIVEN?
 
-    PROSE DOES NOT COUNT, and that exclusion was paid for immediately. The first commit ever to carry a `Resprofile:` trailer changed wl_profile.py, check_resprofile.py and agent/PLAN-resprofile-wave2.md -- three files, all of them the layer or a document about the layer -- and this function accepted it, because the plan file is not in LAYER_FILES. The retirement trigger asks
+    PROSE DOES NOT COUNT, and that exclusion was paid for immediately. The first commit ever to carry a `Resprofile:` trailer changed wl_profile.py, check_resprofile.py and agent/plans/PLAN-resprofile-wave2.md -- three files, all of them the layer or a document about the layer -- and this function accepted it, because the plan file is not in LAYER_FILES. The retirement trigger asks
     whether the profiler drove work in the CODEBASE; a commit that only writes about the profiler answers that question with its own subject.
 
     So: at least one changed file outside the layer that is not documentation. Docs are `.md` anywhere, plus everything under agent/ and docs/, which are prose trees whatever the extension.

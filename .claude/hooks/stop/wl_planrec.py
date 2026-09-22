@@ -1506,8 +1506,8 @@ def compact(root, rel, me, why="author", park=False, now=None):
                         % (k, len(replaced), UNRESOLVED, ", ".join(replaced[:5]))
                     )
 
-    # `--park` IS AN ASSERTION BY THE CALLER, NOT A DERIVATION FROM THE BOXES. This read `park and d["n_open"]`, so a plan with NO checkbox boxes at all took the `compacted` branch however loudly the caller asked for `parked`: a SILENT no-op that handed the plan a housekeeping exemption it had not earned. agent/PLAN-renet-fetch-hardening.md is the live case found 2026-09-06 -- zero
-    # boxes, seven of its eight sites still open in prose, and `Status: compacted`.
+    # `--park` IS AN ASSERTION BY THE CALLER, NOT A DERIVATION FROM THE BOXES. This read `park and d["n_open"]`, so a plan with NO checkbox boxes at all took the `compacted` branch however loudly the caller asked for `parked`: a SILENT no-op that handed the plan a housekeeping exemption it had not earned. agent/plans/PLAN-renet-fetch-hardening.md is the live case found 2026-09-06
+    # -- zero boxes, seven of its eight sites still open in prose, and `Status: compacted`.
     #
     # Honouring the flag unconditionally can only err toward MORE nagging, never less: `parked` stays on the housekeeping clock, so a plan parked by mistake keeps asking to be finished. Nothing downstream reads `parked` as implying open boxes -- checked in check_plan_record.py (R6 treats parked as exempt
     # from the placeholder rule and nothing else) and in check-plan-housekeeping.sh
@@ -1814,8 +1814,8 @@ def ledger_row(root, rel, text, moved_at=""):
             status = st
             break
     open_t, done_t = PF.plan_boxes(text)
-    # `folder` and `moved_at` joined the row on 2026-09-21 with check:ci-plan-folders. `folder` is DERIVED from the path, so it is computed here exactly as the gate computes it. `moved_at` is CARRIED: it records when a closed plan was moved into a terminal folder, nothing in the tree can be read back out of it once a later commit touches the new path, and recomputing it would
-    # reset the 40-day retention clock on every surgical write. The previous value is passed in by the caller that has the committed ledger; absent, it is "" and the plan has not moved.
+    # `folder` and `moved_at` joined the row on 2026-09-21 with check:ci-plan-folders. `folder` is DERIVED from the path, so it is computed here exactly as the gate computes it. `moved_at` is CARRIED: it records when a closed plan was moved into a terminal folder, nothing in the tree can be read back out of it once a later commit touches the new path, and recomputing it would reset
+    # the 40-day retention clock on every surgical write. The previous value is passed in by the caller that has the committed ledger; absent, it is "" and the plan has not moved.
     return {
         "status": status,
         "owner": CK.plan_owner(root, rel) or "unowned",

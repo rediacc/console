@@ -1,6 +1,6 @@
 """`rediacc_ci.deploy.resolve_account_deploy_config` against its bash twin.
 
-W7P5-a (`agent/PLAN-tooling-transformation.md` line 607): `deploy/` and
+W7P5-a (`agent/plans/PLAN-tooling-transformation.md` line 607): `deploy/` and
 `release/` carried zero Python and zero ledgers before this box. The K=5
 shadow-gate ledger proving equivalence across five distinct committed specimens lives at `.ci/shadow/w7p5a-resolve-account-deploy-config.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p5a-resolve-account-deploy-config --assert --k 5` -> "equivalence holds over 5 distinct trees"); this file is the fast, permanent regression twin of that one-time proof, run against
 the REAL twin and REAL port in this tree rather than a throwaway fixture, since the script has no git-scanning surface for a fixture to vary.

@@ -42,7 +42,7 @@ Rendered proof: "Most tools copy one / piece. We copy all of it." becomes "Most 
 
 **One of my examples was wrong.** `/en/docs` "Creating Your / First Repository" is NOT a sentence defect: it is one sentence in a 124px `.docs-card-link` with `text-wrap: balance` already applied. It needs a width or type fix, and this mechanism does nothing for it.
 
-Design and gate: `agent/PLAN-sentence-aware-wrapping.md`.
+Design and gate: `agent/plans/PLAN-sentence-aware-wrapping.md`.
 
 ### 5. Footer language switcher is white-on-white - CONFIRMED
 `footer .language-trigger` computes `background-color: rgb(255,255,255)` with `color: rgb(228,228,231)`. Contrast ratio ~1.03:1. Visually confirmed at the footer's bottom-right pill.
@@ -254,7 +254,7 @@ Owns: `scripts/check-*.ts`, root `package.json`, `scripts/ci-runner/manifest.ts`
 Three-point wiring per `EXPLORE-chrome.md` 4.1-4.3, copying `check:ci-layout-overflow` verbatim as the template, `check:ci-parity` enforcing all three edits bidirectionally, and every gate carrying a `--selftest` control that proves it can fail.
 
 Gates to add:
-1. **Sentence-aware wrapping** (item 4) - design is `agent/PLAN-sentence-aware-wrapping.md`.
+1. **Sentence-aware wrapping** (item 4) - design is `agent/plans/PLAN-sentence-aware-wrapping.md`.
 2. **Docs topic coverage** (item 7) - every doc must carry a subcategory valid for its
 category, and every browse card must render it. No exception, enforced for future docs.
 3. **Accessibility** - axe-core over a route sample with a shrink-only baseline, seeded at
@@ -329,7 +329,7 @@ section must show four visual rows, and `/ar/` must alternate in the mirror dire
 `npm run check:i18n` plus `check-dead-translation-keys` stay green after the locale prune.
 - Item 3: at `scrollY` 0, 40, 200 and 800, assert the condensed bar is present and
 `pointer-events` is not `none`; assert the primary CTA is clickable at depth 800.
-- Item 4: the gate from `agent/PLAN-sentence-aware-wrapping.md`, plus a manual re-read of
+- Item 4: the gate from `agent/plans/PLAN-sentence-aware-wrapping.md`, plus a manual re-read of
 the four known strings at 1440 and 390.
 - Item 5: re-run `agent-browser a11y http://localhost:4321/en` and confirm the
 `.language-name`, `.footer-version` and `.form-input` contrast nodes clear, in BOTH themes (`agent-browser set media light|dark`).
@@ -366,7 +366,7 @@ gap, the surface-colour survey, and the three-point gate wiring with a worked ex
 internals, the live-tested item-8 measurements and their hazard, thumbnail coverage.
 - `agent/a68f3ab4/RESEARCH-ai-deeplinks.md` (347 lines) - verified provider URL templates
 for Ask Assistant, the safe URL length with its real limiting factor, and how Vercel, PostHog, Cloudflare and Mintlify sites do it.
-- `agent/PLAN-sentence-aware-wrapping.md` (439 lines, Status: draft) - the item-4 mechanism
+- `agent/plans/PLAN-sentence-aware-wrapping.md` (439 lines, Status: draft) - the item-4 mechanism
 decision with its browser evidence, the sweep, and both gates with their controls.
 
 All five are in the repo and survive a lost session.

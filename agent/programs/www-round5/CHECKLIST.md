@@ -16,7 +16,7 @@ Source session `a68f3ab4` (`console-39`), 2026-08-23, planned in `~/monorepo/con
 - [x] d7 file:agent/programs/www-round5/06-execution-guide.md
 - [x] d8 file:agent/programs/www-round5/PROMPT.md
 - [x] d9 file:~/.claude/projects/-home-muhammed-console/programs/www-round5/MANIFEST.md
-- [x] d10 file:agent/PLAN-sentence-aware-wrapping.md
+- [x] d10 file:agent/plans/PLAN-sentence-aware-wrapping.md
 
 ## Waves
 
@@ -119,7 +119,7 @@ Two pieces are NOT done and have no owner. Both have ready-to-run briefs.
 (`quality-www-build` already builds; `browser-smoke.sh` is the harness), the deliberate dark-band exemption gate 4 needs, and the correction that gate 5's shrink-only baseline must seed after ALL waves. Gate 5 additionally cannot start until item 4 below exists.
 
 2. **Operator item 4, the sentence-wrapping copy fixes.** Needs the `<Sentences>`
-mechanism designed in `agent/PLAN-sentence-aware-wrapping.md`, which nobody has built. Gate 1 already enforces its precondition and is baselined at 51 unwrapped renders, so the mechanism can land piecemeal without the gate being either useless or blocking.
+mechanism designed in `agent/plans/PLAN-sentence-aware-wrapping.md`, which nobody has built. Gate 1 already enforces its precondition and is baselined at 51 unwrapped renders, so the mechanism can land piecemeal without the gate being either useless or blocking.
 
 Six decisions are parked for the operator in the sections above; none block anything, and every one has a stated default.
 

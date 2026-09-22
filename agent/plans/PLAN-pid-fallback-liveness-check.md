@@ -27,7 +27,7 @@ Any other literal (`0`, `54321`, ...) is not provably alive-by-construction and 
 
 ## Detection approach: regex over the loop condition span, not a full AST
 
-This is a new guard with no bash twin, so there is nothing to port and no differential oracle -- it is judged the way `block_prose_style_edit.py` (`TWIN = None`, confirmed at `.claude/rediacc_hooks/guards/block_prose_style_edit.py:55`) is judged: a dedicated `test-<stem>.py`, plus a planted `DEFECT`.
+This is a new guard with no bash twin, so there is nothing to port and no differential oracle -- it is judged the way `.claude/rediacc_hooks/guards/block_prose_style_edit.py` (`TWIN = None`, confirmed at `.claude/rediacc_hooks/guards/block_prose_style_edit.py:55`) is judged: a dedicated `test-<stem>.py`, plus a planted `DEFECT`.
 
 A full shell AST is not warranted any more than it was for `block_self_matching_pgrep.py`, which also uses anchored regex plus a small amount of Python string surgery over `hookio` primitives (verified: `CHAIN = "pre-bash"` at line 26, `TWIN = "pre-bash/block-self-matching-pgrep.sh"` at line 27, `ORDER = 15` at line 28, `LOOP_WITH_PGREP` regex at line 38). This design follows that
 precedent: regex to find the loop condition and the `-e`/`-d /proc/$(` anchor, then a small hand-written balanced-paren scanner (regex cannot do nested parens reliably) to pull out the substitution body, then a `||`-aware split (quote-respecting) of that body into the `cat` half and the `echo` half.
@@ -196,14 +196,14 @@ def run(ev):
 
 New:
 - `.claude/rediacc_hooks/guards/block_unsatisfiable_pid_wait.py` -- the guard itself.
-  Docstring sections: WHY A HOOK AND NOT A DOCUMENT (cite `b9fd3td29`); THIS GUARD HAS NO BASH TWIN (modeled on `block_prose_style_edit.py:55`); THE TEST IS THE BUG ITSELF; SCOPE (`/proc/` only, `-e`/`-d` only, loops only, `{1, $$}` only); ADVERSARIAL RISKS DESIGNED AGAINST (the `0`/variable/arbitrary-literal/one-shot/prose cases above).
+  Docstring sections: WHY A HOOK AND NOT A DOCUMENT (cite `b9fd3td29`); THIS GUARD HAS NO BASH TWIN (modeled on `.claude/rediacc_hooks/guards/block_prose_style_edit.py:55`); THE TEST IS THE BUG ITSELF; SCOPE (`/proc/` only, `-e`/`-d` only, loops only, `{1, $$}` only); ADVERSARIAL RISKS DESIGNED AGAINST (the `0`/variable/arbitrary-literal/one-shot/prose cases above).
 - `.claude/rediacc_hooks/guards/test-block_unsatisfiable_pid_wait.py` -- standalone control script, house shape matching `.claude/rediacc_hooks/guards/test-block_push_to_protected_branch.py` (confirmed shape: `CASES = [(name, command, cwd, expect_blocked), ...]` -- the `cwd` slot can be `None` for every case here, since none of these commands are branch-dependent the way a push guard's are; drives the live guard through `dispatch.py` via `GUARD_ARGV`, an anti-vacuity check that not all cases answer the same way, ends `sys.exit(1 if fails else 0)`), transcribing the 20-case table above.
 
 Edit:
 - `docs/agent-reference/TRAPS.md` -- insert the new entry immediately after the existing pgrep entry (confirmed: that entry starts at line 708, the next heading `## A \`cp -rs\` mirror...` starts at line 729), so the insertion point is between those two, unchanged from the design.
 
 Not edited (verified, self-registering):
-- `.claude/settings.json` -- routes `pre-bash` to `dispatch.py --chain pre-bash` as one command; a new `block_*.py` with `CHAIN = "pre-bash"` is picked up with no edit here (`guards/__init__.py:38`, confirmed: "A guard added here is registered by EXISTING").
+- `.claude/settings.json` -- routes `pre-bash` to `dispatch.py --chain pre-bash` as one command; a new `block_*.py` with `CHAIN = "pre-bash"` is picked up with no edit here (`.claude/rediacc_hooks/guards/__init__.py:38`, confirmed: "A guard added here is registered by EXISTING").
 - `.claude/rediacc_hooks/tests/test_hooks_delegates.py` -- `TAILED`'s runtime glob discovery (since 2026-09-22, commit `4e5781b7b`'s neighbor) auto-picks up `test-block_unsatisfiable_pid_wait.py` from `.claude/rediacc_hooks/guards/`, one of `_TAILED_ROOTS`. No manual wiring needed, confirmed by design and by how `test-block_push_to_protected_branch.py` itself got picked up.
 - `test_guards_differential.py` -- `test_every_port_has_a_present_twin` only requires the `test-<stem>.py` file to exist at the conventional name for a `TWIN = None` guard; `EDGE_CASES` on the module (if added) is auto-consumed into `NATIVE_CASES`.
 
@@ -211,10 +211,10 @@ Not edited (verified, self-registering):
 
 `CHAIN = "pre-bash"`, `TWIN = None`.
 
-Verified: every `pre-bash` guard's `ORDER` is densely contiguous 3 through 44 (42 guards, no gaps, no duplicates -- confirmed by direct scan of the tree, matching `test_dispatch.py:166-167`'s own assertion: `declared == list(range(declared[0], declared[0] + len(declared)))`).
+Verified: every `pre-bash` guard's `ORDER` is densely contiguous 3 through 44 (42 guards, no gaps, no duplicates -- confirmed by direct scan of the tree, matching `.claude/rediacc_hooks/tests/test_dispatch.py:166-167`'s own assertion: `declared == list(range(declared[0], declared[0] + len(declared)))`).
 
 Two valid placements, both verified against real precedent (commit `36dd93635`, confirmed in git log, which inserted `block_push_to_protected_branch.py` at `ORDER = 39` and re-keyed 5 sibling files with `# Re-keyed from X to X+1 on 2026-09-22 by the insertion of block_push_to_protected_branch.py at 39.` comments -- confirmed present verbatim in
-`block_pathspecless_git_commit.py:45`, `block_prose_style_commit.py:49`, `block_unproven_bulk_transform.py:30`, `warn_staged_shape_duplication.py:55`, `block_unverified_push.py:36`):
+`.claude/rediacc_hooks/guards/block_pathspecless_git_commit.py:45`, `.claude/rediacc_hooks/guards/block_prose_style_commit.py:49`, `.claude/rediacc_hooks/guards/block_unproven_bulk_transform.py:30`, `.claude/rediacc_hooks/guards/warn_staged_shape_duplication.py:55`, `.claude/rediacc_hooks/guards/block_unverified_push.py:36`):
 
 - Recommended: append, `ORDER = 45`. Zero other files touched. There is no correctness dependency between this guard and any neighbor -- each `pre-bash` guard matches a disjoint command shape and the chain stops at first refusal, so relative order among independent guards is inert. Lowest-risk choice.
 - Alternative (documented, not taken): insert at `ORDER = 16`, immediately after `block_self_matching_pgrep.py` (15, the closest sibling in the wait-loop-liveness family), re-keying 29 files. Rejected for this implementation: no correctness benefit over appending, and 29 touched files is a much larger surface for a change with zero behavioral dependency on ordering.
@@ -261,5 +261,5 @@ Two rules. First, never give a `$(cat <pidfile> || echo <N>)` substitution insid
 
 - `test-block_unsatisfiable_pid_wait.py` passes all 20 cases standalone, with a genuine block/allow split (not all one verdict).
 - The planted `DEFECT` substitution flips at least one case's verdict when nullified (proves the test is not vacuous).
-- `check:ci-pytest`-equivalent local run (`test_hooks_delegates.py`, `test_dispatch.py`, `test_guards_differential.py`) green with zero manual registration.
+- `check:ci-pytest`-equivalent local run (`test_hooks_delegates.py`, `.claude/rediacc_hooks/tests/test_dispatch.py`, `test_guards_differential.py`) green with zero manual registration.
 - The TRAPS.md entry reads correctly in place, matching the document's existing entry format.

@@ -19,7 +19,7 @@ NOT ADOPTED. The rival engine-first angle shipped instead, and none of this plan
 - Section 1.4's correction HELD. `rdc storage browse` was not retired and is still
 registered at `packages/cli/src/commands/storage.ts:259` over `packages/cli/src/services/repo/storage-browser.ts`.
 - THE HEADER IS TRUE ABOUT ITSELF AND MISLEADING ABOUT ITS SUBJECT. "Status: design only,
-no code written" is accurate for this file and reads, eighteen days later, as though browse were unbuilt. `agent/PLAN-chunk-store-browse-engine.md` and `agent/PLAN-chunk-store-browse-DECISION.md` record the same conclusion from the winning side.
+no code written" is accurate for this file and reads, eighteen days later, as though browse were unbuilt. `agent/plans/PLAN-chunk-store-browse-engine.md` and `agent/plans/PLAN-chunk-store-browse-DECISION.md` record the same conclusion from the winning side.
 
 ## Lessons
 - A losing angle needs a status that says LOST. "No code written" and "this design was

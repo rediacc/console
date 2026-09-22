@@ -12,7 +12,7 @@
  * side-effect imports do not have, so the walk stopped at a 129-byte facade chunk and
  * never saw the 122,110 B `TutorialVideoPlayer` (plyr) that every homepage visitor in
  * every locale downloads. The gate passed at 451,621 B over a page shipping 576,294 B.
- * Fixed 2026-09-03; see agent/PLAN-www-bundle-determinism.md for the full arithmetic,
+ * Fixed 2026-09-03; see agent/plans/PLAN-www-bundle-determinism.md for the full arithmetic,
  * including how it reconciles to the byte with CI run 33708505104.
  *
  * THE BUDGET IS 500,000 B AND IT IS DELIBERATELY SET WHERE THE FIX LANDS, not where the
@@ -69,7 +69,7 @@ const DEFAULT_BUDGET = 500_000;
  * This split is only honest because the deferral is REAL. Until 2026-09-03 the hydrator
  * mounted on DOMContentLoaded, so every homepage visitor fetched the player whether or
  * not they watched anything -- calling that "deferred" would have been a fudge, and the
- * plan that proposed this split (agent/PLAN-www-bundle-determinism.md section 3a) said
+ * plan that proposed this split (agent/plans/PLAN-www-bundle-determinism.md section 3a) said
  * so in those words. What earns it: SPSolutionVideo.astro now server-renders a poster
  * and tutorial-video-hydrate.ts builds the player on first CLICK. A visitor who never
  * presses play never pays these bytes.
@@ -110,10 +110,8 @@ function importSpecifiers(source: string): Edge[] {
     out.push({ spec: m[1], dynamic: false });
   for (const m of source.matchAll(/\bimport\s*\(\s*["']([^"']+)["']/g))
     out.push({ spec: m[1], dynamic: true });
-  // `\s*`, NOT `\s+`, and the difference was worth 124,673 B. Rollup emits bare
-  // side-effect imports with no whitespace at all -- `import"./x.js";import"./y.js";` --
-  // and `\s+` matched none of them. The homepage's script entry is a 129-BYTE FACADE whose only three edges are all of that form, so this walk dead-ended there and the gate reported 451,621 B while the page shipped 576,294 B. Note the two lines above
-  // already use `\s*`; only this one demanded a space.
+  // `\s*`, NOT `\s+`, and the difference was worth 124,673 B. Rollup emits bare side-effect imports with no whitespace at all -- `import"./x.js";import"./y.js";` -- and `\s+` matched none of them. The homepage's script entry is a 129-BYTE FACADE whose only three edges are all of that form, so this walk dead-ended there and the gate reported 451,621 B while the page shipped 576,294
+  // B. Note the two lines above already use `\s*`; only this one demanded a space.
   for (const m of source.matchAll(/\bimport\s*["']([^"']+)["']/g))
     out.push({ spec: m[1], dynamic: false });
   return out;

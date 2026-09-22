@@ -53,7 +53,7 @@
  * gate declares itself instead of being added to a list in a runner.
  * ---------------------------------------------------------------------------
  *
- * See agent/PLAN-npm-ci-parallel-parity.md sections 3 and 4.2.
+ * See agent/plans/PLAN-npm-ci-parallel-parity.md sections 3 and 4.2.
  */
 
 import type { ExecOutcome } from './exec';

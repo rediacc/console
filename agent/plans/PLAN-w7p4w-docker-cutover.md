@@ -53,7 +53,7 @@ Compacted-By: d778be9d
 Compacted-At: 2026-09-20T18:06:24Z
 Boxes: 12 attested, 0 open, 0 abandoned
 Epics: e87fa3ce
-Touched: agent/PLAN-tooling-transformation.md, .ci/rediacc_ci/docker/retag_image.py, .ci/rediacc_ci/docker/create_manifest.py, .ci/rediacc_ci/docker/cleanup_staging.py, package.json, scripts/ci-runner/manifest.ts, .ci/scripts/release/cleanup-channel-docker-tags.sh, .ci/rediacc_ci/quality/script_exec_bit.py, .github/workflows/ci-build-docker.yml, .github/workflows/cd-stage.yml, .github/workflows/cd-v2.yml, .ci/scripts/docker/create-manifest.sh, .ci/scripts/docker/cleanup-staging.sh, .ci/config/constants.sh, .ci/scripts/docker/cleanup_staging.py
+Touched: agent/plans/PLAN-tooling-transformation.md, .ci/rediacc_ci/docker/retag_image.py, .ci/rediacc_ci/docker/create_manifest.py, .ci/rediacc_ci/docker/cleanup_staging.py, package.json, scripts/ci-runner/manifest.ts, .ci/scripts/release/cleanup-channel-docker-tags.sh, .ci/rediacc_ci/quality/script_exec_bit.py, .github/workflows/ci-build-docker.yml, .github/workflows/cd-stage.yml, .github/workflows/cd-v2.yml, .ci/scripts/docker/create-manifest.sh, .ci/scripts/docker/cleanup-staging.sh, .ci/config/constants.sh, .ci/scripts/docker/cleanup_staging.py
 Gates: check:ci-dead-bash, check:ci-dead-python, check:ci-em-dash-surfaces, check:ci-python-lint, check:ci-shell-size, check:ci-staging-tag-guard
 Why-Source: model
 Read-History: `git show 34d1153bbcf19cb076af1957dcb17306000a4c53` recovers the text; `git log --find-object=34d1153bbcf19cb076af1957dcb17306000a4c53 --all` names the commit

@@ -1,7 +1,7 @@
 """wl_proofcheck: the stop judge asks whether a bulk mechanical transform proved itself.
 
-WHY THIS EXISTS, in the operator's own instruction: block a bulk transform that carries no proof it did not destroy structure the transform's own author did not think to check. `agent/PLAN-consolidation-pressure.md` names the mechanism -- `.ci/scripts/quality/shape_cluster_diff.py`, a shape-cluster diff over every changed line -- and this module is the second half: the demand that
-a session actually runs it, or something as strong, before a bulk rewrite is allowed to stand.
+WHY THIS EXISTS, in the operator's own instruction: block a bulk transform that carries no proof it did not destroy structure the transform's own author did not think to check. `agent/plans/PLAN-consolidation-pressure.md` names the mechanism -- `.ci/scripts/quality/shape_cluster_diff.py`, a shape-cluster diff over every changed line -- and this module is the second half: the demand
+that a session actually runs it, or something as strong, before a bulk rewrite is allowed to stand.
 
 THE INCIDENT THIS RULE ANSWERS TO, all from one session and none caught by a green gate: a reflow pass rewrote 884 files and destroyed 838 section banners while an AST-equality proof, 82 selftest controls and 216 pytest cases all passed, because none of them reads prose STRUCTURE. Fixing the Python comment path left the C-style one absorbing the same shapes. A list item's
 continuation was flattened to column 0 under a passing fence/heading/table check. Four bulk rewrites, each shipped on the strength of the WRONG proof, or none.
@@ -13,7 +13,7 @@ SECOND question about a fix-set the judge is already being shown, not a second g
 THE SAME ENFORCEMENT SHAPE AS wl_classsweep, on purpose, because it is proven: ONE optional-at-the-top-level schema object, required only when the prompt actually asks for it (`judge_schema_for`); a verdict flip via `wl_rules.apply_order`, never a new blocking path; a carried-forward demand so a session that stops again without the proof is asked again; FAIL SEMANTICS that never
 fail closed, because the only thing this object can do is turn a stop into a continue, and degrading loses a demand rather than granting an exit.
 
-NOT DUPLICATED, REUSED. `validate_search`, `names_destructive` and the Demand class already live behind `wl_classsweep`/`wl_rules` and are called here rather than copied, which is the discipline `agent/PLAN-consolidation-pressure.md` argues for: a rule of this shape belongs in one place, consulted by every caller, not re-derived by each one that needs it.
+NOT DUPLICATED, REUSED. `validate_search`, `names_destructive` and the Demand class already live behind `wl_classsweep`/`wl_rules` and are called here rather than copied, which is the discipline `agent/plans/PLAN-consolidation-pressure.md` argues for: a rule of this shape belongs in one place, consulted by every caller, not re-derived by each one that needs it.
 """
 
 import os
@@ -191,8 +191,8 @@ def enforce(out, payload, fixset_files=None):
     THE RESERVED CHECK RUNS EVEN WHEN `validate_search` SAYS OK, and it has to: `validate_search` proves a string PARSES as a read-only shell command, not that its English is safe to hand over. "commit the reflow now" carries no `git` token and no verb `_DESTRUCTIVE` recognises, so it validates as `ok` -- caught by this module's own planted control, and fixed here and in
     `wl_classsweep.enforce`, which carried the identical gap on its `search` field.
 
-    `fixset_files` is a SEPARATE, later-added gap of the same shape: a fired finding's own SCOPE claim was never checked against what git says actually changed, only that a follow-up command built from it parses. ANNOTATES `reason` only, never suppresses (see agent/PLAN-judge-prompt-trap-conflation.md and `wl_rules.scope_grounded`'s own docstring for why): this rule never fails
-    closed, so a check added here may only make a fired finding more legible about its own uncertainty.
+    `fixset_files` is a SEPARATE, later-added gap of the same shape: a fired finding's own SCOPE claim was never checked against what git says actually changed, only that a follow-up command built from it parses. ANNOTATES `reason` only, never suppresses (see agent/plans/PLAN-judge-prompt-trap-conflation.md and `wl_rules.scope_grounded`'s own docstring for why): this rule never
+    fails closed, so a check added here may only make a fired finding more legible about its own uncertainty.
     """
     reason = V_REASON % (payload["transform_kind"], V_ASSERTED if payload["asserted"] else "")
     if not wl_rules.scope_grounded(payload.get("scope", ""), fixset_files):

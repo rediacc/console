@@ -5,7 +5,7 @@
 # check (.claude/hooks/stop/wl_planfid.py) blocks a stop while "a plan task
 # nothing tracks" exists, and it finds those tasks with a MARKDOWN parser. A
 # plan written in prose is not seen as having zero tasks -- it is seen as
-# having the WRONG ones. Measured on agent/PLAN-secret-namespace-migration.md
+# having the WRONG ones. Measured on agent/plans/PLAN-secret-namespace-migration.md
 # before this guard existed: plan_tasks() returned 21 "tasks", of which 8 were
 # the operator's locked DECISIONS and 5 were open QUESTIONS, while every real
 # unit of work (the two rotation defects, the atomic rename, the four cleanup

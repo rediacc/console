@@ -1099,7 +1099,7 @@ scope out a gate because gates are not scopeable at all. A conservative rule def
 **Two subsets stay full**, found by tracing execution rather than reading names: `scripts/drills/` (ct-tests.yml:1730 → run.sh:1987) and `generate-third-party-licenses.ts`, which runs inside the SEA build and whose output SHIPS in the CLI binary — a silently-wrong credits file is caught only by gated jobs. Everything else is a zero-job `gates` module.
 
 **Honest expected value: ~1.28% of commits** (29 of 2263). 75% of `scripts/`-touching commits also drag `package.json`/`.ci/`/`.github/`, which force full independently. The reason to land it is not the minutes; it is that "an attribution-string check ran a ceph fork test" makes the engine look untrustworthy even when it is working correctly. Full analysis:
-`agent/PLAN-scope-gates-split.md`.
+`agent/plans/PLAN-scope-gates-split.md`.
 
 **A CI wait is no longer a legitimate stop.** Operator ruling: a session watching a run is idle, not blocked, because the run needs nothing from it. The stop-gate judge now earns "stop" from a named CI wait only when no tracked item can be advanced locally. Unpushed work cannot disturb a run in flight, so "wait for the PR to land" almost never justifies not writing the code.
 
@@ -1642,7 +1642,7 @@ Two defects only the live document exposed, no fixture would have: a peer headin
 Operator ruling: "reading the trap file could be skipped with an agent." A trap in markdown protects only a session that reads it, remembers it, and applies it at the right second. This repo had already proved that in its own record: `REPORT-licensing-bigbang-2026-08-04.md:234` is titled "WHY KNOWING ABOUT IT DOES NOT PREVENT IT" and reports eight instances in one night, three by
 the author who had just written the entry. `pr-babysit-0804-1.md:114` adds the design principle: "not one was caught by its author re-reading it. Each was caught by a DIFFERENT instrument."
 
-Plan at `agent/PLAN-trap-enforcement.md`, which absorbs and supersedes `PLAN-unify-trap-corpus.md`. Instruments are matched to failure SHAPE, not topic: forbidden action and guaranteed-failing action (PreToolUse block), misread outcome (PostToolUse injection on `tool_response`), unproven claim (control-first gate). Of 23 traps roughly 14 are mechanizable now and about 2.5 are
+Plan at `agent/plans/PLAN-trap-enforcement.md`, which absorbs and supersedes `PLAN-unify-trap-corpus.md`. Instruments are matched to failure SHAPE, not topic: forbidden action and guaranteed-failing action (PreToolUse block), misread outcome (PostToolUse injection on `tool_response`), unproven claim (control-first gate). Of 23 traps roughly 14 are mechanizable now and about 2.5 are
 judgment-only, and the judgment-only ones sit at the top of the cost curve.
 
 Landed: `block-blanket-git-add.sh`, and `trapguard/dispatch.py` carrying
@@ -2283,7 +2283,7 @@ page-cap term in that warning is load-bearing: without it every young low-volume
 
 Three days: 589 success, 230 skipped, 117 cancelled, **64 failure** -- and **63 of the 64 are the watchdog failing BY DESIGN** (`##[error]PIPELINE CANCELLED`, its way of signalling it killed a pipeline). Exactly one genuine failure. The 117 cancelled are superseded pushes.
 
-This is why "retry all failed runs nightly" is the wrong shape, and why the design in `agent/PLAN-nightly-retry-and-watchdog-noise.md` is filters-first. Also verified: **a rerun updates a run's conclusion IN PLACE**, so a sweeper keyed on `conclusion=failure` self-heals.
+This is why "retry all failed runs nightly" is the wrong shape, and why the design in `agent/plans/PLAN-nightly-retry-and-watchdog-noise.md` is filters-first. Also verified: **a rerun updates a run's conclusion IN PLACE**, so a sweeper keyed on `conclusion=failure` self-heals.
 
 ### A PR must not be opened from a stale-dated branch
 
@@ -2567,8 +2567,8 @@ conflicted, and one where the submodule's own rebase conflicted and silently did
 **Mention read as execution, six times.** A deny-list flagged itself; a `log_warn` string read as code; prose about a rule read as the rule being broken; a heredoc BODY read as a command; a shell variable assignment read as an execution; and finally a one-shot `pgrep -cf` sharing a line with the English word "while" read as a wedged wait loop -- that last one inside the guard
 written to catch the fifth. Every fix anchors on execution: command position after comment and heredoc stripping, and for the loop case, requiring the `pgrep` to sit inside the loop's own condition.
 
-The sibling class is **a union read as safe**. Merging both waves' additions to `wl_agents._STOPWORD_TEXT` produced adjacent Python literals with no separating space, so `touched` + `see` concatenated and two real stopwords silently stopped existing. The file parsed, the suite passed, nothing failed. That is why `agent/PLAN-resumable-rebase-executor.md` requires every mechanical
-union to land behind an invariant proving meaning survived, and why a class with no invariant stays "judgement" and is left untouched.
+The sibling class is **a union read as safe**. Merging both waves' additions to `wl_agents._STOPWORD_TEXT` produced adjacent Python literals with no separating space, so `touched` + `see` concatenated and two real stopwords silently stopped existing. The file parsed, the suite passed, nothing failed. That is why `agent/plans/PLAN-resumable-rebase-executor.md` requires every
+mechanical union to land behind an invariant proving meaning survived, and why a class with no invariant stays "judgement" and is left untouched.
 
 ### The same class, measured instead of counted
 
@@ -2769,11 +2769,11 @@ rather than as nothing to do was the bug. It now checks `rev-parse --verify --qu
 
 ### Two plans filed, and what they found
 
-`agent/PLAN-ci-watch-enforcement.md`: this session pushed four times and watched CI zero times on its own initiative. The machinery to catch that already exists and **could never fire**. `ci_watch_armed` has ONE call site (`wl_ci.py:769`), reached only after a job has already failed, so it can only EXCUSE a block. And `ci_trouble` returns at its first two statements — `:737-739` on
-an unset `WORKLIST_PUBLISH_REF`, `:740-743` on multi-session. Zero `cistate` sidecars after a full night proves it never executed past line 743.
+`agent/plans/PLAN-ci-watch-enforcement.md`: this session pushed four times and watched CI zero times on its own initiative. The machinery to catch that already exists and **could never fire**. `ci_watch_armed` has ONE call site (`wl_ci.py:769`), reached only after a job has already failed, so it can only EXCUSE a block. And `ci_trouble` returns at its first two statements —
+`:737-739` on an unset `WORKLIST_PUBLISH_REF`, `:740-743` on multi-session. Zero `cistate` sidecars after a full night proves it never executed past line 743.
 
-`agent/PLAN-stop-always-tier.md`: the three checks where ANOTHER session is blocked — `no-waiter`, `no-waiter-asked`, `requests` — are all `always=False`. `carry_through_pause` at `wl_checks.py:2971` already names exactly those three on exactly the right reasoning, and that mechanism survives a cadence pause but NOT rotation. Rotation breaks ties by **line order**, so 23 keys sort
-ahead of "you are not listening". Worse, `no-waiter-asked` bumps its 5-rung ladder at COMPUTE time (`:3957`), so rungs advance unseen and "rotation forgets nothing" is false. `wl_wait.nudge()` UNLINKS the grace counter on compliance, so arming one waiter buys 30+ minutes of silence after it lapses.
+`agent/plans/PLAN-stop-always-tier.md`: the three checks where ANOTHER session is blocked — `no-waiter`, `no-waiter-asked`, `requests` — are all `always=False`. `carry_through_pause` at `wl_checks.py:2971` already names exactly those three on exactly the right reasoning, and that mechanism survives a cadence pause but NOT rotation. Rotation breaks ties by **line order**, so 23 keys
+sort ahead of "you are not listening". <!-- style-ok --> Worse, `no-waiter-asked` bumps its 5-rung ladder at COMPUTE time (`:3957`), so rungs advance unseen and "rotation forgets nothing" is false. `wl_wait.nudge()` UNLINKS the grace counter on compliance, so arming one waiter buys 30+ minutes of silence after it lapses.
 
 **And a channel that never reaches a blocking session at all:** unread sub-agent reports are an `outq` advisory, and `outq_drain` has one call site, on the ALLOW path. Four unread reports survived 57 consecutive blocking stops untold.
 
@@ -3025,7 +3025,7 @@ The gate then caught its own author: moving five files onto a shared colour modu
 
 ## The stretch that wired the third judged rule, and the four claims that died
 
-Twelve commits, `1a8f9bc60`..`b41506cac`. The design is in `agent/PLAN-duplication-angle.md`; this section records what moved and what stopped being true.
+Twelve commits, `1a8f9bc60`..`b41506cac`. The design is in `agent/plans/PLAN-duplication-angle.md`; this section records what moved and what stopped being true.
 
 ### The replay answered the question the rule was waiting on
 
@@ -3725,7 +3725,7 @@ Class swept afterwards: 40 shadow-compare steps across 19 workflow files, exactl
 
 ### The effort cap exists now, and a compacted session needs to know
 
-Operator ruling, 2026-09-05T01:55Z: cap runaway regression-gate work, and **on the hook side, not by a session deciding it has complied enough**. Steps 2-3 of `agent/PLAN-reggate-effort-cap.md` are in:
+Operator ruling, 2026-09-05T01:55Z: cap runaway regression-gate work, and **on the hook side, not by a session deciding it has complied enough**. Steps 2-3 of `agent/plans/PLAN-reggate-effort-cap.md` are in:
 
 - `agent/reggate/<branch>.jsonl` — append-only, **tracked**, scoped to the BRANCH. Not the
 session: `reggate_path` is session-keyed, so a per-session budget evaporates exactly when a long night makes compaction likely.
@@ -3815,7 +3815,7 @@ needs a valid `AKIA` id. Assembled from parts rather than baselined, which also 
 ### What is deliberately still on GitHub
 
 Four reads, all in workflows that cannot fetch: `breakpoint.yml` (a later step hands a human a shell) and `watchdog-monitor.yml` (a gate enforces that nothing optional precedes its monitor step). **Do not "fix" these with a step-scoped fetch**: `GITHUB_ENV` and `GITHUB_OUTPUT` are files any step in the job can read, so it isolates nothing from the shell. See
-`agent/PLAN-breakpoint-secret-shape.md`.
+`agent/plans/PLAN-breakpoint-secret-shape.md`.
 
 ---
 
@@ -3874,12 +3874,12 @@ evidence is a dedicated per-guard control harness (`test-block_<name>.py`) plus 
 The wave that followed found real bugs, several of them the SAME shape as bugs this document already narrates for other gates, which is worth naming rather than treating each as a one-off.
 
 **`discover()` trusted the filesystem, not git, and admitted gitignored files into a `--write-baseline` sweep.** This is the second recorded instance of exactly the contamination class the 2026-09-13 `.claude/worktrees/` incident named first (fixed there by `paths.walk_tree()`): a corpus-building function that walks disk instead of `git ls-files` will eventually freeze debt for a
-file nobody committed. Fixed by routing `discover()` through `gitx.is_work_tree()` + `gitx.ls_files(existing=True)`, matching the same convention three sibling `--write-baseline` gates (`plant_proofs.py`, `python_env_registry.py`, `check_language_policy.py`) already used. `agent/PLAN-git-ignore-aware-discover.md` carries the full design and the sibling-gate evidence table.
+file nobody committed. Fixed by routing `discover()` through `gitx.is_work_tree()` + `gitx.ls_files(existing=True)`, matching the same convention three sibling `--write-baseline` gates (`plant_proofs.py`, `python_env_registry.py`, `check_language_policy.py`) already used. `agent/plans/PLAN-git-ignore-aware-discover.md` carries the full design and the sibling-gate evidence table.
 
 **Widening `.json` into scope needed two separate fixes before it could work at all, not one.** `globals.include` matched by bare suffix, so a glob meant to narrow scope to `.ci/config/*.json` would have silently admitted every `.json` in the tree (fixed: `fnmatch` against the raw glob, in both `discover()` and the edit-time guard's `_in_scope()`). And every non-`.md`/`.py` suffix
 extracted comments via a scanner that treats anything inside quotes as data, so a naive `.json` addition would have scanned zero prose lines and reported green over nothing (fixed: a dedicated `json_prose_lines()` physical-line extractor). `gates.lock.json` stays excluded on purpose: its `blocker` field is a **typed** field (`scripts/ci-runner/gate-spec.ts`), not an untyped string
-constant a human wraps by hand, so no amount of source-side rewrapping changes its JSON output -- verified directly by wrapping six long `BLOCKER:` literals in `manifest.ts` and confirming `gates.lock.json`'s own lines were unaffected. `agent/PLAN-json-prose-scope-audit.md` has the full survey (742 `.json` files, 23 in the narrow scope that actually got widened) and the bug found
-while seeding it: `write_baseline()` tallied `by_rule` from raw findings instead of the same `fid`-deduped set `count` uses, drifting by exactly the number of repeated `(path, rule, text)` triples in the tree.
+constant a human wraps by hand, so no amount of source-side rewrapping changes its JSON output -- verified directly by wrapping six long `BLOCKER:` literals in `manifest.ts` and confirming `gates.lock.json`'s own lines were unaffected. `agent/plans/_done/PLAN-json-prose-scope-audit.md` has the full survey (742 `.json` files, 23 in the narrow scope that actually got widened) and the
+bug found while seeding it: `write_baseline()` tallied `by_rule` from raw findings instead of the same `fid`-deduped set `count` uses, drifting by exactly the number of repeated `(path, rule, text)` triples in the tree.
 
 **A `--migrate --candidates` bug hid a session that had ticked every worklist item but still had real work in its STATE.md.** The fallback loop that surfaces a STATE.md-only candidate reused `WORKLIST_DEAD_HOURS` (a 24-hour constant tuned for "is this process still plausibly alive") as an upper age bound for "is this handoff worth surfacing at all" -- two questions that want
 different numbers, made nearly mutually exclusive by sharing one. Fixed with a dedicated `WORKLIST_HANDOFF_STALE_HOURS` (default 720h/30 days).
@@ -3930,17 +3930,17 @@ would have frozen that corruption as the reference.
 
 ## Agreement tests, a proof obligation for bulk change, and a judge that invented its evidence (2026-09-17/20)
 
-The consolidation-pressure plan (`agent/PLAN-consolidation-pressure.md`) answered four incidents in which one policy lived in two implementations and nothing compared them. Duplicate-text detection could not have caught any of the four, so the instrument is AGREEMENT: `.ci/rediacc_ci/tests/test_sibling_agreement.py` runs two independent implementations of one decision over the real
-corpus, with a containment arm (the reflow never folds a line the linter does not police) and a coverage arm, for the Python pair and the C-style pair. Each anti-vacuity control calls the same verdict function as the real arm, because a control that re-derives the inequality inline was caught twice being the same defect one function down.
+The consolidation-pressure plan (`agent/plans/PLAN-consolidation-pressure.md`) answered four incidents in which one policy lived in two implementations and nothing compared them. Duplicate-text detection could not have caught any of the four, so the instrument is AGREEMENT: `.ci/rediacc_ci/tests/test_sibling_agreement.py` runs two independent implementations of one decision over
+the real corpus, with a containment arm (the reflow never folds a line the linter does not police) and a coverage arm, for the Python pair and the C-style pair. Each anti-vacuity control calls the same verdict function as the real arm, because a control that re-derives the inequality inline was caught twice being the same defect one function down.
 
 `.ci/scripts/quality/shape_cluster_diff.py` is the proof a bulk transform owes: every changed line becomes a shape, and per-shape counts are diffed against a revision, with `--columns` for lost indent widths. It was built against markdown and collided with Python on first contact (`heading` and `indent-code` matched ordinary `#` comments), so those two shapes are now markdown-only
 (`bcfb87458`). The refusal is enforced twice: `wl_proofcheck.py` asks the stop judge on a fix stop, and `block_unproven_bulk_transform.py` refuses at pre-bash commit, push and `gh pr create` above 20 files with no quoted proof. TRAPS.md records why a proof can be the wrong proof.
 
 Two reflow consequences. Anchoring the commented-out-code test to a trailing semicolon (`469faae58`) unlocked 988 R19 findings across 593 files, reflowed and proven by a docstring-normalized AST comparison for Python and an untouched-line comparison for C-style. A docstring's opening and closing physical lines now fold and wrap when prose shares the line with the quotes
-(`d43cd6212`, `agent/PLAN-reflow-comments-boundary-wrapping.md`): 644 files, zero AST mismatches, and a closing line with a trailing token after the quote is excluded because gluing the delimiter back would drop it.
+(`d43cd6212`, `agent/plans/_done/PLAN-reflow-comments-boundary-wrapping.md`): 644 files, zero AST mismatches, and a closing line with a trailing token after the quote is excluded because gluing the delimiter back would drop it.
 
-The stop judge fabricated a bulk transform twice with specifics that did not exist (an 84-file reflow, a `plans/` directory). The live proof prompt quoted a real 884-file incident as a worked example, and the judge paraphrased it as a finding. `c1a6128aa` (`agent/PLAN-judge-prompt-trap-conflation.md`) injects a git-computed file list into the prompt, removes the magic number, and
-annotates a fired finding UNVERIFIED when its scope does not match that list, never suppressing it. `2bc1b2ad9` rewrote the class-sweep block around its purpose, consolidation: look for other copies of the CHANGED code, with any search anchored to the fix-set's own files.
+The stop judge fabricated a bulk transform twice with specifics that did not exist (an 84-file reflow, a `plans/` directory). The live proof prompt quoted a real 884-file incident as a worked example, and the judge paraphrased it as a finding. `c1a6128aa` (`agent/plans/PLAN-judge-prompt-trap-conflation.md`) injects a git-computed file list into the prompt, removes the magic number,
+and annotates a fired finding UNVERIFIED when its scope does not match that list, never suppressing it. `2bc1b2ad9` rewrote the class-sweep block around its purpose, consolidation: look for other copies of the CHANGED code, with any search anchored to the fix-set's own files.
 
-Still open: `agent/PLAN-staged-duplication-probe.md` (a pre-bash staged-files duplication probe). A quick Python port of `check-shape-duplication.ts` was rejected because `isSharedHelperCall` derives its helper names from the whole corpus, so a port would be a second implementation of one decision; a Plan agent is designing a mechanism that keeps the normalization in one place. An
-audit of the other stop-hook prompts for job-specific wording is in flight.
+Still open: `agent/plans/PLAN-staged-duplication-probe.md` (a pre-bash staged-files duplication probe). A quick Python port of `check-shape-duplication.ts` was rejected because `isSharedHelperCall` derives its helper names from the whole corpus, so a port would be a second implementation of one decision; a Plan agent is designing a mechanism that keeps the normalization in one
+place. An audit of the other stop-hook prompts for job-specific wording is in flight.

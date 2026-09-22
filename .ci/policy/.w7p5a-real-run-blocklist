@@ -1,6 +1,6 @@
 # .w7p5a-real-run-blocklist -- W7P5-a's real-run BLOCKER register.
 #
-# W7P5-a ("agent/PLAN-tooling-transformation.md") requires, for each of the 48
+# W7P5-a ("agent/plans/PLAN-tooling-transformation.md") requires, for each of the 48
 # deploy/release bash scripts under port: either a K=5 shadow-gate ledger
 # asserting `equivalence holds`, or an allowlist entry with a BLOCKER. No
 # third state.

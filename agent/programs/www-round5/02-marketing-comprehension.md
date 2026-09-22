@@ -44,7 +44,7 @@ Score the rest against a single question: **does a prospect need this answered b
 
 ## Item 4 fixes in marketing copy
 
-The mechanism, the evidence that chose it, the sweep and both gates live in `agent/PLAN-sentence-aware-wrapping.md`. Read it before touching this. What matters here:
+The mechanism, the evidence that chose it, the sweep and both gates live in `agent/plans/PLAN-sentence-aware-wrapping.md`. Read it before touching this. What matters here:
 
 **The operator's literal rule is unsatisfiable and was corrected.** "A line must not both end one sentence and begin another" turns `.sp-slice-winner-description`, which is five sentences on two lines, into five lines. The enforceable rule is: **a sentence that occupies more than one line must not share either of those lines with a neighbour.** Two whole sentences on one line is
 fine.

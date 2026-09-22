@@ -4,7 +4,7 @@ Status: draft
 First-Seen: 2026-09-17
 Owner: d778be9d
 Updated: 2026-09-17
-Related: agent/PLAN-plan-file-lifecycle.md, agent/PLAN-tooling-transformation.md
+Related: agent/plans/PLAN-plan-file-lifecycle.md, agent/plans/PLAN-tooling-transformation.md
 
 99 open `- [ ]` boxes across 11 committed plans, owned by three idle sessions, are invisible to every "what is left" surface this repo has. This makes the DISCOVERY layer read the plan census it already maintains.
 
@@ -16,7 +16,7 @@ Live on this tree, 2026-09-17, branch `0914-1`:
 
 returns four idle prefixes -- `f4da5c2e`, `74de73ca`, `d1589e0b`, `8f55d4f0` -- every one of them carrying `0 worklist item(s), but a STATE.md Next action below`. Not one plan file is named. Yet `agent/INDEX.md:345` already records:
 
-    | `agent/PLAN-tooling-transformation.md` | ready | 6782 | 13 | 141 | 622006 |
+    | `agent/plans/PLAN-tooling-transformation.md` | ready | 6782 | 13 | 141 | 622006 |
 
 Thirteen open boxes, 141 ticked, `Owner: 8f55d4f0` -- a session the same listing prints as `idle`. The whole tree, computed from the census plus one `plan_owner` read per box-carrying plan:
 
@@ -223,7 +223,7 @@ body -- the same cycle-avoidance `wl_planindex.census_rows` documents for `wl_ch
 Run, in order, and record the output of the first two in the commit message:
 
 1. `python3 .claude/hooks/stop/worklist.py --migrate d778be9d --candidates`
--- must now name `agent/PLAN-tooling-transformation.md [ready] 13 open` under `8f55d4f0` and `agent/PLAN-stop-hook-overhaul.md [ready] 31 open` under `f4da5c2e`. Before the change, neither string appears anywhere in the output.
+-- must now name `agent/plans/PLAN-tooling-transformation.md [ready] 13 open` under `8f55d4f0` and `agent/plans/PLAN-stop-hook-overhaul.md [ready] 31 open` under `f4da5c2e`. Before the change, neither string appears anywhere in the output.
 2. `python3 .claude/hooks/stop/worklist.py --migrate d778be9d --candidates --json`
 -- every candidate object carries a `plans` array (possibly empty); the union of `plans[].rel` over all candidates must be exactly the 11 idle-owned plans tabulated in the Why section, and must NOT contain any plan owned by `d778be9d` or `PLAN-secret-namespace-migration.md`.
 3. `npm run check:ci-hook-worklist-suite` -- the whole v5 control suite, which

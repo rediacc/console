@@ -316,7 +316,7 @@ jobs:
       # on a real bump-none merge, so nothing would ever exercise it and it
       # would rot into a vacuous branch. Letting the script decide keeps the
       # thing under test on the live path. See
-      # agent/PLAN-skip-release-gates-r2-manifest.md section 3.
+      # agent/plans/PLAN-skip-release-gates-r2-manifest.md section 3.
       - name: Upload artifacts to R2 channel
         if: inputs.channel != ''
         run: |

@@ -11,7 +11,7 @@ implementations. Line-level and diff-level metrics miss policy violations in cod
 
 ## Outcome
 Landed. Switched from duplication detection (insufficient) to agreement detection via executable parity gates generalizing test_guards_differential.py, with shared corpus and per-family COUNT floors. First proof pair registered: python_comment_lines vs _python_reflow_lines. Proof obligations wired into stop judge, pre-bash guards (commit/push/gh write paths). Staged-files
-duplication probe designed in agent/PLAN-staged-duplication-probe.md, commit e7d882261. Batch-size-scales-with-proof rule added to docs/agent-reference/TRAPS.md. Family-widening question folded into agent/PLAN-extension-shaped-matchers.md (its commit 3, still in flight).
+duplication probe designed in agent/plans/PLAN-staged-duplication-probe.md, commit e7d882261. Batch-size-scales-with-proof rule added to docs/agent-reference/TRAPS.md. Family-widening question folded into agent/plans/PLAN-extension-shaped-matchers.md (its commit 3, still in flight).
 
 ## Lessons
 - Declarative agreement registries go silent when stale; executable parity gates computing both sides on every run stay honest by construction — renamed paths fail, unregistered siblings hit COUNT floors, no allowlist to hide in.
@@ -21,7 +21,7 @@ duplication probe designed in agent/PLAN-staged-duplication-probe.md, commit e7d
 - Sub-agent refactoring contracts must include shape-cluster diff against HEAD with per-cluster counts, results of sweeps over untouched scopes, and exact file ownership — because gates green and tests passing never prove feature correctness.
 
 ## Boxes
-- [x] Fold the family-widening question into agent/PLAN-extension-shaped-matchers.md commit 3 and remove it from this plan's scope
+- [x] Fold the family-widening question into agent/plans/PLAN-extension-shaped-matchers.md commit 3 and remove it from this plan's scope
     (record) sig=b2486512 done=f67f82cca
 - [x] Build the sibling-differential harness by generalising the corpus and compare halves of test_guards_differential.py, which stays alive
     (record) sig=2a2b9199 done=f67f82cca
@@ -37,7 +37,7 @@ duplication probe designed in agent/PLAN-staged-duplication-probe.md, commit e7d
     (record) sig=a3446cbb done=f67f82cca
 - [x] Wire the same refusal into the pre-bash commit, push and gh guards, so the proof is demanded where the change leaves the tree
     (record) sig=419a2340 done=f67f82cca
-- [x] Add the pre-bash staged-files-only duplication probe against a cached index, budget 200ms, failing OPEN and LOUD when the cache is stale. Done in `e7d882261`, redesigned Plan-first: see `agent/PLAN-staged-duplication-probe.md`.
+- [x] Add the pre-bash staged-files-only duplication probe against a cached index, budget 200ms, failing OPEN and LOUD when the cache is stale. Done in `e7d882261`, redesigned Plan-first: see `agent/plans/PLAN-staged-duplication-probe.md`.
     (record) sig=a443e632 done=f67f82cca
 - [x] Record the batch-size-scales-with-proof rule in docs/agent-reference/TRAPS.md with a Trap-Id and an Enforced-By pointer
     (record) sig=5b81afb3 done=f67f82cca

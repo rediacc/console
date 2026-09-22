@@ -4,7 +4,7 @@
 WHY THIS EXISTS. The Stop hook already tells a session what to do -- but only once it tries to stop, which is after the work. A fresh session, and above all a POST-COMPACTION session, arrives with no memory of the store and learns the rules by hitting the wall: it finishes a job, writes a `## Remaining` section from memory, and the hook refuses it. The operator's words were that
 these sessions "hit the wall and repeat the same mistakes like completing the job without updating the remainings by invoking stop hook's commands with specific arguments".
 
-WHERE IT FIRES, and both alternatives were measured rather than argued (see agent/PLAN-session-onboarding-marker.md section 4):
+WHERE IT FIRES, and both alternatives were measured rather than argued (see agent/plans/PLAN-session-onboarding-marker.md section 4):
 
   * NOT SessionStart. Its output lands behind a large system prompt and two
     other blocks, and this repo has already concluded a wall of text there is

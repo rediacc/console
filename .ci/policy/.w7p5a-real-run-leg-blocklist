@@ -1,7 +1,7 @@
 # .w7p5a-real-run-leg-blocklist -- W7P5-a's real-run-LEG BLOCKER register, distinct
 # from .w7p5a-real-run-blocklist.
 #
-# W7P5-a ("agent/PLAN-tooling-transformation.md") sets the bar as "golden dry-run
+# W7P5-a ("agent/plans/PLAN-tooling-transformation.md") sets the bar as "golden dry-run
 # parity plus one real run each". The 32 paths in .w7p5a-real-run-blocklist have
 # neither leg done directly (their dry-run parity is inherited from W7P6's port);
 # the paths here are different: EACH ALREADY CARRIES ITS OWN w7p5a K=5 shadow-gate

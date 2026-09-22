@@ -33,7 +33,7 @@ Implemented in commit e7d882261. The gate exports `countShapes`, `kindFor`, `isO
     (record) sig=6240d9b4 done=f67f82cca
 - [x] Measure the composed latency and confirm the loud channel live
     (record) sig=b29ca7a9 done=f67f82cca
-- [x] Commit, tick worklist `6ef6d1d1`, tick the box in `agent/PLAN-consolidation-pressure.md`, set this plan `Status: done`
+- [x] Commit, tick worklist `6ef6d1d1`, tick the box in `agent/plans/PLAN-consolidation-pressure.md`, set this plan `Status: done`
     (record) sig=bcb9cb4a done=f67f82cca
 
 ## Record

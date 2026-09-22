@@ -14,7 +14,7 @@ WHY THE INSTRUMENT IS `git log`, AND WHY THAT ALMOST MADE THIS VACUOUS. mtime is
 
     $ git rev-parse --is-shallow-repository
     true
-    $ git log -1 --format=%cI -- agent/PLAN-cold-path.md
+    $ git log -1 --format=%cI -- agent/plans/PLAN-cold-path.md
     2026-09-01T14:25:23+02:00     # the GRAFT commit, not the file's
 
 Every one of the 70 tracked plans reports one day old, because `git log` on a shallow clone attributes each file to the graft boundary. A gate built on that is not merely inaccurate, it is a gate that CANNOT FAIL, and it would report a confident "none over 33 days" forever. `check_git_history_depth.py:6` already documents the class. So a shallow checkout is REFUSED here, not
@@ -283,7 +283,7 @@ _FIRST_SEEN_RE = re.compile(r"^First-Seen:[ \t]*(\d{4}-\d{2}-\d{2})[ \t]*$")
 def first_seen(path: pathlib.Path) -> str:
     """The `First-Seen:` date a move stamped into the header, or "".
 
-    RISK 1 OF agent/PLAN-agent-tree-lifecycle.md, ON THIS CLOCK. `git log` does not follow renames, so the day every plan moved into `agent/plans/` the last-commit date of all 97 of them became the date of the move, and this gate's 33-day window silently restarted for the whole corpus. `check_plan_folders.py --move` writes the PRE-move committer date here, and `plan_age_date`
+    RISK 1 OF agent/plans/PLAN-agent-tree-lifecycle.md, ON THIS CLOCK. `git log` does not follow renames, so the day every plan moved into `agent/plans/` the last-commit date of all 97 of them became the date of the move, and this gate's 33-day window silently restarted for the whole corpus. `check_plan_folders.py --move` writes the PRE-move committer date here, and `plan_age_date`
     below takes the OLDER of the two, so neither a move nor a re-write of the header can buy a plan freshness.
 
     The same anchors as every other header reader in this file: the first `HEADER_LINES` lines, anchored at both ends, so the word in prose is not a date.

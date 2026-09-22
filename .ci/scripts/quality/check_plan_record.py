@@ -159,8 +159,8 @@ except ImportError as _exc:  # pragma: no cover -- exercised by test-gate-anti-v
 # Floor over the PLAN corpus, not over the records. Zero records is the correct state today (phase 1 builds the machinery; no real plan is compacted yet), so a floor on records would be a gate that cannot pass. A floor on the plans is what catches the glob losing the corpus -- the same number check_plan_boxes.py uses.
 MIN_PLAN_FILES = int(os.environ.get("PLAN_RECORD_MIN_PLANS", "20"))
 
-# THE ADVISORY CENSUS. `agent/ledgers/census-*.jsonl` is globbed by `--census-report` so that a future per-branch split (the shape `agent/reggate/<branch>.jsonl` already uses, to keep an append-only log out of merge conflicts) needs no reader change. S5 of agent/PLAN-agent-tree-lifecycle.md moved it out of the agent root: a `.jsonl` at the top of a directory of documents reaches
-# nobody's eye, which is the class `check:ci-tree-shape` exists for. The DIRECTORY is the constant the glob is taken from, so the two cannot name different places.
+# THE ADVISORY CENSUS. `agent/ledgers/census-*.jsonl` is globbed by `--census-report` so that a future per-branch split (the shape `agent/reggate/<branch>.jsonl` already uses, to keep an append-only log out of merge conflicts) needs no reader change. S5 of agent/plans/PLAN-agent-tree-lifecycle.md moved it out of the agent root: a `.jsonl` at the top of a directory of documents
+# reaches nobody's eye, which is the class `check:ci-tree-shape` exists for. The DIRECTORY is the constant the glob is taken from, so the two cannot name different places.
 CENSUS_DIR = "agent/ledgers"
 CENSUS_REL = CENSUS_DIR + "/census-plan-record.jsonl"
 CENSUS_GLOB = "census-*.jsonl"
@@ -200,7 +200,8 @@ def _git(root, *args):
 # Supersedes AT LEAST ONE pointer. A supersession is an instruction to a reader: go read that instead. Naming nothing is unfalsifiable and unactionable, so it is a finding even though every pointer present resolves. Extends EXACTLY ONE. You extend one document. Two leaves a reader with no way to know which one carries the base they need, and zero is the Supersedes case again.
 # Related ANY NUMBER, INCLUDING NONE. This is deliberate asymmetry, not an oversight: `Related:` is a note, and a note whose value is an issue URL or a sentence carries no in-tree pointer and is still a true statement. What is checked is that any pointer it DOES carry resolves.
 #
-# THE VALUE IS A BLOCK, NOT A LINE, and this is load-bearing rather than generous. Both real users in this tree wrap: `agent/PLAN-bws-rotation-on-failure.md:4-5` puts its only resolvable pointer on the SECOND line, and reading the key's own line alone would report that plan as superseding nothing. The block ends at a blank line, at the next header field, or at a markdown heading.
+# THE VALUE IS A BLOCK, NOT A LINE, and this is load-bearing rather than generous. Both real users in this tree wrap: `agent/plans/PLAN-bws-rotation-on-failure.md:4-5` puts its only resolvable pointer on the SECOND line, and reading the key's own line alone would report that plan as superseding nothing. The block ends at a blank line, at the next header field, or at a markdown
+# heading.
 #
 # SCOPE IS EVERY PLAN, NOT EVERY RECORD. Both subjects in this tree carry `Status: draft`, so a rule scoped to compaction records would have zero subjects and pass forever, which is the shape this repo calls a rule with no subject.
 

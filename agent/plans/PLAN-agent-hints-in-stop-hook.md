@@ -13,7 +13,7 @@ second model call was refused on), and a prototype matcher measured over synthet
 ## Outcome
 THE HEADER SAYS `Status: SUPERSEDED`, AND THIS IS THE ONE PLAN IN THIS BATCH WHERE THE TREE AGREES WITH THE HEADER. Measured 2026-09-06.
 
-Its investigation half was consumed by `agent/PLAN-agent-hints-implementation.md`, which SHIPPED. Its design half did not land, and three specifics prove it rather than assert it:
+Its investigation half was consumed by `agent/plans/PLAN-agent-hints-implementation.md`, which SHIPPED. Its design half did not land, and three specifics prove it rather than assert it:
 
 - The gate filename this plan proposed, `.ci/scripts/quality/check-agent-hint-liveness.py`
 with hyphens, does not exist. What exists is the underscore form `.ci/scripts/quality/check_agent_hint_liveness.py`, which is exactly the correction the implementation plan's section 1 made to this file.

@@ -871,7 +871,7 @@ untouched; the entire defect was one bare `sort` in the test.
 **The check to run:** when two lists built by DIFFERENT sorters (shell `sort` vs. node/jq/python `.sort()`/a hand-written literal) are compared, and only ONE locale reproduces a failure, suspect collation before suspecting either list's content. `LC_ALL=C sort` fixes it: `locale -a` on this host confirms both `C.utf8` and `en_US.utf8` exist, so the comparison is trivial —
 `LC_ALL=en_US.UTF-8 bash <test>` vs `LC_ALL=C bash <test>` on the SAME unmodified file. If only the first fails, the bug is collation, not content.
 
-See `.ci/scripts/test/gates/test-scope-gate-outputs.sh:254` for the fixed instance and `agent/PLAN-scope-gate-sort-collation.md` for the full trace.
+See `.ci/scripts/test/gates/test-scope-gate-outputs.sh:254` for the fixed instance and `agent/plans/PLAN-scope-gate-sort-collation.md` for the full trace.
 
 ## `date +%s%3N` returns NANOSECONDS under uutils coreutils, and CI will never tell you
 Trap-Id: date-precision-digit-under-uutils
@@ -1232,8 +1232,8 @@ Trap-Id: buffered-suite-looks-hung
 Enforced-By: JUDGMENT-ONLY
 Residue: Any harness that captures a child's output with $( ) or `capture_output=True`. Silence is the design, so quietness is never evidence of a hang.
 
-The harness this was paid for was `.claude/hooks/test-hooks.sh`, which ran the suite as `out="$(bash "$STOP_SUITE" 2>&1)"`. It is retired, and the trap outlived it unchanged: its port, `.claude/rediacc_hooks/tests/test_hooks_delegates.py`, runs every delegate under `subprocess.run(..., capture_output=True)`, which buffers for exactly the same reason. Either way **nothing the
-child prints reaches the log until it exits** — so the log sits at the same line count for the whole run, by design.
+The harness this was paid for was `.claude/hooks/test-hooks.sh`, which ran the suite as `out="$(bash "$STOP_SUITE" 2>&1)"`. It is retired, and the trap outlived it unchanged: its port, `.claude/rediacc_hooks/tests/test_hooks_delegates.py`, runs every delegate under `subprocess.run(..., capture_output=True)`, which buffers for exactly the same reason. Either way **nothing the child
+prints reaches the log until it exits** — so the log sits at the same line count for the whole run, by design.
 
 This looks exactly like a hang, and I treated it as one: two runs killed on a 10-minute timeout, a wrong first guess (a case file created mid-run — impossible, the case list is explicit rather than a glob), and a second wrong guess recorded here as fact (inherited stdin) before the evidence was in. What actually settled it was reading `/proc/<pid>/wchan` down the whole process
 chain rather than the top of it:
@@ -1444,7 +1444,7 @@ subject is unrelated to the work under investigation.
 
 A plan file, a gate, or any tracked file that was ever MOVED has two adds in its history: the real one, and the one git infers at the new path. `--diff-filter=A` returns the second. It does not fail, warn, or return nothing; it returns a real commit that a reader will believe.
 
-Measured 2026-09-06 on `agent/PLAN-add-chunkstore-backup-verb.md`, whose plans were moved from `agent/0815-1/` to `agent/` with zero content change:
+Measured 2026-09-06 on `agent/plans/PLAN-add-chunkstore-backup-verb.md`, whose plans were moved from `agent/0815-1/` to `agent/` with zero content change:
 
     git log --diff-filter=A -- <path>           -> f7a5351a9  feat(www): simplify the marketing and docs site
     git log --follow --diff-filter=A -- <path>  -> 120cd9e73  feat(backup): chunk-store cold path
@@ -1464,9 +1464,9 @@ Found by a read-only investigator inside a compaction wave whose own briefing ta
 Trap-Id: errexit-rearmed-in-a-tested-command
 Enforced-By: JUDGMENT-ONLY
 Residue: the one instance-level control this entry ever had died with the file that
-carried it. `.ci/scripts/test/run-all.sh:149`'s `guard_selftest` was retired when `.ci/rediacc_ci/battery.py` replaced that runner, and there is no counterpart to repoint at BY CONSTRUCTION: the replacement is Python and has no `set -e`, so a control there would prove nothing about the bash semantic this entry describes. The trap stays VALID for the roughly 620 tracked `.sh`
-still in the tree; what is gone is the single place it was mechanically checked. And the entry's own residue always said this was the honest disposition rather than a convenient one: that control covered ONE function in ONE runner, and nothing decides, in general, whether a given assertion about `set -e` is running in a suppressed context -- the answer depends on how the
-enclosing function is called, which is a property of the caller, not of the assertion. Reading the call site stays a human step.
+carried it. `.ci/scripts/test/run-all.sh:149`'s `guard_selftest` was retired when `.ci/rediacc_ci/battery.py` replaced that runner, and there is no counterpart to repoint at BY CONSTRUCTION: the replacement is Python and has no `set -e`, so a control there would prove nothing about the bash semantic this entry describes. The trap stays VALID for the roughly 620 tracked `.sh` still
+in the tree; what is gone is the single place it was mechanically checked. And the entry's own residue always said this was the honest disposition rather than a convenient one: that control covered ONE function in ONE runner, and nothing decides, in general, whether a given assertion about `set -e` is running in a suppressed context -- the answer depends on how the enclosing
+function is called, which is a property of the caller, not of the assertion. Reading the call site stays a human step.
 
 Bash suppresses errexit for the whole body of a command whose status is being tested -- `if ! fn`, `fn || handler`, `fn && next`, `! fn`. That much is documented. What is not obvious, and what cost a control here on 2026-09-08, is that **the suppression follows the call into subshells that re-arm `set -e` themselves**. Re-running `set -euo pipefail` inside a command substitution
 nested in such a function does not restore it.
@@ -1562,7 +1562,7 @@ A plan's `Status:` line says what its author believed when they last typed it. I
 The instruments that DO measure are the plan-box ledger (`.ci/scripts/quality/check_plan_boxes.py`) and the plan record (`.claude/hooks/stop/wl_planrec.py`), and both are DERIVED -- they drift on every plan edit and must be regenerated with `--update` rather than believed. Neither reads `Status:`.
 
 So: before acting on a plan's stated status, run the thing the plan claims about. Almost
-every box in `agent/PLAN-tooling-transformation.md` had a stated premise that was wrong about something measurable -- a count, a line number, a symbol name that occurs zero times in the tree. The header is a hypothesis with a colon in it.
+every box in `agent/plans/PLAN-tooling-transformation.md` had a stated premise that was wrong about something measurable -- a count, a line number, a symbol name that occurs zero times in the tree. The header is a hypothesis with a colon in it.
 
 ## A manifest id is not an npm script, and the difference looks like a failing gate
 Trap-Id: manifest-id-is-not-an-npm-script
@@ -1571,8 +1571,8 @@ Residue: Nothing can tell a typo apart from a gate that failed for cause at the 
 
 `npm run --silent <name>` for a name `package.json` does not define exits **1 with ZERO bytes on both streams**. That is byte-for-byte what a gate failing for cause looks like when its output is suppressed, so the reflex it triggers -- "this gate is red, go fix the tree" -- sends a session debugging something that never ran.
 
-**The reason this is a trap and not just a typo is that the ids are real.** Most gates are both a `package.json` script and a `scripts/ci-runner/manifest.ts` entry, so the two namespaces look interchangeable. They are not. Some manifest entries have no npm script at all and carry a bare path in `run:` -- `gate-test:trap-registry` and `gate-test:docs-gen`
-are two, and `gate-test:claude-hooks` was a third until its subject was ported to pytest -- and the ci-runner invokes them by that path. Reading the id out of the manifest and typing `npm run` in front of it therefore produces a plausible-looking red for a gate that is perfectly green.
+**The reason this is a trap and not just a typo is that the ids are real.** Most gates are both a `package.json` script and a `scripts/ci-runner/manifest.ts` entry, so the two namespaces look interchangeable. They are not. Some manifest entries have no npm script at all and carry a bare path in `run:` -- `gate-test:trap-registry` and `gate-test:docs-gen` are two, and
+`gate-test:claude-hooks` was a third until its subject was ported to pytest -- and the ci-runner invokes them by that path. Reading the id out of the manifest and typing `npm run` in front of it therefore produces a plausible-looking red for a gate that is perfectly green.
 
 Measured in one session on 2026-09-09: **four** such reds, on `check:ci-plan-lifecycle` (a name that does not exist anywhere; the real gate is `check:ci-plan-housekeeping`), on `gate-test:trap-registry`, and on `gate-test:docs-gen`. Every one of them was rc=0 when driven by its real invocation. Two earlier sessions lost time to the same shape on `check:ci-cli-examples`, whose real
 name is `check:cli-examples`.

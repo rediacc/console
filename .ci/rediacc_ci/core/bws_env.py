@@ -28,8 +28,8 @@ entire product; the diagnostics are the by-product. A child process cannot mutat
      to stop.
 
 WHICH MAKES THE PRACTICAL ANSWER EASY TODAY, AND IT IS WORTH WRITING DOWN:
-`bws-env.sh` HAS ZERO PRODUCTION SOURCERS. Re-measured 2026-09-09 -- `grep -rlP '^\\s*(source|\\.)\\s.*/bws-env\\.sh'` over the tree returns nothing at all; every textual reference is the helper itself, its gate test, the manifest entry for that test, `.ci/config/` policy data, or a plan. The audit note at `agent/PLAN-env-to-bitwarden-v2.md:37` reached the same conclusion by a
-different route and said it plainly: "the fetcher has ZERO production callers". So route 2 is available for every future caller without breaking a single existing one, and route 1 never has to be argued.
+`bws-env.sh` HAS ZERO PRODUCTION SOURCERS. Re-measured 2026-09-09 -- `grep -rlP '^\\s*(source|\\.)\\s.*/bws-env\\.sh'` over the tree returns nothing at all; every textual reference is the helper itself, its gate test, the manifest entry for that test, `.ci/config/` policy data, or a plan. The audit note at `agent/plans/PLAN-env-to-bitwarden-v2.md:37` reached the same conclusion by
+a different route and said it plainly: "the fetcher has ZERO production callers". So route 2 is available for every future caller without breaking a single existing one, and route 1 never has to be argued.
 
 --------------------------------------------------------------------------
 WHAT IS PORTED, AND WHAT IS PROVED

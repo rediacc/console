@@ -35,8 +35,8 @@ Read from the lock rather than inferred from the fixtures, which would mislead: 
     `test_review_report_count_is_shared_and_unqualified` parse constants out of
     the two real hygiene gates and `common.sh`.
 
-Every temp-world case also RUNS the real `review-status.sh`, `check_review_comments.py`, `check_review_report_replies.py` and `claude-review-gate.sh` off the tracked tree. A battery step rewriting any of those mid-sweep is a divergence that would be blamed on this port. The two hygiene gates are named by their entry points because their bash twins were retired in W7 P5 batch
-G1; see the pin rule beside `REVIEW_COMMENTS_GATE_REL` for why a harness that RUNS a gate and one that READS it take different files.
+Every temp-world case also RUNS the real `review-status.sh`, `check_review_comments.py`, `check_review_report_replies.py` and `claude-review-gate.sh` off the tracked tree. A battery step rewriting any of those mid-sweep is a divergence that would be blamed on this port. The two hygiene gates are named by their entry points because their bash twins were retired in W7 P5 batch G1;
+see the pin rule beside `REVIEW_COMMENTS_GATE_REL` for why a harness that RUNS a gate and one that READS it take different files.
 
 `REAL_TREE_TWIN = True` buys the serialisation, and it is honoured ONLY because
 this module declares no `XDIST_GROUP` of its own; see `real_tree_admission` in `test_twin_parity.py`, where an own group silently makes the opt-in vacuous.
@@ -1044,7 +1044,7 @@ def test_workflow_does_not_trigger_on_pull_request(gate):
     gate.log_pass("workflow keeps its four default-branch triggers and never uses pull_request")
 
 
-# --------------------------------------------------------------------------- workflow_dispatch -- closes the head-SHA gap a workflow_run event hits when Claude Review was itself invoked via workflow_dispatch (its head_sha is the dispatch ref, e.g. main, never the PR head -- documented GitHub Actions behavior). See agent/PLAN-github-actions-workflow-run-trigger-fix.md.
+# --------------------------------------------------------------------------- workflow_dispatch -- closes the head-SHA gap a workflow_run event hits when Claude Review was itself invoked via workflow_dispatch (its head_sha is the dispatch ref, e.g. main, never the PR head -- documented GitHub Actions behavior). See agent/plans/PLAN-github-actions-workflow-run-trigger-fix.md.
 # ---------------------------------------------------------------------------
 
 

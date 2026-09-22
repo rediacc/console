@@ -965,7 +965,7 @@ jobs:
       # advance the R2 channel pointer either -- an edge manifest naming an
       # untagged version breaks `rdc` auto-update and, worse, feeds
       # promote-stable a `ref: v<version>` that does not exist. See
-      # agent/PLAN-skip-release-gates-r2-manifest.md.
+      # agent/plans/PLAN-skip-release-gates-r2-manifest.md.
       skip_release: ${{ needs.initialize.outputs.skip_release }}
       renet_tag: ${{ needs.initialize.outputs.renet_tag }}
       web_tag: ${{ needs.initialize.outputs.web_tag }}

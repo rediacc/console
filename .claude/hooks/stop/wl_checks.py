@@ -738,8 +738,8 @@ def docs_drift(root):
 # Accepts the shape the plans in this repo ACTUALLY use, which the first version did not: `**Status: DESIGNED, not started. <prose>**`. Requiring a bare `Status: word` line meant five of twelve real plans parsed as UNKNOWN -- a FORMAT mismatch reported as a content problem, which would have sent someone rewriting perfectly good plans to satisfy a regex. Optional markdown emphasis,
 # and the first word wins with any trailing prose ignored.
 #
-# SECOND ROUND OF THE SAME BUG, 2026-08-25. The anchored form still required `Status:` to START a line, and two more real plans state it mid-line: agent/PLAN-test-advisor.md Owner: b7baf3ee · 2026-08-24 · status: BUILT agent/PLAN-chunk-store-browse-server.md Branch: `0815-1`. Status: design only, ... Both parsed UNKNOWN, and UNKNOWN is loud by design, so the stop hook told a
-# session to go fix two plans that were already accurate and were not even its own. Exactly the failure the paragraph above describes, in a new format.
+# SECOND ROUND OF THE SAME BUG, 2026-08-25. The anchored form still required `Status:` to START a line, and two more real plans state it mid-line: agent/plans/PLAN-test-advisor.md Owner: b7baf3ee · 2026-08-24 · status: BUILT agent/plans/PLAN-chunk-store-browse-server.md Branch: `0815-1`. Status: design only, ... Both parsed UNKNOWN, and UNKNOWN is loud by design, so the stop hook
+# told a session to go fix two plans that were already accurate and were not even its own. Exactly the failure the paragraph above describes, in a new format.
 #
 # So: try the anchored form first (unchanged precedence, so a real leading `Status:` line always wins), then fall back to `Status:` anywhere in the header block. The fallback is case-insensitive because `status: BUILT` is what the deviating plans write.
 PLAN_STATUS_RE = re.compile(r"^\*{0,2}Status\*{0,2}:\s*([A-Za-z-]+)", re.MULTILINE)
@@ -928,8 +928,9 @@ def plan_orientation(root, rel):
 def plan_box_census(root, recs):
     """(per_relpath_counts, open_total, done_total, in_scope, exempt) for the boxes.
 
-    S1 of agent/PLAN-plan-file-lifecycle.md, and it exists because the operator asked "I feel like it only catches single file?" -- which was right, for TWO reasons and the smaller one was the known one. wl_planfile renders one plan per stop AND its NOT_STARTED_STATES filter drops the rest before it ever opens them: measured 2026-09-02, six of the eight box-carrying plans read
-    `Status: draft`, hiding 72 of 88 open boxes, because `draft` has become this repo's default header on plans under ACTIVE execution rather than a marker for proposals.
+    S1 of agent/plans/PLAN-plan-file-lifecycle.md, and it exists because the operator asked "I feel like it only catches single file?" -- which was right, for TWO reasons and the smaller one was the known one.  # style-ok
+    wl_planfile renders one plan per stop AND its NOT_STARTED_STATES filter drops the rest before it ever opens them: measured 2026-09-02, six of the eight box-carrying plans
+    read `Status: draft`, hiding 72 of 88 open boxes, because `draft` has become this repo's default header on plans under ACTIVE execution rather than a marker for proposals.
 
     This census answers with the whole number instead. It runs from plans_block, which fires at SessionStart and PostCompact OUTSIDE the outq, so it cannot be starved the way the per-stop advisory was -- that one was shown once across six sessions in a day, at drain position 20 of 22 behind eleven priority-1 producers.
 
@@ -2141,7 +2142,7 @@ def planfid_check(worklist, session_id, event, fold, lines, me8, last_msg, vadd)
 
 def _resprofile_report(worklist, session_id, state_doc):
     """Report-only structural findings from the previous CI run's captures, and the tier-0 -> tier-1 fold. NEVER blocks: the judge gates an exit so "cannot decide" must not be an escape, but this describes how work was done, so "we did not measure" must never become "the stop is refused". Every failure is swallowed; the off switch is
-    WORKLIST_PROFILE=off. See agent/PLAN-shell-resource-profiling.md section 3."""
+    WORKLIST_PROFILE=off. See agent/plans/PLAN-shell-resource-profiling.md section 3."""
     if os.environ.get("WORKLIST_PROFILE") == "off":
         return
     with contextlib.suppress(Exception):
@@ -3065,7 +3066,7 @@ def run_stop(event, event_ok, worklist, hook_file):
         )
 
     # ---- PLAN FILE vs WORKLIST (wl_planfile). The sibling of plan-drift above: that one asks "has the plan gone stale against the work", this one asks "are the plan's own checkbox TASKS tracked at all". Different questions, and neither implies the other -- a plan can be freshly rewritten and still have eighteen boxes nothing tracks, which is exactly what was measured on
-    # agent/PLAN-secret-namespace-migration.md on 2026-09-02.
+    # agent/plans/PLAN-secret-namespace-migration.md on 2026-09-02.
     #
     # AN ADVISORY, NOT A `vadd`, and the reason is a deadlock rather than politeness: a plan carrying 18 open tasks would, as a block, refuse every turn of every session in this repo until a multi-week migration finished. See wl_planfile's design note 1. The queue also supplies the whole noise
     # policy for free -- OUTQ_PER_STOP=1, plus outq_add's content signature,
@@ -4273,8 +4274,8 @@ def run_stop(event, event_ok, worklist, hook_file):
         judge_log = wl_judge.judge_log_path(worklist, me8)
         judge_streak = wl_judge.continue_streak(judge_log)
         reg_scripts = wl_reggate.package_scripts(root) if reg_signals else {}
-        # GROUND THE JUDGE IN A REAL FILE LIST, computed here rather than left to the model's own prose: twice in one session the judge fabricated a "bulk transform" naming files that did not exist anywhere in the tree, pattern-matching a worked example in PF.PROOF_PROMPT rather than reading the actual diff (agent/PLAN-judge-prompt-trap-conflation.md). Computed UNCONDITIONALLY (one
-        # cheap git call when reg_ids is empty) so a follow-up proof/sweep question on a later stop is grounded too, not only a fresh fire.
+        # GROUND THE JUDGE IN A REAL FILE LIST, computed here rather than left to the model's own prose: twice in one session the judge fabricated a "bulk transform" naming files that did not exist anywhere in the tree, pattern-matching a worked example in PF.PROOF_PROMPT rather than reading the actual diff (agent/plans/PLAN-judge-prompt-trap-conflation.md). Computed
+        # UNCONDITIONALLY (one cheap git call when reg_ids is empty) so a follow-up proof/sweep question on a later stop is grounded too, not only a fresh fire.
         reg_fixset_files = []
         with contextlib.suppress(Exception):
             reg_fixset_files = wl_reggate.fixset_files(root, reg_ids)

@@ -8,7 +8,7 @@
  * SEPARATELY") exists because of it. `--merge-output` is the deliberate opt-in
  * for a gate whose interleaving genuinely matters.
  *
- * See agent/PLAN-npm-ci-parallel-parity.md section 4.4.
+ * See agent/plans/PLAN-npm-ci-parallel-parity.md section 4.4.
  */
 import { spawn } from 'node:child_process';
 import path from 'node:path';

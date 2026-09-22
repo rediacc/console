@@ -216,7 +216,7 @@ function main(): number {
     for (const o of r.offenders.slice(0, 10)) console.error(`    ${o}`);
     if (r.offenders.length > 10) console.error(`    ... and ${r.offenders.length - 10} more`);
     console.error(`  Each makes a render-blocking request for a component it never builds.`);
-    console.error(`  See agent/PLAN-plyr-css-on-demand-loading.md.`);
+    console.error(`  See agent/plans/PLAN-plyr-css-on-demand-loading.md.`);
     return 1;
   }
   console.log(

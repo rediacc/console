@@ -12,7 +12,7 @@ ADDING AN AGENT MEANS ADDING A SPECIMEN. That is deliberate friction, and it is 
 CONTROL-FIRST. Before the real corpus is judged at all, the matcher and this gate's own evaluator are driven against a synthetic fixture with planted defects: a blanked description must be reported DEAD, a specimen for a deleted agent must be reported STALE, an agent with no specimen must be reported UNPROVEN, and a threshold raised out of reach must silence a match that otherwise
 fires. If any planted defect passes, this gate declares itself broken and exits non-zero WITHOUT issuing a verdict on the real corpus. A verdict from an instrument that cannot fail is worse than no verdict.
 
-Design: agent/PLAN-agent-hints-implementation.md (sections 5 and 6).
+Design: agent/plans/PLAN-agent-hints-implementation.md (sections 5 and 6).
 
 ---- gate ----
 step: Agent hints can actually fire

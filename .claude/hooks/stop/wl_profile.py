@@ -17,7 +17,7 @@ rate over JUDGEABLE captures satisfies `admissible(F, J)`: J >= 20 AND the one-s
 95% Wilson upper bound on F/J <= 0.05. Below J=20 the class is report-only "for lack
 of denominator", which is a different and more honest reason than "too noisy". The gate applies this per class; this module only emits findings with their class.
 
-Findings (see agent/PLAN-shell-resource-profiling.md sections 3 and 3b):
+Findings (see agent/plans/PLAN-shell-resource-profiling.md sections 3 and 3b):
   E1  SEQUENTIAL INDEPENDENT FANOUT   enforceable
   E4  UNDECLARED CONCURRENT WRITER    enforceable  (two captures, one run id)
   E5  INTRA-SHAPE MEMORY OUTLIER      report-only until J>=20 (sibling-relative, not MemTotal)

@@ -50,7 +50,7 @@ bug in section 3.
 2. **Quota: BOTH, with retention on top.** Fix the chain shape, make prune
 chain-aware, AND wire retention enforcement.
 3. **Restore: BUILD IT NOW.** Reverses the earlier "its own campaign" default.
-Plan at `agent/PLAN-chunkstore-restore.md`. DONE; see §1. The plan was right about the tree in every load-bearing claim I checked, and wrong about one convention: it said `--selftest` must plant an assertion in each new drill leg, but the drill uses ONE shared probe (`scripts/drills/lib.sh:367`) before any leg runs.
+Plan at `agent/plans/PLAN-chunkstore-restore.md`. DONE; see §1. The plan was right about the tree in every load-bearing claim I checked, and wrong about one convention: it said `--selftest` must plant an assertion in each new drill leg, but the drill uses ONE shared probe (`scripts/drills/lib.sh:367`) before any leg runs.
 4. **Scheduling: clean break, no leftovers, backward compatibility explicitly
 not important.** One operator, no external consumers.
 5. **Testing: tier A now, plus a probe bucket the operator creates.** It must be

@@ -107,7 +107,7 @@ const OPT_OUT = 'NOT ROUTED THROUGH';
 //
 // W7 P5 will delete the 77 `check-*.sh`, which is 6709 windows. With a floor on that family the deletion must update this table in the same change or go red; without one it leaves silently, exactly as family D did. THE QUALITY AND GATE-TEST PYTHON FAMILIES ARE NOT HERE YET, deliberately and with the cost measured. Adding `.ci/scripts/quality/check_*.py` and
 // `.ci/rediacc_ci/tests/gates/test_gate_*.py` on 2026-09-08, once the coordinate fix made the corpus visible, reported 76 new shapes -- headed by a FORTY-FOUR copy span that is the shared `sys.path` hop every ported entry point carries. That is one scaffold to extract, not 76 defects, and extracting it before widening is what makes the widening land at about eleven rather than
-// seventy-six. The sequence is written down in `agent/PLAN-extension-shaped-matchers.md`; this table gains those two rows in its commit 3, after the extraction.
+// seventy-six. The sequence is written down in `agent/plans/PLAN-extension-shaped-matchers.md`; this table gains those two rows in its commit 3, after the extraction.
 interface Family {
   readonly pathspec: string;
   readonly floor: number;
