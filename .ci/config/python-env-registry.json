@@ -1559,6 +1559,10 @@
       "WORKLIST_TAIL_BYTES",
       "WORKLIST_TASKS_DIR"
     ],
+    ".claude/hooks/stop/wl_hints.py": [
+      "TMPDIR",
+      "WORKLIST_HINTS_FILE"
+    ],
     ".claude/hooks/stop/wl_judge.py": [
       "TMPDIR",
       "WORKLIST_JUDGE",

@@ -18,6 +18,7 @@ import wl_checklist
 import wl_ci
 import wl_claimcheck
 import wl_core as C
+import wl_hints
 import wl_histfirst
 import wl_judge
 import wl_liveness
@@ -4861,11 +4862,43 @@ def run_stop(event, event_ok, worklist, hook_file):
             state_doc,
             (last_msg or "") + "\n" + "\n".join(remaining_lines),
         )
+    # THE BEHAVIORAL-HINT QUEUE PRODUCERS, matching agent_hint_queue's own placement exactly: BEFORE outq_drain, so anything queued here has the SAME chance to drain on THIS stop that every other producer gets, rather than only ever being seen on the next one -- a corpus error queued after the drain call would otherwise sit until a LATER, possibly genuinely-silent stop, and single-handedly break that stop's silence. These two are ordinary queue items and are NOT gated on other content already firing; only the hint LINE ITSELF, picked below, carries that gate.
+    hint_entries, hint_errs = [], []
+    with contextlib.suppress(Exception):  # an advisory must never wedge a stop
+        hint_entries, hint_errs = wl_hints.load_corpus(wl_hints.hints_path(root))
+        if hint_errs:
+            outq_add(
+                worklist,
+                session_id,
+                state_doc,
+                "hint-corpus-err",
+                M.N_HINT_CORPUS_ERR % "\n".join("  " + e for e in hint_errs),
+                3,
+            )
+        pending = wl_hints.pending_proposals(root)
+        if pending:
+            outq_add(
+                worklist,
+                session_id,
+                state_doc,
+                "hint-proposals",
+                M.N_HINT_PROPOSALS_PENDING % len(pending),
+                3,
+                refresh_min=wl_hints.PROPOSAL_REFRESH_MIN,
+            )
     # UP TO OUTQ_PER_STOP sections per stop, highest priority first and randomized inside a priority class. The "+N more" tail is MANDATORY for the reason spelled out at the guide's own truncation: a silent cap reads as "that is everything", and there is no knob left to widen it for one turn.
     texts, remaining = outq_drain(worklist, session_id, state_doc, OUTQ_PER_STOP)
     parts.extend(texts)
     if remaining:
         parts.append(M.N_OUTQ_MORE % remaining)
+    # THE ROTATING BEHAVIORAL HINT, LAST and gated on parts already being non-empty: it rides an output the stop was already going to produce and must never be the reason one exists. Checked here, not inside wl_hints, because "did anything else fire this stop" is exactly what `parts` already answers -- a second empty-output check inside the module would just be the same question
+    # asked twice and could drift from this one.
+    if parts:
+        with contextlib.suppress(Exception):  # an advisory must never wedge a stop
+            ledger = state_doc.setdefault("hints", {})
+            picked = wl_hints.hint_pick(hint_entries, ledger)
+            if picked:
+                parts.append(wl_hints.render(*picked))
     # outq_drain persisted the queue already; this save carries the judge-line marker pop and any late state mutation, and one redundant atomic write is cheaper than reasoning about which came last. It happens BEFORE the exit below, because a silent allow must still bank everything a loud one does.
     S.save_state(worklist, session_id, state_doc)
     if not parts:

@@ -295,6 +295,12 @@
       ],
       "why": "The harness pid, overriding the ancestor walk in wl_liveness.py:172, for tests and for setups where the walk cannot see the harness. Read with `.isdigit()`, so a typo and a non-numeric value are indistinguishable from unset and both fall back to the walk."
     },
+    "WORKLIST_HINTS_FILE": {
+      "kind": "path",
+      "defaults": [
+        "NONE"
+      ]
+    },
     "WORKLIST_IDLE_EDGE_EPSILON_S": {
       "kind": "tuning",
       "defaults": [

@@ -105,6 +105,7 @@ for _name in (
     "wl_reggate",
     "wl_judge",
     "wl_checks",
+    "wl_hints",
     "wl_roundlog",
     "worklist_messages",
 ):
@@ -120,6 +121,7 @@ R = _MODS["wl_requests"]
 CK = _MODS["wl_checks"]
 J = _MODS["wl_judge"]
 M = _MODS["worklist_messages"]
+H = _MODS["wl_hints"]
 RL = _MODS["wl_roundlog"]
 
 # Re-exported for direct importers (the suite drives these two as library functions; keeping them on this module is part of the compatibility surface). Absent when their module is broken, which is correct: a caller gets an AttributeError naming this module instead of a silent stub.
@@ -535,6 +537,39 @@ def _planwhy_cli(argv):
         M.CLI_PLANWHY_NO_EDGE
         % {"path": target, "n": len({r for v in index.values() for r in v}), "index": R.INDEX_REL}
     )
+
+
+def _hint_propose_cli(argv):
+    """--hint-propose <me> <text...> [SOURCE: <pointer>].
+
+    WRITES ONE ROW to agent/ledgers/hint-proposals.jsonl AND NOTHING ELSE. It never opens, never edits and never checks docs/agent-reference/HINTS.md: promotion is a reviewed hand edit to that file, by design, so a session cannot promote its own proposal by accident, by a bad parse, or by a future edit that
+    flips a status field. See wl_hints.propose's own docstring for the full reasoning.
+
+    An optional trailing `SOURCE: <pointer>` names where the lesson came from, for the human who later reviews the backlog; the CLI splits on the LAST occurrence of the literal token so a hint sentence that happens to contain the word "source" elsewhere is not mistaken for the marker.
+    """
+
+    def die(msg):
+        print(msg, file=sys.stderr)
+        sys.exit(2)
+
+    rest = argv[1:]
+    if len(rest) < 2:
+        die("usage: worklist.py --hint-propose <me> <text...> [SOURCE: <pointer>]")
+    me = rest[0]
+    if not C.PREFIX_RE.match(me):
+        die("bad prefix %r: pass YOUR session-id prefix first" % me)
+    _identity_or_die(me, die)
+    body = " ".join(rest[1:]).replace("\n", " ").strip()
+    text, source = body, ""
+    marker = " SOURCE: "
+    if marker in body:
+        idx = body.rfind(marker)
+        text, source = body[:idx].strip(), body[idx + len(marker) :].strip()
+    if not text:
+        die("an empty proposal names no lesson")
+    root = C.project_root(C.project_start())
+    H.propose(root, me, text, source)
+    print("proposed: %s" % text[:80])
 
 
 def _plantick_cli(argv):
@@ -1855,6 +1890,9 @@ def main():
         return
     if sys.argv[1:2] == ["--plan-tick"]:
         _plantick_cli(sys.argv[1:])
+        return
+    if sys.argv[1:2] == ["--hint-propose"]:
+        _hint_propose_cli(sys.argv[1:])
         return
     if sys.argv[1:2] and sys.argv[1] in (
         "--add",

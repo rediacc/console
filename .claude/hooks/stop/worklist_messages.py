@@ -1361,6 +1361,17 @@ N_AGENT_HINT = (
     "  Agent tool, or ignore this line if it is not the domain you are in."
 )
 
+# ---- the rotating behavioral hint (wl_hints) -------------------------------- NAMING THE ID AND SOURCE is the same self-refuting design N_AGENT_HINT uses: a wrong hint is dismissed in one second by opening what it cites, rather than taken on faith.
+
+N_BEHAVIOR_HINT = "TIP (hint %d of %d, rotating): %s  [%s -- %s]"
+
+N_HINT_CORPUS_ERR = "Hint corpus problem (the rotating behavioral hint is degraded until fixed):\n%s"
+
+N_HINT_PROPOSALS_PENDING = (
+    "%d hint proposal(s) are waiting in agent/ledgers/hint-proposals.jsonl, not yet promoted into "
+    "docs/agent-reference/HINTS.md. Promotion is a reviewed hand edit to that file, never automatic."
+)
+
 # ---- the push-back (wl_agents.pushback_for) --------------------------------- NOT an accusation and deliberately not phrased as one: concluding that something is impossible is often CORRECT, and CLAUDE.md rule 3 forbids only concluding it WITHOUT PROBING. So this quotes the claim back, names the file that may already answer it, and asks for one command. A session that has already
 # probed clears it in a sentence.
 #
