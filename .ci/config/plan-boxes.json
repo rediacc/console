@@ -1409,6 +1409,37 @@
       ],
       "done_sigs": []
     },
+    "agent/plans/PLAN-stop-hook-plan-backlog-nudge.md": {
+      "status": "draft",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 20,
+      "done": 0,
+      "open_sigs": [
+        "02dca5d3",
+        "19a57a62",
+        "3523e121",
+        "41df3c85",
+        "4eed7471",
+        "5414fc16",
+        "57c29019",
+        "6fa268dc",
+        "734de6d2",
+        "786549bb",
+        "7923ae6d",
+        "805b2061",
+        "94d9d0bf",
+        "9833ea9b",
+        "a70daa15",
+        "bc23fd8a",
+        "c01bd041",
+        "deae49d4",
+        "e20ff464",
+        "f2337abd"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-stop-hook-refactor-enforcement.md": {
       "status": "draft",
       "owner": "d778be9d",
