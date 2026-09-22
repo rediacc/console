@@ -30,6 +30,9 @@ with tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False) as _body_
     _body_file.write("Did %s run the tests?" % Y)
 BODY_FILE_PATH = _body_file.name
 
+# R18 is a FLOOR since the 2026-09-22 rewrite (prose_style.py:_sentence_break_offset): a line past 384 chars is only a finding when a genuine sentence-ending period sat at or before that floor. A run of one repeated character has no such break and is legal at any length, so a case meant to exercise R18 needs an early period followed by a long tail.
+R18_VIOLATION = "This starts with one short sentence. " + ("word " * 100)
+
 CASES = [
     # (name, command, expect_blocked) ---- the block direction ------------------------------------------
     ("a subject addressing the reader", '%s -m "Did %s run the tests?"' % (COMMIT, Y), True),
@@ -77,7 +80,13 @@ CASES = [
     (
         "a long PR body still gets R18 even chained after a short commit",
         '%s -m "fix: x" -m "short" && gh pr create --title "fix: x" --body "%s"'
-        % (COMMIT, "z" * 400),
+        % (COMMIT, R18_VIOLATION),
+        True,
+    ),
+    (
+        "a long commit body gets R18 too, since 2026-09-22, even chained after a short PR body",
+        '%s -m "fix: x" -m "%s" && gh pr create --title "fix: x" --body "short body"'
+        % (COMMIT, R18_VIOLATION),
         True,
     ),
     # ---- the allow direction ------------------------------------------
@@ -138,7 +147,7 @@ CASES = [
     ),
     ("an empty command", "", False),
     (
-        "a long commit body is not R18 (pr-only) even chained with a gh pr create",
+        "CONTROL: a commit body with no sentence break stays allowed past 384 chars, same as a PR body",
         '%s -m "fix: x" -m "%s" && gh pr create --title "fix: x" --body "short body"'
         % (COMMIT, "z" * 400),
         False,

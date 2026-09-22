@@ -101,8 +101,9 @@ this hook.
 """
 
 # Which command a flag belongs to, not which command the guard happened to see LAST.
-# Found live by review 2026-09-16: `scope` used to be computed ONCE from `GH_PR.search(command)` over the whole command line, so a chained `git commit -m "..." && gh pr create ...` set scope="pr" for the COMMIT message too, and R18 (line length, scoped to "pr"/"markdown"/"ai_output", deliberately NOT "commit") blocked a long commit body under a rule written not to apply to it.
+# Found live by review 2026-09-16: `scope` used to be computed ONCE from `GH_PR.search(command)` over the whole command line, so a chained `git commit -m "..." && gh pr create ...` set scope="pr" for the COMMIT message too, and R18 (line length) blocked a long commit body under a rule that, at the time, was scoped to "pr"/"markdown"/"ai_output" and deliberately excluded "commit" -- so the leak surfaced as a false positive on the commit body.
 # The flag names are unambiguous per command -- `-m`/`--message`/`-F`/`--file`/a heredoc body are `git commit`'s, `--body`/`--title`/`-b`/`-t`/`--body-file` are `gh pr`'s -- so scope is looked up per LABEL instead of guessed once for the whole command.
+# Since 2026-09-22, R18's `scopes` list (`.ci/config/prose-style-rules.json`) also names "commit": with per-label scoping already correct, a commit body genuinely gets the same floor-only line-length check a PR body does, and this mechanism is what keeps that scoped to the right target rather than leaking again.
 PR_LABELS = frozenset({"--body", "--title", "-b", "-t", "--body-file"})
 
 

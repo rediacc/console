@@ -843,7 +843,8 @@
       "scopes": [
         "markdown",
         "comment",
-        "pr"
+        "pr",
+        "commit"
       ],
       "patterns": [],
       "detection": "measured",
