@@ -106,6 +106,11 @@ def classify_from_lock(lock_path: pathlib.Path, claim: str) -> set[str]:
     """Basenames of gate tests whose lock entry declares a `tree:` resource under `claim` (`mutex` for exclusive, `reads` for shared).
 
     Returns an EMPTY SET when the lock is unreadable or declares nothing, and the caller decides what that means -- "no declarations yet" and "the lock is broken" must not silently become the same thing as "nothing needs isolating".
+
+    A `run` naming a file under `.ci/scripts/test/gates/` is what this originally matched exclusively, back when every isolation-declaring entry was one of those bash files and `run` WAS the path.
+    The 97-bash-gate-test port (2026-09-21) moved most of them into `check:ci-pytest`, one Python entrypoint whose `run` is `npm run check:ci-pytest` -- no gates-subdir substring anywhere -- so an entry can now declare a real `tree:` claim while naming its identity through `leaves` instead of `run`.
+    `test_battery.py`'s live-lock canary caught the gap: `check:ci-pytest`'s own `mutex: ['tree:repo']` went unread, and the assertion that the lock still declares SOMETHING started failing for a reason that was never about the lock losing its declarations.
+    So a `run` that does not match the gates-subdir shape falls back to `leaves[0]`'s basename, which is what this claim is actually about naming once the claimant is no longer a `.ci/scripts/test/gates/*.sh` file itself.
     """
     try:
         with lock_path.open(encoding="utf-8") as handle:
@@ -115,11 +120,12 @@ def classify_from_lock(lock_path: pathlib.Path, claim: str) -> set[str]:
     if not isinstance(entries, list):
         return set()
     found = set()
+    gates_prefix = "/".join(GATES_SUBDIR) + "/"
     for entry in entries:
         if not isinstance(entry, dict):
             continue
         run = entry.get("run")
-        if not isinstance(run, str) or "/".join(GATES_SUBDIR) + "/" not in run:
+        if not isinstance(run, str):
             continue
         claimed = entry.get(claim)
         if not isinstance(claimed, list):
@@ -127,10 +133,18 @@ def classify_from_lock(lock_path: pathlib.Path, claim: str) -> set[str]:
         if not any(isinstance(r, str) and r.startswith("tree:") for r in claimed):
             continue
         # A `run` is a command line in the general case, so take the word that actually names the script rather than assuming it is the whole string.
+        matched = False
         for word in run.split():
-            if word.startswith("/".join(GATES_SUBDIR) + "/"):
+            if word.startswith(gates_prefix):
                 found.add(os.path.basename(word))
+                matched = True
                 break
+        if matched:
+            continue
+        # `run` names an npm script or similar, not a gates-subdir file directly: fall back to the entry's own implementing file.
+        leaves = entry.get("leaves")
+        if isinstance(leaves, list) and leaves and isinstance(leaves[0], str):
+            found.add(os.path.basename(leaves[0]))
     return found
 
 
