@@ -80,3 +80,11 @@
 {"kind":"charge","sig":"2d08d88dbd3e","why":"proven","at":"2026-09-22T10:14:23Z","br":"0914-1"}
 {"kind":"debt","sig":"acbd5301a817","blind_spot":"Path construction logic in CI inspection that does not verify all code paths account for configurable gates-subdir configuration","surface":"gates","artifact":".ci/rediacc_ci/quality/pool_writer_safety.py","charged":60,"at":"2026-09-22T10:17:08Z","br":"0914-1"}
 {"kind":"charge","sig":"acbd5301a817","why":"capped","at":"2026-09-22T10:17:08Z","br":"0914-1"}
+{"kind":"charge","sig":"fac92455fc43","why":"proven","at":"2026-09-22T11:43:59Z","br":"0914-1"}
+{"kind":"debt","sig":"3569a1b7b8e3","blind_spot":"The prose style gate did not validate that commit scope modifications in the rules remained consistent when logic was reapplied, so R19 re-introduced the gap R18 had just closed","surface":"gates","artifact":".claude/rediacc_hooks/guards/test-block_prose_style_commit.py","charged":62,"at":"2026-09-22T11:50:24Z","br":"0914-1"}
+{"kind":"charge","sig":"3569a1b7b8e3","why":"capped","at":"2026-09-22T11:50:24Z","br":"0914-1"}
+{"kind":"debt","sig":"f4d1531dc3d1","blind_spot":"Judge rule conditions evaluated without first checking whether the target item is open or closed","surface":"gates","artifact":"scripts/ci-runner/","charged":63,"at":"2026-09-22T12:40:30Z","br":"0914-1"}
+{"kind":"charge","sig":"f4d1531dc3d1","why":"capped","at":"2026-09-22T12:40:30Z","br":"0914-1"}
+{"kind":"debt","sig":"56191d885842","blind_spot":"Existing liveness guards checked for `/proc/<pid>` existence only, not for unsatisfiable-condition patterns where `$(cat <pidfile> || echo <literal-N>)` fallback is provably always alive, making the fallback unreachable.","surface":"gates","artifact":"scripts/ci-runner/block_unsatisfiable_pid_wait.py","charged":64,"at":"2026-09-22T12:53:36Z","br":"0914-1"}
+{"kind":"charge","sig":"56191d885842","why":"capped","at":"2026-09-22T12:53:36Z","br":"0914-1"}
+{"kind":"charge","sig":"f337a30c0683","why":"proven","at":"2026-09-22T14:00:38Z","br":"0914-1"}
