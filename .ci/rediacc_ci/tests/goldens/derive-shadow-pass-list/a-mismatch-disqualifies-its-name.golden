@@ -1,0 +1,16 @@
+# twin scripts/ops/derive-shadow-pass-list.sh blob 878eee5e76e52f74caeea6122bff700cb3e2b2e5
+exit: 0
+--- stdout ---
+gh secret delete BETA_RENAMED --org rediacc
+--- stderr ---
+# deriving from branch shadow-branch, up to 6 run(s) per shadow-carrying workflow
+# 1 shadow-carrying workflow(s)
+# verdicts seen: 2, clean-pass names: 1, names with a non-match: 1
+# 4 org secret(s), 1 repo-level
+# 1 deletable, 0 skipped
+--- calls ---
+CALL gh	run	list	--workflow=shadow-a.yml	--branch	shadow-branch	--limit	6	--json	databaseId	-q	.[].databaseId
+CALL gh	run	view	101	--json	jobs	-q	[.jobs[]|select(.conclusion=="success")|.name]|length
+CALL gh	run	view	101	--log
+CALL gh	api	orgs/rediacc/actions/secrets	--paginate	-q	[.secrets[].name]
+CALL gh	api	repos/rediacc/console/actions/secrets	--paginate	-q	[.secrets[].name]

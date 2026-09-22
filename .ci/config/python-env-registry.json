@@ -408,6 +408,12 @@
       "CI",
       "NO_COLOR"
     ],
+    ".ci/rediacc_ci/ops/build_server.py": [
+      "ACCOUNT_ED25519_PUBLIC_KEY"
+    ],
+    ".ci/rediacc_ci/ops/derive_shadow_pass_list.py": [
+      "BRANCH"
+    ],
     ".ci/rediacc_ci/paths.py": [
       "REDIACC_CI_ROOT"
     ],
@@ -1278,6 +1284,12 @@
     ],
     ".ci/rediacc_ci/tests/test_infra_docker_pull_ghcr.py": [
       "PATH"
+    ],
+    ".ci/rediacc_ci/tests/test_ops_build_server.py": [
+      "HOME"
+    ],
+    ".ci/rediacc_ci/tests/test_ops_derive_shadow_pass_list.py": [
+      "HOME"
     ],
     ".ci/rediacc_ci/tests/test_proxies_ensure_nfpm.py": [
       "HOME",

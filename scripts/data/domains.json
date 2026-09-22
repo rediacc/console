@@ -115,7 +115,7 @@
       "paths": ["scripts/ops/**"],
       "home": "scripts/ops",
       "stays": true,
-      "why": "Operator-only tools: a human runs them by hand and no workflow, npm key, run.sh verb or gate invokes them. Surveyed 2026-09-06, ten are unambiguously operator-only (apply-cf-redirect-rules.sh, backup-d1.sh, bws-map-refresh.py, deploy-bench.sh, derive-shadow-pass-list.sh, linode-cluster-validation.sh, r2-oneshot-scrub.sh, reset-bench.sh, backup-cutover-preflight.sh, build-server.sh) and four more are operator-run with a CI-side reader or test.",
+      "why": "Operator-only tools: a human runs them by hand and no workflow, npm key, run.sh verb or gate invokes them. Surveyed 2026-09-06, ten are unambiguously operator-only (apply-cf-redirect-rules.sh, backup-d1.sh, bws-map-refresh.py, deploy-bench.sh, .ci/rediacc_ci/ops/derive_shadow_pass_list.py, linode-cluster-validation.sh, r2-oneshot-scrub.sh, reset-bench.sh, backup-cutover-preflight.sh, .ci/rediacc_ci/ops/build_server.py) and four more are operator-run with a CI-side reader or test.",
       "blockedOn": "CLEARED 2026-09-20: the move landed. Fourteen files arrived from scripts/dev/, scripts/docker/ and the scripts/ root as git renames, after W8 P1a-P6 and W0.1 had made their edits at the old path and were all ticked. scripts/docker no longer exists; scripts/dev keeps worktree.sh alone under the devbox-bash rule above.",
       "exceptions": [
         "scripts/ops/lib/cf-auth.sh is sourced by three siblings and moved with them.",
@@ -128,7 +128,7 @@
         "scripts/gates/check-worker-secret-names.ts:66 parses scripts/ops/deploy-bench.sh with a floor of 20.",
         ".ci/scripts/quality/check_bws_map.py:100 reads scripts/ops/secret-rename.py as its rename oracle, built as ROOT / \"scripts\" / \"ops\" / ... so a path-literal grep cannot see it.",
         "test-bws-map.sh:40 and :58 and test-vacuity-floors.sh:115 name paths under scripts/ops (a third, .ci/scripts/test/gates/test-scrub-sentinel-empty.sh:40 and :56, was retired in W7 P5 census batch A8), and three Python gate tests build the same paths out of pathlib parts.",
-        "Dockerfile:12 and :32 mention scripts/ops/build-server.sh in comments only, which is also the only thing keeping it out of check-dead-bash's findings."
+        "Dockerfile:12 and :32 named scripts/ops/build-server.sh in comments only, which was also the only thing keeping it out of check-dead-bash's findings. The twin was ported to .ci/rediacc_ci/ops/build_server.py and deleted on 2026-09-22 under ruling 7; those same two comments now name the module, and they are what admits it through check-dead-python's mentioned route, an operator tool having no wiring to be reached by."
       ]
     },
     {

@@ -1,0 +1,6 @@
+# twin scripts/ops/derive-shadow-pass-list.sh blob 878eee5e76e52f74caeea6122bff700cb3e2b2e5
+exit: 2
+--- stdout ---
+--- stderr ---
+gh is required
+--- calls ---

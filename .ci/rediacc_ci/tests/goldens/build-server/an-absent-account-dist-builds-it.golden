@@ -1,0 +1,24 @@
+# twin scripts/ops/build-server.sh blob 8869c152c26924da7feaa0f86a3ffdd9bd75abf4
+exit: 0
+--- stdout ---
+==> Staging build context...
+==> Building private/account/web...
+==> Packing CLI tarball...
+==> Building rediacc-server-onprem:dev (--target onprem)...
+
+Built: rediacc-server-onprem:dev
+
+Run with:
+  docker run --rm -p 8080:80 rediacc-server-onprem:dev
+--- stderr ---
+--- calls ---
+CALL npx	vite	build	--outDir	dist
+CALL npm	pack	--pack-destination	<root>/cli-npm
+CALL docker	buildx	build	--file	Dockerfile	--target	onprem	--build-arg	ACCOUNT_ENTRY=on-premise	--build-arg	ACCOUNT_ED25519_PUBLIC_KEY=	--build-arg	VITE_APP_VERSION=dev	--tag	rediacc-server-onprem:dev	--load	.
+--- staged ---
+binaries/renet-linux-amd64	renet-amd64
+binaries/renet-linux-arm64	renet-arm64
+www-assets/index.html	www-index
+account-web-assets/index.html	index.html
+cli-npm/rediacc-cli-0.8.9.tgz	rediacc-cli-0.8.9.tgz
+cli-npm/rediacc-cli-latest.tgz	rediacc-cli-0.8.9.tgz
