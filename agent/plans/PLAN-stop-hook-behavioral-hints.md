@@ -278,7 +278,7 @@ Two more are grounded and held back only to keep the first cut at twelve: `one-o
 - [x] Add `"WORKLIST_HINTS_FILE"` to `wlfix.py`'s `RESET_KNOBS` tuple.
 - [x] Add a ledger entry for this plan in `.ci/config/plan-boxes.json` (or run the ledger's own update path) so `check:ci-plan-boxes` G-A0 does not red on an untracked plan carrying open boxes.
 - [x] Run `python3 .ci/scripts/quality/check_prose_style.py reflow --write` then `check` on `docs/agent-reference/HINTS.md` and this plan.
-- [ ] Run the full `.claude/rediacc_hooks/tests/` suite as the closing verification step.
+- [x] Run the full `.claude/rediacc_hooks/tests/` suite as the closing verification step. 7576 passed, 0 failed (a first attempt showed 1 error, a false positive from this session's own concurrent write mid-run; the clean re-run is the one that counts).
 
 ## Acceptance criteria
 

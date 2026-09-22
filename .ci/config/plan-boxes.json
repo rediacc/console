@@ -1331,10 +1331,9 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 4,
-      "done": 16,
+      "open": 3,
+      "done": 17,
       "open_sigs": [
-        "0e93d730",
         "299409bb",
         "bc819650",
         "fcb9be74"
@@ -1349,6 +1348,7 @@
         "746590c8",
         "7b2f2e64",
         "bcd3ab41",
+        "c2379c3a",
         "c28b0e1c",
         "d95f4819",
         "d9a2fb3d",
@@ -1558,6 +1558,23 @@
       "done": 0,
       "open_sigs": [],
       "done_sigs": []
+    },
+    "agent/plans/PLAN-sys-path-canonical-form.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 0,
+      "done": 6,
+      "open_sigs": [],
+      "done_sigs": [
+        "0099e76a",
+        "2a925979",
+        "35a592ee",
+        "cb6f6b5d",
+        "d3777ae7",
+        "fc0d9cd3"
+      ]
     },
     "agent/plans/PLAN-test-advisor.md": {
       "status": "compacted",
