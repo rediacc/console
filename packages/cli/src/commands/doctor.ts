@@ -140,7 +140,7 @@ function checkRenetBinary(checks: CheckResult[], renetPath: string | null): void
       status: isSEA() ? 'warn' : 'fail',
       hint: isSEA()
         ? 'Renet is optional on workstations (only needed for local VM ops). It is auto-provisioned to remote machines.'
-        : 'Build renet with: ./run.sh build renet',
+        : 'Build renet with: cd private/renet && ./build.sh dev',
     });
     return;
   }
@@ -180,7 +180,7 @@ function checkDevEmbedAssets(checks: CheckResult[]): void {
     checks,
     hasEmbedAssets ? 'yes (dev embed assets found)' : 'no (dev embed assets missing)',
     hasEmbedAssets ? 'ok' : 'warn',
-    hasEmbedAssets ? undefined : 'Build renet embed assets with: ./run.sh build renet'
+    hasEmbedAssets ? undefined : 'Build renet embed assets with: cd private/renet && ./build.sh dev'
   );
 }
 

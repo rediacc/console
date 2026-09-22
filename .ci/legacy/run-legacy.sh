@@ -84,284 +84,6 @@ dev() {
 }
 
 # =============================================================================
-# TEST COMMANDS
-# =============================================================================
-
-test_unit() {
-    check_node_version
-    ensure_packages_built
-    log_step "Running unit tests"
-    "$ROOT_DIR/.ci/scripts/test/run-unit.sh" "$@"
-}
-
-test_bridge() {
-    check_node_version
-    ensure_packages_built
-
-    log_step "Running E2E tests"
-    "$ROOT_DIR/.ci/scripts/test/run-e2e.sh" "$@"
-}
-
-test_all() {
-    test_unit
-}
-
-# =============================================================================
-# BUILD COMMANDS
-# =============================================================================
-
-build_cli() {
-    check_node_version
-    log_step "Building CLI application"
-    "$ROOT_DIR/.ci/scripts/build/build-cli.sh"
-}
-
-build_packages() {
-    check_node_version
-    log_step "Building shared packages"
-    "$ROOT_DIR/.ci/scripts/setup/build-packages.sh"
-}
-
-build_renet() {
-    check_go_installed
-    log_step "Building renet binary"
-    local renet_dir="$ROOT_DIR/private/renet"
-    (cd "$renet_dir" && ./go dev)
-
-    if [[ ! -f "$renet_dir/bin/renet" ]]; then
-        log_error "Renet build failed"
-        exit 1
-    fi
-
-    log_info "Renet built: private/renet/bin/renet"
-}
-
-build_all() {
-    check_node_version
-    log_step "Building all components"
-    build_packages
-    build_cli
-}
-
-# =============================================================================
-# PR COMMANDS
-# =============================================================================
-
-pr_publish() {
-    check_node_version
-    require_var CLOUDFLARE_API_TOKEN
-
-    if ! command -v gh &>/dev/null; then
-        log_error "GitHub CLI (gh) is not installed"
-        log_info "Install from: https://cli.github.com/"
-        exit 1
-    fi
-
-    # Auto-discover Cloudflare account ID from GitHub repo variables
-    if [[ -z "${CLOUDFLARE_ACCOUNT_ID:-}" ]]; then
-        log_step "Fetching CLOUDFLARE_ACCOUNT_ID from repo variables..."
-        CLOUDFLARE_ACCOUNT_ID=$(gh variable get CLOUDFLARE_ACCOUNT_ID 2>/dev/null) || {
-            log_error "Failed to fetch CLOUDFLARE_ACCOUNT_ID from repo variables"
-            log_info "Set CLOUDFLARE_ACCOUNT_ID env var or check 'gh auth status'"
-            exit 1
-        }
-        export CLOUDFLARE_ACCOUNT_ID
-    fi
-
-    log_step "Discovering PR number..."
-    local pr_number
-    pr_number=$(gh pr view --json number -q .number 2>/dev/null) || {
-        log_error "No PR found for current branch"
-        log_info "Push your branch and open a PR first"
-        exit 1
-    }
-    log_info "PR #${pr_number} → https://pr-${pr_number}.rediacc.workers.dev"
-
-    # Source private/account/.env for secrets and R2 credentials
-    local account_env="$ROOT_DIR/private/account/.env"
-    local env_vars=""
-    if [[ -f "$account_env" ]]; then
-        env_vars=$(set -a && source "$account_env" && set +a && env)
-    fi
-    _env() { echo "$env_vars" | grep "^$1=" | head -1 | cut -d= -f2-; }
-
-    # Build shared packages
-    log_step "Building shared packages..."
-    build_packages
-
-    # Build static sites (set PUBLIC_SITE_URL so install commands point to the preview)
-    local preview_url="https://pr-${pr_number}.rediacc.workers.dev"
-
-    log_step "Building www (marketing site)..."
-    PUBLIC_SITE_URL="$preview_url" PUBLIC_REPO_CHANNEL="pr-${pr_number}" npm run build:www
-
-    log_step "Building json (template catalog)..."
-    npm run build:json
-
-    # Build CLI binary (linux-x64) and upload to R2 channel via wrangler
-    local cli_version
-    cli_version=$(git describe --tags --match 'v*' --abbrev=0 2>/dev/null | sed 's/^v//' || echo "0.0.0-dev")
-    local channel="pr-${pr_number}"
-
-    log_step "Building CLI binary (linux-x64)..."
-    "$ROOT_DIR/.ci/scripts/build/build-cli-executables.sh" --platform linux --arch x64
-
-    log_step "Generating CLI manifest..."
-    PYTHONPATH="$ROOT_DIR/.ci" PYTHONDONTWRITEBYTECODE=1 \
-        python3 "$ROOT_DIR/.ci/rediacc_ci/build/generate_cli_manifest.py" \
-        --version "$cli_version" --input dist/cli/
-
-    log_step "Uploading CLI binary to R2 (channel: ${channel})..."
-    local r2_bucket="rediacc-releases"
-    for f in dist/cli/rdc-*; do
-        [[ -f "$f" ]] || continue
-        local fname
-        fname="$(basename "$f")"
-        npx wrangler r2 object put "${r2_bucket}/cli/${channel}/${fname}" --file "$f" --content-type application/octet-stream --remote
-    done
-    if [[ -f "dist/cli/manifest.json" ]]; then
-        npx wrangler r2 object put "${r2_bucket}/cli/${channel}/manifest.json" --file dist/cli/manifest.json --content-type application/json --remote
-    fi
-    echo "{\"version\":\"${cli_version}\"}" >/tmp/latest.json
-    npx wrangler r2 object put "${r2_bucket}/cli/${channel}/latest.json" --file /tmp/latest.json --content-type application/json --remote
-    rm -f /tmp/latest.json
-    log_info "CLI binary uploaded to R2 channel: ${channel}"
-
-    # Assemble pages into workers/www/dist/
-    log_step "Assembling pages..."
-    "$ROOT_DIR/.ci/scripts/build/build-pages.sh" --output dist/pages
-
-    # Install script defaults (channel, server URL) are rewritten at runtime
-    # by the worker based on the deployment hostname. No sed needed.
-
-    # Build account portal
-    log_step "Building account portal..."
-    (cd "$ROOT_DIR/private/account/web" && npm install && npx vite build --outDir ../../../workers/www/dist/account)
-
-    # Install www worker deps
-    (cd "$ROOT_DIR/workers/www" && npm install)
-
-    # Deploy
-    log_step "Deploying pr-${pr_number}..."
-    "$ROOT_DIR/.ci/scripts/deploy/deploy-www.sh" --name "pr-${pr_number}"
-
-    # Set worker secrets from private/account/.env (secrets persist across deploys)
-    local worker_name="pr-${pr_number}"
-    if [[ -f "$account_env" ]] && [[ -n "$(_env ACCOUNT_ED25519_PRIVATE_KEY)" ]]; then
-        log_step "Setting worker secrets for ${worker_name} (from private/account/.env)..."
-
-        # ─── Non-empty guards, same shape as the deploy builders ─────────────
-        # This block used to rely on `with_entries(select(.value != ""))` alone
-        # to drop empties. That is the right treatment for a key that is
-        # genuinely optional here, and exactly the WRONG one for a key that is
-        # not: an unreadable name (a rename landed in one file and not the
-        # other, a key never added to .env) yields "", the entry silently
-        # disappears from the payload, `wrangler secret bulk` succeeds, and the
-        # preview Worker keeps whatever it had -- or, on a fresh Worker, runs
-        # with the feature turned off. Nothing in that chain says a name was
-        # wrong. Measured 2026-09-02: STRIPE_SANDBOX_SECRET_KEY is NOT a key
-        # `private/account/.env` has ever carried, so every local preview
-        # shipped with no Stripe credential at all and reported success.
-        #
-        # So this demands, by name, every key the deploy builders demand with
-        # `_require_nonempty` plus the six env.ts declares non-optional. Each
-        # entry is `<.env key>:<Worker key>` -- they differ only where the
-        # preview deliberately fills a role with a different credential (see
-        # the Stripe note below), and printing both is what makes a failure
-        # actionable.
-        local _required=(
-            ACCOUNT_ED25519_PRIVATE_KEY:ACCOUNT_ED25519_PRIVATE_KEY
-            ACCOUNT_ED25519_PUBLIC_KEY:ACCOUNT_ED25519_PUBLIC_KEY
-            ACCOUNT_X25519_PRIVATE_KEY:ACCOUNT_X25519_PRIVATE_KEY
-            ACCOUNT_X25519_PUBLIC_KEY:ACCOUNT_X25519_PUBLIC_KEY
-            ACCOUNT_SERVER_API_KEY:ACCOUNT_SERVER_API_KEY
-            ACCOUNT_JWT_SECRET:ACCOUNT_JWT_SECRET
-            ROOT_EMAIL:ROOT_EMAIL
-            AWS_SES_ACCESS_KEY_ID:AWS_SES_ACCESS_KEY_ID
-            AWS_SES_SECRET_ACCESS_KEY:AWS_SES_SECRET_ACCESS_KEY
-            AWS_SES_REGION:AWS_SES_REGION
-            CLOUDFLARE_TURNSTILE_SECRET_KEY:CLOUDFLARE_TURNSTILE_SECRET_KEY
-            STRIPE_SANDBOX_SECRET_KEY:STRIPE_SECRET_KEY
-            STRIPE_E2E_WEBHOOK_SECRET:STRIPE_WEBHOOK_SECRET
-        )
-        local _missing=() _pair _envkey _workerkey
-        for _pair in "${_required[@]}"; do
-            _envkey="${_pair%%:*}"
-            _workerkey="${_pair##*:}"
-            if [[ -z "$(_env "$_envkey")" ]]; then
-                if [[ "$_envkey" == "$_workerkey" ]]; then
-                    _missing+=("$_envkey")
-                else
-                    _missing+=("$_envkey (worker key $_workerkey)")
-                fi
-            fi
-        done
-        if ((${#_missing[@]})); then
-            log_error "private/account/.env is missing worker secret(s) the preview needs:"
-            for _pair in "${_missing[@]}"; do log_error "    $_pair"; done
-            log_error "  Pushing a preview without these does not fail -- the empty entry is"
-            log_error "  dropped and the Worker silently runs without the feature, so this"
-            log_error "  refuses instead. Add the key(s) to private/account/.env; './run.sh"
-            log_error "  account reset' regenerates the six ACCOUNT_* ones."
-            return 1
-        fi
-
-        # Build secrets JSON. AWS_SES_FROM / AWS_SES_CONFIGURATION_SET are the
-        # only two left unguarded -- both are optional() in env.ts and neither
-        # turns a feature off by its absence -- so the `with_entries` filter
-        # below now drops nothing else.
-        #
-        # THE ONE REMAINING NAME-CROSSING, and it is deliberate: the .env key
-        # STRIPE_SANDBOX_SECRET_KEY fills the Worker's STRIPE_SECRET_KEY. A
-        # preview is a sandbox deployment, and app.ts reads STRIPE_SECRET_KEY
-        # for the ordinary billing path (STRIPE_SANDBOX_SECRET_KEY is a
-        # separate, additional binding), so a preview that wants working
-        # billing must receive the sandbox key in the live key's slot. CI does
-        # exactly the same thing at ci.yml's set-preview-worker-secrets step.
-        jq -n \
-            --arg ed25519_priv "$(_env ACCOUNT_ED25519_PRIVATE_KEY)" \
-            --arg ed25519_pub "$(_env ACCOUNT_ED25519_PUBLIC_KEY)" \
-            --arg x25519_priv "$(_env ACCOUNT_X25519_PRIVATE_KEY)" \
-            --arg x25519_pub "$(_env ACCOUNT_X25519_PUBLIC_KEY)" \
-            --arg api_key "$(_env ACCOUNT_SERVER_API_KEY)" \
-            --arg jwt "$(_env ACCOUNT_JWT_SECRET)" \
-            --arg stripe "$(_env STRIPE_SANDBOX_SECRET_KEY)" \
-            --arg stripe_wh "$(_env STRIPE_E2E_WEBHOOK_SECRET)" \
-            --arg admin "$(_env ROOT_EMAIL)" \
-            --arg ses_key "$(_env AWS_SES_ACCESS_KEY_ID)" \
-            --arg ses_secret "$(_env AWS_SES_SECRET_ACCESS_KEY)" \
-            --arg ses_region "$(_env AWS_SES_REGION)" \
-            --arg ses_from "$(_env AWS_SES_FROM)" \
-            --arg ses_cs "$(_env AWS_SES_CONFIGURATION_SET)" \
-            --arg turnstile "$(_env CLOUDFLARE_TURNSTILE_SECRET_KEY)" \
-            '{
-              ACCOUNT_ED25519_PRIVATE_KEY: $ed25519_priv,
-              ACCOUNT_ED25519_PUBLIC_KEY: $ed25519_pub,
-              ACCOUNT_X25519_PRIVATE_KEY: $x25519_priv,
-              ACCOUNT_X25519_PUBLIC_KEY: $x25519_pub,
-              ACCOUNT_SERVER_API_KEY: $api_key,
-              ACCOUNT_JWT_SECRET: $jwt,
-              STRIPE_SECRET_KEY: $stripe,
-              STRIPE_WEBHOOK_SECRET: $stripe_wh,
-              ROOT_EMAIL: $admin,
-              AWS_SES_ACCESS_KEY_ID: $ses_key,
-              AWS_SES_SECRET_ACCESS_KEY: $ses_secret,
-              AWS_SES_REGION: $ses_region,
-              AWS_SES_FROM: $ses_from,
-              AWS_SES_CONFIGURATION_SET: $ses_cs,
-              CLOUDFLARE_TURNSTILE_SECRET_KEY: $turnstile
-            } | with_entries(select(.value != ""))' | npx wrangler secret bulk --name "$worker_name"
-
-        log_info "Secrets set for ${worker_name}"
-    else
-        log_warn "Skipping secrets (private/account/.env missing or empty)"
-        log_info "Secrets persist across deploys. Run './run.sh account reset' to generate .env."
-    fi
-
-    log_info "Published to https://pr-${pr_number}.rediacc.workers.dev"
-}
-
-# =============================================================================
 # QUALITY COMMANDS
 # =============================================================================
 
@@ -499,35 +221,6 @@ fix_shell() {
 }
 
 # =============================================================================
-# CHECK COMMANDS (PRE-PUSH VALIDATION)
-# =============================================================================
-
-check_quick() {
-    check_node_version
-    log_step "Running quick checks"
-    npm run check:lint || exit 1
-    npm run check:format || exit 1
-    npm run typecheck || exit 1
-    log_info "Quick checks passed!"
-}
-
-check_full() {
-    check_node_version
-    log_step "Running full validation"
-
-    log_step "Phase 1/3: Quality Checks"
-    quality_all || exit 1
-
-    log_step "Phase 2/3: Security Audit"
-    quality_audit || exit 1
-
-    log_step "Phase 3/3: Unit Tests"
-    test_unit || exit 1
-
-    log_info "Full validation passed!"
-}
-
-# =============================================================================
 # SETUP
 # =============================================================================
 
@@ -640,11 +333,6 @@ WWW COMMANDS:
   www tutorials all [opts]          Full tutorial pipeline (record -> extract -> generate -> video)
 
 
-TEST COMMANDS:
-  test unit           Run unit tests
-  test bridge [opts]  Run bridge tests (requires VMs)
-  test all            Run all tests
-
 DRILL COMMANDS (scripted walkthroughs; non-zero exit on any failed assertion):
   drill universe      Config isolation, source labels, per-config tokens (headless)
   drill transfer      Config-storage battery vs ./run.sh account dev (headless)
@@ -653,12 +341,6 @@ DRILL COMMANDS (scripted walkthroughs; non-zero exit on any failed assertion):
                       upload, byte-identical restore, quota refusal (no VMs needed)
   drill <name> --selftest
                       Plant one failing assertion; the run MUST exit non-zero
-
-BUILD COMMANDS:
-  build cli           Build CLI application
-  build renet         Build renet binary (Go, with embedded assets)
-  build packages      Build shared packages
-  build all           Build everything
 
 QUALITY COMMANDS:
   quality lint        Run linting (ESLint + Knip)
@@ -678,16 +360,6 @@ FIX COMMANDS:
   fix lint            Auto-fix linting issues
   fix shell           Auto-fix shell script formatting (shfmt)
   fix all             Auto-fix all issues
-
-PR COMMANDS:
-  pr publish          Build and deploy to PR preview (pr-N.rediacc.workers.dev)
-                      Auto-discovers PR number and Cloudflare account ID via gh CLI.
-                      Sets worker secrets from private/account/.env if present.
-                      Requires: CLOUDFLARE_API_TOKEN
-
-CHECK COMMANDS (PRE-PUSH):
-  check quick         Fast checks (lint, format, types)
-  check full          Full validation (quality + audit + tests)
 
 MAINTENANCE:
   clean               Clean build artifacts
@@ -867,28 +539,6 @@ main() {
             esac
             ;;
 
-        # Tests
-        test)
-            shift
-            case "${1:-}" in
-                unit)
-                    shift
-                    test_unit "$@"
-                    ;;
-                bridge)
-                    shift
-                    test_bridge "$@"
-                    ;;
-                all) test_all ;;
-                *)
-                    log_error "Unknown test command: ${1:-}"
-                    echo ""
-                    echo "Usage: ./run.sh test [unit|bridge|all]"
-                    exit 1
-                    ;;
-            esac
-            ;;
-
         # Drills: the campaign's manual walkthroughs, scripted. Each one owns
         # its setup, numbered assertions and teardown, and exits non-zero on any
         # failed assertion. Dispatched by literal path (not "$1.sh") so
@@ -916,23 +566,6 @@ main() {
                     log_error "Unknown drill: ${1:-}"
                     echo ""
                     echo "Usage: ./run.sh drill [universe|transfer|license|backup] [--selftest]"
-                    exit 1
-                    ;;
-            esac
-            ;;
-
-        # Build
-        build)
-            shift
-            case "${1:-}" in
-                cli) build_cli ;;
-                renet) build_renet ;;
-                packages) build_packages ;;
-                all | "") build_all ;;
-                *)
-                    log_error "Unknown build command: ${1:-}"
-                    echo ""
-                    echo "Usage: ./run.sh build [cli|renet|packages|all]"
                     exit 1
                     ;;
             esac
@@ -1001,35 +634,6 @@ main() {
                     log_error "Unknown fix command: ${1:-}"
                     echo ""
                     echo "Usage: ./run.sh fix [format|lint|shell|all]"
-                    exit 1
-                    ;;
-            esac
-            ;;
-
-        # Check
-        check)
-            shift
-            case "${1:-}" in
-                quick) check_quick ;;
-                full) check_full ;;
-                *)
-                    log_error "Unknown check command: ${1:-}"
-                    echo ""
-                    echo "Usage: ./run.sh check [quick|full]"
-                    exit 1
-                    ;;
-            esac
-            ;;
-
-        # PR commands
-        pr)
-            shift
-            case "${1:-}" in
-                publish) pr_publish ;;
-                *)
-                    log_error "Unknown pr command: ${1:-}"
-                    echo ""
-                    echo "Usage: ./run.sh pr [publish]"
                     exit 1
                     ;;
             esac
