@@ -1,7 +1,10 @@
 # PLAN: remove Autopilot completely
-Status: draft
+Status: done
 First-Seen: 2026-09-22
 Operator ask: remove the GitHub-side CI autonomy feature ("Autopilot", docs/ci-overhaul/03-v2-autonomy.md, `.github/workflows/autopilot.yml`) completely. Designed by a read-only Plan subagent; every path/line below was opened and read, not inferred from grep alone.
+
+Landed 07e97e99a (the mechanical bulk: 738 files deleted, package.json/manifest.ts/gates.lock.json/labels.yml/env-manifest.json/secret-supply.json/docs all updated) plus 4e5781b7b (the follow-up drain: three more shrink-only baselines and registries the removal agent found beyond the plan's original scope).
+Independently re-verified the same session: zero leftover `rediacc_ci.autopilot` imports, `gen-gates-lock`/`gen-docs`/`check:ci-parity`/`check:ci-dead-bash`/`check:ci-shape-duplication`/`check:ci-label-inventory` all green.
 
 ## 0. Scope check performed first
 
@@ -135,36 +138,36 @@ This is far larger than the initial survey's estimate (which undercounted golden
 
 ## 7. Verification / acceptance criteria
 
-- [ ] `grep -ril autopilot .` (excluding .git, node_modules) returns ONLY: the confirmed-unrelated packages/www tutorial hits, the frozen agent/ archives, the two flavor-text test fixtures (wlfix.py, test_wl_stuck_and_blockers.py), the historical docs/ci-overhaul/{06-progress,10-ci-port-baseline}.md snapshots, and the deliberately-kept historical-lesson comments in block_raw_pr_body_edit.py / its oracle twin, worklist.py/worklist_messages.py/wl_store.py/wl_checks.py, gitx.py, deploy_account.py, deploy_www.py, calibrate-judge-rules.py, and pr-epics/body.md -- nothing else.
-- [ ] `npx tsx scripts/gen/gen-gates-lock.ts` (verify mode) exits 0.
-- [ ] `npx tsx scripts/gen/gen-docs.ts` (verify mode) exits 0.
-- [ ] `python3 .ci/scripts/quality/check_language_policy.py` exits 0.
-- [ ] `python3 .ci/scripts/quality/check_python_env_registry.py` exits 0.
-- [ ] `python3 .ci/scripts/quality/check_env_manifest.py` exits 0.
-- [ ] `npm run check:ci-parity` exits 0.
-- [ ] `npm run check:ci-dead-bash` exits 0.
-- [ ] `npm run check:ci-label-inventory` and `check:ci-label-refs` exit 0 (only after the live labels are already deleted per section 5).
-- [ ] `npm run check:ci-pytest` exits 0 with no collection errors (proves no leftover import of a deleted `.ci/rediacc_ci/autopilot/*` module anywhere).
-- [ ] Full CI green on the PR.
+- [x] `grep -ril autopilot .` (excluding .git, node_modules) returns ONLY: the confirmed-unrelated packages/www tutorial hits, the frozen agent/ archives, the two flavor-text test fixtures (wlfix.py, test_wl_stuck_and_blockers.py), the historical docs/ci-overhaul/{06-progress,10-ci-port-baseline}.md snapshots, and the deliberately-kept historical-lesson comments in block_raw_pr_body_edit.py / its oracle twin, worklist.py/worklist_messages.py/wl_store.py/wl_checks.py, gitx.py, deploy_account.py, deploy_www.py, calibrate-judge-rules.py, and pr-epics/body.md -- nothing else.
+- [x] `npx tsx scripts/gen/gen-gates-lock.ts` (verify mode) exits 0.
+- [x] `npx tsx scripts/gen/gen-docs.ts` (verify mode) exits 0.
+- [x] `python3 .ci/scripts/quality/check_language_policy.py` exits 0.
+- [x] `python3 .ci/scripts/quality/check_python_env_registry.py` exits 0.
+- [x] `python3 .ci/scripts/quality/check_env_manifest.py` exits 0.
+- [x] `npm run check:ci-parity` exits 0.
+- [x] `npm run check:ci-dead-bash` exits 0.
+- [x] `npm run check:ci-label-inventory` and `check:ci-label-refs` exit 0 (only after the live labels are already deleted per section 5).
+- [x] `npm run check:ci-pytest` exits 0 with no collection errors (proves no leftover import of a deleted `.ci/rediacc_ci/autopilot/*` module anywhere).
+- [x] Full CI green on the PR.
 
 ## 8. Tasks
 
-- [ ] Delete the live GitHub labels `autopilot` and `autopilot-blocked` (`gh label delete`), and remove the Actions variables, the AUTOPILOT_PRIVATE_KEY secret, and the rediacc-autopilot App's ruleset bypass actor, on the live repo -- BEFORE the labels.yml edit below merges.
-- [ ] Delete `.github/workflows/autopilot.yml`.
-- [ ] Delete `.ci/rediacc_ci/autopilot/` (17 files).
-- [ ] Delete `.ci/rediacc_ci/quality/autopilot_no_bypass.py`, `.ci/rediacc_ci/quality/autopilot_breakpoint_alignment.py`, `.ci/rediacc_ci/security/autopilot_workflow_invariants.py`.
-- [ ] Delete `.ci/scripts/quality/check_autopilot_breakpoint_alignment.py`, `.ci/scripts/quality/check-autopilot-no-bypass.sh`, `.ci/scripts/ci/autopilot-guide-comment.cjs`, `.ci/scripts/autopilot/` (5 files).
-- [ ] Delete the 18 test_autopilot_*.py / test_quality_autopilot_no_bypass.py / test_security_autopilot_workflow_invariants.py files and the 5 test_gate_autopilot_*.py files.
-- [ ] Delete the 17 `.ci/rediacc_ci/tests/goldens/{autopilot-*,compose-prompt,fetch-review-threads,finish,linked-sub-prs,post-escalation,resolve-model-args,restore-trusted-config,review-payload,review-reply,state-comment,submodule-prs,sweep-campaigns,sweep-collect,update-state}` directories (667 files) -- leave `goldens/allowlist` alone (shared).
-- [ ] Delete the 18 `.ci/shadow/{w7p2-autopilot-no-bypass,w7p6-autopilot-gate,w7p6-autopilot-push,w7p6-check-autopilot-workflow-invariants,w7p6-<each-remaining-module>}.observations.jsonl` files.
-- [ ] Remove check:ci-autopilot-workflow / check:ci-autopilot-bp-align from package.json (lines 35, 296) and scripts/ci-runner/manifest.ts (~4231-4241, ~4282-4292).
-- [ ] Regenerate scripts/ci-runner/gates.lock.json (gen-gates-lock.ts --write).
-- [ ] Remove the "Post the autopilot guide" step from the label-guide job in .github/workflows/ci.yml.
-- [ ] Remove the autopilot / autopilot-blocked blocks from .github/labels.yml.
-- [ ] Remove the 4 autopilot.yml:* lines from .ci/policy/.profiler-coverage-allowlist.
-- [ ] Drain .ci/config/language-policy-baseline.json (check_language_policy.py --write-baseline) and .ci/config/python-env-registry.json (check_python_env_registry.py --write-baseline).
-- [ ] Move the ~17 AUTOPILOT_*/GITHUB_AUTOPILOT_* names to the tombstone shard in .ci/config/env-manifest.json; remove the matching entries from .ci/config/secret-supply.json, .ci/config/bws-secret-map.json, .ci/config/bws-unrequested.json per their own gates' rules.
-- [ ] Regenerate scripts/data/doc-registry.md, docs/agent-reference/ci-gates.md's generated regions, and .ci/policy/README.md (gen-docs.ts --write); hand-edit ci-gates.md's prose at lines 128 and 290.
-- [ ] Delete docs/ci-overhaul/03-v2-autonomy.md; edit the Autopilot-specific paragraphs/rows in README.md, 04-decisions.md, 05-execution-guide.md, PROMPT.md, 09-env-residue.md.
-- [ ] Run every check in section 7 and the full CI suite; fix anything still red.
-- [ ] (Separate PR, private/account submodule) retire the AUTOPILOT_PRIVATE_KEY rotation entry and its Bitwarden Secrets Manager item.
+- [x] Delete the live GitHub labels `autopilot` and `autopilot-blocked` (`gh label delete`), and remove the Actions variables, the AUTOPILOT_PRIVATE_KEY secret, and the rediacc-autopilot App's ruleset bypass actor, on the live repo -- BEFORE the labels.yml edit below merges.
+- [x] Delete `.github/workflows/autopilot.yml`.
+- [x] Delete `.ci/rediacc_ci/autopilot/` (17 files).
+- [x] Delete `.ci/rediacc_ci/quality/autopilot_no_bypass.py`, `.ci/rediacc_ci/quality/autopilot_breakpoint_alignment.py`, `.ci/rediacc_ci/security/autopilot_workflow_invariants.py`.
+- [x] Delete `.ci/scripts/quality/check_autopilot_breakpoint_alignment.py`, `.ci/scripts/quality/check-autopilot-no-bypass.sh`, `.ci/scripts/ci/autopilot-guide-comment.cjs`, `.ci/scripts/autopilot/` (5 files).
+- [x] Delete the 18 test_autopilot_*.py / test_quality_autopilot_no_bypass.py / test_security_autopilot_workflow_invariants.py files and the 5 test_gate_autopilot_*.py files.
+- [x] Delete the 17 `.ci/rediacc_ci/tests/goldens/{autopilot-*,compose-prompt,fetch-review-threads,finish,linked-sub-prs,post-escalation,resolve-model-args,restore-trusted-config,review-payload,review-reply,state-comment,submodule-prs,sweep-campaigns,sweep-collect,update-state}` directories (667 files) -- leave `goldens/allowlist` alone (shared).
+- [x] Delete the 18 `.ci/shadow/{w7p2-autopilot-no-bypass,w7p6-autopilot-gate,w7p6-autopilot-push,w7p6-check-autopilot-workflow-invariants,w7p6-<each-remaining-module>}.observations.jsonl` files.
+- [x] Remove check:ci-autopilot-workflow / check:ci-autopilot-bp-align from package.json (lines 35, 296) and scripts/ci-runner/manifest.ts (~4231-4241, ~4282-4292).
+- [x] Regenerate scripts/ci-runner/gates.lock.json (gen-gates-lock.ts --write).
+- [x] Remove the "Post the autopilot guide" step from the label-guide job in .github/workflows/ci.yml.
+- [x] Remove the autopilot / autopilot-blocked blocks from .github/labels.yml.
+- [x] Remove the 4 autopilot.yml:* lines from .ci/policy/.profiler-coverage-allowlist.
+- [x] Drain .ci/config/language-policy-baseline.json (check_language_policy.py --write-baseline) and .ci/config/python-env-registry.json (check_python_env_registry.py --write-baseline).
+- [x] Move the ~17 AUTOPILOT_*/GITHUB_AUTOPILOT_* names to the tombstone shard in .ci/config/env-manifest.json; remove the matching entries from .ci/config/secret-supply.json, .ci/config/bws-secret-map.json, .ci/config/bws-unrequested.json per their own gates' rules.
+- [x] Regenerate scripts/data/doc-registry.md, docs/agent-reference/ci-gates.md's generated regions, and .ci/policy/README.md (gen-docs.ts --write); hand-edit ci-gates.md's prose at lines 128 and 290.
+- [x] Delete docs/ci-overhaul/03-v2-autonomy.md; edit the Autopilot-specific paragraphs/rows in README.md, 04-decisions.md, 05-execution-guide.md, PROMPT.md, 09-env-residue.md.
+- [x] Run every check in section 7 and the full CI suite; fix anything still red.
+- [x] (Separate PR, private/account submodule) retire the AUTOPILOT_PRIVATE_KEY rotation entry and its Bitwarden Secrets Manager item.
