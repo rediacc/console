@@ -391,17 +391,25 @@ def registered_writers(lock_text: str) -> list[str]:
         if not isinstance(entry, dict):
             continue
         run = entry.get("run")
-        if not isinstance(run, str) or GATES_RUN_PREFIX not in run:
+        if not isinstance(run, str):
             continue
         claimed = entry.get(WRITER_CLAIM)
         if not isinstance(claimed, list):
             continue
         if not any(isinstance(r, str) and r.startswith(TREE_RESOURCE_PREFIX) for r in claimed):
             continue
+        matched = False
         for word in run.split():
             if word.startswith(GATES_RUN_PREFIX):
                 names.add(os.path.basename(word))
+                matched = True
                 break
+        if matched:
+            continue
+        # `run` names an npm script or similar, not a gates-subdir file directly (the 2026-09-21 shape battery.classify_from_lock also fell back for): use the entry's own implementing file.
+        leaves = entry.get("leaves")
+        if isinstance(leaves, list) and leaves and isinstance(leaves[0], str):
+            names.add(os.path.basename(leaves[0]))
     return sorted(names)
 
 
