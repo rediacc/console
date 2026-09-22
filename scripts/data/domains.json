@@ -95,7 +95,7 @@
       "paths": ["scripts/dev/worktree.sh"],
       "home": "scripts/dev",
       "stays": true,
-      "why": "The one file under scripts/dev that is NOT operator-only, and the reason scripts/dev survives W9 P2's move. .ci/legacy/run-legacy.sh:793 dispatches it as `./run.sh worktree` and .ci/scripts/test/gates/test-worktree-devbox-teardown.sh:42 executes it as its SUT, so it is CI-reachable and scripts/ops (`why`: nothing but a human runs these) would be a false description of it. This rule sits BEFORE operator-bash because first match wins; without it the file would match no rule at all and the layout gate reports UNCLASSIFIED.",
+      "why": "The one file under scripts/dev that is NOT operator-only, and the reason scripts/dev survives W9 P2's move. .ci/legacy/run-legacy.sh:793 dispatches it as `./run.sh worktree` and .ci/rediacc_ci/tests/gates/test_gate_worktree_devbox_teardown.py:31 lifts remove_worktree's body as its SUT, so it is gate-tested and scripts/ops (`why`: nothing but a human runs these) would be a false description of it. This rule sits BEFORE operator-bash because first match wins; without it the file would match no rule at all and the layout gate reports UNCLASSIFIED.",
       "notes": [
         "Moving this file is a change to .ci/legacy/run-legacy.sh and to the teardown gate test in the same commit, not a git mv. W9 P2 declined to make it, because run-legacy.sh was owned by a concurrent writer and the exception was already declared."
       ]
