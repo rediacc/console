@@ -49,6 +49,7 @@
   ".claude/rediacc_hooks/guards/block_suppressions.py",
   ".claude/rediacc_hooks/guards/block_unlinked_commit_author.py",
   ".claude/rediacc_hooks/guards/block_unproven_bulk_transform.py",
+  ".claude/rediacc_hooks/guards/block_unsatisfiable_pid_wait.py",
   ".claude/rediacc_hooks/guards/block_untagged_commit.py",
   ".claude/rediacc_hooks/guards/block_unverified_push.py",
   ".claude/rediacc_hooks/guards/block_worktree_add.py",
