@@ -589,6 +589,33 @@
         "eed39eb9"
       ]
     },
+    "agent/plans/PLAN-github-actions-to-bitwarden.md": {
+      "status": "draft",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 16,
+      "done": 0,
+      "open_sigs": [
+        "26abe0f2",
+        "28d5f960",
+        "462d404b",
+        "4a168aee",
+        "4fc98aba",
+        "56203231",
+        "6d895c92",
+        "7a00eafd",
+        "8b81b4ad",
+        "9a9c38bf",
+        "a23f5a4d",
+        "aa640ee5",
+        "ca878a30",
+        "cbd1676c",
+        "d33c61df",
+        "eb8f899e"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-github-actions-workflow-run-trigger-fix.md": {
       "status": "compacted",
       "owner": "unowned",
@@ -1299,6 +1326,37 @@
       "open_sigs": [],
       "done_sigs": []
     },
+    "agent/plans/PLAN-stop-hook-behavioral-hints.md": {
+      "status": "draft",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 20,
+      "done": 0,
+      "open_sigs": [
+        "0e93d730",
+        "0f630a91",
+        "17083c91",
+        "27a68907",
+        "299409bb",
+        "4f755819",
+        "64f5c214",
+        "71e8cfb9",
+        "746590c8",
+        "7b2f2e64",
+        "bc819650",
+        "bcd3ab41",
+        "c28b0e1c",
+        "d95f4819",
+        "d9a2fb3d",
+        "e43a85ce",
+        "eeded314",
+        "f95260f7",
+        "f9d0ddf8",
+        "fcb9be74"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-stop-hook-cadence.md": {
       "status": "compacted",
       "owner": "unowned",
@@ -1380,30 +1438,29 @@
       "done_sigs": []
     },
     "agent/plans/PLAN-stop-hook-task-verification.md": {
-      "status": "draft",
+      "status": "done",
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 12,
-      "done": 3,
-      "open_sigs": [
+      "open": 0,
+      "done": 15,
+      "open_sigs": [],
+      "done_sigs": [
         "07198838",
         "237eb8f8",
+        "3ba5b00a",
         "4192f407",
         "76db9494",
         "76e182ab",
         "b46c9428",
+        "b4ece53f",
         "b56aa2fc",
+        "b5eb0eef",
         "c5fa6ca5",
         "c6ba223d",
         "ebe8974d",
         "f98d7ead",
         "fd828e25"
-      ],
-      "done_sigs": [
-        "3ba5b00a",
-        "b4ece53f",
-        "b5eb0eef"
       ]
     },
     "agent/plans/PLAN-stop-report-queue.md": {
