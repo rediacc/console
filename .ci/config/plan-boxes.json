@@ -1331,20 +1331,23 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 20,
-      "done": 0,
+      "open": 4,
+      "done": 16,
       "open_sigs": [
         "0e93d730",
+        "299409bb",
+        "bc819650",
+        "fcb9be74"
+      ],
+      "done_sigs": [
         "0f630a91",
         "17083c91",
         "27a68907",
-        "299409bb",
         "4f755819",
         "64f5c214",
         "71e8cfb9",
         "746590c8",
         "7b2f2e64",
-        "bc819650",
         "bcd3ab41",
         "c28b0e1c",
         "d95f4819",
@@ -1352,10 +1355,8 @@
         "e43a85ce",
         "eeded314",
         "f95260f7",
-        "f9d0ddf8",
-        "fcb9be74"
-      ],
-      "done_sigs": []
+        "f9d0ddf8"
+      ]
     },
     "agent/plans/PLAN-stop-hook-cadence.md": {
       "status": "compacted",

@@ -1,5 +1,5 @@
 # PLAN: a rotating behavioral-hint line on the stop report
-Status: draft
+Status: executing
 Owner: d778be9d
 Updated: 2026-09-22
 
@@ -258,25 +258,26 @@ Two more are grounded and held back only to keep the first cut at twelve: `one-o
 
 ## Tasks
 
-- [ ] Write `docs/agent-reference/HINTS.md` with the section 1.1 schema, a header stating the TRAPS.md boundary, and the twelve section 7 entries.
-- [ ] Add `.claude/hooks/stop/wl_hints.py`: `HINTS_REL`, `hints_path()` with the `WORKLIST_HINTS_FILE` seam, `load_corpus` returning `(entries, errors)` and never raising, `hint_pick(entries, ledger, rng=None)`, and `render`.
-- [ ] State in the module header that there is no judge call, no marker, no schema and no `apply_verdict`, with the section 6.2 reasons, so the absence is not read as an omission.
-- [ ] Extract `pick_random(candidates, rng)` and make `outq_drain`'s tier-internal selection call it (depends on `PLAN-eliminate-worklist-report-per-stop-env.md` landing; fallback in section 3.1 if it has not).
-- [ ] Add `N_BEHAVIOR_HINT` to `worklist_messages.py` beside `N_AGENT_HINT`.
-- [ ] Wire the hint line into `run_stop`'s allow block after the drain at `wl_checks.py:4844`, inside `contextlib.suppress(Exception)`, BEFORE the empty-`parts` exit at `wl_checks.py:4852` so it can never create output on a silent stop.
-- [ ] Queue an `hint-corpus-err` advisory at priority 3 when `load_corpus` returns errors, mirroring `agent-corpus-err` at `wl_checks.py:1453`.
-- [ ] Add the `--hint-propose <me> <text...> [SOURCE: <pointer>]` verb to `worklist.py`, appending one JSON line to `agent/ledgers/hint-proposals.jsonl` and nothing else.
-- [ ] Queue the `hint-proposals` advisory (priority 3, `refresh_min` 720) counting proposals whose text is absent from the corpus, printing the promotion command.
-- [ ] Register `WORKLIST_HINTS_FILE` in `.ci/policy/worklist-env-registry.json` (`kind: path`, `defaults: ["NONE"]`) and in `.ci/config/env-manifest.json`'s harness shard.
-- [ ] Run `python3 .ci/scripts/quality/check_python_env_registry.py --write-baseline` and `npx tsx scripts/gen/gen-docs.ts --write` for the new name.
+- [x] Write `docs/agent-reference/HINTS.md` with the section 1.1 schema, a header stating the TRAPS.md boundary, and the twelve section 7 entries.
+- [x] Add `.claude/hooks/stop/wl_hints.py`: `HINTS_REL`, `hints_path()` with the `WORKLIST_HINTS_FILE` seam, `load_corpus` returning `(entries, errors)` and never raising, `hint_pick(entries, ledger, rng=None)`, and `render`.
+- [x] State in the module header that there is no judge call, no marker, no schema and no `apply_verdict`, with the section 6.2 reasons, so the absence is not read as an omission.
+- [ ] Extract `pick_random(candidates, rng)` and make `outq_drain`'s tier-internal selection call it (depends on `PLAN-eliminate-worklist-report-per-stop-env.md` landing; fallback in section 3.1 if it has not). NOT extracted: implemented independently (outq_drain uses r.sample, hint_pick uses r.choice), matching the plan's own stated fallback for exactly this case.
+  Sharing is a mechanical follow-up, not a correctness gap.
+- [x] Add `N_BEHAVIOR_HINT` to `worklist_messages.py` beside `N_AGENT_HINT`.
+- [x] Wire the hint line into `run_stop`'s allow block after the drain at `wl_checks.py:4844`, inside `contextlib.suppress(Exception)`, BEFORE the empty-`parts` exit at `wl_checks.py:4852` so it can never create output on a silent stop.
+- [x] Queue an `hint-corpus-err` advisory at priority 3 when `load_corpus` returns errors, mirroring `agent-corpus-err` at `wl_checks.py:1453`.
+- [x] Add the `--hint-propose <me> <text...> [SOURCE: <pointer>]` verb to `worklist.py`, appending one JSON line to `agent/ledgers/hint-proposals.jsonl` and nothing else.
+- [x] Queue the `hint-proposals` advisory (priority 3, `refresh_min` 720) counting proposals whose text is absent from the corpus, printing the promotion command.
+- [x] Register `WORKLIST_HINTS_FILE` in `.ci/policy/worklist-env-registry.json` (`kind: path`, `defaults: ["NONE"]`) and in `.ci/config/env-manifest.json`'s harness shard.
+- [x] Run `python3 .ci/scripts/quality/check_python_env_registry.py --write-baseline` and `npx tsx scripts/gen/gen-docs.ts --write` for the new name.
 - [ ] Write `.ci/scripts/quality/check_hint_corpus.py` with assertions H1-H7 from section 6.3, control-first.
 - [ ] Wire `check:ci-hint-corpus` at all three points (`---- gate ----` header block, `package.json`, `scripts/ci-runner/manifest.ts`) and confirm `scripts/gates/check-ci-parity.ts` is green.
-- [ ] Add in-process unit tests in `.claude/rediacc_hooks/tests/test_wl_hints.py` driving `hint_pick` with `random.Random(seed)`: full-cycle coverage, no repeat inside a cycle, no back-to-back repeat across a cycle boundary, and at least two distinct first-picks across 50 seeds (the entropy control, mirroring `test_181_control`).
-- [ ] Add a subprocess test proving the line appears on a loud allow stop AND is absent from a silent clean stop (the zero-byte case at `wl_checks.py:4852`), and absent from a blocked stop.
-- [ ] Add the negative control: point `WORKLIST_HINTS_FILE` at an empty corpus and assert the stop output is byte-identical to the run without the feature, proving the corpus drives the line.
-- [ ] Add `"WORKLIST_HINTS_FILE"` to `wlfix.py`'s `RESET_KNOBS` tuple.
-- [ ] Add a ledger entry for this plan in `.ci/config/plan-boxes.json` (or run the ledger's own update path) so `check:ci-plan-boxes` G-A0 does not red on an untracked plan carrying open boxes.
-- [ ] Run `python3 .ci/scripts/quality/check_prose_style.py reflow --write` then `check` on `docs/agent-reference/HINTS.md` and this plan.
+- [x] Add in-process unit tests in `.claude/rediacc_hooks/tests/test_wl_hints.py` driving `hint_pick` with `random.Random(seed)`: full-cycle coverage, no repeat inside a cycle, no back-to-back repeat across a cycle boundary, and at least two distinct first-picks across 50 seeds (the entropy control, mirroring `test_181_control`).
+- [x] Add a subprocess test proving the line appears on a loud allow stop AND is absent from a silent clean stop (the zero-byte case at `wl_checks.py:4852`), and absent from a blocked stop.
+- [x] Add the negative control: point `WORKLIST_HINTS_FILE` at an empty corpus and assert the stop output is byte-identical to the run without the feature, proving the corpus drives the line.
+- [x] Add `"WORKLIST_HINTS_FILE"` to `wlfix.py`'s `RESET_KNOBS` tuple.
+- [x] Add a ledger entry for this plan in `.ci/config/plan-boxes.json` (or run the ledger's own update path) so `check:ci-plan-boxes` G-A0 does not red on an untracked plan carrying open boxes.
+- [x] Run `python3 .ci/scripts/quality/check_prose_style.py reflow --write` then `check` on `docs/agent-reference/HINTS.md` and this plan.
 - [ ] Run the full `.claude/rediacc_hooks/tests/` suite as the closing verification step.
 
 ## Acceptance criteria
