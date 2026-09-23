@@ -25,4 +25,5 @@ A general Stop-hook mechanism, for every session in this repo (not just this one
 
 - [x] `.claude/hooks/stop/wl_popup.py` -- `should_pop(rng=None)`, `POP_PROBABILITY = 0.2`.
     (ticked) 4/4 pytest (test-popup.py), both directions proven under fixed seeds (1 fires, 0 does not), plus a default-rng-matches-explicit-rng control and a pinned-probability control.
-- [ ] The one-line `wl_checks.py` call-site change (`if parts:` -> `if parts or wl_popup.should_pop():`), landed the same way every other genuinely-additive touch to this contested file has this session: named explicitly, minimal, and flagged rather than buried.
+- [x] The one-line `wl_checks.py` call-site change (`if parts:` -> `if parts or wl_popup.should_pop():`), landed the same way every other genuinely-additive touch to this contested file has this session: named explicitly, minimal, and flagged rather than buried.
+    (ticked) 2026-09-23T10:13:46Z by d778be9d: Peer folded the exact 2-line change into commit 004b5dba1, confirmed via .claude/hooks/stop/wl_checks.py:32; investigation recorded in commit 53f0e7365.

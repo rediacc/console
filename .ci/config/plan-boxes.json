@@ -802,13 +802,12 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 1,
-      "done": 1,
-      "open_sigs": [
-        "bc63178b"
-      ],
+      "open": 0,
+      "done": 2,
+      "open_sigs": [],
       "done_sigs": [
-        "9b477c32"
+        "9b477c32",
+        "bc63178b"
       ]
     },
     "agent/plans/PLAN-printf-echo-pipefail-sweep.md": {
