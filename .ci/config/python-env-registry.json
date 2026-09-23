@@ -160,8 +160,22 @@
       "BWS_ENV_ROOT",
       "PATH"
     ],
+    ".ci/rediacc_ci/core/devbox_shadow_driver.py": [
+      "HOME",
+      "PATH"
+    ],
     ".ci/rediacc_ci/core/env.py": [
       "*key"
+    ],
+    ".ci/rediacc_ci/core/local_common.py": [
+      "CONSOLE_ROOT_DIR",
+      "LOCAL_CI_DIR",
+      "LOCAL_LIB_DIR",
+      "LOCAL_ROOT_DIR"
+    ],
+    ".ci/rediacc_ci/core/local_common_shadow_driver.py": [
+      "HOME",
+      "PATH"
     ],
     ".ci/rediacc_ci/core/platform.py": [
       "*name",
@@ -438,6 +452,10 @@
     ],
     ".ci/rediacc_ci/quality/account_probes.py": [
       "REDIACC_CI_ROOT"
+    ],
+    ".ci/rediacc_ci/quality/agent_session_archival.py": [
+      "AGENT_SESSION_ARCHIVAL_ROOT",
+      "WORKLIST_DEAD_HOURS"
     ],
     ".ci/rediacc_ci/quality/announce_gate_skips.py": [
       "GATE_SKIP_MODE",
@@ -1103,6 +1121,10 @@
     ".ci/rediacc_ci/tests/test_core_env.py": [
       "REDIACC_TEST_ENV_APPLY"
     ],
+    ".ci/rediacc_ci/tests/test_core_local_common.py": [
+      "HOME",
+      "PATH"
+    ],
     ".ci/rediacc_ci/tests/test_deploy_cf_purge_urls.py": [
       "HOME"
     ],
@@ -1486,6 +1508,9 @@
       "WORKLIST_AGENT_PUSHBACK",
       "WORKLIST_AGENT_PUSHBACK_MIN_MARGIN",
       "WORKLIST_AGENT_PUSHBACK_MIN_SCORE"
+    ],
+    ".claude/hooks/stop/wl_backlog.py": [
+      "WORKLIST_BACKLOG_MAX_PER_SESSION"
     ],
     ".claude/hooks/stop/wl_bravedefault.py": [
       "WORKLIST_BRAVE_MAX_FIRES",
