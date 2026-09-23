@@ -254,7 +254,8 @@ collide on it). Confirm no concurrent writer holds it before starting D3/D4.
       (extra job cost on an otherwise-fast lane), or (b) a new, dedicated, always-run job with
       node and nothing else, matching the box's own "or a dedicated always-run step" alternative.
       Choosing between them is a real design call, not a mechanical edit -- next session's job.
-- [ ] Add the two missing selftest controls to `scripts/gate-bind.ts`'s `selftest()`: a lane
+- [x] Add the two missing selftest controls to `scripts/gate-bind.ts`'s `selftest()`: a lane
+    (ticked) 2026-09-23T11:59:53Z by d778be9d: PRESENT, record stale: both controls are in selftest() verbatim at scripts/gate-bind.ts:1990 and scripts/gate-bind.ts:2021, added by c691a3004. Driven live: npx tsx scripts/gate-bind.ts --selftest prints PASS for both and exits 0 failures; investigation row in 8114cd2c1.
       WITH an assignment emits `matrix.shard == N` on exactly the steps the plan gives that leg;
       a lane WITHOUT one emits byte-identically to today. Required before any `SHARD_COUNTS`
       population, per the box's own gap note.
@@ -268,7 +269,8 @@ collide on it). Confirm no concurrent writer holds it before starting D3/D4.
       (ticked) 2026-09-15 by d778be9d: verified live at `scripts/gate-bind.ts:785` (line number drifted
       with the D1-D5 insertions) -- reads "...and no lane is in `SHARD_COUNTS` today", the exact
       corrected wording.
-- [ ] New completeness gate (or new static clause in `check-quality-complete.ts`): define
+- [x] New completeness gate (or new static clause in `check-quality-complete.ts`): define
+    (ticked) 2026-09-23T11:59:54Z by d778be9d: PRESENT, record stale: the static clause is in scripts/gates/check-quality-complete.ts:389 (DECLARED_HAND_WRITTEN_LANES, opening with quality-branch and quality-submodule-branches) and scripts/gates/check-quality-complete.ts:411 (UNDECIDED_LANES naming ci-quick, quality-packages, quality-go). partitionFindings asserts the partition both directions plus the id-setup reason clause; landed in 814893cb7, investigation row in 8114cd2c1.
       `DECLARED_HAND_WRITTEN_LANES` explicitly (starting `['quality-branch',
       'quality-submodule-branches']`); assert `REGION_LANES ∪ DECLARED_HAND_WRITTEN_LANES`
       equals the workflow's full job set with empty intersection, both directions; assert no

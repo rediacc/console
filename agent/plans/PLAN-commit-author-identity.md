@@ -145,7 +145,8 @@ assertions fail; and a submodule fan-out where console is clean but `rediacc/acc
       its still-live twin per `.ci/rediacc_ci/quality/commit_identity.py:3,22`). Ran
       `npm run check:ci-parity` live: rc=0, "the local gate set and the CI quality surface agree in
       both directions."
-- [ ] Add the workflow step to `quality-submodule-branches`
+- [x] Add the workflow step to `quality-submodule-branches`
+    (ticked) 2026-09-23T11:59:40Z by d778be9d: PRESENT, record stale: the workflow step exists at .github/workflows/ci-quality.yml:498-503, added by d99a4e92f, running .ci/scripts/quality/check_commit_identity.py on every pull_request. It sits in job quality-static beside the Claude-attribution step rather than in quality-submodule-branches; investigation row in 8114cd2c1.
 - [x] Run the gate against the PRE-REWRITE tips in `refs/original/`; record the exit-1 output in the gate header
       **CLOSED 2026-09-09: the mechanism was never the gate's.** `.ci/scripts/quality/check-commit-identity.sh`
       is GitHub-API driven by design -- nine `gh api` / `pulls/` references, and its own
@@ -180,4 +181,5 @@ assertions fail; and a submodule fan-out where console is clean but `rediacc/acc
       '[.[] | select(.author==null or .committer==null)] | length'` -> `0` for all three, and
       `repos/rediacc/console/pulls/585/commits` shows every commit attributed to `mfbayraktar`. All
       four repos currently exit 0.
-- [ ] `check_plan_boxes.py --update` and commit the ledger
+- [x] `check_plan_boxes.py --update` and commit the ledger
+    (ticked) 2026-09-23T11:59:53Z by d778be9d: PRESENT, record stale: .ci/config/plan-boxes.json:245 already carries this plan committed and in sync (status draft, owner d778be9d, open 3, done 10, open_sigs exactly the live boxes). npm run check:ci-plan-boxes ran live, rc=0, 132 plan file(s) agree with the ledger; investigation row in 8114cd2c1.
