@@ -208,16 +208,20 @@ Naming the advisory status in the message is deliberate. An advisory that reads 
 
 ### Commit 1 -- Rearm what exists (independently valuable; ship first)
 
-- [ ] Split the index refresh out from under the judge. In `.claude/hooks/stop/wl_shapedup.py:371`, split `run(root, state)` into `refresh_index(root, state)` (counter run + `--emit-index`, no model call) and `ask(root, state, findings)` (the judged half).
+- [x] Split the index refresh out from under the judge. In `.claude/hooks/stop/wl_shapedup.py:371`, split `run(root, state)` into `refresh_index(root, state)` (counter run + `--emit-index`, no model call) and `ask(root, state, findings)` (the judged half).
+    (ticked) 2026-09-23T18:47:48Z by d778be9d: refresh_index/judge split landed, wired outside if judged_ok: (commit e31838a0f).
   In `.claude/hooks/stop/wl_checks.py`, call `refresh_index` on every full stop that reaches the allow path, independent of `judged_ok`; keep the `ask` half inside `if judged_ok:` at `:4619` exactly as today. Rationale to carry in the comment: a stale index makes the commit-path guard say "DID NOT RUN", and that guard's rearm must not depend on the judge's verdict. Verified live: a
   one-comment edit disarmed it for 36+ minutes with no path to recovery.
-- [ ] Make the index staleness question survive a comment edit. `warn_staged_shape_duplication._algorithm_moved` (`:138-153`) sha256s whole files. Two acceptable shapes; pick one and record why:
+- [x] Make the index staleness question survive a comment edit. `warn_staged_shape_duplication._algorithm_moved` (`:138-153`) sha256s whole files. Two acceptable shapes; pick one and record why:
+    (ticked) 2026-09-23T18:47:48Z by d778be9d: index_inputs_moved fallback landed and tested (commit e31838a0f).
   - (preferred) Move the staleness test into the probe bundle -- `probe.mjs` already contains the gate's source; have `probeMain` (`scripts/gates/check-shape-duplication.ts:1794` region) verify its own `inputs` and return `{error: "stale: <rel>"}`, and delete `_algorithm_moved` from the Python. One implementation, two callers -- the rule this system is built on.
   - (fallback, cheaper) Keep the whole-file hash but have `refresh_index` also re-emit when any `inputs` sha has moved, so the LOUD "did not run" window is one stop rather than unbounded.
   Do not weaken the check to ignore comments: a comment in this file carries the incident history, and a hash that skips comments is a hash that can be fooled by moving code into one.
-- [ ] Add a `deadSeeded` report beside `deadAccepted`. `scripts/gates/check-shape-duplication.ts:1455`. Same predicate (`copies.get(h)?.size ?? 0) < N`), applied to `seed.shapes`.
+- [x] Add a `deadSeeded` report beside `deadAccepted`. `scripts/gates/check-shape-duplication.ts:1455`. Same predicate (`copies.get(h)?.size ?? 0) < N`), applied to `seed.shapes`.
+    (ticked) 2026-09-23T18:47:48Z by d778be9d: deadSeeded landed, reported on the success line, 2 selftest controls pass (commit e31838a0f).
   Report, do not refuse -- 95 of 267 are dead today and a refusal would go red on an unrelated commit. Print the count on the success line next to the existing `seeded + accepted` arithmetic, so the debt is visible on every green. Name the danger in the comment: a dead seed hash is permanent silence if that shape returns.
-- [ ] Regression coverage for the first two: a case in `.ci/rediacc_hooks/guards/test-warn_staged_shape_duplication.py` that plants an `inputs` drift and asserts the guard says DID NOT RUN (pins the current behaviour), plus a `test-judge-schema.py` control that `refresh_index` runs when `judged_ok` is false.
+- [x] Regression coverage for the first two: a case in `.ci/rediacc_hooks/guards/test-warn_staged_shape_duplication.py` that plants an `inputs` drift and asserts the guard says DID NOT RUN (pins the current behaviour), plus a `test-judge-schema.py` control that `refresh_index` runs when `judged_ok` is false.
+    (ticked) 2026-09-23T18:47:48Z by d778be9d: 13 new controls landed across both test files, all green (commit e31838a0f).
 
 ### Commit 2 -- The profile split (pure refactor, no behaviour change)
 
