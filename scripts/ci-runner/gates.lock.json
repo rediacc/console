@@ -1669,6 +1669,20 @@
     }
   },
   {
+    "id": "check:ci-bws-rotation-notice",
+    "run": "npm run check:ci-bws-rotation-notice",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_bws_rotation_notice.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-security",
+      "step": "BWS rotation notice"
+    }
+  },
+  {
     "id": "check:ci-actions-allowlist",
     "run": "npm run check:ci-actions-allowlist",
     "gate": true,
@@ -1695,7 +1709,7 @@
     "run": "npm run check:ci-plan-housekeeping",
     "gate": true,
     "paths": [
-      "agent/PLAN-*.md",
+      "agent/plans/**",
       ".ci/config/plan-lifecycle.json",
       ".ci/policy/.plan-housekeeping-allowlist",
       ".ci/scripts/quality/check_plan_housekeeping.py"
@@ -1961,7 +1975,7 @@
     "run": "npm run check:ci-plan-boxes",
     "gate": true,
     "paths": [
-      "agent/PLAN-*.md",
+      "agent/plans/**",
       ".ci/config/plan-boxes.json",
       ".ci/scripts/quality/check_plan_boxes.py"
     ],
@@ -1974,6 +1988,23 @@
       "workflow": ".github/workflows/ci-quality.yml",
       "job": "quality-branch",
       "step": "Plan checkbox ledger"
+    }
+  },
+  {
+    "id": "check:ci-plan-implementation",
+    "env": {
+      "GITHUB_BASE_REF": "${{ github.base_ref }}"
+    },
+    "run": "npm run check:ci-plan-implementation",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_plan_implementation.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-branch",
+      "step": "Plan implementation clock"
     }
   },
   {
@@ -2001,7 +2032,7 @@
     "run": "npm run check:ci-plan-citations",
     "gate": true,
     "paths": [
-      "agent/PLAN-*.md",
+      "agent/plans/**",
       "agent/INDEX.md",
       ".ci/scripts/quality/check_plan_citations.py"
     ],
@@ -2024,7 +2055,7 @@
     "run": "npm run check:ci-plan-record",
     "gate": true,
     "paths": [
-      "agent/PLAN-*.md",
+      "agent/plans/**",
       "agent/INDEX.md",
       ".ci/scripts/quality/check_plan_record.py",
       ".claude/hooks/stop/wl_planrec.py",
@@ -2046,7 +2077,7 @@
     "run": "npm run check:ci-plan-folders",
     "gate": true,
     "paths": [
-      "agent/PLAN-*.md",
+      "agent/plans/**",
       "agent/INDEX.md",
       ".ci/config/plan-lifecycle.json",
       ".ci/config/plan-boxes.json",
@@ -2062,6 +2093,20 @@
       "workflow": ".github/workflows/ci-quality.yml",
       "job": "quality-branch",
       "step": "Plan folders and retention"
+    }
+  },
+  {
+    "id": "check:ci-agent-session-archival",
+    "run": "npm run check:ci-agent-session-archival",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_agent_session_archival.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-branch",
+      "step": "Agent session archival"
     }
   },
   {
@@ -2516,6 +2561,20 @@
       "workflow": ".github/workflows/ci-quality.yml",
       "job": "quality-content",
       "step": "Agent hints can actually fire"
+    }
+  },
+  {
+    "id": "check:ci-hint-corpus",
+    "run": "npm run check:ci-hint-corpus",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_hint_corpus.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-content",
+      "step": "Behavioral hints can actually fire"
     }
   },
   {
