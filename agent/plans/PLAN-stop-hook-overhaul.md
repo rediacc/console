@@ -47,7 +47,8 @@ motivating shape is already caught by `want me to`.
       `CLOSING_QUESTION_RE` at `.claude/hooks/stop/wl_admit.py:411`. Keep the two legitimate
       exits at `.claude/hooks/stop/wl_admit.py:580` and the `DEFAULT:` skip at
       `.claude/hooks/stop/wl_admit.py:416`.
-- [ ] CONTROL in `.claude/hooks/stop/worklist-cases/01-core-blocking.sh`: a rhetorical closing
+- [x] CONTROL in `.claude/hooks/stop/worklist-cases/01-core-blocking.sh`: a rhetorical closing
+    (ticked) 2026-09-23T16:27:37Z by d778be9d: CONTROL tests landed in commit c631e3c19; investigation ledger committed at 255285cf2.
       question must NOT block; `Do you want me to land this?` MUST still block.
 
 ### 1.3 The pure-wait check-in on stream-less teammates -- DROP THE DEMAND FOR THOSE ROWS

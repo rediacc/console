@@ -1234,8 +1234,8 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "2026-09-21",
-      "open": 25,
-      "done": 6,
+      "open": 24,
+      "done": 7,
       "open_sigs": [
         "06fcc45a",
         "071fec08",
@@ -1259,7 +1259,6 @@
         "d2374200",
         "dbdc8bbc",
         "e97f9440",
-        "ea9dc74a",
         "eb55a6bd",
         "edc40d5b"
       ],
@@ -1269,7 +1268,8 @@
         "823d5963",
         "909cdb2d",
         "afcec761",
-        "c63cd990"
+        "c63cd990",
+        "ea9dc74a"
       ]
     },
     "agent/plans/PLAN-stop-hook-refactor-enforcement.md": {
