@@ -156,6 +156,24 @@ case(
 )
 git(pathspec_repo, "reset", "-q")
 
+# ---- SCOPE: a brand-new, never-staged path is still just its own path ------
+# Reproduced live 2026-09-23: `diff HEAD --name-only -- <path>` reports NOTHING for a genuinely untracked path.
+# That is not a HEAD-vs-cached nuance -- `diff` never reports untracked content at all, staged or not.
+# A single new file, never staged, named in `git commit -m ... -- <that file>` made the empty `_pathspec_files` result fall through `paths and _pathspec_files(...)` into the full shared-index fallback (177 unrelated files that day).
+# `git status --porcelain` sees the `??` entry `diff` cannot. Git itself still refuses to COMMIT an untracked pathspec, so this case checks only that the GUARD stops blaming a one-file attempt on an unrelated bulk index, not that the commit succeeds.
+new_file_repo = scratch_repo()
+stage_files(new_file_repo, BULK, prefix="idx")
+# WRITTEN AFTER `stage_files`, DELIBERATELY: that helper's own `git add -A` would otherwise stage this file too, leaving it indistinguishable from the tracked case the earlier block already covers.
+with open(os.path.join(new_file_repo, "brand_new.py"), "w", encoding="utf-8") as fh:
+    fh.write("z = 1\n")
+case(
+    "one brand-new, never-staged path is judged on itself, not the loaded index",
+    'git commit -m "feat: add brand_new.py" -- brand_new.py',
+    new_file_repo,
+    False,
+)
+git(new_file_repo, "reset", "-q")
+
 case("a plain command is not a target", "ls -la", repo, False)
 case("gh pr view is not a write", "gh pr view 1", repo, False)
 case(

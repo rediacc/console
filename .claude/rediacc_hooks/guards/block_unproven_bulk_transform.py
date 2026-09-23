@@ -94,11 +94,27 @@ def _pathspec_files(cwd, paths):
     same class of blindness the repo-context note in `run` records, one scope narrower.
 
     `HEAD`, not `--cached`, because the content committed comes from the WORKTREE: a path modified but never staged still lands in that commit, and `--cached` would not see it. `want_rc=True` keeps an unresolvable pathspec (a bogus path, a `--` belonging to some other clause) as None rather than as an empty list that would read as "this commit changes nothing".
+
+    `git diff` NEVER REPORTS AN UNTRACKED FILE, staged or not -- that is not a `HEAD`-vs-`--cached` nuance, it is a property of `diff` itself, which only compares TRACKED content. Reproduced live 2026-09-23: a single brand-new file, `git add`ed then committed as `git commit -m ... -- <that file>`, made `diff HEAD --name-only -- <path>` print nothing (empty string, not None), so the caller's `paths and _pathspec_files(...)` was falsy and fell through to `_staged_files` -- the FULL shared index, 177 unrelated paths, on a one-file commit. `git status --porcelain --  <paths>` sees the file (`??`) where `diff` cannot, so it is unioned in below; the file's own new content is what would land in the commit either way.
     """
     out = hookio.git_out(["diff", "HEAD", "--name-only", "--", *paths], cwd=cwd, want_rc=True)
     if out is None:
         return []
-    return [line for line in out.splitlines() if line.strip()]
+    tracked = [line for line in out.splitlines() if line.strip()]
+
+    status_out = hookio.git_out(["status", "--porcelain", "--", *paths], cwd=cwd, want_rc=True)
+    untracked = []
+    if status_out is not None:
+        for line in status_out.splitlines():
+            if line.startswith("??"):
+                untracked.append(line[3:].strip())
+
+    seen = set(tracked)
+    for path in untracked:
+        if path not in seen:
+            seen.add(path)
+            tracked.append(path)
+    return tracked
 
 
 def _commit_pathspecs(scan):
