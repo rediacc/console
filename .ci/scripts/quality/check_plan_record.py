@@ -310,28 +310,55 @@ def attested_under_any_path(root, ledger, rel, sig):
 
     A COMMITTED LEDGER IS KEYED BY THE PATH THE PLAN HAD AT THAT COMMIT. The tree-lifecycle move re-keys the current ledger and cannot re-key the historical ones, so without this every `done=` proof in the corpus reads as asserted-and-absent on the day the plans move -- 21 of them did, measured 2026-09-21. The fallback is the stub, not the basename, so it cannot admit a proof
     belonging to a different document.
+
+    THE STUB IS NOT THE ONLY SURVIVING WITNESS. `names_this_record` already falls through to `_named_by_git_history` once a stub is gone (the 2026-09-22 cleanup retired the whole flat-stub class on that premise); this function did not get the same fallback, so a `done=` proof recorded under a pre-move path went back to reading as asserted-and-absent the moment its stub was
+    retired, which is the same failure this function exists to prevent, just delayed. `_former_paths_by_git_history` asks git's own rename graph for every name `rel` has ever had and tries the ledger under each.
     """
     if R.attested_at(ledger, rel, sig):
         return True
     origin = legacy_path_of(root, rel)
-    return bool(origin) and R.attested_at(ledger, origin, sig)
+    if origin and R.attested_at(ledger, origin, sig):
+        return True
+    return any(R.attested_at(ledger, former, sig) for former in _former_paths_by_git_history(root, rel))
 
 
 def names_this_record(root, rel, path):
-    """Whether a `Full-Text:` path names THIS record, directly or through its stub.
+    """Whether a `Full-Text:` path names THIS record, directly, through its stub, or through git's own rename history once the stub is gone.
 
-    A record keeps its plan's path precisely so citations resolve, and the tree-lifecycle move keeps that promise with a STUB at the old path rather than with the path itself. The pointer is NOT re-spelled at the move: the commit it names carries the text at the OLD path, so `agent/plans/...` would make R2's `git rev-parse <sha>:<path>` resolve to nothing and turn a correct record
-    into a red one.
+    A record keeps its plan's path precisely so citations resolve, and the tree-lifecycle move keeps that promise with a STUB at the old path rather than with the path itself.
+    The pointer is NOT re-spelled at the move: the commit it names carries the text at the OLD path, so `agent/plans/...` would make R2's `git rev-parse <sha>:<path>` resolve to nothing and turn a correct record into a red one.
 
     The stub is READ rather than assumed. A bare legacy path with no pointer back is still somebody else's document, which is the case R1's third control plants.
+
+    A stub that has since been DELETED -- the 2026-09-22 cleanup retired the whole one-time class of flat-layout stubs left by `fce51e202` and `a81967e94` -- falls through to `_named_by_git_history`, which asks git's own rename graph the same question the stub used to answer on disk.
     """
     if path == rel:
         return True
     try:
         probe = (root / path).read_text(encoding="utf-8", errors="replace")
     except OSError:
-        return False
+        return _named_by_git_history(root, rel, path)
     return PL.looks_like_stub(probe) and PL.parse_plan(path, probe).moved_to == rel
+
+
+def _named_by_git_history(root, rel, path):
+    """Whether `path` is a git-tracked former name of `rel`.
+
+    For when the stub that used to assert this on disk (`Status: moved` / `Moved-To:`) has since been deleted.
+    `git log --follow` walks the rename graph through the deletion just as reliably as through a live stub -- `agent/plans/PLAN-lint-css-ci-wiring.md`'s own history shows a `C099` copy from `agent/PLAN-lint-css-ci-wiring.md` at `fce51e202`, so this recovers exactly what the stub used to assert without needing it to still exist.
+    Returns `False` on anything git cannot answer (no repo, no history, no match) rather than guessing.
+    """
+    names = _git(root, "log", "--follow", "--name-only", "--format=", "--", rel)
+    return path in {line.strip() for line in names.splitlines() if line.strip()}
+
+
+def _former_paths_by_git_history(root, rel):
+    """{str} -- every git-tracked former name of `rel`, `rel` itself excluded.
+
+    The reverse of `_named_by_git_history`'s question: instead of "was `path` once this file's name", this asks "what were ALL of this file's names". Same `--follow` walk, same fallback role -- for when the stub `attested_under_any_path` would otherwise read through has been deleted.
+    """
+    names = _git(root, "log", "--follow", "--name-only", "--format=", "--", rel)
+    return {line.strip() for line in names.splitlines() if line.strip()} - {rel}
 
 
 def problems_for(root, rel, text, current_ledger):
@@ -1033,6 +1060,48 @@ def selftest():
             f"got {through_stub}",
         )
         (root / legacy).unlink()
+
+        # R1 THROUGH GIT HISTORY, no stub on disk at all -- the exact shape the 2026-09-22 flat-stub cleanup leaves behind: a plan git-renamed out of a flat path into agent/plans/, and the flat-path stub since deleted with nothing left to read there.
+        # Isolated in its own tiny repo rather than mutated into the shared fixture, so it cannot perturb `rel`'s own commit history for every rule that runs after it.
+        with tempfile.TemporaryDirectory() as td2:
+            hroot = pathlib.Path(td2) / "hist"
+            (hroot / "agent").mkdir(parents=True)
+            _run(hroot, "git", "init", "-q", "-b", "main")
+            _run(hroot, "git", "config", "user.email", "fixture@example.invalid")
+            _run(hroot, "git", "config", "user.name", "fixture")
+            gone = "agent/PLAN-legacy-history.md"
+            survivor = "agent/plans/PLAN-legacy-history.md"
+            (hroot / gone).write_text("placeholder\n", encoding="utf-8")
+            _run(hroot, "git", "add", "-A")
+            _run(hroot, "git", "commit", "-qm", "fixture: at the flat path")
+            (hroot / "agent" / "plans").mkdir(parents=True, exist_ok=True)
+            _run(hroot, "git", "mv", gone, survivor)
+            _run(
+                hroot,
+                "git",
+                "commit",
+                "-qm",
+                "fixture: moved into agent/plans/, stub since deleted",
+            )
+            ck(
+                "R1 CONTROL: a Full-Text path whose stub is gone but git rename history confirms it is accepted",
+                names_this_record(hroot, survivor, gone),
+            )
+            ck(
+                "R1 CONTROL: an absent path with no git rename history at all is still refused",
+                not names_this_record(hroot, survivor, "agent/PLAN-never-existed.md"),
+            )
+            # R4 THROUGH GIT HISTORY, same fixture, same stub-since-deleted shape: a proof recorded under `gone` before the move must still be found once `survivor` is the only name left on disk.
+            hist_ledger = {"plans": {gone: {"done_sigs": ["deadbeef"]}}}
+            ck(
+                "R4 CONTROL: a proof recorded under a pre-move path is found through git history once the stub is gone",
+                attested_under_any_path(hroot, hist_ledger, survivor, "deadbeef"),
+            )
+            ck(
+                "R4 CONTROL: a signature nothing attests is still not found through git history",
+                not attested_under_any_path(hroot, hist_ledger, survivor, "0badbeef"),
+            )
+
         # R4 THROUGH THE STUB, both directions. A committed ledger is keyed by the path the plan had at that commit, so without the hop the migration turns every `done=` proof in the corpus into "asserted, not present" on the day it lands.
         moved_rel = "agent/plans/PLAN-moved-fixture.md"
         legacy_rel = "agent/PLAN-moved-fixture.md"
