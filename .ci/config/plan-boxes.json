@@ -404,43 +404,31 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 45,
-      "done": 14,
+      "open": 31,
+      "done": 28,
       "open_sigs": [
         "0881924d",
         "126e279c",
-        "1b56afc3",
-        "20fa54ca",
         "24d05963",
-        "25fd4db0",
         "2a1e4062",
         "3b9f2a67",
-        "3e8d7832",
         "3f64f815",
         "42c71f29",
         "5094f9db",
         "555bc990",
-        "5c96945f",
-        "5eaae63d",
         "621f2352",
-        "64265410",
         "68a803e2",
-        "747573be",
         "7b817420",
         "7f46ef2c",
-        "81eef3cf",
         "83eea3e4",
         "843e9d82",
         "8be0a1ba",
-        "955765a3",
         "9843ff37",
         "9c6e8631",
         "a49ff99f",
         "a6792021",
         "a9721885",
-        "b1c49189",
         "bcb0d0c6",
-        "c0e21510",
         "c25ceef5",
         "cf3de542",
         "dd6df2ed",
@@ -449,25 +437,37 @@
         "e516ec35",
         "f0d7ac5d",
         "f2706431",
-        "f4b8f5e1",
-        "fa4ee95b",
-        "fc685d4e"
+        "f4b8f5e1"
       ],
       "done_sigs": [
         "1786f319",
+        "1b56afc3",
+        "20fa54ca",
+        "25fd4db0",
         "31d63357",
         "3918f842",
+        "3e8d7832",
         "51049618",
+        "5c96945f",
         "5e5e989c",
+        "5eaae63d",
         "5f259ebe",
+        "64265410",
+        "747573be",
+        "81eef3cf",
+        "955765a3",
         "979bea0b",
         "9f68b703",
         "ac9bc9c2",
+        "b1c49189",
         "b3a63c90",
+        "c0e21510",
         "cc16f28a",
         "d226044f",
         "de035f8e",
-        "ee81c1f3"
+        "ee81c1f3",
+        "fa4ee95b",
+        "fc685d4e"
       ]
     },
     "agent/plans/PLAN-fix-tutorial-player-debug-hook-attachment.md": {
@@ -1589,19 +1589,20 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 8,
-      "done": 0,
+      "open": 6,
+      "done": 2,
       "open_sigs": [
-        "3cee36fd",
         "4cb49d45",
         "86e7ccdc",
         "8b4161ce",
         "cbf8530c",
         "ce14776f",
-        "d073162f",
-        "ff0cda58"
+        "d073162f"
       ],
-      "done_sigs": []
+      "done_sigs": [
+        "3cee36fd",
+        "ff0cda58"
+      ]
     },
     "agent/plans/PLAN-w9p2-script-relocation.md": {
       "status": "draft",
@@ -1651,32 +1652,6 @@
         "c3ba6973",
         "cd510b2d"
       ]
-    },
-    "agent/plans/PLAN-wl-wait-duplicate-listener.md": {
-      "status": "draft",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 15,
-      "done": 0,
-      "open_sigs": [
-        "06fd7f1a",
-        "0dd251c8",
-        "25d3d511",
-        "313df70f",
-        "392e5f4d",
-        "65367d5a",
-        "68811e65",
-        "877e6c4e",
-        "961627a6",
-        "a3c9229e",
-        "b6e6d4db",
-        "c394f280",
-        "cf8c4e39",
-        "e25cc76b",
-        "ef3adc89"
-      ],
-      "done_sigs": []
     },
     "agent/plans/PLAN-www-bundle-determinism.md": {
       "status": "compacted",
@@ -2291,6 +2266,32 @@
         "cb6f6b5d",
         "d3777ae7",
         "fc0d9cd3"
+      ]
+    },
+    "agent/plans/_done/PLAN-wl-wait-duplicate-listener.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-09-23",
+      "open": 0,
+      "done": 15,
+      "open_sigs": [],
+      "done_sigs": [
+        "06fd7f1a",
+        "0dd251c8",
+        "25d3d511",
+        "313df70f",
+        "392e5f4d",
+        "65367d5a",
+        "68811e65",
+        "877e6c4e",
+        "961627a6",
+        "a3c9229e",
+        "b6e6d4db",
+        "c394f280",
+        "cf8c4e39",
+        "e25cc76b",
+        "ef3adc89"
       ]
     }
   }

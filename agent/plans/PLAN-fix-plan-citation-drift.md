@@ -121,47 +121,61 @@ Not attempted this pass. 351 citation findings across 41 plans and 130 record fi
 
 ### check:ci-plan-citations, 351 findings across 41 plans
 
-- [ ] `agent/plans/PLAN-add-chunkstore-backup-verb.md` -- 1: 1 fileline: right file, stale line, no unambiguous anchor
-- [ ] `agent/plans/PLAN-agent-hints-implementation.md` -- 1: 1 fileline: right file, stale line, no unambiguous anchor
-- [ ] `agent/plans/PLAN-agent-hints-in-stop-hook.md` -- 1: 1 gate: no such `check:` script
+- [x] `agent/plans/PLAN-add-chunkstore-backup-verb.md` -- 1: 1 fileline: right file, stale line, no unambiguous anchor
+    (ticked) 2026-09-23T10:35:45Z by d778be9d: check:ci-plan-citations names no finding in PLAN-add-chunkstore-backup-verb.md on a live run; the repaired pointer is at agent/plans/PLAN-add-chunkstore-backup-verb.md:26
+- [x] `agent/plans/PLAN-agent-hints-implementation.md` -- 1: 1 fileline: right file, stale line, no unambiguous anchor
+    (ticked) 2026-09-23T10:35:45Z by d778be9d: check:ci-plan-citations names no finding in PLAN-agent-hints-implementation.md on a live run; the repaired pointer is at agent/plans/PLAN-agent-hints-implementation.md:32
+- [x] `agent/plans/PLAN-agent-hints-in-stop-hook.md` -- 1: 1 gate: no such `check:` script
+    (ticked) 2026-09-23T10:35:43Z by d778be9d: check:ci-plan-citations names no finding in PLAN-agent-hints-in-stop-hook.md on a live run; the repaired pointer is at agent/plans/PLAN-agent-hints-in-stop-hook.md:46
 - [ ] `agent/plans/PLAN-agent-tree-lifecycle.md` -- 5: 5 fileline ON A BOX LINE (editing it re-keys the box signature)
 - [ ] `agent/plans/PLAN-commit-author-identity.md` -- 5: 3 fileline: basename matches NOTHING in the tree; 2 fileline: right file, stale line, no unambiguous anchor
-- [ ] `agent/plans/PLAN-duplication-angle.md` -- 1: 1 gate: no such `check:` script
+- [x] `agent/plans/PLAN-duplication-angle.md` -- 1: 1 gate: no such `check:` script
+    (ticked) 2026-09-23T10:35:44Z by d778be9d: check:ci-plan-citations names no finding in PLAN-duplication-angle.md on a live run; the repaired pointer is at agent/plans/PLAN-duplication-angle.md:32
 - [ ] `agent/plans/PLAN-env-to-bitwarden-v2.md` -- 14: 7 fileline: basename matches NOTHING in the tree; 4 fileline: unique basename but the line is out of range there too; 1 fileline ON A BOX LINE (editing it re-keys the box signature); 1 fileline: right file, stale line, no unambiguous anchor; 1 gate: no such `check:` script
-- [ ] `agent/plans/PLAN-fix-plan-citation-drift.md` -- 2: 2 object: neither blob nor reachable commit
+- [x] `agent/plans/PLAN-fix-plan-citation-drift.md` -- 2: 2 object: neither blob nor reachable commit
+    (ticked) 2026-09-23T10:35:45Z by d778be9d: check:ci-plan-citations names no finding in PLAN-fix-plan-citation-drift.md on a live run; the repaired pointer is at agent/plans/PLAN-fix-plan-citation-drift.md:11
 - [ ] `agent/plans/PLAN-gh-swallow-gates-audit.md` -- 2: 2 fileline ON A BOX LINE (editing it re-keys the box signature)
 - [ ] `agent/plans/PLAN-github-actions-to-bitwarden.md` -- 9: 4 fileline: basename matches 2 files, ambiguous; 3 gate: no such `check:` script; 2 fileline ON A BOX LINE (editing it re-keys the box signature)
-- [ ] `agent/plans/PLAN-haiku-model-routing.md` -- 3: 3 gate: no such `check:` script
+- [x] `agent/plans/PLAN-haiku-model-routing.md` -- 3: 3 gate: no such `check:` script
+    (ticked) 2026-09-23T10:35:44Z by d778be9d: check:ci-plan-citations names no finding in PLAN-haiku-model-routing.md on a live run; the repaired pointer is at agent/plans/PLAN-haiku-model-routing.md:41
 - [ ] `agent/plans/_done/PLAN-migrate-plan-doc-discovery.md` -- 11: 8 fileline: basename matches 2 files, ambiguous; 2 plan: cited plan file gone; 1 gate: no such `check:` script
-- [ ] `agent/plans/PLAN-npm-ci-parallel-parity.md` -- 1: 1 gate: no such `check:` script
+- [x] `agent/plans/PLAN-npm-ci-parallel-parity.md` -- 1: 1 gate: no such `check:` script
+    (ticked) 2026-09-23T10:35:44Z by d778be9d: check:ci-plan-citations names no finding in PLAN-npm-ci-parallel-parity.md on a live run; the repaired pointer is at agent/plans/PLAN-npm-ci-parallel-parity.md:35
 - [ ] `agent/plans/PLAN-pipefail-grep-q-renet-gate.md` -- 14: 11 fileline: basename matches NOTHING in the tree; 2 fileline: right file, stale line, no unambiguous anchor; 1 fileline ON A BOX LINE (editing it re-keys the box signature)
 - [ ] `agent/plans/PLAN-plan-file-lifecycle.md` -- 6: 3 fileline: basename matches NOTHING in the tree; 2 fileline: unique basename but the line is out of range there too; 1 plan: cited plan file gone
 - [ ] `agent/plans/PLAN-plan-implementation-enforcement.md` -- 11: 9 fileline: basename matches 2 files, ambiguous; 2 fileline ON A BOX LINE (editing it re-keys the box signature)
-- [ ] `agent/plans/_done/PLAN-plyr-css-on-demand-loading.md` -- 2: 2 fileline: basename matches NOTHING in the tree
-- [ ] `agent/plans/PLAN-popup-reminder.md` -- 1: 1 object: neither blob nor reachable commit
+- [x] `agent/plans/_done/PLAN-plyr-css-on-demand-loading.md` -- 2: 2 fileline: basename matches NOTHING in the tree
+    (ticked) 2026-09-23T10:35:46Z by d778be9d: check:ci-plan-citations names no finding in PLAN-plyr-css-on-demand-loading.md on a live run; the repaired pointer is at agent/plans/_done/PLAN-plyr-css-on-demand-loading.md:27
+- [x] `agent/plans/PLAN-popup-reminder.md` -- 1: 1 object: neither blob nor reachable commit
+    (ticked) 2026-09-23T10:35:45Z by d778be9d: check:ci-plan-citations names no finding in PLAN-popup-reminder.md on a live run; the repaired pointer is at agent/plans/PLAN-popup-reminder.md:11
 - [ ] `agent/plans/PLAN-printf-echo-pipefail-sweep.md` -- 5: 5 fileline ON A BOX LINE (editing it re-keys the box signature)
 - [ ] `agent/plans/PLAN-remove-autopilot.md` -- 2: 2 gate: no such `check:` script
 - [ ] `agent/plans/PLAN-secret-namespace-migration.md` -- 82: 44 fileline: basename matches NOTHING in the tree; 19 fileline ON A BOX LINE (editing it re-keys the box signature); 6 fileline: unique basename but the line is out of range there too; 5 plan: cited plan file gone; 5 object: neither blob nor reachable commit; 2 fileline: right file, stale line, no unambiguous anchor; 1 fileline: basename matches 4 files, ambiguous
-- [ ] `agent/plans/PLAN-shell-resource-profiling.md` -- 1: 1 gate: no such `check:` script
+- [x] `agent/plans/PLAN-shell-resource-profiling.md` -- 1: 1 gate: no such `check:` script
+    (ticked) 2026-09-23T10:35:44Z by d778be9d: check:ci-plan-citations names no finding in PLAN-shell-resource-profiling.md on a live run; the repaired pointer is at agent/plans/PLAN-shell-resource-profiling.md:33
 - [ ] `agent/plans/PLAN-stop-hook-overhaul.md` -- 8: 6 fileline: right file, stale line, no unambiguous anchor; 1 fileline: basename matches NOTHING in the tree; 1 fileline ON A BOX LINE (editing it re-keys the box signature)
 - [ ] `agent/plans/PLAN-stop-hook-refactor-enforcement.md` -- 1: 1 fileline ON A BOX LINE (editing it re-keys the box signature)
 - [ ] `agent/plans/PLAN-sweep-obligation-carry-forward.md` -- 10: 10 object: neither blob nor reachable commit
 - [ ] `agent/plans/PLAN-tooling-transformation.md` -- 54: 31 fileline: basename matches NOTHING in the tree; 16 fileline: right file, stale line, no unambiguous anchor; 5 fileline ON A BOX LINE (editing it re-keys the box signature); 2 object: neither blob nor reachable commit
 - [ ] `agent/plans/PLAN-trap-enforcement.md` -- 24: 17 fileline: basename matches NOTHING in the tree; 5 gate: no such `check:` script; 1 object: neither blob nor reachable commit; 1 fileline: basename matches 2 files, ambiguous
 - [ ] `agent/plans/PLAN-w9p2-script-relocation.md` -- 9: 9 fileline: basename matches NOTHING in the tree
-- [ ] `agent/plans/_done/PLAN-agent-session-archival.md` -- 1: 1 fileline: basename matches 38 files, ambiguous
+- [x] `agent/plans/_done/PLAN-agent-session-archival.md` -- 1: 1 fileline: basename matches 38 files, ambiguous
+    (ticked) 2026-09-23T10:35:45Z by d778be9d: check:ci-plan-citations names no finding in PLAN-agent-session-archival.md on a live run; the repaired pointer is at agent/plans/_done/PLAN-agent-session-archival.md:14
 - [ ] `agent/plans/_done/PLAN-archival-tests-python-compliance.md` -- 8: 6 fileline: basename matches NOTHING in the tree; 1 object: neither blob nor reachable commit; 1 fileline ON A BOX LINE (editing it re-keys the box signature)
-- [ ] `agent/plans/_done/PLAN-ci-pr-head-ref-trigger-resolution.md` -- 3: 3 fileline: basename matches NOTHING in the tree
+- [x] `agent/plans/_done/PLAN-ci-pr-head-ref-trigger-resolution.md` -- 3: 3 fileline: basename matches NOTHING in the tree
+    (ticked) 2026-09-23T10:35:46Z by d778be9d: check:ci-plan-citations names no finding in PLAN-ci-pr-head-ref-trigger-resolution.md on a live run; the repaired pointer is at agent/plans/_done/PLAN-ci-pr-head-ref-trigger-resolution.md:152
 - [ ] `agent/plans/_done/PLAN-ci-vacuity-baseline-registry.md` -- 6: 5 fileline: right file, stale line, no unambiguous anchor; 1 fileline: basename matches NOTHING in the tree
 - [ ] `agent/plans/_done/PLAN-cleanup-context-state-files.md` -- 1: 1 fileline ON A BOX LINE (editing it re-keys the box signature)
 - [ ] `agent/plans/_done/PLAN-eliminate-worklist-report-per-stop-env.md` -- 14: 14 fileline ON A BOX LINE (editing it re-keys the box signature)
 - [ ] `agent/plans/_done/PLAN-fix-stop-hook-completion-evidence-refire.md` -- 4: 4 object: neither blob nor reachable commit
 - [ ] `agent/plans/_done/PLAN-hint-corpus-ci-assertions.md` -- 4: 2 fileline ON A BOX LINE (editing it re-keys the box signature); 1 gate: no such `check:` script; 1 fileline: basename matches NOTHING in the tree
-- [ ] `agent/plans/_done/PLAN-reflow-comments-boundary-wrapping.md` -- 1: 1 fileline: basename matches NOTHING in the tree
+- [x] `agent/plans/_done/PLAN-reflow-comments-boundary-wrapping.md` -- 1: 1 fileline: basename matches NOTHING in the tree
+    (ticked) 2026-09-23T10:35:46Z by d778be9d: check:ci-plan-citations names no finding in PLAN-reflow-comments-boundary-wrapping.md on a live run; the repaired pointer is at agent/plans/_done/PLAN-reflow-comments-boundary-wrapping.md:23
 - [ ] `agent/plans/_done/PLAN-stop-hook-behavioral-hints.md` -- 5: 4 fileline ON A BOX LINE (editing it re-keys the box signature); 1 fileline: basename matches 2 files, ambiguous
 - [ ] `agent/plans/_done/PLAN-stop-hook-plan-backlog-nudge.md` -- 10: 5 fileline ON A BOX LINE (editing it re-keys the box signature); 4 fileline: basename matches 2 files, ambiguous; 1 object: neither blob nor reachable commit
 - [ ] `agent/plans/_done/PLAN-stop-hook-task-verification.md` -- 2: 1 fileline: basename matches 2 files, ambiguous; 1 fileline ON A BOX LINE (editing it re-keys the box signature)
-- [ ] `agent/plans/_done/PLAN-sys-path-canonical-form.md` -- 6: 6 object: neither blob nor reachable commit
+- [x] `agent/plans/_done/PLAN-sys-path-canonical-form.md` -- 6: 6 object: neither blob nor reachable commit
+    (ticked) 2026-09-23T10:35:46Z by d778be9d: check:ci-plan-citations names no finding in PLAN-sys-path-canonical-form.md on a live run; the repaired pointer is at agent/plans/_done/PLAN-sys-path-canonical-form.md:22
 
 ### check:ci-plan-record, 130 findings across 13 records
 
