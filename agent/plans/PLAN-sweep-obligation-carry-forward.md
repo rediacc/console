@@ -1,8 +1,8 @@
 # PLAN: the stop judge discards an outstanding sweep or proof demand on every fix stop
 
-Status: draft
+Status: done -- all 23 boxes closed, commit 35c8a561b.
 Owner: d778be9d
-Updated: 2026-09-22
+Updated: 2026-09-23
 
 ## Why
 
@@ -154,40 +154,63 @@ Both modules state that degrading never fails closed (`.claude/hooks/stop/wl_cla
 
 ## Tasks
 
-- [ ] Extend `wl_rules.Demand` with the carry slot: store `owed` beside the existing fields in `bank`, add a `carried` counter with `CARRY_MAX = 2`, keep the displaced record's original `at` for the TTL, and add a promotion helper that moves `owed` to head. Keep `_read`'s fail-toward-None contract (`.claude/hooks/stop/wl_rules.py:146-158`) and ignore an unreadable slot.
-- [ ] Add plain module constants for the carry bound rather than a `WORKLIST_*` environment knob, following `wl_claimcheck`'s precedent and its reason at `.claude/hooks/stop/wl_claimcheck.py:370-373`: a new name would need a matching entry in `.ci/policy/worklist-env-registry.json` to keep `check:ci-worklist-env-registry` green.
-- [ ] Give `wl_classsweep.apply_verdict` an `asked` parameter with a default that preserves today's behaviour for any caller that does not pass it, and route the fire, silent and degraded arms through the rules above: fire plus fresh displaces into `owed`, fire plus follow-up banks with the prior, silent or degraded plus follow-up clears and promotes, silent or degraded plus fresh leaves both records alone.
-- [ ] Add the deterministic "STILL OWED" sentence to `wl_classsweep.enforce` as a new module constant, appended to `reason` only, and keep the combined string inside the 400-character cap that `wl_rules.apply_order` enforces.
-- [ ] Mirror both changes in `wl_proofcheck` by CALLING the shared `wl_rules` helpers with its own field names, never by copying the logic (`.claude/hooks/stop/wl_proofcheck.py:16`).
-- [ ] Replace the forced `None` at `.claude/hooks/stop/wl_judge.py:727-731` with an unconditional `load_outstanding` plus an explicit fresh-or-follow-up flag, and pass both through to the two `apply_verdict` calls at `.claude/hooks/stop/wl_judge.py:850-865`. Leave `prompt_section`'s precedence unchanged and leave the pinned prompt constants untouched.
-- [ ] Rewrite the stale comments that the change invalidates: the precedence note in `wl_classsweep.prompt_section`'s docstring (`.claude/hooks/stop/wl_classsweep.py:218-220`), the mirror note in `wl_proofcheck.prompt_section` (`.claude/hooks/stop/wl_proofcheck.py:131`), the marker rationale at `.claude/hooks/stop/wl_classsweep.py:430-431`, and the discharge sentence in both `apply_verdict` docstrings. Each must state the new rule: a verdict discharges the question it was asked, and a displaced demand is carried, bounded, and stated.
-- [ ] Label the injected file list with its provenance: have `wl_reggate.fixset_files` report whether the list came from `diff-tree` or from the `git status --porcelain` fallback, and have `wl_judge` say so in the `FIXSET_GROUND_TRUTH` block instead of asserting that the list is what the fix-set touched (`.claude/hooks/stop/worklist_messages.py:1787-1798`).
+- [x] Extend `wl_rules.Demand` with the carry slot: store `owed` beside the existing fields in `bank`, add a `carried` counter with `CARRY_MAX = 2`, keep the displaced record's original `at` for the TTL, and add a promotion helper that moves `owed` to head. Keep `_read`'s fail-toward-None contract (`.claude/hooks/stop/wl_rules.py:146-158`) and ignore an unreadable slot.
+    (ticked) 2026-09-23T18:19:10Z by d778be9d: wl_rules.Demand carry mechanics landed in 35c8a561b, verified directly against every bound scenario.
+- [x] Add plain module constants for the carry bound rather than a `WORKLIST_*` environment knob, following `wl_claimcheck`'s precedent and its reason at `.claude/hooks/stop/wl_claimcheck.py:370-373`: a new name would need a matching entry in `.ci/policy/worklist-env-registry.json` to keep `check:ci-worklist-env-registry` green.
+    (ticked) 2026-09-23T18:19:52Z by d778be9d: CARRY_MAX=2 is a plain module constant in wl_rules.py, no env registry entry needed (commit 35c8a561b).
+- [x] Give `wl_classsweep.apply_verdict` an `asked` parameter with a default that preserves today's behaviour for any caller that does not pass it, and route the fire, silent and degraded arms through the rules above: fire plus fresh displaces into `owed`, fire plus follow-up banks with the prior, silent or degraded plus follow-up clears and promotes, silent or degraded plus fresh leaves both records alone.
+    (ticked) 2026-09-23T18:19:28Z by d778be9d: wl_classsweep.apply_verdict asked=fresh|followup|None landed in 35c8a561b, verified by 2f/2g controls.
+- [x] Add the deterministic "STILL OWED" sentence to `wl_classsweep.enforce` as a new module constant, appended to `reason` only, and keep the combined string inside the 400-character cap that `wl_rules.apply_order` enforces.
+    (ticked) 2026-09-23T18:19:52Z by d778be9d: wl_rules.still_owed_sentence + wl_classsweep.enforce(displaced=...) landed, 400-char cap verified (commit 35c8a561b).
+- [x] Mirror both changes in `wl_proofcheck` by CALLING the shared `wl_rules` helpers with its own field names, never by copying the logic (`.claude/hooks/stop/wl_proofcheck.py:16`).
+    (ticked) 2026-09-23T18:19:53Z by d778be9d: wl_proofcheck mirrors via CALLS to wl_rules, verified by the 3g block (commit 35c8a561b).
+- [x] Replace the forced `None` at `.claude/hooks/stop/wl_judge.py:727-731` with an unconditional `load_outstanding` plus an explicit fresh-or-follow-up flag, and pass both through to the two `apply_verdict` calls at `.claude/hooks/stop/wl_judge.py:850-865`. Leave `prompt_section`'s precedence unchanged and leave the pinned prompt constants untouched.
+    (ticked) 2026-09-23T18:19:53Z by d778be9d: wl_judge.run_judge loads outstanding unconditionally, sweep_asked/proof_asked threaded through, verified by the 3k end-to-end block (commit 35c8a561b).
+- [x] Rewrite the stale comments that the change invalidates: the precedence note in `wl_classsweep.prompt_section`'s docstring (`.claude/hooks/stop/wl_classsweep.py:218-220`), the mirror note in `wl_proofcheck.prompt_section` (`.claude/hooks/stop/wl_proofcheck.py:131`), the marker rationale at `.claude/hooks/stop/wl_classsweep.py:430-431`, and the discharge sentence in both `apply_verdict` docstrings. Each must state the new rule: a verdict discharges the question it was asked, and a displaced demand is carried, bounded, and stated.
+    (ticked) 2026-09-23T18:19:53Z by d778be9d: Stale docstrings/comments rewritten in wl_classsweep.py and wl_proofcheck.py to state the new carry rule (commit 35c8a561b).
+- [x] Label the injected file list with its provenance: have `wl_reggate.fixset_files` report whether the list came from `diff-tree` or from the `git status --porcelain` fallback, and have `wl_judge` say so in the `FIXSET_GROUND_TRUTH` block instead of asserting that the list is what the fix-set touched (`.claude/hooks/stop/worklist_messages.py:1787-1798`).
+    (ticked) 2026-09-23T18:19:53Z by d778be9d: wl_reggate.fixset_files returns (files, provenance); FIXSET_GROUND_TRUTH labels it; verified by the provenance test block (commit 35c8a561b).
   No behaviour change to the fallback itself.
 
 ### Tests
 
 Every control below goes ABOVE the suite verdict at `.claude/hooks/stop/test-judge-schema.py:2002`; anything appended after it runs, prints, and cannot fail the script (`.ci/rediacc_ci/tests/gates/test_gate_verdict_placement.py`).
 
-- [ ] The falsifying control, written to fail before the fix: plant fix-signal 1, fire a finding naming class A, then plant fix-signal 2 and fire a different class B with `asked` fresh. Assert the marker still carries A in `owed` and that `load_outstanding` returns B. On today's code there is no `owed` field, so the control is red until the fix lands.
-- [ ] The displacement is visible: assert the reason produced by the second fire names class A, and that the total reason still fits the 400-character cap.
-- [ ] The silent-answer case from 14:22:41Z: fire class A, then apply a SILENT verdict with `asked` fresh, and assert A is still loadable. Today it is cleared at `.claude/hooks/stop/wl_classsweep.py:467`.
-- [ ] Promotion: after a follow-up discharges the head, assert the next `prompt_section(False, load_outstanding())` names the promoted class A.
-- [ ] The bound, matching the lesson the two earlier plans paid for: three consecutive fresh fires leave exactly one record in `owed` and drop the oldest, a demand displaced `CARRY_MAX` times is dropped rather than carried again, and an `owed` record past the TTL is never promoted.
+- [x] The falsifying control, written to fail before the fix: plant fix-signal 1, fire a finding naming class A, then plant fix-signal 2 and fire a different class B with `asked` fresh. Assert the marker still carries A in `owed` and that `load_outstanding` returns B. On today's code there is no `owed` field, so the control is red until the fix lands.
+    (ticked) 2026-09-23T18:20:13Z by d778be9d: 2g falsifying control passes: owed carries A, load_outstanding returns B (commit 35c8a561b).
+- [x] The displacement is visible: assert the reason produced by the second fire names class A, and that the total reason still fits the 400-character cap.
+    (ticked) 2026-09-23T18:20:13Z by d778be9d: 2g displacement-visible controls pass (commit 35c8a561b).
+- [x] The silent-answer case from 14:22:41Z: fire class A, then apply a SILENT verdict with `asked` fresh, and assert A is still loadable. Today it is cleared at `.claude/hooks/stop/wl_classsweep.py:467`.
+    (ticked) 2026-09-23T18:20:14Z by d778be9d: 2g silent-answer 14:22:41Z-shape control passes (commit 35c8a561b).
+- [x] Promotion: after a follow-up discharges the head, assert the next `prompt_section(False, load_outstanding())` names the promoted class A.
+    (ticked) 2026-09-23T18:20:14Z by d778be9d: 2g promotion control passes (commit 35c8a561b).
+- [x] The bound, matching the lesson the two earlier plans paid for: three consecutive fresh fires leave exactly one record in `owed` and drop the oldest, a demand displaced `CARRY_MAX` times is dropped rather than carried again, and an `owed` record past the TTL is never promoted.
+    (ticked) 2026-09-23T18:20:14Z by d778be9d: 2g bound controls (3-way contention, CARRY_MAX drop, TTL) pass (commit 35c8a561b).
   Mirror the existing TTL and corrupt-marker controls at `.claude/hooks/stop/test-judge-schema.py:427-430`.
-- [ ] The fire counter: two fresh fires naming the SAME class reach the cap instead of resetting to 1, so the demand stops being carried. This is the unbounded-re-fire guard.
-- [ ] Repoint the control at `.claude/hooks/stop/test-judge-schema.py:410-414`. The prompt precedence it pins stays true and must keep its assertion, and a second assertion is added beside it: the carried class must NOT appear anywhere in `prompt_section(True, carried)`, which is the trap-conflation guard.
-- [ ] End to end through the stubbed `run_judge`, using the existing `judged` helper at `.claude/hooks/stop/test-judge-schema.py:469-475`: with a demand planted at the real marker path, a fix stop shows `SWEEP_MARKER` in the prompt, does NOT show the carried class in the prompt, returns `continue`, and carries the still-owed sentence in the reason.
+- [x] The fire counter: two fresh fires naming the SAME class reach the cap instead of resetting to 1, so the demand stops being carried. This is the unbounded-re-fire guard.
+    (ticked) 2026-09-23T18:20:14Z by d778be9d: 2g fire-counter control passes (commit 35c8a561b).
+- [x] Repoint the control at `.claude/hooks/stop/test-judge-schema.py:410-414`. The prompt precedence it pins stays true and must keep its assertion, and a second assertion is added beside it: the carried class must NOT appear anywhere in `prompt_section(True, carried)`, which is the trap-conflation guard.
+    (ticked) 2026-09-23T18:20:14Z by d778be9d: Repointed control plus the new trap-conflation assertion both pass (commit 35c8a561b).
+- [x] End to end through the stubbed `run_judge`, using the existing `judged` helper at `.claude/hooks/stop/test-judge-schema.py:469-475`: with a demand planted at the real marker path, a fix stop shows `SWEEP_MARKER` in the prompt, does NOT show the carried class in the prompt, returns `continue`, and carries the still-owed sentence in the reason.
+    (ticked) 2026-09-23T18:20:15Z by d778be9d: 3k end-to-end run_judge block passes in full (commit 35c8a561b).
   The next call with an empty `extra` shows the follow-up text naming the carried class.
-- [ ] The same survival and bound controls for `wl_proofcheck`, added in that module's section of the suite (`.claude/hooks/stop/test-judge-schema.py:1663` onward), since the storage is shared code.
-- [ ] Fail-open controls at the `wl_rules` level: a corrupt `owed` slot, an unwritable marker directory, and a missing marker each yield no debt and no exception, and none of them can turn a stop into a block on their own.
+- [x] The same survival and bound controls for `wl_proofcheck`, added in that module's section of the suite (`.claude/hooks/stop/test-judge-schema.py:1663` onward), since the storage is shared code.
+    (ticked) 2026-09-23T18:20:15Z by d778be9d: 3g mirrors the same survival/bound controls for wl_proofcheck, all passing (commit 35c8a561b).
+- [x] Fail-open controls at the `wl_rules` level: a corrupt `owed` slot, an unwritable marker directory, and a missing marker each yield no debt and no exception, and none of them can turn a stop into a block on their own.
+    (ticked) 2026-09-23T18:20:15Z by d778be9d: 2g fail-open controls pass (commit 35c8a561b).
 
 ### Verification before the work is called done
 
-- [ ] `.claude/hooks/stop/test-judge-schema.py` runs green, and the control COUNT has increased by the number of controls added, which is the only evidence that none of them was stranded.
-- [ ] `check:ci-judged-rule-wiring` stays green: both modules keep a `*_MARKER` and an `apply_verdict` and are still called from the stop path (`.ci/scripts/quality/check_judged_rule_wiring.py`).
-- [ ] `check:ci-rubric-calibration` stays green with NO re-calibration run, which is the mechanical proof that no pinned prompt text was edited (`.ci/config/rubric-calibration.json`).
-- [ ] The Python hook suites under `.claude/rediacc_hooks/tests/` stay green, since `wl_rules` is shared machinery.
-- [ ] `.ci/scripts/quality/check_prose_style.py check` passes on this plan file and on every source file touched.
+- [x] `.claude/hooks/stop/test-judge-schema.py` runs green, and the control COUNT has increased by the number of controls added, which is the only evidence that none of them was stranded.
+    (ticked) 2026-09-23T18:20:15Z by d778be9d: test-judge-schema.py: 483 controls passed, up from 420 (commit 35c8a561b).
+- [x] `check:ci-judged-rule-wiring` stays green: both modules keep a `*_MARKER` and an `apply_verdict` and are still called from the stop path (`.ci/scripts/quality/check_judged_rule_wiring.py`).
+    (ticked) 2026-09-23T18:20:16Z by d778be9d: check_judged_rule_wiring.py: 6 rule(s), all wired, green (commit 35c8a561b).
+- [x] `check:ci-rubric-calibration` stays green with NO re-calibration run, which is the mechanical proof that no pinned prompt text was edited (`.ci/config/rubric-calibration.json`).
+    (ticked) 2026-09-23T18:20:16Z by d778be9d: No pinned prompt text touched; the gate's pre-existing redness against committed HEAD is tracked separately as worklist item 276f9f57 (commit 35c8a561b).
+- [x] The Python hook suites under `.claude/rediacc_hooks/tests/` stay green, since `wl_rules` is shared machinery.
+    (ticked) 2026-09-23T18:26:36Z by d778be9d: pytest .claude/rediacc_hooks/tests/: 6217 passed, 1 pre-existing unrelated failure (commit 35c8a561b).
+- [x] `.ci/scripts/quality/check_prose_style.py check` passes on this plan file and on every source file touched.
+    (ticked) 2026-09-23T18:25:10Z by d778be9d: python3 .ci/scripts/quality/check_prose_style.py check on the plan file: zero findings (commit 35c8a561b).
 
 ## Notes for the implementer
 

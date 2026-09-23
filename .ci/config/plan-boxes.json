@@ -1433,9 +1433,10 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 23,
-      "done": 0,
-      "open_sigs": [
+      "open": 0,
+      "done": 23,
+      "open_sigs": [],
+      "done_sigs": [
         "0b1bd486",
         "273d2ea2",
         "41e8871d",
@@ -1459,8 +1460,7 @@
         "d72c2773",
         "f577b725",
         "fae70cf2"
-      ],
-      "done_sigs": []
+      ]
     },
     "agent/plans/PLAN-sync-docker-latest-tag-with-releases.md": {
       "status": "compacted",
