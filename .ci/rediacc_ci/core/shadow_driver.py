@@ -414,7 +414,7 @@ banner "hello"
 banner ""
 banner "$(printf '%063d' 0)"
 banner "$(printf '%070d' 0)"
-banner "héllo — ünicode"
+banner "héllo, ünicode"
 
 step rustfs-dead account_rustfs_alive "$DEAD_PORT"
 step rustfs-live account_rustfs_alive "$LIVE_PORT"
@@ -555,7 +555,7 @@ def run_new(scenario: str, printer: Printer, env: dict[str, str]) -> int:
     dead = int(env["DEAD_PORT"])
 
     if scenario == "probe":
-        for text in ("hello", "", "%063d" % 0, "%070d" % 0, "héllo — ünicode"):
+        for text in ("hello", "", "%063d" % 0, "%070d" % 0, "héllo, ünicode"):
             printer.banner(account.banner_row(text))
         live = int(env["LIVE_PORT"])
         call(printer, "rustfs-dead", lambda: account.rustfs_alive(dead))

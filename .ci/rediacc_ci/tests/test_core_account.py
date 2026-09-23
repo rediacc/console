@@ -219,7 +219,7 @@ def test_banner_row_pads_to_63_and_never_truncates(text: str, expected: int) -> 
 
 def test_banner_row_pads_by_bytes_not_characters() -> None:
     """Defect 2. A multibyte glyph really does shorten the visible field."""
-    text = "héllo — ünicode"
+    text = "héllo, ünicode"
     row = account.banner_row(text)
     assert len(text.encode("utf-8")) > len(text)
     assert len(row[len("  │  ") : -1].encode("utf-8")) == 63

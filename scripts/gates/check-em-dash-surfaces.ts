@@ -62,6 +62,9 @@ const DEFAULT_BASELINE = 'scripts/data/em-dash-surfaces-baseline.json';
 /** U+2014. Deliberately just this one: the en dash U+2013 is a different argument. */
 const EM_DASH = '—';
 
+// A same-line escape for a 'source' surface only, the same shape prose-style's `# style-ok` already uses. Scoped to lines that reproduce EXISTING output byte for byte (a differential-tested port of a real generated file's real bytes) rather than lines that merely mention the character, which stay reported: an em dash typed in a NEW comment is exactly what this gate exists to catch, and a marker that suppressed prose too would be the loophole this repo's shrink-only baselines are built to refuse.
+const EM_DASH_OK_MARKERS = ['# em-dash-ok', '// em-dash-ok'];
+
 /**
  * The surfaces scanned, and the shape each one reports findings in.
  *
@@ -336,6 +339,7 @@ export function scanSurface(
 
     for (const line of text.split('\n')) {
       if (!line.includes(EM_DASH)) continue;
+      if (EM_DASH_OK_MARKERS.some((marker) => line.includes(marker))) continue;
       findings.push({ file: rel, where: shortHash(line.trim()), excerpt: excerpt(line) });
     }
   }
@@ -508,6 +512,24 @@ function selftest(): boolean {
   fs.writeFileSync(path.join(hookDir, 'guard.sh'), `echo "BLOCKED ${EM_DASH} use rdc instead."\n`);
   check(
     'an em dash in a hook output string is reported',
+    scanSurface(root, hookSurface).findings.length === 1
+  );
+
+  // BOTH DIRECTIONS: the marker silences the line it sits on, and the identical text with no marker still fires. A one-way proof (silence with the marker) is satisfied by a scanner that silently stopped scanning the file at all.
+  fs.writeFileSync(
+    path.join(hookDir, 'guard.sh'),
+    `echo "BLOCKED ${EM_DASH} use rdc instead." # em-dash-ok\n`
+  );
+  check(
+    'a marked line is silenced',
+    scanSurface(root, hookSurface).findings.length === 0
+  );
+  fs.writeFileSync(
+    path.join(hookDir, 'guard.sh'),
+    `echo "BLOCKED ${EM_DASH} use rdc instead." # em-dash-ok\necho "SECOND ${EM_DASH} unmarked line."\n`
+  );
+  check(
+    'CONTROL: an unmarked line in the same file still fires',
     scanSurface(root, hookSurface).findings.length === 1
   );
 
