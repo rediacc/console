@@ -31,7 +31,8 @@ The damage is the ROUTING, not the DETECTION -- `.claude/hooks/stop/worklist-cas
       `.claude/hooks/stop/worklist_messages.py:1433`; register the new key in
       `.claude/hooks/stop/test-always-tier.py:68`; update
       `.ci/scripts/quality/check_agent_hint_liveness.py:487`.
-- [ ] CONTROL, three parts in `.claude/hooks/stop/worklist-cases/20-advisories-rotation.sh`:
+- [x] CONTROL, three parts in `.claude/hooks/stop/worklist-cases/20-advisories-rotation.sh`:
+    (ticked) 2026-09-23T16:19:16Z by d778be9d: CONTROL landed in commit b6b71b9c1; investigation ledger committed.
       a give-up sentence whose only agent term is one ordinary word must NOT name an agent;
       the same fixture with discriminative vocabulary MUST name one (without this, part one
       passes when the feature is dead); and the agent-free arm must actually speak.
