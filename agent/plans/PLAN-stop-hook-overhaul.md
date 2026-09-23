@@ -60,7 +60,8 @@ by-design case.
       `_only_waiters` to every live task with an automatic liveness answer, using the
       teammate count from `.claude/hooks/stop/wl_liveness.py:318`. Keep the restamp on both
       arms -- `.claude/hooks/stop/wl_checks.py:3426` explains why.
-- [ ] Strip the "whether the stream evidence matches" clause for stream-less rows.
+- [x] Strip the "whether the stream evidence matches" clause for stream-less rows.
+    (ticked) 2026-09-23T16:40:56Z by d778be9d: V_BG_REPORT wording fixed in commit c8e36d98a.
 - [ ] CONTROL in `.claude/hooks/stop/worklist-cases/14-background-waits.sh`: a roster of
       fresh-transcript teammates with no `.output` gives NO check-in; the same roster aged
       past `TEAMMATE_FRESH_MIN` DOES fire and says POSSIBLY STUCK.
