@@ -151,12 +151,30 @@ interface Profile {
   readonly refuses: boolean;
 }
 
+// THE WIDE CORPUS (agent/plans/PLAN-stop-hook-refactor-enforcement.md, Commit 3): everything the operator would call "any existing code" that `gate`'s three families do not reach. Floors set a little under each family's measured count on 2026-09-23 (144, 160, 48, 36), the same discipline `FAMILIES` uses above and for the same reason -- a family that shrank silently is a family this
+// advisory stopped scanning. UNLIKE THE GATE PROFILE, THIS ONE NEVER REFUSES (`refuses: false` below): CI never runs it, only the Stop hook's advisory tier does, and a 90-finding backlog nobody here created must never fail an unrelated commit.
+const ADVISORY_FAMILIES: readonly Family[] = [
+  { pathspec: '.ci/scripts/quality/check_*.py', floor: 120 },
+  { pathspec: '.ci/rediacc_ci/tests/gates/test_gate_*.py', floor: 140 },
+  { pathspec: '.claude/rediacc_hooks/guards/block_*.py', floor: 40 },
+  { pathspec: '.claude/hooks/stop/wl_*.py', floor: 25 },
+];
+
 const PROFILES: Partial<Record<'gate' | 'advisory', Profile>> = {
   gate: {
     families: FAMILIES,
     seed: 'scripts/data/shape-duplication-seed.json',
     cache: '.ci/cache/shape-index',
     refuses: true,
+  },
+  // NOT SEEDED AT INSTALL, deliberately -- the gate profile's `--seed` discipline exists because the GATE refuses, and seeding 90-odd hashes into a fresh advisory seed at once would be exactly the suppression `--seed`'s own refusal (`:1865-1868`, unchanged by this profile) warns against for the family it protects. An advisory tier carries its backlog OPENLY and drips it one finding
+  // per stop through the Stop hook's existing queue (`wl_shapedup.py`, Commit 3) instead. `scripts/data/shape-duplication-seed-advisory.json` starts absent; the first real run reports the whole backlog as findings rather than silencing it, and the settle path is the SAME `accepted` map with a BLOCKER reason the gate profile already uses -- there is no second escape hatch to
+  // maintain. GRADUATION CRITERION, so "advisory forever" is not the silent outcome: when the backlog drains below 10 coalesced findings and each family above clears its own floor with margin, these families move into `FAMILIES` (the gate profile) proper, this whole `advisory` entry is deleted, and CI starts refusing on them like every other family.
+  advisory: {
+    families: ADVISORY_FAMILIES,
+    seed: 'scripts/data/shape-duplication-seed-advisory.json',
+    cache: '.ci/cache/shape-index-advisory',
+    refuses: false,
   },
 };
 
@@ -1394,6 +1412,44 @@ function controls(): { name: string; ok: boolean; detail?: string }[] {
       ok: deadSeeded(mk(N, SPAN), ['deadbeefdead']).length === 1,
     },
     {
+      // setProfile mutates real module state, so this control switches to 'advisory' and back to 'gate' in the SAME check, leaving the state the real scan below depends on exactly as it found it -- a control that forgot the restore would make every case after it run against the wrong profile.
+      name: "setProfile('advisory') switches families/seed/cache, and switching back to 'gate' restores them exactly",
+      ok: (() => {
+        const gateSeed = SEED_FILE;
+        const gatePaths = [...FAMILY_PATHSPECS];
+        setProfile('advisory');
+        const advisorySwitched =
+          SEED_FILE.endsWith('shape-duplication-seed-advisory.json') &&
+          FAMILY_PATHSPECS.some((p) => p.includes('wl_*.py')) &&
+          !FAMILY_PATHSPECS.some((p) => p === gatePaths[0]);
+        setProfile('gate');
+        const restored = SEED_FILE === gateSeed && FAMILY_PATHSPECS.join('|') === gatePaths.join('|');
+        return advisorySwitched && restored;
+      })(),
+    },
+    {
+      name: 'an unknown profile refuses rather than silently running the last one selected',
+      ok: (() => {
+        const before = PROFILE_NAME;
+        const realExit = process.exit;
+        let refused = false;
+        // A stub that ALWAYS THROWS types as `(code?) => never`, the same shape `process.exit` itself carries, so this needs no cast and no suppression -- catching the throw is how the control observes the call without the process actually ending.
+        process.exit = (): never => {
+          refused = true;
+          throw new Error('exit-control-sentinel');
+        };
+        try {
+          setProfile('not-a-real-profile');
+        } catch {
+          // Expected: the stub above throws in place of exiting.
+        } finally {
+          process.exit = realExit;
+          setProfile(before);
+        }
+        return refused;
+      })(),
+    },
+    {
       name: 'CONTROL: a live seeded shape is not reported dead',
       ok: (() => {
         const per = mk(N, SPAN);
@@ -1981,7 +2037,10 @@ async function main(): Promise<void> {
 
   // `--no-seed` IS FOR THE AGREEMENT TEST AND NOTHING ELSE, and it is not an escape hatch: it makes the gate report the 219-span standing backlog this file's docstring describes, which is a wall rather than a verdict. What it buys is a comparison -- the probe answers about a staged file against a cached corpus, and the only way to check that answer is to ask the whole-corpus scan
   // the same question with the same silence set, which for a single staged file is no silence at all.
-  const noSeed = argv.includes('--no-seed');
+  // A NON-REFUSING PROFILE STARTS WITH NO SEED, ON PURPOSE (agent/plans/PLAN-stop-hook-refactor-enforcement.md, Commit 3): `advisory` is never seeded at install (see PROFILES' own comment for why), so the ordinary `no seed at ...` refusal below would exit 1 on its very first run and every run after, forever -- the exact "advisory tier that cannot function" bug this line exists to
+  // avoid. A refusing profile still requires one, unchanged: without it, `gate` would silently report the whole 219-span standing backlog as new and refuse every commit. Once an advisory seed file DOES exist -- the settle path writes to it exactly like the gate profile's -- it is read normally, same as `--no-seed`'s own agreement-test path never touches this branch either.
+  const forcedNoSeed = !PROFILES[PROFILE_NAME]!.refuses && !existsSync(SEED_FILE);
+  const noSeed = argv.includes('--no-seed') || forcedNoSeed;
   const { silent: seed, accepted, shapes } = noSeed
     ? { silent: new Set<string>(), accepted: [], shapes: [] }
     : loadSeed();
@@ -2016,7 +2075,8 @@ async function main(): Promise<void> {
     return;
   }
 
-  if (findings.length > 0) {
+  // A NON-REFUSING PROFILE REPORTS, NEVER REFUSES, on a human/CI (non-`--json`) invocation too -- the Stop hook's own `--json` path above already returns before this line, so this branch exists only for a direct run of `--profile advisory` on the command line, and it must not exit 1 on a backlog nobody here created.
+  if (findings.length > 0 && PROFILES[PROFILE_NAME]!.refuses) {
     console.error(`${RED}✗${NC} ${findings.length} NEW shape(s) have reached ${N} copies:\n`);
     for (const f of findings) {
       console.error(`  ~${f.span} lines x ${f.files.length} copies:  ${f.shape}`);
@@ -2028,11 +2088,14 @@ async function main(): Promise<void> {
 
   // DEBT ON EVERY GREEN, not only when someone thinks to ask: a dead seed hash is permanent silence for that shape (deadSeeded's own doc comment), so the count rides the success line beside the arithmetic it corrects rather than living in a report nobody runs.
   const deadSeed = noSeed ? [] : deadSeeded(perFile, shapes);
+  const shapeNote =
+    findings.length > 0
+      ? `${findings.length} NEW shape(s) have reached ${N} copies (advisory, not refusing)`
+      : `no NEW shape has reached ${N} copies`;
   console.log(
     `${GREEN}✓${NC} shape duplication: ${files.length} file(s), ${totalWindows} window(s), ` +
       `${seed.size - accepted.length} seeded + ${accepted.length} accepted shape(s) ` +
-      `(${deadSeed.length} seeded shape(s) dead); ` +
-      `no NEW shape has reached ${N} copies`
+      `(${deadSeed.length} seeded shape(s) dead); ${shapeNote}`
   );
 }
 
