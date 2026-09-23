@@ -36,7 +36,11 @@ truthy("seed 1 rolls under the floor", random.Random(1).random() < wl_popup.POP_
 truthy("seed 0 rolls at or over the floor", random.Random(0).random() >= wl_popup.POP_PROBABILITY)
 
 control("should_pop fires under a seed that rolls low", wl_popup.should_pop(random.Random(1)), True)
-control("should_pop stays silent under a seed that rolls high", wl_popup.should_pop(random.Random(0)), False)
+control(
+    "should_pop stays silent under a seed that rolls high",
+    wl_popup.should_pop(random.Random(0)),
+    False,
+)
 
 # CONTROL: an explicit rng and the default must agree on a seeded instance, so `rng=None` is really `random` and not a second, silently different generator.
 random.seed(1)
