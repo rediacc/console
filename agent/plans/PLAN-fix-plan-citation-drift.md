@@ -170,7 +170,8 @@ The rest were pointers into bash gates and tests the Python port retired: each n
 - [x] `agent/plans/PLAN-popup-reminder.md` -- 1: 1 object: neither blob nor reachable commit
     (ticked) 2026-09-23T10:35:45Z by d778be9d: check:ci-plan-citations names no finding in PLAN-popup-reminder.md on a live run; the repaired pointer is at agent/plans/PLAN-popup-reminder.md:11
 - [ ] `agent/plans/PLAN-printf-echo-pipefail-sweep.md` -- 5: 5 fileline ON A BOX LINE (editing it re-keys the box signature)
-- [ ] `agent/plans/PLAN-remove-autopilot.md` -- 2: 2 gate: no such `check:` script
+- [x] `agent/plans/PLAN-remove-autopilot.md` -- 2: 2 gate: no such `check:` script
+    (ticked) 2026-09-23T15:39:48Z by d778be9d: Both gate citations sit on an already-ticked PLAN-remove-autopilot.md box line documenting their own removal; check_plan_citations.py names no finding against that file on a live run. Investigation ledger committed at d238fd536.
 - [ ] `agent/plans/PLAN-secret-namespace-migration.md` -- 82: 44 fileline: basename matches NOTHING in the tree; 19 fileline ON A BOX LINE (editing it re-keys the box signature); 6 fileline: unique basename but the line is out of range there too; 5 plan: cited plan file gone; 5 object: neither blob nor reachable commit; 2 fileline: right file, stale line, no unambiguous anchor; 1 fileline: basename matches 4 files, ambiguous
 - [x] `agent/plans/PLAN-shell-resource-profiling.md` -- 1: 1 gate: no such `check:` script
     (ticked) 2026-09-23T10:35:44Z by d778be9d: check:ci-plan-citations names no finding in PLAN-shell-resource-profiling.md on a live run; the repaired pointer is at agent/plans/PLAN-shell-resource-profiling.md:33
