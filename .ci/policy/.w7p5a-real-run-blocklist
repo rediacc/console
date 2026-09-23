@@ -95,12 +95,6 @@
 .ci/scripts/deploy/upload-repos-to-r2.sh
 .ci/scripts/deploy/upload-to-r2.sh
 
-# BLOCKER: this session is a sandboxed coding agent with no Cloudflare/AWS/GitHub production credentials and is explicitly forbidden from performing a real deploy or a real release action; the script's real-run path invokes curl against the real edge.rediacc.com endpoint, so the box's 'one real run each' clause cannot be satisfied here. The bash-vs-python golden dry-run parity ledger for this path is DONE (verified 2026-09-14): W7P6 independently ported it to .ci/rediacc_ci/, with a permanent side-by-side pytest differential and a K=5 shadow-gate ledger (w7p6-<slug>), external tools stubbed throughout so nothing touches production -- this entry blocks only the real-run clause, not the whole path.
-.ci/scripts/deploy/verify-edge-endpoints.sh
-
-# BLOCKER: this session is a sandboxed coding agent with no Cloudflare/AWS/GitHub production credentials and is explicitly forbidden from performing a real deploy or a real release action; the script's real-run path invokes curl against the real www.rediacc.com endpoint, so the box's 'one real run each' clause cannot be satisfied here. The bash-vs-python golden dry-run parity ledger for this path is DONE (verified 2026-09-14): W7P6 independently ported it to .ci/rediacc_ci/, with a permanent side-by-side pytest differential and a K=5 shadow-gate ledger (w7p6-<slug>), external tools stubbed throughout so nothing touches production -- this entry blocks only the real-run clause, not the whole path.
-.ci/scripts/deploy/verify-stable-endpoints.sh
-
 # BLOCKER: this session is a sandboxed coding agent with no Cloudflare/AWS/GitHub production credentials and is explicitly forbidden from performing a real deploy or a real release action; the script's real-run path invokes aws s3 against the real R2 bucket, so the box's 'one real run each' clause cannot be satisfied here. The bash-vs-python golden dry-run parity ledger for this path is DONE (verified 2026-09-14): W7P6 independently ported it to .ci/rediacc_ci/, with a permanent side-by-side pytest differential and a K=5 shadow-gate ledger (w7p6-<slug>), external tools stubbed throughout so nothing touches production -- this entry blocks only the real-run clause, not the whole path.
 .ci/scripts/deploy/write-release-sentinel.sh
 
