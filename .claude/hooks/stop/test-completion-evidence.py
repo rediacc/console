@@ -11,6 +11,7 @@ import importlib.util
 import inspect
 import pathlib
 import re
+import subprocess
 import sys
 import tempfile
 
@@ -20,6 +21,14 @@ import wl_claimcheck as CC
 import wl_classsweep as CS
 
 ROOT = pathlib.Path(__file__).resolve().parents[3]
+
+# The submodule's OWN current HEAD, computed live rather than hardcoded: a submodule sha is a real object, but only inside its own git database, never in ROOT's. This resolved to False before wl_checks.py grew a per-submodule fallback (found live 2026-09-23 ticking real, verified private/renet work whose only cited sha kept failing this check).
+_SUBMODULE_SHA = subprocess.run(
+    ["git", "-C", str(ROOT / "private" / "renet"), "rev-parse", "HEAD"],
+    capture_output=True,
+    text=True,
+    check=False,
+).stdout.strip()
 
 # A path that really exists in this repo, so "resolving" means resolving.
 REAL = ".claude/hooks/stop/wl_checks.py:1"
@@ -42,6 +51,11 @@ MUST_PASS = [
     ),
 ]
 
+if _SUBMODULE_SHA:
+    MUST_PASS.append(
+        ("a real submodule-only sha resolves", "fixed private/renet %s" % _SUBMODULE_SHA)
+    )
+
 MUST_FAIL = [
     ("no citation at all is not evidence", "I finished it, all good"),
     ("one fabricated path is not evidence", "see totally/made/up/file.ts:99"),
@@ -51,6 +65,8 @@ MUST_FAIL = [
     ),
     # The dotfile branch must still RESOLVE, or it would turn any dotted prose token into evidence. This is the control that keeps that branch honest.
     ("a fabricated root dotfile is not evidence", "see .no-such-allowlist:4"),
+    # A fabricated hex string must still fail even now that submodule roots are also checked -- the per-submodule fallback adds a search location, never a looser match.
+    ("a fabricated sha is not evidence even with submodule roots checked", "fixed deadbee1"),
 ]
 
 
@@ -143,32 +159,61 @@ def _extra():
 # =============================================================================
 
 
+def _stub_fixture(tmp):
+    """Build a synthetic plan-move stub plus its target under `tmp`.
+
+    The stub-hop tests used to point straight at the real `agent/PLAN-tooling-transformation.md`, one of the 103 one-time historical flat-layout stubs from the `a81967e94` migration. The 2026-09-22 cleanup deletes every one of those (the operator's "no leftovers" call, tracked in PLAN-plan-path-migration.md), so the tests cannot depend on that file surviving.
+
+    Picking a different real stub to depend on would just relocate the same fragility. This builds its own disposable pair in a tempdir instead: a five-line pointer with the exact `Status: moved` / `Moved-To:` shape `wl_store.plan_stub_target` looks for, plus a target long enough for line 495 to stay in range.
+    The ongoing close-time `_done`/`_removed` stub convention (agent/README.md) is untouched; this fixture only stops the test caring which repo file plays the role.
+    """
+    root = pathlib.Path(tmp)
+    stub = root / "agent" / "PLAN-tooling-transformation.md"
+    target = root / "agent" / "plans" / "PLAN-tooling-transformation.md"
+    stub.parent.mkdir(parents=True, exist_ok=True)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    stub.write_text(
+        "# PLAN: Tooling Transformation (moved)\n"
+        "Status: moved\n"
+        "Moved-To: agent/plans/PLAN-tooling-transformation.md\n"
+        "\n"
+        "This plan moved. Fixture stub for the stub-hop tests.\n"
+    )
+    target.write_text("\n".join("placeholder line %d" % n for n in range(1, 600)) + "\n")
+    return str(root)
+
+
 def _stub():
     bad = []
     # The live pair the plan named: a real stub, a real in-range line into the five-line pointer, past-EOF for the stub but in-range for the moved file.
     stub_cite = "agent/PLAN-tooling-transformation.md:495"
 
-    excerpt = W.cited_excerpts(ROOT, f"see {stub_cite}")
-    if not excerpt.strip():
-        bad.append("cited_excerpts returned empty for a citation through a plan-move stub")
-    elif "agent/plans/PLAN-tooling-transformation.md" not in excerpt:
-        bad.append(f"excerpt did not resolve through the stub hop: {excerpt!r}")
+    with tempfile.TemporaryDirectory() as tmp:
+        fixture_root = _stub_fixture(tmp)
 
-    ok, detail = W.citation_state(ROOT, f"see {stub_cite}")
-    if not ok:
-        bad.append(f"citation_state stopped resolving the stub citation: {detail}")
-    elif "agent/plans/" not in detail:
-        bad.append(f"citation_state resolved but not through the stub hop: {detail}")
+        excerpt = W.cited_excerpts(fixture_root, f"see {stub_cite}")
+        if not excerpt.strip():
+            bad.append("cited_excerpts returned empty for a citation through a plan-move stub")
+        elif "agent/plans/PLAN-tooling-transformation.md" not in excerpt:
+            bad.append(f"excerpt did not resolve through the stub hop: {excerpt!r}")
+
+        ok, detail = W.citation_state(fixture_root, f"see {stub_cite}")
+        if not ok:
+            bad.append(f"citation_state stopped resolving the stub citation: {detail}")
+        elif "agent/plans/" not in detail:
+            bad.append(f"citation_state resolved but not through the stub hop: {detail}")
+
+        # CONTROL: a line genuinely out of range even after the hop stays skipped, not resolved through a second one -- check:ci-plan-folders F5 forbids a stub that points at a stub.
+        oor = W.cited_excerpts(fixture_root, "see agent/PLAN-tooling-transformation.md:99999999")
+        if oor.strip():
+            bad.append(
+                f"an out-of-range line past the moved file's own end still excerpted: {oor!r}"
+            )
 
     # CONTROL: an ordinary, non-stub citation must be unaffected by the hop.
     plain_excerpt = W.cited_excerpts(ROOT, f"see {REAL}")
     if not plain_excerpt.strip():
         bad.append("cited_excerpts regressed on an ordinary, non-stub citation")
-
-    # CONTROL: a line genuinely out of range even after the hop stays skipped, not resolved through a second one -- check:ci-plan-folders F5 forbids a stub that points at a stub.
-    oor = W.cited_excerpts(ROOT, "see agent/PLAN-tooling-transformation.md:99999999")
-    if oor.strip():
-        bad.append(f"an out-of-range line past the moved file's own end still excerpted: {oor!r}")
 
     # PIN: the coupling that made the two functions drift in the first place. One reads `citation_state` used to hop and `cited_excerpts` did not; a future edit reintroducing a private hop in either one un-shares them.
     src_cs = inspect.getsource(W.citation_state)
@@ -207,35 +252,43 @@ MOVED = "agent/plans/PLAN-tooling-transformation.md"
 def _claim():
     bad = []
 
-    # THE CASE THIS MODULE EXISTS FOR: it resolves, and git says the fix-set never touched it.
-    untouched = CC.profile(ROOT, ADVERSARIAL, ["packages/cli/src/index.ts"])
-    if untouched["shape"] != CC.UNTOUCHED:
-        bad.append(
-            f"the adversarial tick profiled as {untouched['shape']!r}, not resolved-untouched"
-        )
-    if [c["verdict"] for c in untouched["citations"]] != [CC.UNTOUCHED]:
-        bad.append(f"per-citation verdicts were {[c['verdict'] for c in untouched['citations']]}")
-    if not untouched["citations"] or not untouched["citations"][0]["excerpt"].strip():
-        bad.append(
-            "the cited line was not quoted at all, so the judge would be handed an empty block"
-        )
-    section = CC.prompt_section(untouched)
-    if CC.CLAIM_MARKER not in section:
-        bad.append(
-            "the prompt section carries no marker, so judge_schema_for would never require the object"
-        )
-    if MOVED not in section or "resolved-untouched" not in section:
-        bad.append("the prompt section names neither the resolved path nor the mismatch")
+    # ADVERSARIAL cites the same synthetic stub-hop pair _stub() builds -- see _stub_fixture's docstring for why this cannot point at the real, now-deleted agent/PLAN-tooling-transformation.md any more.
+    with tempfile.TemporaryDirectory() as tmp:
+        fixture_root = _stub_fixture(tmp)
 
-    # CONTROL, and without it the case above passes against a function that flags everything: the SAME claim, against a fix-set that really did touch the cited file, must not be flagged.
-    touched = CC.profile(ROOT, ADVERSARIAL, [MOVED, "packages/cli/src/index.ts"])
-    if touched["shape"] != CC.RESOLVED:
-        bad.append(f"a citation to a file the fix-set touched profiled as {touched['shape']!r}")
+        # THE CASE THIS MODULE EXISTS FOR: it resolves, and git says the fix-set never touched it.
+        untouched = CC.profile(fixture_root, ADVERSARIAL, ["packages/cli/src/index.ts"])
+        if untouched["shape"] != CC.UNTOUCHED:
+            bad.append(
+                f"the adversarial tick profiled as {untouched['shape']!r}, not resolved-untouched"
+            )
+        if [c["verdict"] for c in untouched["citations"]] != [CC.UNTOUCHED]:
+            bad.append(
+                f"per-citation verdicts were {[c['verdict'] for c in untouched['citations']]}"
+            )
+        if not untouched["citations"] or not untouched["citations"][0]["excerpt"].strip():
+            bad.append(
+                "the cited line was not quoted at all, so the judge would be handed an empty block"
+            )
+        section = CC.prompt_section(untouched)
+        if CC.CLAIM_MARKER not in section:
+            bad.append(
+                "the prompt section carries no marker, so judge_schema_for would never require the object"
+            )
+        if MOVED not in section or "resolved-untouched" not in section:
+            bad.append("the prompt section names neither the resolved path nor the mismatch")
 
-    # CONTROL: the PRE-MOVE spelling counts as touched too. The fix-set names whichever path the session actually edited, and comparing only the resolved spelling would report a file it did touch as untouched.
-    pre_move = CC.profile(ROOT, ADVERSARIAL, ["agent/PLAN-tooling-transformation.md"])
-    if pre_move["shape"] != CC.RESOLVED:
-        bad.append(f"the pre-move spelling was not recognised as touched: {pre_move['shape']!r}")
+        # CONTROL, and without it the case above passes against a function that flags everything: the SAME claim, against a fix-set that really did touch the cited file, must not be flagged.
+        touched = CC.profile(fixture_root, ADVERSARIAL, [MOVED, "packages/cli/src/index.ts"])
+        if touched["shape"] != CC.RESOLVED:
+            bad.append(f"a citation to a file the fix-set touched profiled as {touched['shape']!r}")
+
+        # CONTROL: the PRE-MOVE spelling counts as touched too. The fix-set names whichever path the session actually edited, and comparing only the resolved spelling would report a file it did touch as untouched.
+        pre_move = CC.profile(fixture_root, ADVERSARIAL, ["agent/PLAN-tooling-transformation.md"])
+        if pre_move["shape"] != CC.RESOLVED:
+            bad.append(
+                f"the pre-move spelling was not recognised as touched: {pre_move['shape']!r}"
+            )
 
     # VACUITY, per wl_classsweep's precedent and check_plan_boxes.py G-A6: a check that cannot see must SAY it cannot see, never report a clean profile.
     for label, text, fixset in (

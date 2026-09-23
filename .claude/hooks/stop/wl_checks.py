@@ -21,6 +21,7 @@ import wl_checklist
 import wl_ci
 import wl_claimcheck
 import wl_core as C
+import wl_git
 import wl_hints
 import wl_histfirst
 import wl_judge
@@ -489,8 +490,10 @@ def completion_evidence(root, text):
         if tok not in seen:
             seen.add(tok)
             cands.append((-len(tok), i, tok))
+    # SUBMODULE SHAS ARE REAL OBJECTS TOO, just not in `root`'s own database. A commit in private/renet or private/account never resolves via `git -C root rev-parse`, since each submodule keeps its own separate object store -- found live 2026-09-23 ticking real, verified work whose only cited sha lived in private/renet. Checked only after `root` itself misses, and only for candidates that survived the same length-ranked cap above, so a tree with no submodules pays nothing extra and a real console sha never falls through to a slower path for no reason.
+    roots = [root] + [os.path.join(root, p) for p, _branch in wl_git.submodules(root)]
     for _, _, tok in sorted(cands)[:5]:
-        if C._git(root, "rev-parse", "--verify", "--quiet", tok + "^{object}"):
+        if any(C._git(r, "rev-parse", "--verify", "--quiet", tok + "^{object}") for r in roots):
             return True
     return False
 
