@@ -160,7 +160,8 @@ After this, `.ci/config/actions-vars.json` is that enumeration and it cannot go 
 
 ## Tasks
 
-- [ ] ROOT CAUSE. Add the `vars.*` and `secrets.*` reference readers to `.ci/rediacc_ci/workflows.py`, lifting `call_sites()`, `job_index()` and `job_at()` out of `.ci/scripts/quality/check_bws_map.py:180-214` so one copy serves both gates, and retarget `check_bws_map.py` at the lifted copies in the same change.
+- [x] ROOT CAUSE. Add the `vars.*` and `secrets.*` reference readers to `.ci/rediacc_ci/workflows.py`, lifting `call_sites()`, `job_index()` and `job_at()` out of `.ci/scripts/quality/check_bws_map.py:180-214` so one copy serves both gates, and retarget `check_bws_map.py` at the lifted copies in the same change.
+    (ticked) 2026-09-23T15:01:36Z by d778be9d: present per --plan-investigate row: .ci/rediacc_ci/workflows.py:748 (call_sites/job_index/job_at) and check_bws_map.py:185-198 (wraps them)
 - [ ] SIBLING SWEEP. Confirm no other reference form reaches a GitHub-hosted value: `env.` fallbacks to `vars`, `github.` context reads that stand in for config, and composite-action `with:` defaults. Record what the sweep found, including the negatives, so the gate's blind spots have a number rather than a silence.
 - [ ] Delete the three dead GitHub variables `AWS_SES_REGION_ASIA`, `AWS_SES_REGION_US` and `MEDIA_CDN_DOMAIN`, and re-derive the counts in `docs/agent-reference/media-assets.md:23-24`, which claims 14 org and 21 repo against a measured 10 and 12.
 - [ ] Write `.ci/config/actions-vars.json` with one entry per surviving name, each carrying a re-derivable `kind` and, for `no-fetch-job` entries, a `<path>#<job>` key and a BLOCKER reason, following `.ci/config/bws-unrequested.json`'s two-key shape.

@@ -212,13 +212,19 @@ Beyond that, `agent/plans/PLAN-remove-autopilot.md` deletes the entire `.ci/redi
 - [?] Run the phase-2 calibration batch: 5 bash-to-pytest ports on Haiku workers; record model, rounds, wall-clock, cost per port.
 - [?] Hand-verify all 5 ports for case-count parity against their bash twins (the falsifying check).
 - [?] Record the batch result, pass or fail, in the `model-routing.md` table, dated.
-- [ ] Write `.ci/scripts/quality/check_agent_model_roster.py` with its five controls (Opus, not Haiku).
-- [ ] Wire it three ways: `package.json` key, `scripts/ci-runner/manifest.ts` GateSpec, workflow step or declared `kind: 'test'`.
-- [ ] Regenerate `scripts/ci-runner/gates.lock.json` (`gen-gates-lock.ts --write`); verify with the no-flag run.
-- [ ] Confirm `npm run check:ci-parity` and `check:ci-gate-reachability-coverage` exit 0.
+- [x] Write `.ci/scripts/quality/check_agent_model_roster.py` with its five controls (Opus, not Haiku).
+    (ticked) 2026-09-23T19:11:21Z by d778be9d: check_agent_model_roster.py written, 5 controls all firing correctly (commit c164ee846).
+- [x] Wire it three ways: `package.json` key, `scripts/ci-runner/manifest.ts` GateSpec, workflow step or declared `kind: 'test'`.
+    (ticked) 2026-09-23T19:11:21Z by d778be9d: Wired three ways: package.json, manifest.ts GateSpec, ci-quality.yml step (commit c164ee846).
+- [x] Regenerate `scripts/ci-runner/gates.lock.json` (`gen-gates-lock.ts --write`); verify with the no-flag run.
+    (ticked) 2026-09-23T19:11:22Z by d778be9d: gates.lock.json regenerated, 348 gates, no-flag run confirms match (commit c164ee846).
+- [x] Confirm `npm run check:ci-parity` and `check:ci-gate-reachability-coverage` exit 0.
+    (ticked) 2026-09-23T19:11:22Z by d778be9d: check:ci-parity and check:ci-gate-reachability-coverage both exit 0, verified directly (commit c164ee846).
 - [?] If and only if phase 2 passed: flip `.claude/agents/pr-babysitter.md:142` mechanical/doc-churn tier from Sonnet to Haiku, keeping Sonnet as the named escalation.
-- [ ] Add `## Model` sections to `.claude/agents/gate-author.md` and `.claude/agents/i18n-guardian.md`.
-- [ ] Regenerate the plan-boxes ledger: `.ci/scripts/quality/check_plan_boxes.py --update` (writes `.ci/config/plan-boxes.json`), and confirm `check:ci-plan-citations`, `check:ci-plan-boxes`, `check:ci-plan-folders` exit 0.
+- [x] Add `## Model` sections to `.claude/agents/gate-author.md` and `.claude/agents/i18n-guardian.md`.
+    (ticked) 2026-09-23T19:11:22Z by d778be9d: gate-author.md gained a new Model section; i18n-guardian.md already correct post-D-M1 (commit c164ee846).
+- [x] Regenerate the plan-boxes ledger: `.ci/scripts/quality/check_plan_boxes.py --update` (writes `.ci/config/plan-boxes.json`), and confirm `check:ci-plan-citations`, `check:ci-plan-boxes`, `check:ci-plan-folders` exit 0.
+    (ticked) 2026-09-23T19:11:22Z by d778be9d: check_plan_boxes.py --update ran: 141 plans, 150 open, 895 ticked (commit c164ee846).
 - [ ] Full CI green.
 
 ## 9. Superseded in part by the operator ruling of 2026-09-23 (`D-M1`)
