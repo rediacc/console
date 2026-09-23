@@ -25,7 +25,8 @@ The damage is the ROUTING, not the DETECTION -- `.claude/hooks/stop/worklist-cas
       `(claims, agent_or_None)`, naming an agent only above the HINT's own floor
       (`.claude/hooks/stop/wl_agents.py:51`, `.claude/hooks/stop/wl_agents.py:57`). Delete
       `PUSHBACK_MIN_SCORE` and `PUSHBACK_MIN_MARGIN`.
-- [ ] Split the `vadd` at `.claude/hooks/stop/wl_checks.py:4502` into `agent-pushback:<name>`
+- [x] Split the `vadd` at `.claude/hooks/stop/wl_checks.py:4502` into `agent-pushback:<name>`
+    (ticked) 2026-09-23T16:12:34Z by d778be9d: vadd split landed in commit ff677e171; investigation ledger committed.
       and an agent-free `giveup-claim`; add the second template beside
       `.claude/hooks/stop/worklist_messages.py:1433`; register the new key in
       `.claude/hooks/stop/test-always-tier.py:68`; update
