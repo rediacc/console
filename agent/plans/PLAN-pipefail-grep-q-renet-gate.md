@@ -21,11 +21,12 @@ private/renet/.github -type f` returns that one file.
 **renet's gate layer is bash, and it mirrors console's `.ci` layout.** `private/renet/.ci/ci.sh` has three stages; `run_quality()` at `private/renet/.ci/ci.sh:22` invokes exactly five scripts, at `private/renet/.ci/ci.sh:24` through `private/renet/.ci/ci.sh:28`: `format.sh`, `lint.sh`, `deadcode.sh`, `security.sh`, `i18n.sh`. Every one of them sources
 `private/renet/.ci/scripts/lib/common.sh`, which sets `set -euo pipefail` at `private/renet/.ci/scripts/lib/common.sh:9` and supplies `log_step`/`log_info`/`log_error` and `require_cmd`.
 
-**Console runs that stage.** `.ci/scripts/private/run-renet.sh:5` registers the gate id `check:ci-renet`; `package.json:253` binds it to `.ci/scripts/private/run-renet.sh quality`; `.github/workflows/ci-quality.yml:2291` and `.github/workflows/ci-quality.yml:2293` run it in the L10 Go lane. So a script added to `run_quality()` runs in console CI **and** in local `npm run ci` with
+**Console runs that stage.** `.ci/rediacc_ci/private/run_renet.py:56` registers the gate id `check:ci-renet`; `package.json:259` binds it to `PYTHONPATH=.ci python3 -m rediacc_ci.private.run_renet quality`; `.github/workflows/ci-quality.yml:2438` and `.github/workflows/ci-quality.yml:2440` run it in the L10 Go lane.
+So a script added to `run_quality()` runs in console CI **and** in local `npm run ci` with
 no workflow edit.
 
-**renet has ZERO shell-script gating today.** No shellcheck, no shfmt, no custom shell checker -- and it says so in its own tree, at `private/renet/.ci/scripts/test/run-tests.sh:20`: "renet's CI runs no shellcheck over .ci/scripts, so this warning was invisible until the console-side battery was pointed at this file". Console's shellcheck gate (`package.json:230` ->
-`.ci/scripts/security/shellcheck.sh`) enumerates its corpus with `git ls-files '*.sh'` at `.ci/scripts/security/shellcheck.sh:83` plus `--others --exclude-standard` at `.ci/scripts/security/shellcheck.sh:84`, run at the CONSOLE root -- and `git ls-files private/renet` in console returns the single gitlink line `private/renet`, not the submodule's contents. Verified: of the 504
+**renet has ZERO shell-script gating today.** No shellcheck, no shfmt, no custom shell checker -- and it says so in its own tree, at `private/renet/.ci/scripts/test/run-tests.sh:20`: "renet's CI runs no shellcheck over .ci/scripts, so this warning was invisible until the console-side battery was pointed at this file". Console's shellcheck gate (`package.json:236` -> `.ci/rediacc_ci/security/shellcheck.py`) enumerates its corpus with `git ls-files '*.sh'` at `.ci/rediacc_ci/security/shellcheck.py:232` plus `--others --exclude-standard` at `.ci/rediacc_ci/security/shellcheck.py:237`, run at the CONSOLE root -- and `git ls-files private/renet` in console returns the single gitlink line `private/renet`, not the submodule's contents.
+Verified: of the 504
 files console's pipefail gate scans, 11 have "renet" in the path and every one is a console-side `.ci/scripts/**/renet-*.sh`; none is inside the submodule.
 
 **But the surface is small, and that is the load-bearing number.** `git ls-files '*.sh'` inside `private/renet` returns **15** files, ~3,400 lines; **11 of the 15 set pipefail**. The exceptions are `build.sh` (850 lines, no pipefail), `_scripts/verify_translations.sh`, `scripts/test-repo-integration.sh` (deprecated per its own header) and nothing else. There is also exactly one
@@ -96,13 +97,13 @@ Structure, in order:
 1. `source ../lib/common.sh`, then `set +e` with a comment: the gate COUNTS failures and
 reports them all, so errexit (inherited from `private/renet/.ci/scripts/lib/common.sh:9`) must be off; `-u` and `-o pipefail` stay on. `require_cmd git`.
 2. `offenders() { ... }` and `join_logical() { ... }` -- ported from
-`.ci/scripts/quality/check-pipefail-grep-q.sh` (the bash twin, whose `SCALING_PRODUCERS` is at `.ci/scripts/quality/check-pipefail-grep-q.sh:191`). Keep the comment stripping AND the quoted-span blanking: without the second one the gate flags its own prose, which is how console discovered the mention-as-execution class inside the gate written for a different class.
+`.ci/scripts/quality/check-pipefail-grep-q.sh` (the bash twin, retired; its `SCALING_PRODUCERS` port is at `.ci/rediacc_ci/quality/pipefail_grep_q.py:224`). Keep the comment stripping AND the quoted-span blanking: without the second one the gate flags its own prose, which is how console discovered the mention-as-execution class inside the gate written for a different class.
 3. `SCALING_PRODUCERS` = console's 17, **plus `tee` and `docker`**, with the extras listed
 separately in a `RENET_EXTRA_PRODUCERS` variable so Phase 2's parity assertion can name them, and each extra carrying its measured justification (section 2).
 4. No `INHERITS_PIPEFAIL_PREFIXES`. Console needs it for exactly one file; in renet,
 `.ci/scripts/lib/common.sh` sets pipefail itself at line 9, so the per-file test already answers correctly for every sourced library here. Add the mechanism only if a sourced file that does NOT set pipefail ever appears.
 5. Corpus: `git -C "$ROOT" ls-files '*.sh' '*.bats'` PLUS `git -C "$ROOT" ls-files --others
---exclude-standard '*.sh' '*.bats'`, deduplicated -- the untracked half for the same reason console's shellcheck takes it at `.ci/scripts/security/shellcheck.sh:84`: a script a session has written but not committed is exactly when the check is most useful. `git` is REQUIRED, not optional: a `find` fallback would silently redefine the corpus (and pick up `build/`, `bin/`), and a
+--exclude-standard '*.sh' '*.bats'`, deduplicated -- the untracked half for the same reason console's shellcheck takes it at `.ci/rediacc_ci/security/shellcheck.py:234`: a script a session has written but not committed is exactly when the check is most useful. `git` is REQUIRED, not optional: a `find` fallback would silently redefine the corpus (and pick up `build/`, `bin/`), and a
 gate with two corpora has two verdicts.
 6. Controls, run on every invocation (section 6).
 7. Anti-vacuity floors, both of them:
@@ -155,8 +156,7 @@ Each control that fails prints `CONTROL DID NOT FIRE: ...` (the detector is blin
 
 ### 6.2 Console-side battery test
 
-`.ci/scripts/test/gates/test-renet-pipefail-grep-q.sh`, modelled line-for-line on `.ci/scripts/test/gates/test-renet-deadcode.sh`: the same `# ---- gate ----` header shape (`kind: battery`, `step: Quality-gate unit tests`, `needs: submodules`, `lane: quality-security`, plus the blocker line those 149 shared-step tests all carry), the same absent-submodule skip as
-`.ci/scripts/test/gates/test-renet-deadcode.sh:28`, the same `source` of the renet script under its main guard as `.ci/scripts/test/gates/test-renet-deadcode.sh:35`, and the same `mktemp -d` fixture dir as `.ci/scripts/test/gates/test-renet-deadcode.sh:37` -- fixtures NEVER in the real tree, so the test needs no `mutex`/`reads` claim in the battery's isolation lock.
+`.ci/scripts/test/gates/test-renet-pipefail-grep-q.sh`, modelled line-for-line on `.ci/scripts/test/gates/test-renet-deadcode.sh` (since retired; its Python successor `.ci/rediacc_ci/tests/gates/test_gate_renet_deadcode.py` carries the same shape): the same `# ---- gate ----` header shape (`kind: battery`, `step: Quality-gate unit tests`, `needs: submodules`, `lane: quality-security`, plus the blocker line those 149 shared-step tests all carry), the same absent-submodule handling as `.ci/rediacc_ci/tests/gates/test_gate_renet_deadcode.py:46-52`, the same `source` of the renet script under its main guard as `.ci/rediacc_ci/tests/gates/test_gate_renet_deadcode.py:54`, and the same per-case fixture directory as `.ci/rediacc_ci/tests/gates/test_gate_renet_deadcode.py:20` -- fixtures NEVER in the real tree, so the test needs no `mutex`/`reads` claim in the battery's isolation lock.
 
 It asserts, by calling the sourced `offenders()`:
 
@@ -168,8 +168,8 @@ that renet has not taken reds here -- the drift direction that costs a missed de
 3. every extra in `RENET_EXTRA_PRODUCERS` is a real word in the renet list, so the declared
 extras cannot rot into prose.
 
-The test runs in the `quality-security` job, whose checkout sets `submodules: true`, under the step at `.github/workflows/ci-quality.yml:2196`; the battery globs `.ci/scripts/test/gates/test-*.sh` (`.ci/rediacc_ci/battery.py:111`), and the entry must ALSO be declared in `scripts/ci-runner/manifest.ts` (see the existing renet entry at `scripts/ci-runner/manifest.ts:6832`, projected
-into `scripts/ci-runner/gates.lock.json:6753`) and the lock regenerated with `npm run gen:gates-lock` (`package.json:169`) -- never hand-edited.
+The test runs in the `quality-security` job, whose checkout sets `submodules: true`, under the step at `.github/workflows/ci-quality.yml:2196`; the battery globs `.ci/scripts/test/gates/test-*.sh` (`.ci/rediacc_ci/battery.py:111`), and the entry must ALSO be declared in `scripts/ci-runner/manifest.ts` (see the existing renet entry at `scripts/ci-runner/manifest.ts:3422`, projected
+into `scripts/ci-runner/gates.lock.json:3658`) and the lock regenerated with `npm run gen:gates-lock` (`package.json:169`) -- never hand-edited.
 
 ### 6.3 Real-tree plant, done once by hand and recorded in the commit
 
@@ -196,13 +196,13 @@ Phase 1 -- the renet gate (lands in `private/renet`, branch `0914-1`, rides PR #
       `*.bats`, both anti-vacuity floors, `BASH_SOURCE` main guard, fixtures assembled at
       runtime so the file never carries the racing shape contiguously.
 - [x] Add the twelve in-script controls plus the two mechanism controls (section 6.1);
-    (ticked) 2026-09-22T19:54:23Z by d778be9d: run_controls() at pipefail-grep-q.sh:228-392, 2 mechanism + 12 detector-direction controls
+    (ticked) 2026-09-22T19:54:23Z by d778be9d: run_controls() at private/renet/.ci/scripts/quality/pipefail-grep-q.sh:228-392, 2 mechanism + 12 detector-direction controls
       verify each one FAILS when its assertion is inverted.
 - [x] Register it as the first line of `run_quality()` in `private/renet/.ci/ci.sh`
     (ticked) 2026-09-22T19:54:23Z by d778be9d: private/renet/.ci/ci.sh:26 is first line of run_quality()
       (before line 24).
 - [x] Convert the three sites the new list finds: `private/renet/.ci/scripts/quality/i18n.sh:155`
-    (ticked) 2026-09-22T19:54:23Z by d778be9d: i18n.sh:160, ci-test.sh:177,221 all converted to [ -n "$(... | grep ...)" ]
+    (ticked) 2026-09-22T19:54:23Z by d778be9d: private/renet/.ci/scripts/quality/i18n.sh:160, private/renet/scripts/ci-test.sh:177,221 all converted to [ -n "$(... | grep ...)" ]
       (keep the `tee` write to `$WORK/hash-check.log` -- the failure branch `cat`s it),
       `private/renet/scripts/ci-test.sh:174`, `private/renet/scripts/ci-test.sh:217`.
       Keep every grep flag except `-q`; verify by RUNNING each file, not by reading it.
