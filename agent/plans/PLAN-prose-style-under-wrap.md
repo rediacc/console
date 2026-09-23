@@ -84,7 +84,8 @@ future normal edit unless it is scoped very narrowly and its existing-corpus hit
 - [x] Decide and implement the heuristic gate (see Detection algorithm) as a named, tested
     (ticked) 2026-09-22T19:57:54Z by d778be9d: _looks_hard_wrapped(buffer, width) at .ci/rediacc_ci/quality/prose_style.py:1082, live-tested against must-not-fire list, all correct
       function so it is not duplicated a third time.
-- [ ] Wire `block_prose_style_edit.py`: no code change needed beyond what already exists -- it
+- [x] Wire `block_prose_style_edit.py`: no code change needed beyond what already exists -- it
+    (ticked) 2026-09-23T16:46:01Z by d778be9d: EDGE_CASES added in commit f39adb027; investigation ledger committed.
       already calls `engine.lint_text(rel, new_prose, rules, globals_, scope=scope)` and already
       treats any `finding.fid` present in `load_baseline(root)` as carried/allowed. R19 rides the
       same mechanism automatically once wired into `lint_text`. Add `EDGE_CASES` to

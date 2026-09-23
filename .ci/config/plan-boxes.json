@@ -946,11 +946,10 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "2026-09-21",
-      "open": 2,
-      "done": 11,
+      "open": 1,
+      "done": 12,
       "open_sigs": [
-        "037ff64e",
-        "de6c18f7"
+        "037ff64e"
       ],
       "done_sigs": [
         "0253b9bf",
@@ -963,7 +962,8 @@
         "9af03d8c",
         "a2d8e84e",
         "a41b0fdf",
-        "d4772b60"
+        "d4772b60",
+        "de6c18f7"
       ]
     },
     "agent/plans/PLAN-pytest-parallelism.md": {
