@@ -1,5 +1,5 @@
 # PLAN: commits must be attributable to a GitHub account
-Status: draft
+Status: done
 First-Seen: 2026-09-17
 Owner: d778be9d (adopted from 74de73ca 2026-09-23)
 Updated: 2026-09-23

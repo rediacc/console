@@ -144,7 +144,8 @@ The rest were pointers into bash gates and tests the Python port retired: each n
     (ticked) 2026-09-23T10:35:43Z by d778be9d: check:ci-plan-citations names no finding in PLAN-agent-hints-in-stop-hook.md on a live run; the repaired pointer is at agent/plans/PLAN-agent-hints-in-stop-hook.md:46
 - [x] `agent/plans/PLAN-agent-tree-lifecycle.md` -- 5: 5 fileline ON A BOX LINE (editing it re-keys the box signature)
     (ticked) 2026-09-23T12:16:25Z by d778be9d: Investigated at a959e94ad. check:ci-plan-citations names no finding against PLAN-agent-tree-lifecycle.md on a live run; the repaired pointers are on agent/plans/PLAN-agent-tree-lifecycle.md:55 and the box loose_sig is unchanged.
-- [ ] `agent/plans/PLAN-commit-author-identity.md` -- 5: 3 fileline: basename matches NOTHING in the tree; 2 fileline: right file, stale line, no unambiguous anchor
+- [x] `agent/plans/PLAN-commit-author-identity.md` -- 5: 3 fileline: basename matches NOTHING in the tree; 2 fileline: right file, stale line, no unambiguous anchor
+    (ticked) 2026-09-23T15:04:19Z by d778be9d: PLAN-commit-author-identity.md is 13/13 boxes done, only Status:draft is stale (should say done) -- see agent/plans/PLAN-commit-author-identity.md:13
 - [x] `agent/plans/PLAN-duplication-angle.md` -- 1: 1 gate: no such `check:` script
     (ticked) 2026-09-23T10:35:44Z by d778be9d: check:ci-plan-citations names no finding in PLAN-duplication-angle.md on a live run; the repaired pointer is at agent/plans/PLAN-duplication-angle.md:32
 - [ ] `agent/plans/PLAN-env-to-bitwarden-v2.md` -- 14: 7 fileline: basename matches NOTHING in the tree; 4 fileline: unique basename but the line is out of range there too; 1 fileline ON A BOX LINE (editing it re-keys the box signature); 1 fileline: right file, stale line, no unambiguous anchor; 1 gate: no such `check:` script

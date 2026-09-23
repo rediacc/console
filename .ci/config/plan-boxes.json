@@ -426,8 +426,8 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 14,
-      "done": 45,
+      "open": 13,
+      "done": 46,
       "open_sigs": [
         "126e279c",
         "42c71f29",
@@ -435,7 +435,6 @@
         "621f2352",
         "83eea3e4",
         "9c6e8631",
-        "a49ff99f",
         "a9721885",
         "cf3de542",
         "dd6df2ed",
@@ -475,6 +474,7 @@
         "979bea0b",
         "9843ff37",
         "9f68b703",
+        "a49ff99f",
         "a6792021",
         "ac9bc9c2",
         "b1c49189",
@@ -555,12 +555,11 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 16,
-      "done": 0,
+      "open": 15,
+      "done": 1,
       "open_sigs": [
         "26abe0f2",
         "28d5f960",
-        "462d404b",
         "4a168aee",
         "4fc98aba",
         "56203231",
@@ -575,7 +574,9 @@
         "f2030dec",
         "f642f759"
       ],
-      "done_sigs": []
+      "done_sigs": [
+        "462d404b"
+      ]
     },
     "agent/plans/PLAN-github-actions-workflow-run-trigger-fix.md": {
       "status": "compacted",
