@@ -30,7 +30,15 @@ def main(argv: list[str]) -> int:
     version = _require("VERSION")
     github_repository = _require("GITHUB_REPOSITORY")
 
-    subprocess.run(["git", "fetch", "--tags", "--quiet"], check=True)
+    try:
+        subprocess.run(["git", "fetch", "--tags", "--quiet"], check=True)
+    except subprocess.CalledProcessError as exc:
+        # MIRROR THE TWIN, not `check=True`'s own traceback: under `set -euo pipefail`, a
+        # failing `git fetch` exits the script immediately with THAT command's own exit
+        # code, printing nothing this script adds -- git's own stderr already streamed
+        # through by the time it fails. `check=True` alone raises here instead, which
+        # trades that clean exit for a ten-line CalledProcessError traceback on stderr.
+        return exc.returncode or 1
 
     tag = f"v{version}"
     tags = subprocess.run(

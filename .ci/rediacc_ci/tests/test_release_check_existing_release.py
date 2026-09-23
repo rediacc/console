@@ -125,6 +125,22 @@ def test_a_genuinely_new_version_is_available_on_both_sides(tmp_path: pathlib.Pa
     assert new == old
 
 
+def test_a_fetch_that_fails_exits_clean_on_both_sides(tmp_path: pathlib.Path) -> None:
+    """The one path neither side's happy-path fixture drives: `git fetch --tags` itself fails.
+
+    Found by the W7P5-a real-run audit: the bash twin's `set -euo pipefail` exits immediately with `git fetch`'s own code and nothing extra.
+    The un-caught `check=True` in the Python port raised a `CalledProcessError` and printed a ten-line traceback instead.
+    Reproduced here by pointing `origin` at a path that no longer exists, which fails offline and deterministically -- no network, no GitHub.
+    """
+    repo = _make_repo_with_origin(tmp_path, tags=[])
+    _git(repo, "remote", "set-url", "origin", str(tmp_path / "does-not-exist.git"))
+    bindir = _make_fake_gh(tmp_path, rc=1, stderr="release not found\n")
+    old, new = run_both(repo, bindir, "1.2.3")
+    assert old[0] != 0, "the fixture itself is broken: git fetch did not fail"
+    assert new[0] == old[0], (old, new)
+    assert new[1] == old[1] == "", "neither side prints anything extra to stdout on a fetch failure"
+
+
 def test_missing_version_fails_the_same_way_reworded(tmp_path: pathlib.Path) -> None:
     repo = _make_repo_with_origin(tmp_path, tags=[])
     bindir = _make_fake_gh(tmp_path, rc=1, stderr="release not found\n")
