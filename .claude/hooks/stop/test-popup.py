@@ -6,6 +6,7 @@
 A feature whose only test asserts a rate over many real calls is a coin-flip pretending to be a proof. Both cases here are 1.0 or 0.0 for a fixed seed, so each runs once.
 """
 
+import os
 import random
 import sys
 
@@ -52,6 +53,29 @@ control(
 
 # PIN, not a measurement: the operator asked for 20%. A silent change to this constant should be a visible diff, not a passing test.
 control("the probability is pinned at one in five", wl_popup.POP_PROBABILITY, 0.2)
+
+# WORKLIST_POPUP_PROBABILITY is the cross-process seam wlfix.py's subprocess-driven suite needs, since it cannot swap `rng=` on a `wl_checks.py` running in another process. Prove both overrides here rather than trusting the read.
+os.environ["WORKLIST_POPUP_PROBABILITY"] = "0"
+control(
+    "an override of 0 never fires, regardless of roll", wl_popup.should_pop(random.Random(1)), False
+)
+os.environ["WORKLIST_POPUP_PROBABILITY"] = "1"
+control(
+    "an override of 1 always fires, regardless of roll", wl_popup.should_pop(random.Random(0)), True
+)
+del os.environ["WORKLIST_POPUP_PROBABILITY"]
+control(
+    "an unset override falls back to POP_PROBABILITY",
+    wl_popup.should_pop(random.Random(1)),
+    random.Random(1).random() < wl_popup.POP_PROBABILITY,
+)
+os.environ["WORKLIST_POPUP_PROBABILITY"] = "not-a-float"
+control(
+    "an unparseable override falls back to POP_PROBABILITY rather than raising",
+    wl_popup.should_pop(random.Random(1)),
+    random.Random(1).random() < wl_popup.POP_PROBABILITY,
+)
+del os.environ["WORKLIST_POPUP_PROBABILITY"]
 
 if Tally.count < 5:
     Tally.fails += 1

@@ -23,8 +23,8 @@ def _hints():
 
 
 def test_load_corpus_reads_the_real_twelve_entries_clean():
-    H = _hints()
-    entries, errors = H.load_corpus(REAL_HINTS)
+    h = _hints()
+    entries, errors = h.load_corpus(REAL_HINTS)
     assert errors == [], errors
     assert len(entries) == 12, [e["id"] for e in entries]
     ids = [e["id"] for e in entries]
@@ -37,95 +37,100 @@ def test_load_corpus_reads_the_real_twelve_entries_clean():
 
 def test_load_corpus_missing_file_is_silent_not_an_error():
     """A missing corpus reads as NOT CONFIGURED, matching `wl_agents.load_corpus`'s own precedent for a missing agents directory: every test fixture that has never pointed WORKLIST_HINTS_FILE at a real file must not spuriously report a broken corpus."""
-    H = _hints()
-    entries, errors = H.load_corpus("/no/such/path/HINTS.md")
+    h = _hints()
+    entries, errors = h.load_corpus("/no/such/path/HINTS.md")
     assert entries == []
     assert errors == []
 
 
 def test_load_corpus_an_unreadable_file_is_still_a_real_error(tmp_path):
     """The other half: a corpus that EXISTS but cannot be read (not merely absent) is a genuine, loud error."""
-    H = _hints()
+    h = _hints()
     path = tmp_path / "hints.md"
-    path.write_text("## x\nHint-Id: x\nSource: file:CLAUDE.md:1\nStatus: active\n", encoding="utf-8")
+    path.write_text(
+        "## x\nHint-Id: x\nSource: file:CLAUDE.md:1\nStatus: active\n", encoding="utf-8"
+    )
     path.chmod(0o000)
     try:
-        entries, errors = H.load_corpus(str(path))
+        entries, errors = h.load_corpus(str(path))
         assert entries == []
-        assert len(errors) == 1 and "cannot read" in errors[0]
+        assert len(errors) == 1
+        assert "cannot read" in errors[0]
     finally:
         path.chmod(0o644)
 
 
 def test_load_corpus_entry_with_no_hint_id_is_an_error_not_a_silent_skip(tmp_path):
-    H = _hints()
+    h = _hints()
     path = tmp_path / "hints.md"
     path.write_text("## A heading with no trailer at all\n\nbody only\n", encoding="utf-8")
-    entries, errors = H.load_corpus(str(path))
-    assert len(errors) == 1 and "no Hint-Id" in errors[0]
+    _entries, errors = h.load_corpus(str(path))
+    assert len(errors) == 1
+    assert "no Hint-Id" in errors[0]
 
 
 def test_load_corpus_entry_with_no_source_is_an_error(tmp_path):
-    H = _hints()
+    h = _hints()
     path = tmp_path / "hints.md"
     path.write_text(
         "## A heading\nHint-Id: x\nStatus: active\n\nbody\n",
         encoding="utf-8",
     )
-    entries, errors = H.load_corpus(str(path))
-    assert len(errors) == 1 and "no Source" in errors[0]
+    _entries, errors = h.load_corpus(str(path))
+    assert len(errors) == 1
+    assert "no Source" in errors[0]
 
 
 def test_load_corpus_duplicate_hint_id_is_an_error(tmp_path):
-    H = _hints()
+    h = _hints()
     path = tmp_path / "hints.md"
     path.write_text(
         "## First\nHint-Id: dup\nSource: file:CLAUDE.md:1\nStatus: active\n\n"
         "## Second\nHint-Id: dup\nSource: file:CLAUDE.md:2\nStatus: active\n",
         encoding="utf-8",
     )
-    entries, errors = H.load_corpus(str(path))
+    _entries, errors = h.load_corpus(str(path))
     assert any("duplicate Hint-Id" in e for e in errors), errors
 
 
 def test_load_corpus_a_retired_entry_still_parses_but_is_excluded_from_pick(tmp_path):
-    H = _hints()
+    h = _hints()
     path = tmp_path / "hints.md"
     path.write_text(
         "## Live one\nHint-Id: live\nSource: file:CLAUDE.md:1\nStatus: active\n\n"
         "## Dead one\nHint-Id: dead\nSource: file:CLAUDE.md:2\nStatus: retired\n",
         encoding="utf-8",
     )
-    entries, errors = H.load_corpus(str(path))
+    entries, errors = h.load_corpus(str(path))
     assert errors == []
     assert {e["id"] for e in entries} == {"live", "dead"}
     ledger = {}
     for _ in range(10):
-        picked = H.hint_pick(entries, ledger, rng=random.Random(1))
+        picked = h.hint_pick(entries, ledger, rng=random.Random(1))
         assert picked[0]["id"] == "live", "a retired entry was ever picked"
 
 
 def test_load_corpus_a_heading_inside_a_fenced_block_is_not_a_phantom_entry(tmp_path):
-    H = _hints()
+    h = _hints()
     path = tmp_path / "hints.md"
     path.write_text(
         "## Real one\nHint-Id: real\nSource: file:CLAUDE.md:1\nStatus: active\n\n"
         "body with an example:\n\n```\n## This looks like a heading but is not\n```\n",
         encoding="utf-8",
     )
-    entries, errors = H.load_corpus(str(path))
+    entries, errors = h.load_corpus(str(path))
     assert errors == []
     assert [e["id"] for e in entries] == ["real"]
 
 
 def test_load_corpus_strips_a_trailing_style_ok_marker_from_the_source_value(tmp_path):
-    H = _hints()
+    h = _hints()
     path = tmp_path / "hints.md"
     path.write_text(
         "## Heading\nHint-Id: x\nSource: trap:some-id-with-you-in-it <!-- style-ok -->\nStatus: active\n",
         encoding="utf-8",
     )
-    entries, _errors = H.load_corpus(str(path))
+    entries, _errors = h.load_corpus(str(path))
     assert entries[0]["source"] == "trap:some-id-with-you-in-it"
 
 
@@ -133,71 +138,71 @@ def test_load_corpus_strips_a_trailing_style_ok_marker_from_the_source_value(tmp
 
 
 def test_hint_pick_full_cycle_coverage_across_fifty_seeds():
-    H = _hints()
-    entries, _errors = H.load_corpus(REAL_HINTS)
+    h = _hints()
+    entries, _errors = h.load_corpus(REAL_HINTS)
     for seed in range(50):
         ledger = {}
         seen = set()
         for _ in range(12):
-            picked = H.hint_pick(entries, ledger, rng=random.Random(seed))
+            picked = h.hint_pick(entries, ledger, rng=random.Random(seed))
             seen.add(picked[0]["id"])
         assert len(seen) == 12, "seed %d: did not cover the full corpus in one cycle" % seed
 
 
 def test_hint_pick_never_repeats_inside_a_single_cycle():
-    H = _hints()
-    entries, _errors = H.load_corpus(REAL_HINTS)
+    h = _hints()
+    entries, _errors = h.load_corpus(REAL_HINTS)
     ledger = {}
     seen = []
     for i in range(12):
-        picked = H.hint_pick(entries, ledger, rng=random.Random(7 + i))
+        picked = h.hint_pick(entries, ledger, rng=random.Random(7 + i))
         seen.append(picked[0]["id"])
     assert len(set(seen)) == 12, seen
 
 
 def test_hint_pick_never_repeats_across_a_cycle_boundary():
-    H = _hints()
-    entries, _errors = H.load_corpus(REAL_HINTS)
+    h = _hints()
+    entries, _errors = h.load_corpus(REAL_HINTS)
     ledger = {}
     last_of_cycle_one = None
     for i in range(12):
-        picked = H.hint_pick(entries, ledger, rng=random.Random(100 + i))
+        picked = h.hint_pick(entries, ledger, rng=random.Random(100 + i))
         last_of_cycle_one = picked[0]["id"]
-    first_of_cycle_two = H.hint_pick(entries, ledger, rng=random.Random(200))[0]["id"]
+    first_of_cycle_two = h.hint_pick(entries, ledger, rng=random.Random(200))[0]["id"]
     assert first_of_cycle_two != last_of_cycle_one
 
 
 def test_hint_pick_entropy_control_different_seeds_pick_different_first_hints():
     """CONTROL: proves the selection is genuinely randomized, not a fixed order that happens to look shuffled."""
-    H = _hints()
-    entries, _errors = H.load_corpus(REAL_HINTS)
+    h = _hints()
+    entries, _errors = h.load_corpus(REAL_HINTS)
     firsts = set()
     for seed in range(30):
-        picked = H.hint_pick(entries, {}, rng=random.Random(seed))
+        picked = h.hint_pick(entries, {}, rng=random.Random(seed))
         firsts.add(picked[0]["id"])
     assert len(firsts) > 1, "30 different seeds all picked the same first hint"
 
 
 def test_hint_pick_returns_none_when_the_corpus_has_nothing_active():
-    H = _hints()
-    assert H.hint_pick([], {}, rng=random.Random(0)) is None
+    h = _hints()
+    assert h.hint_pick([], {}, rng=random.Random(0)) is None
     retired_only = [{"id": "x", "heading": "h", "source": "s", "status": "retired"}]
-    assert H.hint_pick(retired_only, {}, rng=random.Random(0)) is None
+    assert h.hint_pick(retired_only, {}, rng=random.Random(0)) is None
 
 
 def test_hint_pick_index_and_total_match_the_active_corpus_size():
-    H = _hints()
-    entries, _errors = H.load_corpus(REAL_HINTS)
-    picked = H.hint_pick(entries, {}, rng=random.Random(0))
+    h = _hints()
+    entries, _errors = h.load_corpus(REAL_HINTS)
+    picked = h.hint_pick(entries, {}, rng=random.Random(0))
     _entry, index, total = picked
     assert total == 12
     assert 1 <= index <= 12
 
 
 def test_render_names_heading_id_and_source_all_refutable_in_one_look():
-    H = _hints()
+    h = _hints()
     entry = {"heading": "Do the thing", "id": "do-the-thing", "source": "file:CLAUDE.md:1"}
-    text = H.render(entry, 3, 12)
+    text = h.render(entry, 3, 12)
     assert "3 of 12" in text
     assert "Do the thing" in text
     assert "do-the-thing" in text
@@ -218,6 +223,8 @@ def test_hint_fires_on_a_loud_allow_stop(wl):  # noqa: F811
 
 def test_hint_absent_on_a_genuinely_silent_clean_stop(wl):  # noqa: F811
     wl.env["WORKLIST_HINTS_FILE"] = REAL_HINTS
+    # The popup reminder (wl_popup.py) is a separate, deliberate exception to this same silence, on a ~20% independent roll -- pinned off here because this control is about the rotating hint's own gate, not about that roll.
+    wl.env["WORKLIST_POPUP_PROBABILITY"] = "0"
     wl.brief_now()
     wl.hand_now()
     wl.run()
@@ -275,12 +282,12 @@ def test_hint_corpus_error_is_reported_and_never_blocks(wl):  # noqa: F811
 
 
 def test_propose_writes_only_the_ledger_and_never_touches_hints_md(tmp_path):
-    H = _hints()
+    h = _hints()
     (tmp_path / "docs" / "agent-reference").mkdir(parents=True)
     hints_file = tmp_path / "docs" / "agent-reference" / "HINTS.md"
     hints_file.write_text("# corpus\n", encoding="utf-8")
     before = hints_file.read_text(encoding="utf-8")
-    row = H.propose(str(tmp_path), "d778be9d", "a lesson worth keeping", "incident-1")
+    row = h.propose(str(tmp_path), "d778be9d", "a lesson worth keeping", "incident-1")
     after = hints_file.read_text(encoding="utf-8")
     assert after == before, "propose() touched HINTS.md"
     ledger = tmp_path / "agent" / "ledgers" / "hint-proposals.jsonl"
@@ -290,13 +297,16 @@ def test_propose_writes_only_the_ledger_and_never_touches_hints_md(tmp_path):
 
 
 def test_pending_proposals_excludes_text_already_present_in_the_corpus(tmp_path):
-    H = _hints()
+    h = _hints()
     (tmp_path / "docs" / "agent-reference").mkdir(parents=True)
     hints_file = tmp_path / "docs" / "agent-reference" / "HINTS.md"
-    hints_file.write_text("## already promoted\nHint-Id: x\nSource: file:CLAUDE.md:1\nStatus: active\n", encoding="utf-8")
-    H.propose(str(tmp_path), "d778be9d", "already promoted", "")
-    H.propose(str(tmp_path), "d778be9d", "still waiting on review", "")
-    pending = H.pending_proposals(str(tmp_path))
+    hints_file.write_text(
+        "## already promoted\nHint-Id: x\nSource: file:CLAUDE.md:1\nStatus: active\n",
+        encoding="utf-8",
+    )
+    h.propose(str(tmp_path), "d778be9d", "already promoted", "")
+    h.propose(str(tmp_path), "d778be9d", "still waiting on review", "")
+    pending = h.pending_proposals(str(tmp_path))
     assert [p["text"] for p in pending] == ["still waiting on review"]
 
 

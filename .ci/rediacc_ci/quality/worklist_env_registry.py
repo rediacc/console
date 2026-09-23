@@ -112,7 +112,7 @@ def scan_python(rel, source):
     """Every WORKLIST_* environment READ in one Python file.
 
     Writes are excluded: `os.environ["X"] = v` is a test setting the variable,
-    not code depending on it, and counting it would make a name that only the test corpus assigns look alive.
+    not code depending on it, and counting it would make a name that only the test corpus assigns look alive. `del os.environ["X"]` is the same exclusion under a different AST node: a test tearing the variable back down is not a read either, and left uncaught it misreports as a REQUIRED subscript read.
     """
     tree = ast.parse(source, filename=rel)
     written = set()
@@ -121,6 +121,8 @@ def scan_python(rel, source):
             written.update(
                 id(target) for target in node.targets if isinstance(target, ast.Subscript)
             )
+        elif isinstance(node, ast.Delete):
+            written.update(id(t) for t in node.targets if isinstance(t, ast.Subscript))
     out = []
     for node in ast.walk(tree):
         if isinstance(node, ast.Call):

@@ -111,6 +111,12 @@
         "'168'"
       ]
     },
+    "WORKLIST_BACKLOG_MAX_PER_SESSION": {
+      "kind": "tuning",
+      "defaults": [
+        "'3'"
+      ]
+    },
     "WORKLIST_BACKOFF_NOTE_MIN": {
       "kind": "tuning",
       "defaults": [
@@ -450,7 +456,7 @@
     "WORKLIST_PLANFILE_MAX_BYTES": {
       "kind": "tuning",
       "defaults": [
-        "str(400 * 1024)"
+        "str(1024 * 1024)"
       ]
     },
     "WORKLIST_PLANFILE_MAX_READ": {
@@ -520,12 +526,17 @@
         "'600'"
       ]
     },
+    "WORKLIST_POPUP_PROBABILITY": {
+      "kind": "tuning",
+      "defaults": [
+        "str(POP_PROBABILITY)"
+      ]
+    },
     "WORKLIST_PROFILE": {
       "kind": "corpus",
       "defaults": [
         "''",
-        "NONE",
-        "REQUIRED"
+        "NONE"
       ],
       "why": "`off` disables the tier-0 resource profiler (wl_resprofile.py:197 and :369). Compared with `== \"off\"` in both places, so every other spelling leaves profiling on. Classed as a corpus rather than a flag because the bash side reads it with a different default spelling, which is itself worth seeing in this table."
     },
@@ -749,8 +760,7 @@
     "WORKLIST_STORE_DIR": {
       "kind": "path",
       "defaults": [
-        "NONE",
-        "REQUIRED"
+        "NONE"
       ]
     },
     "WORKLIST_STUCK_ROUNDS": {

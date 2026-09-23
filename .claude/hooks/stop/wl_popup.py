@@ -12,15 +12,25 @@ THE SEAM MATCHES outq_drain's AND hint_pick's, on purpose: `rng=None` resolves t
 
 A feature whose only proof is "run it 1000 times and check the rate is near 20%" is a flaky test wearing a real one's clothes; this one is instead provably 1.0 or 0.0 for a given seed, checked once each way.
 
+`WORKLIST_POPUP_PROBABILITY` IS THE CROSS-PROCESS SEAM, matching `WORKLIST_HINTS_FILE`'s precedent: `wl_checks.py` runs as a subprocess in the wlfix.py harness, so an in-process `rng=` swap cannot reach it from a test driving the real Stop event end to end. A genuinely-silent-stop control sets this to `"0"` rather than hunting for a seed whose first roll happens to clear the floor.
+
 CONTROLS live in test-popup.py beside this file, the same convention test-planfile.py uses next to wl_planfile.py.
 """
 
+import os
 import random
 
 POP_PROBABILITY = 0.2
 
 
+def _probability():
+    try:
+        return float(os.environ.get("WORKLIST_POPUP_PROBABILITY", str(POP_PROBABILITY)))
+    except ValueError:
+        return POP_PROBABILITY
+
+
 def should_pop(rng=None):
-    """True with probability POP_PROBABILITY, False otherwise. Never raises."""
+    """True with probability `_probability()`, False otherwise. Never raises."""
     r = rng if rng is not None else random
-    return r.random() < POP_PROBABILITY
+    return r.random() < _probability()
