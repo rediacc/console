@@ -888,14 +888,14 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "2026-09-21",
-      "open": 3,
-      "done": 10,
+      "open": 2,
+      "done": 11,
       "open_sigs": [
-        "0253b9bf",
         "037ff64e",
         "de6c18f7"
       ],
       "done_sigs": [
+        "0253b9bf",
         "0c71f11f",
         "0f2922c5",
         "5f0642e7",

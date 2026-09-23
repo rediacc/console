@@ -112,7 +112,8 @@ future normal edit unless it is scoped very narrowly and its existing-corpus hit
       block (paragraph joins -> flags; single-line paragraph -> clean; list item / heading /
       fence adjacency -> clean; already-wide paragraph -> clean; idempotence: a reflowed
       paragraph must not re-flag).
-- [ ] Do NOT attempt to bulk-fix the existing pile inline this session. Re-running
+- [x] Do NOT attempt to bulk-fix the existing pile inline this session. Re-running
+    (ticked) 2026-09-23T12:10:59Z by d778be9d: Investigated at 66e58b956. No bulk reflow landed: .ci/config/prose-style-baseline.json:1 carries 62 R19 findings under by_rule, so the detector ships against a shrink-only pile, and the drain is tracked separately as worklist item 4c6ce46d requiring its own PR.
       `check_prose_style.py reflow --write` is the correct bulk instrument for markdown, but
       rewriting 400+ files is its own large, separately reviewable diff -- schedule it as a
       follow-up PR, not bundled with the detector landing.
