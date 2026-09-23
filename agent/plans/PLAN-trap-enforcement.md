@@ -36,8 +36,8 @@ The operator's statement of the problem: *"reading the trap file could be skippe
 *"authored by me, hours after writing the TRAPS.md entry about it. Writing the rule down does not confer immunity from it."* <!-- style-ok -->
 - Same file `:113-114`: *"Nine instances of ONE pattern, across harness, product,
 gates, and the meta-gate, and not one was caught by its author re-reading it. Each was caught by a DIFFERENT instrument."*
-- `reports/pr-babysit-0807.md:290-292` and `:317-322`: four npm scripts that do not
-exist were read as passing gates in one night, after the class had already been written down three times.
+- a pr-babysit round log outside this repository, `pr-babysit-0807.md` lines 290-292
+and 317-322: four npm scripts that do not exist were read as passing gates in one night, after the class had already been written down three times.
 
 The class recurred on 2026-08-04, on 2026-08-07, and again on 2026-08-09. Rewriting the entry more sharply has been tried and is what produced the 2026-08-04 instance.
 
@@ -62,8 +62,8 @@ rules out, as *primary* mechanisms: session-start briefings, sharper wording, lo
 | **Misread outcome** | The command ran, the output is not what the session will conclude from it (a cancelled run read as passed, a phantom deletion in `git diff`) | PostToolUse injection keyed on `tool_response` | Intent was innocent. Only the *result* distinguishes the trap from the normal case |
 | **Unproven claim** | A gate, probe, or suite reports clean without having run | CI gate with a planted defect (control-first) | The artifact is static and inspectable outside the session |
 
-The fourth shape is already mechanized four times over (`.ci/scripts/quality/check_lint_rule_liveness.py`, `.ci/scripts/quality/check_gate_reachability_coverage.py`, `.ci/scripts/quality/check-dead-case-arms.sh:106-132`, `scripts/gates/check-suppression-liveness.ts`). The third shape is entirely unexploited: **no hook in this repository reads `tool_response`** (single repo-wide
-occurrence is a docstring at `.claude/hooks/stop/wl_wait.py:141`). That is the largest unclaimed surface and it maps onto the two most expensive misread-outcome traps.
+The fourth shape is already mechanized four times over (`.ci/scripts/quality/check_lint_rule_liveness.py`, `.ci/scripts/quality/check_gate_reachability_coverage.py`, `.ci/scripts/quality/check_dead_case_arms.py` (the retired `check-dead-case-arms.sh`'s Python port), `scripts/gates/check-suppression-liveness.ts`).
+The third shape is entirely unexploited: **no hook in this repository reads `tool_response`** (single repo-wide occurrence is a docstring at `.claude/hooks/stop/wl_wait.py:141`). That is the largest unclaimed surface and it maps onto the two most expensive misread-outcome traps.
 
 **2.3 Precision, not coverage, is the budget.** An instrument that fires too often trains the reader to skim it, which reproduces the corpus's failure at higher frequency and inside the tool loop, where it is more annoying and therefore learned faster. This is why the misread-outcome tier is keyed on the response rather than the command: firing on "the session ran `gh api
 .../jobs`" would fire on every CI round, while firing on "the response says `cancelled` and the session filtered for `failure`" fires only in the trap's own footprint. Each injecting rule additionally fires at most **once per session per trap**.
@@ -139,10 +139,15 @@ in the dispatcher's rule table; every `suite:` case header exists in the named h
   - `hook:` rule ids must have **at least one FIRING case and at least one SILENT
     case** in the hook suite. One-sided coverage is how a rule that always fires, or
     never fires, passes as covered.
-  - `suite:` cases must appear in the harness's own pass tally, which
-    `.ci/scripts/test/gates/test-claude-hooks.sh:31-38` already parses.
+  - `suite:` cases must appear in the harness's own pass tally. At the time this was
+    written that meant `test-claude-hooks.sh` (a gate test wrapping `test-hooks.sh`); that bash
+    harness is retired (ported to pytest under `.claude/rediacc_hooks/tests/`, run via
+    `check:ci-pytest`, `.ci/rediacc_ci/check_pytest.py`), and pytest's own per-case
+    pass/fail accounting is the successor tally -- no single line plays the old
+    parsing role any more.
 - **F6 SELF-CONTROL, runs first.** Against a `mktemp` fixture, plant three defects and
-require a red on each: an entry with no disposition (F3), an entry pointing at `gate:check:does-not-exist` (F4), and a `hook:` rule with a firing case but no silent case (F5). If any plant passes, the gate exits non-zero **without judging the real tree**. This is `check-dead-case-arms.sh:106-132` applied to the registry, and it is non-negotiable given what the gate is for.
+require a red on each: an entry with no disposition (F3), an entry whose `gate:` pointer names an id absent from `GATES` (F4), and a `hook:` rule with a firing case but no silent case (F5). If any plant passes, the gate exits non-zero **without judging the real tree**.
+This is `.ci/rediacc_ci/quality/dead_case_arms.py:279-294` (the plant-before-scan control in the retired `check-dead-case-arms.sh`'s Python port) applied to the registry, and it is non-negotiable given what the gate is for.
 
 `JUDGMENT-ONLY` must stay cheap to declare, deliberately. A disposition that is expensive or embarrassing to choose gets lied about, and a lie in this field is worse than an honest gap because it hides the residue that §5 is trying to size. The gate never counts `JUDGMENT-ONLY` against anything; the number of them is the metric the operator should watch, not a number to drive to
 zero.
@@ -180,8 +185,9 @@ PostToolUse matcher "Bash": python3 .../trapguard/dispatch.py --post-bash
 
 One process for all new rules, which buys three things the current shape cannot have: a single enforced time budget, a single exception boundary, and a rule-id namespace for `Enforced-By` pointers to resolve against.
 
-**The dispatcher's own risk, named:** it is a single point of failure where 18 independent hooks degrade one at a time. That is answered by F5, which requires every rule id to carry a firing case and a silent case, and by §7's dispatcher-integrity case. This is strictly better than the status quo, where `pre-edit/block-inline-python.sh` and both `post-bash/` hooks have **zero
-behavioral test cases** (wiring-checked only, via `test-hooks.sh:44-113`) and `pre-bash/test-block-git-amend.py` is an orphan referenced by nothing in the repo. Existing instruments are already unproven; the dispatcher is the first shape that makes that state impossible to reach quietly.
+**The dispatcher's own risk, named:** it is a single point of failure where 18 independent hooks degrade one at a time. That is answered by F5, which requires every rule id to carry a firing case and a silent case, and by §7's dispatcher-integrity case.
+This is strictly better than the status quo, where `pre-edit/block-inline-python.sh` and both `post-bash/` hooks have **zero behavioral test cases** (wiring-checked only -- at the time this was written via `test-hooks.sh`, since retired and ported to pytest's `.claude/rediacc_hooks/tests/test_hooks_wiring.py`) and `pre-bash/test-block-git-amend.py` is an orphan referenced by nothing in the repo.
+Existing instruments are already unproven; the dispatcher is the first shape that makes that state impossible to reach quietly.
 
 Do **not** migrate the existing 18 in this program. They work, migration is churn with its own regression surface, and F4 can point at them by `suite:` case today.
 
@@ -238,9 +244,9 @@ gates, plus `check:ci-trap-registry` itself.
 
 This is the part no instrument closes, and it is the expensive part.
 
-**What is actually in it.** The honest split on the corpus's most costly entry: a *registered gate that cannot fire* is Tier 4 and already has four working precedents. An *ad-hoc probe an agent types in the moment* is not mechanizable, because no hook can know what the probe was meant to prove. All nine 2026-08-04 instances were ad-hoc: a `git archive` that extracted nothing, a
-restricted PATH that hid bash, a log collector pointed at a directory the tool deletes on exit, and a `keyctl` probe that exercised a different operation from the one that fails (`pr-babysit-0804-1.md:1420-1424`). Joining that residue: `A wrong comment is more dangerous than a wrong commit message` (no parser knows what a comment overclaims) and `A ruling from an artifact is a
-hypothesis` (no parser knows which claim was load-bearing).
+**What is actually in it.** The honest split on the corpus's most costly entry: a *registered gate that cannot fire* is Tier 4 and already has four working precedents. An *ad-hoc probe an agent types in the moment* is not mechanizable, because no hook can know what the probe was meant to prove.
+All nine 2026-08-04 instances were ad-hoc: a `git archive` that extracted nothing, a restricted PATH that hid bash, a log collector pointed at a directory the tool deletes on exit, and a `keyctl` probe that exercised a different operation from the one that fails (a pr-babysit round log outside this repository, `pr-babysit-0804-1.md` lines 1420-1424).
+Joining that residue: `A wrong comment is more dangerous than a wrong commit message` (no parser knows what a comment overclaims) and `A ruling from an artifact is a hypothesis` (no parser knows which claim was load-bearing).
 
 **Recommendation: inject at the moment of risk, and accept a named residue below
 that.** Ranked against the alternatives:
@@ -278,8 +284,9 @@ Run `PLAN-unify-trap-corpus.md` §4 through §7 as written, with the §9 amendme
 ### W1: registry trailers, the coverage gate, and the prompt filter
 
 1. Add `Trap-Id` / `Enforced-By` / `Residue` trailers to all 23 entries. Populating
-them **is** the reclassification. Do not port the "roughly 14 mechanizable" estimate from the earlier investigation: that investigation asserted three claims as verified and two were false (it claimed the hook test suites are in no workflow and no `package.json`, which is refuted by `scripts/ci-runner/manifest.ts:388` plus `.ci/scripts/test/gates/test-claude-hooks.sh:24` and
-`.github/workflows/ci-quality.yml:1089`; and it claimed `check-autopilot-no-bypass.sh` is wired nowhere, also false). Every disposition gets written by resolving a pointer, not by recalling a classification.
+them **is** the reclassification.
+Do not port the "roughly 14 mechanizable" estimate from the earlier investigation: that investigation asserted three claims as verified and two were false (it claimed the hook test suites are in no workflow and no `package.json`, which is refuted by `scripts/ci-runner/manifest.ts:388` plus a workflow step -- at the time this was written `test-claude-hooks.sh` reached from `.github/workflows/ci-quality.yml:1089`, since retired and replaced by `check:ci-pytest` (`.ci/rediacc_ci/check_pytest.py`), wired to `.github/workflows/ci-quality.yml` job `quality-security`; and it claimed `check-autopilot-no-bypass.sh` is wired nowhere, also false).
+Every disposition gets written by resolving a pointer, not by recalling a classification.
 2. Land `.ci/scripts/quality/check-trap-registry.sh` with F1 to F4 and F6. **F5 is
 deferred to W2**, honestly and in a comment, because there are no `hook:` pointers to prove live yet.
 3. Land the prompt filter of §3.3 (`JUDGMENT-ONLY` and `Residue` entries only) in
@@ -292,8 +299,8 @@ and both `post-bash/` hooks have no behavioral cases, so any trap pointing at th
 **Candidate A: `npm-script-exists`** (Tier 2, block).
 
 - *Correction to the brief, verified this session.* The 0807 report describes missing
-npm scripts as exiting "non-zero-or-silent". Measured: `npm run check:ci-docs-links` exits **1** and writes `npm error Missing script: "check:ci-docs-links"` plus did-you-mean suggestions to **stderr**, with **stdout completely empty**. npm is not silent. The trap is a session reading stdout only, which is the same root cause as `docs/agent-reference/TRAPS.md:101` ("Read stdout and stderr
-SEPARATELY"). That changes the instrument for the better: the referent is resolvable *before* the call, so this becomes a deterministic Tier 2 block instead of a response heuristic.
+npm scripts as exiting "non-zero-or-silent". Measured against a script name chosen specifically because it does not exist, `npm run does-not-exist-example`: exits **1** and writes `npm error Missing script: "does-not-exist-example"` plus closest-match suggestions to **stderr**, with **stdout completely empty**. npm is not silent.
+The trap is a session reading stdout only, which is the same root cause as `docs/agent-reference/TRAPS.md:101` ("Read stdout and stderr SEPARATELY"). That changes the instrument for the better: the referent is resolvable *before* the call, so this becomes a deterministic Tier 2 block instead of a response heuristic.
 - *Surface:* PreToolUse, `trapguard` rule id `npm-script-exists`.
 - *Detection rule:* for each `npm run <name>` / `npm run-script <name>` anchored at a
 command position (reuse the anchoring idiom of `.claude/oracles/pre-bash/lib/command-scan.sh:120` `hook_gh_pr_at_command_pos`), resolve the governing `package.json`: `--prefix <dir>` or `-w <workspace>` in the same segment, else a `cd <dir>` earlier in the same segment, else the repo root. Block when `<name>` is absent from that file's `.scripts`. **Fail open** on: a name containing `$`, backtick or `{`
@@ -302,13 +309,14 @@ command position (reuse the anchoring idiom of `.claude/oracles/pre-bash/lib/com
 a false block costs nothing a true block does not already cost.
 - *Message:* the missing name, the resolved `package.json`, and the nearest real script
 names, so the fix is one edit away.
-- *Mutations that must turn it red:* `npm run check:ci-docs-links` exits 2;
+- *Mutations that must turn it red:* `npm run does-not-exist-example` exits 2;
 `cd packages/cli && npm run test` (a real script in that package) exits 0; `npm run "$GATE"` exits 0 (fail open); `npm run check:ci-python-lint` exits 0.
 
 **Candidate B: `blanket-git-add`** (Tier 1, block).
 
-- *Verified gap:* grep across `.claude/hooks/pre-bash/` for `git add`, `add -A`,
-`add --all`, `add .` returns exactly one hit, and it is a fixture inside the orphan `test-block-git-amend.py:25`. There is no guard. Trap `docs/agent-reference/TRAPS.md:146` documents the incident (sweep `cefa43ca7` imported another session's `check-solution-video-engine.ts`, which failed `273 of 273` on branch 0730-2, run 30554973713, job 90913300683).
+- *Verified gap, at the time this was written:* grep across `.claude/hooks/pre-bash/` (since relocated to `.claude/rediacc_hooks/guards/`) for `git add`, `add -A`,
+`add --all`, `add .` returned exactly one hit, a fixture inside the then-orphan `test-block-git-amend.py` (now `.claude/rediacc_hooks/guards/test-block_git_amend.py:24`, wired and live). There was no guard; `.claude/rediacc_hooks/guards/block_blanket_git_add.py` has since landed, closing this gap.
+Trap `docs/agent-reference/TRAPS.md:146` documents the incident: a sweep imported another session's `check-solution-video-engine.ts`, which failed `273 of 273` on branch 0730-2, run 30554973713, job 90913300683. The sweep's own commit sha did not survive the 2026-08-23 history rewrite, so the run and job ids are the pointers that still resolve.
 - *Surface:* PreToolUse, rule id `blanket-git-add`.
 - *Detection rule:* at a command position, `git [-flags] add` whose pathspec set is
 blanket: `-A`/`--all` with **no** `--` pathspec following, or a lone `.`, or `:/`. `git add -A -- packages/cli/src` is explicitly allowed, and that is the escape the message names.
@@ -379,10 +387,10 @@ with an `agent_type` other than the main loop. §1 leans on this; it is currentl
 
 **Retirement.** The probe entry is removed in W3 and the registry gate asserts its absence. A permanent probe on every tool call is exactly the cost §4.1 objects to.
 
-### 7.2 `.claude/hooks/test-hooks.sh`
+### 7.2 `.claude/hooks/test-hooks.sh` (retired 2026-09; ported to pytest under `.claude/rediacc_hooks/tests/`)
 
-Extend the existing harness rather than adding a second one; it is already gated (`.ci/scripts/test/gates/test-claude-hooks.sh:24`, reached from `.github/workflows/ci-quality.yml:1089` via `check:ci-quality-gates`), it already has a vacuity guard (`test-claude-hooks.sh:35-38` fails on `CASES == 0`, so a harness that silently ran nothing still reds), and it already runs a wiring
-control that deletes a real registration and invents a ghost one (`test-hooks.sh:106-112`).
+Extend the existing harness rather than adding a second one. The bash harness this section originally named is gone: `scripts/ci-runner/manifest.ts:4762` records "the harness is gone, ported to pytest under `.claude/rediacc_hooks/tests/`", so the specifics below are restated against the port rather than left pointing at a deleted file.
+It is already gated (`check:ci-pytest`, `.ci/rediacc_ci/check_pytest.py`, wired to `.github/workflows/ci-quality.yml` job `quality-security`), it already has a vacuity guard (`.claude/rediacc_hooks/tests/hookblocks.py:69-73` fails when a block asserts zero cases, so a harness that silently ran nothing still reds), and it already runs a wiring control that deletes a real registration and invents a ghost one (`.claude/rediacc_hooks/tests/test_hooks_wiring.py:109-126`).
 
 - One `check` case per mutation row in §6 (candidates A, B, D, E): each mutation
 asserted red, each companion asserted green.
@@ -390,16 +398,17 @@ asserted red, each companion asserted green.
 nothing. A rule that raises must not prevent later rules from firing: register a deliberately-raising rule behind `TRAPGUARD_FAULT=<rule-id>`, then assert that a second rule in the same dispatch still blocks, that the error log gained a line, and that the dispatcher exit code is that of the second rule and not an interpreter traceback.
 - **Budget.** A payload with `MAX_PAYLOAD + 1` bytes of response must exit 0 within the
 deadline, must not raise, and must record the skip reason.
-- **Wiring.** `check_wiring` (`test-hooks.sh:70`) globs `*.sh` only, so it is blind to
-the dispatcher's Python. Extend the glob, or the two new registrations can be deleted from `settings.json` without the suite noticing. That blindness is also how `test-block-git-amend.py` became an orphan nobody detected.
+- **Wiring.** `check_wiring` (`.claude/rediacc_hooks/tests/test_hooks_wiring.py:66-71`, fed by `hook_files`'s `root.rglob("*.sh")` at `:31`) globs `*.sh` only, so it is still blind to the dispatcher's Python, exactly as its bash predecessor was. Extend the glob, or the two new registrations can be deleted from `settings.json` without the suite noticing.
+That blindness is also how `test-block-git-amend.py` became an orphan nobody detected -- since resolved: the guard's own harness now lives at `.claude/rediacc_hooks/guards/test-block_git_amend.py` and drives the live dispatcher guard directly.
 
 ### 7.3 `.ci/scripts/test/gates/test-trap-registry.sh`
 
-One case per F-assertion, each against a `mktemp` fixture (never the real tree; the hazard of a gate test that writes into the live tree is documented at `run-all.sh:14-31`), plus a clean-tree case asserting exit 0 and a vacuity case asserting an empty fixture reds.
+One case per F-assertion, each against a `mktemp` fixture (never the real tree; the hazard of a gate test that writes into the live tree was documented at `run-all.sh`, since retired -- the same rule now lives in `.ci/rediacc_ci/battery.py:26`, "the battery may not leave a TRACKED file modified"), plus a clean-tree case asserting exit 0 and a vacuity case asserting an empty fixture reds.
 
-**Correction to `PLAN-unify-trap-corpus.md` §7, which would otherwise be copied forward.** That plan tells its gate test to end with `passed=<n> failed=<m>`. That is the wrong contract and would make the test read as vacuous. Verified: `run-all.sh:207` defines `PASS_RE=$'^(\033\\[0;32m)?PASS:'` and `:267-275` fails any gate test that exits 0 without a single matching line. Gate
-tests under `.ci/scripts/test/gates/` therefore emit `log_pass` lines, one per case, ending in `log_pass "all tests passed"` (the shape of `test-dead-case-arms.sh`). The `PASS=<n> FAIL=<m>` counter is a different contract belonging to `.claude/hooks/test-hooks.sh`, translated by `test-claude-hooks.sh:31-38` precisely because the two harnesses do not agree. Use `log_pass` for
-`test-trap-registry.sh`; use the counter only if extending `test-hooks.sh`.
+**Correction to `PLAN-unify-trap-corpus.md` §7, which would otherwise be copied forward.** That plan tells its gate test to end with `passed=<n> failed=<m>`. That is the wrong contract and would make the test read as vacuous.
+Verified against `run-all.sh`'s successor, which keeps this rule byte-for-byte: `.ci/rediacc_ci/battery.py:90` defines `PASS_RE` and `.ci/rediacc_ci/battery.py:339-341` fails any gate test that exits 0 without a single matching line.
+Gate tests under `.ci/scripts/test/gates/` therefore emit `log_pass` lines, one per case, ending in `log_pass "all tests passed"` (the shape of `test-dead-case-arms.sh`).
+The `PASS=<n> FAIL=<m>` counter was a different contract belonging to the retired `.claude/hooks/test-hooks.sh`, since ported wholesale to the pytest suite under `.claude/rediacc_hooks/tests/`, which no longer needs a shell-side translator between two disagreeing harnesses. Use `log_pass` for `test-trap-registry.sh`.
 
 ### 7.4 Manifest and parity
 
@@ -437,7 +446,7 @@ once the fire log shows zero false positives. That is a real option and it costs
 per-rule exception boundaries (§4.3.4) so one bad rule cannot silence the others; the error log surfaced by the Stop hook at `always=True`, so failing open is visible within one stop rather than at the next incident; and F5's two-sided coverage requirement, which makes a rule that never fires a gate failure instead of a quiet nothing.
 3. **Latency on every Bash call.** The baseline is already order 200 forks per call
 with no timeout (§4.1). The dispatcher adds one Python interpreter start, roughly 30 to 60 ms, in exchange for not adding five more bash-plus-jq chains. The 250 ms deadline bounds the worst case, `applies` may not fork, and no rule may make a network call. Measure it in W2 and put the number in the wave report; if the interpreter start dominates, the fallback is to fold the
-dispatcher into the existing matcher-less PostToolUse Python entry (`settings.json:121`) rather than to add a second interpreter.
+dispatcher into the existing matcher-less PostToolUse Python entry (`.claude/settings.json:47-55`) rather than to add a second interpreter.
 4. **A large `tool_response` on a hot path.** Bounded read plus discard-drain
 (§4.3.1). The failure mode to avoid is a hook that hangs holding a megabyte pipe; the bound is the fix and the oversized-payload case in §7.2 is the proof.
 5. **Response data leaking into a log.** Prohibited by §4.3.2 and enforced by review:
@@ -463,8 +472,9 @@ headings without also receiving the problem (its §3.2). Loud-by-shape, not by c
 `.claude/hooks/stop/wl_checks.py:1481` and `.claude/hooks/stop/wl_judge.py:323` (its §3.3).
 - A missing corpus blocks the stop at `always=True`, with the repair command in the
 message (its §3.4).
-- The anti-resplit gate `check:ci-trap-corpus`, assertions A to E and its self-control
-(its §6). It stays a separate gate from `check:ci-trap-registry`: one polices location, one polices dispositions, and merging them would make a single control responsible for two unrelated failure classes.
+- The anti-resplit gate named `ci-trap-corpus` in the unify plan, assertions A to E and
+its self-control (its §6) -- **never built**: `PLAN-unify-trap-corpus.md`'s own compacted record confirms only a differently-scoped registry floor (`check:ci-trap-registry`) landed in its place, asserting a ratchet rather than the one-corpus/no-gitignored-file/hook-agreement set this bullet names.
+It was designed to stay a separate gate from `check:ci-trap-registry`: one polices location, one polices dispositions, and merging them would make a single control responsible for two unrelated failure classes.
 - The merge arithmetic and the `lost: []` verification (its §5.1, §5.5), the
 move-never-delete rule for the gitignored original (its §4.15), and the charter rewrite (its §5.3), which now also has to state the trailer format from §3.1.
 - Its rejections of (b) un-ignoring `.agent/TRAPS.md`, (c) a generated or symlinked
@@ -475,7 +485,7 @@ view, and (d) moving only the pointer. All three still hold; (b)'s finding that 
 - **Its §4.2 cap change** (raise the cap to 120, append a synthetic overflow marker) is
 replaced by §3.3 here: filter the prompt by disposition so mechanized traps leave it entirely, and keep a loud belt-and-braces `TRAP_PROMPT_CAP = 60`. The cap was treating a symptom that the registry removes.
 - **Its §7 summary-line contract for `test-trap-corpus.sh`** is factually wrong and
-would ship a gate test that `run-all.sh` scores as vacuous. Corrected in §7.3 here: gate tests emit `log_pass` lines, verified against `run-all.sh:207,267-275`. Apply the correction to W0's gate test as well, since W0 executes that plan as written.
+would ship a gate test that the battery scores as vacuous. Corrected in §7.3 here: gate tests emit `log_pass` lines, verified against `run-all.sh`'s successor `.ci/rediacc_ci/battery.py:90,339-341`. Apply the correction to W0's gate test as well, since W0 executes that plan as written.
 - **Its implicit model that the corpus is the protection.** Under this plan the corpus
 is the ledger, and the protection lives in the tiers of §4. The charter rewrite should say so, because an append-only file whose entries must each carry a disposition is a different artifact from a file of hard-won prose.
 
@@ -494,8 +504,9 @@ is the ledger, and the protection lives in the tiers of §4. The charter rewrite
 reader is `trap_headings` at `.claude/hooks/stop/wl_store.py:265-284`. Everything the brief says about the 40-cap and file-order truncation is correct, at those lines.
 2. **`npm run <missing>` is not silent.** Measured: exit code 1, empty stdout, and
 `npm error Missing script: "<name>"` with did-you-mean suggestions on stderr. The 0807 report's "non-zero-or-silent" framing is imprecise, and the imprecision mattered: the real root cause is stdout-only reading, and the correct instrument is a deterministic pre-call block (§6, candidate A) rather than a response heuristic.
-3. **`git add -A` is genuinely unguarded, confirmed.** The only hit anywhere under
-`.claude/hooks/pre-bash/` is a fixture line inside `test-block-git-amend.py:25`, a file referenced by nothing in the repo.
+3. **`git add -A` was genuinely unguarded, confirmed at the time.** The only hit anywhere under
+`.claude/hooks/pre-bash/` (since relocated to `.claude/rediacc_hooks/guards/`) was a fixture line inside `test-block-git-amend.py` (now `.claude/rediacc_hooks/guards/test-block_git_amend.py:24`), a file that was then referenced by nothing in the repo and is now the live guard's own wired harness.
+`.claude/rediacc_hooks/guards/block_blanket_git_add.py` has since closed the gap this correction names.
 4. **`tool_response` is genuinely unread, confirmed.** One repo-wide occurrence, a
 docstring at `.claude/hooks/stop/wl_wait.py:141`. `duration_ms` and `effort` are documented in the same line and are also used by nothing.
 5. **New: the corpus parser has no fenced-code-block handling** (`.claude/hooks/stop/wl_store.py:278-283`).
