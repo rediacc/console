@@ -123,23 +123,28 @@ assertions fail; and a submodule fan-out where console is clean but `rediacc/acc
 ## 7. Tasks
 
 - [x] Write `.ci/scripts/quality/check-commit-identity.sh` (verdict + `--refresh`)
+    (ticked) 2026-09-23T19:20:44Z by d778be9d: Box already ticked before the plan moved to _done/ via check_plan_folders.py --move (commit da2670983, git mv preserving content); backfilling the investigation row under the new path.
       LEDGER LAG, closed 2026-09-09: on disk, executable, `--refresh` implemented at
       `.ci/scripts/quality/check-commit-identity.sh:130`; `.ci/scripts/test/gates/test-commit-identity.sh` drives it live (rc=0).
 - [x] Generate `.ci/config/commit-identity.json`; confirm it derives the address with no `user` scope
+    (ticked) 2026-09-23T19:20:40Z by d778be9d: Box already ticked before the plan moved to _done/ via check_plan_folders.py --move (commit da2670983, git mv preserving content); backfilling the investigation row under the new path.
       LEDGER LAG, closed 2026-09-09: file on disk (1 identity, `mfbayraktar`). `refresh_identity()` at
       `.ci/scripts/quality/check-commit-identity.sh:93-99` explicitly falls back to deriving from
       attributed commits (`repos/{repo}/commits`) specifically because `gh api user/emails` needs the
       `user` scope this token lacks -- confirmed by reading the fallback branch, not just its comment.
 - [x] Write `.ci/scripts/test/gates/test-commit-identity.sh` with the ten fixtures; watch them fail before the gate is finished
+    (ticked) 2026-09-23T19:20:39Z by d778be9d: Box already ticked before the plan moved to _done/ via check_plan_folders.py --move (commit da2670983, git mv preserving content); backfilling the investigation row under the new path.
       LEDGER LAG, closed 2026-09-09: file on disk, 8 cases (not literally ten -- null-author,
       attributed-control, bot-pass, null-committer, empty-list, gh-failure, page-cap, and a
       fixture-decides control that itself drives two of the eight `run_gate` calls). Ran it live:
       `bash .ci/scripts/test/gates/test-commit-identity.sh` -> all 8 PASS, rc=0.
 - [x] Register `gate-test:commit-identity` in `scripts/ci-runner/manifest.ts`
+    (ticked) 2026-09-23T19:20:46Z by d778be9d: Box already ticked before the plan moved to _done/ via check_plan_folders.py --move (commit da2670983, git mv preserving content); backfilling the investigation row under the new path.
       LEDGER LAG, closed 2026-09-09: `scripts/ci-runner/manifest.ts:7262-7270`, wired to
       `ci-quality.yml` job `quality-security`, step `Quality-gate unit tests`; also present in
       `scripts/ci-runner/gates.lock.json:7234`.
 - [x] Add the `ci-only` BLOCKER entry to `.ci-parity-exempt`; run `check:ci-parity`
+    (ticked) 2026-09-23T19:20:48Z by d778be9d: Box already ticked before the plan moved to _done/ via check_plan_folders.py --move (commit da2670983, git mv preserving content); backfilling the investigation row under the new path.
       LEDGER LAG, closed 2026-09-09: `.ci/policy/.ci-parity-exempt:33-34` carries the BLOCKER reason
       for `.ci/scripts/quality/check_commit_identity.py` (the wired-in Python gate; the `.sh` above is
       its still-live twin per `.ci/rediacc_ci/quality/commit_identity.py:3,22`). Ran
@@ -148,6 +153,7 @@ assertions fail; and a submodule fan-out where console is clean but `rediacc/acc
 - [x] Add the workflow step to `quality-submodule-branches`
     (ticked) 2026-09-23T11:59:40Z by d778be9d: PRESENT, record stale: the workflow step exists at .github/workflows/ci-quality.yml:498-503, added by d99a4e92f, running .ci/scripts/quality/check_commit_identity.py on every pull_request. It sits in job quality-static beside the Claude-attribution step rather than in quality-submodule-branches; investigation row in 8114cd2c1.
 - [x] Run the gate against the PRE-REWRITE tips in `refs/original/`; record the exit-1 output in the gate header
+    (ticked) 2026-09-23T19:20:45Z by d778be9d: Box already ticked before the plan moved to _done/ via check_plan_folders.py --move (commit da2670983, git mv preserving content); backfilling the investigation row under the new path.
       **CLOSED 2026-09-09: the mechanism was never the gate's.** `.ci/scripts/quality/check-commit-identity.sh`
       is GitHub-API driven by design -- nine `gh api` / `pulls/` references, and its own
       header says so. It reads PRs, not local refs. And `refs/original/` holds exactly ONE
@@ -156,6 +162,7 @@ assertions fail; and a submodule fan-out where console is clean but `rediacc/acc
       `gh api repos/rediacc/{account,renet,elite}/pulls/{85,110,16}/commits` shows zero
       unattributed commits across all three, and console PR #585 is fully attributed.
 - [x] Write `.claude/hooks/pre-bash/block-unlinked-commit-author.sh`
+    (ticked) 2026-09-23T19:20:42Z by d778be9d: Box already ticked before the plan moved to _done/ via check_plan_folders.py --move (commit da2670983, git mv preserving content); backfilling the investigation row under the new path.
       **CLOSED 2026-09-09: THE FUNCTION EXISTS AND THIS PATH IS NOW ILLEGAL.** The guard is
       `.claude/rediacc_hooks/guards/block_unlinked_commit_author.py`, auto-discovered by
       `dispatch.py` through a `CHAIN` attribute, with a bash twin at
@@ -164,6 +171,7 @@ assertions fail; and a submodule fan-out where console is clean but `rediacc/acc
       `.ci` and `.claude` at 515, and `check_language_policy.py` refuses an addition. A box
       asking for a new shell guard under `.claude/` is asking CI to red.
 - [x] Register it in `.claude/settings.json` and `scripts/data/hook-inventory-baseline.json`
+    (ticked) 2026-09-23T19:20:49Z by d778be9d: Box already ticked before the plan moved to _done/ via check_plan_folders.py --move (commit da2670983, git mv preserving content); backfilling the investigation row under the new path.
       **CLOSED 2026-09-09 with the box above: there is nothing to register.** The Python
       guard is AUTO-DISCOVERED via its `CHAIN` attribute, so it needs no per-hook
       `settings.json` entry -- that is the whole point of the dispatch architecture that
@@ -171,12 +179,14 @@ assertions fail; and a submodule fan-out where console is clean but `rediacc/acc
 - [x] Add the eleven cases to `.claude/hooks/test-hooks.sh`
     (ticked) 2026-09-23T12:08:05Z by d778be9d: IMPLEMENTED in 1eeda8a20: the block at .claude/rediacc_hooks/tests/test_hooks_fixtures.py:293 now carries twelve cases, six BLOCK (plain config, -c user.email, GIT_AUTHOR_EMAIL, --author, a nested checkout under the project root, an unreadable identity cache) and six ALLOW. The named path .claude/hooks/test-hooks.sh is gone; the shell harness was ported to pytest. Driven live: pytest -k unlinked passes, the nested-checkout BLOCK arm exits 2 naming bad@example.com and the linked-address twin exits 0, and npm run check:ci-hook-integrity reports rc=0 with 48 guards, none newly uncovered. Investigation row in a4b08dbe8.
 - [x] Run `check:ci-hook-integrity` -- guard present, both directions covered
+    (ticked) 2026-09-23T19:20:38Z by d778be9d: Box already ticked before the plan moved to _done/ via check_plan_folders.py --move (commit da2670983, git mv preserving content); backfilling the investigation row under the new path.
       LEDGER LAG, closed 2026-09-09: `npm run check:ci-hook-integrity` live -> rc=0, "43 guard(s)
       present across 3 chain(s), none newly uncovered." `guards/block_unlinked_commit_author.py` is on
       disk with 3 block-direction + 3 allow-direction cases in `.claude/hooks/test-hooks.sh:466-489`,
       so both directions are covered for this guard specifically, even though the box below it
       (eleven cases) is not fully met.
 - [x] Re-run the gate after the rewrite; confirm exit 0 on all four repos
+    (ticked) 2026-09-23T19:20:47Z by d778be9d: Box already ticked before the plan moved to _done/ via check_plan_folders.py --move (commit da2670983, git mv preserving content); backfilling the investigation row under the new path.
       LEDGER LAG, closed 2026-09-09, INDEPENDENTLY VERIFIED against live GitHub (not just the gate's
       own header prose): `gh api repos/rediacc/{account,renet,elite}/pulls/{85,110,16}/commits --jq
       '[.[] | select(.author==null or .committer==null)] | length'` -> `0` for all three, and

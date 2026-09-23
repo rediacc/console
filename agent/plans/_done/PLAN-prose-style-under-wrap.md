@@ -48,6 +48,7 @@ future normal edit unless it is scoped very narrowly and its existing-corpus hit
 ## Tasks
 
 - [x] Confirm with the operator, before writing code, the scope and blast-radius decisions.
+    (ticked) 2026-09-23T19:20:24Z by d778be9d: Box already ticked before the plan moved to _done/ via check_plan_folders.py --move (commit da2670983, git mv preserving content); backfilling the investigation row under the new path.
       DONE 2026-09-17: operator answered "we go all in all but in a smarter way -- investigate
       the existing formatting tools" -- scope is now `["markdown", "pr", "comment"]`, and the
       tooling investigation above replaced the hand-rolled-heuristic guesswork with an evidenced
