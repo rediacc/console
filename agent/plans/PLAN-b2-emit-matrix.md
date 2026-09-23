@@ -2,7 +2,7 @@
 Status: partially executed -- D1-D4 and D5's first clause landed 2026-09-15, verified
 First-Seen: 2026-09-17
 against the live tree, NOT re-derived from this checklist (which still read "draft" and every task unchecked despite the commits below existing). D5's second clause was ATTEMPTED and REVERTED for cause the same day; see Tasks. Remaining: D5's second clause (properly traced), the two selftest controls, the stale-comment fix.
-Owner: f4da5c2e
+Owner: d778be9d (adopted from f4da5c2e 2026-09-23)
 
 ## Why
 

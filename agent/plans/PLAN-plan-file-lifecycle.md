@@ -1,7 +1,7 @@
 Status: ready
 First-Seen: 2026-09-17
-Owner: 74de73ca
-Updated: 2026-09-02
+Owner: d778be9d (adopted from 74de73ca 2026-09-23)
+Updated: 2026-09-23
 
 # Plan files: a lifecycle nobody has to remember
 

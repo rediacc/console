@@ -1,6 +1,6 @@
 Status: ready
 First-Seen: 2026-09-17
-Owner: f4da5c2e
+Owner: d778be9d (adopted from f4da5c2e 2026-09-23)
 Date: 2026-09-09
 
 # Stop-hook overhaul: noise, rulings, idempotence, focus
