@@ -175,6 +175,50 @@ case(
     True,
 )
 
+# A follow-up commit naming the unproven SHA and quoting proof clears it -- the module docstring's own promised remedy ("attach the proof in a follow-up commit naming the one being proven").
+followup_repo = scratch_repo()
+remote_f = tempfile.mkdtemp()
+git(remote_f, "init", "-q", "--bare")
+git(followup_repo, "remote", "add", "origin", remote_f)
+git(followup_repo, "push", "-q", "-u", "origin", "main")
+stage_files(followup_repo, BULK, prefix="r")
+git(followup_repo, "commit", "-qm", "style: bulk rewrite with no proof")
+bulk_sha = git(followup_repo, "rev-parse", "HEAD").stdout.strip()[:10]
+with open(os.path.join(followup_repo, "tiny.txt"), "w", encoding="utf-8") as fh:
+    fh.write("x\n")
+git(followup_repo, "add", "-A")
+git(
+    followup_repo,
+    "commit",
+    "-qm",
+    "docs: sampled and read %s by hand, no structural loss" % bulk_sha,
+)
+case(
+    "a follow-up commit naming the unproven SHA with proof clears it",
+    "git push",
+    followup_repo,
+    False,
+)
+
+# The same shape, but the follow-up NEVER NAMES the SHA -- proof text alone must not clear an unrelated commit, or this guard would accept any later commit that merely mentions the phrase.
+unnamed_repo = scratch_repo()
+remote_u = tempfile.mkdtemp()
+git(remote_u, "init", "-q", "--bare")
+git(unnamed_repo, "remote", "add", "origin", remote_u)
+git(unnamed_repo, "push", "-q", "-u", "origin", "main")
+stage_files(unnamed_repo, BULK, prefix="s")
+git(unnamed_repo, "commit", "-qm", "style: bulk rewrite with no proof")
+with open(os.path.join(unnamed_repo, "tiny.txt"), "w", encoding="utf-8") as fh:
+    fh.write("x\n")
+git(unnamed_repo, "add", "-A")
+git(unnamed_repo, "commit", "-qm", "docs: sampled and read the diff by hand")
+case(
+    "a follow-up commit with proof text but no SHA reference does NOT clear it",
+    "git push",
+    unnamed_repo,
+    True,
+)
+
 # A second scratch repo for the ALLOWED push, so the first repo's now-diverged history (it was blocked, never actually pushed) does not contaminate this case.
 push_repo2 = scratch_repo()
 remote2 = tempfile.mkdtemp()

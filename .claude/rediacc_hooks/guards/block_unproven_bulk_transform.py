@@ -104,13 +104,32 @@ def _range_commits(base, head, cwd):
     return shas[:RANGE_COMMIT_CAP]
 
 
+def _proven_by_a_later_commit(sha, newer_messages):
+    """Whether a commit NEWER than `sha` in the same range names it and shows proof.
+
+    `newer_messages` is every message strictly closer to HEAD than `sha` -- the shape the module docstring promises ("attach the proof in a follow-up commit naming the one being proven").
+
+    `_commit_message(sha, cwd)` alone, reading only the offending commit's own text, cannot see a follow-up; this is what makes that promise real.
+
+    `sha[:10]` matches how this guard already abbreviates a SHA everywhere else it prints one (`BLOCK_RANGE`), so a follow-up commit only has to spell the same short form.
+    """
+    short = sha[:10]
+    return any(short in msg and _proof_shown(msg) for msg in newer_messages)
+
+
 def _first_unproven(shas, cwd):
-    """The first (sha, file_count) over threshold with no proof, or None."""
-    for sha in shas:
+    """The first (sha, file_count) over threshold with no proof anywhere in the range, or None.
+
+    `shas` is newest-first (git rev-list's own order), so a commit's "later, in the same push/PR" proof sits at a LOWER index -- collected once, up front, so an N-commit range costs one pass rather than a quadratic re-scan.
+    """
+    messages = [_commit_message(sha, cwd) for sha in shas]
+    for i, sha in enumerate(shas):
         files = _commit_files(sha, cwd)
         if len(files) < BULK_FILE_THRESHOLD:
             continue
-        if _proof_shown(_commit_message(sha, cwd)):
+        if _proof_shown(messages[i]):
+            continue
+        if _proven_by_a_later_commit(sha, messages[:i]):
             continue
         return sha, len(files)
     return None
@@ -126,7 +145,9 @@ def _push_target(scan, cwd):
     upstream = hookio.git_out(
         ["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"], cwd=cwd, want_rc=True
     )
-    if not upstream:
+    # THE LITERAL "HEAD" IS A SEPARATE FAILURE FROM THE EMPTY ONE, and emptiness alone does not catch it.
+    # `rev-parse --abbrev-ref` answers with the string "HEAD" rather than failing when there is nothing symbolic to shorten, and this guard would then compare the range "HEAD..HEAD", which is EMPTY: every commit in the push would go unexamined and the push would be allowed, silently, in exactly the case the docstring above calls unresolvable.
+    if not upstream or upstream == "HEAD":
         return None
     return upstream, "HEAD"
 
