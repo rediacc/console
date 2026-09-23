@@ -130,6 +130,10 @@ pathspec_repo = scratch_repo()
 for i in range(3):
     with open(os.path.join(pathspec_repo, "own%d.py" % i), "w", encoding="utf-8") as fh:
         fh.write("y = %d\n" % i)
+# CLEAN AND STAYS CLEAN, for the case this guard runs BEFORE the command that writes it.
+# Reproduced live 2026-09-23: one bash command ran a ledger-writing verb and then committed that ledger by pathspec, and at hook time the path had no diff at all, so an empty narrowed set fell through to 174 staged files belonging to other sessions.
+with open(os.path.join(pathspec_repo, "clean0.py"), "w", encoding="utf-8") as fh:
+    fh.write("clean = True\n")
 git(pathspec_repo, "add", "-A")
 git(pathspec_repo, "commit", "-qm", "seed the three paths")
 for i in range(3):
@@ -153,6 +157,12 @@ case(
     'git commit -m "style: reflow" -- ../outside-this-repo.py',
     pathspec_repo,
     True,
+)
+case(
+    "a tracked pathspec with nothing pending YET is judged on itself, not the loaded index",
+    'git commit -m "docs: record a row" -- clean0.py',
+    pathspec_repo,
+    False,
 )
 git(pathspec_repo, "reset", "-q")
 
@@ -341,7 +351,7 @@ case(
 )
 
 print()
-TOTAL_CASES = 15
+TOTAL_CASES = 16
 if Tally.blocked in (0, TOTAL_CASES):
     print(
         "*** FAIL *** %d of %d cases blocked: the guard answered the same way on every "

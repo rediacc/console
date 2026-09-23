@@ -119,6 +119,26 @@ def _pathspec_files(cwd, paths):
     return tracked
 
 
+def _pathspecs_resolve(cwd, paths):
+    """Does every pathspec token name something this repository knows?
+
+    THE TAIL WAS READ CORRECTLY IS NOT THE SAME CLAIM AS THE PATHS HAVE CHANGES, and `_pathspec_files` cannot tell them apart: it answers `[]` both for a `--` that belonged to some other clause and for a real path with nothing pending. The caller used to treat every `[]` as the first case and fall back to the whole shared index.
+    Reproduced live 2026-09-23: one bash command ran `worklist.py --plan-investigate ... --write` and THEN `git commit -- agent/ledgers/plan-investigation.jsonl`. This guard runs BEFORE the command, so at that instant the ledger was clean, the narrowed set was empty, and a one-file commit was refused citing 174 staged files belonging to other sessions.
+
+    `ls-files --error-unmatch` is the tracked answer and an on-disk probe is the untracked one, which together are exactly the paths a commit can name. A token neither knows -- a bogus path, a stray `--` -- still returns False here, so the fallback that stops a real bulk commit walking past is untouched.
+    """
+    for path in paths:
+        if hookio.git_out(["ls-files", "--error-unmatch", "--", path], cwd=cwd, want_rc=True) is not None:
+            continue
+        try:
+            if (pathlib.Path(cwd) / path).exists():
+                continue
+        except OSError:
+            pass
+        return False
+    return True
+
+
 def _commit_pathspecs(scan):
     """The `-- <path>...` tail of the command, as a list of tokens."""
     matches = hookio.grep_o(PATHSPEC_TAIL, scan)
@@ -243,9 +263,13 @@ def run(ev):
 
     if PSC.GIT_COMMIT.search(scan):
         # A PATHSPEC NARROWS THE COMMIT, SO IT NARROWS THIS COUNT. Reproduced live 2026-09-23: a three-file `git commit -F <msg> -- <three paths>` was refused citing 183 staged files, none of which that commit would have touched -- the index belonged to other sessions' work in the same tree, which is the normal state here and the reason `block_blanket_git_add.py` exists.
-        # An EMPTY narrowed set falls back to the staged count rather than allowing. git refuses a pathspec commit that changes nothing, so an empty answer means the tail was misread, not that the commit is harmless, and guessing in the permissive direction is how a real bulk commit walks past a guard whose whole subject is scale.
+        # An EMPTY narrowed set falls back to the staged count ONLY when the tail did not resolve.
+        # Guessing in the permissive direction is how a real bulk commit walks past a guard whose whole subject is scale, so a `--` belonging to some other clause still gets judged on the index. A pathspec naming paths this repository knows is a different answer: the commit really is that narrow, and it reads as empty only because this guard runs BEFORE the command that writes
+        # those paths. See `_pathspecs_resolve`.
         paths = _commit_pathspecs(scan)
-        files = (paths and _pathspec_files(cwd, paths)) or _staged_files(cwd)
+        files = _pathspec_files(cwd, paths) if paths else []
+        if not files and not (paths and _pathspecs_resolve(cwd, paths)):
+            files = _staged_files(cwd)
         if len(files) >= BULK_FILE_THRESHOLD and not _proof_shown(_commit_message_text(cmd, cwd)):
             ev.warn(BLOCK_COMMIT % len(files))
             return hookio.DENY
