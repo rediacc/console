@@ -182,3 +182,21 @@ Section 2 must land before section 3's submodule rewrite, because the rewrite de
 
 - [x] Regenerate `.ci/config/plan-boxes.json` so this plan's boxes enter the ledger.
     (ticked) 2026-09-22T19:54:10Z by d778be9d: check_plan_boxes.py --update runs continuously; .ci/config/plan-boxes.json:1437-1471 already carries this plan's full 31-open ledger entry
+
+## 9. Re-audited 2026-09-23 on adoption, and what a future session needs
+
+Every `file:line` in sections 1 to 6 is stale, and two of the files the CONTROL boxes name no longer exist at all.
+`.claude/hooks/stop/worklist-cases/` and `.claude/hooks/stop/test-worklist-v5.sh` were ported to pytest under `.claude/rediacc_hooks/tests/test_wl_*.py`, and `CASE_FILES` exists nowhere in the tree, so every box that says "CONTROL in `worklist-cases/NN-x.sh`" now means a test function in the matching `test_wl_*.py` module.
+That rewrite is why the boxes are not simply re-worded here: editing a box's text changes its signature, which `check:ci-plan-boxes`'s A1 reads as a box that vanished.
+
+The audit re-resolved all thirty boxes against today's tree. Twenty-nine are ABSENT and one is PARTIAL; none has landed under another name.
+The symbols each section proposes to change are all still present and unchanged: `PUSHBACK_MIN_SCORE` and `PUSHBACK_MIN_MARGIN` at `.claude/hooks/stop/wl_agents.py:401-402`, consumed at `:489-490`, with `pushback_for` at `:459` still returning a result only when an agent matched; `CLOSING_QUESTION_RE` at `.claude/hooks/stop/wl_admit.py:319` and its `ln.endswith("?")` clause at `:460`; `_only_waiters` at `.claude/hooks/stop/wl_checks.py:2588`, consumed at `:2625` and `:3835`; `V_BG_REPORT`'s "whether the stream evidence matches" clause at `.claude/hooks/stop/worklist_messages.py:1480`, still unconditional; `submodule_decision_recorded` at `.claude/hooks/stop/wl_checks.py:1278` with `SUBMODULE_DECIDED_LATCH_MIN` at `:1267`; and `vadd` at `.claude/hooks/stop/wl_checks.py:2749`, still the bare two-line appender the plan's own Defect analysis describes.
+
+Sections 2 to 6 are absent in whole rather than in part, which is worth stating plainly because it decides the sequencing. There is no `agent/rulings/` directory, no `"rulings"` in `AGENT_RESERVED_DIRS` (`.claude/hooks/stop/wl_store.py:173-175`), no `--rule` verb, no `check_operator_rulings.py` and no `ci-operator-rulings` gate, and no `wl_ruling.py` carrying `settled()`.
+There is no `vsig` or `vsuppressed` key anywhere. There is no `planagent_due` or `planagent_armed_at` in `.claude/hooks/context/epoch-reset.py` and no `plan-agent` check. There is no `BIG_TOP_N`, `BIG_OPEN_FLOOR` or `big_pieces()` in `wl_planindex.py`, no `unfocused` verdict in `agent_state_shape`, and no `bigpieces` drift check.
+So section 8's ordering still binds: section 2 lands before section 3's submodule rewrite.
+
+The one PARTIAL box is section 1.1's third. `.claude/rediacc_hooks/tests/test_wl_advisories_rotation.py:553` already asserts both halves the box's first two parts ask for, an ordinary counting word that must NOT route and a discriminative claim that MUST, with the positive presence checked first for the reason case 208 records.
+Its third part, the agent-free arm actually speaking, has nothing to assert against, because the `giveup-claim` key that arm would emit does not exist; `.claude/hooks/stop/test-always-tier.py:51` registers `agent-pushback` alone.
+
+WHAT THIS PLAN IS NOT. It is not stale in its reasoning: every defect it names is still live, and the measurement behind each one still reproduces. What has changed underneath it is the test harness and every line number, so the work is a re-scope rather than a re-design, and the cost of starting is reading six modules that have all moved rather than writing six patches.
