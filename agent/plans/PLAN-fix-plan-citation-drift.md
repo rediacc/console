@@ -1,6 +1,6 @@
 # PLAN: fix plan-citation and plan-record drift (958 + 161 findings)
 
-Status: executing -- both mechanical scripts (A and B) and the gate-defect investigation are done; the judgment remainder (351 citations + 130 record findings, both sections below) is real, tracked, future work, not attempted this pass.
+Status: executing -- both mechanical scripts (A and B) and the gate-defect investigation are done; a dispatched writer is actively working the judgment remainder below box by box, verifying each against the tree rather than force-closing.
 Owner: d778be9d
 Updated: 2026-09-23
 
