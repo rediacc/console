@@ -15,6 +15,10 @@ NOT BLOCKED, deliberately:
     write;
   - `gh api .../pulls/<n> -X PATCH` that carries no body field (a title or
     state change), for the same reason;
+  - `gh api .../pulls/<n> -X PATCH` whose body carries a generated block and is
+    missing another one THE LIVE DESCRIPTION DOES NOT HAVE EITHER. A write
+    cannot drop what is not there, and refusing it left PR #590 with no route to
+    correcting its own description at all on 2026-09-23. See `_would_drop`;
   - `gh pr edit` for anything that is not the body: --title, --add-label,
     --add-reviewer, --milestone. The guard keys on the body flags alone,
     because a guard whose usual outcome is a false positive teaches people to
@@ -55,6 +59,8 @@ API_BODY_FLAG = hookio.rx(
     r"(^|[{S}])(-F|-f|--field|--raw-field)[{S}]+body=|(^|[{S}])--input([{S}]|=)"
 )
 API_BODY_ARGS = hookio.rx(r"((-F|--field)[{S}]+body=@|--input([{S}]+|=))[^{S};|&]+")
+# The endpoint the PATCH names, reused as the endpoint the CURRENT body is read back from. Taken from the command rather than from the cwd, because the repo a PATCH targets is spelled in its own path.
+API_PR_REF = hookio.rx(r"repos/[^{S};|&/]+/[^{S};|&/]+/pulls/[0-9]+")
 
 REFUSE_WHOLE_BODY = """BLOCKED: do not write a PR body by hand.
 
@@ -172,8 +178,38 @@ def _visible_body(cmd, seg, root):
     return body, saw_file
 
 
+def _carries(marker, body):
+    return hookio.grep_q("<!-- %s:begin -->" % marker, body, fixed=True)
+
+
 def _has_every_marker(body):
-    return all(hookio.grep_q("<!-- %s:begin -->" % m, body, fixed=True) for m in GENERATED_MARKERS)
+    return all(_carries(m, body) for m in GENERATED_MARKERS)
+
+
+def _live_body(ref):
+    """The PR's CURRENT description, or None when it cannot be read.
+
+    `want_rc=True` is the whole point: `gh` failing and a PR whose body is empty both print nothing, and only one of them is an answer. An unreadable body means the guard cannot tell what the write would drop, so it keeps refusing.
+    """
+    return hookio.run_out(["gh", "api", ref, "--jq", ".body"], want_rc=True)
+
+
+def _would_drop(body, ref):
+    """The generated markers this write would really remove from the live description.
+
+    A MARKER THE LIVE BODY DOES NOT CARRY CANNOT BE DROPPED BY REPLACING IT, and until 2026-09-23 this guard did not ask. `GENERATED_MARKERS` is the set this repo CAN generate, not the set any given PR has: `pushed-head` is written by the post-bash refresh hook after a push, so a PR created and not yet pushed to has no such section at all. Measured that day on PR #590, whose
+    body carried `worklist-epics` and nothing else: every route to removing one bad line from its description was refused for dropping a block that was never there, and the only doors left were the GitHub UI, which an agent does not have, and closing and reopening the PR.
+
+    THE FILE'S OWN HEADER ALREADY RECORDED THIS BITE ONCE, on 2026-09-03 -- "a PR body had to lose a footer that check-claude-attribution.sh refuses, the corrected body kept the block, and the only routes left were the GitHub UI or closing and reopening the PR" -- and the note was written as an accepted cost rather than as a defect. It came back, through the same door, for the
+    same reason.
+    """
+    missing = [m for m in GENERATED_MARKERS if not _carries(m, body)]
+    if not missing:
+        return []
+    live = _live_body(ref) if ref else None
+    if live is None:
+        return missing
+    return [m for m in missing if _carries(m, live)]
 
 
 def run(ev):
@@ -249,7 +285,15 @@ def run(ev):
                     saw = True
                     patch_body = patch_body + "\n" + hookio._command_substitution(_read(cand))
                     break
-        patch_ok = not (need and not saw) and _has_every_marker(patch_body)
+        readable = not (need and not saw)
+        patch_ok = readable and _has_every_marker(patch_body)
+        # THE LIVE BODY IS CONSULTED ONLY FOR THIS ARM, and only once the static rule has already said no, which is what keeps the lookup off the common path and out of every case that never needed it. Two reasons it is this arm rather than both: this is the door the message above prescribes, and the `gh pr edit --body`/`--body-file` door is refused one guard earlier by
+        # block-adhoc-sanctioned.sh (ORDER 33 against this file's 37) on the deprecated projectCards field, so its copy of the over-block is unreachable.
+        #
+        # A WRITE CARRYING NO GENERATED MARKER AT ALL IS STILL REFUSED WITHOUT ASKING GitHub. That is a hand-written body, the thing this guard exists for, and it is also every negative case in the suite: making the verdict depend on a network read there would trade a deterministic refusal for one that answers differently depending on what a PR looks like today.
+        if not patch_ok and readable and any(_carries(m, patch_body) for m in GENERATED_MARKERS):
+            ref = hookio._command_substitution("\n".join(hookio.grep_o(API_PR_REF, api_segs)))
+            patch_ok = not _would_drop(patch_body, ref.split("\n")[0] if ref else "")
         if patch_ok:
             return hookio.ALLOW
         ev.warn_raw(REFUSE_WHOLE_BODY)

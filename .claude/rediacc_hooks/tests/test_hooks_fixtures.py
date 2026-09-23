@@ -107,6 +107,9 @@ def test_block_raw_pr_body_edit_body_files(tmp_path):
         "check 2 guards/block_raw_pr_body_edit.py",
         bash_json(patch % with_md),
         "raw-pr-body: PATCH carrying ONLY the epic block still drops pushed-head",
+        # A FAILING `gh` IS PART OF THIS CASE NOW, not an accident of the environment. Since 2026-09-23 the arm asks GitHub what the live body actually carries before refusing, so without a stub this case would depend on `repos/o/r/pulls/42` staying a 404 -- a passing assertion resting on a repository nobody here owns. An unreadable live body is the fail-closed arm, which is
+        # the verdict this case has always pinned.
+        env=path_env(stub_gh(tmp_path / "gh-down", "", 1)),
     )
     block.check(
         "check 0 guards/block_raw_pr_body_edit.py",
@@ -117,6 +120,162 @@ def test_block_raw_pr_body_edit_body_files(tmp_path):
         "check 2 guards/block_raw_pr_body_edit.py",
         bash_json(patch % absent),
         "raw-pr-body: PATCH with an unreadable body file is refused, not trusted",
+    )
+    block.done()
+
+
+# --- block_raw_pr_body_edit: a marker the LIVE body never had cannot be dropped -- Measured on PR #590, 2026-09-23. Its description carried `worklist-epics` and no `pushed-head` section, because that one is written by the post-bash refresh hook after a push and the PR had not been pushed to since it was created. A PATCH that reproduced the live body exactly, minus one bad
+# line, was refused for dropping a block that did not exist, and the doors left were the GitHub UI, which an agent does not have, and closing and reopening the PR.
+#
+# THE SAME BITE IS ALREADY IN THE GUARD'S HEADER, dated 2026-09-03, written down as a cost rather than as a defect: "a PR body had to lose a footer that check-claude-attribution.sh refuses ... and the only routes left were the GitHub UI or closing and reopening the PR." It came back through the same door for the same reason, which is why the rule is now about what the live body
+# carries rather than about what this repo can generate.
+#
+# STUBBED IN BOTH DIRECTIONS. The verdict now depends on an answer from GitHub, so each case names the answer it is about: a live body with one marker, a live body with both, and a `gh` that cannot answer at all.
+@pytest.mark.xdist_group("hooks-fixtures")
+def test_block_raw_pr_body_edit_asks_what_the_live_body_carries(tmp_path):
+    block = hookblocks.Block("raw-pr-body-live")
+    head_mark = "<!-- pushed-head:begin -->"
+    epics_only = tmp_path / "epics-only.md"
+    epics_only.write_text("prose\n\n%s\n- epic\n<!-- worklist-epics:end -->\n" % EPIC_MARK, "utf-8")
+    plain = tmp_path / "plain.md"
+    plain.write_text("prose with no block at all\n", encoding="utf-8")
+    patch = "gh api repos/o/r/pulls/42 -X PATCH -F body=@%s"
+    live_one = path_env(stub_gh(tmp_path / "gh-one", "body\n%s\nx\n" % EPIC_MARK, 0))
+    live_both = path_env(
+        stub_gh(tmp_path / "gh-both", "body\n%s\n%s\n" % (EPIC_MARK, head_mark), 0)
+    )
+    live_down = path_env(stub_gh(tmp_path / "gh-none", "", 1))
+    block.check(
+        "check 0 guards/block_raw_pr_body_edit.py",
+        bash_json(patch % epics_only),
+        "raw-pr-body-live: a PATCH cannot drop a pushed-head block the live body never had",
+        env=live_one,
+    )
+    block.check(
+        "check 2 guards/block_raw_pr_body_edit.py",
+        bash_json(patch % epics_only),
+        "raw-pr-body-live CONTROL: the same PATCH IS refused when the live body has both",
+        env=live_both,
+    )
+    block.check(
+        "check 2 guards/block_raw_pr_body_edit.py",
+        bash_json(patch % epics_only),
+        "raw-pr-body-live CONTROL: an unreadable live body fails closed, as before",
+        env=live_down,
+    )
+    # THE LOOKUP IS NOT A WAY PAST THE GUARD. A body carrying no generated marker at all is a hand-written one, which is the whole subject, and it is refused without asking GitHub anything -- so a live body that happens to carry nothing cannot wave one through.
+    block.check(
+        "check 2 guards/block_raw_pr_body_edit.py",
+        bash_json(patch % plain),
+        "raw-pr-body-live CONTROL: a blockless body is refused whatever the live body says",
+        env=live_one,
+    )
+    block.done()
+
+
+# --- block_commit_meta: the trailer lives in the FILE, and gh does not say -F --- WHAT WAS UNCOVERED. The guard reads `-F <path>` bodies because two commits carrying the co-author trailer reached a real push before anyone noticed the message was never in the command string. That fix shipped with no case of its own, so the first assertion below is a regression test for a
+# repair that has been running untested since it landed.
+#
+# AND THE FLAG NAME WAS GIT'S ONLY. `gh pr create`/`gh pr edit` spell a long body `--body-file <path>`, and the sanctioned `gh api ... -X PATCH` form spells it `-F body=@<path>`; neither is a prefix or a suffix of `-F` or `--file`, so the file was never opened for either. Measured 2026-09-23: `gh pr create --body-file <path>` created PR #590 with the attribution footer live in
+# its description, past this guard, and the operator found it on GitHub.
+#
+# THE LITERAL IS ASSEMBLED FROM PARTS, for the reason `.ci/rediacc_ci/quality/claude_attribution.py` gives at length: this guard refuses any command whose text carries the trailer, so a file spelling it out could not be handed to a shell here at all.
+TOKEN = "Co-" + "Authored-By"
+TRAILER = TOKEN + ": Claude Opus 5 <noreply@anthropic.com>"
+FOOTER = "\U0001f916 " + "Generated with [Claude Code](https://claude.com/claude-code)"
+
+
+@pytest.mark.xdist_group("hooks-fixtures")
+def test_block_commit_meta_reads_every_body_file_spelling(tmp_path):
+    block = hookblocks.Block("commit-meta-files")
+    trailer_md = tmp_path / "trailer.md"
+    trailer_md.write_text("a real message\n\n%s\n" % TRAILER, encoding="utf-8")
+    footer_md = tmp_path / "footer.md"
+    footer_md.write_text("a PR body\n\n%s\n%s\n" % (EPIC_MARK, FOOTER), encoding="utf-8")
+    clean_md = tmp_path / "clean.md"
+    clean_md.write_text("a PR body\n\n%s\n- epic\n" % EPIC_MARK, encoding="utf-8")
+    absent = tmp_path / "absent.md"
+    for spelling, path, expected, why in (
+        ("git commit -F %s", trailer_md, 2, "-F <file> is READ, and the trailer in it is refused"),
+        ("git commit --file=%s", trailer_md, 2, "--file=<file> is the same flag, same answer"),
+        ("git commit -F %s", clean_md, 0, "CONTROL: a clean -F body passes"),
+        (
+            "gh pr create --draft --title t --body-file %s",
+            footer_md,
+            2,
+            "gh spells it --body-file, and the footer in it was walking past (PR #590)",
+        ),
+        (
+            "gh pr create --draft --title t --body-file=%s",
+            footer_md,
+            2,
+            "--body-file=<file> is the same flag, same answer",
+        ),
+        (
+            "gh pr create --draft --title t --body-file %s",
+            clean_md,
+            0,
+            "CONTROL: a clean --body-file passes",
+        ),
+        (
+            "gh api repos/o/r/pulls/42 -X PATCH -F body=@%s",
+            footer_md,
+            2,
+            "the sanctioned PATCH door carries the body in -F body=@<file>",
+        ),
+        (
+            "gh api repos/o/r/pulls/42 --method PATCH --input %s",
+            trailer_md,
+            2,
+            "--input <file> is the same door under another name",
+        ),
+        # `gh api`'s flags are order-independent, which is why the endpoint and the method are two checks rather than one sequential pattern.
+        (
+            "gh api -X PATCH repos/o/r/pulls/42 -F body=@%s",
+            footer_md,
+            2,
+            "the method may precede the endpoint and it is the same write",
+        ),
+        (
+            "gh api repos/o/r/pulls/42 -X PATCH -F body=@%s",
+            clean_md,
+            0,
+            "CONTROL: a clean PATCH body passes",
+        ),
+        # The readability rule the `-F` arm has always had: judge what can be read, allow what cannot, rather than refusing blind.
+        (
+            "gh pr create --draft --body-file %s",
+            absent,
+            0,
+            "CONTROL: a --body-file that does not exist is allowed, not refused blind",
+        ),
+    ):
+        block.check(
+            "check %d guards/block_commit_meta.py" % expected,
+            bash_json(spelling % path),
+            "commit-meta-files: %s" % why,
+        )
+    # THE VERB GATE IS STILL THE VERB GATE, and the METHOD half of it is what keeps this guard from blocking its own enforcement. Reaching a `pulls/<n>` endpoint with PATCH authors a PR description; the same endpoint without one is a READ, and reading a live body in order to grep it for the trailer is how the rule gets audited. That shape is the false-positive class the
+    # 2026-08-27 verb gate was written to end, and an endpoint-only test would have reintroduced it.
+    block.check(
+        "check 0 guards/block_commit_meta.py",
+        bash_json("gh api repos/o/r/pulls/42 --jq .body"),
+        "commit-meta-files CONTROL: a GET against the same endpoint is not a write",
+    )
+    block.check(
+        "check 0 guards/block_commit_meta.py",
+        bash_json("gh api repos/o/r/pulls/42 --jq .body | grep %s" % TOKEN),
+        "commit-meta-files CONTROL: auditing a live body for the trailer is not adding one",
+    )
+    block.check(
+        "check 0 guards/block_commit_meta.py",
+        bash_json("gh api repos/o/r/pulls/42/comments -X POST -f body=hi"),
+        "commit-meta-files CONTROL: a comment POST is not a PR description",
+    )
+    block.check(
+        "check 0 guards/block_commit_meta.py",
+        bash_json("gh api user --jq .login"),
+        "commit-meta-files CONTROL: an unrelated gh api read is not this guard's business",
     )
     block.done()
 
