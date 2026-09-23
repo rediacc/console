@@ -40,7 +40,9 @@ TWIN_REL = ".ci/scripts/build/build-json.sh"
 PORT_REL = ".ci/rediacc_ci/build/build_json.py"
 COMMON_REL = ".ci/scripts/lib/common.sh"
 
-# The www twin, still tracked, whose bytes on the shared failure are recorded beside this pair's.
+# The www twin, RETIRED like `TWIN_REL` above it, whose bytes on the shared failure are recorded beside this pair's.
+# The name survives because a frozen golden's header carries it and `test_the_www_golden_names_a_different_twin` reads that header; nothing copies the file any more, because there is no file. Measured 2026-09-23: `fixture()` still listed it, so both planted-defect controls raised FileNotFoundError instead of planting, which is the
+# cannot-fail shape this pair exists to refuse.
 WWW_TWIN_REL = ".ci/scripts/build/build-www.sh"
 
 # Everything the port imports, transitively. `build_www` is here because `build_json` reuses its `run_npm`: the two twins were byte-identical through `:23` and duplicating the npm-invocation logic would be a second thing to drift.
@@ -79,11 +81,11 @@ CALLS_MARKER = "--- calls ---\n"
 
 
 def fixture(tmp_path: pathlib.Path, *, port_source: str | None = None) -> pathlib.Path:
-    """A throwaway root holding the port, `common.sh` and the surviving www twin."""
+    """A throwaway root holding the port and `common.sh`."""
     root = tmp_path / "repo"
-    for rel in (PORT_REL, COMMON_REL, WWW_TWIN_REL, *VENDORED):
+    for rel in (PORT_REL, COMMON_REL, *VENDORED):
         (root / rel).parent.mkdir(parents=True, exist_ok=True)
-    for rel in (COMMON_REL, WWW_TWIN_REL, *VENDORED):
+    for rel in (COMMON_REL, *VENDORED):
         shutil.copy2(ROOT / rel, root / rel)
     if port_source is None:
         shutil.copy2(ROOT / PORT_REL, root / PORT_REL)
