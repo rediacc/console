@@ -119,6 +119,10 @@ That drift is pre-existing, invisible to this gate, and judgment work.
 
 Not attempted this pass. 351 citation findings across 41 plans and 130 record findings across 13 records. Each line is one plan, its finding count, and the categories those findings fall into.
 
+Progress, 2026-09-23. The record half is finished: all 13 lines close, nine of them because `attested_under_any_path` now falls through to the rename graph (`.ci/scripts/quality/check_plan_record.py:322`) and the remaining four by re-deriving three Record-Sig lines and writing one record's author slots.
+Fourteen of the 41 citation lines close as well. Seven were repaired in the plan text, five in archived plans, and two were never findings: a background agent id and a test's own content fingerprint are both long hex runs the object matcher claimed by coincidence of shape, and `AGENT_ID_RE` and `FINGERPRINT_RE` exempt each class with six controls between them.
+The corpus stands at 351 citation findings and no record findings, against 385 and 130 when this section was written.
+
 ### check:ci-plan-citations, 351 findings across 41 plans
 
 - [x] `agent/plans/PLAN-add-chunkstore-backup-verb.md` -- 1: 1 fileline: right file, stale line, no unambiguous anchor
