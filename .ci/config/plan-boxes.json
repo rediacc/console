@@ -125,7 +125,7 @@
       "done_sigs": []
     },
     "agent/plans/PLAN-bgsweep-orphan-shells.md": {
-      "status": "proposed",
+      "status": "done",
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
