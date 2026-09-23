@@ -124,23 +124,6 @@
       "open_sigs": [],
       "done_sigs": []
     },
-    "agent/plans/PLAN-bgsweep-orphan-shells.md": {
-      "status": "done",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 0,
-      "done": 6,
-      "open_sigs": [],
-      "done_sigs": [
-        "251e6c8e",
-        "4a9f06c9",
-        "775f11ff",
-        "a63df077",
-        "cb244b5c",
-        "d7f4bbdb"
-      ]
-    },
     "agent/plans/PLAN-breakpoint-secret-shape.md": {
       "status": "design",
       "owner": "unowned",
@@ -298,30 +281,6 @@
       "open_sigs": [],
       "done_sigs": []
     },
-    "agent/plans/PLAN-commit-author-identity.md": {
-      "status": "done",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "2026-09-21",
-      "open": 0,
-      "done": 13,
-      "open_sigs": [],
-      "done_sigs": [
-        "36c8e346",
-        "444ac305",
-        "51f6c3d8",
-        "5c05ef83",
-        "68b1dba0",
-        "756ce886",
-        "76c86d5d",
-        "b5849b3f",
-        "ba5ad2fd",
-        "cd572f71",
-        "d3e3de15",
-        "dcdc7331",
-        "e7ea085e"
-      ]
-    },
     "agent/plans/PLAN-completion-strategy.md": {
       "status": "compacted",
       "owner": "f4da5c2e",
@@ -370,23 +329,6 @@
         "6edb0ce2"
       ],
       "done_sigs": []
-    },
-    "agent/plans/PLAN-deflected-finding-check.md": {
-      "status": "done",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 0,
-      "done": 6,
-      "open_sigs": [],
-      "done_sigs": [
-        "08c6f913",
-        "3f255c42",
-        "580863a5",
-        "594a5819",
-        "cd80c1d4",
-        "e2125fb3"
-      ]
     },
     "agent/plans/PLAN-devbox-uid-derived-image.md": {
       "status": "compacted",
@@ -529,76 +471,6 @@
         "023406b0"
       ]
     },
-    "agent/plans/PLAN-fix-plan-citation-drift.md": {
-      "status": "done",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 0,
-      "done": 59,
-      "open_sigs": [],
-      "done_sigs": [
-        "0881924d",
-        "126e279c",
-        "1786f319",
-        "1b56afc3",
-        "20fa54ca",
-        "24d05963",
-        "25fd4db0",
-        "2a1e4062",
-        "31d63357",
-        "3918f842",
-        "3b9f2a67",
-        "3e8d7832",
-        "3f64f815",
-        "42c71f29",
-        "5094f9db",
-        "51049618",
-        "555bc990",
-        "5c96945f",
-        "5e5e989c",
-        "5eaae63d",
-        "5f259ebe",
-        "621f2352",
-        "64265410",
-        "68a803e2",
-        "747573be",
-        "7b817420",
-        "7f46ef2c",
-        "81eef3cf",
-        "83eea3e4",
-        "843e9d82",
-        "8be0a1ba",
-        "955765a3",
-        "979bea0b",
-        "9843ff37",
-        "9c6e8631",
-        "9f68b703",
-        "a49ff99f",
-        "a6792021",
-        "a9721885",
-        "ac9bc9c2",
-        "b1c49189",
-        "b3a63c90",
-        "bcb0d0c6",
-        "c0e21510",
-        "c25ceef5",
-        "cc16f28a",
-        "cf3de542",
-        "d226044f",
-        "dd6df2ed",
-        "de035f8e",
-        "e2413159",
-        "e2488abb",
-        "e516ec35",
-        "ee81c1f3",
-        "f0d7ac5d",
-        "f2706431",
-        "f4b8f5e1",
-        "fa4ee95b",
-        "fc685d4e"
-      ]
-    },
     "agent/plans/PLAN-fix-tutorial-player-debug-hook-attachment.md": {
       "status": "compacted",
       "owner": "unowned",
@@ -710,30 +582,30 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 15,
-      "done": 5,
+      "open": 9,
+      "done": 11,
       "open_sigs": [
         "0f6b67f2",
-        "194f5da2",
         "1a7591c6",
-        "2bfd6f0a",
-        "2e25dbeb",
-        "4c1297a6",
-        "61f2fc31",
         "7d0eb59a",
         "8ee9261e",
         "9c983aa3",
         "9d5e06fe",
         "b48dd4e3",
         "b4ba1890",
-        "de3be853",
-        "df9c5a34"
+        "de3be853"
       ],
       "done_sigs": [
+        "194f5da2",
+        "2bfd6f0a",
+        "2e25dbeb",
         "41548480",
+        "4c1297a6",
         "55fe1fbf",
         "5bd1ecac",
+        "61f2fc31",
         "972c0e48",
+        "df9c5a34",
         "f219557d"
       ]
     },
@@ -958,30 +830,6 @@
       "done": 0,
       "open_sigs": [],
       "done_sigs": []
-    },
-    "agent/plans/PLAN-prose-style-under-wrap.md": {
-      "status": "done",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "2026-09-21",
-      "open": 0,
-      "done": 13,
-      "open_sigs": [],
-      "done_sigs": [
-        "0253b9bf",
-        "037ff64e",
-        "0c71f11f",
-        "0f2922c5",
-        "5f0642e7",
-        "8540cabb",
-        "8db71822",
-        "93bc3a14",
-        "9af03d8c",
-        "a2d8e84e",
-        "a41b0fdf",
-        "d4772b60",
-        "de6c18f7"
-      ]
     },
     "agent/plans/PLAN-pytest-parallelism.md": {
       "status": "compacted",
@@ -1380,7 +1228,7 @@
       ]
     },
     "agent/plans/PLAN-stop-hook-refactor-enforcement.md": {
-      "status": "draft",
+      "status": "executing",
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
@@ -1446,40 +1294,6 @@
         "f1981d10"
       ],
       "done_sigs": []
-    },
-    "agent/plans/PLAN-sweep-obligation-carry-forward.md": {
-      "status": "done",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 0,
-      "done": 23,
-      "open_sigs": [],
-      "done_sigs": [
-        "0b1bd486",
-        "273d2ea2",
-        "41e8871d",
-        "44070214",
-        "4a907336",
-        "4adbeca3",
-        "4e7ca32a",
-        "5234d176",
-        "5f04a388",
-        "650f6e47",
-        "6cd8d331",
-        "76f6c85b",
-        "779f765c",
-        "79391787",
-        "7cadd702",
-        "b0215417",
-        "bcf66859",
-        "c52e0e01",
-        "cee231d2",
-        "d292ba83",
-        "d72c2773",
-        "f577b725",
-        "fae70cf2"
-      ]
     },
     "agent/plans/PLAN-sync-docker-latest-tag-with-releases.md": {
       "status": "compacted",
@@ -1889,6 +1703,23 @@
         "d301decb"
       ]
     },
+    "agent/plans/_done/PLAN-bgsweep-orphan-shells.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-09-23",
+      "open": 0,
+      "done": 6,
+      "open_sigs": [],
+      "done_sigs": [
+        "251e6c8e",
+        "4a9f06c9",
+        "775f11ff",
+        "a63df077",
+        "cb244b5c",
+        "d7f4bbdb"
+      ]
+    },
     "agent/plans/_done/PLAN-bws-rotation-on-failure.md": {
       "status": "done",
       "owner": "d778be9d",
@@ -2004,6 +1835,30 @@
         "9d43dc05"
       ]
     },
+    "agent/plans/_done/PLAN-commit-author-identity.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-09-23",
+      "open": 0,
+      "done": 13,
+      "open_sigs": [],
+      "done_sigs": [
+        "36c8e346",
+        "444ac305",
+        "51f6c3d8",
+        "5c05ef83",
+        "68b1dba0",
+        "756ce886",
+        "76c86d5d",
+        "b5849b3f",
+        "ba5ad2fd",
+        "cd572f71",
+        "d3e3de15",
+        "dcdc7331",
+        "e7ea085e"
+      ]
+    },
     "agent/plans/_done/PLAN-consolidate-test-scaffolding.md": {
       "status": "done",
       "owner": "8f55d4f0",
@@ -2017,6 +1872,23 @@
         "9986c208",
         "afb9b239",
         "b30a696d"
+      ]
+    },
+    "agent/plans/_done/PLAN-deflected-finding-check.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-09-23",
+      "open": 0,
+      "done": 6,
+      "open_sigs": [],
+      "done_sigs": [
+        "08c6f913",
+        "3f255c42",
+        "580863a5",
+        "594a5819",
+        "cd80c1d4",
+        "e2125fb3"
       ]
     },
     "agent/plans/_done/PLAN-devbox-toolchain-guard-extension.md": {
@@ -2100,6 +1972,76 @@
         "cfa17a03",
         "d09068dc",
         "ef421565"
+      ]
+    },
+    "agent/plans/_done/PLAN-fix-plan-citation-drift.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-09-23",
+      "open": 0,
+      "done": 59,
+      "open_sigs": [],
+      "done_sigs": [
+        "0881924d",
+        "126e279c",
+        "1786f319",
+        "1b56afc3",
+        "20fa54ca",
+        "24d05963",
+        "25fd4db0",
+        "2a1e4062",
+        "31d63357",
+        "3918f842",
+        "3b9f2a67",
+        "3e8d7832",
+        "3f64f815",
+        "42c71f29",
+        "5094f9db",
+        "51049618",
+        "555bc990",
+        "5c96945f",
+        "5e5e989c",
+        "5eaae63d",
+        "5f259ebe",
+        "621f2352",
+        "64265410",
+        "68a803e2",
+        "747573be",
+        "7b817420",
+        "7f46ef2c",
+        "81eef3cf",
+        "83eea3e4",
+        "843e9d82",
+        "8be0a1ba",
+        "955765a3",
+        "979bea0b",
+        "9843ff37",
+        "9c6e8631",
+        "9f68b703",
+        "a49ff99f",
+        "a6792021",
+        "a9721885",
+        "ac9bc9c2",
+        "b1c49189",
+        "b3a63c90",
+        "bcb0d0c6",
+        "c0e21510",
+        "c25ceef5",
+        "cc16f28a",
+        "cf3de542",
+        "d226044f",
+        "dd6df2ed",
+        "de035f8e",
+        "e2413159",
+        "e2488abb",
+        "e516ec35",
+        "ee81c1f3",
+        "f0d7ac5d",
+        "f2706431",
+        "f4b8f5e1",
+        "fa4ee95b",
+        "fc685d4e"
       ]
     },
     "agent/plans/_done/PLAN-fix-plan-implementation-check-regression.md": {
@@ -2350,6 +2292,30 @@
         "bc63178b"
       ]
     },
+    "agent/plans/_done/PLAN-prose-style-under-wrap.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-09-23",
+      "open": 0,
+      "done": 13,
+      "open_sigs": [],
+      "done_sigs": [
+        "0253b9bf",
+        "037ff64e",
+        "0c71f11f",
+        "0f2922c5",
+        "5f0642e7",
+        "8540cabb",
+        "8db71822",
+        "93bc3a14",
+        "9af03d8c",
+        "a2d8e84e",
+        "a41b0fdf",
+        "d4772b60",
+        "de6c18f7"
+      ]
+    },
     "agent/plans/_done/PLAN-reflow-comments-boundary-wrapping.md": {
       "status": "done",
       "owner": "d778be9d",
@@ -2493,6 +2459,40 @@
         "b99de4fa",
         "c1090b6e",
         "fd69f02d"
+      ]
+    },
+    "agent/plans/_done/PLAN-sweep-obligation-carry-forward.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-09-23",
+      "open": 0,
+      "done": 23,
+      "open_sigs": [],
+      "done_sigs": [
+        "0b1bd486",
+        "273d2ea2",
+        "41e8871d",
+        "44070214",
+        "4a907336",
+        "4adbeca3",
+        "4e7ca32a",
+        "5234d176",
+        "5f04a388",
+        "650f6e47",
+        "6cd8d331",
+        "76f6c85b",
+        "779f765c",
+        "79391787",
+        "7cadd702",
+        "b0215417",
+        "bcf66859",
+        "c52e0e01",
+        "cee231d2",
+        "d292ba83",
+        "d72c2773",
+        "f577b725",
+        "fae70cf2"
       ]
     },
     "agent/plans/_done/PLAN-sys-path-canonical-form.md": {
