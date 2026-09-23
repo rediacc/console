@@ -19,6 +19,9 @@ HOOK = paths.from_root(".claude", "hooks", "stop", "wl_shapedup.py")
 
 
 def _families() -> set[str]:
+    # THIS IS STILL THE FULL CORPUS, after agent/plans/PLAN-stop-hook-refactor-enforcement.md Commit 2's profile split: `PROFILES.gate.families` references this SAME `FAMILIES` constant by name rather than inlining a second array literal, so a text scan for `const FAMILIES = [...]` still finds the whole gate profile's pathspecs. `CORPUS_GLOBS` is asserted against the UNION of every
+    # profile's pathspecs, which today is just this one -- Commit 3's `advisory` profile, once it exists, gets a companion regex here (a second named constant, the same pattern) rather than a change to this docstring's promise; the counter never scans anything the Stop hook does not also watch for staleness, whatever profile is asking.
+    #
     # THE LITERAL GREW A TYPE AND A FLOOR on 2026-09-08 -- `const FAMILIES: readonly
     # Family[] = [{ pathspec: '...', floor: N }, ...]` -- and this pattern, written
     # against the bare `const FAMILIES = [`, stopped matching. It did not go quiet: the

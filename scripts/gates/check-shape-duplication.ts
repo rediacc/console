@@ -82,11 +82,29 @@ import { refuseIfEmpty, runControls } from '../lib/controls.js';
 // request and the gate sets it from `--root`; the default below is what a plain run has always used.
 let ROOT = path.resolve(import.meta.dirname, '..', '..');
 let SEED_FILE = path.join(ROOT, 'scripts/data/shape-duplication-seed.json');
+// PROFILE-DERIVED, PLUMBED THROUGH setProfile BELOW (agent/plans/PLAN-stop-hook-refactor-enforcement.md, Commit 2). The literal default above matches the gate profile byte for byte, so a run that never calls --profile behaves exactly as it always has; only setProfile (defined after PROFILES, which needs FAMILIES first) ever reassigns these away from that default.
+let PROFILE_NAME: keyof typeof PROFILES = 'gate';
+let FAMILY_PATHSPECS: string[] = [];
 
 function setRoot(root: string): void {
   ROOT = path.resolve(root);
-  SEED_FILE = path.join(ROOT, 'scripts/data/shape-duplication-seed.json');
+  SEED_FILE = path.join(ROOT, PROFILES[PROFILE_NAME]?.seed ?? 'scripts/data/shape-duplication-seed.json');
   // The tracked-path cache is keyed on nothing, so a root change has to drop it or the next resolution answers about the previous tree.
+  TRACKED_CACHE = null;
+}
+
+/** Switch the active profile, refusing an unknown or unpopulated one rather than silently scanning nothing. `--profile` is the only caller; the default stays `gate` until it runs. */
+function setProfile(name: string): void {
+  const profile = PROFILES[name as keyof typeof PROFILES];
+  if (!profile) {
+    console.error(
+      `${RED}✗${NC} unknown --profile ${name}; known: ${Object.keys(PROFILES).join(', ')}`
+    );
+    process.exit(1);
+  }
+  PROFILE_NAME = name as keyof typeof PROFILES;
+  FAMILY_PATHSPECS = profile.families.map((f) => f.pathspec);
+  SEED_FILE = path.join(ROOT, profile.seed);
   TRACKED_CACHE = null;
 }
 
@@ -121,8 +139,26 @@ const FAMILIES: readonly Family[] = [
   // floor it used to carry. THE PYTHON SPELLING IS STILL NOT HERE, deliberately and with the cost measured: adding `.claude/rediacc_hooks/guards/block_*.py` on 2026-09-08 reported 26 new shapes, because the guards carry a shared scaffold of their own, so the widening is an extraction job like the quality half above and belongs in a commit of its own.
 ];
 
-/** Exported for the index: the probe must scan the corpus this gate scans, and one list says so. */
-export const FAMILY_PATHSPECS = FAMILIES.map((f) => f.pathspec);
+/**
+ * A named corpus this gate can scan: which families, which seed file, which cache directory, and whether an Nth-copy finding refuses the process (a CI gate) or only reports (an advisory tier).
+ *
+ * ONLY `gate` IS POPULATED (agent/plans/PLAN-stop-hook-refactor-enforcement.md, Commit 2 is a pure refactor with no new capability). `advisory` is the Commit 3 corpus over `.ci/scripts/quality/check_*.py`, `.ci/rediacc_ci/tests/gates/test_gate_*.py`, `.claude/rediacc_hooks/guards/block_*.py` and `.claude/hooks/stop/wl_*.py`, added there with its own seed and cache directory so it can never collide with the gate profile's.
+ */
+interface Profile {
+  readonly families: readonly Family[];
+  readonly seed: string;
+  readonly cache: string;
+  readonly refuses: boolean;
+}
+
+const PROFILES: Partial<Record<'gate' | 'advisory', Profile>> = {
+  gate: {
+    families: FAMILIES,
+    seed: 'scripts/data/shape-duplication-seed.json',
+    cache: '.ci/cache/shape-index',
+    refuses: true,
+  },
+};
 
 /**
  * Which language's lexical rules a corpus path is read under.
@@ -833,11 +869,15 @@ function trackedIn(pathspec: string): string[] {
 }
 
 function tracked(): string[] {
+  // THE ACTIVE PROFILE'S FAMILIES, not the bare module constant -- PROFILE_NAME defaults to 'gate' and setProfile is what moves it, so an untouched invocation scans exactly what FAMILIES always named.
+  const families = PROFILES[PROFILE_NAME]!.families;
   // THE FLOOR IS PER FAMILY AND IT IS A COUNT, for the reason recorded at FAMILIES. A family that emptied is invisible to a whole-corpus check, and one that shrank to a single file is invisible to a non-emptiness check. Both happened here.
-  const short = FAMILIES.map((f) => ({
-    f,
-    n: trackedIn(f.pathspec).length,
-  })).filter((r) => r.n < r.f.floor);
+  const short = families
+    .map((f) => ({
+      f,
+      n: trackedIn(f.pathspec).length,
+    }))
+    .filter((r) => r.n < r.f.floor);
   if (short.length > 0) {
     for (const { f, n } of short) {
       console.error(
@@ -858,7 +898,7 @@ function tracked(): string[] {
     })
       .split('\n')
       .filter(Boolean),
-    `tracked files matching ${FAMILIES.length} family pathspec(s)`,
+    `tracked files matching ${families.length} family pathspec(s)`,
     'The families moved, or this is not a repository checkout.'
   );
   return refuseIfEmpty(
@@ -1566,11 +1606,9 @@ function loadSeed(): { silent: Set<string>; accepted: string[]; shapes: string[]
 /** The index format. A probe that reads an older shape must refuse rather than guess, so this is checked before anything else in it is trusted. */
 export const INDEX_SCHEMA = 1;
 
-const CACHE_REL = '.ci/cache/shape-index';
-
-/** Where the index and its probe live. `SHAPE_PROBE_CACHE` is for a test that must not touch the real one. */
+/** Where the index and its probe live, for the ACTIVE profile. `SHAPE_PROBE_CACHE` is for a test that must not touch the real one, and it overrides whichever profile is running -- one process only ever runs one profile, so there is nothing for it to collide with. */
 function cacheDir(): string {
-  return process.env.SHAPE_PROBE_CACHE || path.join(ROOT, CACHE_REL);
+  return process.env.SHAPE_PROBE_CACHE || path.join(ROOT, PROFILES[PROFILE_NAME]!.cache);
 }
 
 /**
@@ -1854,6 +1892,10 @@ async function main(): Promise<void> {
 
   const rootAt = argv.indexOf('--root');
   if (rootAt >= 0 && argv[rootAt + 1]) setRoot(argv[rootAt + 1]);
+
+  // ALWAYS CALLED, even for the default: this is what actually populates FAMILY_PATHSPECS and SEED_FILE from PROFILES.gate, rather than leaving them at their placeholder top-level values. An invocation with no --profile at all still runs setProfile('gate'), so its behaviour is unchanged from before profiles existed.
+  const profileAt = argv.indexOf('--profile');
+  setProfile(profileAt >= 0 && argv[profileAt + 1] ? argv[profileAt + 1] : 'gate');
 
   if (argv.includes('--selftest')) {
     const failed = runControls(controls());
