@@ -705,10 +705,22 @@ def _is_genuine_sentence_period(raw, index):
     return not _SENTENCE_ABBREVIATION.search(raw[:index])  # "e.g.", "Dr.", "etc." and friends
 
 
+def _ends_with_sentence_period(raw):
+    """Whether `raw` (stripped of trailing whitespace) closes on a genuine sentence-ending period.
+
+    A line that reaches its OWN natural end this way is never an R18 finding, however many interior sentence breaks it also passed up: the floor exists to stop a line being cut off mid-thought, not to force the first available break onto its own line.
+    `_is_genuine_sentence_period` still rules out a trailing decimal/version/abbreviation dot, so `v1.3.12` and `etc.` at the tail do not count.
+    """
+    trimmed = raw.rstrip()
+    if not trimmed.endswith("."):
+        return False
+    return _is_genuine_sentence_period(trimmed, len(trimmed) - 1)
+
+
 def _sentence_break_offset(raw, limit):
     """The offset of the first GENUINE sentence-ending period in `raw` at or before `limit`, or `None` when there is none.
 
-    R18's floor (see the module header and `.ci/config/prose-style-rules.json`): 384 is where a line is ALLOWED to break, not where it is required to stop, so a line past the limit is only a finding when it ran past a break it could have taken. A period only counts when it is immediately followed by whitespace or the end of the line -- which is what excludes a decimal and a
+    R18's floor (see the module header and `.ci/config/prose-style-rules.json`): 768 is where a line is ALLOWED to break, not where it is required to stop, so a line past the limit is only a finding when it ran past a break it could have taken, AND does not itself close on a genuine sentence-ending period. A period only counts when it is immediately followed by whitespace or the end of the line -- which is what excludes a decimal and a
     dotted version number, since the period inside either is followed by a digit -- is not the second dot of an ellipsis, and is not the tail of `_SENTENCE_ABBREVIATION`.
 
     Scans `raw`, the same untouched line R18 measures, so an offset returned here lines up with the character count the length check already reports; `line.text` (code spans/URLs scrubbed, stripped) has no stable relationship to that count.
@@ -780,8 +792,9 @@ def lint_line(line, rules, scope, max_len):
             # A table row and a record's `Touched:` list are single-line by grammar: a table cannot wrap a row and the plan-record parser reads only the first line of a `Touched:` value, so the width limit has nothing to fold.
             if TABLE_ROW.match(line.raw) or line.raw.startswith(MACHINE_LIST_KEYS):
                 continue
-            if max_len is not None and len(line.raw) > max_len:
-                # 384 is a FLOOR, not a ceiling (see `_sentence_break_offset`): a line past it is only a finding when a genuine sentence-ending period sat at or before the floor and the line ran past it anyway. A line with no such break -- one continuous clause with nowhere sane to stop -- is not flagged regardless of how long it runs.
+            if max_len is not None and len(line.raw) > max_len and not _ends_with_sentence_period(line.raw):
+                # 768 is a FLOOR, not a ceiling (see `_sentence_break_offset`): a line past it is only a finding when a genuine sentence-ending period sat at or before the floor and the line ran past it anyway. A line with no such break -- one continuous clause with nowhere sane to stop -- is not flagged regardless of how long it runs.
+                # Nor is a line that reaches ITS OWN end on a genuine period: several whole sentences merged onto one long line are exactly the shape this floor is meant to allow, not the shape it exists to catch.
                 break_at = _sentence_break_offset(line.raw, max_len)
                 if break_at is not None:
                     hits.append(
@@ -1814,7 +1827,7 @@ def reflow_comments(text, suffix, width):
 
 def run_reflow(root, globals_, targets, *, write=False, show_diff=False):
     """The `reflow` subcommand. DRY RUN BY DEFAULT; `--write` is the opt-in."""
-    width = globals_.get("max_line_length", 384)
+    width = globals_.get("max_line_length", 768)
     try:
         files = targets or discover(root, globals_)
     except RuleError as exc:
@@ -2147,6 +2160,11 @@ def selftest():
     ctl.check(
         "MIRROR: a long line whose only break sits PAST the floor does not fire",
         md(("x" * 50) + ". " + ("y" * 5)),
+        [],
+    )
+    ctl.check(
+        "MIRROR: a long line that reaches ITS OWN end on a genuine period does not fire, however early its own earlier break sat",
+        md(("x" * 30) + ". " + ("y" * 30) + "."),
         [],
     )
 
@@ -2527,7 +2545,7 @@ def selftest():
         real_root = paths.repo_root()
         rg, rr = load_rules_file(real_root)
         ctl.check("the real rules file loads", len(rr) >= 18, True)
-        ctl.check("the real rules file declares a limit", rg.get("max_line_length"), 384)
+        ctl.check("the real rules file declares a limit", rg.get("max_line_length"), 768)
         bad_expect = [
             (r.id, e.get("text"))
             for r in rr

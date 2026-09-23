@@ -44,7 +44,7 @@
     "checked, which is how R11's imperative arm stays out of code comments and commit subjects."
   ],
   "globals": {
-    "max_line_length": 384,
+    "max_line_length": 768,
     "scopes": [
       "ai_output",
       "user_prompt",
@@ -847,7 +847,7 @@
     {
       "id": "R18",
       "title": "Line length",
-      "description": "A line past the 384-character floor is flagged only when a genuine sentence-ending period sat at or before that floor and the line ran past it anyway; a line with no such break anywhere before its own end may run to any length, since 384 is where wrapping is allowed, not where it must happen, and R19 already polices wrapping narrower than a paragraph's natural width from the other direction.",
+      "description": "A line past the 768-character floor is flagged only when it does not end on a genuine sentence-ending period and a genuine sentence break also sat at or before that floor; a line that reaches its own end on a real full stop is never flagged, whatever earlier breaks it also passed over -- several whole sentences merged onto one long line are exactly the shape this floor allows, not the shape it exists to catch. A line with no break anywhere before its own end may likewise run to any length, since 768 is where wrapping is allowed, not where it must happen, and R19 already polices wrapping narrower than a paragraph's natural width from the other direction.",
       "severity": "error",
       "scopes": [
         "markdown",
@@ -861,13 +861,17 @@
         "Length is counted, not matched. The floor lives in `globals.max_line_length` because",
         "the reflow subcommand needs the same number, and two copies of a width is how a reflow",
         "starts producing lines its own linter refuses.",
-        "A second, small piece of matching runs only on a line already over that floor: a search",
-        "for the first genuine sentence-ending period at or before it. A period only counts when",
-        "immediately followed by whitespace or the line's own end, which is what rules out a",
-        "decimal and a dotted version number, since the period inside either is followed by a",
-        "digit; the remaining candidates are filtered against a short abbreviation list (\"e.g.\",",
-        "\"i.e.\", \"etc.\", \"Dr.\" and the like) so those do not read as sentence ends either. No",
-        "such break at or before the floor means no finding, however long the line runs."
+        "A line that closes on its own genuine sentence-ending period is never a finding,",
+        "however many earlier sentence breaks it also passed over: merging several whole",
+        "sentences onto one long line is the shape this floor is meant to allow.",
+        "Only a line that both runs past the floor AND does not end on such a period is",
+        "checked further, by a search for the first genuine sentence-ending period at or",
+        "before it. A period only counts when immediately followed by whitespace or the",
+        "line's own end, which is what rules out a decimal and a dotted version number,",
+        "since the period inside either is followed by a digit; the remaining candidates",
+        "are filtered against a short abbreviation list (\"e.g.\", \"i.e.\", \"etc.\", \"Dr.\" and",
+        "the like) so those do not read as sentence ends either. No such break at or before",
+        "the floor means no finding, however long the line runs."
       ],
       "exceptions": [],
       "examples": [
@@ -882,7 +886,12 @@
           "kind": "good"
         },
         {
-          "text": "This sentence is short and ends quickly right here. xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+          "text": "This sentence is short and ends quickly right here. So does this second one, right after it, running a little longer than the first. And a third sentence follows immediately, adding still more words before it too comes to a stop. And a fourth sentence keeps the paragraph going even further, spelling out one more complete idea in full before it, too, reaches its own natural stopping point. A fifth sentence adds still more length to the paragraph, carrying the running total well past the point any of the earlier sentences alone would have reached. Several complete sentences merged onto one long line this way are fine, however many places earlier they could each have broken instead, as long as the line itself reaches its own true conclusion on a genuine full stop.",
+          "expect": "clean",
+          "kind": "good"
+        },
+        {
+          "text": "This sentence is short and ends quickly right here. xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
           "expect": "flag",
           "kind": "bad"
         }

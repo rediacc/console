@@ -1002,7 +1002,11 @@ def test_an_opening_line_alone_over_width_is_left_unwrapped_without_a_period():
 
 def test_an_opening_line_alone_over_width_wraps_and_glues_at_a_sentence_break():
     """The same opening-line path, now WITH sentence breaks to wrap at, proving the delimiter still glues to the first wrapped line rather than the raw segment silently passing through untouched."""
-    text = 'def f():\n    """' + " ".join("Sentence number %d ends here." % i for i in range(1, 20)) + '\n    """\n'
+    text = (
+        'def f():\n    """'
+        + " ".join("Sentence number %d ends here." % i for i in range(1, 20))
+        + '\n    """\n'
+    )
     out = ps.reflow_comments(text, ".py", 80)
     lines = out.splitlines()
     assert max(len(line) for line in lines) <= 80
@@ -1020,9 +1024,11 @@ def test_a_closing_line_alone_over_width_is_left_unwrapped_without_a_period():
 
 def test_a_closing_line_alone_over_width_wraps_and_glues_at_a_sentence_break():
     """The closing-side twin of the opening-line wrap control, gluing the closing delimiter back on after the wrap rather than before it."""
-    text = 'def f():\n    """Summary.\n\n    ' + " ".join(
-        "Sentence number %d ends here." % i for i in range(1, 20)
-    ) + '"""\n'
+    text = (
+        'def f():\n    """Summary.\n\n    '
+        + " ".join("Sentence number %d ends here." % i for i in range(1, 20))
+        + '"""\n'
+    )
     out = ps.reflow_comments(text, ".py", 80)
     lines = out.splitlines()
     assert max(len(line) for line in lines) <= 80
@@ -1258,42 +1264,49 @@ def _r18(name: str, text: str) -> list:
     return [f for f in findings if f.rule == "R18"]
 
 
-#: A line that both exceeds 384 AND ran past a genuine sentence-ending break sitting well before the floor -- the shape that must still fire once the break is not table/Touched-exempted. The lead sentence ends at a low, fixed offset; the filler after it is what pushes the line past 384 with no upper limit of its own.
-_LONG_WITH_EARLY_BREAK = "A short lead-in sentence ends here. " + ("x" * 400)
+#: A line that both exceeds 768 AND ran past a genuine sentence-ending break sitting well before the floor, and does NOT itself close on a period -- the shape that must still fire once the break is not table/Touched-exempted. The lead sentence ends at a low, fixed offset; the filler after it is what pushes the line past 768 with no upper limit of its own, and it stops on a bare `x` rather than a period so the new trailing-period exemption does not also swallow it.
+_LONG_WITH_EARLY_BREAK = "A short lead-in sentence ends here. " + ("x" * 800)
 
 
 def test_a_long_table_row_and_a_touched_list_are_not_width_findings():
     """A table cannot wrap a row and the plan-record parser reads one line of `Touched:`, so R18 has nothing to fold there -- even when the line carries a sentence break it could otherwise be flagged for skipping."""
     long = _LONG_WITH_EARLY_BREAK
-    assert len(long) > 384
+    assert len(long) > 768
     assert _r18("a.md", "| `package.json` | %s |\n" % long) == []
     assert _r18("a.md", "Touched: %s\n" % long) == []
 
 
 def test_the_same_length_in_ordinary_prose_is_still_a_width_finding():
-    """CONTROL for the case above: the exemption is the row and the key, not the length. The line runs well past 384, and its lead sentence ended long before that -- an available break the author ran past, which R18's floor still catches."""
+    """CONTROL for the case above: the exemption is the row and the key, not the length. The line runs well past 768, its lead sentence ended long before that, and it does not close on a period either -- an available break the author ran past, which R18's floor still catches."""
     assert len(_r18("a.md", "Prose that is far too long: %s\n" % _LONG_WITH_EARLY_BREAK)) == 1
 
 
 def test_a_long_line_with_no_sentence_break_anywhere_is_not_a_width_finding():
-    """384 is a FLOOR, not a ceiling: a comma-joined list of `.md` paths has no `. ` anywhere (every period is immediately followed by a filename character, never whitespace), so however far past 384 it runs, there was nowhere sane to break it -- and R18 must not flag it."""
-    long = ", ".join("agent/PLAN-%03d.md" % n for n in range(40))
-    assert len(long) > 384
+    """768 is a FLOOR, not a ceiling: a comma-joined list of `.md` paths has no `. ` anywhere (every period is immediately followed by a filename character, never whitespace), so however far past 768 it runs, there was nowhere sane to break it -- and R18 must not flag it."""
+    long = ", ".join("agent/PLAN-%03d.md" % n for n in range(80))
+    assert len(long) > 768
     assert _r18("a.md", "Prose that is far too long: %s\n" % long) == []
 
 
 def test_a_break_that_only_arrives_past_the_floor_does_not_count():
-    """The MIRROR half of `_LONG_WITH_EARLY_BREAK`: the line's only sentence-ending period sits PAST 384, so there was no break available AT OR BEFORE the floor to skip, and the line is not flagged even though it plainly runs long and does end in a real sentence eventually."""
-    text = ("x" * 400) + ". Trailing sentence that arrives after the floor.\n"
-    assert len(text) > 384
+    """The MIRROR half of `_LONG_WITH_EARLY_BREAK`: the line's only sentence-ending period sits PAST 768, so there was no break available AT OR BEFORE the floor to skip, and the line is not flagged even though it plainly runs long and does end in a real sentence eventually."""
+    text = ("x" * 800) + ". Trailing sentence that arrives after the floor.\n"
+    assert len(text) > 768
     assert _r18("a.md", "Prose that is far too long: %s" % text) == []
+
+
+def test_a_line_that_closes_on_its_own_period_is_not_a_width_finding_either():
+    """A second, DISTINCT reason a long line is not flagged, alongside 'no break at all': the line reaches ITS OWN end on a genuine sentence-ending period, however many earlier breaks it also passed over. `_LONG_WITH_EARLY_BREAK` stops on a bare `x` precisely so this case and the CONTROL above stay separable."""
+    text = _LONG_WITH_EARLY_BREAK + "."
+    assert len(text) > 768
+    assert _r18("a.md", "Prose that is far too long: %s\n" % text) == []
 
 
 def test_the_loader_accepts_the_real_file():
     """The MIRROR for the seven refusals above. Without it they prove only that `load_rules` can raise, which a `raise RuleError` on line one would satisfy."""
     globals_, rules = ps.load_rules_file(ROOT)
     assert len(rules) >= 18
-    assert globals_["max_line_length"] == 384
+    assert globals_["max_line_length"] == 768
 
 
 def test_the_gate_selftest_passes():

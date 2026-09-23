@@ -69,7 +69,7 @@ Beyond those, exemptions are by NAME with a `BLOCKER:` reason, and every run PRI
 ```
 
 `reflow` undoes hard-wrapping: a paragraph broken across several narrow lines is joined into one, then re-wrapped only at a genuine sentence-ending period -- never at a plain word boundary.
-A joined paragraph with no such period, however far past the limit it runs, is left on one line: R18's own floor-not-ceiling contract (384 is where a break is ALLOWED, not required) applies to the tool that fixes a line exactly as it applies to the rule that checks one.
+A joined paragraph with no such period, however far past the limit it runs, is left on one line: R18's own floor-not-ceiling contract (768 is where a break is ALLOWED, not required, and a line that closes on its own genuine sentence-ending period is never flagged either way) applies to the tool that fixes a line exactly as it applies to the rule that checks one.
 It is a DRY RUN by default, and it leaves fences, headings, tables, blockquotes, indented code, link definitions and list items alone.
 
 It has never been run against this tree. As of 2026-09-16 it reports 399 of 447 markdown files and 36,784 lines that would rejoin.
@@ -91,3 +91,17 @@ A line that genuinely has to carry a violation, because it IS the example or bec
 Several things are already not prose and need no marker: fenced code, inline code spans, URLs and link targets, blockquotes (somebody else's words), headings, tables, `gen-docs` generated regions, indented blocks in markdown AND inside Python comments and docstrings, and any line beginning `bad:` / `wrong:` / `avoid:`, which exists to hold the violation.
 
 The marker is for a line that is an example. Reaching for it to get past the gate is the thing it is not for.
+
+## A draft that is over the line, in one round trip
+
+The guard reads the tool call's OWN new content, not how that content was produced.
+A long, un-reflowed `Edit`/`Write` call is refused by R18 with the recipe printed inline; the fix is not to route the write through `git commit`/`cp`/a script to dodge the guard, since the guard has no bash twin on purpose and a route around it produces an unexamined write rather than a compliant one.
+
+Reflow first, THEN call `Edit`/`Write` directly with the reflowed text -- no indirection needed:
+
+```
+.ci/scripts/quality/check_prose_style.py reflow --write <scratch-path>
+.ci/scripts/quality/check_prose_style.py check <scratch-path>
+```
+
+Once `check` is clean, an `Edit`/`Write` carrying that exact text passes the guard on the first try, because the guard lints the payload's `content`/`new_string`, not the tool that produced it. This was verified directly: the same reflowed paragraph that a raw `Edit` call refused was accepted by `Edit` once reflowed, with no other change.
