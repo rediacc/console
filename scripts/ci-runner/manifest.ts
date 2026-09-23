@@ -3423,7 +3423,11 @@ export const GATES: readonly GateSpec[] = [
     run: 'npm run check:ci-renet',
     gate: true,
     // The BARE gitlink, not `private/renet/**`. `git ls-files private/` returns four bare gitlinks with no files underneath, so a /** form translates to a regex matching nothing, and a glob that matches nothing can only exclude. A submodule content change reaches this repository's diff only as a pointer bump on that path.
-    paths: ['private/renet', '.ci/rediacc_ci/private/run_renet.py', '.ci/rediacc_ci/core/common.py'],
+    paths: [
+      'private/renet',
+      '.ci/rediacc_ci/private/run_renet.py',
+      '.ci/rediacc_ci/core/common.py',
+    ],
     pathsOrigin: 'declared',
     // 40.4s measured 2026-08-27, and only now: it used to die at exit 127 in format.sh (goimports installed to $(go env GOPATH)/bin, which was on no PATH) about a second in, so its old "fast" tier was the cost of crashing early rather than of running. With that fixed it does the real work -- gofmt, goimports, golangci-lint and govulncheck over the whole module.
     slow: true,
