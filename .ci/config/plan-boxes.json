@@ -968,6 +968,23 @@
       "open_sigs": [],
       "done_sigs": []
     },
+    "agent/plans/PLAN-repair-prose-style-findings.md": {
+      "status": "draft",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 6,
+      "done": 0,
+      "open_sigs": [
+        "01a4718b",
+        "3c926cc8",
+        "734eba3a",
+        "7cc30b07",
+        "9b97d598",
+        "d2157a79"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-require-testid-sweep.md": {
       "status": "compacted",
       "owner": "97604f47",
