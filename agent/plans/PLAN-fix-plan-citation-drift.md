@@ -148,7 +148,8 @@ The rest were pointers into bash gates and tests the Python port retired: each n
     (ticked) 2026-09-23T15:04:19Z by d778be9d: PLAN-commit-author-identity.md is 13/13 boxes done, only Status:draft is stale (should say done) -- see agent/plans/PLAN-commit-author-identity.md:13
 - [x] `agent/plans/PLAN-duplication-angle.md` -- 1: 1 gate: no such `check:` script
     (ticked) 2026-09-23T10:35:44Z by d778be9d: check:ci-plan-citations names no finding in PLAN-duplication-angle.md on a live run; the repaired pointer is at agent/plans/PLAN-duplication-angle.md:32
-- [ ] `agent/plans/PLAN-env-to-bitwarden-v2.md` -- 14: 7 fileline: basename matches NOTHING in the tree; 4 fileline: unique basename but the line is out of range there too; 1 fileline ON A BOX LINE (editing it re-keys the box signature); 1 fileline: right file, stale line, no unambiguous anchor; 1 gate: no such `check:` script
+- [x] `agent/plans/PLAN-env-to-bitwarden-v2.md` -- 14: 7 fileline: basename matches NOTHING in the tree; 4 fileline: unique basename but the line is out of range there too; 1 fileline ON A BOX LINE (editing it re-keys the box signature); 1 fileline: right file, stale line, no unambiguous anchor; 1 gate: no such `check:` script
+    (ticked) 2026-09-23T15:32:00Z by d778be9d: Fixed all 9 fixable stale citations in PLAN-env-to-bitwarden-v2.md, commit fbafc9ac1; check_plan_citations.py reports zero findings for this file post-fix; the 14th sits on the plan's own box line and is deliberately left alone.
 - [x] `agent/plans/PLAN-fix-plan-citation-drift.md` -- 2: 2 object: neither blob nor reachable commit
     (ticked) 2026-09-23T10:35:45Z by d778be9d: check:ci-plan-citations names no finding in PLAN-fix-plan-citation-drift.md on a live run; the repaired pointer is at agent/plans/PLAN-fix-plan-citation-drift.md:11
 - [ ] `agent/plans/PLAN-gh-swallow-gates-audit.md` -- 2: 2 fileline ON A BOX LINE (editing it re-keys the box signature)
