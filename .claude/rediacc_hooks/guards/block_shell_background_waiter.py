@@ -39,13 +39,13 @@ MESSAGE = (
     "process is untracked -- the harness can never notify you when it fires, so you stop "
     "hearing cross-session mail silently. Launch it as a harness background task instead: "
     "run the plain command `python3 .claude/hooks/stop/wl_wait.py <session-prefix> "
-    "--timeout 60` with run_in_background: true on the Bash tool call. (Also: to check "
+    "--timeout 60m` with run_in_background: true on the Bash tool call. (Also: to check "
     "whether one is already running, match the PYTHON process, not your own wrapper: "
     'ps -eo pid,args | grep "[p]ython3.*wl_wait" -- a bare pgrep -f self-matches the Bash '
     "tool wrapper containing your pattern text.)"
 )
 
-_LAUNCH = "python3 .claude/hooks/stop/wl_wait.py d1589e0b --timeout 60"
+_LAUNCH = "python3 .claude/hooks/stop/wl_wait.py d1589e0b --timeout 60m"
 
 EDGE_CASES = [
     ("the shape from 2026-08-08", _LAUNCH + " &"),

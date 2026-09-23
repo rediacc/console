@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """wl_wait: block until something NEW arrives for this session, then exit.
 
-    python3 /abs/path/.claude/hooks/stop/wl_wait.py <session-8-prefix> --timeout 60
+    python3 /abs/path/.claude/hooks/stop/wl_wait.py <session-8-prefix> --timeout 60m
 
 Launched as a BACKGROUND SHELL TASK. Its exit is the ping.
 
@@ -12,9 +12,13 @@ NO QUOTES ANYWHERE IN THE COMMAND LINE, and that is not cosmetic. `_needle` (wl_
 task's command and requires >= 12 characters, and `verify_background`
 (wl_liveness.py:235-263) only reaches `confirmed` for a shell task with a usable needle. Wrap this path in quotes and a perfectly healthy waiter renders as `unverifiable`, which is exactly how a working waiter comes to look stuck. The absolute path alone is far over 12 characters, so the property holds by construction as long as nobody adds quotes.
 
-IT NEVER TAKES A LOCK, AND THAT IS THE SHARPEST HAZARD IN THE WHOLE DESIGN.
+IT NEVER TAKES A LOCK ON THE WORKLIST STORE, AND THAT IS THE SHARPEST HAZARD IN THE WHOLE DESIGN.
 `_append_lines` (wl_store.py) takes a BLOCKING LOCK_EX, so an hour-long holder would stall every --ask/--add/--tick in the repo. Worse, the two LOCK_EX|LOCK_NB paths that give up SILENTLY on contention -- escalation (wl_requests.py:196-199) and dead-session cleanup (wl_store.py) -- would become permanent no-ops with no error printed anywhere, so the damage would be invisible.
 Readers take no lock by design and this process only ever reads, stats, or appends a single sub-1024-byte line through wl_report (which is itself lock-free). Test 3 in test-report-inbox.sh asserts it, with a control that proves the assertion can fail.
+
+THE ONE LOCK IT DOES TAKE IS ITS OWN, and the distinction above is exactly what makes that safe. `claim_instance` holds a LOCK_EX|LOCK_NB flock on a
+PRIVATE per-session sidecar (`.waiterlock-<me8>`) that nothing else in this repo opens, reads or writes, so no --add/--tick/--ask path can ever contend on it and the silent-give-up hazard described above cannot reach it. What it buys is the single-writer assumption the heartbeat and the tombstone were built on: thirteen simultaneous instances for one session were measured on
+2026-09-23, and because every one of them re-touched the SAME heartbeat every two seconds, a tombstone written by an exiting instance was clobbered within a tick, so `waiter_lapsed` never fired while any duplicate survived. See agent/plans/_done/PLAN-wl-wait-duplicate-listener.md.
 
 IT IS A CHANGE DETECTOR, NEVER A BACKLOG DETECTOR. A request that arrived BEFORE the waiter launched will not wake it, by design (see `arm`). That is the one bug a review caught in this design rather than a test, so read `arm` before changing the wake condition.
 
@@ -38,6 +42,44 @@ TICK_S = float(os.environ.get("WORKLIST_WAIT_TICK_S", "2"))
 DEFAULT_TIMEOUT_MIN = float(os.environ.get("WORKLIST_WAIT_TIMEOUT_MIN", "60"))
 # How often the waiter re-runs wl_report --scan while it is awake anyway. This is what makes a report captured by neither the hook nor the previous scan still reach the session, so it is a correctness path, not an optimisation.
 SCAN_EVERY_S = float(os.environ.get("WORKLIST_WAIT_SCAN_S", "300"))
+
+# `--timeout` TAKES A UNIT SUFFIX AND A BARE NUMBER IS REFUSED. Minutes per suffixed minute.
+TIMEOUT_UNITS = {"s": 1.0 / 60.0, "m": 1.0, "h": 60.0}
+# The refusal, spelled out once because it is the whole repair for a misreading this repo has now paid for twice. 2026-09-04 (worklist_messages.py, the V_ASK_NOLISTEN_CMD comment): a message asked for `--timeout 900` meaning fifteen minutes and bought a fifteen-HOUR wait. 2026-09-23: thirteen overlapping instances, each relaunched in the belief that a `--timeout 60`
+# process launched minutes earlier had already finished.
+#
+# The sibling instrument is what makes a bare number genuinely ambiguous rather than merely undocumented: `.ci/scripts/ci/ci-trace.py --timeout` is the same flag name on the other sanctioned long-lived background process in this repo, and its unit is SECONDS. A session that has read either one cannot infer the other. So neither takes a bare number any more.
+TIMEOUT_UNIT_REFUSAL = (
+    "--timeout needs an explicit unit: %r could mean %s minutes or %s seconds and this flag will "
+    "not guess. Write 60m, 3600s or 1h.\n"
+    "THE UNIT IS NOT THE SAME ON THE SIBLING TOOL, which is why a bare number is refused rather "
+    "than defaulted: .ci/scripts/ci/ci-trace.py --timeout is SECONDS, this one is minutes, and "
+    "both now require the suffix so neither can be read off the other."
+)
+
+
+def parse_timeout_min(token):
+    """(minutes, "") for an explicitly suffixed --timeout token, or (None, why).
+
+    NO BARE-NUMBER FALLBACK, deliberately. Accepting `60` "as minutes" would leave exactly the ambiguity that produced the 13-instance pile: the value is read by a session, not by a parser, and a session reading `--timeout 60` in a message has no way to tell which of the two long-lived instruments' conventions is in force. A clean break is cheap here -- every emitter in
+    the tree is swept in the same change and there are no external callers.
+    """
+    text = str(token).strip()
+    if not text or text[-1] not in TIMEOUT_UNITS:
+        return None, TIMEOUT_UNIT_REFUSAL % (text, text or "?", text or "?")
+    try:
+        value = float(text[:-1])
+    except ValueError:
+        return None, "--timeout %r is not a number followed by s, m or h" % text
+    return value * TIMEOUT_UNITS[text[-1]], ""
+
+
+def fmt_timeout(minutes):
+    """A --timeout token this script would accept back, unit included.
+
+    Every relaunch line in this file and in worklist_messages.py renders through a suffixed form, so no message can teach the spelling `main()` refuses. `%g` rather than `%d`: the old `%d` rendered a sub-minute timeout (the test suite uses 0.15) as the literal `0`, which is a value this script rejects as non-positive -- a relaunch command that could not run.
+    """
+    return "%gm" % minutes
 
 
 def _stat(path):
@@ -99,8 +141,80 @@ def heartbeat_path(worklist, me):
     hook_event_name. No background_tasks, no session_crons.
 
     So the nudge cannot see the task table, and a marker written once at launch would be a LIE the moment the waiter died. A file that only a live process keeps refreshing is the same guarantee by a different route: it goes stale on its own, needs no pid semantics (so it stays portable), and costs the hook exactly one stat.
+
+    ONE PATH PER SESSION, SO IT ASSUMES A SINGLE WRITER, and until claim_instance() nothing enforced that. Measured 2026-09-23: thirteen instances for one session each `_touch`ed this one path every TICK_S, so a tombstone written by an exiting instance was overwritten by a survivor's live pulse within two seconds. waiter_lapsed() below reads the CONTENT of this file, so it could
+    never return a lapse while any duplicate survived, and the Stop-side `waiter-lapsed` check built on it was switched off by the very pile it would have been the evidence for. claim_instance() is what makes the assumption TRUE BY CONSTRUCTION rather than by convention: a second instance refuses before it touches anything.
     """
     return worklist.with_suffix(".waiter-%s" % (me or "unknown")[:8])
+
+
+def waiterlock_path(worklist, me):
+    """The PRIVATE single-instance claim for this session. Nothing else in the repo opens it.
+
+    A DEDICATED FILE AND NEVER THE WORKLIST STORE. The module docstring's prohibition is about the store, whose locks are taken blocking by `_append_lines` and non-blocking-and-silent by escalation and dead-session cleanup; an hour-long holder there would turn both of those into invisible no-ops. This path has exactly one client -- this script -- so contention on it means
+    one thing only, which is the fact the guard needs.
+    """
+    return worklist.with_suffix(".waiterlock-%s" % (me or "unknown")[:8])
+
+
+def claim_instance(worklist, me):
+    """(handle, "") when this process is the session's only waiter, or (None, refusal) when one is already running.
+
+    THE HANDLE IS THE LOCK AND MUST BE HELD FOR THE PROCESS LIFETIME. Closing it releases the flock, and the kernel drops it on exit however the process dies, which is why this needs no cleanup path and no stale-pidfile handling -- the two failure modes a pidfile would have added.
+
+    A REFUSING DUPLICATE WRITES NOTHING, and that is load-bearing rather than tidy. The obvious refusal -- leave a tombstone saying the launch gave up -- would write the INCUMBENT'S heartbeat path (there is only one per session), marking a waiter that is alive and counting down as lapsed, which is the precise failure this whole guard exists to end. The file is opened for APPEND and
+    never written, so a refuser does not even truncate its own sidecar.
+
+    NO SELF-CLEANUP. Killing the incumbent is the wrong trade three ways: the incumbent may be 55 minutes into a deadline with a peer's answer moments away while the newcomer has nothing, the heartbeat carries no pid so a killer would need an argv scan (block_self_matching_pgrep.py documents why that traps), and a killed process leaves a phantom in the harness task table that
+    rates `suspect` and nags the session into launching yet another one. Teardown of a real surplus is a `TaskStop`, surfaced by the Stop-side `many-waiters` check.
+    """
+    import wl_store as S  # noqa: PLC0415
+
+    path = waiterlock_path(worklist, me)
+    try:
+        handle = path.open("a", encoding="utf-8")  # the handle IS the lock; see the docstring
+    except OSError:
+        # FAIL OPEN. A sidecar that cannot be created is a broken TMPDIR, not a duplicate, and refusing to listen on that evidence would cost the session its mail to protect it from a process it probably does not have.
+        return None, ""
+    try:
+        S._flock(handle, S.LOCK_EX | S.LOCK_NB)
+    except OSError:
+        handle.close()
+        return None, refusal_text(worklist, me)
+    except RuntimeError:
+        # NO fcntl ON THIS PLATFORM (S._flock raises a named refusal rather than an ImportError). Degrade to the heartbeat predicate alone -- the same one nudge() already trusts to decide whether anybody is listening.
+        handle.close()
+        hb = heartbeat_path(worklist, me)
+        if _fresh(hb, HEARTBEAT_STALE_S) and not _is_tombstone(hb):
+            return None, refusal_text(worklist, me)
+        return None, ""
+    return handle, ""
+
+
+def refusal_text(worklist, me):
+    """What the duplicate prints on its way out, exit 3.
+
+    IT MUST SAY DO NOT RELAUNCH IN SO MANY WORDS. A fast exit is otherwise indistinguishable from a waiter that fired, and a session acting on that reading relaunches immediately -- turning a slow pile-up into a spin. It names the incumbent's heartbeat age for the same reason: an unfalsifiable "one is already running" invites a session to disbelieve it.
+    """
+    hb = heartbeat_path(worklist, me)
+    try:
+        age_s = time.time() - hb.stat().st_mtime
+        age = "its heartbeat was refreshed %ds ago" % int(age_s)
+    except OSError:
+        age = "its heartbeat file is not readable from here"
+    return (
+        "ALREADY LISTENING (exit 3): a waiter for %s is already running and %s. This second "
+        "instance refused before reading, scanning or touching anything, so nothing it did can "
+        "have disturbed the one that is listening.\n"
+        "DO NOT RELAUNCH IT. You are already listening; there is nothing to fix and nothing to "
+        "start. A duplicate is pure cost -- every instance re-touches the same heartbeat, so a "
+        "pile of them destroys the lapse detector that would tell you when the real waiter "
+        "died.\n"
+        "A relaunch attempt is always SAFE to make for exactly this reason: if one is running "
+        "you get this line in milliseconds, and if none is you get a waiter. Exit 3 means "
+        "refused-as-redundant; it is not an error and it is not a fired waiter (that is exit 0 "
+        "with INBOX or REPORT lines)." % (me, age)
+    )
 
 
 def ask_nolisten_path(worklist, me):
@@ -146,6 +260,9 @@ def _touch(path):
 # The tombstone a waiter leaves BEHIND ITSELF on exit, in place of the unlink both exits used to do. See tombstone().
 TOMBSTONE = "EXPIRED"
 
+# Open handles whose flock must survive for the process lifetime. See the comment at the claim site in wait().
+HELD_LOCKS = []
+
 
 def tombstone(path, why):
     """Mark a waiter's heartbeat DEAD instead of deleting it.
@@ -156,6 +273,9 @@ def tombstone(path, why):
     THE CARRIER IS THE SAME PATH, deliberately, and that is what makes this the cheapest possible change. Every existing reader is `_fresh(hb,
     HEARTBEAT_STALE_S)` with HEARTBEAT_STALE_S = 60s, and a tombstone is a
     WRITE, so it ages out within a minute exactly as a real heartbeat would. No existing caller changes behaviour; the only new reader is waiter_lapsed() below, which looks at the CONTENT rather than the mtime.
+
+    AND IT ASSUMES IT IS THE ONLY WRITER ON THAT PATH. With N live instances for one session a tombstone survives at most TICK_S seconds before a survivor's `_touch` overwrites it with a live pulse, which made waiter_lapsed() and the Stop-side `waiter-lapsed` check unreachable for exactly the sessions that had lost track of their waiters. claim_instance() enforces N == 1, so
+    the only process that can write here is the one whose exit this marks -- and a REFUSING duplicate writes nothing at all, precisely so it cannot leave this marker on a waiter that is still alive.
     """
     with contextlib.suppress(OSError):
         path.write_text("%s %s %s\n" % (TOMBSTONE, C.stamp_now(), why), encoding="utf-8")
@@ -190,6 +310,16 @@ def wait(me, timeout_min, start):
     branch = C.git_branch(C.project_root(start)) or RPT.NO_BRANCH
     hook_path = "python3 %s" % (pathlib.Path(__file__).resolve().parent / "worklist.py")
 
+    # THE INSTANCE GUARD COMES FIRST, BEFORE THE SCAN AND BEFORE THE BASELINE, so a duplicate pays for nothing: no report scan against the shared store, no request fold, no heartbeat touch. Everything below this line is work that a second instance for the same session would only repeat.
+    #
+    # The handle is parked in a module-level list rather than a local, and that is not style: an flock lives on the OPEN FILE DESCRIPTION, so the moment the last reference is dropped the object is finalized, the fd closes and the claim is silently released while the process runs on. A name that outlives the call is the whole mechanism.
+    lock_handle, refusal = claim_instance(worklist, me)
+    if refusal:
+        print(refusal, file=sys.stderr)
+        return 3
+    if lock_handle is not None:
+        HELD_LOCKS.append(lock_handle)
+
     # Scan BEFORE arming, never after. The first scan on a fresh store indexes every already-finished agent in the lookback window; if the baseline were taken first, all of them would read as NEW and the waiter would wake immediately with a flood of history on its very first run.
     _safe_scan(store, start)
     base = arm(worklist, store, branch, me)
@@ -210,9 +340,15 @@ def wait(me, timeout_min, start):
         if remaining <= 0:
             # ONE BOUNDED LINE, exit 0. Printing nothing would be cheaper and would match --poll's empty-inbox contract, but a check whose running you cannot see is worthless, and this is the only evidence that the waiter ran at all rather than dying silently at launch.
             print(
-                "INBOX-WAIT: %dm elapsed, nothing new for %s. RELAUNCH to keep "
-                "listening: python3 %s %s --timeout %d"
-                % (timeout_min, me, pathlib.Path(__file__).resolve(), me, timeout_min)
+                "INBOX-WAIT: %gm elapsed, nothing new for %s. RELAUNCH to keep "
+                "listening: python3 %s %s --timeout %s"
+                % (
+                    timeout_min,
+                    me,
+                    pathlib.Path(__file__).resolve(),
+                    me,
+                    fmt_timeout(timeout_min),
+                )
             )
             # A TOMBSTONE, NOT AN UNLINK. See tombstone(): deleting the file made "this waiter lapsed" indistinguishable from "no waiter was ever armed", which is the state the Stop hook is most lenient about.
             tombstone(hb, "timeout")
@@ -262,8 +398,8 @@ def wait(me, timeout_min, start):
         # THE WAITER FIRES ONCE AND IS THEN GONE. Nothing relaunches it, and a session that does not re-arm is DEAF -- worse than the cron, which at least fires again. Measured live: a waiter fired at 16:13, a peer answered at 16:16, and the answer was never seen. So the exit line carries the relaunch command, and the PostToolUse nudge below is the belt to this braces.
         print(
             "RELAUNCH THE WAITER NOW (background task), or you stop hearing "
-            "anything: python3 %s %s --timeout %d"
-            % (pathlib.Path(__file__).resolve(), me, timeout_min)
+            "anything: python3 %s %s --timeout %s"
+            % (pathlib.Path(__file__).resolve(), me, fmt_timeout(timeout_min))
         )
         tombstone(hb, "fired")  # see tombstone(); never an unlink
         return 0
@@ -271,7 +407,7 @@ def wait(me, timeout_min, start):
 
 HELP = """wl_wait.py -- block until something new arrives for you, then EXIT.
 
-    python3 %s <your-8-char-session-id-prefix> --timeout 60
+    python3 %s <your-8-char-session-id-prefix> --timeout 60m
 
 LAUNCH IT AS A BACKGROUND TASK (run_in_background: true). That is not a
 suggestion, it is the whole mechanism: nothing can inject a turn into a running
@@ -300,6 +436,17 @@ IT ONLY FIRES ONCE. After it wakes it is gone, and nothing relaunches it for
 you -- a session that does not re-arm goes deaf, which is worse than the cron.
 Relaunch it in the same turn you act on what it told you.
 
+AND A RELAUNCH IS ALWAYS SAFE TO ATTEMPT, so never skip one because you think
+one may still be running. A second instance for the same session refuses in
+milliseconds with exit 3 and writes nothing at all, so the worst case of an
+unnecessary relaunch is one line of output. The worst case of a SKIPPED one is
+that you stop hearing cross-session mail. Thirteen simultaneous instances were
+measured on 2026-09-23, every one of them relaunched in the belief that a
+`--timeout 60` process started minutes earlier had already finished -- the flag
+was MINUTES. They cost more than the waste: all thirteen re-touched the one
+per-session heartbeat every two seconds, so the exit marker a dying waiter
+leaves was clobbered within a tick and the lapse detector could never fire.
+
 AND STOP IT WHEN YOU ARE DONE. A waiter held by a session with nothing open,
 nothing in flight and no pending task is an orphan process with an hour to run:
 kill the background task (TaskStop <id>) rather than ending the session on top
@@ -310,8 +457,14 @@ EXIT CODES / OUTPUT
     0 + INBOX/REPORT lines   something arrived; act on it, then RELAUNCH
     0 + one INBOX-WAIT line  the timeout elapsed with nothing new; relaunch
     2                        misuse (bad prefix, bad --timeout); nothing waited
+    3                        refused: one is ALREADY listening for you. Not an
+                             error, and not a fired waiter. Nothing was written
+                             and nothing needs relaunching.
 
-    --timeout <minutes>   default %d
+    --timeout <n>{s|m|h}  REQUIRED SUFFIX, e.g. 60m. Default %dm. A bare number
+                          is refused: ci-trace.py's --timeout is SECONDS and
+                          this one is minutes, so neither can be read off the
+                          other and neither guesses.
 
 Related: `worklist.py --poll <me>` is the pull version (one shot, prints only
 what is already there). `worklist.py --reports` lists captured sub-agent reports.
@@ -491,10 +644,12 @@ def main(argv):
     timeout_min = DEFAULT_TIMEOUT_MIN
     if "--timeout" in argv:
         i = argv.index("--timeout")
-        try:
-            timeout_min = float(argv[i + 1])
-        except (IndexError, ValueError):
-            print("--timeout takes a number of minutes", file=sys.stderr)
+        if i + 1 >= len(argv):
+            print("--timeout takes a value with a unit suffix, e.g. 60m", file=sys.stderr)
+            return 2
+        timeout_min, why = parse_timeout_min(argv[i + 1])
+        if why:
+            print(why, file=sys.stderr)
             return 2
     if timeout_min <= 0:
         print("--timeout must be positive", file=sys.stderr)

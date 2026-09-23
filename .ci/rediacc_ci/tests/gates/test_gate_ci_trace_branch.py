@@ -388,4 +388,4 @@ def test_ci_nonblocking_contexts_selftest(gate):
         gate.log_fail(
             "ci-trace.py --selftest failed (rc=%d): %s" % (result.rc, result.combined.strip())
         )
-    gate.log_pass("ci-trace.py --selftest: 3/3")
+    gate.log_pass("ci-trace.py --selftest: every control passed")

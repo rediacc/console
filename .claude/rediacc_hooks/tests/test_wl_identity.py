@@ -135,6 +135,27 @@ def plant_adopt_chain(fix, previous: str = "adopt111") -> None:
     )
 
 
+def plant_investigate_target(fix) -> tuple[str, str]:
+    """(rel, sig) for a real, open box `--plan-investigate`'s table row can cite.
+
+    A SIGNATURE, not the box's free text: the table's `template.replace(...).split()` whitespace-splits the whole command line, so a selector with a space in it would be cut into two argv tokens.
+    `select_box` accepts an 8-hex signature for exactly this reason (a machine passes the sig, a person passes substring text).
+
+    CONTROL A needs rc=0, and unlike `--plan-tick`/`--plan-compact`/`--plan-revive` this verb has no listing mode -- every invocation resolves pointers for real.
+    `fix.proj/.git` is a plain directory (see `Fixture.setup`'s own comment), so `git rev-parse HEAD` fails, which `plan_investigate` already tolerates (`head = _git_out(...) or ""`).
+    The two pointers below are chosen to resolve WITHOUT git for that reason: `fileline:` is a filesystem check and `plan:` is a citation-resolution check, so together they clear the two-distinct-kinds floor on a git-free fixture.
+    """
+    rel = "agent/plans/PLAN-l1-investigate-target.md"
+    body = "the one open box this row investigates"
+    (fix.proj / "agent" / "plans").mkdir(parents=True, exist_ok=True)
+    (fix.proj / rel).write_text(
+        "# PLAN: l1 investigate target\nStatus: ready\nOwner: %s\nUpdated: 2026-09-01\n\n"
+        "## Tasks\n\n- [ ] %s\n" % (fix.sid, body),
+        encoding="utf-8",
+    )
+    return rel, wlfix.import_wl("wl_planrec").box_sig(body)
+
+
 def probe_phantom(fix) -> str:
     """`wl_checks.phantom_identities` as a library call: "BLIND: <reason>" or "FLAGGED: <prefixes>".
 
@@ -378,6 +399,7 @@ def drive_l1(fix) -> L1Drive:
         ("r_ack", r_ack),
     ):
         assert value, "FIXTURE BROKEN: %s was never created, so its row proves nothing" % name
+    inv_rel, inv_selector = plant_investigate_target(fix)
 
     # A phantom for the --reassign row: three aged events under an identity that has never stopped, owning open items. This case runs no Stop hook, so no .lastevent- file exists for anybody here, which is exactly the phantom shape.
     fix.phantom_store("phantom1", 90)
@@ -423,6 +445,13 @@ def drive_l1(fix) -> L1Drive:
         ("--plan-revive", "--plan-revive @WHO@", "plan records on disk"),
         # Same listing rule, same reason. --plan-tick's write mode needs a plan AND a committed box ledger; its listing mode is where a caller gets the box SIGNATURE the write mode wants, so the read is a prerequisite of the write rather than a convenience, and it runs the identical argv parse.
         ("--plan-tick", "--plan-tick @WHO@", "open boxes that --plan-tick can flip"),
+        # Unlike the three rows above, --plan-investigate has no listing mode, so CONTROL A is driven for real against plant_investigate_target's fixture plan rather than against an empty argv.
+        (
+            "--plan-investigate",
+            "--plan-investigate @WHO@ %s %s present fileline:%s:1 plan:%s -- l1 fixture note for --plan-investigate, long enough to clear the floor"
+            % (inv_rel, inv_selector, inv_rel, inv_rel),
+            "[verdict: present]",
+        ),
         ("--hint-propose", "--hint-propose @WHO@ l1-table-hint", "proposed:"),
     ]
 
@@ -477,7 +506,7 @@ def drive_l1(fix) -> L1Drive:
 
     def wait(prefix: str) -> wlfix.Result:
         proc = subprocess.run(
-            [sys.executable, str(waitbin), prefix, "--timeout", "0.02"],
+            [sys.executable, str(waitbin), prefix, "--timeout", "0.02m"],
             capture_output=True,
             text=True,
             env=dict(fix.env, CLAUDE_PROJECT_DIR=str(fix.proj)),
@@ -665,7 +694,7 @@ def test_184x_a_short_me_that_exactly_matches_an_explicit_declaration_is_honoure
     assert "8-char" in both(got), both(got)[:200]
 
     proc = subprocess.run(
-        [sys.executable, str(wlfix.STOP_DIR / "wl_wait.py"), "w2s-en", "--timeout", "0.01"],
+        [sys.executable, str(wlfix.STOP_DIR / "wl_wait.py"), "w2s-en", "--timeout", "0.01m"],
         capture_output=True,
         text=True,
         env=dict(declared, CLAUDE_PROJECT_DIR=str(wl.proj)),

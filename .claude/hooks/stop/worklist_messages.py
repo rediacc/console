@@ -363,7 +363,7 @@ V_NO_POLL_CRON = (
     "nothing ever mentioned it:\n"
     "  (a) A WAITER, launched as a BACKGROUND task (run_in_background: true), "
     "no quotes anywhere in the command line:\n"
-    "        python3 .claude/hooks/stop/wl_wait.py %s --timeout 60\n"
+    "        python3 .claude/hooks/stop/wl_wait.py %s --timeout 60m\n"
     "      It blocks until something NEW arrives for you and then exits, and "
     "its EXIT is the notification -- seconds of latency instead of up to a "
     "cron period, and no turn spent on an empty inbox. It fires ONCE, so "
@@ -391,6 +391,25 @@ V_MANY_WORK_CRONS = (
 V_MANY_POLL_CRONS = (
     "%d poll crons (*/5, */10, */20, */40 or hourly) are live; one is the shape. Delete the "
     "extra with CronDelete."
+)
+
+# THE OS-TRUTH BACKSTOP FOR DUPLICATE WAITERS, modelled on V_MANY_WORK_CRONS above: more than one of this instrument is a violation, and the remedy names the exact verb per surplus id.
+#
+# WHY IT IS NOT MERELY WASTE, which is the reading that kept the 2026-09-23 pile invisible for 55 minutes. There is ONE heartbeat path per session (wl_wait.heartbeat_path) and every live instance re-touches it every two seconds, so the TOMBSTONE an exiting waiter writes in place of that pulse is overwritten by a survivor within a tick. That tombstone is the only evidence
+# `waiter-lapsed` has, so a pile does not just cost processes: it switches off the check built to notice that the session stopped listening. The script now refuses a duplicate at launch (exit 3); this fires on a surplus that is already declared, which the script cannot retract.
+#
+# TaskStop AND NEVER kill. Killing the process leaves the harness task declared, which rates `suspect` under verify_background, does not satisfy confirmed_waiters, and gets the session nagged by `no-waiter` into launching another one -- converting waste into a self-amplifying loop.
+V_MANY_WAITERS = (
+    "%d INBOX WAITERS ARE LIVE ON THIS SESSION, and one is the shape. A second waiter hears "
+    "nothing the first does not: they arm on the same two files, poll the same two stats and "
+    "rescan the same report store, and only one of them can be the exit that wakes you.\n"
+    "%s"
+    "IT IS WORSE THAN DUPLICATED WORK. Every instance re-touches the one per-session heartbeat "
+    "every couple of seconds, so the exit marker a dying waiter leaves is clobbered by a "
+    "survivor's live pulse and the `waiter-lapsed` check can never fire -- the pile disables "
+    "the very mechanism that would tell you your waiter had gone.\n"
+    "TaskStop, never kill: killing the process leaves the task declared, which reads as "
+    "`suspect` rather than gone and gets you told to start yet another one."
 )
 
 V_AGENT_STATE = (
@@ -542,7 +561,7 @@ N_WAITER_NUDGE = (
     "NOT LISTENING: %d live peer session(s) can send you work and nothing here "
     "would wake you. Start a waiter as a BACKGROUND task (run_in_background: "
     "true), no quotes anywhere in the command:\n"
-    "    python3 %s %s --timeout %d\n"
+    "    python3 %s %s --timeout %dm\n"
     "It blocks until something new arrives and then EXITS -- the exit is the "
     "notification. It fires once, so relaunch it in the turn you act on it."
 )
@@ -556,7 +575,7 @@ N_WAITER_DRAINED = (
     "%s\n"
     "Start a FRESH one the moment you pick work up again (a stopped waiter "
     "cannot be resumed, and it would not see anything that arrived meanwhile "
-    "anyway): python3 %s %s --timeout %d"
+    "anyway): python3 %s %s --timeout %dm"
 )
 
 # FIVE ROUNDS, FIVE DIFFERENT STATEMENTS, AND IT NEVER GIVES UP.
@@ -618,8 +637,9 @@ V_ASK_NOLISTEN_CMD = (
     "Start one as a BACKGROUND task (run_in_background: true), NO QUOTES anywhere\n"
     "in the command line (a quoted path renders the waiter `unverifiable`, which\n"
     "does not satisfy this check -- it is confirmed against the OS, not believed):\n"
-    # SIXTY, not 900. `--timeout` is in MINUTES (wl_wait.DEFAULT_TIMEOUT_MIN, `timeout_min * 60.0`), so 900 asked for a FIFTEEN-HOUR wait while V_NO_WAITER and wl_wait.HELP both said 60. A session shown both picks one and its waiter then lapses at an hour while the other message insists it should still be running.
-    "    python3 %s %s --timeout 60\n"
+    # SIXTY MINUTES, SPELLED `60m`, and the suffix is now mandatory rather than advisory. This line used to read `--timeout 900`, which asked for a FIFTEEN-HOUR wait while V_NO_WAITER and wl_wait.HELP both said 60; correcting the literal fixed that message and left the ambiguity standing, and on 2026-09-23 it fired again as thirteen overlapping instances. wl_wait.parse_timeout_min
+    # refuses a bare number outright now, so a message that dropped the `m` would be caught by the tool instead of believed.
+    "    python3 %s %s --timeout 60m\n"
     "Its EXIT is the notification, and it fires ONCE: relaunch it in the same\n"
     "turn you act on what it reports.\n"
 )
@@ -632,7 +652,7 @@ V_NO_WAITER = (
     "Start one as a BACKGROUND task (run_in_background: true), NO QUOTES "
     "anywhere in the command line (a quoted path renders the waiter "
     "`unverifiable`, which does not satisfy this check):\n"
-    "    python3 %s %s --timeout 60\n"
+    "    python3 %s %s --timeout 60m\n"
     "Its EXIT is the notification. It fires ONCE, so relaunch it in the same "
     "turn you act on what it reports; this check is what catches you if you "
     "forget. `--help` on that path explains the whole contract.\n"
@@ -647,7 +667,7 @@ V_WAITER_LAPSED = (
     "the gentle 'you have never started one' nudge: you started one, it told "
     "you on the way out that it fires ONCE and must be relaunched, and it was "
     "not. Every request sent since then is sitting unread.\n"
-    "    python3 %s %s --timeout 60\n"
+    "    python3 %s %s --timeout 60m\n"
     "as a BACKGROUND task (run_in_background: true), NO QUOTES anywhere in the "
     "command line. If you are genuinely finished, say so and close your open "
     "items instead -- a drained session is told to stop its waiter, not to keep "

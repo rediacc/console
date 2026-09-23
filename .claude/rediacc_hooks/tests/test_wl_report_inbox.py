@@ -650,8 +650,53 @@ def test_15_wl_wait_misuse(sc):
     got = sc.py("wl_wait.py", "abc")
     assert got.rc == 2, "a short prefix should exit 2, got %d" % got.rc
     assert "bad prefix" in got.out + got.err, "a short prefix must name the problem"
-    got = sc.py("wl_wait.py", "aaaaaaaa", "--timeout", "0")
+    got = sc.py("wl_wait.py", "aaaaaaaa", "--timeout", "0m")
     assert got.rc == 2, "a non-positive timeout should exit 2, got %d" % got.rc
+
+
+def test_15b_a_bare_timeout_is_refused_and_a_suffixed_one_is_accepted(sc):
+    """THE MISREADING, 2026-09-23: `--timeout 60` is SIXTY MINUTES and reads as sixty seconds.
+
+    A session relaunching on that belief accumulated thirteen simultaneous instances, each of them correctly counting down an hour. Only `--help` ever stated the unit, and the sibling long-lived instrument (.ci/scripts/ci/ci-trace.py) carries the same flag name in SECONDS, so the value could not be inferred from the ecosystem either. The suffix is mandatory now, with no
+    bare-number fallback, and the refusal has to NAME both readings or it teaches nothing.
+    """
+    # BOUNDED, and the bound is the finding itself: if the refusal is ever removed, `--timeout 60` is taken as SIXTY MINUTES and this call blocks for an hour. A hang is a terrible red -- it looks like a broken runner rather than a broken guard -- so the failure is forced to arrive as a TimeoutExpired naming the command.
+    proc = subprocess.run(
+        [sys.executable, str(HERE / "wl_wait.py"), "aaaaaaaa", "--timeout", "60"],
+        capture_output=True,
+        text=True,
+        env=dict(sc.env),
+        check=False,
+        timeout=30,
+    )
+    merged = proc.stdout + proc.stderr
+    assert proc.returncode == 2, "15b: a bare --timeout should exit 2, got %d (%s)" % (
+        proc.returncode,
+        merged[:200],
+    )
+    assert "explicit unit" in merged, (
+        "15b: the refusal does not say a unit is missing: %s" % (merged[:200])
+    )
+    both = "15b: the refusal must name BOTH readings, or a session picks the wrong one again: %s"
+    assert "minutes" in merged, both % merged[:200]
+    assert "seconds" in merged, both % merged[:200]
+    assert "ci-trace" in merged, (
+        "15b: the refusal must name the sibling tool whose unit is the opposite: %s" % merged[:200]
+    )
+    # CONTROL, and the load-bearing half: the SUFFIXED form is accepted and really waits. Without it every assertion above is satisfied by a flag that refuses everything. 0.05m is three seconds, so this returns through the ordinary timeout path.
+    ok = sc.py("wl_wait.py", "aaaaaaaa", "--timeout", "0.05m")
+    assert ok.rc == 0, "15b CONTROL: a suffixed timeout was refused (rc=%d): %s" % (
+        ok.rc,
+        (ok.out + ok.err)[:200],
+    )
+    assert "INBOX-WAIT" in ok.out + ok.err, "15b CONTROL: the suffixed form did not wait"
+    # And the relaunch command it prints must itself be acceptable to this parser. The old `%d` rendered 0.05 minutes as the literal `0`, which this script refuses as non-positive -- a relaunch line that could not be run.
+    printed = re.search(r"--timeout (\S+)", ok.out + ok.err)
+    assert printed, "15b CONTROL: the timeout line carries no --timeout token"
+    wait_mod = wlfix.import_wl("wl_wait")
+    minutes, why = wait_mod.parse_timeout_min(printed.group(1))
+    assert not why, "15b: the printed relaunch command is not runnable: %s" % why
+    assert minutes > 0, "15b: the printed relaunch command asks for a non-positive wait"
 
 
 LOCK_RE = re.compile(r"_flock\(|fcntl\.flock\(|import fcntl")
@@ -664,20 +709,66 @@ def lock_hits(name: str) -> int:
     )
 
 
-def test_16_wl_wait_takes_no_lock():
-    """Structural, with a proven-live control."""
-    assert lock_hits("wl_wait.py") == 0, "wl_wait.py makes a lock call"
+def lock_lines(name: str) -> list[str]:
+    return [
+        line
+        for line in (HERE / name).read_text(encoding="utf-8").splitlines()
+        if LOCK_RE.search(line)
+    ]
+
+
+def test_16_wl_wait_locks_nothing_but_its_own_private_sidecar():
+    """WAS "takes no lock at all", AND THE WEAKENING IS DELIBERATE AND NARROW.
+
+    The prohibition wl_wait's module docstring states is about the WORKLIST STORE: `_append_lines` takes a blocking LOCK_EX, and the escalation and dead-session-cleanup paths take LOCK_EX|LOCK_NB and give up SILENTLY, so an hour-long holder on any of those would turn them into invisible no-ops. A lock on a file with exactly one client cannot do any of that.
+
+    So the assertion becomes the one that was actually meant: no BLOCKING lock anywhere in this process, and the only thing it locks is the private per-session `.waiterlock-` sidecar. `test_21` below is the behavioural half -- it measures that a concurrent worklist write is not delayed while a waiter runs.
+    """
     assert lock_hits("wl_report.py") == 0, "wl_report.py makes a lock call"
-    # CONTROL: the SAME pattern must fire on a file that really does lock, or it is a pattern that can never match and the two assertions above prove nothing.
-    hits = lock_hits("wl_store.py")
-    assert hits > 0, "CONTROL: the pattern is dead, it found 0 hits in wl_store.py"
+    lines = lock_lines("wl_wait.py")
+    assert lines, "wl_wait.py takes no lock at all, so the instance guard is gone"
+    blocking = [line.strip() for line in lines if "_flock(" in line and "LOCK_NB" not in line]
+    assert not blocking, (
+        "wl_wait.py takes a BLOCKING lock, which stalls every worklist write: %s" % (blocking)
+    )
+    # CONTROL for that assertion: a file that really does take a blocking lock must produce a hit, or "no blocking lock lines" is a claim no file could ever fail.
+    store_blocking = [
+        line.strip()
+        for line in lock_lines("wl_store.py")
+        if "_flock(" in line and "LOCK_NB" not in line
+    ]
+    assert store_blocking, "CONTROL: the blocking-lock pattern found nothing in wl_store.py"
+
+
+def test_16b_the_instance_lock_is_a_private_path_no_other_writer_touches(sc):
+    """THE PATH IS THE WHOLE SAFETY ARGUMENT, so it is asserted rather than described.
+
+    A guard that happened to lock the requests log, or the worklist itself, would be the exact hazard the module docstring forbids: every `--add`, `--tick` and `--ask` in the repo would queue behind an hour-long waiter.
+    """
+    wait_mod = wlfix.import_wl("wl_wait")
+    store = wlfix.import_wl("wl_store")
+    worklist = sc.worklist()
+    lock = wait_mod.waiterlock_path(worklist, "aaaaaaaa")
+    shared = {
+        str(worklist),
+        str(store.requests_path(worklist)),
+        str(store.requests_path(worklist)) + ".lock",
+        str(wait_mod.heartbeat_path(worklist, "aaaaaaaa")),
+    }
+    assert str(lock) not in shared, "16b: the instance lock sits on a SHARED path: %s" % lock
+    assert ".waiterlock-" in lock.name, "16b: unexpected sidecar name %s" % lock.name
+    # And it is per-session, so two sessions' waiters never contend.
+    other = wait_mod.waiterlock_path(worklist, "bbbbbbbb")
+    assert other != lock, (
+        "16b: one lock path serves every session, so peers would refuse each other"
+    )
 
 
 def test_17_wl_wait_wakes_on_a_new_request_not_a_pre_existing_one(sc):
     """17a is the spin-loop regression: arming on "the slice is non-empty" would fire instantly, forever. 17b is its control: with that same request still unresolved, a NEW one DOES wake it, and prints ONLY the new one."""
     out = sc.t / "w1.out"
     sc.mkreq("preexist", "bbbbbbbb", "aaaaaaaa", "a request the session has already seen")
-    proc = sc.waiter("aaaaaaaa", "--timeout", "0.15", out=out)
+    proc = sc.waiter("aaaaaaaa", "--timeout", "0.15m", out=out)
     try:
         time.sleep(4)
         assert alive(proc), "a pre-existing request woke the waiter: %s" % out.read_text()
@@ -716,7 +807,7 @@ def test_17c_the_baseline_suppresses_a_request_already_seen_when_the_signature_m
             + "\n"
         )
     out = sc.t / "w5.out"
-    proc = sc.waiter("aaaaaaaa", "--timeout", "0.2", out=out)
+    proc = sc.waiter("aaaaaaaa", "--timeout", "0.2m", out=out)
     try:
         time.sleep(2)
         worklist = sc.worklist()
@@ -753,7 +844,7 @@ def test_17c_the_baseline_suppresses_a_request_already_seen_when_the_signature_m
 
 def test_18_foreign_traffic_does_not_wake_the_waiter(sc):
     out = sc.t / "w2.out"
-    proc = sc.waiter("aaaaaaaa", "--timeout", "0.3", out=out)
+    proc = sc.waiter("aaaaaaaa", "--timeout", "0.3m", out=out)
     try:
         time.sleep(2)
         sc.mkreq("foreign1", "bbbbbbbb", "cccccccc", "traffic between two other sessions")
@@ -773,7 +864,7 @@ def test_18_foreign_traffic_does_not_wake_the_waiter(sc):
 
 def test_19_wl_wait_wakes_on_a_new_subagent_report(sc):
     out = sc.t / "w3.out"
-    proc = sc.waiter("aaaaaaaa", "--timeout", "0.3", out=out)
+    proc = sc.waiter("aaaaaaaa", "--timeout", "0.3m", out=out)
     try:
         time.sleep(2)
         sc.stop_event(
@@ -793,7 +884,7 @@ def test_19_wl_wait_wakes_on_a_new_subagent_report(sc):
 
 
 def test_20_wl_wait_timeout_prints_one_bounded_line_and_exits_zero(sc):
-    got = sc.py("wl_wait.py", "aaaaaaaa", "--timeout", "0.05")
+    got = sc.py("wl_wait.py", "aaaaaaaa", "--timeout", "0.05m")
     assert got.rc == 0, "timeout should exit 0, got %d" % got.rc
     text = (got.out + got.err).strip()
     assert "INBOX-WAIT" in text, text[:300]
@@ -803,7 +894,7 @@ def test_20_wl_wait_timeout_prints_one_bounded_line_and_exits_zero(sc):
 def test_21_wl_wait_does_not_block_a_concurrent_worklist_write(sc):
     store = wlfix.import_wl("wl_store")
     out = sc.t / "w4.out"
-    proc = sc.waiter("aaaaaaaa", "--timeout", "0.4", out=out)
+    proc = sc.waiter("aaaaaaaa", "--timeout", "0.4m", out=out)
     try:
         time.sleep(2)
         path = store.requests_path(sc.worklist())

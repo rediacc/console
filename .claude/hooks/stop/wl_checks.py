@@ -2078,6 +2078,8 @@ PRIORITY_LADDER = (
                 "no-poll",
                 "many-poll-crons",
                 "many-work-crons",
+                # Same family, same tier: more than one of a single-instance instrument is live.
+                "many-waiters",
             }
         ),
     ),
@@ -3830,7 +3832,8 @@ def run_stop(event, event_ok, worklist, hook_file):
     # `_only_waiters` is the guard that matters, not `_waiters_confirmed` alone: a session whose OTHER background jobs are still running is not drained, and their reports arrive through this very channel -- telling it to stop listening would make it deaf to the workers it is supervising.
     #
     # A REPORT, NEVER A VIOLATION. An orphan waiter costs a process, not correctness, and a stop that BLOCKED on it would keep the session alive to argue about the thing it is being told to shut down -- the same backwards trade the nudge's own history above records.
-    if _waiters_confirmed and _only_waiters and not actionable_remains:
+    _drained_waiters = bool(_waiters_confirmed and _only_waiters and not actionable_remains)
+    if _drained_waiters:
         outq_add(
             worklist,
             session_id,
@@ -3845,6 +3848,24 @@ def run_stop(event, event_ok, worklist, hook_file):
                 60,
             ),
             1,
+        )
+    # THE SAME SHAPE AS many-work-crons BELOW, pointed at the instrument it was never pointed at. Every consumer of `_waiters_confirmed` above treats the list as a boolean, so thirteen simultaneous waiters satisfied `no-poll`, `no-waiter` and `no-waiter-asked` exactly as one would, and the only site that ever renders the COUNT is the drained report -- which fires only for a
+    # session with nothing open, in flight or pending, which a session busy enough to accumulate duplicates never is. That is why the 2026-09-23 pile stayed invisible to this hook for 55 minutes while it was fully visible in `background_tasks`.
+    #
+    # wl_wait.claim_instance now refuses a duplicate at LAUNCH, so this is the backstop for the case the script cannot reach: a task that is still DECLARED to the harness. Only a TaskStop retires that, and only the session can issue one.
+    #
+    # NON-ALWAYS TIER, matching many-work-crons: it is a real waste and a real hazard, but it is not a claim about work that nobody on the other end could check. Promote it if it ever fires twice -- a second occurrence means the launch-time refusal is being routed around rather than merely raced.
+    #
+    # THE DRAINED REPORT WINS when both apply. N_WAITER_DRAINED already prints a TaskStop line per waiter and says to stop ALL of them, which strictly contains this message's remedy; firing both would tell one session to stop every waiter and to stop all but one, in the same stop.
+    if len(_waiters_confirmed) > 1 and not _drained_waiters:
+        vadd(
+            "many-waiters",
+            False,
+            M.V_MANY_WAITERS
+            % (
+                len(_waiters_confirmed),
+                "".join("    TaskStop %s\n" % (b.get("id") or "?") for b in _waiters_confirmed[1:]),
+            ),
         )
     if len(live_work_crons) > 1:
         vadd(

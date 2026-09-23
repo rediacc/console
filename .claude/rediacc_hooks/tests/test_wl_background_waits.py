@@ -10,6 +10,7 @@ from __future__ import annotations
 import contextlib
 import json
 import os
+import pathlib
 import re
 import subprocess
 import sys
@@ -78,7 +79,7 @@ def waiter_command() -> str:
 
     `sys.executable` rather than the bare `python3` the bash used: the verdict is a substring match against the child's real `/proc` cmdline, and the interpreter pytest runs under is the one the child will show.
     """
-    return "%s %s deadbeef --timeout 3" % (sys.executable, WAIT_PY)
+    return "%s %s deadbeef --timeout 3m" % (sys.executable, WAIT_PY)
 
 
 def waiter_row(task_id: str = "wt1", description: str = "inbox waiter") -> dict:
@@ -112,7 +113,7 @@ def live_waiter(fix, tmpdir_name: str = "waittmp"):
     env["TMPDIR"] = str(fix.base / tmpdir_name)
     env["CLAUDE_PROJECT_DIR"] = str(fix.base)
     proc = subprocess.Popen(
-        [sys.executable, str(WAIT_PY), "deadbeef", "--timeout", "3"],
+        [sys.executable, str(WAIT_PY), "deadbeef", "--timeout", "3m"],
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
         env=env,
@@ -124,6 +125,138 @@ def live_waiter(fix, tmpdir_name: str = "waittmp"):
     finally:
         proc.kill()
         proc.wait()
+
+
+def waiter_world(fix, tmpdir_name: str):
+    """(env, worklist path) for a REAL waiter child, resolved the way the waiter itself resolves it.
+
+    `wl_core.worklist_for` reads TMPDIR from the ambient environment, so the variable is swapped for the length of the call rather than the slug formula being copied here -- a second copy would drift from the one under test.
+    """
+    core = wlfix.import_wl("wl_core")
+    (fix.base / tmpdir_name).mkdir(parents=True, exist_ok=True)
+    env = dict(fix.env)
+    env["TMPDIR"] = str(fix.base / tmpdir_name)
+    env["CLAUDE_PROJECT_DIR"] = str(fix.base)
+    previous = os.environ.get("TMPDIR")
+    os.environ["TMPDIR"] = env["TMPDIR"]
+    try:
+        worklist = pathlib.Path(core.worklist_for(str(fix.base)))
+    finally:
+        if previous is None:
+            os.environ.pop("TMPDIR", None)
+        else:
+            os.environ["TMPDIR"] = previous
+    return env, worklist
+
+
+def await_heartbeat(path, timeout_s: float = 8.0) -> None:
+    """Block until a launched waiter has written its first pulse, or fail the case saying so."""
+    deadline = time.time() + timeout_s
+    while time.time() < deadline:
+        if path.is_file() and path.stat().st_size:
+            return
+        time.sleep(0.2)
+    msg = "no waiter heartbeat appeared at %s within %.0fs" % (path, timeout_s)
+    raise AssertionError(msg)
+
+
+def test_163r_a_second_waiter_for_the_same_session_refuses_and_writes_nothing(wl):  # noqa: F811
+    """THE PILE, 2026-09-23: thirteen simultaneous `wl_wait.py <me> --timeout 60` processes over 55 minutes.
+
+    Every one of them was relaunched in the belief that a process started minutes earlier had finished, because `--timeout` is MINUTES and only `--help` said so. Nothing anywhere refused a duplicate: the script held no lock, the Stop hook treated `confirmed_waiters` as a boolean, and the PostToolUse nudge saw a heartbeat the duplicates themselves kept fresh.
+
+    Three claims are pinned here, and the third is the one that matters most. A refusing duplicate must write NOTHING: there is exactly ONE heartbeat path per session, so a duplicate that left a tombstone on the way out would mark the LIVE incumbent as lapsed -- manufacturing the failure the whole mechanism exists to detect.
+    """
+    env, worklist = waiter_world(wl, "duptmp")
+    wait_mod = wlfix.import_wl("wl_wait")
+    hb = wait_mod.heartbeat_path(worklist, "deadbeef")
+    lock = wait_mod.waiterlock_path(worklist, "deadbeef")
+
+    incumbent = subprocess.Popen(
+        [sys.executable, str(WAIT_PY), "deadbeef", "--timeout", "3m"],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        env=env,
+    )
+    try:
+        await_heartbeat(hb)
+        before_mtime = hb.stat().st_mtime_ns
+        before_text = hb.read_text(encoding="utf-8")
+
+        second = subprocess.run(
+            [sys.executable, str(WAIT_PY), "deadbeef", "--timeout", "3m"],
+            capture_output=True,
+            text=True,
+            env=env,
+            check=False,
+            timeout=30,
+        )
+        merged = second.stdout + second.stderr
+        assert second.returncode == 3, (
+            "163r: the duplicate exited %d, not 3. Exit 0 is indistinguishable from a FIRED "
+            "waiter and a session acting on it relaunches again, turning a slow pile into a "
+            "spin: %s" % (second.returncode, merged[:300])
+        )
+        assert "ALREADY LISTENING" in merged, (
+            "163r: the refusal does not name itself: %s" % (merged[:300])
+        )
+        assert "DO NOT RELAUNCH" in merged, (
+            "163r: the refusal must say so in as many words, or a fast exit reads as a fired "
+            "waiter: %s" % merged[:300]
+        )
+
+        # IT WROTE NOTHING. The tombstone check is the load-bearing one: `_is_tombstone` reads the CONTENT of this exact path, and a tombstone here would make waiter_lapsed() accuse a waiter that is alive and counting down.
+        assert not wait_mod._is_tombstone(hb), (
+            "163r: the refusing duplicate tombstoned the INCUMBENT'S heartbeat, which is the "
+            "precise failure this guard exists to prevent: %r" % hb.read_text(encoding="utf-8")
+        )
+        assert not before_text.startswith(wait_mod.TOMBSTONE), (
+            "163r premise: the incumbent was already dead before the duplicate ran"
+        )
+        assert lock.is_file(), "163r: no instance-claim sidecar was created at %s" % lock
+        assert lock.stat().st_size == 0, (
+            "163r: the refuser wrote to its own sidecar (%d bytes); it is a claim, not a channel"
+            % lock.stat().st_size
+        )
+
+        # AND THE INCUMBENT IS STILL PULSING. A guard that refused by killing what it found would pass every assertion above and leave the session with no waiter at all.
+        time.sleep(float(wait_mod.TICK_S) + 1.5)
+        assert hb.stat().st_mtime_ns > before_mtime, (
+            "163r: the incumbent's heartbeat stopped advancing after the duplicate ran"
+        )
+        assert incumbent.poll() is None, "163r: the duplicate killed the incumbent"
+    finally:
+        incumbent.kill()
+        incumbent.wait()
+
+
+def test_163r_control_with_no_incumbent_the_same_launch_runs(wl):  # noqa: F811
+    """CONTROL: exit 3 is about CONTENTION, not about the command.
+
+    Without this, 163r would pass just as well if wl_wait had been changed to refuse every launch -- which would silence every waiter in the repo while looking like a working guard. Same argv, same env, same session prefix, and the only difference is that nobody holds the claim.
+    """
+    env, worklist = waiter_world(wl, "solotmp")
+    wait_mod = wlfix.import_wl("wl_wait")
+    got = subprocess.run(
+        [sys.executable, str(WAIT_PY), "deadbeef", "--timeout", "0.05m"],
+        capture_output=True,
+        text=True,
+        env=env,
+        check=False,
+        timeout=60,
+    )
+    merged = got.stdout + got.stderr
+    assert got.returncode == 0, "163r CONTROL: an uncontended waiter exited %d: %s" % (
+        got.returncode,
+        merged[:300],
+    )
+    assert "INBOX-WAIT" in merged, "163r CONTROL: it never actually waited: %s" % merged[:300]
+    # And having run to its timeout it leaves the tombstone, so the lapse detector the pile disabled works again once there is only ever one writer.
+    hb = wait_mod.heartbeat_path(worklist, "deadbeef")
+    assert wait_mod._is_tombstone(hb), (
+        "163r CONTROL: a waiter that ran to its timeout left no tombstone: %r"
+        % hb.read_text(encoding="utf-8")
+    )
 
 
 def nudge(fix) -> None:
@@ -493,6 +626,27 @@ def test_163q_c3_control_a_waiter_beside_a_live_worker_is_kept(wl):  # noqa: F81
         wl.check_quiet(
             "DRAINED, AND STILL HOLDING A WAITER",
             "163q-c3 CONTROL: told to stop listening while a worker was running",
+        )
+
+
+def test_163q_c4_a_drained_session_with_duplicates_gets_one_message_not_two(wl):  # noqa: F811
+    """THE OVERLAP between the drained report and the `many-waiters` violation, resolved rather than left to chance.
+
+    Both conditions hold for a finished session that accumulated duplicates: every live task is a confirmed waiter and there is more than one of them. Firing both would tell one session, in the same stop, to stop ALL of its waiters and to stop all but one. The drained report wins because its remedy strictly contains the other's -- it already prints a TaskStop line per
+    waiter -- and because "stop listening entirely" is the correct advice for a session with nothing left to hear.
+    """
+    drained_setup(wl)
+    with live_waiter(wl):
+        wl.bg = json.dumps([waiter_row("wt9"), waiter_row("wt8", "inbox waiter (duplicate)")])
+        wl.say(DRAINED_MSG)
+        got = wl.run()
+        label = "163q-c4: a drained session with two waiters is told to stop both, once"
+        assert_in(got, "DRAINED, AND STILL HOLDING A WAITER", label)
+        assert_in(got, "TaskStop wt9", label)
+        assert_in(got, "TaskStop wt8", label)
+        assert "INBOX WAITERS ARE LIVE" not in got.out, (
+            "163q-c4: both messages fired, so the session is told to stop all of them and to "
+            "stop all but one: %s" % got.out[:400]
         )
 
 

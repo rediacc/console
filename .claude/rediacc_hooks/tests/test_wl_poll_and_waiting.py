@@ -356,6 +356,8 @@ ARITY = {
     "V_NO_WAITER": (2, "p", "m"),
     "N_WAITER_NUDGE": (2, "p", "m", 60),
     "V_MANY_WORK_CRONS": (2, "l"),
+    # (n confirmed waiters, the pre-rendered TaskStop rows for the surplus)
+    "V_MANY_WAITERS": (2, "rows"),
     # (n waiters, the TaskStop rows, the wl_wait path, the session prefix, the fresh timeout)
     "N_WAITER_DRAINED": (1, "rows", "p", "m", 60),
     "V_MANY_POLL_CRONS": (2,),
@@ -403,6 +405,7 @@ ARITY = {
     "N_JUDGE_STAMP_FULL": ("m", "approved", "why"),
     "N_OUTQ_MORE": (3,),
     "N_OUTQ_BLOCKED": (3, 3),
+    "N_ONBOARD_DELIVERED": (17,),
     "N_AGENT_HINT": ("a", "a", "t, t"),
     "N_AGENT_CORPUS_ERR": ("rows",),
     "N_BEHAVIOR_HINT": (1, 12, "heading", "hint-id", "file:CLAUDE.md:1"),
@@ -507,6 +510,8 @@ ARITY = {
     "REGGATE_PROMPT": {"fixset": "f", "keys": "k"},
     "FIXSET_GROUND_TRUTH": {"count": 1, "files": "f", "more": ""},
     "V_PLAN_ADOPTED": {"rel": "p", "n_open": 2, "n_gap": 1, "recipes": "r", "me": "m"},
+    # ONE HOLE, and deliberately one: every number in the plan-implementation block -- the ceiling, the day, the three ownership buckets, the named box -- is computed by `wl_planenforce.render`, so the catalogue string wraps a body rather than formatting fourteen fields a call site would have to keep in step.
+    "V_PLAN_UNIMPLEMENTED": {"body": "b"},
     # v20 plan fidelity (wl_planfid.py). V_PLANFID takes the plan path, the umbrella rows, the untracked-task rows, the judge's instruction, and then the session prefix TWICE (once for the --add exit, once as the owner tag of the deferral line) before the planfid: token.
     "V_PLANFID": ("p", "u", "m", "i", "me", "me", "t"),
     "V_PLANFID_DEGRADED": ("e",),
@@ -554,7 +559,26 @@ ARITY = {
     "CLI_PLANWHY_NO_INDEX": {"path": "p", "index": "agent/INDEX.md"},
     "CLI_PLANTICK_USAGE": None,
     "CLI_PLANTICK_DRY": {"rel": "p", "note": "n"},
-    "CLI_PLANTICK_WROTE": {"rel": "p", "ledger": "l", "note": "n", "me": "m"},
+    "CLI_PLANTICK_WROTE": {"rel": "p", "ledger": "l", "investigation": "i", "note": "n", "me": "m"},
+    "CLI_PLANINV_USAGE": None,
+    "CLI_PLANINV_DRY": {
+        "rel": "p",
+        "sig": "s",
+        "verdict": "v",
+        "head": "h",
+        "br": "b",
+        "table": "t",
+    },
+    "CLI_PLANINV_WROTE": {
+        "rel": "p",
+        "sig": "s",
+        "verdict": "v",
+        "head": "h",
+        "br": "b",
+        "table": "t",
+        "ledger": "l",
+        "next": "n",
+    },
 }
 
 

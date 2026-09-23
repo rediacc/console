@@ -60,7 +60,7 @@ fi
 STRIPPED=$(printf '%s' "$STRIPPED" | sed -e "s/'[^']*'//g" -e 's/"[^"]*"//g' -e 's/[0-9]*>&[0-9-]*//g')
 
 if printf '%s' "$STRIPPED" | grep -qE 'wl_wait\.py[^&|;]*&([^&]|$)'; then
-    echo '❌ BLOCKED: wl_wait.py must NOT be launched with a shell `&`. A shell-backgrounded process is untracked -- the harness can never notify you when it fires, so you stop hearing cross-session mail silently. Launch it as a harness background task instead: run the plain command `python3 .claude/hooks/stop/wl_wait.py <session-prefix> --timeout 60` with run_in_background: true on the Bash tool call. (Also: to check whether one is already running, match the PYTHON process, not your own wrapper: ps -eo pid,args | grep "[p]ython3.*wl_wait" -- a bare pgrep -f self-matches the Bash tool wrapper containing your pattern text.)' >&2
+    echo '❌ BLOCKED: wl_wait.py must NOT be launched with a shell `&`. A shell-backgrounded process is untracked -- the harness can never notify you when it fires, so you stop hearing cross-session mail silently. Launch it as a harness background task instead: run the plain command `python3 .claude/hooks/stop/wl_wait.py <session-prefix> --timeout 60m` with run_in_background: true on the Bash tool call. (Also: to check whether one is already running, match the PYTHON process, not your own wrapper: ps -eo pid,args | grep "[p]ython3.*wl_wait" -- a bare pgrep -f self-matches the Bash tool wrapper containing your pattern text.)' >&2
     exit 2
 fi
 exit 0

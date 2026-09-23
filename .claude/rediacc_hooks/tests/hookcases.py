@@ -2012,12 +2012,12 @@ STATIC: list[Case] = [
     # green. It cannot detect its own neutering, so something else has to.
     case(
         "check 2 guards/block_shell_background_waiter.py",
-        bash_json("python3 .claude/hooks/stop/wl_wait.py abc --timeout 60 &"),
+        bash_json("python3 .claude/hooks/stop/wl_wait.py abc --timeout 60m &"),
         "background-waiter: a shell & makes it untracked",
     ),
     case(
         "check 0 guards/block_shell_background_waiter.py",
-        bash_json("python3 .claude/hooks/stop/wl_wait.py abc --timeout 60"),
+        bash_json("python3 .claude/hooks/stop/wl_wait.py abc --timeout 60m"),
         "background-waiter CONTROL: the same command in the foreground",
     ),
     case(

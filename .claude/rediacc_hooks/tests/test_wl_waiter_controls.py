@@ -58,7 +58,7 @@ def waiter_command() -> str:
 
     LOCAL to this module although the background-waits module has the same helper: the bash set WAITER_CMD once in `14-background-waits.sh` and the cases here read it across a file boundary, which is the coupling a per-module copy removes. `sys.executable` rather than the bare `python3` the bash used, because the verdict is a substring match against the child's real cmdline.
     """
-    return "%s %s deadbeef --timeout 3" % (sys.executable, WAIT_PY)
+    return "%s %s deadbeef --timeout 3m" % (sys.executable, WAIT_PY)
 
 
 def waiter_row(task_id: str = "wt1", description: str = "inbox waiter") -> dict:
@@ -350,7 +350,7 @@ def test_163z_c2_control_a_waiter_does_not_silence_a_real_job_beside_it(wl):  # 
     wl.hand_now()
     bgout(wl)
     (wl.base / "bgout" / "bw1.output").write_text("worker stream content\n", encoding="utf-8")
-    proc = spawn(wl, [sys.executable, str(WAIT_PY), "deadbeef", "--timeout", "3"], "waittmp2")
+    proc = spawn(wl, [sys.executable, str(WAIT_PY), "deadbeef", "--timeout", "3m"], "waittmp2")
     try:
         time.sleep(1)
         wl.bg = json.dumps(
@@ -376,6 +376,66 @@ def test_163z_c2_control_a_waiter_does_not_silence_a_real_job_beside_it(wl):  # 
             got,
             "PURE BACKGROUND WAIT",
             "163z-c2 CONTROL: one waiter silenced supervision of a real job",
+        )
+    finally:
+        proc.kill()
+        proc.wait()
+
+
+def test_163s_two_confirmed_waiters_are_a_violation(wl):  # noqa: F811
+    """THE OS-TRUTH BACKSTOP for the 2026-09-23 pile, and the check that did not exist.
+
+    The Stop hook SAW all thirteen: they were in `background_tasks`, they verified `confirmed`, and `confirmed_waiters` returned every one of them. Then every consumer discarded the count -- `_only_waiters`, the no-poll relaxation, `no-waiter`, `no-waiter-asked` all treat the list as a boolean, so thirteen satisfied them exactly as one would. The only site that ever
+    rendered the number fires solely for a drained session, which a session busy enough to accumulate duplicates never is.
+
+    `many-work-crons` has been the template for "more than one of this instrument is a violation" all along; it was simply never pointed here.
+    """
+    wl.brief_now()
+    wl.hand_now()
+    bgout(wl)
+    proc = spawn(wl, [sys.executable, str(WAIT_PY), "deadbeef", "--timeout", "3m"], "waittmp3")
+    try:
+        time.sleep(1)
+        # PREMISE, asserted rather than assumed: both declared tasks must reach `confirmed`, or the case would pass for want of a verdict instead of for the count.
+        liveness = wlfix.import_wl("wl_liveness")
+        rows = [waiter_row("wt1"), waiter_row("wt2", "inbox waiter (duplicate)")]
+        verdicts = liveness.verify_background(rows, ancestors={os.getpid()})
+        assert set(verdicts.values()) == {"confirmed"}, (
+            "163s premise: verdicts are %r, so the count is not what is being measured" % verdicts
+        )
+        wl.bg = json.dumps(rows)
+        wl.task(7, "in_progress", "waiting on the inbox")
+        wl.say(SAID_INBOX)
+        got = wl.run()
+        label = "163s: two live waiters on one session is a violation"
+        assert_in(got, "2 INBOX WAITERS ARE LIVE", label)
+        # The remedy names the SURPLUS task's own id, and TaskStop rather than kill: killing leaves the task declared, which rates `suspect` and gets the session nagged into starting another one.
+        assert_in(got, "TaskStop wt2", label)
+        assert "TaskStop wt1" not in got.out, (
+            "163s: it told the session to stop ALL its waiters, leaving it deaf: %s" % got.out[:300]
+        )
+    finally:
+        proc.kill()
+        proc.wait()
+
+
+def test_163s_control_one_confirmed_waiter_is_the_shape(wl):  # noqa: F811
+    """CONTROL: the identical fixture with ONE declared waiter must stay silent.
+
+    Without it the assertion above is satisfied by a check that fires whenever any waiter is confirmed -- which would accuse every correctly-behaving session in the repo.
+    """
+    wl.brief_now()
+    wl.hand_now()
+    bgout(wl)
+    proc = spawn(wl, [sys.executable, str(WAIT_PY), "deadbeef", "--timeout", "3m"], "waittmp4")
+    try:
+        time.sleep(1)
+        wl.bg = json.dumps([waiter_row("wt1")])
+        wl.task(7, "in_progress", "waiting on the inbox")
+        wl.say(SAID_INBOX)
+        wl.check_quiet(
+            "INBOX WAITERS ARE LIVE",
+            "163s CONTROL: a single waiter was accused of being a pile",
         )
     finally:
         proc.kill()
