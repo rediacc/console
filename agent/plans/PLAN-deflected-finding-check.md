@@ -1,6 +1,6 @@
 # PLAN: a mechanical Stop-hook check for deflected findings
 
-Status: executing
+Status: designed, not yet implemented -- committed and reviewable, but no writer has been dispatched against its 6 boxes yet.
 Owner: d778be9d
 Updated: 2026-09-23
 

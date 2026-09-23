@@ -2,6 +2,7 @@
 
 Status: executing -- both mechanical scripts (A and B) and the gate-defect investigation are done.
 Two dispatched writers have now each worked the judgment remainder box by box and reported back; the second round repaired 13 more entries (citation corpus 357 -> 250) and closed this plan's own box count from 27 to 14.
+No further writer has been dispatched against this plan's own remaining boxes since that second round landed; unrelated worklist activity elsewhere in this session does not change this plan's state.
 Remaining boxes are the "Judgment remainder" section's genuine per-plan calls, not force-closed.
 Owner: d778be9d
 Updated: 2026-09-23
