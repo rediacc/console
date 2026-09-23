@@ -124,6 +124,23 @@
       "open_sigs": [],
       "done_sigs": []
     },
+    "agent/plans/PLAN-bgsweep-orphan-shells.md": {
+      "status": "proposed",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 6,
+      "done": 0,
+      "open_sigs": [
+        "251e6c8e",
+        "4a9f06c9",
+        "775f11ff",
+        "a63df077",
+        "cb244b5c",
+        "d7f4bbdb"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-breakpoint-secret-shape.md": {
       "status": "design",
       "owner": "unowned",
@@ -172,6 +189,28 @@
       "open": 0,
       "done": 0,
       "open_sigs": [],
+      "done_sigs": []
+    },
+    "agent/plans/PLAN-chunk-store-browse-toc-and-remote.md": {
+      "status": "proposed",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 11,
+      "done": 0,
+      "open_sigs": [
+        "217bb9ee",
+        "22cf9fc3",
+        "2b7fdc6c",
+        "38831edc",
+        "59e2de3a",
+        "68bb5192",
+        "74ee49a6",
+        "79352342",
+        "7d2cd3d5",
+        "83843282",
+        "8c416e11"
+      ],
       "done_sigs": []
     },
     "agent/plans/PLAN-chunkstore-restore.md": {
@@ -242,7 +281,7 @@
       "done_sigs": []
     },
     "agent/plans/PLAN-commit-author-identity.md": {
-      "status": "draft",
+      "status": "done",
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "2026-09-21",
@@ -295,6 +334,41 @@
         "a984dd31",
         "f7d91e90"
       ]
+    },
+    "agent/plans/PLAN-defer-settle-classifier.md": {
+      "status": "proposed",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 7,
+      "done": 0,
+      "open_sigs": [
+        "053b4136",
+        "3ac400fc",
+        "452d9340",
+        "58aeb9ee",
+        "5dce0269",
+        "65206617",
+        "6edb0ce2"
+      ],
+      "done_sigs": []
+    },
+    "agent/plans/PLAN-deflected-finding-check.md": {
+      "status": "designed",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 6,
+      "done": 0,
+      "open_sigs": [
+        "08c6f913",
+        "3f255c42",
+        "580863a5",
+        "594a5819",
+        "cd80c1d4",
+        "e2125fb3"
+      ],
+      "done_sigs": []
     },
     "agent/plans/PLAN-devbox-uid-derived-image.md": {
       "status": "compacted",
@@ -421,8 +495,24 @@
       "open_sigs": [],
       "done_sigs": []
     },
+    "agent/plans/PLAN-fix-is-invoked-sh-alternation.md": {
+      "status": "draft",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 3,
+      "done": 1,
+      "open_sigs": [
+        "009ad262",
+        "2c4d110a",
+        "f7cb4cdd"
+      ],
+      "done_sigs": [
+        "023406b0"
+      ]
+    },
     "agent/plans/PLAN-fix-plan-citation-drift.md": {
-      "status": "executing",
+      "status": "done",
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
@@ -1320,6 +1410,25 @@
       "open_sigs": [],
       "done_sigs": []
     },
+    "agent/plans/PLAN-submodule-branch-coordination-guard.md": {
+      "status": "proposed",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 8,
+      "done": 0,
+      "open_sigs": [
+        "01580b54",
+        "07636674",
+        "166f81b3",
+        "33fa94fa",
+        "7d554983",
+        "ab41ac98",
+        "c053d7f5",
+        "f1981d10"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-sweep-obligation-carry-forward.md": {
       "status": "draft",
       "owner": "d778be9d",
@@ -1568,6 +1677,24 @@
       "open": 0,
       "done": 0,
       "open_sigs": [],
+      "done_sigs": []
+    },
+    "agent/plans/PLAN-uncommitted-work-exposure-check.md": {
+      "status": "proposed",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 7,
+      "done": 0,
+      "open_sigs": [
+        "0374ed48",
+        "319fe5ff",
+        "32584cc7",
+        "3f2db5f2",
+        "5eadb655",
+        "8e1e6542",
+        "b9327adf"
+      ],
       "done_sigs": []
     },
     "agent/plans/PLAN-unify-trap-corpus.md": {
