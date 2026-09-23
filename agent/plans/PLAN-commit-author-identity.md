@@ -168,7 +168,8 @@ assertions fail; and a submodule fan-out where console is clean but `rediacc/acc
       guard is AUTO-DISCOVERED via its `CHAIN` attribute, so it needs no per-hook
       `settings.json` entry -- that is the whole point of the dispatch architecture that
       replaced per-file wiring.
-- [ ] Add the eleven cases to `.claude/hooks/test-hooks.sh`
+- [x] Add the eleven cases to `.claude/hooks/test-hooks.sh`
+    (ticked) 2026-09-23T12:08:05Z by d778be9d: IMPLEMENTED in 1eeda8a20: the block at .claude/rediacc_hooks/tests/test_hooks_fixtures.py:293 now carries twelve cases, six BLOCK (plain config, -c user.email, GIT_AUTHOR_EMAIL, --author, a nested checkout under the project root, an unreadable identity cache) and six ALLOW. The named path .claude/hooks/test-hooks.sh is gone; the shell harness was ported to pytest. Driven live: pytest -k unlinked passes, the nested-checkout BLOCK arm exits 2 naming bad@example.com and the linked-address twin exits 0, and npm run check:ci-hook-integrity reports rc=0 with 48 guards, none newly uncovered. Investigation row in a4b08dbe8.
 - [x] Run `check:ci-hook-integrity` -- guard present, both directions covered
       LEDGER LAG, closed 2026-09-09: `npm run check:ci-hook-integrity` live -> rc=0, "43 guard(s)
       present across 3 chain(s), none newly uncovered." `guards/block_unlinked_commit_author.py` is on
