@@ -1,6 +1,6 @@
 # PLAN: a mechanical Stop-hook check for deflected findings
 
-Status: designed, not yet implemented -- committed and reviewable, but no writer has been dispatched against its 6 boxes yet.
+Status: done -- all 6 boxes closed, commit 770b9e9c2.
 Owner: d778be9d
 Updated: 2026-09-23
 
@@ -47,13 +47,19 @@ New `V_DEFLECTED_FINDING` in `worklist_messages.py`, sibling to `V_DEFERRED_FIND
 
 ## Boxes
 
-- [ ] Add `wl_deflect.py`: the phrase regex (verdict-shape + finding-noun-adjacent shape), the harmless-noun exclusion, the baseline/ratchet exemption, and the settled-signature cache (clone `wl_admit.py`'s `load_settled`/`save_settled`/`turn_sig`/`_norm` shape).
-- [ ] Extend the turn walker to capture Bash command strings, not just tool names -- either generalize into `wl_core.py` (preferred, since two detectors now need it) or a small local duplicate in `wl_deflect.py` with a comment flagging the duplication for a future fold-in.
-- [ ] Add `V_DEFLECTED_FINDING` to `worklist_messages.py`.
-- [ ] Wire `wl_deflect` into `wl_checks.py` beside the `DEFERRED_FINDING_RE` call site (`wl_checks.py:4030-4051`), `always=False`.
-- [ ] Test coverage: phrase-family MUST_HIT/MUST_MISS pairs (verdict shape, finding-noun shape, harmless-noun exclusion, baseline exemption) using this session's own real quoted lines as fixtures.
+- [x] Add `wl_deflect.py`: the phrase regex (verdict-shape + finding-noun-adjacent shape), the harmless-noun exclusion, the baseline/ratchet exemption, and the settled-signature cache (clone `wl_admit.py`'s `load_settled`/`save_settled`/`turn_sig`/`_norm` shape).
+    (ticked) 2026-09-23T17:21:35Z by d778be9d: Landed in commit 770b9e9c2; investigation ledger committed at ef28c2183.
+- [x] Extend the turn walker to capture Bash command strings, not just tool names -- either generalize into `wl_core.py` (preferred, since two detectors now need it) or a small local duplicate in `wl_deflect.py` with a comment flagging the duplication for a future fold-in.
+    (ticked) 2026-09-23T17:21:35Z by d778be9d: Landed in commit 770b9e9c2; investigation ledger committed at ef28c2183.
+- [x] Add `V_DEFLECTED_FINDING` to `worklist_messages.py`.
+    (ticked) 2026-09-23T17:21:36Z by d778be9d: Landed in commit 770b9e9c2; investigation ledger committed at ef28c2183.
+- [x] Wire `wl_deflect` into `wl_checks.py` beside the `DEFERRED_FINDING_RE` call site (`wl_checks.py:4030-4051`), `always=False`.
+    (ticked) 2026-09-23T17:21:36Z by d778be9d: Landed in commit 770b9e9c2; investigation ledger committed at ef28c2183.
+- [x] Test coverage: phrase-family MUST_HIT/MUST_MISS pairs (verdict shape, finding-noun shape, harmless-noun exclusion, baseline exemption) using this session's own real quoted lines as fixtures.
+    (ticked) 2026-09-23T17:21:36Z by d778be9d: Landed in commit 770b9e9c2; investigation ledger committed at ef28c2183.
       Corroboration-window pairs using a synthetic transcript fixture (same tempdir shape as `wl_admit._selftest`): should-not-block (phrase + later worklist --add in the same turn, matching the real 84031->84053 sequence), should-block (phrase, no corroboration anywhere in the turn), turn-boundary reset control (phrase in one turn, genuine operator message, new turn -- must not leak forward), and a documented false-negative control (an unrelated worklist --add present in the turn, which the whole-turn window cannot distinguish from real corroboration -- assert it currently does NOT block, as a known, accepted tradeoff, not a silent gap).
-- [ ] Run the new test file and the full `wl_admit`/`wl_checks` suite; confirm no regression.
+- [x] Run the new test file and the full `wl_admit`/`wl_checks` suite; confirm no regression.
+    (ticked) 2026-09-23T17:21:36Z by d778be9d: Landed in commit 770b9e9c2; investigation ledger committed at ef28c2183.
 
 ## Critical files
 

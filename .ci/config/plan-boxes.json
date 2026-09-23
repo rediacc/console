@@ -358,17 +358,17 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 6,
-      "done": 0,
-      "open_sigs": [
+      "open": 0,
+      "done": 6,
+      "open_sigs": [],
+      "done_sigs": [
         "08c6f913",
         "3f255c42",
         "580863a5",
         "594a5819",
         "cd80c1d4",
         "e2125fb3"
-      ],
-      "done_sigs": []
+      ]
     },
     "agent/plans/PLAN-devbox-uid-derived-image.md": {
       "status": "compacted",
