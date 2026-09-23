@@ -20,7 +20,8 @@ Not fixable by tuning, and the repo already proved that: `.ci/scripts/quality/ch
 
 The damage is the ROUTING, not the DETECTION -- `.claude/hooks/stop/worklist-cases/20-advisories-rotation.sh:645` records exactly that conclusion from an earlier misfire.
 
-- [ ] Split `pushback_for` (`.claude/hooks/stop/wl_agents.py:667`) so it returns
+- [x] Split `pushback_for` (`.claude/hooks/stop/wl_agents.py:667`) so it returns
+    (ticked) 2026-09-23T16:07:22Z by d778be9d: pushback_for split landed in commit 00b0a0957; investigation ledger committed at 4e05a9d03.
       `(claims, agent_or_None)`, naming an agent only above the HINT's own floor
       (`.claude/hooks/stop/wl_agents.py:51`, `.claude/hooks/stop/wl_agents.py:57`). Delete
       `PUSHBACK_MIN_SCORE` and `PUSHBACK_MIN_MARGIN`.
