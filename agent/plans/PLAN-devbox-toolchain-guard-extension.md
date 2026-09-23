@@ -1,6 +1,6 @@
 # PLAN: extend block_host_toolchain_run.py to cover aws/bw/bws, with an exception list
 
-Status: executing
+Status: executing (implementation in progress, uncommitted: block_host_toolchain_run.py modified, .ci/policy/.host-toolchain-exceptions created)
 Owner: d778be9d
 Updated: 2026-09-23
 
