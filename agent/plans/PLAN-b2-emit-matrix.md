@@ -225,7 +225,8 @@ collide on it). Confirm no concurrent writer holds it before starting D3/D4.
       regenerated block against the live workflow text necessarily catches drift either way by
       construction; there is no separate "[1..N]" literal to write because the comparison is
       structural, not textual. D5a is DONE. Only D5b remains open in this box.
-- [ ] D5b: retarget `check:ci-quality-complete`'s own gate-header `lane:` off `quality-code`
+- [x] D5b: retarget `check:ci-quality-complete`'s own gate-header `lane:` off `quality-code`
+    (ticked) 2026-09-23T12:14:50Z by d778be9d: PRESENT, record stale: HOST_LANE is quality-wiring, a NEW lane rather than quality-branch, and the gate header records the clause as CLOSED with the reason quality-branch and quality-submodule-branches were both refused (no node, no id setup). Landed in 814893cb7; manifest and workflow agree on the lane; partitionFindings refuses HOST_LANE ever entering SHARD_COUNTS. Driven live: npm run check:ci-quality-complete rc=0. Investigation row in f751d55be.
       (currently `scripts/gates/check-quality-complete.ts:59`, matching
       `scripts/ci-runner/manifest.ts:4966`) onto a lane that can never be sharded (e.g.
       `quality-branch`); this is a driver-only `package.json`/`manifest.ts`/workflow-step edit,
@@ -277,13 +278,16 @@ collide on it). Confirm no concurrent writer holds it before starting D3/D4.
       lane in the allowlist has `- id: setup` unless it carries a recorded `why:`. Surfaces
       `ci-quick`, `quality-packages`, `quality-go` as an explicit open decision rather than a
       silent gap.
-- [ ] Update invariant 11's prose (`agent/plans/PLAN-tooling-transformation.md:6043`, "eight of ten
+- [x] Update invariant 11's prose (`agent/plans/PLAN-tooling-transformation.md:6043`, "eight of ten
+    (ticked) 2026-09-23T12:14:50Z by d778be9d: PRESENT, and the quoted phrase was never there: invariant 11 names quality-branch and quality-submodule-branches as the only lanes without an id setup step rather than hardcoding a count, which is the box own second option, and the same wording is in the pre-move file at fce51e202^ line 6485. Re-derived against .github/workflows/ci-quality.yml just now: exactly those two of thirteen jobs lack an id setup step. Investigation row in f751d55be.
       lanes") to match the current 9-of-11 count, or reword to not hardcode a count.
-- [ ] Correct B4's status note about `ci-quick` (box `:4029-4033` says it stays `[ ]` "until it
+- [x] Correct B4's status note about `ci-quick` (box `:4029-4033` says it stays `[ ]` "until it
+    (ticked) 2026-09-23T12:14:50Z by d778be9d: PRESENT: the flag was raised and acted on. B4 is ticked in PLAN-tooling-transformation.md, closed 2026-09-15 by f4da5c2e, and its tick note records the ci-quick job as live, which .github/workflows/ci-quality.yml:146 confirms. The commit the box names, 6b1a1b060, resolves. Investigation row in f751d55be.
       lands in the primary tree" -- `git log` shows commit `6b1a1b060` on 2026-09-14 landed it
       for real). Flag to whoever owns B4, out of this plan's direct scope but noted since B2's
       lane count depends on it.
-- [ ] Re-run `check:ci-gates-lock`, `check:ci-parity`, `check:ci-gate-bind --write` (dry-run
+- [x] Re-run `check:ci-gates-lock`, `check:ci-parity`, `check:ci-gate-bind --write` (dry-run
+    (ticked) 2026-09-23T12:14:50Z by d778be9d: PERFORMED, after fdc5a0799 removed the refusal that made it unanswerable. All five runs green: check:ci-gates-lock rc=0, check:ci-parity rc=0 (347 manifest gates, both directions agree), check:actions rc=0 (15 actions up to date), check:ci-quality-complete rc=0 (40 controls, 347 lock entries, 13 jobs), and gate-bind --dry-run rc=0 reporting 6 regions, 2676 lines to 2676, with NO drops in either bucket. The one sharded lane is quality-code, whose four matrix legs inherit the job runs-on ubuntu-latest and timeout-minutes 15 unchanged, so the shard runs-on and timeout criterion holds by construction. Investigation row in f751d55be.
       first), `actionlint`, and the new completeness gate after each piece lands; confirm
       `dropped` stays empty and every shard's `runs-on`/`timeout-minutes` match its pre-rewrite
       lane's, per the box's stated acceptance criteria.
