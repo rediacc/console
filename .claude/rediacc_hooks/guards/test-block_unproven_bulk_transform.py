@@ -122,6 +122,40 @@ case(
 )
 git(repo, "reset", "-q")
 
+# ---- SCOPE: a pathspec commits ITS paths, not the index ---------------------
+# Reproduced live 2026-09-23: a three-file `git commit -F <msg> -- <three paths>` in this checkout was refused citing 183 staged files, none of which that commit would have touched. The tree is shared, so the index routinely carries other sessions' work; judging a pathspec commit by it is a fact about the tree, not about the commit. Both directions, because the narrowing must
+# not become a way past the guard: a pathspec naming BULK files is still bulk.
+pathspec_repo = scratch_repo()
+# TRACKED AND THEN MODIFIED, because that is what a pathspec commit can name: git refuses `commit -- <path>` for a path it does not know, so an untracked fixture would test a command nobody can run.
+for i in range(3):
+    with open(os.path.join(pathspec_repo, "own%d.py" % i), "w", encoding="utf-8") as fh:
+        fh.write("y = %d\n" % i)
+git(pathspec_repo, "add", "-A")
+git(pathspec_repo, "commit", "-qm", "seed the three paths")
+for i in range(3):
+    with open(os.path.join(pathspec_repo, "own%d.py" % i), "w", encoding="utf-8") as fh:
+        fh.write("y = %d  # edited\n" % i)
+stage_files(pathspec_repo, BULK, prefix="idx")
+case(
+    "a three-path commit is judged on its three paths, not the loaded index",
+    'git commit -m "fix: a small thing" -- own0.py own1.py own2.py',
+    pathspec_repo,
+    False,
+)
+case(
+    "a pathspec naming BULK files is still bulk, and still needs proof",
+    'git commit -m "style: reflow" -- %s' % " ".join("idx%d.py" % i for i in range(BULK)),
+    pathspec_repo,
+    True,
+)
+case(
+    "a pathspec git cannot resolve falls back to the index rather than allowing",
+    'git commit -m "style: reflow" -- ../outside-this-repo.py',
+    pathspec_repo,
+    True,
+)
+git(pathspec_repo, "reset", "-q")
+
 case("a plain command is not a target", "ls -la", repo, False)
 case("gh pr view is not a write", "gh pr view 1", repo, False)
 case(

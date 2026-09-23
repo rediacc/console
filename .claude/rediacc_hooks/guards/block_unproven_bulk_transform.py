@@ -45,6 +45,9 @@ BULK_FILE_THRESHOLD = int(os.environ.get("WORKLIST_BULK_FILE_THRESHOLD", "20"))
 # A push or PR range check walks every commit in the range; this is the ceiling on how many are inspected before the guard gives up and allows rather than spending unbounded subprocess time on a rebase or a stacked branch.
 RANGE_COMMIT_CAP = 200
 
+# The `-- <path>...` tail `block_pathspecless_git_commit.py` requires on every commit here. Its own `DDASH_PATHSPEC` only has to PROVE one is present, so it stops at the first character of the first path; this one has to capture the whole list, and stops at a clause or redirection boundary so a `--` in one clause cannot claim the next clause's words.
+PATHSPEC_TAIL = hookio.rx(r"(^|[{S}])--([{S}]+[^{S};&|<>()]+)+")
+
 PROOF_PHRASE = re.compile(
     r"shape[-_ ]cluster[-_ ]diff|shape_cluster_diff\.py|ast[-_ ]equalit|ast[-_ ]diff"
     r"|byte[-_ ]identical|sampled\s+(?:\d+\s+)?files?|sampled\s+and\s+(?:diffed|read|compared)",
@@ -82,6 +85,28 @@ def _commit_message_text(cmd, cwd):
 def _staged_files(cwd):
     out = hookio.git_out(["diff", "--cached", "--name-only"], cwd=cwd)
     return [line for line in out.splitlines() if line.strip()]
+
+
+def _pathspec_files(cwd, paths):
+    """What `git commit -- <paths>` will really commit, or [] when that cannot be resolved.
+
+    A PATHSPEC COMMIT DOES NOT COMMIT THE INDEX. git's own wording: "git commit [--] <paths>... commits the contents of the files given on the command line", ignoring what is staged. In a tree several sessions share, the index routinely carries a hundred paths nobody in this command mentioned, so the staged count is a fact about the TREE rather than about the commit -- the
+    same class of blindness the repo-context note in `run` records, one scope narrower.
+
+    `HEAD`, not `--cached`, because the content committed comes from the WORKTREE: a path modified but never staged still lands in that commit, and `--cached` would not see it. `want_rc=True` keeps an unresolvable pathspec (a bogus path, a `--` belonging to some other clause) as None rather than as an empty list that would read as "this commit changes nothing".
+    """
+    out = hookio.git_out(["diff", "HEAD", "--name-only", "--", *paths], cwd=cwd, want_rc=True)
+    if out is None:
+        return []
+    return [line for line in out.splitlines() if line.strip()]
+
+
+def _commit_pathspecs(scan):
+    """The `-- <path>...` tail of the command, as a list of tokens."""
+    matches = hookio.grep_o(PATHSPEC_TAIL, scan)
+    if not matches:
+        return []
+    return [word for word in matches[-1].split() if word != "--"]
 
 
 def _commit_files(sha, cwd):
@@ -198,7 +223,10 @@ def run(ev):
     cwd = ev.field("cwd") or root
 
     if PSC.GIT_COMMIT.search(scan):
-        files = _staged_files(cwd)
+        # A PATHSPEC NARROWS THE COMMIT, SO IT NARROWS THIS COUNT. Reproduced live 2026-09-23: a three-file `git commit -F <msg> -- <three paths>` was refused citing 183 staged files, none of which that commit would have touched -- the index belonged to other sessions' work in the same tree, which is the normal state here and the reason `block_blanket_git_add.py` exists.
+        # An EMPTY narrowed set falls back to the staged count rather than allowing. git refuses a pathspec commit that changes nothing, so an empty answer means the tail was misread, not that the commit is harmless, and guessing in the permissive direction is how a real bulk commit walks past a guard whose whole subject is scale.
+        paths = _commit_pathspecs(scan)
+        files = (paths and _pathspec_files(cwd, paths)) or _staged_files(cwd)
         if len(files) >= BULK_FILE_THRESHOLD and not _proof_shown(_commit_message_text(cmd, cwd)):
             ev.warn(BLOCK_COMMIT % len(files))
             return hookio.DENY
