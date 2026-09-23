@@ -520,10 +520,7 @@ function selftest(): boolean {
     path.join(hookDir, 'guard.sh'),
     `echo "BLOCKED ${EM_DASH} use rdc instead." # em-dash-ok\n`
   );
-  check(
-    'a marked line is silenced',
-    scanSurface(root, hookSurface).findings.length === 0
-  );
+  check('a marked line is silenced', scanSurface(root, hookSurface).findings.length === 0);
   fs.writeFileSync(
     path.join(hookDir, 'guard.sh'),
     `echo "BLOCKED ${EM_DASH} use rdc instead." # em-dash-ok\necho "SECOND ${EM_DASH} unmarked line."\n`
