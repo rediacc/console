@@ -151,6 +151,16 @@
       "RENET_TAG",
       "WEB_TAG"
     ],
+    ".ci/rediacc_ci/core/account.py": [
+      "CONSOLE_ROOT_DIR",
+      "DATABASE_PATH",
+      "DEVBOX_OFFSET_STUDIO",
+      "GATEWAY_PORT",
+      "HOME",
+      "REDIACC_DEV_PORT_BASE",
+      "REDIACC_STARTUP_TIMEOUT",
+      "ROOT_EMAIL"
+    ],
     ".ci/rediacc_ci/core/advisory.py": [
       "CI"
     ],
@@ -196,6 +206,10 @@
     ".ci/rediacc_ci/core/service.py": [
       "CONSOLE_ROOT_DIR",
       "SERVICE_STATUS_NOW"
+    ],
+    ".ci/rediacc_ci/core/shadow_driver.py": [
+      "HOME",
+      "PATH"
     ],
     ".ci/rediacc_ci/deploy/deploy_account.py": [
       "CLOUDFLARE_API_TOKEN"
@@ -958,6 +972,9 @@
     ".ci/rediacc_ci/tests/gates/test_gate_bws_env.py": [
       "PATH"
     ],
+    ".ci/rediacc_ci/tests/gates/test_gate_bws_rotate.py": [
+      "PATH"
+    ],
     ".ci/rediacc_ci/tests/gates/test_gate_ci_complete_tiers.py": [
       "HOME",
       "PATH"
@@ -1114,6 +1131,9 @@
     ".ci/rediacc_ci/tests/test_ci_scope_shadow.py": [
       "HOME",
       "PATH"
+    ],
+    ".ci/rediacc_ci/tests/test_core_account.py": [
+      "HOME"
     ],
     ".ci/rediacc_ci/tests/test_core_dockerx.py": [
       "DOCKER_HOST"
@@ -1494,6 +1514,9 @@
       "WORKLIST_PROFILE",
       "_WL_SITEPROFILE"
     ],
+    ".claude/hooks/stop/test-backlog.py": [
+      "WORKLIST_STORE_DIR"
+    ],
     ".claude/hooks/stop/test-planrec.py": [
       "HOME",
       "PATH"
@@ -1630,6 +1653,7 @@
       "CLAUDE_PROJECT_DIR"
     ],
     ".claude/hooks/stop/wl_planrec.py": [
+      "TMPDIR",
       "WORKLIST_RECORD_BLOB_RATIO",
       "WORKLIST_RECORD_MAX_BYTES",
       "WORKLIST_RECORD_PER_BOX_BYTES",
@@ -1798,8 +1822,14 @@
     "packages/json/templates/networking/cloud-switch/web/app.py": [
       "FLASK_DEBUG"
     ],
-    "scripts/ops/bws-map-refresh.py": [
-      "BWS_ACCESS_TOKEN"
+    "scripts/dev/bws-rotate.py": [
+      "BWS_ACCESS_TOKEN",
+      "BWS_BIN",
+      "BWS_ROTATE_ENV_FILE",
+      "BWS_ROTATE_GITMODULES",
+      "BWS_ROTATE_MIN_SECRETS",
+      "BWS_ROTATE_SECRET_MAP",
+      "GH_BIN"
     ],
     "scripts/ops/secret-rename.py": [
       "SECRET_RENAME_MIN_FILES"
