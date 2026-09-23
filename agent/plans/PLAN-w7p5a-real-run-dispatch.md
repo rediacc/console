@@ -1,6 +1,6 @@
 # PLAN: W7P5-a real-run dispatch — execute the 32-path authorization safely
 
-Status: executing
+Status: ready -- the design (categorization, tiers, sequencing) is complete and unchanged since landing; every remaining box is door:operator-only (per-path sign-off, several requiring the operator physically at the keyboard), so no further session-side work advances it without an operator action.
 Owner: d778be9d
 Updated: 2026-09-23
 

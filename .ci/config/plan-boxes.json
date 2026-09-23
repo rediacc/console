@@ -1620,7 +1620,7 @@
       ]
     },
     "agent/plans/PLAN-w7p5a-real-run-dispatch.md": {
-      "status": "executing",
+      "status": "ready",
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
