@@ -38,7 +38,7 @@ Both, in this repo's established split:
 - **`CLAUDE.md:134`** -- replace the current one-liner (`Opus for code and design, Sonnet for translation and naturalization`) with a three-line shape rule plus a pointer. It sits inside rule 4, "Reach for subagents" (`CLAUDE.md:122`), which is where a session is already reading when it dispatches.
 - **`docs/agent-reference/model-routing.md`** (new) -- the full rule, the oracle caveat, the worked examples from section 5, and the measurement table from section 6.
 
-This matches eight existing precedents in CLAUDE.md of the form "**[docs/agent-reference/X.md](...)** carries the rest" (`CLAUDE.md:189`, `:203`, `:241`, `:247`, `:253`, `:264`, `:270`, `:272`). **Not generated from one another** -- no generator produces agent-reference prose, and inventing one for two files is not worth a new failure mode. The `check:ci-agent-model-roster` gate in
+This matches eight existing precedents in CLAUDE.md of the form "**[docs/agent-reference/X.md](...)** carries the rest" (`CLAUDE.md:189`, `:203`, `:241`, `:247`, `:253`, `:264`, `:270`, `:272`). **Not generated from one another** -- no generator produces agent-reference prose, and inventing one for two files is not worth a new failure mode. The proposed `ci-agent-model-roster` gate in
 section 4 is what keeps them from drifting.
 
 **Wiring note:** after adding the doc, run `npx tsx scripts/gen/gen-docs.ts --write` and confirm `npx tsx scripts/gen/gen-docs.ts` (verify mode) exits 0 -- `scripts/data/doc-registry.md` is generated and may need the new file's row. Do not hand-edit it.
@@ -102,7 +102,7 @@ sonnet interlude and its resolution, which is where a future reader should land.
 A planted defect would have to be "an agent whose description implies the wrong shape", and shape-from-prose is precisely the judgment call the rule exists to have a human make. A gate that cannot state what a planted defect looks like is a gate that cannot fail, which `.claude/agents/gate-author.md`'s own anti-vacuity discipline forbids. Building it would manufacture a green that
 means nothing.
 
-**Recommended instead: `check:ci-agent-model-roster`**, a small keyset gate in the spirit of `.ci/scripts/quality/check_agent_hint_liveness.py` (which already scans `.claude/agents/*.md` and asserts a specimen keyset equals the agent-file set in both directions) and of `scripts/gates/check-naturalization-model-policy.ts` (which "deliberately does NOT adjudicate which model is
+**Recommended instead: a new gate named `ci-agent-model-roster`**, a small keyset gate in the spirit of `.ci/scripts/quality/check_agent_hint_liveness.py` (which already scans `.claude/agents/*.md` and asserts a specimen keyset equals the agent-file set in both directions) and of `scripts/gates/check-naturalization-model-policy.ts` (which "deliberately does NOT adjudicate which model is
 best... the gate only insists the change be made ON PURPOSE, in CLAUDE.md and here together"). Same bargain, applied to the agent roster:
 
 1. Every `.claude/agents/*.md` declares a `model:` whose family is in `{opus, haiku, sonnet}` -- a version bump within a family passes, a change of family or vendor does not (copy the family-matching approach at `scripts/gates/check-naturalization-model-policy.ts:51`).
@@ -183,7 +183,7 @@ The table lives beside the rule for the same reason `.claude/hooks/stop/wl_judge
 1. **Phase 0, doc-only, zero risk, no behavior change.** `CLAUDE.md:134` rewrite + pointer; new `docs/agent-reference/model-routing.md`; `gen-docs.ts --write` and verify. Ships alone.
 2. **Phase 1, the stale i18n note.** Section 3's `.claude/agents/i18n-guardian.md:77-79` rewrite. Independent of everything else; can ride phase 0's commit.
 3. **Phase 2, the calibration batch.** Section 6's five ports, hand-run, results recorded. Blocks phases 3 and 4. No further routing changes until this table exists.
-4. **Phase 3, the roster gate.** `check:ci-agent-model-roster` plus three-point wiring and `gates.lock.json` regeneration. After phase 0, because the gate asserts against the doc phase 0 creates. Dispatch to Opus (section 4).
+4. **Phase 3, the roster gate.** The new `ci-agent-model-roster` gate plus three-point wiring and `gates.lock.json` regeneration. After phase 0, because the gate asserts against the doc phase 0 creates. Dispatch to Opus (section 4).
 5. **Phase 4, the pr-babysitter flip, only if phase 2 passed.** `.claude/agents/pr-babysitter.md:142` Sonnet -> Haiku for mechanical sweeps and doc/format churn, Sonnet retained as the named escalation tier. This is the highest-volume change in the plan and the one with real downside if the calibration disappoints, so it goes last and is conditional.
 6. **Phase 5, the three agent-body `## Model` sections** (section 2's table, minus `.claude/agents/pr-babysitter.md:142` which phase 4 owns). Cosmetic once the doc exists; batch with phase 4.
 

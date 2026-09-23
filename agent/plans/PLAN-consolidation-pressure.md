@@ -3,7 +3,7 @@ Status: compacted
 First-Seen: 2026-09-20
 Owner: d778be9d
 Full-Text-Blob: a6ea9a9a7a15345da735ff30ad88810a8c2125a9
-Record-Sig: 959be3c1
+Record-Sig: 98d03a8d
 
 ## Why
 Four incidents escaped detection while all gates were green: duplicate implementations of shared policies diverged (comment vs docstring handling), a constraint existed in one place but wasn't consulted by siblings (REFLOW_STOP), fixes covered only one language or call site while siblings had identical blind spots. The root cause: no mechanism enforced agreement between sibling
@@ -56,3 +56,5 @@ Read-History: `git show a6ea9a9a7a15345da735ff30ad88810a8c2125a9` recovers the t
 
 ## History
 - 2026-09-20T18:09:46Z compacted by d778be9d from `done` (record-sig 959be3c1)
+- 2026-09-23T10:29:00Z record-sig re-derived by d778be9d from 959be3c1, the remedy check:ci-plan-record R7 names: the plan-folder move at `a81967e94` repointed `agent/PLAN-` to `agent/plans/PLAN-` inside the box table and the signature was not re-derived with it.
+  The box signatures and their `done=` proofs are untouched; only the line that attests them is brought back into agreement.

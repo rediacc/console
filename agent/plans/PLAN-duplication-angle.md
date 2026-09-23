@@ -29,7 +29,7 @@ Compacted-At: 2026-09-20T16:45:45Z
 Boxes: 0 attested, 0 open, 0 abandoned
 Epics: 23ac415a, e87fa3ce
 Touched: .ci/scripts/test/gates/test-autopilot-breakpoint-alignment.sh
-Gates: check:ci-hook-worklist-suite
+Gates: check:ci-pytest
 Why-Source: model
 Read-History: `git show 49d0c8831c5086a49590a8c127d9a4ebd5b15e6e` recovers the text; `git log --find-object=49d0c8831c5086a49590a8c127d9a4ebd5b15e6e --all` names the commit
 

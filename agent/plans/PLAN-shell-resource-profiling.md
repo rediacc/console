@@ -30,7 +30,7 @@ Compacted-At: 2026-09-20T16:44:01Z
 Boxes: 0 attested, 0 open, 0 abandoned
 Epics: 24c98380, e87fa3ce
 Touched: .claude/hooks/stop/test-worklist-v5.sh, scripts/ci-runner/exec.ts, .ci/scripts/quality/check-tracked-sidecars.sh, .ci/scripts/test/run-all.sh, docs/agent-reference/TRAPS.md, .ci/scripts/security/shellcheck.sh, .ci/scripts/test/gates/test-breakpoint-teardown.sh
-Gates: check:ci-hook-worklist-suite, check:ci-resprofile, check:ci-workflows, check:test-shared
+Gates: check:ci-pytest, check:ci-resprofile, check:ci-workflows, check:test-shared
 Why-Source: model
 Read-History: `git show acfed5118c57313c4f59592e73370b780616f5ac` recovers the text; `git log --find-object=acfed5118c57313c4f59592e73370b780616f5ac --all` names the commit
 

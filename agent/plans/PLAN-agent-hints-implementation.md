@@ -29,7 +29,7 @@ exists and `.claude/agents/account-dev.md:3` carries the bench sentence the plan
 THE HEADER SAID `Status: READY TO IMPLEMENT` AND THE TREE DISAGREES. It is implemented. The console commit carrying it is 120cd9e73, "feat(backup): chunk-store cold path, rclone decommission, stop-hook cadence", an ancestor of origin/main. Note that a plain `git log --diff-filter=A` on the plan path names f7a5351a9 instead, because the plans were MOVED from `agent/0815-1/` into
 `agent/` with no content change; `--follow` is required to reach the real commit.
 
-DIVERGENCES. The corpus grew from the plan's 8 agents to 13 and the gate's specimen table grew with it. `load_corpus` takes `agents_dir_path` rather than the frozen `agents_dir`. One feature is in the tree and in no part of the plan: `pushback_for` at `.claude/hooks/stop/wl_agents.py:655`, with its own message block and its own gate assertions.
+DIVERGENCES. The corpus grew from the plan's 8 agents to 13 and the gate's specimen table grew with it. `load_corpus` takes `agents_dir_path` rather than the frozen `agents_dir`. One feature is in the tree and in no part of the plan: `pushback_for` at `.claude/hooks/stop/wl_agents.py:459`, with its own message block and its own gate assertions.
 
 ## Lessons
 - A healthy corpus on a quiet stop looks exactly like a dead matcher, which is why

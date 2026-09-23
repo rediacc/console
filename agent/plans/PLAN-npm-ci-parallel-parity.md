@@ -32,7 +32,7 @@ Compacted-At: 2026-09-06T17:08:52Z
 Boxes: 0 attested, 0 open, 0 abandoned
 Epics: none
 Touched: package.json, .ci/scripts/quality/check-command-tree.sh, .ci/scripts/quality/check-cli-contract.sh, docs/agent-reference/ci-gates.md, docs/agent-reference/suppressions.md, .ci/scripts/ci/scope-map.cjs, scripts/gates/check-suppression-liveness.ts
-Gates: check:ci-account-no-admin-role, check:ci-account-no-node-env-routes, check:ci-account-portal, check:ci-account-scope-audit, check:ci-account-server, check:ci-autopilot-workflow, check:ci-command-planes, check:ci-cta-bolt, check:ci-dead-bash, check:ci-editorconfig, check:ci-external-links, check:ci-i18n-cross-locale, check:ci-jq-boolean-default, check:ci-locale-sources, check:ci-lockfile, check:ci-no-otlp-creds, check:ci-parity, check:ci-quality-gates, check:ci-rdc-sh-env, check:ci-redirects
+Gates: check:ci-account-no-admin-role, check:ci-account-no-node-env-routes, check:ci-account-portal, check:ci-account-scope-audit, check:ci-account-server, ci-autopilot-workflow (retired, no successor), check:ci-command-planes, check:ci-cta-bolt, check:ci-dead-bash, check:ci-editorconfig, check:ci-external-links, check:ci-i18n-cross-locale, check:ci-jq-boolean-default, check:ci-locale-sources, check:ci-lockfile, check:ci-no-otlp-creds, check:ci-parity, check:ci-quality-gates, check:ci-rdc-sh-env, check:ci-redirects
 Why-Source: author
 Read-History: `git show 579a43b2793afd84e1ec525e2c236f98ed11e94e` recovers the text; `git log --find-object=579a43b2793afd84e1ec525e2c236f98ed11e94e --all` names the commit
 

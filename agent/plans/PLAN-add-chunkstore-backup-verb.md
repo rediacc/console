@@ -23,7 +23,7 @@ declares `Name: "backup_snapshot"`, with `BackupSnapshotCommand` at :640.
 - The generated contract was regenerated rather than hand-edited:
 `packages/shared/src/renet-contract/data/functions.generated.ts:815` and `packages/shared/src/renet-contract/data/functions.schema.ts:92` (`BackupSnapshotParamsSchema`).
 - The CLI shipped: `packages/cli/src/commands/backup-storage.ts:358` registers
-`.command('snapshot')` and dispatches `'backup_snapshot'` at :373, hung off the backup group at `packages/cli/src/commands/backup.ts:427`, with its metadata entry at `packages/cli/src/config/command-metadata.ts:174`.
+`.command('snapshot')` and dispatches `'backup_snapshot'` at :373, hung off the backup group at `packages/cli/src/commands/backup.ts:404` (`registerBackupStorageCommands(backup)`), with its metadata entry at `packages/cli/src/config/command-metadata.ts:174`.
 - The prerequisite reconciliation is done: `private/renet/pkg/chunkstore/session.go:218`
 sends `X-Backup-Session`, :309 posts `/exists`, :498 posts `/commit`.
 

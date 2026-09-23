@@ -3,7 +3,7 @@ Status: compacted
 First-Seen: 2026-09-20
 Owner: d778be9d
 Full-Text-Blob: 69a5cbc721dad210ccc92af94ac69ad7f5860e05
-Record-Sig: 681dbbc8
+Record-Sig: b5b343e3
 
 ## Why
 The consolidation plan required a synchronous pre-bash check of staged files for shape duplication within ~200ms, failing loudly when the cache is stale. The core constraint: staged files need the gate's normalization and helper-detection functions, but reimplementing them in Python would create a second implementation of one decision (the consolidation plan's root problem).
@@ -50,3 +50,5 @@ Read-History: `git show 69a5cbc721dad210ccc92af94ac69ad7f5860e05` recovers the t
 
 ## History
 - 2026-09-20T18:09:24Z compacted by d778be9d from `done` (record-sig 681dbbc8)
+- 2026-09-23T10:29:00Z record-sig re-derived by d778be9d from 681dbbc8, the remedy check:ci-plan-record R7 names: the plan-folder move at `a81967e94` repointed `agent/PLAN-` to `agent/plans/PLAN-` inside the box table and the signature was not re-derived with it.
+  The box signatures and their `done=` proofs are untouched; only the line that attests them is brought back into agreement.

@@ -4,13 +4,20 @@ Full-Text-Blob: d2f66802c91b406d26dcbf5a82eca82444b45c4b
 Record-Sig: fa090543
 
 ## Why
-<FILL: why>
+The operator asked for the GitHub-side CI autonomy feature -- Autopilot, its workflow, its harness, its gates and its design doc -- to be removed completely.
+It was one workflow of 1,173 lines standing on a 6,490-line harness, three dedicated gates, 23 test files, 667 golden fixtures and 18 shadow parity ledgers, and nothing else in the repository depended on any of it.
 
 ## Outcome
-<FILL: outcome>
+Removed, in two commits. The mechanical bulk landed at 07e97e99a: 738 files deleted and roughly 37,000 lines removed, with package.json, scripts/ci-runner/manifest.ts, scripts/ci-runner/gates.lock.json, .github/labels.yml, .ci/config/env-manifest.json, .ci/config/secret-supply.json and the docs all updated in the same change.
+The follow-up drain landed at 4e5781b7b: three further shrink-only baselines and registries the removal found beyond the plan's original scope.
+Re-verified independently in the same session: no `rediacc_ci.autopilot` import survives anywhere, and gen-gates-lock, gen-docs, check:ci-parity, check:ci-dead-bash, check:ci-shape-duplication and check:ci-label-inventory are all green.
+The live-side work -- deleting the two GitHub labels, the Actions variables, the private-key secret and the App's ruleset bypass actor -- was done first, because the label gate fails in the live-but-undeclared direction for the length of one PR if the declaration goes before the label.
 
 ## Lessons
-<FILL: lessons>
+- A scope check that reads every grep hit before deleting anything is what separates a removal from an outage. Three whole directories sat alphabetically beside Autopilot's and belonged to the unrelated Claude-Review gates; the marketing copy for automated storage in a tutorial caption matched the word and had nothing to do with the feature. All were excluded and untouched.
+- Generated and shrink-only files are drained by their own writer, never hand-edited. The language-policy baseline, the Python env registry, .ci/policy/README.md and scripts/data/doc-registry.md all name a deleted path, and each has a `--write-baseline` or a generator that removes it; hand-editing a golden that mirrors a real file drifts the corpus from the file.
+- A retired environment variable goes to the tombstone shard, not to the bin. env-manifest.json has a shard for exactly this, and moving the seventeen AUTOPILOT_* and GITHUB_AUTOPILOT_* names into it keeps the gate able to say the name is retired on purpose rather than merely missing.
+- One citation was left alone on purpose. `.claude/hooks/stop/calibrate-judge-rules.py` cites a bash fixture that a previous port wave had already deleted; the dangling pointer predates this removal, nothing machine-checks it, and repointing it at another dead path would have looked like a fix.
 
 ## Boxes
 - [x] `grep -ril autopilot .` (excluding .git, node_modules) returns ONLY: the confirmed-unrelated packages/www tutorial hits, the frozen agent/ archives, the two flavor-text test fixtures (wlfix.py, test_wl_stuck_and_blockers.py), the historical docs/ci-overhaul/{06-progress,10-ci-port-baseline}.md snapshots, and the deliberately-kept historical-lesson comments in block_raw_pr_body_edit.py / its oracle twin, worklist.py/worklist_messages.py/wl_store.py/wl_checks.py, gitx.py, deploy_account.py, deploy_www.py, calibrate-judge-rules.py, and pr-epics/body.md -- nothing else.
