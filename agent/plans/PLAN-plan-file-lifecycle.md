@@ -314,7 +314,8 @@ fetches. `git diff --name-status --find-renames` FIRST (trees only, free), then 
       DONE 2026-09-03: header plus zero entries, which is the correct and safe state --
       the floor and the three liveness rules mean an empty list cannot make the gate
       vacuous. Registered in docs/agent-reference/suppressions.md's Current sites table.
-- [ ] Delete the 19 finished-and-uncited plans to flatten the 2026-09-23 cliff (list in the age agent's report; 33 of 61 are FINISHED, 19 of those cited by nothing outside `agent/`)
+- [x] Delete the 19 finished-and-uncited plans to flatten the 2026-09-23 cliff (list in the age agent's report; 33 of 61 are FINISHED, 19 of those cited by nothing outside `agent/`)
+    (ticked) 2026-09-23T12:03:53Z by d778be9d: PRESENT, superseded: deletion is forbidden and the cliff is already flat. .ci/config/plan-lifecycle.json:16 records THE THIRD DOOR (W12, 2026-09-06) -- a finished plan is COMPACTED into an attested record that keeps its own path, because the operator standing rule is that nothing is deleted. Today is the 2026-09-23 cliff date and npm run check:ci-plan-housekeeping reports rc=0, 101 tracked plan file(s), none over 33 days, 0 within 7 days, 74 compacted. Investigation row in f9aba8ad3.
 - [x] Ship S1, the SessionStart census -- cheapest change here and the operator-visible half; do not let it wait on the CI work
       DONE 2026-09-03: wl_checks.plan_box_census + plans_block now carry per-plan box
       counts and two tree-wide summary lines. Live output: "10 plan file(s) carry 82 open
@@ -343,5 +344,7 @@ fetches. `git diff --name-status --find-renames` FIRST (trees only, free), then 
       Three existing controls asserting "a draft plan is not checked" now assert the
       new contract instead, each with the pair that a census row DEMANDS nothing --
       otherwise it is the full treatment under another name. 119 controls pass.
-- [ ] Pull forward the prior plan's parser refactor (`plan_task_marks`, `[?]`/`[>]` as first-class marks); A1's "parked, not vanished" exit needs it
-- [ ] Confirm cheat 13's exposure against the branch ruleset before treating it as closed
+- [x] Pull forward the prior plan's parser refactor (`plan_task_marks`, `[?]`/`[>]` as first-class marks); A1's "parked, not vanished" exit needs it
+    (ticked) 2026-09-23T12:03:53Z by d778be9d: PRESENT, record stale: the marks are first-class in the live parser. .claude/hooks/stop/wl_planfile.py:169 defines OPEN_BOX_LINE over the class [ ?>], so a box parked - [?] or leased - [>] stays in the OPEN bucket rather than vanishing, which is the parked-not-vanished exit A1 needed. Only the helper name plan_task_marks is stale; the behaviour is carried by the regex. Investigation row in f9aba8ad3.
+- [x] Confirm cheat 13's exposure against the branch ruleset before treating it as closed
+    (ticked) 2026-09-23T12:03:53Z by d778be9d: PRESENT, and the assertion did NOT hold. docs/agent-reference/TRAPS.md:1737 (Trap-Id bypass-actor-exposure-believed-nil) records the measurement: rediacc-ci-cd, app_id 2772000, carries bypass_mode always on the main ruleset, so a push by that identity lands on main with no PR and no quality run. Reproduced live: gh api repos/rediacc/console/rulesets/12344707 shows ref_name include ~DEFAULT_BRANCH only and bypass_actors RepositoryRole 5 plus Integration 2772000, both always. The residual fix is operator-deferred as worklist item 83844786. Investigation row in f9aba8ad3.
