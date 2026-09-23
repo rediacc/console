@@ -215,8 +215,7 @@ mention the sweep at all, swept=false with evidence_kind `none`.
 def prompt_section(fix_signal, outstanding=None):
     """The prompt text to append, or "" when this stop asks nothing.
 
-    The fix signal wins over an outstanding demand: a NEW fix-set is a new
-    class, and asking about the old one instead would drop it.
+    The fix signal wins over an outstanding demand: a NEW fix-set is asked about fresh, on SWEEP_PROMPT, which never mentions the outstanding class -- that demand is not dropped, it is carried forward in the marker's `owed` slot (wl_rules.Demand.displace) and asked in full on a later stop that is not a fix stop.
     """
     if fix_signal:
         return SWEEP_PROMPT
@@ -377,7 +376,7 @@ V_ACTION_DROPPED = (
 )
 
 
-def enforce(out, payload, fixset_files=None):
+def enforce(out, payload, fixset_files=None, displaced=None):
     """Write the sweep order into a judge verdict, in place. Returns the note.
 
     `search` IS MODEL PROSE TOO, and `validate_search` was never asked to know that: it checks whether a string PARSES as a read-only shell command, not whether its English happens to name a reserved act. "commit the reflow now" carries no `git` token and no verb `_DESTRUCTIVE` recognises, so it validated as `ok` and would have reached the session as `Run: commit the reflow now`,
@@ -385,8 +384,14 @@ def enforce(out, payload, fixset_files=None):
 
     `fixset_files` checks the TRIGGERING FIX's own claim (`defect_class`), never `locus`/`search`: those legitimately point OUTSIDE the touched files by design (that is the entire point of a sweep), so grounding them against the fix-set would flag every real sweep as ungrounded. Annotates `reason` only, mirroring `wl_proofcheck.enforce` exactly (see
     agent/plans/PLAN-judge-prompt-trap-conflation.md).
+
+    `displaced` is the demand THIS fire is about to bump into the marker's `owed` slot (see wl_rules.Demand.displace), or None when there is nothing to carry. Its class and search were already validated when that demand first fired, so the STILL OWED sentence appended here re-emits only that already-checked text, never anything fresh from the model.
     """
     reason = V_REASON % (payload["defect_class"], V_ASSERTED if payload["asserted"] else "")
+    if isinstance(displaced, dict) and displaced.get("defect_class"):
+        reason += wl_rules.still_owed_sentence(
+            displaced["defect_class"], "run %s" % (displaced.get("search") or "(no search recorded)")
+        )
     if not wl_rules.scope_grounded(payload.get("defect_class", ""), fixset_files):
         reason += (
             " UNVERIFIED: git's own file list for this fix-set does not match '%s' -- if that "
@@ -429,6 +434,8 @@ def enforce(out, payload, fixset_files=None):
 #
 # WHY A MARKER AT ALL. The fix signal is de-duplicated per fix-set by wl_reggate and a settled fix-set is never re-asked, so without this the demand is strictly one-shot: a session could stop again with no new commits and never be asked whether it did the sweep. The marker carries the question forward onto the next judged stop. Its bounds -- and why they are hard -- are in
 # wl_rules.
+#
+# WHY A FRESH FIRE DOES NOT DESTROY THE OLD DEMAND ANY MORE (agent/plans/PLAN-sweep-obligation-carry-forward.md). A NEW fix-set's class always wins the PROMPT -- asking about the old class instead would drop the new one, which is worse -- but the marker itself no longer treats "a different question was asked" as "nothing is owed". `wl_judge.run_judge` loads this demand unconditionally now and tells `apply_verdict` which question was asked (`asked="fresh"` or `"followup"`); a fresh fire DISPLACES the current head into the marker's one `owed` slot instead of overwriting it, and a fresh silent/degraded answer leaves both head and owed untouched, since a verdict about a DIFFERENT fix-set says nothing about whether THIS class was swept.
 
 SWEEP_TTL_MIN = int(os.environ.get("WORKLIST_SWEEP_TTL_MIN", "120"))
 SWEEP_MAX_FIRES = int(os.environ.get("WORKLIST_SWEEP_MAX_FIRES", "2"))
@@ -452,17 +459,34 @@ def clear_outstanding(path=None):
     SWEEP_DEMAND.clear(path)
 
 
-def apply_verdict(out, outstanding=None, path=None, fixset_files=None):
+def apply_verdict(out, outstanding=None, path=None, fixset_files=None, asked=None):
     """(kind, note). Mutates `out` when the rule fires; owns the marker lifecycle.
 
-    kind is 'fire', 'silent' or 'degraded'. A silent OR degraded answer discharges any outstanding demand: carrying one forward on an answer nobody could read would block a session on the judge's malfunction rather than on anything it did.
+    kind is 'fire', 'silent' or 'degraded'. A verdict discharges only the question it was actually asked (agent/plans/PLAN-sweep-obligation-carry-forward.md): `asked` is `"fresh"` on a stop that asked SWEEP_PROMPT about a NEW fix-set, `"followup"` on a stop that asked FOLLOWUP_PROMPT about `outstanding` itself, and `None` (the default) reproduces the byte-identical legacy behaviour for any caller that has not adopted the parameter -- fire always banks over `outstanding`, silent/degraded always clears it.
+
+    On `asked="fresh"`: a fire DISPLACES `outstanding` into the marker's `owed` slot rather than overwriting it (the new class still wins the prompt and the verdict), and a silent or degraded answer leaves `outstanding` and its `owed` slot completely untouched -- an answer about a DIFFERENT fix-set says nothing about whether THIS class was swept.
+
+    On `asked="followup"`: a fire is a re-fire of the SAME `outstanding` head, banked as before; a silent or degraded answer discharges the head and promotes a live `owed` record to take its place, since the question just answered was actually about `outstanding`.
 
     `fixset_files` defaults to `None`, so every existing call site that does not know about it behaves byte-identically to before this parameter existed (see `wl_rules.scope_grounded`).
     """
     kind, payload = read_verdict(out)
     if kind == "fire":
+        if asked == "fresh":
+            note = enforce(out, payload, fixset_files, displaced=outstanding)
+            SWEEP_DEMAND.displace(
+                {"defect_class": payload["defect_class"], "search": payload["search"]},
+                head=outstanding,
+                path=path,
+            )
+            return "fire", note
         note = enforce(out, payload, fixset_files)
         save_outstanding(payload, outstanding, path)
         return "fire", note
-    clear_outstanding(path)
+    if asked == "fresh":
+        return kind, payload if isinstance(payload, str) else ""
+    if asked == "followup":
+        SWEEP_DEMAND.promote(path)
+    else:
+        clear_outstanding(path)
     return kind, payload if isinstance(payload, str) else ""

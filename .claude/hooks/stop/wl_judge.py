@@ -712,6 +712,7 @@ def run_judge(
     extra="",
     traps=None,
     fixset_files=None,
+    fixset_provenance=None,
 ):
     """(verdict_dict, error_string). Exactly one is non-None."""
     exe = resolve_claude()
@@ -724,16 +725,22 @@ def run_judge(
         return None, "judge workdir unusable: %s" % exc
     # THE CLASS SWEEP rides this call rather than making its own: the question "were the siblings swept?" is about the same fix-set the regression gate is already being asked about, and a second model call would double the cost of every fix stop to ask half a question. `extra` is extended BEFORE the schema is built so the two stay in lockstep -- a section the prompt asks for is a
     # field the schema requires.
-    sweep_outstanding = None if _REGGATE_MARKER in (extra or "") else CS.load_outstanding()
-    sweep_extra = CS.prompt_section(_REGGATE_MARKER in (extra or ""), sweep_outstanding)
+    #
+    # LOADED UNCONDITIONALLY (agent/plans/PLAN-sweep-obligation-carry-forward.md), where it used to be forced to `None` on a fix stop. The forced `None` was itself the bug: apply_verdict never saw the outstanding demand at all on exactly the stops where a fresh fix-set's answer would otherwise overwrite or clear it. `sweep_asked`/`proof_asked` tell CS.apply_verdict/PF.apply_verdict
+    # WHICH question this stop actually asked, so a fresh fire displaces the old demand into its `owed` slot instead of destroying it, and a fresh silent/degraded answer -- which is about a DIFFERENT fix-set -- leaves the old demand alone rather than discharging it.
+    fix_stop_now = is_fix_stop(extra)
+    sweep_outstanding = CS.load_outstanding()
+    sweep_extra = CS.prompt_section(fix_stop_now, sweep_outstanding)
+    sweep_asked = "fresh" if fix_stop_now else "followup"
     # THE PROOF OBLIGATION rides the same call for the same reason the class sweep does: the question is about the same fix-set the regression gate already shows the judge, and a second model call would double the cost of every fix stop.
-    proof_outstanding = None if _REGGATE_MARKER in (extra or "") else PF.load_outstanding()
-    proof_extra = PF.prompt_section(_REGGATE_MARKER in (extra or ""), proof_outstanding)
+    proof_outstanding = PF.load_outstanding()
+    proof_extra = PF.prompt_section(fix_stop_now, proof_outstanding)
+    proof_asked = "fresh" if fix_stop_now else "followup"
     # THE BRAVE-DEFAULT rule rides the same call on its own trigger: a parked decision whose DEFAULT does nothing. Its trigger is the remaining list, not `extra`, so the two rules are independent and either may be asked alone.
     #
     # NOT ON A FIX STOP. A regression-gate stop is already asking the judge to rule on a fix's test coverage AND its sibling sweep; adding "and by the way, is that parked question's DEFAULT brave enough" makes one call carry three unrelated judgements, and the parked question is the one least connected to what the session just did. It is not dropped, only deferred: the trigger is
     # the remaining list, which does not go away, so the same item is asked about on the next stop that is not a fix stop.
-    brave_extra = "" if is_fix_stop(extra) else BD.prompt_section(remaining_lines)
+    brave_extra = "" if fix_stop_now else BD.prompt_section(remaining_lines)
     # GROUND THE SWEEP/PROOF QUESTIONS IN A REAL FILE LIST, computed by git rather than trusted from the model's own prose -- see wl_reggate.fixset_files. Injected only when the caller computed one AND a sweep/proof question is actually being asked, so an ordinary judge call carries no new tokens. `fixset_files is None` (the caller could not compute it, or this is a call site that
     # has not adopted the parameter yet) means NO claim, never "the tree is clean" -- conflating the two would accuse a fired finding of being ungrounded on missing data rather than on git's own evidence.
     ground_extra = ""
@@ -741,6 +748,7 @@ def run_judge(
         shown = fixset_files[:40]
         ground_extra = M.FIXSET_GROUND_TRUTH % {
             "count": len(fixset_files),
+            "how": M.FIXSET_PROVENANCE.get(fixset_provenance, M.FIXSET_PROVENANCE[None]),
             "files": "\n".join("  " + f for f in shown)
             or "  (none -- git shows a clean tree and nothing between the fix marker and HEAD)",
             "more": "\n  (+%d more)" % (len(fixset_files) - 40) if len(fixset_files) > 40 else "",
@@ -848,7 +856,7 @@ def run_judge(
     # BEFORE sanitize_next_action, deliberately: the search command and the braver default are the MODEL's text, so they go through the operator-only filter like any other next_action rather than around it.
     fired = False
     if sweep_extra:
-        kind, note = CS.apply_verdict(out, sweep_outstanding, fixset_files=fixset_files)
+        kind, note = CS.apply_verdict(out, sweep_outstanding, fixset_files=fixset_files, asked=sweep_asked)
         fired = kind == "fire"
         if kind == "degraded":
             # Never a block (see wl_classsweep FAIL SEMANTICS), but never silent either: a paid question that produced no answer must be visible in the one field the session always reads.
@@ -857,7 +865,7 @@ def run_judge(
             ]
     if proof_extra:
         # BOTH RULES MAY FIRE ON ONE STOP, deliberately, on the same reasoning apply_order documents: a verdict already `continue` is APPENDED to, never overwritten, so a class-sweep order and a proof order both reach the session rather than one silently losing to the other.
-        kind, note = PF.apply_verdict(out, proof_outstanding, fixset_files=fixset_files)
+        kind, note = PF.apply_verdict(out, proof_outstanding, fixset_files=fixset_files, asked=proof_asked)
         fired = fired or kind == "fire"
         if kind == "degraded":
             out["reason"] = (

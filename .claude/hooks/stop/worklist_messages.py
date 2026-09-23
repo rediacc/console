@@ -1868,10 +1868,19 @@ second gate for it buys nothing. It is not automatically covered -- decide -- bu
 do not reach for `gate_needed: true` here by reflex.
 """
 
+# The provenance label FIXSET_GROUND_TRUTH interpolates: git's own answer for where this file list came from, since a tick-based fix-set has no resolvable commit yet and the honest answer for it is the whole dirty tree, not a diff. `None` is the key for an unrecognised or missing provenance (a caller that has not adopted the parameter), which reads the same as the fallback rather than asserting the stronger diff-tree claim it cannot back up.
+FIXSET_PROVENANCE = {
+    "diff-tree": "resolved from the fix-set's own commit(s)",
+    "status-fallback": (
+        "the fix-set has no resolvable commit yet, so this is the whole working tree's current `git status --porcelain`"
+    ),
+    None: "provenance unknown",
+}
+
 FIXSET_GROUND_TRUTH = """
 
 ACTUAL FILES THIS FIX-SET TOUCHED, computed directly by git just now (%(count)d
-file(s)), never narrated:
+file(s), %(how)s), never narrated:
 %(files)s%(more)s
 
 The class_sweep and proof_obligation objects below are ONLY about this list and

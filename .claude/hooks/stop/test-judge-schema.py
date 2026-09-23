@@ -412,6 +412,12 @@ control(
     wl_classsweep.prompt_section(True, carried) == wl_classsweep.SWEEP_PROMPT,
     True,
 )
+# THE TRAP-CONFLATION GUARD (agent/plans/PLAN-sweep-obligation-carry-forward.md): a carried class must never leak into the FRESH prompt, only ever into the follow-up one -- putting a PAST finding's text into a FRESH ask is the exact input shape that produced fabricated bulk-transform findings elsewhere in this hook.
+control(
+    "the carried class never appears in the fresh SWEEP_PROMPT text",
+    carried["defect_class"] in wl_classsweep.prompt_section(True, carried),
+    False,
+)
 control(
     "nothing to ask means no prompt section at all", wl_classsweep.prompt_section(False, None), ""
 )
@@ -429,6 +435,162 @@ control("THE TTL: an ancient demand is not carried", wl_classsweep.load_outstand
 MARKER.write_text("{not json")
 control("a corrupt marker is not carried", wl_classsweep.load_outstanding(MARKER), None)
 wl_classsweep.clear_outstanding(MARKER)
+
+# -- 2g. THE CARRY-FORWARD FIX (agent/plans/PLAN-sweep-obligation-carry-forward.md). A fresh fire (asked="fresh") no longer overwrites or clears a live demand naming a DIFFERENT class outright; it displaces it into the marker's one `owed` slot instead, states the debt in `reason`, and asks it in full on a later stop that is not a fix stop. `asked=None` (untested here, already pinned above) keeps the pre-existing legacy behaviour byte-identical.
+
+SILENT_SWEEP = {
+    "verdict": "stop",
+    "reason": "clean",
+    "next_action": "",
+    "class_sweep": {
+        "applicable": False,
+        "defect_class": "",
+        "locus": "",
+        "search": "",
+        "evidence": "",
+        "evidence_kind": "none",
+        "swept": False,
+        "instruction": "",
+    },
+}
+
+# The falsifying control: plant fix-signal 1, fire class A, then plant fix-signal 2 and fire a DIFFERENT class B with asked="fresh". On the code this plan replaces there is no `owed` field at all, so this control is red until the fix lands.
+out_a = answer(defect_class="class A: a guard matching a mention instead of a target")
+kind, _ = wl_classsweep.apply_verdict(out_a, None, path=MARKER, asked="fresh")
+control("2g: first fresh fire fires", kind, "fire")
+out_b = answer(defect_class="class B: a directory written from one template")
+kind, _ = wl_classsweep.apply_verdict(
+    out_b, wl_classsweep.SWEEP_DEMAND.peek(MARKER), path=MARKER, asked="fresh"
+)
+control("2g: a second fresh fire naming a different class also fires", kind, "fire")
+owed = wl_classsweep.SWEEP_DEMAND.peek(MARKER)["owed"]
+control("2g: class A is preserved in the owed slot", owed["defect_class"].startswith("class A"), True)
+control(
+    "2g: load_outstanding now answers class B, the new head",
+    wl_classsweep.load_outstanding(MARKER)["defect_class"].startswith("class B"),
+    True,
+)
+
+# The displacement is stated in the reason, and the whole reason still fits the 400-char cap wl_rules.apply_order enforces.
+control("2g: the reason names the displaced class A", "class A" in out_b["reason"], True)
+control("2g: the STILL OWED sentence is present", "STILL OWED" in out_b["reason"], True)
+control("2g: the reason still fits the 400-char cap", len(out_b["reason"]) <= 400, True)
+
+# THE 14:22:41Z CASE. A silent answer about a fresh (different) fix-set must not discharge the demand it displaced -- the live incident this plan fixes.
+kind, _ = wl_classsweep.apply_verdict(
+    SILENT_SWEEP, wl_classsweep.SWEEP_DEMAND.peek(MARKER), path=MARKER, asked="fresh"
+)
+control("2g: a fresh silent answer is read as silent", kind, "silent")
+control(
+    "2g: THE FIX -- a fresh silent answer leaves the outstanding head (class B) untouched",
+    wl_classsweep.load_outstanding(MARKER)["defect_class"].startswith("class B"),
+    True,
+)
+control(
+    "2g: ...and leaves the owed class A untouched too",
+    wl_classsweep.SWEEP_DEMAND.peek(MARKER)["owed"]["defect_class"].startswith("class A"),
+    True,
+)
+
+# PROMOTION. A follow-up that discharges the head promotes the owed class to head, and the promoted class then appears in the follow-up prompt.
+kind, _ = wl_classsweep.apply_verdict(
+    SILENT_SWEEP, wl_classsweep.SWEEP_DEMAND.peek(MARKER), path=MARKER, asked="followup"
+)
+control("2g: a follow-up silent answer discharges the head", kind, "silent")
+promoted = wl_classsweep.load_outstanding(MARKER)
+control("2g: class A is promoted to head", promoted["defect_class"].startswith("class A"), True)
+control(
+    "2g: the promoted class now appears in the follow-up prompt",
+    "class A" in wl_classsweep.prompt_section(False, promoted),
+    True,
+)
+wl_classsweep.clear_outstanding(MARKER)
+
+# THE BOUND: three consecutive fresh fires leave exactly one record in owed, dropping the oldest.
+wl_classsweep.apply_verdict(answer(defect_class="class P"), None, path=MARKER, asked="fresh")
+wl_classsweep.apply_verdict(
+    answer(defect_class="class Q"), wl_classsweep.SWEEP_DEMAND.peek(MARKER), path=MARKER, asked="fresh"
+)
+wl_classsweep.apply_verdict(
+    answer(defect_class="class R"), wl_classsweep.SWEEP_DEMAND.peek(MARKER), path=MARKER, asked="fresh"
+)
+rec = wl_classsweep.SWEEP_DEMAND.peek(MARKER)
+control(
+    "2g: three consecutive fresh fires leave exactly one owed record",
+    rec["owed"]["defect_class"].startswith("class Q"),
+    True,
+)
+control("2g: the head is the third class", rec["defect_class"].startswith("class R"), True)
+control("2g: the oldest (class P) was dropped, not carried a second time", "class P" not in json.dumps(rec), True)
+wl_classsweep.clear_outstanding(MARKER)
+
+# CARRY_MAX: a demand displaced CARRY_MAX (2) times is dropped rather than carried a third time.
+wl_classsweep.apply_verdict(answer(defect_class="class M"), None, path=MARKER, asked="fresh")
+wl_classsweep.apply_verdict(
+    answer(defect_class="class N1"), wl_classsweep.SWEEP_DEMAND.peek(MARKER), path=MARKER, asked="fresh"
+)  # M carried into owed once (carried=1)
+wl_classsweep.SWEEP_DEMAND.promote(MARKER)  # M promoted back to head
+wl_classsweep.apply_verdict(
+    answer(defect_class="class N2"), wl_classsweep.SWEEP_DEMAND.peek(MARKER), path=MARKER, asked="fresh"
+)  # M carried a second time (carried=2, at CARRY_MAX)
+wl_classsweep.SWEEP_DEMAND.promote(MARKER)  # M promoted back to head again
+wl_classsweep.apply_verdict(
+    answer(defect_class="class N3"), wl_classsweep.SWEEP_DEMAND.peek(MARKER), path=MARKER, asked="fresh"
+)  # M's third displacement would exceed CARRY_MAX -> dropped
+control(
+    "2g: CARRY_MAX -- a demand displaced a third time is dropped, not carried again",
+    wl_classsweep.SWEEP_DEMAND.peek(MARKER)["owed"],
+    None,
+)
+wl_classsweep.clear_outstanding(MARKER)
+
+# An owed record past its own TTL is never promoted.
+wl_classsweep.apply_verdict(answer(defect_class="class S"), None, path=MARKER, asked="fresh")
+wl_classsweep.apply_verdict(
+    answer(defect_class="class T"), wl_classsweep.SWEEP_DEMAND.peek(MARKER), path=MARKER, asked="fresh"
+)
+raw = wl_classsweep.SWEEP_DEMAND._raw(MARKER)
+raw["owed"]["at"] = 0.0  # force TTL expiry on the owed slot only, without touching the head
+MARKER.write_text(json.dumps(raw))
+wl_classsweep.apply_verdict(
+    SILENT_SWEEP, wl_classsweep.SWEEP_DEMAND.peek(MARKER), path=MARKER, asked="followup"
+)
+control(
+    "2g: a TTL-expired owed record is never promoted",
+    wl_classsweep.load_outstanding(MARKER),
+    None,
+)
+wl_classsweep.clear_outstanding(MARKER)
+
+# THE FIRE COUNTER: a fresh fire followed by a follow-up fire on the SAME class reaches the cap rather than resetting to 1 -- the unbounded-re-fire guard this plan closes, since a bug that resets `fires` to 1 on every fix stop never reaches SWEEP_MAX_FIRES and the demand is never dropped as answered.
+wl_classsweep.apply_verdict(answer(defect_class="class U"), None, path=MARKER, asked="fresh")
+wl_classsweep.apply_verdict(
+    answer(defect_class="class U"), wl_classsweep.SWEEP_DEMAND.peek(MARKER), path=MARKER, asked="followup"
+)
+control("2g: fresh-then-followup on the SAME class reaches the fire cap", fires(MARKER), 2)
+control(
+    "2g: a demand at the cap is never carried further",
+    wl_classsweep.load_outstanding(MARKER),
+    None,
+)
+wl_classsweep.clear_outstanding(MARKER)
+
+# FAIL-OPEN, at the wl_classsweep seam: a missing marker, a corrupt one, and an unwritable directory each yield no debt and no exception on the new verbs too, not only on the pre-existing `load_outstanding`/`clear_outstanding` pair.
+_missing = pathlib.Path(_TMP.name) / "does-not-exist-2g.json"
+control("2g fail-open: promote() on a missing marker never raises", wl_classsweep.SWEEP_DEMAND.promote(_missing), None)
+_corrupt = pathlib.Path(_TMP.name) / "corrupt-2g.json"
+_corrupt.write_text("{not json")
+control(
+    "2g fail-open: displace() over a corrupt marker never raises and still writes a fresh head",
+    wl_classsweep.SWEEP_DEMAND.displace({"defect_class": "z", "search": "y"}, head=None, path=_corrupt) or True,
+    True,
+)
+control(
+    "2g fail-open: the fresh head is readable after recovering from the corrupt marker",
+    wl_classsweep.SWEEP_DEMAND.load(_corrupt)["defect_class"],
+    "z",
+)
+_corrupt.unlink()
 
 # --------------------------------------------------------------------------- PART 3 -- end to end through run_judge, with the model call stubbed.
 #
@@ -579,6 +741,55 @@ control(
 )
 control("and the class survives in the reason", "argv[0]" in v["reason"], True)
 wl_classsweep.clear_outstanding()
+
+
+# 3k. END TO END through the stubbed run_judge (agent/plans/PLAN-sweep-obligation-carry-forward.md), replaying the live 14:22:41Z regression this plan fixes: a fix stop's fresh fire on a NEW class must not destroy a demand already outstanding for an OLD one, and the old one must eventually be asked in full.
+wl_classsweep.clear_outstanding()
+
+v1 = judged(FIXSIG, answer(defect_class="planted class: two semantically linked fields"))
+control("3k: the planting fix stop blocks", v1["verdict"], "continue")
+control("3k: the demand is live at the default marker path afterward", bool(wl_classsweep.load_outstanding()), True)
+
+# A SECOND fix stop fires a genuinely different class -- the live shape: a fresh ask about a NEW fix-set while the first is still outstanding.
+v2 = judged(FIXSIG, answer(defect_class="new class: a table with more rows"))
+control("3k: the fix section is in the prompt", wl_classsweep.SWEEP_MARKER in CAPTURED["prompt"], True)
+control(
+    "3k: the planted class never leaks into the fresh SWEEP_PROMPT (it carries no interpolation)",
+    "two semantically linked fields" in CAPTURED["prompt"],
+    False,
+)
+control("3k: the second fix stop still blocks", v2["verdict"], "continue")
+control("3k: THE FIX -- the reason carries the STILL OWED sentence for the displaced class", "STILL OWED" in v2["reason"], True)
+control("3k: ...naming the displaced class by its own already-validated text", "two semantically linked fields" in v2["reason"], True)
+control(
+    "3k: the new head is now the second class",
+    wl_classsweep.load_outstanding()["defect_class"].startswith("new class"),
+    True,
+)
+control(
+    "3k: THE FIX -- the planted class survives, carried in the owed slot rather than destroyed",
+    wl_classsweep.SWEEP_DEMAND.peek()["owed"]["defect_class"].startswith("planted class"),
+    True,
+)
+
+# A NON-FIX stop that does not judge the class_sweep object at all (degraded) discharges the current head and promotes the first class back to it -- silent/degraded discharges only the question actually asked.
+v3 = judged("", {"verdict": "stop", "reason": "clean", "next_action": ""})
+control("3k: a follow-up stop asks about the CURRENT head (the second class)", "a table with more rows" in CAPTURED["prompt"], True)
+control(
+    "3k: discharging it promotes the planted class back to head",
+    wl_classsweep.load_outstanding()["defect_class"].startswith("planted class"),
+    True,
+)
+
+# The NEXT non-fix stop now asks in full about the promoted (originally planted) class.
+v4 = judged("", {"verdict": "stop", "reason": "clean", "next_action": ""})
+control(
+    "3k: THE FIX -- the follow-up prompt now names the promoted class that a fix stop once displaced",
+    "two semantically linked fields" in CAPTURED["prompt"],
+    True,
+)
+wl_classsweep.clear_outstanding()
+
 
 
 # ===========================================================================
@@ -1860,8 +2071,163 @@ control(
 wl_classsweep.clear_outstanding(MARKER)
 wl_proofcheck.clear_outstanding(PROOF_MARKER_PATH)
 
+# -- 3g. THE SAME CARRY-FORWARD FIX, mirrored for wl_proofcheck (agent/plans/PLAN-sweep-obligation-carry-forward.md task "The same survival and bound controls for wl_proofcheck"). Storage is shared (wl_rules.Demand), so this exercises the SAME machinery through PF's own field names (transform_kind/scope) rather than re-deriving it.
+
+SILENT_PROOF = {
+    "verdict": "stop",
+    "reason": "clean",
+    "next_action": "",
+    "proof_obligation": {
+        "applicable": False,
+        "transform_kind": "",
+        "scope": "",
+        "proof_kind": "none",
+        "evidence": "",
+        "proof_attached": False,
+        "instruction": "",
+    },
+}
+
+out_a = proof_answer(transform_kind="transform A: a tree-wide rename")
+kind, _ = wl_proofcheck.apply_verdict(out_a, None, path=PROOF_MARKER_PATH, asked="fresh")
+control("3g: first fresh fire fires", kind, "fire")
+out_b = proof_answer(transform_kind="transform B: a reflow pass")
+kind, _ = wl_proofcheck.apply_verdict(
+    out_b, wl_proofcheck.PROOF_DEMAND.peek(PROOF_MARKER_PATH), path=PROOF_MARKER_PATH, asked="fresh"
+)
+control("3g: a second fresh fire naming a different transform also fires", kind, "fire")
+owed = wl_proofcheck.PROOF_DEMAND.peek(PROOF_MARKER_PATH)["owed"]
+control(
+    "3g: transform A is preserved in the owed slot",
+    owed["transform_kind"].startswith("transform A"),
+    True,
+)
+control(
+    "3g: load_outstanding now answers transform B, the new head",
+    wl_proofcheck.load_outstanding(PROOF_MARKER_PATH)["transform_kind"].startswith("transform B"),
+    True,
+)
+control("3g: the reason names the displaced transform A", "transform A" in out_b["reason"], True)
+control("3g: the STILL OWED sentence is present", "STILL OWED" in out_b["reason"], True)
+control("3g: the reason still fits the 400-char cap", len(out_b["reason"]) <= 400, True)
+
+# A fresh silent answer must not discharge the demand it displaced.
+kind, _ = wl_proofcheck.apply_verdict(
+    SILENT_PROOF, wl_proofcheck.PROOF_DEMAND.peek(PROOF_MARKER_PATH), path=PROOF_MARKER_PATH, asked="fresh"
+)
+control("3g: a fresh silent answer is read as silent", kind, "silent")
+control(
+    "3g: a fresh silent answer leaves the outstanding head (transform B) untouched",
+    wl_proofcheck.load_outstanding(PROOF_MARKER_PATH)["transform_kind"].startswith("transform B"),
+    True,
+)
+control(
+    "3g: ...and leaves the owed transform A untouched too",
+    wl_proofcheck.PROOF_DEMAND.peek(PROOF_MARKER_PATH)["owed"]["transform_kind"].startswith("transform A"),
+    True,
+)
+
+# A follow-up that discharges the head promotes the owed transform to head.
+kind, _ = wl_proofcheck.apply_verdict(
+    SILENT_PROOF, wl_proofcheck.PROOF_DEMAND.peek(PROOF_MARKER_PATH), path=PROOF_MARKER_PATH, asked="followup"
+)
+control("3g: a follow-up silent answer discharges the head", kind, "silent")
+promoted = wl_proofcheck.load_outstanding(PROOF_MARKER_PATH)
+control("3g: transform A is promoted to head", promoted["transform_kind"].startswith("transform A"), True)
+control(
+    "3g: the promoted transform now appears in the follow-up prompt",
+    "transform A" in wl_proofcheck.prompt_section(False, promoted),
+    True,
+)
+control(
+    "3g: the carried transform never appears in the fresh PROOF_PROMPT text",
+    promoted["transform_kind"] in wl_proofcheck.prompt_section(True, promoted),
+    False,
+)
+wl_proofcheck.clear_outstanding(PROOF_MARKER_PATH)
+
+# THE BOUND: three consecutive fresh fires leave exactly one record in owed, dropping the oldest; CARRY_MAX is enforced the same way it is for wl_classsweep, since both ride wl_rules.Demand.
+wl_proofcheck.apply_verdict(proof_answer(transform_kind="transform P"), None, path=PROOF_MARKER_PATH, asked="fresh")
+wl_proofcheck.apply_verdict(
+    proof_answer(transform_kind="transform Q"),
+    wl_proofcheck.PROOF_DEMAND.peek(PROOF_MARKER_PATH),
+    path=PROOF_MARKER_PATH,
+    asked="fresh",
+)
+wl_proofcheck.apply_verdict(
+    proof_answer(transform_kind="transform R"),
+    wl_proofcheck.PROOF_DEMAND.peek(PROOF_MARKER_PATH),
+    path=PROOF_MARKER_PATH,
+    asked="fresh",
+)
+rec = wl_proofcheck.PROOF_DEMAND.peek(PROOF_MARKER_PATH)
+control(
+    "3g: three consecutive fresh fires leave exactly one owed record",
+    rec["owed"]["transform_kind"].startswith("transform Q"),
+    True,
+)
+control("3g: the head is the third transform", rec["transform_kind"].startswith("transform R"), True)
+control(
+    "3g: the oldest (transform P) was dropped, not carried a second time",
+    "transform P" not in json.dumps(rec),
+    True,
+)
+wl_proofcheck.clear_outstanding(PROOF_MARKER_PATH)
+
+# The fire counter: fresh-then-followup on the SAME transform reaches the cap rather than resetting to 1.
+wl_proofcheck.apply_verdict(proof_answer(transform_kind="transform U"), None, path=PROOF_MARKER_PATH, asked="fresh")
+wl_proofcheck.apply_verdict(
+    proof_answer(transform_kind="transform U"),
+    wl_proofcheck.PROOF_DEMAND.peek(PROOF_MARKER_PATH),
+    path=PROOF_MARKER_PATH,
+    asked="followup",
+)
+control("3g: fresh-then-followup on the SAME transform reaches the fire cap", proof_fires(PROOF_MARKER_PATH), 2)
+control(
+    "3g: a demand at the cap is never carried further",
+    wl_proofcheck.load_outstanding(PROOF_MARKER_PATH),
+    None,
+)
+wl_proofcheck.clear_outstanding(PROOF_MARKER_PATH)
+
 
 # --------------------------------------------------------------------------- PART 3h -- grounding a fired finding in the real fix-set (agent/plans/PLAN-judge-prompt-trap-conflation.md).
+
+
+# -- 3h-bis. THE PROVENANCE LABEL (agent/plans/PLAN-sweep-obligation-carry-forward.md task "Label the injected file list with its provenance"): the FIXSET_GROUND_TRUTH block must say WHERE the file list came from, since a diff-tree list and a git-status fallback answer different questions.
+
+CAPTURED["answer"] = answer(defect_class="provenance test class")
+wl_classsweep.clear_outstanding()
+wl_judge.run_judge(
+    [], 0, "a message", 0, "none declared", extra=FIXSIG, fixset_files=["a.py"], fixset_provenance="diff-tree"
+)
+control(
+    "provenance: a resolved commit says so in the prompt",
+    "resolved from the fix-set's own commit(s)" in CAPTURED["prompt"],
+    True,
+)
+wl_classsweep.clear_outstanding()
+
+wl_judge.run_judge(
+    [], 0, "a message", 0, "none declared", extra=FIXSIG, fixset_files=["a.py"], fixset_provenance="status-fallback"
+)
+control(
+    "provenance: the status fallback names itself, not a diff",
+    "git status --porcelain" in CAPTURED["prompt"],
+    True,
+)
+wl_classsweep.clear_outstanding()
+
+wl_judge.run_judge(
+    [], 0, "a message", 0, "none declared", extra=FIXSIG, fixset_files=["a.py"], fixset_provenance=None
+)
+control(
+    "provenance: an unrecognised/missing provenance never asserts the stronger diff-tree claim",
+    "resolved from the fix-set's own commit(s)" in CAPTURED["prompt"],
+    False,
+)
+control("provenance: ...and still renders something, never a raw KeyError", "provenance unknown" in CAPTURED["prompt"], True)
+wl_classsweep.clear_outstanding()
 
 
 control(
@@ -1971,30 +2337,37 @@ with tempfile.TemporaryDirectory() as _fxroot:
     subprocess.run(["git", "-C", str(_fxroot), "commit", "-qm", "add two files"], check=True)
     _second_sha = _git(_fxroot, "rev-parse", "HEAD").strip()
 
+    _fxfiles, _fxprov = wl_reggate.fixset_files(_fxroot, [_second_sha])
     control(
         "fixset_files: a commit sha resolves to its real diff-tree file list",
-        sorted(wl_reggate.fixset_files(_fxroot, [_second_sha])),
+        sorted(_fxfiles),
         ["b.py", "c.py"],
     )
+    control("fixset_files: a resolved commit reports provenance diff-tree", _fxprov, "diff-tree")
     control(
         "fixset_files: a ROOT commit (no parent) still resolves via the --root retry",
-        wl_reggate.fixset_files(_fxroot, [_root_sha]),
+        wl_reggate.fixset_files(_fxroot, [_root_sha])[0],
         ["a.py"],
     )
     control(
         "fixset_files: a non-existent id (tick-shaped) falls back to `git status --porcelain`",
-        wl_reggate.fixset_files(_fxroot, ["deadbeef00"]),
+        wl_reggate.fixset_files(_fxroot, ["deadbeef00"])[0],
         [],
+    )
+    control(
+        "fixset_files: the status fallback reports provenance status-fallback",
+        wl_reggate.fixset_files(_fxroot, ["deadbeef00"])[1],
+        "status-fallback",
     )
     (_fxroot / "d.py").write_text("w = 4\n")
     control(
         "fixset_files: the git-status fallback sees a real untracked file",
-        wl_reggate.fixset_files(_fxroot, ["deadbeef00"]),
+        wl_reggate.fixset_files(_fxroot, ["deadbeef00"])[0],
         ["d.py"],
     )
     control(
         "fixset_files: an empty ids list on an otherwise-dirty tree still uses the status fallback",
-        wl_reggate.fixset_files(_fxroot, []),
+        wl_reggate.fixset_files(_fxroot, [])[0],
         ["d.py"],
     )
 

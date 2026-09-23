@@ -128,7 +128,7 @@ false with proof_kind `none`.
 def prompt_section(fix_signal, outstanding=None):
     """The prompt text to append, or "" when this stop asks nothing.
 
-    Mirrors `wl_classsweep.prompt_section` exactly: the fix signal wins over an outstanding demand, since a NEW fix-set is a new transform and asking about the old one instead would drop it.
+    Mirrors `wl_classsweep.prompt_section` exactly: the fix signal wins over an outstanding demand, since a NEW fix-set is asked about fresh, on PROOF_PROMPT, which never mentions the outstanding transform -- that demand is carried forward in the marker's `owed` slot rather than dropped, and asked in full on a later stop that is not a fix stop.
     """
     if fix_signal:
         return PROOF_PROMPT
@@ -183,7 +183,7 @@ V_ACTION_DROPPED = "Run a shape-cluster diff or equivalent structural proof over
 V_ACTION_NOSEARCH = "%s"
 
 
-def enforce(out, payload, fixset_files=None):
+def enforce(out, payload, fixset_files=None, displaced=None):
     """Write the proof order into a judge verdict, in place. Returns the note.
 
     Reuses `wl_classsweep.validate_search`/`names_destructive` rather than re-deriving them, on the same reasoning the plan this rule implements argues for: a safety check consulted twice belongs in one place.
@@ -193,8 +193,14 @@ def enforce(out, payload, fixset_files=None):
 
     `fixset_files` is a SEPARATE, later-added gap of the same shape: a fired finding's own SCOPE claim was never checked against what git says actually changed, only that a follow-up command built from it parses. ANNOTATES `reason` only, never suppresses (see agent/plans/PLAN-judge-prompt-trap-conflation.md and `wl_rules.scope_grounded`'s own docstring for why): this rule never
     fails closed, so a check added here may only make a fired finding more legible about its own uncertainty.
+
+    `displaced` is the demand THIS fire is about to bump into the marker's `owed` slot (wl_rules.Demand.displace), or None. Mirrors `wl_classsweep.enforce`'s identical parameter: the STILL OWED sentence re-emits only text already validated when that demand first fired.
     """
     reason = V_REASON % (payload["transform_kind"], V_ASSERTED if payload["asserted"] else "")
+    if isinstance(displaced, dict) and displaced.get("transform_kind"):
+        reason += wl_rules.still_owed_sentence(
+            displaced["transform_kind"], "scope %s" % (displaced.get("scope") or "(not recorded)")
+        )
     if not wl_rules.scope_grounded(payload.get("scope", ""), fixset_files):
         reason += (
             " UNVERIFIED: git's own file list for this fix-set does not match '%s' -- if that "
@@ -251,17 +257,30 @@ def clear_outstanding(path=None):
     PROOF_DEMAND.clear(path)
 
 
-def apply_verdict(out, outstanding=None, path=None, fixset_files=None):
+def apply_verdict(out, outstanding=None, path=None, fixset_files=None, asked=None):
     """(kind, note). Mutates `out` when the rule fires; owns the marker lifecycle.
 
-    Mirrors `wl_classsweep.apply_verdict`: a silent OR degraded answer discharges any outstanding demand, since carrying one forward on an unreadable judge answer would block a session on the judge's own malfunction.
+    Mirrors `wl_classsweep.apply_verdict` exactly, including the `asked` contract: `"fresh"` displaces `outstanding` into `owed` on a fire and leaves both untouched on silent/degraded; `"followup"` banks a re-fire over `outstanding` as before and promotes a live `owed` record on silent/degraded; `None` (the default) reproduces the byte-identical legacy behaviour of always banking on fire and always clearing on silent/degraded, for any caller that has not adopted the parameter.
 
     `fixset_files` defaults to `None`, so every existing call site that does not know about it behaves byte-identically to before this parameter existed (see `wl_rules.scope_grounded`).
     """
     kind, payload = read_verdict(out)
     if kind == "fire":
+        if asked == "fresh":
+            note = enforce(out, payload, fixset_files, displaced=outstanding)
+            PROOF_DEMAND.displace(
+                {"transform_kind": payload["transform_kind"], "scope": payload["scope"]},
+                head=outstanding,
+                path=path,
+            )
+            return "fire", note
         note = enforce(out, payload, fixset_files)
         save_outstanding(payload, outstanding, path)
         return "fire", note
-    clear_outstanding(path)
+    if asked == "fresh":
+        return kind, payload if isinstance(payload, str) else ""
+    if asked == "followup":
+        PROOF_DEMAND.promote(path)
+    else:
+        clear_outstanding(path)
     return kind, payload if isinstance(payload, str) else ""

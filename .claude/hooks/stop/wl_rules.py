@@ -130,8 +130,42 @@ def scope_grounded(text, fixset_files):
     return False
 
 
+# A demand displaced into the `owed` slot may be carried forward at most this many times before it is dropped rather than carried again -- the bound named in agent/plans/PLAN-sweep-obligation-carry-forward.md task 6, shared by every Demand instance because the unbounded-nag failure it guards against is the same shape for a sweep and for a proof obligation.
+CARRY_MAX = 2
+
+
+def _carry_candidate(head):
+    """The `owed`-shaped record `head` becomes on displacement, or None when its own carry count already caps out. `head`'s `at` is left untouched -- the TTL keeps running from wherever it already was, never refreshed by a displacement."""
+    if not isinstance(head, dict):
+        return None
+    try:
+        carried = int(head.get("carried", 0)) + 1
+    except (TypeError, ValueError):
+        return None
+    if carried > CARRY_MAX:
+        return None
+    out = {k: v for k, v in head.items() if k not in ("owed", "fires", "carried")}
+    out["carried"] = carried
+    return out
+
+
+def _newer_of(a, b):
+    """Whichever of two owed-candidates has the more recent `at`; None-safe. Used when a displacement finds the single `owed` slot already occupied: the OLDER of the two is dropped, since it has already had its one reminder and is closest to its own TTL (see the plan's task 3/6)."""
+    if not isinstance(a, dict):
+        return b if isinstance(b, dict) else None
+    if not isinstance(b, dict):
+        return a
+    try:
+        return a if float(a.get("at", 0)) >= float(b.get("at", 0)) else b
+    except (TypeError, ValueError):
+        return a
+
+
 class Demand:
-    """One rule's outstanding-order marker. Every read fails toward "nothing owed"."""
+    """One rule's outstanding-order marker. Every read fails toward "nothing owed".
+
+    A marker holds a HEAD demand (the one actively being asked about) and, in at most one `owed` slot, a demand a fresh fire displaced rather than lost. `bank` re-fires the head in place (a follow-up on the SAME class); `displace` fires a NEW head and files whatever head existed into `owed`, bounded by CARRY_MAX and by the single-slot capacity; `promote` is called when the head is discharged and moves a live `owed` record up to become the new head.
+    """
 
     def __init__(self, name, ttl_min, max_fires):
         self.name = name
@@ -143,12 +177,17 @@ class Demand:
         key = hashlib.sha1((cwd or os.getcwd()).encode("utf-8", "replace")).hexdigest()[:12]
         return base / ("%s-%s.json" % (self.name, key))
 
-    def _read(self, path=None):
+    def _raw(self, path=None):
+        """The whole stored dict, TTL and shape unchecked. For `promote`/`displace`, which need to see a possibly-expired head's own `owed` slot."""
         try:
             d = json.loads((path or self.path()).read_text(encoding="utf-8"))
         except (OSError, ValueError):
             return None
-        if not isinstance(d, dict) or not isinstance(d.get("fires"), int):
+        return d if isinstance(d, dict) else None
+
+    def _read(self, path=None):
+        d = self._raw(path)
+        if d is None or not isinstance(d.get("fires"), int):
             return None
         try:
             if time.time() - float(d.get("at", 0)) > self.ttl_min * 60:
@@ -174,17 +213,62 @@ class Demand:
         return d["fires"] if d else 0
 
     def bank(self, fields, prior=None, path=None):
+        """Re-fire the head demand in place: same class, one more fire. The prior record's `owed` slot rides through untouched -- a follow-up re-fire on the head is not a displacement and must not disturb whatever is parked. `prior`'s own `carried` count (set only when this head was itself promoted from a prior displacement) rides through too, so a LATER displacement of this same head still remembers how many times it has already been carried."""
         p = path or self.path()
         with contextlib.suppress(OSError):
             p.parent.mkdir(parents=True, exist_ok=True)
             payload = dict(fields)
             payload["fires"] = int((prior or {}).get("fires", 0)) + 1
             payload["at"] = time.time()
+            payload["owed"] = (prior or {}).get("owed")
+            if prior and "carried" in prior:
+                payload["carried"] = prior["carried"]
+            p.write_text(json.dumps(payload, indent=1), encoding="utf-8")
+
+    def displace(self, fields, head=None, path=None):
+        """Fire a NEW head demand, preserving `head` (today's head, if any) in the single `owed` slot rather than destroying it. `head` should be the record `load`/`peek` returned before this call -- its own `owed` slot (something displaced earlier) competes for the same one slot, and the older of the two loses per `_newer_of`."""
+        p = path or self.path()
+        with contextlib.suppress(OSError):
+            p.parent.mkdir(parents=True, exist_ok=True)
+            existing_owed = head.get("owed") if isinstance(head, dict) else None
+            owed = _newer_of(_carry_candidate(head), existing_owed)
+            payload = dict(fields)
+            payload["fires"] = 1
+            payload["at"] = time.time()
+            payload["owed"] = owed
+            p.write_text(json.dumps(payload, indent=1), encoding="utf-8")
+
+    def promote(self, path=None):
+        """Discharge the head demand; if a live (non-expired) `owed` record is waiting, it becomes the new head. Fails toward nothing owed: a missing, malformed or TTL-expired `owed` slot is dropped silently, never raised."""
+        p = path or self.path()
+        raw = self._raw(p)
+        owed = raw.get("owed") if isinstance(raw, dict) else None
+        if not isinstance(owed, dict):
+            self.clear(p)
+            return
+        try:
+            expired = time.time() - float(owed.get("at", 0)) > self.ttl_min * 60
+        except (TypeError, ValueError):
+            expired = True
+        if expired:
+            self.clear(p)
+            return
+        with contextlib.suppress(OSError):
+            p.parent.mkdir(parents=True, exist_ok=True)
+            # `carried` rides along rather than being reset: it is how a demand promoted back to head remembers it was already displaced once, so a SECOND displacement can still hit CARRY_MAX and a THIRD is refused rather than restarting the count from zero.
+            payload = dict(owed)
+            payload.setdefault("fires", 1)
+            payload["owed"] = None
             p.write_text(json.dumps(payload, indent=1), encoding="utf-8")
 
     def clear(self, path=None):
         with contextlib.suppress(OSError):
             (path or self.path()).unlink(missing_ok=True)
+
+
+def still_owed_sentence(label, detail):
+    """The deterministic "STILL OWED" clause appended to a displacing stop's reason (plan task 4/121): code-authored text built only from a class and search/scope this same rule already validated when the demand first fired -- never a re-emission of fresh model text."""
+    return " STILL OWED: %s -- %s" % ((label or "")[:160], (detail or "")[:160])
 
 
 def apply_order(out, reason, action):

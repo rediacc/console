@@ -4449,9 +4449,9 @@ def run_stop(event, event_ok, worklist, hook_file):
         reg_scripts = wl_reggate.package_scripts(root) if reg_signals else {}
         # GROUND THE JUDGE IN A REAL FILE LIST, computed here rather than left to the model's own prose: twice in one session the judge fabricated a "bulk transform" naming files that did not exist anywhere in the tree, pattern-matching a worked example in PF.PROOF_PROMPT rather than reading the actual diff (agent/plans/PLAN-judge-prompt-trap-conflation.md). Computed
         # UNCONDITIONALLY (one cheap git call when reg_ids is empty) so a follow-up proof/sweep question on a later stop is grounded too, not only a fresh fire.
-        reg_fixset_files = []
+        reg_fixset_files, reg_fixset_provenance = [], None
         with contextlib.suppress(Exception):
-            reg_fixset_files = wl_reggate.fixset_files(root, reg_ids)
+            reg_fixset_files, reg_fixset_provenance = wl_reggate.fixset_files(root, reg_ids)
         reg_extra = ""
         # v19: the claim-check profile for the ONE tick this fix-set is about, or None when no claim was put to the judge. `claim_prior` is the latch record as it stood BEFORE the ask, which is what makes the fire count increment by one rather than reset. See wl_claimcheck.
         claim_prof, claim_prior = None, None
@@ -4573,6 +4573,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                 # here. The ceiling is bounded by S.TRAP_HEADING_CAP: at 120 headings that is ~8,400 chars, ~2,100 tokens, which is the only figure in this comment that cannot rot, because the cap is enforced in code at wl_store.trap_headings().
                 traps=S.trap_prompt_lines(root),
                 fixset_files=reg_fixset_files,
+                fixset_provenance=reg_fixset_provenance,
             )
         if err is not None:
             # FAIL CLOSED, by operator instruction. A judge that cannot answer must not become the way out.
