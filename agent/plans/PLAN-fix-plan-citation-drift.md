@@ -167,14 +167,23 @@ Not attempted this pass. 351 citation findings across 41 plans and 130 record fi
 
 - [ ] `agent/plans/PLAN-citation-fragility.md` -- 7: 6 R4 done=<commit>: gate is rename-blind (see item 2 above); the record is RIGHT; 1 R7 Record-Sig mismatch: box table hand-edited, re-derive or revive+recompact
 - [ ] `agent/plans/PLAN-consolidation-pressure.md` -- 11: 10 R4 done=<commit>: gate is rename-blind (see item 2 above); the record is RIGHT; 1 R7 Record-Sig mismatch: box table hand-edited, re-derive or revive+recompact
-- [ ] `agent/plans/PLAN-gh-swallow-gates-audit.md` -- 6: 6 R4 done=<commit>: gate is rename-blind (see item 2 above); the record is RIGHT
-- [ ] `agent/plans/PLAN-git-ignore-aware-discover.md` -- 10: 10 R4 done=<commit>: gate is rename-blind (see item 2 above); the record is RIGHT
-- [ ] `agent/plans/PLAN-judge-prompt-trap-conflation.md` -- 8: 8 R4 done=<commit>: gate is rename-blind (see item 2 above); the record is RIGHT
-- [ ] `agent/plans/PLAN-printf-echo-pipefail-sweep.md` -- 33: 33 R4 done=<commit>: gate is rename-blind (see item 2 above); the record is RIGHT
-- [ ] `agent/plans/PLAN-pytest-parallelism.md` -- 10: 10 R4 done=<commit>: gate is rename-blind (see item 2 above); the record is RIGHT
+- [x] `agent/plans/PLAN-gh-swallow-gates-audit.md` -- 6: 6 R4 done=<commit>: gate is rename-blind (see item 2 above); the record is RIGHT
+    (ticked) 2026-09-23T10:19:46Z by d778be9d: check:ci-plan-record now reports 5 problems across 75 records with no finding against PLAN-gh-swallow-gates-audit.md; the R4 rename fallback is at .ci/scripts/quality/check_plan_record.py:322
+- [x] `agent/plans/PLAN-git-ignore-aware-discover.md` -- 10: 10 R4 done=<commit>: gate is rename-blind (see item 2 above); the record is RIGHT
+    (ticked) 2026-09-23T10:19:46Z by d778be9d: check:ci-plan-record now reports 5 problems across 75 records with no finding against PLAN-git-ignore-aware-discover.md; the R4 rename fallback is at .ci/scripts/quality/check_plan_record.py:322
+- [x] `agent/plans/PLAN-judge-prompt-trap-conflation.md` -- 8: 8 R4 done=<commit>: gate is rename-blind (see item 2 above); the record is RIGHT
+    (ticked) 2026-09-23T10:19:46Z by d778be9d: check:ci-plan-record now reports 5 problems across 75 records with no finding against PLAN-judge-prompt-trap-conflation.md; the R4 rename fallback is at .ci/scripts/quality/check_plan_record.py:322
+- [x] `agent/plans/PLAN-printf-echo-pipefail-sweep.md` -- 33: 33 R4 done=<commit>: gate is rename-blind (see item 2 above); the record is RIGHT
+    (ticked) 2026-09-23T10:19:46Z by d778be9d: check:ci-plan-record now reports 5 problems across 75 records with no finding against PLAN-printf-echo-pipefail-sweep.md; the R4 rename fallback is at .ci/scripts/quality/check_plan_record.py:322
+- [x] `agent/plans/PLAN-pytest-parallelism.md` -- 10: 10 R4 done=<commit>: gate is rename-blind (see item 2 above); the record is RIGHT
+    (ticked) 2026-09-23T10:19:46Z by d778be9d: check:ci-plan-record now reports 5 problems across 75 records with no finding against PLAN-pytest-parallelism.md; the R4 rename fallback is at .ci/scripts/quality/check_plan_record.py:322
 - [ ] `agent/plans/PLAN-remove-autopilot.md` -- 1: 1 R6 unfilled <FILL: ...> placeholder: needs an author
-- [ ] `agent/plans/PLAN-rest-graphql-guard-parity.md` -- 8: 8 R4 done=<commit>: gate is rename-blind (see item 2 above); the record is RIGHT
+- [x] `agent/plans/PLAN-rest-graphql-guard-parity.md` -- 8: 8 R4 done=<commit>: gate is rename-blind (see item 2 above); the record is RIGHT
+    (ticked) 2026-09-23T10:19:47Z by d778be9d: check:ci-plan-record now reports 5 problems across 75 records with no finding against PLAN-rest-graphql-guard-parity.md; the R4 rename fallback is at .ci/scripts/quality/check_plan_record.py:322
 - [ ] `agent/plans/PLAN-staged-duplication-probe.md` -- 9: 8 R4 done=<commit>: gate is rename-blind (see item 2 above); the record is RIGHT; 1 R7 Record-Sig mismatch: box table hand-edited, re-derive or revive+recompact
-- [ ] `agent/plans/PLAN-w7p4w-docker-cutover.md` -- 12: 12 R4 done=<commit>: gate is rename-blind (see item 2 above); the record is RIGHT
-- [ ] `agent/plans/PLAN-w7p5a-deploy-release-port.md` -- 8: 8 R4 done=<commit>: gate is rename-blind (see item 2 above); the record is RIGHT
-- [ ] `agent/plans/PLAN-wl-report-liveness-oracle.md` -- 7: 7 R4 done=<commit>: gate is rename-blind (see item 2 above); the record is RIGHT
+- [x] `agent/plans/PLAN-w7p4w-docker-cutover.md` -- 12: 12 R4 done=<commit>: gate is rename-blind (see item 2 above); the record is RIGHT
+    (ticked) 2026-09-23T10:19:47Z by d778be9d: check:ci-plan-record now reports 5 problems across 75 records with no finding against PLAN-w7p4w-docker-cutover.md; the R4 rename fallback is at .ci/scripts/quality/check_plan_record.py:322
+- [x] `agent/plans/PLAN-w7p5a-deploy-release-port.md` -- 8: 8 R4 done=<commit>: gate is rename-blind (see item 2 above); the record is RIGHT
+    (ticked) 2026-09-23T10:19:47Z by d778be9d: check:ci-plan-record now reports 5 problems across 75 records with no finding against PLAN-w7p5a-deploy-release-port.md; the R4 rename fallback is at .ci/scripts/quality/check_plan_record.py:322
+- [x] `agent/plans/PLAN-wl-report-liveness-oracle.md` -- 7: 7 R4 done=<commit>: gate is rename-blind (see item 2 above); the record is RIGHT
+    (ticked) 2026-09-23T10:19:47Z by d778be9d: check:ci-plan-record now reports 5 problems across 75 records with no finding against PLAN-wl-report-liveness-oracle.md; the R4 rename fallback is at .ci/scripts/quality/check_plan_record.py:322
