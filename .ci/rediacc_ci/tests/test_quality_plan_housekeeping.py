@@ -31,10 +31,11 @@ import pytest
 from rediacc_ci import log, paths
 from rediacc_ci.quality import plan_housekeeping as hk
 
-TWIN = paths.CI_DIR.parent / ".ci" / "scripts" / "quality" / "check-plan-housekeeping.sh"
+# THE `TWIN` CONSTANT IS GONE. `.ci/scripts/quality/check-plan-housekeeping.sh` was retired in W7P5-c, blob `f985c1c71a9239eaa6eeda699b7d7235d839669b`, once `.ci/shadow/w7p2-plan-housekeeping.observations.jsonl` held K=5 over 5 distinct trees with 5 distinct fingerprints, every verdict `EQUIVALENT`. The sed programs below are unchanged: they were ALREADY frozen literals copied
+# out of the twin rather than read from it at test time, so they keep running the real `sed` against the port exactly as before. Only the two cases that OPENED the twin's source changed, each to the golden recorded at its own docstring.
 CONFIG = paths.CI_DIR.parent / ".ci" / "config" / "plan-lifecycle.json"
 
-# check-plan-housekeeping.sh:128 and :138, verbatim.
+# The twin's blob lines 128 and 138, verbatim at the moment of freezing.
 BLOB_SED = r"""sed -n '1,10s/^Full-Text-Blob:[[:space:]]*\([0-9a-f]\{40\}\)[[:space:]]*$/\1/p' "$1" | head -1"""
 # W12 P3.3. BUILT FROM THE CONFIG, NOT TYPED. This literal used to carry the alternation `compacted\|parked` verbatim, which made it the THIRD copy of one vocabulary beside the two twins. A test that hard-types what it is checking cannot see the two implementations agree on a word the config no longer has.
 STATUS_SED = (
@@ -289,14 +290,15 @@ def test_age_days_reports_over_and_under_and_refuses_a_bad_date() -> None:
     assert hk.age_days((now - dt.timedelta(days=5)).replace(tzinfo=None).isoformat()) == 5
 
 
-def test_is_shallow_is_dead_in_the_twin_and_therefore_absent_here() -> None:
-    """A finding about the twin, pinned so it is not silently re-imported.
+def test_is_shallow_stayed_dead_and_was_never_imported() -> None:
+    """A finding about the twin, frozen so it is not silently re-imported.
 
-    `is_shallow()` is defined at `check-plan-housekeeping.sh:275` and called nowhere; the live logic reads the graft list per plan, which is the third iteration the header describes. If a future edit gives it a caller, this test fails and whoever ports the twin next has to decide deliberately.
+    THE TWIN-SIDE HALF IS A GOLDEN NOW, NOT A READ. Until W7P5-c this case opened `check-plan-housekeeping.sh` and asserted `is_shallow()` was defined exactly once, meaning defined and never called. That twin was deleted in W7P5-c after `.ci/shadow/w7p2-plan-housekeeping.observations.jsonl` held K=5 (5 rows, 5 distinct trees, 5 distinct fingerprints, all `EQUIVALENT`), and the
+    measurement below was taken from the live file immediately before deletion rather than remembered: at blob `f985c1c71a9239eaa6eeda699b7d7235d839669b` the string `is_shallow` occurred exactly ONCE in the whole file, at line 318, as the definition `is_shallow() {`. One occurrence is the whole claim: a definition with no caller.
+    (The old docstring said `:275`; that citation had gone stale and the real line was 318, which is the kind of drift a frozen number records and a live read hides.)
+
+    WHAT IS STILL CHECKED AGAINST A LIVE FILE is the half that can still regress: the PORT must not have grown an `is_shallow`. That is the direction this case exists for -- the twin's dead code staying out of the language it was ported into -- and it is the direction a deleted twin cannot make vacuous.
     """
-    text = TWIN.read_text(encoding="utf-8")
-    assert "is_shallow()" in text, "the twin no longer defines is_shallow"
-    assert text.count("is_shallow") == 1, "is_shallow now has a caller in the twin"
     assert "is_shallow" not in (
         paths.CI_DIR / "rediacc_ci" / "quality" / "plan_housekeeping.py"
     ).read_text(encoding="utf-8").replace("`is_shallow()`", "")
@@ -346,6 +348,9 @@ def test_neither_twin_hard_types_the_alternation_any_more() -> None:
     """The point of the config is that the word appears in ONE place.
 
     A twin that reads the config AND keeps its old literal still works, and the literal is then a copy waiting to be edited by someone who greps for the word. This asserts the copies are gone from both twins rather than merely inert.
+
+    THE BASH SIDE IS A GOLDEN NOW. `check-plan-housekeeping.sh` was deleted in W7P5-c; measured against blob `f985c1c71a9239eaa6eeda699b7d7235d839669b` immediately before deletion, with comment lines dropped exactly as `code_only` drops them, the twin contained `record_states` and did NOT contain the literal alternation `\\(compacted\\|parked\\)`. Both halves of the bash claim
+    held at the moment the file left the tree, so what remains checkable is the Python side, which is where a future regression could actually land.
     """
 
     def code_only(text: str, comment: str) -> str:
@@ -361,13 +366,10 @@ def test_neither_twin_hard_types_the_alternation_any_more() -> None:
         ),
         "#",
     )
-    sh = code_only(TWIN.read_text(encoding="utf-8"), "#")
-    # The Python twin's status regex, and the bash twin's sed alternation.
+    # The Python port's status regex. The bash twin's sed alternation is the golden above.
     assert "(compacted|parked)" not in py
-    assert r"\(compacted\|parked\)" not in sh
-    # ...and both really do read the key, so this is not passing by deletion.
+    # ...and it really does read the key, so this is not passing by deletion.
     assert '"record_states"' in py or "record_states" in py
-    assert "record_states" in sh
 
 
 def test_an_empty_vocabulary_matches_nothing_rather_than_the_empty_status() -> None:

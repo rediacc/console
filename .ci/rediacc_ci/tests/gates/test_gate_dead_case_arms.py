@@ -12,11 +12,12 @@ tree at least through `DEAD_CASE_MEDIA_DIRS`, which the twin never overrides. So
 `REAL_TREE_TWIN = True` is what buys the serialisation, and it is only honoured
 because this module declares no `XDIST_GROUP` of its own -- see `real_tree_admission` in `test_twin_parity.py`, which refuses the combination.
 
-WHAT IS DELIBERATELY NOT RE-IMPLEMENTED. The scanner is never reproduced in Python. Every case drives the real `bash check-dead-case-arms.sh` with the same two environment overrides the twin uses, so the code under test is the code that ships.
+WHAT IS DELIBERATELY NOT RE-IMPLEMENTED. The scanner is never reproduced in Python. Every case drives the real `check_dead_case_arms.py` entry point as a subprocess with the same two environment overrides the twin used, so the code under test is the code that ships.
 """
 
 import os
 import pathlib
+import sys
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
@@ -24,27 +25,26 @@ from rediacc_ci.tests.gates import harness
 # The twin reads the real tree (`.ci/media` is scanned on every invocation, and the default CODE_DIRS greps `.ci/scripts`, `scripts` and `packages/www/scripts`), so this module must be serialised against the battery. See the module docstring.
 REAL_TREE_TWIN = True
 
-GATE = paths.from_root(".ci", "scripts", "quality", "check-dead-case-arms.sh")
+# THE SUBJECT IS THE PYTHON GATE NOW. It was `.ci/scripts/quality/check-dead-case-arms.sh` (blob `19c18e3f491528ad54c0e1fb8832f626b0eade9d`), retired in W7P5-c once `.ci/shadow/w7p2-dead-case-arms.observations.jsonl` held K=5 -- 5 rows, 5 distinct tree ids, 5 distinct fingerprints, every verdict `EQUIVALENT`. The repoint was DRIVEN before the deletion, not assumed: a clean
+# real-tree run with no overrides and a fixture carrying one dead arm beside one live arm were each run on both sides, stdout and stderr captured SEPARATELY, byte-identical on all four streams, with the fixture genuinely exiting 1 and naming the dead arm so the comparison was not made over two silent runs.
+GATE = paths.from_root(".ci", "scripts", "quality", "check_dead_case_arms.py")
 
 # The twin's `run_gate` default. Repeated rather than imported because it IS the twin's declaration, and a port that quietly widened it would be testing a different corpus than its original.
 DEFAULT_CODE_DIRS = ".ci/scripts scripts"
 
 
 def require_gate(gate) -> str:
-    """The subject, proved present and executable before anything is claimed.
+    """The subject, proved present before anything is claimed.
 
-    The twin asserts `[ -x "$GATE" ]` at load time and dies there. Doing it per
+    The twin asserted `[ -x "$GATE" ]` at load time and died there. Doing it per
     case is the same claim made at the point of use, and it keeps a missing
-    subject from arriving as a bare `Permission denied` from subprocess.
+    subject from arriving as a bare `ENOENT` from subprocess.
+
+    THE EXECUTABLE-BIT CHECK IS GONE WITH THE BASH TWIN, deliberately rather than by oversight: the subject is now driven as `sys.executable <gate>`, which does not consult the mode bit, so asserting on it would be a control that cannot fail for the invocation actually used. What replaces it is the presence check above, which is the half that can still fire.
     """
     if not GATE.is_file():
         gate.log_fail("subject under test is missing: %s" % paths.relative_to_root(GATE))
-    if not os.access(GATE, os.X_OK):
-        gate.log_fail(
-            "subject under test is not executable: %s. Fix: chmod +x %s"
-            % (paths.relative_to_root(GATE), paths.relative_to_root(GATE))
-        )
-    return harness.require_tool("bash", "install bash; the subject IS a bash script")
+    return sys.executable
 
 
 def run_gate(gate, test_dirs, code_dirs: str = DEFAULT_CODE_DIRS) -> harness.RunResult:
@@ -52,9 +52,9 @@ def run_gate(gate, test_dirs, code_dirs: str = DEFAULT_CODE_DIRS) -> harness.Run
 
     The twin captures `2>&1` into `$LAST` and asserts on the merged text, so the callers below read `.combined` for the same reason.
     """
-    bash = require_gate(gate)
+    runner = require_gate(gate)
     return harness.run(
-        [bash, os.fspath(GATE)],
+        [runner, os.fspath(GATE)],
         cwd=paths.repo_root(),
         env={
             "DEAD_CASE_TEST_DIRS": os.fspath(test_dirs),
@@ -68,8 +68,8 @@ def test_real_tree_is_clean_and_the_control_fired(gate):
 
     This is the line the manifest's BLOCKER names, and it is why the subject is registered as a real-tree reader in the lock.
     """
-    bash = require_gate(gate)
-    result = harness.run([bash, os.fspath(GATE)], cwd=paths.repo_root())
+    runner = require_gate(gate)
+    result = harness.run([runner, os.fspath(GATE)], cwd=paths.repo_root())
     gate.assert_exit_code(
         0, result.rc, "the real tree must have no dead case arms (output: %s)" % result.combined
     )
@@ -162,14 +162,14 @@ def test_the_scanned_media_root_is_not_empty(gate):
 
     The subject refuses when `DEAD_CASE_MEDIA_DIRS` holds no shell files, because a scan root that has stopped matching reports clean forever and that green is indistinguishable from a clean tree. The twin never asserts the refusal exists, so a subject that lost it would keep every twin case green. This drives the subject at an EMPTY media root and requires the loud refusal.
     """
-    bash = require_gate(gate)
+    runner = require_gate(gate)
     with harness.temp_dir() as d:
         tests = d / "test"
         empty_media = d / "media"
         tests.mkdir(parents=True, exist_ok=True)
         empty_media.mkdir(parents=True, exist_ok=True)
         result = harness.run(
-            [bash, os.fspath(GATE)],
+            [runner, os.fspath(GATE)],
             cwd=paths.repo_root(),
             env={
                 "DEAD_CASE_TEST_DIRS": os.fspath(tests),

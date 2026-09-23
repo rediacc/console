@@ -745,7 +745,43 @@ def load_workflow(path: pathlib.Path | str) -> Workflow:
     return Workflow(path, load(path))
 
 
+# LIFTED FROM check_bws_map.py, per agent/plans/PLAN-github-actions-to-bitwarden.md Decision 4: "NO NEW PARSER... those three should be lifted into rediacc_ci/workflows.py so both gates import one copy, which is the same move workflows.py was created to make." `check_actions_vars.py` needed the exact same corpus and the exact same "which job owns this line" answer that `check_bws_map.py` already had; a second copy of either is a second answer to one question.
+#
+# LINE-SCAN, NOT STRUCTURAL. `job_index`/`job_at` answer "which job owns line N" from the raw text, not from a parsed `Workflow`/`Job` tree, because both callers need this for a `vars.NAME`/`secrets.NAME` reference found by a bare regex over the whole file -- turning every such reference into a structural walk of `Job.steps` would mean re-deriving the line number the structural
+# parse does not keep. `JOB_RE` matches this repo's own convention (two-space top-level job indent under `jobs:`), the same assumption `check_bws_map.py` made.
+JOB_RE = re.compile(r"^  ([A-Za-z0-9_-]+):\s*$")
+
+# The frozen twin: `.ci/breakpoint/workflow/breakpoint.yml` carries a copy of `breakpoint.yml` at the same line numbers (see PLAN-github-actions-to-bitwarden.md Decision 3, "THE JOB THAT MUST NOT FETCH"), so any gate enumerating "every workflow-shaped file" must include it or silently miss half of every exemption keyed against it.
+_EXTRA_WORKFLOW_DIRS = ((".ci", "breakpoint", "workflow"),)
+
+
+def call_sites(root: pathlib.Path) -> list[pathlib.Path]:
+    """Every file that may carry a workflow-shaped `vars.`/`secrets.`/`bws-secrets` reference: `.github/workflows/*.yml`, `.github/actions/*/action.yml`, and the breakpoint twin directory above."""
+    out = sorted((root / ".github" / "workflows").glob("*.yml"))
+    out += sorted((root / ".github" / "actions").glob("*/action.yml"))
+    for parts in _EXTRA_WORKFLOW_DIRS:
+        out += sorted(root.joinpath(*parts).glob("*.yml"))
+    return out
+
+
+def job_index(lines: list[str]) -> list[tuple[int, str]]:
+    """[(line_no, job_id), ...] for every top-level job header in `lines`, in file order."""
+    return [(i, m.group(1)) for i, line in enumerate(lines) if (m := JOB_RE.match(line))]
+
+
+def job_at(index: list[tuple[int, str]], i: int) -> str | None:
+    """The job owning line `i`, from an already-built `job_index`, or None above the first job header."""
+    cur = None
+    for start, name in index:
+        if start <= i:
+            cur = name
+        else:
+            break
+    return cur
+
+
 __all__ = [
+    "JOB_RE",
     "SETUP_GO",
     "SETUP_WORKSPACE",
     "Job",
@@ -754,6 +790,9 @@ __all__ = [
     "UnsupportedYAMLError",
     "Workflow",
     "WorkflowParseError",
+    "call_sites",
+    "job_at",
+    "job_index",
     "lane_capabilities",
     "load",
     "load_workflow",

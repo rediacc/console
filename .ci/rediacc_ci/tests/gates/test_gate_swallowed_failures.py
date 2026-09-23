@@ -1,6 +1,6 @@
 r"""Port of `.ci/scripts/test/gates/test-swallowed-failures.sh`, retired in W7 P5.
 
-Both-ways test for `.ci/scripts/quality/check-swallowed-failures.sh`.
+Both-ways test for `.ci/scripts/quality/check_swallowed_failures.py`, whose bash twin `check-swallowed-failures.sh` was retired in W7P5-c.
 
 THE DEFECT IT POLICES, carried across from the twin's header. A gate captures a probe, throws away the probe's exit status and its stderr, and reads the captured value. A failed probe yields empty, empty is byte-identical to "nothing to report", and the gate prints its success message. The live specimen is the pre-fix probe in `check-go-deps.sh`, recovered here from git history
 rather than paraphrased, so this file tests against the bytes that actually shipped.
@@ -33,6 +33,7 @@ scoping breaking -- a `.sh` file appearing beside these ports, or the walker wid
 
 import os
 import re
+import sys
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
@@ -40,8 +41,14 @@ from rediacc_ci.tests.gates import harness
 # test_real_tree_is_clean, test_the_repaired_sites_stay_repaired and the added inertness control all read the real tree. See the docstring.
 REAL_TREE_TWIN = True
 
-GATE_REL = ".ci/scripts/quality/check-swallowed-failures.sh"
+# THE SUBJECT IS THE PYTHON GATE NOW. It was `.ci/scripts/quality/check-swallowed-failures.sh` (blob `e7b12ba15c41569a88ea8065007e246ab948f2ee`), retired in W7P5-c once `.ci/shadow/w7p2-swallowed-failures.observations.jsonl` held K=5 -- 10 rows, 10 distinct tree ids, 4 distinct fingerprints, every verdict `EQUIVALENT`.
+# The repoint was DRIVEN before the deletion rather than assumed: a seam-free real-tree run and a fixture whose single swallowed capture exits 1 were each run on both sides, stdout and stderr captured SEPARATELY, byte-identical on all four streams.
+GATE_REL = ".ci/scripts/quality/check_swallowed_failures.py"
 GATE = paths.from_root(*GATE_REL.split("/"))
+
+# WHERE THE SCOPE DECLARATION LIVES, and it is NOT in the file above. The entry point is a shim; `DEFAULT_SCAN_DIRS` sits in the library it calls, so the two cases that read the subject's SOURCE read this path instead. Reading the shim would find nothing, and "found nothing" is the vacuity both of those cases already refuse out loud.
+SCOPE_REL = ".ci/rediacc_ci/quality/swallowed_failures.py"
+SCOPE_SRC = paths.from_root(*SCOPE_REL.split("/"))
 HERE_REL = ".ci/rediacc_ci/tests/gates"
 
 # `<file>.sh:<line>: $<var>` -- the finding line shape test_real_tree_is_clean counts. `grep -cE '^.*\.sh:[0-9]+: \$'` in the twin; `-P`-equivalent here because Python's `re` has no ugrep's alternated-anchor defect.
@@ -122,7 +129,7 @@ def require_gate(gate) -> str:
     """The subject, proved present before anything is claimed."""
     if not GATE.is_file():
         gate.log_fail("subject under test is missing: %s" % GATE_REL)
-    return harness.require_tool("bash", "install bash; the subject IS a bash script")
+    return sys.executable
 
 
 def write_case(gate, root, name: str, *lines: str):
@@ -150,9 +157,9 @@ def run_gate(gate, root, dirs: str = SCAN_REL) -> harness.RunResult:
 
     The twin captures `2>&1` into `LAST_OUT` and asserts on the merged text, so every caller below reads `.combined` for the same reason.
     """
-    bash = require_gate(gate)
+    runner = require_gate(gate)
     return harness.run(
-        [bash, os.fspath(GATE)],
+        [runner, os.fspath(GATE)],
         cwd=paths.repo_root(),
         env={"SWALLOWED_SCAN_ROOT": os.fspath(root), "SWALLOWED_SCAN_DIRS": dirs},
     )
@@ -534,8 +541,8 @@ def test_real_tree_is_clean(gate):
 
     Zero is the only bound worth pinning here. A range would let the class regrow one call site at a time, which is exactly how it reached 16: nobody was counting. If this case fails, a new capture is throwing away a probe failure. Fix it or waive it with a real reason, and do not relax this assertion to make the failure go away.
     """
-    bash = require_gate(gate)
-    result = harness.run([bash, os.fspath(GATE)], cwd=paths.repo_root())
+    runner = require_gate(gate)
+    result = harness.run([runner, os.fspath(GATE)], cwd=paths.repo_root())
     count = len(FINDING_RE.findall(result.combined))
     if result.rc != 0:
         gate.log_fail(
@@ -573,17 +580,17 @@ def test_the_repaired_sites_stay_repaired(gate):
 
 def test_scope_is_gates_only(gate):
     """The scope is the justification for the whole design: only a gate can turn a swallowed failure into a false GREEN that lets a merge through. If the default scope silently widened to the whole repo, the false-positive budget calibrated above would be meaningless."""
-    if not GATE.is_file():
-        gate.log_fail("subject under test is missing: %s" % GATE_REL)
+    if not SCOPE_SRC.is_file():
+        gate.log_fail("scope declaration is missing: %s" % SCOPE_REL)
     body = "\n".join(
         line
-        for line in GATE.read_text(encoding="utf-8").splitlines()
-        if "DEFAULT_SCAN_DIRS=" in line
+        for line in SCOPE_SRC.read_text(encoding="utf-8").splitlines()
+        if line.startswith("DEFAULT_SCAN_DIRS")
     )
     if not body:
         gate.log_fail(
-            "no DEFAULT_SCAN_DIRS= line in %s, so this case read NOTHING and every "
-            "assertion below would be about an empty string." % GATE_REL
+            "no DEFAULT_SCAN_DIRS assignment in %s, so this case read NOTHING and every "
+            "assertion below would be about an empty string." % SCOPE_REL
         )
     gate.assert_contains(body, IN_SCOPE[0], "quality gates are in scope")
     gate.assert_contains(body, IN_SCOPE[1], "security gates are in scope")
@@ -614,9 +621,9 @@ def test_this_module_plants_no_capture_the_real_sweep_can_see(gate):
             "found ZERO python files under %s, so this control swept nothing and its "
             "green would mean nothing." % HERE_REL
         )
-    bash = require_gate(gate)
+    runner = require_gate(gate)
     result = harness.run(
-        [bash, os.fspath(GATE)],
+        [runner, os.fspath(GATE)],
         cwd=paths.repo_root(),
         env={
             "SWALLOWED_SCAN_ROOT": os.fspath(paths.repo_root()),
@@ -639,9 +646,14 @@ def test_this_module_plants_no_capture_the_real_sweep_can_see(gate):
     # And the directory scope, read off the subject rather than remembered.
     scope = "\n".join(
         line
-        for line in GATE.read_text(encoding="utf-8").splitlines()
-        if "DEFAULT_SCAN_DIRS=" in line
+        for line in SCOPE_SRC.read_text(encoding="utf-8").splitlines()
+        if line.startswith("DEFAULT_SCAN_DIRS")
     )
+    if not scope:
+        gate.log_fail(
+            "no DEFAULT_SCAN_DIRS assignment in %s: this assertion would be about an "
+            "empty string" % SCOPE_REL
+        )
     gate.assert_not_contains(
         scope, ".ci/rediacc_ci", "the default scope must not reach the ports' package"
     )
