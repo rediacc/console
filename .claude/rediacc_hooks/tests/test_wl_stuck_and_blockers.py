@@ -189,6 +189,23 @@ def test_57_citing_a_real_line_clears_it(wl):  # noqa: F811
     wl.check("allow", "", "a citation that resolves is accepted")
 
 
+def test_57b_a_jsonl_citation_resolves_too(wl):  # noqa: F811
+    """REGRESSION 2026-09-23: CITE_RE's extension alternation carried `json` but not `jsonl`, and the alternation requires an exact trailing match up to `:` -- `.jsonl:N` never matched `json` as a shorter prefix, it simply failed to match at all. Silent for months because `agent/worklist/*.jsonl` and `agent/ledgers/*.jsonl`, this hook's own store and investigation ledger, are cited
+    constantly in evidence lines and tick messages, and every one of those citations was unresolvable to citation_state."""
+    wl.brief_now()
+    wl.hand_now()
+    (wl.proj / "agent" / "ledgers").mkdir(parents=True, exist_ok=True)
+    (wl.proj / "agent" / "ledgers" / "plan-investigation.jsonl").write_text(
+        '{"a": 1}\n{"b": 2}\n{"c": 3}\n', encoding="utf-8"
+    )
+    wl.say(
+        "answer\n\n## Remaining\n| #12 | Wave C autopilot | blocked, "
+        "agent/ledgers/plan-investigation.jsonl:2 |"
+    )
+    wl.task(12, "pending", "Wave C autopilot")
+    wl.check("allow", "", "a .jsonl citation that resolves is accepted")
+
+
 def test_58_control_a_citation_past_end_of_file_is_not_accepted(wl):  # noqa: F811
     wl.brief_now()
     wl.hand_now()

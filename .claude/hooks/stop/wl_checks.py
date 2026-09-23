@@ -377,9 +377,10 @@ CITE_RE = re.compile(
     # and a name like `.gitignore` or `.dead-bash-allowlist` has its only dot at the FRONT, so 22 of this repo's 24 tracked root dotfiles could not be cited AT ALL. That set is not incidental: it is every one of the 16 allowlists and blocklists the whole suppressions discipline is built on, plus .gitignore, .npmrc, .gitattributes and .gitmodules. A session draining an allowlist
     # entry, which is exactly the work that most needs a record, could not cite the file it had just edited. The branch carries no slash on purpose, so it
     # reaches root dotfiles and cannot swallow the `.ci` prefix of a real path;
-    # the first branch is tried first and wins for anything with an extension. Over-matching is cheap here anyway: citation_state still has to RESOLVE the path on disk, so a stray `.foo:3` in prose fails there rather than passing.
+    # the first branch is tried first and wins for anything with an extension. Over-matching is cheap here anyway: citation_state still has to RESOLVE the path on disk, so a stray `.foo:3` in prose fails there rather than passing. `jsonl` added 2026-09-23, the SAME class of gap as astro/css and mdx/svg/cast/txt above, found by a background report naming it directly rather than by
+    # a live refusal: `agent/worklist/<prefix>.jsonl` and `agent/ledgers/*.jsonl` are this hook's own store and investigation ledger, cited constantly in evidence lines and tick messages, and every one of those citations was silently unresolvable to citation_state -- `json` matched the shorter prefix nowhere near far enough, since the alternation requires an EXACT trailing match up to `:`.
     r"(?<![\w./-])("
-    r"\.?[\w][\w./-]*\.(?:py|ts|tsx|js|cjs|mjs|sh|json|md|ya?ml|go|toml|astro|css|mdx|svg|cast|txt)"
+    r"\.?[\w][\w./-]*\.(?:py|ts|tsx|js|cjs|mjs|sh|json|jsonl|md|ya?ml|go|toml|astro|css|mdx|svg|cast|txt)"
     r"|\.[\w][\w-]*"
     r")"
     r":(\d+)(?:-\d+)?\b"
