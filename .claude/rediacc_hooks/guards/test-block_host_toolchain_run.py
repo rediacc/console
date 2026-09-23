@@ -64,10 +64,38 @@ def run_full(cmd, path=None):
 REAL = os.environ.get("PATH", "")
 WITH_SHIM = f"{shim}:{REAL}"
 
-# The directory that resolves `bash` must survive every "host lacks <tool>" PATH strip below, even when that directory ALSO resolves the tool being hidden. On this CI runner go is apt-installed into /usr/bin, the same directory bash lives in, so a strip keyed only on "does this dir contain <tool>" silently removed bash too and every subprocess.run(["bash", GUARD]) call in this file
-# failed with FileNotFoundError. Locally go lives under /usr/local/go/bin (the go.dev tarball path from `./run.sh setup`), a separate directory from bash's, which is why this never reproduced there.
-_bash_which = shutil.which("bash", path=REAL)
-BASH_DIR = os.path.dirname(_bash_which) if _bash_which else None
+# EVERY OTHER TOOL THIS TEST OR THE GUARD ITSELF NEEDS must stay resolvable through a "host lacks <tool>" PATH strip below, even when the excluded tool's own directory ALSO resolves one of them. Measured live, 2026-09-23, on this exact devbox image: `bash`, `docker` AND `shellcheck` all resolve to `/usr/bin`. A strip keyed only on "does this dir contain <tool>" removes the whole directory,
+# which silently took `bash` out from under `subprocess.run(["bash", GUARD])` the first time this was hit, and, on a subtler path, took `docker` out from under the GUARD ITSELF the second time: the guard's own "is a devbox running" check shells out to `docker ps`, so stripping `/usr/bin` to hide `shellcheck` also hid `docker`, which made the guard report "no devbox" and fall back to its
+# note-only branch instead of routing -- the exact shape of a false negative this constructed-absence design exists to prevent, just aimed at the guard's OWN toolchain rather than the one under test.
+# The fix generalizes past bash specifically: `_path_without` below builds ONE shim directory holding a symlink to every real, resolvable executable found anywhere on `base`, EXCEPT the one being hidden, and uses that shim as the entire replacement PATH. Nothing that already resolved on `base` can stop resolving as a side effect of hiding an unrelated name, because every other name got its own
+# symlink rather than inheriting its directory's fate.
+def _path_without(tool, base):
+    """A single shim directory symlinking every real, resolvable executable found on `base`, except `tool` -- replacing `base` entirely rather than filtering its directories.
+
+    First `base` directory to offer a given name wins, matching normal PATH resolution order, so a name shadowed further down `base` stays shadowed here too.
+    """
+    shim_dir = tempfile.mkdtemp()
+    seen = set()
+    for directory in base.split(os.pathsep):
+        if not directory or not os.path.isdir(directory):
+            continue
+        try:
+            names = os.listdir(directory)
+        except OSError:
+            continue
+        for name in names:
+            if name == tool or name in seen:
+                continue
+            src = os.path.join(directory, name)
+            if not os.path.isfile(src):
+                continue
+            try:
+                os.symlink(src, os.path.join(shim_dir, name))
+            except OSError:
+                continue
+            seen.add(name)
+    return shim_dir
+
 
 # Does a devbox exist? The refusal arm requires one; without it the guard correctly downgrades to a note, and asserting exit 2 would be asserting the wrong thing on a machine with no container.
 box_name = subprocess.run(
@@ -152,9 +180,7 @@ else:
 
 # --- BARE TOOL: the same class, for a directly-typed command ---------------- The NEEDS table above matches a GATE KEY string in the command (`check:ci-python-lint`); it is blind to `go build ./...`, which names no gate at all. BARE_TOOLS exists to catch exactly that shape. Constructed rather than ambient: whether THIS host happens to have `go` on PATH must not decide which branch
 # of the guard gets exercised. Strip every PATH entry that actually resolves `go`, so the REFUSE branch runs deterministically instead of silently degrading to a no-op CONTROL assertion on a host that has go (which is exactly what happened the first time this case was written: it passed while testing nothing, because `go` was on this host's PATH the whole time).
-NOGO = os.pathsep.join(
-    d for d in REAL.split(os.pathsep) if d == BASH_DIR or not os.path.isfile(os.path.join(d, "go"))
-)
+NOGO = _path_without("go", REAL)
 if have_box:
     r = run_full("go build ./...", NOGO)
     cases.append((2, r.returncode, "bare 'go', host lacks it, devbox has it -> REFUSED"))
@@ -268,15 +294,6 @@ if os.path.exists(os.path.join(REPO, "private/account/.env")):
 #
 # PATH is constructed per tool, never trusted to ambient host state: this host happens to lack shfmt/shellcheck/actionlint and have ruff/go, and a case written against today's ambient mix silently stops testing the branch it names the moment the host's toolset changes.
 ALL_TOOLS = ["ruff", "go", "shfmt", "shellcheck", "actionlint"]
-
-
-def _path_without(tool, base):
-    """base's PATH entries, minus any that resolve `tool` -- except bash's own directory, which must survive every strip or the subprocess call used to exercise the guard can no longer find bash itself (see BASH_DIR above)."""
-    return os.pathsep.join(
-        d
-        for d in base.split(os.pathsep)
-        if d == BASH_DIR or not os.path.isfile(os.path.join(d, tool))
-    )
 
 
 for tool in ALL_TOOLS:
