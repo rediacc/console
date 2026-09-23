@@ -334,6 +334,34 @@ def index_present(root):
     )
 
 
+def index_inputs_moved(root):
+    """True when the on-disk index cannot be trusted: missing, unreadable, or one of its own recorded `inputs` no longer hashes to what the index says.
+
+    THE FALLBACK CHOSEN OVER THE PREFERRED DESIGN (agent/plans/PLAN-stop-hook-refactor-enforcement.md, Commit 1): moving this check into the probe bundle itself (`probeMain` in `scripts/gates/check-shape-duplication.ts`) is the one-implementation-two-callers design and stays the long-term target, but it is a TypeScript change riding the same file Commit 2's profile split rewrites, and this rule needed the gap closed now. `corpus_sig` only stat-sweeps the three `CORPUS_GLOBS` pathspecs, so it is blind to a change in a file the bundle depends on WITHOUT being IN the scanned corpus -- `scripts/lib/blocker-validator.ts`, `scripts/lib/console.ts` and `scripts/lib/controls.ts` are three such `inputs` today, none of them matching `scripts/gates/check-*.ts`.
+    Reading the SAME whole-file sha256 the commit-path guard's `_algorithm_moved` already computes (`.claude/rediacc_hooks/guards/warn_staged_shape_duplication.py:137-153`) needs no port: both read `index.json`'s own `inputs` map and hash the same bytes the same way, so there is nothing here to drift out of step with it.
+
+    Fails toward re-running rather than toward trusting a doubtful cache: a missing index, an unreadable one, a missing input file, or an unreadable one are all read as "moved", never as "unchanged".
+    """
+    cache = os.environ.get("SHAPE_PROBE_CACHE") or os.path.join(root, SHAPE_INDEX_REL)
+    try:
+        with open(os.path.join(cache, "index.json"), encoding="utf-8") as fh:
+            index = json.load(fh)
+    except (OSError, ValueError):
+        return True
+    inputs = index.get("inputs") if isinstance(index, dict) else None
+    if not isinstance(inputs, dict):
+        return True
+    for rel, want in inputs.items():
+        try:
+            with open(os.path.join(root, rel), "rb") as fh:
+                got = hashlib.sha256(fh.read()).hexdigest()
+        except OSError:
+            return True
+        if got != want:
+            return True
+    return False
+
+
 def counter_findings(root):
     """(findings, error). Each finding is {shape, files, span}. Never raises."""
     script = os.path.join(root, COUNTER)
@@ -368,17 +396,22 @@ def counter_findings(root):
     return (out if isinstance(out, list) else []), ""
 
 
-def run(root, state):
-    """The whole rule. (fired, reason, next_action, note).
+def refresh_index(root, state):
+    """(findings, err) from a fresh counter run, or (None, "") when nothing needed re-running.
 
-    `state` is a mutable dict persisted by the caller; only `shapedup_sig` is used.
+    SPLIT OUT OF `run` (agent/plans/PLAN-stop-hook-refactor-enforcement.md, Commit 1) so the commit-path guard's index can be rearmed on EVERY stop that reaches the allow path, independent of whether the judge said `stop`. Before this split the only thing that re-ran the counter -- and so the only thing that re-emitted `.ci/cache/shape-index/` -- was `run`, called exclusively from inside `if judged_ok:`. A one-character comment edit to the counter's own source moved its `inputs` hash, `warn_staged_shape_duplication`'s `_algorithm_moved` correctly refused to trust the stale index, and the commit-path advisory stayed disarmed for 36+ minutes because the judge kept saying `continue` -- verified live, not assumed.
+    `None` (rather than `[]`) is the signal that the counter did not run at all this stop, which the judged half needs to tell apart from "it ran and found nothing".
     """
     sig = corpus_sig(root)
-    if sig == state.get("shapedup_sig") and index_present(root):
-        return False, "", "", ""
+    stale = sig != state.get("shapedup_sig") or not index_present(root) or index_inputs_moved(root)
+    if not stale:
+        return None, ""
     state["shapedup_sig"] = sig
+    return counter_findings(root)
 
-    findings, err = counter_findings(root)
+
+def judge(root, findings, err):
+    """The judged half of the old `run`: given findings `refresh_index` already computed, ask the model about the largest shape and apply the verdict. (fired, reason, next_action, note). Never runs the counter itself."""
     if err:
         # NEVER FAILS CLOSED, same as wl_classsweep: the only thing this rule can do is turn an allowed stop into a block, so a counter that could not answer loses a demand rather than granting an exit.
         return False, "", "", "shape counter unavailable: %s" % err
@@ -400,3 +433,14 @@ def run(root, state):
     if kind != "fire":
         return False, "", "", note if kind == "degraded" else ""
     return True, out.get("reason", ""), out.get("next_action", ""), note
+
+
+def run(root, state):
+    """The whole rule, byte-identical in behaviour to before the split: refresh then judge.
+
+    `state` is a mutable dict persisted by the caller; only `shapedup_sig` is used. Kept for any caller that still wants both halves in one call; `.claude/hooks/stop/wl_checks.py` now calls `refresh_index` and `judge` separately so the former can run unconditionally.
+    """
+    findings, err = refresh_index(root, state)
+    if findings is None and not err:
+        return False, "", "", ""
+    return judge(root, findings, err)

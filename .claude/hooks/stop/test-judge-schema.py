@@ -15,6 +15,7 @@ The third pair is the one that matters most and is easiest to get wrong: the bui
 """
 
 import json
+import hashlib
 import os
 import pathlib
 import shutil
@@ -1519,18 +1520,104 @@ try:
     wl_shapedup.counter_findings = _boom
     _st3 = {}
     wl_shapedup.ask = lambda _inst: (None, "stubbed: no model call in a control")
-    # The skip also needs a shape index on disk, which a fresh checkout does not have until the first scan writes one; pinning it makes this control about the signature and not about the checkout it runs in.
+    # The skip also needs a shape index on disk, which a fresh checkout does not have until the first scan writes one; pinning it, and the inputs-moved check beside it, makes this control about the signature and not about the checkout it runs in or the real cache's own contents.
     _index_present = wl_shapedup.index_present
+    _index_inputs_moved = wl_shapedup.index_inputs_moved
     wl_shapedup.index_present = lambda _root: True
+    wl_shapedup.index_inputs_moved = lambda _root: False
     wl_shapedup.run(REPO, _st3)
     wl_shapedup.run(REPO, _st3)
     wl_shapedup.index_present = _index_present
+    wl_shapedup.index_inputs_moved = _index_inputs_moved
     control("an unchanged corpus is scanned once, not twice", len(_calls), 1)
     control(
         "the signature is recorded so the skip can happen", bool(_st3.get("shapedup_sig")), True
     )
 finally:
     wl_shapedup.counter_findings = _orig_counter
+
+# 6g. THE REFRESH/JUDGE SPLIT (agent/plans/PLAN-stop-hook-refactor-enforcement.md, Commit 1): refresh_index runs the counter and rearms the commit-path index on its own, with NO model call and independent of whatever a judge later decides -- the fix for the live incident where a session the judge kept telling to `continue` never rearmed the disarmed commit-path guard.
+_orig_counter2 = wl_shapedup.counter_findings
+try:
+    _refresh_calls = []
+
+    def _boom2(_root):
+        _refresh_calls.append(1)
+        return [{"shape": "hh", "files": ["p.ts:1", "q.ts:1", "r.ts:1"], "span": 5}], ""
+
+    wl_shapedup.counter_findings = _boom2
+    _index_present2 = wl_shapedup.index_present
+    _index_inputs_moved2 = wl_shapedup.index_inputs_moved
+    wl_shapedup.index_present = lambda _root: False
+    wl_shapedup.index_inputs_moved = lambda _root: False
+    _st4 = {}
+    _findings, _err = wl_shapedup.refresh_index(REPO, _st4)
+    control("refresh_index runs the counter with NO model call involved", len(_refresh_calls), 1)
+    control("refresh_index returns the counter's real findings", bool(_findings), True)
+    control("refresh_index records the signature so a later skip can happen", bool(_st4.get("shapedup_sig")), True)
+
+    # A SECOND call with an unchanged corpus and a now-present index is the skip path: no counter call, findings=None so `judge` can tell "did not run" from "ran and found nothing".
+    wl_shapedup.index_present = lambda _root: True
+    _findings2, _err2 = wl_shapedup.refresh_index(REPO, _st4)
+    control("refresh_index skips a second call on an unchanged, indexed corpus", len(_refresh_calls), 1)
+    control("...and signals the skip with findings=None, not an empty list", _findings2, None)
+
+    # judge() NEVER TOUCHES THE COUNTER, only the findings it is handed -- the whole point of the split.
+    wl_shapedup.ask = lambda _inst: (None, "stubbed: no model call in a control")
+    _fired3, _r3, _a3, _n3 = wl_shapedup.judge(REPO, None, "")
+    control("judge(findings=None) fires nothing and stays silent", (_fired3, _n3), (False, ""))
+    _fired4, _r4, _a4, _n4 = wl_shapedup.judge(REPO, [], "counter exploded")
+    control("judge still surfaces a counter error it was handed, without re-running the counter", "counter exploded" in _n4, True)
+    control("judge never called the counter itself for either case", len(_refresh_calls), 1)
+
+    # THE REGRESSION THIS SPLIT FIXES, replayed directly: refresh_index alone -- exactly what a stop with judged_ok=False now calls -- still rearms the index, with no `ask`/judge call anywhere in the path.
+    wl_shapedup.index_present = lambda _root: False
+    _st5 = {}
+    wl_shapedup.refresh_index(REPO, _st5)
+    control(
+        "THE FIX: refresh_index alone (judged_ok=False's whole call) still reaches the counter and rearms the index",
+        len(_refresh_calls),
+        2,
+    )
+    wl_shapedup.index_present = _index_present2
+    wl_shapedup.index_inputs_moved = _index_inputs_moved2
+finally:
+    wl_shapedup.counter_findings = _orig_counter2
+
+# 6h. index_inputs_moved (agent/plans/PLAN-stop-hook-refactor-enforcement.md, Commit 1): the fallback staleness check that catches a moved DEPENDENCY the corpus glob-sweep is blind to.
+with tempfile.TemporaryDirectory() as _im_root:
+    _im_cache = pathlib.Path(_im_root) / ".ci" / "cache" / "shape-index"
+    _im_cache.mkdir(parents=True)
+    _im_dep = pathlib.Path(_im_root) / "scripts" / "lib"
+    _im_dep.mkdir(parents=True)
+    (_im_dep / "console.ts").write_text("export const x = 1;\n")
+    _im_sha = hashlib.sha256((_im_dep / "console.ts").read_bytes()).hexdigest()
+    (_im_cache / "index.json").write_text(
+        json.dumps({"inputs": {"scripts/lib/console.ts": _im_sha}})
+    )
+    control(
+        "index_inputs_moved: an index whose inputs still hash to what it recorded is trusted",
+        wl_shapedup.index_inputs_moved(_im_root),
+        False,
+    )
+    (_im_dep / "console.ts").write_text("export const x = 2;  // edited\n")
+    control(
+        "THE GAP THIS CLOSES: a dependency OUTSIDE the corpus globs that moved is caught",
+        wl_shapedup.index_inputs_moved(_im_root),
+        True,
+    )
+    (_im_cache / "index.json").unlink()
+    control(
+        "index_inputs_moved: a missing index is never trusted",
+        wl_shapedup.index_inputs_moved(_im_root),
+        True,
+    )
+    (_im_cache / "index.json").write_text("{not json")
+    control(
+        "index_inputs_moved: a corrupt index is never trusted",
+        wl_shapedup.index_inputs_moved(_im_root),
+        True,
+    )
 
 # --------------------------------------------------------------------------- PART 4: a schema-exhausted sample is a FLAKE, not a broken gate.
 #

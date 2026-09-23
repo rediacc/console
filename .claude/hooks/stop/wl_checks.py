@@ -4850,13 +4850,25 @@ def run_stop(event, event_ok, worklist, hook_file):
                     + guide_tail,
                 }
             )
+        # THE INDEX REFRESH RUNS UNCONDITIONALLY (agent/plans/PLAN-stop-hook-refactor-enforcement.md, Commit 1), independent of `judged_ok`: it is a mechanical counter run with no model call, and it is also the ONLY thing that re-emits the commit-path guard's cache (`.ci/cache/shape-index/`). Gating it behind `judged_ok` meant a session the judge kept telling to `continue` never
+        # rearmed that guard even after the corpus it hashes had moved -- verified live, a one-comment edit disarmed the commit-path advisory for 36+ minutes with no path to recovery until a stop finally reached `stop`.
+        try:
+            sd_findings, sd_cerr = wl_shapedup.refresh_index(str(root), state_doc)
+        except Exception as exc:  # noqa: BLE001 -- an advisory rule must never wedge a stop
+            sd_findings, sd_cerr = [], "shape index refresh errored: %s" % exc
+        S.save_state(worklist, session_id, state_doc)
         # IS THIS THE NTH COPY. The third judged rule, and the only one that does NOT ride the judge's call: the trim that was supposed to pay for a fourth object in that prompt freed 62 characters, not the ~2,300 the plan estimated, and a fix stop already carries ~17,700 characters of rubric across three calibrated sections. So it makes its own `claude -p`, and earns it by being
         # rare -- a MECHANICAL counter gates the call, and only a shape that was not in the seed and has just reached its third copy opens it.
         #
         # ON THE ALLOW PATH ONLY, deliberately. A judge that already said continue has placed an order; a second order in the same block is how a block stops being read (the same argument wl_judge makes for skipping brave_default after the sweep fires). The shape is still there next stop.
         if judged_ok:
             try:
-                sd_fired, sd_reason, sd_action, sd_note = wl_shapedup.run(str(root), state_doc)
+                if sd_findings is None:
+                    sd_fired, sd_reason, sd_action, sd_note = False, "", "", ""
+                else:
+                    sd_fired, sd_reason, sd_action, sd_note = wl_shapedup.judge(
+                        str(root), sd_findings, sd_cerr
+                    )
             except Exception as exc:  # noqa: BLE001 -- an advisory rule must never wedge a stop
                 sd_fired, sd_reason, sd_action, sd_note = (
                     False,

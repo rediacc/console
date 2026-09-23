@@ -1350,6 +1350,18 @@ function controls(): { name: string; ok: boolean; detail?: string }[] {
       })(),
     },
     {
+      name: 'deadSeeded reports a dead anonymous seed shape, the same predicate as deadAccepted',
+      ok: deadSeeded(mk(N, SPAN), ['deadbeefdead']).length === 1,
+    },
+    {
+      name: 'CONTROL: a live seeded shape is not reported dead',
+      ok: (() => {
+        const per = mk(N, SPAN);
+        const live = per.get('f0.ts')?.[0]?.h;
+        return live !== undefined && deadSeeded(per, [live]).length === 0;
+      })(),
+    },
+    {
       // `--seed` used to write `{generated, files, shapes}` and drop `accepted` on the
       // floor. This asserts the committed artifact still carries both halves, and that a judged hash is never ALSO an anonymous one -- which would double-count it in the success line and hide the reason behind a silent entry.
       name: 'CONTROL: the seed keeps its accepted block, disjoint from the anonymous shapes',
@@ -1468,6 +1480,20 @@ export function deadAccepted(
 }
 
 /**
+ * Anonymous SEEDED shapes that no longer occur at `N` copies -- REPORTED, never refused.
+ *
+ * THE SAME PREDICATE AS `deadAccepted`, applied to the OTHER half of the seed (agent/plans/PLAN-stop-hook-refactor-enforcement.md, Commit 1). `deadAccepted`'s hand-written entries each carry a BLOCKER reason, and refusing when one goes dead is right: a person judged it, and the judgement is stale. The anonymous `shapes` entries carry no such judgement -- they mean only "this was already there when Nth-copy detection was seeded" -- so refusing when a large batch of them goes dead at once would fail an unrelated commit for free. Measured 2026-09-23: 95 of 267 seeded shapes (36%) are already dead on this corpus. Reported on the success line instead, so the debt stays visible on every green run rather than only on the day someone thinks to ask.
+ *
+ * A dead seed hash is not harmless: it is PERMANENT SILENCE for that shape. If a later port reintroduces it at `N` copies, the gate will never say so, because the seed still lists it as pre-existing duplication rather than new.
+ */
+export function deadSeeded(
+  perFile: Map<string, { h: string; line: number }[]>,
+  shapes: readonly string[]
+): string[] {
+  return deadAccepted(perFile, shapes);
+}
+
+/**
  * The pure half of the `accepted` check, split out so the controls drive the REAL
  * validation rather than a reimplementation of it -- the same reason `normalise`, `windows`
  * and `judge` are exported.
@@ -1510,8 +1536,8 @@ export function checkAccepted(accepted: Record<string, string>): {
  * same shape as `wl_reggate.py:130` hashing every existing check script so only new ones
  * count. `accepted` is per-entry judgement, and judgement is what needs a reason.
  */
-function loadSeed(): { silent: Set<string>; accepted: string[] } {
-  if (!existsSync(SEED_FILE)) return { silent: new Set(), accepted: [] };
+function loadSeed(): { silent: Set<string>; accepted: string[]; shapes: string[] } {
+  if (!existsSync(SEED_FILE)) return { silent: new Set(), accepted: [], shapes: [] };
   const raw = JSON.parse(readFileSync(SEED_FILE, 'utf8')) as {
     shapes?: string[];
     accepted?: Record<string, string>;
@@ -1525,7 +1551,8 @@ function loadSeed(): { silent: Set<string>; accepted: string[] } {
     process.exit(1);
   }
   // THE IDS, not a count, because the caller has to prove each one is still LIVE. Returning the number was enough while the only question was "how many are silent"; it is not enough to answer "is this entry still buying anything", which is the half that makes the set shrink.
-  return { silent, accepted: ok };
+  // `shapes` is returned RAW (not merged into `silent`) so `deadSeeded` can be asked about exactly the anonymous half of the seed, disjoint from the judged `accepted` half `deadAccepted` already covers.
+  return { silent, accepted: ok, shapes: raw.shapes ?? [] };
 }
 
 // --------------------------------------------------------------------------- THE CACHED INDEX, AND THE PROBE THAT READS IT ---------------------------------------------------------------------------
@@ -1913,8 +1940,8 @@ async function main(): Promise<void> {
   // `--no-seed` IS FOR THE AGREEMENT TEST AND NOTHING ELSE, and it is not an escape hatch: it makes the gate report the 219-span standing backlog this file's docstring describes, which is a wall rather than a verdict. What it buys is a comparison -- the probe answers about a staged file against a cached corpus, and the only way to check that answer is to ask the whole-corpus scan
   // the same question with the same silence set, which for a single staged file is no silence at all.
   const noSeed = argv.includes('--no-seed');
-  const { silent: seed, accepted } = noSeed
-    ? { silent: new Set<string>(), accepted: [] }
+  const { silent: seed, accepted, shapes } = noSeed
+    ? { silent: new Set<string>(), accepted: [], shapes: [] }
     : loadSeed();
   if (!noSeed && seed.size === 0) {
     console.error(`${RED}✗${NC} no seed at ${SEED_FILE}; run --seed once, and commit it.`);
@@ -1957,9 +1984,12 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
+  // DEBT ON EVERY GREEN, not only when someone thinks to ask: a dead seed hash is permanent silence for that shape (deadSeeded's own doc comment), so the count rides the success line beside the arithmetic it corrects rather than living in a report nobody runs.
+  const deadSeed = noSeed ? [] : deadSeeded(perFile, shapes);
   console.log(
     `${GREEN}✓${NC} shape duplication: ${files.length} file(s), ${totalWindows} window(s), ` +
-      `${seed.size - accepted.length} seeded + ${accepted.length} accepted shape(s); ` +
+      `${seed.size - accepted.length} seeded + ${accepted.length} accepted shape(s) ` +
+      `(${deadSeed.length} seeded shape(s) dead); ` +
       `no NEW shape has reached ${N} copies`
   );
 }
