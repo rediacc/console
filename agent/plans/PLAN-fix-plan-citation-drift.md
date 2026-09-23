@@ -56,10 +56,13 @@ Estimate: ~730-750 of 1119 (~65-67%) mechanical, ~370-390 need judgment.
 - [x] Investigate whether the 103-delete/28-rename migration pattern is itself fixable (stub restoration) without a history rewrite, and whether doing so meaningfully shrinks the backlog before per-citation fixes.
     (ticked) 2026-09-23T08:44:08Z by d778be9d: Investigated and fixed: check_plan_record.py's attested_under_any_path was missing the git-history fallback names_this_record already had, committed d231c8c30, check:ci-plan-record 132 findings -> 4.
 - [x] Script A implemented and run: bare-basename (678) + submodule-qualified (14) + stale-line (42) citation fixes, each with its own printed proof.
+    (ticked) 2026-09-23T11:19:15Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] Script B implemented and run: record findings 126 + 30 + 1 (INDEX.md).
     (ticked) 2026-09-23: the 126 were the gate defect item 1's investigation found and fixed directly (commit d231c8c30, attested_under_any_path's git-history fallback) -- they went green with no record edited, exactly as anticipated below. The 30 + 1 landed in Run 1.
 - [x] Both gates re-run; finding-count delta matches fixes applied exactly.
+    (ticked) 2026-09-23T11:19:15Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] Judgment-remainder checklist written (grouped by plan) for the ~370-390 left, explicitly not attempted this pass.
+    (ticked) 2026-09-23T11:19:15Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 
 ## Run 1 (2026-09-23, session d778be9d)
 

@@ -103,11 +103,17 @@ This is the one control this plan cannot skip: it is the exact failure mode a sa
 ## Tasks
 
 - [x] S1 `.ci/rediacc_ci/quality/agent_session_archival.py`: pure `findings()`/`classify_due()`/`label_for()`, taking already-gathered session records as data. `.ci/config/agent-session-archival.json` with `grace_days: 14`.
+    (ticked) 2026-09-23T11:19:16Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] S2 `.ci/scripts/quality/check_agent_session_archival.py`: `_gather()` via `paths.hooks_stop_dir` + `paths.on_sys_path` + `import wl_store`, calling `agent_peer_sections(root, "")` / `agent_state_dead(sections, "", "")`; verbs `--check` (default), `--status`, `--move <session> [--label L] [--force]`, `--selftest`.
+    (ticked) 2026-09-23T11:19:16Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] S3 Wire the three points, run `check:ci-parity` and `check:ci-gate-reachability-coverage`.
+    (ticked) 2026-09-23T11:19:16Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] S4 Run `--move --label 2026-09-22-backfill` once per directory over the 18 measured backlog sessions, on a quiet tree, one commit. Confirm the gate is green afterward at `grace_days=14`.
+    (ticked) 2026-09-23T11:19:16Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] S5 Regression test proving no STATE.md resurrection, landed alongside S4.
+    (ticked) 2026-09-23T11:19:16Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] S6 `--move` bash coverage (refuse reserved / refuse live without `--force` / move-and-leaves-nothing / refuse dirty tree).
+    (ticked) 2026-09-23T11:19:16Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 
 ## Risks
 

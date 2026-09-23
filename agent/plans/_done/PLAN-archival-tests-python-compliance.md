@@ -81,9 +81,11 @@ That invariant protects twins with real git history -- `check-python-lint.sh` (`
 ## Tasks
 
 - [x] T1. Re-run `npm run check:ci-language-policy` and confirm the live finding text still names exactly `.ci/scripts/test/gates/test-agent-session-archival.sh` and nothing else, so the fix is scoped correctly before touching anything.
+    (ticked) 2026-09-23T11:19:16Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
       Done, in progress 2026-09-23: writer a6fb2bd0c76e5508e dispatched and mid-implementation.
 
 - [x] T2. Write `.ci/rediacc_ci/tests/gates/test_gate_agent_session_archival.py`.
+    (ticked) 2026-09-23T11:19:16Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
       Written, staged, confirmed on disk 2026-09-23. Port every one of the 15 bash functions listed below to a `def test_...(gate, tmp_path)` function, preserving the case each one proves (not just its name) and every "mirror" assertion (a refusal proven beside the same fixture succeeding once the blocking fact is fixed):
 
   1. `test_the_subject_and_its_tools_are_present` (`:89-94`) -- `GATE.is_file()`, git and python3 on PATH (git/python3 checks can drop: the harness itself needs both to run at all, so `shutil.which` guards read like `.ci/rediacc_ci/tests/gates/test_gate_plan_folders.py:73-76`'s `test_git_is_available_or_this_file_asserts_nothing`).
@@ -110,12 +112,14 @@ That invariant protects twins with real git history -- `check-python-lint.sh` (`
   Header docstring should state, in this file's own words, what it adds beyond `agent_session_archival.py`'s pure-function port and beyond the gate's own `--selftest` -- i.e. restate the "WHAT THIS ADDS" section of the bash original's header (`test-agent-session-archival.sh (retired at 1ad63b448, ported to .ci/rediacc_ci/tests/gates/test_gate_agent_session_archival.py; the site was lines 11-34)`) in the repo's own prose style, and note explicitly that it drives the CLI as a process against a real git tree with the REAL `.claude/` reachable, which is why it (like `gate-test:agent-session-archival` before it) is the one case in this file's family that needs a real filesystem and a real oracle rather than a fixture record.
 
 - [x] T3. Confirmed independently 2026-09-23: `pytest .ci/rediacc_ci/tests/gates/test_gate_agent_session_archival.py -q` -- 15 passed in 3.91s. Run the new file standalone and confirm all 15+ cases pass:
+    (ticked) 2026-09-23T11:19:16Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
   ```
   PYTHONPATH=.ci python3 -m pytest .ci/rediacc_ci/tests/gates/test_gate_agent_session_archival.py -v
   ```
   Done looks like: every `test_*` passes, and each prints at least one `gate.log_pass(...)`/assertion (the `gate` fixture's teardown in `conftest.py` raises on a green test with zero recorded controls, so a silently-vacuous port fails this step on its own).
 
 - [x] T4. Done 2026-09-23. `dead=bool(known and known.dead)` at `check_agent_session_archival.py:426` was replaced with `dead=True` for one run; the suite went `1 failed, 14 passed`, and the one failure was `test_a_live_target_is_refused_without_force_and_moves_with_it` ("expected 1, got 0"). The suite reds on a real regression and is not vacuous.
+    (ticked) 2026-09-23T11:19:16Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
       NOTE ON STEP 3: `git checkout -- <path>` is refused by `.claude/hooks/chain-head.sh` (pre-bash) in this tree, so the plant was reverted by editing the line back, which is the repair-forward form and is safer here because that file carries another session's staged work.
       `git diff` against the index is empty afterwards and `git status` reports the file as `A ` again, so the revert is byte-exact; the re-run is 15 passed.
       Prove the suite can fail (a control, not a courtesy). Temporarily edit the real subject for one throwaway run and revert immediately:
@@ -126,14 +130,17 @@ That invariant protects twins with real git history -- `check-python-lint.sh` (`
   Done looks like: a recorded observation (in the plan's own closing note, not a committed file) that the new suite reds on a real regression and is not vacuous.
 
 - [x] T5. Delete `.ci/scripts/test/gates/test-agent-session-archival.sh` from the tree and from the index
+    (ticked) 2026-09-23T11:19:16Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
       Confirmed gone 2026-09-23 (`ls`: No such file or directory, neither staged nor untracked). (`git rm .ci/scripts/test/gates/test-agent-session-archival.sh` -- it is currently staged as a new file this session, so this both unstages and removes it). Confirm with `git status` that it no longer appears at all (neither staged nor untracked).
 
 - [x] T6. Done 2026-09-23: the 15-line object plus its two comment lines removed, `git diff --stat` on `manifest.ts` reads `16 deletions(-)` and nothing else. The only `agent-session-archival` strings left in the file are `check:ci-agent-session-archival`'s own `id` and `run` at `:2026-2027`.
+    (ticked) 2026-09-23T11:19:16Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
       Remove the `gate-test:agent-session-archival` entry from `scripts/ci-runner/manifest.ts` (the whole object at `scripts/ci-runner/manifest.ts:4840-4854`, comment included, from the opening `{` through its matching `},`).
   Do not rewire it onto `check:ci-pytest` -- `check:ci-pytest`'s `paths:` already carries `.ci/rediacc_ci/**` (`scripts/ci-runner/manifest.ts:4783-4791`), the same retirement shape used for `gate-test:bws-rotate` (confirmed: no `bws-rotate` string appears anywhere in `manifest.ts`, `gates.lock.json`, `package.json` or `ci-quality.yml` after that retirement) and documented in `agent/plans/PLAN-plyr-css-on-demand-loading.md:117` ("a Python port does not get one: `scripts/ci-runner/manifest.ts` records that the standalone `gate-test:` entries for ported modules were RETIRED into `check:ci-pytest`... a second entry would schedule the same work twice").
   Leave `check:ci-agent-session-archival` (`scripts/ci-runner/manifest.ts:2026-2029`, `package.json:185`) completely untouched -- that is the still-bash-free production gate, unaffected by this change.
 
 - [x] T7. Done 2026-09-23: `gen-gates-lock: wrote scripts/ci-runner/gates.lock.json (347 gate(s) in manifest file order)`, then `✓ scripts/ci-runner/gates.lock.json matches the manifest: 347 gate(s), same order.` The lock diff is `18 deletions(-)` and is exactly the removed block.
+    (ticked) 2026-09-23T11:19:16Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
       Regenerate the committed lock and verify it:
   ```
   npm run gen:gates-lock
@@ -142,6 +149,7 @@ That invariant protects twins with real git history -- `check-python-lint.sh` (`
   Done looks like: `scripts/ci-runner/gates.lock.json`'s `gate-test:agent-session-archival` block (currently at `scripts/ci-runner/gates.lock.json:5113-5129`) is gone, and no other entries changed except whatever the generator normally touches. Do not hand-edit the lock file.
 
 - [x] T8. Done 2026-09-23: `38 control(s) passed` and `✓ language policy: 267 bash file(s) ... 139 frozen (shrink-only, none added), 128 exempt by name across 18 allowlist entr(ies).` No NEW bash finding.
+    (ticked) 2026-09-23T11:19:16Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
       Re-run the language policy gate and confirm green:
   ```
   npm run check:ci-language-policy
@@ -149,6 +157,7 @@ That invariant protects twins with real git history -- `check-python-lint.sh` (`
   Done looks like: `38 control(s) passed` (or more) and no `NEW bash file(s)` finding.
 
 - [x] T9. Done 2026-09-23: `34 control(s) passed`, against `CONTROL_FLOOR = 26`. The subject is untouched by this plan, so this is the no-op confirmation it was meant to be.
+    (ticked) 2026-09-23T11:19:16Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
       Run the gate's own selftest directly, to confirm nothing about the production subject moved:
   ```
   python3 .ci/scripts/quality/check_agent_session_archival.py --selftest
@@ -156,6 +165,7 @@ That invariant protects twins with real git history -- `check-python-lint.sh` (`
   Done looks like: the same `CONTROL_FLOOR = 26`-or-more controls reported passing as before this change (this file is untouched by this plan, so this is a no-op confirmation, not a fix).
 
 - [x] T10. Done 2026-09-23: the new module is collected (`info: 1630 test function(s) on disk in .ci/rediacc_ci/tests/gates`, `info: corpus 7091 across 3 root(s) (floor 150)`) and its 15 cases are absent from every FAILED line.
+    (ticked) 2026-09-23T11:19:16Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
       The gate itself exits 1 on 53 pre-existing failures in `test_build_build_json.py`, `test_gate_worklist_env_registry.py`, `test_quality_python_lint.py`, `test_quality_editorconfig.py`, `test_canonical_sys_path_hop.py`, `test_core_dockerx.py` and `test_env_create_e2e_env.py`. Grep for `test_gate_agent_session_archival` across the whole run log returns 0 matches, so none of them names this port.
       Run the full Python corpus and confirm the new module is collected and the whole suite is still green:
   ```
@@ -164,6 +174,7 @@ That invariant protects twins with real git history -- `check-python-lint.sh` (`
   Done looks like: the per-root `info: N test function(s) on disk in .ci/rediacc_ci/tests/gates` count is higher by the number of functions added in T2, and the gate exits 0. No manual floor bump is needed anywhere -- `corpus_test_count`/`testpath_dirs` (`.ci/rediacc_ci/check_pytest.py:780-802`) derive the count from disk every run.
 
 - [x] T11. Done 2026-09-23. `npm run lint` and `npm run typecheck` are both green (`typecheck-workers: 4 worker project(s) typechecked clean`), so the `manifest.ts` edit costs nothing on the TypeScript side.
+    (ticked) 2026-09-23T11:19:16Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
       `npm run check:ci-python-lint` first named this port among 5 files needing `ruff format`; it was formatted, and the gate now names only 4 files, all of them other live work (`bws_env.py`, `test_core_bws_env.py`, `check_bws_rotation_notice.py`, `test-block_unproven_bulk_transform.py`), which are out of this plan's ownership.
       `npm run check:ci-python-types` reports 31 new findings across 15 files, all in `bws`, `hint-corpus` and `.claude/hooks/stop` work; grep for `test_gate_agent_session_archival` in its output returns 0.
       Run lint and types on the new file (and on `manifest.ts` if T6 touched formatting nearby):
@@ -176,6 +187,7 @@ That invariant protects twins with real git history -- `check-python-lint.sh` (`
   Done looks like: all four green, with no new findings attributable to `test_gate_agent_session_archival.py` or the `manifest.ts` edit.
 
 - [x] T12. Done 2026-09-23. `check:ci-gate-reachability-coverage` green: `probe agrees with all 337 manifest registrations`, with its own control firing. `check:ci-parity` green: `347 manifest gate(s); 2 workflow scope(s); 9 exempt; 5 battery test(s)` and `agree in both directions`.
+    (ticked) 2026-09-23T11:19:16Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
       `check:ci-gate-manifest` exits 1 on 10 findings, all pre-existing and none naming anything this plan touched: 9 are `[tier]` timing drift on unrelated gates (`check:ci-toolchain-pins`, `check:ci-changed-selection` and 7 others) and 1 is `[leaf] check:ci-shell-lint declares paths but not its own leaf`.
       Run the manifest-consistency gates that watch removals like T6:
   ```
@@ -186,6 +198,7 @@ That invariant protects twins with real git history -- `check-python-lint.sh` (`
   Done looks like: all three green. (`check:ci-parity` is the one that would catch an orphaned reference to the deleted `.sh` path or a manifest entry pointing at a `leaves:` file that no longer exists.)
 
 - [x] T13. Done 2026-09-23: the only hits are prose. This plan, `PLAN-tooling-transformation.md`, one header line in the port itself, and one comment in `scripts/gates/check-shape-duplication.ts:1851` recording the retirement. No wiring file (`.ts` object, `.json` entry, `.yml` step) names the path any more.
+    (ticked) 2026-09-23T11:19:16Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
       Confirm no stray reference to the deleted bash file remains anywhere in the tree:
   ```
   grep -rn "test-agent-session-archival.sh" . --include='*.ts' --include='*.json' --include='*.py' --include='*.md' --include='*.yml' 2>/dev/null
@@ -193,6 +206,7 @@ That invariant protects twins with real git history -- `check-python-lint.sh` (`
   Done looks like: zero matches (or only this plan file itself, which is expected and fine).
 
 - [x] T14. Done 2026-09-23: `Quality-gate tests: 5 passed, 0 failed (86 assertions)`, `schedule: lock, jobs: 8, 5 test(s)`, exit 0. The step still has five bash gate-tests riding it, so the retirement orphaned nothing.
+    (ticked) 2026-09-23T11:19:16Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
       Run the shared "Quality-gate unit tests" battery locally to confirm the retirement didn't orphan the CI step it rode on:
   ```
   npm run check:ci-quality-gates
@@ -200,6 +214,7 @@ That invariant protects twins with real git history -- `check-python-lint.sh` (`
   Done looks like: green. (`gate-test:agent-session-archival` was one of several `gate-test:*` entries sharing the hand-written `Quality-gate unit tests` step in `.github/workflows/ci-quality.yml:2344`; six other `gate-test:*` entries remain wired to the same step, so removing this one does not orphan it.)
 
 - [x] T15. Done 2026-09-23: `check:ci-language-policy` re-run after T6/T7 is green at `38 control(s) passed` with no NEW bash finding, and this plan's `Status:` is now `done`. The tree is staged by name and left uncommitted, per the session default.
+    (ticked) 2026-09-23T11:19:16Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
       Final full check: `npm run check:ci-language-policy` once more (belt and suspenders after T6/T7), then hand this plan to CI via the normal commit/PR flow. Update this plan's `Status:` line to `done` with a one-line summary of what actually ran green, following the convention in `agent/plans/PLAN-fix-python-lint-violations.md`.
 
 ## What this plan deliberately does not touch

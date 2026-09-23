@@ -103,12 +103,16 @@ silent overwrite.
 ## Tasks
 
 - [x] Write `.claude/hooks/context/onboard.py`, modelled on `band-notice.py` (every exception swallowed to the error log, `sys.exit(0)` on every path, `additionalContext` output)
+    (ticked) 2026-09-23T11:19:18Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] Register it: PostToolUse (universal, no matcher), plus `--arm` on PostCompact and SessionStart
+    (ticked) 2026-09-23T11:19:18Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
       LEDGER LAG, closed 2026-09-09: `.claude/settings.json:112` (PostToolUse, no `matcher`
       key, unlike the `Bash`-matched group above it), `:189` (PostCompact) and `:215`
       (SessionStart) both run `onboard.py --arm`.
 - [x] Write `worklist-cases/25-first-touch.sh` and register it in `CASE_FILES`
+    (ticked) 2026-09-23T11:19:18Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] Case: arm (a) fires with the item id and the pre-substituted verb; a second tool call in the same epoch is SILENT
+    (ticked) 2026-09-23T11:19:18Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
       Closed 2026-09-23: `test_25_arm_a_fires_at_the_first_tool_call_carrying_the_id_and_the_prefix`
       in `.claude/rediacc_hooks/tests/test_wl_first_touch.py`. It asserts the notice on a BASH
       call (arm (a), not arm (b)), the item id, all three pre-substituted verbs, the ABSENCE of
@@ -117,7 +121,9 @@ silent overwrite.
       `me = "deadbeef"` each turned the case red, and `git diff` confirmed the hook byte-identical
       after both reverts.
 - [x] Case: arm (b) waits for the first Edit; twenty Bash calls with no items emit nothing (the case that would have nagged 38 of 41 real sessions)
+    (ticked) 2026-09-23T11:19:18Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] Case: the epoch-bump path -- a compaction that fires no hook re-arms via epoch mismatch, and the same sequence WITHOUT the bump stays silent
+    (ticked) 2026-09-23T11:19:18Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
       Closed 2026-09-23: `test_25_an_epoch_bump_re_arms_and_the_same_sequence_without_one_stays_silent`.
       The control runs FIRST: three identical tool calls with the epoch unmoved must all be silent
       before the bump is allowed to break the silence, because an assertion that a bumped epoch
@@ -125,7 +131,9 @@ silent overwrite.
       m.get("state") == "delivered": sys.exit(0)` (no epoch term) reds the bump leg; deleting the
       early exit entirely reds the control leg.
 - [x] Case: a subagent is silent; a corrupt marker and an unrunnable worklist both exit 0 with empty stdout and one error-log line
+    (ticked) 2026-09-23T11:19:18Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] Case: `--audit` reports refusal-before-write correctly in both directions
+    (ticked) 2026-09-23T11:19:18Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
       Closed 2026-09-23, and the audit itself was BUILT for it: section 5's tool did not exist,
       `--audit` only dumped the marker JSON. `onboard.py` now carries `scan_transcript`,
       `store_first_writes`, `audit_rows`, `audit_summary`, `audit_report` and `audit_main`, with
@@ -136,6 +144,7 @@ silent overwrite.
       the floor skip reds three cases, and turning the empty-cohort exit into 0 reds the
       anti-vacuity case.
 - [x] Add the observational line to the Stop refusal naming when the notice was delivered (changes no verdict)
+    (ticked) 2026-09-23T11:19:18Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
       DONE 2026-09-23. `wl_checks.py` cross-imports `onboard` (best-effort, not a real sibling --
       wrapped in `try/except ImportError`, falls back to `onboard = None`, since the crash-test
       fixture `test_wl_cadence.py::test_222j` copies only `.claude/hooks/stop/*.py` and a hard
@@ -147,6 +156,7 @@ silent overwrite.
       change (the one remaining `wl_checks.py` finding, `tiers` var-annotated, predates this edit
       and is outside this box's diff).
 - [x] Record the post-change baseline with `--audit --json` BEFORE any `worklist.py --compact`
+    (ticked) 2026-09-23T11:19:18Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
       Closed 2026-09-23, recorded in `## Baseline re-measured 2026-09-23` below. No
       `worklist.py --compact` was run by this session.
 

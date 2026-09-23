@@ -14,30 +14,45 @@ The filename says "baseline registry" because that is what the triage predicted.
 ## Tasks
 
 - [x] Add `plant()`, `plant_re()` and `VacuousPlantError` to `.ci/rediacc_ci/controls.py`, raising on a missing needle, on `old == new`, and on a byte-identical result
+    (ticked) 2026-09-23T11:19:16Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] Cover the harness in `.ci/rediacc_ci/tests/test_controls.py`, both directions, with `old == new` as its own distinct refusal
+    (ticked) 2026-09-23T11:19:16Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] Convert the genuine plants in the other 8 files — 38 sites across drill_verdicts,
+    (ticked) 2026-09-23T11:19:17Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
       release_bump_skip, renet_tier_map, review_cap_coherence, release_signing_coverage,
       autopilot_breakpoint_alignment; every selftest exits 0
 - [x] Convert `.ci/scripts/quality/check_plan_record.py` — 17 mutant constructions on `clean`, gate exit 0, identity plant proven to raise
+    (ticked) 2026-09-23T11:19:16Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] Convert `compose_env.py` (2), `npmrc.py` (3), `account_portal.py` (1) — all selftests exit 0
+    (ticked) 2026-09-23T11:19:16Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] Convert `.ci/rediacc_ci/quality/review_turn_capacity.py` (5 sites) and DELETE the identity leg that was at `:480`
+    (ticked) 2026-09-23T11:19:16Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] Adjust the floors this file's conversion moved: its derived floor `+3`→`+2`, and the external `>= 12`→`>= 11` in `.ci/rediacc_ci/tests/test_quality_review_turn_capacity.py:218`, each with its reason recorded in place
+    (ticked) 2026-09-23T11:19:16Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] Rename the LOCAL `plant` helpers to `expect_finding` — `.ci/scripts/quality/check_plan_record.py` (13 calls)
+    (ticked) 2026-09-23T11:19:16Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
       and `cli_doc_coverage.py` (8 calls). A THIRD remains at
       `.ci/rediacc_ci/tests/gates/test_gate_watchdog_monitor_ordering.py:98`, left alone because
       that tree is a live writer's; the gate's resolve-the-import rule covers it regardless
 - [x] Write `.ci/scripts/quality/check_python_control_plants.py` — 9 controls pass; it
+    (ticked) 2026-09-23T11:19:16Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
       resolves `plant` to the IMPORT so a local `def plant` earns no credit
 - [x] RESOLVE THE FALSE POSITIVES — settled with TWO shape-based exemptions, no
+    (ticked) 2026-09-23T11:19:16Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
       allowlist: sibling substitutions in one call are normalisation, and a result
       compared back against its own source already carries a vacuity proof. Real tree
       now 128 modules, 69 plant() sites, ZERO findings; 13 controls; both exemptions
       planted open and both mirrors fire
 - [x] Make zero discovered `plant()` sites a RED distinct from an empty directory — both arms driven against real starved trees via `PY_CONTROL_PLANTS_ROOT`, and the helper returns WHICH arm fired so the two cannot cover for each other
+    (ticked) 2026-09-23T11:19:16Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] Add `.ci/rediacc_ci/tests/gates/test_gate_python_control_plants.py` with the real-tree plant, the historical `max_turns=140` plant, and the unmodified-copy mirror
+    (ticked) 2026-09-23T11:19:16Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] WITHDRAWN, not done: the anti-vacuity harness copies `.ci/rediacc_ci` wholesale, so it feeds this gate its real inputs and cannot starve it. A registry row claiming a diagnostic that cannot fire would be a false entry in a hand-verified list; the coverage lives in the gate's own controls instead
+    (ticked) 2026-09-23T11:19:16Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] Correct the disclosure in BOTH `control_vacuity` twins together — `py_unscanned` is now a delegation naming the owning gate; `.ci/rediacc_ci/tests/test_quality_control_vacuity.py` 11/11
+    (ticked) 2026-09-23T11:19:16Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] Registration applied: `package.json` key, `manifest.ts` entry in `quality-static`, `gate-bind --write` emitted the step at `.github/workflows/ci-quality.yml:292`, `gen:gates-lock` → 459 gates. Reachable from `npm run ci`. NOTE: `gate-bind` scans only git-TRACKED files, so a new gate must be `git add`-ed to be discoverable at all
+    (ticked) 2026-09-23T11:19:16Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 
 ## 0. What I got wrong, corrected before anything else
 

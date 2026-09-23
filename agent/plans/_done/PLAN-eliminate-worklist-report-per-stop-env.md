@@ -169,25 +169,45 @@ def test_176_a_one_shot_that_loses_its_slot_is_never_dropped_only_delayed():
 ## Tasks
 
 - [x] Change `OUTQ_PER_STOP` (wl_checks.py:1302) to a plain constant `3`, no env read.
+    (ticked) 2026-09-23T11:19:17Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] Add an `rng` parameter to `outq_drain`, default None -> module-level `random`; group items by priority tier, randomize selection within each tier, preserve strict tier ordering across tiers.
+    (ticked) 2026-09-23T11:19:17Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] Update the call site at wl_checks.py:4772 (no change needed if it keeps the default `rng=None`).
+    (ticked) 2026-09-23T11:19:17Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] Fix the 5 stale comments naming "OUTQ_PER_STOP is 1" (wl_checks.py:1434, :3071, :3565; wl_planfile.py:25; test_wl_advisories_rotation.py:315).
+    (ticked) 2026-09-23T11:19:17Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] Reword N_OUTQ_MORE and N_OUTQ_BLOCKED in worklist_messages.py to drop the env-var mention.
+    (ticked) 2026-09-23T11:19:17Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] Delete the WORKLIST_REPORT_PER_STOP block from .ci/policy/worklist-env-registry.json.
+    (ticked) 2026-09-23T11:19:17Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] Delete the WORKLIST_REPORT_PER_STOP line from .ci/config/env-manifest.json's harness shard.
+    (ticked) 2026-09-23T11:19:17Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] Run `python3 .ci/scripts/quality/check_python_env_registry.py --write-baseline` to drain python-env-registry.json.
+    (ticked) 2026-09-23T11:19:17Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] Run `npx tsx scripts/gen/gen-docs.ts --write` to drop the generated doc-registry.md row.
+    (ticked) 2026-09-23T11:19:17Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] Edit .ci/policy/README.md to drop WORKLIST_REPORT_PER_STOP from its "three names" sentence.
+    (ticked) 2026-09-23T11:19:17Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] Delete the env-var line at every "U"-classified test site in section 7's table (test_wl_report_queue.py test_173_control widening; the 12 test_wl_advisories_rotation.py sites; test_wl_background_waits.py:415; test_wl_checklists.py:371; test_wl_ci_queue_and_mail.py:208; test_wl_poll_and_waiting.py:104; test_wl_migrate.py:279,289; test_wl_state_document.py:209,223,239,260; test_wl_cadence.py:827,840; test_wl_guide_and_deferrals.py:559; test_wl_requests.py:132).
+    (ticked) 2026-09-23T11:19:17Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] Redesign test_173 to assert counts instead of exact single-item drain.
+    (ticked) 2026-09-23T11:19:17Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] Retire outq_fill/outq_order and test_174/test_174_control per section 7; add the direct seq-bump assertion for changed-content re-enqueue.
+    (ticked) 2026-09-23T11:19:17Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] Redesign test_175 to assert render position instead of exclusion.
+    (ticked) 2026-09-23T11:19:17Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] Replace test_176 with the unit-level version in section 9.
+    (ticked) 2026-09-23T11:19:17Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] Redesign 209K's CONTROL leg to drop its widening.
+    (ticked) 2026-09-23T11:19:17Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] Pad test_201's fixture per section 7 so it stays robust under randomization.
+    (ticked) 2026-09-23T11:19:17Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] Remove WORKLIST_REPORT_PER_STOP from test_wl_identity.py's `knobs` tuple and wlfix.py's RESET_KNOBS tuple.
+    (ticked) 2026-09-23T11:19:17Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] Add the two new randomization-invariant tests from section 8 (test_181, test_181_control).
+    (ticked) 2026-09-23T11:19:17Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] Run the full .claude/rediacc_hooks/tests/ suite, not just the 13-file subset, as the closing verification step. Run twice:
+    (ticked) 2026-09-23T11:19:17Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
   7548 total, 7540 passed both runs; the 8 differential-test failures (block_unlinked_commit_author, block_unverified_push) are confirmed environmental/concurrency artifacts (private/renet submodule git identity; a shared bash-side-suite.sh fixture colliding under -n 8 parallelism), each spot-verified passing in isolation.
   One genuine casualty found beyond the plan's own table (test_163y_unread_sub_agent_reports_are_surfaced_on_an_ordinary_stop) and fixed the same way as test_201: padded with a fresh peer note so something survives the fixed-3 drain.
 

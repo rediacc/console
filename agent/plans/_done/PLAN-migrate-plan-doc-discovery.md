@@ -128,6 +128,7 @@ body -- the same cycle-avoidance `wl_planindex.census_rows` documents for `wl_ch
 ## Tasks
 
 - [x] Add `plan_candidates(root)` to `.claude/hooks/stop/wl_store.py`, returning
+    (ticked) 2026-09-23T11:19:17Z by d778be9d: retroactive record: closed by 28d8f96e4 (2026-09-23) docs(agent): archive 3 done plans, verified box-complete before moving -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
       `{owner8: [{"rel","status","open","ticked","title"}]}`.
       DONE at `.claude/hooks/stop/wl_store.py:1783`. Verified live 2026-09-23:
       `python3 .claude/hooks/stop/worklist.py --migrate d778be9d --candidates`
@@ -138,11 +139,13 @@ body -- the same cycle-avoidance `wl_planindex.census_rows` documents for `wl_ch
       (both print `rel`, which already carries the slug), so the key would be a
       field with no consumer and a second file read per plan to populate it.
 - [x] Source it from a DEFERRED `import wl_planindex` + `index_census(root)`,
+    (ticked) 2026-09-23T11:19:18Z by d778be9d: retroactive record: closed by 28d8f96e4 (2026-09-23) docs(agent): archive 3 done plans, verified box-complete before moving -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
       with the `census_rows` fallback on a non-fresh state.
       DONE at `.claude/hooks/stop/wl_store.py:1799-1807`: the three imports sit inside the function
       body with the cycle named in a comment, and a state other than
       `CENSUS_FRESH` re-reads through `census_rows`.
 - [x] Filter to `open > 0` and status not in `wl_planfile.FINISHED_STATES`, then
+    (ticked) 2026-09-23T11:19:17Z by d778be9d: retroactive record: closed by 28d8f96e4 (2026-09-23) docs(agent): archive 3 done plans, verified box-complete before moving -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
       call `plan_owner` only on the surviving short list, wrapped so an
       unreadable header yields owner `None` (dropped) rather than an exception.
       DONE at `.claude/hooks/stop/wl_store.py:1810-1818`. The unreadable-header case is handled by
@@ -150,12 +153,14 @@ body -- the same cycle-avoidance `wl_planindex.census_rows` documents for `wl_ch
       and returns `None` (`.claude/hooks/stop/wl_checks.py:803-806`), which `if not owner: continue`
       then drops. No second try/except is stacked on top of one that already holds.
 - [x] Give it a docstring naming the measurement in this plan (99 open boxes, 11
+    (ticked) 2026-09-23T11:19:17Z by d778be9d: retroactive record: closed by 28d8f96e4 (2026-09-23) docs(agent): archive 3 done plans, verified box-complete before moving -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
       plans, 3 idle owners, 2026-09-17) and stating why `in_scope_status` is NOT
       the filter and why there is no time cutoff.
       DONE at `.claude/hooks/stop/wl_store.py:1784-1798`: four paragraphs, carrying the 2026-09-17
       measurement, the census-not-a-fresh-scan rule, the `in_scope_status`
       refusal with the 6-of-8 `draft` figure, and the no-time-cutoff reasoning.
 - [x] Add `WORKLIST_MIGRATE_PLANS_SHOW` (default `"3"`) and
+    (ticked) 2026-09-23T11:19:17Z by d778be9d: retroactive record: closed by 28d8f96e4 (2026-09-23) docs(agent): archive 3 done plans, verified box-complete before moving -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
       `WORKLIST_MIGRATE_PLAN_MIN_OPEN` (default `"1"`) as module constants in
       `wl_store.py` read via `os.environ.get`.
       BOTH NAMES EXIST WITH THE STATED DEFAULTS, read via `os.environ.get`:
@@ -169,6 +174,7 @@ body -- the same cycle-avoidance `wl_planindex.census_rows` documents for `wl_ch
       already gated: `check:ci-worklist-env-registry` carries the live control
       `PLANT: TWO sites reading one name with different fallbacks reds`.
 - [x] Register both new names in `.ci/policy/worklist-env-registry.json` (kind
+    (ticked) 2026-09-23T11:19:17Z by d778be9d: retroactive record: closed by 28d8f96e4 (2026-09-23) docs(agent): archive 3 done plans, verified box-complete before moving -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
       `tuning`, alongside the `WORKLIST_HANDOFF_STALE_HOURS` entry at line 279),
       in `.ci/config/env-manifest.json`, and under the
       `.claude/hooks/stop/wl_store.py` key in `.ci/config/python-env-registry.json`,
@@ -179,12 +185,14 @@ body -- the same cycle-avoidance `wl_planindex.census_rows` documents for `wl_ch
       real read sites (1516 wl_checks, 1681 wl_store, 1698 worklist).
       `npm run check:ci-worklist-env-registry` exits 0, 2026-09-23.
 - [x] In `migrate_candidates` (`.claude/hooks/stop/wl_store.py:1973`), seed
+    (ticked) 2026-09-23T11:19:17Z by d778be9d: retroactive record: closed by 28d8f96e4 (2026-09-23) docs(agent): archive 3 done plans, verified box-complete before moving -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
       `"plans": []` on both existing candidate-dict constructions so every
       consumer sees the key unconditionally.
       DONE at `.claude/hooks/stop/wl_store.py:1693` (the worklist-item pass) and `.claude/hooks/stop/wl_store.py:1739`
       (the STATE.md fallback pass). `--candidates --json` carries a `plans` array
       on every object.
 - [x] Add the third pass after the STATE.md fallback loop: call
+    (ticked) 2026-09-23T11:19:17Z by d778be9d: retroactive record: closed by 28d8f96e4 (2026-09-23) docs(agent): archive 3 done plans, verified box-complete before moving -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
       `plan_candidates`, enrich any candidate already in `out` whose `prefix`
       matches, and append a new candidate for each remaining owner that is not
       the requesting session, not `live`, and not already covered -- with
@@ -194,6 +202,7 @@ body -- the same cycle-avoidance `wl_planindex.census_rows` documents for `wl_ch
       (test_205..test_208); with the pass neutered to `{}.items()` all four go
       red, which is the control that makes their green mean something.
 - [x] Extend `_migrate_cli`'s `--candidates` renderer
+    (ticked) 2026-09-23T11:19:17Z by d778be9d: retroactive record: closed by 28d8f96e4 (2026-09-23) docs(agent): archive 3 done plans, verified box-complete before moving -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
       (`.claude/hooks/stop/worklist.py:1097-1140`) so `item_desc` reports plans
       when `total == 0` ("0 worklist item(s), but N committed plan(s) with M
       open box(es)"), and print up to `WORKLIST_MIGRATE_PLANS_SHOW` lines of the
@@ -203,6 +212,7 @@ body -- the same cycle-avoidance `wl_planindex.census_rows` documents for `wl_ch
       `f4da5c2e  0 worklist item(s), but 2 committed plan(s) with 36 open box(es)`
       followed by two PLAN lines. Asserted by test_207 and test_208.
 - [x] Add a `--plan <path> [<path>...]` mode to `_migrate_cli`: for each path,
+    (ticked) 2026-09-23T11:19:18Z by d778be9d: retroactive record: closed by 28d8f96e4 (2026-09-23) docs(agent): archive 3 done plans, verified box-complete before moving -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
       refuse a status in `FINISHED_STATES`, refuse zero open boxes, no-op with a
       message when the owner already resolves to the requesting session,
       otherwise rewrite the `Owner:` line.
@@ -212,6 +222,7 @@ body -- the same cycle-avoidance `wl_planindex.census_rows` documents for `wl_ch
       second run printed `already belongs to deadbeef; nothing changed`. Both
       refusals are asserted byte-for-byte by test_210.
 - [x] The rewrite writes `Owner: <adopter8> (adopted from <prev8> <YYYY-MM-DD>)`
+    (ticked) 2026-09-23T11:19:18Z by d778be9d: retroactive record: closed by 28d8f96e4 (2026-09-23) docs(agent): archive 3 done plans, verified box-complete before moving -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
       WITHIN the first `PLAN_HEADER_LINES` (10) lines -- session-shaped token
       FIRST so `PLAN_OWNER_ID_RE` picks the adopter, and never inserting a line
       that would push the header past line 10.
@@ -222,6 +233,7 @@ body -- the same cycle-avoidance `wl_planindex.census_rows` documents for `wl_ch
       header re-resolves to the adopter through `wl_checks.plan_owner` and that
       the line count is unchanged.
 - [x] In the same mode, set an existing `Updated:` line in the header to today's
+    (ticked) 2026-09-23T11:19:17Z by d778be9d: retroactive record: closed by 28d8f96e4 (2026-09-23) docs(agent): archive 3 done plans, verified box-complete before moving -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
       date and leave it absent when absent; touch NO box line, so
       `check:ci-plan-boxes` A0 task signatures and A1 never-deleted stay
       byte-identical.
@@ -229,6 +241,7 @@ body -- the same cycle-avoidance `wl_planindex.census_rows` documents for `wl_ch
       existing `Updated: YYYY-MM-DD`. test_209 asserts that the list of every
       `- [ ]` and `- [x]` line is identical before and after adoption.
 - [x] Have `--plan` print `npm run check:ci-plan-record -- --update` after any
+    (ticked) 2026-09-23T11:19:17Z by d778be9d: retroactive record: closed by 28d8f96e4 (2026-09-23) docs(agent): archive 3 done plans, verified box-complete before moving -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
       successful rewrite, because the edit changes the plan's byte size and
       `index_census` uses size as its freshness signal (`wl_planindex.py`
       module docstring) -- a stale census would otherwise put a loud banner on
@@ -237,12 +250,14 @@ body -- the same cycle-avoidance `wl_planindex.census_rows` documents for `wl_ch
       the counterpart a reader would not think to check: a run that wrote
       NOTHING must not ask for a regeneration.
 - [x] Make `--migrate <me> <prefix>` PRINT that prefix's open plans and the
+    (ticked) 2026-09-23T11:19:17Z by d778be9d: retroactive record: closed by 28d8f96e4 (2026-09-23) docs(agent): archive 3 done plans, verified box-complete before moving -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
       exact `--plan` command rather than adopting them: a store migration must
       not silently rewrite committed documents, matching the skill's own rule
       that a predecessor's STATE.md is left alone as a peer's document.
       DONE at `worklist.py:1138-1153`. test_209 asserts the printed command is
       runnable verbatim AND that the plan file's bytes are unchanged by the move.
 - [x] Extend `CLI_MIGRATE_USAGE` (`.claude/hooks/stop/worklist_messages.py:773`)
+    (ticked) 2026-09-23T11:19:17Z by d778be9d: retroactive record: closed by 28d8f96e4 (2026-09-23) docs(agent): archive 3 done plans, verified box-complete before moving -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
       with the `--plan` form, and keep the usage text the only place the
       grammar is written.
       DONE at `.claude/hooks/stop/worklist_messages.py:728-740`: the third usage line reads
@@ -250,6 +265,7 @@ body -- the same cycle-avoidance `wl_planindex.census_rows` documents for `wl_ch
       a candidate can be a committed plan and that a store migration only ever
       prints the command.
 - [x] Teach `handoff_note` (`.claude/hooks/stop/wl_checks.py:3079`) to print a
+    (ticked) 2026-09-23T11:19:17Z by d778be9d: retroactive record: closed by 28d8f96e4 (2026-09-23) docs(agent): archive 3 done plans, verified box-complete before moving -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
       `PLAN <rel> [status] N open` line per candidate plan under the existing
       item lines, capped by the same constant, so a session's `## Remaining`
       guidance can name the plans; keep the block advisory and never blocking.
@@ -257,6 +273,7 @@ body -- the same cycle-avoidance `wl_planindex.census_rows` documents for `wl_ch
       makes the whole block advisory, and capped by the same
       `WORKLIST_MIGRATE_PLANS_SHOW` with the same `+N more plan(s)` tail.
 - [x] Update `.claude/skills/migrate/SKILL.md`: state that a candidate can be
+    (ticked) 2026-09-23T11:19:17Z by d778be9d: retroactive record: closed by 28d8f96e4 (2026-09-23) docs(agent): archive 3 done plans, verified box-complete before moving -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
       named by a committed plan with open boxes and a non-live owner; fix the
       stale `WORKLIST_DEAD_HOURS` claim at line 27, which the code has read as
       `WORKLIST_HANDOFF_STALE_HOURS` (720h) since this session's fix.
@@ -266,6 +283,7 @@ body -- the same cycle-avoidance `wl_planindex.census_rows` documents for `wl_ch
       shape, the `WORKLIST_MIGRATE_PLANS_SHOW` cap and why this half takes no
       age cutoff.
 - [x] In the same skill update, extend the AskUserQuestion label rule so `<n>
+    (ticked) 2026-09-23T11:19:17Z by d778be9d: retroactive record: closed by 28d8f96e4 (2026-09-23) docs(agent): archive 3 done plans, verified box-complete before moving -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
       open` covers plan boxes, and document `--plan` in the "What it does and
       does not touch" table as the only thing that writes a peer's plan, and
       only when named.
@@ -276,6 +294,7 @@ body -- the same cycle-avoidance `wl_planindex.census_rows` documents for `wl_ch
       committed plans`, with a paragraph under it naming the refusals and the
       census regeneration.
 - [x] Add cases to `.claude/hooks/stop/worklist-cases/26-migrate.sh` (its `mig`
+    (ticked) 2026-09-23T11:19:17Z by d778be9d: retroactive record: closed by 28d8f96e4 (2026-09-23) docs(agent): archive 3 done plans, verified box-complete before moving -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
       helper at the top and the `check` form at line 272 are the models): a
       plan with open boxes owned by an aged peer appears in `--candidates`; the
       same plan with `Status: done` does not; the same plan with zero open
@@ -287,6 +306,7 @@ body -- the same cycle-avoidance `wl_planindex.census_rows` documents for `wl_ch
       "Ported from worklist-cases/26-migrate.sh" header. The `mig` helper the box
       names survives there verbatim and is what the new cases drive.
 - [x] Also in that suite: a plan owned by a LIVE session does not appear; an
+    (ticked) 2026-09-23T11:19:17Z by d778be9d: retroactive record: closed by 28d8f96e4 (2026-09-23) docs(agent): archive 3 done plans, verified box-complete before moving -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
       owner already listed for worklist items is ENRICHED rather than
       duplicated (assert the prefix appears once).
       DONE as `test_206_a_live_sessions_plan_is_never_offered` and
@@ -295,6 +315,7 @@ body -- the same cycle-avoidance `wl_planindex.census_rows` documents for `wl_ch
       listing; 207 asserts the prefix exactly once in BOTH surfaces, the JSON
       and the rendered text, and that neither half of the enriched row was lost.
 - [x] Add the CONTROL case the suite's convention demands: a peer with 0 items,
+    (ticked) 2026-09-23T11:19:17Z by d778be9d: retroactive record: closed by 28d8f96e4 (2026-09-23) docs(agent): archive 3 done plans, verified box-complete before moving -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
       no STATE.md `## Next action`, and one `Status: ready` plan with open
       boxes must still be a candidate -- this is the exact live shape
       (`8f55d4f0`, `PLAN-tooling-transformation.md`) that produced nothing
@@ -306,6 +327,7 @@ body -- the same cycle-avoidance `wl_planindex.census_rows` documents for `wl_ch
       either. Its own negative control: a plan owned by this session, and a plan
       declaring `unowned`, must both stay out of the listing.
 - [x] Add `--plan` adoption cases: the `Owner:` line is rewritten and the
+    (ticked) 2026-09-23T11:19:17Z by d778be9d: retroactive record: closed by 28d8f96e4 (2026-09-23) docs(agent): archive 3 done plans, verified box-complete before moving -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
       header stays within 10 lines; every `- [ ]` and `- [x]` line is
       byte-identical before and after; a second run reports the plan already
       belongs to the requesting session and changes nothing; a `Status: done`
@@ -315,6 +337,7 @@ body -- the same cycle-avoidance `wl_planindex.census_rows` documents for `wl_ch
       in the file pass; 205-208 were proven able to fail by neutering the third
       pass, 209-210 by planting a wrong expected string in each.
 - [x] Regenerate `agent/INDEX.md` with `npm run check:ci-plan-record -- --update`
+    (ticked) 2026-09-23T11:19:17Z by d778be9d: retroactive record: closed by 28d8f96e4 (2026-09-23) docs(agent): archive 3 done plans, verified box-complete before moving -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
       after this plan file lands, since a new `agent/PLAN-*.md` changes the
       census path set and R8 compares for equality.
       DONE 2026-09-23 after the ticks above: `npm run check:ci-plan-record -- --update`

@@ -196,10 +196,13 @@ RECORD_SIG_RE = re.compile(r"^Record-Sig:[ \t]*([0-9a-f]{8})[ \t]*$", re.MULTILI
 RECORD_LINE_RE = re.compile(
     r"^ {4}\(record\) sig=([0-9a-f]{8}) done=([0-9a-f]{9}|open|abandoned)[ \t]*$"
 )
-#: A box line, with its mark captured. Same shape as wl_planfile.OPEN/DONE_BOX_LINE,
-#: kept as one regex here because the record renderer needs the mark and the body
-#: from the same match.
-BOX_LINE_RE = re.compile(r"^\s*[-*+]\s+\[([ xX])\]\s+(\S.*)$")
+#: A box line, with its mark captured. Same shape as wl_planfid.CHECKBOX_RE (all
+#: four marks, `[?]`/`[>]` included since 2026-09-22's fix for the identical
+#: fallthrough bug there -- a `[?]`/`[>]` box used to vanish from `boxes`
+#: entirely here too, and its own valid `(record)` line got misreported as
+#: orphaned), kept as one regex here because the record renderer needs the mark
+#: and the body from the same match.
+BOX_LINE_RE = re.compile(r"^\s*[-*+]\s+\[([ xX?>])\]\s+(\S.*)$")
 
 #: A gate id as `package.json` spells it.
 GATE_RE = re.compile(r"\bcheck:[a-z0-9][a-z0-9:-]{2,60}\b")
@@ -302,6 +305,9 @@ def sha9(s: str) -> str:
 
 RESOLVE_KINDS = ("blob", "tree", "commit", "ancestor", "fileline", "gate", "plan", "trap")
 
+#: A flat-layout legacy plan path (`agent/PLAN-<slug>.md`), whose stub the 2026-09-22 cleanup deleted -- see `resolve`'s "plan" kind.
+_FLAT_LEGACY_RE = re.compile(r"^agent/PLAN-(.+)\.md$")
+
 
 def _package_scripts(root) -> dict:
     try:
@@ -378,7 +384,7 @@ def resolve(root, kind, token):
             return False, "package.json has no scripts block to check against"
         return (token in scripts), ("package.json scripts" if token in scripts else "no such gate")
     if kind == "plan":
-        # A BARE SLUG IS TRIED IN EVERY FOLDER, deepest first, because a closed plan lives under `agent/plans/_done/` and the slug in a citation does not say so. A full path is taken as written: the stub left at a moved plan's old path is a real file, so the legacy spelling resolves there and the citation keeps its meaning rather than silently following the move.
+        # A BARE SLUG IS TRIED IN EVERY FOLDER, deepest first, because a closed plan lives under `agent/plans/_done/` and the slug in a citation does not say so. A full path is taken as written: the stub left at a moved plan's old path used to be a real file, so the legacy spelling resolved there and the citation kept its meaning rather than silently following the move.
         if token.startswith("agent/"):
             candidates = [token]
         else:
@@ -389,6 +395,15 @@ def resolve(root, kind, token):
         for rel in candidates:
             if (pathlib.Path(root) / rel).is_file():
                 return True, rel
+        # THE STUB IS GONE NOW: the 2026-09-22 cleanup deleted every flat-layout `agent/PLAN-<slug>.md` stub the `fce51e202`/`a81967e94` migration left behind, so a full legacy path no longer resolves by itself.
+        # The slug survives every move, so re-derive it and try the same folders the bare-slug branch above already searches, same fallback `wl_store.plan_stub_target` uses for `citation_state`.
+        m = _FLAT_LEGACY_RE.match(token)
+        if m:
+            slug = m.group(1)
+            for d in ("agent/plans/_done", "agent/plans/_removed", "agent/plans"):
+                rel = "%s/PLAN-%s.md" % (d, slug)
+                if (pathlib.Path(root) / rel).is_file():
+                    return True, rel
         return False, "%s does not exist" % candidates[-1]
     if kind == "trap":
         ids = _trap_ids(root)
@@ -1336,7 +1351,11 @@ AUTO_SOURCES = ("author", "auto", "model")
 
 
 #: A box line, matched only to DELETE it from lifted prose. See _auto_prose.
-ANY_BOX_LINE = re.compile(r"^\s*[-*+]\s+\[[ xX]\]\s")
+#: All four marks, for the same reason BOX_LINE_RE carries them: a `[?]`/`[>]`
+#: line this missed would leak through into the Status quote uncut and get
+#: double-counted as a phantom box by wl_planfid.plan_tasks, which already
+#: recognizes all four.
+ANY_BOX_LINE = re.compile(r"^\s*[-*+]\s+\[[ xX?>]\]\s")
 
 
 def title_of(text, rel):
@@ -1771,11 +1790,31 @@ def open_boxes(text):
     return out
 
 
-def select_box(boxes, selector):
+def done_boxes(text):
+    """[(line_index, line, body, sig)] for every DONE box the real parser resolves.
+
+    `open_boxes`'s mirror image, and it exists for exactly one caller: `plan_backfill_investigation`, whose whole subject is a box that is ALREADY `[x]`. Written as a separate function rather than as a flag on `open_boxes`, because a flag would let a mistyped argument hand the tick verbs a done box, and the two verbs must never be able to reach each other's set.
+    """
+    _open_t, done_t = PF.plan_boxes(text)
+    out = []
+    for i, raw in enumerate(text.splitlines()):
+        m = BOX_LINE_RE.match(raw)
+        if not m or m.group(1).lower() != "x":
+            continue
+        body = re.sub(r"[*_`]+", "", m.group(2)).strip()
+        if body[:300] not in done_t:
+            continue
+        out.append((i, raw, body, box_sig(body)))
+    return out
+
+
+def select_box(boxes, selector, kind="OPEN"):
     """The ONE box `selector` names. Raises RecordError on none and on several.
 
     Two spellings, and both are needed. A signature is what the ledger and the record speak, so it is what a machine will pass; a substring is what a person has in front of them. AMBIGUITY IS A REFUSAL rather than a first-match, because the whole point of the verb is that it edits a file nobody is watching -- picking one of two candidates silently is how the wrong box gets ticked
     and the evidence lands under it.
+
+    `kind` NAMES THE SET IN THE REFUSAL and changes nothing else. It defaults to `OPEN` so every existing caller's message is byte-identical; `plan_backfill_investigation` passes `DONE`, because a refusal that offered "the open boxes are:" while listing ticked ones would send the reader looking for a box that is not in the list.
     """
     sel = (selector or "").strip()
     if not sel:
@@ -1788,14 +1827,24 @@ def select_box(boxes, selector):
         hits = [b for b in boxes if low in b[2].lower()]
     if not hits:
         raise RecordError(
-            "no OPEN box matches %r. The open boxes are:\n%s"
-            % (sel, "\n".join("  %s  %s" % (b[3], b[2][:80]) for b in boxes) or "  (none)")
+            "no %s box matches %r. The %s boxes are:\n%s"
+            % (
+                kind,
+                sel,
+                kind.lower(),
+                "\n".join("  %s  %s" % (b[3], b[2][:80]) for b in boxes) or "  (none)",
+            )
         )
     if len(hits) > 1:
         raise RecordError(
-            "%r matches %d open boxes, and picking one silently is how the wrong box gets "
+            "%r matches %d %s boxes, and picking one silently is how the wrong box gets "
             "ticked. Pass a signature instead:\n%s"
-            % (sel, len(hits), "\n".join("  %s  %s" % (b[3], b[2][:80]) for b in hits))
+            % (
+                sel,
+                len(hits),
+                kind.lower(),
+                "\n".join("  %s  %s" % (b[3], b[2][:80]) for b in hits),
+            )
         )
     return hits[0]
 
@@ -1864,6 +1913,345 @@ def tickable(root, plan_records):
     return sorted(out)
 
 
+# --------------------------------------------------------------------------- THE INVESTIGATION RECORD (agent/plans/PLAN-plan-implementation-enforcement.md Part 3).
+#
+# WHAT THIS IS FOR, in the operator's own framing: "we must investigate if they're implemented before implement". CLAUDE.md's "Search first" paragraph already says several campaign boxes closed by finding the work already landed and only the record was stale -- and nothing anywhere in this tree made that question askable, let alone answerable later. This is the mechanism.
+#
+# ONLY A RE-DERIVATION MAY BLOCK, and that line is inherited rather than chosen here. wl_claimcheck measured both available SEMANTIC tests over 342 real closing-tick notes and found both unusable as blockers: lexical overlap falsely accuses 12.4% of genuine claims, and "the cited sha touches a file the claim names" disagrees with 36% of the ticks carrying both. So nothing below
+# scores, rates or judges anything. Every refusal here is a fact a `git` call or a filesystem read produced, and `resolve` above is the only vocabulary it speaks -- no second parser, no fuzzy matcher, no threshold.
+
+INVESTIGATION_REL = ("agent", "ledgers", "plan-investigation.jsonl")
+
+#: The three answers an investigation can reach, and the vocabulary is load-bearing.
+#:
+#:   absent   the work is not in the tree. Implement it.
+#:   present  the work is ALREADY DONE and only the record is stale. A complete,
+#:            honourable answer that licenses an immediate --plan-tick, and the
+#:            single feature that makes this verb worth a session's time rather
+#:            than a tax: it turns "go and check whether this is already done"
+#:            from unrewarded diligence into the cheapest way to close a box.
+#:   partial  some of it exists; `note` says which part, and the box stays open.
+INV_VERDICTS = ("absent", "present", "partial")
+
+#: TWO POINTERS OF TWO DISTINCT KINDS. One pointer is a citation; two of different kinds is a triangulation, and the asymmetry is cheap -- a `fileline` plus a `commit` costs one file read and one `rev-parse`. Two of the SAME kind is refused because the cheapest way to satisfy a pointer count is to cite the same artifact twice.
+INV_MIN_POINTERS = 2
+INV_MIN_KINDS = 2
+#: A note under this is not a note. TICK_EVIDENCE_MIN's 12 characters is the mistake being corrected, not copied: a note is what a LATER reader uses to decide whether to re-open the question, and twelve characters cannot carry that.
+INV_NOTE_MIN = 40
+
+#: PLAIN CONSTANTS, no env override, for the reason wl_claimcheck.py:370-372 states: every `WORKLIST_*` name in this tree must be declared in the registry `check:ci-worklist-env-registry` enforces, and adding a name here would red a gate in order to make an untunable rule tunable. Only the CLOCK's numbers live in config (.ci/config/plan-implementation.json), because those WILL
+#: be retuned.
+
+POINTER_RE = re.compile(r"^([a-z]+):(.+)$", re.DOTALL)
+
+
+def investigation_path(root):
+    return pathlib.Path(root, *INVESTIGATION_REL)
+
+
+def _investigation_lock(path):
+    """The flock sidecar, in TMPDIR rather than beside the ledger.
+
+    Verbatim the reasoning wl_claimcheck._census_lock records: every other sidecar in this repo sits next to its file and needed a `.gitignore` line to stay out of `git status`, and a fourth untracked `.lock` beside a tracked file is a defect the clean-tree gates would report. The lock arbitrates only between Stop hooks and CLI invocations on ONE machine writing ONE checkout,
+    which is exactly the scope a per-machine tmp path serves.
+    """
+    base = os.path.join(os.environ.get("TMPDIR", "/tmp"), "claude-worklist", ".judge")
+    os.makedirs(base, exist_ok=True)
+    key = hashlib.sha1(str(path).encode("utf-8", "replace")).hexdigest()[:12]
+    return os.path.join(base, "plan-investigation-%s.lock" % key)
+
+
+def append_investigation(root, row):
+    """Append ONE investigation row. Returns the row as written.
+
+    APPEND-ONLY, through the store's own locked append, the same discipline the two ledgers already under agent/ledgers/ use. Never commits -- the same contract every verb in worklist.py keeps, and it matters here for the reason --plan-tick's own success message already says: a tick writes TWO files, and with this the set is THREE, all of which must land in one commit or
+    check:ci-plan-boxes reads the ledger's staleness as a box that vanished.
+    """
+    path = investigation_path(root)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    rec = dict(row)
+    rec.setdefault("at", C.stamp_now())
+    S._append_lines(str(path), _investigation_lock(path), [rec])
+    return rec
+
+
+def read_investigations(root):
+    """[row] from the ledger, oldest first. [] when it does not exist.
+
+    NEVER RAISES on a malformed line: the ledger is append-only and two writers under one flock cannot tear a line, but a hand-edit could, and one bad line must not make every row after it invisible. A skipped line is a row that cannot testify, which fails CLOSED here -- the tick it would have licensed is refused for want of a row rather than allowed for want of a reader.
+    """
+    path = investigation_path(root)
+    out = []
+    try:
+        raw = path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return out
+    for raw_line in raw.splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+        try:
+            rec = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(rec, dict):
+            out.append(rec)
+    return out
+
+
+def investigation_for(root, rel, sig, rows=None):
+    """The LATEST row about this box, or None.
+
+    LATEST, not first, and the choice closes a cheat rather than expressing a preference. A session that investigated honestly, implemented, and then wrote a SECOND row to dodge Clause 2 would find the second row's `head` is at or past the implementation commit -- so Clause 1 refuses it. Taking the first row instead would let a later row be written and ignored, which is the same
+    as not writing it.
+    """
+    rows = read_investigations(root) if rows is None else rows
+    hits = [r for r in rows if r.get("plan") == rel and r.get("sig") == sig]
+    return hits[-1] if hits else None
+
+
+def parse_pointers(tokens):
+    """[(kind, token)] from `kind:token` strings. Raises RecordError on a bad shape.
+
+    EXPORTED so the selftest drives it without shelling out, and deliberately dumb: ordinary shell quoting is the interface and no new parser is introduced. The kind must be one of `resolve`'s eight, because `resolve` is the only oracle in this design and a ninth kind would be a pointer nothing can check.
+    """
+    out = []
+    for raw in tokens or []:
+        tok = str(raw or "").strip()
+        if not tok:
+            continue
+        m = POINTER_RE.match(tok)
+        if not m:
+            raise RecordError(
+                "pointer %r is not `<kind>:<token>`. The kinds are: %s"
+                % (tok, ", ".join(RESOLVE_KINDS))
+            )
+        kind, value = m.group(1), m.group(2).strip()
+        if kind not in RESOLVE_KINDS:
+            raise RecordError(
+                "pointer %r names kind %r, which nothing here can resolve. The kinds are: %s"
+                % (tok, kind, ", ".join(RESOLVE_KINDS))
+            )
+        if not value:
+            raise RecordError("pointer %r carries an empty token" % tok)
+        out.append((kind, value))
+    return out
+
+
+def resolve_pointers(root, pointers):
+    """[(kind, ok, detail)] -- every pointer put to `resolve`, none of them trusted.
+
+    A `gate:` pointer is held to a SECOND bar: the key must also be reachable from `npm run ci`. `resolve`'s own `gate` kind only asks whether the key exists in package.json, and TRAPS.md's `check-cannot-fail` plus check-gate-reachability.ts both exist because a gate that is defined and never run is the shape this repo keeps paying for. Citing one as proof of implementation would
+    be citing a check nobody runs.
+    """
+    out = []
+    for kind, token in pointers:
+        try:
+            ok, detail = resolve(root, kind, token)
+        except ValueError as exc:  # an unknown kind, already refused by parse_pointers
+            ok, detail = False, str(exc)
+        if ok and kind == "gate":
+            try:
+                import wl_reggate as RG  # noqa: PLC0415 -- see resolve()
+
+                if not RG.gate_reachable(_package_scripts(root), token, root):
+                    ok = False
+                    detail = (
+                        "%s is a key in package.json but is NOT reachable from `npm run ci`, "
+                        "so it is a gate nothing runs" % token
+                    )
+            except ImportError:
+                ok = False
+                detail = "cannot import wl_reggate to check `npm run ci` reachability"
+        out.append((kind, ok, detail))
+    return out
+
+
+def render_resolution(resolved):
+    """The resolution table, printed by --dry-run and quoted in every refusal."""
+    return "\n".join(
+        "    %-9s %-4s %s" % (kind, "OK" if ok else "FAIL", detail) for kind, ok, detail in resolved
+    )
+
+
+def vet_pointers_and_note(root, pointer_tokens, note):
+    """(pointers, resolved, note) once every bar an investigation row must clear is cleared.
+
+    EXTRACTED RATHER THAN COPIED, on the day a second writer of these rows arrived. `plan_investigate` and `plan_backfill_investigation` must hold a row to the SAME four bars -- the pointer count, the distinct-kind count, live re-resolution of every pointer, and the note floor -- and two copies of that block would be two opinions about what a row has to carry. A backfill whose
+    bars had quietly drifted below the live verb's is exactly the shape that makes a retroactive record worth less than the one it imitates.
+    """
+    pointers = parse_pointers(pointer_tokens)
+    if len(pointers) < INV_MIN_POINTERS:
+        raise RecordError(
+            "%d pointer(s); at least %d are required. One pointer is a citation, two of "
+            "different kinds is a triangulation. Kinds: %s"
+            % (len(pointers), INV_MIN_POINTERS, ", ".join(RESOLVE_KINDS))
+        )
+    kinds = {k for k, _t in pointers}
+    if len(kinds) < INV_MIN_KINDS:
+        raise RecordError(
+            "all %d pointer(s) are of kind %r; at least %d DISTINCT kinds are required. Citing "
+            "the same artifact twice is the cheapest way to satisfy a count, which is why the "
+            "count alone is not the rule." % (len(pointers), min(kinds), INV_MIN_KINDS)
+        )
+    resolved = resolve_pointers(root, pointers)
+    dead = [(k, d) for k, ok, d in resolved if not ok]
+    if dead:
+        raise RecordError(
+            "%d of %d pointer(s) do not resolve, so this row would assert something nothing "
+            "can check:\n%s\n\nThe whole row is refused rather than the dead pointers dropped: "
+            "a record that silently kept its good half would read, later, exactly like one "
+            "that was right all along." % (len(dead), len(resolved), render_resolution(resolved))
+        )
+    n = (note or "").strip()
+    if len(n) < INV_NOTE_MIN:
+        raise RecordError(
+            "the note is %d character(s); at least %d are required. The note is what a LATER "
+            "reader uses to decide whether to re-open this question, and `--plan-tick`'s own "
+            "%d-character floor is the mistake being corrected here, not copied. Say what was "
+            "looked at and what was found." % (len(n), INV_NOTE_MIN, TICK_EVIDENCE_MIN)
+        )
+    return pointers, resolved, n
+
+
+def plan_investigate(root, rel, selector, verdict, pointer_tokens, note, me, now=None):
+    """(row, resolved) for one investigation. Raises RecordError. WRITES NOTHING.
+
+    Every step is a re-derivation and none of it is trust:
+
+      1. the plan exists and `selector` names exactly ONE open box, through the
+         same `open_boxes`/`select_box` pair --plan-tick uses. Ambiguity is a
+         refusal rather than a first-match, for the reason select_box states.
+      2. `verdict` is one of three.
+      3. EVERY pointer resolves NOW, by this process's own git and filesystem
+         calls, and the whole row is refused if any one fails, naming which.
+      4. at least INV_MIN_POINTERS pointers of at least INV_MIN_KINDS kinds.
+      5. the note clears INV_NOTE_MIN characters.
+
+    `head` is `git rev-parse HEAD` at write time, and it is what makes the record an ASSERTION ABOUT A TREE rather than a story: Clause 1 in plan_tick requires the tick's own cited commit to descend from it, which an investigation written after the implementation cannot satisfy.
+    """
+    root = pathlib.Path(root)
+    p = root / rel
+    if not p.is_file():
+        raise RecordError("%s does not exist" % rel)
+    v = str(verdict or "").strip().lower()
+    if v not in INV_VERDICTS:
+        raise RecordError(
+            "verdict %r is not one of %s. There is deliberately no fourth verdict: a box is "
+            "not closable by investigating it and declaring it hard, which would make this "
+            "whole gate optional in one command. The door for a box that cannot be worked now "
+            "is `worklist.py --add` or `worklist.py --defer`, both of which keep it VISIBLE."
+            % (verdict, ", ".join(INV_VERDICTS))
+        )
+    text = p.read_text(encoding="utf-8", errors="replace")
+    if is_record(text):
+        raise RecordError("%s is a COMPACTED RECORD; its boxes are history, not work" % rel)
+    boxes = open_boxes(text)
+    if not boxes:
+        raise RecordError("%s has no open boxes to investigate" % rel)
+    _i, _line, body, sig = select_box(boxes, selector)
+
+    pointers, resolved, n = vet_pointers_and_note(root, pointer_tokens, note)
+
+    head = _git_out(root, "rev-parse", "HEAD") or ""
+    row = {
+        "at": now or C.stamp_now(),
+        "by": (me or "?")[:8],
+        "plan": rel,
+        "sig": sig,
+        "box": body[:200],
+        "verdict": v,
+        "head": head[:40],
+        "br": C.git_branch(root) or "",
+        "pointers": [[k, t] for k, t in pointers],
+        "resolved": [[k, ok, d] for k, ok, d in resolved],
+        "note": n[:600],
+    }
+    return row, resolved
+
+
+# --------------------------------------------------------------------------- CLAUSE 1 AND CLAUSE 2: what makes this "investigation BEFORE implementation" rather than a post-hoc story.
+
+
+def _blob_lines_at(root, commit, rel):
+    """How many lines `rel` had at `commit`, or None when it did not exist there.
+
+    `git cat-file -e` first so a missing path is distinguishable from an empty one -- the same reason resolve() checks the object type rather than trusting a non-empty read.
+    """
+    if not commit or not rel:
+        return None
+    if not _git_ok(root, "cat-file", "-e", "%s:%s" % (commit, rel)):
+        return None
+    return len(_git_raw(root, "show", "%s:%s" % (commit, rel)).splitlines())
+
+
+def clause1_ordering(root, row, evidence):
+    """ "" when the ordering holds, else the refusal text. Clause 1 of Part 3.6.
+
+    THE CITED COMMIT MUST DESCEND FROM THE INVESTIGATION'S OWN `head`. An investigation written AFTER the implementation commit cannot satisfy this, because the commit would not be a descendant of a head recorded later. The primitive is `git merge-base --is-ancestor`, the same one resolve()'s `ancestor` kind already uses.
+
+    SILENT WHEN THE EVIDENCE NAMES NO COMMIT. Clause 1 is a statement about two commits and has nothing to say about a tick whose evidence is a file:line or a run id; Clause 2 is what covers that case, and inventing a demand for a sha here would make every honest non-commit tick refusable on a technicality.
+    """
+    head = str(row.get("head") or "").strip()
+    if not head:
+        return ""
+    shas = []
+    seen = set()
+    for m in re.finditer(r"(?<![0-9a-zA-Z])([0-9a-f]{7,40})(?![0-9a-zA-Z])", evidence or ""):
+        tok = m.group(1)
+        if tok in seen:
+            continue
+        seen.add(tok)
+        if _git_out(root, "rev-parse", "--verify", "--quiet", tok + "^{commit}"):
+            shas.append(tok)
+    if not shas:
+        return ""
+    if any(_git_ok(root, "merge-base", "--is-ancestor", head, s) for s in shas):
+        return ""
+    return (
+        "CLAUSE 1 (ordering): the investigation row for this box recorded HEAD=%s, and none of "
+        "the commit(s) this tick cites (%s) is a DESCENDANT of it. An investigation is only an "
+        "investigation if it happened BEFORE the work: a row written after the implementation "
+        "commit records a head the commit cannot descend from, which is exactly what this "
+        "arithmetic sees. Investigate first, then implement, then tick."
+        % (head[:12], ", ".join(s[:12] for s in shas))
+    )
+
+
+def clause2_falsifiable(root, row, evidence):
+    """ "" when the negative claim survives, else the refusal text. Clause 2 of Part 3.6.
+
+    A `verdict: "absent"` row is a FALSIFIABLE ASSERTION ABOUT THE TREE AT `row.head`: "this work is not there". So when the tick's own evidence cites a `file:line` that ALREADY RESOLVED at that head, the investigation claimed the absence of something the investigation itself could have found, and the tick is refused.
+
+    THIS IS THE ONLY CLAUSE WHERE THE MECHANISM HOLDS AN OPINION THE SESSION DID NOT SUPPLY, and that is why it is the load-bearing one. Every other clause can be satisfied by finding any real pointer; this one compares two of the session's OWN claims against each other across a git revision, so a fabricated investigation contradicts the fabricated tick.
+    """
+    if str(row.get("verdict") or "").strip().lower() != "absent":
+        return ""
+    head = str(row.get("head") or "").strip()
+    if not head:
+        return ""
+    import wl_checks as CK  # noqa: PLC0415 -- see resolve()
+
+    for m in CK.CITE_RE.finditer(evidence or ""):
+        cited_rel, line = m.group(1), int(m.group(2))
+        n = _blob_lines_at(root, head, cited_rel)
+        if n is None or line > n:
+            continue
+        return (
+            "CLAUSE 2 (the negative claim is falsifiable): the investigation row for this box "
+            "recorded verdict=absent at HEAD=%s -- an assertion that the work was NOT in the "
+            "tree. This tick cites %s:%d, and that file already had %d line(s) at that same "
+            "head, so the citation resolved there too. The investigation claimed the absence "
+            "of something it could have found.\n\n"
+            "Either the investigation was written to satisfy this verb rather than to answer "
+            "the question, or the real verdict was `present` (the work was already done and "
+            "only the record was stale) -- which is a complete, honourable answer and licenses "
+            "an immediate tick. Re-run --plan-investigate with the verdict that is true."
+            % (head[:12], cited_rel, line, n)
+        )
+    return ""
+
+
 def plan_tick(root, rel, selector, evidence, me, now=None):
     """(new_plan_text, new_ledger_doc, note) for one tick. Raises RecordError.
 
@@ -1881,6 +2269,17 @@ def plan_tick(root, rel, selector, evidence, me, now=None):
             "reader can check it. Name the command, the file:line or the run id."
             % TICK_EVIDENCE_MIN
         )
+    # THE TWO TICK VERBS HAD DRIFTED, and this closes it. `worklist.py --tick` has called wl_checks.completion_evidence since v5 and dies with CLI_TICK_NO_EVIDENCE; `--plan-tick` tested only the 12-CHARACTER FLOOR, so `--plan-tick <me> <plan> <sig> "done it, works"` was accepted. That was the widest hole in the tree, in the one verb a plan-implementation gate has to depend on.
+    # Both floors apply now: the length floor catches a terse claim and completion_evidence demands something a reader can follow.
+    import wl_checks as CK_EV  # noqa: PLC0415 -- see resolve()
+
+    if not CK_EV.completion_evidence(root, ev):
+        raise RecordError(
+            "evidence is %d character(s) but carries nothing checkable. `worklist.py --tick` "
+            "has demanded this since v5 and `--plan-tick` did not, which is how "
+            '"done it, works" became an acceptable close on a plan box. Name a real sha, a '
+            "run id, a file:line that RESOLVES, an exit code, or a URL." % len(ev)
+        )
     text = p.read_text(encoding="utf-8", errors="replace")
     if is_record(text):
         raise RecordError(
@@ -1897,6 +2296,30 @@ def plan_tick(root, rel, selector, evidence, me, now=None):
         _o, done_t = PF.plan_boxes(text)
         raise RecordError("%s has no open boxes to tick (%d already ticked)." % (rel, len(done_t)))
     i, line, body, sig = select_box(boxes, selector)
+
+    # ---- PROOF OF INVESTIGATION, and it is strictly FORWARD-ONLY.
+    #
+    # Measured corpus-wide before this was written: 13 `    (ticked) ` evidence lines across all four plan folders, all of them in ONE file, against 589 done boxes. `--plan-tick` has been used on about 2% of the boxes it was written for and the rest were flipped with the Edit tool carrying no evidence of any kind. There is nothing to re-check on them and never will be, so this
+    # binds the NEXT tick and never a past one. Saying so here is what stops a later "strengthening" into a rule that reds 576 boxes it cannot possibly judge.
+    inv_row = investigation_for(root, rel, sig)
+    if inv_row is None:
+        raise RecordError(
+            "no investigation row for box %s of %s.\n\n"
+            "CLAUDE.md's own rule is that several campaign boxes closed by finding the work "
+            "ALREADY LANDED and only the record being stale -- not by doing it again. That "
+            "sentence has been a norm a session could forget; it is now a step:\n\n"
+            "    worklist.py --plan-investigate %s %s %s <absent|present|partial> \\\n"
+            "        <kind>:<token> <kind>:<token> -- <what was looked at and what was found>\n"
+            "    worklist.py --plan-investigate ... --write\n\n"
+            "Two pointers of two distinct kinds, every one re-resolved by this process rather "
+            "than trusted. Kinds: %s. A `present` verdict is a COMPLETE answer and licenses "
+            "this tick immediately."
+            % (sig, rel, (me or "<me>")[:8], rel, sig, ", ".join(RESOLVE_KINDS))
+        )
+    for clause in (clause1_ordering, clause2_falsifiable):
+        problem = clause(root, inv_row, ev)
+        if problem:
+            raise RecordError(problem)
 
     lines = text.splitlines(keepends=True)
     eol = "\n" if lines[i].endswith("\n") else ""
@@ -1940,6 +2363,163 @@ def plan_tick(root, rel, selector, evidence, me, now=None):
         "BOTH files must land in the SAME commit." % (sig, LEDGER_REL, row["open"], row["done"])
     )
     return out, merge_ledger(doc, rel, row), note
+
+
+# --------------------------------------------------------------------------- THE RETROACTIVE BACKFILL, and the one divergence it makes from `plan_investigate` is stated in the open rather than buried.
+#
+# WHY A SECOND WRITER OF INVESTIGATION ROWS EXISTS AT ALL. `plan_investigate` and `plan_tick` both reach their box through `open_boxes`, which returns only boxes whose mark is not `x`. A box that a sub-agent already flipped with the Edit tool is therefore unreachable by both verbs FOR EVER: the live pipeline structurally refuses to speak about a box that is already closed, which
+# is correct for its own job -- investigate, then implement, then tick -- and leaves no way at all to repair a trail that was skipped. Measured on branch `0923-1`: 316 boxes across 31 plans were closed by real, verified work and carry no ledger row, and re-running the live verbs on any one of them refuses outright.
+#
+# THE DIVERGENCE, AND IT IS THE ONLY ONE. `plan_investigate` stamps `head` with `git rev-parse HEAD` at write time, which is what makes the row an assertion about a tree rather than a story: Clause 1 then demands that the tick's own commit DESCEND from that head, and an investigation written after the work cannot satisfy it. A backfill has no such head to offer honestly -- the
+# work is already committed, and stamping the live HEAD would assert an ordering that never happened. So `head` here is `done_commit^`, the immediate parent of the commit that ticked the box. That is a real commit, it is unconditionally an ancestor of `done_commit`, and it is the LAST tree in which the question "is this box's work already present?" was still open. Nothing is
+# invented and no ordering is claimed that the history does not already carry.
+#
+# WHAT IS DELIBERATELY NOT AVAILABLE HERE. There is no verdict argument: `present` is the only honest answer a backfill can give, because the box is closed and the work is in the tree by construction. There is no box-mark write: the mark is already `x` and this verb never touches it. And there is no way in: an open box is refused, so this can never become a shortcut past a live
+# investigation.
+
+#: The single verdict a backfill may record. See the block above: a retroactive row about an already-closed box cannot honestly say `absent`, and `partial` would contradict the `[x]` it is describing.
+BACKFILL_VERDICT = "present"
+
+
+def plan_backfill_investigation(
+    root, rel, selector, pointer_tokens, note, me, evidence=None, text=None, history=None, now=None
+):
+    """(row, resolved, new_text) for ONE already-ticked box. Raises RecordError. WRITES NOTHING.
+
+    The caller writes both halves, the same contract `plan_tick` keeps and for the same reason: a refusal on the second must not be able to leave the first half applied. The ledger half goes through `append_investigation` and nothing else, so there is exactly one piece of row-writing code in this module.
+
+    `text` lets a caller CHAIN insertions through one plan file without re-reading it, which is what makes a batch over a plan's twenty boxes safe: each call recomputes line indices from the text it was handed, so an earlier insertion cannot shift a later one onto the wrong line.
+
+    Every bar `plan_investigate` holds a row to is held here too, through the shared `vet_pointers_and_note`. Two extra refusals are specific to the retroactive case and both are LOUD rather than silent skips:
+
+      * a box that is still OPEN -- it belongs to the live pipeline, which can
+        still answer the question honestly, and a backfill row for it would be a
+        pre-dated investigation nobody performed.
+      * a box whose `done_commit` is "" -- the ledger walk found no commit that
+        attests it, which is the `abandoned` vocabulary of this module. A trail
+        must not be manufactured for a box no commit ever closed.
+    """
+    root = pathlib.Path(root)
+    p = root / rel
+    if not p.is_file():
+        raise RecordError("%s does not exist" % rel)
+    if text is None:
+        text = p.read_text(encoding="utf-8", errors="replace")
+    if is_record(text):
+        raise RecordError("%s is a COMPACTED RECORD; its boxes are history, not work" % rel)
+
+    # THE OPEN-BOX DOOR IS CHECKED FIRST and refuses before anything else is computed, so the refusal names the real problem rather than "no DONE box matches".
+    opens = open_boxes(text)
+    try:
+        still_open = select_box(opens, selector)
+    except RecordError:
+        still_open = None
+    if still_open is not None:
+        raise RecordError(
+            "box %s of %s is still OPEN, and a backfill may only describe a box that is already "
+            "closed. Backfilling an open box would record an investigation nobody performed and "
+            "would license the very tick it was invented to excuse. Use the live pipeline, which "
+            "can still answer this honestly:\n"
+            "    worklist.py --plan-investigate %s %s %s <absent|present|partial> "
+            "<kind>:<token> <kind>:<token> -- <note> --write"
+            % (still_open[3], rel, (me or "<me>")[:8], rel, still_open[3])
+        )
+
+    dones = done_boxes(text)
+    if not dones:
+        raise RecordError(
+            "%s has no ticked boxes, so there is no closed box to backfill a record for" % rel
+        )
+    i, _line, body, sig = select_box(dones, selector, kind="DONE")
+
+    # `done=` COMES FROM HISTORY, NEVER FROM A CLAIM -- the same ledger walk `derive` and the gate both use. The commit this finds is the first one whose committed `.ci/config/plan-boxes.json` attests the signature as done, which no working tree can rewrite.
+    commit = done_commit(history if history is not None else ledger_history(root), rel, sig)
+    if not commit:
+        raise RecordError(
+            "box %s of %s is ticked in the tree but NO commit's %s attests it as done, so the "
+            "ledger walk reads it as abandoned. Refusing rather than skipping it quietly: a "
+            "backfill exists to record what really happened, and there is no commit here to "
+            "record. Either the tick has not been committed yet -- commit the plan and the box "
+            "ledger together, then run this again -- or the box was flipped without the ledger "
+            "and check:ci-plan-boxes owns that remedy." % (sig, rel, LEDGER_REL)
+        )
+
+    # `done_commit^`, NOT `git rev-parse HEAD`. The block above this function states why at length; the short version is that the parent is the last tree in which this box's question was genuinely open, and it is an ancestor of `done_commit` by construction rather than by assertion.
+    head = _git_out(root, "rev-parse", "--verify", "--quiet", "%s^" % commit) or ""
+    if not head:
+        raise RecordError(
+            "%s has no parent commit, so there is no tree in which box %s of %s was still open "
+            "and no honest `head` to record. A root commit cannot carry a backfilled "
+            "investigation." % (commit[:12], sig, rel)
+        )
+    # BELT AND BRACES, and cheap: P-A4 re-derives exactly this with `merge-base --is-ancestor`, so asserting it here means a refusal costs a message instead of a red gate.
+    if not _git_ok(root, "merge-base", "--is-ancestor", head, commit):
+        raise RecordError(
+            "%s is not an ancestor of %s, which cannot happen for a parent and its child. "
+            "Refusing rather than writing a row the gate would reject." % (head[:12], commit[:12])
+        )
+
+    pointers, resolved, n = vet_pointers_and_note(root, pointer_tokens, note)
+
+    ev = (evidence if evidence is not None else n).strip()
+    if len(ev) < TICK_EVIDENCE_MIN:
+        raise RecordError(
+            "the evidence line is %d character(s) and at least %d are required. A backfilled "
+            "line is held to the SAME floor a live `--plan-tick` line is, because the next "
+            "reader cannot tell the two apart and must not have to." % (len(ev), TICK_EVIDENCE_MIN)
+        )
+    import wl_checks as CK_EV  # noqa: PLC0415 -- see resolve()
+
+    if not CK_EV.completion_evidence(root, ev):
+        raise RecordError(
+            "the evidence line carries nothing checkable. `--plan-tick` has demanded this since "
+            "the two tick verbs were reconciled, and a retroactive line that fell short of it "
+            "would be a weaker record wearing the same grammar. Name the real closing sha, a "
+            "file:line that RESOLVES, a run id, an exit code, or a URL."
+        )
+
+    row = {
+        "at": now or C.stamp_now(),
+        "by": (me or "?")[:8],
+        "plan": rel,
+        "sig": sig,
+        "box": body[:200],
+        "verdict": BACKFILL_VERDICT,
+        "head": head[:40],
+        "br": C.git_branch(root) or "",
+        "pointers": [[k, t] for k, t in pointers],
+        "resolved": [[k, ok, d] for k, ok, d in resolved],
+        "note": n[:600],
+        # PROVENANCE, IN THE ROW ITSELF. A later reader must be able to tell a row written before the work from one reconstructed after it, and a field is the only place that fact survives. `head_is` spells out the derivation rather than naming it, so the divergence is legible without opening this file.
+        "backfill": {"done_commit": commit[:40], "head_is": "done_commit^"},
+    }
+
+    # THE EVIDENCE LINE IS INSERTED ONLY IF ABSENT. 95 of the 316 boxes this was written for already carry a well-formed one citing real commits; overwriting those would replace a contemporaneous record with a reconstruction, which is strictly worse. Idempotent for the same reason: a second run over a plan must be a no-op on its text.
+    lines = text.splitlines(keepends=True)
+    already = i + 1 < len(lines) and TICK_LINE_RE.match(lines[i + 1])
+    if already:
+        out = text
+    else:
+        # A PLAN WHOSE LAST LINE HAS NO NEWLINE would otherwise have the evidence spliced onto the end of its own box line, which rewrites the box. Terminating it first is what keeps the insertion a whole line at a whole offset.
+        if not lines[i].endswith("\n"):
+            lines[i] = lines[i] + "\n"
+        stamp = now or C.stamp_now()
+        note_line = TICK_EVIDENCE % (stamp, (me or "?")[:8], clip(ev, TICK_EVIDENCE_MAX))
+        lines.insert(i + 1, note_line + "\n")
+        out = "".join(lines)
+
+    # THE INVARIANT, the same one `plan_tick` checks at the same point and for the same reason. A backfill must move NOTHING: the box was done before and is done after, the open set is untouched, and the inserted line must stay invisible to `wl_planfid.BULLET_RE`. Anything else is indistinguishable to check_plan_boxes.py's A1 from a box being deleted, and the whole point of this
+    # verb is that it can be run over 31 plans without perturbing a single signature.
+    before_o, before_d = PF.plan_boxes(text)
+    after_o, after_d = PF.plan_boxes(out)
+    if sorted(before_o) != sorted(after_o) or sorted(before_d) != sorted(after_d):
+        raise RecordError(
+            "REFUSED: backfilling %r moved a box. before open=%d done=%d, after open=%d done=%d. "
+            "check_plan_boxes.py's A1 cannot tell this apart from a box being deleted, so it "
+            "would red the tree."
+            % (body[:60], len(before_o), len(before_d), len(after_o), len(after_d))
+        )
+    return row, resolved, out
 
 
 def revive(root, rel):

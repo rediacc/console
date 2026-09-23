@@ -186,25 +186,35 @@ This is deliberately deferred to its own follow-up plan rather than bundled here
 ## 5. Tasks
 
 - [x] Apply the `run()` fix in `.claude/rediacc_hooks/guards/block_unproven_bulk_transform.py` (section 1): insert the `shellscan.target_root(scan, root) != ""` early-return between the `root` and `cwd` assignments at lines 149-150.
+    (ticked) 2026-09-23T11:19:17Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
       Confirmed on disk 2026-09-23, verified via `git diff`.
 - [x] Update `.claude/rediacc_hooks/guards/test-block_unproven_bulk_transform.py`: pin `CLAUDE_PROJECT_DIR` to `cwd` in `run()` (lines 23-31); add the `bulk_root`/`foreign` fixtures and the three new `case()` calls after line 127; bump `TOTAL_CASES` from 12 to 15.
+    (ticked) 2026-09-23T11:19:17Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
       Confirmed on disk 2026-09-23.
 - [x] Verify the reproduction: run the updated test file against the pre-fix guard and confirm the two new `False`-wanted cases report `*** FAIL ***` (proves the incident reproduces, not assumed).
+    (ticked) 2026-09-23T11:19:17Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
       Run against the UNFIXED guard 2026-09-23, with only the harness/case changes applied: `a bulk-staged CLAUDE_PROJECT_DIR does not leak into a `-C <foreign>` commit  want=allowed got=BLOCKED *** FAIL ***` and `the same shape via a leading `cd <foreign> &&` ... want=allowed got=BLOCKED *** FAIL ***`, both with the BLOCK_COMMIT text on stderr; tally `15 case(s), 6 blocked,
       9 allowed / FAILURES: 2`, exit 1. The third new case (unresolvable `-C`) was already `ok` pre-fix, which is what makes it the fail-safe control rather than a second reproduction.
 - [x] Verify the fix: run the updated test file against the post-fix guard and confirm all 15 cases pass, `FAILURES: 0`, and the constant-answer sanity check still passes.
+    (ticked) 2026-09-23T11:19:17Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
       Confirmed independently 2026-09-23: `python3 .claude/rediacc_hooks/guards/test-block_unproven_bulk_transform.py` -- 15 case(s), 4 blocked, 11 allowed, FAILURES: 0.
 - [x] Run `python3 .claude/rediacc_hooks/run_tests.py -k hooks_delegates` (or `pytest .claude/rediacc_hooks/tests -k hooks_delegates`) and confirm the `guards/test-block_unproven_bulk_transform.py` TAILED case passes under real delegation.
+    (ticked) 2026-09-23T11:19:17Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
       Confirmed independently 2026-09-23: `35 passed, 7560 deselected in 85.91s`.
 - [x] Append TRAPS.md entries A and B (section 3) after `docs/agent-reference/TRAPS.md:1797`.
+    (ticked) 2026-09-23T11:19:17Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
       Confirmed on disk 2026-09-23: both Trap-Id headings present, corpus now 96 entries.
 - [x] Bump `TRAP_FLOOR_DEFAULT` from 94 to 96 in `.ci/rediacc_ci/quality/trap_registry.py:160`, and `TRAP_FLOOR="${TRAP_FLOOR:-94}"` to `96` in `.ci/scripts/quality/check-trap-registry.sh:108` (and correct that file's stale "line 118" self-reference while touching the neighboring comment).
+    (ticked) 2026-09-23T11:19:17Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
       Confirmed on disk 2026-09-23: both constants now read 96.
 - [x] Run `cd .ci && python3 -m rediacc_ci.quality.trap_registry --scan-only` and confirm the entry count and `gate:check:ci-pytest` pointer both resolve and are live for entry A.
+    (ticked) 2026-09-23T11:19:17Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
       Confirmed independently 2026-09-23: `96 entries (floor 96), ... 58 live pointers`.
 - [x] Run `npm run check:ci-hook-integrity` and `npm run check:ci-pytest` and confirm both are green.
+    (ticked) 2026-09-23T11:19:17Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
       `check:ci-hook-integrity` confirmed independently 2026-09-23: `48 guard(s) present across 2 chain(s), none newly uncovered`. Full `check:ci-pytest` already ran once this turn as part of the writer's own T-section-2 verification (50 pre-existing failures, none naming this guard's files); not re-run in full a second time here.
 - [x] Do NOT add a raw-plumbing guard in this change (section 4); if the operator wants the narrow `update-ref`/`symbolic-ref`-on-`main`/`HEAD` guard sketched in section 4 built, open it as a separate follow-up plan rather than amending this one.
+    (ticked) 2026-09-23T11:19:17Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
       Confirmed independently 2026-09-23: `git status --short .claude/rediacc_hooks/guards/` shows zero new (`A `) files -- honored.
 
 ### Critical Files for Implementation

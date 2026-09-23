@@ -83,29 +83,37 @@ The browser probe's "the mount already reserves 768x432" holds for `.video-playe
 ## Tasks
 
 - [x] Write `scripts/gates/check-player-css-scope.ts` with the six floors and eight selftest plants, BEFORE any source change
+    (ticked) 2026-09-23T11:19:18Z by d778be9d: retroactive record: closed by 28d8f96e4 (2026-09-23) docs(agent): archive 3 done plans, verified box-complete before moving -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
       CLOSED 2026-09-23: the four checks are now twelve, and eight of them are the numbered plants P1-P8. One corpus builder with seven knobs makes every floor plant exactly one knob off a shared clean baseline, which is what makes that baseline an honest counterpart for all six of them. `npx tsx scripts/gates/check-player-css-scope.ts` prints twelve PASS lines and the real-dist verdict: "1842 page(s), 9893 stylesheet link(s), 572 with a mount". P4 stays the over-match control and P6 stays F6, because `test_gate_player_css_scope.py` asserts the mutants red the selftest naming those two.
 - [x] Run it against the existing dist and confirm it reports exactly 794 offenders
+    (ticked) 2026-09-23T11:19:18Z by d778be9d: retroactive record: closed by 28d8f96e4 (2026-09-23) docs(agent): archive 3 done plans, verified box-complete before moving -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
       LEDGER LAG, closed 2026-09-09: the 794 figure is cross-referenced and consistent
       across three independent files measured 2026-09-03 -- the gate's own header
       (`scripts/gates/check-player-css-scope.ts:9`), `packages/www/src/components/TutorialVideoPlayer.tsx:24`, and
       `scripts/gates/check-dead-css.ts:69` -- all citing the same pre-fix count.
 - [x] Write `packages/www/src/scripts/tutorial-video-styles.ts` exporting `ensurePlayerStyles()`, memoised, resolving on load OR error so a missing sheet leaves an ugly player rather than none
+    (ticked) 2026-09-23T11:19:18Z by d778be9d: retroactive record: closed by 28d8f96e4 (2026-09-23) docs(agent): archive 3 done plans, verified box-complete before moving -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
       LEDGER LAG, closed 2026-09-09: on disk; `ensurePlayerStyles()` at
       `packages/www/src/scripts/tutorial-video-styles.ts:56-62` memoises via `pending ??=`,
       and `loadOne()` (:34-49) resolves on both `load` and `error`.
 - [x] Delete `packages/www/src/components/TutorialVideoPlayer.tsx:23-24`, leaving a comment pointing at the new module and saying why
+    (ticked) 2026-09-23T11:19:18Z by d778be9d: retroactive record: closed by 28d8f96e4 (2026-09-23) docs(agent): archive 3 done plans, verified box-complete before moving -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
       LEDGER LAG, closed 2026-09-09: `packages/www/src/components/TutorialVideoPlayer.tsx:22-25`
       carries exactly this comment, naming `../scripts/tutorial-video-styles.ts` and
       `check:ci-player-css-scope`.
 - [x] Await `Promise.all([ensurePlayerStyles(), import(player)])` in the hydrator before `createRoot`
+    (ticked) 2026-09-23T11:19:18Z by d778be9d: retroactive record: closed by 28d8f96e4 (2026-09-23) docs(agent): archive 3 done plans, verified box-complete before moving -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
       LEDGER LAG, closed 2026-09-09: `packages/www/src/scripts/tutorial-video-hydrate.ts:61-64`
       does exactly this, and `createRoot` (:95) runs only after both resolve.
 - [x] Re-point the stale `BLOCKER:` citation in `scripts/gates/check-dead-css.ts:53-62`
+    (ticked) 2026-09-23T11:19:18Z by d778be9d: retroactive record: closed by 28d8f96e4 (2026-09-23) docs(agent): archive 3 done plans, verified box-complete before moving -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
       LEDGER LAG, closed 2026-09-09: `scripts/gates/check-dead-css.ts:64-70` cites
       `src/scripts/tutorial-video-styles.ts` and says explicitly "only the citation moved".
 - [x] Add the source-level invariant to `check-video-player-invariants.ts` (hydrator must await the styles before `createRoot`) with mutants that delete and that reorder the call
+    (ticked) 2026-09-23T11:19:18Z by d778be9d: retroactive record: closed by 28d8f96e4 (2026-09-23) docs(agent): archive 3 done plans, verified box-complete before moving -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
       CLOSED 2026-09-23: `styleOrderFaults()` and `styleUrlFaults()` at `scripts/gates/check-video-player-invariants.ts`, wired into `main()` and into the selftest's clean check. Seven new controls, including the two mutants this box names: a delete (`ensurePlayerStyles(` to `noop(`) and a real REORDER that moves the whole awaited statement below `createRoot` and returns null rather than a no-op if its anchors are gone. Proved on a real invocation rather than in memory only: a fixture tree of copied sources driven through a byte copy of the gate reds on each of three planted defects (root before the await, the await removed, `?url` removed) and goes green again when the plant is withdrawn. The failure epilogue was made family-scoped in the same edit, since it used to print the Plyr quality-pane paragraph for any fault at all.
 - [x] Write `.ci/scripts/test/gates/test-player-css-scope.sh` with both mutants, written OUTSIDE the repo to avoid check:ci-pool-writer-safety
+    (ticked) 2026-09-23T11:19:18Z by d778be9d: retroactive record: closed by 28d8f96e4 (2026-09-23) docs(agent): archive 3 done plans, verified box-complete before moving -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
       CLOSED 2026-09-23 as `.ci/rediacc_ci/tests/gates/test_gate_player_css_scope.py`, Python per the restatement below. Four cases: the eight plants all pass and are all present by label, the marker-widening mutant reds naming P4, the F6-killing mutant reds naming P6, and the real dist reports zero offenders. Both mutants are written to `tmp_path` with `node_modules` and `scripts/lib` symlinked in, so the gate's `../lib/repo-root.js` import still resolves and nothing is written inside the repo. Each carries a vacuity guard on its mutation target. Both directions proved by planting: renaming P8 in the gate reds the plant-set case, and a mutation target that no longer matches reds the guard.
 
       **ILLEGAL AS WRITTEN, 2026-09-09 -- restate before building.** It names a new tracked
@@ -115,6 +123,7 @@ The browser probe's "the mount already reserves 768x432" holds for `.video-playe
       mutants and the written-outside-the-repo requirement carry over unchanged; only the
       language does not.
 - [x] Three-point wiring: package.json key, two manifest entries, and a `Player CSS scope` step in quality-www-build whose name matches the manifest byte for byte
+    (ticked) 2026-09-23T11:19:18Z by d778be9d: retroactive record: closed by 28d8f96e4 (2026-09-23) docs(agent): archive 3 done plans, verified box-complete before moving -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
       CLOSED 2026-09-23, and the SECOND MANIFEST ENTRY IS RESTATED AWAY rather than added. It followed from the `.sh` gate test the box above asked for, and a Python port does not get one: `scripts/ci-runner/manifest.ts` records that the standalone `gate-test:` entries for ported modules were RETIRED into `check:ci-pytest`, whose `paths` already carry `.ci/rediacc_ci/**`, and a second entry would schedule the same work twice for the same reason `check:ci-seo` was demoted to `gate: false`. The wiring that does exist was verified rather than assumed: `package.json:380`, `scripts/ci-runner/manifest.ts:4402-4415`, and `.github/workflows/ci-quality.yml:2025` under `quality-www-build`, with the step name "Player CSS scope" matching the manifest byte for byte. `check:ci-pytest`'s own corpus counter reports 4 test functions in the new module, so its collection floor moves with it. `npm run check:ci-gate-reachability-coverage` green, 337 registrations; `npm run check:ci-parity` green at 347 manifest gates when this work began and red an hour later on an untracked `.ci/scripts/test/gates/test-bws-rotate.sh` a concurrent writer added, which names nothing here.
 
       Superseded note, kept for the record: `package.json:372` (`check:ci-player-css-scope`) and the
@@ -123,10 +132,12 @@ The browser probe's "the mount already reserves 768x432" holds for `.video-playe
       companion gate-test that would come from the missing `test-player-css-scope.sh` above
       does not exist.
 - [x] One serialised `build:www`, then re-run the gate for 0 offenders
+    (ticked) 2026-09-23T11:19:18Z by d778be9d: retroactive record: closed by 28d8f96e4 (2026-09-23) docs(agent): archive 3 done plans, verified box-complete before moving -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
       LEDGER LAG, closed 2026-09-09: ran `npx tsx scripts/gates/check-player-css-scope.ts`
       live against the tree's current `packages/www/dist` -> "1842 page(s), 9893 stylesheet
       link(s), 572 with a mount; no page links ... without one" -- 0 offenders, rc=0.
 - [x] Browser-check a solution page, a docs tutorial page and the homepage
+    (ticked) 2026-09-23T11:19:18Z by d778be9d: retroactive record: closed by 28d8f96e4 (2026-09-23) docs(agent): archive 3 done plans, verified box-complete before moving -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
       LEDGER LAG, closed 2026-09-09: `packages/www/src/scripts/tutorial-video-styles.ts:19-21`
       records "three browser screenshots are byte-identical to the pre-change baselines,"
       matching the three page types asked for here.

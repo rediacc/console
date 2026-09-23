@@ -252,11 +252,17 @@ Two rules. First, never give a `$(cat <pidfile> || echo <N>)` substitution insid
 ## Tasks
 
 - [x] Write `.claude/rediacc_hooks/guards/block_unsatisfiable_pid_wait.py` per the design above.
+    (ticked) 2026-09-23T11:19:18Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] Write `.claude/rediacc_hooks/guards/test-block_unsatisfiable_pid_wait.py`, transcribing all 20 adversarial cases, modeled on `test-block_push_to_protected_branch.py`.
+    (ticked) 2026-09-23T11:19:18Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] Insert the TRAPS.md entry between lines 727 and 729.
+    (ticked) 2026-09-23T11:19:18Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] Run the new standalone test directly (`python3 .claude/rediacc_hooks/guards/test-block_unsatisfiable_pid_wait.py`), confirm 20/20 with a non-trivial block/allow split.
+    (ticked) 2026-09-23T11:19:18Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] Run `.claude/rediacc_hooks/tests/test_hooks_delegates.py` and `.claude/rediacc_hooks/tests/test_dispatch.py` (ORDER contiguity) and `.claude/rediacc_hooks/tests/test_guards_differential.py` (TWIN=None coverage), confirm all green with no manual wiring needed.
+    (ticked) 2026-09-23T11:19:18Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] Confirm the new test file is auto-discovered by `test_hooks_delegates.py`'s TAILED glob (case count should increase by one, matching the pattern already proven for `test-block_push_to_protected_branch.py`).
+    (ticked) 2026-09-23T11:19:18Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 
 ## Acceptance criteria
 

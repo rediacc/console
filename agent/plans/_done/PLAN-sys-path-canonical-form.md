@@ -31,17 +31,23 @@ Branch reality check, re-verified independently: `gh pr view 589` returns `state
 ## Task checklist
 
 - [x] 1. `.claude/rediacc_hooks/tests/wlfix.py`: canonical-form fix.
+    (ticked) 2026-09-23T11:19:19Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
   - Add `from rediacc_ci import paths` near the existing imports.
   - Replace the `if str(STOP_DIR) not in sys.path: sys.path.insert(0, str(STOP_DIR))` two-liner in `import_wl` with `paths.on_sys_path(STOP_DIR)`.
   - `sys` stays imported, since it is still used for `sys.executable` elsewhere.
   - Re-run `git diff -- wlfix.py` immediately before editing: another session has one unrelated uncommitted hunk in this file (RESET_KNOBS), nowhere near this region.
 - [x] 2. `.ci/rediacc_ci/tests/test_canonical_sys_path_hop.py`: table additions.
+    (ticked) 2026-09-23T11:19:19Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
   - Add `.ci/rediacc_ci/dev/shadow_driver.py` and `.ci/rediacc_ci/docker/shadow_driver.py` to `BASELINE` (`fingerprint:c1e552fa19e9`; see the note above the Findings table), alphabetically between `check_pytest.py` and `setup/port_parity.py`.
   - Add `.claude/hooks/post-bash/cancel_old_ci.py` and `.claude/hooks/post-bash/refresh_pr_body.py` to `BASELINE` (same fingerprint), alphabetically between `.claude/hooks/context/test-context-bands.py` and `.claude/hooks/stop/calibrate-judge-rules.py`.
   - Add all 4 paths to `FRESH`.
 - [x] 3. Verify: `pytest .ci/rediacc_ci/tests/test_canonical_sys_path_hop.py -v` all pass.
+    (ticked) 2026-09-23T11:19:19Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
   - `test_no_hand_written_hop_outside_the_exemptions_and_the_baseline` (was red, 5 findings) turns green.
   - `test_the_floor_holds_every_known_hop_is_still_found`, `test_the_baseline_names_only_files_that_exist`, `test_every_fresh_entry_is_really_baselined` and `test_the_exemptions_are_all_live` all stay green.
 - [x] 4. Fires-on-a-planted-defect control: temporarily add an unbudgeted `sys.path.insert(0, "/tmp/plant")` to wlfix.py, confirm the target test reds naming it, then revert before committing. Confirm silence (zero findings) after the real fix with the plant reverted.
+    (ticked) 2026-09-23T11:19:19Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] 5. Smoke-test wlfix.py's edited `import_wl` still works: `pytest .claude/rediacc_hooks/tests -k "wl_" -q` clean.
+    (ticked) 2026-09-23T11:19:19Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] 6. Do not touch anything outside the 5 named files plus this plan file. No new shim file, no edit to `paths.py` or already-baselined siblings.
+    (ticked) 2026-09-23T11:19:19Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites

@@ -29,5 +29,8 @@ Add `private/account/.env.example` to `fixture()`, containing exactly the 3 name
 ## Boxes
 
 - [x] Add the synthetic `.env.example` (3 active + 27 commented names) to `fixture()`.
+    (ticked) 2026-09-23T11:19:17Z by d778be9d: retroactive record: closed by 8a25a0c4b (2026-09-23) docs(agent): tick PLAN-fix-plan-citation-drift.md's migration-fixabili -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] Add the synthetic `env-local-allowlist.json` (27 opt-in entries) to `fixture()`.
+    (ticked) 2026-09-23T11:19:17Z by d778be9d: retroactive record: closed by 8a25a0c4b (2026-09-23) docs(agent): tick PLAN-fix-plan-citation-drift.md's migration-fixabili -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] `test_gate_bws_map.py` full file green.
+    (ticked) 2026-09-23T11:19:17Z by d778be9d: retroactive record: closed by 8a25a0c4b (2026-09-23) docs(agent): tick PLAN-fix-plan-citation-drift.md's migration-fixabili -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
