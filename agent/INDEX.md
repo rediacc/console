@@ -461,14 +461,14 @@ What `--plan-why <path>` answers from. Each row is a path a compacted plan cited
 
 ## Plan census
 
-Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans block can be printed from THIS file instead of opening all 128 of them. The hook checks freshness with `stat` alone (path set plus byte size) and falls back to reading the plans, loudly, when the two disagree.
+Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans block can be printed from THIS file instead of opening all 129 of them. The hook checks freshness with `stat` alone (path set plus byte size) and falls back to reading the plans, loudly, when the two disagree.
 
 | Plan | Status | lines | open | ticked | bytes |
 |---|---|---|---|---|---|
-| `agent/plans/PLAN-add-chunkstore-backup-verb.md` | compacted | 64 | 0 | 0 | 5601 |
+| `agent/plans/PLAN-add-chunkstore-backup-verb.md` | compacted | 64 | 0 | 0 | 5643 |
 | `agent/plans/PLAN-add-js-extensions-shared.md` | compacted | 50 | 0 | 0 | 4285 |
 | `agent/plans/PLAN-agent-hints-implementation.md` | compacted | 60 | 0 | 0 | 4623 |
-| `agent/plans/PLAN-agent-hints-in-stop-hook.md` | compacted | 51 | 0 | 0 | 3653 |
+| `agent/plans/PLAN-agent-hints-in-stop-hook.md` | compacted | 51 | 0 | 0 | 3640 |
 | `agent/plans/PLAN-agent-tree-lifecycle.md` | mostly-done | 70 | 1 | 6 | 10745 |
 | `agent/plans/PLAN-ask-flow-preemptive-settled-check.md` | compacted | 38 | 0 | 0 | 2358 |
 | `agent/plans/PLAN-b2-emit-matrix.md` | partially | 295 | 6 | 7 | 31001 |
@@ -483,22 +483,22 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-chunkstore-restore.md` | compacted | 55 | 0 | 0 | 4230 |
 | `agent/plans/PLAN-ci-trace-no-pr-branch.md` | compacted | 38 | 0 | 0 | 2480 |
 | `agent/plans/PLAN-ci-watch-enforcement.md` | draft | 189 | 0 | 0 | 15692 |
-| `agent/plans/PLAN-citation-fragility.md` | compacted | 48 | 0 | 6 | 4905 |
+| `agent/plans/PLAN-citation-fragility.md` | compacted | 49 | 0 | 6 | 5254 |
 | `agent/plans/PLAN-cli-em-dash-lint-gate.md` | compacted | 57 | 0 | 0 | 4340 |
 | `agent/plans/PLAN-cold-path.md` | compacted | 52 | 0 | 0 | 4026 |
 | `agent/plans/PLAN-commit-author-identity.md` | draft | 183 | 3 | 10 | 17993 |
 | `agent/plans/PLAN-completion-strategy.md` | compacted | 39 | 0 | 0 | 3909 |
-| `agent/plans/PLAN-consolidation-pressure.md` | compacted | 58 | 0 | 10 | 4888 |
+| `agent/plans/PLAN-consolidation-pressure.md` | compacted | 60 | 0 | 10 | 5277 |
 | `agent/plans/PLAN-devbox-uid-derived-image.md` | compacted | 36 | 0 | 0 | 2532 |
 | `agent/plans/PLAN-docker-image-freshness-soak-filter.md` | compacted | 39 | 0 | 0 | 2715 |
-| `agent/plans/PLAN-duplication-angle.md` | compacted | 37 | 0 | 0 | 2643 |
+| `agent/plans/PLAN-duplication-angle.md` | compacted | 37 | 0 | 0 | 2630 |
 | `agent/plans/PLAN-durable-reports-and-push-inbox.md` | compacted | 52 | 0 | 0 | 3692 |
 | `agent/plans/PLAN-env-to-bitwarden-v2.md` | draft | 497 | 3 | 6 | 49177 |
 | `agent/plans/PLAN-extension-shaped-matchers.md` | compacted | 37 | 0 | 0 | 3104 |
 | `agent/plans/PLAN-fix-ci-contention-aware-timeouts.md` | compacted | 38 | 0 | 0 | 3425 |
 | `agent/plans/PLAN-fix-german-translation-artifacts.md` | compacted | 50 | 0 | 0 | 3117 |
 | `agent/plans/PLAN-fix-in-session-rule.md` | compacted | 55 | 0 | 0 | 3577 |
-| `agent/plans/PLAN-fix-plan-citation-drift.md` | executing | 180 | 54 | 5 | 20701 |
+| `agent/plans/PLAN-fix-plan-citation-drift.md` | executing | 207 | 27 | 32 | 26866 |
 | `agent/plans/PLAN-fix-tutorial-player-debug-hook-attachment.md` | compacted | 37 | 0 | 0 | 3148 |
 | `agent/plans/PLAN-gh-swallow-gates-audit.md` | compacted | 49 | 0 | 6 | 4452 |
 | `agent/plans/PLAN-git-history-media-rewrite.md` | compacted | 37 | 0 | 0 | 2958 |
@@ -506,7 +506,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-github-actions-to-bitwarden.md` | draft | 174 | 16 | 0 | 25551 |
 | `agent/plans/PLAN-github-actions-workflow-run-trigger-fix.md` | compacted | 54 | 0 | 0 | 3927 |
 | `agent/plans/PLAN-greenlight-verify-at-read.md` | compacted | 44 | 0 | 0 | 3606 |
-| `agent/plans/PLAN-haiku-model-routing.md` | phase | 216 | 15 | 5 | 24166 |
+| `agent/plans/PLAN-haiku-model-routing.md` | phase | 239 | 15 | 5 | 28064 |
 | `agent/plans/PLAN-judge-gate-worthiness-and-surface-scope.md` | compacted | 39 | 0 | 0 | 3232 |
 | `agent/plans/PLAN-judge-prompt-trap-conflation.md` | compacted | 54 | 0 | 8 | 3828 |
 | `agent/plans/PLAN-lint-css-ci-wiring.md` | compacted | 54 | 0 | 0 | 4377 |
@@ -514,19 +514,17 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-locale-techdiff-resync.md` | ready | 69 | 0 | 0 | 4536 |
 | `agent/plans/PLAN-localize-cheat-sheet-rendering.md` | compacted | 50 | 0 | 0 | 4436 |
 | `agent/plans/PLAN-nightly-retry-and-watchdog-noise.md` | compacted | 39 | 0 | 0 | 2744 |
-| `agent/plans/PLAN-npm-ci-parallel-parity.md` | compacted | 40 | 0 | 0 | 3234 |
+| `agent/plans/PLAN-npm-ci-parallel-parity.md` | compacted | 40 | 0 | 0 | 3252 |
 | `agent/plans/PLAN-pipefail-grep-q-renet-gate.md` | in-progress | 264 | 5 | 11 | 24616 |
 | `agent/plans/PLAN-plan-file-lifecycle.md` | ready | 347 | 3 | 10 | 28822 |
 | `agent/plans/PLAN-plan-implementation-enforcement.md` | draft | 565 | 0 | 16 | 64995 |
-| `agent/plans/PLAN-plan-path-migration.md` | closing | 150 | 2 | 7 | 22564 |
-| `agent/plans/PLAN-popup-reminder.md` | executing | 28 | 1 | 1 | 2630 |
 | `agent/plans/PLAN-printf-echo-pipefail-sweep.md` | compacted | 103 | 0 | 33 | 10276 |
 | `agent/plans/PLAN-promote-mutation-runner.md` | compacted | 39 | 0 | 0 | 2977 |
 | `agent/plans/PLAN-prose-style-under-wrap.md` | mostly-done | 245 | 3 | 10 | 24048 |
 | `agent/plans/PLAN-pytest-parallelism.md` | compacted | 57 | 0 | 10 | 4644 |
 | `agent/plans/PLAN-rclone-decommission.md` | compacted | 39 | 0 | 0 | 3019 |
 | `agent/plans/PLAN-reggate-effort-cap.md` | compacted | 38 | 0 | 0 | 2586 |
-| `agent/plans/PLAN-remove-autopilot.md` | compacted | 90 | 0 | 30 | 6568 |
+| `agent/plans/PLAN-remove-autopilot.md` | compacted | 97 | 0 | 30 | 9218 |
 | `agent/plans/PLAN-renet-fetch-hardening.md` | parked | 34 | 0 | 0 | 909 |
 | `agent/plans/PLAN-require-testid-sweep.md` | compacted | 39 | 0 | 0 | 2511 |
 | `agent/plans/PLAN-resprofile-wave2.md` | compacted | 39 | 0 | 0 | 3076 |
@@ -540,7 +538,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-secret-namespace-migration.md` | mostly | 1670 | 8 | 26 | 175616 |
 | `agent/plans/PLAN-sentence-aware-wrapping.md` | compacted | 38 | 0 | 0 | 2804 |
 | `agent/plans/PLAN-shell-command-gate-regex-fix.md` | compacted | 39 | 0 | 0 | 3165 |
-| `agent/plans/PLAN-shell-resource-profiling.md` | compacted | 38 | 0 | 0 | 3324 |
+| `agent/plans/PLAN-shell-resource-profiling.md` | compacted | 38 | 0 | 0 | 3311 |
 | `agent/plans/PLAN-skip-release-gates-r2-manifest.md` | compacted | 39 | 0 | 0 | 3156 |
 | `agent/plans/PLAN-ssr-nav-locale.md` | compacted | 36 | 0 | 0 | 1976 |
 | `agent/plans/PLAN-staged-duplication-probe.md` | compacted | 52 | 0 | 8 | 3329 |
@@ -561,15 +559,15 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-unify-trap-corpus.md` | compacted | 39 | 0 | 0 | 2772 |
 | `agent/plans/PLAN-w7p4w-docker-cutover.md` | compacted | 62 | 0 | 12 | 4758 |
 | `agent/plans/PLAN-w7p5a-deploy-release-port.md` | compacted | 53 | 0 | 8 | 3914 |
-| `agent/plans/PLAN-w7p5a-real-run-dispatch.md` | ready | 75 | 8 | 0 | 9984 |
+| `agent/plans/PLAN-w7p5a-real-run-dispatch.md` | ready | 249 | 6 | 2 | 30630 |
 | `agent/plans/PLAN-w9p2-script-relocation.md` | draft | 177 | 0 | 10 | 28293 |
 | `agent/plans/PLAN-wire-account-vitest-ci.md` | compacted | 39 | 0 | 0 | 3063 |
 | `agent/plans/PLAN-wl-report-liveness-oracle.md` | compacted | 52 | 0 | 7 | 3665 |
 | `agent/plans/PLAN-www-bundle-determinism.md` | compacted | 38 | 0 | 0 | 2592 |
-| `agent/plans/_done/PLAN-agent-session-archival.md` | done | 135 | 0 | 6 | 16778 |
-| `agent/plans/_done/PLAN-archival-tests-python-compliance.md` | done | 214 | 0 | 15 | 27001 |
+| `agent/plans/_done/PLAN-agent-session-archival.md` | done | 135 | 0 | 6 | 16806 |
+| `agent/plans/_done/PLAN-archival-tests-python-compliance.md` | done | 216 | 0 | 15 | 27701 |
 | `agent/plans/_done/PLAN-bws-rotation-on-failure.md` | done | 142 | 0 | 18 | 17180 |
-| `agent/plans/_done/PLAN-ci-pr-head-ref-trigger-resolution.md` | done | 268 | 0 | 15 | 29465 |
+| `agent/plans/_done/PLAN-ci-pr-head-ref-trigger-resolution.md` | done | 269 | 0 | 15 | 29674 |
 | `agent/plans/_done/PLAN-ci-stale-plan-citations-repair.md` | done | 60 | 0 | 8 | 8026 |
 | `agent/plans/_done/PLAN-ci-vacuity-baseline-registry.md` | done | 169 | 0 | 15 | 16786 |
 | `agent/plans/_done/PLAN-cleanup-context-state-files.md` | done | 31 | 0 | 4 | 4826 |
@@ -585,13 +583,16 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-local-ci-gate-prerequisites.md` | landed | 79 | 0 | 0 | 4719 |
 | `agent/plans/_done/PLAN-migrate-plan-doc-discovery.md` | done | 345 | 0 | 23 | 27741 |
 | `agent/plans/_done/PLAN-pid-fallback-liveness-check.md` | done | 266 | 0 | 6 | 22470 |
-| `agent/plans/_done/PLAN-plyr-css-on-demand-loading.md` | done | 131 | 0 | 11 | 13971 |
-| `agent/plans/_done/PLAN-reflow-comments-boundary-wrapping.md` | done | 58 | 0 | 9 | 8152 |
+| `agent/plans/_done/PLAN-plan-path-migration.md` | done | 152 | 0 | 9 | 22702 |
+| `agent/plans/_done/PLAN-plyr-css-on-demand-loading.md` | done | 132 | 0 | 11 | 14200 |
+| `agent/plans/_done/PLAN-popup-reminder.md` | done | 30 | 0 | 2 | 2952 |
+| `agent/plans/_done/PLAN-reflow-comments-boundary-wrapping.md` | done | 59 | 0 | 9 | 8213 |
 | `agent/plans/_done/PLAN-session-onboarding-marker.md` | done | 192 | 0 | 10 | 17706 |
 | `agent/plans/_done/PLAN-stop-hook-behavioral-hints.md` | done | 301 | 0 | 20 | 35367 |
 | `agent/plans/_done/PLAN-stop-hook-plan-backlog-nudge.md` | done | 339 | 0 | 20 | 42080 |
 | `agent/plans/_done/PLAN-stop-hook-task-verification.md` | done | 258 | 0 | 15 | 33294 |
 | `agent/plans/_done/PLAN-subscription-status-error-swallowing.md` | done | 89 | 0 | 5 | 4684 |
-| `agent/plans/_done/PLAN-sys-path-canonical-form.md` | done | 44 | 0 | 6 | 4778 |
+| `agent/plans/_done/PLAN-sys-path-canonical-form.md` | done | 47 | 0 | 6 | 5283 |
+| `agent/plans/_done/PLAN-wl-wait-duplicate-listener.md` | done | 188 | 0 | 15 | 23086 |
 
-128 plan(s), 58 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.
+129 plan(s), 59 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.
