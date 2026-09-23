@@ -19,7 +19,7 @@ Operator ask: *"plan for removing gh cli tool usage there since we don't keep th
 | `rotation-manifest.json` — `github_secret_names` | **11 slugs** | remove 10, keep `cf-breakpoint` |
 | `scripts/rotation/commands/init.ts` | lines 112-113, 172, 248, 257 | stop writing `github_secret_names` for the removed slugs |
 | `scripts/rotation/consumers/github-secret.ts` (63 lines) | — | **KEEP.** `cf-breakpoint` still needs it |
-| `scripts/rotation/lib/credentials.ts:130-137` (`gh auth status`) | — | **KEEP**, for the same reason |
+| `private/account/scripts/rotation/lib/credentials.ts:130-137` (`gh auth status`) | — | **KEEP**, for the same reason |
 
 ## The one that stays, and why
 

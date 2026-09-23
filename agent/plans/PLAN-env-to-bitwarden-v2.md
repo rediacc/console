@@ -1,6 +1,6 @@
 Status: draft
 First-Seen: 2026-09-17
-Owner: 74de73ca
+Owner: d778be9d (adopted from 74de73ca 2026-09-22)
 Date: 2026-09-02
 Supersedes: the classification in `agent/archive/plans/PLAN-env-to-bitwarden.md` Part 1
 (archived byte-identical 2026-09-09; see `agent/plans/PLAN-completion-strategy.md` section 2). That plan's Parts 2-7 (consumer map, fetch helper, clone protocol, gate retargets, migration order) still stand except where Part 6 below amends them.
@@ -12,13 +12,13 @@ written to Bitwarden, AWS, Cloudflare or GitHub. No value of any secret was read
 ## Tasks
 
 - [x] Fix `private/growth/video_pipeline/publish-solutions.sh:55` and `publish.py:40` — they
-      AUDIT: DONE 2026-09-02 (audit): publish-solutions.sh:55 and publish.py:40 both guard the CLOUDFLARE_R2_MEDIA_* names; the blindness itself is recorded at scripts/dev/secret-rename.py:112-121 (NON_SUBMODULE_REPOS).
+      AUDIT: DONE 2026-09-02 (audit): publish-solutions.sh:55 and publish.py:40 both guard the CLOUDFLARE_R2_MEDIA_* names; the blindness itself is recorded at scripts/ops/secret-rename.py:112-121 (NON_SUBMODULE_REPOS).
       still require the pre-rename names `R2_MEDIA_{ACCESS_KEY_ID,SECRET_ACCESS_KEY,ENDPOINT}`
       while `.env` now holds `CLOUDFLARE_R2_MEDIA_*`. **The solution-video publish pipeline
       aborts at step 0 today.** Part 3, defect D1. Operator/`private/growth` write access.
 - [x] Delete `R2_MEDIA_BUCKET` from `private/account/.env` and `.env.example`. Zero readers
       AUDIT: DONE 2026-09-02 (audit): no `^R2_MEDIA_BUCKET=` in .env or .env.example; the name survives only as prose explaining the deletion. .env down to 49 assigned names.
-      anywhere; `sync-media-to-r2.sh:35` hardcodes `BUCKET="rediacc-www-media"`. Part 3, D2.
+      anywhere; `.ci/scripts/deploy/sync-media-to-r2.sh:35` hardcodes `BUCKET="rediacc-www-media"`. Part 3, D2.
 - [x] Rename the local `.env` key `STRIPE_WEBHOOK_SECRET` → `STRIPE_WEBHOOK_SECRET_E2E_FIXTURE`
       AUDIT: DONE 2026-09-02 (audit) under a DIFFERENT name than proposed -- STRIPE_E2E_WEBHOOK_SECRET, not STRIPE_WEBHOOK_SECRET_E2E_FIXTURE. Writer .ci/lib/account.sh:238-240,298; reader :826-831 exports it as E2E_WEBHOOK_SECRET; .env.example:67. The collision with the store's STRIPE_WEBHOOK_SECRET is gone by construction.
       (writer `.ci/lib/account.sh:238,296`; reader `.ci/lib/account.sh:825-827`). It is a
@@ -32,10 +32,11 @@ written to Bitwarden, AWS, Cloudflare or GitHub. No value of any secret was read
       `AWS_IAM_ADMIN_SECRET_ACCESS_KEY`, `CF_GLOBAL_API_KEY`, `CF_EMAIL`) into whichever
       project the operator picks in `## Remaining` Q2. Operator-only.
 - [ ] Everything in v1's task list from "Write `.ci/lib/bws-env.sh`" onward, unchanged.
-      AUDIT: PARTIAL: this box aggregates v1:14-38 (19 boxes). Audited: 1 DONE, 2 PARTIAL, 16 NOT-DONE. The migration itself has not started -- `grep -rl 'bws-env.sh\|bws_env_load'` finds only the helper, its gate test, the manifest and plan files, so the fetcher has ZERO production callers.
-- [ ] Build `.ci/scripts/test/gates/test-bws-env-helper.sh` (Part 5, harness B).
-      AUDIT: PARTIAL: exists as test-bws-env.sh, wired. Missing B4/B6/B7 plus all three v2 additions (B8 --json expansion, B9 non-object refusal, B10 --cache-to allowlist), because bws-env.sh implements neither --json nor --cache-to. The `command -v bws` precondition is absent too: the test pins BWS_BIN directly.
-- [ ] Add assertion 8 to `.ci/scripts/quality/check_bws_map.py` over
+      AUDIT: PARTIAL. RE-AUDITED 2026-09-22 against the tree, not against the note below, and the note's central premise is now stale: `.ci/lib/bws-env.sh` NO LONGER EXISTS. It was written, then retired 2026-09-21 with zero sourcers and ported to `.ci/rediacc_ci/core/bws_env.py`, whose docstring records the decision; the bash bytes are frozen under `.ci/rediacc_ci/tests/goldens/bws-env/` and `.ci/rediacc_ci/tests/test_core_bws_env.py` is the byte-for-byte differential. Re-creating the bash helper would resurrect a deliberately retired twin, so every v1 box naming it was audited against the PORT. Of the 19: 3 DONE, 1 PARTIAL, 3 SUPERSEDED or MOOT under v2, 12 NOT-DONE. DONE -- v1:15 (the fetch helper, now `bws_env.py`, and the `NAME > LOCAL` alias grammar the old note recorded as missing is implemented at `parse_spec`), v1:18 (the gate test, now `test_gate_bws_env.py`, B1-B10), v1:40 (the two stale citations). PARTIAL -- v1:31, whose CI half is assertion 14 below; the local `./run.sh setup` companion is not written. SUPERSEDED or MOOT -- v1:27 and v1:28 (`dev.defaults.env` is not created, per Part 6) and v1:42 (it adds files Part 6 deletes from the design); v1:17's `with_fake_bws` would go in a bash harness that no longer runs, and the Python gate test carries the same fake. NOT-DONE and NOT attempted here, all outside this session's file ownership -- v1:20, v1:21, v1:22 (the `__ROTATED_` archive trio) and v1:23, which asserts a naming convention none of those three yet produces; v1:24, v1:25 (the vitest rotation harness); v1:29, v1:30, v1:39 (the reader and writer cutovers, which also wait on the two seeding boxes above). OPERATOR-ONLY, named rather than skipped -- v1:26 (backing `.env` up to the personal vault) and v1:38 (truncating `.env`), both of which handle real secret values. TWO CITATIONS IN v1 HAVE ROTTED: `scripts/dev/{secret-rename,bws-map-refresh}.py` are now under `scripts/ops/`, and `.claude/hooks/pre-bash/block-host-toolchain-run.sh` no longer exists.
+- [x] Build `.ci/scripts/test/gates/test-bws-env-helper.sh` (Part 5, harness B).
+      AUDIT: DONE 2026-09-22, at the PORTED subject rather than the bash path this box names: `.ci/rediacc_ci/tests/gates/test_gate_bws_env.py`, 18 cases. Added B4 (a value carrying `$(...)`, backticks, a newline and `-----BEGIN` binds verbatim; the control is that the sentinel file does not exist afterwards), B6 in both directions (the alias binds LOCAL only, and an absent aliased name is reported by its STORE name), B7 (grammar parity asserted as an equality against `check_bws_map.parse_requests` over an 8-line fixture, with a length assertion so two empty lists cannot pass for agreement), B8, B9 and B10, plus the mandatory shim precondition the note records as absent -- `command -v bws` must resolve INSIDE the shim directory and the thing it resolves to must prove it is the fake. Every one was verified by planting the defect it names into `bws_env.py` and watching that case go red: 8 plants, 8 fires, subject restored byte-identical. TWO PLANTS DID NOT FIRE ON FIRST RUN and the fault was the control, not the gate: `harness.no()` RECORDS a failure and keeps going, so B4's and B10's headline assertions printed FAIL and the test passed. Both now use `log_fail`, which raises. Wiring is three-point through `check:ci-pytest` (`gate: true`, `ci-quality.yml` step "Python package tests"), which collects all 18.
+- [x] Add assertion 8 to `.ci/scripts/quality/check_bws_map.py` over
+      AUDIT: DONE 2026-09-22, as assertion 14, because the file has grown assertions 1-13 since this box was written and 8 is taken. Landed with `.ci/config/env-local-allowlist.json` (33 entries, 7 re-derived kinds). 14a: every name assigned in `.env.example`, active or commented, is mapped or exempt. 14b: no exemption names a key the example dropped. 14c: each entry is re-derived against its kind. 14d: the nine `SELLER_*` fields `bws_env.JSON_REQUIRED` promises to bind are the nine the example has, imported rather than re-typed so the two cannot drift. All six planted controls the plan names were run against the real tree and behave as specified, plus a negative control and the both-emptied floor case; nine of them are now folded into the gate's own `selftest()` so they run every invocation. The end-to-end plant appended a homeless key to the real `.env.example`, the gate went red naming it, and the file was restored byte-identical (sha256 verified). TWO FINDINGS THIS ASSERTION IMMEDIATELY PRODUCED, both recorded in the allowlist rather than suppressed: `DESIGN_PARTNER_PROGRAM_ENABLED` is ACTIVE in `.env.example` and read by NOTHING, which is D2's class exactly; and `GITHUB_AUTOPILOT_APP_ID` and `GITHUB_AUTOPILOT_PRIVATE_KEY` are NOT in `bws-secret-map.json`, so Part 1 (b)'s "19 names already in the store" is 17.
       `private/account/.env.example` + a new `.ci/config/env-local-allowlist.json` (Part 5,
       harness C). This is the gate that keeps the migration from silently rotting.
 - [x] Do NOT create `private/account/scripts/__tests__/`. Part 5 §"where it does not belong".
@@ -64,7 +65,7 @@ keeps that property with a **cache**, not with a second home; see 0.4.
 
 v1 tabulated `.env` as spelling `R2_ACCESS_KEY_ID`, `SES_AK_ID`, `AUTOPILOT_PRIVATE_KEY`, `BREAKPOINT_TUNNEL_TOKEN`, `CLAUDE_CODE_OAUTH_TOKEN` — the pre-rename names — and concluded that "alias handling is load-bearing and non-optional" because `.env` "MIXES both conventions".
 
-Measured today, name-only, from `private/account/.env`: it holds `CLOUDFLARE_R2_ACCESS_KEY_ID`, `AWS_IAM_ADMIN_ACCESS_KEY_ID`, `GITHUB_AUTOPILOT_PRIVATE_KEY`, `CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN`, `ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN`. `secret-rename.py` carries `private/account/.env` in `EXTRA` (`scripts/dev/secret-rename.py:105`) and the `--apply` ran:
+Measured today, name-only, from `private/account/.env`: it holds `CLOUDFLARE_R2_ACCESS_KEY_ID`, `AWS_IAM_ADMIN_ACCESS_KEY_ID`, `GITHUB_AUTOPILOT_PRIVATE_KEY`, `CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN`, `ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN`. `secret-rename.py` carries `private/account/.env` in `EXTRA` (`scripts/ops/secret-rename.py:105`) and the `--apply` ran:
 `private/account/.env.pre-rename.bak` exists beside it, mode 0600, exactly as `:269` promises.
 
 Consequence: **20 of the 50 `.env` keys now match a store name byte for byte** (Part 2),
@@ -143,7 +144,7 @@ for one string.
 | `OTEL_ENDPOINT` | `OTEL_ENDPOINT` | `https://otlp.rediacc.io`, a constant (`.ci/lib/account.sh:302`) |
 | `SELLER_{NAME,VAT_NUMBER,REGISTRATION_NUMBER,ADDRESS_LINE1,ADDRESS_LINE2,CITY,POSTAL_CODE,COUNTRY,EMAIL}` | **one** entry `SELLER_PROFILE_JSON` | nine fields of one company record. See below |
 
-**Why the nine `SELLER_*` become one entry.** They are one object: a company's registration identity, read together at `private/account/src/app.ts:308-310` and pushed together as nine `--arg`s at `.ci/scripts/deploy/set-account-worker-secrets.sh:239-269` and `set-www-worker-secrets.sh:107-132`. Nine store entries make nine independent things that can disagree; one JSON blob cannot
+**Why the nine `SELLER_*` become one entry.** They are one object: a company's registration identity, read together at `private/account/src/app.ts:308-310` and pushed together as nine `--arg`s at `.ci/scripts/deploy/set-account-worker-secrets.sh:239-269` and `.ci/scripts/deploy/set-www-worker-secrets.sh:107-132`. Nine store entries make nine independent things that can disagree; one JSON blob cannot
 half-update. It also keeps the store's entry count honest — adding nine rows for one fact inflates `MIN_MAP_ENTRIES`-style floors with no coverage gain. The fetch helper expands it: `bws_export --json SELLER_PROFILE_JSON` binds the nine `SELLER_*` names from the object's keys, and refuses if any of the nine is missing.
 
 **Counter-argument, recorded rather than hidden:** nine flat entries mirror CI's nine `vars.SELLER_*` (`cd-deploy-account.yml:401-405,…`) one-to-one, and a flat name is greppable. If the operator prefers that symmetry, it is nine `create`s and one line of helper code less; the cost is nine ways to have a stale address. Recommendation stands at one blob.
@@ -156,7 +157,7 @@ than the four SES sending keys that *are* stored. They MOVE; the only question i
 ### (e) MOVE, on-prem upstream — 3 names, one of which is an ASK
 
 - `UPSTREAM_URL` → MOVE. `https://www.rediacc.com`, a constant
-(`private/account/src/entry/on-premise.ts:141`, `src/types/env.ts:246`).
+(`private/account/src/entry/on-premise.ts:141`, `private/account/src/types/env.ts:246`).
 - `UPSTREAM_PUBLIC_KEY` → MOVE + cache (0.4). Baked at image build time by
 `.ci/docker/web/entrypoint.sh:221-226`, so it must be readable offline.
 - `UPSTREAM_API_KEY` → **ASK**, see `## Remaining` Q1.
@@ -184,7 +185,7 @@ Counted in `.env` keys, so the four buckets sum to 50.
 
 Three of the 39 (`ACCOUNT_ED25519_PUBLIC_KEY`, `ACCOUNT_X25519_PUBLIC_KEY`, `UPSTREAM_PUBLIC_KEY`) additionally get a local cache so builds stay offline (0.4).
 
-The store grows by **10 entries, not 39** — 19 names already exist, 2 alias onto existing regional entries, and 9 `SELLER_*` collapse into one. Both entry floors clear it unchanged: `MIN_MAP_ENTRIES = 30` (`.ci/scripts/quality/check_bws_map.py:94`) and `MIN_ENTRIES = 40` (`scripts/dev/bws-map-refresh.py:50`); the map goes 56 → 66.
+The store grows by **10 entries, not 39** — 19 names already exist, 2 alias onto existing regional entries, and 9 `SELLER_*` collapse into one. Both entry floors clear it unchanged: `MIN_MAP_ENTRIES = 30` (`.ci/scripts/quality/check_bws_map.py:94`) and `MIN_ENTRIES = 40` (`scripts/ops/bws-map-refresh.py:50`); the map goes 56 → 66.
 
 ---
 
@@ -246,7 +247,7 @@ Method: name-only set algebra over `sed -n 's/=.*//p' private/account/.env` (50)
 
 | group | names | why no `.env` key |
 |---|---|---|
-| deploy-time regional expansions | `AWS_SES_{ACCESS_KEY_ID,SECRET_ACCESS_KEY}_{EU,US}`, `OBS_OTLP_CREDENTIALS_{EU,US,ASIA}`, `STRIPE_WEBHOOK_SECRET_{EU,US,ASIA}` | built at runtime as `PREFIX_${SUFFIX}` (`set-account-worker-secrets.sh:134-135`); a dev machine runs one region |
+| deploy-time regional expansions | `AWS_SES_{ACCESS_KEY_ID,SECRET_ACCESS_KEY}_{EU,US}`, `OBS_OTLP_CREDENTIALS_{EU,US,ASIA}`, `STRIPE_WEBHOOK_SECRET_{EU,US,ASIA}` | built at runtime as `PREFIX_${SUFFIX}` (`.ci/scripts/deploy/set-account-worker-secrets.sh:134-135`); a dev machine runs one region |
 | Stripe live/sandbox set | `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, `STRIPE_SANDBOX_{SECRET_KEY,PUBLISHABLE_KEY,WEBHOOK_SECRET,WEBHOOK_SECRET_ID}`, `STRIPE_WEBHOOK_SECRET_ID` | opt-in locally; `.env.example` lists them commented out. `STRIPE_SANDBOX_WEBHOOK_SECRET` is auto-captured from `stripe listen` (`.ci/lib/account.sh:235`) |
 | customer-supplied onprem | `SMTP_{HOST,PORT,USER,PASSWORD,FROM}` | set by the customer on the onprem image; `.ci/config/bws-unrequested.json` says so per name |
 | account-backup plane | `ACCOUNT_BACKUP_S3_{ACCESS_KEY_ID,SECRET_ACCESS_KEY,ENDPOINT}` | `programs/backup-storage/start-local-plane.sh:60-64` **relies on these being ABSENT from `.env`** so its own exports survive |
@@ -276,7 +277,7 @@ private/growth/video_pipeline/publish-solutions.sh:56          [[ -n "${!v:-}" ]
 private/growth/video_pipeline/publish.py:40                _R2_ENV_VARS = ("R2_MEDIA_ACCESS_KEY_ID", "R2_MEDIA_SECRET_ACCESS_KEY", "R2_MEDIA_ENDPOINT")
 ```
 
-`.env` holds `CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID` etc. since the rename (`scripts/dev/secret-rename.py:58-60`). The three `${!v}` reads therefore expand empty and `die` fires at step 0 of every solution-video publish.
+`.env` holds `CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID` etc. since the rename (`scripts/ops/secret-rename.py:58-60`). The three `${!v}` reads therefore expand empty and `die` fires at step 0 of every solution-video publish.
 
 **How it escaped every gate.** `secret-rename.py`'s walk covers tracked console files plus `EXTRA` (`:105`); `private/growth` is a separate git repository, so it is in neither. And `check_bws_map.py` only scans workflows. There is no console-side instrument that can see a `private/growth` consumer — Part 18 already recorded exactly this blindness for `apollo-companies/.env` and the
 lesson did not generalise to the rename.
@@ -290,7 +291,7 @@ this session's write access (`door:no-write-access` for a design-only agent) —
 
 ### D2 — `R2_MEDIA_BUCKET` is dead, and a doc asserts the opposite
 
-Zero readers. `.ci/scripts/deploy/sync-media-to-r2.sh:35` hardcodes `BUCKET="rediacc-www-media"`. The only mentions anywhere are prose: `CLAUDE.md:649` (calls it an org *variable*), and `.claude/agents/media-pipeline.md:343`, which says **"`R2_MEDIA_BUCKET` is not in `private/account/.env`"** — it is, at line 41.
+Zero readers. `.ci/scripts/deploy/sync-media-to-r2.sh:35` hardcodes `BUCKET="rediacc-www-media"`. The only mentions anywhere are prose: `CLAUDE.md:649` (calls it an org *variable*), and `.claude/agents/media-pipeline.md:241`, which says **"`R2_MEDIA_BUCKET` is not in `private/account/.env`"** — it is, at line 41.
 
 This falsifies `agent/plans/PLAN-secret-namespace-migration.md` Part 18's measurement that "**all 50 keys** in `private/account/.env` have live readers". 49 do. The one that does not is the one whose readers were assumed from a CLAUDE.md sentence rather than grepped.
 
@@ -311,7 +312,7 @@ than an empty one.
 ### D4 — spelling differences that are INTENDED
 
 - `AWS_SES_ACCESS_KEY_ID` / `AWS_SES_SECRET_ACCESS_KEY` (`.env`) vs `_EU` / `_US` (store).
-  Deliberate: `set-account-worker-secrets.sh:26,205` documents the
+  Deliberate: `.ci/scripts/deploy/set-account-worker-secrets.sh:26,205` documents the
 `AWS_SES_ACCESS_KEY_ID_<SUFFIX> -> Worker AWS_SES_ACCESS_KEY_ID` collapse, and `.github/workflows/ci.yml:1471` already does exactly this aliasing. Local dev is EU. Express it with the existing `NAME > ENV_NAME` grammar (`.github/actions/bws-secrets/action.yml:35-40`), never by renaming either side.
 - `OBS_OTLP_CREDENTIALS` (unsuffixed, both sides) alongside `OBS_OTLP_CREDENTIALS_{EU,US,ASIA}`
 (store only). Intended today, but it is a name that will read as a bug to the next person; the exemption file already explains it and the fetch site should cite that line.
@@ -320,7 +321,7 @@ than an empty one.
 ### D5 — spelling differences that are NOT intended
 
 None found beyond D1 and D3. Specifically checked and clean: every `.env` key that resolves to a store name resolves to the right one, and no store name is a near-miss of a `.env` key (no case, underscore, or `CLOUDFLARE_`/`CF_`-prefix variants left over from the rename inside `.env` itself). `CF_GLOBAL_API_KEY` and `CF_EMAIL` keep the `CF_` prefix while everything else moved to
-`CLOUDFLARE_`; that is a **pre-existing inconsistency in the rename table** (`secret-rename.py:54-64` renames `TURNSTILE_*` and `BREAKPOINT_*` to `CLOUDFLARE_*` but not these two) and should be settled when they are seeded in (d), so the store is not born with it.
+`CLOUDFLARE_`; that is a **pre-existing inconsistency in the rename table** (`scripts/ops/secret-rename.py:54-64` renames `TURNSTILE_*` and `BREAKPOINT_*` to `CLOUDFLARE_*` but not these two) and should be settled when they are seeded in (d), so the store is not born with it.
 
 ---
 
@@ -430,7 +431,7 @@ actually in `.env.example`. This is what would have flagged D2: delete `R2_MEDIA
 - **8c. the local-only surrogate is honest.** For each `machine-local` entry, the `derive`
 file:line must exist and must contain that name. Cheap, and it is the assertion that keeps the "why" from becoming folklore.
 
-**The planted defects that must make it red** — control-first, following `check_bws_map.py:436-470`'s `selftest()`, which already proves its parser in both directions on synthetic input before issuing any verdict:
+**The planted defects that must make it red** — control-first, following `.ci/scripts/quality/check_bws_map.py:436-470`'s `selftest()`, which already proves its parser in both directions on synthetic input before issuing any verdict:
 
 1. Add `NEW_THING=x` to a copy of `.env.example`, in neither store nor allowlist → 8a RED
 naming `NEW_THING`. *(the D1/new-key class)*
@@ -472,7 +473,7 @@ defects, they are cheap, and D3 in particular must land before any `bws_export` 
 ## Remaining (operator)
 
 - `[?]` **Q1 — `UPSTREAM_API_KEY`: shared or per-install?** It is the delegation auto-renew
-token an on-prem install uses against `www.rediacc.com` (`private/account/src/entry/on-premise.ts:45-53,142`; `src/routes/portal-delegation-certs.ts:300-301` issues it). The portal enforces **one active delegation cert per subscription**, so two machines holding the same token are renewing one chain — which is either exactly what you want (one shared dev on-prem identity) or a way
+token an on-prem install uses against `www.rediacc.com` (`private/account/src/entry/on-premise.ts:45-53,142`; `private/account/src/routes/portal-delegation-certs.ts:300-301` issues it). The portal enforces **one active delegation cert per subscription**, so two machines holding the same token are renewing one chain — which is either exactly what you want (one shared dev on-prem identity) or a way
 for two machines to fight over one cert.
   **DEFAULT: MOVE it.** One subscription, one token, one store entry; the alternative is
 each machine minting its own and no way to tell them apart.

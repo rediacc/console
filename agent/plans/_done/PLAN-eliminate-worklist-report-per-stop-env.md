@@ -11,7 +11,7 @@ Updated: 2026-09-22
 ## 2. The randomization mechanism inside `outq_drain`
 
 Group `q["items"]` by `prio`, iterate priority tiers in ascending numeric order (lower = more urgent, unchanged), and within each tier randomly select up to the remaining budget. `outq_drain` gains an `rng` parameter, defaulting `None` -> the module-level `random`. Only `outq_drain` gains the parameter; `outq_add` is untouched. Every call site of `outq_drain` was checked:
-`wl_checks.py:4772` (real call, no `rng`), `.claude/hooks/stop/test-planfile.py:420-436` (in-process, needs attention -- see task list). No other callers exist anywhere in the tree.
+`.claude/hooks/stop/wl_checks.py:4772` (real call, no `rng`), `.claude/hooks/stop/test-planfile.py:420-436` (in-process, needs attention -- see task list). No other callers exist anywhere in the tree.
 
 The `is_settled`/`reg-settled:` merge logic later in the function reads `q["items"]` directly, not `take`'s order, so it is unaffected by the tier-internal shuffle.
 
@@ -19,13 +19,13 @@ The `is_settled`/`reg-settled:` merge logic later in the function reads `q["item
 
 No `random.`/`secrets.` usage exists anywhere in `.claude/hooks/stop/` or `.claude/rediacc_hooks/` today -- this is genuinely new territory, no house convention to match.
 
-For subprocess-driven tests, there is no way to reach a child process's `random` state. New unit-level tests call `wl_checks.outq_drain` directly, in-process, matching the pattern `test-planfile.py:420-436` and `test_wl_report_queue.py`'s own `test_180c` already use.
+For subprocess-driven tests, there is no way to reach a child process's `random` state. New unit-level tests call `wl_checks.outq_drain` directly, in-process, matching the pattern `.claude/hooks/stop/test-planfile.py:420-436` and `test_wl_report_queue.py`'s own `test_180c` already use.
 
 ## 4. Registry / manifest edits
 
 - `.ci/policy/worklist-env-registry.json:633-638` -- delete the whole `WORKLIST_REPORT_PER_STOP` block.
   Confirmed via the gate's own AST scanner (`worklist_env_registry.py:scan_python`): it counts only `os.environ.get(...)`/`getenv(...)` reads and `os.environ[...]` reads; `fix.env["WORKLIST_REPORT_PER_STOP"] = "N"` in test files is a write (excluded), and `wlfix.py`'s `RESET_KNOBS` tuple is a bare string in a tuple (also excluded).
-  `wl_checks.py:1302` is the only read site in the tracked corpus.
+  `.claude/hooks/stop/wl_checks.py:1302` is the only read site in the tracked corpus.
   This deletion must land in the same commit as the code change.
 - `.ci/config/env-manifest.json:915` -- delete the line `"WORKLIST_REPORT_PER_STOP",` from the `harness` shard array. Hand-maintained for removals per its own header.
 - `.ci/config/python-env-registry.json:1523` -- `SHRINK-ONLY, AND GENERATED -- do not hand-edit`. After the code edit, run `python3 .ci/scripts/quality/check_python_env_registry.py --write-baseline`. A pure shrink, no `--allow-new` needed.
@@ -36,11 +36,11 @@ For subprocess-driven tests, there is no way to reach a child process's `random`
 
 | File:Line | Current text | Fix |
 |---|---|---|
-| `wl_checks.py:1434` | "OUTQ_PER_STOP is 1" | "OUTQ_PER_STOP is 3" |
-| `wl_checks.py:3071` | "OUTQ_PER_STOP=1, plus outq_add's content signature" | "OUTQ_PER_STOP=3, plus outq_add's content signature" |
-| `wl_checks.py:3565` | "OUTQ_PER_STOP defaults to 1 and outq_drain is highest-priority-first" | "OUTQ_PER_STOP is 3 and outq_drain is highest-priority-first" |
-| `wl_planfile.py:25` | "`OUTQ_PER_STOP` is 1, so at most one advisory section reaches any stop at all" | "`OUTQ_PER_STOP` is 3, so at most three advisory sections reach any stop at all" |
-| `test_wl_advisories_rotation.py:315` | describes a 1-wide drain forcing the hint to lose its slot | update to describe the fixed 3-wide budget and that widening is no longer a knob |
+| `.claude/hooks/stop/wl_checks.py:1434` | "OUTQ_PER_STOP is 1" | "OUTQ_PER_STOP is 3" |
+| `.claude/hooks/stop/wl_checks.py:3071` | "OUTQ_PER_STOP=1, plus outq_add's content signature" | "OUTQ_PER_STOP=3, plus outq_add's content signature" |
+| `.claude/hooks/stop/wl_checks.py:3565` | "OUTQ_PER_STOP defaults to 1 and outq_drain is highest-priority-first" | "OUTQ_PER_STOP is 3 and outq_drain is highest-priority-first" |
+| `.claude/hooks/stop/wl_planfile.py:25` | "`OUTQ_PER_STOP` is 1, so at most one advisory section reaches any stop at all" | "`OUTQ_PER_STOP` is 3, so at most three advisory sections reach any stop at all" |
+| `.claude/rediacc_hooks/tests/test_wl_advisories_rotation.py:315` | describes a 1-wide drain forcing the hint to lose its slot | update to describe the fixed 3-wide budget and that widening is no longer a knob |
 
 ## 6. Message wording
 
@@ -63,18 +63,18 @@ since fixed by 1d3fdf2e9/a81967e94 this same session). Do not treat those two as
 | `test_wl_advisories_rotation.py` (12 sites at `="4"`, all except 209H/209H_control/209K) | widen so the agent hint (prio 3) gets a slot | Every fixture queues at most 2 concurrent items; fixed budget 3 already covers it. Delete the env-var line at each site, nothing else changes. |
 | `test_wl_advisories_rotation.py` (209K, `="6"` on the CONTROL leg only) | FIRE leg proves the hint is outranked and stays queued; CONTROL widens to 6 to prove it was queued, not lost | Empirically confirmed: fixture queues 5 items (4 prio-2 + 1 prio-3 hint); at budget 3, the FIRE assertions hold with no env line at all. Replace the CONTROL's widening with `wl.newturn(); wl.say(HINT_SAY); got2 = wl.run()` (no widening needed, budget 3 >= the 2 remaining items). |
 | `test_wl_advisories_rotation.py` (204/205/206, `="6"`) | two-key rotation / foreign checklist advisories not overwritten | Each fixture queues 1-2 concurrent items. Delete the env line at all sites. |
-| `test_wl_background_waits.py:415` (`="6"`) | 2-item shape | Delete. |
-| `test_wl_checklists.py:371` (`drained_setup`, `="6"`) | queue-not-violation shape | Delete -- item count is <=2, confirmed passing under forced 3. Update the docstring's "OUTQ_PER_STOP is 1 by default" claim too. |
+| `.claude/rediacc_hooks/tests/test_wl_background_waits.py:415` (`="6"`) | 2-item shape | Delete. |
+| `.claude/rediacc_hooks/tests/test_wl_checklists.py:371` (`drained_setup`, `="6"`) | queue-not-violation shape | Delete -- item count is <=2, confirmed passing under forced 3. Update the docstring's "OUTQ_PER_STOP is 1 by default" claim too. |
 | `test_wl_checklists.py` test_201 (does not set the env var) | poll fast-path forfeits (non-empty output) when a live checklist's stat changed | Genuine indirect casualty. Pad the fixture with `wl.brief_other("cafe1234")` + a stale peer transcript + an orphaned item so >=4 items compete at stop 1; under budget 3, at least 1 always survives into stop 2 regardless of which 3 randomization releases. Robust to randomization by construction. |
-| `test_wl_ci_queue_and_mail.py:208` (`="9"`) | 2 concurrent items (peers section + request note) | Delete. |
-| `test_wl_poll_and_waiting.py:104` (`="9"`) | 2-class-2-sections shape | Delete. |
-| `test_wl_migrate.py:279,289` (`="6"`) | handoff-candidates report, 1-2 items typical | Delete both, pass `wl.run()` with no `extra_env`. |
-| `test_wl_state_document.py:209,223,239,260` (`="9"`) | peer-visibility notes, 1-2 items | Delete all 4. |
-| `test_wl_cadence.py:827,840` (`="9"`) | deferral audit note / ask-refusals ledger note, 2 items | Delete both. |
-| `test_wl_guide_and_deferrals.py:559` (`="9"`) | audit note + unconfigured-email one-shot, 2 items | Delete. |
-| `test_wl_requests.py:132` (`="9"`) | two class-2 sections | Delete. |
-| `test_wl_identity.py:181` (in the `knobs` tuple) | checks the fixture scrub leaves no `WORKLIST_*` ambient leakage; names `WORKLIST_REPORT_PER_STOP` as one checked knob | Remove `"WORKLIST_REPORT_PER_STOP",` from the `knobs` tuple -- it is no longer a real knob, and leaving the string checks nothing. |
-| `wlfix.py:51` (`RESET_KNOBS` tuple) | reset between fixture cases | Remove the `"WORKLIST_REPORT_PER_STOP",` entry -- inert for every other knob. |
+| `.claude/rediacc_hooks/tests/test_wl_ci_queue_and_mail.py:208` (`="9"`) | 2 concurrent items (peers section + request note) | Delete. |
+| `.claude/rediacc_hooks/tests/test_wl_poll_and_waiting.py:104` (`="9"`) | 2-class-2-sections shape | Delete. |
+| `.claude/rediacc_hooks/tests/test_wl_migrate.py:279,289` (`="6"`) | handoff-candidates report, 1-2 items typical | Delete both, pass `wl.run()` with no `extra_env`. |
+| `.claude/rediacc_hooks/tests/test_wl_state_document.py:209,223,239,260` (`="9"`) | peer-visibility notes, 1-2 items | Delete all 4. |
+| `.claude/rediacc_hooks/tests/test_wl_cadence.py:827,840` (`="9"`) | deferral audit note / ask-refusals ledger note, 2 items | Delete both. |
+| `.claude/rediacc_hooks/tests/test_wl_guide_and_deferrals.py:559` (`="9"`) | audit note + unconfigured-email one-shot, 2 items | Delete. |
+| `.claude/rediacc_hooks/tests/test_wl_requests.py:132` (`="9"`) | two class-2 sections | Delete. |
+| `.claude/rediacc_hooks/tests/test_wl_identity.py:181` (in the `knobs` tuple) | checks the fixture scrub leaves no `WORKLIST_*` ambient leakage; names `WORKLIST_REPORT_PER_STOP` as one checked knob | Remove `"WORKLIST_REPORT_PER_STOP",` from the `knobs` tuple -- it is no longer a real knob, and leaving the string checks nothing. |
+| `.claude/rediacc_hooks/tests/wlfix.py:51` (`RESET_KNOBS` tuple) | reset between fixture cases | Remove the `"WORKLIST_REPORT_PER_STOP",` entry -- inert for every other knob. |
 
 ## 8. The two new randomization-invariant tests (add to `test_wl_report_queue.py`, in-process, no subprocess)
 
@@ -161,7 +161,7 @@ def test_176_a_one_shot_that_loses_its_slot_is_never_dropped_only_delayed():
 
 - Randomization masking a real ordering regression. A future sort-key bug that only misorders within a tier (not across tiers) would be invisible to `test_181`'s tier-order check and could slip past `test_181_control`'s set-based check too, since a bug that scrambles order without changing the SET selected is not caught by it.
   Mitigated but not eliminated -- the plan proves tier order holds and that entropy exists, not which distribution is used.
-- `test-planfile.py:420-436`'s seeded call is a single hardcoded seed. If a future edit to `outq_add`/`outq_drain` changes iteration order such that seed picks the wrong item again, the test goes red for an unrelated reason. The implementer should verify the seed choice once (try seeds 0..9, pick the first that lands on a `reg-settled:` entry), not assume any seed works.
+- `.claude/hooks/stop/test-planfile.py:420-436`'s seeded call is a single hardcoded seed. If a future edit to `outq_add`/`outq_drain` changes iteration order such that seed picks the wrong item again, the test goes red for an unrelated reason. The implementer should verify the seed choice once (try seeds 0..9, pick the first that lands on a `reg-settled:` entry), not assume any seed works.
 - The `test_201` fix and 209K's redesign both rely on "at least one item survives to the next stop" as their evidence, deterministic given the padded item counts. Any future change that raises `OUTQ_PER_STOP` again would silently re-open the vacuity these tests were just rescued from -- worth a comment at the constant's definition pointing at these two tests.
 - The empirical sweep covered only the 13 files matching a literal grep for `WORKLIST_REPORT_PER_STOP`. The implementing session should re-run the complete `.claude/rediacc_hooks/tests/` suite (not just the 13-file subset) as the closing verification step.
 - `N_OUTQ_BLOCKED`'s new second argument is `OUTQ_PER_STOP`, not `pending_outq` twice. Checked: only the two call sites and the one ARITY entry reference it; no third consumer exists.

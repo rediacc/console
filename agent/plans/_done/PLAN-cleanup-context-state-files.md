@@ -15,7 +15,7 @@ Found as a sibling of the agent-session-archival problem during a stop-gate judg
 
 **Age threshold:** `WORKLIST_DEAD_HOURS` (default 24, read via `os.environ.get("WORKLIST_DEAD_HOURS", "24")` at `.claude/hooks/stop/wl_store.py:1470`, `:1919`, `:2323` — there is no single named constant, it is re-read inline at each call site). Reusing this number keeps one liveness horizon instead of inventing a second.
 
-**Safe to delete unconditionally past the threshold.** The only readers of a state file are `.claude/hooks/context/band-notice.py:183`, `epoch-reset.py:23`, `onboard.py:187`, each calling `load_state(session_id)` for the CURRENTLY RUNNING session only — nothing ever reads another session's state file, dead or alive.
+**Safe to delete unconditionally past the threshold.** The only readers of a state file are `.claude/hooks/context/band-notice.py:183`, `.claude/hooks/context/epoch-reset.py:23`, `.claude/hooks/context/onboard.py:187`, each calling `load_state(session_id)` for the CURRENTLY RUNNING session only — nothing ever reads another session's state file, dead or alive.
 
 **Sweep, not a gate.** `save_state()` (`.claude/hooks/context/ctx_budget.py:317`) already runs on every PostToolUse and compaction boundary. A debounced TTL sweep piggybacked on that hot path costs negligible overhead, needs no new wiring, and runs far more often than any Stop-only gate would.
 

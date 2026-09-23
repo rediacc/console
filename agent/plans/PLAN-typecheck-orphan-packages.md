@@ -61,7 +61,7 @@ afterwards.
 - **A green `ci:quick` is NOT a claim about types.** `check:types` is `slow: true` and the
 quick lane defers it, and `check:lint`/`check:format` are biome, which does not typecheck. Two type errors reached CI that way. Run `npx tsc --noEmit -p <project>` before every push.
 - **`check:lint` is eslint, not biome.** Sub-agents reported "biome clean" and left 10
-eslint errors, 7 of them `@typescript-eslint/require-await` from making a sync mock body `async` to satisfy a `Promise<T>` signature. The repo's adaptation pattern is at `remote/sync/__tests__/sftp-fallback.test.ts:31`: keep the body sync, wrap at the boundary.
+eslint errors, 7 of them `@typescript-eslint/require-await` from making a sync mock body `async` to satisfy a `Promise<T>` signature. The repo's adaptation pattern is at `packages/cli/src/remote/sync/__tests__/sftp-fallback.test.ts:31`: keep the body sync, wrap at the boundary.
 - **`as unknown as X` hides everything and TS cannot flag it.** Replacing one with
 `satisfies` exposed 8 missing required fields and a fixture expressing "unmounted" by OMITTING a required field. Grep for `as unknown as` in the package before starting.
 - Fix the TYPE. No `@ts-expect-error`, no `as any`, no widening to `unknown`.

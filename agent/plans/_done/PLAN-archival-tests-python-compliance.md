@@ -33,8 +33,8 @@ It drives `.ci/scripts/quality/check_agent_session_archival.py`, which is alread
 
 That distinguishes this from the `bws-rotate` precedent this session already completed: there, `scripts/dev/bws-rotate.sh` (an operator tool) had to become `scripts/dev/bws-rotate.py` *and* its gate-test had to be ported. Here the production side is a non-issue; only the bash gate-test needs a home in Python.
 
-The already-staged `.ci/rediacc_ci/tests/test_quality_agent_session_archival.py` does NOT make the bash file redundant. It is the port of the *library's* own reasoning (`agent_session_archival.py`'s pure functions: `idle_hours`, `classify_due`, `vacuity_reason`, `label_for`, `move_refusal`, etc.), driven by direct import (`test_quality_agent_session_archival.py:1-9,264-288`).
-Its own docstring says exactly this: it drives "the individual functions directly," and it imports `check_agent_session_archival` only "for its constants only; nothing here calls `main`" (`test_quality_agent_session_archival.py:27-34`).
+The already-staged `.ci/rediacc_ci/tests/test_quality_agent_session_archival.py` does NOT make the bash file redundant. It is the port of the *library's* own reasoning (`agent_session_archival.py`'s pure functions: `idle_hours`, `classify_due`, `vacuity_reason`, `label_for`, `move_refusal`, etc.), driven by direct import (`.ci/rediacc_ci/tests/test_quality_agent_session_archival.py:1-9,264-288`).
+Its own docstring says exactly this: it drives "the individual functions directly," and it imports `check_agent_session_archival` only "for its constants only; nothing here calls `main`" (`.ci/rediacc_ci/tests/test_quality_agent_session_archival.py:27-34`).
 
 The bash file's own header states what it adds on top of that (`.ci/scripts/test/gates/test-agent-session-archival.sh:11-34`): its own `--selftest` (34 controls) proves `move_refusal()`'s DECISION as a pure function and nothing else. The bash file exists to drive the CLI entry point as a real subprocess against a real git repository, and specifically to prove:
 
@@ -43,7 +43,7 @@ The bash file's own header states what it adds on top of that (`.ci/scripts/test
 3. `--check`, `--status` and `--selftest` write nothing at all to `agent/` or the git index, driven as three real invocations (`:226-238`).
 4. The gate reds on a real backlog and goes green once the fix it names is applied (`:240-254`).
 5. The three CANNOT-RUN (exit 77) cases -- empty `agent/`, missing `agent/archive/`, and a `.claude/` that cannot be reached -- each refuse rather than silently passing (`:256-287`).
-6. The fixture symlinks the real `.claude/` (`ln -s "$REPO_ROOT/.claude" "$root/.claude"`, `:65`) so the gate's derivation of `wl_store` (`check_agent_session_archival.py:262-277`, `paths.hooks_stop_dir` + `paths.on_sys_path`) is exercised against the live oracle, not a copy that could drift.
+6. The fixture symlinks the real `.claude/` (`ln -s "$REPO_ROOT/.claude" "$root/.claude"`, `:65`) so the gate's derivation of `wl_store` (`.ci/scripts/quality/check_agent_session_archival.py:262-277`, `paths.hooks_stop_dir` + `paths.on_sys_path`) is exercised against the live oracle, not a copy that could drift.
    This is exactly why the manifest entry declares `reads: ['tree:repo']` (`scripts/ci-runner/manifest.ts:4840-4841`).
 
 None of that -- the CLI as a process, the real `git mv`, the exit codes, the read-only guarantee, the symlinked live oracle -- is covered by the existing `test_quality_agent_session_archival.py`. So this is a genuine port, not a deletion.
@@ -58,7 +58,7 @@ Target: `.ci/rediacc_ci/tests/gates/test_gate_agent_session_archival.py` (not `.
 No `BASH_TWIN` module attribute is declared, and this follows the `bws-rotate` precedent directly: `test_twin_parity.py` (`.ci/rediacc_ci/tests/gates/test_twin_parity.py:1-30`) exists to compare a port against a committed bash original ("invariant 5 forbids deleting a twin in the change that ports it").
 That invariant protects twins with real git history -- `check-python-lint.sh` (`.ci/rediacc_ci/tests/test_quality_python_lint.py:260-262`), `run-all.sh` (`.ci/rediacc_ci/battery.py:4`), etc. `test-agent-session-archival.sh` has none: it was never in a commit.
 `test_gate_bws_rotate.py` set the exact precedent for this same situation this session (`.ci/rediacc_ci/tests/gates/test_gate_bws_rotate.py:1` -- "retired 2026-09-23", no `BASH_TWIN` anywhere in that file, confirmed by grep).
-`ported_modules()` (`test_twin_parity.py:59-65`) only compares modules that declare `BASH_TWIN`; a module that does not simply isn't part of that comparison, which is correct here because there is no committed original left to diff against.
+`ported_modules()` (`.ci/rediacc_ci/tests/gates/test_twin_parity.py:59-65`) only compares modules that declare `BASH_TWIN`; a module that does not simply isn't part of that comparison, which is correct here because there is no committed original left to diff against.
 
 ## The template
 
@@ -72,9 +72,9 @@ That invariant protects twins with real git history -- `check-python-lint.sh` (`
 ## Confirmed seams available on the subject (no production code changes needed)
 
 - `AGENT_SESSION_ARCHIVAL_ROOT` env var seam: `.ci/rediacc_ci/quality/agent_session_archival.py:54` (`ROOT_ENV`), read by `repo_root()` at `:276-278`. This is exactly what the bash fixture already uses (`test-agent-session-archival.sh:83`, `run_gate()`).
-- `.ci/config/agent-session-archival.json` must exist under the fixture root with a numeric `grace_days` (`check_agent_session_archival.py:304-311`, `_config()`); the bash fixture copies the real file (`test-agent-session-archival.sh:66`) -- the port does the same, from `paths.from_root(".ci", "config", "agent-session-archival.json")`.
-- The oracle derivation: `check_agent_session_archival.py:262-277` (`_wl_store`), using `paths.hooks_stop_dir(root)` + `paths.on_sys_path`. A fixture with no `.claude/` at all makes this raise `CannotRunError` -> exit 77 with "cannot import wl_store" in the message (`:273-276`, `main()`'s `except CannotRunError` at `:486-488`).
-- `move()`'s full rail set lives at `check_agent_session_archival.py:402-452`; `run()`'s vacuity/backlog behaviour at `:327-369`; `main()`'s argv handling (including the `--move` with no target -> exit 2 case) at `:455-489`.
+- `.ci/config/agent-session-archival.json` must exist under the fixture root with a numeric `grace_days` (`.ci/scripts/quality/check_agent_session_archival.py:304-311`, `_config()`); the bash fixture copies the real file (`test-agent-session-archival.sh:66`) -- the port does the same, from `paths.from_root(".ci", "config", "agent-session-archival.json")`.
+- The oracle derivation: `.ci/scripts/quality/check_agent_session_archival.py:262-277` (`_wl_store`), using `paths.hooks_stop_dir(root)` + `paths.on_sys_path`. A fixture with no `.claude/` at all makes this raise `CannotRunError` -> exit 77 with "cannot import wl_store" in the message (`:273-276`, `main()`'s `except CannotRunError` at `:486-488`).
+- `move()`'s full rail set lives at `.ci/scripts/quality/check_agent_session_archival.py:402-452`; `run()`'s vacuity/backlog behaviour at `:327-369`; `main()`'s argv handling (including the `--move` with no target -> exit 2 case) at `:455-489`.
 
 ## Tasks
 
@@ -84,7 +84,7 @@ That invariant protects twins with real git history -- `check-python-lint.sh` (`
 - [x] T2. Write `.ci/rediacc_ci/tests/gates/test_gate_agent_session_archival.py`.
       Written, staged, confirmed on disk 2026-09-23. Port every one of the 15 bash functions listed below to a `def test_...(gate, tmp_path)` function, preserving the case each one proves (not just its name) and every "mirror" assertion (a refusal proven beside the same fixture succeeding once the blocking fact is fixed):
 
-  1. `test_the_subject_and_its_tools_are_present` (`:89-94`) -- `GATE.is_file()`, git and python3 on PATH (git/python3 checks can drop: the harness itself needs both to run at all, so `shutil.which` guards read like `test_gate_plan_folders.py:73-76`'s `test_git_is_available_or_this_file_asserts_nothing`).
+  1. `test_the_subject_and_its_tools_are_present` (`:89-94`) -- `GATE.is_file()`, git and python3 on PATH (git/python3 checks can drop: the harness itself needs both to run at all, so `shutil.which` guards read like `.ci/rediacc_ci/tests/gates/test_gate_plan_folders.py:73-76`'s `test_git_is_available_or_this_file_asserts_nothing`).
   2. `test_an_abandoned_directory_moves_and_leaves_nothing_behind` (`:98-114`) -- `--move deadbeef --label test-label` exits 0, prints `agent/deadbeef -> agent/archive/test-label/deadbeef`, old path gone, new `STATE.md` content intact, `git status --porcelain` shows `R  agent/deadbeef/STATE.md`.
   3. `test_the_promotion_reminder_is_printed_before_it_acts` (`:116-123`) -- output contains `promote anything in agent/RULES.md`.
   4. `test_a_reserved_name_is_refused_outright` (`:127-140`) -- `--move archive` exits 1, "reserved directory", `agent/archive` untouched; MIRROR: `--move deadbeef` on the same tree still succeeds.
@@ -137,7 +137,7 @@ That invariant protects twins with real git history -- `check-python-lint.sh` (`
   npm run gen:gates-lock
   npm run check:ci-gates-lock
   ```
-  Done looks like: `scripts/ci-runner/gates.lock.json`'s `gate-test:agent-session-archival` block (currently at `gates.lock.json:5113-5129`) is gone, and no other entries changed except whatever the generator normally touches. Do not hand-edit the lock file.
+  Done looks like: `scripts/ci-runner/gates.lock.json`'s `gate-test:agent-session-archival` block (currently at `scripts/ci-runner/gates.lock.json:5113-5129`) is gone, and no other entries changed except whatever the generator normally touches. Do not hand-edit the lock file.
 
 - [x] T8. Done 2026-09-23: `38 control(s) passed` and `✓ language policy: 267 bash file(s) ... 139 frozen (shrink-only, none added), 128 exempt by name across 18 allowlist entr(ies).` No NEW bash finding.
       Re-run the language policy gate and confirm green:

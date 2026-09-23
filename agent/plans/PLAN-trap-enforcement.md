@@ -14,7 +14,7 @@ wanted it) and F3b is not implemented (the dispatcher has no block tier). W2 and
 
 Supersedes `agent/plans/PLAN-unify-trap-corpus.md` (§9 says exactly which parts are kept and which are replaced). Nothing in this plan is implemented.
 
-**2026-08-18: STILL UNIMPLEMENTED, VERIFIED RATHER THAN ASSUMED, AND UNOWNED.** Checked directly: no trap script exists under `.ci/scripts/quality/`, no `check:` id in `package.json` mentions traps, and `docs/agent-reference/TRAPS.md` carries no ledger table (zero table rows). Individual traps HAVE become instruments in the meantime -- TRAPS.md:537 says "This one is now an
+**2026-08-18: STILL UNIMPLEMENTED, VERIFIED RATHER THAN ASSUMED, AND UNOWNED.** Checked directly: no trap script exists under `.ci/scripts/quality/`, no `check:` id in `package.json` mentions traps, and `docs/agent-reference/TRAPS.md` carries no ledger table (zero table rows). Individual traps HAVE become instruments in the meantime -- docs/agent-reference/TRAPS.md:537 says "This one is now an
 instrument, not just a lesson" -- which is easy to mistake for this plan having landed. It has not: the thing specified here is the SYSTEMATIC gate that reds when a trap has neither an instrument nor a stated reason it cannot have one, and that gate does not exist.
 
 Owner `99ccf057` is a session that ended around 2026-08-09; nothing is in flight. `Status: executing` overstates it, but the work is still wanted, so it is left open rather than closed as superseded. A session picking this up owns it from scratch and should re-verify every file:line below before trusting one -- the sibling plans in this directory have had their line numbers decay
@@ -63,7 +63,7 @@ rules out, as *primary* mechanisms: session-start briefings, sharper wording, lo
 | **Unproven claim** | A gate, probe, or suite reports clean without having run | CI gate with a planted defect (control-first) | The artifact is static and inspectable outside the session |
 
 The fourth shape is already mechanized four times over (`.ci/scripts/quality/check_lint_rule_liveness.py`, `.ci/scripts/quality/check_gate_reachability_coverage.py`, `.ci/scripts/quality/check-dead-case-arms.sh:106-132`, `scripts/gates/check-suppression-liveness.ts`). The third shape is entirely unexploited: **no hook in this repository reads `tool_response`** (single repo-wide
-occurrence is a docstring at `wl_wait.py:141`). That is the largest unclaimed surface and it maps onto the two most expensive misread-outcome traps.
+occurrence is a docstring at `.claude/hooks/stop/wl_wait.py:141`). That is the largest unclaimed surface and it maps onto the two most expensive misread-outcome traps.
 
 **2.3 Precision, not coverage, is the budget.** An instrument that fires too often trains the reader to skim it, which reproduces the corpus's failure at higher frequency and inside the tool loop, where it is more annoying and therefore learned faster. This is why the misread-outcome tier is keyed on the response rather than the command: firing on "the session ran `gh api
 .../jobs`" would fire on every CI round, while firing on "the response says `cancelled` and the session filtered for `failure`" fires only in the trap's own footprint. Each injecting rule additionally fires at most **once per session per trap**.
@@ -112,7 +112,7 @@ Pointer grammar, each of which must resolve:
 
 This keeps one writable face, keeps the file human-readable and openable from the PostCompact briefing, and makes the registry a property of the document rather than a shadow of it.
 
-**The parser must track fenced code blocks, and today's does not.** `trap_headings` (`wl_store.py:278-283`) is a bare `line.startswith("## ")` loop with no fence state. Both corpora happen to contain no fenced `## ` line right now, verified by script, so this is latent rather than active. The registry activates it: once F2 requires every `## ` entry to carry a `Trap-Id`, a `## `
+**The parser must track fenced code blocks, and today's does not.** `trap_headings` (`.claude/hooks/stop/wl_store.py:278-283`) is a bare `line.startswith("## ")` loop with no fence state. Both corpora happen to contain no fenced `## ` line right now, verified by script, so this is latent rather than active. The registry activates it: once F2 requires every `## ` entry to carry a `Trap-Id`, a `## `
 inside a fenced example in a trap body becomes a phantom entry with no id, and the gate reds on a document that is correct. Trap bodies routinely carry shell and markdown examples, and this plan's own §3.1 example block would trip it. So the shared parser (one implementation, used by both `wl_store` and the gate, never two) toggles on ``` and ~~~ fences and ignores headings inside
 them. Test case: a fixture whose body contains a fenced `## Not A Trap` must yield the real entries only, and the same line unfenced must yield an F2 red.
 
@@ -124,7 +124,7 @@ one per trap, and report 100% coverage while doing it.
 So the gate `check:ci-trap-registry` asserts liveness, not presence:
 
 - **F1 POPULATION FLOOR.** At least `TRAP_FLOOR` entries (23 after the §9 merge). An
-emptied or truncated corpus reds instead of passing vacuously. Precedent: `MIN_MANIFEST_GATES = 40` at `check_gate_reachability_coverage.py:47`.
+emptied or truncated corpus reds instead of passing vacuously. Precedent: `MIN_MANIFEST_GATES = 40` at `.ci/scripts/quality/check_gate_reachability_coverage.py:47`.
 - **F2 IDENTITY.** Every `## ` entry has a `Trap-Id`; ids are unique; ids match
 `^[a-z0-9][a-z0-9-]{2,48}$`.
 - **F3 DISPOSITION.** Every entry has either at least one resolving pointer or
@@ -149,7 +149,7 @@ zero.
 
 ### 3.3 The registry pays for itself immediately: it fixes the judge prompt's cost curve
 
-`wl_store.trap_headings` (`.claude/hooks/stop/wl_store.py:265-284`, not `:231` as the brief states; `:231` is `agent_traps_path`) caps at 40 headings and `break`s in **file order**, while both corpora append newest-last (`.agent/TRAPS.md:11`, "Newest at the bottom"). Past 40 entries the newest traps go silently invisible to the judge. The merge alone reaches 23, so this stops being
+`wl_store.trap_headings` (`.claude/hooks/stop/wl_store.py:265-284`, not `:231` as the brief states; `:231` is `agent_traps_path`) caps at 40 headings and `break`s in **file order**, while both corpora append newest-last (`docs/agent-reference/TRAPS.md:11`, "Newest at the bottom"). Past 40 entries the newest traps go silently invisible to the judge. The merge alone reaches 23, so this stops being
 theoretical at once.
 
 `PLAN-unify-trap-corpus.md` §4.2 answers this by raising the cap to 120 and appending a synthetic overflow marker. **This plan supersedes that.** With `Enforced-By` present, the cap problem dissolves rather than moving: a trap that a gate or hook already enforces does not need to be in a per-stop model prompt at all, because a machine is already watching it. So:
@@ -168,8 +168,8 @@ the prompt, and make overflow loud, per the unify plan's instinct.
 ### 4.1 Stop adding one file per hook
 
 Today each hook is registered individually in `.claude/settings.json`: 18 separate PreToolUse entries for Bash (`:9-77`), 4 for edits (`:86-98`), 2 PostToolUse for Bash (`:109-113`). **There is no dispatcher**; the JSON array order is the only thing that encodes ordering, and adding a hook means two synchronized edits. Each Bash tool call therefore spawns 18 `bash` processes, and
-each hook that sources `pre-bash/lib/command-scan.sh` forks roughly ten more (`command-scan.sh:108-113` chains awk, tr, sed, awk, tr, sed). Order 200 processes per Bash tool call, with **no `timeout` on any PreToolUse hook** (the only timeout in the file is `:142`, Stop=300s) and a worst case around 70 seconds of unbounded network wait on a single `gh pr merge` line
-(`block-admin-merge.sh:64,82,92` and `block-premature-ready.sh:49`).
+each hook that sources `pre-bash/lib/command-scan.sh` forks roughly ten more (`.claude/oracles/pre-bash/lib/command-scan.sh:108-113` chains awk, tr, sed, awk, tr, sed). Order 200 processes per Bash tool call, with **no `timeout` on any PreToolUse hook** (the only timeout in the file is `:142`, Stop=300s) and a worst case around 70 seconds of unbounded network wait on a single `gh pr merge` line
+(`.claude/oracles/pre-bash/block-admin-merge.sh:64,82,92` and `.claude/oracles/pre-bash/block-premature-ready.sh:49`).
 
 Adding five more entries in that style is a 28% increase in per-call fork cost for no functional gain. Introduce **`.claude/hooks/trapguard/`**, registered exactly twice:
 
@@ -212,12 +212,12 @@ customer data. Rules may read it; nothing writes it anywhere. The probe in §7 r
 3. **Time budget.** `DEADLINE_MS = 250`, checked on a monotonic clock between rules.
 Over budget, remaining rules are skipped and the overrun is logged. No rule may make a network call; that is a review rule, and F5's silent-case requirement makes a network-dependent rule hard to test, which is the intended friction.
 4. **Fail open per rule, and loudly.** Every `applies`/`verdict` call is wrapped; an
-exception is appended to `~/.claude/trapguard/errors.jsonl` and the next rule runs. The Stop hook surfaces a non-empty error log as a `vadd(..., always=True, ...)` violation, because `always=True` is the documented tier for hook-integrity failures (`wl_checks.py:2184-2190`). A silently failing guard is the trap this whole plan is about; failing open is correct, failing open
+exception is appended to `~/.claude/trapguard/errors.jsonl` and the next rule runs. The Stop hook surfaces a non-empty error log as a `vadd(..., always=True, ...)` violation, because `always=True` is the documented tier for hook-integrity failures (`.claude/hooks/stop/wl_checks.py:2184-2190`). A silently failing guard is the trap this whole plan is about; failing open is correct, failing open
 *quietly* is not.
 5. **Block resolution.** First `tier == "block"` verdict wins: message to stderr,
-`exit 2`. That matches every existing hook's contract (`block-worktree-add.sh:36-37`).
+`exit 2`. That matches every existing hook's contract (`.claude/oracles/pre-bash/block-worktree-add.sh:36-37`).
 6. **Inject resolution.** All `tier == "inject"` verdicts are concatenated into one
-`hookSpecificOutput.additionalContext` and printed as JSON with `exit 0`. Live precedent for the exact envelope: `wl_wait.py:386-396`.
+`hookSpecificOutput.additionalContext` and printed as JSON with `exit 0`. Live precedent for the exact envelope: `.claude/hooks/stop/wl_wait.py:386-396`.
 7. **One shot per session per trap.** Inject verdicts are suppressed if
 `(session_id, trap_id)` is already recorded in `~/.claude/trapguard/shown-<session>.json`. Per §2.3, repetition is how an instrument teaches skimming.
 
@@ -248,7 +248,7 @@ that.** Ranked against the alternatives:
 - *Session-start or PostCompact briefing* is what exists today, and it is precisely
 what failed: the 2026-08-04 author had the fact and did not apply it. Keep it (it is free, it already runs), demote it to a backstop.
 - *A Stop-hook judge that checks traps against the session's actions* is the same
-faculty per §2.1, and it is post-hoc: it can only report a cost already paid. Keep one narrow, deterministic slice of it: the judge already receives the session's cited sources (`wl_judge.py:316-324`), so a **non-model** pre-check can assert that a session claiming a gate passed cited a gate id that exists in `GATES`. That is cheap, mechanical, and catches the `npm run <missing>`
+faculty per §2.1, and it is post-hoc: it can only report a cost already paid. Keep one narrow, deterministic slice of it: the judge already receives the session's cited sources (`.claude/hooks/stop/wl_judge.py:316-324`), so a **non-model** pre-check can assert that a session claiming a gate passed cited a gate id that exists in `GATES`. That is cheap, mechanical, and catches the `npm run <missing>`
 family a second time at a different layer. It is a backstop, not the mechanism.
 - *Moment-of-risk injection* is the recommendation, because it is the only option that
 puts the fact in front of the decision instead of before it, and because it reaches subagents for free (§1).
@@ -278,7 +278,7 @@ Run `PLAN-unify-trap-corpus.md` §4 through §7 as written, with the §9 amendme
 ### W1: registry trailers, the coverage gate, and the prompt filter
 
 1. Add `Trap-Id` / `Enforced-By` / `Residue` trailers to all 23 entries. Populating
-them **is** the reclassification. Do not port the "roughly 14 mechanizable" estimate from the earlier investigation: that investigation asserted three claims as verified and two were false (it claimed the hook test suites are in no workflow and no `package.json`, which is refuted by `manifest.ts:388` plus `.ci/scripts/test/gates/test-claude-hooks.sh:24` and
+them **is** the reclassification. Do not port the "roughly 14 mechanizable" estimate from the earlier investigation: that investigation asserted three claims as verified and two were false (it claimed the hook test suites are in no workflow and no `package.json`, which is refuted by `scripts/ci-runner/manifest.ts:388` plus `.ci/scripts/test/gates/test-claude-hooks.sh:24` and
 `.github/workflows/ci-quality.yml:1089`; and it claimed `check-autopilot-no-bypass.sh` is wired nowhere, also false). Every disposition gets written by resolving a pointer, not by recalling a classification.
 2. Land `.ci/scripts/quality/check-trap-registry.sh` with F1 to F4 and F6. **F5 is
 deferred to W2**, honestly and in a comment, because there are no `hook:` pointers to prove live yet.
@@ -292,11 +292,11 @@ and both `post-bash/` hooks have no behavioral cases, so any trap pointing at th
 **Candidate A: `npm-script-exists`** (Tier 2, block).
 
 - *Correction to the brief, verified this session.* The 0807 report describes missing
-npm scripts as exiting "non-zero-or-silent". Measured: `npm run check:ci-docs-links` exits **1** and writes `npm error Missing script: "check:ci-docs-links"` plus did-you-mean suggestions to **stderr**, with **stdout completely empty**. npm is not silent. The trap is a session reading stdout only, which is the same root cause as `.agent/TRAPS.md:101` ("Read stdout and stderr
+npm scripts as exiting "non-zero-or-silent". Measured: `npm run check:ci-docs-links` exits **1** and writes `npm error Missing script: "check:ci-docs-links"` plus did-you-mean suggestions to **stderr**, with **stdout completely empty**. npm is not silent. The trap is a session reading stdout only, which is the same root cause as `docs/agent-reference/TRAPS.md:101` ("Read stdout and stderr
 SEPARATELY"). That changes the instrument for the better: the referent is resolvable *before* the call, so this becomes a deterministic Tier 2 block instead of a response heuristic.
 - *Surface:* PreToolUse, `trapguard` rule id `npm-script-exists`.
 - *Detection rule:* for each `npm run <name>` / `npm run-script <name>` anchored at a
-command position (reuse the anchoring idiom of `command-scan.sh:120` `hook_gh_pr_at_command_pos`), resolve the governing `package.json`: `--prefix <dir>` or `-w <workspace>` in the same segment, else a `cd <dir>` earlier in the same segment, else the repo root. Block when `<name>` is absent from that file's `.scripts`. **Fail open** on: a name containing `$`, backtick or `{`
+command position (reuse the anchoring idiom of `.claude/oracles/pre-bash/lib/command-scan.sh:120` `hook_gh_pr_at_command_pos`), resolve the governing `package.json`: `--prefix <dir>` or `-w <workspace>` in the same segment, else a `cd <dir>` earlier in the same segment, else the repo root. Block when `<name>` is absent from that file's `.scripts`. **Fail open** on: a name containing `$`, backtick or `{`
 (dynamic); an unresolvable directory; an unparseable `package.json`.
 - *Why blocking is safe:* `certain_failure = True`. The command exits 1 regardless, so
 a false block costs nothing a true block does not already cost.
@@ -308,7 +308,7 @@ names, so the fix is one edit away.
 **Candidate B: `blanket-git-add`** (Tier 1, block).
 
 - *Verified gap:* grep across `.claude/hooks/pre-bash/` for `git add`, `add -A`,
-`add --all`, `add .` returns exactly one hit, and it is a fixture inside the orphan `test-block-git-amend.py:25`. There is no guard. Trap `.agent/TRAPS.md:146` documents the incident (sweep `cefa43ca7` imported another session's `check-solution-video-engine.ts`, which failed `273 of 273` on branch 0730-2, run 30554973713, job 90913300683).
+`add --all`, `add .` returns exactly one hit, and it is a fixture inside the orphan `test-block-git-amend.py:25`. There is no guard. Trap `docs/agent-reference/TRAPS.md:146` documents the incident (sweep `cefa43ca7` imported another session's `check-solution-video-engine.ts`, which failed `273 of 273` on branch 0730-2, run 30554973713, job 90913300683).
 - *Surface:* PreToolUse, rule id `blanket-git-add`.
 - *Detection rule:* at a command position, `git [-flags] add` whose pathspec set is
 blanket: `-A`/`--all` with **no** `--` pathspec following, or a lone `.`, or `:/`. `git add -A -- packages/cli/src` is explicitly allowed, and that is the escape the message names.
@@ -333,7 +333,7 @@ entry (read the job's own conclusion, not the run's).
 - *Mutations:* a synthetic payload whose `tool_response` carries a cancelled run must
 produce `additionalContext` naming the trap id; a payload where every job is `success` must produce no output at all; a payload with an empty `tool_response` must produce no output (proving the rule does not fire on absence).
 
-**Candidate E: `phantom-deletion-diff`** (Tier 3, inject). Trap: the one entry present in both corpora, `.agent/TRAPS.md:192` and `docs/agent-reference/TRAPS.md:184`. Observed 2026-08-09 on branch 0809-2: an intact 462-line `wl_checklist.py` reported `1 file changed, 462 deletions(-)`, and the entry itself records that "the reflex read is that a sub-agent deleted it". The near-miss
+**Candidate E: `phantom-deletion-diff`** (Tier 3, inject). Trap: the one entry present in both corpora, `docs/agent-reference/TRAPS.md:192` and `docs/agent-reference/TRAPS.md:184`. Observed 2026-08-09 on branch 0809-2: an intact 462-line `wl_checklist.py` reported `1 file changed, 462 deletions(-)`, and the entry itself records that "the reflex read is that a sub-agent deleted it". The near-miss
 is a destructive repair of a file that was never damaged, which is why it earns an instrument despite one observed instance.
 - *Surface:* PostToolUse, rule id `phantom-deletion-diff`.
 - *Detection rule:* `applies` when the command is `git diff` with a ref argument and
@@ -356,7 +356,7 @@ House style throughout: plant the defect, assert the FIRE, re-run clean, assert 
 
 ### 7.1 The first `tool_response` reader's control (blocking prerequisite for Tier 3)
 
-No hook in this repo has ever read `tool_response`. The only evidence it arrives is a docstring (`wl_wait.py:139-143`) recording a payload someone captured. That is a ruling from an artifact, which is itself a trap in the corpus, so it gets probed before anything depends on it.
+No hook in this repo has ever read `tool_response`. The only evidence it arrives is a docstring (`.claude/hooks/stop/wl_wait.py:139-143`) recording a payload someone captured. That is a ruling from an artifact, which is itself a trap in the corpus, so it gets probed before anything depends on it.
 
 **The probe.** `trapguard/dispatch.py --probe-payload`, registered for one wave as a matcher-less PostToolUse entry. Per invocation it appends one line to `~/.claude/trapguard/probe.jsonl`:
 
@@ -420,7 +420,7 @@ npm run check:ci-gate-reachability-coverage
 bash .ci/scripts/test/gates/test-ci-parity.sh
 ```
 
-Read stdout and stderr separately on every one of these. `test-worklist-v5.sh` has shipped `253 passed, 0 failed` while three assertions wrote `pass: command not found` to stderr (`.agent/TRAPS.md:111-117`), and this plan's own W2 correction exists because a command's stderr was not read.
+Read stdout and stderr separately on every one of these. `test-worklist-v5.sh` has shipped `253 passed, 0 failed` while three assertions wrote `pass: command not found` to stderr (`docs/agent-reference/TRAPS.md:111-117`), and this plan's own W2 correction exists because a command's stderr was not read.
 
 ---
 
@@ -460,7 +460,7 @@ than assumed away.
 - `trap_headings` returns a two-tuple `(headings, problem)` so a caller cannot obtain
 headings without also receiving the problem (its §3.2). Loud-by-shape, not by care.
 - One renderer, `traps_block(root)`, collapsing the duplicate fallbacks at
-`wl_checks.py:1481` and `wl_judge.py:323` (its §3.3).
+`.claude/hooks/stop/wl_checks.py:1481` and `.claude/hooks/stop/wl_judge.py:323` (its §3.3).
 - A missing corpus blocks the stop at `always=True`, with the repair command in the
 message (its §3.4).
 - The anti-resplit gate `check:ci-trap-corpus`, assertions A to E and its self-control
@@ -484,21 +484,21 @@ is the ledger, and the protection lives in the tiers of §4. The charter rewrite
 - Its §4.12 `CLAUDE.md` edit must also say that appending a trap now requires a
 `Trap-Id` and a disposition, and that `check:ci-trap-registry` reds without them. A contributor who learns the trailer format from a gate failure has already had the bad experience the format exists to prevent.
 
-**Its adjacent finding stands and is inherited:** `V_AGENT_BOOTSTRAP` (`worklist_messages.py:271-279`) points at `.agent/README.md`, which is gitignored, so on a fresh clone the whole `.agent/` convention bootstraps from a file that does not exist. Same class (durable instructions in a volatile tree), separate worklist item.
+**Its adjacent finding stands and is inherited:** `V_AGENT_BOOTSTRAP` (`.claude/hooks/stop/worklist_messages.py:271-279`) points at `.agent/README.md`, which is gitignored, so on a fresh clone the whole `.agent/` convention bootstraps from a file that does not exist. Same class (durable instructions in a volatile tree), separate worklist item.
 
 ---
 
 ## 10. Corrections to the brief, verified this session
 
-1. **`wl_store.py:231` is not the reader.** `:231` is `agent_traps_path`; the corpus
-reader is `trap_headings` at `wl_store.py:265-284`. Everything the brief says about the 40-cap and file-order truncation is correct, at those lines.
+1. **`.claude/hooks/stop/wl_store.py:231` is not the reader.** `:231` is `agent_traps_path`; the corpus
+reader is `trap_headings` at `.claude/hooks/stop/wl_store.py:265-284`. Everything the brief says about the 40-cap and file-order truncation is correct, at those lines.
 2. **`npm run <missing>` is not silent.** Measured: exit code 1, empty stdout, and
 `npm error Missing script: "<name>"` with did-you-mean suggestions on stderr. The 0807 report's "non-zero-or-silent" framing is imprecise, and the imprecision mattered: the real root cause is stdout-only reading, and the correct instrument is a deterministic pre-call block (§6, candidate A) rather than a response heuristic.
 3. **`git add -A` is genuinely unguarded, confirmed.** The only hit anywhere under
 `.claude/hooks/pre-bash/` is a fixture line inside `test-block-git-amend.py:25`, a file referenced by nothing in the repo.
 4. **`tool_response` is genuinely unread, confirmed.** One repo-wide occurrence, a
-docstring at `wl_wait.py:141`. `duration_ms` and `effort` are documented in the same line and are also used by nothing.
-5. **New: the corpus parser has no fenced-code-block handling** (`wl_store.py:278-283`).
+docstring at `.claude/hooks/stop/wl_wait.py:141`. `duration_ms` and `effort` are documented in the same line and are also used by nothing.
+5. **New: the corpus parser has no fenced-code-block handling** (`.claude/hooks/stop/wl_store.py:278-283`).
 Latent today (verified: zero fenced `## ` lines in either corpus), activated by the registry. Covered in §3.1. Found by grepping `^## ` over this plan file and getting a hit from inside its own example block.
 6. **New, and relevant to the plan's premise:** three registered hooks
 (`pre-edit/block-inline-python.sh`, `post-bash/cancel-old-ci.sh`, `post-bash/refresh-pr-body.sh`) have **zero behavioral test cases**; they are wiring-checked only. The repo's existing instruments are already in the state this plan is trying to prevent, which is why F5 demands liveness rather than presence and why W1 writes those cases before F5 lands.

@@ -797,6 +797,50 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       live production writes with real blast radius (a GitHub release, a Docker/R2 promotion to stable, an
       overwrite of a live Worker's secrets, a submodule tag push) rather than a credential gap, and that is an
       authorization question, asked separately below.
+      AUDIT: DONE 2026-09-23 (audit): this box re-measured against the tree rather than against its
+      own prose, and three of its standing numbers have moved. **The corpus is 41 files / 4,931
+      lines, not 48 / 5,440**: `.ci/scripts/deploy/` holds 26 `.sh` and `.ci/scripts/release/` 15,
+      because seven of the 48 twins are already DELETED (commits `0bb1a4c15`, `2e50af60a`) --
+      `release/decide-release-mode.sh`, `deploy/resolve-www-deploy-target.sh`,
+      `release/backfill-write-sentinel.sh`, `release/check-soak-period.sh`,
+      `release/deployment-summary.sh`, `release/resolve-backfill-commit.sh` and
+      `release/validate-stage-artifacts.sh`, which are seven of the nine real-run-confirmed rows.
+      `.ci/shadow/w7p5a-status.json` still carries all 48 rows, correctly, as the box's subject
+      register rather than as a file listing.
+      **Every one of the 48 rows checked against its artifact, not against its note.** The 16
+      `status: "ledger"` rows each hold 5 ledger lines over 5 distinct tree ids, every verdict
+      `EQUIVALENT`. The 32 `blocked` rows each hold a port under `.ci/rediacc_ci/deploy/` or
+      `.ci/rediacc_ci/release/`, a `w7p6-<slug>` K=5 `EQUIVALENT` ledger (`deploy-proxy` at 6 rows)
+      and a pytest differential. Nothing in the 48 is unstarted, and
+      `npm run check:ci-w7p5a-real-run-blockers` is rc=0 on the current tree.
+      **THE FULL-BAR COUNT IS 9 OF 48, and the box names neither of the two mechanisms that say
+      so.** `.ci/policy/.w7p5a-real-run-leg-blocklist` is a SECOND BLOCKER register, 7 entries, for
+      the real-run leg of a path whose dry-run parity is already ledgered under this box's own
+      name; and 13 of the 32 `blocked` rows now carry a `dry_run_pair`/`dry_run_ledger` re-driven
+      under the `w7p5a-` namespace, enforced by
+      `.ci/rediacc_ci/tests/test_w7p5a_dry_run_ledgers.py`. The gate prints the split this prose
+      does not: 32 blocked, 16 ledgered, of which "9 have their real-run leg confirmed and 7 are
+      leg-blocked".
+      **SIX REAL RUNS DRIVEN 2026-09-23, both sides, streams compared by hand, nothing recorded
+      into the ledgers (that is a driver action, not an audit's).**
+      `.ci/scripts/release/check-edge-manifest.sh`, `.ci/scripts/release/check-stable-manifest.sh`
+      (EDGE_VERSION=1.3.12), `.ci/scripts/release/resolve-ci-run.sh`,
+      `.ci/scripts/release/verify-release-assets.sh` (VERSION=v1.3.12),
+      `.ci/scripts/deploy/verify-stable-endpoints.sh` and
+      `.ci/scripts/deploy/verify-edge-endpoints.sh` (VERSION=1.3.12) each ran rc=0 against real
+      production and the real GitHub API, and each agreed with its Python port on stdout, stderr
+      and `GITHUB_OUTPUT` byte-for-byte. Four of the six are leg-blocklisted and two are on the 32;
+      what blocks all six is authorization, not capability.
+      **AND THE SEVENTH REAL RUN FOUND A DIVERGENCE THE STUBBED LEDGER CANNOT SEE.**
+      `.ci/scripts/release/check-existing-release.sh` and
+      `.ci/rediacc_ci/release/check_existing_release.py` both exit 1 when `git fetch --tags
+      --quiet` fails, but the twin writes nothing on either stream while the port emits a ten-line
+      `subprocess.CalledProcessError` traceback: `.ci/rediacc_ci/release/check_existing_release.py:33`
+      passes `check=True` with no handler.
+      `.ci/rediacc_ci/tests/test_release_check_existing_release.py` carries four cases and every
+      one of them points `origin` at a working local bare repo, so the failing-fetch arm is never
+      driven. That is the `bws-env.sh` traceback class again in the opposite direction, and it is
+      precisely what the "one real run each" clause exists to catch.
       **REAL-RUN RUNBOOK 2026-09-20 (credential claim above superseded).** The 32 blocklisted scripts each need
       one real run before their bash twin may be deleted. The table lists, per script, the external tools its
       code calls, the credential that implies, and the workflow step to copy the command from (the workflow step
@@ -807,36 +851,36 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       |---|---|---|---|
       | `deploy/cf-purge-urls.sh` | curl | none unless the URL is private | no workflow site |
       | `deploy/clone-d1.sh` | wrangler | CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID | no workflow site |
-      | `deploy/delete-r2-channel.sh` | aws | R2 key pair (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY) + R2 endpoint | cleanup-r2-staging.yml:52 |
-      | `deploy/deploy-account.sh` | wrangler | CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID | cd-deploy-account.yml:273 |
+      | `deploy/delete-r2-channel.sh` | aws | R2 key pair (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY) + R2 endpoint | .github/workflows/cleanup-r2-staging.yml:52 |
+      | `deploy/deploy-account.sh` | wrangler | CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID | .github/workflows/cd-deploy-account.yml:273 |
       | `deploy/deploy-edge.sh` | wrangler | CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID | no workflow site |
       | `deploy/deploy-proxy.sh` | wrangler | CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID | no workflow site |
-      | `deploy/deploy-www.sh` | wrangler | CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID | ci.yml:1407 |
-      | `deploy/promote-docker-to-stable-hotfix.sh` | docker buildx | registry login (GHCR/Docker Hub) | cd-v2.yml:388 |
-      | `deploy/promote-r2-to-stable-hotfix.sh` | aws | R2 key pair (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY) + R2 endpoint | cd-v2.yml:384 |
-      | `deploy/promote-r2-to-stable.sh` | aws | R2 key pair (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY) + R2 endpoint | promote-stable.yml:120 |
+      | `deploy/deploy-www.sh` | wrangler | CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID | .github/workflows/ci.yml:1407 |
+      | `deploy/promote-docker-to-stable-hotfix.sh` | docker buildx | registry login (GHCR/Docker Hub) | .github/workflows/cd-v2.yml:388 |
+      | `deploy/promote-r2-to-stable-hotfix.sh` | aws | R2 key pair (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY) + R2 endpoint | .github/workflows/cd-v2.yml:384 |
+      | `deploy/promote-r2-to-stable.sh` | aws | R2 key pair (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY) + R2 endpoint | .github/workflows/promote-stable.yml:120 |
       | `deploy/purge-media-cache.sh` | curl | none unless the URL is private | no workflow site |
-      | `deploy/set-account-worker-secrets.sh` | wrangler | CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID | cd-deploy-account.yml:335 |
-      | `deploy/set-preview-worker-secrets.sh` | wrangler | CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID | ci.yml:1436 |
-      | `deploy/set-www-worker-secrets.sh` | wrangler | CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID | cd-deploy-worker.yml:210 |
-      | `deploy/simulate-promotion.sh` | aws | R2 key pair (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY) + R2 endpoint | ci.yml:1670 |
-      | `deploy/sync-media-from-r2.sh` | aws | R2 key pair (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY) + R2 endpoint | ci-quality.yml:1825 |
+      | `deploy/set-account-worker-secrets.sh` | wrangler | CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID | .github/workflows/cd-deploy-account.yml:335 |
+      | `deploy/set-preview-worker-secrets.sh` | wrangler | CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID | .github/workflows/ci.yml:1436 |
+      | `deploy/set-www-worker-secrets.sh` | wrangler | CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID | .github/workflows/cd-deploy-worker.yml:210 |
+      | `deploy/simulate-promotion.sh` | aws | R2 key pair (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY) + R2 endpoint | .github/workflows/ci.yml:1670 |
+      | `deploy/sync-media-from-r2.sh` | aws | R2 key pair (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY) + R2 endpoint | .github/workflows/ci-quality.yml:1825 |
       | `deploy/sync-media-to-r2.sh` | aws, curl | R2 key pair (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY) + R2 endpoint; none unless the URL is private | no workflow site |
-      | `deploy/test-d1-migrations.sh` | wrangler | CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID | ct-tests.yml:187 |
-      | `deploy/upload-repos-to-r2.sh` | aws | R2 key pair (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY) + R2 endpoint | cd-stage.yml:342 |
-      | `deploy/upload-to-r2.sh` | aws | R2 key pair (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY) + R2 endpoint | cd-stage.yml:323 |
-      | `deploy/verify-edge-endpoints.sh` | curl | none unless the URL is private | cd-v2.yml:553 |
-      | `deploy/verify-stable-endpoints.sh` | curl | none unless the URL is private | promote-stable.yml:220 |
-      | `deploy/write-release-sentinel.sh` | aws | R2 key pair (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY) + R2 endpoint | ci.yml:1892 |
-      | `release/advance-contract-floor.sh` | git push | push credential for the target repo | cd-v2.yml:702 |
-      | `release/assert-artifact-version.sh` | gh | GH_TOKEN (scope as the calling job grants) | cd-v2.yml:216 |
-      | `release/assert-edge-tag-exists.sh` | aws, gh | R2 key pair (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY) + R2 endpoint; GH_TOKEN (scope as the calling job grants) | promote-stable.yml:73 |
-      | `release/cleanup-channel-docker-tags.sh` | none found | none | cd-v2.yml:395 |
-      | `release/create-github-release.sh` | gh | GH_TOKEN (scope as the calling job grants) | cd-v2.yml:712 |
-      | `release/mark-production.sh` | gh | GH_TOKEN (scope as the calling job grants) | promote-stable.yml:228 |
-      | `release/reprobe-r2-sentinel.sh` | none found | none | backfill-release-sentinel.yml:182 |
-      | `release/tag-submodules.sh` | git push | push credential for the target repo | cd-v2.yml:673 |
-      | `release/update-homebrew-tap.sh` | curl, git push | none unless the URL is private; push credential for the target repo | cd-v2.yml:680 |
+      | `deploy/test-d1-migrations.sh` | wrangler | CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID | .github/workflows/ct-tests.yml:187 |
+      | `deploy/upload-repos-to-r2.sh` | aws | R2 key pair (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY) + R2 endpoint | .github/workflows/cd-stage.yml:342 |
+      | `deploy/upload-to-r2.sh` | aws | R2 key pair (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY) + R2 endpoint | .github/workflows/cd-stage.yml:323 |
+      | `deploy/verify-edge-endpoints.sh` | curl | none unless the URL is private | .github/workflows/cd-v2.yml:553 |
+      | `deploy/verify-stable-endpoints.sh` | curl | none unless the URL is private | .github/workflows/promote-stable.yml:220 |
+      | `deploy/write-release-sentinel.sh` | aws | R2 key pair (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY) + R2 endpoint | .github/workflows/ci.yml:1892 |
+      | `release/advance-contract-floor.sh` | git push | push credential for the target repo | .github/workflows/cd-v2.yml:702 |
+      | `release/assert-artifact-version.sh` | gh | GH_TOKEN (scope as the calling job grants) | .github/workflows/cd-v2.yml:216 |
+      | `release/assert-edge-tag-exists.sh` | aws, gh | R2 key pair (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY) + R2 endpoint; GH_TOKEN (scope as the calling job grants) | .github/workflows/promote-stable.yml:73 |
+      | `release/cleanup-channel-docker-tags.sh` | none found | none | .github/workflows/cd-v2.yml:395 |
+      | `release/create-github-release.sh` | gh | GH_TOKEN (scope as the calling job grants) | .github/workflows/cd-v2.yml:712 |
+      | `release/mark-production.sh` | gh | GH_TOKEN (scope as the calling job grants) | .github/workflows/promote-stable.yml:228 |
+      | `release/reprobe-r2-sentinel.sh` | none found | none | .github/workflows/backfill-release-sentinel.yml:182 |
+      | `release/tag-submodules.sh` | git push | push credential for the target repo | .github/workflows/cd-v2.yml:673 |
+      | `release/update-homebrew-tap.sh` | curl, git push | none unless the URL is private; push credential for the target repo | .github/workflows/cd-v2.yml:680 |
 - [ ] **W7P5-b S, the true long pole** The 13 real bash libs, **6,840 lines**. `common.sh` has
       **251 sourcers** -- the highest fan-in file in the programme. Order by fan-in ascending:
       `gate-controls` (41), `bws-env` (111), `emit-advisory` (218), `service` (225),
@@ -1199,6 +1243,140 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       `.ci/scripts/lib/age-check.sh` follows for free. `local-common.sh` and `devbox.sh`
       cannot move until `.ci/rediacc_ci/setup/phases.py`'s six bridged phases are ported
       for real.
+      AUDIT: DONE 2026-09-23 (audit): re-measured the "13 real bash libs" count and the
+      9-ported claim against the tree rather than the box's own prose, which predates
+      several deletions other sessions have since landed without updating this box.
+      **Four of the 13 libs this box counted are simply gone now.**
+      `.ci/scripts/lib/age-check.sh`, `.ci/scripts/lib/bws-env.sh`,
+      `.ci/scripts/lib/gate-controls.sh` and `.ci/scripts/lib/release-age.sh` do not exist
+      anywhere in the tree (`find . -name <name>` returns nothing for all four).
+      `git log --all --diff-filter=D` finds each retired at commits `430b54ede`
+      ("check-go-deps.sh, release-age.sh and age-check.sh retire", 2026-09-22),
+      `0bb1a4c15` (bws-env + gate-controls, "9 more bash twins", 2026-09-22) and
+      `7a9bda6d7` (2026-09-21) -- all three ancestors of current HEAD `2ed7d6726`
+      (`git merge-base --is-ancestor` confirmed for each). `age-check.sh` went exactly as
+      this box's own fifth-wave note predicted: delete `audit.sh`/`check-go-deps.sh` first,
+      then the shim "follows for free" -- `430b54ede`'s own message confirms `check-go-deps.sh`
+      was the caller that made it free. So the box's true remaining count is not "4 beyond
+      the 9 ported" (account, devbox, local-common, age-check) but **3**:
+      `account.sh`, `devbox.sh`, `local-common.sh`. `find-port.sh` was already correctly
+      counted as deleted by the box's own fifth wave.
+      **Current on-disk line counts** (`wc -l` against the live tree):
+      `.ci/lib/account.sh` **1143**, `.ci/lib/devbox.sh` **1112**,
+      `.ci/lib/local-common.sh` **1008**. **No shadow ledger exists for any of the three.**
+      `ls .ci/shadow/ | grep -iE 'account|devbox|local.common'` returns only unrelated
+      pairs whose names happen to contain "account" or "devbox" -- `w7p2-account-portal`,
+      `w7p2-account-probes`, `w7p2-devbox-exec`, `w7p4b-ci-start-account`,
+      `w7p4b-run-account`, `w7p5a-resolve-account-deploy-config`,
+      `w7p6-ci-start-account`, `w7p6-deploy-account`, `w7p6-run-account`,
+      `w7p6-set-account-worker-secrets` -- each a `.ci/scripts/deploy|release|infra` SCRIPT,
+      never the `.ci/lib/account.sh` LIBRARY itself. No `w7p5b-account`, `w7p5b-devbox` or
+      `w7p5b-local-common` prefix exists among the 277 ledgers on disk today.
+      **The numerically smallest of the three, `local-common.sh` (1008 lines), is NOT the
+      next portable one -- it and `devbox.sh` are both still gated, confirmed live rather
+      than inherited from this box's own prior note.** `.ci/rediacc_ci/setup/bridge.py:3-10`
+      states outright: "`setup()` calls fifteen things. Nine ... are ported in `host.py`.
+      The other six live in `.ci/lib/local-common.sh` and `.ci/lib/devbox.sh`, which this
+      box does not touch and which other verbs (`devbox`, `account`, `service`, `rdc.sh`)
+      still call" -- and `.ci/rediacc_ci/setup/bridge.py:35` literally `source`s `.ci/lib/devbox.sh` at runtime,
+      the "SAME BYTES run" this box's own prose already cited from W8.
+      `.ci/rediacc_ci/setup/machine.py:57,141` and
+      `.ci/rediacc_ci/setup/shadow_driver.py:136-147` bridge the same way for `devbox.sh`'s
+      seven `setup_check()` questions. Porting either file alone, without also cutting over
+      the four other verbs `bridge.py` names as still calling it directly, would create the
+      exact duplicate-instrument risk invariant 5 exists to prevent -- neither is
+      writer-actionable alone today.
+      **`account.sh` (1143 lines) is the smallest lib that is genuinely unblocked, and is
+      the one this brief targets.** Unlike the other two, it is named nowhere in
+      `bridge.py`, `machine.py` or `phases.py` (grep confirmed, zero hits). Its only real
+      sourcers, found the same anchored way this box's fifth wave found `find-port.sh`'s
+      (real `source` sites, not bare string match), are
+      `.ci/legacy/run-legacy.sh:405` and `:443`, both inside the same top-level command
+      dispatcher: the `account` verb (`dev|db|test|stop|reset|seed-demo|totp`) and the
+      `rotation` verb (`.ci/legacy/run-legacy.sh:401-439`). It defines 22 functions
+      (`account_cleanup:41`, `account_allocate_ports:53`, `account_wait_port:114`,
+      `account_rustfs_alive:167`, `account_docker_ghost_clean:178`,
+      `account_generate_crypto_keys:191`, `account_generate_fresh_env:221`,
+      `account_env_add_if_missing:275`, `account_ensure_env_keys:287`,
+      `account_ensure_env:333`, `account_stripe_auto:347`, `account_dev:415` --
+      the largest single function, 415-608 -- `account_dev_credentials:609`,
+      `account_banner_row:722`, `account_totp:729`, `account_stop:763`,
+      `account_test:810`, `account_test_e2e:819`, `account_reset:889`,
+      `account_seed_demo:933`, `account_rotation:1018`, `account_db:1047`).
+      **The scope warning this brief owes the next writer: this is not shaped like the 9
+      already-ported libs.** Those (`gate-controls`, `bws-env`, `emit-advisory`, `service`'s
+      Docker-free half, `blocker-validator`, `release-age`, `toolchain`,
+      `release-state-validator`, `common`) are single-shot CLI tools whose stdout/exit code
+      a shadow-gate differential compares directly. `account_dev`, `account_stop`,
+      `account_test`/`account_test_e2e`, `account_reset` and `account_seed_demo` start and
+      stop long-running dev infrastructure (Docker containers, RustFS, background servers)
+      -- the same class `service.sh`'s own port already explicitly refused to touch
+      (`service_start`/`service_stop` "explicitly NOT ported," this box's first-wave note).
+      A K=5 shadow ledger recording one bash run and one Python run of `account_dev` would
+      need to compare two dev-server-boot transcripts, not two deterministic reports --
+      a different differential technique than the deploy/release ledgers already in
+      `.ci/shadow/w7p6-*`, closer to `service.sh`'s deferred half or an E2E drill. The
+      deterministic half -- `account_allocate_ports`, `account_wait_port`,
+      `account_rustfs_alive`, `account_generate_crypto_keys`, `account_generate_fresh_env`,
+      `account_env_add_if_missing`, `account_ensure_env_keys`, `account_ensure_env`,
+      `account_totp`, `account_banner_row`, `account_db` -- is the part that fits the
+      established shadow-gate pattern and is the recommended first slice; the interactive
+      half needs a driver ruling on technique before a writer starts it, the same way
+      `service.sh`'s split was a driver decision rather than a writer one.
+      NOT ticked, nothing else touched in this box.
+      AUDIT: DONE 2026-09-23 (writer): the DETERMINISTIC half of `.ci/lib/account.sh` is ported, licensed and differentially tested. The long-running half is untouched and stays a separate ruling, exactly as the 2026-09-23 audit above recommended.
+      **PORTED, 11 of the 22 functions, into `.ci/rediacc_ci/core/account.py` (the `core/` home `service.py` established for a `.ci/lib/*.sh` port):** `account_allocate_ports`, `account_wait_port`, `account_rustfs_alive`, `account_generate_crypto_keys`, `account_generate_fresh_env`, `account_env_add_if_missing`, `account_ensure_env_keys`, `account_ensure_env`, `account_banner_row`, `account_totp`, and the decidable half of `account_db` (`db_plan()`: argument parsing, the database path, the devbox-derived preferred port, the free-port search, the two refusals and the `sqlite_web` resolution).
+      **NOT PORTED, the other 11, and no Python function exists for any of them:** `account_cleanup:41` (kills the tracked pid set, calls `exit`), `account_docker_ghost_clean:178` (force-removes containers), `account_stripe_auto:347` (backgrounds `stripe listen`), `account_dev:415` (Docker, RustFS, Astro, Vite, a foreground gateway), `account_dev_credentials:609` (drives the live gateway's provisioning routes), `account_stop:763`, `account_test:810`, `account_test_e2e:819`, `account_reset:889`, `account_seed_demo:933`, `account_rotation:1018` (`cd` plus `npx tsx`). `db_launch()` is written out for completeness and is named in its own docstring as NOT differentially proved, because it execs a server.
+      **SEQUENCING FOLLOWS THE ESTABLISHED PATTERN AND NOTHING IS CUT OVER.** `430b54ede`, `0bb1a4c15` and `7a9bda6d7` each retired a twin that was ALREADY ported and ALREADY held a K=5 ledger, and `.ci/lib/service.sh` is still sourced at `.ci/legacy/run-legacy.sh:48` while `rediacc_ci/core/service.py` has carried its ledger since 2026-09-10. So `.ci/legacy/run-legacy.sh:405` and `:443` are unchanged, and `test_the_twin_is_sourced_by_run_legacy_and_nothing_is_cut_over` asserts both source sites are still there.
+      **THE LICENCE IS REAL AND IT IS ON DISK.** `.ci/shadow/w7p5b-account.observations.jsonl`, 5 rows, `npx tsx scripts/lib/shadow-gate.ts --pair w7p5b-account --assert --k 5` prints "equivalence holds over 5 distinct trees": 5 rows, 5 distinct clean trees, 5 distinct finding sets, every row EQUIVALENT, comment ratio 1.1578 against the 0.90 floor. Recorded against a disposable git repository outside this checkout (this tree is never clean), holding a copy of `.ci/lib`, `.ci/config`, `.ci/scripts/lib`, `.ci/rediacc_ci`, `scripts/lib` and `.devcontainer`, with the ledger written here via `--ledger` and every command relative so `reachesOutside` passes honestly. The fixture's `account.py`, `shadow_driver.py` and `account.sh` are `diff`-verified against the shipped ones BEFORE recording, and the whole ledger was re-recorded from scratch three times, after `ruff format` touched the file and after each of the two defects below, so the rows describe the bytes that ship rather than an earlier draft.
+      **BOTH SIDES REALLY RAN.** `.ci/rediacc_ci/core/shadow_driver.py` drives them: the old side sources `account.sh` through `run-legacy.sh`'s own prelude (`constants.sh`, `toolchain.sh`, `local-common.sh`) and calls the twin's functions; the new side calls the port. Five scenarios, 314 observation lines, byte-identical on every one. `probe` covers the banner over five widths including a multibyte string, `rustfs_alive` and `wait_port` in BOTH directions against a real HTTP server the driver runs, and `allocate_ports` on a free pinned base and on one whose MIDDLE port the driver holds open. `db` reaches the devbox-derived preferred port end to end by occupying all 41 ports of the scan window, so the twin names the port it wanted in its refusal.
+      **EIGHT PLANTED CONTROLS, SEVEN WATCHED GOING RED AND THEN REMOVED**, with the port restored byte-identical by sha256 after each: banner padding 62 instead of 63, the totp silent path explaining itself, `env_add_if_missing` dropping its blank line, the db refusal reworded, a typo in the fresh `.env` template, byte padding changed to character padding driven through pytest rather than through the driver, and the missing-curl guard removed. **THE EIGHTH DID NOT FIRE, AND THAT IS WHERE A REAL PORT DEFECT WAS.** Replacing `code not in {"", "000"}` with `code != "000"` in `rustfs_alive` passed the whole differential, which said the EMPTY-body branch is never reached: every scenario runs with curl installed. Taking curl off PATH showed the twin returning 1 quietly through its `|| true` while the port raised `FileNotFoundError`, a traceback where a verdict belongs. `curl_body()` now catches it at both call sites, and `test_a_missing_curl_degrades_on_both_sides_instead_of_raising` builds a PATH farm of every binary in `/usr/bin` and `/bin` EXCEPT curl and compares the two exit codes, having first asserted the farm is non-empty and that curl really is installed otherwise.
+      **THREE REAL DEFECTS FOUND BY RUNNING IT, all fixed rather than papered over.** (1) The driver's `step` helper originally read `if ( set -e; "$@" ); then`, and a command in an `if` CONDITION runs with errexit SUPPRESSED, a suppression that propagates into a subshell created there. Under it `account_totp` survived the bare assignment that really kills it and printed "Could not read gateway port", a message it never prints in production. That is the `errexit-rearmed-in-a-tested-command` trap, met in the wild; `set +e` around a plain subshell fixed it, and the twin's genuine behaviour on a state file with no `gateway_port=` line is a SILENT exit 1. (2) `ensure_env` reached `generate_fresh_env` with no clock seam, so the bash side used the frozen fake `date` and the port used the wall clock. `ensure_env` now takes `stamp`, and both seams are fed from one constant. (3) The missing-curl crash above, in the port itself.
+      **A FOURTH FINDING CAME FROM A GATE RATHER THAN FROM THE DIFFERENTIAL, and it is fixed the same way.** `test_canonical_sys_path_hop.py` flagged the driver's `sys.path.insert(0, ... parents[2])`, copied from `rediacc_ci/dev/shadow_driver.py` where it is baselined. Rather than add a forty-second baseline entry, the driver is now invoked as `PYTHONPATH=.ci python3 -m rediacc_ci.core.shadow_driver`, which removes the need for a hop at all; the ledger commands carry that form, and `dead_python.py` still admits the port because `--port .ci/rediacc_ci/core/account.py` is in the new-side command.
+      **FOUR TWIN BEHAVIOURS REPRODUCED RATHER THAN FIXED**, each named in the port's docstring and pinned by a case: the silent death above; `printf '%-63s'` padding by BYTES so a multibyte glyph shifts the closing bar; `cut -d= -f2` truncating a state value containing `=`; and `account db --studio --bogus` refusing with exit 2 because the twin's loop keeps parsing after the flag.
+      **THE PERMANENT SURFACE** is `.ci/rediacc_ci/tests/test_core_account.py`, 44 tests, about 15 seconds, all passing. It drives the live twin on every run rather than replaying a recording, asserts the K=5 ledger off disk, asserts the twin still defines all 22 functions, asserts the 11 unported ones still have NO Python counterpart, and declares `XDIST_GROUP = "ports"` so it serialises against `test_core_ports.py` over the host port space the driver pins.
+      **GATES RUN:** `check:ci-dead-python` (1110 files, every one reached, 41 controls, the port admitted through the shadow route), `check:ci-python-gate-deps`, `check:ci-no-inline-python` and `check:ci-python-control-plants` all green; `ruff check` and `ruff format` clean on all three new files after 16 findings in them were fixed. `check:ci-pytest` ran the whole 17,581-test suite: 11 FAILED lines, and the string `core/account.py`, `core/shadow_driver.py` and `test_core_account` appear ZERO times anywhere in its 906 seconds of output. Every one of those failures was reproduced and attributed: three in `test_quality_python_lint.py` are `ruff format` differences in `.ci/rediacc_ci/core/bws_env.py`, `.ci/rediacc_ci/tests/gates/test_gate_bws_rotate.py`, `.ci/rediacc_ci/tests/test_core_bws_env.py` and `.ci/scripts/quality/check_bws_rotation_notice.py`, all a sibling session's uncommitted bws work; the rest sit in `test_gate_worklist_env_registry.py`, `test_wl_poll_and_waiting.py`, `test_quality_editorconfig.py`, `test_quality_control_vacuity.py`, `test_env_create_e2e_env.py`, `test_core_dockerx.py` and `test_canonical_sys_path_hop.py`, whose two remaining hop findings are `test_gate_python_control_plants.py` and `.claude/hooks/context/onboard.py`. `check:ci-python-types` reports 31 new findings and ZERO are in these three files; `check:ci-python-env-registry` reports 3 and none are; `check:ci-prose-style` reports 116 new findings and none are in these three files or in this plan.
+      **NOT TOUCHED, and checked rather than assumed:** `.ci/lib/account.sh` itself (unmodified, still 1143 lines), `.ci/lib/local-common.sh`, `.ci/lib/devbox.sh`, `.ci/legacy/run-legacy.sh`, `scripts/ci-runner/manifest.ts`, `scripts/ci-runner/gates.lock.json`, `.ci/config/language-policy-baseline.json`, `docs/agent-reference/TRAPS.md`, `.ci/rediacc_ci/quality/trap_registry.py`, anything under `deploy/` or `release/`, and every `bws`-named file. `check_node_version` and `devbox_state_get` are RE-IMPLEMENTED in the port because a module cannot borrow a function from its importer, which is the same shape `service.py` records for `check_docker`; neither bash file is edited.
+      NOT ticked. This slice covers half of one of the box's three remaining libs; `devbox.sh` and `local-common.sh` are still blocked on `setup/bridge.py`'s six bridged phases, and `account.sh`'s long-running half still needs a driver ruling on differential technique before a writer starts it.
+      AUDIT: DONE 2026-09-23 (writer): the PURE-COMPUTATION half of `.ci/lib/local-common.sh` is ported, licensed and differentially tested, on the same pattern the `account.sh` slice above established the same day. Nothing is cut over and nothing is deleted.
+      **THE CLASSIFICATION WAS RE-MEASURED, NOT INHERITED.** All 30 functions were read with line numbers and classified; the brief's 9-function list is CORRECT but INCOMPLETE as a statement of what is deterministic. `_sha256sum:37`, `_sed_i:46`, `compute_hash_for_package_dirs:58`, `_git_tree_fingerprint:92`, `compute_tree_hash:137`, `read_stamp_hash:148`, `write_stamp_hash:156`, `_version_gte:545` and `has_npm_script:401` are the nine, and every one of them is genuinely pure. FOUR MORE are equally pure and are deliberately NOT ported, each for a stated reason rather than by oversight: `check_node_version:418` is ALREADY ported at `.ci/rediacc_ci/core/account.py:143` and a second copy here would be two Python implementations of one bash function; `check_go_installed:439` calls `exit 1` rather than returning, so its only real behaviour is killing the sourcing shell; `_renet_source_hash:749` and `_renet_artifact_fp:785` exist solely to serve `ensure_renet_built`, which is not portable, so porting them would add differential surface for a caller that cannot move.
+      **PORTED, 9 of the 30 functions, into `.ci/rediacc_ci/core/local_common.py`** (the `core/` home `service.py` and `account.py` established for a `.ci/lib/*.sh` port, with the hyphen-to-underscore spelling `bws_env.py` and `gate_controls.py` established).
+      **NOT PORTED, the other 21, and no Python function exists for any of them:** the eleven installers and builders (`ensure_cpu_features_gypi:178`, `ensure_deps:203`, `ensure_packages_built:308`, `ensure_cli_built:333`, `run_npm_script:408`, `ensure_go_installed:458`, `ensure_bashcov_sup:566`, `ensure_host_tools:587`, `ensure_docker_installed:669`, `_ensure_docker_group:721`, `ensure_renet_built:789`), the three interactive or session-altering ones (`prompt_continue:371` reads stdin, `open_browser:381`, `reexec_with_docker_group:630` calls `exec sg docker`), `check_node_version:418`, `check_go_installed:439`, `_renet_source_hash:749`, `_renet_artifact_fp:785`, and the three DEVBOX-COUPLED ones (`gate_lane_decide:934`, `gate_lane_should_route:980`, `gate_lane_run:1005`), which source `.ci/lib/devbox.sh` and call `devbox_state_get` / `devbox_container_running` / `devbox_mount_ok` / `devbox_identity_ok` / `devbox_exec`. `.ci/lib/devbox.sh` is not read, not modified and not ported by this slice, and `test_devbox_is_not_touched_by_this_slice` asserts the port and its driver name nothing devbox-shaped, walking the AST rather than the text because both files discuss the coupling at length in prose.
+      **THE LICENCE IS REAL AND IT IS ON DISK.** `.ci/shadow/w7p5b-local-common.observations.jsonl`, 7 rows, `npx tsx scripts/lib/shadow-gate.ts --pair w7p5b-local-common --assert --k 5` prints "equivalence holds over 7 distinct trees": 7 rows, 7 distinct clean trees, 7 distinct finding sets, every row EQUIVALENT, 196 observations, comment ratio 1.0416 against the 0.90 floor. Recorded against a disposable git repository outside this checkout (this tree is never clean), holding a copy of `.ci/lib`, `.ci/config`, `.ci/scripts`, `.ci/policy`, `.ci/rediacc_ci`, `scripts` and `.devcontainer`, with the ledger written here via `--ledger` and every command relative so `reachesOutside` passes honestly. The fixture's `local-common.sh`, `local_common.py` and `local_common_shadow_driver.py` are `diff`-verified against the shipped ones BEFORE recording, and the whole ledger was re-recorded from scratch THREE times, after the 125 defect below and after each prose-style reflow, so the rows describe the bytes that ship rather than an earlier draft.
+      **BOTH SIDES REALLY RAN.** `.ci/rediacc_ci/core/local_common_shadow_driver.py` drives them: the old side sources `local-common.sh` through `run-legacy.sh`'s own prelude (`constants.sh`, `toolchain.sh`) and calls the twin's functions, the new side calls the port. Seven scenarios, 196 observation lines, byte-identical on every one. `hash` covers the six prune rules, a symlink, an empty directory, a name with a SPACE and one with a BACKSLASH (which the tool escapes, changing the bytes the outer hash sees), a missing start point, a trailing-slash start point and two unusable roots. `git-fp` runs against a real git repository the driver builds with a committed history, a modified file, a deleted file, a staged file and an untracked file. `version` drives 72 ordered pairs.
+      **THE FIXTURES ARE BUILT IN PYTHON FOR BOTH SIDES**, which is the one place this driver departs from `core/shadow_driver.py`'s shape: two hand-written builders for a git repository are two things that can drift, and a fingerprint differing because the two repositories differ is a mismatch that says nothing about the port.
+      **TEN PLANTED CONTROLS, ALL TEN WATCHED GOING RED AND THEN REMOVED**, with the port restored byte-identical by sha256 after each (`d0a6baffc9309595...`): the sha256 line printed with one space instead of two, the empty file set hashed as an empty stream, the `.DS_Store` prune rule dropped, the walk following symlinks, the `cd` diagnostic silenced, the errexit reproduction ignored, the stamp's trailing newline dropped, `filevercmp` replaced by a plausible dotted split, `has_npm_script` narrowed to the `scripts` object, and `_sed_i` losing its in-place flag.
+      **THREE REAL DEFECTS FOUND BY RUNNING IT, all fixed rather than papered over.** (1) THE ONE A CONTROL FOUND THAT THE DIFFERENTIAL COULD NOT: with no `sha256sum` and no `shasum` on PATH, `compute_hash_for_package_dirs` exits **125**, not 0. `$_SHA256SUM_CMD` expands to nothing, `xargs -0` with no command defaults to `echo`, the next two pipeline stages are empty commands so nothing reads the pipe, `echo` takes SIGPIPE, GNU xargs reports a signal-killed child as 125, and `pipefail` carries it out. Every ledger scenario runs with the tool installed, so the branch is unreachable from the differential; `test_no_sha256_tool_degrades_the_same_way_on_both_sides` builds a PATH farm of every binary in `/usr/bin` and `/bin` except those two and compares the two sides live rather than against the constant. (2) The port's `sha256sum` RAISED `OSError` on an unreadable input where the tool names the file on stderr, omits its line and carries on; found by the `sha-missing` row and fixed at the call site. (3) The driver's own `while IFS= read -r l` loops DROPPED a final line with no trailing newline, so the BASH side under-reported what the twin really printed for `read_stamp_hash` over a hand-written stamp and for `_sed_i` over a file with no final newline. `|| [[ -n "$l" ]]` fixed it. That third one is a harness defect, and finding it is the reason the fix is recorded here rather than in a commit message.
+      **SIX TWIN BEHAVIOURS REPRODUCED RATHER THAN FIXED**, each named in the port's docstring and pinned by a case. (1) An EMPTY file set is not the hash of nothing: `xargs` still runs the tool once, which hashes its own empty stdin, so an empty directory fingerprints as `abcfa6a9d4df...` and not as `e3b0c442...`. (2) `_git_tree_fingerprint` DIES OR SURVIVES DEPENDING ON WHO CALLED IT: `existing="$(while ...)"` is a bare assignment taking the loop's LAST status, so a `changed` list ending in a DELETED file kills it under armed errexit and does not when `compute_tree_hash` calls it from an `if` condition. Both directions are in the ledger: `fp-src` exits 1 with no output while `th-git-src` over the same repository and the same path prints a fingerprint. (3) `has_npm_script` greps the WHOLE `package.json`, so a dependency called `zod` answers true. (4) A missing `package.json` exits 2, not 1, because that is grep's status. (5) `write_stamp_hash` appends a newline `read_stamp_hash` never removes. (6) A missing sha256 tool has TWO different failure modes, `exit 1` from `_sha256sum` and the silent 125 above.
+      **THE ONE PLACE THE PORT REFUSES WHERE THE TWIN WOULD GUESS:** `has_npm_script` raises on a script name carrying a BRE metacharacter, because the twin's `grep -q "\"$name\":"` makes that name a pattern. All 388 script names in `package.json` are `[a-z0-9:-]+`, where a BRE and a literal agree, so the refusal is free for the whole live corpus. Same shape as `account.py`'s `env_add_if_missing`.
+      **THE TOOL SET THIS LICENCE IS TRUE AGAINST IS NOT GNU.** Measured 2026-09-23: `sha256sum`, `sort`, `tr`, `head`, `cat`, `uname` and `stat` on this machine are **uutils coreutils 0.8.0**, `find` is **bfs 4.1.1** and `grep` is **ugrep 7.8.4**; only `xargs` (GNU findutils 4.10.0), `awk` (GNU awk 5.3.2) and `sed` (GNU sed 4.9) are the GNU originals. That is recorded in the port's docstring rather than left implicit, because `sort -V`'s ordering and `sha256sum`'s backslash escaping are both reproduced from measurement. `version_gte` transcribes gnulib's `filevercmp` and was validated against the live `sort -V` over 2,401 ordered pairs from a 49-string corpus with zero divergences before any of it was written down.
+      **THE PERMANENT SURFACE** is `.ci/rediacc_ci/tests/test_core_local_common.py`, 52 tests, about 5 seconds, all passing. It drives the live twin on every run rather than replaying a recording, asserts the K=5 ledger off disk, asserts the twin still defines all 30 functions AND NOTHING ELSE, asserts the 21 unported ones have no Python counterpart, and asserts all five real `source` sites are still there.
+      **A VACUITY THIS SLICE CAUGHT IN ITS OWN FIRST GREEN.** `check:ci-python-env-registry` scans TRACKED files, so while the three new files were untracked it reported zero findings about them, which read as a pass. Staging them turned that into 8 real findings. They are registered by a hand edit adding exactly three keys to `.ci/config/python-env-registry.json`, verified by diffing the OLD and NEW module maps and asserting the removed side is empty and every other module is byte-identical, rather than by `--write-baseline`, which would have reseeded the whole file and silently absorbed a peer's 22 open findings.
+      **GATES RUN:** `check:ci-dead-python` green (1114 files, every one reached, 41 controls, the port admitted through the shadow route, and PROVED non-vacuous by planting an unreferenced `.ci/rediacc_ci/core/zz_deadprobe.py`, watching it go DEAD, and removing it); `check:ci-python-gate-deps`, `check:ci-no-inline-python` and `check:ci-python-control-plants` all green; `ruff check` and `ruff format` clean on all three new files. `check:ci-python-lint` reports 3 unformatted files and all three are a sibling session's uncommitted `bws` work. `check:ci-python-types` reports 31 new findings and ZERO name these three files. `check:ci-python-env-registry` reports 22 and none are mine: 11 belong to the `account.sh` slice above (`core/account.py` 8, `core/shadow_driver.py` 2, `tests/test_core_account.py` 1) and were already red before this slice started, the rest are peers' `bws` and hook work. `check:ci-prose-style` reports 110 new findings and none are in these three files or in this plan. `test_canonical_sys_path_hop.py` fails on the same two pre-existing hops the audit above named, `test_gate_python_control_plants.py` and `.claude/hooks/context/onboard.py`; the driver needs no hop because it runs as `PYTHONPATH=.ci python3 -m`.
+      **A GUARD DEFECT FOUND ON THE WAY, reported rather than routed around.** `.claude/rediacc_hooks/guards/block_untagged_commit.py` judges a commit in a DISPOSABLE repository outside the checkout against CONSOLE's own state, so `git -C <scratchpad fixture> commit` is refused for want of a `PR-TASK` trailer that belongs to a different repository. Its sibling `.claude/rediacc_hooks/guards/block_unproven_bulk_transform.py:151` documents exactly this class, names `block_untagged_commit` among the still-affected guards, and has itself been fixed via `shellscan.target_root`; the untagged guard has not. Two further notes for whoever fixes it: `target_root` only resolves a LITERAL `-C` path, so `git -C "$F" commit` with a shell variable falls through and judges CONSOLE; and it resolves through `git rev-parse --show-toplevel` in the target, so a `git init` that has not run yet (because an earlier guard blocked the same compound command) also makes it fall through.
+      **NOT TOUCHED, and checked rather than assumed:** `.ci/lib/` is byte-identical to HEAD (`git diff HEAD -- .ci/lib/` is empty), which covers `local-common.sh`, `devbox.sh` and `account.sh`; `rdc.sh`, `.ci/legacy/run-legacy.sh`, `.ci/media/`, `scripts/ci-runner/manifest.ts` and `gates.lock.json` (both carry a peer's staged change that names nothing of this slice), `.ci/config/language-policy-baseline.json`, `.ci/config/prose-style-baseline.json`, `docs/agent-reference/TRAPS.md`, `.ci/rediacc_ci/quality/trap_registry.py`, anything under `deploy/` or `release/`, every `bws`-named file, and every W7P5-a and W7P5-c artifact. No call site is cut over: all five sourcers still source the bash.
+      NOT ticked. This slice covers 9 of the 30 functions in 1 of the box's 2 remaining libs. `local-common.sh` itself still cannot be retired, because its three `gate_lane_*` functions reach into `.ci/lib/devbox.sh` and `setup/bridge.py`'s six bridged phases still call it; `devbox.sh` is untouched and still needs its own ruling.
+      AUDIT: DONE 2026-09-23 (writer): the three PURE functions of `.ci/lib/devbox.sh` are ported, licensed and differentially tested, on the pattern the `account.sh` and `local-common.sh` slices above established the same day. Nothing is cut over, nothing is deleted, and `.ci/lib/devbox.sh` is byte-identical to HEAD (`git diff HEAD -- .ci/lib/devbox.sh` is empty).
+      **THE SCOPE WAS RE-MEASURED, NOT INHERITED.** All 39 functions were read with line numbers and classified, and the brief's three-function list is CORRECT and also COMPLETE: `devbox_slugify:186`, `devbox_slug_drift:242` and `devbox_route_label:830` are the only ones whose whole answer is computation over their own arguments. Every other function reaches git, docker, the filesystem, the port allocator or the network. `devbox_url:283` is the NEAR MISS and is named rather than left as an absence: its body is pure string formatting, and its DEFAULT for the slug argument is `devbox_slug_active`, which inspects a running container, so it is pure only for callers that pass both arguments.
+      **THE PURITY CLAIM WAS DRIVEN BEFORE ANY OF IT WAS WRITTEN.** The three were run against the live twin under `LC_ALL=C` and again under `LC_ALL=C.utf8` with the same corpus and the same answers both times, which is what the `slug-utf8` scenario now pins permanently. The whole environment dependency of the three is `tr` and `sed` on PATH and the sourcing shell's `set -u`, and that last one is not cosmetic: `devbox_slug_drift` and `devbox_route_label` open with `local x="$1"`, so a call with no arguments prints `$1: unbound variable` and KILLS the shell with status 1, while `devbox_slugify` is written `"${1:-}"` and answers the empty string. The port reproduces all three behaviours, and the `arity` scenario compares them.
+      **PORTED, 3 of the 39 functions, into `.ci/rediacc_ci/core/devbox.py`** (the `core/` home `service.py`, `account.py` and `local_common.py` established for a `.ci/lib/*.sh` port). `tr` and `sed` are REIMPLEMENTED rather than shelled out, which is the opposite of the choice `local_common.py` made for `git` and `sed`, and the same rule read the other way: the pipeline is four byte-level rewrites, so piping the twin's own pipeline would be the same program and its differential would prove nothing.
+      **NOT PORTED, the other 36, and no Python function exists for any of them:** the four git-coupled (`devbox_worktree:55`, `devbox_branch:176`, `devbox_slug_basename:199`, `devbox_slug:204`), the twenty-five docker-coupled (`devbox_docker:93` through `devbox_doctor:1105`), the five filesystem-coupled or port-allocating (`devbox_mount_root:70`, `devbox_state_write:107`, `devbox_state_get:124`, `devbox_base_port:136`, `_devbox_bind_if_present:452`) and the two network-probing (`devbox_status:846`, `devbox_url:283`). `test_the_unported_thirty_six_have_no_python_counterpart` asserts the absence rather than leaving it to a reader, and `test_the_twin_still_defines_every_function_this_slice_names` asserts the twin defines those 39 AND NOTHING ELSE.
+      **THE LICENCE IS REAL AND IT IS ON DISK.** `.ci/shadow/w7p5b-devbox.observations.jsonl`, 7 rows, `npx tsx scripts/lib/shadow-gate.ts --pair w7p5b-devbox --assert --k 5` prints "equivalence holds over 7 distinct trees": 7 rows, 7 distinct clean trees, 6 distinct finding fingerprints, every row EQUIVALENT, 686 observations. Recorded against a disposable git repository outside this checkout (this tree is never clean), holding a copy of `.ci/lib`, `.ci/config`, `.ci/scripts`, `.ci/policy`, `.ci/legacy`, `.ci/rediacc_ci`, `scripts` and `.devcontainer`, with the ledger written here via `--ledger` and every command relative so `reachesOutside` passes honestly. The three files are `diff`-verified against the shipped ones BEFORE each recording, and the whole ledger was re-recorded from scratch after the last prose reflow, so the rows describe the bytes that ship rather than an earlier draft.
+      **THE LEDGER WAS RE-RECORDED TWICE FROM SCRATCH**, once after the last prose reflow and again after `check:ci-python-lint` found the driver git mode disagreeing with its shebang.
+      A tree id covers file MODES as well as bytes, so a row recorded at 100644 would not describe a driver that ships at 100755, and that gate finding is a real one this slice fixed with `git update-index --chmod=+x`.
+      **THE TWO SCENARIOS THAT SHARE A FINGERPRINT ARE THE POINT, NOT A GAP.** `slug-basic` and `slug-utf8` drive one corpus under two locales and MUST agree; six distinct fingerprints across seven rows is what that claim looks like in the ledger, and `--assert` needs two.
+      **BOTH SIDES REALLY RAN.** `.ci/rediacc_ci/core/devbox_shadow_driver.py` drives them: the old side sources `devbox.sh` through `setup/bridge.py`'s own prelude (`run-legacy.sh`, then `devbox.sh` on top) and calls the twin's functions, the new side calls the port. Seven scenarios, 686 observation lines, byte-identical on every one. EVERY ANSWER IS COMPARED AS HEX, through `od -An -v -tx1` over a capture file, because `devbox_slugify` prints a BARE NEWLINE for an empty answer and a text observation would make that identical to no answer at all.
+      **THERE IS NO SANDBOX, and that is a statement about the subject.** The `local-common.sh` driver symlinks a whole `CONSOLE_ROOT_DIR` because its functions read and write real paths; these three take strings and return strings, so the old side sources the library straight out of the checkout the tree id names and the only temporary directory holds the corpus files. The corpus is built in Python for BOTH sides and handed to bash as NUL-separated records, because an argument may contain a newline.
+      **TWELVE PLANTED CONTROLS: TEN FIRED, AND THE TWO THAT DID NOT ARE THE FINDING.** Each was planted into the port alone, watched against the live twin, and removed with the port restored byte-identical by sha256. The ten that fired: the dash collapse dropped (196 fuzz observations moved), the 40-cap become a 41-cap, the cut applied after the trim instead of before, the input encoded with `errors="ignore"` so bytes that are not valid UTF-8 vanish (39 moved), the empty answer losing its newline, the pre-change 404 catch-all, an empty `routed` read as `no`, the state-file drift line dropped, the 502 hint suffix dropped, and a Unicode-aware lowering.
+      **THE TWO THAT STAYED SILENT WERE NOT WEAK CONTROLS, THEY WERE FALSE CLAIMS IN THE PORT'S OWN DOCSTRING, and both are now corrected there.** (1) A latin-1 port changed NOTHING, because `s/--*/-/g` collapses the run whether a multibyte character became two dashes or one, so the byte-versus-character choice is unobservable in the answer; the surviving and now-stated claim is that the bytes must not be LOST, which the `errors="ignore"` plant proves. (2) Dropping `${3:-unknown}` changed NOTHING, because the `unknown` it supplies reaches the `*)` arm and so does every other value that is not `yes` or `no`: the default is INERT, and the docstring said it was load-bearing. Both were caught only because each plant was watched individually rather than in a batch.
+      **SEVEN TWIN BEHAVIOURS REPRODUCED RATHER THAN FIXED**, each named in the port's docstring and pinned by a case: an empty answer is still a LINE; the 40-character cap is applied BEFORE the final dash trim, so an answer can be 39 characters; a newline in the argument SURVIVES, because `sed` trims per line and a two-line argument yields a two-line answer; multibyte collapses to one dash per RUN rather than one per byte; `${3:-unknown}` fires on an EMPTY third argument and is inert anyway; `devbox_slug_drift` never fails, so its result is what it PRINTED; and no argument at all is an unbound-variable death rather than a default.
+      **THE COMMENT-BYTE FLOOR IS THE ONE EXEMPTION THIS SLICE TAKES, AND IT IS VISIBLE RATHER THAN QUIET.** `shadow-gate`'s floor compares the WHOLE twin's comments against the WHOLE port's, which is the right denominator for a whole-file port and the wrong one for 3 functions out of 39: measured, `.ci/lib/devbox.sh` carries 28,483 comment bytes against the port's 13,848, a ratio of 0.4862, while the three PORTED functions' own comments are 1,998 bytes and the port scores 6.93 against them. The rows are recorded without `--old-file`/`--new-file`, on the `w7p5b-common` precedent, and `test_the_ledger_carries_no_comment_audit_and_says_why` recomputes the slice-level number on every run and fails if any row ever appears with a ratio below the floor.
+      **THE PERMANENT SURFACE** is `.ci/rediacc_ci/tests/test_core_devbox.py`, 72 tests, about 13 seconds, all passing. It drives the live twin on every run rather than replaying a recording, asserts the K=5 ledger off disk, asserts all five real `source` sites are still there, asserts the port imports NOTHING that could reach outside its arguments (with the driver as the other-direction control), and re-plants five of the defects above IN PROCESS through `monkeypatch`, so nothing can leave a defect on disk and a scenario that stopped watching its own claim reds.
+      **A HARNESS DEFECT FOUND BY RUNNING IT, and the vacuity it nearly produced.** A corpus entry spelled `\udcc3\udc28` is not encodable by `surrogateescape` at all (only `\udc80`-`\udcff` are), so the fixture builder raised on BOTH sides and the first comparison script called two empty outputs a MATCH. The entry is now `\udcc3(`, which is the invalid UTF-8 sequence it was meant to be, and `test_each_scenario_observed_something` is the floor that refuses an empty transcript from either side.
+      **GATES RUN:** `check:ci-python-lint` GREEN over all 1,116 files (ruff 0.16.1 lint and format); `check:ci-dead-python` green (1,117 files, every one reached, 82 by the shadow route, 41 controls) and PROVED non-vacuous by planting an unreferenced `.ci/rediacc_ci/core/zz_devbox_deadprobe.py`, watching it report DEAD, and removing it; `check:ci-python-control-plants` green (241 gate modules, 139 plant sites, 19 controls). `check:ci-python-env-registry` reported exactly 2 findings for this slice, both `devbox_shadow_driver.py` (`HOME`, `PATH`), and they are registered by a HAND EDIT adding exactly one key, verified by diffing the OLD and NEW module maps and asserting the added side is that one key, the removed side is empty and every other module is byte-identical, rather than by `--write-baseline`, which would have reseeded the whole file and absorbed a peer's 22 open findings. The remaining 22 name `core/account.py`, `core/shadow_driver.py`, `test_core_account.py`, the `bws` work and two hooks, and none of them is this slice's. `check:ci-prose-style` over the whole tree reports 110 NEW findings and ZERO of them name these three files or this plan.
+      **A GUARD DEFECT CONFIRMED AND EXTENDED, reported rather than routed around.** The `local-common.sh` audit above records `block_untagged_commit.py` judging a commit in a DISPOSABLE repository against CONSOLE's own state. The same shape holds for two more: `block_commit_identity` refused a fixture commit for an author email that has nothing to do with this repository, and `block_unproven_bulk_transform.py` reported "274 staged file(s)" for a one-file fixture commit, which is CONSOLE's staged count and not the fixture's. A LITERAL `-C <path>` does not help, contrary to the note left above: the same 274 is reported either way. Every fixture commit here therefore carries a `PR-TASK` trailer and a proof sentence that belong to another repository, which is honest but is not what those guards are for.
+      **NOT TOUCHED, and checked rather than assumed:** `.ci/lib/` is byte-identical to HEAD, which covers `devbox.sh`, `local-common.sh` and `account.sh`; no other function in `devbox.sh` is read into the port, no bash file is edited, `.ci/legacy/run-legacy.sh`, `.ci/rediacc_ci/setup/bridge.py`, `scripts/ci-runner/manifest.ts` and `gates.lock.json`, `.ci/config/prose-style-baseline.json`, `.ci/config/language-policy-baseline.json`, `docs/agent-reference/TRAPS.md`, anything under `deploy/` or `release/`, every `bws`-named file, and every W7P5-a and W7P5-c artifact. The only non-new file this slice writes is `.ci/config/python-env-registry.json`, one key. No call site is cut over: all five sourcers still source the bash.
+      NOT ticked. This slice covers 3 of the 39 functions in the last of the box's remaining libs. `devbox.sh` itself cannot be retired: the other 36 functions are the whole of the devbox verb, `setup/bridge.py` still calls them as bash, and `local-common.sh`'s three `gate_lane_*` functions still source this file.
 - [ ] **W7P5-c S** The deletion box, the only one that removes anything.
       **OPERATOR RULING 2026-09-21 ON THE HOOK ORACLES AND THE TOOLCHAIN BASH.** The 47 `.claude/oracles/**` bash
       files stay as a permanent language-policy exemption (`tree:.claude/oracles/`, abda9690f), chosen over goldens,
@@ -1411,6 +1589,370 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       `.ci/scripts/security/shfmt.sh:71-73` whose margin goes 2.8x to 1.7x,
       `.ci/rediacc_ci/tests/test_battery.py:352`,
       `.ci/rediacc_ci/quality/pool_writer_safety.py:545`).
+      AUDIT: DONE 2026-09-23 (audit): re-measured against the tree rather than against the
+      box's own prose, which predates several deletions the box never recorded.
+      **`run-all.sh` no longer exists, and all five of its cited blockers plus the
+      `test_battery.py` TWIN issue are resolved.** `.ci/scripts/test/run-all.sh` is gone --
+      `git log --all --diff-filter=D -- '*run-all.sh'` finds it retired at `1306a6539`
+      ("run-all.sh is retired, the licensed battery runner carries every reader",
+      2026-09-21), an ancestor of current HEAD `2ed7d6726` (`git merge-base
+      --is-ancestor` confirmed). Verified per blocker, against the real tree:
+      1. `docs/agent-reference/TRAPS.md` -- the trap moved to line 1465 (the file has grown
+         past `:2463`) but its disposition is already `Enforced-By: JUDGMENT-ONLY`
+         (`docs/agent-reference/TRAPS.md:1464-1465`), the exact settled disposition this box already committed to.
+      2. `.ci/config/language-policy-baseline.json` -- `grep -n "run-all"` returns nothing;
+         the entry the box named at `:423` is gone, drained.
+      3. `.ci/scripts/test/gates/test-run-all-parallel.sh` -- does not exist. Its pytest
+         replacement, `.ci/rediacc_ci/tests/gates/test_gate_run_all_parallel.py`, exists and
+         its own docstring says it was "RETARGETED WITH ITS SUBJECT ... deleted once the
+         shadow pair `w7p8-battery` held at K=5 over seven distinct trees."
+         `grep -n "run-all" scripts/ci-runner/manifest.ts scripts/ci-runner/gates.lock.json`
+         returns zero hits in both files.
+      4. Shadow ledger pairing `battery.py` with `run-all.sh` -- exists:
+         `.ci/shadow/w7p8-battery.observations.jsonl`, 9 rows, **7 `EQUIVALENT` over 7
+         distinct tree ids and 6 distinct fingerprints** (plus 1 `ERROR_REFUSAL` and 1
+         `VACUOUS_BOTH_EMPTY` row, neither counted toward K), comfortably clearing K=5.
+      5. The ~10 `manifest.ts` "inside run-all.sh" BLOCKER strings -- zero remain (same grep
+         as #3).
+      6. `.ci/rediacc_ci/tests/test_battery.py`'s TWIN-reads-source-at-runtime case -- gone.
+         Its own header now reads "IT WAS A DIFFERENTIAL AND IT IS NOT ONE ANY MORE ... The
+         shell runner was deleted once the shadow pair `w7p8-battery` held at K=5 over seven
+         distinct trees; only the cases that EXECUTED or READ it went with it"
+         (`.ci/rediacc_ci/tests/test_battery.py:3`), and the isolation-comparison case that used to drive the
+         extracted heredoc is now a synthetic-lock test with a docstring explaining exactly
+         why the old comparison is gone (`.ci/rediacc_ci/tests/test_battery.py:187-190`).
+      All remaining tracked hits for the string `run-all.sh` (`git grep -n "run-all\.sh"`)
+      are historical/documentary: docstrings on the replacement modules explaining what they
+      replaced (`.ci/rediacc_ci/battery.py:4,8,29,34,744`,
+      `.ci/rediacc_ci/quality/battery_clean_tree.py`,
+      `.ci/rediacc_ci/quality/pool_writer_safety.py`, `.ci/rediacc_ci/xdist_groups.py`) and
+      frozen `.ci/shadow/w7p2-*.observations.jsonl` rows recorded before the deletion. None
+      is a live call site. The C3 trap example this box's own census flagged
+      (`.github/workflows/autopilot.yml:252` running the bash `check-resolved-threads.sh`
+      while `ci.yml` ran the Python) is also resolved: `check-resolved-threads.sh` no longer
+      exists anywhere in the tree; only `check_resolved_threads.py` remains and both
+      workflow files now call it.
+      **So the box's named subject -- deleting `run-all.sh` -- is DONE, by a wave this box's
+      own text never recorded, and its "THREE BLOCKERS" / "TWO MORE" section is now entirely
+      stale.** The box's other precondition, the coverage campaign, is measurably far along
+      too but is not finished:
+      **Quality-gate twins: 82 -> 9 bash files remain**, not the 77-ledgered/5-unledgered
+      split the box's 2026-09-09 census (`agent/archive/2026-09-22-backfill/f4da5c2e/
+      W7P5c-licence-census.md` -- itself still dated 2026-09-09 despite living in a
+      "2026-09-22-backfill" archive directory; it was archived later, never re-run) measured.
+      `ls .ci/scripts/quality/*.sh` today: `check-dead-case-arms.sh`,
+      `check-plan-housekeeping.sh`, `check-profiler-coverage.sh`, `check-python-lint.sh`,
+      `check-submodule-branches.sh`, `check-swallowed-failures.sh`, `check-trap-registry.sh`,
+      `check-workflows.sh`, `typecheck-workers.sh` (this last one was one of the census's
+      "5 quality gates with no ledger" and now has both a ledger and a port). All 9 already
+      have a K=5 `EQUIVALENT` shadow ledger (verified live: 5-15 rows each for the first 8
+      under `w7p2-*`, all EQUIVALENT, 4-9 distinct fingerprints; `typecheck-workers.sh`
+      under `w7p4b-typecheck-workers`, 9 rows, all EQUIVALENT) and a live Python entry point
+      registered as a `gates.lock.json` leaf (8 of 9; `check_submodule_branches.py` is
+      called directly at `.github/workflows/ci-quality.yml:699` instead of through a leaf).
+      **None of the 9 passes C3 today, and by design, not by oversight:** every one carries
+      a permanent pytest differential with a live `TWIN = ...` constant reading the bash file
+      (`.ci/rediacc_ci/tests/test_quality_swallowed_failures.py:16`, `.ci/rediacc_ci/tests/test_quality_trap_registry.py:17`,
+      `.ci/rediacc_ci/tests/test_quality_python_lint.py:34`, `.ci/rediacc_ci/tests/test_quality_profiler_coverage.py:21`,
+      `.ci/rediacc_ci/tests/test_quality_plan_housekeeping.py:34`, `.ci/rediacc_ci/tests/test_quality_typecheck_workers.py:32`) plus an
+      explicit "INVARIANT 5 IS INTACT ... deleting it is W7 P5's job" line in the Python
+      port's own docstring (`.ci/scripts/quality/check_dead_case_arms.py:62`, `.ci/scripts/quality/check_plan_housekeeping.py:32`,
+      `.ci/scripts/quality/check_profiler_coverage.py:62`, `.ci/scripts/quality/check_python_lint.py:77`,
+      `.ci/scripts/quality/check_submodule_branches.py:12`, `.ci/scripts/quality/check_swallowed_failures.py:13`,
+      `.ci/scripts/quality/check_trap_registry.py:58`, `.ci/scripts/quality/check_workflows.py:33`) -- each one naming this box as
+      the intended executor. The 73 other original quality-gate twins have already been
+      deleted by other waves using exactly this pattern (freeze the differential to golden
+      literals captured pre-deletion, drop the baseline line, one commit) -- see
+      `430b54ede`, `0bb1a4c15`, `7a9bda6d7` for three worked examples already landed.
+      **Gate tests: 149 -> 7 bash files remain.** `ls .ci/scripts/test/gates/*.sh`:
+      `test-agent-session-archival.sh`, `test-blocker-golden-corpus.sh`,
+      `test-bws-rotate.sh`, `test-media-r2.sh`, `test-run-sh.sh`, `test-runner-advice.sh`,
+      `test-toolchain.sh` (142 of the original 149 already retired, not "0 of 149 have a
+      ledger" as the box's stale prose still implies). `.ci/rediacc_ci/tests/gates/
+      test_gate_*.py` now numbers 159. The twin-parity ledger the box's own driver ruled
+      sufficient C1 evidence for gate tests (`.ci/shadow/twin-parity.ledger.jsonl`) still
+      tracks the same **141 distinct subjects**, now over **572 rows, all 572 agreed** (was
+      231 rows at the box's last count) -- the driver's C1-for-gate-tests ruling has not
+      been overturned and remains the correct instrument; a raw shadow-gate K=5 ledger was
+      never the right measure for this half of the census.
+      **Answering the three re-derivation questions directly: (a) quality-gate twins with
+      K=5 ledger evidence today: 9 of 9 remaining (100% of what is left; 73 of the original
+      82 are already deleted, not "77 of 82 have a ledger"); (b) gate tests with equivalence
+      evidence: 141 of the remaining population via twin-parity, per the standing driver
+      ruling; (c) the true blocker count for `run-all.sh` specifically: ZERO -- it is
+      deleted and none of its five cited blockers, nor the `test_battery.py` issue, remain
+      live.**
+      **Is the box ready for a deletion writer? Split answer.** The box's own named subject
+      (`run-all.sh`) needs no further writer work -- it is done. The broader coverage-campaign
+      mandate is NOT finished but is now small and mechanical: 9 quality-gate twins + 7
+      gate-test twins = **16 files remain**, each already licensed on C1 and C2, each
+      blocked only by the SAME already-proven mechanical sequence that four prior commits
+      (`430b54ede`, `0bb1a4c15`, `7a9bda6d7`, `1306a6539`) already executed successfully and
+      documented in their own messages. This is writer-sub-agent scope, not Plan-agent scope:
+      no new design decision remains, only repeating a proven pattern across 16 named files.
+      **The exact deletion sequence for the next writer**, mirroring the four prior commits'
+      own template:
+      1. For each of the 9 quality-gate `.sh` twins: freeze its differential's `TWIN`-read
+         comparison to golden literals captured from the live bash output before deletion
+         (as `430b54ede` did for `release-age.sh`/`age-check.sh`), update the "INVARIANT 5 IS
+         INTACT ... deletion is W7 P5's job" docstring line to say it happened, delete the
+         `.sh` file, and drop its line from `.ci/config/language-policy-baseline.json`.
+      2. For each of the 7 remaining `.ci/scripts/test/gates/test-*.sh` gate tests: confirm
+         each already has a `test_gate_*.py` counterpart collected under `check:ci-pytest`
+         (verify per file, not assumed), delete the `.sh`, and remove its
+         `scripts/ci-runner/manifest.ts` + `gates.lock.json` entries.
+      3. Re-run `check:ci-language-policy`, `check:ci-dead-bash`, `check:ci-parity` and the
+         full pytest suite after each batch, exactly as `1306a6539`'s own commit message
+         describes doing.
+      4. Ride the baseline drain in the SAME commit as each deletion batch (never a following
+         one), per this box's own acceptance rule and the shape TRAPS entry 85 already
+         describes (`check_language_policy.py` reads tree state, not commit boundaries).
+      5. `w7p2-stagingtag`'s permanent carve-out (`check-staging-tag-guard.sh`) stays
+         undeleted; it is disqualified by design and needs a human sign-off line, not a
+         re-run (unaffected by this audit).
+      NOT ticked, nothing else touched in this box.
+      AUDIT: DONE 2026-09-23 (writer): **FOUR of the sixteen deleted, and the audit above is
+      wrong that the other twelve are "small and mechanical".** Each of the twelve is blocked
+      by something named below, verified against the enforcing code rather than inferred, and
+      none of the twelve is blocked by a missing licence -- C1 holds for all sixteen.
+      **DELETED, each on the four prior commits' own pattern, one at a time, verified before
+      the next was started.** `.ci/scripts/quality/check-workflows.sh` (blob
+      `8b15557789b1fe8615c572a1076e6a3d7bc5bdca`, ledger `w7p2-workflows`, 10 rows / 10 trees /
+      5 fingerprints); `check-plan-housekeeping.sh` (`f985c1c71a9239eaa6eeda699b7d7235d839669b`,
+      `w7p2-plan-housekeeping`, 5/5/5); `check-dead-case-arms.sh`
+      (`19c18e3f491528ad54c0e1fb8832f626b0eade9d`, `w7p2-dead-case-arms`, 5/5/5);
+      `check-swallowed-failures.sh` (`e7b12ba15c41569a88ea8065007e246ab948f2ee`,
+      `w7p2-swallowed-failures`, 10/10/4). Every ledger verdict `EQUIVALENT`.
+      **THE LEDGER WAS NOT TREATED AS SUFFICIENT.** Before each deletion the twin and its port
+      were driven side by side on this tree, stdout and stderr captured SEPARATELY, and each
+      pairing included a fixture that genuinely EXITED 1 and named a finding, so no comparison
+      was made over two silent runs: 6 drives for `check-workflows.sh` (3 fixtures x `CI`
+      set/unset), 2 for `check-dead-case-arms.sh` (clean real tree, and one dead arm beside one
+      live arm), 2 for `check-swallowed-failures.sh` (clean real tree, and one swallowed
+      capture). Byte-identical on every stream. `check-plan-housekeeping.sh` needed no drive:
+      its differential already held the twin's `sed` programs as frozen literals and only two
+      cases opened the twin's SOURCE.
+      **AND EACH REPOINT WAS PLANT-CONTROLLED.** After repointing, a defect was planted into
+      the PORT and the suite required to red, then the port restored and its git blob compared
+      to prove the restore was byte-identical: `workflows.py` (1 failed / 8 passed),
+      `dead_case_arms.py` (1/17), `swallowed_failures.py` (3/18, including both repointed
+      source-readers), `plan_housekeeping.py` (1/38).
+      **WHAT THE FREEZES ACTUALLY DID, since "freeze to goldens" hides three different moves.**
+      `test_quality_swallowed_failures.py` keeps its differential FULLY LIVE: the twin's 172-line
+      awk program moved from a runtime slice into an `AWK_PROGRAM` literal, verified equal to
+      the live extraction byte for byte, and all 30 cases still pipe real input through the real
+      `awk`. Freezing the VERDICTS instead would have turned a differential into an assertion
+      about remembered text. `test_quality_plan_housekeeping.py` froze only the two twin-source
+      claims and KEPT the port-side half of each, which is the half that can still regress.
+      `workflow_rule.py`, `test_gate_dead_case_arms.py`, `test_gate_media_helpers.py` and
+      `test_gate_swallowed_failures.py` are SUBJECT repoints, not freezes: they drove the bash
+      gate and now drive `sys.executable <gate>.py`.
+      **TWO CONSEQUENCES THE PER-FILE LOOP MISSED AND THE FULL SUITE CAUGHT, both fixed here.**
+      (1) `docs/agent-reference/TRAPS.md:309` and `:532` both carried
+      `Enforced-By: file:.ci/scripts/quality/check-swallowed-failures.sh`, and
+      `trap_registry.py` requires a `file:` pointer to resolve on disk -- the same class as
+      `errexit-rearmed-in-a-tested-command`, but with a live counterpart, so both were repointed
+      to `check_swallowed_failures.py` (manifest-reachable at `scripts/ci-runner/manifest.ts:835`) rather than to
+      `JUDGMENT-ONLY`. `check:ci-trap-registry` rc=0, 94 entries, 12 file pointers.
+      (2) `test_quality_control_vacuity.py`'s substitution classifier stopped discriminating:
+      with the directory down to four files ALL FOUR build by substitution, so
+      `len(substituting) < len(_gate_files())` could only fail. The population was WIDENED to
+      both gate directories (5 substituting, 1 not) rather than the claim weakened, matching what
+      that file's own docstring already did for `has_control`, and the fix was controlled by
+      planting an unconditional `return True` into `builds_by_substitution` (5 failed / 7 passed).
+      **A SECOND THING THE PER-FILE LOOP COULD NOT SEE, and it is a finding about the gate
+      rather than about this box.** `check:ci-language-policy` CANNOT REACH its own
+      stale-baseline ratchet while any NEW bash file exists: `check_language_policy.py`'s `run()`
+      returns 1 on the `added` set at `:771-788`, before the `drained` check at `:789`. A peer's
+      new bash files sat in `added` throughout, so a plain run could not tell a drained baseline
+      from an un-drained one -- the control was re-added to the baseline as a plant and the output
+      came back BYTE-IDENTICAL. The ratchet was driven instead through the
+      `LANGUAGE_POLICY_BASELINE` env seam against a copy, and fires in both directions: rc=1
+      "1 baselined bash file(s) are gone from the tree" un-drained, rc=0 drained. The real drain
+      is composition-checked, not size-checked: 143 -> 139, removed exactly the four files above,
+      **ADDED empty**.
+      **THE TWELVE THAT WERE NOT DELETED, each with the code that blocks it.** Five quality twins:
+      * `check-trap-registry.sh` -- a PEER IS EDITING IT RIGHT NOW. The staged worktree bumps
+        `TRAP_FLOOR` 90 -> 94 in the twin and `TRAP_FLOOR_DEFAULT` 90 -> 94 in the port, in
+        lockstep. Deleting it destroys uncommitted work by a session still treating it as live.
+      * `check-submodule-branches.sh` -- a LIVE call site, `.ci/legacy/run-legacy.sh:154`, inside
+        `quality_submodules()`. The repoint is small but it is a CALL-SITE change in W7P6's
+        territory, not a freeze, and `.github/workflows/ci-quality.yml:699` already runs the Python, so the pair is
+        the C3 shape this box's own census flagged for `check-resolved-threads.sh`.
+      * `check-profiler-coverage.sh` -- `test_quality_profiler_coverage.py` extracts the twin's
+        shell functions BY NAME and runs them against the port over
+        `.github/workflows/*.yml`, the REAL corpus, in 6 of its cases. Freezing that means
+        per-workflow goldens that go stale the next time any workflow is edited, which is a
+        churning golden rather than a frozen one. The honest exit is a redesign to synthetic
+        specimens, which is a design decision and not this pattern.
+      * `check-python-lint.sh` -- `.ci/rediacc_ci/tests/test_quality_python_lint.py:56` COPIES the twin into a git
+        fixture and runs it; freezable to a goldens directory exactly as `0bb1a4c15` did for
+        `bws-env`, so this one is genuinely mechanical but large. Also `.ci/rediacc_ci/tests/test_core_dockerx.py:489`
+        greps the twin for its `exit 77` literal.
+      * `typecheck-workers.sh` -- the twin carries the `---- gate ----` REGISTRATION and
+        `.ci/rediacc_ci/tests/test_quality_typecheck_workers.py:442` asserts the PORT carries none. Deleting it moves
+        a gate registration, which is wiring rather than a freeze.
+      All seven gate tests, and **the audit above is wrong that any of them is ready**:
+      * `test-run-sh.sh` -- `.github/workflows/ci.yml:547` runs it as a named step, and
+        `test_gate_plant_proofs.py` drives it as `BASH_SUBJECT` at six sites.
+      * `test-toolchain.sh` -- `.github/workflows/ci.yml:550` runs it; it is a PERMANENT
+        `file:` exemption on `.ci/policy/.language-policy-allowlist` (the gate prints
+        `exempt file:.ci/scripts/test/gates/test-toolchain.sh` every run); and
+        `test_gate_toolchain.py` declares NO `BASH_TWIN`, so it has zero twin-parity rows and
+        no C1 evidence at all. Three independent reasons.
+      * `test-media-r2.sh` -- `.ci/rediacc_ci/tests/gates/test_gate_media_docs.py:245` and `:247` EXECUTES `bash <twin>` twice.
+      * `test-blocker-golden-corpus.sh` -- the twin has an `--emit` verb that RE-RECORDS the
+        golden corpus and the port has none, so the port is not a replacement; the port's own
+        failure message tells the reader to run `bash <twin> --emit`.
+      * `test-runner-advice.sh` -- its manifest entry is the only one of the seven carrying
+        `reads: ['tree:repo']`, and `.ci/rediacc_ci/tests/gates/test_gate_runner_advice.py:16` says outright that
+        `REAL_TREE_TWIN = True` "buys the serialisation". That serialisation is looked up
+        through the LOCK entry for the twin's basename, so deleting the entry drops it
+        SILENTLY -- a scheduling decision, not a deletion.
+      * `test-bws-rotate.sh` and `test-agent-session-archival.sh` -- brand-new peer work this
+        session was told not to touch; neither has a `test_gate_*.py` counterpart.
+      **FLOORS MOVED IN THE SAME CHANGE, per the 2026-09-21 ruling.**
+      `check-shape-duplication.ts`: the `.ci/scripts/quality/check-*.sh` family floor 8 -> 4 and
+      the corpus floor 138 -> 134, measured against the tracked tree (126 + 4 + 5, minus the
+      opted-out file) rather than subtracted. **Only two of those four corpus units are this
+      session's**, and the comment beside the floor says so rather than absorbing the rest: a
+      concurrent writer retired `.ci/scripts/test/gates/test-bws-rotate.sh` and then
+      `.ci/scripts/test/gates/test-agent-session-archival.sh` midway through, taking the gate-test
+      family 7 -> 5 while this wave ran. A floor re-measured inside a live tree has to name whose
+      deletion moved it, or the next reader reconstructs one writer's history from one number.
+      **That concurrency is also why the seven gate-test rows above will keep moving**: two of the
+      seven this audit triaged are already gone by another hand, so the residue is five, not seven,
+      and the five that remain are the five carrying the blockers named below.
+      `scripts/data/enumeration-vacuity-baseline.json` drained 34 -> 33, removed exactly
+      `check-swallowed-failures.sh`, ADDED empty.
+      **GATES RUN AT THE END, all rc=0:** `check:ci-parity` (349 gates, 2 workflow scopes, 9
+      exempt, agrees both directions), `check:ci-gate-reachability-coverage` (339 registrations,
+      control fired), `check:ci-dead-bash` (292 shell files, 1016 functions, 0 findings),
+      `check:ci-enumeration-vacuity`, `check:ci-trap-registry`, and the language-policy ratchet
+      through its env seam. `check:ci-shape-duplication` is rc=1 on ONE pre-existing finding that
+      is not this session's -- a 3-copy shape across `check-env-credential-drift.ts`,
+      `check-pr-task-trailers.ts` and `check-video-player-invariants.ts`, the last of which is a
+      peer's staged edit; proven pre-existing by restoring the deleted file and the old floor and
+      re-running, which reproduced the identical finding.
+      **THE FULL PYTEST SUITE: 9900 passed, 60 failed, 6 errors before these fixes; 54 failed
+      after.** The six this session closed were its own (3 trap-registry, 1 control-vacuity, 2
+      collateral). Of the 54 remaining, none is in a module this session edited and none names a
+      file it touched; they sit in peer-modified files (`onboard.py`, `trap_registry.py`,
+      `python-env-registry.json`, `worklist-env-registry.json`, `gates.lock.json`) or are
+      environmental (`npm` absent for `test_build_build_json.py`, ruff for
+      `test_quality_python_lint.py`). **One of them is a real finding worth its own box:**
+      `test_gate_vacuity_floors.py::test_shfmt_accepts_the_real_corpus` fails because shfmt's
+      `.ci/**/*.sh` glob reaches into the GITIGNORED `.ci/cache/toolchain/uv-cache/` and lints
+      sdist payloads (`.../pypi/pyyaml/6.0.2/.../libyaml.sh.orig`). That cache is dated
+      2026-09-22, before this session, so the failure is pre-existing; the gate should exclude
+      `.ci/cache/`.
+      NOT ticked. Twelve of the sixteen remain, and the four prior commits' pattern does not
+      reach any of them unchanged.
+      AUDIT: DONE 2026-09-23 (writer, `check-python-lint.sh` only): **NOT DELETED, and the
+      audit above is right that it is blocked but wrong about WHICH thing blocks it.** The
+      previous entry named two obstacles for this file -- a differential that copies the twin
+      into a git fixture and runs it, and the `.ci/rediacc_ci/tests/test_core_dockerx.py:489`
+      grep of the twin for its
+      `exit 77` literal -- and called the pair "genuinely mechanical but large". Driven against
+      the tree, the dockerx grep is not an obstacle at all and the fixture is a harder one than
+      "large".
+      **THE LICENCE IS NOT THE PROBLEM. C1 and C2 both hold, verified live.**
+      `.ci/shadow/w7p2-python-lint.observations.jsonl` carries **6 rows, all `EQUIVALENT`, over
+      6 distinct tree ids and 6 distinct fingerprints**, every row pairing
+      `bash .ci/scripts/quality/check-python-lint.sh` against
+      `python3 -m rediacc_ci.quality.python_lint`. That clears K=5 with >=2 fingerprints
+      comfortably. The Python side is live and registered: `package.json:161`
+      (`check:ci-python-lint` -> `.ci/scripts/quality/check_python_lint.py`),
+      `scripts/ci-runner/manifest.ts:1542-1545` and `scripts/ci-runner/gates.lock.json:1610-1614`,
+      all three already naming the `.py` leaf and none naming the `.sh`. **There is no
+      manifest or lock row to remove for this file**, so step 4 of the box's own sequence is a
+      no-op here and `gen:gates-lock` was not run.
+      **QUESTION 3 ANSWERED, AND IT IS A FALSE BLOCKER.**
+      `.ci/rediacc_ci/tests/test_core_dockerx.py:489` is a CONTENT grep, not a call site or a
+      path reference: `test_the_cannot_run_code_agrees_with_every_other_definition_in_the_repo`
+      reads four files and pattern-matches each for the 77 literal, using
+      `^\s*exit (\d+)\s*$` for the twin and asserting `77 in matches` (membership rather than
+      equality, because the bash file also `exit 1`s in eight other places --
+      `grep -nP '^\s*exit \d+\s*$'` returns 9 lines, `:194` being the 77). The repoint is one
+      line and would be STRONGER than what it replaces:
+      `.ci/rediacc_ci/quality/python_lint.py:175` is `EXIT_CANNOT_RUN = 77`, so the port takes
+      the `EXIT_CANNOT_RUN = (\d+)` pattern and the equality assertion the other two
+      constant-naming files already get, not the membership one. This blocker is retired as a
+      finding; it is not what stops the deletion.
+      **WHAT ACTUALLY STOPS IT: THE DIFFERENTIAL'S FIXTURE IS LIVE REPO CONTENT, SO ITS
+      GOLDENS WOULD CHURN AND COULD NOT BE RE-RECORDED.**
+      `.ci/rediacc_ci/tests/test_quality_python_lint.py:41-83` `build()` copies the REAL tree
+      into each specimen --
+      `.ci/scripts/lib/` wholesale, `pyproject.toml`, `.devcontainer/toolchain.env`, six named
+      `rediacc_ci` modules, and (in 8 of the 9 twin executions -- the floor case is the one
+      exception, and it passes `with_core=False` precisely to starve the corpus)
+      `shutil.copytree` of the ENTIRE
+      `.ci/rediacc_ci/core/` directory. The twin then lints that specimen and prints the corpus
+      SIZE on every run. Driven through the test module's own `build()` and `run_both()` in a
+      tmpdir, two specimens differing by exactly one added `.py`:
+      `baseline exit=1 ['info: linting 33 Python file(s) with ruff 0.16.1']` against
+      `one extra .py exit=1 ['info: linting 34 Python file(s) with ruff 0.16.1']`. The
+      committed ledger shows the same line, and `18 files already formatted` beside it, so BOTH
+      of the gate's two stages emit the count.
+      **That number is a function of how many modules `.ci/rediacc_ci/core/` holds, and that
+      directory is one of the fastest-moving in the tree:** 25 `.py` today, **21 of them added
+      since 2026-08-20**, and three more in flight in this very tree
+      (`core/account.py` and `core/shadow_driver.py` staged, `core/local_common.py` untracked).
+      A golden recorded today reds the next time any peer adds a core module, and once the twin
+      is deleted it **cannot be re-recorded** -- only hand-edited, which destroys the one
+      property `.ci/rediacc_ci/tests/frozen.py:4-5` says makes a golden evidence rather than a
+      restatement of the port ("Nothing in a golden is a hand-written expectation").
+      Masking the count is not the exit either: `.ci/rediacc_ci/tests/frozen.py:10` rules that
+      a golden masking a
+      value the differential compared is weaker than the comparison it replaced, and here the
+      masked value is the anti-vacuity signal itself, the corpus size the `MIN_PY_FILES = 10`
+      floor exists to defend.
+      **AND THE TWIN IS RED ON THIS TREE RIGHT NOW, so there is no clean recording to take.**
+      `.ci/cache/toolchain/uv-tools/pytest/bin/pytest .ci/rediacc_ci/tests/test_quality_python_lint.py`
+      is **3 failed / 12 passed**: `test_differential[a clean corpus passes]`,
+      `test_differential[a shebang with git mode 100755 is fine, and no shebang with 100644 is
+      too]` and `test_a_clean_run_still_prints_ruffs_own_pass_line` all fail on
+      `assert 1 == 0`. The cause is not the port and not the test: a peer's UNTRACKED
+      `.ci/rediacc_ci/core/local_common.py:287` trips `PERF401 Use list.extend to create a
+      transformed list`, gets copied into every specimen by the `copytree`, and makes the "clean
+      corpus" cases not clean. The real gate agrees -- `npm run check:ci-python-lint` is
+      **rc=1** on this tree with the identical finding, and `ruff check --no-cache
+      .ci/rediacc_ci/core/` reproduces it in isolation. **Freezing now would enshrine a peer's
+      transient diagnostic, path and line numbers included, into three permanent goldens that
+      can never be re-recorded.** That file belongs to the account.sh/local-common.sh port this
+      writer was scoped out of, so it was not touched; it is reported as a live finding instead.
+      **THE HONEST EXIT IS THE SAME ONE `check-profiler-coverage.sh` GOT, AND FOR THE SAME
+      REASON.** Making this freezable means making the fixture HERMETIC -- a fixed synthetic
+      padding corpus clearing `MIN_PY_FILES` instead of `copytree` of a live package -- which
+      changes what the differential compares (the test's own docstring at `:21-22` leans on the
+      gate linting its own port file) and must be designed and validated WHILE the twin is
+      still alive, then recorded. That is a design decision, not the four-step pattern. Twin
+      blob for whoever picks it up: `471b915b87984c59aeaca380951aa3dd5bd3b702` (worktree and
+      `HEAD:` agree).
+      **NOTHING WAS CHANGED FOR THIS FILE.** No deletion, no golden written, no
+      `.ci/config/language-policy-baseline.json:73` drain (the ratchet must ride the deletion
+      commit and there is none), no `test_core_dockerx.py` repoint (pointless while the twin
+      stays), no manifest or lock edit (there was never a row), and none of the other eleven
+      skipped files touched. NOT ticked; eleven of the sixteen remain plus this one, and this
+      one is now blocked by a NAMED redesign rather than by an unexamined "large".
+      AUDIT: DONE 2026-09-23 (writer, fixture only): **THE FIXTURE IS NOW HERMETIC. THE FILE IS STILL NOT DELETED, AND THAT REMAINS SEPARATE WORK.** The named redesign the entry above blocks on is implemented: `.ci/rediacc_ci/tests/test_quality_python_lint.py`'s `build()` no longer `copytree`s the live `.ci/rediacc_ci/core/` into its specimens. The 8 real files it already copies (6 `PACKAGE_FILES` plus the 2 quality-module files) are topped up by 4 fixed synthetic one-line modules, `_pad0.py` through `_pad3.py`, to 12 against the `MIN_PY_FILES = 10` floor. Nothing in `.ci/rediacc_ci/core/` was touched.
+      **THE PREDICTED CHURN WAS NOT HYPOTHETICAL, AND IT FIRED TWICE DURING THIS ONE TASK.** The suite was **3 failed / 12 passed** on entry, the same three cases the entry above names, but no longer for `core/local_common.py`: the cause today is a peer's untracked `.ci/rediacc_ci/core/devbox.py:185` failing `ruff format`, copied into every specimen by the `copytree`. While the task ran, that same peer added a second untracked file, `core/devbox_shadow_driver.py`, which the real gate also reports unformatted. A golden frozen at any point in this task's span would have enshrined a different peer's transient diagnostic each time.
+      **AFTER: 15 passed / 0 failed**, with no expected-behaviour change in any of the 9 `run_both` executions, none of which ever asserted on `core/`'s content. Corpus sizes driven through the test module's own `build()`: `with_padding=True` gives `info: linting 12 Python file(s)`, and the floor case's `with_padding=False` stays at **8 files** and still refuses with `VACUOUS INPUT: only 8 Python file(s) found, expected at least 10`.
+      **BOTH CONTROLS FIRED ON THE REAL SUITE, NOT ONLY IN THEORY.** Planting a `ruff` F821 into the padding content reds the three clean cases (3 failed / 12 passed), which proves the padding is genuinely inside the linted corpus rather than decorative; flipping the floor case to `with_padding=True` reds `test_the_file_floor_refuses_rather_than_reporting_clean` (1 failed / 14 passed), which proves `with_padding=False` is load-bearing. Both plants were removed and the suite returned to 15 passed.
+      **`MIN_PY_FILES` WAS NOT MOVED ON EITHER SIDE**, and neither `.ci/scripts/quality/check-python-lint.sh` nor `.ci/rediacc_ci/quality/python_lint.py` was edited. `npm run check:ci-python-lint` is still **rc=1** on this tree, and every finding is in the two peer-owned `core/` files above; `ruff check` and `ruff format --check` on the changed test file alone are both clean. The remaining deletion work is unchanged and still owed: freeze the twin's output as a golden, drain `.ci/config/language-policy-baseline.json:73`, repoint `.ci/rediacc_ci/tests/test_core_dockerx.py:489` at `EXIT_CANNOT_RUN`, and re-verify C1/C2 licensing at that time. NOT ticked.
+      AUDIT: DONE 2026-09-23 (writer, `check-python-lint.sh` only): **DELETED.** All four pieces of debt the entry above listed as owed are discharged in this one change, on the exact sequence `430b54ede`, `0bb1a4c15`, `7a9bda6d7` and `1306a6539` established. The licence was re-verified live before anything was removed: `.ci/shadow/w7p2-python-lint.observations.jsonl` still carries 6 rows, all `EQUIVALENT`, over 6 distinct trees and 6 distinct fingerprints, and `package.json`, `scripts/ci-runner/manifest.ts` and `scripts/ci-runner/gates.lock.json` still name only the `.py` leaf, so there was no manifest or lock row to remove and `gen:gates-lock` was not run.
+      **THE GOLDENS ARE AT `.ci/rediacc_ci/tests/goldens/python-lint/`, 8 files, and every provenance header reads `# twin .ci/scripts/quality/check-python-lint.sh blob 471b915b87984c59aeaca380951aa3dd5bd3b702`.** That sha was taken with `git rev-parse HEAD:` and cross-checked against `git hash-object` on the worktree copy by the recorder itself, which refuses to write if the two disagree, so the recording describes the tracked bytes rather than a local edit. The 9 twin executions collapse to 8 recordings because `test_a_clean_run_still_prints_ruffs_own_pass_line` drives the same specimen as `a clean corpus passes` and therefore reads the same golden. `test_the_twin_is_gone_and_its_recording_names_it` asserts both halves: the `.sh` is absent AND all 8 headers name it.
+      **ONE DIFFERENCE BETWEEN THE RECORDED FIXTURE AND THE LIVE ONE, DRIVEN RATHER THAN ASSUMED.** The recording ran the twin from INSIDE the specimen, because the twin derives its root from `$BASH_SOURCE`, so `build()` copied the `.sh` in; after the deletion it cannot. Before deleting anything, the port was run over a specimen with the `.sh` removed and re-committed, across all 8 cases, and reproduced every recording byte for byte on both streams. `build()` no longer copies the twin and the module docstring says why.
+      **FOUR CONTROLS, EACH WATCHED GOING RED ON THE REAL SUITE AND THEN REMOVED**, with `.ci/rediacc_ci/quality/python_lint.py` restored from a pre-plant copy and re-verified byte-identical by `sha256sum` after each mutation (the digest is deliberately not quoted here: a hex run of that shape reads as a git object to `check:ci-plan-citations`, and a sha256 is not one). (1) Changing one word of the green success line ("format" to "formatting") reds exactly the 3 cases that exit 0. (2) Moving one golden out of the directory reds 4 tests, `test_every_case_has_a_golden_and_no_golden_is_orphaned` among them, which is the anti-vacuity half. (3) Changing one word of the `NOT skipping` line reds exactly `test_a_missing_ruff_is_77_and_not_1`, proving the 77 recording is genuinely compared and not merely present. (4) Restoring the OLD `check-shape-duplication.ts` floors reds the gate with "family .ci/scripts/quality/check-*.sh has 3 tracked file(s), below its floor of 4", proving the floor move below was required rather than cosmetic.
+      **THE BASELINE DRAIN RODE THE DELETION, and the ADDED side was diffed rather than the sizes compared.** `.ci/config/language-policy-baseline.json` loses exactly one line, `.ci/scripts/quality/check-python-lint.sh`; `git diff HEAD` on that file shows ZERO added lines. `check:ci-language-policy` is rc=0 at 266 bash file(s), 138 frozen (was 139), "none added". Floors moved in the same change per the 2026-09-21 ruling: `check-shape-duplication.ts`'s `.ci/scripts/quality/check-*.sh` family 4 -> 3 and the corpus 134 -> 133, measured against the tracked tree (126 + 3 + 5, minus the opted-out file) rather than subtracted.
+      **`test_core_dockerx.py`'s 77-contract row is repointed, and it is now STRONGER.** The old row read the twin for `^\s*exit (\d+)\s*$` and could only assert MEMBERSHIP, because the bash file carried nine such lines. The new row reads `.ci/rediacc_ci/quality/python_lint.py` for `EXIT_CANNOT_RUN = (\d+)` and asserts EQUALITY, the same shape the two other constant-naming files already get.
+      **A PRE-EXISTING RED WAS FOUND IN THAT SAME FUNCTION AND FIXED, and it is NOT part of this deletion.** Its sibling row still pointed at `.ci/scripts/security/shfmt.sh`, which is absent from HEAD (retired by an earlier bash-twin wave, `02dc20665` or one of its neighbours), so `test_the_cannot_run_code_agrees_with_every_other_definition_in_the_repo` had been raising `FileNotFoundError` and ruling on nothing. It is repointed at `.ci/rediacc_ci/security/shfmt.py`, which writes a bare `return 77` among four bare numeric returns, so that row keeps MEMBERSHIP: exactly as strong as what it replaces and no stronger. Flagged rather than buried because nobody asked for it and it is somebody else's wave's debt.
+      **GATES RE-RUN:** `check:ci-language-policy` rc=0, `check:ci-dead-bash` rc=0 (285 shell files, 957 functions, 0 findings), `check:ci-parity` rc=0 (347 manifest gates, 2 workflow scopes, 9 exempt, agrees both directions), and `ruff check` plus `ruff format --check` clean on all four changed Python files under the pinned ruff 0.16.1. `check:ci-shape-duplication` is rc=1 on ONE finding, the SAME pre-existing 3-copy shape across `check-env-credential-drift.ts`, `check-pr-task-trailers.ts` and `check-video-player-invariants.ts` that the audit above already recorded; none of those three files is touched here. `test_quality_python_lint.py` is 18 passed (was 15: the three added are the corpus check, the non-vacuous-green check and the planted-defect control) and `test_core_dockerx.py` 41 passed, 59 together.
+      **THE FULL `check:ci-pytest` SUITE: 17,705 passed, 54 failed, 6 errors in 1,066 seconds**, which is the same 54 the audit above recorded as pre-existing, and the strings `python_lint`, `test_core_dockerx`, `check_python_lint` and `goldens/python-lint` appear ZERO times among the 60 `FAILED` and `ERROR` lines.
+      Two that could plausibly have been this change were reproduced and attributed rather than assumed: `test_gate_gate_anti_vacuity.py::test_validator_rejects_empty_tree` fails on `.ci/scripts/quality/check_bws_map.py`, a peer's file, while `check_python_lint.py`'s own row passes; and `test_gate_docs_gen.py` re-runs clean through `npx tsx scripts/gen/gen-docs.ts --verify`, so those three were a mid-run race with a concurrent writer.
+      `check:ci-python-lint` itself is rc=1 on ONE finding, an EXE001 mode on the peer-owned `.ci/rediacc_ci/core/devbox_shadow_driver.py`, with lint and format clean across all 1,117 files.
+      `check:ci-plan-citations` adds nothing on this note's own lines, checked with `PLAN_CITATIONS_MAX_SHOWN=5000` rather than trusting the 40-row truncation, and `check:ci-prose-style` adds no blocking finding in any file this change touches.
+      NOT ticked, because the box is the whole 16-file mandate and this retires ONE of it. Eleven of the sixteen remain, each blocked by what the audit above names; `check-python-lint.sh` is no longer among them.
 - [x] **W7P6 C, 3 writers** The 142 unnamed files (P-C). Port groups above; allowlist the 7-8
       named. Resolve the missing allowlist kind for `bootstrap.sh` before the strict flip.
       **STARTED 2026-09-09, 1 of ~37 free files ported, and the box's own numbers all moved.**
@@ -4506,7 +5048,7 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       **But `pool.ts` ordering cannot survive a contiguous region.** The eligible and hand
       entries INTERLEAVE: the array alternates between the two classes **65 times**, the
       first hand entry is at index 2 and the last eligible at index 478, so making the
-      generated set contiguous would move **262 of the 264**. `scripts/gen-gates-lock.ts:99`
+      generated set contiguous would move **262 of the 264**. `scripts/gen/gen-gates-lock.ts:99`
       states the consequence in one line -- "pool.ts breaks scheduling ties on the array
       index, so order is behaviour" -- and `scripts/ci-runner/select.ts:142` says the same.
       **So a single contiguous generated region is not a pure refactor, and the box's four
@@ -4591,7 +5133,7 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       exclusion, and it is the same class as the `env` 9.
       **So the emitter's subject set is 149 now and grows as those declarations land.** The
       option-(a) decision is unchanged: 45 contiguous runs, 90 marker lines, order preserved
-      exactly, because `scripts/gen-gates-lock.ts:99` still makes the array index behaviour.
+      exactly, because `scripts/gen/gen-gates-lock.ts:99` still makes the array index behaviour.
       **AND THEY LANDED THE SAME DAY. 149 -> 166, regions 45 -> 41, markers 90 -> 82.** The
       31 missing declarations went into their own headers -- 22 `slow: true` and 9
       `env-<KEY>:` lines over 29 files, inserted before each header's `why:` because `why:`
@@ -4666,7 +5208,7 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       is emitted only if its serialisation is BYTE-IDENTICAL to the span already in the
       file, so `--write` inserts nothing but marker lines. Measured on the write: **84 lines
       inserted, and `diff` shows no other changed line in `scripts/ci-runner/manifest.ts`.**
-      No entry moves, so the array index -- which `scripts/gen-gates-lock.ts:99` makes
+      No entry moves, so the array index -- which `scripts/gen/gen-gates-lock.ts:99` makes
       behaviour -- cannot move either, and `scripts/ci-runner/gates.lock.json` regenerated
       **byte-identical against a copy taken before the run**. An entry whose generated form
       differs is EXCLUDED, never rewritten: a generator that would improve an entry is
@@ -4877,7 +5419,7 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       reads 30 hook commands in 18 groups over 11 distinct (event, matcher) patterns, so the target of 11 is
       right. Three of the four blockers hold as written: `require-python.sh` may not be ported (its own header,
       lines 5-12) and a new tracked `.sh` is refused by the language-policy gate;
-      `check_hooks_resolvable.py:103` still pins `FIRST_GUARD = "require-jq.sh"` (the earlier note cited
+      `.ci/scripts/quality/check_hooks_resolvable.py:103` still pins `FIRST_GUARD = "require-jq.sh"` (the earlier note cited
       `:121`); and `scripts/lib/doc-providers.ts:295` still reads the hooks table. Two corrections: "8 of the 12
       processes" is 4 of 12, and the safe partial does NOT reduce the count the acceptance clause measures. The
       three `PostToolUse` groups with a null matcher hold one command each, so merging them takes 18 groups to
@@ -4886,14 +5428,14 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       one bash file for it. Neither is reachable without an operator ruling.
       **RE-RUN 2026-09-20 LATER THE SAME DAY, NOTHING CLEARED.** `.claude/settings.json` reads 30 commands in 18
       groups over 11 patterns; `require-python.sh:5-12` still argues it may never be ported;
-      `check_hooks_resolvable.py:107` pins `FIRST_GUARD = "require-jq.sh"` (line moved from 103);
-      `doc-providers.ts:295` still reads the hooks table; and the language policy still counts 582 bash
+      `.ci/scripts/quality/check_hooks_resolvable.py:107` pins `FIRST_GUARD = "require-jq.sh"` (line moved from 103);
+      `scripts/lib/doc-providers.ts:295` still reads the hooks table; and the language policy still counts 582 bash
       files, 507 frozen, so one more tracked `.sh` for a chain head is refused. The exit condition is
       unchanged and needs an operator ruling.
       **RE-RUN 2026-09-21, NOTHING CLEARED.** Four probes with full stderr, all rc=0 and no stderr: settings.json
       reads 30 commands in 18 groups over 11 patterns; `require-python.sh:5-12` still argues it may never be
-      ported; `FIRST_GUARD = "require-jq.sh"` is at `check_hooks_resolvable.py:107` and the hooks table is read at
-      `doc-providers.ts:295`; the language policy reports 539 bash files, 464 frozen, none added, so a new
+      ported; `FIRST_GUARD = "require-jq.sh"` is at `.ci/scripts/quality/check_hooks_resolvable.py:107` and the hooks table is read at
+      `scripts/lib/doc-providers.ts:295`; the language policy reports 539 bash files, 464 frozen, none added, so a new
       tracked `.sh` is still refused.
       **D4 DONE 2026-09-21 (036dc10d4), operator option A.** settings.json reads 11 commands in 11 groups over 11
       patterns. The chain head (admitted by a `file:` allowlist entry) runs the two toolchain checks and hands the
@@ -5183,7 +5725,7 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       * **`mc_migrate_claude` NO LONGER EXISTS**, so the expiry clause above is spent: the
         operator replaced it on 2026-09-09 with `local-rw-account` (never expires) and
         `ci-readonly-console`. The registry's `client_id_sha256` for `local-rw-account`
-        **MATCHES** the live token, recomputed the way `scripts/dev/bws-map-refresh.py:83` does
+        **MATCHES** the live token, recomputed the way `scripts/ops/bws-map-refresh.py:83` does
         it -- over the CLIENT-ID half, not the whole token, which is what a naive `sha256sum`
         of the token gets wrong.
       * **`dev-shared` IS A PROJECT, NOT AN ACCOUNT, AND THERE IS EXACTLY ONE PROJECT:**
@@ -5220,7 +5762,7 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       a newly minted account by fingerprint; the operator ruled the two existing accounts are
       the final shape, so it has no subject. The fingerprint fact worth keeping:
       `local-rw-account`'s `client_id_sha256` in `.ci/config/bws-token-expiry.json` MATCHES
-      the live token when recomputed the way `scripts/dev/bws-map-refresh.py:83` does it --
+      the live token when recomputed the way `scripts/ops/bws-map-refresh.py:83` does it --
       over the CLIENT-ID half, which a naive `sha256sum` of the whole token gets wrong.
       `ci-readonly-console`'s stays `null` by construction: it lives only inside the GitHub
       secret, so a silent swap of the CI credential remains undetectable from here.
@@ -5543,7 +6085,7 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       is guaranteed; bootstrap circularity) until W6 P3; `.ci/lib/account.sh:438` and `:791` retarget;
       `.ci/scripts/lib/toolchain.sh:34` is bootstrap-sensitive, measure first; `.ci/legacy/run-legacy.sh:185` **do not
       retarget** (W6 P5 deletes it -- record the decision so it is not re-found and mistaken for a
-      miss); `scripts/dev/deploy-bench.sh:137` retarget before W9 P2 moves it;
+      miss); `scripts/ops/deploy-bench.sh:137` retarget before W9 P2 moves it;
       `programs/backup-storage/start-local-plane.sh:60` retarget -- its own comment at `:57-59`
       already reasons about precedence, the best demonstration that the rule is real.
       **Out of scope in writing:** `private/growth` (gitignored separate checkout) and
@@ -6147,7 +6689,7 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       `package.json`, 159 in `manifest.ts`, 157 in `gates.lock.json` -- three driver-only files at
       once. **Two couplings the predecessor did not name:** (a) `ci-tree`'s row key is the
       directory, and `doc-registry-preport.json` carries `.ci/scripts/{ci,build/sea-inject,docs,autopilot}`
-      among its keys; `scripts/gen-docs.ts:268` says MISSING keys are **fatal** to `--diff-snapshot`, so
+      among its keys; `scripts/gen/gen-docs.ts:268` says MISSING keys are **fatal** to `--diff-snapshot`, so
       the moves break the programme's own verification instrument unless the four keys are
       re-keyed in the same commit -- never `--snapshot --force`. (b) the 42-entry
       `unguarded` baseline. Plus the six invariant-2 inventories.

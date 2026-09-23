@@ -1,6 +1,8 @@
 # PLAN: prose-style under-wrap detection (R19)
 
-Status: draft
+Status: mostly-done -- 9 of 12 boxes verified done 2026-09-22 (R19 shipped, wired, baselined at 62 findings).
+Genuinely open: the EDGE_CASES regression tests for block_prose_style_edit.py and test_underwrap_* for test_quality_prose_style.py (behavior independently verified correct, but unasserted).
+The "do not bulk-fix inline" decision box was reversed same-day by explicit operator instruction (commits 05b753df3, 6fb8849f9 bulk-reflowed the whole repo) -- left open rather than ticked, since the box's own instruction was not the thing that happened.
 First-Seen: 2026-09-17
 Owner: d778be9d
 
@@ -51,30 +53,36 @@ future normal edit unless it is scoped very narrowly and its existing-corpus hit
       tooling investigation above replaced the hand-rolled-heuristic guesswork with an evidenced
       conclusion (no external tool does under-wrap detection; `textwrap` stays the shared
       wrapping primitive, matching what `reflow_markdown` already uses).
-- [ ] Factor `reflow_markdown`'s paragraph-buffering loop (fence/frontmatter/list-item/
+- [x] Factor `reflow_markdown`'s paragraph-buffering loop (fence/frontmatter/list-item/
+    (ticked) 2026-09-22T19:57:53Z by d778be9d: markdown_segments(text) at .ci/rediacc_ci/quality/prose_style.py:1001, consumed by both reflow_markdown:1159 and underwrap_findings:1120, landed in 527fc9ad7
       REFLOW_STOP handling) out of the function body into a reusable `paragraphs(text)`
       generator yielding `(start_lineno, list[str])`, used by both `reflow_markdown` (unchanged
       behavior, `test_reflow*` must stay green) and the new detector. This is the "reuse, don't
       reinvent join-feasibility" requirement.
-- [ ] Add `R19` to `.ci/config/prose-style-rules.json`: `detection: "underwrap"`,
+- [x] Add `R19` to `.ci/config/prose-style-rules.json`: `detection: "underwrap"`,
+    (ticked) 2026-09-22T19:57:53Z by d778be9d: .ci/config/prose-style-rules.json:883-915, R19 detection:underwrap, scopes widened to markdown/comment/pr/commit past this box's original spec, verified live via .claude/rediacc_hooks/guards/test-block_prose_style_commit.py:36-38,97-98
       `scopes: ["markdown", "pr"]` (see Scope decision -- deliberately excludes `comment` and
       `commit`), no `patterns`, one `good` example (a normally-wrapped short paragraph) and one
       `bad` example (a 3+ line uniformly-narrow paragraph, embedded as a `\n`-joined JSON
       string, matching how `R18`/reflow tests embed multi-line fixtures).
-- [ ] Extend `Rule.advisory` in `prose_style.py`: `return not self.raw_patterns and
+- [x] Extend `Rule.advisory` in `prose_style.py`: `return not self.raw_patterns and
+    (ticked) 2026-09-22T19:57:53Z by d778be9d: .ci/rediacc_ci/quality/prose_style.py:130 exact match: return not self.raw_patterns and self.detection not in (measured, underwrap)
       self.detection not in ("measured", "underwrap")` -- otherwise R19 is reported as
       advisory/undetected and the `_shape()`/`sync` output lies about it.
-- [ ] Add `underwrap_findings(text, rule, scope, max_len)` in `prose_style.py`: runs
+- [x] Add `underwrap_findings(text, rule, scope, max_len)` in `prose_style.py`: runs
+    (ticked) 2026-09-22T19:57:53Z by d778be9d: .ci/rediacc_ci/quality/prose_style.py:1112 underwrap_findings(path, text, rule, scope, max_len), one Finding per paragraph
       `paragraphs(text)`, applies the heuristic gate (below), and for each qualifying paragraph
       emits **one** `Finding` anchored at the paragraph's first line, with `Finding.text` = the
       whole paragraph joined by `\n` (so a rewrite of any line inside it re-keys the baseline
       entry, matching the documented "a rewrite is exactly when a human should look again"
       contract).
-- [ ] Wire it into `lint_text` and `lint_message`: both currently loop `for line in lines:
+- [x] Wire it into `lint_text` and `lint_message`: both currently loop `for line in lines:
+    (ticked) 2026-09-22T19:57:54Z by d778be9d: .ci/rediacc_ci/quality/prose_style.py:853-856 lint_text and :873-876 lint_message, both guarded by rule.detection == underwrap
       lint_line(...)`, which has no cross-line context. Add a second pass,
       `findings.extend(underwrap_findings(...))` for the R19 rule if it applies to the scope,
       run once per document/message rather than per extracted `Line`.
-- [ ] Decide and implement the heuristic gate (see Detection algorithm) as a named, tested
+- [x] Decide and implement the heuristic gate (see Detection algorithm) as a named, tested
+    (ticked) 2026-09-22T19:57:54Z by d778be9d: _looks_hard_wrapped(buffer, width) at .ci/rediacc_ci/quality/prose_style.py:1082, live-tested against must-not-fire list, all correct
       function so it is not duplicated a third time.
 - [ ] Wire `block_prose_style_edit.py`: no code change needed beyond what already exists -- it
       already calls `engine.lint_text(rel, new_prose, rules, globals_, scope=scope)` and already
@@ -84,13 +92,15 @@ future normal edit unless it is scoped very narrowly and its existing-corpus hit
       `Write`/`content` block; (b) the same paragraph rewritten at full width passes; (c) a
       single-line `Edit.new_string` with no sibling context is NOT flagged (documented
       limitation, see below) -- must be asserted, not just hoped for.
-- [ ] Wire `block_prose_style_commit.py`: same, no structural change --
+- [x] Wire `block_prose_style_commit.py`: same, no structural change --
+    (ticked) 2026-09-22T19:57:54Z by d778be9d: .claude/rediacc_hooks/guards/test-block_prose_style_commit.py:36-38,97-98 add R19 heredoc case, guard suite passes 35/35
       `lint_message(text, rules, globals_, _scope_for(label))` already exists; R19 applies only
       when `_scope_for(label) == "pr"` (title/body/body-file), never for `"commit"` labels,
       because R19's scopes list omits `commit`. Add `EDGE_CASES` to
       `test-block_prose_style_commit.py` mirroring the edit-guard cases, scoped to
       `gh pr create --body`.
-- [ ] Run the tree-wide `check` once R19 is loaded, measure the real finding count (expect low
+- [x] Run the tree-wide `check` once R19 is loaded, measure the real finding count (expect low
+    (ticked) 2026-09-22T19:57:54Z by d778be9d: prose-style-baseline.json by_rule.R19=62 (far below original 13328 estimate, since the bulk-reflow already ran)
       thousands per the paragraph-level numbers above, scoped to markdown+pr only, not the
       inflated comment number), and freeze it with `check_prose_style.py check --write-baseline`
       -- this is the SAME shrink-only mechanism every other rule's debt already goes through
@@ -106,7 +116,8 @@ future normal edit unless it is scoped very narrowly and its existing-corpus hit
       `check_prose_style.py reflow --write` is the correct bulk instrument for markdown, but
       rewriting 400+ files is its own large, separately reviewable diff -- schedule it as a
       follow-up PR, not bundled with the detector landing.
-- [ ] Fix only the two files the operator actually pointed at (`prose_style.py`,
+- [x] Fix only the two files the operator actually pointed at (`prose_style.py`,
+    (ticked) 2026-09-22T19:57:54Z by d778be9d: verified: re.MULTILINE on GIT_COMMIT/GH_PR .claude/rediacc_hooks/guards/block_prose_style_commit.py:70-75, _is_docstring stepping past tokenize.NL .ci/rediacc_ci/quality/prose_style.py:477,485, both committed at HEAD, git diff empty
       `block_prose_style_commit.py`) by hand this session if the operator still wants that after
       seeing the scope numbers, since two files is a small, safe, human-reviewable diff, unlike
       the 400-file tree-wide reflow. (Already done live this session, ahead of this plan: both

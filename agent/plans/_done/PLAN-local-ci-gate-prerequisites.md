@@ -29,7 +29,7 @@ edges: "ids that must succeed first".
 - `manifest.ts:2218` states the rule outright: *"build:www is not an
 optimisation: without dist it REFUSES rather than self-skipping."*
 - The `blocked` status is fully plumbed already: `pool.ts:35` and `:275`,
-`report.ts:89-178`, `run.ts:643` and `:816`.
+`scripts/ci-runner/report.ts:89-178`, `scripts/ci-runner/run.ts:643` and `:816`.
 
 So `check:ci-landmarks` and `check:ci-ssr-locale` were simply **missing a declaration that every one of their siblings has**. The fix is two `needs` lines, not a feature.
 

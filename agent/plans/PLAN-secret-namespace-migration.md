@@ -1,6 +1,11 @@
-Status: partially implemented 2026-09-05 — every line a session can execute has been
+Status: mostly stale 2026-09-22 -- 5 of 9 open boxes were already done in the tree, via commits this file was never updated to reflect; verified and ticked 2026-09-22.
 First-Seen: 2026-09-17
-executed; the 7 open boxes are operator-only or land in other repos (a GitLab commit for private/growth, renames in private/generative, the GPG revocation certificate, and the mc_migrate_claude machine-account token only the operator can mint).
+Done: org secrets deleted, mc_migrate_claude replaced/rotated, OTLP row O3 closed.
+Still open: private/growth + private/generative TTS_ENGINE/RDC_ renames, the growth 6-secret GitLab commit, and the GPG revocation certificate.
+The door:operator-only reasoning below (three disputed secret values) is now MOOT.
+The operator overrode the "delete nothing" default directly on 2026-09-05 (commit a0d3d880f, "Bitwarden wins... Get rid of them").
+Execution finished by 2026-09-15 (commit 7343ae9dc). `.ci/config/shadow-expected-mismatches.json` and `.ci/config/github-secret-preimage.json`, both cited below, no longer exist -- deleted along with the shadow machinery once the migration completed.
+No live session owns this file (its driving session, a276391d, was tombstoned 2026-09-05); do not force an Owner: onto it.
 
 The header said `done` until 2026-09-05, and that is why this file reds check:ci-plan-boxes rather than being exempted by it: a finished status switches the Stop hook's advisory off, so a plan claiming done while carrying open boxes hides them from the one mechanism that surfaces them. The boxes were always there; the header was the inaccurate half. What remains is not a step in
 it: three secrets whose two copies hold different VALUES, which only the operator can reconcile. That is recorded where it will be found without reading 2,600 lines — `.ci/config/shadow-expected-mismatches.json`, which carries each drift with the run that found it, its door, and a `$resolution` block naming the steps. Worklist `[?] #fbd35dba` was closed 2026-09-03 with
@@ -46,7 +51,7 @@ The rename, as ONE atomic commit (5e forces atomicity):
 - [x] Rename every console occurrence onto the agreed convention in a single commit — `.github/workflows` and `.ci/` are ~75% of ~1,770 hits; `packages/` has 7 and `workers/` has 1 (5e)
       AUDIT: DONE 2026-09-02 (audit): applied and committed as a86eb8d0e (196 files) plus the submodule pointers. Target spellings verified at .github/workflows/cd-deploy-account.yml:291-293, :267, .ci/scripts/deploy/upload-to-r2.sh:146,153-154, and all 56 names in .ci/config/bws-secret-map.json. NOTE: commit 3e5997faa then had to repair 267 `secrets.X` right-hand sides this rename should never have touched.
 - [x] Rewrite the seven runtime-constructed names by hand, since find-and-replace cannot see them: `set-account-worker-secrets.sh:70-73,79-89`, `cd-deploy-account.yml:249`, `regions.json:15,30,45`, and the `${!var_name}` presence-checkers in `common.sh:133`, `upload-to-r2.sh:147`, `breakpoint-common.sh:178,346`, `assert-ci-complete.sh:65,74` (5e)
-      AUDIT: DONE 2026-09-02 (audit): set-account-worker-secrets.sh:114-115, :123-126, :128-130, :134-135 all carry the new spellings; the second key_var="STRIPE_KEY_${SUFFIX}" indirection is deleted with its reason recorded at cd-deploy-account.yml:339-346.
+      AUDIT: DONE 2026-09-02 (audit): .ci/scripts/deploy/set-account-worker-secrets.sh:114-115, :123-126, :128-130, :134-135 all carry the new spellings; the second key_var="STRIPE_KEY_${SUFFIX}" indirection is deleted with its reason recorded at cd-deploy-account.yml:339-346.
 - [x] **Done 2026-09-02 (Writer B; the workflow env side is Writer D's, in flight).** Delete the `SECRET_*` / `<PREFIX>_<SUFFIX>` workflow-env shim in `set-{account,www,preview}-worker-secrets.sh` (contract at `:26-41`, consumed at `:92-141`) and have the Worker read the full names, updating the `env.ts` zod schema — decision 2, the fourth namespace
 - [x] **Done 2026-09-02 (Writer B for Worker names; Writer E adds explicit `bitwarden_secret_names`).** Update the rotation literals in `scripts/rotation/lib/config.ts:39,54,70,91,97,107,117,133,201,212,222` in the same commit, or `commands/init.ts` reseeds a manifest that disagrees with itself (5b)
 - [x] **Done 2026-09-02** (exit 0, 46 references across 3 repos; the gate is now red only on `BWS_ACCESS_TOKEN`, which is absent from the org by design until the operator mints it). Regenerate `.ci/config/secret-reachability.json` with `npm run check:ci-secret-reachability -- --refresh` (needs the org-admin token; carries `MAX_BASELINE_AGE_DAYS=45` and hardcoded `OPTIONAL` entries) — the one gate guaranteed to fail otherwise (5e)
@@ -55,7 +60,7 @@ Submodule and sibling-repo coordination, in the same window as the rename:
 
 - [ ] Land the six `private/growth` secrets under provider prefixes — `ELEVENLABS_API_KEY`, `PEXELS_API_KEY`, `MAUTIC_USER`, `MAUTIC_PASS`, `APOLLO_EMAIL`, `APOLLO_PASSWORD` — as a coordinated GitLab commit (decision 6, 5d)
 - [x] Rename growth's five console-secret reads behind their two indirection constructs — `publish-solutions.sh:51-58` (`${!v}` over a name list) and `publish.py:40` (`_R2_ENV_VARS` tuple) — together with console's `.ci/scripts/deploy/upload-media-to-r2.sh`, or growth's guard passes and the upload dies inside `aws` (5d)
-      AUDIT: DONE 2026-09-02 (audit): private/growth/video_pipeline/publish-solutions.sh:55 and publish.py:40 carry the new names; console's counterpart moved with them at upload-media-to-r2.sh:26-28,99,105-106,122,127. CF_GLOBAL_API_KEY/CF_EMAIL are deliberately unchanged (no Part 10 row).
+      AUDIT: DONE 2026-09-02 (audit): private/growth/video_pipeline/publish-solutions.sh:55 and publish.py:40 carry the new names; console's counterpart moved with them at .ci/scripts/deploy/upload-media-to-r2.sh:26-28,99,105-106,122,127. CF_GLOBAL_API_KEY/CF_EMAIL are deliberately unchanged (no Part 10 row).
 - [ ] Rename `TTS_ENGINE` in `private/generative` (`src/tutorial_tts/config.py:116`) and `private/growth` (`step4000_voiceover.py:46`) in the SAME change; growth passes its whole environment through at `:157`, so a one-sided rename silently falls back to a different narration engine (5c)
 - [ ] Rename `RDC_GPU_LOCK_FILE` (generative) and `RDC_REMOTION_CONCURRENCY` (growth) out of the `RDC_` prefix — neither has anything to do with the CLI (5c)
 
@@ -70,10 +75,11 @@ deliberately absent and stays absent. In flight 2026-09-02 as part of the five-c
 - [>] **`CLOUDFLARE_API_TOKEN` is in flight 2026-09-02** under decision 9; the `CLOUDFLARE_R2_*`
 trio and `CLOUDFLARE_TURNSTILE_SECRET_KEY` are already present in `ci-shared` (verified against the map) and need no mint. Original text: Re-mint the 3 `CLOUDFLARE_R2_*` (`R2_ACCESS_KEY_ID`/`_SECRET_ACCESS_KEY`/`_ENDPOINT`) plus `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_TURNSTILE_SECRET_KEY` into `ci-shared`
 - [x] Supply the 2 operator-only values `DOCKERHUB_USERNAME` and `ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN` — no console can re-mint the first
-      AUDIT: DONE 2026-09-02 (audit): both exist as ci-shared entries in the store-generated map -- bws-secret-map.json:43 and :94, each with a UUID, refreshed_at 2026-09-02T20:13:01Z. Caveat recorded by the auditor: this proves the NAME/UUID exists, not the value.
+      AUDIT: DONE 2026-09-02 (audit): both exist as ci-shared entries in the store-generated map -- .ci/config/bws-secret-map.json:43 and :94, each with a UUID, refreshed_at 2026-09-02T20:13:01Z. Caveat recorded by the auditor: this proves the NAME/UUID exists, not the value.
 - [x] **Settled 2026-09-02: one account, so the secret key has no region; the unsuffixed webhook secret is treated as EU per the operator.** Establish which REGION `ci-shared`'s unsuffixed `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` belong to before either is used as a migration source (Part 10)
 - [x] **Done 2026-09-02 (Writer C), id 2b34dfab preserved.** Rename `OTLP_AUTH_TOKEN=USER:PASS` to `OBS_OTLP_CREDENTIALS` in the vault and `ci-shared` — the current name contains `=` and `:` and breaks KEY=VALUE parsing
-- [ ] Replace `mc_migrate_claude` before it expires 2026-09-08, renamed `BWS_ACCESS_TOKEN` (target corrected, Part 10) — parked as `[?] #d76f8e3d`, the operator creates the read-only machine account; it is the only Bitwarden WRITE credential
+- [x] Replace `mc_migrate_claude` before it expires 2026-09-08, renamed `BWS_ACCESS_TOKEN` (target corrected, Part 10) — parked as `[?] #d76f8e3d`, the operator creates the read-only machine account; it is the only Bitwarden WRITE credential
+    (ticked) 2026-09-22T19:56:53Z by d778be9d: bws-token-expiry.json: mc_migrate_claude deleted (not edited), expired 2026-09-08; split 2026-09-09 into local-rw-account and ci-readonly-console; credentials.ts:147 confirms fallback gone
       AUDIT: PARTIAL: the RENAME half is done (BWS_ACCESS_TOKEN everywhere; the mc_migrate_claude fallback removed at rotation/lib/credentials.ts:146-155). The REPLACEMENT is not: .ci/config/bws-token-expiry.json:29-34 still names mc_migrate_claude, expires 2026-09-08, client_id_sha256 unchanged.
 
 Bitwarden, second (see Sequencing):
@@ -86,12 +92,14 @@ Post-migration cleanup (detail in Part 6):
 
 - [?] Narrow the `gh` token back to `gist,read:org,repo,workflow` once the reachability baseline is regenerated, and verify by CAPABILITY (`gh api /user/orgs` still works, `gh secret list --org rediacc` starts 403ing) rather than by the scope label (Part 6.1)
       AUDIT: UNVERIFIABLE from the tree: a `gh` OAuth scope set lives in the operator's credential store. Its PRECONDITION is also unmet -- .ci/config/secret-reachability.json:8 is still keyed on the OLD names, so the post-rename --refresh (which needs admin:org) has not run.
-- [ ] Delete the old GitHub org secrets once CI reads from Bitwarden — this is what makes decision 3 pay off (Part 6.2)
+- [x] Delete the old GitHub org secrets once CI reads from Bitwarden — this is what makes decision 3 pay off (Part 6.2)
+    (ticked) 2026-09-22T19:56:54Z by d778be9d: .ci/config/secret-reachability.json:8-20 (refreshed 2026-09-15T01:18:42Z) shows only BWS_ACCESS_TOKEN per repo; commit 40c61a6b9: operator deleted GitHub org secrets, migrated to Bitwarden
 - [?] Revoke the predecessor backup R2 credential, identified via the Cloudflare audit log, and narrow `backup-s3-20260901T103133Z` from account-wide R2 write to the backup buckets only (Part 6.3, decision 8)
       AUDIT: UNVERIFIABLE from the tree: entirely Cloudflare state, and nothing here records token scopes. `grep -rn 'backup-s3-20260901T103133Z'` finds it only in plan prose. Proof would be a token listing showing the predecessor revoked and the successor scoped to the six backup buckets instead of account-wide R2 write.
 - [x] Decide the 3 SMTP orphans — `SMTP_HOST`, `SMTP_PASS`, `SMTP_USER` are org secrets no workflow references: delete them, or document what outside CI uses them (Part 6.4)
       AUDIT: DONE 2026-09-02 (audit): resolved via the 'document what outside CI uses them' branch -- .ci/config/bws-unrequested.json:67-70, :71-74, :79-82 carry SMTP_HOST / SMTP_PASSWORD / SMTP_USER with re-derivable reasons, plus :63-66 and :75-78 for SMTP_FROM/SMTP_PORT.
-- [ ] Rotate the `mc_migrate_claude` machine-account token — created 2026-09-01 with 7-day validity and read-WRITE on `ci-shared`; the long-lived CI tokens must be read-only and per-project (Part 6.5)
+- [x] Rotate the `mc_migrate_claude` machine-account token — created 2026-09-01 with 7-day validity and read-WRITE on `ci-shared`; the long-lived CI tokens must be read-only and per-project (Part 6.5)
+    (ticked) 2026-09-22T19:56:54Z by d778be9d: same evidence as mc_migrate_claude replacement: long-lived rw token no longer exists, superseded by ci-readonly-console (read-only, per-purpose) rather than literally rotated
 - [x] ~~Regenerate the GPG signing key~~ **SUPERSEDED by decision 8bis (Part 9): the key IS readable in the vault and was verified importable as `rsa4096/49BA687F0527C72B`, so it was COPIED, not regenerated.** The revocation certificate remains open as its own item above. Original text: produce a revocation certificate — the pair exists only in the unreadable org store, the local keyring is empty, and `docs/code-signing-guide.md:559` is unticked (Part 3; operator accepted regeneration, no users yet)
 
 ---
@@ -277,7 +285,7 @@ Boolean probes confirming it is one single-region dev instance rather than a mir
 ### Two gate findings that came out of reading `.env` (2026-09-02)
 
 - **`check:env-credential-drift` tracked a category error, now fixed.** Its `TRACKED` list
-checked `SES_AK_ID` against the `ses-eu`/`ses-us`/`ses-asia` slugs. But `SES_AK_ID` is the AWS **IAM admin** credential the rotation tool uses to create and delete the SES sending keys (`scripts/rotation/lib/credentials.ts:59-61`), not a sending key itself. No manifest slug records it and none can, so the check could never pass — a permanently red gate, which is worse than one that
+checked `SES_AK_ID` against the `ses-eu`/`ses-us`/`ses-asia` slugs. But `SES_AK_ID` is the AWS **IAM admin** credential the rotation tool uses to create and delete the SES sending keys (`private/account/scripts/rotation/lib/credentials.ts:59-61`), not a sending key itself. No manifest slug records it and none can, so the check could never pass — a permanently red gate, which is worse than one that
 cannot fail because it teaches you to skip the output. Removed, with the honest consequence stated in the source: **the admin credential is outside the rotation record entirely, so nothing tracks its age.** Closing that means an `aws-admin` slug in the manifest — operator's call.
 - **One real drift survives and is the operator's** (`[?] #2d728f0a`): `.env`'s
 `AWS_SES_ACCESS_KEY_ID` matches no version the manifest records for any `ses-*` slug. Either a stale key or a separate never-rotated dev key. Resolving it needs `rotation rotate ses-eu` (mints and pushes a real AWS key) or a paste from the AWS console. The gate is local-only, not in CI, so nothing is blocked meanwhile.
@@ -290,8 +298,8 @@ cannot fail because it teaches you to skip the output. Removed, with the honest 
 |---|---|---|
 | `AUTOPILOT_PRIVATE_KEY` leaked into a transcript | `bws` parser echoed it | **`[?] #76f6f55e`** — operator must rotate |
 | `GPG_PRIVATE_KEY`/`GPG_PASSPHRASE` exist ONLY in the unreadable org store; local keyring empty; no revocation cert (`docs/code-signing-guide.md:559` unticked) | published half is `rsa4096/49BA687F0527C72B` | Operator accepted: **regenerate**, no users yet |
-| `BACKUP_S3_BUCKET`/`_ENDPOINT` are single global secrets while R2 bindings are **per-region and EU-jurisdiction-locked** | `cd-deploy-account.yml:296-297` justifies not suffixing the CREDENTIAL then applies it to the BUCKET too; `backup-chunk-store.ts:980` uses the value verbatim | **DONE 2026-09-02** — see the passage below; fixed by derivation, not by suffixing |
-| `cd-stage.yml` piped nfpm into `sudo tar` while sibling `ci.yml:810` already verified the same pin | class-sweep miss by a prior session | **Fixed** |
+| `BACKUP_S3_BUCKET`/`_ENDPOINT` are single global secrets while R2 bindings are **per-region and EU-jurisdiction-locked** | `.github/workflows/cd-deploy-account.yml:296-297` justifies not suffixing the CREDENTIAL then applies it to the BUCKET too; `backup-chunk-store.ts:980` uses the value verbatim | **DONE 2026-09-02** — see the passage below; fixed by derivation, not by suffixing |
+| `cd-stage.yml` piped nfpm into `sudo tar` while sibling `.github/workflows/ci.yml:810` already verified the same pin | class-sweep miss by a prior session | **Fixed** |
 | `ci-build-renet.yml` pulled golangci-lint's installer from the `master` branch | moving target piped to `sh` | **Fixed** (pinned to the release tag) |
 | 5 Dockerfile downloads unverified; ttyd pinned by a mutable tag | — | **Fixed** + gate `check:ci-unverified-downloads` |
 
@@ -360,7 +368,7 @@ confirm the token's scope in Cloudflare before the first real backup deploy.
 The real defect was both simpler and worse. `KNOWN_CREDENTIAL_SLUGS` listed 13 of the 15 slugs CLAUDE.md documents, and the same check gates **all three verbs** — `rotate.ts:109`, `deactivate.ts:49`, `delete.ts:37`. So `cf-r2-media` and `cf-breakpoint` could not be rotated, deactivated *or* deleted: two live credentials with no retirement path at all. `rotateCloudflareToken`
 already knew how to mint `cf-r2-media`; that branch was simply unreachable.
 
-**What was done.** Both slugs added to `KNOWN_CREDENTIAL_SLUGS` (`src/types/rotation-manifest.ts:288`, now exported). The push step was refactored off its hard-coded slug branches: secret NAMES now come from `cred.consumers` in the manifest, and the only per-slug knowledge left is a `CF_TOKEN_CONSUMER_SHAPE` of `bearer` (one consumer, gets the token value) or `r2-keypair` (two
+**What was done.** Both slugs added to `KNOWN_CREDENTIAL_SLUGS` (`private/account/src/types/rotation-manifest.ts:288`, now exported). The push step was refactored off its hard-coded slug branches: secret NAMES now come from `cred.consumers` in the manifest, and the only per-slug knowledge left is a `CF_TOKEN_CONSUMER_SHAPE` of `bearer` (one consumer, gets the token value) or `r2-keypair` (two
 consumers, get the id and sha256(value)). Verified behaviour-preserving: the manifest's consumer names for all four cf slugs are byte-identical to the ones the old code hard-coded. The usage string, which had drifted to offer `cf-r2-media` while the slug check refused it, is now derived from `KNOWN_CREDENTIAL_SLUGS` rather than restated.
 
 `rotate cf-breakpoint` still refuses, deliberately and loudly: no permission set is declared for it, and minting with guessed scopes would silently widen or narrow what a debug session can reach. The refusal names `.ci/breakpoint/README.md` as the source and says that deactivate/delete/list work today. `deactivate`/`delete`/`list` are unblocked.
@@ -423,13 +431,13 @@ hits (2 files) and `workers/` has 1** — the product code is not in the blast r
 **16 of the 44 never reach a Worker** (CI-only) and rename with zero cross-namespace coordination. **19 collapse** through the shim — the region suffix is stripped, and `env.ts` only ever sees the short name.
 
 **Names constructed at runtime — the find-and-replace blind spots**, and there are only seven:
-- `set-account-worker-secrets.sh:70-71,72-73,79-82,88-89` — `${!STRIPE_VAR}`, `${!WH_VAR}`,
+- `.ci/scripts/deploy/set-account-worker-secrets.sh:70-71,72-73,79-82,88-89` — `${!STRIPE_VAR}`, `${!WH_VAR}`,
 `${!SES_K}`, `${!SES_S}`, `${!OTLP_VAR}`
 - `:84-86` — the ASIA special case borrowing literal `${SES_KEY_EU}`
-- `cd-deploy-account.yml:249` — a **second, independent** `key_var="STRIPE_KEY_${SUFFIX}"`
+- `.github/workflows/cd-deploy-account.yml:249` — a **second, independent** `key_var="STRIPE_KEY_${SUFFIX}"`
 - `regions.json:15,30,45` — `secretSuffix` is the single source for every suffix above
 - generic `${!var_name}` presence-checkers in `.ci/scripts/lib/common.sh:133`,
-`upload-to-r2.sh:147`, `breakpoint-common.sh:178,346`, `assert-ci-complete.sh:65,74`
+`.ci/scripts/deploy/upload-to-r2.sh:147`, `.ci/breakpoint/lib/breakpoint-common.sh:178,346`, `.ci/scripts/ci/assert-ci-complete.sh:65,74`
 
 There is **no** dynamic `secrets[...]` indexing in GitHub expressions — all construction is bash-side, and the only variable part is `EU|US|ASIA` from one file.
 
@@ -532,11 +540,11 @@ The shim is contracted at `.ci/scripts/deploy/set-account-worker-secrets.sh:26-4
 
 ## The seven runtime-constructed names — find-and-replace CANNOT see these
 
-1-5. `set-account-worker-secrets.sh:70-71,72-73,79-82,88-89` — `${!STRIPE_VAR}`,
+1-5. `.ci/scripts/deploy/set-account-worker-secrets.sh:70-71,72-73,79-82,88-89` — `${!STRIPE_VAR}`,
      `${!WH_VAR}`, `${!SES_K}`, `${!SES_S}`, `${!OTLP_VAR}`
-6. `set-account-worker-secrets.sh:84-86` — the ASIA special case borrowing literal
+6. `.ci/scripts/deploy/set-account-worker-secrets.sh:84-86` — the ASIA special case borrowing literal
 `${SES_KEY_EU}` / `${SES_SECRET_EU}` (**deliberate**: AWS has not granted `ap-northeast-1` production access; ASIA is kept for when it does)
-7. `cd-deploy-account.yml:249` — a **second, independent** `key_var="STRIPE_KEY_${SUFFIX}"`
+7. `.github/workflows/cd-deploy-account.yml:249` — a **second, independent** `key_var="STRIPE_KEY_${SUFFIX}"`
 
 `regions.json:15,30,45` is the single source of `secretSuffix`. There is **no** dynamic `secrets[...]` indexing in GitHub expressions — all construction is bash-side.
 
@@ -826,7 +834,7 @@ That last rename is not cosmetic: **the current name contains `=` and `:`**, whi
 
 Lowercase in a file of SCREAMING_SNAKE, and it names neither its provider nor its purpose. Expires **2026-09-08**.
 
-**Target CORRECTED 2026-09-02 from `BITWARDEN_SM_ACCESS_TOKEN` to `BWS_ACCESS_TOKEN`.** The rename inventory (Part 12) found the two names colliding in intent: `bws` itself reads `BWS_ACCESS_TOKEN`, the composite action documents that GitHub secret name, and `check_bws_map.py:107` expects it. One token, one name, the one the tool already reads.
+**Target CORRECTED 2026-09-02 from `BITWARDEN_SM_ACCESS_TOKEN` to `BWS_ACCESS_TOKEN`.** The rename inventory (Part 12) found the two names colliding in intent: `bws` itself reads `BWS_ACCESS_TOKEN`, the composite action documents that GitHub secret name, and `.ci/scripts/quality/check_bws_map.py:107` expects it. One token, one name, the one the tool already reads.
 
 ### Out of scope — in the vault and SM, read by nothing
 
@@ -909,7 +917,7 @@ keyed on "zero tasks" would have waved that straight through, which is why the h
 out pay-as-you-go API billing, so this credential will never exist. It used to be referenced-but-absent, held in place by an `OPTIONAL` allowlist entry in `check_secret_reachability.py`; both the reference and the entry were deleted, that allowlist is now empty, and the watchdog's tier 2 authenticates with `CLAUDE_CODE_OAUTH_TOKEN` alone. **Do not re-add it, and do not mint a
 key.** If a future reader finds this name in a comment, that comment is the record of its removal.
 - **`AWS_SES_*_ASIA` are NOT dead.** They are held for when AWS grants `ap-northeast-1`;
-`set-account-worker-secrets.sh:84` substitutes EU at deploy time only.
+`.ci/scripts/deploy/set-account-worker-secrets.sh:84` substitutes EU at deploy time only.
 - **`private/growth` and `private/generative` are real GitLab repos**, coordinatable but not
 atomic with console. `TTS_ENGINE` is duplicated in both and must move in lockstep or narration silently falls back to a different engine.
 
@@ -923,39 +931,39 @@ Produced by a read-only agent over `git ls-files --recurse-submodules` plus the 
 substring of its own replacement (`R2_ENDPOINT` → `CLOUDFLARE_R2_ENDPOINT`). A second pass without the anchor yields `CLOUDFLARE_CLOUDFLARE_R2_ENDPOINT`. No target name exists anywhere in the tree yet, so a partial run is detectable but not self-healing.
 - **Container tokens that must NOT change** (each is a different credential):
 `CONFIG_R2_{ENDPOINT,ACCESS_KEY_ID,SECRET_ACCESS_KEY}` (37 sites, the on-prem rustfs blob store; `.ci/lib/account.sh`, `src/entry/*.ts`, `env.ts:157-163`, `docker-compose.yml`, `scripts/drills/backup.sh:111-112`), `ACCOUNT_BACKUP_R2_GRANT_*` (formerly `BACKUP_R2_*`, renamed by decision 10; a distinct optional Worker binding, and it is now impossible to hit by accident since it no
-longer shares a stem with the S3 family), `ACCOUNT_BACKUP_S3_*` (which CONTAINS `BACKUP_S3_*`, so the GitHub-side rename needs its left boundary or a second pass doubles the prefix), `CD_APP_PRIVATE_KEY` (`scripts/dev/SECURITY-HARDENING-SETUP.md:50,194`).
+longer shares a stem with the S3 family), `ACCOUNT_BACKUP_S3_*` (which CONTAINS `BACKUP_S3_*`, so the GitHub-side rename needs its left boundary or a second pass doubles the prefix), `CD_APP_PRIVATE_KEY` (`scripts/ops/SECURITY-HARDENING-SETUP.md:50,194`).
 - **`STRIPE_SECRET_KEY_{EU,US,ASIA}` before any bare `STRIPE_SECRET_KEY` rule, with a
 RIGHT boundary too.** `STRIPE_SANDBOX_SECRET_KEY` (18 refs) and `STRIPE_WEBHOOK_SECRET_*` are unchanged and must be excluded.
 - **`OTLP_CLIENT_CREDENTIALS_{EU,US,ASIA}` longest-first.** The bare
 `OTLP_CLIENT_CREDENTIALS` is a live Worker key and `.env` key, not in the table.
 - `OTLP_AUTH_{USERNAME,PASSWORD,TOKEN}` have ZERO live readers (two dead comments at
-`ci-build-renet.yml:28` and `ci.yml:716`). Rename them in Bitwarden only.
+`.github/workflows/ci-build-renet.yml:28` and `.github/workflows/ci.yml:716`). Rename them in Bitwarden only.
 
 ### Runtime-constructed names sed cannot see (verified line numbers)
 
-- `set-account-worker-secrets.sh:83-102`: six `${!VAR}` indirections over
-`STRIPE_KEY_$SUFFIX`, `STRIPE_WH_$SUFFIX`, `SES_KEY_$SUFFIX`, `SES_SECRET_$SUFFIX`, `OTLP_CRED_$SUFFIX`, plus the literal `_EU` ASIA fallback at `:98-99`. These are workflow-local env names minted at `cd-deploy-account.yml:246-248,277-282,287-295`; only the `secrets.X:` left-hand side of those YAML lines carries a Part 10 name.
-- `cd-deploy-account.yml:253-254`: a second independent `key_var="STRIPE_KEY_${SUFFIX}"`
+- `.ci/scripts/deploy/set-account-worker-secrets.sh:83-102`: six `${!VAR}` indirections over
+`STRIPE_KEY_$SUFFIX`, `STRIPE_WH_$SUFFIX`, `SES_KEY_$SUFFIX`, `SES_SECRET_$SUFFIX`, `OTLP_CRED_$SUFFIX`, plus the literal `_EU` ASIA fallback at `:98-99`. These are workflow-local env names minted at `.github/workflows/cd-deploy-account.yml:246-248,277-282,287-295`; only the `secrets.X:` left-hand side of those YAML lines carries a Part 10 name.
+- `.github/workflows/cd-deploy-account.yml:253-254`: a second independent `key_var="STRIPE_KEY_${SUFFIX}"`
 in "Verify Stripe prices". The one-account collapse makes `:252-257` dead.
 - `private/account/scripts/ops.sh:134,138,144`: name held as a string in `key_var`.
 - `scripts/dev/migrate-stripe-to-envs.sh`: exists solely to push the three regional
 Stripe keys into GitHub environments. The collapse voids the script; **deleted 2026-09-02 (Writer D)**.
-- `scripts/dev/deploy-bench.sh:203,205,206`: nested defaults carrying TWO renamed names
+- `scripts/ops/deploy-bench.sh:203,205,206`: nested defaults carrying TWO renamed names
 per line with DIFFERENT targets (`ACCOUNT_BACKUP_S3_*` vs `CLOUDFLARE_R2_*`; the first read `CLOUDFLARE_R2_BACKUP_*` until decision 10, which is precisely the collision that made the line hazardous — the two no longer share a prefix at all).
 - `run.sh:1438` `_env()` greps `.env` by literal key; callers at `:1501-1520`.
 - `credentials.ts:60-61`: `SES_AK_ID ?? AWS_SES_ADMIN_KEY_ID`, a THIRD spelling of the
-IAM admin pair, also at `deploy-bench.sh:163`. Not in the table; collapse it.
+IAM admin pair, also at `scripts/ops/deploy-bench.sh:163`. Not in the table; collapse it.
 - `credentials.ts:152-153`: exports the token under `BWS_ACCESS_TOKEN`, not Part 10's
 `BITWARDEN_SM_ACCESS_TOKEN`.
 
 ### Gates that hardcode a renamed name (fail on the rename unless moved with it)
 
-`check-workflows.sh:99` and `check_workflow_submodule_deps.py:482` (`APP_PRIVATE_KEY`); `check_secret_reachability.py:7,70,85,173` (`CLAUDE_CODE_OAUTH_TOKEN`); `check-autopilot-no-bypass.sh` (7 × `AUTOPILOT_APP_ID`, a `vars.` not a secret) and its two harnesses; `check-breakpoint-drift.sh` pairs `.ci/breakpoint/workflow/breakpoint.yml` with `.github/workflows/breakpoint.yml`, which
+`check-workflows.sh:99` and `.ci/scripts/quality/check_workflow_submodule_deps.py:414` (`APP_PRIVATE_KEY`); `.ci/scripts/quality/check_secret_reachability.py:7,70,85,173` (`CLAUDE_CODE_OAUTH_TOKEN`); `check-autopilot-no-bypass.sh` (7 × `AUTOPILOT_APP_ID`, a `vars.` not a secret) and its two harnesses; `check-breakpoint-drift.sh` pairs `.ci/breakpoint/workflow/breakpoint.yml` with `.github/workflows/breakpoint.yml`, which
 must change together.
 
 ### Part 10 rows that are missing, reported for a ruling
 
-1. `BWS_ACCESS_TOKEN` (composite action, `check_bws_map.py:107`, credentials.ts) versus the
+1. `BWS_ACCESS_TOKEN` (composite action, `.ci/scripts/quality/check_bws_map.py:107`, credentials.ts) versus the
 table's `BITWARDEN_SM_ACCESS_TOKEN`: two names, one token, neither settled.
    DEFAULT: `BWS_ACCESS_TOKEN` stays; it is what `bws` itself reads.
 2. `STRIPE_SANDBOX_SECRET_KEY` and `STRIPE_SANDBOX_WEBHOOK_SECRET`: live secrets, no row.
@@ -1107,7 +1115,7 @@ Three `rotate` runs, each exit 0, in this order. Predecessors are `grace` and NO
 
 All five were Bitwarden **creates**, as predicted — `ci-shared` went 48 → 53 secrets and the map gained five entries. `check:ci-bws-map` reports `53 secret(s) mapped, 20 caller file(s)`. The ASIA org secrets still carry their 2026-04-05 timestamps, which is the ruling holding.
 
-The five are now covered by the shadow run: `cd-deploy-worker.yml:76` (EU pair + `CLOUDFLARE_API_TOKEN`) and `cd-deploy-account.yml:223` (EU + US pairs + `CLOUDFLARE_API_TOKEN`), each wired as the full triple — the `NAME > BWS_NAME` request, the `SHADOW_NAMES` entry, and the `GH_<NAME>` env. ASIA is deliberately NOT added to either: `ci-shared` holds no ASIA value and the compare
+The five are now covered by the shadow run: `.github/workflows/cd-deploy-worker.yml:76` (EU pair + `CLOUDFLARE_API_TOKEN`) and `.github/workflows/cd-deploy-account.yml:223` (EU + US pairs + `CLOUDFLARE_API_TOKEN`), each wired as the full triple — the `NAME > BWS_NAME` request, the `SHADOW_NAMES` entry, and the `GH_<NAME>` env. ASIA is deliberately NOT added to either: `ci-shared` holds no ASIA value and the compare
 step now fails on an empty side, so adding it would turn the ruling into a red job.
 
 **How the three pre-fixes actually resolved**
@@ -1127,7 +1135,7 @@ Found before the first mint, while proving pre-fix 3. **`bws` 2.1.0's default `-
 
 Both JSON-parsing callers were therefore broken:
 
-- `scripts/dev/bws-map-refresh.py:77` — died on `bws secret list did not return JSON`. It
+- `scripts/ops/bws-map-refresh.py:77` — died on `bws secret list did not return JSON`. It
 only ever runs through a pipe, so it had never worked.
 - `private/account/scripts/rotation/consumers/bitwarden-sm.ts:69` — `JSON.parse` throws at
 char 0, so EVERY `bitwarden-sm:` push would have failed at the `findBitwardenSecret` listing, before writing anything. This path had never executed against real `bws`: the `bitwarden-sm:` consumers are uncommitted work added AFTER the 2026-09-02T10:22 `cf-r2` rotation, the last one to run.
@@ -1145,7 +1153,7 @@ The deferral offered "rename the grant minter, leave the S3 family as Part 10 sa
 
 ### 2. EXTRACT the duplicated span; do not accept the divergence
 
-`check:ci-shape-duplication` failed when a new gate became the third copy of a ~5-line span (`check-ci-fetch-integrity.ts:114`, `check-guard-mutations.ts:149`, `check-test-scripts-reachable.ts:187`). The session recorded an accepted divergence with a `BLOCKER:` reason arguing the three were "a shared token skeleton, not a shared purpose" — a control-fixture table, a missing-subject
+`check:ci-shape-duplication` failed when a new gate became the third copy of a ~5-line span (`scripts/gates/check-ci-fetch-integrity.ts:114`, `scripts/gates/check-guard-mutations.ts:149`, `scripts/gates/check-test-scripts-reachable.ts:187`). The session recorded an accepted divergence with a `BLOCKER:` reason arguing the three were "a shared token skeleton, not a shared purpose" — a control-fixture table, a missing-subject
 refusal and an over-report control — and that a helper spanning them would take the message, the exit policy and the assertion direction as parameters.
 
 **That argument was wrong, and the way it was wrong is worth keeping.** It compared the three sites' INTENTS, which do differ, and concluded there was nothing to share. But what had been duplicated was the ACT: state why the gate cannot answer, then stop. `refuse(... lines): never` now lives in `scripts/lib/controls.ts`. Two adoptions were enough to drop the shape below three
@@ -1298,7 +1306,7 @@ None of the 18 was a judgement call. "Unrequested" is definitionally "no GitHub 
 **Part 16's mechanism was wrong, which matters because it implies the wrong fix.** It said `AWS_SES_REGION`, `STRIPE_WEBHOOK_SECRET` and `OBS_OTLP_CREDENTIALS` "are consumed by `set-account-worker-secrets.sh`, yet no workflow requests them". The scripts consume the *env var* of that name; CI populates that env var from a **differently-named** GitHub secret or from `vars.`. "Add a
 request line" is therefore wrong for the first two — they have no GitHub value to compare against at all. `AWS_SES_REGION` is public data already committed in `regions.json:17,35,53` and should never enter a secret store.
 
-**THE CUTOVER BREAKER.** `set-account-worker-secrets.sh:134-135` builds `OBS_OTLP_CREDENTIALS_${SUFFIX}` at RUNTIME and `_require_nonempty`s it at `:209`; today it is fed from `secrets.OTLP_CLIENT_CREDENTIALS_{EU,US,ASIA}` (`cd-deploy-account.yml:404-406`), which `secret-rename.py:70-72` renames to exactly those three names — **none of which is in the map**. No scan on either side
+**THE CUTOVER BREAKER.** `.ci/scripts/deploy/set-account-worker-secrets.sh:134-135` builds `OBS_OTLP_CREDENTIALS_${SUFFIX}` at RUNTIME and `_require_nonempty`s it at `:209`; today it is fed from `secrets.OTLP_CLIENT_CREDENTIALS_{EU,US,ASIA}` (`cd-deploy-account.yml:404-406`), which `scripts/ops/secret-rename.py:70-72` renames to exactly those three names — **none of which is in the map**. No scan on either side
 can see them, because the name never appears as a literal. This is the founding OTLP incident, reproduced by the migration built to prevent it. Severity, stated precisely: `_require_nonempty:185-192` **exits 1**, so all three regions fail the deploy LOUDLY rather than shipping blank. The Part 14 guard is the whole difference. The three values are readable nowhere (GitHub secrets
 are write-only; `.env` holds only the unsuffixed copy), so they must be created by `./run.sh rotation rotate otlp-eu|otlp-us|otlp-asia`, which mints — operator work, and `rotation sweep` must never be run.
 
@@ -1310,7 +1318,7 @@ per-job coverage.**
 **`R2_TOKEN_AUTH_API` is identified** — the raw bearer VALUE of a Cloudflare R2 API token, the third artifact beside `id` (= access key id) and `sha256(value)` (= secret access key); `rotate.ts:502-505,724-726` implements that transform and never pushes the raw value for `cf-r2`. Dead as a stored entry. Whether the Cloudflare TOKEN is dead is settled without revealing anything by
 comparing `sha256(R2_TOKEN_AUTH_API)` against `CLOUDFLARE_R2_SECRET_ACCESS_KEY`: equal means it is the active `cf-r2` credential and revoking it breaks every R2 upload.
 
-**Two credentials are in no store at all** — `SES_AK_ID`/`SES_AK_SECRET`, the AWS IAM **admin** pair the rotation tool authenticates with (`rotation/lib/credentials.ts:60-61`), strictly more powerful than the four SES sending keys that ARE stored; and the `dkim-notify` RSA key (`rotation-manifest.json:152-157`), staged by hand. A larger hole than the 18, and the subject of
+**Two credentials are in no store at all** — `SES_AK_ID`/`SES_AK_SECRET`, the AWS IAM **admin** pair the rotation tool authenticates with (`rotation/lib/credentials.ts:60-61`), strictly more powerful than the four SES sending keys that ARE stored; and the `dkim-notify` RSA key (`private/account/rotation-manifest.json:152-157`), staged by hand. A larger hole than the 18, and the subject of
 `agent/PLAN-env-to-bitwarden.md`.
 
 **Verdicts on the 18:** all DEAD except `GITHUB_AUTOPILOT_APP_ID`, which is *unshadowable* — it is `vars.AUTOPILOT_APP_ID`, no GitHub secret of that name exists, and the comparator fails on an empty side, so adding a request line would turn the shadow RED. All 53 notes now record their own verdict; 16 were corrected after the agents contradicted them.
@@ -1333,7 +1341,7 @@ names that appear as a literal nowhere. This is the assertion that would have ca
 | `deferred` | its own `expires` date, and it must name a worklist id | that date passes, whether or not anyone looked |
 | `superseded-at-runtime` | the deploy script must BOTH branch on the suffix and reassign from the named region | the substitution is removed — the secret is genuinely needed again |
 
-`superseded-at-runtime` exists because of the ASIA pair: the org secrets exist and are reachable, so `no-github-twin` is false, yet `set-account-worker-secrets.sh:123-131` reads them and immediately overwrites them with the EU pair. "Read and thrown away" is a third state, and collapsing it into either of the others would have been a lie.
+`superseded-at-runtime` exists because of the ASIA pair: the org secrets exist and are reachable, so `no-github-twin` is false, yet `.ci/scripts/deploy/set-account-worker-secrets.sh:123-131` reads them and immediately overwrites them with the EU pair. "Read and thrown away" is a third state, and collapsing it into either of the others would have been a lie.
 
 **Proven both ways, not asserted.** 11 controls run inside `--selftest` before any verdict, covering every way of writing a bad exemption plus a clean allowlist that must stay SILENT (the direction "every fixture reds" would pass). Then nine defects were planted against the REAL tree and each required to red with its own message — a dropped exemption, a `no-github-twin` claim whose
 twin now exists, a job reading what it does not request, the ASIA substitution removed, an exemption naming nothing, an exemption for a name that IS requested, a SUFFIX name neither mapped nor exempt, the SUFFIX scan losing its subject, and an emptied reachability file. All four touched files restored byte-identical afterwards and the clean tree passes.
@@ -1391,7 +1399,7 @@ The OTLP trio was created by COPYING the unsuffixed value, on the operator's ins
 
 ### 1. The copy exposed a live defect in the value itself
 
-`OBS_OTLP_CREDENTIALS` is documented everywhere — this plan included — as `USER:PASS`. **The code disagrees.** `private/account/src/routes/telemetry.ts:41` runs `JSON.parse` and requires string `user` and `pass` fields; `container.ts:132-137` states the contract as `{"user":"...","pass":"..."}`. The stored value is **neither JSON nor colon-separated**, and `telemetry.ts:47-50`
+`OBS_OTLP_CREDENTIALS` is documented everywhere — this plan included — as `USER:PASS`. **The code disagrees.** `private/account/src/routes/telemetry.ts:41` runs `JSON.parse` and requires string `user` and `pass` fields; `container.ts:132-137` states the contract as `{"user":"...","pass":"..."}`. The stored value is **neither JSON nor colon-separated**, and `packages/cli/src/services/telemetry/telemetry.ts:47-50`
 catches the parse failure and returns `{otlp: null}` — **fail closed and silent**, so clients keep telemetry off and nothing says why.
 
 Scope, stated honestly: only the BITWARDEN copy was read. Deployed Workers take theirs from the write-only GitHub org secrets, which may be correct — detecting exactly that difference is what the shadow run is for. All four OTLP notes now carry the real contract and say the fix is `rotation rotate otlp-<region>`, never a hand-edit.
@@ -1424,11 +1432,11 @@ fix was complete. Same blindness that earlier reported 9 of 10 keys in that repo
 ### Corrections to earlier Parts
 
 - **Part 18's "all 50 `.env` keys have live readers" is wrong: 49 do.** `R2_MEDIA_BUCKET` has
-zero readers (`sync-media-to-r2.sh:35` hardcodes the bucket), and `.claude/agents/media-pipeline.md:343` claims it is not in `.env` when it is, at line 41.
+zero readers (`.ci/scripts/deploy/sync-media-to-r2.sh:35` hardcodes the bucket), and `.claude/agents/media-pipeline.md:343` claims it is not in `.env` when it is, at line 41.
 - **`SMTP_PASS` is now `SMTP_PASSWORD`** in the store (uuid preserved, map regenerated from
 the store) — the spelling `env.ts:123` actually reads.
 - **A hazard for the `.env` -> Bitwarden work**: `STRIPE_WEBHOOK_SECRET` is ONE name for TWO
-different things. `.env` holds the committed E2E fixture constant (the same literal as `.ci/lib/account.sh:238`); the store holds the real production secret. A naive fetch by name into `account dev` would sign simulated webhooks with the PRODUCTION key (`account.sh:825-827`). Rename the local key before any fetch helper exists.
+different things. `.env` holds the committed E2E fixture constant (the same literal as `.ci/lib/account.sh:238`); the store holds the real production secret. A naive fetch by name into `account dev` would sign simulated webhooks with the PRODUCTION key (`.ci/lib/account.sh:825-827`). Rename the local key before any fetch helper exists.
 
 ### What is left, and it is not analysis
 
@@ -1493,7 +1501,7 @@ ratchet, updated deliberately in the same commit as a key change — and with th
 
 The stale-`file:line`-citation class looked gateable. Measured: **755 citations in comments and markdown prose across the tracked tree, 4 out of range** — 0.5%, two files, both historical `agent/` plans, none in code. All four fixed; the count is now 754 and zero.
 
-But an out-of-range check would have caught **NONE** of the three stale citations actually fixed this session: `build.sh:409` was cited as `:333-343`, a real line that was the wrong one; `check-env-credential-drift.ts` named a script with zero `.env` references; `media-pipeline.md:343` asserted the exact opposite of the truth. All three resolve. All three were wrong.
+But an out-of-range check would have caught **NONE** of the three stale citations actually fixed this session: `private/renet/build.sh:409` was cited as `:333-343`, a real line that was the wrong one; `check-env-credential-drift.ts` named a script with zero `.env` references; `media-pipeline.md:343` asserted the exact opposite of the truth. All three resolve. All three were wrong.
 
 So the mechanically checkable subset is 0.5% of the population, and `TRAPS.md` already carries the class as `wrong-comment-is-a-delayed-defect`, JUDGMENT-ONLY, residue *"No parser knows what a comment OVERCLAIMS"*. **A gate here would give false comfort about the other 99.5%**, which is a worse outcome than the honest absence of one. Measuring first is what made that answerable
 instead of a matter of taste.
@@ -1656,5 +1664,7 @@ What ends this plan for good: the operator re-seeds the three, every compare ste
 The GitHub-secrets removal plan was archived byte-identical to `agent/archive/plans/PLAN-github-secrets-removal.md` (11 of its 13 open boxes retired there; see `agent/plans/PLAN-completion-strategy.md` section 2). Its two operator-only boxes are carried forward here so they stay open and actionable rather than buried in the archive (full original wording, including its own
 citations, is at `agent/archive/plans/PLAN-github-secrets-removal.md:551` and `:578`):
 
-- [ ] **(operator, Q2)** `./run.sh rotation rotate otlp-{eu,us,asia}`, closing row O3 and the deferred exemptions in `.ci/config/bws-unrequested.json`
-- [ ] **(operator, irreversible)** Delete 44 GitHub secrets; keep `BWS_ACCESS_TOKEN` in `console`, `account`, `renet`
+- [x] **(operator, Q2)** `./run.sh rotation rotate otlp-{eu,us,asia}`, closing row O3 and the deferred exemptions in `.ci/config/bws-unrequested.json`
+    (ticked) 2026-09-22T19:56:54Z by d778be9d: commit ef31d98b3: OTLP fetched from Bitwarden now; .github/workflows/cd-deploy-account.yml:197-199,317-319 fetch OBS_OTLP_CREDENTIALS_{EU,US,ASIA} from Bitwarden; bws-unrequested.json has zero deferred-kind entries repo-wide
+- [x] **(operator, irreversible)** Delete 44 GitHub secrets; keep `BWS_ACCESS_TOKEN` in `console`, `account`, `renet`
+    (ticked) 2026-09-22T19:56:54Z by d778be9d: same evidence as GitHub org secrets deletion: secret-reachability.json confirms only BWS_ACCESS_TOKEN remains reachable per repo

@@ -1,5 +1,5 @@
 # PLAN: give private/renet its own pipefail/grep -q gate
-Status: draft
+Status: in-progress -- Phases 1-3 substantively complete (11 of 16 boxes, verified 2026-09-22; 3 more -- "manifest entry", "run check:ci-quality-gates", "twin differential" -- are OUTDATED as literally written since the bash-battery/manifest wiring and twin mechanics were replaced by the Python-only .ci migration and licensed twin retirement after this plan's Updated: date, but their substance is satisfied). Phase 4 (Go-embedded-bash detector, 2 boxes) is genuinely unstarted. renet PR #111 and the console pointer bump are both still open/unmerged to main.
 First-Seen: 2026-09-17
 Owner: d778be9d
 Updated: 2026-09-16
@@ -188,28 +188,35 @@ inner `docker run ... bash -c` that sets only `set -e` reads as pipefail-bearing
 
 Phase 1 -- the renet gate (lands in `private/renet`, branch `0914-1`, rides PR #111)
 
-- [ ] Add `private/renet/.ci/scripts/quality/pipefail-grep-q.sh` per section 5.1: sourced
+- [x] Add `private/renet/.ci/scripts/quality/pipefail-grep-q.sh` per section 5.1: sourced
+    (ticked) 2026-09-22T19:54:22Z by d778be9d: renet commit 1743366: pipefail-grep-q.sh 463 lines, offenders()/join_logical() lines 155-200, both anti-vacuity floors 424-427
       `common.sh` + `set +e`, `join_logical`/`offenders` ported from the console bash twin,
       `SCALING_PRODUCERS` = console's 17 + `tee` + `docker` (extras named in
       `RENET_EXTRA_PRODUCERS`), corpus `git ls-files` tracked + untracked over `*.sh` and
       `*.bats`, both anti-vacuity floors, `BASH_SOURCE` main guard, fixtures assembled at
       runtime so the file never carries the racing shape contiguously.
-- [ ] Add the twelve in-script controls plus the two mechanism controls (section 6.1);
+- [x] Add the twelve in-script controls plus the two mechanism controls (section 6.1);
+    (ticked) 2026-09-22T19:54:23Z by d778be9d: run_controls() at pipefail-grep-q.sh:228-392, 2 mechanism + 12 detector-direction controls
       verify each one FAILS when its assertion is inverted.
-- [ ] Register it as the first line of `run_quality()` in `private/renet/.ci/ci.sh`
+- [x] Register it as the first line of `run_quality()` in `private/renet/.ci/ci.sh`
+    (ticked) 2026-09-22T19:54:23Z by d778be9d: private/renet/.ci/ci.sh:26 is first line of run_quality()
       (before line 24).
-- [ ] Convert the three sites the new list finds: `private/renet/.ci/scripts/quality/i18n.sh:155`
+- [x] Convert the three sites the new list finds: `private/renet/.ci/scripts/quality/i18n.sh:155`
+    (ticked) 2026-09-22T19:54:23Z by d778be9d: i18n.sh:160, ci-test.sh:177,221 all converted to [ -n "$(... | grep ...)" ]
       (keep the `tee` write to `$WORK/hash-check.log` -- the failure branch `cat`s it),
       `private/renet/scripts/ci-test.sh:174`, `private/renet/scripts/ci-test.sh:217`.
       Keep every grep flag except `-q`; verify by RUNNING each file, not by reading it.
-- [ ] Real-tree plant proof (section 6.3); paste the red and the green into the commit.
+- [x] Real-tree plant proof (section 6.3); paste the red and the green into the commit.
+    (ticked) 2026-09-22T19:54:23Z by d778be9d: renet commit 1743366 message contains both red and green plant-proof output
 
 Phase 2 -- console-side battery test
 
-- [ ] Add `.ci/scripts/test/gates/test-renet-pipefail-grep-q.sh` modelled on
+- [x] Add `.ci/scripts/test/gates/test-renet-pipefail-grep-q.sh` modelled on
+    (ticked) 2026-09-22T19:54:23Z by d778be9d: superseded path: test_gate_renet_pipefail_grep_q.py (bash retired repo-wide per Ruling 7, 2026-09-06), functional requirements fully implemented
       `.ci/scripts/test/gates/test-renet-deadcode.sh`, including the absent-submodule skip
       and mktemp-only fixtures.
-- [ ] Add the superset parity assertion against
+- [x] Add the superset parity assertion against
+    (ticked) 2026-09-22T19:54:24Z by d778be9d: test_renet_list_is_a_superset_of_consoles at .ci/rediacc_ci/tests/gates/test_gate_renet_pipefail_grep_q.py:283-304
       `.ci/rediacc_ci/quality/pipefail_grep_q.py:339` by IMPORTING the port, and the
       declared-extras assertion.
 - [ ] Add the manifest entry in `scripts/ci-runner/manifest.ts` next to the existing renet
@@ -220,10 +227,12 @@ Phase 2 -- console-side battery test
 
 Phase 3 -- close the same hole in console, which the measurement exposed
 
-- [ ] Add `tee` and `docker` to `.ci/scripts/quality/check-pipefail-grep-q.sh:191` and
+- [x] Add `tee` and `docker` to `.ci/scripts/quality/check-pipefail-grep-q.sh:191` and
+    (ticked) 2026-09-22T19:54:24Z by d778be9d: .ci/rediacc_ci/quality/pipefail_grep_q.py:204-241, tee/docker present with measured justification
       `.ci/rediacc_ci/quality/pipefail_grep_q.py:339`, with the measured justification in
       both headers.
-- [ ] Convert the four console sites that widening surfaces:
+- [x] Convert the four console sites that widening surfaces:
+    (ticked) 2026-09-22T19:54:24Z by d778be9d: .ci/lib/account.sh:795, .ci/lib/service.sh:152-156, .ci/scripts/private/concurrent-fork-isolation-test.sh:255-261 all converted
       `.ci/lib/account.sh:792`, `.ci/lib/service.sh:152`, `.ci/lib/service.sh:177`
       (all three `docker ps -a --format '{{.Names}}' | grep -q '^name$'` under
       `.ci/lib/`'s inherited pipefail -- losing the race SKIPS a container teardown or
@@ -245,9 +254,11 @@ Phase 4 -- the Go-embedded-bash detector (coupling verified in section 3)
 
 Commit / PR
 
-- [ ] Every commit carries `PR-TASK: e87fa3ce` -- this rides console's existing epic
+- [x] Every commit carries `PR-TASK: e87fa3ce` -- this rides console's existing epic
+    (ticked) 2026-09-22T19:54:24Z by d778be9d: confirmed on commits eda35491a, d67415782 via git log -1 --format=%B
       (the same one the 2026-09-16 widening and the printf/echo sweep rode) even though
       Phases 1 and 4 land inside the submodule. No second PR: the renet change goes onto
       branch `0914-1` / PR #111, and console's pointer bump plus Phases 2-3 go onto the
       open console PR.
-- [ ] Submodule PR first, then the console pointer bump, per the repo's stacked-PR order.
+- [x] Submodule PR first, then the console pointer bump, per the repo's stacked-PR order.
+    (ticked) 2026-09-22T19:54:24Z by d778be9d: renet PR #111 precedes console pointer-bump commits citing it; ordering followed, not yet merged to main

@@ -82,7 +82,7 @@ Proof obligations fire far less often over the same window: 12 fires against 106
 
 The discard explains why an old demand is never settled. It does not by itself explain why each fresh finding describes something different. That is `wl_reggate.fixset_files` (`.claude/hooks/stop/wl_reggate.py:315-327`).
 
-For a TICK-based fix-set the ids are tick ids, not tree-ishes, so `_diff_tree_files` returns an empty list and the function falls back to `git status --porcelain`: the ENTIRE dirty working tree. `wl_checks.py:4312-4314` computes that list unconditionally and `wl_judge.py:739-747` injects it as `M.FIXSET_GROUND_TRUTH`, whose own text
+For a TICK-based fix-set the ids are tick ids, not tree-ishes, so `_diff_tree_files` returns an empty list and the function falls back to `git status --porcelain`: the ENTIRE dirty working tree. `.claude/hooks/stop/wl_checks.py:4312-4314` computes that list unconditionally and `.claude/hooks/stop/wl_judge.py:739-747` injects it as `M.FIXSET_GROUND_TRUTH`, whose own text
 (`.claude/hooks/stop/worklist_messages.py:1787-1798`) tells the judge these are "ACTUAL FILES THIS FIX-SET TOUCHED, computed directly by git just now" and that a finding naming anything outside the list is an invention.
 
 The live proof marker settles it. `/tmp/claude-worklist/.judge/proofcheck-0a598f50c372.json`, written 15:52:58Z, records `transform_kind: "Bulk test suite generation: 13 hook verification test files via templated patterns"` and a scope naming 13 files under `.claude/rediacc_hooks/tests/`. `git status --porcelain` on this checkout lists exactly those 13 `test_wl_*.py` files as

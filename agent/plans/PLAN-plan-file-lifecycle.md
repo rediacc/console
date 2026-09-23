@@ -38,7 +38,7 @@ Three asks, one subject: creation, maintenance, retirement of `agent/PLAN-*.md`.
 | `wl_planfile.raw_box_counts` (anchored, no fence tracking) | 89 | 24 | 9 |
 | `wl_planfid.plan_tasks` (the REAL parser) | 88 | 24 | 8 |
 
-**5 of 93 raw hits are false positives.** Four are mid-line prose about the grammar (`PLAN-secret-namespace-migration.md:45`, `:1269`, and two in `PLAN-stop-plan-box-enforcement.md`); one is a fenced code SAMPLE at `PLAN-fix-in-session-rule.md:352`, a depiction of a line the hook prints.
+**5 of 93 raw hits are false positives.** Four are mid-line prose about the grammar (`agent/plans/PLAN-secret-namespace-migration.md:45`, `:1269`, and two in `PLAN-stop-plan-box-enforcement.md`); one is a fenced code SAMPLE at `PLAN-fix-in-session-rule.md:352`, a depiction of a line the hook prints.
 
 **This dictates the implementation language.** A gate built on `grep` reds on 5 non-tasks. A gate on `raw_box_counts` reds on 1. Only `plan_tasks` is correct, and it is Python in `.claude/hooks/stop/`. So the gate is Python and imports it. There is no second parser to drift, which turns the fence rule from a test into a structural property.
 
@@ -89,7 +89,7 @@ $ git log -1 --format='%h %cI' -- agent/plans/PLAN-cold-path.md
 1cf2a3733 2026-09-01T14:25:23+02:00        # the GRAFT, not the file's commit
 ```
 
-Every tracked plan reports 1 day old in this checkout. `check_git_history_depth.py:6-9` already documents the class; it reproduced. Computed instead over all 4001 reachable commits excluding the two grafts:
+Every tracked plan reports 1 day old in this checkout. `.ci/scripts/quality/check_git_history_depth.py:6-9` already documents the class; it reproduced. Computed instead over all 4001 reachable commits excluding the two grafts:
 
 - **At 33 days, ZERO `agent/PLAN-*.md` files fail today.** The oldest is 12 days.
 - Structural cap: `agent/` became tracked on 2026-08-18 (`e0ad8e6c2`), so nothing under
@@ -201,10 +201,10 @@ Stop hook (asserted as a subset control), so the two cannot enforce rules about 
 whole control battery still run.
 - Floor: `>= 30` plan files (61 today), env-overridable like `BWS_MIN_MAP_ENTRIES`.
 - Placement: **`quality-i18n`, last step.** It already pays the `fetch-depth: 0
---filter=blob:none` checkout at ci-quality.yml:1646-1655, and its `if: inputs.is_bot != 'true'` covers PR + nightly + dispatch. A clock-driven gate NEEDS the nightly, or a plan crossing 33 days first surfaces by ambushing an unrelated PR. `quality-branch` is rejected only because it is `pull_request`-only. A new `quality-history` lane is rejected on cost:
+--filter=blob:none` checkout at .github/workflows/ci-quality.yml:1646-1655, and its `if: inputs.is_bot != 'true'` covers PR + nightly + dispatch. A clock-driven gate NEEDS the nightly, or a plan crossing 33 days first surfaces by ambushing an unrelated PR. `quality-branch` is rejected only because it is `pull_request`-only. A new `quality-history` lane is rejected on cost:
 `.profiler-coverage-allowlist:29`'s BLOCKER makes it a 5-point wiring. **No checkout needs to change** -- that is the whole reason for the choice.
 - Hatch: `.plan-housekeeping-allowlist`, `# BLOCKER:` + `YYYY-MM-DD  path`, with three
-re-derived liveness rules: the path must exist in the glob; the plan must actually be over the threshold (an exemption that suppresses nothing is red -- the converse direction, lifted from `check_bws_map.py:551-554`); and a hard UTC expiry that reds on its own date whether or not anyone looked. Rule 3 alone is what stops a dumping ground.
+re-derived liveness rules: the path must exist in the glob; the plan must actually be over the threshold (an exemption that suppresses nothing is red -- the converse direction, lifted from `.ci/scripts/quality/check_bws_map.py:551-554`); and a hard UTC expiry that reds on its own date whether or not anyone looked. Rule 3 alone is what stops a dumping ground.
 - **`Status: executing` does NOT auto-exempt.** A status is self-reported free text
 costing one word: no reason, no expiry, no reviewer. It converts the gate into "type `executing` to opt out". And the corpus will not support a whitelist -- measured statuses include `W1 LANDED 2026-08-27; W2 to W4 still draft`. The question dissolves anyway: an edit is a commit and a commit resets the clock. An "executing" plan nobody has committed to in 33 days is abandoned with
 an optimistic header, which is exactly the file this gate exists to find. The status IS printed in the failure line, because `Status: done` beside `41 days` tells the reader the answer is `git rm`.
@@ -265,7 +265,7 @@ Three points each, plus two easy-to-forget fourths.
 - `package.json`: `"check:ci-plan-boxes": ".ci/scripts/quality/check_plan_boxes.py"` and
 `"check:ci-plan-housekeeping": ".ci/scripts/quality/check-plan-housekeeping.sh"`.
 - `scripts/ci-runner/manifest.ts`: one gate entry each plus a `gate-test:` entry each with
-`qualityGateTest: true` (assertion 7 compares that set to the on-disk glob). **The comment goes ABOVE the opening brace** -- `wl_reggate._manifest_gate_ids` matches `/\{\s*id:/`, and a comment inside the brace makes the entry invisible to `check:ci-gate-reachability-coverage` (documented at manifest.ts:322).
+`qualityGateTest: true` (assertion 7 compares that set to the on-disk glob). **The comment goes ABOVE the opening brace** -- `wl_reggate._manifest_gate_ids` matches `/\{\s*id:/`, and a comment inside the brace makes the entry invisible to `check:ci-gate-reachability-coverage` (documented at scripts/ci-runner/manifest.ts:322).
 - `ci-quality.yml`: `Plan checkbox ledger` in `quality-branch` (bare path, that lane's
 convention, `if: !cancelled()` since it has no `steps.setup`); `Plan file housekeeping` in `quality-i18n` (npm key, `if: !cancelled() && steps.setup.outcome == 'success'`, which 178 steps in the file already use and zero deviate from). Step names must match the manifest byte-for-byte.
 - Fourth: register `check_plan_boxes.py` in `test-gate-anti-vacuity.sh`'s `REGISTRY`.

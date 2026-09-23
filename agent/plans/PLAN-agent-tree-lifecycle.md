@@ -1,5 +1,5 @@
 # PLAN: A permanent shape for agent/ and the repo root, kept true by Python
-Status: in-progress
+Status: mostly-done -- 6 of 7 boxes verified done 2026-09-22 (commits 1ea0c7340, fce51e202). S6 (sweeper's first run + shadow-ledger drop) correctly stays open: time-gated (40/90-day clock, move was 2026-09-21) and dependent on PLAN-tooling-transformation.md's W1P6, which is itself unticked.
 First-Seen: 2026-09-21
 Owner: d778be9d
 
@@ -41,21 +41,27 @@ Design:
 - Policy as data: `.ci/policy/tree-shape.json`, a permitted-class table (root fixed names, plan, agent-doc, session-note `agent/<8hex>/STATE.md`, the ledger classes, pr-snapshot, agent-archive, policy, baseline, hook-sidecar, and a `dead-amnesty` class to delete). Register it in both `POLICY_FILES` lists (`.ci/rediacc_ci/policy_paths.py` and `scripts/lib/policy-paths.ts`).
 - Logic in `.ci/rediacc_ci/quality/tree_shape.py`, entry `.ci/scripts/quality/check_tree_shape.py`, key `check:ci-tree-shape`. It enumerates `git ls-files` plus `git ls-files --others --exclude-standard` and keeps the exit status, since a swallowed enumeration must not read as clean.
 - It derives `AGENT_RESERVED_DIRS` from `.claude/hooks/stop/wl_store.py:170` instead of copying it (that set is already stale: `pr` and `legacy` are missing).
-- The baseline is `.ci/config/tree-shape-baseline.json`, shrink-only, reusing the decision in `check_language_policy.py:365-400`, with a `plant()` control per finding class.
+- The baseline is `.ci/config/tree-shape-baseline.json`, shrink-only, reusing the decision in `.ci/scripts/quality/check_language_policy.py:365-400`, with a `plant()` control per finding class.
 - Runtime guard: a session-scoped autouse fixture in the root `conftest.py` (the only conftest all three testpaths see) that snapshots untracked files before and after the session and fails naming the last test. A gate assertion also forbids any module under `.claude/hooks/` or `.ci/rediacc_ci/` from building a repo path out of a bare relative string.
-- Known cwd-relative sites to fix: `.ci/rediacc_ci/review/standing_orders_brief.py:271,273,321,329`, `.ci/rediacc_ci/private/run_account.py:154`, `.claude/hooks/stop/wl_ci.py:1074-1102` (selftest only) and `wl_reggate.py:192` (a read-only git call).
-- Ledgers: move only `agent/census-plan-record.jsonl` to `agent/ledgers/`. That touches `check_plan_record.py:162` with its glob base and the two citations in `PLAN-tooling-transformation.md` and `PLAN-migrate-plan-doc-discovery.md`, in the same commit. `agent/worklist/` and `agent/reggate/` stay: their paths are the hook's contract.
-- The 291 `.ci/shadow/*.observations.jsonl` are read by `dead_python.py:93-94,270-290`. A ledger whose twin is deleted is already inert, so drop by whole file only after W1P6 deletes the twins (dead_python refuses ledgers that parse to zero records, so never truncate).
+- Known cwd-relative sites to fix: `.ci/rediacc_ci/review/standing_orders_brief.py:271,273,321,329`, `.ci/rediacc_ci/private/run_account.py:154`, `.claude/hooks/stop/wl_ci.py:1074-1102` (selftest only) and `.claude/hooks/stop/wl_reggate.py:192` (a read-only git call).
+- Ledgers: move only `agent/census-plan-record.jsonl` to `agent/ledgers/`. That touches `.ci/scripts/quality/check_plan_record.py:162` with its glob base and the two citations in `PLAN-tooling-transformation.md` and `PLAN-migrate-plan-doc-discovery.md`, in the same commit. `agent/worklist/` and `agent/reggate/` stay: their paths are the hook's contract.
+- The 291 `.ci/shadow/*.observations.jsonl` are read by `.ci/rediacc_ci/quality/dead_python.py:93-94,270-290`. A ledger whose twin is deleted is already inert, so drop by whole file only after W1P6 deletes the twins (dead_python refuses ledgers that parse to zero records, so never truncate).
 - Delete the dead `.gitignore` amnesties left by the removed bash suites (`.claude/hooks/stop/.events.jsonl`, `capfix-at/`, `capfix-over/`) and their on-disk leftovers.
 
 ## Steps
 Each step is one commit, and none may land while another writer edits the same files.
-- [ ] S1 Lifecycle library and gate, registered, reading BOTH `agent/PLAN-*.md` and `agent/plans/**` (the old location is legal); `terminal_days: 40` and `backlog_days: 90` in `plan-lifecycle.json`; `"plans"`, `"pr"` and `"legacy"` in `AGENT_RESERVED_DIRS`. Green on today's tree.
-- [ ] S2 Every reader dual-path: `wl_store.py:210 agent_plan_dir` (the choke point), `wl_checks.py:801`, `wl_planindex.py:86`, `check_plan_boxes.py:109,379,384`, `plan_housekeeping.py`, `PLAN_REF_RE` in `wl_planrec.py:206`, the `check-plan-housekeeping` twin, `skip-plan-reconcile.cjs`, `agent/README.md` and `CLAUDE.md`.
-- [ ] S2b A move without the glob change trips the `MIN_PLAN_FILES` vacuity floor, so the migration cannot fail green.
-- [ ] S3 Tree-shape policy, module, gate and baseline over today's tree; the root conftest fixture; the cwd-relative fixes; the dead amnesties removed.
-- [ ] S4 The move: 102 `git mv` plus stubs plus `First-Seen:` headers, then one `check:ci-plan-boxes --update` and one `check:ci-plan-record --update`. Confirm the archive append-only rule does not claim the rename, that `_archived()` does not start matching by basename across trees, and that the floors count the recursive corpus. Needs a quiet tree.
-- [ ] S5 Flip the gate so the old location is fatal; move `census-plan-record.jsonl` to `agent/ledgers/`; move `agent/REPORT-*.md` under `agent/archive/`; regenerate.
+- [x] S1 Lifecycle library and gate, registered, reading BOTH `agent/PLAN-*.md` and `agent/plans/**` (the old location is legal); `terminal_days: 40` and `backlog_days: 90` in `plan-lifecycle.json`; `"plans"`, `"pr"` and `"legacy"` in `AGENT_RESERVED_DIRS`. Green on today's tree.
+    (ticked) 2026-09-22T19:53:54Z by d778be9d: commit 1ea0c7340: plan_lifecycle.py + check_plan_folders.py landed. plan-lifecycle.json: terminal_days=40, backlog_days=90. AGENT_RESERVED_DIRS at .claude/hooks/stop/wl_store.py:173-175 includes plans/pr/legacy
+- [x] S2 Every reader dual-path: `wl_store.py:210 agent_plan_dir` (the choke point), `wl_checks.py:801`, `wl_planindex.py:86`, `check_plan_boxes.py:109,379,384`, `plan_housekeeping.py`, `PLAN_REF_RE` in `wl_planrec.py:206`, the `check-plan-housekeeping` twin, `skip-plan-reconcile.cjs`, `agent/README.md` and `CLAUDE.md`.
+    (ticked) 2026-09-22T19:53:54Z by d778be9d: .claude/hooks/stop/wl_store.py:236 agent_plan_dirs + AGENT_PLAN_SUBDIRS; .claude/hooks/stop/wl_planindex.py:91-96; .ci/scripts/quality/check_plan_boxes.py:112,213,397 is_plan_path; plan_housekeeping.py reads plan_globs; .claude/hooks/stop/wl_planrec.py:206 PLAN_REF_RE; agent/README.md:31 and CLAUDE.md:37 both canonical
+- [x] S2b A move without the glob change trips the `MIN_PLAN_FILES` vacuity floor, so the migration cannot fail green.
+    (ticked) 2026-09-22T19:53:55Z by d778be9d: MIN_PLAN_FILES floor=20 in .ci/scripts/quality/check_plan_boxes.py:112 and .ci/rediacc_ci/quality/plan_lifecycle.py:92; F9 planted-control test at .ci/rediacc_ci/tests/test_quality_plan_lifecycle.py:298-312 and .ci/scripts/quality/check_plan_folders.py:272-288
+- [x] S3 Tree-shape policy, module, gate and baseline over today's tree; the root conftest fixture; the cwd-relative fixes; the dead amnesties removed.
+    (ticked) 2026-09-22T19:53:55Z by d778be9d: commit 1ea0c7340: tree-shape.json, tree_shape.py, check_tree_shape.py landed. conftest.py:124-137 autouse fixture; .ci/rediacc_ci/review/standing_orders_brief.py:127-135 cwd-relative fix
+- [x] S4 The move: 102 `git mv` plus stubs plus `First-Seen:` headers, then one `check:ci-plan-boxes --update` and one `check:ci-plan-record --update`. Confirm the archive append-only rule does not claim the rename, that `_archived()` does not start matching by basename across trees, and that the floors count the recursive corpus. Needs a quiet tree.
+    (ticked) 2026-09-22T19:53:55Z by d778be9d: commit fce51e202: 103 plans moved into agent/plans/, census ledger and reports follow. agent/plans/ now holds 114 files, 0 flat agent/PLAN-*.md remain at commit time
+- [x] S5 Flip the gate so the old location is fatal; move `census-plan-record.jsonl` to `agent/ledgers/`; move `agent/REPORT-*.md` under `agent/archive/`; regenerate.
+    (ticked) 2026-09-22T19:53:55Z by d778be9d: .ci/scripts/quality/check_plan_folders.py:20 confirms F1 fatal since migration landed; agent/ledgers/census-plan-record.jsonl exists; agent/archive/REPORT-licensing-bigbang-2026-08-04.md exists, 0 agent/REPORT-*.md remain at root
 - [ ] S6 The sweeper's first run (`--sweep --write`) once a plan has aged, and the shadow-ledger drops after W1P6.
 
 ## Risks and first tests

@@ -56,7 +56,7 @@ Insert one early-return in `run()`, between the `root` computation and the `cwd`
 ```
 
 No new import is needed (`shellscan` is already imported at line 24).
-This mirrors the exact idiom already used at `block_untagged_commit.py:203`, `block_unverified_push.py:259`, `block_push_to_protected_branch.py:148`, `block_unlinked_commit_author.py:161`, and `warn_remote_drift.py:167` -- `target_root(scan, root) != ""` means the command names a different, real repo, and this guard has nothing to say about it.
+This mirrors the exact idiom already used at `.claude/rediacc_hooks/guards/block_untagged_commit.py:203`, `.claude/rediacc_hooks/guards/block_unverified_push.py:259`, `.claude/rediacc_hooks/guards/block_push_to_protected_branch.py:148`, `.claude/rediacc_hooks/guards/block_unlinked_commit_author.py:161`, and `.claude/rediacc_hooks/guards/warn_remote_drift.py:167` -- `target_root(scan, root) != ""` means the command names a different, real repo, and this guard has nothing to say about it.
 `target_root` fails safe on an unresolvable hint (a `-C` path that is not a real git repo returns `""`), so a bogus or nonexistent `-C` target does NOT exempt a command -- the guard falls through and keeps judging `root`, exactly as today.
 
 This does not change behavior for any existing case: none of the guard's current `EDGE_CASES` or its differential's 12 cases contain a `-C`/`cd` hint, so `target_root` returns `""` for all of them and the new line is a no-op for every one.
@@ -68,7 +68,7 @@ It is executed in CI as one of the `TAILED` cases `.claude/rediacc_hooks/tests/t
 That chain is the correct `Enforced-By` anchor for the new TRAPS.md entry in section 3 -- verified directly, not assumed (`.claude/rediacc_hooks/guards/block_unproven_bulk_transform.py` itself is NOT reachable by name from any file `check:ci-trap-registry`'s liveness walk reaches, confirmed by running `trap_registry.Registry.file_is_live` against it: `False` -- so a `file:` pointer at the guard itself would be a dangling F5 finding; `gate:check:ci-pytest` is the one that actually resolves and is live).
 
 **Harness change needed first.** `run()` at `.claude/rediacc_hooks/guards/test-block_unproven_bulk_transform.py:23-31` never sets `CLAUDE_PROJECT_DIR` in the subprocess environment, so today `root` inside the guard resolves from whatever the ambient test-runner environment happens to hold -- not from any of this file's own scratch repos.
-That never mattered before (no existing case uses `-C`/`cd`, so `root`'s value was inert), but the fix makes `root` load-bearing. Change `run()` to pin `CLAUDE_PROJECT_DIR` to the same value already carried as `cwd`, which is also the honest simulation of the real harness invariant `block_blanket_git_add.py:110-111` documents (`ev.cwd` is always the project dir):
+That never mattered before (no existing case uses `-C`/`cd`, so `root`'s value was inert), but the fix makes `root` load-bearing. Change `run()` to pin `CLAUDE_PROJECT_DIR` to the same value already carried as `cwd`, which is also the honest simulation of the real harness invariant `.claude/rediacc_hooks/guards/block_blanket_git_add.py:110-111` documents (`ev.cwd` is always the project dir):
 
 ```python
 def run(command, cwd):
@@ -85,7 +85,7 @@ def run(command, cwd):
     return proc.returncode != 0, proc.stderr
 ```
 
-(`os` is already imported at `test-block_unproven_bulk_transform.py:11`.) Verified this is a no-op for all 12 existing cases: none contain `-C`/`cd`, so `shellscan.target_root` returns `""` regardless of `root`'s value either way.
+(`os` is already imported at `.claude/rediacc_hooks/guards/test-block_unproven_bulk_transform.py:11`.) Verified this is a no-op for all 12 existing cases: none contain `-C`/`cd`, so `shellscan.target_root` returns `""` regardless of `root`'s value either way.
 
 **New cases** (insert after line 127, before the `# ---- PUSH ...` comment at line 129):
 

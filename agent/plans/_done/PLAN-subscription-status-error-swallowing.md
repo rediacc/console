@@ -33,9 +33,9 @@ The account view's entire output is `outputRemoteStatus(status)`, so when the re
 
 ## Sibling in the same class
 
-`executeAccountRefresh()` (`subscription-actions.ts:345`) shares swallow #1. It handles the `null` correctly (throws `ValidationError`, exit 2) but reports a generic "Could not read account state from the account server." — the actionable 403 reason is still lost. Fixing only `status` would leave the class half-swept.
+`executeAccountRefresh()` (`packages/cli/src/commands/subscription-actions.ts:345`) shares swallow #1. It handles the `null` correctly (throws `ValidationError`, exit 2) but reports a generic "Could not read account state from the account server." — the actionable 403 reason is still lost. Fixing only `status` would leave the class half-swept.
 
-`doctor.ts:422` is the one caller that **legitimately wants** the tolerant null: it races the fetch against a timeout and degrades to a `warn` row. Its behavior must not change.
+`packages/cli/src/commands/doctor.ts:422` is the one caller that **legitimately wants** the tolerant null: it races the fetch against a timeout and degrades to a `warn` row. Its behavior must not change.
 
 ## Design
 
@@ -86,4 +86,4 @@ message, not the generic string.
 
 ### Deliberately not changed
 
-`renderActivationSection`'s `catch` (subscription-actions.ts:320) also drops the reason, but it EMITS a warning and is one optional section of a multi-section command, so it is not the silent-no-op class this plan addresses.
+`renderActivationSection`'s `catch` (packages/cli/src/commands/subscription-actions.ts:320) also drops the reason, but it EMITS a warning and is one optional section of a multi-section command, so it is not the silent-no-op class this plan addresses.

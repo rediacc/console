@@ -17,7 +17,7 @@ The other 4 sit inside dual-use package modules or standalone hook scripts where
 
 | Site | Fingerprint | Class | Fix |
 |---|---|---|---|
-| `.ci/rediacc_ci/dev/shadow_driver.py:69` | `c1e552fa19e9` | Dual-use package module (imported by `test_dev_www.py:43` and run as a script), same shape as already-baselined `setup/shadow_driver.py` | BASELINE + FRESH |
+| `.ci/rediacc_ci/dev/shadow_driver.py:69` | `c1e552fa19e9` | Dual-use package module (imported by `.ci/rediacc_ci/tests/test_dev_www.py:43` and run as a script), same shape as already-baselined `setup/shadow_driver.py` | BASELINE + FRESH |
 | `.ci/rediacc_ci/docker/shadow_driver.py:81` | `c1e552fa19e9` | Same dual-use class (imported by `test_docker_run_in_image.py`, also run as a script) | BASELINE + FRESH |
 | `.claude/hooks/post-bash/cancel_old_ci.py:24` | `c1e552fa19e9` | Standalone script invoked by `lifecycle.run_pattern`; needs `.claude` on `sys.path`, not `.ci`; no shim exists yet | BASELINE + FRESH |
 | `.claude/hooks/post-bash/refresh_pr_body.py:24` | `c1e552fa19e9` | Same as above | BASELINE + FRESH |

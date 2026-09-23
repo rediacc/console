@@ -180,4 +180,5 @@ tell an announcement from closing prose ending in `?`. Deleting that arm is the 
 
 Section 2 must land before section 3's submodule rewrite, because the rewrite deletes the mechanism section 2 replaces. Everything else is parallel.
 
-- [ ] Regenerate `.ci/config/plan-boxes.json` so this plan's boxes enter the ledger.
+- [x] Regenerate `.ci/config/plan-boxes.json` so this plan's boxes enter the ledger.
+    (ticked) 2026-09-22T19:54:10Z by d778be9d: check_plan_boxes.py --update runs continuously; .ci/config/plan-boxes.json:1437-1471 already carries this plan's full 31-open ledger entry

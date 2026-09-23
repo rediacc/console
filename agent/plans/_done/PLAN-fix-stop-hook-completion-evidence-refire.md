@@ -50,27 +50,27 @@ Not addressed by this plan, flagged for a future one: I7 (`.claude/hooks/stop/wl
 ## Tasks
 
 - [x] Change `wl_reggate.mine_tick_ids(lines, session_id)` to
-    (ticked) 2026-09-22T19:55:38Z by d778be9d: wl_reggate.py:226-230 (commit e0fe455f7): mine_tick_ids(items, session_id) now reads rec['state']/rec.get('owner') directly off fold records, matches box text verbatim; verified live by reading the source today
+    (ticked) 2026-09-22T19:55:38Z by d778be9d: .claude/hooks/stop/wl_reggate.py:226-230 (commit e0fe455f7): mine_tick_ids(items, session_id) now reads rec['state']/rec.get('owner') directly off fold records, matches box text verbatim; verified live by reading the source today
       `mine_tick_ids(items, session_id)`, reading `rec["state"]`/`rec["owner"]` directly off
       each record instead of re-parsing `C.ITEM.match(rec["line"])`.
 - [x] Change `wl_reggate.fix_signals(root, lines, session_id, state)` to accept `fold.items`
-    (ticked) 2026-09-22T19:55:41Z by d778be9d: wl_reggate.py:355-428 (commit e0fe455f7): fix_signals(root, items, session_id, state) accepts fold.items and returns (tid, line, evidence_text) triples where evidence_text = rec.get('lastnote') or line; docstring at wl_reggate.py:372 describes the new shape
+    (ticked) 2026-09-22T19:55:41Z by d778be9d: .claude/hooks/stop/wl_reggate.py:355-428 (commit e0fe455f7): fix_signals(root, items, session_id, state) accepts fold.items and returns (tid, line, evidence_text) triples where evidence_text = rec.get('lastnote') or line; docstring at .claude/hooks/stop/wl_reggate.py:372 describes the new shape
       (or an explicit second `items` param alongside `lines` if a narrower diff is
       preferred), and have it return, per new tick, an evidence text derived from
       `rec.get("lastnote") or rec["line"]`. Update the docstring's "ticks stays (id, line)
       pairs" note (`.claude/hooks/stop/wl_reggate.py:426`) to describe the new shape.
 - [x] Update the `.claude/hooks/stop/wl_checks.py:2385` call site to unpack the new tuple shape.
-    (ticked) 2026-09-22T19:55:45Z by d778be9d: wl_checks.py:2424 unpacks reg_signals, reg_ids, reg_new_ticks, reg_head, reg_banked = wl_reggate.fix_signals(...); every reg_new_ticks consumer (2427,2431,2434-2435,2469,2990,4359-4360,4569) unpacks the (t,_ln,_ev)/(_tid,_line,ev) triple shape; verified via grep
+    (ticked) 2026-09-22T19:55:45Z by d778be9d: .claude/hooks/stop/wl_checks.py:2424 unpacks reg_signals, reg_ids, reg_new_ticks, reg_head, reg_banked = wl_reggate.fix_signals(...); every reg_new_ticks consumer (2427,2431,2434-2435,2469,2990,4359-4360,4569) unpacks the (t,_ln,_ev)/(_tid,_line,ev) triple shape; verified via grep
 - [x] Update `.claude/hooks/stop/wl_checks.py:2949` to call `completion_evidence(root, evidence_text)` and to
-    (ticked) 2026-09-22T19:55:48Z by d778be9d: wl_checks.py:2990: ev_ticks = [ev[:150] for _tid, _line, ev in reg_new_ticks if not completion_evidence(root, ev)] -- checks evidence_text (ev) not the full line, and displays the scoped evidence text's own prefix instead of the item's original description
+    (ticked) 2026-09-22T19:55:48Z by d778be9d: .claude/hooks/stop/wl_checks.py:2990: ev_ticks = [ev[:150] for _tid, _line, ev in reg_new_ticks if not completion_evidence(root, ev)] -- checks evidence_text (ev) not the full line, and displays the scoped evidence text's own prefix instead of the item's original description
       build `ev_ticks` from `S.brief_text(rec, cap=150)` (or equivalent) rather than
       `line[:150]`.
 - [x] Confirm `tick_touches_code` (`.claude/hooks/stop/wl_reggate.py:412-417`) still receives the full `line`
-    (ticked) 2026-09-22T19:55:51Z by d778be9d: wl_reggate.py:415 (fix_signals): if not tick_touches_code(line) -- still passed the full rendered line, unchanged; confirmed by reading the source
+    (ticked) 2026-09-22T19:55:51Z by d778be9d: .claude/hooks/stop/wl_reggate.py:415 (fix_signals): if not tick_touches_code(line) -- still passed the full rendered line, unchanged; confirmed by reading the source
       (unchanged) -- it answers a different question (does the fix touch code) and must keep
       scanning the whole rendered text.
 - [x] Add a regression fixture reproducing the exact poisoning shape: an item with several
-    (ticked) 2026-09-22T19:55:55Z by d778be9d: test_wl_regression_gate.py:420-495, test_96_a_ticks_evidence_is_its_closing_note_not_the_whole_accumulated_history: reproduces the exact poisoning shape via raw JSONL lease events with worker-id-shaped hex notes (af61cd805486b8e9f etc.) followed by a closing state event with a real sha; ran green: pytest -k test_96 -> 1 passed
+    (ticked) 2026-09-22T19:55:55Z by d778be9d: .claude/rediacc_hooks/tests/test_wl_regression_gate.py:420-495, test_96_a_ticks_evidence_is_its_closing_note_not_the_whole_accumulated_history: reproduces the exact poisoning shape via raw JSONL lease events with worker-id-shaped hex notes (af61cd805486b8e9f etc.) followed by a closing state event with a real sha; ran green: pytest -k test_96 -> 1 passed
       `lease` events carrying long (17-20 char) hex worker-id-shaped notes, followed by a
       closing `state s="x"` event whose note carries a short, genuinely resolving sha.
       Recommended home: a new case in
@@ -84,7 +84,7 @@ Not addressed by this plan, flagged for a future one: I7 (`.claude/hooks/stop/wl
         - Post-fix: the stop allows (or at least does not block on "completion"), proving
           the real sha in the closing note is recognized.
 - [x] Add/extend a direct-call control in `.claude/hooks/stop/test-completion-evidence.py`
-    (ticked) 2026-09-22T19:56:03Z by d778be9d: Direct-call control landed as part of test_96 (test_wl_regression_gate.py:482-495) rather than a separate file: checks.completion_evidence(str(wl.proj), rec['line']) asserted False (polluted blob) and checks.completion_evidence(str(wl.proj), evidence_text) asserted True (isolated closing note), both direct calls against the real function; ran green
+    (ticked) 2026-09-22T19:56:03Z by d778be9d: Direct-call control landed as part of test_96 (.claude/rediacc_hooks/tests/test_wl_regression_gate.py:482-495) rather than a separate file: checks.completion_evidence(str(wl.proj), rec['line']) asserted False (polluted blob) and checks.completion_evidence(str(wl.proj), evidence_text) asserted True (isolated closing note), both direct calls against the real function; ran green
       (or a new sibling file) proving `completion_evidence` behaves correctly when given an
       isolated note vs. a polluted multi-KB blob, mirroring the MUST_PASS/MUST_FAIL shape
       already used there.

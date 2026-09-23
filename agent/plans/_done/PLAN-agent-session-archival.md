@@ -7,7 +7,7 @@ Updated: 2026-09-22
 ## Why
 
 `agent/<session-prefix>/` holds one session's `STATE.md` (`agent/README.md:14`).
-The Stop hook already computes which peer directories are ABANDONED, every stop, for free: `wl_checks.py:3526-3527` calls `S.agent_peer_sections(root, session_id)` then `S.agent_state_dead(_all, session_id, projects_dir)`, and the row-rendering comment at `wl_checks.py:3535` says outright: "NOT 'reap-eligible' any more: nothing prunes another session's directory, so a label promising that would be a check that cannot fire." It only labels; nothing moves anything.
+The Stop hook already computes which peer directories are ABANDONED, every stop, for free: `.claude/hooks/stop/wl_checks.py:3526-3527` calls `S.agent_peer_sections(root, session_id)` then `S.agent_state_dead(_all, session_id, projects_dir)`, and the row-rendering comment at `.claude/hooks/stop/wl_checks.py:3535` says outright: "NOT 'reap-eligible' any more: nothing prunes another session's directory, so a label promising that would be a check that cannot fire." It only labels; nothing moves anything.
 `agent/README.md:72` describes the manual step ("Move the finished session directories into `archive/<label>/`... Before archiving, promote anything in RULES.md that turned out to be true of the REPO into TRAPS.md") and nobody runs it.
 
 Measured on this tree, with the already-landed `agent_peer_sections` dedup fix in place (`.claude/rediacc_hooks/tests/test_wl_state_document.py::test_29k_a_peer_directory_carrying_two_sections_for_one_owner_is_reported_once`): 19 peer directories, 18 ABANDONED, 1 live (the current session). The 18 range from 7.2 days idle (`f4da5c2e`) to 43.9 days idle (`2fd369e0`).
@@ -15,7 +15,7 @@ Measured on this tree, with the already-landed `agent_peer_sections` dedup fix i
 
 ## The oracle: reused, not reinvented
 
-`wl_store.agent_state_dead(sections, session_id, projects_dir, now=None)` (`wl_store.py:2299`) is the ONE liveness judge in this repo. The gate calls it exactly as written, with two decisions on the two arguments a CI gate cannot fill from live event context the way the Stop hook does:
+`wl_store.agent_state_dead(sections, session_id, projects_dir, now=None)` (`.claude/hooks/stop/wl_store.py:2299`) is the ONE liveness judge in this repo. The gate calls it exactly as written, with two decisions on the two arguments a CI gate cannot fill from live event context the way the Stop hook does:
 
 - **session_id**: pass empty string. `wl_core.same_session(a, b)` returns `bool(a) and bool(b) and (...)`, so an empty caller id can never match any real owner.
   Every section in the tree is judged uniformly, none exempted as "the caller's own."
@@ -26,7 +26,7 @@ Both are pure-input decisions at the gate's own call site; `wl_store.agent_state
 
 ## The oracle's import path: mirror check_tree_shape.py, not wl_planrec
 
-`.ci/rediacc_ci/quality/tree_shape.py` already needed `wl_store` and the entry point derives it rather than copying it (`check_tree_shape.py:338-353`, `_reserved()`): `paths.hooks_stop_dir(root)` then `paths.on_sys_path(hooks)` then `import wl_store`, wrapped so a missing `.claude/` is `CannotRunError` -- a loud refusal, not a silent skip.
+`.ci/rediacc_ci/quality/tree_shape.py` already needed `wl_store` and the entry point derives it rather than copying it (`.ci/scripts/quality/check_tree_shape.py:338-353`, `_reserved()`): `paths.hooks_stop_dir(root)` then `paths.on_sys_path(hooks)` then `import wl_store`, wrapped so a missing `.claude/` is `CannotRunError` -- a loud refusal, not a silent skip.
 This plan's gate does the identical hop to reach `wl_store.agent_peer_sections` and `wl_store.agent_state_dead`. No second implementation of either function is written anywhere under `.ci/`.
 
 ## The move
@@ -39,7 +39,7 @@ Going forward there is only ever ONE current directory per session, so `--move` 
 `--label <name>` overrides it, since the one-time bulk migration of the 18 pre-existing backlog directories spans branches and five weeks; that bulk pass uses an explicit synthetic label, `2026-09-22-backfill`.
 
 **Does the old path need a stub?** Measured: grepped the tree for every `agent/[0-9a-f]{7,8}/...` reference. Result: zero citations anywhere in the tracked tree carry the `<path>:<line>` shape `check_plan_citations.py`'s `CITE_RE` or `wl_planrec.resolve`'s `RESOLVE_KINDS` (no `session` kind exists at all) would ever mechanically check.
-The handful of real references found (`agent/RULES.md:53`, `agent/e580532b/NOTE-to-9d92d9b6.md:18`, `.ci/scripts/quality/check_guard_feature_completeness.py:11`, six `agent/8f55d4f0/W7P3-batch5-brief.md` mentions, `docs/ci-overhaul/06-progress.md:3492`) are all bare paths with no line number, so `CITE_RE` never matches them -- `check:ci-plan-citations` is structurally blind to all of them, today and after any move.
+The handful of real references found (`agent/RULES.md:53`, `agent/archive/2026-09-22-backfill/e580532b/NOTE-to-9d92d9b6.md:18`, `.ci/scripts/quality/check_guard_feature_completeness.py:11`, six `agent/8f55d4f0/W7P3-batch5-brief.md` mentions, `docs/ci-overhaul/06-progress.md:3492`) are all bare paths with no line number, so `CITE_RE` never matches them -- `check:ci-plan-citations` is structurally blind to all of them, today and after any move.
 This is the opposite of the `plans/` case, where `plan:<slug>` is resolved by name and genuinely forces a stub.
 
 More importantly, a same-named stub would be actively wrong. `wl_store.agent_peer_sections` reads `d / "STATE.md"` literally and `agent_state_parse` "NEVER RAISES, and never discards": any `STATE.md`-named file with no `## SESSION` heading is adopted as a `legacy` section stamped at the file's own `mtime`.
@@ -83,14 +83,14 @@ S4 below runs `--move --label 2026-09-22-backfill` once per directory over the m
 
 1. `package.json`: `"check:ci-agent-session-archival": ".ci/scripts/quality/check_agent_session_archival.py"`, beside `"check:ci-plan-folders"` (`package.json:182`).
 2. `scripts/ci-runner/manifest.ts`: one `GateSpec` entry, `id: 'check:ci-agent-session-archival'`, `gate: true`, `leaves: ['.ci/scripts/quality/check_agent_session_archival.py']`.
-   `ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-branch', step: 'Agent session archival' }`, placed immediately after the `check:ci-plan-folders` entry (`manifest.ts:1962-1981`).
-3. `.github/workflows/ci-quality.yml`: a step named `Agent session archival` in the `quality-branch` job, immediately after "Plan folders and retention" (`ci-quality.yml:583-585`).
+   `ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-branch', step: 'Agent session archival' }`, placed immediately after the `check:ci-plan-folders` entry (`scripts/ci-runner/manifest.ts:1962-1981`).
+3. `.github/workflows/ci-quality.yml`: a step named `Agent session archival` in the `quality-branch` job, immediately after "Plan folders and retention" (`.github/workflows/ci-quality.yml:583-585`).
 
 Run `npm run check:ci-parity` and `npm run check:ci-gate-reachability-coverage` after wiring.
 
 ## Tests
 
-**Control-first gate selftest** (`--selftest`, mirroring `check_plan_folders.py:123-249` and `check_hint_corpus.py`): pure fixtures, no git repo per control.
+**Control-first gate selftest** (`--selftest`, mirroring `.ci/scripts/quality/check_plan_folders.py:123-249` and `check_hint_corpus.py`): pure fixtures, no git repo per control.
 S1 fires on a section timestamped past `WORKLIST_DEAD_HOURS + grace_days`; does NOT fire on a section within the grace window (both boundary directions); does NOT fire on a live section; a directory already moved (absent from enumeration) produces no finding; vacuity floor for an empty session list.
 
 **Pure-library pytest** (`.ci/rediacc_ci/tests/test_quality_agent_session_archival.py`, mirroring `test_quality_plan_lifecycle.py`): `classify_due(...)`, `label_for(branch)`, pure judgment split from impure gather, exactly as `check_tree_shape.py`'s `_reserved()` split.

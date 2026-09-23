@@ -22,9 +22,9 @@ a workflow needs a value, so the gate is the deliverable and the migration is wh
 | Distinct `vars.*` names read in tracked workflows | regex over `.github/**` and `.ci/breakpoint/workflow/` | 20 |
 | GitHub Actions variables that exist | session audit, org + `rediacc/console` | 22 (10 org, 12 repo) |
 | Variables that exist and nothing reads | set difference | 3: `AWS_SES_REGION_ASIA`, `AWS_SES_REGION_US`, `MEDIA_CDN_DOMAIN` |
-| Names read but never set | set difference | 1: `FULL_CI`, deliberately unset (`ci.yml:335`) |
+| Names read but never set | set difference | 1: `FULL_CI`, deliberately unset (`.github/workflows/ci.yml:335`) |
 | `vars.*` reads in a job with NO existing bws fetch | per-job scan against `./.github/actions/bws-secrets` | ZERO |
-| Live non-`BWS_ACCESS_TOKEN` `secrets.*` reads | regex, comments excluded | 2, both `secrets.GITHUB_TOKEN` (`ci-quality.yml:1209`, `ci.yml:1111`) |
+| Live non-`BWS_ACCESS_TOKEN` `secrets.*` reads | regex, comments excluded | 2, both `secrets.GITHUB_TOKEN` (`.github/workflows/ci-quality.yml:1209`, `.github/workflows/ci.yml:1111`) |
 | Files calling `./.github/actions/bws-secrets` | `grep -rln` | 20, matching `MIN_CALLERS`+1 accounting at `.ci/scripts/quality/check_bws_map.py` |
 | `vars.*` names classified by `env-manifest.json` | membership test over all eight shards | 15 of 20; `APP_ID`, `TURNSTILE_SITE_KEY`, `AWS_SES_REGION_EU`, `FULL_CI`, `MEDIA_CDN_DOMAIN` are in NO shard |
 
@@ -61,18 +61,18 @@ The remaining names keep their spellings, since `check_bws_map.py`'s reverse cla
 
 Four categories, and each maps onto an exemption shape the estate already has.
 
-DEAD. `AWS_SES_REGION_ASIA`, `AWS_SES_REGION_US`, `MEDIA_CDN_DOMAIN`. Zero `vars.` readers anywhere. `cd-deploy-account.yml:310` takes the region from `matrix.sesRegion`, which `cd-deploy-account.yml:63` derives from `regions.json:17,35,53`. These are deleted with `gh variable delete`, not migrated. Migrating a dead name is how a store acquires the inert leftovers
+DEAD. `AWS_SES_REGION_ASIA`, `AWS_SES_REGION_US`, `MEDIA_CDN_DOMAIN`. Zero `vars.` readers anywhere. `.github/workflows/cd-deploy-account.yml:310` takes the region from `matrix.sesRegion`, which `.github/workflows/cd-deploy-account.yml:63` derives from `regions.json:17,35,53`. These are deleted with `gh variable delete`, not migrated. Migrating a dead name is how a store acquires the inert leftovers
 `.ci/config/bws-unrequested.json` already carries four of.
 
 BOOTSTRAP. `BWS_ACCESS_TOKEN`, which is a secret and not a variable, and is the sanctioned exception by the same argument `secret_supply.py` records under `bootstrap_names`.
 
-RUNNER-MINTED. `secrets.GITHUB_TOKEN` at `ci-quality.yml:1209` and `ci.yml:1111`. Minted per job by the runner, never stored anywhere, and the closest analogue on a GitLab runner is `CI_JOB_TOKEN`. It is not a GitHub dependency in the sense the operator's ruling means.
+RUNNER-MINTED. `secrets.GITHUB_TOKEN` at `.github/workflows/ci-quality.yml:1209` and `.github/workflows/ci.yml:1111`. Minted per job by the runner, never stored anywhere, and the closest analogue on a GitLab runner is `CI_JOB_TOKEN`. It is not a GitHub dependency in the sense the operator's ruling means.
 
 THE JOB THAT MUST NOT FETCH. `breakpoint.yml`'s `session` job reads `vars.CLOUDFLARE_ACCOUNT_ID` at lines 227, 316 and 376 and `vars.AWS_SES_REGION_EU` and `vars.AWS_SES_FROM` at 344 and 345. That job hands a human a shell, and `breakpoint.yml:210-216` and `:333-341` both record why moving values into it is refused: `GITHUB_ENV` and `GITHUB_OUTPUT` are files any later step can
 read, so a fetched value is a value handed to whoever holds the session. `.ci/config/bws-unrequested.json` already carries a `no_fetch_jobs` key, keyed `<path>#<job>` with a BLOCKER reason and a liveness check, built for exactly this. The same key shape is what the new gate's exemption half should use. Note that `.ci/breakpoint/workflow/breakpoint.yml` is a frozen twin of the same
 file and carries the same five reads at the same line numbers, so any exemption is a pair.
 
-THE OPERATOR SWITCH. `vars.FULL_CI` at `ci.yml:335` is a kill switch whose whole design, per the comment at `ci.yml:325-335`, is that an operator disables CI scoping WITHOUT a code change. It is read but never set. A BWS secret can serve this -- `bws secret edit` is equally out-of-band once the name exists in the map -- so this is a migration with a caveat rather than an exemption:
+THE OPERATOR SWITCH. `vars.FULL_CI` at `.github/workflows/ci.yml:335` is a kill switch whose whole design, per the comment at `.github/workflows/ci.yml:325-335`, is that an operator disables CI scoping WITHOUT a code change. It is read but never set. A BWS secret can serve this -- `bws secret edit` is equally out-of-band once the name exists in the map -- so this is a migration with a caveat rather than an exemption:
 the secret must be CREATED (with an empty value) and mapped in the same commit as the workflow edit, or the switch becomes uncallable until someone lands a map refresh. This is the one name where the migration is strictly worse ergonomically, and it should be migrated anyway, because a portability plan that leaves one GitHub-shaped control plane behind has left the whole class
 behind.
 
@@ -90,11 +90,11 @@ WHAT IS ASSERTED, six clauses.
 
   1. FORWARD. Every `vars.NAME` read in the corpus has an entry in `.ci/config/actions-vars.json`, or the gate reds naming the file, the job and the name.
   2. REVERSE. Every entry in that file is still read by some call site. An entry whose reads have all gone reds as RESOLVED, with the message naming both readings the way `secret_supply.evaluate_residue` does -- either the migration landed and the entry should be drained, or the read moved and the entry is now a lie. This is what makes the file untrimmable in both directions.
-3. KINDS ARE RE-DERIVED. `migrated` requires the name's BWS twin to be present in `.ci/config/bws-secret-map.json`, so an entry claiming a migration that did not happen reds. `no-fetch-job` requires the cited `<path>#<job>` to exist AND to still contain the read, the same double liveness `check_bws_map.py:818-833` applies to `no_fetch_jobs`.
+3. KINDS ARE RE-DERIVED. `migrated` requires the name's BWS twin to be present in `.ci/config/bws-secret-map.json`, so an entry claiming a migration that did not happen reds. `no-fetch-job` requires the cited `<path>#<job>` to exist AND to still contain the read, the same double liveness `.ci/scripts/quality/check_bws_map.py:818-833` applies to `no_fetch_jobs`.
   `dead` requires ZERO reads, so it is unreachable by construction and exists only to be refused -- a dead name is deleted, not recorded.
 4. THE SECRETS ARM. Every `secrets.NAME` read outside a comment is `BWS_ACCESS_TOKEN` or `GITHUB_TOKEN`. This is green today and the clause exists to keep it that way; a workflow that starts reading a new GitHub secret reds at the commit that adds it.
   The name regex must require `[A-Z][A-Z0-9_]*` and reject a following path character, or `set-account-worker-secrets.sh` in a comment matches as `secrets.sh` -- four such false positives exist in the tree today and the selftest must plant one.
-5. COMMENTS ARE NOT READS. Both `secrets.ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN` occurrences (`claude-review-reusable.yml:264,384`) are inside `#` comments explaining a fallback that was deliberately removed. A gate that counts them reds on a correct tree, which is the shape that gets suppressed.
+5. COMMENTS ARE NOT READS. Both `secrets.ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN` occurrences (`.github/workflows/claude-review-reusable.yml:264,384`) are inside `#` comments explaining a fallback that was deliberately removed. A gate that counts them reds on a correct tree, which is the shape that gets suppressed.
   The selftest must plant a commented read and require it NOT to fire, in both the vars arm and the secrets arm.
 6. ANTI-VACUITY, and none of it is a floor that reds on success. Zero candidate files is a REFUSAL naming the corpus, because "there are no workflows in this repository" is an instrument that lost the tree, not a pass. An empty `actions-vars.json` alongside a non-empty derived read set is a REFUSAL.
   An empty read set alongside an empty file is the TERMINAL state and passes, printing zero -- the state this plan is working towards, and a typed floor of "at least 20" would red exactly when the migration succeeds, which is the finish-line trap `secret_supply.py` names in its own anti-vacuity section.
@@ -110,24 +110,24 @@ APP_ID, 47 sites in 12 files, all `client-id:` inputs to `./.github/actions/app-
 fetch at `:231`), `ci-build-renet.yml` 4, `cd-v2.yml` 3, `ci-build-docker.yml` 3, `cd-deploy-account.yml` 2 (`:92`, `:204`), `housekeeping.yml` 2, and one each in `backfill-release-sentinel.yml`, `cd-deploy-worker.yml`, `ci-ops-test.yml`, `cleanup-preview.yml`. Consider making `app-token`'s `client-id` input optional with a default of `${{ env.BWS_APP_ID }}` at
 `.github/actions/app-token/action.yml:7`; that would collapse 47 edits into one, at the cost of a composite whose contract depends on an ambient env name, which is the kind of implicit coupling this repo generally refuses. Recorded as an option, not a recommendation.
 
-CLOUDFLARE_ACCOUNT_ID, 25 sites. `ci.yml:1348,1390,1395,1498`, `cleanup-preview.yml:86,92,102,126`, `housekeeping.yml:88,114,178`, `cd-deploy-account.yml:276,281`, `cd-deploy-worker.yml:158,163`, `ct-tests.yml:184,190`, `watchdog-monitor.yml:177`, `breakpoint.yml:227,316,376` and the frozen twin at the same three lines. Every one of those jobs already fetches. The breakpoint five
+CLOUDFLARE_ACCOUNT_ID, 25 sites. `.github/workflows/ci.yml:1348,1390,1395,1498`, `.github/workflows/cleanup-preview.yml:86,92,102,126`, `.github/workflows/housekeeping.yml:88,114,178`, `.github/workflows/cd-deploy-account.yml:276,281`, `.github/workflows/cd-deploy-worker.yml:158,163`, `.github/workflows/ct-tests.yml:184,190`, `.github/workflows/watchdog-monitor.yml:177`, `breakpoint.yml:227,316,376` and the frozen twin at the same three lines. Every one of those jobs already fetches. The breakpoint five
 are the `no-fetch-job` exemption.
 
-CLOUDFLARE_ZONE_ID, 4 sites: `ci.yml:1661`, `cd-stage.yml:340`, `cd-v2.yml:383`, `promote-stable.yml:118`. All four jobs already fetch (`cd-stage.yml:105`, `cd-v2.yml:253`, `promote-stable.yml:44`, `ci.yml:1643`).
+CLOUDFLARE_ZONE_ID, 4 sites: `.github/workflows/ci.yml:1661`, `.github/workflows/cd-stage.yml:340`, `.github/workflows/cd-v2.yml:383`, `.github/workflows/promote-stable.yml:118`. All four jobs already fetch (`.github/workflows/cd-stage.yml:105`, `.github/workflows/cd-v2.yml:253`, `.github/workflows/promote-stable.yml:44`, `.github/workflows/ci.yml:1643`).
 
-The SELLER block, 9 names, 18 sites, exactly two files: `cd-deploy-account.yml:322-330` and `cd-deploy-worker.yml:182-190`. Both jobs already fetch (`:156`/`:170` and `:59`). This is the cluster the separate-project question was about; see Decision 1.
+The SELLER block, 9 names, 18 sites, exactly two files: `.github/workflows/cd-deploy-account.yml:322-330` and `.github/workflows/cd-deploy-worker.yml:182-190`. Both jobs already fetch (`:156`/`:170` and `:59`). This is the cluster the separate-project question was about; see Decision 1.
 
-ROOT_EMAIL, 4 sites: `cd-deploy-account.yml:321`, `cd-deploy-worker.yml:181`, `ci.yml:1407`, `ct-tests.yml:1917`. Already in the `product-runtime` shard of the env manifest, so the shard must move to `secret` when the vault acquires the name -- see the sequencing note below.
+ROOT_EMAIL, 4 sites: `.github/workflows/cd-deploy-account.yml:321`, `.github/workflows/cd-deploy-worker.yml:181`, `.github/workflows/ci.yml:1407`, `.github/workflows/ct-tests.yml:1917`. Already in the `product-runtime` shard of the env manifest, so the shard must move to `secret` when the vault acquires the name -- see the sequencing note below.
 
-AWS_SES_FROM (`cd-deploy-account.yml:309`, `cd-deploy-worker.yml:177`, `ci.yml:1414`, `breakpoint.yml:345` and twin), AWS_SES_CONFIGURATION_SET (`cd-deploy-account.yml:308`, `cd-deploy-worker.yml:176`, `ci.yml:1415`), AWS_SES_REGION_EU (`cd-deploy-worker.yml:178`, `ci.yml:1410`, `breakpoint.yml:344` and twin). The breakpoint reads are exempt; the rest migrate. Note that the map
+AWS_SES_FROM (`.github/workflows/cd-deploy-account.yml:309`, `.github/workflows/cd-deploy-worker.yml:177`, `.github/workflows/ci.yml:1414`, `breakpoint.yml:345` and twin), AWS_SES_CONFIGURATION_SET (`.github/workflows/cd-deploy-account.yml:308`, `.github/workflows/cd-deploy-worker.yml:176`, `.github/workflows/ci.yml:1415`), AWS_SES_REGION_EU (`.github/workflows/cd-deploy-worker.yml:178`, `.github/workflows/ci.yml:1410`, `breakpoint.yml:344` and twin). The breakpoint reads are exempt; the rest migrate. Note that the map
 already holds an unsuffixed `AWS_SES_REGION` whose `bws-unrequested.json` reason says nothing requests it and the deploy paths use `matrix.sesRegion` and `vars.AWS_SES_REGION_EU`; migrating the EU variable makes that reason stale in one half, so the exemption's text must be re-derived in the same change or `check:ci-bws-map` will be carrying a sentence that is no longer true.
 
-GIT_BOT_NAME and GIT_BOT_EMAIL, 6 sites, one file: `cd-v2.yml:668,669,688,689,702,703`, job `tag-and-release`, which already fetches at `:634`. Line 668-669 are inside a `run:` block as `git config` arguments rather than an `env:` block, so the substitution there is `${BWS_GIT_BOT_NAME}` shell interpolation, not `${{ env.X }}` -- the one site in the whole migration where the edit
+GIT_BOT_NAME and GIT_BOT_EMAIL, 6 sites, one file: `.github/workflows/cd-v2.yml:668,669,688,689,702,703`, job `tag-and-release`, which already fetches at `:634`. Line 668-669 are inside a `run:` block as `git config` arguments rather than an `env:` block, so the substitution there is `${BWS_GIT_BOT_NAME}` shell interpolation, not `${{ env.X }}` -- the one site in the whole migration where the edit
 is not mechanical.
 
-TURNSTILE_SITE_KEY, 2 live sites: `cd-deploy-account.yml:123` (job `build`, fetch at `:83`) and `cd-deploy-worker.yml:141` (fetch at `:59`). The third occurrence, `ci.yml:1354`, is a COMMENT explaining that PR previews deliberately use the per-PR widget minted at `ci.yml:327-333` instead. The map already holds `CLOUDFLARE_TURNSTILE_SECRET_KEY`, so the site key joins its own pair.
+TURNSTILE_SITE_KEY, 2 live sites: `.github/workflows/cd-deploy-account.yml:123` (job `build`, fetch at `:83`) and `.github/workflows/cd-deploy-worker.yml:141` (fetch at `:59`). The third occurrence, `.github/workflows/ci.yml:1354`, is a COMMENT explaining that PR previews deliberately use the per-PR widget minted at `.github/workflows/ci.yml:327-333` instead. The map already holds `CLOUDFLARE_TURNSTILE_SECRET_KEY`, so the site key joins its own pair.
 
-FULL_CI, 1 site, `ci.yml:335`. See Decision 3.
+FULL_CI, 1 site, `.github/workflows/ci.yml:335`. See Decision 3.
 
 ## Sequencing, and the one trap in it
 

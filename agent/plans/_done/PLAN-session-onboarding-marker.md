@@ -140,7 +140,7 @@ silent overwrite.
       wrapped in `try/except ImportError`, falls back to `onboard = None`, since the crash-test
       fixture `test_wl_cadence.py::test_222j` copies only `.claude/hooks/stop/*.py` and a hard
       import there took the whole hook down; caught by running that suite before landing). Added
-      `worklist_messages.N_ONBOARD_DELIVERED`. Two lines beside `wl_checks.py:4197` read the
+      `worklist_messages.N_ONBOARD_DELIVERED`. Two lines beside `.claude/hooks/stop/wl_checks.py:4197` read the
       marker via `onboard.load_marker(session_id)` and append the line when `state == "delivered"`.
       Verified: `test_wl_cadence.py` 39/39, `test_wl_first_touch.py` 15/15, `check:ci-python-lint`
       clean on both touched files, `check:ci-python-types` shows zero new findings caused by this

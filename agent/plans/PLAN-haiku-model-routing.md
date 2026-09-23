@@ -1,6 +1,7 @@
 # PLAN: route the cheap-tier work to Haiku, by task shape
 
 Status: phase 0-1 done, phase 2 (calibration batch) next
+Owner: d778be9d
 First-Seen: 2026-09-22
 Operator ask: "we burn a lot of tokens with stop hook... investigate where we can use haiku model for sub-agents. Which task categories and which languages are better to leverage haiku... implement planned changes to encourage haiku model wherever possible. I suppose python and typescript could be the targets but not limited to them." <!-- style-ok -->
 
@@ -90,7 +91,7 @@ section 6 acceptance criterion should be measured against.
 
 - **`.claude/agents/i18n-guardian.md:77-79`** -- replace the `## Model choice` section with the true statement: haiku across all twelve, matching `docs/i18n/CONVENTIONS.md:26` and `CLAUDE.md:195`; note that sonnet appeared in the ledger between `f7a5351a9` and `b8de2f586` and was migrated back; keep the "do not flip this casually" energy but attach it to the correct model.
 Preserve the `$meta.models` pointer -- that is the part a session needs.
-- **`agent/programs/www-simplification/research/01-SYNTHESIS.md:208,449`** and **`RESEARCH-i18n-ci.md:157,459`** -- leave untouched.
+- **`agent/programs/www-simplification/research/01-SYNTHESIS.md:208,449`** and **`agent/programs/www-simplification/research/RESEARCH-i18n-ci.md:157,459`** -- leave untouched.
 These are dated research records, and this repo freezes a record once written (the same convention `agent/plans/PLAN-remove-autopilot.md` applies to `docs/ci-overhaul/06-progress.md`). They were accurate on the day they were written. Rewriting them falsifies the history that explains the stale note. The new `docs/agent-reference/model-routing.md` carries one line noting the 2026-08
 sonnet interlude and its resolution, which is where a future reader should land.
 - **No change** to `CLAUDE.md:195`, `docs/i18n/CONVENTIONS.md`, the ledger, or `scripts/gates/check-naturalization-model-policy.ts`.

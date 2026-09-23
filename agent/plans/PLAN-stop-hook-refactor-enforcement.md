@@ -10,7 +10,7 @@ Every number below was measured against this checkout, read-only.
 ### 0.1 The "40% threshold" does not exist. Say so plainly.
 
 Searched: `.claude/**`, `.ci/config/*.json`, `scripts/data/*.json`, `agent/plans/**`, `agent/plans/_removed/` (empty), `docs/agent-reference/*.md`, CLAUDE.md, and every `.git/hooks` (none installed; no husky/lefthook).
-There is no 40%, 0.4, or any ratio-shaped threshold anywhere in the duplication/refactoring machinery. The only hits near "40" are unrelated: `wl_report.py:153`'s truncation ladder, a 40-hex git-blob length in `block_compacted_plan_edit.py:55`, and the `5->10->20->40->60` poll-backoff ladder.
+There is no 40%, 0.4, or any ratio-shaped threshold anywhere in the duplication/refactoring machinery. The only hits near "40" are unrelated: `.claude/hooks/stop/wl_report.py:153`'s truncation ladder, a 40-hex git-blob length in `.claude/rediacc_hooks/guards/block_compacted_plan_edit.py:55`, and the `5->10->20->40->60` poll-backoff ladder.
 
 The thresholds that do exist are counts, not percentages, and they are stated as definitions rather than knobs:
 - `scripts/gates/check-shape-duplication.ts:95` -- `N = 3` (the Nth copy).
@@ -33,12 +33,12 @@ stderr:  SHAPE PROBE DID NOT RUN: scripts/gates/check-shape-duplication.ts has
          changed since the index was built, so every hash in it may have
 ```
 
-The operator's claim holds, and the exact reason follows. `_algorithm_moved` (`warn_staged_shape_duplication.py:138-153`) sha256s every esbuild input the index was built from and refuses if any byte moved. One of those inputs is the gate's own source. This session's citation-migration sweep edited one comment line in it (an `agent/PLAN-...` -> `agent/plans/PLAN-...` path fix at
-`check-shape-duplication.ts:110`) and that single character-level prose edit disarmed the entire commit-path advisory for every commit on this branch until the index was regenerated (done separately, same session, immediately after this finding landed).
+The operator's claim holds, and the exact reason follows. `_algorithm_moved` (`.claude/rediacc_hooks/guards/warn_staged_shape_duplication.py:138-153`) sha256s every esbuild input the index was built from and refuses if any byte moved. One of those inputs is the gate's own source. This session's citation-migration sweep edited one comment line in it (an `agent/PLAN-...` -> `agent/plans/PLAN-...` path fix at
+`scripts/gates/check-shape-duplication.ts:110`) and that single character-level prose edit disarmed the entire commit-path advisory for every commit on this branch until the index was regenerated (done separately, same session, immediately after this finding landed).
 
 The check's intent is right and its docstring says so ("a change to `normalise` or to the window rule rewrites every hash in the tree"). Its instrument cannot tell an algorithm change from a comment change.
 
-And it does not self-heal on a clock. The only thing that re-emits the index is `wl_shapedup.run` (`wl_checks.py:4621`), which sits inside `if judged_ok:` (`:4619`), inside `if (something_remains or reg_signals) and not wl_judge.JUDGE_DISABLED:` (`:4270`). So a rearm requires the judge to run at all, and the judge to say `stop`. A session that is blocked, quiet, or being told
+And it does not self-heal on a clock. The only thing that re-emits the index is `wl_shapedup.run` (`.claude/hooks/stop/wl_checks.py:4621`), which sits inside `if judged_ok:` (`:4619`), inside `if (something_remains or reg_signals) and not wl_judge.JUDGE_DISABLED:` (`:4270`). So a rearm requires the judge to run at all, and the judge to say `stop`. A session that is blocked, quiet, or being told
 `continue` never rearms the commit guard.
 
 ### 0.3 The detection engine itself works. Proven, not assumed.
@@ -64,7 +64,7 @@ So the thing to design is not "add a Stop-hook enforcement". It is "the Stop-hoo
 
 ### 0.5 The real defect: the corpus is 138 files out of 2,461.
 
-`FAMILIES` (`check-shape-duplication.ts:116-124`) is three pathspecs:
+`FAMILIES` (`scripts/gates/check-shape-duplication.ts:116-124`) is three pathspecs:
 
 | pathspec | floor | tracked |
 |---|---|---|
@@ -113,7 +113,7 @@ gate corpus       139 files   28,885 windows   175 raw shapes at 3+   0.28s hash
 gate + 4 wide     514 files   87,903 windows   311 raw shapes at 3+   0.83s hashing
 ```
 
-Hashing triples but stays under a second. `wl_shapedup.py:302`'s "~1.10s wall" is dominated by `npx tsx` startup, so a widened run should land at roughly 1.6-2.0s -- and only on stops where `corpus_sig` moved. Acceptable on a path that already forks git and gh.
+Hashing triples but stays under a second. `.claude/hooks/stop/wl_shapedup.py:302`'s "~1.10s wall" is dominated by `npx tsx` startup, so a widened run should land at roughly 1.6-2.0s -- and only on stops where `corpus_sig` moved. Acceptable on a path that already forks git and gh.
 
 ## Part 1 -- The design
 
@@ -128,8 +128,8 @@ Nothing new is implemented. The counter, the normalisation, the probe bundle, th
 - A new `wl_*.py` rule module. Rejected. It would need its own `*_MARKER` + `apply_verdict` (discovered by `.ci/scripts/quality/check_judged_rule_wiring.py`, `MIN_RULES` floor raised), its own rubric entry in `.ci/rediacc_ci/quality/rubric_calibration.py:58` with fixtures nothing has calibrated, and a sixth schema-constrained call site for
   `.ci/scripts/quality/check_schema_call_sites.py` to police.
   Reusing `wl_shapedup.py` needs none of that.
-- A Python reimplementation of "is this duplicated". Explicitly refused by `warn_staged_shape_duplication.py:6-7`: "A Python reimplementation of those would be a second implementation of ONE decision, which is the class of defect the gate itself exists to count."
-- A new sampling / budget / timer. Refused by `wl_shapedup.py:343-344`: "A refresh on its own timer would be a second schedule for one fact."
+- A Python reimplementation of "is this duplicated". Explicitly refused by `.claude/rediacc_hooks/guards/warn_staged_shape_duplication.py:6-7`: "A Python reimplementation of those would be a second implementation of ONE decision, which is the class of defect the gate itself exists to count."
+- A new sampling / budget / timer. Refused by `.claude/hooks/stop/wl_shapedup.py:343-344`: "A refresh on its own timer would be a second schedule for one fact."
   Everything needed already exists: `corpus_sig` (the tree moved), `reg_signals` (a fix landed), `outq_add`'s `shown` ledger (avoids repeating a section), `wl_rules.Demand` (TTL + max fires), and `wl_reggate`'s branch ledger (a K-shaped spend cap).
 - A tool-call counter ("after N edits"). Rejected: the Stop hook has no tool-call counter; building one is a new sampling system for a fact two existing signals already carry.
 
@@ -140,7 +140,7 @@ The trigger is the conjunction of conditions that all already exist, evaluated a
 1. Mechanical, and it comes first. `wl_shapedup.corpus_sig(root)` over the widened globs differs from `state["shapedup_wide_sig"]`, or the wide index is absent (`index_present`).
    This is a stat sweep on an unchanged tree. In plain terms: the session edited a file in a family the shape index tracks. This is candidate (a)/(b) from the operator's ask, already built, already pinned by `.ci/rediacc_ci/tests/test_shapedup_corpus_sig.py`.
 2. Or -- and this is the addition -- `reg_signals` is non-empty and `wl_reggate.fixset_files(root, reg_ids)` contains a path matching a wide pathspec.
-   In plain terms: a fix just landed in a family the index tracks. This is candidate (c) from the ask: it rides `wl_reggate.fix_signals` (`wl_reggate.py:363`), which is artifact-derived, already de-duplicated per fix-set, already excludes docs-only sets, and is already computed at `wl_checks.py:2385`. It costs one `in` test. It matters because `corpus_sig` is banked once per edit,
+   In plain terms: a fix just landed in a family the index tracks. This is candidate (c) from the ask: it rides `wl_reggate.fix_signals` (`.claude/hooks/stop/wl_reggate.py:363`), which is artifact-derived, already de-duplicated per fix-set, already excludes docs-only sets, and is already computed at `.claude/hooks/stop/wl_checks.py:2385`. It costs one `in` test. It matters because `corpus_sig` is banked once per edit,
    so a commit that follows an already-checked edit would otherwise be silent -- and the commit is the moment the operator named.
 3. And the counter actually found something not already in the `shown` ledger.
 
@@ -157,7 +157,7 @@ Reasons, in order of weight:
 
 1. A blocking tier over a standing backlog is a nagging machine by construction. There are 90 findings today that nobody in this session created.
    Blocking on them would wall every session behind work it did not cause -- the exact failure `wl_shapedup.apply_verdict`'s `capped` branch exists to avoid, at 90x the scale. This session just spent a turn fixing a check that fired the identical block on 10+ consecutive stops (`agent/plans/PLAN-fix-stop-hook-completion-evidence-refire.md`). Shipping a new one would be remarkable.
-2. The layering is already decided and it is good. CI refuses; the commit guard warns; the Stop judge asks. `warn_staged_shape_duplication.py:9` -- "IT NEVER DENIES ... the CI gate owns the refusal."
+2. The layering is already decided and it is good. CI refuses; the commit guard warns; the Stop judge asks. `.claude/rediacc_hooks/guards/warn_staged_shape_duplication.py:9` -- "IT NEVER DENIES ... the CI gate owns the refusal."
    A wide advisory extends the middle layer; it does not need a fourth refusal.
 3. CLAUDE.md rule 2 does not require it. Rule 2 forbids suppressing a gate that blocks. It says nothing about whether a new advisory must block.
    Nothing here suppresses anything; the CI gate's verdict on the narrow corpus is untouched.
@@ -172,10 +172,10 @@ Four independent brakes, every one of them pre-existing and tested:
 
 | Brake | Instrument | Value |
 |---|---|---|
-| Don't say the same thing twice | `outq_add`'s `shown` ledger, keyed on sha1 of the text (`wl_checks.py:1344, 1378-1381`) | `REPORT_REFRESH_MIN = 360` min |
+| Don't say the same thing twice | `outq_add`'s `shown` ledger, keyed on sha1 of the text (`.claude/hooks/stop/wl_checks.py:1344, 1378-1381`) | `REPORT_REFRESH_MIN = 360` min |
 | Don't say more than one thing per stop | `outq_drain(..., OUTQ_PER_STOP)` (`:4772`) | `OUTQ_PER_STOP` (currently 1; see the sibling plan-eliminate-worklist-report-per-stop-env work, landing separately) |
-| Don't ask the model about one shape forever | `wl_rules.Demand("shapedup-wide-<hash12>", TTL, max_fires)` -- the existing latch at `wl_shapedup.py:189-192` | TTL 120 min, max 2 |
-| Don't spend more than K model calls per branch | `wl_reggate`-shaped JSONL ledger under `agent/reggate/` (`wl_reggate.py:83-88, 195-211`) | `WORKLIST_SHAPEDUP_WIDE_CAP = 5` |
+| Don't ask the model about one shape forever | `wl_rules.Demand("shapedup-wide-<hash12>", TTL, max_fires)` -- the existing latch at `.claude/hooks/stop/wl_shapedup.py:189-192` | TTL 120 min, max 2 |
+| Don't spend more than K model calls per branch | `wl_reggate`-shaped JSONL ledger under `agent/reggate/` (`.claude/hooks/stop/wl_reggate.py:83-88, 195-211`) | `WORKLIST_SHAPEDUP_WIDE_CAP = 5` |
 
 Above the K cap the finding still lands -- mechanically, as the counter's file:line list plus the index's own `advice` string -- with no model call. A rule that goes silent when its budget runs out is a rule that quietly stops.
 
@@ -186,7 +186,7 @@ next stop -- forever, and visibly. That is the exit `V_ACTION` already names, an
 
 ### 1.6 The prompt
 
-No new rubric. `SHAPE_PROMPT` (`wl_shapedup.py:43-80`) is already calibrated against `SHAPE_CASES` and hashed into `.ci/config/rubric-calibration.json`. It takes an `instances` list of `file:line` strings and asks exactly the right question -- should these become one thing, and if not what is the DIVERGENCE -- with the three-valued answer (`yes` / `already` / `no`), the
+No new rubric. `SHAPE_PROMPT` (`.claude/hooks/stop/wl_shapedup.py:43-80`) is already calibrated against `SHAPE_CASES` and hashed into `.ci/config/rubric-calibration.json`. It takes an `instances` list of `file:line` strings and asks exactly the right question -- should these become one thing, and if not what is the DIVERGENCE -- with the three-valued answer (`yes` / `already` / `no`), the
 harness-exists-on-disk check, and the refusal to accept `no` without a concrete divergence.
 
 Its claim "A mechanical counter has ALREADY found the duplication ... the instances below are measured, not suspected" stays true verbatim on the wide profile, because the wide profile runs the same counter.
@@ -212,7 +212,7 @@ Naming the advisory status in the message is deliberate. An advisory that reads 
   In `.claude/hooks/stop/wl_checks.py`, call `refresh_index` on every full stop that reaches the allow path, independent of `judged_ok`; keep the `ask` half inside `if judged_ok:` at `:4619` exactly as today. Rationale to carry in the comment: a stale index makes the commit-path guard say "DID NOT RUN", and that guard's rearm must not depend on the judge's verdict. Verified live: a
   one-comment edit disarmed it for 36+ minutes with no path to recovery.
 - [ ] Make the index staleness question survive a comment edit. `warn_staged_shape_duplication._algorithm_moved` (`:138-153`) sha256s whole files. Two acceptable shapes; pick one and record why:
-  - (preferred) Move the staleness test into the probe bundle -- `probe.mjs` already contains the gate's source; have `probeMain` (`check-shape-duplication.ts:1794` region) verify its own `inputs` and return `{error: "stale: <rel>"}`, and delete `_algorithm_moved` from the Python. One implementation, two callers -- the rule this system is built on.
+  - (preferred) Move the staleness test into the probe bundle -- `probe.mjs` already contains the gate's source; have `probeMain` (`scripts/gates/check-shape-duplication.ts:1794` region) verify its own `inputs` and return `{error: "stale: <rel>"}`, and delete `_algorithm_moved` from the Python. One implementation, two callers -- the rule this system is built on.
   - (fallback, cheaper) Keep the whole-file hash but have `refresh_index` also re-emit when any `inputs` sha has moved, so the LOUD "did not run" window is one stop rather than unbounded.
   Do not weaken the check to ignore comments: a comment in this file carries the incident history, and a hash that skips comments is a hash that can be fooled by moving code into one.
 - [ ] Add a `deadSeeded` report beside `deadAccepted`. `check-shape-duplication.ts:1455`. Same predicate (`copies.get(h)?.size ?? 0) < N`), applied to `seed.shapes`.
@@ -265,7 +265,7 @@ Naming the advisory status in the message is deliberate. An advisory that reads 
 1. It becomes the repeated-nag bug. Highest risk; it is the one the operator will notice. Four brakes above, plus the settle path.
    The specific failure mode to test for is the completion-evidence one: a finding the session cannot discharge. Control: after writing an `accepted` entry with a valid BLOCKER reason, the same shape must be silent on the next stop. If that control cannot be written, the design is wrong.
 2. The wide tier fires on the Stop hook about the Stop hook. 9 of the 90 findings are in `.claude/hooks/stop/wl_*.py`. A session editing the stop hook gets duplication findings about the stop hook, from the stop hook, while editing it.
-   Not a defect, but it will read as one the first time; name it in the module comment. It is also the family most likely to produce false positives, because those files carry deliberate parallel rule structure (`wl_classsweep`/`wl_bravedefault`/`wl_shapedup` share a shape on purpose -- `wl_rules.py:3` says exactly that). Expect `no` verdicts here and make sure the `accepted` path
+   Not a defect, but it will read as one the first time; name it in the module comment. It is also the family most likely to produce false positives, because those files carry deliberate parallel rule structure (`wl_classsweep`/`wl_bravedefault`/`wl_shapedup` share a shape on purpose -- `.claude/hooks/stop/wl_rules.py:3` says exactly that). Expect `no` verdicts here and make sure the `accepted` path
    is easy, or this family alone will produce the noise that gets the whole tier ignored.
 3. Cost. One extra `claude -p` per firing stop at up to `JUDGE_BUDGET_USD = 0.25`. Capped at 5 per branch. If the cap proves too tight the finding degrades to mechanical, never to silence.
 4. Stop latency. Measured 0.83s of hashing; roughly 2s wall predicted. Guarded by the stat-sweep signature. Named ceiling and fallback in Commit 3.

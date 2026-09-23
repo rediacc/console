@@ -96,7 +96,7 @@ Instrument instead: a harness plus a gate that requires the harness. A `plant()`
 
 `.ci/rediacc_ci/controls.py` gains module-level `plant` / `plant_re`, free functions rather than `Controls` methods because several files build fixtures at module level where no `ctl` exists. `plant()` prints nothing — it is a constructor, not an assertion.
 
-The 12 files convert mechanically. **Watch the derived floors**: removing the now redundant proof at `.ci/rediacc_ci/quality/review_turn_capacity.py:499-503` drops a `ctl.check`, so the `+3` at `:489` becomes `+2`. `.ci/scripts/quality/check_plan_record.py` needs the `sys.path` hop spelled as in `.ci/scripts/quality/check_npmrc.py:69`.
+The 12 files convert mechanically. **Watch the derived floors**: removing the now redundant proof at `.ci/rediacc_ci/quality/review_turn_capacity.py:499-503` drops a `ctl.check`, so the `+3` at `:489` becomes `+2`. `.ci/scripts/quality/check_plan_record.py` needs the `sys.path` hop spelled as in `.ci/scripts/quality/check_npmrc.py:17`.
 
 The new gate is NOT a widened `control_vacuity`. Three reasons in descending force: the live gate is the bash twin (`package.json:140`) and `.ci/rediacc_ci/tests/test_quality_control_vacuity.py:189` requires byte-identical output, so widening means writing an AST-equivalent predicate **in bash**; invariant 5 forbids deleting the twin, so widening means maintaining a bash
 Python-parser until W7 P5; and the predicate is genuinely different — `control_vacuity` asks "is there a proof?", this asks "did you use the harness?".
@@ -134,7 +134,7 @@ W7 P4 is actively rewriting. Land as one PR and rebase rather than interleaving.
 
 The gate ran against the real tree and produced 7 findings. Judged one by one:
 
-- **2 were my implementation bug.** `.ci/rediacc_ci/quality/no_otlp_creds.py:437-438` — `SPACE_RE.sub("", " \t\n")`.
+- **2 were my implementation bug.** `.ci/rediacc_ci/quality/no_otlp_creds.py:373` — `SPACE_RE.sub("", " \t\n")`.
 For `.sub`/`.subn` the RECEIVER is a compiled regex, not the fixture; that call exercises the pattern itself. Fixed by narrowing `SUBSTITUTORS` to `.replace` alone.
 - **1 was a genuine miss, now converted.** `.ci/scripts/quality/check_plan_record.py:1090`
 `with_ph.replace("Status: parked", "Status: compacted", 1)` is a real mutant on a lowercase local, which the earlier `_UPPER`/`clean` sweeps did not reach.

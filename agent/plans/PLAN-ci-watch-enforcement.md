@@ -11,12 +11,12 @@ A session cannot stop while a head IT pushed has no terminal verdict on record a
 Every root-cause claim below was re-checked against the source by the session that filed it, because an approved plan's assertion about unread code is a hypothesis. Confirmed directly:
 
 - `WORKLIST_PUBLISH_REF` is UNSET in this checkout (`echo` of the var is empty),
-so `wl_ci.py:737-739` returns `"unset"` as the FIRST statement of `ci_trouble`.
-- `wl_ci.py:740-743` returns `"multi-session"` next; the sessions file carries 19
+so `.claude/hooks/stop/wl_ci.py:737-739` returns `"unset"` as the FIRST statement of `ci_trouble`.
+- `.claude/hooks/stop/wl_ci.py:740-743` returns `"multi-session"` next; the sessions file carries 19
 entries, so `sole_live_session` has been false throughout.
 - `/tmp/claude-worklist/` holds ZERO `cistate`/`cimark`/`ciqueue` sidecars after a
-full night of stops. `ci_trouble`'s first reachable disk write is at `wl_ci.py:763`, so it never executed past line 743. This is the empirical proof, not an inference from reading.
-- `ci_watch_armed` has exactly ONE call site, `wl_ci.py:769`, inside the branch
+full night of stops. `ci_trouble`'s first reachable disk write is at `.claude/hooks/stop/wl_ci.py:763`, so it never executed past line 743. This is the empirical proof, not an inference from reading.
+- `ci_watch_armed` has exactly ONE call site, `.claude/hooks/stop/wl_ci.py:769`, inside the branch
 reached only after `ci_classify` found a failing job.
 - `.claude/agents/pr-babysitter.md:125` does hand out
 `until [ status = completed ]; do sleep 20; done` and call it sanctioned.
@@ -41,10 +41,10 @@ ONE head carries SEVERAL runs (3c151275 has 33135268915 success AND 33135196245 
 
 | # | Hypothesis | Verdict | Evidence |
 |---|---|---|---|
-| a | only fires in-flight; completed-failed not covered | INVERTED, true as a gap | `wl_ci.py:765-768`: no failing job means `"ok"`. In-flight-with-nothing-red is inexpressible |
-| b | advisory, not blocking | FALSE | `wl_checks.py:3529` `vadd("ci-red", True, ...)`; always-tier defeats the cadence pause |
-| c | needs something present to activate | TRUE, twice | `wl_ci.py:737-739` needs `WORKLIST_PUBLISH_REF`; `:740-743` needs sole liveness |
-| d | keys on something that stopped matching | FALSE | `wl_ci.py:562`: a bare `ci-trace` invocation needs no needle |
+| a | only fires in-flight; completed-failed not covered | INVERTED, true as a gap | `.claude/hooks/stop/wl_ci.py:765-768`: no failing job means `"ok"`. In-flight-with-nothing-red is inexpressible |
+| b | advisory, not blocking | FALSE | `.claude/hooks/stop/wl_checks.py:3529` `vadd("ci-red", True, ...)`; always-tier defeats the cadence pause |
+| c | needs something present to activate | TRUE, twice | `.claude/hooks/stop/wl_ci.py:737-739` needs `WORKLIST_PUBLISH_REF`; `:740-743` needs sole liveness |
+| d | keys on something that stopped matching | FALSE | `.claude/hooks/stop/wl_ci.py:562`: a bare `ci-trace` invocation needs no needle |
 | e | an earlier check returns first | TRUE | both returns above are the 1st and 2nd statements of `ci_trouble` |
 
 **The decisive structural fact:** `ci_watch_armed` can suppress a block. It has never been able to cause one. "The machinery already exists" is misleading.
@@ -116,7 +116,7 @@ Structural first: only `ci-trace.py` writes receipts, so a banned form produces 
 One new row in `lib/sanctioned.py` for the variable-assigned loop shape that slipped both the pre-bash guard and the recipe gate, with `example` + `counter` that `check_sanctioned_registry.py` re-runs so it cannot rot. **Stated residual:** a loop whose `gh` call is assigned in an earlier command is not expressible as a single-command regex; the Stop side catches it via
 `adhoc_watch`, the pre-bash side cannot, and that is written down rather than papered over.
 
-Widen `hands_out_loop` in `check-ci-watch-recipe.sh` to an alternative that does not require the literal `.status` or the quoted `"completed"` — the reason it could not see `pr-babysitter.md:125`.
+Widen `hands_out_loop` in `check-ci-watch-recipe.sh` to an alternative that does not require the literal `.status` or the quoted `"completed"` — the reason it could not see `.claude/agents/pr-babysitter.md:125`.
 
 ## 8. Documentation, so the taught loop matches the enforcement
 

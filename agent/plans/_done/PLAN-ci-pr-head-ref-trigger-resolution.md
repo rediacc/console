@@ -207,49 +207,49 @@ refusal, or the word `VACUOUS`). Rename it `MIN_READERS = 2` and add `MIN_SETTER
 ## Tasks
 
 - [x] Add the event→context coverage table and `clause_events(expr)` to
-    (ticked) 2026-09-22T19:51:35Z by d778be9d: check_pr_head_ref_completeness.py:210-236 tables, :505-533 clause_events(), UNKNOWN counted at :550-551,:624-626
+    (ticked) 2026-09-22T19:51:35Z by d778be9d: .ci/scripts/quality/check_pr_head_ref_completeness.py:210-236 tables, :505-533 clause_events(), UNKNOWN counted at :550-551,:624-626
       `.ci/scripts/quality/check_pr_head_ref_completeness.py`, with UNKNOWN returning
       "covers everything" and being counted.
 - [x] Add `narrow_by_if(triggers, condition)` implementing the four conjunct rules;
-    (ticked) 2026-09-22T19:52:42Z by d778be9d: check_pr_head_ref_completeness.py:299-357, four-rule conjunct logic, never widens per comment at :300
+    (ticked) 2026-09-22T19:52:42Z by d778be9d: .ci/scripts/quality/check_pr_head_ref_completeness.py:299-357, four-rule conjunct logic, never widens per comment at :300
       never widen.
 - [x] Add `workflow_triggers(path)` reading `doc.get(True) or doc.get("on")`, with
-    (ticked) 2026-09-22T19:52:42Z by d778be9d: WorkflowSet.on_block() at check_pr_head_ref_completeness.py:431-447, callers() :449-457, effective_triggers() :459-472 with cycle guard
+    (ticked) 2026-09-22T19:52:42Z by d778be9d: WorkflowSet.on_block() at .ci/scripts/quality/check_pr_head_ref_completeness.py:431-447, callers() :449-457, effective_triggers() :459-472 with cycle guard
       caller-chain resolution for `workflow_call`-only files via `uses:
       ./.github/workflows/<name>` and a cycle guard.
 - [x] Add `find_setter_steps()` enumerating every step whose `env:` carries
-    (ticked) 2026-09-22T19:52:42Z by d778be9d: WorkflowSet.setter_steps() at check_pr_head_ref_completeness.py:575-606, file:line via _env_line() :559-573
+    (ticked) 2026-09-22T19:52:42Z by d778be9d: WorkflowSet.setter_steps() at .ci/scripts/quality/check_pr_head_ref_completeness.py:575-606, file:line via _env_line() :559-573
       `PR_HEAD_REF` or `GITHUB_HEAD_REF`, with `file:line` for the reporting.
 - [x] Add exemption E1 (`${{ github.event_name }}` present as a value in the step's
-    (ticked) 2026-09-22T19:51:35Z by d778be9d: has_event_name_env() at check_pr_head_ref_completeness.py:360-378, wired at :621-622
+    (ticked) 2026-09-22T19:51:35Z by d778be9d: has_event_name_env() at .ci/scripts/quality/check_pr_head_ref_completeness.py:360-378, wired at :621-622
       `env:`), with the four real anchors named in a comment.
 - [x] Wire CHECK 2 into `main()` alongside CHECK 1, with separate offender lists and a
-    (ticked) 2026-09-22T19:51:51Z by d778be9d: check_pr_head_ref_completeness.py:1003-1039, separate findings/offenders lists, success line prints both counts plus unknown tally
+    (ticked) 2026-09-22T19:51:51Z by d778be9d: .ci/scripts/quality/check_pr_head_ref_completeness.py:1003-1039, separate findings/offenders lists, success line prints both counts plus unknown tally
       success line that prints both counts plus the UNKNOWN tally.
 - [x] Rename the floor to `MIN_READERS = 2`, add `MIN_SETTER_STEPS = 6`, remove
     (ticked) 2026-09-22T19:51:51Z by d778be9d: MIN_READERS=2 at :122, MIN_SETTER_STEPS=5 (corrected from plan's 6) at :125, baseline entry removed from enumeration-vacuity-baseline.json
       `.ci/scripts/quality/check_pr_head_ref_completeness.py` from
       `scripts/data/enumeration-vacuity-baseline.json:13`.
 - [x] Extend `controls()` with the planted defect, the fixed form, the four silent
-    (ticked) 2026-09-22T19:52:42Z by d778be9d: controls_check2() at check_pr_head_ref_completeness.py:764-970: planted defect, fixed form, 4 silent controls, negative control, 2 parser controls -- verified running live
+    (ticked) 2026-09-22T19:52:42Z by d778be9d: controls_check2() at .ci/scripts/quality/check_pr_head_ref_completeness.py:764-970: planted defect, fixed form, 4 silent controls, negative control, 2 parser controls -- verified running live
       controls, the narrower negative control, and the two parser controls.
 - [x] Rewrite the module docstring: what CHECK 2 asserts, why the `LOUD_FAILURE`
-    (ticked) 2026-09-22T19:52:43Z by d778be9d: check_pr_head_ref_completeness.py:1-88 covers CHECK 2's assertion, exemption split, non-goal at :36-37, PR_NUMBER exclusion :47-74
+    (ticked) 2026-09-22T19:52:43Z by d778be9d: .ci/scripts/quality/check_pr_head_ref_completeness.py:1-88 covers CHECK 2's assertion, exemption split, non-goal at :36-37, PR_NUMBER exclusion :47-74
       exemption is right for CHECK 1 and absent from CHECK 2, the non-emptiness-not-
       correctness non-goal, and the measured `PR_NUMBER` exclusion with both sites named.
 - [x] Fix `.github/workflows/ci-quality.yml:1114` — append `|| github.ref_name`, matching
-    (ticked) 2026-09-22T19:52:43Z by d778be9d: ci-quality.yml:1236 PR_HEAD_REF: github.event.pull_request.head.ref || github.ref_name, matches check-pr-epic-block.ts:40
+    (ticked) 2026-09-22T19:52:43Z by d778be9d: .github/workflows/ci-quality.yml:1236 PR_HEAD_REF: github.event.pull_request.head.ref || github.ref_name, matches scripts/gates/check-pr-epic-block.ts:40
       `scripts/gates/check-pr-epic-block.ts:40` and `scripts/ci-runner/manifest.ts:1081`, with a comment citing
       `f1ce6911f`.
 - [x] Fix `.github/workflows/ci-quality.yml:1121` — same, matching `scripts/gates/check-pr-task-trailers.ts:42` and
-    (ticked) 2026-09-22T19:52:43Z by d778be9d: ci-quality.yml:1247 same fix, matches check-pr-task-trailers.ts:42 and manifest.ts:1003
+    (ticked) 2026-09-22T19:52:43Z by d778be9d: .github/workflows/ci-quality.yml:1247 same fix, matches scripts/gates/check-pr-task-trailers.ts:42 and scripts/ci-runner/manifest.ts:1003
       `scripts/ci-runner/manifest.ts:1032`.
 - [x] Delete `PR_HEAD_REF` from `.github/workflows/ci-quality.yml:2200` and `scripts/ci-runner/manifest.ts:5048`; note in
-    (ticked) 2026-09-22T19:52:43Z by d778be9d: ci-quality.yml:2318-2326 now a comment block explaining deliberate env: absence, no PR_HEAD_REF key remains at that site
+    (ticked) 2026-09-22T19:52:43Z by d778be9d: .github/workflows/ci-quality.yml:2318-2326 now a comment block explaining deliberate env: absence, no PR_HEAD_REF key remains at that site
       the commit that nothing under `.ci/rediacc_ci/` reads it and two test modules
       scrub it.
 - [x] Regenerate `scripts/ci-runner/gates.lock.json` and run
-    (ticked) 2026-09-22T19:52:43Z by d778be9d: gates.lock.json:1251-1262 current; ran check:ci-step-env-parity (22 controls passed, 278 steps agree) and check:ci-parity (agree in both directions)
+    (ticked) 2026-09-22T19:52:43Z by d778be9d: scripts/ci-runner/gates.lock.json:1251-1262 current; ran check:ci-step-env-parity (22 controls passed, 278 steps agree) and check:ci-parity (agree in both directions)
       `npm run check:ci-step-env-parity` plus `npm run check:ci-parity`.
 - [x] Run `npm run check:ci-pr-head-ref-completeness` and confirm: three findings before
     (ticked) 2026-09-22T19:52:44Z by d778be9d: ran check:ci-pr-head-ref-completeness: 2 readers all have setters, 6 setter steps resolve non-empty on every trigger, zero findings

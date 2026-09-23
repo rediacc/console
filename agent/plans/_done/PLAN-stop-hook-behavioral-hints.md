@@ -8,14 +8,14 @@ Updated: 2026-09-22
 
 Three mechanisms in this tree are close enough that the boundary has to be drawn before anything is built, or the fourth one becomes a second copy of one of them.
 
-`wl_agents.py` is the closest relative and the structural template: a deterministic, non-judged matcher over a corpus on disk, delivered through the advisory queue (`wl_checks.py:1441 agent_hint_queue`, queued at priority 3, called on the allow path only at `wl_checks.py:4837`), with a liveness gate (`.ci/scripts/quality/check_agent_hint_liveness.py`) rather than tests over its
+`wl_agents.py` is the closest relative and the structural template: a deterministic, non-judged matcher over a corpus on disk, delivered through the advisory queue (`.claude/hooks/stop/wl_checks.py:1441 agent_hint_queue`, queued at priority 3, called on the allow path only at `.claude/hooks/stop/wl_checks.py:4837`), with a liveness gate (`.ci/scripts/quality/check_agent_hint_liveness.py`) rather than tests over its
 internals. It answers "which specialist covers the topic in hand", which is a RELEVANCE question about this particular stop. The mechanism proposed here answers no question at all: it surfaces a standing rule that was already true before the session started, chosen at random. Relevance is what separates them, and it is why one needs a matcher and the other must not have one.
 
 `docs/agent-reference/TRAPS.md` is the corpus whose shape is being copied. Its charter, stated in its own opening lines, is "ways a session gets *fooled* -- as opposed to ways it gets *blocked*", and "Mechanics of a specific subsystem do not belong here. ... This file is about judgement." The operator's two worked examples -- record an order with the worklist verbs, dispatch a
 Haiku sub-agent for small work -- are neither. They are standing behavioral defaults already written in CLAUDE.md (`CLAUDE.md:53`, `CLAUDE.md:135`). Filing them in TRAPS.md would dilute a corpus whose value comes from every entry having cost a real incident. A second file with a distinct charter is the right answer, and the distinction is: TRAPS.md is what a session did not know;
 HINTS.md is what a session knew and did not do.
 
-`outq_add`/`outq_drain` (`wl_checks.py:1347`, `wl_checks.py:1414`) is the delivery machinery, and `agent/plans/PLAN-eliminate-worklist-report-per-stop-env.md` is redesigning its selection to release a fixed 3 sections per stop with randomized same-priority choice through an injectable `rng`. This plan reuses that plan's `rng` seam and its shown-ledger idea, and deliberately does
+`outq_add`/`outq_drain` (`.claude/hooks/stop/wl_checks.py:1347`, `.claude/hooks/stop/wl_checks.py:1414`) is the delivery machinery, and `agent/plans/PLAN-eliminate-worklist-report-per-stop-env.md` is redesigning its selection to release a fixed 3 sections per stop with randomized same-priority choice through an injectable `rng`. This plan reuses that plan's `rng` seam and its shown-ledger idea, and deliberately does
 NOT use the queue itself. Section 3 gives the reason.
 
 ## 1. Where the corpus lives
@@ -27,7 +27,7 @@ Four facts decide this, none of them a preference.
 `agent/README.md:36` already rules on the directory: "The standing lookup material -- TRAPS.md, ci-gates.md, suppressions.md -- lives in `docs/agent-reference/`, because it is reference prose that outlives every session, while everything under `agent/` is per-session state or a durable design record." A hint corpus is standing lookup material by definition. `agent/` is excluded by
 the repo's own rule.
 
-The machine-read objection against Markdown does not survive contact with the tree. `wl_store.py:428 trap_entries` already parses exactly this shape from inside the stop hook -- `## ` headings, a trailer block read only between the heading and the first blank line, fenced blocks excluded so a markdown example inside a body cannot become a phantom entry -- and `wl_store.py:283
+The machine-read objection against Markdown does not survive contact with the tree. `.claude/hooks/stop/wl_store.py:428 trap_entries` already parses exactly this shape from inside the stop hook -- `## ` headings, a trailer block read only between the heading and the first blank line, fenced blocks excluded so a markdown example inside a body cannot become a phantom entry -- and `.claude/hooks/stop/wl_store.py:283
 agent_traps_path` already resolves the path from the hook. A second consumer of the same shape in the same directory is a parser the hook has written and debugged once already, including the fenced-block defect its docstring records.
 
 `.ci/config/*.json` is the wrong precedent for this content. Those files are CI configuration and generated baselines (`.ci/config/python-env-registry.json` says "SHRINK-ONLY, AND GENERATED -- do not hand-edit" in its own header). A hint corpus is hand-curated prose that a human reads in a PR diff, and a reminder's single most important property is that it reads well. JSON string
@@ -48,9 +48,9 @@ Status: active | retired
 human reader only. The hook never displays a body.>
 ```
 
-The `## ` heading IS the displayed text, exactly as `wl_store.py:401 trap_headings` treats a trap title. This is deliberate and it is a constraint on authorship: a hint whose heading does not stand alone as a complete reminder is not a hint yet.
+The `## ` heading IS the displayed text, exactly as `.claude/hooks/stop/wl_store.py:401 trap_headings` treats a trap title. This is deliberate and it is a constraint on authorship: a hint whose heading does not stand alone as a complete reminder is not a hint yet.
 
-`Source:` uses the pointer grammar `wl_planrec.py:344 resolve` already implements -- `file:<path>[:<line>]` through the `fileline` kind, `gate:<npm id>`, `trap:<Trap-Id>`, `plan:<slug>`. Reusing that resolver rather than writing a fourth one means a hint that cites `CLAUDE.md:135` is proven to point at a real line by the same code the plan-record gate uses, and a hint whose
+`Source:` uses the pointer grammar `.claude/hooks/stop/wl_planrec.py:344 resolve` already implements -- `file:<path>[:<line>]` through the `fileline` kind, `gate:<npm id>`, `trap:<Trap-Id>`, `plan:<slug>`. Reusing that resolver rather than writing a fourth one means a hint that cites `CLAUDE.md:135` is proven to point at a real line by the same code the plan-record gate uses, and a hint whose
 grounding gets deleted or renumbered goes red instead of quietly becoming folklore.
 
 `Status:` exists so a retired hint can stay in the file with its history intact rather than being deleted. Only `active` entries are eligible for display. There is deliberately no `proposed` value; section 4 explains why.
@@ -59,16 +59,16 @@ A `Hint-Id` is never renumbered and never reused after retirement, matching `Tra
 
 ## 2. The delivery path: a bottom line, not a queue entry
 
-The hint is appended to `parts` in `run_stop`'s allow block, AFTER the `outq_drain` call at `wl_checks.py:4844` and after the `N_OUTQ_MORE` tail, as the last element before the final `S.save_state`. It is one line. It never becomes a queue entry.
+The hint is appended to `parts` in `run_stop`'s allow block, AFTER the `outq_drain` call at `.claude/hooks/stop/wl_checks.py:4844` and after the `N_OUTQ_MORE` tail, as the last element before the final `S.save_state`. It is one line. It never becomes a queue entry.
 
-WHY NOT THE QUEUE, since the queue is where every other advisory goes. The queue exists to make a section DURABLE: `wl_checks.py:1309-1315`'s header records that its whole reason for being is that one-shot producers spend a budget before an emit path that exits the process, so "an entry that lands in the state doc the moment its producer spends that budget survives a block, a judge
+WHY NOT THE QUEUE, since the queue is where every other advisory goes. The queue exists to make a section DURABLE: `.claude/hooks/stop/wl_checks.py:1309-1315`'s header records that its whole reason for being is that one-shot producers spend a budget before an emit path that exits the process, so "an entry that lands in the state doc the moment its producer spends that budget survives a block, a judge
 block, a crash and a restart." A rotating reminder has the exact opposite property. It is idempotent, it loses nothing by being skipped, and it can be shown again tomorrow at zero cost. Putting it in the queue would buy durability nothing needs and pay for it twice: once by occupying one of the three per-stop slots that a real report section could have used, and once by inheriting
 the shown-ledger, whose semantics are "suppress permanently" -- which is precisely wrong for a line that must rotate forever.
 
-WHY IT NEVER CREATES OUTPUT. `wl_checks.py:4852` exits with zero bytes when `parts` is empty, and the comment on it records that this silence was won on purpose: "v18: nothing actionable, nothing queued, no judge line to show. This used to be impossible (the guide was unconditional) and is now the common shape of a clean stop." A tip that turned every silent stop into a line of
+WHY IT NEVER CREATES OUTPUT. `.claude/hooks/stop/wl_checks.py:4852` exits with zero bytes when `parts` is empty, and the comment on it records that this silence was won on purpose: "v18: nothing actionable, nothing queued, no judge line to show. This used to be impossible (the guide was unconditional) and is now the common shape of a clean stop." A tip that turned every silent stop into a line of
 output would undo that deliberately, and would be the single most irritating possible shape for this feature. So the rule is absolute and belongs in the module header: the hint RIDES an output that was going to happen anyway, and the emptiness check at `:4851` runs before it, not after.
 
-The accepted cost, stated rather than discovered later: a session whose every stop is clean and silent is never hinted. That is the same trade `agent_hint_queue`'s call site already takes and names at `wl_checks.py:4836` -- "the trade is that a session which never reaches a clean stop is never hinted, which is acceptable for exactly the same reason" -- inverted, and acceptable for
+The accepted cost, stated rather than discovered later: a session whose every stop is clean and silent is never hinted. That is the same trade `agent_hint_queue`'s call site already takes and names at `.claude/hooks/stop/wl_checks.py:4836` -- "the trade is that a session which never reaches a clean stop is never hinted, which is acceptable for exactly the same reason" -- inverted, and acceptable for
 the mirror reason. A session with nothing to be told is a session that needs no reminders.
 
 ALLOW PATH ONLY. A blocked stop already carries a demand, and adding a behavioral aside underneath a block is how the block gets skimmed.
@@ -82,11 +82,11 @@ TIP (hint 4 of 12, rotating): Before calling a bug fixed, grep for its siblings;
 The trailing id and source are not decoration. A hint that reads as wrong must be refutable in one second by opening the thing it cites, which is the same argument `wl_agents.py`'s `fold()` docstring makes for printing matched terms rather than stems: "a wrong hint is self-refuting in one second". The `N of M` counter is what makes the rotation legible as a rotation rather than as
 a random nag, and it is what makes the vacuity test in section 6 able to observe progress.
 
-The message constant goes in `worklist_messages.py` beside `N_AGENT_HINT` (`worklist_messages.py:1355`), named `N_BEHAVIOR_HINT`.
+The message constant goes in `worklist_messages.py` beside `N_AGENT_HINT` (`.claude/hooks/stop/worklist_messages.py:1355`), named `N_BEHAVIOR_HINT`.
 
 ## 3. Selection: the rotation
 
-State lives in the session's state doc under a new `hints` key, shaped like the existing `agent_hints` ledger at `wl_checks.py:1466`:
+State lives in the session's state doc under a new `hints` key, shaped like the existing `agent_hints` ledger at `.claude/hooks/stop/wl_checks.py:1466`:
 
 ```
 state_doc["hints"] = {"shown": {"<hint-id>": "<stamp>"}, "cycle": 0, "last": "<hint-id>"}
@@ -102,7 +102,7 @@ That is round-robin with randomized order inside each pass, which is what the op
 `agent/plans/PLAN-eliminate-worklist-report-per-stop-env.md` section 2 adds an `rng` parameter to `outq_drain`, defaulting to `None` meaning the module-level `random`, and its section 8 drives that seam directly in-process with `random.Random(seed)` rather than trying to reach a subprocess's random state. Both halves are reused verbatim:
 
 - The SEAM. `hint_pick(entries, ledger, rng=None)` takes the same optional `rng` with the same `None` -> module `random` default and the same in-process test style. There is deliberately no seed env var and no "deterministic mode" flag; the parameter is the whole mechanism, exactly as that plan decided.
-- The LEDGER SHAPE. `shown` is a dict keyed by a stable id with a stamp value, the same shape `_outq`'s `shown` has at `wl_checks.py:1325`.
+- The LEDGER SHAPE. `shown` is a dict keyed by a stable id with a stamp value, the same shape `_outq`'s `shown` has at `.claude/hooks/stop/wl_checks.py:1325`.
 
 One helper is genuinely common and should be extracted rather than written twice: `pick_random(candidates, rng)`, a two-line wrapper that resolves `rng or random` and returns one element, which `outq_drain`'s tier-internal selection and `hint_pick` both call. Nothing larger is shared. `outq_drain` groups by priority tier and takes up to a budget; `hint_pick` has no tiers and takes
 exactly one. Forcing those into one function would produce a parameterized abstraction with two callers and no third, which is the shape this repo's own `class_sweep` rubric names as consolidation pressure applied where there is no class.
@@ -116,7 +116,7 @@ SEQUENCING. This plan lands AFTER `PLAN-eliminate-worklist-report-per-stop-env.m
 
 One hint line per full allow-path stop that already has non-empty `parts`. No one-in-N throttle, no minute-based floor.
 
-The counter-argument is in this tree and deserves an answer: `wl_checks.py:2047`'s `ALWAYS_FULL_MAX` comment warns that "a prompt that fires always is a prompt that gets skimmed", and `wl_classsweep.py`'s header says the same of its trigger boundary. Both are about a rule that DEMANDS something and asks the same question every time. Rotation is the difference: the line is one
+The counter-argument is in this tree and deserves an answer: `.claude/hooks/stop/wl_checks.py:2047`'s `ALWAYS_FULL_MAX` comment warns that "a prompt that fires always is a prompt that gets skimmed", and `wl_classsweep.py`'s header says the same of its trigger boundary. Both are about a rule that DEMANDS something and asks the same question every time. Rotation is the difference: the line is one
 sentence, it is different on every stop, and it costs nothing to skip. A time-based floor would add a clock nobody can observe from the output and would make the liveness test in section 6 depend on wall time.
 
 The reversal is decided now so it does not get re-litigated from scratch later. If the operator reports the line as noise, the first lever is to STOP CYCLING: go silent after one full pass per session, rather than to add a timer or a probability. That keeps the rotation legible and makes the quiet deterministic.
@@ -147,7 +147,7 @@ IT IS NOT A DECISION THE SESSION IS BLOCKED ON. The same paragraph continues: "R
 
 THE JUSTIFICATION GATE WOULD REJECT IT ANYWAY. `worklist.py:678` shows `--defer` validating `WHY:`/`HOW:` at creation (v12, from the operator's "Too many '[?]'. This is an escape hatch."), and the judge audits whether the WHY is true, reopening the item as `- [ ]` when it is not. A hint proposal has no honest WHY -- nothing is blocked.
 
-`--ask operator` was the second candidate and is closer, but `wl_requests.py:112` records that an escalated ask "appends an `escalate` event plus a `- [?]` item ... carrying the ask's own DEFAULT:", so it lands in the same place by a longer road.
+`--ask operator` was the second candidate and is closer, but `.claude/hooks/stop/wl_requests.py:112` records that an escalated ask "appends an `escalate` event plus a `- [?]` item ... carrying the ask's own DEFAULT:", so it lands in the same place by a longer road.
 
 ### 4.2 Why proposals never live in the corpus file
 
@@ -175,8 +175,8 @@ NOT A TRAP CORPUS. TRAPS.md keeps its charter and its `check:ci-trap-registry` g
 
 NOT A MODEL CALL. See section 6.2.
 
-NOT A BLOCKER ON ITS OWN FAILURE. An unreadable, missing, or malformed corpus degrades to silence plus one queued note, never an exception and never a block, matching `wl_agents.py`'s returned-errors contract and `agent_hint_queue`'s `agent-corpus-err` section at `wl_checks.py:1453`. The call site is wrapped in the same `contextlib.suppress(Exception)` the agent hint already uses
-at `wl_checks.py:4836`.
+NOT A BLOCKER ON ITS OWN FAILURE. An unreadable, missing, or malformed corpus degrades to silence plus one queued note, never an exception and never a block, matching `wl_agents.py`'s returned-errors contract and `agent_hint_queue`'s `agent-corpus-err` section at `.claude/hooks/stop/wl_checks.py:1453`. The call site is wrapped in the same `contextlib.suppress(Exception)` the agent hint already uses
+at `.claude/hooks/stop/wl_checks.py:4836`.
 
 ## 6. The module
 
@@ -204,7 +204,7 @@ rubric prompt, and an `apply_verdict` that never fails closed.
 
 This module produces no verdict. It reads a file, excludes the ids in a ledger, and picks one at random. There is nothing for a model to decide, and the one thing a model COULD decide here -- which hint is most relevant right now -- is explicitly ruled out by section 5 and by the operator's own specification of randomness.
 
-The cost side is already measured in this tree and points the same way. `wl_agents.py`'s header cites `wl_judge.py:20-39` for what a second paid call costs on the stop path: "4.9-20.0s, and one live timeout that BLOCKED a stop". Spending that to choose between twelve fixed sentences would be indefensible.
+The cost side is already measured in this tree and points the same way. `wl_agents.py`'s header cites `.claude/hooks/stop/wl_judge.py:20-39` for what a second paid call costs on the stop path: "4.9-20.0s, and one live timeout that BLOCKED a stop". Spending that to choose between twelve fixed sentences would be indefensible.
 
 So: marker, schema, prompt and `apply_verdict` are all absent, and the module header states why in those terms, so the next reader does not "restore consistency" with its siblings by adding them.
 
@@ -214,7 +214,7 @@ Registered as `check:ci-hint-corpus`, modelled directly on `check_agent_hint_liv
 
 Assertions:
 
-- H1 POPULATION FLOOR. At least `MIN_HINTS` (8) active entries. An emptied, truncated or relocated corpus reds instead of passing vacuously. Same shape as `trap_registry`'s F1 and `check_plan_boxes.py:211 vacuity_problems` (G-A6).
+- H1 POPULATION FLOOR. At least `MIN_HINTS` (8) active entries. An emptied, truncated or relocated corpus reds instead of passing vacuously. Same shape as `trap_registry`'s F1 and `.ci/scripts/quality/check_plan_boxes.py:211 vacuity_problems` (G-A6).
 - H2 IDENTITY. Every entry carries a `Hint-Id` matching `^[a-z0-9][a-z0-9-]{2,48}$`; ids are unique.
 - H3 GROUNDING. Every entry carries at least one `Source:` pointer, and every pointer RESOLVES through `wl_planrec.resolve`. A hint whose citation has been deleted or renumbered is folklore and reds here.
 - H4 SHAPE. Every `## ` heading is <= 160 chars, is a complete sentence on its own, and carries no second-person or first-person pronoun. The prose-style gate covers the file for the general case; H4 is the heading-specific floor.
@@ -254,7 +254,7 @@ Two more are grounded and held back only to keep the first cut at twelve: `one-o
 - A twelve-entry corpus cycles quickly in a long session. The `N of M` counter makes that visible rather than confusing, and the cycle reset at section 3 is the documented lever if it reads as repetitive.
 - `Source:` pointers using `fileline` decay whenever CLAUDE.md is edited above the cited line. H3 turns that into a red rather than into silent folklore, but it also means editing CLAUDE.md can red this gate for an unrelated reason. That is the same cost `check:ci-plan-citations` already carries in this tree and the same remedy applies: repoint the citation.
   Prefer a section-anchor-free `file:CLAUDE.md` pointer where the rule is unlikely to move, and a `:line` only where the exact site is the grounding.
-- The hint line lands beneath the `N_OUTQ_MORE` tail, so a reader skimming for "what is left" sees the tip after the count. Verified against the current emit order at `wl_checks.py:4844-4847`; if that reads badly in practice, the fix is ordering inside `parts`, not a new channel.
+- The hint line lands beneath the `N_OUTQ_MORE` tail, so a reader skimming for "what is left" sees the tip after the count. Verified against the current emit order at `.claude/hooks/stop/wl_checks.py:4844-4847`; if that reads badly in practice, the fix is ordering inside `parts`, not a new channel.
 - `pick_random` is extracted from work that has not landed yet. Section 3.1 names the fallback so this plan cannot be blocked by that one.
 
 ## Tasks

@@ -27,21 +27,21 @@ the incident exists only in the operator's memory and this session's context, so
 
 ### 1.1 The distinction the sibling fix did not cross
 
-`agent/plans/PLAN-fix-stop-hook-completion-evidence-refire.md` (landed `e0fe455f7`) fixed scope: I7 now reads a tick's closing note (`rec["lastnote"]`) instead of its 6,084-char accumulated history, so a real sha stops being buried behind worker-id tokens. Confirmed at `wl_reggate.py:372-374` and the call site `wl_checks.py:2952`.
+`agent/plans/PLAN-fix-stop-hook-completion-evidence-refire.md` (landed `e0fe455f7`) fixed scope: I7 now reads a tick's closing note (`rec["lastnote"]`) instead of its 6,084-char accumulated history, so a real sha stops being buried behind worker-id tokens. Confirmed at `.claude/hooks/stop/wl_reggate.py:372-374` and the call site `.claude/hooks/stop/wl_checks.py:2952`.
 
 That is "the tick carries a citation, and the check looks in the right place for it." It is not "the citation, when resolved, proves the claim." The two are different problems and only the first is enforced.
 
-Side note, an instance of the very shape this plan is about: that plan file still reads `Status: draft` with all nine task boxes `- [ ]`, though `e0fe455f7` landed the work. Exactly TRAPS.md:1553's first direction.
+Side note, an instance of the very shape this plan is about: that plan file still reads `Status: draft` with all nine task boxes `- [ ]`, though `e0fe455f7` landed the work. Exactly docs/agent-reference/TRAPS.md:1553's first direction.
 
 ### 1.2 The load-bearing finding: a documented delegation that does not exist
 
-`wl_checks.py:440-441`, `completion_evidence`'s own docstring:
+`.claude/hooks/stop/wl_checks.py:440-441`, `completion_evidence`'s own docstring:
 
 > "Deliberately shape-based: whether the evidence SUPPORTS the claim is the reggate judge's question, since every new tick already flows into it."
 
 `citation_state`'s docstring repeats it at `:374-375`: "Whether the cited text actually SUPPORTS the claim is the judge's question."
 
-The reggate judge is never asked that question. `REGGATE_PROMPT` (`worklist_messages.py:1799-1861`) asks exactly five, all about regression coverage: (0) was this found by a gate, (1) blind spot, (2) existing coverage, (3) recurrence, (4) surface. Nothing asks whether the tick's evidence supports the tick's claim. The `regression_gate` schema (`wl_judge.py:79`) has no field for it.
+The reggate judge is never asked that question. `REGGATE_PROMPT` (`.claude/hooks/stop/worklist_messages.py:1799-1861`) asks exactly five, all about regression coverage: (0) was this found by a gate, (1) blind spot, (2) existing coverage, (3) recurrence, (4) surface. Nothing asks whether the tick's evidence supports the tick's claim. The `regression_gate` schema (`.claude/hooks/stop/wl_judge.py:79`) has no field for it.
 
 The delegation is also false a second way: `fix_signals:397-427` emits one unit per stop, and `tick_touches_code` routes docs-only ticks to `banked_only`. So "every new tick already flows into it" is untrue for docs-only ticks and for every tick past the first on a busy stop.
 
@@ -49,7 +49,7 @@ This is the gap. Two independent checks point at a judge that was never given th
 
 ### 1.3 A live defect in the one primitive the design depends on
 
-`citation_state` takes one hop through a plan stub (`wl_checks.py:386-390`, via `S.plan_stub_target`) so that citations written before a plan moved still resolve. `cited_excerpts` (`:400-428`) does not: it reads `pathlib.Path(root) / rel` raw at `:413` and `continue`s at `:418` when `line > len(lines)`.
+`citation_state` takes one hop through a plan stub (`.claude/hooks/stop/wl_checks.py:386-390`, via `S.plan_stub_target`) so that citations written before a plan moved still resolve. `cited_excerpts` (`:400-428`) does not: it reads `pathlib.Path(root) / rel` raw at `:413` and `continue`s at `:418` when `line > len(lines)`.
 
 Verified live:
 
@@ -96,7 +96,7 @@ No single mechanical test separates true from false completion claims well enoug
 
 Extend the existing I7 path on the stop that already runs a fresh judge call. Weighed against the alternatives:
 
-- (a) every worklist tick with evidence -- CHOSEN. `wl_checks.py:4319`: `if not reg_signals and not audit_batch: verdict = cached_stop_verdict(...)`. When `reg_signals` is non-empty -- i.e. a tick or a fix commit -- the cache is bypassed and a fresh `run_judge` always fires. The marginal cost of asking one more question there is prompt tokens, not a model call.
+- (a) every worklist tick with evidence -- CHOSEN. `.claude/hooks/stop/wl_checks.py:4319`: `if not reg_signals and not audit_batch: verdict = cached_stop_verdict(...)`. When `reg_signals` is non-empty -- i.e. a tick or a fix commit -- the cache is bypassed and a fresh `run_judge` always fires. The marginal cost of asking one more question there is prompt tokens, not a model call.
   It reuses `fix_signals`' unit selection (one per stop), `reg_sig` (`:2425`), the `fixsets` settle ledger (`:4441`), `seen_ticks`, and the branch budget in `agent/reggate/*.jsonl`. Nothing new is sampled, scheduled or invented.
 - (b) every plan box tick -- REJECTED for v1. `check_plan_boxes.py` runs in CI (`lane: quality-branch`), has no judge, and its ledger has nowhere to put evidence. Adding an evidence column is a schema change to a file G-A1's unforgeability depends on. Deferred to Part 3.8 as a follow-on that reuses whatever v1 proves out.
 - (c) conversational prose -- OUT OF SCOPE. See 3.6.
@@ -109,7 +109,7 @@ A new module `.claude/hooks/stop/wl_claimcheck.py` computes a corroboration prof
 |---|---|---|
 | `file:line` | `citation_state(root, cite)` resolves and `cited_excerpts` (stub-hop fixed, 3.4-T1) returns non-empty text | `resolved` + the excerpt text, carried into the prompt |
 | `file:line` | resolves, but the cited file is not in `fixset_files(root, reg_ids)` -- the real, git-computed list the session touched | `resolved-untouched` -- the strongest mechanical mismatch available (see 3.3) |
-| commit sha | `_diff_tree_files(root, sha)` (`wl_reggate.py:293`) is non-empty | `commit` + the file list, basename-intersected with paths the claim names |
+| commit sha | `_diff_tree_files(root, sha)` (`.claude/hooks/stop/wl_reggate.py:293`) is non-empty | `commit` + the file list, basename-intersected with paths the claim names |
 | run-id / exit code / URL | none available from inside the hook | `unverifiable-shape` -- stated as such, never scored as support |
 | no resolvable citation | already handled by I7 | untouched. Do not re-litigate `PLAN-fix-stop-hook-completion-evidence-refire.md`: I7 owns "is there a citation" and keeps owning it. This layer only runs on ticks that already passed I7 |
 
@@ -124,9 +124,9 @@ is never asked whether `:495` says anything about `GITHUB_AUTOPILOT_APP_ID`. Cha
 
 The detection heuristic, `resolved-untouched`. Of everything measured, one signal is both mechanical and low-noise:
 
-> A tick claims work. Its citation resolves to `path:line`. Git says this session did not touch `path` at all -- `path` is absent from `wl_reggate.fixset_files(root, reg_ids)`, which is `_diff_tree_files` over the fix-set with a `git status --porcelain` fallback (`wl_reggate.py:315-327`), and the fix-set is non-empty.
+> A tick claims work. Its citation resolves to `path:line`. Git says this session did not touch `path` at all -- `path` is absent from `wl_reggate.fixset_files(root, reg_ids)`, which is `_diff_tree_files` over the fix-set with a `git status --porcelain` fallback (`.claude/hooks/stop/wl_reggate.py:315-327`), and the fix-set is non-empty.
 
-This is path equality against git's own answer, not word similarity. It has no threshold to tune. Crucially, `fixset_files` is already computed on this exact code path (`wl_checks.py:4281`) and already injected into the judge prompt as `FIXSET_GROUND_TRUTH` (`worklist_messages.py:1786-1797`) for the sweep/proof questions -- the plumbing exists and is used.
+This is path equality against git's own answer, not word similarity. It has no threshold to tune. Crucially, `fixset_files` is already computed on this exact code path (`.claude/hooks/stop/wl_checks.py:4281`) and already injected into the judge prompt as `FIXSET_GROUND_TRUTH` (`.claude/hooks/stop/worklist_messages.py:1786-1797`) for the sweep/proof questions -- the plumbing exists and is used.
 
 Its limits, named rather than implied:
 
@@ -138,14 +138,14 @@ Its limits, named rather than implied:
 
 ### 3.4 Concretely, what changes
 
-T1 -- fix `cited_excerpts`' stub blindness (prerequisite, standalone). `wl_checks.py:413` gains the same `S.plan_stub_target` hop `citation_state:386-390` already has. Best factored as a shared `_resolve_cite_path(root, rel)` used by both, so the two cannot drift -- a second copy is the divergence this bug is. Fixes today's silently-blank judge citation block independent of
+T1 -- fix `cited_excerpts`' stub blindness (prerequisite, standalone). `.claude/hooks/stop/wl_checks.py:413` gains the same `S.plan_stub_target` hop `citation_state:386-390` already has. Best factored as a shared `_resolve_cite_path(root, rel)` used by both, so the two cannot drift -- a second copy is the divergence this bug is. Fixes today's silently-blank judge citation block independent of
 everything else. Control: the live pair from 1.3 (resolves -> non-empty), plus a non-stub path unchanged, plus a stub-pointing-at-a-stub refused (`check:ci-plan-folders` F5 forbids it).
 
 T2 -- `wl_claimcheck.py`, following the `wl_shapedup`/`wl_classsweep` module shape exactly: `CLAIM_MARKER`, `CLAIM_SCHEMA`, `CLAIM_PROMPT`, `profile(root, evidence_text, fixset_files)` (mechanical, no model), `prompt_section(profile)`, `apply_verdict(out, profile)`.
 
 T3 -- schema + prompt wiring. A `claim_check` object, optional at the top level, made required by `wl_judge.judge_schema_for` (`:675-698`) iff `CLAIM_MARKER` is in `extra` -- the established one-rule-per-marker pattern. Fields: `supported` (`yes`/`partial`/`no`/`unverifiable`), `why` (<=300), `instruction` (<=300).
 
-T4 -- the call site. `wl_checks.py` around `:2952` computes the profile for the surviving tick; the section is appended to `reg_extra` near `:4290`. Failure semantics follow `wl_classsweep`/`wl_shapedup`, not `regression_gate`: a missing or malformed `claim_check` never fails closed. `wl_classsweep.py:34` states the reasoning and it transfers verbatim -- the only thing this object
+T4 -- the call site. `wl_checks.py` around `:2952` computes the profile for the surviving tick; the section is appended to `reg_extra` near `:4290`. Failure semantics follow `wl_classsweep`/`wl_shapedup`, not `regression_gate`: a missing or malformed `claim_check` never fails closed. `.claude/hooks/stop/wl_classsweep.py:34` states the reasoning and it transfers verbatim -- the only thing this object
 can do is add an advisory, so degrading loses a demand rather than granting an exit.
 
 T5 -- the settle path, which is the whole difference between a demand and a wall. Keyed on `reg_sig`, written into `reg_state["fixsets"][reg_sig]` on the same stop (`:4441`), so an answered claim is never re-asked -- the identical mechanism that makes reggate cost-bounded. Plus a `wl_rules.Demand("claimcheck-<sig12>", ttl_min=120, max_fires=2)` latch, so even an unsettled profile
@@ -172,7 +172,7 @@ docstring, where the decision lives.
 
 This cannot and will not verify a claim made only in conversational prose.
 
-The Stop hook can read `event["last_assistant_message"]` and a 2 MB transcript tail (`wl_core.transcript_tail:707`), and I7's `ev_tasks` arm already greps `last_msg` for a `#<id>` row (`wl_checks.py:2956`). So the boundary is not "the hook is blind to prose" -- it is narrower and must be said exactly:
+The Stop hook can read `event["last_assistant_message"]` and a 2 MB transcript tail (`wl_core.transcript_tail:707`), and I7's `ev_tasks` arm already greps `last_msg` for a `#<id>` row (`.claude/hooks/stop/wl_checks.py:2956`). So the boundary is not "the hook is blind to prose" -- it is narrower and must be said exactly:
 
 > The hook sees the final assistant message of a turn, and only at stop time. It cannot see a claim made mid-turn, in a sub-agent's transcript (`wl_planfid.py:62-64` already records sub-agent plans as out of reach), or in a message the session later supersedes. "The GitHub Autopilot App is blocked" said in the middle of a turn, over a tracked file nobody edited and a worklist nobody ticked, leaves no artifact and is not reachable by this or any Stop-hook design.
 
@@ -182,12 +182,12 @@ The design therefore binds only claims that touch a tracked file, a worklist tic
 
 | Brake | Instrument | Value |
 |---|---|---|
-| No new model call | Rides the fresh `run_judge` that `reg_signals` already forces (`wl_checks.py:4319`) | +0 calls |
-| Prompt growth bounded | One tick, <=3 citations at +-4 lines (`cited_excerpts` defaults), <=40 fix-set files (`wl_judge.py:735`) | ~900 chars on a fix stop that already carries ~17,700 of rubric (`wl_shapedup.py:11`) |
-| Never ask twice about one claim | `reg_state["fixsets"][reg_sig]` (`wl_checks.py:4441`) | permanent |
-| Never ask forever | `wl_rules.Demand(ttl_min=120, max_fires=2)` (`wl_rules.py:133-183`) | 2 fires |
+| No new model call | Rides the fresh `run_judge` that `reg_signals` already forces (`.claude/hooks/stop/wl_checks.py:4319`) | +0 calls |
+| Prompt growth bounded | One tick, <=3 citations at +-4 lines (`cited_excerpts` defaults), <=40 fix-set files (`.claude/hooks/stop/wl_judge.py:735`) | ~900 chars on a fix stop that already carries ~17,700 of rubric (`.claude/hooks/stop/wl_shapedup.py:11`) |
+| Never ask twice about one claim | `reg_state["fixsets"][reg_sig]` (`.claude/hooks/stop/wl_checks.py:4441`) | permanent |
+| Never ask forever | `wl_rules.Demand(ttl_min=120, max_fires=2)` (`.claude/hooks/stop/wl_rules.py:133-183`) | 2 fires |
 | Never displace a real violation | `outq_add(prio=2)`; drains on the allow path only | `OUTQ_PER_STOP` |
-| Cannot wedge a stop | Non-blocking + `wl_classsweep` fail-open semantics (`wl_classsweep.py:34`) | n/a |
+| Cannot wedge a stop | Non-blocking + `wl_classsweep` fail-open semantics (`.claude/hooks/stop/wl_classsweep.py:34`) | n/a |
 | Bounded git work | `citation_state` x <=3, `_diff_tree_files` x <=3, `fixset_files` already computed | <=7 git calls |
 
 ### 3.8 Explicitly deferred
