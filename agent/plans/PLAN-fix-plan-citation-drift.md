@@ -161,8 +161,10 @@ The corpus stands at 351 citation findings and no record findings, against 385 a
 - [x] `agent/plans/PLAN-shell-resource-profiling.md` -- 1: 1 gate: no such `check:` script
     (ticked) 2026-09-23T10:35:44Z by d778be9d: check:ci-plan-citations names no finding in PLAN-shell-resource-profiling.md on a live run; the repaired pointer is at agent/plans/PLAN-shell-resource-profiling.md:33
 - [ ] `agent/plans/PLAN-stop-hook-overhaul.md` -- 8: 6 fileline: right file, stale line, no unambiguous anchor; 1 fileline: basename matches NOTHING in the tree; 1 fileline ON A BOX LINE (editing it re-keys the box signature)
-- [ ] `agent/plans/PLAN-stop-hook-refactor-enforcement.md` -- 1: 1 fileline ON A BOX LINE (editing it re-keys the box signature)
-- [ ] `agent/plans/PLAN-sweep-obligation-carry-forward.md` -- 10: 10 object: neither blob nor reachable commit
+- [x] `agent/plans/PLAN-stop-hook-refactor-enforcement.md` -- 1: 1 fileline ON A BOX LINE (editing it re-keys the box signature)
+    (ticked) 2026-09-23T12:09:46Z by d778be9d: Investigated at d30f418f1. check:ci-plan-citations names no finding against PLAN-stop-hook-refactor-enforcement.md on a live run; the repaired pointer is at agent/plans/PLAN-stop-hook-refactor-enforcement.md:218 and resolves to scripts/gates/check-shape-duplication.ts:1455.
+- [x] `agent/plans/PLAN-sweep-obligation-carry-forward.md` -- 10: 10 object: neither blob nor reachable commit
+    (ticked) 2026-09-23T12:09:46Z by d778be9d: Investigated at d30f418f1. check:ci-plan-citations names no finding against PLAN-sweep-obligation-carry-forward.md on a live run; all ten were stop-hook tick ids, now exempt behind their own markers at .ci/scripts/quality/check_plan_citations.py:275 with four controls in both directions.
 - [ ] `agent/plans/PLAN-tooling-transformation.md` -- 54: 31 fileline: basename matches NOTHING in the tree; 16 fileline: right file, stale line, no unambiguous anchor; 5 fileline ON A BOX LINE (editing it re-keys the box signature); 2 object: neither blob nor reachable commit
 - [ ] `agent/plans/PLAN-trap-enforcement.md` -- 24: 17 fileline: basename matches NOTHING in the tree; 5 gate: no such `check:` script; 1 object: neither blob nor reachable commit; 1 fileline: basename matches 2 files, ambiguous
 - [ ] `agent/plans/PLAN-w9p2-script-relocation.md` -- 9: 9 fileline: basename matches NOTHING in the tree
@@ -174,7 +176,8 @@ The corpus stands at 351 citation findings and no record findings, against 385 a
 - [ ] `agent/plans/_done/PLAN-ci-vacuity-baseline-registry.md` -- 6: 5 fileline: right file, stale line, no unambiguous anchor; 1 fileline: basename matches NOTHING in the tree
 - [ ] `agent/plans/_done/PLAN-cleanup-context-state-files.md` -- 1: 1 fileline ON A BOX LINE (editing it re-keys the box signature)
 - [ ] `agent/plans/_done/PLAN-eliminate-worklist-report-per-stop-env.md` -- 14: 14 fileline ON A BOX LINE (editing it re-keys the box signature)
-- [ ] `agent/plans/_done/PLAN-fix-stop-hook-completion-evidence-refire.md` -- 4: 4 object: neither blob nor reachable commit
+- [x] `agent/plans/_done/PLAN-fix-stop-hook-completion-evidence-refire.md` -- 4: 4 object: neither blob nor reachable commit
+    (ticked) 2026-09-23T12:09:46Z by d778be9d: Investigated at d30f418f1. check:ci-plan-citations names no finding against PLAN-fix-stop-hook-completion-evidence-refire.md on a live run; both survivors were one tick id, marked at agent/plans/_done/PLAN-fix-stop-hook-completion-evidence-refire.md:31.
 - [ ] `agent/plans/_done/PLAN-hint-corpus-ci-assertions.md` -- 4: 2 fileline ON A BOX LINE (editing it re-keys the box signature); 1 gate: no such `check:` script; 1 fileline: basename matches NOTHING in the tree
 - [x] `agent/plans/_done/PLAN-reflow-comments-boundary-wrapping.md` -- 1: 1 fileline: basename matches NOTHING in the tree
     (ticked) 2026-09-23T10:35:46Z by d778be9d: check:ci-plan-citations names no finding in PLAN-reflow-comments-boundary-wrapping.md on a live run; the repaired pointer is at agent/plans/_done/PLAN-reflow-comments-boundary-wrapping.md:23
