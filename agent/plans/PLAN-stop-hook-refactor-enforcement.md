@@ -1,5 +1,5 @@
 # PLAN: stop-hook code-maintenance pressure -- a second, wider duplication corpus that only the Stop hook reads
-Status: executing -- Commit 1 done (commit e31838a0f), Commits 2-4 open.
+Status: executing -- Commits 1-2 done (commits e31838a0f, 3128f9a2f), Commits 3-4 open.
 Owner: d778be9d
 Updated: 2026-09-23
 
@@ -125,7 +125,7 @@ Hashing triples but stays under a second. `.claude/hooks/stop/wl_shapedup.py:302
 
 The design: give `check-shape-duplication.ts` a second corpus profile that CI never runs and only the Stop hook reads, then point the existing judged rule at it and let it drip one finding per stop through the queue that already exists.
 
-Nothing new is implemented. The counter, the normalisation, the probe bundle, the `SHAPE_PROMPT` rubric, the `ASK_SCHEMA`, the `Demand` latch and the output queue are all reused verbatim. The only new code is a table row, a flag, a second cache path, and roughly 60 lines of wiring.
+Nothing new is implemented by Commits 2-4's own tasks beyond what is stated here. The counter, the normalisation, the probe bundle, the `SHAPE_PROMPT` rubric, the `ASK_SCHEMA`, the `Demand` latch and the output queue are all reused verbatim. The only new code is a table row, a flag, a second cache path, and roughly 60 lines of wiring. (Commit 1, shipped first as an independently-valuable fix per its own header, DID add real capability -- `index_inputs_moved` and `deadSeeded` -- ahead of this design's own scope; see Part 0.2/0.6 and Part 2's Commit 1 for what it closed.)
 
 ### 1.2 Why not any of the alternatives
 
