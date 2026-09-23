@@ -107,6 +107,13 @@ else, so a version string with a leading space would keep it on both sides.
 `REPO_ROOT` is `paths.repo_root()`, which is `<file>/../../..` exactly as the twin's `SCRIPT_DIR/../../..` is, plus the package-wide `$REDIACC_CI_ROOT` override the twin has no equivalent for. That override is the only way the two roots can differ, and it exists so a harness can point the whole program at a fixture; see `paths.py`'s docstring.
 
 K=5 LEDGER: `.ci/shadow/w7p6-browser-smoke.observations.jsonl`.
+
+---- gate ----
+step: Browser smoke
+needs: node
+run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.browser_smoke
+lane: quality-www-build
+---- end gate ----
 """
 
 from __future__ import annotations
