@@ -137,8 +137,19 @@ export function scan(dist: string): Result {
   return r;
 }
 
+/**
+ * EIGHT PLANTS, EACH WITH A CLEAN COUNTERPART.
+ *
+ * Six of the eight aim at a FLOOR, and a floor nobody has watched refuse is decoration. Each of those is the baseline corpus with exactly ONE knob moved, which is what makes a single clean baseline an honest counterpart for all six: the corpus that refuses and the corpus that does not differ by the one thing the floor is about, so a refusal cannot be arriving from anywhere
+ * else. The other two are the verdict itself, P1, and the over-match control, P4.
+ *
+ * THE NUMBERS ARE LOAD-BEARING and not decoration either. `test_gate_player_css_scope.py` mutates this gate and asserts the selftest goes red NAMING P4 and P6, so renumbering a plant silently breaks a control one directory away. P4 is the over-match control and P6 is F6, as the plan wrote them.
+ *
+ * The negative direction is carried by the baseline, by P4, and by the two mount spellings: a gate that reported everything would fail four of these checks rather than pass them.
+ */
 function selftest(): number {
   let bad = 0;
+  const tmps: string[] = [];
   const check = (name: string, ok: boolean, detail = '') => {
     console.log(`  ${ok ? 'PASS' : 'FAIL'}  ${name}`);
     if (!ok) {
@@ -146,55 +157,130 @@ function selftest(): number {
       if (detail) console.error(`        ${detail}`);
     }
   };
-  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'player-css-'));
-  const d = path.join(tmp, 'dist');
-  const mk = (rel: string, body: string) => {
-    fs.mkdirSync(path.join(d, path.dirname(rel)), { recursive: true });
-    fs.writeFileSync(path.join(d, rel), body);
-  };
-  const page = (link: boolean, mount: boolean) =>
-    `<html><head>${link ? '<link rel="stylesheet" href="/a/player.css">' : ''}</head><body>` +
-    `${mount ? '<div class="x video-player-mount y" data-video-src="v.mp4"></div>' : ''}</body></html>`;
 
-  mk('a/player.css', '.plyr__control{}.tvp-caption-word{}');
-  mk('a/other.css', '.tvp-root{}.tvp-toolbar{}'); // the OVER-MATCH control
-  mk('a/app.js', 'import"./player.css";');
-  for (let i = 0; i < MIN_PAGES + 5; i++) mk(`p${i}.html`, page(true, true));
-  // P4: a page linking the NON-player sheet with no mount must NOT be reported.
-  mk(
-    'over.html',
-    '<html><head><link rel="stylesheet" href="/a/other.css"></head><body></body></html>'
-  );
-  let r = scan(d);
+  const page = (link: boolean, mount: boolean, spelling: string, attr: boolean) =>
+    `<html><head>${link ? '<link rel="stylesheet" href="/a/player.css">' : ''}</head><body>` +
+    `${mount ? `<div class="x ${spelling} y"${attr ? ' data-video-src="v.mp4"' : ''}></div>` : ''}</body></html>`;
+
+  /** One corpus. Every knob defaults to the CLEAN value, so a plant is one argument. */
+  const build = (
+    o: {
+      pages?: number;
+      link?: boolean;
+      mount?: boolean;
+      markers?: string[];
+      js?: string;
+      spelling?: string;
+      attr?: boolean;
+    } = {}
+  ): string => {
+    const {
+      pages = MIN_PAGES + 5,
+      link = true,
+      mount = true,
+      markers = MARKERS,
+      js = 'import"./player.css";',
+      spelling = 'video-player-mount',
+      attr = true,
+    } = o;
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'player-css-'));
+    tmps.push(tmp);
+    const d = path.join(tmp, 'dist');
+    const mk = (rel: string, body: string) => {
+      fs.mkdirSync(path.join(d, path.dirname(rel)), { recursive: true });
+      fs.writeFileSync(path.join(d, rel), body);
+    };
+    mk('a/player.css', markers.map((m) => `${m}{}`).join(''));
+    mk('a/other.css', '.tvp-root{}.tvp-toolbar{}'); // the OVER-MATCH control
+    mk('a/app.js', js);
+    for (let i = 0; i < pages; i++) mk(`p${i}.html`, page(link, mount, spelling, attr));
+    // P4's subject, present in EVERY corpus: a page that links the NON-player sheet and has no mount. So every clean verdict below is also a statement that it was not reported.
+    mk(
+      'over.html',
+      '<html><head><link rel="stylesheet" href="/a/other.css"></head><body></body></html>'
+    );
+    return d;
+  };
+  const add = (d: string, rel: string, body: string) => fs.writeFileSync(path.join(d, rel), body);
+
+  const clean = build();
+  let r = scan(clean);
   check(
-    'a clean corpus reports no offender',
+    'CLEAN COUNTERPART: the baseline corpus refuses nothing and reports no offender',
     !r.refusal && r.offenders.length === 0,
     r.refusal ?? r.offenders.slice(0, 2).join(', ')
   );
   check(
+    'and the baseline is not vacuous: it really carries the pages, the links and the mounts',
+    r.pages > MIN_PAGES && r.links > MIN_LINKS && r.mounts > MIN_MOUNTS,
+    `pages=${r.pages} links=${r.links} mounts=${r.mounts}`
+  );
+  check(
     'P4 CONTROL: a sheet with .tvp-root but neither marker is not a player sheet',
-    !r.offenders.includes('/over.html')
+    !r.offenders.includes('/over.html') && !r.playerCss.includes('/a/other.css'),
+    r.playerCss.join(', ')
   );
 
-  // P1: the plant.
-  mk('bad.html', page(true, false));
-  r = scan(d);
+  // P1, the verdict itself.
+  add(clean, 'bad.html', page(true, false, 'video-player-mount', true));
+  r = scan(clean);
   check(
-    'PLANT: a page linking the player sheet with NO mount is reported',
+    'P1 PLANT: a page linking the player sheet with NO mount is reported',
     r.offenders.includes('/bad.html'),
-    r.refusal ?? ''
+    r.refusal ?? `offenders=${r.offenders.length}`
+  );
+  // The other half of the mount question. The hydrator selects `.tutorial-video-container[data-video-src]`, so a bare div builds no player, and its page is still paying for a stylesheet it cannot use.
+  add(clean, 'attrless.html', page(true, true, 'tutorial-video-container', false));
+  r = scan(clean);
+  check(
+    'CONTROL: a mount CLASS with no data-video-src is not a mount, so its page is reported',
+    r.offenders.includes('/attrless.html'),
+    r.refusal ?? r.offenders.join(', ')
+  );
+  check(
+    'CONTROL: the second mount spelling still counts as a mount',
+    scan(build({ spelling: 'tutorial-video-container' })).offenders.length === 0
   );
 
-  // P6: F6 fires when nothing loads the sheet.
-  fs.writeFileSync(path.join(d, 'a/app.js'), 'console.log(1);');
-  r = scan(d);
+  // P2, P3, P5 to P8: one floor each, one knob each, against the baseline above.
+  r = scan(path.join(clean, 'no-such-build'));
   check(
-    'F6 fires when no JS chunk names the stylesheet',
+    'P2 PLANT: F1 fires when there is no build to read',
+    !!r.refusal?.startsWith('F1'),
+    r.refusal ?? 'no refusal'
+  );
+  r = scan(build({ pages: 5 }));
+  check(
+    'P3 PLANT: F2 fires when the page walk loses the corpus',
+    !!r.refusal?.startsWith('F2'),
+    r.refusal ?? 'no refusal'
+  );
+  r = scan(build({ link: false }));
+  check(
+    'P5 PLANT: F3 fires when the link scanner sees nothing',
+    !!r.refusal?.startsWith('F3'),
+    r.refusal ?? 'no refusal'
+  );
+  r = scan(build({ js: 'console.log(1);' }));
+  check(
+    'P6 PLANT: F6 fires when no JS chunk names the stylesheet',
     !!r.refusal?.startsWith('F6'),
     r.refusal ?? 'no refusal'
   );
+  r = scan(build({ markers: [MARKERS[0]] }));
+  check(
+    'P7 PLANT: F4 fires when a marker is absent from every built stylesheet',
+    !!r.refusal?.startsWith('F4'),
+    r.refusal ?? 'no refusal'
+  );
+  r = scan(build({ mount: false }));
+  check(
+    'P8 PLANT: F5 fires when the mount markup changes shape',
+    !!r.refusal?.startsWith('F5'),
+    r.refusal ?? 'no refusal'
+  );
 
-  fs.rmSync(tmp, { recursive: true, force: true });
+  for (const t of tmps) fs.rmSync(t, { recursive: true, force: true });
   return bad;
 }
 

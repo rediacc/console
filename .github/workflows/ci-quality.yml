@@ -558,6 +558,18 @@ jobs:
         env:
           GITHUB_BASE_REF: ${{ github.base_ref }}
 
+      # Hand-written for the same reason as every other step in this job, and placed
+      # immediately AFTER the ledger gate on purpose: this one refuses to render a verdict
+      # while the ledger disagrees with the tree, so running it first would only ever
+      # produce a second report of its neighbour's finding. It needs the same base ref and
+      # the same fetch-depth 0: the forward-only proof asks whether the commit that ticked
+      # a box descends from the commit its investigation was recorded against.
+      - name: Plan implementation clock
+        if: ${{ !cancelled() }}
+        run: npm run check:ci-plan-implementation
+        env:
+          GITHUB_BASE_REF: ${{ github.base_ref }}
+
       # HAND-WRITTEN, and it must stay that way: quality-branch has no `- id: setup`
       # step, so per invariant 11 a gate-bind region here would emit steps whose
       # `steps.setup.outcome` guard evaluates empty -- every one would SKIP while the
@@ -583,6 +595,15 @@ jobs:
       - name: Plan folders and retention
         if: ${{ !cancelled() }}
         run: npm run check:ci-plan-folders
+
+      # Hand-written for the same reason as its neighbour above, and with no
+      # GITHUB_BASE_REF for the same reason too: this one reads the working tree and one
+      # heading stamp per session directory, never a merge-base, so a push and a PR get
+      # the same verdict. Whether a directory is overdue is a fact about the calendar
+      # rather than about the diff.
+      - name: Agent session archival
+        if: ${{ !cancelled() }}
+        run: npm run check:ci-agent-session-archival
 
       # HAND-WRITTEN, like its neighbours, and the reason is invariant 11:
       # quality-branch has no `- id: setup`, so `scripts/gate-bind.ts:289-300` refuses to
@@ -2247,6 +2268,9 @@ jobs:
       - name: BLOCKER validator — syncpack versionGroups
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-syncpack-reasons
+      - name: BWS rotation notice
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_bws_rotation_notice.py
       - name: Check every Dockerfile download is cryptographically verified
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-unverified-downloads
