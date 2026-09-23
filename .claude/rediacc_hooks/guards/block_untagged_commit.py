@@ -203,6 +203,15 @@ def run(ev):
     if shellscan.target_root(scan, root) != "":
         return hookio.ALLOW
 
+    # THE TOOL CALL'S OWN `cwd` IS A SECOND, MORE RELIABLE SIGNAL than the text-parsed `cd`/`-C` hint above -- reproduced live 2026-09-23: a session ran `git commit` with the Bash tool's `cwd` field pointed at an independent local clone (`/home/developer/console-ci-fix-scratch`, cloned to keep a risky change out of this shared tree), with no `cd`/`-C` anywhere in the command text
+    # itself, so `target_root` found no hint at all and this guard judged the commit against THIS repo's stale index and its `agent/pr/<this-branch>.md` epic snapshot -- the exact wrong-tree failure the comment above already fixed for the text-hint case, reachable from a second direction the fix never covered. `ev.field("cwd") or root` is the same fallback
+    # `block_unproven_bulk_transform.py:262` already uses for this exact field.
+    _cwd = ev.field("cwd")
+    if _cwd and _cwd != root:
+        _cwd_root = hookio.git_out(["-C", _cwd, "rev-parse", "--show-toplevel"], want_rc=True)
+        if _cwd_root is not None and _cwd_root.strip() not in ("", root):
+            return hookio.ALLOW
+
     # ---- what message text can we actually see? ---------------------------- Everything readable is concatenated; the trailer only has to appear once.
     msg = ""
 

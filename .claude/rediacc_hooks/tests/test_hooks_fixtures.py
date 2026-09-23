@@ -898,6 +898,18 @@ def test_a_guard_judges_the_tree_the_command_touches(tmp_path):
         bash_json("cd %s && git commit -m 'chore: no trailer here'" % other),
         "target-root: a cd into another repo exempts the whole line",
     )
+    # THE TOOL CALL'S OWN `cwd` FIELD, WITH NO `cd`/`-C` ANYWHERE IN THE COMMAND TEXT.
+    # Reproduced live 2026-09-23: a session ran `git commit` with the Bash tool's `cwd` pointed at an independent local clone.
+    # This guard judged it against the console tree's own stale index and epic snapshot, because `bash_json` (used by every other case here) never sets a `"cwd"` key at all, so this exact shape had no case until now.
+    cwd_only_payload = '{"tool_input":{"command":%s},"cwd":%s}' % (
+        json.dumps("git commit -m 'chore: no trailer here'"),
+        json.dumps(str(other)),
+    )
+    block.check(
+        "check 0 guards/block_untagged_commit.py",
+        cwd_only_payload,
+        "target-root: the tool call's own cwd field alone exempts the commit, with no cd/-C in the command text",
+    )
     # The two guards the fix was made FOR. Only the exempting direction is asserted here: their blocking direction depends on a gate-run stamp and a remote's position, neither of which a harness can pin, and both are covered elsewhere.
     block.check(
         "check 0 guards/block_unverified_push.py",
