@@ -37,7 +37,6 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
-import hashlib
 import json
 import os
 import re
@@ -50,115 +49,45 @@ ROOT = Path(__file__).resolve().parents[2]
 MAP = ROOT / ".ci" / "config" / "bws-secret-map.json"
 
 MIN_ENTRIES = 40
-EXPIRY = ROOT / ".ci" / "config" / "bws-token-expiry.json"
 
-
-# `expires` HAS THREE STATES and this reader used to accept only one of them.
+# THE EXPIRY FILE IS GONE, AND SO IS EVERYTHING THAT READ IT. `warn_if_token_expiring()` lived here until 2026-09-23 and read a hand-maintained date out of `.ci/config/bws-token-expiry.json`.
+# Both are deleted by `agent/plans/PLAN-bws-rotation-on-failure.md`, whose ruling is that detection is the FAILURE and never a date: nothing in this repository can observe a machine account's expiry, so a written-down date is a second source of truth that only a human ever refreshes.
 #
-# It did `dt.date.fromisoformat(str(e["expires"]))` inside a try that swallows ValueError and returns, so a single non-date row silently disabled the WHOLE warning -- including
-# for the other rows, which is the worst direction. That was invisible while the file held
-# exactly one dated token; the 2026-09-09 split into a never-expiring local account and an unverified CI one is what made it reachable.
+# WHAT IS LOST, HONESTLY: up to five days' notice before the credential died, delivered by exactly one reader that a human ran by hand occasionally. It never warned CI, never warned `bws_env_load`, never warned a deploy, and no gate read it.
 #
-# Bitwarden's own default is no expiry ("When the token Expires. By default, Never." -- bitwarden.com/help/access-tokens), so `null` is the COMMON case, not an edge one, and "unknown" has to stay distinct from it: null is a claim that the token never expires, "unknown" is a record that nobody checked. Collapsing them would let an unverified CI credential read as safe forever.
-NEVER = "never"
-UNKNOWN = "unknown"
+# WHAT SURVIVED THE DELETION is the client-id fingerprint, because it was the one part of that reader binding a claim to the LIVE token rather than to a written date. It now lives at `rediacc_ci.core.bws_env.client_fingerprint`, and `scripts/dev/bws-rotate.py` uses it to refuse a paste of the credential that is already installed.
 
 
-def _expiry_of(entry):
-    """A `datetime.date`, or the NEVER / UNKNOWN sentinel. Raises on a malformed date."""
-    raw = entry.get("expires")
-    if raw is None:
-        return NEVER
-    if isinstance(raw, str) and raw.strip().lower() == UNKNOWN:
-        return UNKNOWN
-    return dt.date.fromisoformat(str(raw))
+def _rotation_notice(returncode: int, stderr: str) -> list[str]:
+    """The rotation notice for a failed `bws`, from the ONE classifier, out of process.
 
+    WHY A SUBPROCESS AND NOT AN IMPORT, since an import would read better. This file lives under `scripts/ops/` and there is no `_cipath` shim there; the canonical way onto `sys.path` is `import _cipath` from a sibling, or `paths.on_sys_path`, which already requires `rediacc_ci` to be importable.
+    A hand-written `sys.path.insert` here would be a NEW finding against the whole-tree hop baseline in `.ci/rediacc_ci/tests/test_canonical_sys_path_hop.py`, and that baseline is shrink-only. So the classifier is REACHED rather than copied, and `check:ci-bws-rotation-notice` asserts that no second copy of the decision exists anywhere in the tree.
 
-def _live_client_fingerprint() -> str:
-    """sha256 of the CLIENT ID half of BWS_ACCESS_TOKEN, or "" when absent.
+    THE STDERR GOES ON STDIN, never on argv: argv is visible in `ps` and in process accounting, and `bws`'s stderr is the stream most likely to echo something back.
 
-    The token's shape is `0.<client-id>.<secret>:<key>`. Only the identifier is hashed, and only a prefix of the digest is kept, so nothing derived from the secret can leave this function.
-    """
-    token = os.environ.get("BWS_ACCESS_TOKEN", "")
-    client_id = token.split(".")[1] if token.count(".") >= 2 else ""
-    if not client_id:
-        return ""
-    return hashlib.sha256(client_id.encode()).hexdigest()[:16]
-
-
-def warn_if_token_expiring() -> None:
-    """A machine-account token carries no expiry inside it, so nothing can derive this -- it is written down at mint time or it is discovered as an outage.
-
-    Advisory on purpose: a hard refusal here would block the refresh on a clock even when the token still works, and this script has real refusals for the things it can actually verify. What it prevents is the failure MODE: `bws` answers an expired token with an opaque auth error, so without this the first symptom is every local command breaking at once for no stated reason.
-
-    THE SCHEMA IS AN ARRAY because the replacement posture is a SPLIT -- a read-only account for .env and CI, a read-write one supplied per rotation -- and a one-token file cannot describe the state during the swap, which is exactly when it is being read. One entry today; the loop is not speculative scaffolding, it is the shape the next mint produces.
+    A FAILURE TO REACH THE CLASSIFIER IS REPORTED, not swallowed. Returning an empty list on an OSError would turn "the notice could not be produced" into "there was nothing to say", which is the shape this whole plan exists to refuse.
     """
     try:
-        doc = json.loads(EXPIRY.read_text(encoding="utf-8"))
-        entries = doc["tokens"]
-        if not isinstance(entries, list) or not entries:
-            return
-        tokens = [(e, _expiry_of(e)) for e in entries]
-    except (OSError, ValueError, KeyError, TypeError):
-        return  # absent or malformed is not this script's job to enforce
-
-    where = EXPIRY.relative_to(ROOT)
-    warn_days = int(doc.get("warn_days", 5))
-
-    # BIND THE CLAIM TO THE TOKEN IT DESCRIBES. Every other state-changing script in scripts/ops/ derives applied-vs-pending from the live system -- apply-cf-redirect-rules.sh reads the Cloudflare ruleset, the R2 scrubs read R2, this script's own map carries refreshed_at behind a staleness gate. A hand-written date is the one shape that cannot self-check, so it gets the nearest
-    # thing: a fingerprint of the token's client id. Mint a new token without updating the file and this says so, instead of the date quietly describing a token that no longer exists.
-    #
-    # WITH AN ARRAY THE FINGERPRINT ALSO SELECTS. When the live token matches one declared entry, only that entry's date is the one in force; the others describe accounts this process is not using. When it matches NONE, the file describes something else entirely and every date below is about the wrong account -- that is louder than any expiry warning, so it returns.
-    fp = _live_client_fingerprint()
-    declared = {str(e.get("client_id_sha256", "")) for e, _ in tokens}
-    if fp:
-        if fp in declared:
-            tokens = [(e, d) for e, d in tokens if str(e.get("client_id_sha256", "")) == fp]
-        elif any(declared - {""}):
-            names = ", ".join(
-                f"{e.get('name', '?')} ({e.get('client_id_sha256', '-')})" for e, _ in tokens
-            )
-            print(
-                f"!! {where} describes {names}, but BWS_ACCESS_TOKEN is a DIFFERENT "
-                f"machine account ({fp}). Every expiry date in that file is about the "
-                f"wrong token."
-            )
-            return
-        else:
-            print(
-                f"   (note: no entry in {where} carries a client_id_sha256; add {fp} "
-                f"so a swapped token cannot go unnoticed)"
-            )
-
-    today = dt.datetime.now(dt.UTC).date()
-    shouted = False
-    # A row with no countdown is REPORTED, not warned about, and never sorted against a date. Silence here would be indistinguishable from "checked, and fine".
-    for entry, expires in [(e, d) for e, d in tokens if not isinstance(d, dt.date)]:
-        if expires is UNKNOWN:
-            print(
-                f"   (note: {entry.get('name', '?')} has no verified expiry in {where}; "
-                f"fill it in from the web vault so a lapse cannot arrive unannounced)"
-            )
-    dated = sorted([(e, d) for e, d in tokens if isinstance(d, dt.date)], key=lambda t: t[1])
-    for entry, expires in dated:
-        left = (expires - today).days
-        if left > warn_days:
-            continue
-        shouted = True
-        name = entry.get("name", "?")
-        if left < 0:
-            print(
-                f"!! BWS_ACCESS_TOKEN ({name}) EXPIRED {-left} day(s) ago "
-                f"({expires}). An auth error below means that, not a network fault."
-            )
-        else:
-            print(f"!! BWS_ACCESS_TOKEN ({name}) expires in {left} day(s) ({expires}).")
-        print("   Only the operator can mint a replacement -- no bws verb creates or rotates")
-        print(
-            f"   a machine-account token. Plan: {entry.get('replacement_plan', '(none recorded)')}"
+        done = subprocess.run(
+            [sys.executable, "-m", "rediacc_ci.core.bws_env", "rotation-notice", str(returncode)],
+            input=stderr,
+            capture_output=True,
+            text=True,
+            check=False,
+            cwd=str(ROOT),
+            env={**os.environ, "PYTHONPATH": str(ROOT / ".ci")},
+            timeout=30,
         )
-    if shouted:
-        print(f"   Update {where} after minting.")
+    except (OSError, subprocess.SubprocessError) as exc:
+        return [
+            f"!! the rotation classifier could not be run ({exc}), so this failure is",
+            "   UNCLASSIFIED rather than fine. Read .ci/config/bws-rotation-notice.txt.",
+        ]
+    # 3 is a wiring fault and 4 is a run that did not fail at all. Neither is a rotation.
+    if done.returncode != 0:
+        return []
+    return done.stdout.rstrip("\n").split("\n")
 
 
 UUID_RE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
@@ -182,8 +111,6 @@ def main() -> int:
     if not project or not UUID_RE.match(str(project)):
         die("the map has no usable 'project' uuid to refresh from")
 
-    warn_if_token_expiring()
-
     bws = args.bws or shutil.which("bws")
     if not bws or not Path(bws).exists():
         die("bws not found; install it as .devcontainer/Dockerfile does, or pass --bws")
@@ -196,6 +123,10 @@ def main() -> int:
         check=False,  # the return code is judged below, with stderr only
     )
     if proc.returncode != 0:
+        # THE NOTICE COMES BEFORE THE DEATH AND ON THE SAME STREAM, which is why it is stderr and not stdout. The first version printed it to stdout and it arrived AFTER `die`'s line under a pipe: stderr is unbuffered and a piped stdout is block-buffered, so the two came out in the opposite order to the one they were written in. A procedure that appears below the exception
+        # reads as trailing noise.
+        for line in _rotation_notice(proc.returncode, proc.stderr or ""):
+            print(line, file=sys.stderr)
         # stderr only: stdout on a partial failure could carry secret material.
         die(f"bws secret list exited {proc.returncode}: {proc.stderr.strip()}")
     try:

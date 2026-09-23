@@ -337,3 +337,20 @@ Two of six are wrong, and they are precisely the two dead reads of section 6. Th
 
 Not refreshed here, deliberately. `npm run check:ci-secret-reachability -- --refresh` (needs an org-admin token; this session's `gh` has `admin:org`) would write the truth and turn the gate **red with two real findings** — the correct end state, but a tree-wide red during a twelve-workstream programme is a packaging decision for the driver, not a survey phase's to make
 unilaterally. Recommended default: refresh in the SAME change that resolves F1, so the gate flips from lying-green to telling-the-truth-green rather than sitting red between two commits.
+
+---
+
+## 9. 2026-09-23 — the subject of sections 1.3 and 2 was DELETED, and this record is not rewritten to match
+
+APPENDED, NOT EDITED, and the distinction is the point of keeping a record at all. Sections 1.3 and 2 above are a dated MEASUREMENT: on 2026-09-09 `.ci/config/bws-token-expiry.json` existed, carried a `tokens[]` array, and had exactly one reader at `scripts/ops/bws-map-refresh.py`.
+Every word of that was true when it was written and is still the correct account of the tree on that day. Editing a historical measurement so it agrees with a later decision is how a corpus stops being evidence and becomes a summary of whatever was believed most recently.
+
+WHAT CHANGED. `agent/plans/PLAN-bws-rotation-on-failure.md` deleted both the file and `warn_if_token_expiring()`, on the ruling that detection is the FAILURE and never a date: a machine-account token carries no expiry inside it, so the date could only ever be transcribed by hand from the web vault, and section 2's own closing line records that no CI gate read it.
+The replacement is not another prediction. It is `.ci/config/bws-rotation-notice.txt`, one procedure printed by five emitters at the moment a `bws` call fails, plus `scripts/dev/bws-rotate.py` and the gate `check:ci-bws-rotation-notice`.
+
+WHAT SECTION 2 GOT RIGHT AND WHAT IT COST.
+The `tokens[]` restructure and the client-id fingerprint were both real improvements to a file that should not have existed, and one of the two survived the deletion: the fingerprint computation is now `rediacc_ci.core.bws_env.client_fingerprint`, and `scripts/dev/bws-rotate.py` uses it to refuse a paste of the credential already installed.
+That is the piece that bound a claim to the LIVE token rather than to a written date, which is exactly why it outlived the file it was invented for.
+
+WHAT IS HONESTLY LOST. Up to five days' notice before the sole local credential died, delivered by one command a human ran occasionally. It never warned CI, never warned a deploy, and no gate read it. The trade is that a scheduled outage arriving silently becomes an unscheduled one arriving with its own diagnosis and a one-command fix.
+The part that gets worse is CD, and the mitigation for that is the `if: failure()` annotation in `.github/actions/bws-secrets/action.yml`, which is why that step is not optional.

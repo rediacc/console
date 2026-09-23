@@ -84,10 +84,17 @@ import datetime as dt
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
 from pathlib import Path
+
+import _cipath  # noqa: F401
+from rediacc_ci import workflows
+
+# IMPORTED, NOT RE-TYPED. Assertion 14d asks whether the fields the FETCH promises to bind are the fields the tree actually has, and a second copy of the nine names here would make that question compare this file against itself. `bws_env` declares; this re-derives.
+from rediacc_ci.core.bws_env import JSON_REQUIRED as BWS_ENV_JSON_REQUIRED
 
 # Overridable so a gate-test can drive the REAL scan against a fixture tree instead of only the pure-logic selftest. This is not an escape hatch: every anti-vacuity clause below (MIN_MAP_ENTRIES, MIN_CALLERS, the blind-corpus and blind-suffix refusals) FAILS on a tree that holds nothing, so pointing this at an empty directory reds rather than passes.
 ROOT = Path(os.environ.get("BWS_MAP_ROOT") or Path(__file__).resolve().parents[3])
@@ -169,7 +176,15 @@ def parse_requests(yaml_text: str) -> list[tuple[int, str, str]]:
 
 # --------------------------------------------------------------------------- Coverage helpers (assertions 5-7). Each RE-DERIVES what an allowlist would otherwise be trusted for. ---------------------------------------------------------------------------
 
-JOB_RE = re.compile(r"^  ([A-Za-z0-9_-]+):\s*$")
+# JOB_RE, call_sites, job_index and job_at ARE IMPORTED, NOT DEFINED, and that is the point of the lift. This file grew all four first; `check_actions_vars.py` then needed the same corpus and the same "which job owns line N" answer, and a second copy of either is a second answer to one question -- the exact defect class this gate exists to find in the secret tables it reads.
+# `rediacc_ci.workflows` now holds the single copy (see its own note at the `JOB_RE` definition, citing PLAN-github-actions-to-bitwarden.md Decision 4).
+#
+# `call_sites` IS WRAPPED RATHER THAN RE-EXPORTED because the shared one takes an explicit root while this gate resolves everything against its own overridable ROOT, which `BWS_MAP_ROOT` repoints so a gate test can drive the real scan over a fixture tree. Passing ROOT at the one call site keeps that override working; importing the bare function would silently scan the real
+# repository from inside a fixture run.
+JOB_RE = workflows.JOB_RE
+job_index = workflows.job_index
+job_at = workflows.job_at
+
 USE_RE = re.compile(r"(?<![\w./-])secrets\.([A-Za-z_][A-Za-z0-9_]*)")
 CALLS_REUSABLE_RE = re.compile(r"^\s*uses: \./\.github/workflows/")
 SUFFIX_RE = re.compile(r'^\s*[A-Za-z_][A-Za-z0-9_]*="([A-Z0-9_]+)_\$\{SUFFIX\}"', re.MULTILINE)
@@ -178,12 +193,8 @@ NOT_SHADOWED = {"GITHUB_TOKEN", "BWS_ACCESS_TOKEN"}
 
 
 def call_sites() -> list[Path]:
-    """Every file that may carry a bws-secrets request block."""
-    out = sorted((ROOT / ".github" / "workflows").glob("*.yml"))
-    out += sorted((ROOT / ".github" / "actions").glob("*/action.yml"))
-    for d in EXTRA_WORKFLOW_DIRS:
-        out += sorted(d.glob("*.yml"))
-    return out
+    """Every file that may carry a bws-secrets request block, from the shared corpus."""
+    return workflows.call_sites(ROOT)
 
 
 def rename_pairs() -> list[tuple[str, str]]:
@@ -197,20 +208,6 @@ def rename_pairs() -> list[tuple[str, str]]:
         return []
     exec(compile(m.group(0), str(RENAME_TABLE), "exec"), ns)  # noqa: S102
     return list(ns.get("RENAMES", []))
-
-
-def job_index(lines: list[str]) -> list[tuple[int, str]]:
-    return [(i, m.group(1)) for i, line in enumerate(lines) if (m := JOB_RE.match(line))]
-
-
-def job_at(index: list[tuple[int, str]], i: int) -> str | None:
-    cur = None
-    for start, name in index:
-        if start <= i:
-            cur = name
-        else:
-            break
-    return cur
 
 
 def superseded_problems(name: str, rec: dict, suffixes: list[str]) -> list[str]:
@@ -726,6 +723,256 @@ def read_order_in(lines: list[str], label: str) -> tuple[list[str], int]:
     return problems, n
 
 
+# --------------------------------------------------------------------------- Assertion 14: the local surrogate. `private/account/.env` is untracked and CI never sees it, so `.env.example` is the only CI-visible record of what a developer machine actually needs. ---------------------------------------------------------------------------
+
+ENV_EXAMPLE = ROOT / "private" / "account" / ".env.example"
+ENV_LOCAL = ROOT / ".ci" / "config" / "env-local-allowlist.json"
+
+# `NAME=` at the start of a line, and the same thing behind a `#`. Two patterns rather than one optional group, because the ACTIVE/COMMENTED distinction is itself an assertion: the `opt-in` kind means "commented, never active", and a single pattern that erased the difference could not express it.
+ENV_ACTIVE_RE = re.compile(r"^([A-Za-z_][A-Za-z0-9_]*)=", re.MULTILINE)
+ENV_COMMENTED_RE = re.compile(r"^#\s*([A-Za-z_][A-Za-z0-9_]*)=", re.MULTILINE)
+
+# Floors. An empty example file and an empty allowlist BOTH pass a naive 14a, which is the control the plan calls out by name: "Empty the allowlist AND empty .env.example -> must still RED on the floor, not pass silently." Sized under the live numbers (54 example names, 33 entries) with room for the migration to drain entries, and far enough above zero that a half-read file cannot
+# clear them.
+#
+# NOT ENV-OVERRIDABLE, unlike MIN_MAP_ENTRIES and MIN_CALLERS above. Those two exist because the gate test drives the whole `main()` over a fixture tree and has no other way to lower them. Assertion 14's controls call `env_local_problems` with explicit `example=` and `allow=` paths instead, so they can simply supply forty synthetic names and clear the real floor honestly. A knob
+# nothing needs is a knob that is only ever reachable by someone trying to get past the gate.
+MIN_EXAMPLE_NAMES = 30
+MIN_LOCAL_ENTRIES = 10
+
+LOCAL_KINDS = (
+    "machine-local",
+    "bootstrap",
+    "opt-in",
+    "alias",
+    "test-fixture",
+    "unreferenced",
+    "deferred",
+)
+
+
+def example_names(path: Path | None = None) -> tuple[set[str], set[str]]:
+    """(active, commented) names assigned in `.env.example`.
+
+    READ DIRECTLY, NEVER THROUGH A RECURSIVE GREP. `grep -r` here is ugrep, which honours `.gitignore` by default, and `.env*` is ignored -- so a recursive sweep over this exact file reports ZERO matches while a direct read finds them. Measured 2026-09-22: `grep -rn DESIGN_PARTNER private/account/` printed nothing while `grep -n` on the file printed line 116.
+
+    Any sweep of this file class that went through a recursive grep should be treated as unrun.
+    """
+    src = ENV_EXAMPLE if path is None else path
+    text = src.read_text(encoding="utf-8")
+    return set(ENV_ACTIVE_RE.findall(text)), set(ENV_COMMENTED_RE.findall(text))
+
+
+def load_env_local(path: Path | None = None) -> tuple[dict, list[str]]:
+    """The allowlist's `entries`, or a refusal. Unreadable means REFUSE, never forgive."""
+    src = ENV_LOCAL if path is None else path
+    try:
+        doc = json.loads(src.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        return {}, [f"cannot read {src} ({exc}); assertion 14 is blind, which is not a pass"]
+    entries = doc.get("entries")
+    if not isinstance(entries, dict):
+        return {}, [f"{src} has no `entries` object; assertion 14 has nothing to check"]
+    return entries, []
+
+
+def local_entry_problems(
+    name: str, rec: dict, secrets: dict, commented: set[str], today
+) -> list[str]:
+    """14c. RE-DERIVE one entry against its own `kind`.
+
+    This is the half that stops the file becoming folklore. An exemption that only carries prose is a licence; one that states a checkable claim is a control, and every kind below names a different thing that must still be true in the tree.
+    """
+    out: list[str] = []
+    kind = rec.get("kind")
+    if kind not in LOCAL_KINDS:
+        return [
+            f"env-local-allowlist {name!r} has kind {kind!r}; expected one of {', '.join(LOCAL_KINDS)}"
+        ]
+    if len(str(rec.get("reason", "")).strip()) < 20:
+        out.append(
+            f"env-local-allowlist {name!r} has no usable reason; a bare exemption is a licence"
+        )
+
+    if kind in ("machine-local", "test-fixture"):
+        # The citation must exist AND the cited line must still carry the name. A citation nobody re-derives is how "why" becomes folklore, and a line number drifts the moment a paragraph moves above it.
+        cite = str(rec.get("derive", ""))
+        if ":" not in cite:
+            out.append(
+                f"env-local-allowlist {name!r} is {kind} and needs a `derive` file:line citation"
+            )
+        else:
+            rel, _, lineno = cite.rpartition(":")
+            target = ROOT / rel
+            if not target.is_file():
+                out.append(f"env-local-allowlist {name!r} cites {rel}, which does not exist")
+            elif not lineno.isdigit():
+                out.append(f"env-local-allowlist {name!r} has a malformed citation {cite!r}")
+            else:
+                lines = target.read_text(encoding="utf-8", errors="replace").split("\n")
+                i = int(lineno) - 1
+                if not (0 <= i < len(lines)) or name not in lines[i]:
+                    # NAME THE LINE IT MOVED TO. A bare "stale citation" sends a reader to hunt; the actual line number makes the fix a one-character edit, which is what keeps these citations maintained rather than deleted.
+                    found = [str(n + 1) for n, ln in enumerate(lines) if name in ln]
+                    where = (
+                        " it is now at line " + ", ".join(found[:3])
+                        if found
+                        else " the name is not in that file at all"
+                    )
+                    out.append(
+                        f"env-local-allowlist {name!r} cites {cite} but that line does not contain it;{where}"
+                    )
+
+    if kind in ("bootstrap", "test-fixture") and name in secrets:
+        why = (
+            "a circularity: the bootstrap credential cannot come from the store it unlocks"
+            if kind == "bootstrap"
+            else "the D3 collision: one name meaning a fixture here and a production secret there"
+        )
+        out.append(f"env-local-allowlist {name!r} is {kind} but IS in the map -- {why}")
+
+    if kind == "opt-in" and name not in commented:
+        out.append(
+            f"env-local-allowlist {name!r} is opt-in but is not commented out in .env.example; an active default needs a home"
+        )
+
+    if kind == "alias":
+        store = str(rec.get("store", ""))
+        if not store:
+            out.append(
+                f"env-local-allowlist {name!r} is an alias and must name the `store` entry it resolves to"
+            )
+        elif store not in secrets:
+            out.append(
+                f"env-local-allowlist {name!r} aliases {store!r}, which is NOT in the map -- the row forgives a read that resolves to nothing"
+            )
+
+    if kind == "unreferenced":
+        # Re-derived by a real sweep. A name that acquired a reader is no longer dead and needs a proper home, so this reds in the direction that matters.
+        hits = tracked_readers(name)
+        if hits:
+            out.append(
+                f"env-local-allowlist {name!r} is marked unreferenced but {len(hits)} file(s) now read it ({', '.join(hits[:3])}); give it a home"
+            )
+
+    if kind in ("deferred", "unreferenced"):
+        expires = str(rec.get("expires", ""))
+        try:
+            when = dt.datetime.strptime(expires, "%Y-%m-%d").replace(tzinfo=dt.UTC).date()
+        except ValueError:
+            out.append(
+                f"env-local-allowlist {name!r} is {kind} and needs an `expires` UTC date (YYYY-MM-DD)"
+            )
+        else:
+            if when < today:
+                out.append(
+                    f"env-local-allowlist {name!r} expired on {expires}; decide it, do not extend the date by reflex"
+                )
+    if kind == "deferred" and len(str(rec.get("blocker", "")).strip()) < 20:
+        out.append(
+            f"env-local-allowlist {name!r} is deferred and must name its `blocker` -- who is blocked on what"
+        )
+    return out
+
+
+# What a READER is not. A name is alive when CODE reads it; prose that documents the name as dead is not evidence that it is alive, and counting it makes the `unreferenced` kind self-refuting -- recording the finding in a plan flips its own entry red, which is exactly what happened the first time this ran (2026-09-22).
+#
+# DELIBERATELY NARROW. Only markdown, the two documentation trees, and this gate's own allowlist are excluded; a `.json` or `.ts` under `.ci/config` that names the key still counts, because config a script loads IS a reader. The bias is toward calling a name ALIVE, which reds a stale entry and asks a human, rather than toward calling it dead.
+PROSE_DIRS = ("agent/", "docs/")
+
+
+def is_prose(path: str) -> bool:
+    return (
+        path.endswith(".md")
+        or path.startswith(PROSE_DIRS)
+        or path == ".ci/config/env-local-allowlist.json"
+    )
+
+
+def tracked_readers(name: str) -> list[str]:
+    """Files that mention `name`, minus `.env*` and minus prose. `git grep --recurse-submodules`.
+
+    SUBMODULES ARE THE WHOLE POINT OF THE FLAG. `private/account` is its own repository, so a plain `git grep` from console cannot see the very file this assertion is about. Sibling repositories outside the superproject (`private/growth`) are still invisible, and that is stated rather than assumed.
+    """
+    try:
+        proc = subprocess.run(
+            ["git", "grep", "-l", "--recurse-submodules", "-F", name],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=120,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        # UNKNOWN IS NOT FINE. A sweep that could not run has proved nothing, so it reports a synthetic hit rather than an empty list -- an empty list here would read as "confirmed dead" and quietly bless the entry.
+        return ["<the reader sweep could not run, so this is UNCHECKED>"]
+    out = []
+    for line in proc.stdout.split("\n"):
+        f = line.strip()
+        if f and not Path(f).name.startswith(".env") and not is_prose(f):
+            out.append(f)
+    return sorted(out)
+
+
+def env_local_problems(
+    secrets: dict, example: Path | None = None, allow: Path | None = None
+) -> tuple[list[str], int, int]:
+    """Assertion 14. (problems, example names seen, allowlist entries seen).
+
+    14a  every name assigned in `.env.example`, active or commented, is either in
+         the map or in the allowlist. This is the class that produced D1, D2 and
+         D3: a key nobody moved, a key nobody reads, a name meaning two things.
+    14b  every allowlist entry names a key `.env.example` really has. Delete the
+         key and its exemption reds until it is dropped too -- which is exactly
+         what would have flagged R2_MEDIA_BUCKET.
+    14c  each entry is re-derived against its own kind (above).
+    14d  the nine SELLER_* fields `bws_env.JSON_REQUIRED` promises to bind are
+         the nine the example actually has. A tenth field added to the tree
+         without being added there would bind eight of ten and return 0.
+    """
+    problems: list[str] = []
+    try:
+        active, commented = example_names(example)
+    except OSError as exc:
+        return ([f"cannot read {example or ENV_EXAMPLE} ({exc}); assertion 14 is blind"], 0, 0)
+    names = active | commented
+    entries, load_problems = load_env_local(allow)
+    problems += load_problems
+
+    # ANTI-VACUITY FIRST, because both floors are cleared by a file that failed to parse into anything, and every clause below would then report a clean tree. Zero inputs is a FAILURE, never a pass.
+    if len(names) < MIN_EXAMPLE_NAMES:
+        problems.append(
+            f".env.example yields {len(names)} name(s), floor is {MIN_EXAMPLE_NAMES} -- the gate is not seeing the file, and its green would mean nothing"
+        )
+    if not load_problems and len(entries) < MIN_LOCAL_ENTRIES:
+        problems.append(
+            f"env-local-allowlist holds {len(entries)} entry/entries, floor is {MIN_LOCAL_ENTRIES} -- an emptied allowlist passes 14a vacuously"
+        )
+
+    for n in sorted(n for n in names if n not in secrets and n not in entries):
+        problems.append(
+            f".env.example assigns {n!r}, which is in neither bws-secret-map.json nor env-local-allowlist.json -- give it a home or say why it stays local. Do not add it to the baseline"
+        )
+    for n in sorted(set(entries) - names):
+        problems.append(
+            f"env-local-allowlist exempts {n!r}, which .env.example no longer assigns -- drop the exemption too"
+        )
+    today = dt.datetime.now(dt.UTC).date()
+    for n in sorted(set(entries) & names):
+        problems.extend(local_entry_problems(n, entries[n] or {}, secrets, commented, today))
+
+    seller_declared = set(BWS_ENV_JSON_REQUIRED.get("SELLER_PROFILE_JSON", ()))
+    seller_actual = {n for n in names if n.startswith("SELLER_")}
+    if seller_declared and seller_actual and seller_declared != seller_actual:
+        missing = sorted(seller_actual - seller_declared)
+        extra = sorted(seller_declared - seller_actual)
+        problems.append(
+            f"bws_env.JSON_REQUIRED['SELLER_PROFILE_JSON'] and .env.example disagree about the record's fields "
+            f"(example-only: {missing or 'none'}; declared-only: {extra or 'none'}) -- the fetch would bind a partial record and return 0"
+        )
+    return problems, len(names), len(entries)
+
+
 def coverage_problems(secrets: dict, exemptions: dict, no_fetch: dict | None = None) -> list[str]:
     """Assertions 5, 6 and 7. Every one is the converse of assertion 1.
 
@@ -1159,6 +1406,119 @@ jobs:
     print(f"  {'PASS' if ok4 else 'FAIL'}  a missing allowlist refuses rather than passing")
     if not ok4:
         bad += 1
+
+    # ---- assertion 14, the controls the plan names, plus its own converse ----
+    #
+    # Driven through the REAL function against synthetic file pairs, so each one exercises the code path the live run takes. The plan also asks for a plant against the real tree; that was done by hand once (a homeless key appended to .env.example, gate red naming it, file restored byte-identical) and these are what keep it true on every invocation afterwards.
+    env_dir = Path(tempfile.mkdtemp(prefix="bws-env-local-"))
+    ex_f, al_f = env_dir / "example", env_dir / "allow.json"
+    base_names = "\n".join(f"NAME_{i}=v" for i in range(40))
+    base_reason = "a synthetic fixture name, held local so this fixture is not vacuous"
+    base_entries = {f"NAME_{i}": {"kind": "bootstrap", "reason": base_reason} for i in range(40)}
+
+    def env14(example_text: str, entries: dict, store: dict | None = None) -> list[str]:
+        ex_f.write_text(example_text, encoding="utf-8")
+        al_f.write_text(json.dumps({"entries": entries}), encoding="utf-8")
+        return env_local_problems(store or {}, example=ex_f, allow=al_f)[0]
+
+    def with_entry(name: str, rec: dict, extra: str = "") -> list[str]:
+        return env14(base_names + extra, {**base_entries, name: rec})
+
+    checks14 = [
+        (
+            "CONTROL: every example name mapped or exempt is silent",
+            lambda: env14(base_names, base_entries) == [],
+        ),
+        (
+            "14a: a key in neither the map nor the allowlist is named",
+            lambda: any(
+                "NEW_THING" in m for m in env14(base_names + "\nNEW_THING=x\n", base_entries)
+            ),
+        ),
+        (
+            "14b: an exemption for a key the example dropped is named",
+            lambda: any(
+                "ORPHAN" in m
+                for m in with_entry(
+                    "ORPHAN",
+                    {"kind": "bootstrap", "reason": "an exemption whose key the example dropped"},
+                )
+            ),
+        ),
+        (
+            "14c: a derive citation that does not contain its name is named",
+            lambda: any(
+                "does not contain it" in m
+                for m in with_entry(
+                    "WHO",
+                    {
+                        "kind": "machine-local",
+                        "reason": "a synthetic machine-local entry for the citation control",
+                        "derive": "regions.json:1",
+                    },
+                    "\nWHO=1\n",
+                )
+            ),
+        ),
+        (
+            "14c: an opt-in that became an ACTIVE default is named",
+            lambda: any(
+                "opt-in" in m
+                for m in with_entry(
+                    "OPTIN",
+                    {"kind": "opt-in", "reason": "a synthetic opt-in, which must stay commented"},
+                    "\nOPTIN=1\n",
+                )
+            ),
+        ),
+        (
+            "14c: an alias onto a name the map lacks is named",
+            lambda: any(
+                "NOT_IN_MAP" in m
+                for m in with_entry(
+                    "AL",
+                    {
+                        "kind": "alias",
+                        "reason": "a synthetic alias pointing at nothing",
+                        "store": "NOT_IN_MAP",
+                    },
+                    "\nAL=1\n",
+                )
+            ),
+        ),
+        (
+            "14c: a bootstrap name that IS in the map is a circularity",
+            lambda: any(
+                "circularity" in m for m in env14(base_names, base_entries, store={"NAME_0": {}})
+            ),
+        ),
+        (
+            "14c: a deferral past its own expiry is named",
+            lambda: any(
+                "expired" in m
+                for m in with_entry(
+                    "LATE",
+                    {
+                        "kind": "deferred",
+                        "reason": "a synthetic deferral whose window has closed",
+                        "blocker": "a synthetic blocker long enough to pass the floor",
+                        "expires": "2000-01-01",
+                    },
+                    "\nLATE=1\n",
+                )
+            ),
+        ),
+        (
+            "14 floors: an empty example AND an empty allowlist still RED",
+            lambda: len([m for m in env14("", {}) if "floor" in m]) == 2,
+        ),
+    ]
+    for label, probe in checks14:
+        good = probe()
+        print(f"  {'PASS' if good else 'FAIL'}  {label}")
+        if not good:
+            bad += 1
+    shutil.rmtree(env_dir, ignore_errors=True)
     return 1 if bad else 0
 
 
@@ -1253,6 +1613,10 @@ def main() -> int:
         exp_problems, n_ledger, n_excusing = expected_mismatch_problems()
         problems += exp_problems
 
+    # 14. The local surrogate stays honest. Deliberately OUTSIDE the block above: that block is skipped when the map itself is unusable, and 14a/14b/14c are properties of `.env.example` and the allowlist which hold either way. A key with no home is a key with no home whether or not the store is readable today.
+    env_problems, n_example, n_local = env_local_problems(secrets)
+    problems += env_problems
+
     if problems:
         print(f"✗ bws map check ({len(problems)} problem(s)):", file=sys.stderr)
         for p in problems:
@@ -1296,6 +1660,12 @@ def main() -> int:
             f"({n_excusing} step(s)) and every excuse names a ledger entry with its run and its "
             f"door -- none is a blanket exemption"
         )
+    print(
+        f"✓ local surrogate: all {n_example} name(s) assigned in .env.example are mapped or "
+        f"exempt ({n_local} allowlist entry/entries, each kind re-derived), every exemption "
+        f"names a key the example still has, and the 9 SELLER_* fields match what the fetch "
+        f"promises to bind"
+    )
     print("  Blind spot: this proves NAMES resolve. Liveness in Bitwarden is proven at run time,")
     print(
         "  where a missing UUID fails the whole fetch; an EMPTY value is the deploy scripts' job."

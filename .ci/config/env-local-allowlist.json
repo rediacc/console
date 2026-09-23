@@ -1,0 +1,203 @@
+{
+  "note": "Every name in private/account/.env.example that is NOT in .ci/config/bws-secret-map.json, with the reason it is not, RE-DERIVED rather than believed.",
+  "owner": "Assertion 14 of .ci/scripts/quality/check_bws_map.py. 14a refuses an example key in neither the map nor here; 14b refuses an entry naming a key the example no longer has; 14c re-derives every entry against its own kind.",
+  "modelled_on": ".ci/config/bws-unrequested.json, which established the rule that an exemption states a CHECKABLE claim or it is just a licence.",
+  "why_the_example_and_not_the_env": "private/account/.env is untracked and CI never sees it, so no gate can read it. .env.example is tracked and carries every live key, which makes it the only CI-visible surrogate. 14a is what keeps it one.",
+  "kinds": {
+    "machine-local": "The correct value is a function of THIS machine: a path, a listening port, a URL derived from that port. `derive` must cite a file:line that exists and still mentions the name. Reds when someone moves the default into the store, or deletes the writer.",
+    "bootstrap": "The root of trust for reading everything else, so it cannot come from the store. Re-derived by requiring the name to be ABSENT from bws-secret-map.json; the moment it is added that is a circularity, and this reds.",
+    "opt-in": "A feature a developer switches on locally. Re-derived by requiring the name to appear COMMENTED OUT in .env.example and never active. No live entries today, because every opt-in name this repo has is already in the map.",
+    "alias": "The example spells a name the store holds under a different one, deliberately. `store` must name an entry that really is in the map, which stops an alias row forgiving a read that resolves to nothing.",
+    "test-fixture": "A committed test constant that is not a credential. Re-derived twice: `derive` must cite a line that still contains the name, and the name must be ABSENT from the map. A store entry under the same name is the D3 collision.",
+    "unreferenced": "Assigned in .env.example and read by NOTHING. Debt, not an exemption: the disposition is DELETE. Re-derived by a real sweep, so the entry reds the moment a reader appears. Carries `expires`, or it becomes permanent.",
+    "deferred": "It should MOVE to the store and has not, because seeding a value is operator-only. Carries `blocker` and a UTC `expires`. Reds when that date passes, whether or not anyone looked."
+  },
+  "entries": {
+    "REDIACC_ACCOUNT_SERVER": {
+      "kind": "machine-local",
+      "reason": "http://localhost:4800, and private/account/src/entry/dev-gateway.ts rewrites it on every gateway start with the port actually bound",
+      "derive": ".ci/lib/account.sh:230"
+    },
+    "DATABASE_PATH": {
+      "kind": "machine-local",
+      "reason": "account.db, a relative path resolved against the local checkout",
+      "derive": ".ci/lib/account.sh:233"
+    },
+    "PORT": {
+      "kind": "machine-local",
+      "reason": "3000, a listening port for the standalone node entry; a property of this machine, not of the deployment",
+      "derive": ".ci/lib/account.sh:263"
+    },
+    "CI_MODE": {
+      "kind": "machine-local",
+      "reason": "asserts what this process is; app.ts gates Turnstile on it, and a shared store cannot know",
+      "derive": "private/account/src/app.ts:200"
+    },
+    "WEBAUTHN_RP_ID": {
+      "kind": "machine-local",
+      "reason": "localhost; one third of the WebAuthn consistency triple",
+      "derive": ".ci/lib/account.sh:266"
+    },
+    "WEBAUTHN_RP_NAME": {
+      "kind": "machine-local",
+      "reason": "Rediacc; kept local because the WebAuthn spec requires the origin's host to equal RP_ID, so splitting the triple across two stores is how the halves drift",
+      "derive": ".ci/lib/account.sh:267"
+    },
+    "WEBAUTHN_ORIGIN": {
+      "kind": "machine-local",
+      "reason": "derived from the bound gateway port; the third of the triple",
+      "derive": ".ci/lib/account.sh:268"
+    },
+    "BWS_ACCESS_TOKEN": {
+      "kind": "bootstrap",
+      "reason": "root of trust; no bws verb mints or rotates a machine-account token, so it cannot come from the store it unlocks"
+    },
+    "STRIPE_E2E_WEBHOOK_SECRET": {
+      "kind": "test-fixture",
+      "reason": "the committed E2E webhook constant, in the clear at its own writer. Renamed off STRIPE_WEBHOOK_SECRET so it cannot collide with the store's real signing secret (D3)",
+      "derive": ".ci/lib/account.sh:256"
+    },
+    "AWS_SES_ACCESS_KEY_ID": {
+      "kind": "alias",
+      "reason": "local dev is EU; the store holds the regional spelling and ci.yml already performs the same collapse",
+      "store": "AWS_SES_ACCESS_KEY_ID_EU"
+    },
+    "AWS_SES_SECRET_ACCESS_KEY": {
+      "kind": "alias",
+      "reason": "local dev is EU; same regional collapse as its key id",
+      "store": "AWS_SES_SECRET_ACCESS_KEY_EU"
+    },
+    "DESIGN_PARTNER_PROGRAM_ENABLED": {
+      "kind": "unreferenced",
+      "reason": "ACTIVE in .env.example and read by nothing in console, either submodule, or private/growth. Same class as R2_MEDIA_BUCKET (D2): DELETE it from .env.example and .env, do not seed it",
+      "found": "2026-09-22 by git grep --recurse-submodules; a plain recursive grep reports zero here because ugrep honours .gitignore and .env* is ignored",
+      "expires": "2026-12-31"
+    },
+    "ROOT_EMAIL": {
+      "kind": "deferred",
+      "reason": "operator identity, identical on every machine; seeds as its own store entry",
+      "blocker": "agent/plans/PLAN-env-to-bitwarden-v2.md task 'Seed the 6 shareable store entries' -- Operator-only",
+      "expires": "2026-12-31"
+    },
+    "AWS_SES_FROM": {
+      "kind": "deferred",
+      "reason": "already an org variable; consumed by all three set-*-worker-secrets.sh",
+      "blocker": "agent/plans/PLAN-env-to-bitwarden-v2.md task 'Seed the 6 shareable store entries' -- Operator-only",
+      "expires": "2026-12-31"
+    },
+    "OTEL_ENDPOINT": {
+      "kind": "deferred",
+      "reason": "https://otlp.rediacc.io, a constant",
+      "blocker": "agent/plans/PLAN-env-to-bitwarden-v2.md task 'Seed the 6 shareable store entries' -- Operator-only",
+      "expires": "2026-12-31"
+    },
+    "UPSTREAM_URL": {
+      "kind": "deferred",
+      "reason": "https://www.rediacc.com, a constant read by the on-premise entry point",
+      "blocker": "agent/plans/PLAN-env-to-bitwarden-v2.md Part 1 (e) -- Operator-only seed",
+      "expires": "2026-12-31"
+    },
+    "UPSTREAM_PUBLIC_KEY": {
+      "kind": "deferred",
+      "reason": "moves, and additionally gets a local cache so builds stay offline; one of the three names bws_env.CACHEABLE permits",
+      "blocker": "agent/plans/PLAN-env-to-bitwarden-v2.md Part 1 (e) and 0.4 -- Operator-only seed",
+      "expires": "2026-12-31"
+    },
+    "UPSTREAM_API_KEY": {
+      "kind": "deferred",
+      "reason": "the delegation auto-renew token; shared-or-per-install is open question Q1, whose DEFAULT is MOVE",
+      "blocker": "agent/plans/PLAN-env-to-bitwarden-v2.md '## Remaining' Q1 -- operator decision",
+      "expires": "2026-12-31"
+    },
+    "AWS_IAM_ADMIN_ACCESS_KEY_ID": {
+      "kind": "deferred",
+      "reason": "admin-tier; in no store at all today. Destination is open question Q2",
+      "blocker": "agent/plans/PLAN-env-to-bitwarden-v2.md task 'Seed the 4 admin credentials' -- Operator-only",
+      "expires": "2026-12-31"
+    },
+    "AWS_IAM_ADMIN_SECRET_ACCESS_KEY": {
+      "kind": "deferred",
+      "reason": "admin-tier; in no store at all today. Destination is open question Q2",
+      "blocker": "agent/plans/PLAN-env-to-bitwarden-v2.md task 'Seed the 4 admin credentials' -- Operator-only",
+      "expires": "2026-12-31"
+    },
+    "CF_GLOBAL_API_KEY": {
+      "kind": "deferred",
+      "reason": "full-account Cloudflare key; Q2's DEFAULT replaces its local uses with the scoped CLOUDFLARE_API_TOKEN, already in the store",
+      "blocker": "agent/plans/PLAN-env-to-bitwarden-v2.md task 'Seed the 4 admin credentials' -- Operator-only",
+      "expires": "2026-12-31"
+    },
+    "CF_EMAIL": {
+      "kind": "deferred",
+      "reason": "pairs with CF_GLOBAL_API_KEY; keeps the CF_ prefix the rename table never applied to these two",
+      "blocker": "agent/plans/PLAN-env-to-bitwarden-v2.md task 'Seed the 4 admin credentials' -- Operator-only",
+      "expires": "2026-12-31"
+    },
+    "GITHUB_AUTOPILOT_APP_ID": {
+      "kind": "deferred",
+      "reason": "Part 1 (b) lists this among 19 names already in the store with nothing to seed. Re-measured 2026-09-22 it is NOT in bws-secret-map.json, so (b) is 17 names and this one needs seeding like the rest",
+      "blocker": "agent/plans/PLAN-env-to-bitwarden-v2.md Part 1 (b) is wrong on this name -- Operator-only seed",
+      "expires": "2026-12-31"
+    },
+    "GITHUB_AUTOPILOT_PRIVATE_KEY": {
+      "kind": "deferred",
+      "reason": "same correction as GITHUB_AUTOPILOT_APP_ID: absent from the map, and distinct from the mapped GITHUB_APP_PRIVATE_KEY, which is the CD app",
+      "blocker": "agent/plans/PLAN-env-to-bitwarden-v2.md Part 1 (b) is wrong on this name -- Operator-only seed",
+      "expires": "2026-12-31"
+    },
+    "SELLER_NAME": {
+      "kind": "deferred",
+      "reason": "one of nine SELLER_* fields seeding as a single SELLER_PROFILE_JSON object entry, expanded by bws_env.JSON_REQUIRED",
+      "blocker": "agent/plans/PLAN-env-to-bitwarden-v2.md task 'Seed the 6 shareable store entries' -- Operator-only",
+      "expires": "2026-12-31"
+    },
+    "SELLER_VAT_NUMBER": {
+      "kind": "deferred",
+      "reason": "one of nine SELLER_* fields seeding as a single SELLER_PROFILE_JSON object entry, expanded by bws_env.JSON_REQUIRED",
+      "blocker": "agent/plans/PLAN-env-to-bitwarden-v2.md task 'Seed the 6 shareable store entries' -- Operator-only",
+      "expires": "2026-12-31"
+    },
+    "SELLER_REGISTRATION_NUMBER": {
+      "kind": "deferred",
+      "reason": "one of nine SELLER_* fields seeding as a single SELLER_PROFILE_JSON object entry, expanded by bws_env.JSON_REQUIRED",
+      "blocker": "agent/plans/PLAN-env-to-bitwarden-v2.md task 'Seed the 6 shareable store entries' -- Operator-only",
+      "expires": "2026-12-31"
+    },
+    "SELLER_ADDRESS_LINE1": {
+      "kind": "deferred",
+      "reason": "one of nine SELLER_* fields seeding as a single SELLER_PROFILE_JSON object entry, expanded by bws_env.JSON_REQUIRED",
+      "blocker": "agent/plans/PLAN-env-to-bitwarden-v2.md task 'Seed the 6 shareable store entries' -- Operator-only",
+      "expires": "2026-12-31"
+    },
+    "SELLER_CITY": {
+      "kind": "deferred",
+      "reason": "one of nine SELLER_* fields seeding as a single SELLER_PROFILE_JSON object entry, expanded by bws_env.JSON_REQUIRED",
+      "blocker": "agent/plans/PLAN-env-to-bitwarden-v2.md task 'Seed the 6 shareable store entries' -- Operator-only",
+      "expires": "2026-12-31"
+    },
+    "SELLER_POSTAL_CODE": {
+      "kind": "deferred",
+      "reason": "one of nine SELLER_* fields seeding as a single SELLER_PROFILE_JSON object entry, expanded by bws_env.JSON_REQUIRED",
+      "blocker": "agent/plans/PLAN-env-to-bitwarden-v2.md task 'Seed the 6 shareable store entries' -- Operator-only",
+      "expires": "2026-12-31"
+    },
+    "SELLER_COUNTRY": {
+      "kind": "deferred",
+      "reason": "one of nine SELLER_* fields seeding as a single SELLER_PROFILE_JSON object entry, expanded by bws_env.JSON_REQUIRED",
+      "blocker": "agent/plans/PLAN-env-to-bitwarden-v2.md task 'Seed the 6 shareable store entries' -- Operator-only",
+      "expires": "2026-12-31"
+    },
+    "SELLER_EMAIL": {
+      "kind": "deferred",
+      "reason": "one of nine SELLER_* fields seeding as a single SELLER_PROFILE_JSON object entry, expanded by bws_env.JSON_REQUIRED",
+      "blocker": "agent/plans/PLAN-env-to-bitwarden-v2.md task 'Seed the 6 shareable store entries' -- Operator-only",
+      "expires": "2026-12-31"
+    },
+    "SELLER_ADDRESS_LINE2": {
+      "kind": "deferred",
+      "reason": "one of nine SELLER_* fields seeding as a single SELLER_PROFILE_JSON object entry, expanded by bws_env.JSON_REQUIRED; legitimately blank for a one-line address, which is why expand_json refuses a MISSING key rather than an empty one",
+      "blocker": "agent/plans/PLAN-env-to-bitwarden-v2.md task 'Seed the 6 shareable store entries' -- Operator-only",
+      "expires": "2026-12-31"
+    }
+  }
+}

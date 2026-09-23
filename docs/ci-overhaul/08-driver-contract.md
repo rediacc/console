@@ -72,7 +72,7 @@ These files have exactly ONE writer in flight across the entire program. A sub-d
 | `docs/agent-reference/TRAPS.md` | W11 is sole owner. Every other track hands W11 the text. Measured: 75 headings, exactly on the floor of 75, so a heading may never be deleted. |
 | `CLAUDE.md`, `ci-gates.md`, `suppressions.md` | W11 is sole owner. Session Defaults in CLAUDE.md stays byte-identical throughout. |
 | `.ci/scripts/ci/scope-map.cjs` | Rule ORDER is semantics (first match wins). One writer at a time; every mover states where its rule sits. |
-| `.ci/config/bws-token-expiry.json` | W0 restructures, W8 consumes. |
+| `.ci/config/bws-rotation-notice.txt` | DELETED and REPLACED the row that stood here. `.ci/config/bws-token-expiry.json` and its one reader (`scripts/ops/bws-map-refresh.py::warn_if_token_expiring`) were removed on 2026-09-23 by `agent/plans/PLAN-bws-rotation-on-failure.md`: the date was a second source of truth about a fact nothing in a checkout can observe. What sits here now is the rotation NOTICE, one file, read by five emitters and asserted by `check:ci-bws-rotation-notice`. Single writer for the text; an emitter may be added without touching it. |
 | `run.sh` | W10 removes the media lines FIRST, then W6 moves the remainder to the legacy file. Never concurrent: W6's move is the largest revert boundary in the program. |
 
 ---

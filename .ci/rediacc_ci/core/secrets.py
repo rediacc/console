@@ -66,7 +66,8 @@ from collections.abc import Iterable, Mapping
 # What a masked value is replaced BY. Three asterisks matches what a GitHub Actions runner substitutes for a registered mask, so a log that has been through both this and the runner reads the same way throughout.
 MASK = "***"
 
-# How many hex digits of the sha256 a fingerprint carries. Not chosen here: scripts/ops/bws-map-refresh.py:67 already fingerprints a token's client id as `hashlib.sha256(client_id.encode()).hexdigest()[:16]`, and .ci/config/ bws-token-expiry.json stores the results. A second width would mean the two could never be compared.
+# How many hex digits of the sha256 a fingerprint carries. Not chosen here: `rediacc_ci.core.bws_env.client_fingerprint` already fingerprints a token's client id as `hashlib.sha256(client_id.encode()).hexdigest()[:16]`, and `scripts/dev/bws-rotate.py` compares two of its results to refuse a rotation that installs the credential already in place.
+# A second width would mean the two could never be compared. That computation used to live at `scripts/ops/bws-map-refresh.py:67` beside a hand-written expiry file that stored the digests; both were deleted on 2026-09-23 with the reader that read them, and the computation survived because it was the one part of that reader bound to the LIVE token rather than to a date.
 FINGERPRINT_HEX_DIGITS = 16
 
 PRESENT = "present"
@@ -110,7 +111,7 @@ def looks_secret(name: str) -> bool:
     if segments & _STRONG:
         return True
     if name.upper().endswith("_ID"):
-        # The identifier half of a pair. `.ci/config/bws-token-expiry.json` rules on exactly this shape: the client id of a BWS token is "the IDENTIFIER half ... never the secret", which is why fingerprinting it is publishable in a tracked file.
+        # The identifier half of a pair. `rediacc_ci.core.bws_env.client_fingerprint` rules on exactly this shape: the client id of a BWS token is the IDENTIFIER half and never the secret, which is why fingerprinting it is publishable in a tracked file.
         return False
     return bool(segments & _WEAK)
 
@@ -148,7 +149,7 @@ def missing(source: Mapping[str, str | None], names: Iterable[str]) -> list[str]
 def fingerprint(value: str) -> str:
     """A stable short digest of a value, for telling two values apart.
 
-    ONLY SAFE FOR HIGH-ENTROPY VALUES, and that limit is real rather than ceremonial: sha256 is fast, so the digest of a human-chosen password is recoverable from a wordlist in seconds. The corpus this matches (scripts/ops/bws-map-refresh.py:67) fingerprints a machine-account client id, which is a random identifier. Do not reach for this to describe a passphrase.
+    ONLY SAFE FOR HIGH-ENTROPY VALUES, and that limit is real rather than ceremonial: sha256 is fast, so the digest of a human-chosen password is recoverable from a wordlist in seconds. The corpus this matches (`rediacc_ci.core.bws_env.client_fingerprint`) fingerprints a machine-account client id, which is a random identifier. Do not reach for this to describe a passphrase.
 
     An empty value returns "" rather than the digest of the empty string. Otherwise every absent variable in a report would carry the same conspicuous constant, which reads as a value and is not one.
     """

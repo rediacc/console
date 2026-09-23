@@ -19,6 +19,7 @@ ledger deliberately does not carry that case.
 
 import json
 import os
+import pathlib
 import shutil
 import stat
 import textwrap
@@ -41,6 +42,11 @@ BETA_EMPTY = json.dumps(
 ONLY_ALPHA = json.dumps([{"key": "ALPHA_TOKEN", "value": "a-val"}])
 
 MAP = '{ "project": "p", "secrets": { "ALPHA_TOKEN": { "id": "1" }, "BETA_TOKEN": { "id": "2" } } }'
+
+# The TRACKED notice, read once. Every fixture below plants this exact text rather than a paraphrase: a fixture carrying its own wording would keep passing after the shipped file was emptied, which is the one regression the notice can suffer.
+REAL_NOTICE = (
+    pathlib.Path(bws_env.root({})) / bws_env.ROTATION_NOTICE_REL
+).read_text(encoding="utf-8")
 
 # The driver the recording was taken through, kept verbatim: source the twin, load, then print the NAMES that are now set. `set +e` because the twin returned 1 on a partial load and the driver had to survive it to report anything at all.
 BASH_DRIVER = textwrap.dedent(
@@ -159,12 +165,61 @@ def test_map_missing(tmp_path) -> None:
     )
 
 
-def test_bws_exits_non_zero(tmp_path) -> None:
+def with_notice(root, text: str | None = None):
+    """Put a rotation notice under the fixture root, so the emitter has one to read."""
+    target = root / bws_env.ROTATION_NOTICE_REL
+    target.parent.mkdir(parents=True, exist_ok=True)
+    body = REAL_NOTICE if text is None else text
+    target.write_text(body, encoding="utf-8")
+    return target
+
+
+def test_bws_exits_non_zero_is_the_second_deliberate_divergence(tmp_path) -> None:
+    """THE ROTATION NOTICE, pinned exactly as the unparseable case below is pinned.
+
+    The twin's second line named `.ci/config/bws-token-expiry.json`, a hand-maintained DATE that `agent/plans/PLAN-bws-rotation-on-failure.md` deletes outright: it was read by one script a human ran occasionally, it never warned CI, and no gate read it. What replaces it is not another prediction but the procedure, printed at the moment of the failure it belongs to.
+
+    BOTH SIDES ARE ASSERTED, so a reader cannot mistake this for drift. The recording still names the file it named on the day it was made, and the port names the notice. Everything else about the case -- the exit code, the empty stdout, the first line of the refusal -- is unchanged, which is what makes this a divergence in ONE decision rather than a rewrite.
+    """
     root = fixture(tmp_path / BWS_NON_ZERO, BOTH, bws_body="#!/bin/bash\nexit 9\n")
+    with_notice(root)
     old = recorded(BWS_NON_ZERO)
     new = run_port([], env_for(root), root)
-    assert old == new
-    assert "bws secret list failed" in old[2]
+
+    assert old[0] == new[0] == 1, "both still fail; the exit code is not the divergence"
+    assert old[1] == new[1] == "", "neither resolves a name"
+    assert old[2].splitlines()[0] == new[2].splitlines()[0] == bws_env.LIST_FAILED[0], (
+        "the first line of the refusal is the twin's, verbatim"
+    )
+
+    assert "bws-token-expiry.json" in old[2], "the recording names the file it named that day"
+    assert "bws-token-expiry.json" not in new[2], (
+        "the port must not name a file this plan deletes; that is the whole divergence"
+    )
+    assert "scripts/dev/bws-rotate.py" in new[2], (
+        "the notice reached stderr and it names the one command that fixes this"
+    )
+    assert "DO NOT ask for the token in the conversation" in new[2]
+
+
+def test_a_missing_notice_is_reported_and_never_swallowed(tmp_path) -> None:
+    """The dangling pointer, out loud. An empty string here would read as "nothing more to say" at the exact moment there is a great deal more to say."""
+    root = fixture(tmp_path / "no-notice", BOTH, bws_body="#!/bin/bash\nexit 9\n")
+    new = run_port([], env_for(root), root)
+    assert new[0] == 1
+    assert "bws-rotation-notice.txt is missing or empty" in new[2]
+    assert "The credential still needs rotating" in new[2]
+    with_notice(root)
+    again = run_port([], env_for(root), root)
+    assert "is missing or empty" not in again[2], "the control: a present notice is read"
+
+
+def test_the_real_notice_is_the_one_the_emitters_read() -> None:
+    """ANTI-VACUITY on the fixture: every case above plants a COPY of the tracked file, so an emptied tracked file would leave them all passing against text nobody ships."""
+    assert len(REAL_NOTICE.strip()) > 400, "the tracked notice is %d byte(s)" % len(REAL_NOTICE)
+    assert bws_env.ROTATE_SCRIPT_REL.replace(os.sep, "/") in REAL_NOTICE, (
+        "the notice must name the rotation script, or its one actionable line points nowhere"
+    )
 
 
 def test_the_corpus_is_not_empty() -> None:
@@ -297,6 +352,101 @@ def test_map_verb_refuses_an_empty_map(tmp_path, monkeypatch) -> None:
     assert bws_env.main(["map"]) == 1
     (tmp_path / ".ci" / "config" / "bws-secret-map.json").write_text(MAP, encoding="utf-8")
     assert bws_env.main(["map"]) == 0, "the control: a populated map is accepted"
+
+
+def test_classify_failure_answers_all_three_verdicts() -> None:
+    """The ONE classifier, driven directly, in every direction it has.
+
+    BOTH DIRECTIONS ARE REQUIRED HERE. A classifier with only ROTATION cases would be indistinguishable from `return ROTATION`, which is exactly what it looks like at a glance -- and the two branches that are NOT rotations are the two that cost something when they are wrong.
+    """
+    assert bws_env.classify_failure(0, "") == bws_env.CLEAN
+    assert bws_env.classify_failure(0, "anything at all") == bws_env.CLEAN
+    assert bws_env.classify_failure(1, "Missing access token") == bws_env.WIRING
+    assert bws_env.classify_failure(1, "") == bws_env.ROTATION
+    assert bws_env.classify_failure(1, "a string nobody has ever seen") == bws_env.ROTATION
+    assert bws_env.classify_failure(-1, "") == bws_env.ROTATION, "a timeout is a failed read"
+    for marker in bws_env.ROTATION_MARKERS:
+        assert bws_env.classify_failure(1, "error: %s" % marker) == bws_env.ROTATION, marker
+
+
+def test_failure_notice_is_empty_unless_it_is_a_rotation() -> None:
+    assert bws_env.failure_notice(0, "") == []
+    assert bws_env.failure_notice(1, "Missing access token") == []
+    lines = bws_env.failure_notice(1, "")
+    assert lines, "the default direction is ON; an unrecognised failure must print the notice"
+    assert any("bws-rotate.py" in line for line in lines)
+
+
+def test_the_classifier_never_relays_the_bytes_it_read() -> None:
+    """`bws`'s stderr is a place values turn up. It is matched and then dropped."""
+    poison = "bws-secret-value-that-must-not-be-relayed"
+    verdict = bws_env.classify_failure(1, "[400] %s" % poison)
+    assert verdict == bws_env.ROTATION
+    for line in bws_env.failure_notice(1, "[400] %s" % poison):
+        assert poison not in line
+
+
+def test_client_fingerprint_digests_the_identifier_and_nothing_else() -> None:
+    """The computation MOVED out of `warn_if_token_expiring()`, asserted on its own.
+
+    The secret half is varied while the client id is held fixed, and the digest must not move. That is the property that makes printing it safe, and it is not provable by hashing one token and comparing the result with itself.
+    """
+    one = bws_env.client_fingerprint("0.fixture-client-id.secret-one:key-one")
+    two = bws_env.client_fingerprint("0.fixture-client-id.secret-two:key-two")
+    assert one == two, "the digest moved when only the SECRET half changed"
+    assert len(one) == 16
+    assert all(c in "0123456789abcdef" for c in one)
+    assert bws_env.client_fingerprint("0.other-client-id.secret-one:key-one") != one
+    assert bws_env.client_fingerprint("") == ""
+    assert bws_env.client_fingerprint("not-a-token") == ""
+    assert bws_env.client_fingerprint("0.only-one-dot") == ""
+
+
+def test_the_rotation_notice_verb_carries_its_verdict_in_the_exit_code(tmp_path) -> None:
+    """The door `scripts/ops/bws-map-refresh.py` uses, driven exactly as it drives it."""
+    root = fixture(tmp_path / "verb", BOTH)
+    with_notice(root)
+    env = env_for(root)
+
+    code, out, err = diff.bash_streams(
+        "printf '%s' '' | PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env rotation-notice 1",
+        env=env,
+    )
+    assert code == 0, err
+    assert "bws-rotate.py" in out, "a rotation prints the notice on STDOUT"
+
+    code, out, _err = diff.bash_streams(
+        "printf 'Missing access token' | PYTHONPATH=.ci python3 -m "
+        "rediacc_ci.core.bws_env rotation-notice 1",
+        env=env,
+    )
+    assert code == 3, "a wiring fault has its own exit code"
+    assert out == "", "and prints nothing at all"
+
+    code, out, _err = diff.bash_streams(
+        "printf '' | PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env rotation-notice 0", env=env
+    )
+    assert code == 4, "a clean run is not a rotation"
+    assert out == "", "and it prints nothing"
+
+
+def test_the_fingerprint_verb_reads_the_environment_and_never_argv(tmp_path) -> None:
+    root = fixture(tmp_path / "fp", BOTH)
+    # Token-SHAPED and not a credential: the digest is over the client id, so the shape has to be real for the verb to have anything to hash. No part of this string exists in any store.
+    shaped = "0.fixture-client-id.not-a-secret:not-a-key"
+    env = dict(env_for(root), **{bws_env.ACCESS_ENV: shaped})
+    code, out, _err = diff.bash_streams(
+        "PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env fingerprint", env=env
+    )
+    assert code == 0
+    assert out.strip() == bws_env.client_fingerprint(shaped)
+    code, out, err = diff.bash_streams(
+        "PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env fingerprint",
+        env={k: v for k, v in env.items() if k != bws_env.ACCESS_ENV},
+    )
+    assert code == 1, "the control: no token, no digest"
+    assert out == "", "and nothing on stdout"
+    assert "is absent or is not shaped like" in err
 
 
 def test_bash_and_python_read_the_same_default_name_list() -> None:
