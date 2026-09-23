@@ -67,6 +67,7 @@ SCOPE_ALL = "all"
 # Which scope a path is linted under. `.md` is prose end to end; a source file contributes only its COMMENTS, so it is linted under `comment`, which is the scope R11's imperative arm deliberately excludes.
 SCOPE_BY_SUFFIX = {
     ".md": "markdown",
+    ".txt": "markdown",
     ".py": "comment",
     ".ts": "comment",
     ".tsx": "comment",
@@ -635,7 +636,7 @@ def extract(path, text, markers=DEFAULT_MARKERS):
     A file whose Python will not tokenize falls back to the C-style scanner, which finds nothing, and the CALLER is told: a file that silently extracted nothing is indistinguishable from a clean one, which is the whole vacuity problem in miniature.
     """
     suffix = pathlib.Path(path).suffix
-    if suffix == ".md":
+    if suffix in (".md", ".txt"):
         return markdown_lines(text, markers), None
     if suffix == ".py":
         try:
@@ -1820,7 +1821,9 @@ def run_reflow(root, globals_, targets, *, write=False, show_diff=False):
         log.error(str(exc))
         return 1
     files = [
-        f for f in files if f.endswith(".md") or pathlib.Path(f).suffix in COMMENT_LINE_BY_SUFFIX
+        f
+        for f in files
+        if f.endswith((".md", ".txt")) or pathlib.Path(f).suffix in COMMENT_LINE_BY_SUFFIX
     ]
     if not files:
         log.error("VACUOUS: zero reflowable file(s) matched, so reflow checked nothing.")
@@ -1829,7 +1832,7 @@ def run_reflow(root, globals_, targets, *, write=False, show_diff=False):
     for rel in files:
         full = pathlib.Path(root) / rel
         before = read_text(full)
-        if rel.endswith(".md"):
+        if rel.endswith((".md", ".txt")):
             after = reflow_markdown(before, width)
         else:
             after = reflow_comments(before, pathlib.Path(rel).suffix, width)

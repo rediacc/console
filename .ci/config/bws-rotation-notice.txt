@@ -1,0 +1,29 @@
+BWS ACCESS TOKEN: THE STORE COULD NOT BE READ, AND THE REMEDY IS A ROTATION.
+
+1. WHAT HAPPENED, AND WHAT CANNOT BE TOLD APART FROM HERE.
+   `bws` exited non-zero. An EXPIRED token, a REVOKED one, a DELETED machine account and a NETWORK FAULT all exit 1 and all look identical from here, differing only in wording that Bitwarden is free to change between releases. Nothing in this repository can separate them, so nothing here pretends to.
+   The measured strings, taken 2026-09-06 against bws 2.1.0 with deliberately bogus tokens and never with a live one, were `[400 Bad Request] {"error":"invalid_client"}` for a well-formed token naming no client, and `Doesn't contain a decryption key` for a garbled one. The string a genuinely expired token produces has never been seen here, and nothing above depends on it.
+
+2. NOBODY CAN MINT A REPLACEMENT FROM HERE, AND THAT IS NOT A WIRING GAP.
+   bws 2.1.0 has no verb that creates or rotates a machine-account token. The value is minted in the Bitwarden web vault, by a human holding an account, and it is the one credential that cannot come out of Bitwarden itself. Every procedure in this repository is downstream of a value the operator already holds, which is why the steps below end at a person rather than at a command.
+
+3. AN AI SESSION'S WHOLE PART IS TO REPORT THIS AND STOP.
+   Say which command failed, print this notice, and hand the operator the line in section 4. That is the entire contribution available. Continuing to work against a credential that does not exist yet produces failures that describe the missing token rather than the task.
+
+4. THE OPERATOR RUNS ONE COMMAND, IN THEIR OWN TERMINAL:
+
+       scripts/dev/bws-rotate.py
+
+5. WHAT A SESSION MUST NOT DO. Each of these has its own reason and none of
+   them is a matter of taste. DO NOT ask for the token in the conversation. A conversation is a log, a transcript on disk, and a context window that later gets summarised into another one. A credential pasted into it is a credential in all three, and no later deletion reaches any of them. DO NOT put it in a tracked file.
+   It belongs in `private/account/.env`, which is untracked; every other file in this tree is public the moment it is pushed, and a credential in git history outlives the commit that removed it. DO NOT offer to run the script.
+   It reads the value from a TTY with echo off and refuses a non-TTY stdin with exit 2, deliberately, so that a tool call with no terminal physically cannot feed it. Offering implies a capability that does not exist and invites the operator to paste the value somewhere it can be read.
+
+6. WHAT THE SCRIPT DOES, SO THE OPERATOR KNOWS WHAT THEY ARE AGREEING TO.
+   It prompts on the terminal with echo off, so the value never reaches argv, a shell history, a log or a process listing.
+   Nothing is written until four checks pass: the value has the shape `0.<client-id>.<secret>:<key>`; a live `bws secret list` through it returns at least 40 secrets from the project, because a short listing is how a scoped-down credential looks successful; its client-id fingerprint DIFFERS from the installed one, because a paste of the value already in use is the commonest way a rotation silently does nothing; and no part of the value is printed at any point.
+   Only then does it write `private/account/.env` and refresh the GitHub repository secret of every repo that ALREADY holds one, deriving that list from `.gitmodules` at run time.
+   A repo holding no such secret is named in the report and never given one: a rotation that quietly seeded a live credential into a repository with no consumer would be the opposite of what a rotation is for.
+
+7. WHAT THE SCRIPT CANNOT PROVE, STATED BECAUSE IT WILL NOT BE OBVIOUS.
+   A GitHub Actions secret cannot be read back through the API. The report says an `updated_at` moved, which proves a write happened, not that the intended value landed. The next CI run is the only end-to-end proof there is.

@@ -70,7 +70,8 @@
       "*.mjs",
       "*.go",
       ".ci/config/*.json",
-      ".ci/policy/*.json"
+      ".ci/policy/*.json",
+      ".ci/config/*.txt"
     ],
     "exclude_dirs": [
       ".git",
@@ -85,6 +86,14 @@
       ".artifacts"
     ],
     "exempt_paths": [
+      {
+        "glob": ".ci/config/content-quality-allowlist.txt",
+        "reason": "BLOCKER: a one-path-per-line data list, not prose. markdown_lines() reads consecutive short lines as a hard-wrapped paragraph and flags R19, but reflowing a path list would corrupt it -- one path per line is the format, not a wrapping accident."
+      },
+      {
+        "glob": ".ci/config/directive-quotes-allowlist.txt",
+        "reason": "BLOCKER: same shape as content-quality-allowlist.txt, a path-per-line data list rather than prose, exempted for the same reason before an edit happens to trip the same R19 false positive."
+      },
       {
         "glob": "agent/*/STATE.md",
         "reason": [
