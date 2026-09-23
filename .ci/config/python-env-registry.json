@@ -1761,6 +1761,9 @@
     ".claude/rediacc_hooks/guards/block_unproven_bulk_transform.py": [
       "WORKLIST_BULK_FILE_THRESHOLD"
     ],
+    ".claude/rediacc_hooks/guards/block_unsatisfiable_pid_wait.py": [
+      "REDIACC_PID_WAIT_PROCFS"
+    ],
     ".claude/rediacc_hooks/guards/test-block_host_toolchain_run.py": [
       "PATH"
     ],

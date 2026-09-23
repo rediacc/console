@@ -87,14 +87,6 @@ EXEMPT = (
             "constants.sh."
         ),
     ),
-    (
-        ".ci/legacy/run-legacy.sh",
-        (
-            "BLOCKER: W6 P5 deletes this file. Retargeting it is work thrown away, and the "
-            "plan records the decision here so the site is not re-found and mistaken for a "
-            "miss."
-        ),
-    ),
 )
 
 # A `set -a` COMMAND, not the string. It may open a line or follow a `;`, `&&`, `|` or `(` -- .ci/legacy/run-legacy.sh:185 is the `$(set -a && source ...)` form and an anchored pattern misses it entirely.

@@ -63,7 +63,7 @@ The last one is the licence half. It cannot stop a bad substitution and does not
 | D-S7 | The leaked `AUTOPILOT_PRIVATE_KEY` stays closed as accepted risk | agent/plans/PLAN-secret-namespace-migration.md:156 | live | | The GPG half of the same round was overturned at agent/plans/PLAN-secret-namespace-migration.md:991, which is a premise, not this ruling |
 | D-S8 | R2 token `backup-s3-20260901T103133Z` is kept, then narrowed to the backup buckets only | agent/plans/PLAN-secret-namespace-migration.md:210 | live | | Three further ruling rounds sit at agent/plans/PLAN-secret-namespace-migration.md:158, :170 and :193 and have no id of their own |
 | D-S9 | Mint the five; ASIA stays absent on purpose | agent/plans/PLAN-secret-namespace-migration.md:1570 | live | | |
-| D-S10 | Both backup families are renamed and `CLOUDFLARE_` comes off the S3 family | agent/plans/PLAN-secret-namespace-migration.md:1745 | live | | Overturns the `BACKUP_S3_* -> CLOUDFLARE_R2_BACKUP_*` row that ruling round `8ter` had accepted the same day |
+| D-S10 | Both backup families are renamed and `CLOUDFLARE_` comes off the S3 family | agent/plans/PLAN-secret-namespace-migration.md:1172 | live | | Overturns the `BACKUP_S3_* -> CLOUDFLARE_R2_BACKUP_*` row that ruling round `8ter` had accepted the same day |
 
 ## Adding a row
 

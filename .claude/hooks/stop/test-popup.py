@@ -1,32 +1,62 @@
+#!/usr/bin/env python3
 """wl_popup.should_pop() -- both directions, deterministically.
+
+    python3 .claude/hooks/stop/test-popup.py
 
 A feature whose only test asserts a rate over many real calls is a coin-flip pretending to be a proof. Both cases here are 1.0 or 0.0 for a fixed seed, so each runs once.
 """
 
 import random
+import sys
 
 import wl_popup
 
 
-def test_should_pop_fires_under_a_seed_that_rolls_low() -> None:
-    rng = random.Random(1)
-    assert rng.random() < wl_popup.POP_PROBABILITY, "seed 1's first draw must be under the floor for this test to mean anything"
-    assert wl_popup.should_pop(random.Random(1)) is True
+class Tally:
+    fails = 0
+    count = 0
 
 
-def test_should_pop_stays_silent_under_a_seed_that_rolls_high() -> None:
-    rng = random.Random(0)
-    assert rng.random() >= wl_popup.POP_PROBABILITY, "seed 0's first draw must clear the floor for this test to mean anything"
-    assert wl_popup.should_pop(random.Random(0)) is False
+def control(label, got, want):
+    Tally.count += 1
+    if got != want:
+        Tally.fails += 1
+        print("FAIL  %s: got %r, wanted %r" % (label, got, want), file=sys.stderr)
 
 
-def test_the_default_rng_is_the_module_level_random() -> None:
-    """CONTROL: an explicit rng and the default must agree on a seeded instance, so `rng=None` is really `random` and not a second, silently different generator."""
-    random.seed(1)
-    default_roll = wl_popup.should_pop()
-    assert default_roll == wl_popup.should_pop(random.Random(1))
+def truthy(label, got):
+    Tally.count += 1
+    if not got:
+        Tally.fails += 1
+        print("FAIL  %s: got %r, wanted something truthy" % (label, got), file=sys.stderr)
 
 
-def test_the_probability_is_one_in_five() -> None:
-    """PIN, not a measurement: the operator asked for 20%. A silent change to this constant should be a visible diff, not a passing test."""
-    assert wl_popup.POP_PROBABILITY == 0.2
+# Seed 1's first draw must be under the floor, and seed 0's must clear it, or these two cases prove nothing about should_pop's own boundary.
+truthy("seed 1 rolls under the floor", random.Random(1).random() < wl_popup.POP_PROBABILITY)
+truthy("seed 0 rolls at or over the floor", random.Random(0).random() >= wl_popup.POP_PROBABILITY)
+
+control("should_pop fires under a seed that rolls low", wl_popup.should_pop(random.Random(1)), True)
+control("should_pop stays silent under a seed that rolls high", wl_popup.should_pop(random.Random(0)), False)
+
+# CONTROL: an explicit rng and the default must agree on a seeded instance, so `rng=None` is really `random` and not a second, silently different generator.
+random.seed(1)
+control(
+    "the default rng is the module-level random",
+    wl_popup.should_pop(),
+    wl_popup.should_pop(random.Random(1)),
+)
+
+# PIN, not a measurement: the operator asked for 20%. A silent change to this constant should be a visible diff, not a passing test.
+control("the probability is pinned at one in five", wl_popup.POP_PROBABILITY, 0.2)
+
+if Tally.count < 5:
+    Tally.fails += 1
+    print(
+        "FAIL  only %d control(s) ran; the file is not being executed as written" % Tally.count,
+        file=sys.stderr,
+    )
+
+if Tally.fails:
+    print("FAIL: %d of %d control(s) failed" % (Tally.fails, Tally.count), file=sys.stderr)
+    sys.exit(1)
+print("%d control(s) passed" % Tally.count)

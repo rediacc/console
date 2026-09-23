@@ -11,6 +11,8 @@ Everything else -- the probability, the seam, the test -- lives here where it ca
 THE SEAM MATCHES outq_drain's AND hint_pick's, on purpose: `rng=None` resolves to the module-level `random`, and a test drives the identical code path with `random.Random(seed)` instead of asserting over many real calls.
 
 A feature whose only proof is "run it 1000 times and check the rate is near 20%" is a flaky test wearing a real one's clothes; this one is instead provably 1.0 or 0.0 for a given seed, checked once each way.
+
+CONTROLS live in test-popup.py beside this file, the same convention test-planfile.py uses next to wl_planfile.py.
 """
 
 import random
