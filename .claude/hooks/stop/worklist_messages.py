@@ -1080,6 +1080,21 @@ V_PLAN_ADOPTED = (
     "Status to done, parked or superseded."
 )
 
+# THE BODY IS BUILT BY `wl_planenforce.render`, NOT BY THIS STRING, and the split is deliberate rather than untidy. Every number in that body -- the ceiling, the day, the three ownership buckets, the one named box and its signature -- is arithmetic the module computed, and a format string with fourteen `%(...)s` holes is a place where the caller and the message drift out of step
+# silently. What lives here is the one sentence the ladder's own T_MISSION comment demands be said out loud, wrapped around that body.
+V_PLAN_UNIMPLEMENTED = (
+    "PLANS ARE NOT IMPLEMENTED, and that is the thing this repo was asked to stop doing. "
+    "The operator's ruling was ALL, after seeing the census and the branch age; what it earned "
+    "is a CLOCK, not an exemption, and the clock is the only thing standing between this and a "
+    "gate that reds on the mere existence of an open box.\n\n"
+    "%(body)s\n\n"
+    "THIS BLOCK HAS NO FIRE CAP, because its exit is arithmetic and printed above: close the "
+    "named number of boxes, or move them through one of the five doors, and it goes quiet. "
+    "Three earlier checks in this hook blocked with no reachable exit and each one is now a "
+    "plan about the incident it caused; a cap is what an unreachable exit needs, and this exit "
+    "is reachable."
+)
+
 V_FOUND_NOT_FIXED = (
     "your message carries a 'found, not fixed' list. CLAUDE.md's rule is to FIX "
     "what you find: reporting it is the fallback, not the default. For each item, "
@@ -1351,6 +1366,9 @@ N_OUTQ_BLOCKED = (
     "block and they surface over the following stops."
 )
 
+# PURELY OBSERVATIONAL, changes no verdict: names whether the first-touch onboarding notice (onboard.py) was already delivered this session, so a reader of a refusal does not have to separately wonder whether the session ever saw it.
+N_ONBOARD_DELIVERED = "(Onboarding notice: delivered this session, epoch %s.)"
+
 # ---- the specialist-agent hint (wl_agents) ---------------------------------- NAMING THE MATCHED TERMS is what makes a wrong hint self-refuting: a reader who sees "Matched on: fork, cap" dismisses it in one second instead of opening a 9 KB agent file to find out why it was suggested. It is also what makes the matcher debuggable in the field without a debug flag.
 
 N_AGENT_HINT = (
@@ -1365,7 +1383,9 @@ N_AGENT_HINT = (
 
 N_BEHAVIOR_HINT = "TIP (hint %d of %d, rotating): %s  [%s -- %s]"
 
-N_HINT_CORPUS_ERR = "Hint corpus problem (the rotating behavioral hint is degraded until fixed):\n%s"
+N_HINT_CORPUS_ERR = (
+    "Hint corpus problem (the rotating behavioral hint is degraded until fixed):\n%s"
+)
 
 N_HINT_PROPOSALS_PENDING = (
     "%d hint proposal(s) are waiting in agent/ledgers/hint-proposals.jsonl, not yet promoted into "
@@ -2480,12 +2500,87 @@ CLI_PLANTICK_WROTE = (
     "ticked one box in %(rel)s and updated %(ledger)s\n"
     "  %(note)s\n"
     "\n"
-    "NOT COMMITTED. The two files must land in the SAME commit: the ledger is a\n"
-    "reading OF the plan, so a commit carrying one without the other is read by\n"
-    "check:ci-plan-boxes as a box that vanished rather than one that was ticked.\n"
+    "NOT COMMITTED. THREE files must land in the SAME commit -- the plan, the box\n"
+    "ledger, and the investigation ledger that licensed this tick. The box ledger\n"
+    "is a reading OF the plan, so a commit carrying one without the other is read\n"
+    "by check:ci-plan-boxes as a box that vanished rather than one that was\n"
+    "ticked; and check:ci-plan-implementation re-resolves the investigation row's\n"
+    "pointers for every box this branch moved open -> done, so a tick that lands\n"
+    "without its row reds there instead.\n"
     "\n"
-    "  git add %(rel)s %(ledger)s\n"
+    "  git add %(rel)s %(ledger)s %(investigation)s\n"
 )
+
+CLI_PLANINV_USAGE = (
+    "usage: worklist.py --plan-investigate <me> <agent/plans/PLAN-x.md> <box>\n"
+    "                   <absent|present|partial> <kind>:<token> <kind>:<token>...\n"
+    "                   -- <note...> [--write]\n"
+    "\n"
+    "Record, BEFORE implementing a box, what the tree already holds about it.\n"
+    "The operator's ask in one sentence: investigate whether it is implemented\n"
+    "before implementing it. `--plan-tick` refuses a box with no row here.\n"
+    "\n"
+    "<box>       an 8-hex box signature, or text matching exactly one open box.\n"
+    "<verdict>   absent   the work is not in the tree. Implement it.\n"
+    "            present  the work is ALREADY DONE and only the record is stale.\n"
+    "                     A complete, honourable answer: it licenses an immediate\n"
+    "                     --plan-tick, and it is the cheapest way to close a box.\n"
+    "            partial  some of it exists; say which part; the box stays open.\n"
+    "<kind>:<token>\n"
+    "            at least TWO pointers of at least TWO DISTINCT kinds. Every one\n"
+    "            is re-resolved by this process -- git objects, the filesystem,\n"
+    "            package.json scripts, TRAPS.md ids -- and none is trusted from\n"
+    "            the text. A `gate:` pointer must additionally be reachable from\n"
+    "            `npm run ci`, because a gate nothing runs proves nothing.\n"
+    "            Kinds: blob, tree, commit, ancestor, fileline, gate, plan, trap.\n"
+    "<note>      after a bare `--`, at least 40 characters. This is what a later\n"
+    "            reader uses to decide whether to re-open the question.\n"
+    "\n"
+    "Without --write nothing is written; the resolution table is printed either\n"
+    "way, so a dry run is a cheap way to find out which pointer is dead.\n"
+)
+
+CLI_PLANINV_DRY = (
+    "would record one investigation of %(rel)s box %(sig)s [verdict: %(verdict)s]\n"
+    "  head %(head)s on %(br)s\n"
+    "  every pointer re-resolved just now, none taken from the text:\n"
+    "%(table)s\n"
+    "\n---- NOTHING was written. Re-run with --write. ----\n"
+)
+
+CLI_PLANINV_WROTE = (
+    "recorded one investigation of %(rel)s box %(sig)s [verdict: %(verdict)s]\n"
+    "  head %(head)s on %(br)s\n"
+    "  appended to %(ledger)s\n"
+    "%(table)s\n"
+    "\n"
+    "%(next)s\n"
+    "\n"
+    "NOT COMMITTED. The ledger is append-only and rides the same commit as the\n"
+    "tick it licenses.\n"
+    "\n"
+    "  git add %(ledger)s\n"
+)
+
+CLI_PLANINV_NEXT = {
+    "absent": (
+        "verdict `absent` is a FALSIFIABLE ASSERTION about the tree at that head, and\n"
+        "--plan-tick re-checks it: if this box's tick then cites a file:line that\n"
+        "already resolved at that head, the tick is REFUSED, because the\n"
+        "investigation claimed the absence of something it could have found. So\n"
+        "implement it, and cite the work you actually did."
+    ),
+    "present": (
+        "verdict `present` means the work landed and only the record was stale, which\n"
+        'is CLAUDE.md\'s own "Search first" case. Close the box now:\n'
+        "  worklist.py --plan-tick <me> <plan> <sig> '<evidence>' --write"
+    ),
+    "partial": (
+        "verdict `partial` leaves the box OPEN on purpose. The note names the half\n"
+        "that exists; the remaining half is ordinary work, and this row is what stops\n"
+        "the next session re-deriving the same half."
+    ),
+}
 
 CLI_PLANREC_REVIVED = (
     "restored %(rel)s from blob %(blob)s (%(bytes)d bytes)\n"

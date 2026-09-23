@@ -16,8 +16,12 @@ The worklist store is tracked in git (`agent/worklist/<writer>.jsonl`), so a `gi
 
 An empty list is a normal, common answer, not a failure: say so and stop. A session that is LIVE on this machine is deliberately excluded — its work is not yours to take, and the listing says which artifact proved it.
 
-**A candidate can carry zero worklist items.** Ticking every `[ ]`/`[>]`/`[?]` before dying does not mean nothing is left: `agent/<prefix>/STATE.md`'s newest "## Next action" section is checked too (bounded to the same `WORKLIST_DEAD_HOURS` horizon a peer's section ages out under elsewhere, so this does not resurrect weeks-old handoffs). Such a candidate shows `0 worklist item(s),
-but a STATE.md Next action below` — read that text, it is the whole reason the prefix is listed. This exists because it was missing once: a session that had ticked every item still had a live PR-babysit wave and an unresolved next step named only in its STATE.md, and `--candidates` reported nothing.
+**A candidate can carry zero worklist items.** Ticking every `[ ]`/`[>]`/`[?]` before dying does not mean nothing is left: `agent/<prefix>/STATE.md`'s newest "## Next action" section is checked too (bounded by `WORKLIST_HANDOFF_STALE_HOURS`, 720h, so this does not resurrect handoffs from months ago).
+Such a candidate shows `0 worklist item(s), but a STATE.md Next action below` -- read that text, it is the whole reason the prefix is listed. This exists because it was missing once: a session that had ticked every item still had a live PR-babysit wave and an unresolved next step named only in its STATE.md, and `--candidates` reported nothing.
+
+**A candidate can also be named by a committed PLAN.** Any `agent/plans/PLAN-*.md` carrying open boxes, whose `Status:` is not finished and whose `Owner:` resolves to a session that is not live here, puts that owner in the listing on its own: no worklist item and no STATE.md section required.
+Such a candidate shows `0 worklist item(s), but N committed plan(s) with M open box(es)` followed by one `PLAN <path> [status] N open / M ticked` line per plan (capped at `WORKLIST_MIGRATE_PLANS_SHOW`, default 3, with a `+K more plan(s)` tail).
+There is deliberately NO age cutoff on this half, unlike the STATE.md one: a plan clears itself when its owner goes live, when its status becomes finished, or when its last box is ticked, so there is no stale cursor to age out. Measured 2026-09-17, before this existed: 99 open boxes across 11 plans owned by three idle sessions, and no surface in this repo named one of them.
 
 ## Then ASK, and never assume
 
@@ -27,7 +31,9 @@ One `AskUserQuestion` call, `multiSelect: true`, `header: "Continue"`. The quest
 > and deferred items will be re-tagged to `<me>`; the originals are ticked
 > "migrated to", nothing is deleted, and cross-session requests are not moved.
 
-One option per candidate. Label is `<prefix> (<branch>) <n> open` (`0 open` is valid — a STATE.md-only candidate still names real work, just not in the worklist store); the description carries the verdict and its evidence, the age, whether the last event came from this machine, and the one-line brief, or the STATE.md Next-action excerpt when there is no worklist brief to quote.
+One option per candidate. Label is `<prefix> (<branch>) <n> open`, and `<n>` counts BOTH stores: the candidate's open, in-flight and deferred worklist items PLUS the open boxes of every plan it carries (`counts.open + counts.inflight + counts.deferred + sum(plans[].open)` in the JSON).
+A session whose only remaining work is a committed design must not read as `0 open`, or the option the operator most needs to see is the one that looks emptiest. `0 open` is still valid and now means exactly one thing: a STATE.md-only candidate, with real work named in prose and none of it counted anywhere.
+The description carries the verdict and its evidence, the age, whether the last event came from this machine, and the one-line brief, or the STATE.md Next-action excerpt when there is no worklist brief to quote.
 **Pre-select nothing and recommend nothing.** The whole reason this is a question is that the answer is not derivable: two sessions on one branch at one time look identical from here, and picking for the operator is how a colleague's work gets swept up.
 
 More than 16 candidates: page by newest first and say how many remain.
@@ -53,6 +59,10 @@ by name. Adopting a plan is the statement that this session is executing it, and
 | `[ ]` open items | `[x]` done items (history) |
 | `[>]` in-flight, **lease reset** | cross-session requests (`--requests`) |
 | `[?]` deferrals, **DEFAULT window preserved** | the predecessor's STATE.md (a peer's document) |
+| nothing at all, unless `--plan <path>` names it | the predecessor's committed plans |
+
+`--plan <path> [<path>...]` is the ONLY thing here that writes a peer's plan, and it writes only the paths it is handed. It re-stamps that plan's `Owner:` line to this session inside the header's first ten lines, sets an existing `Updated:` line to today, and touches no `- [ ]` or `- [x]` line, so `check:ci-plan-boxes` A0 signatures and A1 never-deleted stay byte-identical.
+It refuses a finished status and refuses a plan with no open boxes, and says so instead of writing. Run `npm run check:ci-plan-record -- --update` afterwards, which the command itself asks for on every successful rewrite: the census keys freshness on byte size, so an un-regenerated `agent/INDEX.md` puts a staleness banner on the next SessionStart.
 
 The lease is reset rather than carried because its worker was a background task of the previous session, on the previous machine. Re-leasing would claim a live worker that cannot exist and stop the liveness ladder from ever asking about it. The deferral's `upd` stamp IS carried, so a `[?]` whose default was twenty minutes from executing still has twenty minutes, not a fresh window.
 

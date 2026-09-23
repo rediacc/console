@@ -253,16 +253,32 @@ def plan_stub_target(path):
     """The path a stub points FORWARD to, or "" when `path` is not a stub.
 
     The same two-halves test `is_plan_stub` applies, returning the target instead of a bool, so a reader that has to FOLLOW the pointer does not parse the header a second time. `citation_state` is the reason it exists: a stub is five lines, so `agent/PLAN-x.md:3684` resolves to a real file and a line number past its end unless the hop is taken.
+
+    A stub that has since been DELETED falls through to `_flat_legacy_fallback`: the 2026-09-22 cleanup retired the whole one-time class of `agent/PLAN-<slug>.md` flat-layout stubs the `fce51e202`/`a81967e94` migration left behind, so `open(path)` below now raises for every one of them, and a citation written before that cleanup would otherwise silently stop resolving.
     """
     try:
         with open(path, "rb") as handle:
             head = handle.read(STUB_PROBE_BYTES).decode("utf-8", errors="replace")
     except OSError:
-        return ""
+        return _flat_legacy_fallback(path)
     if not _STUB_STATUS_RE.search(head):
         return ""
     match = _STUB_TARGET_RE.search(head)
     return match.group(1) if match else ""
+
+
+def _flat_legacy_fallback(path):
+    """Recover a deleted flat-layout stub's target from the slug alone.
+
+    Every migrated plan keeps its SLUG through the move -- only the folder changes -- so this tries the folders a moved plan can now live in, same as the bare-slug branch of `wl_planrec.resolve`'s "plan" kind. Scoped tight, matching only the exact `<agent-dir>/PLAN-<slug>.md` shape, so an ordinary missing file anywhere else still returns "" rather than guessing.
+    """
+    p = pathlib.Path(path)
+    if p.parent.name != "agent" or not p.name.startswith("PLAN-") or not p.name.endswith(".md"):
+        return ""
+    for folder in ("plans", "plans/_done", "plans/_removed"):
+        if (p.parent / folder / p.name).is_file():
+            return "%s/%s/%s" % (p.parent.name, folder, p.name)
+    return ""
 
 
 def agent_plan_files(root):
@@ -305,14 +321,17 @@ def agent_session_dirs(root):
 
 
 def agent_peer_sections(root, session_id):
-    """Every OTHER session's sections, read from the SIBLING directories.
+    """Every OTHER session's NEWEST section, one row per sibling directory.
 
     This is what peer visibility became when the shared document was split (2026-08-14). Before, every section sat in one file and a whole-file write could delete the lot; now each session owns a directory, and a peer's STATE.md is READ-ONLY to everyone else by construction. Losing sight of them was never the goal: a session that cannot see what its peers are doing duplicates their
     work, or edits under them.
 
     Each file is parsed against ITS OWN mtime, so an unstamped peer document ages by its own clock rather than by whoever wrote last -- the per-file version of the per-section fix that made the old shared document honest.
+
+    DEDUPED BY OWNER. The normal `--state` write path always replaces its caller's own section in place, so a directory should carry exactly one; a directory found carrying more (a legacy-remap sitting beside a real one, or a historical document from before that replace-in-place guarantee) is not a second peer, it is the same peer's older self. Reporting both doubled the peer's row
+    in the stop-hook note and in `--migrate --candidates`' context, so this keeps the newest by `ts` and drops the rest -- read-only, nothing on disk changes.
     """
-    out = []
+    newest = {}
     for d in agent_session_dirs(root):
         if C.same_session(d.name, session_id):
             continue
@@ -326,12 +345,12 @@ def agent_peer_sections(root, session_id):
             if C.same_session(s["owner"], session_id):
                 continue
             # An unowned (legacy) section in a peer's directory is attributed to the DIRECTORY, which is now the authoritative owner: reporting it as `legacy` would hide which session a reader must not disturb.
-            if s["owner"] == AGENT_STATE_LEGACY_OWNER:
+            owner = d.name if s["owner"] == AGENT_STATE_LEGACY_OWNER else s["owner"]
+            existing = newest.get(owner)
+            if existing is None or s["ts"] > existing["ts"]:
                 # New binding rather than rebinding the loop variable: ruff's PLW2901 objects because a reader scanning the loop cannot tell which `s` a later line means.
-                out.append(dict(s, owner=d.name))
-            else:
-                out.append(s)
-    return out
+                newest[owner] = dict(s, owner=owner) if s["owner"] != owner else s
+    return list(newest.values())
 
 
 def agent_next_action(root, owner, limit=1500):

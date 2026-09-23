@@ -10,10 +10,13 @@ import os
 import pathlib
 import random
 import re
+import sys as _sys
 import time
+import types as _types
 
 import wl_admit
 import wl_agents as A
+import wl_backlog
 import wl_checklist
 import wl_ci
 import wl_claimcheck
@@ -22,9 +25,11 @@ import wl_hints
 import wl_histfirst
 import wl_judge
 import wl_liveness
+import wl_planenforce
 import wl_planfid
 import wl_planfile
 import wl_planindex as PI
+import wl_popup
 import wl_reggate
 import wl_report
 import wl_requests
@@ -33,6 +38,15 @@ import wl_shapedup
 import wl_store as S
 import wl_wait
 import worklist_messages as M
+
+# BEST-EFFORT, NOT A SIBLING: onboard.py lives one directory over, in .claude/hooks/context/, so a copy-the-stop-dir fixture (test_wl_cadence's hookcrash case) or any tree missing that directory leaves it unimportable.
+# The read it feeds is purely observational (N_ONBOARD_DELIVERED changes no verdict), so losing it must never take the whole hook down the way a real sibling failing to import correctly does.
+onboard: _types.ModuleType | None
+try:
+    _sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent / "context"))
+    import onboard
+except ImportError:  # absent here just means the notice line stays silent
+    onboard = None
 
 # Heading, any level, so "## Remaining" and "### Remaining work" both count.
 REMAINING_HEADING = re.compile(r"^[ \t]{0,3}#{1,4}[ \t]*Remaining\b", re.MULTILINE | re.IGNORECASE)
@@ -374,6 +388,9 @@ def _resolve_cite_path(root, rel, p):
 
     A closed plan moves into `agent/plans/**` and leaves a five-line pointer at its old path, which is what keeps citations of that path resolving. A `<path>:<line>` citation is the case the pointer alone does NOT serve: the file exists and every line number past five is suddenly out of range, so an evidence line written months ago starts reading as a fabrication. Two
     callers used to take this hop separately, and one of them drifted: `cited_excerpts` read `p` raw and handed the judge an empty quote for exactly the citations that survived a plan move. One definition now, so the two cannot diverge again. Exactly one hop: `check:ci-plan-folders` F5 refuses a stub that points at a stub.
+
+    CALLED EVEN WHEN `p` DOES NOT EXIST, since the 2026-09-22 cleanup: `S.plan_stub_target` falls back to a slug-derived folder search when there is no file left to read at `p` at all, which is the shape every one of the 103 deleted flat-layout stubs now leaves behind. Both callers used to check `p.is_file()` before taking the hop, which is exactly backwards once the
+    stub itself can be the missing part.
     """
     moved_to = S.plan_stub_target(p)
     if moved_to:
@@ -396,9 +413,9 @@ def citation_state(root, text):
         return False, "carries no <path>:<line> citation"
     rel, line = m.group(1), int(m.group(2))
     p = pathlib.Path(root) / rel
+    rel, p = _resolve_cite_path(root, rel, p)
     if not p.is_file():
         return False, "cites %s, which does not exist" % rel
-    rel, p = _resolve_cite_path(root, rel, p)
     try:
         n = len(p.read_text(errors="replace").splitlines())
     except OSError:
@@ -422,9 +439,9 @@ def cited_excerpts(root, message, limit=3, span=4):
             continue
         seen.add((rel, line))
         p = pathlib.Path(root) / rel
+        rel, p = _resolve_cite_path(root, rel, p)
         if not p.is_file():
             continue
-        rel, p = _resolve_cite_path(root, rel, p)
         try:
             lines = p.read_text(errors="replace").splitlines()
         except OSError:
@@ -1993,6 +2010,8 @@ PRIORITY_LADDER = (
                 "open-items",
                 # A plan this session ADOPTED (its Owner line says so) with boxes nothing tracks: the adoption is the statement that it is being executed.
                 "plan-adopted",
+                # The same question widened from "adopted" to ALL, per the operator's own ruling, and bounded by a descending ceiling rather than by a fire cap. T_MISSION is the ladder's own argument rather than a promotion: "the thing this session was ASKED to do is not done ... everything else is housekeeping around work that has not landed". See wl_planenforce.
+                "plan-unimplemented",
                 "defer-expired",
                 "undefaulted",
                 # agent/programs/<slug>/CHECKLIST.md -- deliverable and wave boxes, same four-state markdown the worklist uses.
@@ -3151,6 +3170,57 @@ def run_stop(event, event_ok, worklist, hook_file):
     except Exception:  # noqa: BLE001 -- a plan read must never wedge a stop
         pass
 
+    # ---- PLAN BACKLOG NOMINATION (wl_backlog). Answers the question `plan-tasks` above does not: which committed, undone design should THIS session implement next. The operator's own words: "we plan but don't implement". DESC by mtime (plan_records' own order), validated against a live worklist claim and a peer's liveness -- see wl_backlog's module docstring and
+    # agent/plans/PLAN-stop-hook-plan-backlog-nudge.md. ADVISORY, never a vadd, same tier and same reasoning as plan-tasks: a blocking nomination over a standing backlog nobody here created would wall every session behind work it did not cause.
+    try:
+        _bl_candidate, _bl_reason, _bl_stats = wl_backlog.next_plan(
+            root,
+            plan_records(root),
+            fold,
+            session_id,
+            plan_owner,
+            worklist,
+            state_doc,
+            projects_dir,
+        )
+        if _bl_candidate is not None:
+            _bl_text = wl_backlog.render(_bl_candidate, _bl_reason, _bl_stats, session_id)
+            _bl_added = outq_add(
+                worklist,
+                session_id,
+                state_doc,
+                "plan-backlog:%s" % _bl_candidate["rel"],
+                _bl_text,
+                2,
+            )
+            if _bl_added:
+                _bl_cap = state_doc.get("backlog_nominated")
+                if not isinstance(_bl_cap, dict):
+                    _bl_cap = {}
+                    state_doc["backlog_nominated"] = _bl_cap
+                _bl_cap[_bl_candidate["rel"]] = C.stamp_now()
+                S.save_state(worklist, session_id, state_doc)
+    except Exception:  # noqa: BLE001 -- a plan read must never wedge a stop
+        pass
+
+    # ---- PLANNED BUT NOT IMPLEMENTED (wl_planenforce). The third question in this neighbourhood and the only BLOCKING one: `plan-tasks` above asks whether a plan's boxes are TRACKED, `plan-backlog` asks which plan to start NEXT, and this asks whether the corpus is being DRAINED. The operator was offered three narrower scopes after seeing the census and chose ALL, so there is no
+    # status exemption here and NOT_STARTED_STATES is deliberately not honoured -- `draft` carries most of the debt in this tree, and exempting it would leave the block asserting almost nothing.
+    #
+    # BOUNDED BY A CEILING, NOT BY A FIRE CAP, which is the whole reason this is allowed to be a T_MISSION vadd at all. `wl_planfile`'s design note 1 and the `plan-adopted` call-site comment above both refuse exactly this widening, and they are right about the wedge: a block over 221 standing boxes with no reachable exit would be the fourth repeated-nag incident in this hook. The
+    # ceiling is the answer -- silent at or under it, and the block's own text prints the number of boxes that ends it.
+    #
+    # WARN RIDES THE QUEUE, BLOCK RIDES THE LADDER. Inside the warn band the same body goes out as a priority-2 advisory, where outq_add's content signature keeps it from repeating while nothing changes; over the ceiling it is a vadd. One renderer, two deliveries, so the two can never describe the tree differently.
+    try:
+        _pe_state, _pe_text, _pe_detail = wl_planenforce.evaluate(
+            root, plan_records(root), session_id, plan_owner, worklist, projects_dir
+        )
+        if _pe_state == wl_planenforce.BLOCK and _pe_text:
+            vadd("plan-unimplemented", False, M.V_PLAN_UNIMPLEMENTED % {"body": _pe_text})
+        elif _pe_state == wl_planenforce.WARN and _pe_text:
+            outq_add(worklist, session_id, state_doc, "plan-clock", _pe_text, 2)
+    except Exception:  # noqa: BLE001 -- a plan read must never wedge a stop
+        pass
+
     pstate, pahead, pref = wl_ci.publish_divergence(root)
     if pstate == "stale-local":
         vadd("stale-local", False, M.V_STALE_LOCAL % (pref, pahead))
@@ -4137,6 +4207,9 @@ def run_stop(event, event_ok, worklist, hook_file):
         pending_outq = len(_outq(state_doc).get("items") or [])
         if pending_outq:
             extras += "\n\n" + M.N_OUTQ_BLOCKED % (pending_outq, OUTQ_PER_STOP)
+        onboard_marker = onboard.load_marker(session_id) if onboard else {}
+        if onboard_marker.get("state") == "delivered":
+            extras += "\n\n" + M.N_ONBOARD_DELIVERED % onboard_marker.get("epoch")
         if os.environ.get("WORKLIST_FOCUS", "on").lower() in ("off", "0", "no"):
             # EVERY violation is rendered on this path, so every display latch is genuinely spent. Saved explicitly because this branch emits (and therefore exits) without reaching the save below -- the same trap the queue's compute-time persistence was moved for.
             spend_display_latches([k for k, _a, _t in violations])
@@ -4333,7 +4406,11 @@ def run_stop(event, event_ok, worklist, hook_file):
             with contextlib.suppress(Exception):
                 if reg_new_ticks and not wl_claimcheck.exhausted(reg_sig):
                     _prof = wl_claimcheck.profile(root, reg_new_ticks[0][2], reg_fixset_files)
-                    _section = wl_claimcheck.prompt_section(_prof)
+                    # v20: when the claim names a plan box, the investigation row written BEFORE the work rides along. No new judge call and no change to this rule's advisory character -- the judge was being asked whether the evidence demonstrates the claim while a written statement of what the session found first sat unread in a committed ledger. None for an ordinary worklist
+                    # tick, which is the common case, and an absent row is never reported as a gap here: whether a box may close without one is --plan-tick's mechanical refusal, not a judgement.
+                    _section = wl_claimcheck.prompt_section(
+                        _prof, wl_claimcheck.investigation_for_claim(root, reg_new_ticks[0][2])
+                    )
                     if _section:
                         reg_extra += _section
                         claim_prof = _prof
@@ -4891,9 +4968,12 @@ def run_stop(event, event_ok, worklist, hook_file):
     parts.extend(texts)
     if remaining:
         parts.append(M.N_OUTQ_MORE % remaining)
-    # THE ROTATING BEHAVIORAL HINT, LAST and gated on parts already being non-empty: it rides an output the stop was already going to produce and must never be the reason one exists. Checked here, not inside wl_hints, because "did anything else fire this stop" is exactly what `parts` already answers -- a second empty-output check inside the module would just be the same question
-    # asked twice and could drift from this one.
-    if parts:
+    # THE ROTATING BEHAVIORAL HINT, LAST. Normally gated on parts already being non-empty: it rides an output the stop was already going to produce, so it is not usually the reason one exists.
+    #
+    # wl_popup.should_pop() is the one deliberate exception (PLAN-popup-reminder.md): a ~20% independent roll that lets this same hint fire on an otherwise-silent stop too, "out of the blue" by design.
+    #
+    # Checked here, not inside wl_hints, because "did anything else fire this stop, or did the roll" is exactly what this one condition already answers -- a second check inside the module would just ask the same question twice and could drift from this one.
+    if parts or wl_popup.should_pop():
         with contextlib.suppress(Exception):  # an advisory must never wedge a stop
             ledger = state_doc.setdefault("hints", {})
             picked = wl_hints.hint_pick(hint_entries, ledger)

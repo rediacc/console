@@ -187,7 +187,9 @@ def is_action_heading(title):
 
 # Indent 0-3 only: a nested bullet is detail about its parent, not a peer task.
 BULLET_RE = re.compile(r"^(?P<ind> {0,3})(?:[-*+]|\d+[.)])\s+(?P<body>\S.*)$")
-CHECKBOX_RE = re.compile(r"^\s*[-*+]\s+\[[ xX]\]\s+(?P<body>\S.*)$")
+# `?` and `>` are first-class marks (deferred, leased -- CLAUDE.md's own four-state convention), not just `x`/blank. Before this, a `[?]`/`[>]` line fell through to BULLET_RE instead, which captures the MARK itself into the body ("[?] do the thing"), corrupting the task's identity against its own `[ ]`/`[x]` forms and making check_plan_boxes.py's own advertised remedy
+# ("If it is blocked, mark it - [?]") silently vanish the box from tracking instead of parking it.
+CHECKBOX_RE = re.compile(r"^\s*[-*+]\s+\[[ xX?>]\]\s+(?P<body>\S.*)$")
 
 
 def _norm(s):

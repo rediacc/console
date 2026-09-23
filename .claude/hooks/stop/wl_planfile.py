@@ -109,8 +109,9 @@ PLAN_TASK_SHOW = int(os.environ.get("WORKLIST_PLANFILE_SHOW", "3"))
 PLAN_PLANS_SHOW = int(os.environ.get("WORKLIST_PLANFILE_PLANS_SHOW", "3"))
 # Stale-box examples quoted in the reverse direction.
 PLAN_STALE_SHOW = int(os.environ.get("WORKLIST_PLANFILE_STALE_SHOW", "2"))
-# A plan bigger than this is not read. 400 KB is ~10x the largest plan here.
-PLAN_MAX_BYTES = int(os.environ.get("WORKLIST_PLANFILE_MAX_BYTES", str(400 * 1024)))
+# A plan bigger than this is not read. Raised from 400 KB to 1 MB on 2026-09-22: PLAN-tooling-transformation.md alone reached 646 KB (the next-largest plan is 175 KB), and the 400 KB floor made `_read` return None for it silently -- `is_adopted` then read that as "not adopted" instead of "cannot tell", so an ADOPTED plan's own boxes went untracked with no finding anywhere.
+# 1 MB keeps real headroom over the current outlier without being large enough to hide a genuinely pathological file; see `_read`'s own oversized-vs-missing split below for the file this size still cannot survive.
+PLAN_MAX_BYTES = int(os.environ.get("WORKLIST_PLANFILE_MAX_BYTES", str(1024 * 1024)))
 TASK_QUOTE_CHARS = 96
 
 # Statuses that put a plan OUT of scope. See design note 4: this is a blocklist on purpose, so an unrecognised status is noisy rather than invisible.
@@ -162,7 +163,9 @@ NOT_STARTED_STATES = frozenset(
 )
 
 # The two checkbox shapes, spelled here ONLY to delete lines before handing the text back to the real parser. Nothing downstream reads them as tasks.
-OPEN_BOX_LINE = re.compile(r"^\s*[-*+]\s+\[ \]\s+\S")
+# OPEN_BOX_LINE also matches `?` and `>`: neither is DONE, so both stay in the open bucket the same way a worklist item's own `?`/`>` states still count as outstanding (CLOSED_STATES below). Treating them as open, not as a third invisible bucket, is the minimal fix that restores check_plan_boxes.py's own
+# advertised remedy ("mark it - [?]") without a signature change rippling into every caller of plan_boxes/reconcile.
+OPEN_BOX_LINE = re.compile(r"^\s*[-*+]\s+\[[ ?>]\]\s+\S")
 DONE_BOX_LINE = re.compile(r"^\s*[-*+]\s+\[[xX]\]\s+\S")
 # A worklist state that means the item is no longer outstanding. ' ', '?' and '>' are the open three (wl_checks uses the same triple).
 CLOSED_STATES = frozenset({"x"})
@@ -247,7 +250,7 @@ def match_item(task, prepared):
 
     Takes PREPARED rows (see `prepare`), not raw ones: `reconcile` asks about every task, and tokenising the item side inside that loop is items x tasks of work on the path that lets every session in this repo end a turn.
 
-    Containment in EITHER direction at wl_planfid.TASK_MATCH: an item that quotes a long task line, and an item whose wording the task line is a short version of, are both tracking. Generous on purpose -- see the module docstring on which direction a wrong answer costs more. Ties break on the strongest overlap so the id quoted back is the best one, not the first one.
+    Containment in EITHER direction at wl_planfid.TASK_MATCH: an item that quotes a long task line, and an item whose wording the task line is a short version of, are both tracking. Generous on purpose -- see the module docstring on which direction a wrong answer costs more. Ties break on the strongest overlap so the id quoted back is the best one, not the first one; a tie AT the same overlap prefers a non-closed item over a closed one, since first-wins-on-ties otherwise means re-adding a box after ticking its original item under near-identical wording matches the dead item forever (found 2026-09-23: PLAN-tooling-transformation.md's W7P5-a/W1P6 boxes kept reporting stale_open against their own already-ticked originals, because the ticked item was earlier in fold order than the fresh replacement and both scored identically).
     """
     tt = _toks(task)
     if len(tt) < P.MIN_MATCH_TOKENS:
@@ -259,7 +262,14 @@ def match_item(task, prepared):
             continue
         if inter / len(tt) >= P.TASK_MATCH or inter / len(it) >= P.TASK_MATCH:
             score = inter / float(min(len(tt), len(it)))
-            if best is None or score > best[0]:
+            better = best is None or score > best[0]
+            tie_prefers_open = (
+                best is not None
+                and score == best[0]
+                and state not in CLOSED_STATES
+                and best[2] in CLOSED_STATES
+            )
+            if better or tie_prefers_open:
                 best = (score, iid, state)
     return None if best is None else (best[1], best[2])
 
@@ -288,8 +298,19 @@ def reconcile(open_tasks, done_tasks, rows):
     return untracked, stale_open, reopened
 
 
+def _oversized(path):
+    """True when the file exists and is too large for `_read`, False otherwise (including when it does not exist)."""
+    try:
+        return pathlib.Path(path).stat().st_size > PLAN_MAX_BYTES
+    except OSError:
+        return False
+
+
 def _read(path):
-    """A plan's text, or None. NEVER raises: this runs on the path that lets every session in the repo end a turn."""
+    """A plan's text, or None. NEVER raises: this runs on the path that lets every session in the repo end a turn.
+
+    None does not distinguish "missing" from "too large to read" -- callers that need that distinction call `_oversized` separately, which is what `plan_rows` does so an adopted-but-oversized plan is reported BLIND rather than silently treated as if it did not exist.
+    """
     try:
         p = pathlib.Path(path)
         if p.stat().st_size > PLAN_MAX_BYTES:
@@ -355,8 +376,24 @@ def plan_rows(root, recs, fold, session_id, plan_owner):
     out = []
     for rec in scoped[:PLAN_MAX_READ]:
         rel, status = rec[0], rec[1]
-        text = _read(pathlib.Path(root) / rel)
-        if text is None or len(text) < P.MIN_PLAN_CHARS:
+        path = pathlib.Path(root) / rel
+        text = _read(path)
+        if text is None:
+            if _oversized(path):
+                out.append(
+                    {
+                        "rel": rel,
+                        "status": status,
+                        "n_open": 0,
+                        "n_done": 0,
+                        "untracked": [],
+                        "stale_open": [],
+                        "reopened": 0,
+                        "blind": "over PLAN_MAX_BYTES (%d), not read at all" % PLAN_MAX_BYTES,
+                    }
+                )
+            continue
+        if len(text) < P.MIN_PLAN_CHARS:
             continue
         raw_open, raw_done = raw_box_counts(text)
         if not raw_open and not raw_done:

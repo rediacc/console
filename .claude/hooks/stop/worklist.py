@@ -631,7 +631,82 @@ def _plantick_cli(argv):
     # THE PLAN FIRST, THEN THE LEDGER. The ledger is a reading OF the plan, so this order leaves the recoverable state at every instant: a crash between them leaves a ticked plan and a stale ledger, which check:ci-plan-boxes reports with the exact regenerate command. The other order leaves a ledger attesting a tick no file carries, which reads as a box that vanished.
     R.write_atomic(pathlib.Path(root) / rel, text)
     R.write_atomic(pathlib.Path(root) / R.LEDGER_REL, json.dumps(doc, indent=2) + "\n")
-    print(M.CLI_PLANTICK_WROTE % {"rel": rel, "ledger": R.LEDGER_REL, "note": note, "me": me})
+    print(
+        M.CLI_PLANTICK_WROTE
+        % {
+            "rel": rel,
+            "ledger": R.LEDGER_REL,
+            "investigation": "/".join(R.INVESTIGATION_REL),
+            "note": note,
+            "me": me,
+        }
+    )
+
+
+def _planinvestigate_cli(argv):
+    """--plan-investigate <me> <path> <box> <verdict> <kind>:<tok>... -- <note...> [--write].
+
+    THE VERB THE OPERATOR ASKED FOR: "we must investigate if they're implemented before implement". Everything it does is re-derivation and none of it is trust -- see wl_planrec.plan_investigate. Ordinary shell quoting is the interface and no new parser is introduced; a bare `--` separates the pointer list from the note, the same way a shell separates a command's flags from its
+    operands.
+
+    NEVER COMMITS, same as every verb in this file. The row rides the same commit as the tick it licenses, and the success message says so.
+    """
+
+    def die(msg):
+        print(msg, file=sys.stderr)
+        sys.exit(2)
+
+    if len(argv) < 2:
+        die(M.CLI_PLANINV_USAGE)
+    me = argv[1]
+    if not C.PREFIX_RE.match(me):
+        die("bad prefix %r: pass YOUR session-id prefix first" % me)
+    _identity_or_die(me, die)
+
+    import wl_planrec as R  # noqa: PLC0415 -- sibling, probed not assumed
+
+    root = C.project_root(C.project_start())
+    rest = list(argv[2:])
+    write = "--write" in rest
+    rest = [a for a in rest if a != "--write"]
+    # THE NOTE IS EVERYTHING AFTER A BARE `--`, not "the last argument", because a note is a sentence and a sentence quoted as one argv entry is the shape nobody types correctly the first time.
+    if "--" in rest:
+        cut = rest.index("--")
+        head_args, note = rest[:cut], " ".join(rest[cut + 1 :]).strip()
+    else:
+        head_args, note = rest, ""
+    if len(head_args) < 4:
+        die(M.CLI_PLANINV_USAGE)
+    rel, selector, verdict = head_args[0], head_args[1], head_args[2]
+    pointer_tokens = head_args[3:]
+    for f in pointer_tokens:
+        if f.startswith("--"):
+            die("unknown flag %r\n\n%s" % (f, M.CLI_PLANINV_USAGE))
+    try:
+        rel = str(pathlib.Path(rel).resolve().relative_to(pathlib.Path(root).resolve()))
+    except ValueError:
+        rel = rel.lstrip("./")
+
+    try:
+        row, resolved = R.plan_investigate(root, rel, selector, verdict, pointer_tokens, note, me)
+    except R.RecordError as exc:
+        die(M.CLI_PLANREC_REFUSED % exc)
+        return
+    payload = {
+        "rel": rel,
+        "sig": row["sig"],
+        "verdict": row["verdict"],
+        "head": (row["head"] or "(no HEAD)")[:12],
+        "br": row["br"] or "(no branch)",
+        "table": R.render_resolution(resolved),
+        "ledger": "/".join(R.INVESTIGATION_REL),
+        "next": M.CLI_PLANINV_NEXT.get(row["verdict"], ""),
+    }
+    if not write:
+        sys.stdout.write(M.CLI_PLANINV_DRY % payload)
+        return
+    R.append_investigation(root, row)
+    print(M.CLI_PLANINV_WROTE % payload)
 
 
 def _item_cli(argv, worklist):
@@ -1890,6 +1965,9 @@ def main():
         return
     if sys.argv[1:2] == ["--plan-tick"]:
         _plantick_cli(sys.argv[1:])
+        return
+    if sys.argv[1:2] == ["--plan-investigate"]:
+        _planinvestigate_cli(sys.argv[1:])
         return
     if sys.argv[1:2] == ["--hint-propose"]:
         _hint_propose_cli(sys.argv[1:])
