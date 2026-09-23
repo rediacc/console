@@ -42,7 +42,8 @@ The damage is the ROUTING, not the DETECTION -- `.claude/hooks/stop/worklist-cas
 `ask_announcement` (`.claude/hooks/stop/wl_admit.py:556`) has two matchers. The first is shape-anchored with six lookbehinds bought by live false positives. The second, `.claude/hooks/stop/wl_admit.py:575`, matches any of the last three lines ending in `?` and containing `you`. Its own comment at `.claude/hooks/stop/wl_admit.py:422` calls it "the loosest of the two", and its
 motivating shape is already caught by `want me to`.
 
-- [ ] Delete the `ln.endswith("?")` clause at `.claude/hooks/stop/wl_admit.py:575` and
+- [x] Delete the `ln.endswith("?")` clause at `.claude/hooks/stop/wl_admit.py:575` and
+    (ticked) 2026-09-23T16:27:07Z by d778be9d: CLOSING_QUESTION_RE deletion landed in commit c631e3c19; investigation ledger committed.
       `CLOSING_QUESTION_RE` at `.claude/hooks/stop/wl_admit.py:411`. Keep the two legitimate
       exits at `.claude/hooks/stop/wl_admit.py:580` and the `DEFAULT:` skip at
       `.claude/hooks/stop/wl_admit.py:416`.
