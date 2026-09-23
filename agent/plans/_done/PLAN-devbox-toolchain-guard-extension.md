@@ -24,35 +24,55 @@ Excluded deliberately, same precedent as `check:ci-actionlint`: `.ci/breakpoint/
 ## Table/code additions
 
 - [x] `NEEDS` (line ~57-61): add `("check:ci-release-state", "aws")`.
+    (ticked) 2026-09-23T12:19:36Z by d778be9d: retroactive record: closed by cc20cbec0 (2026-09-23) feat(hooks): route aws/bw/bws at the devbox, with a BLOCKER-gated exce -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] New table `NEEDS_SCRIPT`, placed after `NEEDS`, before `NEEDS_ENV`: `(script-basename, tool)` pairs for the 14 direct-invocation scripts above, matched via `_is_invoked()` (never a plain substring test -- `NEEDS`'s own older substring approach is exactly the "reading a script is mistaken for running it" bug `_is_invoked` was built to fix for `NEEDS_ENV`).
+    (ticked) 2026-09-23T12:19:36Z by d778be9d: retroactive record: closed by cc20cbec0 (2026-09-23) feat(hooks): route aws/bw/bws at the devbox, with a BLOCKER-gated exce -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] New loop for `NEEDS_SCRIPT`, inserted after the existing `BARE_TOOLS` loop, setting `bare = True` so the refusal message says "this command needs 'aws'" rather than suggesting a nonsensical `npm run <script>.sh`.
+    (ticked) 2026-09-23T12:19:36Z by d778be9d: retroactive record: closed by cc20cbec0 (2026-09-23) feat(hooks): route aws/bw/bws at the devbox, with a BLOCKER-gated exce -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] `BARE_TOOLS`: add `"aws"`, `"bw"`, `"bws"`.
+    (ticked) 2026-09-23T12:19:36Z by d778be9d: retroactive record: closed by cc20cbec0 (2026-09-23) feat(hooks): route aws/bw/bws at the devbox, with a BLOCKER-gated exce -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] `NPX_TOOLS`: leave untouched -- no measured incident of `npx aws`/`npx bw` misuse; this file's own discipline is measured incidents, not hypotheticals.
+    (ticked) 2026-09-23T12:19:36Z by d778be9d: retroactive record: closed by cc20cbec0 (2026-09-23) feat(hooks): route aws/bw/bws at the devbox, with a BLOCKER-gated exce -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] `.ci/rediacc_ci/quality/toolchain_pins.py`'s `GATED_TOOLS`: leave untouched -- governs a different convention (unpinned `@latest` downloads via `toolchain_acquire`), and `aws`/`bw`/`bws` are baked into the Dockerfile directly, not pulled per-CI-run.
+    (ticked) 2026-09-23T12:19:36Z by d778be9d: retroactive record: closed by cc20cbec0 (2026-09-23) feat(hooks): route aws/bw/bws at the devbox, with a BLOCKER-gated exce -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 
 ## Exception-list mechanism
 
 - [x] New file `.ci/policy/.host-toolchain-exceptions`, following the repo's existing BLOCKER-comment allowlist format (`# BLOCKER: <reason, >=30 chars, no banned vague phrases>` grouping the entries beneath it). Route it through `scripts/lib/policy-paths.ts`'s `POLICY_FILES`/`policyPath()` seam even though only a Python hook reads it.
+    (ticked) 2026-09-23T12:19:36Z by d778be9d: retroactive record: closed by cc20cbec0 (2026-09-23) feat(hooks): route aws/bw/bws at the devbox, with a BLOCKER-gated exce -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] Parse/validate via a scoped import of `.ci`'s `rediacc_ci.core.allowlist` (same pattern as `block_prose_style_edit.py:230-244`: push `.ci` onto `sys.path`, import, pop it), reusing `parse_file`/`verify` rather than a second implementation.
+    (ticked) 2026-09-23T12:19:36Z by d778be9d: retroactive record: closed by cc20cbec0 (2026-09-23) feat(hooks): route aws/bw/bws at the devbox, with a BLOCKER-gated exce -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] Consult the parsed entries right after `hit`/`need`/`bare` are computed, before the hostbound walk; a present, valid entry emits a NOTE naming the exception and its BLOCKER text, then allows.
+    (ticked) 2026-09-23T12:19:36Z by d778be9d: retroactive record: closed by cc20cbec0 (2026-09-23) feat(hooks): route aws/bw/bws at the devbox, with a BLOCKER-gated exce -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] Add a companion gate test (e.g. `.ci/scripts/test/gates/test-host-toolchain-exceptions.sh`) that greps every parsed reason for the banned phrase family ("doesn't exist on devbox", "absent from the devbox image", "devbox lacks it", "not installed in devbox") and fails loudly if found -- the generic `allowlist.py` banned-phrase list does not know this domain-specific phrase.
+    (ticked) 2026-09-23T12:19:36Z by d778be9d: retroactive record: closed by cc20cbec0 (2026-09-23) feat(hooks): route aws/bw/bws at the devbox, with a BLOCKER-gated exce -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] Ship the file empty at first, with a header comment documenting the one legitimate category (a host-only interactive auth ceremony a headless container cannot complete) versus the one illegitimate category (a devbox gap, which gets fixed in `.devcontainer/Dockerfile` instead).
+    (ticked) 2026-09-23T12:19:36Z by d778be9d: retroactive record: closed by cc20cbec0 (2026-09-23) feat(hooks): route aws/bw/bws at the devbox, with a BLOCKER-gated exce -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
       No current `aws`/`bw`/`bws` consumer needs an exception -- all resolve credentials from plain env vars.
 
 ## Test coverage (mirroring test-block_host_toolchain_run.py's existing pattern)
 
 - [x] Gate-key case: `check:ci-release-state` with `aws` stripped from PATH, `have_box` true -> exit 2; host-has-it control -> exit 0.
+    (ticked) 2026-09-23T12:19:36Z by d778be9d: retroactive record: closed by cc20cbec0 (2026-09-23) feat(hooks): route aws/bw/bws at the devbox, with a BLOCKER-gated exce -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] `NEEDS_SCRIPT` case, the incident itself: `assert-edge-tag-exists.sh --version 1.3.0` with `aws` missing on host, present in devbox -> exit 2, message says "this command needs 'aws'", never "npm run ...".
+    (ticked) 2026-09-23T12:19:36Z by d778be9d: retroactive record: closed by cc20cbec0 (2026-09-23) feat(hooks): route aws/bw/bws at the devbox, with a BLOCKER-gated exce -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] Reader/mention regression: `grep -n TODO assert-edge-tag-exists.sh` and `sed -n 1,5p <same path>` stay exit 0 even with `aws` stripped -- the exact bug class `_is_invoked` exists to prevent.
+    (ticked) 2026-09-23T12:19:36Z by d778be9d: retroactive record: closed by cc20cbec0 (2026-09-23) feat(hooks): route aws/bw/bws at the devbox, with a BLOCKER-gated exce -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] A second, smaller loop (not folded into the existing `ALL_TOOLS` loop, which asserts npx-misuse for every member) covering `aws`/`bw`/`bws` bare-tool routing: absent-from-host + devbox-has-it -> 2; shimmed-onto-host -> 0.
+    (ticked) 2026-09-23T12:19:36Z by d778be9d: retroactive record: closed by cc20cbec0 (2026-09-23) feat(hooks): route aws/bw/bws at the devbox, with a BLOCKER-gated exce -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] Two-stage case: `NEEDS_ENV`'s credential check satisfied (`private/account/.env` sourced) but `aws` still missing on host -> `NEEDS_SCRIPT` still catches it, proving the two tables compose in the right order.
+    (ticked) 2026-09-23T12:19:36Z by d778be9d: retroactive record: closed by cc20cbec0 (2026-09-23) feat(hooks): route aws/bw/bws at the devbox, with a BLOCKER-gated exce -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] Exception-file case: a present, valid exception for `("check:ci-release-state", "aws")` -> exit 0, silent/NOTE only.
+    (ticked) 2026-09-23T12:19:36Z by d778be9d: retroactive record: closed by cc20cbec0 (2026-09-23) feat(hooks): route aws/bw/bws at the devbox, with a BLOCKER-gated exce -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 
 ## Verification
 
 - [x] `python3 .claude/rediacc_hooks/guards/test-block_host_toolchain_run.py` green, new cases included, both directions.
+    (ticked) 2026-09-23T12:19:36Z by d778be9d: retroactive record: closed by cc20cbec0 (2026-09-23) feat(hooks): route aws/bw/bws at the devbox, with a BLOCKER-gated exce -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] `check:ci-hook-integrity` green (TWIN/differential requirements unaffected).
+    (ticked) 2026-09-23T12:19:36Z by d778be9d: retroactive record: closed by cc20cbec0 (2026-09-23) feat(hooks): route aws/bw/bws at the devbox, with a BLOCKER-gated exce -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] Live: `.ci/scripts/release/assert-edge-tag-exists.sh` run on the host now refuses/routes rather than reporting a bare "command not found".
+    (ticked) 2026-09-23T12:19:36Z by d778be9d: retroactive record: closed by cc20cbec0 (2026-09-23) feat(hooks): route aws/bw/bws at the devbox, with a BLOCKER-gated exce -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 
 ## Outcome, 2026-09-23
 
