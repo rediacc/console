@@ -53,18 +53,18 @@ A judge-log row whose timestamp equals a settled fix-set's `at` is a fix stop. T
 
 | time (Z) | fix-set settled | sweep finding | what happened to the prior demand |
 |---|---|---|---|
-| 14:19:18 | `a64d5c5e0a28` capped | "Two semantically linked fields in a single hook transformation ..." | banked, fires=1 |
-| 14:22:41 | `b06260c7103c` covered | none (verdict `stop`) | fresh ask answered silent, so the 14:19 demand was CLEARED unasked |
-| 15:03:03 | `232ec5e2e286` covered | none | nothing outstanding |
-| 15:06:12 | `3807fa1b20c6` capped | "Citation path traversal code that breaks when encountering stub entries ..." | banked, fires=1 |
+| 14:19:18 | `tick:a64d5c5e0a28` capped | "Two semantically linked fields in a single hook transformation ..." | banked, fires=1 |
+| 14:22:41 | `tick:b06260c7103c` covered | none (verdict `stop`) | fresh ask answered silent, so the 14:19 demand was CLEARED unasked |
+| 15:03:03 | `tick:232ec5e2e286` covered | none | nothing outstanding |
+| 15:06:12 | `tick:3807fa1b20c6` capped | "Citation path traversal code that breaks when encountering stub entries ..." | banked, fires=1 |
 | 15:15:16 | not a fix stop | same class repeated | the follow-up path worked; fires=2, at cap |
-| 15:47:49 | `885364fa53bb` covered | "Configuration inventory files ... drift when hooks are added without registration" | banked, fires=1 |
-| 15:51:23 | `fe0655f2220e` proven | "Hook systems lack standardized claim and task verification test suites" | fresh ask, so the 15:47 demand was OVERWRITTEN unasked |
+| 15:47:49 | `tick:885364fa53bb` covered | "Configuration inventory files ... drift when hooks are added without registration" | banked, fires=1 |
+| 15:51:23 | `tick:fe0655f2220e` proven | "Hook systems lack standardized claim and task verification test suites" | fresh ask, so the 15:47 demand was OVERWRITTEN unasked |
 | 15:52:58 | not a fix stop | same class repeated, flagged `UNVERIFIED` | follow-up worked; fires=2, at cap |
 
 The surviving marker `/tmp/claude-worklist/.judge/classsweep-0a598f50c372.json` holds the 15:51 class at `fires: 2`, which corroborates the last two rows exactly.
 
-The same pattern appears earlier the same day: the demand banked at 09:20:15Z was displaced by the fix stop at 09:25:48Z (`f70ca50c7474`), and that one by the fix stop at 09:38:20Z (`594f42ed8a50`).
+The same pattern appears earlier the same day: the demand banked at 09:20:15Z was displaced by the fix stop at 09:25:48Z (`tick:f70ca50c7474`), and that one by the fix stop at 09:38:20Z (`tick:594f42ed8a50`).
 
 ### How often the displacement happens
 

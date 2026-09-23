@@ -253,6 +253,35 @@ FINGERPRINT_RE = re.compile(r"fingerprint:([0-9a-f]{7,64})", re.IGNORECASE)
 #: one missed dead pointer, never a false accusation.
 AGENT_ID_RE = re.compile(r"(?<![0-9a-zA-Z])(a[0-9a-f]{16})(?![0-9a-zA-Z])")
 
+#: A STOP-HOOK TICK ID IS NEVER A GIT OBJECT, the fourth instance of the class
+#: the three blocks above answer: a 12-hex run that satisfies HEXTOK_RE by
+#: coincidence of shape alone.
+#:
+#: `wl_reggate` mints one id per settled fix-set and per judged class, and a plan
+#: that reconstructs a stop-by-stop timeline has to name them -- that IS the
+#: evidence. Measured 2026-09-23: ten findings in
+#: `agent/plans/PLAN-sweep-obligation-carry-forward.md`, every one a tick id in
+#: its own timeline table, and two more in
+#: `agent/plans/_done/PLAN-fix-stop-hook-completion-evidence-refire.md`. Not one
+#: was ever meant to resolve, and the gate was asking those plans to prove a
+#: marker key is a commit.
+#:
+#: Matched by requiring `tick:` immediately before the candidate, the same
+#: marker-behind-the-token shape DIGEST_RE and FINGERPRINT_RE use and for the
+#: same reason: a bare hex run without the marker stays judged, so this cannot
+#: become the general amnesty for long tokens DIGEST_RE's note warns against.
+TICK_ID_RE = re.compile(r"tick:([0-9a-f]{7,64})", re.IGNORECASE)
+
+#: THE SAME ID AS A PATH COMPONENT, which is the one place the marker above
+#: cannot be written without corrupting the evidence. The Stop hook's judge
+#: markers live at `/tmp/claude-worklist/.judge/<rule>-<tick id>.json`, and a
+#: plan quoting that path is quoting a filename, not citing an object.
+#:
+#: Deliberately keyed on the whole `/.judge/` shape rather than on
+#: "<word>-<hex>.json" anywhere, so a genuinely dead sha inside some other
+#: filename is still reported.
+MARKER_FILE_RE = re.compile(r"/\.judge/[a-z][a-z0-9_]*-([0-9a-f]{7,64})\.json")
+
 #: How many findings are printed before the tail is summarised. A wall of
 #: findings is a wall nobody reads to the end of, and the fix for the first is
 #: usually the fix for the rest.
@@ -401,6 +430,8 @@ def citations(text):
     digest_spans = [d.span(1) for d in DIGEST_RE.finditer(text or "")]
     agent_id_spans = [a.span(1) for a in AGENT_ID_RE.finditer(text or "")]
     fingerprint_spans = [f.span(1) for f in FINGERPRINT_RE.finditer(text or "")]
+    tick_id_spans = [t.span(1) for t in TICK_ID_RE.finditer(text or "")]
+    tick_id_spans += [t.span(1) for t in MARKER_FILE_RE.finditer(text or "")]
     for m in R.HEXTOK_RE.finditer(text or ""):
         if any(m.start() < e and s < m.end() for s, e in spans):
             continue
@@ -419,6 +450,9 @@ def citations(text):
             continue
         # A test's own content fingerprint, not a git object. See FINGERPRINT_RE.
         if (m.start(1), m.end(1)) in fingerprint_spans:
+            continue
+        # A stop-hook tick id, not a git object. See TICK_ID_RE and MARKER_FILE_RE.
+        if (m.start(1), m.end(1)) in tick_id_spans:
             continue
         # A SHAPE FINGERPRINT IS NOT A GIT OBJECT, and it looks exactly like one: 12 hex characters, which this gate judges as an abbreviated sha and can never resolve. `check:ci-shape-duplication` prints these and tells the reader to cite them -- "put its FINGERPRINT into shape-duplication-seed.json" -- so a plan explaining WHY a shape was accepted has to name it, and every such
         # plan line was an unresolvable-pointer failure. Measured 2026-09-08: `94f3f7e6f351` and `aea2bc733552` both reported that way, while an earlier plan's `98b21fa52e5d` passed only because it happens to prefix a real object in this clone -- so the gate was already wrong here and was being saved by coincidence.
@@ -802,6 +836,29 @@ def selftest(root):
     ck(
         "CONTROL: the same token WITHOUT the marker IS",
         any(k == "object" for k, _t in citations("the site hashes to c1e552fa19e9")),
+    )
+    # THE TICK-ID EXEMPTION, both directions on each of its two matchers, because each one is licensed by a different marker and a control over only one of them would leave the other able to exempt anything. See TICK_ID_RE and MARKER_FILE_RE.
+    ck(
+        "a hex run behind a `tick:` marker is NOT treated as an object",
+        not any(k == "object" for k, _t in citations("the fix-set tick:a64d5c5e0a28 settled")),
+    )
+    ck(
+        "CONTROL: the same tick id WITHOUT the marker IS",
+        any(k == "object" for k, _t in citations("the fix-set a64d5c5e0a28 settled")),
+    )
+    ck(
+        "a tick id inside a `/.judge/` marker filename is NOT treated as an object",
+        not any(
+            k == "object"
+            for k, _t in citations("/tmp/claude-worklist/.judge/classsweep-0a598f50c372.json")
+        ),
+    )
+    ck(
+        "CONTROL: the same filename OUTSIDE `/.judge/` still carries an object",
+        any(
+            k == "object"
+            for k, _t in citations("/tmp/claude-worklist/marks/classsweep-0a598f50c372.json")
+        ),
     )
     # THE AGENT-ID EXEMPTION, both directions and on the length boundary, because the whole narrowing is the length. See AGENT_ID_RE.
     ck(
