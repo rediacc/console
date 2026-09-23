@@ -129,17 +129,17 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 6,
-      "done": 0,
-      "open_sigs": [
+      "open": 0,
+      "done": 6,
+      "open_sigs": [],
+      "done_sigs": [
         "251e6c8e",
         "4a9f06c9",
         "775f11ff",
         "a63df077",
         "cb244b5c",
         "d7f4bbdb"
-      ],
-      "done_sigs": []
+      ]
     },
     "agent/plans/PLAN-breakpoint-secret-shape.md": {
       "status": "design",

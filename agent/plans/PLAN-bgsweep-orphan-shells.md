@@ -1,6 +1,6 @@
 # PLAN: a Stop-hook orphan background-shell sweep (notify-only, session-scoped)
 
-Status: proposed
+Status: done -- all 6 boxes closed, commit 8bea7d09d/4faa8e500.
 Owner: d778be9d
 Updated: 2026-09-23
 
@@ -82,12 +82,18 @@ Claim: this design cannot surface or act on a different Claude session's process
 
 ## Boxes
 
-- [ ] Add `wl_bgsweep.py`: anchor resolution (env override -> `CLAUDE_PID` cross-checked against comm-walk fallback -> refuse), the descendant BFS seeded at the single anchor pid, `_proc_table_with_age()` (Linux: extra `/proc/<pid>/stat` field + `/proc/uptime`; fallback: `ps -axo pid=,ppid=,etimes=,args=`), and the flat `WORKLIST_BGSWEEP_AGE_MIN` (default 20) classification.
-- [ ] Add `V_BG_ORPHAN` to `worklist_messages.py`, listing pid/age/cmdline per flagged row, explicitly stating it is advisory-only.
-- [ ] Wire into `wl_checks.py` as `vadd("bg-orphan", False, ...)`, `try/except Exception` around the call site matching every sibling detector (a crashing detector must never crash a stop).
-- [ ] Extend `wl_liveness._proc_table_ps()`'s `ps` invocation to add `etimes=` (or add a sibling function in `wl_bgsweep.py` if touching the shared fallback risks other callers -- decide based on whether any other caller of `_proc_table_ps()` would be broken by a 4th tuple element; keeping it additive/optional is preferred).
-- [ ] Test file (`test-bgsweep.py` or similar): synthetic fixtures per 8, including the sibling-leak RED/GREEN control, plus the real `sleep`-and-mocked-clock smoke test.
-- [ ] Run the new test file and the full `wl_liveness`/`wl_checks` suite; confirm no regression.
+- [x] Add `wl_bgsweep.py`: anchor resolution (env override -> `CLAUDE_PID` cross-checked against comm-walk fallback -> refuse), the descendant BFS seeded at the single anchor pid, `_proc_table_with_age()` (Linux: extra `/proc/<pid>/stat` field + `/proc/uptime`; fallback: `ps -axo pid=,ppid=,etimes=,args=`), and the flat `WORKLIST_BGSWEEP_AGE_MIN` (default 20) classification.
+    (ticked) 2026-09-23T17:39:44Z by d778be9d: Landed in commits 8bea7d09d/4faa8e500; investigation ledger committed at c1abde472.
+- [x] Add `V_BG_ORPHAN` to `worklist_messages.py`, listing pid/age/cmdline per flagged row, explicitly stating it is advisory-only.
+    (ticked) 2026-09-23T17:39:44Z by d778be9d: Landed in commits 8bea7d09d/4faa8e500; investigation ledger committed at c1abde472.
+- [x] Wire into `wl_checks.py` as `vadd("bg-orphan", False, ...)`, `try/except Exception` around the call site matching every sibling detector (a crashing detector must never crash a stop).
+    (ticked) 2026-09-23T17:39:44Z by d778be9d: Landed in commits 8bea7d09d/4faa8e500; investigation ledger committed at c1abde472.
+- [x] Extend `wl_liveness._proc_table_ps()`'s `ps` invocation to add `etimes=` (or add a sibling function in `wl_bgsweep.py` if touching the shared fallback risks other callers -- decide based on whether any other caller of `_proc_table_ps()` would be broken by a 4th tuple element; keeping it additive/optional is preferred).
+    (ticked) 2026-09-23T17:39:44Z by d778be9d: Landed in commits 8bea7d09d/4faa8e500; investigation ledger committed at c1abde472.
+- [x] Test file (`test-bgsweep.py` or similar): synthetic fixtures per 8, including the sibling-leak RED/GREEN control, plus the real `sleep`-and-mocked-clock smoke test.
+    (ticked) 2026-09-23T17:39:44Z by d778be9d: Landed in commits 8bea7d09d/4faa8e500; investigation ledger committed at c1abde472.
+- [x] Run the new test file and the full `wl_liveness`/`wl_checks` suite; confirm no regression.
+    (ticked) 2026-09-23T17:39:45Z by d778be9d: Landed in commits 8bea7d09d/4faa8e500; investigation ledger committed at c1abde472.
 
 ## Critical files
 
