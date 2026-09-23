@@ -67,7 +67,7 @@ that matters is larger: `.ci/rediacc_ci/quality/` holds 77 ported gate modules t
 
 ## 1. The real finding, and it is sharper than the one I filed
 
-`.ci/scripts/quality/check-control-vacuity.sh:183-193` says, verbatim:
+`.ci/scripts/quality/check-control-vacuity.sh` (retired, ported to `.ci/scripts/quality/check_control_vacuity.py`) said, verbatim, at the time this was written:
 
 > of the 21 Python gates, ZERO build a control mutant by substitution … **What must
 > not happen is that changing silently.** … so the number of unscanned gates is now
@@ -80,7 +80,7 @@ reads.
 
 Measured day-one set: 12 files, 71 substitution-built plant sites, 3 proof assertions in total. Largest offender `.ci/scripts/quality/check_plan_record.py` (20 sites, 0 proofs).
 
-**One live defect, verified at `.ci/rediacc_ci/quality/review_turn_capacity.py:480`:**
+**One live defect, verified at `.ci/rediacc_ci/quality/review_turn_capacity.py`, at the identity leg this plan's own Tasks list later deleted:**
 
 ```python
 _FIXTURE_HEALTHY.replace("max_turns=140", "max_turns=140").replace(
@@ -95,7 +95,8 @@ A baseline is right under three joint conditions, and this meets none:
 1. **Debt too large to drain in one change.** Language policy: 521 paths, each its
 own port. Here: 71 sites, one mechanical rewrite.
 2. **Heterogeneous fixes.** Here every GENUINE PLANT is the same three tokens.
-**CORRECTED 2026-09-08 while converting:** the count of 71 is NOT 71 plants. It includes `.replace` used for PARSING and for NORMALISING BOTH SIDES OF A COMPARISON, which must NOT be converted — `.ci/rediacc_ci/quality/release_key_canonical.py:651-652` strips newlines off `welded` and `_ARMOR` to compare their content, and wrapping either in `plant()` would break a passing test,
+**CORRECTED 2026-09-08 while converting:** the count of 71 is NOT 71 plants.
+It includes `.replace` used for PARSING and for NORMALISING BOTH SIDES OF A COMPARISON, which must NOT be converted — `.ci/rediacc_ci/quality/release_key_canonical.py:550-551` (the citation drifted from `:651-652` as the file was edited since; content and shape unchanged) strips newlines off `welded` and `_ARMOR` to compare their content, and wrapping either in `plant()` would break a passing test,
 since `plant()` raises when the needle is absent and is a mutant constructor, not a normaliser. So the conversion is per-site judgement, not the mechanical rewrite this plan first claimed. That does not change the verdict against a baseline — it strengthens it, because a baseline would have frozen the parsing sites as debt they are not.
 3. **No harness could make the class impossible.** Here one can:
 `.ci/rediacc_ci/controls.py`, already imported by all 12 files' selftests.
@@ -111,7 +112,9 @@ Instrument instead: a harness plus a gate that requires the harness. A `plant()`
 
 `.ci/rediacc_ci/controls.py` gains module-level `plant` / `plant_re`, free functions rather than `Controls` methods because several files build fixtures at module level where no `ctl` exists. `plant()` prints nothing — it is a constructor, not an assertion.
 
-The 12 files convert mechanically. **Watch the derived floors**: removing the now redundant proof at `.ci/rediacc_ci/quality/review_turn_capacity.py:499-503` drops a `ctl.check`, so the `+3` at `:489` becomes `+2`. `.ci/scripts/quality/check_plan_record.py` needs the `sys.path` hop spelled as in `.ci/scripts/quality/check_npmrc.py:17`.
+The 12 files convert mechanically.
+**Watch the derived floors**: removing the now redundant proof at `.ci/rediacc_ci/quality/review_turn_capacity.py` (the identity leg that stood at `:499-503`, since deleted per this plan's own Tasks list) drops a `ctl.check`, so the `+3` that stood at `:489` became `+2`.
+`.ci/scripts/quality/check_plan_record.py` needs the `sys.path` hop spelled as in `.ci/scripts/quality/check_npmrc.py:17`.
 
 The new gate is NOT a widened `control_vacuity`. Three reasons in descending force: the live gate is the bash twin (`package.json:140`) and `.ci/rediacc_ci/tests/test_quality_control_vacuity.py:189` requires byte-identical output, so widening means writing an AST-equivalent predicate **in bash**; invariant 5 forbids deleting the twin, so widening means maintaining a bash
 Python-parser until W7 P5; and the predicate is genuinely different — `control_vacuity` asks "is there a proof?", this asks "did you use the harness?".
@@ -125,7 +128,7 @@ The `control_vacuity` disclosure edit must land in both twins in one commit or `
 
 ## 4. Controls — fires on a plant, silent when clean, both directions
 
-On `plant()` itself: happy path returns; missing needle raises; **`old == new` raises with its own distinct message** (this is what catches `.ci/rediacc_ci/quality/review_turn_capacity.py:480`, so it is not hypothetical); empty subject raises; `plant_re` both ways; a multi-occurrence mirror.
+On `plant()` itself: happy path returns; missing needle raises; **`old == new` raises with its own distinct message** (this is what caught the identity leg that stood at `.ci/rediacc_ci/quality/review_turn_capacity.py`, since deleted, so it was not hypothetical); empty subject raises; `plant_re` both ways; a multi-occurrence mirror.
 
 On the detector, every rule with its mirror: raw substitution in a control region is a finding / the `plant()` form is silent; a non-`Name` receiver is silent; a `.replace` outside a control region is silent; one inside a docstring is silent.
 
@@ -154,7 +157,7 @@ For `.sub`/`.subn` the RECEIVER is a compiled regex, not the fixture; that call 
 - **1 was a genuine miss, now converted.** `.ci/scripts/quality/check_plan_record.py:1090`
 `with_ph.replace("Status: parked", "Status: compacted", 1)` is a real mutant on a lowercase local, which the earlier `_UPPER`/`clean` sweeps did not reach.
 - **4 REMAIN AND ARE NOT CONVERTIBLE**, which is the finding:
-  - `.ci/rediacc_ci/quality/release_key_canonical.py:651-652` normalise BOTH SIDES of a comparison
+  - `.ci/rediacc_ci/quality/release_key_canonical.py:550-551` (drifted from `:651-652`; same content) normalise BOTH SIDES of a comparison
     (`welded` vs `_ARMOR`, "one line break gone"). Not mutants.
   - `.ci/scripts/quality/check_plan_record.py:1155-1157` is a plant with a DELIBERATE FALLBACK CHAIN:
     `drifted = cen.replace(A)`, then `if drifted == cen: drifted = cen.replace(B)`.
