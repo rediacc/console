@@ -155,7 +155,18 @@ def run(ev):
 
     root = ev.env("CLAUDE_PROJECT_DIR") or hookio.git_out(["rev-parse", "--show-toplevel"])
     if root == "":
-        return hookio.ALLOW
+        # FAIL CLOSED, matching the identity-file-unreadable branch two lines below.
+        # By this point COMMIT_AT_COMMAND_POS has already matched, so this genuinely IS an attempted git commit -- there is no "not a repo, nothing to check" reading left. Reproduced live 2026-09-23: a test harness override of GIT_CONFIG_GLOBAL that lacked a `safe.directory` entry made `git rev-parse --show-toplevel` fail (dubious ownership), root came back empty, and this
+        # guard silently disabled the whole identity check rather than refusing a commit it could not verify.
+        ev.warn(
+            "BLOCKED: could not resolve which repository this commit targets, so its author "
+            "cannot be checked against a linked identity."
+        )
+        ev.warn("")
+        ev.warn("CLAUDE_PROJECT_DIR is unset and `git rev-parse --show-toplevel` failed --")
+        ev.warn("a git config problem (e.g. a missing `safe.directory` entry), not evidence")
+        ev.warn("this command is harmless.")
+        return hookio.DENY
 
     # WHICH REPO IS JUDGED, and this deliberately DIFFERS from block-untagged-commit.sh. That guard exits on ANY foreign root because epics are console's business alone. Three submodules carried this exact defect, so a commit into one of them IS in scope here; only a repo outside this tree is somebody else's identity policy.
     target = shellscan.target_root(scan, root)

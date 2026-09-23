@@ -299,7 +299,11 @@ def test_block_unlinked_commit_author(tmp_path):
     )
     gitconfig = tmp_path / "gitconfig"
     gitconfig.write_text("[user]\n\tname = ctl\n\temail = good@example.com\n", encoding="utf-8")
-    env = env_with(COMMIT_IDENTITY_FILE=str(identity), GIT_CONFIG_GLOBAL=str(gitconfig))
+    # CLAUDE_PROJECT_DIR IS SET EXPLICITLY, not left to the `git rev-parse --show-toplevel` fallback: this fixture's own `GIT_CONFIG_GLOBAL` override has no `safe.directory` entry for this checkout, so that fallback genuinely fails here ("dubious ownership"), and every case in this
+    # function shared that failure silently until block_unlinked_commit_author.py's root-resolution-failure branch was fixed to fail CLOSED instead of ALLOW -- at which point every case here started returning the SAME blocked verdict regardless of its own real logic, which is what surfaced this.
+    env = env_with(
+        COMMIT_IDENTITY_FILE=str(identity), GIT_CONFIG_GLOBAL=str(gitconfig), CLAUDE_PROJECT_DIR=str(ROOT)
+    )
     block.check(
         "check 2 guards/block_unlinked_commit_author.py",
         bash_json("git -c user.email=bad@example.com commit -m x"),
