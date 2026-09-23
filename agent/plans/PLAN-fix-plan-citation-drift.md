@@ -134,7 +134,8 @@ The corpus stands at 351 citation findings and no record findings, against 385 a
     (ticked) 2026-09-23T10:35:45Z by d778be9d: check:ci-plan-citations names no finding in PLAN-agent-hints-implementation.md on a live run; the repaired pointer is at agent/plans/PLAN-agent-hints-implementation.md:32
 - [x] `agent/plans/PLAN-agent-hints-in-stop-hook.md` -- 1: 1 gate: no such `check:` script
     (ticked) 2026-09-23T10:35:43Z by d778be9d: check:ci-plan-citations names no finding in PLAN-agent-hints-in-stop-hook.md on a live run; the repaired pointer is at agent/plans/PLAN-agent-hints-in-stop-hook.md:46
-- [ ] `agent/plans/PLAN-agent-tree-lifecycle.md` -- 5: 5 fileline ON A BOX LINE (editing it re-keys the box signature)
+- [x] `agent/plans/PLAN-agent-tree-lifecycle.md` -- 5: 5 fileline ON A BOX LINE (editing it re-keys the box signature)
+    (ticked) 2026-09-23T12:16:25Z by d778be9d: Investigated at a959e94ad. check:ci-plan-citations names no finding against PLAN-agent-tree-lifecycle.md on a live run; the repaired pointers are on agent/plans/PLAN-agent-tree-lifecycle.md:55 and the box loose_sig is unchanged.
 - [ ] `agent/plans/PLAN-commit-author-identity.md` -- 5: 3 fileline: basename matches NOTHING in the tree; 2 fileline: right file, stale line, no unambiguous anchor
 - [x] `agent/plans/PLAN-duplication-angle.md` -- 1: 1 gate: no such `check:` script
     (ticked) 2026-09-23T10:35:44Z by d778be9d: check:ci-plan-citations names no finding in PLAN-duplication-angle.md on a live run; the repaired pointer is at agent/plans/PLAN-duplication-angle.md:32
@@ -170,12 +171,15 @@ The corpus stands at 351 citation findings and no record findings, against 385 a
 - [ ] `agent/plans/PLAN-w9p2-script-relocation.md` -- 9: 9 fileline: basename matches NOTHING in the tree
 - [x] `agent/plans/_done/PLAN-agent-session-archival.md` -- 1: 1 fileline: basename matches 38 files, ambiguous
     (ticked) 2026-09-23T10:35:45Z by d778be9d: check:ci-plan-citations names no finding in PLAN-agent-session-archival.md on a live run; the repaired pointer is at agent/plans/_done/PLAN-agent-session-archival.md:14
-- [ ] `agent/plans/_done/PLAN-archival-tests-python-compliance.md` -- 8: 6 fileline: basename matches NOTHING in the tree; 1 object: neither blob nor reachable commit; 1 fileline ON A BOX LINE (editing it re-keys the box signature)
+- [x] `agent/plans/_done/PLAN-archival-tests-python-compliance.md` -- 8: 6 fileline: basename matches NOTHING in the tree; 1 object: neither blob nor reachable commit; 1 fileline ON A BOX LINE (editing it re-keys the box signature)
+    (ticked) 2026-09-23T12:16:25Z by d778be9d: Investigated at a959e94ad. check:ci-plan-citations names no finding against PLAN-archival-tests-python-compliance.md on a live run; the repaired pointer is at agent/plans/_done/PLAN-archival-tests-python-compliance.md:121.
 - [x] `agent/plans/_done/PLAN-ci-pr-head-ref-trigger-resolution.md` -- 3: 3 fileline: basename matches NOTHING in the tree
     (ticked) 2026-09-23T10:35:46Z by d778be9d: check:ci-plan-citations names no finding in PLAN-ci-pr-head-ref-trigger-resolution.md on a live run; the repaired pointer is at agent/plans/_done/PLAN-ci-pr-head-ref-trigger-resolution.md:152
 - [ ] `agent/plans/_done/PLAN-ci-vacuity-baseline-registry.md` -- 6: 5 fileline: right file, stale line, no unambiguous anchor; 1 fileline: basename matches NOTHING in the tree
-- [ ] `agent/plans/_done/PLAN-cleanup-context-state-files.md` -- 1: 1 fileline ON A BOX LINE (editing it re-keys the box signature)
-- [ ] `agent/plans/_done/PLAN-eliminate-worklist-report-per-stop-env.md` -- 14: 14 fileline ON A BOX LINE (editing it re-keys the box signature)
+- [x] `agent/plans/_done/PLAN-cleanup-context-state-files.md` -- 1: 1 fileline ON A BOX LINE (editing it re-keys the box signature)
+    (ticked) 2026-09-23T12:16:25Z by d778be9d: Investigated at a959e94ad. check:ci-plan-citations names no finding against PLAN-cleanup-context-state-files.md on a live run; the repaired pointer is at agent/plans/_done/PLAN-cleanup-context-state-files.md:27.
+- [x] `agent/plans/_done/PLAN-eliminate-worklist-report-per-stop-env.md` -- 14: 14 fileline ON A BOX LINE (editing it re-keys the box signature)
+    (ticked) 2026-09-23T12:16:25Z by d778be9d: Investigated at a959e94ad. check:ci-plan-citations names no finding against PLAN-eliminate-worklist-report-per-stop-env.md on a live run; the repaired pointers start at agent/plans/_done/PLAN-eliminate-worklist-report-per-stop-env.md:171.
 - [x] `agent/plans/_done/PLAN-fix-stop-hook-completion-evidence-refire.md` -- 4: 4 object: neither blob nor reachable commit
     (ticked) 2026-09-23T12:09:46Z by d778be9d: Investigated at d30f418f1. check:ci-plan-citations names no finding against PLAN-fix-stop-hook-completion-evidence-refire.md on a live run; both survivors were one tick id, marked at agent/plans/_done/PLAN-fix-stop-hook-completion-evidence-refire.md:31.
 - [ ] `agent/plans/_done/PLAN-hint-corpus-ci-assertions.md` -- 4: 2 fileline ON A BOX LINE (editing it re-keys the box signature); 1 gate: no such `check:` script; 1 fileline: basename matches NOTHING in the tree
