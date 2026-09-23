@@ -568,6 +568,11 @@ def test_209m_counting_words_never_route_a_dismissal_to_a_specialist(wl):  # noq
     assert "already covers" not in got.out, (
         "209M a counting word routed a dismissal to a specialist: %s" % got.out[:400]
     )
+    # THIRD PART, PLAN-stop-hook-overhaul.md section 1.1's CONTROL: the agent-free arm must actually SPEAK, not merely fail to misroute. Silence on both counts would pass the assertion above for the wrong reason -- the whole push-back feature disabled, not the routing fixed -- exactly the trap case 208's own docstring names two lines up. `already covers` never appears because no
+    # file is named; `No specialist file matched` is unique to the agent-free template (V_GIVEUP_CLAIM) and cannot appear by accident.
+    assert "No specialist file matched" in got.out, (
+        "209M the agent-free give-up challenge did not fire: %s" % got.out[:400]
+    )
 
     wl.newturn()
     wl.say("the zorbium ledger reconciliation cannot be tested locally")
