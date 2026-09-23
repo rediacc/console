@@ -30,9 +30,16 @@ CLAUDE.md's own worklist section states the store is per-repo and per-session, a
 ## Derived, mechanical work with a pre-existing oracle and a loud failure goes to a Haiku sub-agent, not inline
 Hint-Id: haiku-for-derived-work
 Source: file:CLAUDE.md:135, file:docs/agent-reference/model-routing.md:1
+Status: retired
+
+Retired 2026-09-23 by the operator ruling recorded as `D-M1`. The three conditions this hint rested on -- derived, oracled, loud -- no longer license a Haiku WRITE dispatch, so the reminder now points the wrong way. Kept with its history intact rather than deleted; `haiku-read-only-only` replaces it.
+
+## Haiku is for read-only investigation and one-line follow-ups; any dispatch that produces an artifact runs on the session default
+Hint-Id: haiku-read-only-only
+Source: file:CLAUDE.md:135, file:docs/agent-reference/model-routing.md:93
 Status: active
 
-The model-routing rule is by task shape, never by language or domain: a port, a translation, a mechanical sweep or a read-only survey where a pre-existing oracle (a shadow ledger, a golden differential, a gate that already reds) decides correctness, and being wrong is loud rather than a silent gap.
+Search and survey fan-out asking for `file:line` evidence, bounded classification, and a single-line correction to something already read are the whole of the Haiku slice. A port, a mechanical sweep or doc churn produces an artifact and owns a file set, and an oracle bounds only the failures it was built to catch, not what the dispatch dropped or touched on the way.
 
 ## A question that means sweeping several files or packages goes to read-only Explore agents, several at once, asking for file:line evidence rather than file dumps
 Hint-Id: investigate-with-fan-out

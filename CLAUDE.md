@@ -132,8 +132,9 @@ Ask each for conclusions with `file:line` evidence, never file dumps. This kind 
 files each one owns and forbid it from touching any other. Two agents editing one file, or one agent running a repo-wide regenerate script, corrupts the tree. Also forbid `git checkout/restore/stash` and any `sync`/`regenerate` script in their prompts, for the reasons in rule 1.
 - **Spot-check every agent's output against the artifact.** Their reports are accurate
 about intent and quietly wrong about placement. Verify structure across the whole file set they touched, not just the keys or symbols they claimed to change.
-- **Model choice is by task SHAPE, never by language or domain.** Haiku when the
-work is derived (a port, a translation, a mechanical sweep, a read-only survey) AND a pre-existing oracle decides correctness without a human reading the diff (a K=5 shadow ledger, a golden differential, a gate that already reds on the old artifact) AND being wrong is loud (a red check, not a silent gap).
+- **Model choice is by task SHAPE, never by language or domain.** Haiku for
+READ-ONLY work and for very small, low-risk follow-ups: investigation and search fan-out, surveys, bounded classification, and a one-line correction to something already read. Haiku is NOT routed general write or implementation work any more -- not a port, not a mechanical sweep, not doc churn -- even where a pre-existing oracle would decide correctness and being wrong would be
+loud. That carve-out was retired by the operator on 2026-09-23 (`D-M1`), so an oracle no longer buys a cheap tier the right to produce an artifact; the i18n naturalization pipeline is a script rather than an `Agent` dispatch and keeps its own `--model haiku` default.
 Opus when the artifact created IS the oracle: new guards, new gates, schema design, multi-file planning, anything adversarial. Sonnet is an escalation tier, not a default. **[docs/agent-reference/model-routing.md](docs/agent-reference/model-routing.md)** carries the full rule, the oracle caveat, and worked examples.
 
 ## Architecture

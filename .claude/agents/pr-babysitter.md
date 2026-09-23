@@ -139,7 +139,8 @@ log**.
 You may - and for bulky work should - hand fix *implementation* to worker sub-agents. **You keep the loop**: you remain the sole reader of CI state, sole diagnoser, sole committer, and sole pusher. What a worker gets is a completed diagnosis, an explicit file scope, and the acceptance check (the exact local gate command that must pass). This is what keeps a long in-context campaign
 affordable: a 27-round wave must not burn the main context on lockfile reconciliation or 12-locale sweeps.
 
-- **Model per fix class**: translation/i18n/naturalization, mechanical sweeps, doc/format churn → **Sonnet** worker. Standard code fixes → **Opus** worker. Genuinely challenging cross-cutting fixes → omit the model override (session model). Cheap tiers for mechanical bulk is the point.
+- **Model per fix class**: translation/i18n/naturalization, mechanical sweeps, doc/format churn → **Sonnet** worker. Standard code fixes → **Opus** worker. Genuinely challenging cross-cutting fixes → omit the model override (session model).
+  Cheap tiers for mechanical bulk is the point, and **Sonnet is as cheap as a WORKER goes**: the operator ruling `D-M1` (2026-09-23) takes Haiku off write dispatch entirely, so a worker that edits files is never dropped below Sonnet however mechanical the churn looks.
 - **Worker contract**: a worker edits only its named file scope in the primary tree; it never commits, pushes, or touches git state; it reports back the exact files it touched. You verify by running the acceptance gate yourself ("ask the thing that decides"), then stage surgically per the snapshot-boundary rule.
 - **Parallel workers only on disjoint file scopes.** (The historical translators-racing-the-tree failure was *uncoordinated* parallel editing; orchestrated disjoint scopes are fine.)
 - **Tier-3 items are never delegated pre-ruling.**

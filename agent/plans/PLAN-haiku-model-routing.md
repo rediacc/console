@@ -1,6 +1,6 @@
 # PLAN: route the cheap-tier work to Haiku, by task shape
 
-Status: phase 0-1 done, phase 2 (calibration batch) next
+Status: phase 0-1 done and standing as historical record; phase 2 and the flip it gated are SUPERSEDED 2026-09-23 by `D-M1` -- see section 9
 Owner: d778be9d
 First-Seen: 2026-09-22
 Operator ask: "we burn a lot of tokens with stop hook... investigate where we can use haiku model for sub-agents. Which task categories and which languages are better to leverage haiku... implement planned changes to encourage haiku model wherever possible. I suppose python and typescript could be the targets but not limited to them." <!-- style-ok -->
@@ -16,6 +16,8 @@ Designed by a read-only Plan subagent. Every path/line below was opened and read
 campaign, not of the work's difficulty. `36dd93635` also lands in Python and is the hardest judgment call in the last hundred commits. **The axis is task shape. Language is noise.**
 
 ## 1. The decision rule
+
+**The Haiku half below is SUPERSEDED 2026-09-23 by `D-M1`; see section 9.** The shape-over-language premise stands, but the three conditions no longer license a Haiku WRITE dispatch: that tier is read-only work and very small follow-ups now. Read the rule from `docs/agent-reference/model-routing.md`, not from here.
 
 **Choose the model by the shape of the task, never by its language or its domain.**
 
@@ -38,8 +40,8 @@ Both, in this repo's established split:
 - **`CLAUDE.md:134`** -- replace the current one-liner (`Opus for code and design, Sonnet for translation and naturalization`) with a three-line shape rule plus a pointer. It sits inside rule 4, "Reach for subagents" (`CLAUDE.md:122`), which is where a session is already reading when it dispatches.
 - **`docs/agent-reference/model-routing.md`** (new) -- the full rule, the oracle caveat, the worked examples from section 5, and the measurement table from section 6.
 
-This matches eight existing precedents in CLAUDE.md of the form "**[docs/agent-reference/X.md](...)** carries the rest" (`CLAUDE.md:189`, `:203`, `:241`, `:247`, `:253`, `:264`, `:270`, `:272`). **Not generated from one another** -- no generator produces agent-reference prose, and inventing one for two files is not worth a new failure mode. The proposed `ci-agent-model-roster` gate in
-section 4 is what keeps them from drifting.
+This matches eight existing precedents in CLAUDE.md of the form "**[docs/agent-reference/X.md](...)** carries the rest" (`CLAUDE.md:189`, `:203`, `:241`, `:247`, `:253`, `:264`, `:270`, `:272`). **Not generated from one another** -- no generator produces agent-reference prose, and inventing one for two files is not worth a new failure mode.
+The proposed `ci-agent-model-roster` gate in section 4 is what keeps them from drifting.
 
 **Wiring note:** after adding the doc, run `npx tsx scripts/gen/gen-docs.ts --write` and confirm `npx tsx scripts/gen/gen-docs.ts` (verify mode) exits 0 -- `scripts/data/doc-registry.md` is generated and may need the new file's row. Do not hand-edit it.
 
@@ -119,6 +121,8 @@ Roughly 150 lines. **Three-point wiring is mandatory** per `.claude/agents/gate-
 
 ## 5. Worked examples
 
+**Example (a) below is SUPERSEDED 2026-09-23 by `D-M1`; see section 9.** A bash-to-pytest port now runs on the session default, not on a Haiku override, however cleanly it satisfies the three conditions. Examples (b) and (c) still hold, and (d) describes the i18n pipeline, which the ruling does not reach. The live rule is `docs/agent-reference/model-routing.md`.
+
 Three real patterns from this session, with the call a future session should make.
 
 **(a) Port another bash gate-test to pytest** -- the `e812c74e1` / `7a9bda6d7` shape, of which dozens remain.
@@ -156,6 +160,8 @@ establishes that twelve languages have shipped this way for a month. Escalate a 
 
 ## 6. Rollout order and acceptance
 
+**SUPERSEDED 2026-09-23 by `D-M1`; see section 9.** The calibration batch below was never run and will not be, and the four acceptance boxes carry `- [?]` for that reason rather than a tick. The ordering that gated phases 3 and 5 behind it is void; those boxes stay open on their own merits.
+
 **Yes, calibrate before trusting the wider rollout**, following `.claude/hooks/stop/calibrate-judge-rules.py`: a hand-run, opt-in, real-fixture harness that costs money and is not a CI gate, whose header states the discipline exactly ("does haiku, reading a real session message, actually recognise...? That needs the model, a network, and about two cents a case, which is exactly
 what a CI gate must not need").
 
@@ -168,10 +174,10 @@ Take the next 5 bash-to-pytest gate-test ports (the section 5(a) class, the most
 
 Haiku is accepted for this class if all of:
 
-- [ ] >=4 of 5 reached oracle-green within <=2 correction rounds.
-- [ ] Zero required an Opus takeover (a worker that had to be abandoned and redone is a failure regardless of rounds).
-- [ ] Zero produced a case-count regression against the bash twin that the differential did not catch -- i.e. no port was green and short of cases. This is the one that would falsify the whole oracle premise, and it is worth checking by hand on all five.
-- [ ] Measured end-to-end cost (worker + orchestrator correction rounds) is below 50% of the Opus median for the same class.
+- [?] >=4 of 5 reached oracle-green within <=2 correction rounds.
+- [?] Zero required an Opus takeover (a worker that had to be abandoned and redone is a failure regardless of rounds).
+- [?] Zero produced a case-count regression against the bash twin that the differential did not catch -- i.e. no port was green and short of cases. This is the one that would falsify the whole oracle premise, and it is worth checking by hand on all five.
+- [?] Measured end-to-end cost (worker + orchestrator correction rounds) is below 50% of the Opus median for the same class.
 
 If it fails, the honest outcome is narrowing, not abandonment: keep Haiku for section 5(c) read-only surveys (where the evidence contract is stronger and the blast radius is a wasted dispatch) and revert 5(a) to the session default. Record the result either way -- a negative result in that table is worth as much as a positive one, and it is what stops the next session re-running
 this experiment from scratch.
@@ -203,14 +209,31 @@ Beyond that, `agent/plans/PLAN-remove-autopilot.md` deletes the entire `.ci/redi
 - [x] Add the read-only-fan-out-defaults-to-Haiku line to `CLAUDE.md:126`'s bullet (section 2a).
 - [x] Run `npx tsx scripts/gen/gen-docs.ts --write`; confirm verify mode exits 0.
 - [x] Rewrite `.claude/agents/i18n-guardian.md:77-79` to state haiku, with the `f7a5351a9` -> `b8de2f586` history.
-- [ ] Run the phase-2 calibration batch: 5 bash-to-pytest ports on Haiku workers; record model, rounds, wall-clock, cost per port.
-- [ ] Hand-verify all 5 ports for case-count parity against their bash twins (the falsifying check).
-- [ ] Record the batch result, pass or fail, in the `model-routing.md` table, dated.
+- [?] Run the phase-2 calibration batch: 5 bash-to-pytest ports on Haiku workers; record model, rounds, wall-clock, cost per port.
+- [?] Hand-verify all 5 ports for case-count parity against their bash twins (the falsifying check).
+- [?] Record the batch result, pass or fail, in the `model-routing.md` table, dated.
 - [ ] Write `.ci/scripts/quality/check_agent_model_roster.py` with its five controls (Opus, not Haiku).
 - [ ] Wire it three ways: `package.json` key, `scripts/ci-runner/manifest.ts` GateSpec, workflow step or declared `kind: 'test'`.
 - [ ] Regenerate `scripts/ci-runner/gates.lock.json` (`gen-gates-lock.ts --write`); verify with the no-flag run.
 - [ ] Confirm `npm run check:ci-parity` and `check:ci-gate-reachability-coverage` exit 0.
-- [ ] If and only if phase 2 passed: flip `.claude/agents/pr-babysitter.md:142` mechanical/doc-churn tier from Sonnet to Haiku, keeping Sonnet as the named escalation.
+- [?] If and only if phase 2 passed: flip `.claude/agents/pr-babysitter.md:142` mechanical/doc-churn tier from Sonnet to Haiku, keeping Sonnet as the named escalation.
 - [ ] Add `## Model` sections to `.claude/agents/gate-author.md` and `.claude/agents/i18n-guardian.md`.
 - [ ] Regenerate the plan-boxes ledger: `.ci/scripts/quality/check_plan_boxes.py --update` (writes `.ci/config/plan-boxes.json`), and confirm `check:ci-plan-citations`, `check:ci-plan-boxes`, `check:ci-plan-folders` exit 0.
 - [ ] Full CI green.
+
+## 9. Superseded in part by the operator ruling of 2026-09-23 (`D-M1`)
+
+The operator withdrew the carve-out this plan's phase 2 existed to prove: "I give up about haiku write agents! They should only be used for read-only investigation and for very small follow-ups." <!-- style-ok --> The ruling is registered as `D-M1` in `agent/DECISIONS.md` and carried in full, with its reasoning, at `docs/agent-reference/model-routing.md:93`.
+
+**Superseded, and therefore never to be run.** Four boxes in section 8: the phase-2 calibration batch of five bash-to-pytest ports on Haiku workers; the hand-verification of those five for case-count parity against their bash twins; the recording of the batch result in the `model-routing.md` measurement table, which that file no longer carries; and the phase-4 flip of `.claude/agents/pr-babysitter.md:142` from Sonnet to Haiku, which was conditional on the batch passing.
+All four are marked `- [?]` rather than ticked. They were abandoned by decision, not completed, and the two outcomes are not the same record.
+Ticking them would claim work nobody did; deleting the lines would hide a decision; `- [?]` keeps the line, keeps its signature, and keeps it out of the done column, which is what `check:ci-plan-boxes` itself recommends for a box that is not finished.
+
+**Standing as historical record.** Phases 0 and 1 landed and their five boxes stay ticked. The shape-over-language argument in section 1 survives, and so does section 3's finding that the i18n ledger was already Haiku and the stale agent-file note was the only defect there: the i18n pipeline is a script flag rather than an `Agent` dispatch, and `D-M1` does not reach it.
+Sections 0, 2, 2a, 4 and 7 are untouched by the ruling.
+
+**Released from phase-2 gating rather than killed.** The `ci-agent-model-roster` gate of section 4, its wiring, and the `## Model` sections of section 2's table are still open boxes. Section 6 ordered them behind the calibration batch; with the batch cancelled that ordering is void, and they are now unblocked work in their own right.
+The roster gate in particular gets MORE useful under the tightened rule, since its load-bearing half is that any agent on a cheap tier must be named in `docs/agent-reference/model-routing.md` with a reason.
+
+**What section 1's rule now reads as.** Haiku for read-only investigation and search fan-out, for bounded classification, and for a very small low-risk follow-up to something already read. Not for a port, a mechanical sweep, doc churn, or any dispatch that produces an artifact and owns a file set, whatever oracle stands behind it.
+The Opus half and the Sonnet-as-escalation half are unchanged. `docs/agent-reference/model-routing.md` is the live rule; this plan is the design that led to it and is no longer the place to read it from.

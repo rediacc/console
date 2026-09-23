@@ -19,6 +19,7 @@ An id is `D-<SRC><n>`. `<SRC>` is a source key declared in the table below, `<n>
   |---|---|
   | `A` | `docs/ci-overhaul/04-decisions.md` section A, locked by the operator |
   | `B` | `docs/ci-overhaul/04-decisions.md` section B, decided by recommendation |
+  | `M` | `docs/agent-reference/model-routing.md`, the numbered `## Rulings` section |
   | `S` | `agent/plans/PLAN-secret-namespace-migration.md`, locked by the operator 2026-09-02 |
 
 **The `D-1`..`D-9` labels in `docs/ci-overhaul/04-decisions.md:57-112` are NOT register ids and must never be read as one.** They label section C, "Open decision points", which are questions carrying a recommended default rather than decisions. They have no letter, so the grammar below cannot read `D-6` as a register id at all; only a hurried reader can. The same file's section F
@@ -54,6 +55,7 @@ The last one is the licence half. It cannot stop a bad substitution and does not
 | D-B2 | The babysit trigger is `workflow_run`; the label is a state flag | docs/ci-overhaul/04-decisions.md:46 | live | | `pull_request.labeled` carries no author identity |
 | D-B3 | The E2E matrix is cut from five to two in v1 | docs/ci-overhaul/04-decisions.md:47 | live | | Wall-neutral; safety leans on the nightly |
 | D-B4 | Delete coverage rather than revive it | docs/ci-overhaul/04-decisions.md:48 | live | | Reviving needs a baseline store that does not exist |
+| D-M1 | Haiku is not routed general write or implementation work; read-only investigation and very small, low-risk follow-ups only | docs/agent-reference/model-routing.md:93 | live | | Retires the derived-plus-oracle-plus-loud carve-out. Supersedes phase 2 of agent/plans/PLAN-haiku-model-routing.md, retires hint `haiku-for-derived-work`, and leaves the i18n pipeline's `--model haiku` untouched |
 | D-S1 | Provider-named prefixes; component prefixes stay for values a component owns | agent/plans/PLAN-secret-namespace-migration.md:136 | live | | The vendor is the namespace, because minting and revoking is what you do with these <!-- style-ok --> |
 | D-S2 | Unify the namespaces: one name everywhere, and the `SECRET_*` shim goes away | agent/plans/PLAN-secret-namespace-migration.md:140 | live | | |
 | D-S3 | Bitwarden gets the clean names; GitHub keeps the old ones transitionally | agent/plans/PLAN-secret-namespace-migration.md:143 | live | | No org-secret flag-day, so the rename never needs `admin:org` |
