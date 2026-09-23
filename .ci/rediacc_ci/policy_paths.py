@@ -69,6 +69,9 @@ POLICY_FILES: tuple[str, ...] = (
     ".e2e-coverage-allowlist",
     ".embed-assets-upgrade-blocklist",
     ".go-deps-upgrade-blocklist",
+    # 2026-09-23. The first entry here read by a HOOK GUARD rather than by a gate: .claude/rediacc_hooks/guards/block_host_toolchain_run.py routes a command into the devbox when the host lacks the toolchain it needs, and this list holds the one thing that may excuse the host, a host-only interactive auth ceremony a headless container cannot complete.
+    # It is reached through policy_path() from that guard and nowhere else, and it ships EMPTY: no aws, bw or bws consumer in this tree needs a TTY.
+    ".host-toolchain-exceptions",
     ".language-policy-allowlist",
     ".plan-housekeeping-allowlist",
     ".profiler-coverage-allowlist",

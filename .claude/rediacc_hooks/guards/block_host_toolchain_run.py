@@ -34,6 +34,7 @@ import glob as globmod
 import os
 import pathlib
 import re
+import sys
 
 from rediacc_hooks import hookio, shellscan
 
@@ -58,6 +59,35 @@ NEEDS = (
     ("check:ci-python-lint", "ruff"),
     ("check:ci-renet", "go"),
     ("check:ci-renet-tiers", "go"),
+    # `.ci/rediacc_ci/quality/release_state.py:115-123` shells out to the `aws` CLI and `require_cmd`s it up front, so the gate FAILS without the binary rather than provisioning its own pin. That is the entry test the paragraph above states, and it is the one this table's original six got wrong three times.
+    ("check:ci-release-state", "aws"),
+)
+
+# SCRIPTS THAT NAME NO GATE KEY AND NO BARE TOOL. Added 2026-09-23.
+#
+# A session ran `.ci/scripts/release/assert-edge-tag-exists.sh` on the HOST, read `Required command 'aws' is not available`, and began evaluating an `awscli` install on the host. The devbox has carried aws-cli 2.36.40 the whole time (`.devcontainer/Dockerfile:467-490`). Neither table above could see the command: it names no gate key, and the tool it needs appears nowhere in the
+# command line -- the script reaches `aws` from inside itself. So the SCRIPT is what has to be matched.
+#
+# Twelve of these `require_cmd aws` (a hard refusal without the binary) and two -- `upload-to-r2.sh`, `r2-oneshot-scrub.sh` -- call `aws` directly under `set -euo pipefail` with no guard at all, which fails the same way with a worse message. Counted 2026-09-23, not estimated.
+#
+# `.ci/breakpoint/scripts/publish-endpoints.sh:96` is DELIBERATELY ABSENT, on the same precedent as `check:ci-actionlint` above: it degrades to skipping a notification rather than failing, so routing it would send a working path into the fix-the-image branch for nothing.
+#
+# MATCHED WITH `_is_invoked`, NEVER A SUBSTRING TEST. Every key here is a path a session has a real reason to grep, sed or cat, and `NEEDS`'s older `grep_q(..., fixed=True)` is exactly the "reading a script is mistaken for running it" bug `_is_invoked` was written to end for `NEEDS_ENV`.
+NEEDS_SCRIPT = (
+    ("assert-edge-tag-exists.sh", "aws"),
+    ("write-release-sentinel.sh", "aws"),
+    ("delete-r2-channel.sh", "aws"),
+    ("promote-r2-to-stable.sh", "aws"),
+    ("promote-r2-to-stable-hotfix.sh", "aws"),
+    ("simulate-promotion.sh", "aws"),
+    ("upload-repos-to-r2.sh", "aws"),
+    ("cleanup-versions.sh", "aws"),
+    ("upload-r2.sh", "aws"),
+    ("scrub-sentinel.sh", "aws"),
+    ("sync-media-to-r2.sh", "aws"),
+    ("sync-media-from-r2.sh", "aws"),
+    ("upload-to-r2.sh", "aws"),
+    ("r2-oneshot-scrub.sh", "aws"),
 )
 
 # CREDENTIALS THAT LIVE IN A FILE, NOT IN YOUR SHELL. Measured 2026-08-28.
@@ -74,9 +104,77 @@ NEEDS_ENV = (
 )
 
 # BARE INVOCATIONS. The table above matches only a GATE KEY (`check:ci-python-lint` in the command), so a session running the tool directly -- `ruff format <files>`, not `npm run check:ci-python-lint` -- was invisible to it. That gap is real independent of the npx incident above: this catches the correctly-shaped direct command too, when the host genuinely lacks the tool.
-BARE_TOOLS = ("ruff", "go", "shfmt", "shellcheck", "actionlint")
+#
+# `aws`, `bw` and `bws` joined on 2026-09-23. All three are baked into `.devcontainer/Dockerfile` (aws at 467-490, bw at 509-553 pinned to 2026.9.0, bws at 555-587 pinned to 2.1.0), so a bare host that lacks one has somewhere to route to. Nothing in the tree invokes `bw`, and only `.ci/rediacc_ci/setup/tools.py:566-584` registers `bws`, so neither earns a NEEDS_SCRIPT row -- but a
+# session typing either by hand on a host without it gets the same wrong lesson, which is what this array is for.
+#
+# NPX_TOOLS IS DELIBERATELY UNCHANGED. No `npx aws` or `npx bw` misuse has been measured here, and this file's discipline is measured incidents rather than symmetry.
+BARE_TOOLS = ("ruff", "go", "shfmt", "shellcheck", "actionlint", "aws", "bw", "bws")
 
 DEVBOX_LABEL = "label=com.rediacc.devbox.worktree"
+
+# The BLOCKER-gated exception list, and the one reason it will not accept.
+#
+# THE ILLEGITIMATE CATEGORY IS THE WHOLE POINT. "the devbox does not have it" is not an exception, it is a bug report against `.devcontainer/Dockerfile`, and an exception list that accepts it converts every image gap into a permanent host fallback -- which is the outcome the block message spends fourteen lines arguing against. `rediacc_ci.core.allowlist`'s LOW_EFFORT_PHRASES cannot
+# know that: "the devbox image has no aws" is specific, over the thirty-character floor, and passes every generic rule. So the phrase family is refused here, where the domain is.
+EXCEPTIONS_FILE = ".host-toolchain-exceptions"
+
+# TIER ONE: the exact phrases, including the four the plan named. Kept as literals because they are the wording a session actually reaches for, and a literal is the thing a reader can grep for when a refusal surprises them.
+DEVBOX_GAP_PHRASES = (
+    "exist on devbox",
+    "exist on the devbox",
+    "exist in devbox",
+    "exist in the devbox",
+    "absent from devbox",
+    "absent from the devbox",
+    "devbox lacks",
+    "devcontainer lacks",
+    "not installed in devbox",
+    "not installed in the devbox",
+    "not installed on devbox",
+    "not installed on the devbox",
+)
+
+# TIER TWO, AND IT IS THE ONE THAT WORKS. The first cut of this refusal was tier one alone, and the very first reason written to test it -- "the devbox image does not have aws installed so the host is the only place this runs" -- was GRANTED: it says the banned thing in words no literal list had. A phrase list loses to paraphrase every time, and losing here is silent.
+#
+# So the rule is a CONJUNCTION over the whole reason: a devbox-ish subject, an absence verb, and a tool-ish object (including the binary actually being refused). All three, or nothing. That is deliberately coarse, and the asymmetry is why: a false refusal costs one rewording, and a false grant is a permanent host fallback wearing a BLOCKER comment.
+#
+# THE OBJECT TERM IS WHAT KEEPS THE LEGITIMATE CATEGORY IN. "the devbox has no TTY, and this unlock needs one" carries a subject and an absence and is exactly the host-only ceremony this list exists for; it is not about a tool, so it passes.
+DEVBOX_GAP_SUBJECTS = ("devbox", "devcontainer", "container image", "docker image", "the image")
+
+DEVBOX_GAP_ABSENCE = (
+    "does not have",
+    "doesn't have",
+    "does not carry",
+    "doesn't carry",
+    "does not ship",
+    "doesn't ship",
+    "does not include",
+    "doesn't include",
+    "does not exist",
+    "doesn't exist",
+    "not installed",
+    "missing",
+    "absent",
+    "lacks",
+    # THE `<VERB> NO <THING>` FAMILY, added after "the container image ships no aws binary at all" was GRANTED by the first draft of this table. "has no" alone was there; the same sentence written with any other verb walked straight past it, which is the paraphrase failure tier two exists for happening one level down inside tier two.
+    "has no",
+    "have no",
+    "ships no",
+    "carries no",
+    "contains no",
+    "includes no",
+    "provides no",
+    "holds no",
+    "with no",
+    "never had",
+    "not available",
+    "not present",
+    "no such",
+    "without",
+)
+
+DEVBOX_GAP_OBJECTS = ("tool", "toolchain", "binary", "cli", "command", "package", "install")
 
 # The three docker worlds this guard's tail distinguishes, driven rather than described. Without them the differential only ever sees whichever devbox this machine happens to be running, and the two NOTE branches plus the refusal are a coin toss decided by another session's `devbox up`.
 ENVS = [
@@ -183,6 +281,77 @@ def _is_invoked(key, scan):
     return hookio.grep_q(pat, scan)
 
 
+def _ci_seams():
+    """`.ci`'s allowlist parser and policy-path seam, with `sys.path` restored.
+
+    THE CODE COMES FROM THIS CHECKOUT, NOT FROM THE ROOT `_exception` IS GIVEN, and the two are the same directory in production. They part only under test, where a fixture root supplies the policy FILE while the parser is still the real one -- which is the split that keeps the fixture honest: a harness that also supplied the parser would be testing its own copy of the grammar.
+
+    THE INSERT IS SCOPED AND REMOVED, the same shape as `block_prose_style_edit._engine` and for the same reason: the dispatcher runs every guard in one process, and a permanent `.ci` entry would put `rediacc_ci` and `_cipath` on every later guard's import path, where a name collision surfaces as some other guard misbehaving with nothing pointing back here.
+
+    IMPORTED RATHER THAN REIMPLEMENTED. The BLOCKER grammar has had four hand-rolled copies in this tree and `rediacc_ci.core.allowlist` exists to end that; a fifth living in a hook would be the same mistake one directory further out.
+    """
+    cipath = str(hookio.repo_root() / ".ci")
+    inserted = cipath not in sys.path
+    if inserted:
+        sys.path.insert(0, cipath)
+    try:
+        from rediacc_ci.core import allowlist  # noqa: PLC0415 - deliberately late
+        from rediacc_ci.policy_paths import policy_path  # noqa: PLC0415 - deliberately late
+    finally:
+        if inserted and cipath in sys.path:
+            sys.path.remove(cipath)
+    return allowlist, policy_path
+
+
+def _is_devbox_gap(reason, need):
+    """Is this reason the one category that may never be an exception?
+
+    Two tiers, and the second is the load-bearing one; the tables above carry the measurement that made it necessary.
+    """
+    lowered = reason.lower()
+    if any(phrase in lowered for phrase in DEVBOX_GAP_PHRASES):
+        return True
+    objects = (*DEVBOX_GAP_OBJECTS, need.lower())
+    return (
+        any(word in lowered for word in DEVBOX_GAP_SUBJECTS)
+        and any(word in lowered for word in DEVBOX_GAP_ABSENCE)
+        and any(word in lowered for word in objects)
+    )
+
+
+def _exception(root, hit, need):
+    """`(granted, refused)` for one `<hit>@<need>` pair, from the policy file.
+
+    `granted` is the BLOCKER text of a valid entry and means the command is allowed through with a note. `refused` is why a PRESENT entry was ignored, which must be said out loud: an exception someone wrote and believes is in force, silently doing nothing, is worse than no exception at all.
+
+    AN UNREADABLE LIST GRANTS NOTHING. Both shared readers treat a missing file as zero entries and so does this, deliberately -- but a missing file here fails CLOSED (the command is still refused and routed), which is the direction that cannot hide. `parse_file(missing_ok=True)` is spelled out for exactly the reason its own docstring gives: the claim should be visible at the call
+    site.
+    """
+    try:
+        allowlist, policy_path = _ci_seams()
+        path = policy_path(EXCEPTIONS_FILE, root)
+        entries = allowlist.parse_file(path, missing_ok=True)
+    except (ImportError, OSError, ValueError):
+        return "", ""
+
+    want = "%s@%s" % (hit, need)
+    for entry in entries:
+        if entry.entry != want:
+            continue
+        failures = allowlist.verify([entry], str(path))
+        if failures:
+            return "", failures[0].split("\n")[0]
+        if _is_devbox_gap(entry.blocker, need):
+            return "", (
+                "%s line %d excuses '%s' on the grounds that the devbox does not carry"
+                " '%s'. That is not an exception, it is a bug report against"
+                " .devcontainer/Dockerfile: pin '%s' there and rebuild the IMAGE"
+                % (EXCEPTIONS_FILE, entry.line, want, need, need)
+            )
+        return entry.blocker, ""
+    return "", ""
+
+
 def run(ev):
     cmd = ev.raw("tool_input", "command")
     if cmd == "":
@@ -287,7 +456,35 @@ def run(ev):
             bare = True
             break
     if hit == "":
+        # `bare = True` HERE TOO, and it is not a detail. The label branch below turns a non-bare hit into "npm run <hit>", and `npm run assert-edge-tag-exists.sh` is not a command that exists -- the same reading error that made the bare-tool arm need its own label in the first place. What the reader needs is "this command needs 'aws'", followed by the command they typed.
+        for key, tool in NEEDS_SCRIPT:
+            if not _is_invoked(key, scan):
+                continue
+            if _have_executable(tool):
+                continue
+            hit = key
+            need = tool
+            bare = True
+            break
+    if hit == "":
         return hookio.ALLOW
+
+    # THE EXCEPTION LIST, and it is empty on purpose. There is exactly ONE category it exists for: a host-only interactive auth ceremony a headless container cannot complete. The category it refuses -- a tool the devbox does not carry -- is checked in `_exception` rather than left to the reader, because that reason reads as perfectly good prose and is the one that must never work.
+    granted, refused = _exception(repo_root, hit, need)
+    if granted:
+        ev.warn_raw(
+            "NOTE: %s needs '%s', which this host lacks, and %s carries an exception for\n"
+            "it:\n"
+            "\n"
+            "  %s\n"
+            "\n"
+            "Proceeding on that basis. If the reason above is no longer true, delete the entry\n"
+            "rather than leaving it to decide this silently.\n"
+            % (hit, need, EXCEPTIONS_FILE, granted)
+        )
+        return hookio.ALLOW
+    if refused:
+        ev.warn_raw("NOTE: an exception entry was found and IGNORED -- %s.\n" % refused)
 
     # HOST-BOUND WORK MUST NOT BE ROUTED. Measured 2026-08-28.
     #

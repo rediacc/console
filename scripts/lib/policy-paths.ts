@@ -78,6 +78,9 @@ const POLICY_FILES = Object.freeze([
   '.e2e-coverage-allowlist',
   '.embed-assets-upgrade-blocklist',
   '.go-deps-upgrade-blocklist',
+  // 2026-09-23. Read by a HOOK GUARD rather than a gate, which is a first here and is deliberate: block_host_toolchain_run.py routes a command into the devbox when the host lacks its toolchain, and the one thing that may excuse the host is a host-only interactive auth ceremony.
+  // It goes through the seam anyway, because a reader that hardcodes the path is the reader the next move leaves behind, whichever language it happens to be written in.
+  '.host-toolchain-exceptions',
   // W4-D1, CLOSED 2026-09-08. This name landed in the directory on 2026-09-07 with check:ci-language-policy and was NOT added here, so 16 dotfiles on disk faced 15 names for a day with nothing red: its gate reached it through a hardcoded literal instead of policyPath(), and a reader that bypasses the seam does not need the list to know the file exists, which is exactly why a stale
   // list is invisible. Both halves are fixed: the literal became policy_path() in W4 P4a, and check:ci-policy-inventory now asserts three-way set equality between this list, the Python one and the directory, so the same drift cannot recur silently.
   '.language-policy-allowlist',

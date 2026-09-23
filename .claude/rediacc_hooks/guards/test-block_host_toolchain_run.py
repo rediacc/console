@@ -319,6 +319,283 @@ for tool in ALL_TOOLS:
         (0, run(f"{tool} --version", with_shim), f"CONTROL: {tool} present on PATH is left alone")
     )
 
+# --------------------------------------------------------------------------- aws, bw, bws -- the three the tables did not cover until 2026-09-23.
+#
+# THE INCIDENT. A session ran `.ci/scripts/release/assert-edge-tag-exists.sh` on the HOST, read `Required command 'aws' is not available`, and began evaluating an `awscli` install on the host. The devbox has carried aws-cli 2.36.40 the whole time.
+# Neither NEEDS nor BARE_TOOLS could see that command: it names no gate key, and `aws` appears nowhere in it -- the script reaches the binary from inside itself. NEEDS_SCRIPT is what closes that, and these cases are what stop it closing again.
+#
+# `aws` IS THE ONE THAT ROUTES HERE AND `bw`/`bws` ARE THE ONES THAT MUST NOT. Measured on this host: no aws, but `bw` and `bws` are both at /home/developer/.local/bin.
+# So the same three-entry addition exercises both directions of "THE HOST IS ASKED, NOT ASSUMED" without a single constructed absence, and the loop below constructs the absence anyway, for the same reason the ALL_TOOLS loop does: whether this host happens to carry a tool must never decide which branch a case exercises.
+AWS_ABSENT = _path_without("aws", REAL)
+
+
+def _in_box(tool):
+    """Does the running devbox resolve `tool`? Asked, never assumed."""
+    if not have_box:
+        return False
+    return (
+        subprocess.run(
+            ["docker", "exec", "-u", "vscode", box_name, "bash", "-lc", f"command -v {tool}"],
+            capture_output=True,
+            check=False,
+        ).returncode
+        == 0
+    )
+
+
+aws_in_box = _in_box("aws")
+
+if aws_in_box:
+    # The gate-key arm: check:ci-release-state require_cmd's aws up front and fails without it, which is the entry test NEEDS documents and three of its original six failed.
+    cases.append(
+        (
+            2,
+            run("npm run check:ci-release-state", AWS_ABSENT),
+            "gate key: check:ci-release-state needs aws, host lacks it -> REFUSED",
+        )
+    )
+
+    # The NEEDS_SCRIPT arm, on the exact command that produced the incident. THREE ASSERTIONS, not one. The exit code says it was refused; the other two say it was refused with advice a reader can act on.
+    # `bare` is set True by the NEEDS_SCRIPT loop precisely so this message does not read "gate 'assert-edge-tag-exists.sh'" and then suggest `npm run assert-edge-tag-exists.sh`, which is not a command that exists.
+    r = run_full(".ci/scripts/release/assert-edge-tag-exists.sh --version 1.3.0", AWS_ABSENT)
+    cases.append((2, r.returncode, "NEEDS_SCRIPT: the incident command itself is REFUSED"))
+    cases.append(
+        (
+            True,
+            "this command needs 'aws'" in r.stderr,
+            "NEEDS_SCRIPT message reads 'this command needs', not 'gate <script> needs'",
+        )
+    )
+    cases.append(
+        (
+            True,
+            "npm run assert-edge-tag-exists.sh" not in r.stderr,
+            "NEEDS_SCRIPT routing never suggests the nonsensical 'npm run <script>.sh'",
+        )
+    )
+
+    # READING A SCRIPT IS NOT RUNNING IT, and this is the exact bug class `_is_invoked` was built for: `grep -n assets/videos .ci/scripts/deploy/sync-media-to-r2.sh` was once refused with a message about credentials a grep does not need.
+    # Every NEEDS_SCRIPT key is a path a session has a real reason to open, so the regression is re-asserted for the new table rather than inherited from the old one.
+    cases.extend(
+        (
+            0,
+            run(reader, AWS_ABSENT),
+            f"CONTROL: reading a NEEDS_SCRIPT path is not running it -- {reader.split()[0]}",
+        )
+        for reader in (
+            "grep -n TODO .ci/scripts/release/assert-edge-tag-exists.sh",
+            "sed -n 1,5p .ci/scripts/release/assert-edge-tag-exists.sh",
+            "cat .ci/scripts/housekeeping/cleanup-versions.sh",
+        )
+    )
+
+    # THE TWO TABLES COMPOSE, IN THIS ORDER. sync-media-to-r2.sh is in NEEDS_ENV as well, so satisfying the credential arm must not satisfy the toolchain one: the credentials being in the shell says nothing about whether aws is on PATH.
+    # The inline form is used rather than the sourcing form because naming private/account/.env puts the command inside a submodule carrying a host-built node_modules, at which point the hostbound arm correctly declines to route and the composition under test never runs.
+    cases.append(
+        (
+            2,
+            run(
+                "CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID=x .ci/scripts/deploy/sync-media-to-r2.sh",
+                AWS_ABSENT,
+            ),
+            "two-stage: NEEDS_ENV satisfied, NEEDS_SCRIPT still catches the missing aws",
+        )
+    )
+
+    fake("aws")
+    cases.append(
+        (
+            0,
+            run("npm run check:ci-release-state", f"{shim}:{REAL}"),
+            "CONTROL: host HAS aws, so the gate is left alone",
+        )
+    )
+    cases.append(
+        (
+            0,
+            run(".ci/scripts/release/assert-edge-tag-exists.sh --version 1.3.0", f"{shim}:{REAL}"),
+            "CONTROL: host HAS aws, so the script is left alone",
+        )
+    )
+else:
+    cases.append(
+        (
+            0,
+            run("npm run check:ci-release-state", AWS_ABSENT),
+            "CONTROL: no devbox with aws, so the guard notes rather than blocks",
+        )
+    )
+
+# A SECOND, SMALLER LOOP, deliberately not folded into ALL_TOOLS above. That one asserts npx-misuse for every member, and none of these three is an npx hazard: NPX_TOOLS is unchanged because no `npx aws` incident has been measured, and asserting one here would be testing a branch this guard does not have.
+for tool in ("aws", "bw", "bws"):
+    if not have_box:
+        continue
+    tool_in_box = _in_box(tool)
+    without = _path_without(tool, REAL)
+    want = 2 if tool_in_box else 0
+    cases.append(
+        (
+            want,
+            run(f"{tool} --version", without),
+            f"bare-tool: {tool} routed when constructed-absent from PATH"
+            if tool_in_box
+            else f"bare-tool: {tool} absent from host AND devbox -> notes, does not route",
+        )
+    )
+    fake(tool)
+    cases.append(
+        (
+            0,
+            run(f"{tool} --version", f"{shim}:{REAL}"),
+            f"CONTROL: {tool} present on PATH is left alone",
+        )
+    )
+
+# --------------------------------------------------------------------------- The exception list.
+#
+# `_exception` IS DRIVEN AS A FUNCTION for the reason cases go through a process everywhere else in this file: the policy file's path is derived from the repository root, so a process-level case can only exercise it by writing into the real tracked file.
+# One case below does exactly that, because the end-to-end path deserves one; the rest use a fixture root, which is also what makes the refusal cases affordable to enumerate.
+#
+# THE PARSER IS STILL THE REAL ONE. The fixture supplies only the file; `_ci_seams` reaches rediacc_ci.core.allowlist out of this checkout, so a harness copy of the BLOCKER grammar never gets a chance to disagree with the one every gate uses.
+sys.path.insert(0, os.path.join(REPO, ".claude"))
+from rediacc_hooks import guards  # noqa: E402 - the path hop above is what makes it importable
+
+GUARD = guards.load("block_host_toolchain_run")
+
+fixture_root = tempfile.mkdtemp()
+os.makedirs(os.path.join(fixture_root, ".ci", "policy"))
+fixture_list = os.path.join(fixture_root, ".ci", "policy", ".host-toolchain-exceptions")
+
+LEGIT = "the vault unlock is an interactive browser handoff the headless devbox cannot complete"
+
+# THE ILLEGITIMATE HALF IS NINE CASES AND THE LEGITIMATE HALF IS TWO, and the ratio is the finding. The first cut of DEVBOX_GAP_PHRASES was a literal list, and the very first reason written against it -- "the devbox image does not have aws installed so the host is the only place this runs" -- was GRANTED. It says the banned thing in words no literal caught.
+# Every paraphrase below was written to break the rule and now documents it instead.
+for reason, want_grant, why in (
+    (LEGIT, True, "a host-only interactive ceremony is the one category this list is for"),
+    (
+        "the devbox has no TTY, and this unlock prompts for a hardware key touch on the console",
+        True,
+        "a devbox-word plus an absence-word is not enough: the claim must be about a TOOL",
+    ),
+    (
+        "the devbox image does not have aws installed so the host is the only place this runs",
+        False,
+        "a devbox gap is refused, and this is the wording that beat the first literal list",
+    ),
+    (
+        "aws doesn't exist on devbox, so the host has to run it for the release pipeline to work",
+        False,
+        "a devbox gap is refused -- the plan's first named phrase",
+    ),
+    (
+        "aws is absent from the devbox image and adding it there would take a full rebuild cycle",
+        False,
+        "a devbox gap is refused -- the plan's second named phrase",
+    ),
+    (
+        "the devbox lacks it entirely, so running on the host is the only option available now",
+        False,
+        "a devbox gap is refused -- the plan's third named phrase",
+    ),
+    (
+        "aws is not installed in devbox and nobody wants to rebuild the image for one command",
+        False,
+        "a devbox gap is refused -- the plan's fourth named phrase",
+    ),
+    (
+        "the container image ships no aws binary at all, so this must stay on the host machine",
+        False,
+        "a devbox gap is refused through a verb the `has no` entry alone would have missed",
+    ),
+    (
+        "the devcontainer is missing the aws cli, which makes the host the only usable place",
+        False,
+        "a devbox gap is refused when the subject is spelled devcontainer",
+    ),
+):
+    with open(fixture_list, "w", encoding="utf-8") as fh:
+        fh.write(f"# BLOCKER: {reason}\ncheck:ci-release-state@aws\n")
+    granted, refused = GUARD._exception(fixture_root, "check:ci-release-state", "aws")
+    cases.append((want_grant, bool(granted), f"exception: {why}"))
+    if not want_grant:
+        cases.append(
+            (True, refused != "", f"exception: the ignored entry is REPORTED, not silent -- {why}")
+        )
+
+# THE GENERIC BLOCKER RULES STILL APPLY, and they are not re-implemented here: rediacc_ci.core.allowlist.verify is what rejects these, exactly as it does for every other list in the tree.
+for body, why in (
+    (
+        "# BLOCKER: needed\ncheck:ci-release-state@aws\n",
+        "a reason under the 30-character floor grants nothing",
+    ),
+    ("# BLOCKER: todo\ncheck:ci-release-state@aws\n", "a low-effort placeholder grants nothing"),
+    ("check:ci-release-state@aws\n", "an entry with no BLOCKER line at all grants nothing"),
+):
+    with open(fixture_list, "w", encoding="utf-8") as fh:
+        fh.write(body)
+    granted, refused = GUARD._exception(fixture_root, "check:ci-release-state", "aws")
+    cases.append((False, bool(granted), f"exception: {why}"))
+    cases.append((True, refused != "", f"exception: and it says so -- {why}"))
+
+# AN EXCEPTION IS FOR ONE COMMAND NEEDING ONE TOOL. A `<hit>@<tool>` key that does not match both halves must not be reached for, or the first exception written would quietly excuse every command that needs the same binary.
+with open(fixture_list, "w", encoding="utf-8") as fh:
+    fh.write(f"# BLOCKER: {LEGIT}\ncheck:ci-release-state@aws\n")
+for hit, need, why in (
+    ("assert-edge-tag-exists.sh", "aws", "another command needing the same tool is not covered"),
+    ("check:ci-release-state", "ruff", "the same command needing another tool is not covered"),
+):
+    granted, _ = GUARD._exception(fixture_root, hit, need)
+    cases.append((False, bool(granted), f"exception: {why}"))
+
+# AN ABSENT LIST GRANTS NOTHING, and it fails in the direction that cannot hide: the command is still refused and routed, exactly as it was before this file existed.
+os.remove(fixture_list)
+cases.append(
+    (
+        True,
+        GUARD._exception(fixture_root, "check:ci-release-state", "aws") == ("", ""),
+        "exception: an absent list grants nothing and reports nothing",
+    )
+)
+shutil.rmtree(fixture_root, ignore_errors=True)
+
+# THE SHIPPED FILE IS EMPTY, and that is asserted rather than assumed. An entry landing here without the reasoning that belongs with it is the thing this whole mechanism is one edit away from becoming.
+cases.append(
+    (
+        True,
+        GUARD._exception(REPO, "check:ci-release-state", "aws") == ("", ""),
+        "the shipped exception list grants nothing today",
+    )
+)
+
+# ONE END-TO-END CASE, through the process, because every other exception case above stops at the function. The real tracked file is written and RESTORED under try/finally: this checkout is shared, and a harness that leaves a fixture entry in a policy file has suppressed something for everyone.
+if aws_in_box:
+    real_list = os.path.join(REPO, ".ci", "policy", ".host-toolchain-exceptions")
+    with open(real_list, encoding="utf-8") as fh:
+        saved = fh.read()
+    try:
+        with open(real_list, "w", encoding="utf-8") as fh:
+            fh.write(f"{saved}\n# BLOCKER: {LEGIT}\ncheck:ci-release-state@aws\n")
+        e2e = run_full("npm run check:ci-release-state", AWS_ABSENT)
+    finally:
+        with open(real_list, "w", encoding="utf-8") as fh:
+            fh.write(saved)
+    cases.append((0, e2e.returncode, "exception end-to-end: a valid entry ALLOWS the command"))
+    cases.append(
+        (
+            True,
+            LEGIT in e2e.stderr and "BLOCKED" not in e2e.stderr,
+            "exception end-to-end: the note names the reason rather than standing in for it",
+        )
+    )
+    with open(real_list, encoding="utf-8") as fh:
+        cases.append(
+            (
+                True,
+                fh.read() == saved,
+                "exception end-to-end: the policy file is restored byte for byte",
+            )
+        )
+
 shutil.rmtree(shim, ignore_errors=True)
 
 bad = 0

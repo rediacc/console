@@ -1,16 +1,16 @@
 """block_unproven_bulk_transform: the proof obligation, at the three points a change leaves the tree.
 
 WHY THIS EXISTS.
-`wl_proofcheck.py` asks the stop judge whether a bulk mechanical transform proved it did not destroy structure it does not know about. That question rides an LLM call, which is right for a nuanced judgement and wrong for every commit -- a synchronous judge call on `git commit` would make every commit pay for a model round trip. This guard is the operator's ruling that the SAME
-demand also lands here, on a cheap, deterministic, staged-scoped check: does a large enough change carry a quoted proof in its own message. It cannot judge WHETHER a transform is mechanical the way the LLM can and judges SCALE instead, which is the plan's own principle -- batch size scales with proof, not ambition -- applied literally: a diff above the threshold must show proof,
-regardless of what produced it.
+`wl_proofcheck.py` asks the stop judge whether a bulk mechanical transform proved it did not destroy structure it does not know about. That question rides an LLM call, which is right for a nuanced judgement and wrong for every commit -- a synchronous judge call on `git commit` would make every commit pay for a model round trip.
+This guard is the operator's ruling that the SAME demand also lands here, on a cheap, deterministic, staged-scoped check: does a large enough change carry a quoted proof in its own message.
+It cannot judge WHETHER a transform is mechanical the way the LLM can and judges SCALE instead, which is the plan's own principle -- batch size scales with proof, not ambition -- applied literally: a diff above the threshold must show proof, regardless of what produced it.
 
 THREE SURFACES, ONE RULE. `git commit` checks the STAGED diff against the message being written. `git push` and `gh pr create` check every commit in the range about to leave the tree, because either one can carry a bulk commit this guard never saw at commit time -- an operator `!`-bypassed commit, a peer's commit merged in, or a commit made before this guard existed.
 
 TWIN = None, the same sentinel and for the same reason as `block_prose_style_commit`/`block_prose_style_edit`: this is a fresh guard authored directly, with no bash original to port from and nothing to differential-test against. `test-block_unproven_bulk_transform.py` stands in for that differential, exactly as it does for its siblings.
 
-WHAT COUNTS AS PROOF, kept identical to the phrases `wl_proofcheck.PROOF_PROMPT` asks the judge to look for: a shape-cluster diff, an AST-equality or AST-diff statement, a byte-identity claim, or an explicit statement that files were sampled and read. A bare file count or diff stat does NOT count -- "884 files changed" is exactly the assertion that shipped alongside a real incident
-this rule exists for.
+WHAT COUNTS AS PROOF, kept identical to the phrases `wl_proofcheck.PROOF_PROMPT` asks the judge to look for: a shape-cluster diff, an AST-equality or AST-diff statement, a byte-identity claim, or an explicit statement that files were sampled and read.
+A bare file count or diff stat does NOT count -- "884 files changed" is exactly the assertion that shipped alongside a real incident this rule exists for.
 
 THE THRESHOLD IS A SCALE PROXY, NOT A MECHANISM DETECTOR. This guard cannot tell a hand-written 25-file fix from a script applied to 25 files; it does not try to. Above the threshold, EITHER shape must show proof, because the plan's own principle is that scale itself is the risk this proof obligation answers to.
 
@@ -38,8 +38,8 @@ DEFECT = (
     "if False:",
 )
 
-# Measured nowhere yet, chosen rather than derived: 20 files is comfortably above an ordinary multi-file hand fix (this session's own hand-written fixes touched 1-8 files) and comfortably below the smallest bulk transform this branch actually produced (884, then 221, then 6). A threshold this far from both boundaries costs false positives only if a future hand-written fix genuinely
-# spans 20+ files, which is itself worth a moment's proof.
+# Measured nowhere yet, chosen rather than derived: 20 files is comfortably above an ordinary multi-file hand fix (this session's own hand-written fixes touched 1-8 files) and comfortably below the smallest bulk transform this branch actually produced (884, then 221, then 6).
+# A threshold this far from both boundaries costs false positives only if a future hand-written fix genuinely spans 20+ files, which is itself worth a moment's proof.
 BULK_FILE_THRESHOLD = int(os.environ.get("WORKLIST_BULK_FILE_THRESHOLD", "20"))
 
 # A push or PR range check walks every commit in the range; this is the ceiling on how many are inspected before the guard gives up and allows rather than spending unbounded subprocess time on a rebase or a stacked branch.
@@ -90,12 +90,14 @@ def _staged_files(cwd):
 def _pathspec_files(cwd, paths):
     """What `git commit -- <paths>` will really commit, or [] when that cannot be resolved.
 
-    A PATHSPEC COMMIT DOES NOT COMMIT THE INDEX. git's own wording: "git commit [--] <paths>... commits the contents of the files given on the command line", ignoring what is staged. In a tree several sessions share, the index routinely carries a hundred paths nobody in this command mentioned, so the staged count is a fact about the TREE rather than about the commit -- the
-    same class of blindness the repo-context note in `run` records, one scope narrower.
+    A PATHSPEC COMMIT DOES NOT COMMIT THE INDEX. git's own wording: "git commit [--] <paths>... commits the contents of the files given on the command line", ignoring what is staged.
+    In a tree several sessions share, the index routinely carries a hundred paths nobody in this command mentioned, so the staged count is a fact about the TREE rather than about the commit -- the same class of blindness the repo-context note in `run` records, one scope narrower.
 
     `HEAD`, not `--cached`, because the content committed comes from the WORKTREE: a path modified but never staged still lands in that commit, and `--cached` would not see it. `want_rc=True` keeps an unresolvable pathspec (a bogus path, a `--` belonging to some other clause) as None rather than as an empty list that would read as "this commit changes nothing".
 
-    `git diff` NEVER REPORTS AN UNTRACKED FILE, staged or not -- that is not a `HEAD`-vs-`--cached` nuance, it is a property of `diff` itself, which only compares TRACKED content. Reproduced live 2026-09-23: a single brand-new file, `git add`ed then committed as `git commit -m ... -- <that file>`, made `diff HEAD --name-only -- <path>` print nothing (empty string, not None), so the caller's `paths and _pathspec_files(...)` was falsy and fell through to `_staged_files` -- the FULL shared index, 177 unrelated paths, on a one-file commit. `git status --porcelain --  <paths>` sees the file (`??`) where `diff` cannot, so it is unioned in below; the file's own new content is what would land in the commit either way.
+    `git diff` NEVER REPORTS AN UNTRACKED FILE, staged or not -- that is not a `HEAD`-vs-`--cached` nuance, it is a property of `diff` itself, which only compares TRACKED content.
+    Reproduced live 2026-09-23: a single brand-new file, `git add`ed then committed as `git commit -m ... -- <that file>`, made `diff HEAD --name-only -- <path>` print nothing (empty string, not None), so the caller's `paths and _pathspec_files(...)` was falsy and fell through to `_staged_files` -- the FULL shared index, 177 unrelated paths, on a one-file commit.
+    `git status --porcelain -- <paths>` sees the file (`??`) where `diff` cannot, so it is unioned in below; the file's own new content is what would land in the commit either way.
     """
     out = hookio.git_out(["diff", "HEAD", "--name-only", "--", *paths], cwd=cwd, want_rc=True)
     if out is None:
@@ -103,11 +105,11 @@ def _pathspec_files(cwd, paths):
     tracked = [line for line in out.splitlines() if line.strip()]
 
     status_out = hookio.git_out(["status", "--porcelain", "--", *paths], cwd=cwd, want_rc=True)
-    untracked = []
+    untracked: list[str] = []
     if status_out is not None:
-        for line in status_out.splitlines():
-            if line.startswith("??"):
-                untracked.append(line[3:].strip())
+        untracked.extend(
+            line[3:].strip() for line in status_out.splitlines() if line.startswith("??")
+        )
 
     seen = set(tracked)
     for path in untracked:
@@ -231,8 +233,9 @@ def run(ev):
     scan = shellscan._command_substitution(shellscan.scan_target(cmd))
     root = ev.env("CLAUDE_PROJECT_DIR", "") or hookio.git_out(["rev-parse", "--show-toplevel"])
 
-    # ANOTHER REPO'S STAGED COUNT IS NOT THIS GUARD'S BUSINESS. Same class of defect as block_untagged_commit / block_unverified_push / block_blanket_git_add (see shellscan.target_root's own docstring): reproduced live 2026-09-23, a writer's `git -C <scratchpad fixture> commit` (equally: a leading `cd <fixture> &&`) was refused citing 255 staged files, which was CONSOLE's own
-    # count, never the fixture's. `root`/CLAUDE_PROJECT_DIR is only the right tree to judge when the command does not name a different one itself. `target_root` returns "" for an unresolvable hint, so a bogus `-C` path does NOT exempt a command: the guard falls through and keeps judging `root`.
+    # ANOTHER REPO'S STAGED COUNT IS NOT THIS GUARD'S BUSINESS.
+    # Same class of defect as block_untagged_commit / block_unverified_push / block_blanket_git_add (see shellscan.target_root's own docstring): reproduced live 2026-09-23, a writer's `git -C <scratchpad fixture> commit` (equally: a leading `cd <fixture> &&`) was refused citing 255 staged files, which was CONSOLE's own count, never the fixture's.
+    # `root`/CLAUDE_PROJECT_DIR is only the right tree to judge when the command does not name a different one itself. `target_root` returns "" for an unresolvable hint, so a bogus `-C` path does NOT exempt a command: the guard falls through and keeps judging `root`.
     if shellscan.target_root(scan, root) != "":
         return hookio.ALLOW
 

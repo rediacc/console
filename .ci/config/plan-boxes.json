@@ -297,37 +297,6 @@
         "f7d91e90"
       ]
     },
-    "agent/plans/PLAN-devbox-toolchain-guard-extension.md": {
-      "status": "executing",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 20,
-      "done": 0,
-      "open_sigs": [
-        "14e7a716",
-        "150469e7",
-        "359e3d31",
-        "490b0271",
-        "505ff916",
-        "71f60ec9",
-        "7a720e1c",
-        "7c7cd2ea",
-        "802384b6",
-        "820deb14",
-        "90e05d93",
-        "9122967f",
-        "9bbb36b7",
-        "c7a17791",
-        "cf927b54",
-        "d993beae",
-        "de38e3d6",
-        "f119c54a",
-        "f2c3a9e3",
-        "f627df71"
-      ],
-      "done_sigs": []
-    },
     "agent/plans/PLAN-devbox-uid-derived-image.md": {
       "status": "compacted",
       "owner": "unowned",
@@ -1887,6 +1856,37 @@
         "9986c208",
         "afb9b239",
         "b30a696d"
+      ]
+    },
+    "agent/plans/_done/PLAN-devbox-toolchain-guard-extension.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-09-23",
+      "open": 0,
+      "done": 20,
+      "open_sigs": [],
+      "done_sigs": [
+        "14e7a716",
+        "150469e7",
+        "359e3d31",
+        "490b0271",
+        "505ff916",
+        "71f60ec9",
+        "7a720e1c",
+        "7c7cd2ea",
+        "802384b6",
+        "820deb14",
+        "90e05d93",
+        "9122967f",
+        "9bbb36b7",
+        "c7a17791",
+        "cf927b54",
+        "d993beae",
+        "de38e3d6",
+        "f119c54a",
+        "f2c3a9e3",
+        "f627df71"
       ]
     },
     "agent/plans/_done/PLAN-eliminate-worklist-report-per-stop-env.md": {
