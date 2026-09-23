@@ -219,10 +219,12 @@ Phase 2 -- console-side battery test
     (ticked) 2026-09-22T19:54:24Z by d778be9d: test_renet_list_is_a_superset_of_consoles at .ci/rediacc_ci/tests/gates/test_gate_renet_pipefail_grep_q.py:283-304
       `.ci/rediacc_ci/quality/pipefail_grep_q.py:339` by IMPORTING the port, and the
       declared-extras assertion.
-- [ ] Add the manifest entry in `scripts/ci-runner/manifest.ts` next to the existing renet
+- [x] Add the manifest entry in `scripts/ci-runner/manifest.ts` next to the existing renet
+    (ticked) 2026-09-23T12:01:10Z by d778be9d: Investigated at 1881f9912: no bespoke manifest entry is available to add, because Ruling 7 retired the bash gate tests and the port landed as .ci/rediacc_ci/tests/gates/test_gate_renet_pipefail_grep_q.py:283, which check:ci-pytest registers through pyproject.toml:377 testpaths -- the same registration test_gate_renet_deadcode.py has.
       one, then regenerate with `npm run gen:gates-lock`; do not hand-edit
       `scripts/ci-runner/gates.lock.json`.
-- [ ] Run the battery (`npm run check:ci-quality-gates`) and confirm the new test is
+- [x] Run the battery (`npm run check:ci-quality-gates`) and confirm the new test is
+    (ticked) 2026-09-23T12:01:10Z by d778be9d: Investigated at 1881f9912: the bash battery no longer carries this test. Driven live instead, the runner that does: pytest .ci/rediacc_ci/tests/gates/test_gate_renet_pipefail_grep_q.py:105 reports 15 passed in 1.65s, exit code 0, so the test is scheduled and green.
       scheduled and green.
 
 Phase 3 -- close the same hole in console, which the measurement exposed
@@ -238,7 +240,8 @@ Phase 3 -- close the same hole in console, which the measurement exposed
       `.ci/lib/`'s inherited pipefail -- losing the race SKIPS a container teardown or
       reports a running container as absent), and
       `.ci/scripts/private/concurrent-fork-isolation-test.sh:258`.
-- [ ] Re-run the twin/port differential on both implementations and confirm byte-identical
+- [x] Re-run the twin/port differential on both implementations and confirm byte-identical
+    (ticked) 2026-09-23T12:01:10Z by d778be9d: Investigated at 1881f9912: the bash twin is gone (.ci/scripts/quality/check-pipefail-grep-q.sh absent, package.json:125 points the key at .ci/rediacc_ci/quality/pipefail_grep_q.py:204), so there is no twin stream left to diff. The surviving cross-implementation check is the superset assertion at .ci/rediacc_ci/tests/gates/test_gate_renet_pipefail_grep_q.py:283, which passes, and check:ci-pipefail-grep-q exits 0 on 170 files.
       streams, per the porting invariant those two files already carry.
 
 Phase 4 -- the Go-embedded-bash detector (coupling verified in section 3)
