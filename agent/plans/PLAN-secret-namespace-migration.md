@@ -58,7 +58,8 @@ The rename, as ONE atomic commit (5e forces atomicity):
 
 Submodule and sibling-repo coordination, in the same window as the rename:
 
-- [ ] Land the six `private/growth` secrets under provider prefixes — `ELEVENLABS_API_KEY`, `PEXELS_API_KEY`, `MAUTIC_USER`, `MAUTIC_PASS`, `APOLLO_EMAIL`, `APOLLO_PASSWORD` — as a coordinated GitLab commit (decision 6, 5d)
+- [x] Land the six `private/growth` secrets under provider prefixes — `ELEVENLABS_API_KEY`, `PEXELS_API_KEY`, `MAUTIC_USER`, `MAUTIC_PASS`, `APOLLO_EMAIL`, `APOLLO_PASSWORD` — as a coordinated GitLab commit (decision 6, 5d)
+    (ticked) 2026-09-23T11:29:03Z by d778be9d: Confirmed 2026-09-23 (commit fc27b9b27): all six private/growth secrets already under provider prefixes, zero SECRET_ shim survivors. Box was already done; only the record was stale.
 - [x] Rename growth's five console-secret reads behind their two indirection constructs — `publish-solutions.sh:51-58` (`${!v}` over a name list) and `publish.py:40` (`_R2_ENV_VARS` tuple) — together with console's `.ci/scripts/deploy/upload-media-to-r2.sh`, or growth's guard passes and the upload dies inside `aws` (5d)
       AUDIT: DONE 2026-09-02 (audit): private/growth/video_pipeline/publish-solutions.sh:55 and publish.py:40 carry the new names; console's counterpart moved with them at .ci/scripts/deploy/upload-media-to-r2.sh:26-28,99,105-106,122,127. CF_GLOBAL_API_KEY/CF_EMAIL are deliberately unchanged (no Part 10 row).
 - [ ] Rename `TTS_ENGINE` in `private/generative` (`src/tutorial_tts/config.py:116`) and `private/growth` (`step4000_voiceover.py:46`) in the SAME change; growth passes its whole environment through at `:157`, so a one-sided rename silently falls back to a different narration engine (5c)
