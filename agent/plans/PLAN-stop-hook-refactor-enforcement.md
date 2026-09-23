@@ -1,7 +1,7 @@
 # PLAN: stop-hook code-maintenance pressure -- a second, wider duplication corpus that only the Stop hook reads
-Status: draft
+Status: executing -- Commit 1 done (commit e31838a0f), Commits 2-4 open.
 Owner: d778be9d
-Updated: 2026-09-22
+Updated: 2026-09-23
 
 ## Part 0 -- What was verified (and what the operator's memory got wrong)
 
