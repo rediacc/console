@@ -149,8 +149,8 @@ Narrowing the steps with `if: github.event_name == 'pull_request'` is the altern
 a newly-skipping step interacts with `gate-test:gate-skip-announcer` / `.ci/scripts/quality/announce-gate-skips.sh`. One clause avoids all of it.
 
 **`:2200` — DELETE the env key.** `check:ci-quality-gates` is the pytest battery (`package.json:152` → `.ci/rediacc_ci/battery.py`). Nothing under `.ci/rediacc_ci/` reads `PR_HEAD_REF` from the ambient environment — the only two modules that mention it SCRUB it: `.ci/rediacc_ci/tests/test_review_discover_epics.py:52-61` replaces the whole environment precisely because "a
-differential that inherits the developer's environment passes or fails depending on whether PR_HEAD_REF ... happen to be exported, and both are exported in CI", and `.ci/rediacc_ci/tests/gates/test_gate_untagged_commit_branch.py:38` says the same. `.ci/rediacc_ci/tests/gates/test_gate_review_status.py:1831` and `.ci/scripts/test/gates/test-review-status.sh:1207` each set their own
-value per call. So this key is dead, and it is the exact ambient-environment leak two test modules were written to defend against. Adding a fallback clause to it would be the wrong fix.
+differential that inherits the developer's environment passes or fails depending on whether PR_HEAD_REF ... happen to be exported, and both are exported in CI", and `.ci/rediacc_ci/tests/gates/test_gate_untagged_commit_branch.py:38` says the same. `.ci/rediacc_ci/tests/gates/test_gate_review_status.py:1831` sets its own value per call, and so did the retired bash twin
+`.ci/scripts/test/gates/test-review-status.sh` (removed when 30 bash gate twins were retired in favor of Python ports). So this key is dead, and it is the exact ambient-environment leak two test modules were written to defend against. Adding a fallback clause to it would be the wrong fix.
 
 **Parity, because the expression lives in more than one place.** For `:1114`/`:1121` the value is declared THREE times — the gate header (`scripts/gates/check-pr-epic-block.ts:40`, `scripts/gates/check-pr-task-trailers.ts:42`), `scripts/ci-runner/manifest.ts:1032`/`:1081`, and the workflow — and `scripts/gates/check-ci-step-env-parity.ts` enforces workflow ↔ lock in both directions
 including value-drift. Edit all three and regenerate `gates.lock.json`, or the fix trades one red for another. `:2200` has no gate-header file (leaf is `battery.py`), so it is `scripts/ci-runner/manifest.ts:5048` + the workflow + the lock.
@@ -159,7 +159,7 @@ including value-drift. Edit all three and regenerate `gates.lock.json`, or the f
 
 `grep -rn "github\.event\.[a-z_.]* *||" .github/workflows/*.yml` returns nine sites. Classified:
 
-- **Four are `concurrency.group`** — `.github/workflows/autopilot.yml:131`, `.github/workflows/claude-mention.yml:24`,
+- **Four are `concurrency.group`** — the retired `.github/workflows/autopilot.yml` (deleted with the autopilot removal; the site was line 131), `.github/workflows/claude-mention.yml:24`,
 `.github/workflows/claude-review.yml:63`, `.github/workflows/review-status.yml:57-62`. No script reads them, and each either ends in a universal fallback (`github.run_id`, `format('dispatch-{0}', ...)`) or already covers every declared trigger. `.github/workflows/claude-mention.yml:24` (`github.event.issue.number || github.event.pull_request.number` against triggers
 `issue_comment`, `pull_request_review_comment`) is a clean real-corpus SILENT case and is worth keeping as a control fixture, not as a subject.
 - **One is a checkout input** — `.github/workflows/claude-review-reusable.yml:76`, `ref:`, two clauses
@@ -170,7 +170,8 @@ docstring so the next reader does not re-derive it.
 `.github/workflows/claude-review-reusable.yml:289` is uncovered on `workflow_run` and `pull_request` (`.github/workflows/claude-review.yml:90` passes `pr_number: ${{ inputs.pr_number || '' }}`, empty on both), and `.ci/scripts/review/claude-review-gate.sh:782` `case`s on `EVENT_NAME` for the same reason. That is **2 false positives out of 2 candidate `PR_NUMBER` sites — a 100%
 noise rate on the one variable the generalisation would add.** Exemption E1 does catch both, so the generalisation is not unsafe — it is simply all cost and no yield.
 
-The asymmetry is structural, not accidental. Every `PR_HEAD_REF` reader resolves the value the SAME way on every event — env, then `GITHUB_HEAD_REF`, then `git branch --show-current` (`scripts/gates/check-pr-epic-block.ts:134-141`, `scripts/gates/check-pr-task-trailers.ts:439-446`, `.ci/scripts/quality/check-review-report-replies.sh:85`, `.ci/scripts/review/discover-epics.sh:23`).
+The asymmetry is structural, not accidental. Every `PR_HEAD_REF` reader resolves the value the SAME way on every event — env, then `GITHUB_HEAD_REF`, then `git branch --show-current` (`scripts/gates/check-pr-epic-block.ts:134-141`, `scripts/gates/check-pr-task-trailers.ts:439-446`, the retired `.ci/scripts/quality/check-review-report-replies.sh` (removed with the bash-twins
+retirement), `.ci/scripts/review/discover-epics.sh:23`).
 That uniformity is exactly what makes "empty on this trigger" a sound defect predicate. `PR_NUMBER`'s readers do not have it. Generalising would mean statically reading a `case` over `$EVENT_NAME` inside a shell script — an order of magnitude more machinery than the bug costs.
 
 **Recommendation: keep the variable set at `{PR_HEAD_REF, GITHUB_HEAD_REF}`** — the

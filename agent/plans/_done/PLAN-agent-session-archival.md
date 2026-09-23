@@ -11,7 +11,7 @@ The Stop hook already computes which peer directories are ABANDONED, every stop,
 `agent/README.md:72` describes the manual step ("Move the finished session directories into `archive/<label>/`... Before archiving, promote anything in RULES.md that turned out to be true of the REPO into TRAPS.md") and nobody runs it.
 
 Measured on this tree, with the already-landed `agent_peer_sections` dedup fix in place (`.claude/rediacc_hooks/tests/test_wl_state_document.py::test_29k_a_peer_directory_carrying_two_sections_for_one_owner_is_reported_once`): 19 peer directories, 18 ABANDONED, 1 live (the current session). The 18 range from 7.2 days idle (`f4da5c2e`) to 43.9 days idle (`2fd369e0`).
-`agent/archive/` last received a real entry (`0815-1`) roughly five weeks ago. The gap this plan closes is the one `agent/97604f47/STATE.md:49` already flagged and left unanswered: "Unanswered peer question: move `agent/2fd369e0/`, `agent/99ccf057/`, `agent/legacy/` under `agent/archive/`? Operator's call."
+`agent/archive/` last received a real entry (`0815-1`) roughly five weeks ago. The gap this plan closes is the one `agent/archive/2026-09-22-backfill/97604f47/STATE.md:49` already flagged and left unanswered: "Unanswered peer question: move `agent/2fd369e0/`, `agent/99ccf057/`, `agent/legacy/` under `agent/archive/`? Operator's call."
 
 ## The oracle: reused, not reinvented
 

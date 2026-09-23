@@ -15,13 +15,16 @@ The other 4 sit inside dual-use package modules or standalone hook scripts where
 
 ## Findings (verified against the tree, not assumed)
 
+The Fingerprint column is not a git object: it is `fingerprint()`'s own sha1-of-`ast.unparse` output (`.ci/rediacc_ci/tests/test_canonical_sys_path_hop.py:185`), the stable id the test's `BASELINE`/`FRESH` tables key on.
+It is written below behind a `fingerprint:` marker, which is what tells check:ci-plan-citations it is not a git object; the value itself is exactly what appears in that file's tables.
+
 | Site | Fingerprint | Class | Fix |
 |---|---|---|---|
-| `.ci/rediacc_ci/dev/shadow_driver.py:69` | `c1e552fa19e9` | Dual-use package module (imported by `.ci/rediacc_ci/tests/test_dev_www.py:43` and run as a script), same shape as already-baselined `setup/shadow_driver.py` | BASELINE + FRESH |
-| `.ci/rediacc_ci/docker/shadow_driver.py:81` | `c1e552fa19e9` | Same dual-use class (imported by `test_docker_run_in_image.py`, also run as a script) | BASELINE + FRESH |
-| `.claude/hooks/post-bash/cancel_old_ci.py:24` | `c1e552fa19e9` | Standalone script invoked by `lifecycle.run_pattern`; needs `.claude` on `sys.path`, not `.ci`; no shim exists yet | BASELINE + FRESH |
-| `.claude/hooks/post-bash/refresh_pr_body.py:24` | `c1e552fa19e9` | Same as above | BASELINE + FRESH |
-| `.claude/rediacc_hooks/tests/wlfix.py:111` | `33a55988e0f6` | Pytest-only fixture module; `.ci` already on `sys.path` via `pyproject.toml`'s `pythonpath = [".ci"]` | CODE FIX to `paths.on_sys_path(STOP_DIR)` |
+| `.ci/rediacc_ci/dev/shadow_driver.py:69` | `fingerprint:c1e552fa19e9` | Dual-use package module (imported by `.ci/rediacc_ci/tests/test_dev_www.py:43` and run as a script), same shape as already-baselined `setup/shadow_driver.py` | BASELINE + FRESH |
+| `.ci/rediacc_ci/docker/shadow_driver.py:81` | `fingerprint:c1e552fa19e9` | Same dual-use class (imported by `test_docker_run_in_image.py`, also run as a script) | BASELINE + FRESH |
+| `.claude/hooks/post-bash/cancel_old_ci.py:24` | `fingerprint:c1e552fa19e9` | Standalone script invoked by `lifecycle.run_pattern`; needs `.claude` on `sys.path`, not `.ci`; no shim exists yet | BASELINE + FRESH |
+| `.claude/hooks/post-bash/refresh_pr_body.py:24` | `fingerprint:c1e552fa19e9` | Same as above | BASELINE + FRESH |
+| `.claude/rediacc_hooks/tests/wlfix.py:111` | `fingerprint:33a55988e0f6` | Pytest-only fixture module; `.ci` already on `sys.path` via `pyproject.toml`'s `pythonpath = [".ci"]` | CODE FIX to `paths.on_sys_path(STOP_DIR)` |
 
 Branch reality check, re-verified independently: `gh pr view 589` returns `state: MERGED`, `mergedAt: 2026-09-22T08:22:16Z`; `gh pr list --state open` returns zero. Local `0914-1` is 69 commits ahead of `origin/0914-1`. Ride the current branch; no new PR needed for this bookkeeping-sized fix.
 
@@ -33,7 +36,7 @@ Branch reality check, re-verified independently: `gh pr view 589` returns `state
   - `sys` stays imported, since it is still used for `sys.executable` elsewhere.
   - Re-run `git diff -- wlfix.py` immediately before editing: another session has one unrelated uncommitted hunk in this file (RESET_KNOBS), nowhere near this region.
 - [x] 2. `.ci/rediacc_ci/tests/test_canonical_sys_path_hop.py`: table additions.
-  - Add `.ci/rediacc_ci/dev/shadow_driver.py` and `.ci/rediacc_ci/docker/shadow_driver.py` to `BASELINE` (fingerprint `c1e552fa19e9`), alphabetically between `check_pytest.py` and `setup/port_parity.py`.
+  - Add `.ci/rediacc_ci/dev/shadow_driver.py` and `.ci/rediacc_ci/docker/shadow_driver.py` to `BASELINE` (`fingerprint:c1e552fa19e9`; see the note above the Findings table), alphabetically between `check_pytest.py` and `setup/port_parity.py`.
   - Add `.claude/hooks/post-bash/cancel_old_ci.py` and `.claude/hooks/post-bash/refresh_pr_body.py` to `BASELINE` (same fingerprint), alphabetically between `.claude/hooks/context/test-context-bands.py` and `.claude/hooks/stop/calibrate-judge-rules.py`.
   - Add all 4 paths to `FRESH`.
 - [x] 3. Verify: `pytest .ci/rediacc_ci/tests/test_canonical_sys_path_hop.py -v` all pass.

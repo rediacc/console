@@ -206,6 +206,26 @@ UUID_TAIL_RE = re.compile(
 #: run, which is the part HEXTOK_RE would otherwise have judged.
 DIGEST_RE = re.compile(r"sha256:([0-9a-f]{7,64})", re.IGNORECASE)
 
+#: A TEST'S OWN CONTENT FINGERPRINT IS NEVER A GIT OBJECT, and this is the same
+#: marker-behind-the-token shape DIGEST_RE uses, for the same reason.
+#: `shape_fingerprints()` below already answers this question for ONE fingerprint
+#: scheme, and it does it from the seed file because there is a seed file to read.
+#: `.ci/rediacc_ci/tests/test_canonical_sys_path_hop.py:185` defines a second
+#: scheme -- a sha1 prefix over `ast.unparse` output, the stable id its BASELINE
+#: and FRESH tables key on -- and there is no data file anywhere that carries
+#: those values, so no authority exists to read. The marker is the authority
+#: instead, exactly as `sha256:` is for a registry digest.
+#:
+#: Measured 2026-09-23 on `agent/plans/_done/PLAN-sys-path-canonical-form.md`: six
+#: findings, all of them the two fingerprints in its Findings table, none of them
+#: resolvable and none of them ever intended to be. The workaround reached for
+#: first was inserting a hyphen into each value so it fell under the object floor,
+#: which silenced the gate by corrupting the data the table exists to carry.
+#:
+#: Matched by requiring `fingerprint:` immediately before the candidate, so a bare
+#: hex run without it is unaffected.
+FINGERPRINT_RE = re.compile(r"fingerprint:([0-9a-f]{7,64})", re.IGNORECASE)
+
 #: A BACKGROUND AGENT ID IS NEVER A GIT OBJECT, and this is the third instance
 #: of the same false-positive class the two blocks above answer: a long hex run
 #: that satisfies HEXTOK_RE by coincidence of shape alone.
@@ -380,6 +400,7 @@ def citations(text):
     uuid_tail_spans = [u.span(1) for u in UUID_TAIL_RE.finditer(text or "")]
     digest_spans = [d.span(1) for d in DIGEST_RE.finditer(text or "")]
     agent_id_spans = [a.span(1) for a in AGENT_ID_RE.finditer(text or "")]
+    fingerprint_spans = [f.span(1) for f in FINGERPRINT_RE.finditer(text or "")]
     for m in R.HEXTOK_RE.finditer(text or ""):
         if any(m.start() < e and s < m.end() for s, e in spans):
             continue
@@ -395,6 +416,9 @@ def citations(text):
             continue
         # A background agent id, not a git object. See AGENT_ID_RE.
         if (m.start(1), m.end(1)) in agent_id_spans:
+            continue
+        # A test's own content fingerprint, not a git object. See FINGERPRINT_RE.
+        if (m.start(1), m.end(1)) in fingerprint_spans:
             continue
         # A SHAPE FINGERPRINT IS NOT A GIT OBJECT, and it looks exactly like one: 12 hex characters, which this gate judges as an abbreviated sha and can never resolve. `check:ci-shape-duplication` prints these and tells the reader to cite them -- "put its FINGERPRINT into shape-duplication-seed.json" -- so a plan explaining WHY a shape was accepted has to name it, and every such
         # plan line was an unresolvable-pointer failure. Measured 2026-09-08: `94f3f7e6f351` and `aea2bc733552` both reported that way, while an earlier plan's `98b21fa52e5d` passed only because it happens to prefix a real object in this clone -- so the gate was already wrong here and was being saved by coincidence.
@@ -769,6 +793,15 @@ def selftest(root):
     ck(
         "CONTROL: the same 12 hex characters WITHOUT the UUID dashes ARE",
         any(k == "object" for k, _t in citations("Stripe secret 3fda6dabc123 leaked")),
+    )
+    # THE FINGERPRINT EXEMPTION, both directions: the marker is what licenses it, so the same token without the marker must still be judged. See FINGERPRINT_RE.
+    ck(
+        "a hex run behind a `fingerprint:` marker is NOT treated as an object",
+        not any(k == "object" for k, _t in citations("the site hashes to fingerprint:c1e552fa19e9")),
+    )
+    ck(
+        "CONTROL: the same token WITHOUT the marker IS",
+        any(k == "object" for k, _t in citations("the site hashes to c1e552fa19e9")),
     )
     # THE AGENT-ID EXEMPTION, both directions and on the length boundary, because the whole narrowing is the length. See AGENT_ID_RE.
     ck(

@@ -24,8 +24,8 @@ Counted over the current `dist` (1,842 HTML files), and reproduced independently
 
 ## Root cause, confirmed in the toolchain source
 
-The hydrator reaches the player through a dynamic `import()`, but Astro's page-CSS hoisting (`astro/dist/core/build/plugins/plugin-css.js:84-160`) iterates every chunk's `viteMetadata.importedCss` and attaches client-chunk CSS to every page in `pagesByScriptId`. **Dynamic-import boundaries are irrelevant to it.** So the sheet is linked wherever the HYDRATOR is, not wherever a
-PLAYER is. DocsLayout carries the hydrator on 1,028 docs pages; 234 of them have a video.
+The hydrator reaches the player through a dynamic `import()`, but Astro's page-CSS hoisting (the installed `astro` package's `dist/core/build/plugins/plugin-css.js`, under `node_modules/` and not tracked in this repo, around lines 84-160) iterates every chunk's `viteMetadata.importedCss` and attaches client-chunk CSS to every page in `pagesByScriptId`.
+**Dynamic-import boundaries are irrelevant to it.** So the sheet is linked wherever the HYDRATOR is, not wherever a PLAYER is. DocsLayout carries the hydrator on 1,028 docs pages; 234 of them have a video.
 
 ## Mechanisms evaluated
 
@@ -35,13 +35,14 @@ the finding that kills the obvious fix: all 794 offenders are docs, docs are one
 bundles a `<script>` per page regardless of conditional rendering, and the docs layout serves both populations.
 3. **Anything native in Astro.** There is none; `build.inlineStylesheets` decides
 inline-vs-link, not which pages get it.
-4. **Runtime injection via Vite `?url`.** CHOSEN, and confirmed rather than assumed:
-`vite/dist/node/chunks/config.js:29635-29639` compiles `?url` to a `transform-only` import plus a URL string; `:29797` excludes `transform-only` from `chunkCSS`, so it never enters `importedCss`; `:29854` still runs `finalizeCss`, so it stays minified; `:29866` emits it as an asset Astro never reads. `plyr.css` has zero `url()` references, so asset rebasing is a non-issue.
+4. **Runtime injection via Vite `?url`.** CHOSEN, and confirmed rather than assumed, against
+the installed `vite` package's `dist/node/chunks/config.js` (under `node_modules/`, not tracked in this repo): around lines 29635-29639 it compiles `?url` to a `transform-only` import plus a URL string; around line 29797 it excludes `transform-only` from `chunkCSS`, so it never enters `importedCss`; around line 29854 it still runs `finalizeCss`, so it stays minified; around line 29866 it emits it as an asset Astro never reads.
+`plyr.css` has zero `url()` references, so asset rebasing is a non-issue.
 
 ## FOUC risk: zero, by construction rather than by timing
 
-`tutorial-video.css` contains **no selector for either mount class** -- every rule is `.tvp-*` or a `.tvp-root`-scoped `.plyr*` override, i.e. DOM React creates. The placeholder's reserved box comes from `packages/www/src/styles/solution-video.css:94,108` and `packages/www/src/layouts/DocsLayout.astro:1369`, neither of which moves. So the stylesheet governs only DOM that does not exist until after it has loaded, and
-`Promise.all([ensurePlayerStyles(), import(player)])` makes the first frame of player DOM already styled.
+`tutorial-video.css` contains **no selector for either mount class** -- every rule is `.tvp-*` or a `.tvp-root`-scoped `.plyr*` override, i.e. DOM React creates. The placeholder's reserved box comes from `packages/www/src/styles/solution-video.css:94,108` and `packages/www/src/layouts/DocsLayout.astro:1369`, neither of which moves.
+So the stylesheet governs only DOM that does not exist until after it has loaded, and `Promise.all([ensurePlayerStyles(), import(player)])` makes the first frame of player DOM already styled.
 
 Cascade: `.plyr`/`.tvp-` selectors exist in exactly two files, and their overlaps are
 decided by SPECIFICITY, not order -- `packages/www/src/styles/solution-video.css:39-40,71-72` say in as many words that they were written that way "so the outcome does not depend on which stylesheet the bundler emits first". Reordering is safe, and that safety is documented in-tree. There is no `<ClientRouter />` anywhere, so no head swap can orphan a link.
@@ -54,11 +55,11 @@ decided by SPECIFICITY, not order -- `packages/www/src/styles/solution-video.css
 
 A *player stylesheet* is detected **by CONTENT, not filename** -- any dist CSS containing `.plyr__control` or `.tvp-caption-word` -- so a rename or re-bundle cannot make the gate blind. The marker choice was measured: `.tvp-root` and `.tvp-toolbar` also appear in a NON-player bundle, so using them would over-match.
 
-**Six floors, because the assertion is a negative and absence must be paid for:** F1 dist exists; F2 >= 1,000 HTML files scanned (today 1,842); F3 >= 1,000 stylesheet links seen (a broken href regex would otherwise report "no player links" vacuously); F4 at least one dist CSS carries each marker (zero means the player has no stylesheet at all -- a worse defect wearing this gate's
-green); F5 >= 500 pages carry a mount (today 572); and **F6, the positive half that stops the fix degenerating into a deletion**: every player stylesheet's filename must appear inside at least one dist JS chunk, proving the styles still REACH the player. Without F6, deleting `plyr.css` outright would pass.
+**Six floors, because the assertion is a negative and absence must be paid for:** F1 dist exists; F2 >= 1,000 HTML files scanned (today 1,842); F3 >= 1,000 stylesheet links seen (a broken href regex would otherwise report "no player links" vacuously); F4 at least one dist CSS carries each marker (zero means the player has no stylesheet at all -- a worse defect wearing this gate's green); F5 >= 500 pages carry a mount (today 572); and **F6, the positive half that stops the fix degenerating into a deletion**: every player stylesheet's filename must appear inside at least one dist JS chunk, proving the styles still REACH the player.
+Without F6, deleting `plyr.css` outright would pass.
 
-**Controls:** eight plants, each with a clean counterpart, including P4 -- a CSS carrying `.tvp-root` but neither marker must NOT be reported, which the real tree proves is needed. Plus a mutant control that widens the marker list and asserts the selftest goes red naming P4, and one that deletes F6 and asserts red naming P6, each with a vacuity guard so a sed that stopped matching
-cannot test the unmutated gate.
+**Controls:** eight plants, each with a clean counterpart, including P4 -- a CSS carrying `.tvp-root` but neither marker must NOT be reported, which the real tree proves is needed.
+Plus a mutant control that widens the marker list and asserts the selftest goes red naming P4, and one that deletes F6 and asserts red naming P6, each with a vacuity guard so a sed that stopped matching cannot test the unmutated gate.
 
 ## Order of work: control first, literally
 
@@ -76,8 +77,8 @@ Not deleting or inlining plyr; not changing which pages have videos; not touchin
 
 ## A finding walked past and reported rather than fixed
 
-`.tutorial-video-container` reserves **no box** before hydration -- nothing gives it an `aspect-ratio` or `min-height`, only `max-inline-size`. So 234 docs tutorial pages shift by the full player height when it lands, unlike solution pages which `packages/www/src/styles/solution-video.css:94` protects. The browser probe's "the mount already reserves 768x432" holds for `.video-player-mount` ONLY. This plan
-neither causes nor worsens it; it wants its own item.
+`.tutorial-video-container` reserves **no box** before hydration -- nothing gives it an `aspect-ratio` or `min-height`, only `max-inline-size`. So 234 docs tutorial pages shift by the full player height when it lands, unlike solution pages which `packages/www/src/styles/solution-video.css:94` protects.
+The browser probe's "the mount already reserves 768x432" holds for `.video-player-mount` ONLY. This plan neither causes nor worsens it; it wants its own item.
 
 ## Tasks
 
