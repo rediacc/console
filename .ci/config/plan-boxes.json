@@ -1232,28 +1232,28 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 13,
-      "done": 4,
+      "open": 9,
+      "done": 8,
       "open_sigs": [
         "085e0bd5",
         "11e90e57",
         "41f56150",
-        "44447d6c",
-        "522d7da0",
         "646bad35",
         "67ec65dc",
         "6a41fd72",
-        "914d108a",
         "a5cabf02",
         "ac6d7f0f",
-        "bba54c8b",
         "d54e3a5b"
       ],
       "done_sigs": [
         "1f689a22",
         "2749c722",
         "37f7e4f1",
-        "4e8179a9"
+        "44447d6c",
+        "4e8179a9",
+        "522d7da0",
+        "914d108a",
+        "bba54c8b"
       ]
     },
     "agent/plans/PLAN-stop-report-queue.md": {

@@ -229,12 +229,16 @@ Naming the advisory status in the message is deliberate. An advisory that reads 
 
 ### Commit 2 -- The profile split (pure refactor, no behaviour change)
 
-- [ ] In `scripts/gates/check-shape-duplication.ts`, replace the bare `FAMILIES` (`:116-124`) with `PROFILES: Record<'gate'|'advisory', {families: Family[], seed: string, cache: string, refuses: boolean}>`, with only the `gate` profile populated.
+- [x] In `scripts/gates/check-shape-duplication.ts`, replace the bare `FAMILIES` (`:116-124`) with `PROFILES: Record<'gate'|'advisory', {families: Family[], seed: string, cache: string, refuses: boolean}>`, with only the `gate` profile populated.
+    (ticked) 2026-09-23T19:40:59Z by d778be9d: PROFILES replaces FAMILIES, only gate populated, verified (commit 3128f9a2f).
   `FAMILY_PATHSPECS` (`:125`) becomes profile-scoped. `tracked()` (`:835`), `scan()` (`:880`), `loadSeed()` (`:1513`), `cacheDir()` (`:1542-1546`) and `emitIndex()` (`:1683`) take the profile. Add `--profile <name>`, defaulting to `gate`.
-- [ ] `SEED_FILE` (`:84`, `:88`) and the `setRoot` reassignment become profile-derived. Preserve the `--seed` refusal at `:1865-1868` per profile.
-- [ ] Update `.ci/rediacc_ci/tests/test_shapedup_corpus_sig.py`. Its `_families()` regex (`:26-36`) matches `const FAMILIES ... = [ ... ];` and asserts exact set equality with `wl_shapedup.CORPUS_GLOBS`, in both directions.
+- [x] `SEED_FILE` (`:84`, `:88`) and the `setRoot` reassignment become profile-derived. Preserve the `--seed` refusal at `:1865-1868` per profile.
+    (ticked) 2026-09-23T19:41:00Z by d778be9d: SEED_FILE/FAMILY_PATHSPECS profile-derived, --seed refusal preserved (commit 3128f9a2f).
+- [x] Update `.ci/rediacc_ci/tests/test_shapedup_corpus_sig.py`. Its `_families()` regex (`:26-36`) matches `const FAMILIES ... = [ ... ];` and asserts exact set equality with `wl_shapedup.CORPUS_GLOBS`, in both directions.
+    (ticked) 2026-09-23T19:41:00Z by d778be9d: test_shapedup_corpus_sig.py comment updated, 2/2 still pass (commit 3128f9a2f).
   After the split it must assert `CORPUS_GLOBS == union of every profile's pathspecs`. The `extra` direction must stay strict -- the docstring's argument (a narrower signature silently serves a stale verdict) applies per profile.
-- [ ] Green: `check:ci-shape-duplication`, `check:ci-gates-lock`, `.ci/rediacc_ci/tests/test_shape_probe_agreement.py`, `--selftest`. Byte-identical verdict on the `gate` profile is the acceptance criterion.
+- [x] Green: `check:ci-shape-duplication`, `check:ci-gates-lock`, `.ci/rediacc_ci/tests/test_shape_probe_agreement.py`, `--selftest`. Byte-identical verdict on the `gate` profile is the acceptance criterion.
+    (ticked) 2026-09-23T19:41:00Z by d778be9d: all acceptance gates verified green (commit 3128f9a2f).
 
 ### Commit 3 -- The advisory profile and its Stop-hook wiring
 
