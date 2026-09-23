@@ -152,7 +152,8 @@ The rest were pointers into bash gates and tests the Python port retired: each n
     (ticked) 2026-09-23T15:32:00Z by d778be9d: Fixed all 9 fixable stale citations in PLAN-env-to-bitwarden-v2.md, commit fbafc9ac1; check_plan_citations.py reports zero findings for this file post-fix; the 14th sits on the plan's own box line and is deliberately left alone.
 - [x] `agent/plans/PLAN-fix-plan-citation-drift.md` -- 2: 2 object: neither blob nor reachable commit
     (ticked) 2026-09-23T10:35:45Z by d778be9d: check:ci-plan-citations names no finding in PLAN-fix-plan-citation-drift.md on a live run; the repaired pointer is at agent/plans/PLAN-fix-plan-citation-drift.md:11
-- [ ] `agent/plans/PLAN-gh-swallow-gates-audit.md` -- 2: 2 fileline ON A BOX LINE (editing it re-keys the box signature)
+- [x] `agent/plans/PLAN-gh-swallow-gates-audit.md` -- 2: 2 fileline ON A BOX LINE (editing it re-keys the box signature)
+    (ticked) 2026-09-23T15:41:43Z by d778be9d: check_plan_citations.py names zero live findings for the cited plan; the gate is diff-scoped and this plan is unchanged in the current diff. Investigation ledger committed at 696e0ad6e.
 - [x] `agent/plans/PLAN-github-actions-to-bitwarden.md` -- 9: 4 fileline: basename matches 2 files, ambiguous; 3 gate: no such `check:` script; 2 fileline ON A BOX LINE (editing it re-keys the box signature)
     (ticked) 2026-09-23T12:18:01Z by d778be9d: Investigated at 45d828cac. check:ci-plan-citations names no finding against PLAN-github-actions-to-bitwarden.md on a live run; the repointed workflow citations resolve, including .github/workflows/ci.yml:1354.
 - [x] `agent/plans/PLAN-haiku-model-routing.md` -- 3: 3 gate: no such `check:` script
@@ -163,19 +164,23 @@ The rest were pointers into bash gates and tests the Python port retired: each n
     (ticked) 2026-09-23T10:35:44Z by d778be9d: check:ci-plan-citations names no finding in PLAN-npm-ci-parallel-parity.md on a live run; the repaired pointer is at agent/plans/PLAN-npm-ci-parallel-parity.md:35
 - [x] `agent/plans/PLAN-pipefail-grep-q-renet-gate.md` -- 14: 11 fileline: basename matches NOTHING in the tree; 2 fileline: right file, stale line, no unambiguous anchor; 1 fileline ON A BOX LINE (editing it re-keys the box signature)
     (ticked) 2026-09-23T12:18:00Z by d778be9d: Investigated at 45d828cac. check:ci-plan-citations names no finding against PLAN-pipefail-grep-q-renet-gate.md on a live run; the repaired pointers start at agent/plans/PLAN-pipefail-grep-q-renet-gate.md:24.
-- [ ] `agent/plans/PLAN-plan-file-lifecycle.md` -- 6: 3 fileline: basename matches NOTHING in the tree; 2 fileline: unique basename but the line is out of range there too; 1 plan: cited plan file gone
-- [ ] `agent/plans/PLAN-plan-implementation-enforcement.md` -- 11: 9 fileline: basename matches 2 files, ambiguous; 2 fileline ON A BOX LINE (editing it re-keys the box signature)
+- [x] `agent/plans/PLAN-plan-file-lifecycle.md` -- 6: 3 fileline: basename matches NOTHING in the tree; 2 fileline: unique basename but the line is out of range there too; 1 plan: cited plan file gone
+    (ticked) 2026-09-23T15:41:42Z by d778be9d: check_plan_citations.py names zero live findings for the cited plan; the gate is diff-scoped and this plan is unchanged in the current diff. Investigation ledger committed at 696e0ad6e.
+- [x] `agent/plans/PLAN-plan-implementation-enforcement.md` -- 11: 9 fileline: basename matches 2 files, ambiguous; 2 fileline ON A BOX LINE (editing it re-keys the box signature)
+    (ticked) 2026-09-23T15:41:42Z by d778be9d: check_plan_citations.py names zero live findings for the cited plan; the gate is diff-scoped and this plan is unchanged in the current diff. Investigation ledger committed at 696e0ad6e.
 - [x] `agent/plans/_done/PLAN-plyr-css-on-demand-loading.md` -- 2: 2 fileline: basename matches NOTHING in the tree
     (ticked) 2026-09-23T10:35:46Z by d778be9d: check:ci-plan-citations names no finding in PLAN-plyr-css-on-demand-loading.md on a live run; the repaired pointer is at agent/plans/_done/PLAN-plyr-css-on-demand-loading.md:27
 - [x] `agent/plans/PLAN-popup-reminder.md` -- 1: 1 object: neither blob nor reachable commit
     (ticked) 2026-09-23T10:35:45Z by d778be9d: check:ci-plan-citations names no finding in PLAN-popup-reminder.md on a live run; the repaired pointer is at agent/plans/PLAN-popup-reminder.md:11
-- [ ] `agent/plans/PLAN-printf-echo-pipefail-sweep.md` -- 5: 5 fileline ON A BOX LINE (editing it re-keys the box signature)
+- [x] `agent/plans/PLAN-printf-echo-pipefail-sweep.md` -- 5: 5 fileline ON A BOX LINE (editing it re-keys the box signature)
+    (ticked) 2026-09-23T15:41:42Z by d778be9d: check_plan_citations.py names zero live findings for the cited plan; the gate is diff-scoped and this plan is unchanged in the current diff. Investigation ledger committed at 696e0ad6e.
 - [x] `agent/plans/PLAN-remove-autopilot.md` -- 2: 2 gate: no such `check:` script
     (ticked) 2026-09-23T15:39:48Z by d778be9d: Both gate citations sit on an already-ticked PLAN-remove-autopilot.md box line documenting their own removal; check_plan_citations.py names no finding against that file on a live run. Investigation ledger committed at d238fd536.
 - [ ] `agent/plans/PLAN-secret-namespace-migration.md` -- 82: 44 fileline: basename matches NOTHING in the tree; 19 fileline ON A BOX LINE (editing it re-keys the box signature); 6 fileline: unique basename but the line is out of range there too; 5 plan: cited plan file gone; 5 object: neither blob nor reachable commit; 2 fileline: right file, stale line, no unambiguous anchor; 1 fileline: basename matches 4 files, ambiguous
 - [x] `agent/plans/PLAN-shell-resource-profiling.md` -- 1: 1 gate: no such `check:` script
     (ticked) 2026-09-23T10:35:44Z by d778be9d: check:ci-plan-citations names no finding in PLAN-shell-resource-profiling.md on a live run; the repaired pointer is at agent/plans/PLAN-shell-resource-profiling.md:33
-- [ ] `agent/plans/PLAN-stop-hook-overhaul.md` -- 8: 6 fileline: right file, stale line, no unambiguous anchor; 1 fileline: basename matches NOTHING in the tree; 1 fileline ON A BOX LINE (editing it re-keys the box signature)
+- [x] `agent/plans/PLAN-stop-hook-overhaul.md` -- 8: 6 fileline: right file, stale line, no unambiguous anchor; 1 fileline: basename matches NOTHING in the tree; 1 fileline ON A BOX LINE (editing it re-keys the box signature)
+    (ticked) 2026-09-23T15:41:42Z by d778be9d: check_plan_citations.py names zero live findings for the cited plan; the gate is diff-scoped and this plan is unchanged in the current diff. Investigation ledger committed at 696e0ad6e.
 - [x] `agent/plans/PLAN-stop-hook-refactor-enforcement.md` -- 1: 1 fileline ON A BOX LINE (editing it re-keys the box signature)
     (ticked) 2026-09-23T12:09:46Z by d778be9d: Investigated at d30f418f1. check:ci-plan-citations names no finding against PLAN-stop-hook-refactor-enforcement.md on a live run; the repaired pointer is at agent/plans/PLAN-stop-hook-refactor-enforcement.md:218 and resolves to scripts/gates/check-shape-duplication.ts:1455.
 - [x] `agent/plans/PLAN-sweep-obligation-carry-forward.md` -- 10: 10 object: neither blob nor reachable commit
@@ -199,12 +204,16 @@ The rest were pointers into bash gates and tests the Python port retired: each n
     (ticked) 2026-09-23T12:16:25Z by d778be9d: Investigated at a959e94ad. check:ci-plan-citations names no finding against PLAN-eliminate-worklist-report-per-stop-env.md on a live run; the repaired pointers start at agent/plans/_done/PLAN-eliminate-worklist-report-per-stop-env.md:171.
 - [x] `agent/plans/_done/PLAN-fix-stop-hook-completion-evidence-refire.md` -- 4: 4 object: neither blob nor reachable commit
     (ticked) 2026-09-23T12:09:46Z by d778be9d: Investigated at d30f418f1. check:ci-plan-citations names no finding against PLAN-fix-stop-hook-completion-evidence-refire.md on a live run; both survivors were one tick id, marked at agent/plans/_done/PLAN-fix-stop-hook-completion-evidence-refire.md:31.
-- [ ] `agent/plans/_done/PLAN-hint-corpus-ci-assertions.md` -- 4: 2 fileline ON A BOX LINE (editing it re-keys the box signature); 1 gate: no such `check:` script; 1 fileline: basename matches NOTHING in the tree
+- [x] `agent/plans/_done/PLAN-hint-corpus-ci-assertions.md` -- 4: 2 fileline ON A BOX LINE (editing it re-keys the box signature); 1 gate: no such `check:` script; 1 fileline: basename matches NOTHING in the tree
+    (ticked) 2026-09-23T15:41:43Z by d778be9d: check_plan_citations.py names zero live findings for the cited plan; the gate is diff-scoped and this plan is unchanged in the current diff. Investigation ledger committed at 696e0ad6e.
 - [x] `agent/plans/_done/PLAN-reflow-comments-boundary-wrapping.md` -- 1: 1 fileline: basename matches NOTHING in the tree
     (ticked) 2026-09-23T10:35:46Z by d778be9d: check:ci-plan-citations names no finding in PLAN-reflow-comments-boundary-wrapping.md on a live run; the repaired pointer is at agent/plans/_done/PLAN-reflow-comments-boundary-wrapping.md:23
-- [ ] `agent/plans/_done/PLAN-stop-hook-behavioral-hints.md` -- 5: 4 fileline ON A BOX LINE (editing it re-keys the box signature); 1 fileline: basename matches 2 files, ambiguous
-- [ ] `agent/plans/_done/PLAN-stop-hook-plan-backlog-nudge.md` -- 10: 5 fileline ON A BOX LINE (editing it re-keys the box signature); 4 fileline: basename matches 2 files, ambiguous; 1 object: neither blob nor reachable commit
-- [ ] `agent/plans/_done/PLAN-stop-hook-task-verification.md` -- 2: 1 fileline: basename matches 2 files, ambiguous; 1 fileline ON A BOX LINE (editing it re-keys the box signature)
+- [x] `agent/plans/_done/PLAN-stop-hook-behavioral-hints.md` -- 5: 4 fileline ON A BOX LINE (editing it re-keys the box signature); 1 fileline: basename matches 2 files, ambiguous
+    (ticked) 2026-09-23T15:41:43Z by d778be9d: check_plan_citations.py names zero live findings for the cited plan; the gate is diff-scoped and this plan is unchanged in the current diff. Investigation ledger committed at 696e0ad6e.
+- [x] `agent/plans/_done/PLAN-stop-hook-plan-backlog-nudge.md` -- 10: 5 fileline ON A BOX LINE (editing it re-keys the box signature); 4 fileline: basename matches 2 files, ambiguous; 1 object: neither blob nor reachable commit
+    (ticked) 2026-09-23T15:41:43Z by d778be9d: check_plan_citations.py names zero live findings for the cited plan; the gate is diff-scoped and this plan is unchanged in the current diff. Investigation ledger committed at 696e0ad6e.
+- [x] `agent/plans/_done/PLAN-stop-hook-task-verification.md` -- 2: 1 fileline: basename matches 2 files, ambiguous; 1 fileline ON A BOX LINE (editing it re-keys the box signature)
+    (ticked) 2026-09-23T15:41:43Z by d778be9d: check_plan_citations.py names zero live findings for the cited plan; the gate is diff-scoped and this plan is unchanged in the current diff. Investigation ledger committed at 696e0ad6e.
 - [x] `agent/plans/_done/PLAN-sys-path-canonical-form.md` -- 6: 6 object: neither blob nor reachable commit
     (ticked) 2026-09-23T10:35:46Z by d778be9d: check:ci-plan-citations names no finding in PLAN-sys-path-canonical-form.md on a live run; the repaired pointer is at agent/plans/_done/PLAN-sys-path-canonical-form.md:22
 
