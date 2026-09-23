@@ -419,7 +419,7 @@ def main() -> int:
         # POSITIVE: the same sentence a session would type, prefixed with the surrender that motivated this feature. ONE SENTENCE, joined by a colon. Two sentences would put the claim and its subject in different haystacks, which the checker rejects on purpose -- and a gate that asserted the two-sentence shape would be demanding the very false positive this feature was fixed to
         # stop making. The colon form is what the live sentence actually looked like.
         giving_up = f"It doesn't reproduce: {specimen}"
-        hit, errs = matcher.pushback_for(giving_up, AGENTS_DIR)
+        (_, hit), errs = matcher.pushback_for(giving_up, AGENTS_DIR)
         if errs:
             pb_findings.append(f"{name}: corpus errors during push-back: {errs}")
         elif not hit:
@@ -430,11 +430,11 @@ def main() -> int:
         elif hit[0] != name:
             pb_findings.append(f"{name}: push-back named {hit[0]} instead")
         # NEGATIVE: the identical sentence WITHOUT a give-up claim must stay silent. This is the half that keeps the push-back from degrading into a second, louder copy of the topic hint.
-        quiet, _ = matcher.pushback_for(specimen, AGENTS_DIR)
+        (_q_claims, quiet), _ = matcher.pushback_for(specimen, AGENTS_DIR)
         if quiet:
             pb_findings.append(
                 f"{name}: pushed back on a specimen carrying NO give-up claim "
-                f"({quiet[2]}), so it fires on topic alone"
+                f"({_q_claims}), so it fires on topic alone"
             )
     # NEGATIVE: give-up language with no specialist domain must stay silent too. The last two are LIVE REGRESSIONS, both from the first hour this check existed, and both were false positives it produced about ITSELF: - a message that quotes the trigger phrases while explaining them (a mention is not a claim), and - a give-up sentence whose domain words sit in a LATER sentence,
     # which scored 5.0 against pr-babysitter while the true ceph case scored 4.0 -- proof that no threshold separates them and that the claim's own sentence is the only honest haystack.
@@ -478,22 +478,27 @@ def main() -> int:
             "no way to fail; it just stopped, and the liveness check reports it as alive"
         ),
     ):
-        stray, _ = matcher.pushback_for(neutral, AGENTS_DIR)
+        (_, stray), _ = matcher.pushback_for(neutral, AGENTS_DIR)
         if stray:
             pb_findings.append(
                 f'"{neutral[:44]}..." pushed back to {stray[0]} on {stray[1]}, '
                 "so give-up language alone is enough to fire it"
             )
     # POSITIVE REGRESSION: the sentence the operator pushed back on by hand. It is pinned verbatim because two separate bugs silenced it during development -- splitting on its colon, and stripping its apostrophe as a quote -- and both looked like a healthy quiet check from the outside.
+    #
+    # PLAN-stop-hook-overhaul.md section 1.1 (2026-09-23) split DETECTION from ROUTING and this sentence is where that split shows: it scores exactly 1.0 on the single term `ceph`, the same score "verifi" and "yet" scored when they misrouted to the wrong specialist on ordinary English. Nothing distinguishes a thin true positive from a thin false positive by SCORE alone -- that is
+    # this check's own prior finding, cited at the top of this file's neighbouring comment as "not fixable by tuning" -- so routing now requires the HINT's OWN floor (MIN_SCORE/MIN_MARGIN) and this sentence no longer clears it. What survives, and what this asserts, is the CHALLENGE: `claims` still fires unconditionally on the give-up language, which is the half CLAUDE.md rule 3
+    # actually requires (probe before concluding impossible) and the half a specific wrong agent name would not have improved anyway.
     _motivating = (
         "It doesn't reproduce: neither local worker has /etc/ceph or rbd. "
         "ops up fleet, ceph never provisioned."
     )
-    _mhit, _ = matcher.pushback_for(_motivating, AGENTS_DIR)
-    if not _mhit or _mhit[0] != "ops-vms":
+    (_mclaims, _mhit), _ = matcher.pushback_for(_motivating, AGENTS_DIR)
+    if not _mclaims:
         pb_findings.append(
-            "the motivating sentence no longer pushes back to ops-vms (got %r). "
-            "This check exists for that sentence; if it is silent the check is dead." % (_mhit,)
+            "the motivating sentence no longer registers a give-up claim at all "
+            "(got claims=%r, agent=%r). This check exists for that sentence; if the "
+            "CHALLENGE is silent the check is dead, regardless of routing." % (_mclaims, _mhit)
         )
 
     if pb_findings:

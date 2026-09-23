@@ -1528,9 +1528,7 @@
       "WORKLIST_AGENT_HINT_MIN_MARGIN",
       "WORKLIST_AGENT_HINT_MIN_SCORE",
       "WORKLIST_AGENT_HINT_REFRESH_MIN",
-      "WORKLIST_AGENT_PUSHBACK",
-      "WORKLIST_AGENT_PUSHBACK_MIN_MARGIN",
-      "WORKLIST_AGENT_PUSHBACK_MIN_SCORE"
+      "WORKLIST_AGENT_PUSHBACK"
     ],
     ".claude/hooks/stop/wl_backlog.py": [
       "WORKLIST_BACKLOG_MAX_PER_SESSION"
@@ -1650,7 +1648,9 @@
       "WORKLIST_PLANFILE_STALE_SHOW"
     ],
     ".claude/hooks/stop/wl_planindex.py": [
-      "CLAUDE_PROJECT_DIR"
+      "CLAUDE_PROJECT_DIR",
+      "WORKLIST_BIG_OPEN_FLOOR",
+      "WORKLIST_BIG_TOP_N"
     ],
     ".claude/hooks/stop/wl_planrec.py": [
       "TMPDIR",
@@ -1818,6 +1818,9 @@
     ".claude/rediacc_hooks/tests/test_shellscan_differential.py": [
       "HOME",
       "PATH"
+    ],
+    ".claude/rediacc_hooks/tests/test_wl_background_waits.py": [
+      "TMPDIR"
     ],
     ".claude/rediacc_hooks/tests/test_wl_report_inbox.py": [
       "TMPDIR"

@@ -75,18 +75,6 @@
       ],
       "why": "The one-shot per-agent-per-session challenge in wl_agents.py:570. Defaults to `on`, so a typo leaves it on. It is deliberately not a nag, which means a session that meant to silence it and misspelled the name gets exactly one confusing challenge and no clue why."
     },
-    "WORKLIST_AGENT_PUSHBACK_MIN_MARGIN": {
-      "kind": "tuning",
-      "defaults": [
-        "'0.5'"
-      ]
-    },
-    "WORKLIST_AGENT_PUSHBACK_MIN_SCORE": {
-      "kind": "tuning",
-      "defaults": [
-        "'1'"
-      ]
-    },
     "WORKLIST_AGENT_STATE_MAX_CHARS": {
       "kind": "tuning",
       "defaults": [
@@ -139,6 +127,18 @@
       "kind": "tuning",
       "defaults": [
         "'15'"
+      ]
+    },
+    "WORKLIST_BIG_OPEN_FLOOR": {
+      "kind": "tuning",
+      "defaults": [
+        "'10'"
+      ]
+    },
+    "WORKLIST_BIG_TOP_N": {
+      "kind": "tuning",
+      "defaults": [
+        "'5'"
       ]
     },
     "WORKLIST_BRAVE_MAX_FIRES": {

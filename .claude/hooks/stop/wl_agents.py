@@ -396,10 +396,8 @@ PUSHBACK_ENABLED = os.environ.get("WORKLIST_AGENT_PUSHBACK", "on").strip().lower
     "false",
     "no",
 )
-# Lower than the hint's floor ON PURPOSE. The hint competes with every other advisory for one slot and must be near-certain to be worth a line; this one only ever speaks when the session has ALSO just claimed something is impossible, and that conjunction carries most of the precision. Requiring the hint's full confidence on top would silence it in exactly the case that motivated it
-# -- "neither local worker has /etc/ceph" is a thin haystack.
-PUSHBACK_MIN_SCORE = float(os.environ.get("WORKLIST_AGENT_PUSHBACK_MIN_SCORE", "1"))
-PUSHBACK_MIN_MARGIN = float(os.environ.get("WORKLIST_AGENT_PUSHBACK_MIN_MARGIN", "0.5"))
+# PUSHBACK_MIN_SCORE/PUSHBACK_MIN_MARGIN (1/0.5, lower than the hint's own 2/1) were DELETED here (PLAN-stop-hook-overhaul.md section 1.1): the gap between the two floors is what let "verifi" and "yet" -- ordinary English words with no competitor -- name a specialist at a perfect but meaningless 1.0 score. `pushback_for` now reuses `MIN_SCORE`/`MIN_MARGIN` for the ROUTING
+# half and reports the CHALLENGE (the claim itself) unconditionally, which is what carries the precision this comment used to credit to the lower floor.
 
 
 # A MENTION IS NOT A CLAIM, and this is a live regression rather than a precaution: the first message written after this check shipped was a summary OF THE CHECK, quoting its own trigger phrases -- `"cannot"`, `"not reproducible"`, and the ops-vms sentence verbatim -- and the check duly accused its author of giving up on pr-babysitter. A session that writes ABOUT surrender is not
@@ -457,18 +455,22 @@ def giveup_claims(text):
 
 
 def pushback_for(haystack, agents_dir_path=None):
-    """((agent, hits, claims) or None, [error]) -- the conjunction, one call.
+    """((claims, agent_or_None), [error]) -- the CHALLENGE and the ROUTING, decoupled.
+
+    `claims` is [] or the give-up labels found (the CHALLENGE: something was declared impossible, and CLAUDE.md rule 3 says that needs probing regardless of whether a specialist can be named for it). `agent_or_None` is `(name, hits)` when a specialist can be named ABOVE THE ORDINARY HINT'S OWN FLOOR (`MIN_SCORE`/`MIN_MARGIN`, the same numbers `best_hint` uses everywhere
+    else in this module) and `None` otherwise -- there is no second, lower floor here any more. There used to be: a claim conjoined with the hint's own confidence still under-detects (`PUSHBACK_MIN_SCORE`/`PUSHBACK_MIN_MARGIN` were 1/0.5 against the hint's 2/1), and that gap between floors is exactly what let one ordinary English word ("verifi", "yet") route a stop to the wrong
+    specialist at a perfect but meaningless 1.0 score. Reusing the hint's own floor removes the second threshold instead of tuning it, which `.ci/scripts/quality/check_agent_hint_liveness.py:544` already found unfixable by tuning.
 
     ORDER MATTERS FOR COST, not just for reading: the give-up scan is a handful of regexes over one message and answers "no" on nearly every stop, so it runs BEFORE the corpus is loaded. On a normal stop this function does not touch the disk.
     """
     if not PUSHBACK_ENABLED:
-        return None, []
+        return ([], None), []
     claims = giveup_claims(haystack)
     if not claims:
-        return None, []
+        return ([], None), []
     corpus, errors = load_corpus(agents_dir() if agents_dir_path is None else agents_dir_path)
     if not corpus:
-        return None, errors
+        return (claims, None), errors
     # SCORE THE SENTENCE THAT MAKES THE CLAIM, NOT THE WHOLE MESSAGE.
     #
     # MEASURED, and it overturned the threshold I first reached for. Scoring the whole message gave a GENERIC report ("It doesn't reproduce and this is pre-existing. Remaining: the wave, console review, commit and check.") a score of 5.0 against pr-babysitter, while the real ceph sentence scored 4.0 against ops-vms. The false positive outranked the true one, so no threshold could
@@ -477,19 +479,14 @@ def pushback_for(haystack, agents_dir_path=None):
     # A claim is ABOUT something, and that something is in the sentence with it. Restricting the haystack to the claim's own sentences encodes exactly that and needs no list to maintain.
     claim_text = " ".join(_claim_sentences(unquoted(haystack)))
     if not claim_text.strip():
-        return None, errors
+        return (claims, None), errors
     # SCORE THE SUBJECT, NOT THE SURRENDER. The give-up phrases are cut out of the haystack before the topic match, and this is a defect the gate's own negative control caught rather than a precaution: `cannot` is a discriminative term in at least one agent description, so "This cannot be done without a token" matched e2e-local ON THE WORD `cannot` alone. That would have made every
     # honest impossibility claim an accusation, pointed at a random specialist -- the precise failure this check exists to avoid, shipped inside the check itself.
     subject = claim_text
     for _label, _rx in _GIVEUP_RES:
         subject = _rx.sub(" ", subject)
-    hit = best_hint(
-        subject,
-        discriminative(corpus),
-        min_score=PUSHBACK_MIN_SCORE,
-        min_margin=PUSHBACK_MIN_MARGIN,
-    )
+    hit = best_hint(subject, discriminative(corpus), min_score=MIN_SCORE, min_margin=MIN_MARGIN)
     if not hit:
-        return None, errors
+        return (claims, None), errors
     name, _score, hits = hit
-    return (name, hits, claims), errors
+    return (claims, (name, hits)), errors

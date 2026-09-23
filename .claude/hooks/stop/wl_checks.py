@@ -3502,8 +3502,9 @@ def run_stop(event, event_ok, worklist, hook_file):
     # It is a BLOCK rather than an advisory, and that is the operator's own standard applied to their own request: "a document an agent can skip is not a control". The advisory tier already carries the topic hint, and the session this was built for had ALREADY been shown that file. One unskippable challenge per specialist is the smallest thing that could have changed the outcome.
     with contextlib.suppress(Exception):  # never wedge a stop on a prompt
         _pb, _pb_errs = A.pushback_for((last_msg or "") + "\n" + "\n".join(remaining_lines))
-        if _pb:
-            _pb_name, _pb_hits, _pb_claims = _pb
+        _pb_claims, _pb_hit = _pb
+        if _pb_hit:
+            _pb_name, _pb_hits = _pb_hit
             _pb_seen = state_doc.get("agent_pushbacks")
             if not isinstance(_pb_seen, dict):
                 _pb_seen = {}
