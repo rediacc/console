@@ -82,7 +82,7 @@ a file that no longer has them. Details and severity in Part 3, D1.
 
 ### 0.4 The three public keys move, and stay offline, via a cache
 
-v1 declined to route `ACCOUNT_ED25519_PUBLIC_KEY`, `ACCOUNT_X25519_PUBLIC_KEY` and `UPSTREAM_PUBLIC_KEY` through Bitwarden because four build-time readers need them offline (`private/renet/build.sh:411-416`, `.ci/lib/local-common.sh:758-759`, `scripts/docker/build-server.sh:41-42`, `rdc.sh:246-248`), and "a build that needs the network to read a *public* key is a regression". That
+v1 declined to route `ACCOUNT_ED25519_PUBLIC_KEY`, `ACCOUNT_X25519_PUBLIC_KEY` and `UPSTREAM_PUBLIC_KEY` through Bitwarden because four build-time readers need them offline (`private/renet/build.sh:411-416`, `.ci/lib/local-common.sh:758-759`, `.ci/rediacc_ci/ops/build_server.py:83-84`, `rdc.sh:115`), and "a build that needs the network to read a *public* key is a regression". That
 reasoning is correct and survives.
 
 But it argues for a **cache**, not for a second source of truth. Two of the three are already in the store (`ACCOUNT_ED25519_PUBLIC_KEY`, `ACCOUNT_X25519_PUBLIC_KEY`), so v1's design would have left the store and the local file both claiming to be authoritative for the same value with nothing comparing them — the exact shape of `agent/plans/PLAN-secret-namespace-migration.md` Part
@@ -286,14 +286,14 @@ lesson did not generalise to the rename.
 
 **Severity, precisely.** It fails LOUDLY (`die`, exit 1) rather than publishing nothing and exiting 0 — the `die` at `:56` was written for a different reason and happens to catch this. So it is an outage, not a silent corruption. `CF_GLOBAL_API_KEY`/`CF_EMAIL` at `:58` are unaffected; those names did not change.
 
-**Fix**: rename the three names in `publish-solutions.sh:55` and `publish.py:40`. Outside
+**Fix**: rename the three names in `private/growth/video_pipeline/publish-solutions.sh:55` and `private/growth/video_pipeline/publish.py:40`. Outside
 this session's write access (`door:no-write-access` for a design-only agent) — it belongs to whoever holds `private/growth`.
 
 **And the class, not the instance**: any `private/growth` or `private/generative` file that sources console's `.env` must be swept for all 25 rename pre-images, not just these three. `grep -rIn -E '\b(R2_|BACKUP_S3_|TURNSTILE_|BREAKPOINT_|SES_AK_|APP_PRIVATE_KEY|AUTOPILOT_|CLAUDE_CODE_OAUTH|GPG_|OTLP_CLIENT_)' private/growth private/generative` is the sweep.
 
 ### D2 — `R2_MEDIA_BUCKET` is dead, and a doc asserts the opposite
 
-Zero readers. `.ci/scripts/deploy/sync-media-to-r2.sh:35` hardcodes `BUCKET="rediacc-www-media"`. The only mentions anywhere are prose: `CLAUDE.md:649` (calls it an org *variable*), and `.claude/agents/media-pipeline.md:241`, which says **"`R2_MEDIA_BUCKET` is not in `private/account/.env`"** — it is, at line 41.
+Zero readers. `.ci/scripts/deploy/sync-media-to-r2.sh:35` hardcodes `BUCKET="rediacc-www-media"`. The only mentions anywhere are prose: `docs/agent-reference/media-assets.md:23` (calls it an org *variable*), and `.claude/agents/media-pipeline.md:241`, which says **"`R2_MEDIA_BUCKET` is not in `private/account/.env`"** — it is, at line 41.
 
 This falsifies `agent/plans/PLAN-secret-namespace-migration.md` Part 18's measurement that "**all 50 keys** in `private/account/.env` have live readers". 49 do. The one that does not is the one whose readers were assumed from a CLAUDE.md sentence rather than grepped.
 
@@ -372,7 +372,7 @@ B protects the code being written. C protects the migration being *kept*. Every 
 
 ### Harness B — `.ci/scripts/test/gates/test-bws-env-helper.sh`
 
-Prior art to follow, verified: `with_fake_gh` at `.ci/scripts/test/lib/test-helpers.sh:93-112` (shim dir on `PATH`, restore, `rm -rf`), the richer `SHIMDIR` + `plant()` shape at `.ci/scripts/test/gates/test-autopilot-no-bypass.sh:36-58`, and the fake-`bws` that faithfully reproduces bws 2.1.0's ANSI-on-pipe behaviour at
+Prior art to follow, verified: `with_fake_gh` at `.ci/scripts/test/lib/test-helpers.sh:93-112` (shim dir on `PATH`, restore, `rm -rf`), the richer shim-dir + `PATH`-shadowing shape now at `.ci/rediacc_ci/tests/gates/test_gate_bws_env.py:159-172` (the bash `test-autopilot-no-bypass.sh` this cited has since been retired), and the fake-`bws` that faithfully reproduces bws 2.1.0's ANSI-on-pipe behaviour at
 `private/account/tests/integration/rotation-bitwarden-consumer.test.ts:41-90` — which is what makes `--color no` a real control rather than a decoration. Add `with_fake_bws` beside `with_fake_gh`.
 
 v1's assertions B1-B7 stand verbatim. Three more, from v2's wider set:
@@ -465,7 +465,7 @@ created** — its 21 names now MOVE. `dev.local.env` shrinks from 5 names to the
 pre-rename (0.2), and `programs/backup-storage/start-local-plane.sh:60-64`'s reliance on `ACCOUNT_BACKUP_S3_*` being ABSENT from `.env` becomes *load-bearing*, because v2 fetches from a store that DOES hold those three names. The explicit-list rule is what protects it; `bws_export` must never be given a wildcard.
 - **v1 Part 5's `check:env-is-token-only` is replaced** by harness C. v1's version asserted
 `.env` contains only `BWS_ACCESS_TOKEN*`; under v2 `.env` legitimately holds 9 names, so the assertion becomes "every key in `.env` is in the allowlist or was fetched" — and it runs in CI against `.env.example` instead of only locally against a file CI cannot see. Keep a local-only companion in `./run.sh setup` that applies 8a to the real `.env`. **Correction to v1 while placing
-it:** v1 said to land it "as a blocking preflight … beside the drift check (`run.sh:1915-1925`)". That neighbour is explicitly **not** blocking — `run.sh:1918-1924` runs `check:env-credential-drift` inside an `if !` that only `log_warn`s, and says so in its own text ("ROTATION IS AN OPS TASK … so this does not stop setup"). Copying its placement would silently copy its severity.
+it:** v1 said to land it "as a blocking preflight … beside the drift check (now `.ci/rediacc_ci/setup/machine.py:373-388`, `run.sh`'s setup logic having since been ported to Python)". That neighbour is explicitly **not** blocking — `.ci/rediacc_ci/setup/machine.py:382-388` runs `check:env-credential-drift` inside an `if ... .rc != 0` that only `ctx.warn()`s, and says so in its own text ("ROTATION IS AN OPS TASK … so this does not stop setup"). Copying its placement would silently copy its severity.
 The completeness check **must** exit non-zero: a `.env` key with no home is a developer-fixable error, not an ops backlog item, and a warning in a 200-line `setup` transcript is not read.
 - **v1 Part 7's ordering stands**, with D1/D2/D3 inserted as step 0. They are pre-existing
 defects, they are cheap, and D3 in particular must land before any `bws_export` of `STRIPE_WEBHOOK_SECRET` exists in the tree.
@@ -482,7 +482,7 @@ each machine minting its own and no way to tell them apart.
 
 - `[?]` **Q2 — where do the 4 admin credentials live, and does `CF_GLOBAL_API_KEY` survive?**
 `AWS_IAM_ADMIN_*` + `CF_GLOBAL_API_KEY`/`CF_EMAIL` are the most powerful credentials in the file. Seeding them into `ci-shared` upgrades `BWS_ACCESS_TOKEN` from "everything CI can deploy" to "everything the AWS and Cloudflare accounts can do" — for a token that sits unencrypted in a file every local script sources. v1 proposed a second `admin-bootstrap` project readable only by
-`mc-rotate`; the snag is `publish-solutions.sh:58`, which needs `CF_GLOBAL_API_KEY` for a CDN purge and would then need the privileged token.
+`mc-rotate`; the snag is `private/growth/video_pipeline/publish-solutions.sh:58`, which needs `CF_GLOBAL_API_KEY` for a CDN purge and would then need the privileged token.
   **DEFAULT: `admin-bootstrap` for all four, AND set `CLOUDFLARE_API_TOKEN` (already in
 `ci-shared`, already in `.env.example`, absent from `.env`) as the local Cloudflare path so `publish-solutions.sh` requires the scoped token instead of the global key.** That is what makes the two-account split mean anything: it shrinks every non-rotation local script from "full Cloudflare account" to a scoped token.
 
