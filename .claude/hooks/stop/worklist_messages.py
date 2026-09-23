@@ -1134,6 +1134,16 @@ V_DEFERRED_FINDING = (
     "`--defer` it with a DEFAULT and the door named. Then drop the phrase."
 )
 
+V_DEFLECTED_FINDING = (
+    'this turn dismissed a finding without fixing, tracking or door-naming it: "%s"\n'
+    "CLAUDE.md rule 2: a finding is fixed, `--add`ed, or `--defer`red with a door in the "
+    "session that finds it -- 'pre-existing'/'unrelated'/'environmental' is not one of the "
+    "three doors on its own. What would have kept this quiet: a `worklist.py --add/--defer` "
+    "call, a `#<id>` citation, or a `door:operator-only|operator-deferred|no-write-access` "
+    "token anywhere in this turn. None of those appeared. Either do one now, or state in one "
+    "line what was already run to verify the claim."
+)
+
 V_SWEEP_MOMENT = (
     "GOOD MOMENT TO SWEEP. Nothing of yours is open, nothing is in flight, and you "
     "just closed %s -- which makes this the cheapest point in the whole session to "

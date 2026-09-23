@@ -21,6 +21,7 @@ import wl_checklist
 import wl_ci
 import wl_claimcheck
 import wl_core as C
+import wl_deflect
 import wl_git
 import wl_hints
 import wl_histfirst
@@ -4069,6 +4070,14 @@ def run_stop(event, event_ok, worklist, hook_file):
             False,
             M.V_DEFERRED_FINDING % "\n".join("    " + d for d in _deferred),
         )
+    try:
+        _deflect_fired, _deflect_text = wl_deflect.check(
+            worklist, session_id, event.get("transcript_path")
+        )
+    except Exception:  # noqa: BLE001 -- a detector must never crash a stop
+        _deflect_fired, _deflect_text = False, ""
+    if _deflect_fired:
+        vadd("deflected-finding", False, M.V_DEFLECTED_FINDING % _deflect_text)
     if unstated:
         vadd("unstated", False, M.V_UNSTATED % ", ".join("#" + i for i in unstated))
     if mislabelled:

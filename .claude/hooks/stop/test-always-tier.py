@@ -88,6 +88,7 @@ HYGIENE_KEYS = frozenset(
         "docs-drift",
         "idle",
         "deferred-finding",
+        "deflected-finding",
         "found-not-fixed",
         "no-remaining",
         "loop-died",
