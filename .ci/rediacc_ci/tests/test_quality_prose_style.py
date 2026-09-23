@@ -977,6 +977,97 @@ def test_a_rest_directive_inside_a_docstring_is_never_rewrapped():
     assert ps.reflow_comments(text, ".py", 384) == text
 
 
+# --------------------------------------------------------------------------- R19 (under-wrap), the dedicated block PLAN-prose-style-under-wrap.md asks for beside the EXAMPLES-driven test_example coverage above ---------------------------------------------------------------------------
+
+
+def test_underwrap_flags_a_hard_wrapped_paragraph_join():
+    text = (
+        "This is a line that is deliberately\n"
+        "kept narrow so that joining works\n"
+        "as the paragraph's whole intent shows.\n"
+    )
+    findings, note = ps.lint_text("b.md", text, RULES, GLOBALS)
+    assert note is None
+    assert "R19" in [f.rule for f in findings], "a 3-line uniform-width paragraph must fire R19"
+
+
+def test_underwrap_a_single_line_paragraph_is_clean():
+    text = "A short single line by itself, nowhere near the width limit at all.\n"
+    findings, note = ps.lint_text("b.md", text, RULES, GLOBALS)
+    assert note is None
+    assert "R19" not in [f.rule for f in findings], "R19 needs 3+ lines, one line can never fire"
+
+
+def test_underwrap_list_item_adjacency_is_clean():
+    text = (
+        "- first short item here\n"
+        "- second short item here\n"
+        "- third short item here\n"
+    )
+    findings, note = ps.lint_text("b.md", text, RULES, GLOBALS)
+    assert note is None
+    assert "R19" not in [f.rule for f in findings], "a bulleted list is not a hard-wrapped paragraph"
+
+
+def test_underwrap_heading_adjacency_is_clean():
+    text = (
+        "# A heading line\n"
+        "This is a line that is deliberately\n"
+        "kept narrow so that joining works\n"
+        "as the paragraph's whole intent shows.\n"
+    )
+    findings, note = ps.lint_text("b.md", text, RULES, GLOBALS)
+    assert note is None
+    assert "R19" in [f.rule for f in findings], "the heading must not absorb the paragraph below it"
+    assert not any(
+        "A heading line" in f.text for f in findings if f.rule == "R19"
+    ), "the heading itself must never join into the R19 finding text"
+
+
+def test_underwrap_fence_adjacency_is_clean():
+    text = (
+        "This is a line that is deliberately\n"
+        "kept narrow so that joining works\n"
+        "as the paragraph's whole intent shows.\n"
+        "```\n"
+        "narrow\n"
+        "fenced\n"
+        "code\n"
+        "```\n"
+    )
+    findings, note = ps.lint_text("b.md", text, RULES, GLOBALS)
+    assert note is None
+    r19 = [f for f in findings if f.rule == "R19"]
+    assert r19, "the prose paragraph above the fence must still fire R19"
+    assert not any("fenced" in f.text or "narrow\ncode" in f.text for f in r19), (
+        "a fenced code block must never be read as part of the hard-wrapped paragraph"
+    )
+
+
+def test_underwrap_an_already_wide_paragraph_is_clean():
+    text = (
+        "A paragraph that already uses close to the full available width on every "
+        "line before it naturally ends, so there is nothing narrow to fix here at all.\n"
+    )
+    findings, note = ps.lint_text("b.md", text, RULES, GLOBALS)
+    assert note is None
+    assert "R19" not in [f.rule for f in findings], "a paragraph already near the width is not debt"
+
+
+def test_underwrap_a_reflowed_paragraph_never_re_flags():
+    text = (
+        "This is a line that is deliberately\n"
+        "kept narrow so that joining works\n"
+        "as the paragraph's whole intent shows.\n"
+    )
+    after = ps.reflow_markdown(text, 384)
+    findings, note = ps.lint_text("b.md", after, RULES, GLOBALS)
+    assert note is None
+    assert "R19" not in [f.rule for f in findings], (
+        "reflow_markdown's own output must never re-trigger the rule it exists to fix: %r" % after
+    )
+
+
 # --------------------------------------------------------------------------- A docstring's own opening/closing physical line folds and wraps too, when it carries prose alongside its delimiter ---------------------------------------------------------------------------
 
 
