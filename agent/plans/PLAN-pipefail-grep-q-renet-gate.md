@@ -25,7 +25,8 @@ private/renet/.github -type f` returns that one file.
 So a script added to `run_quality()` runs in console CI **and** in local `npm run ci` with
 no workflow edit.
 
-**renet has ZERO shell-script gating today.** No shellcheck, no shfmt, no custom shell checker -- and it says so in its own tree, at `private/renet/.ci/scripts/test/run-tests.sh:20`: "renet's CI runs no shellcheck over .ci/scripts, so this warning was invisible until the console-side battery was pointed at this file". Console's shellcheck gate (`package.json:236` -> `.ci/rediacc_ci/security/shellcheck.py`) enumerates its corpus with `git ls-files '*.sh'` at `.ci/rediacc_ci/security/shellcheck.py:232` plus `--others --exclude-standard` at `.ci/rediacc_ci/security/shellcheck.py:237`, run at the CONSOLE root -- and `git ls-files private/renet` in console returns the single gitlink line `private/renet`, not the submodule's contents.
+**renet has ZERO shell-script gating today.** No shellcheck, no shfmt, no custom shell checker -- and it says so in its own tree, at `private/renet/.ci/scripts/test/run-tests.sh:20`: "renet's CI runs no shellcheck over .ci/scripts, so this warning was invisible until the console-side battery was pointed at this file".
+Console's shellcheck gate (`package.json:236` -> `.ci/rediacc_ci/security/shellcheck.py`) enumerates its corpus with `git ls-files '*.sh'` at `.ci/rediacc_ci/security/shellcheck.py:232` plus `--others --exclude-standard` at `.ci/rediacc_ci/security/shellcheck.py:237`, run at the CONSOLE root -- and `git ls-files private/renet` in console returns the single gitlink line `private/renet`, not the submodule's contents.
 Verified: of the 504
 files console's pipefail gate scans, 11 have "renet" in the path and every one is a console-side `.ci/scripts/**/renet-*.sh`; none is inside the submodule.
 
@@ -229,7 +230,7 @@ Phase 2 -- console-side battery test
 
 Phase 3 -- close the same hole in console, which the measurement exposed
 
-- [x] Add `tee` and `docker` to `.ci/scripts/quality/check-pipefail-grep-q.sh:191` and
+- [x] Add `tee` and `docker` to the bash twin `.ci/scripts/quality/check-pipefail-grep-q.sh` (retired since) and
     (ticked) 2026-09-22T19:54:24Z by d778be9d: .ci/rediacc_ci/quality/pipefail_grep_q.py:204-241, tee/docker present with measured justification
       `.ci/rediacc_ci/quality/pipefail_grep_q.py:339`, with the measured justification in
       both headers.
