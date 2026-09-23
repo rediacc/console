@@ -161,6 +161,24 @@
       "open_sigs": [],
       "done_sigs": []
     },
+    "agent/plans/PLAN-calibrate-judge-rules-live.md": {
+      "status": "draft",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 7,
+      "done": 0,
+      "open_sigs": [
+        "015849d7",
+        "0aac02ba",
+        "4dd8ec1f",
+        "77eaad77",
+        "bc40b973",
+        "bcd0c044",
+        "d09e7d40"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-chunk-store-browse-DECISION.md": {
       "status": "compacted",
       "owner": "8f55d4f0",
