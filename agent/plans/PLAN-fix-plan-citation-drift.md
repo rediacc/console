@@ -1,6 +1,6 @@
 # PLAN: fix plan-citation and plan-record drift (958 + 161 findings)
 
-Status: executing
+Status: executing -- both mechanical scripts (A and B) and the gate-defect investigation are done; the judgment remainder (351 citations + 130 record findings, both sections below) is real, tracked, future work, not attempted this pass.
 Owner: d778be9d
 Updated: 2026-09-23
 
@@ -56,7 +56,8 @@ Estimate: ~730-750 of 1119 (~65-67%) mechanical, ~370-390 need judgment.
 - [x] Investigate whether the 103-delete/28-rename migration pattern is itself fixable (stub restoration) without a history rewrite, and whether doing so meaningfully shrinks the backlog before per-citation fixes.
     (ticked) 2026-09-23T08:44:08Z by d778be9d: Investigated and fixed: check_plan_record.py's attested_under_any_path was missing the git-history fallback names_this_record already had, committed d231c8c30, check:ci-plan-record 132 findings -> 4.
 - [x] Script A implemented and run: bare-basename (678) + submodule-qualified (14) + stale-line (42) citation fixes, each with its own printed proof.
-- [ ] Script B implemented and run: record findings 126 + 30 + 1 (INDEX.md).
+- [x] Script B implemented and run: record findings 126 + 30 + 1 (INDEX.md).
+    (ticked) 2026-09-23: the 126 were the gate defect item 1's investigation found and fixed directly (commit d231c8c30, attested_under_any_path's git-history fallback) -- they went green with no record edited, exactly as anticipated below. The 30 + 1 landed in Run 1.
 - [x] Both gates re-run; finding-count delta matches fixes applied exactly.
 - [x] Judgment-remainder checklist written (grouped by plan) for the ~370-390 left, explicitly not attempted this pass.
 
@@ -101,8 +102,8 @@ Refused and reported rather than baselined into the records.
 Draining that by regenerating `.ci/config/plan-boxes.json` would have orphaned every `done=` proof keyed on the old signatures. All 48 were reverted to their exact previous bytes, `check:ci-plan-boxes` is back to its 2 pre-existing findings, and box-line citations are listed in the remainder below as judgment work.
 
 **4. The gate's own submodule advice can name a file that exists.** `check_plan_citations.unresolved` reaches its submodule branch on ANY unresolved fileline, including one whose path exists at the root and is merely too short, and then prints "does not exist at the repository root, but `private/<sub>/<same basename>` does".
-The citation of `README.md` at lines 49 to 54 in `agent/plans/PLAN-printf-echo-pipefail-sweep.md` hit exactly that: the root `README.md` is present with 36 lines, and the advice pointed at `private/renet/README.md`, an unrelated document. Spelled out here rather than quoted verbatim, because quoting it would make this paragraph carry the same dead citation. The A2 rule trusted the message and produced a wrong pointer; the fix was reverted with the other box-line edits.
-The branch should distinguish "file missing" from "line out of range" before offering a submodule.
+The citation of `README.md` at lines 49 to 54 in `agent/plans/PLAN-printf-echo-pipefail-sweep.md` hit exactly that: the root `README.md` is present with 36 lines, and the advice pointed at `private/renet/README.md`, an unrelated document. Spelled out here rather than quoted verbatim, because quoting it would make this paragraph carry the same dead citation.
+The A2 rule trusted the message and produced a wrong pointer; the fix was reverted with the other box-line edits. The branch should distinguish "file missing" from "line out of range" before offering a submodule.
 
 **5.
 A concurrent session's `git stash` reverted 280 of the first pass's citation fixes.** `git reflog` shows two commits from another session at 09:41:22 and 09:50:08 and `git stash list` shows `stash@{0}: WIP on 0923-1: b2cf6a071`; `git stash show --name-only stash@{0}` lists exactly the 13 plan files whose fixes vanished, and each was byte-identical to its pre-edit snapshot afterwards.
@@ -111,7 +112,8 @@ The stash is another session's and holds this session's work mixed into it, so i
 ### What the mechanical fix does NOT claim
 
 Script A repoints the PATH. The gate only asserts the line is IN RANGE, so a repointed citation can land in the right file on a line whose content has since drifted, and stay green.
-Of 20 hand-spot-checked fixes the path is right in 20, and the cited line plainly supports the plan's sentence in 16; the other 4 (`.ci/rediacc_ci/tests/test_core_dockerx.py:489`, `.claude/hooks/stop/wl_checks.py:1115`, `scripts/data/domains.json:119`, `.claude/hooks/stop/wl_checks.py:1685`) land in the right file on a drifted line. That drift is pre-existing, invisible to this gate, and judgment work.
+Of 20 hand-spot-checked fixes the path is right in 20, and the cited line plainly supports the plan's sentence in 16; the other 4 (`.ci/rediacc_ci/tests/test_core_dockerx.py:489`, `.claude/hooks/stop/wl_checks.py:1115`, `scripts/data/domains.json:119`, `.claude/hooks/stop/wl_checks.py:1685`) land in the right file on a drifted line.
+That drift is pre-existing, invisible to this gate, and judgment work.
 
 ## Judgment remainder, grouped by plan
 

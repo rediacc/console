@@ -498,9 +498,8 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-fix-ci-contention-aware-timeouts.md` | compacted | 38 | 0 | 0 | 3425 |
 | `agent/plans/PLAN-fix-german-translation-artifacts.md` | compacted | 50 | 0 | 0 | 3117 |
 | `agent/plans/PLAN-fix-in-session-rule.md` | compacted | 55 | 0 | 0 | 3577 |
-| `agent/plans/PLAN-fix-plan-citation-drift.md` | executing | 177 | 56 | 3 | 19966 |
+| `agent/plans/PLAN-fix-plan-citation-drift.md` | executing | 180 | 54 | 5 | 20701 |
 | `agent/plans/PLAN-fix-tutorial-player-debug-hook-attachment.md` | compacted | 37 | 0 | 0 | 3148 |
-| `agent/plans/PLAN-fixture-env-example-validation-entries.md` | done | 32 | 0 | 3 | 2423 |
 | `agent/plans/PLAN-gh-swallow-gates-audit.md` | compacted | 49 | 0 | 6 | 4452 |
 | `agent/plans/PLAN-git-history-media-rewrite.md` | compacted | 37 | 0 | 0 | 2958 |
 | `agent/plans/PLAN-git-ignore-aware-discover.md` | compacted | 57 | 0 | 10 | 4730 |
@@ -562,7 +561,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-unify-trap-corpus.md` | compacted | 39 | 0 | 0 | 2772 |
 | `agent/plans/PLAN-w7p4w-docker-cutover.md` | compacted | 62 | 0 | 12 | 4758 |
 | `agent/plans/PLAN-w7p5a-deploy-release-port.md` | compacted | 53 | 0 | 8 | 3914 |
-| `agent/plans/PLAN-w7p5a-real-run-dispatch.md` | executing | 75 | 8 | 0 | 9703 |
+| `agent/plans/PLAN-w7p5a-real-run-dispatch.md` | ready | 75 | 8 | 0 | 9984 |
 | `agent/plans/PLAN-w9p2-script-relocation.md` | draft | 177 | 0 | 10 | 28293 |
 | `agent/plans/PLAN-wire-account-vitest-ci.md` | compacted | 39 | 0 | 0 | 3063 |
 | `agent/plans/PLAN-wl-report-liveness-oracle.md` | compacted | 52 | 0 | 7 | 3665 |
@@ -579,6 +578,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-fix-guard-repo-context.md` | done | 216 | 0 | 10 | 25983 |
 | `agent/plans/_done/PLAN-fix-python-lint-violations.md` | done | 30 | 0 | 5 | 3786 |
 | `agent/plans/_done/PLAN-fix-stop-hook-completion-evidence-refire.md` | done | 117 | 0 | 9 | 14625 |
+| `agent/plans/_done/PLAN-fixture-env-example-validation-entries.md` | done | 33 | 0 | 3 | 2446 |
 | `agent/plans/_done/PLAN-hint-corpus-ci-assertions.md` | done | 371 | 0 | 11 | 35525 |
 | `agent/plans/_done/PLAN-hook-inventory-warn-guards.md` | landed | 69 | 0 | 0 | 4111 |
 | `agent/plans/_done/PLAN-json-prose-scope-audit.md` | done | 79 | 0 | 9 | 8023 |
