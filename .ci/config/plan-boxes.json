@@ -470,6 +470,36 @@
         "fc685d4e"
       ]
     },
+    "agent/plans/PLAN-fix-plan-implementation-check-regression.md": {
+      "status": "executing",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 19,
+      "done": 0,
+      "open_sigs": [
+        "00ef9382",
+        "0bd0172a",
+        "10b34ce9",
+        "1f32b7ee",
+        "30302728",
+        "3e6be5af",
+        "49ea62ba",
+        "4bdff4de",
+        "51eca112",
+        "5770f2fc",
+        "69112ab2",
+        "73a9d7f8",
+        "7891de4d",
+        "7a684ca0",
+        "86b48dbc",
+        "913f03ef",
+        "d37232f9",
+        "edbbf4d4",
+        "fba1cf51"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-fix-tutorial-player-debug-hook-attachment.md": {
       "status": "compacted",
       "owner": "unowned",
@@ -1589,18 +1619,18 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 6,
-      "done": 2,
+      "open": 5,
+      "done": 3,
       "open_sigs": [
         "4cb49d45",
         "86e7ccdc",
         "8b4161ce",
-        "cbf8530c",
         "ce14776f",
         "d073162f"
       ],
       "done_sigs": [
         "3cee36fd",
+        "cbf8530c",
         "ff0cda58"
       ]
     },

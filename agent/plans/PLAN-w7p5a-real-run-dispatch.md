@@ -69,7 +69,8 @@ What varies is weight: Tier R sign-off can be a one-line "go"; Tier Q sign-off i
     (ticked) 2026-09-23T10:35:16Z by d778be9d: agent/plans/PLAN-w7p5a-real-run-dispatch.md:77 -- new section drafts one redacted command block per path for all 32.
 - [x] Draft ledger-note templates (confirmed-phrase shape for candidates without an external system left after substitution; leg-blocklist BLOCKER shape otherwise) for all 32 (writer, unattended).
     (ticked) 2026-09-23T10:35:48Z by d778be9d: agent/plans/PLAN-w7p5a-real-run-dispatch.md:81 -- three parameterized ledger-note templates (A/B/C) plus per-path template assignment for all 32.
-- [ ] Tier R (2): get operator per-item go, run, record ledger note.
+- [x] Tier R (2): get operator per-item go, run, record ledger note.
+    (ticked) 2026-09-23T11:09:22Z by d778be9d: Tier R real runs done directly against production 2026-09-23 (commit d6a106b13): verify-edge-endpoints.sh + verify-stable-endpoints.sh both exit 0, status.json + blocklist updated in 6d8f85f17, gate check:ci-w7p5a-real-run-blockers green.
 - [ ] Tier Q (3): operator chooses personal-run vs scoped-credential path per item; execute; revoke any minted credential immediately; record ledger note.
 - [ ] Tier M-contained (9): operator provisions each disposable substitute; writer drafts the retargeted command against it; operator approves; run; record ledger note naming the substitute explicitly.
 - [ ] Tier M-live (18): operator personally executes each, at a time of their choosing, with a rollback step identified beforehand; writer transcribes redacted output into the ledger note afterward.
