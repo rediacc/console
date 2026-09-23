@@ -41,23 +41,67 @@
       "open_sigs": [],
       "done_sigs": []
     },
+    "agent/plans/PLAN-agent-session-archival.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 0,
+      "done": 6,
+      "open_sigs": [],
+      "done_sigs": [
+        "04b1bec9",
+        "1f840f85",
+        "69177af7",
+        "9d142408",
+        "a1aff9c9",
+        "ae7114ff"
+      ]
+    },
     "agent/plans/PLAN-agent-tree-lifecycle.md": {
-      "status": "in-progress",
+      "status": "mostly-done",
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "2026-09-21",
-      "open": 7,
-      "done": 0,
+      "open": 1,
+      "done": 6,
       "open_sigs": [
+        "a97dd3b2"
+      ],
+      "done_sigs": [
         "21b3ff7d",
         "31bd623c",
         "45e45336",
         "4d9e35fb",
         "71b232cf",
-        "a97dd3b2",
         "f14deb25"
-      ],
-      "done_sigs": []
+      ]
+    },
+    "agent/plans/PLAN-archival-tests-python-compliance.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 0,
+      "done": 15,
+      "open_sigs": [],
+      "done_sigs": [
+        "08f38dbf",
+        "10cb4a72",
+        "1f4c4ce7",
+        "3610bf0d",
+        "747d8c0a",
+        "7bf54c68",
+        "82792463",
+        "9671154f",
+        "9c205cf2",
+        "9dc4e750",
+        "a4480dee",
+        "b2370237",
+        "b2d470e4",
+        "b316c657",
+        "d301decb"
+      ]
     },
     "agent/plans/PLAN-ask-flow-preemptive-settled-check.md": {
       "status": "compacted",
@@ -146,23 +190,25 @@
     },
     "agent/plans/PLAN-bws-rotation-on-failure.md": {
       "status": "draft",
-      "owner": "8f55d4f0",
+      "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "2026-09-21",
-      "open": 18,
-      "done": 0,
+      "open": 1,
+      "done": 17,
       "open_sigs": [
+        "b3eb3080"
+      ],
+      "done_sigs": [
         "1d5e729e",
         "2afc0785",
+        "46658c35",
         "52ac972f",
-        "5e7ccca5",
         "62628d42",
         "7383d20e",
         "93a9925c",
         "95ad2397",
         "9e2a5387",
         "a1e323b0",
-        "b3eb3080",
         "d4ec61d3",
         "d6ac16e4",
         "d7124713",
@@ -170,8 +216,7 @@
         "ddcd42ae",
         "ded91aaf",
         "f807942d"
-      ],
-      "done_sigs": []
+      ]
     },
     "agent/plans/PLAN-chunk-store-browse-DECISION.md": {
       "status": "compacted",
@@ -214,13 +259,14 @@
       "done_sigs": []
     },
     "agent/plans/PLAN-ci-pr-head-ref-trigger-resolution.md": {
-      "status": "draft",
+      "status": "done",
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "2026-09-21",
-      "open": 15,
-      "done": 0,
-      "open_sigs": [
+      "open": 0,
+      "done": 15,
+      "open_sigs": [],
+      "done_sigs": [
         "170d524b",
         "3c9efd68",
         "422cf471",
@@ -236,8 +282,7 @@
         "cc8061fa",
         "cee03814",
         "d644a19c"
-      ],
-      "done_sigs": []
+      ]
     },
     "agent/plans/PLAN-ci-trace-no-pr-branch.md": {
       "status": "compacted",
@@ -250,21 +295,20 @@
       "done_sigs": []
     },
     "agent/plans/PLAN-ci-vacuity-baseline-registry.md": {
-      "status": "ready",
-      "owner": "f4da5c2e",
+      "status": "done",
+      "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "2026-09-21",
-      "open": 1,
-      "done": 14,
-      "open_sigs": [
-        "574bbce7"
-      ],
+      "open": 0,
+      "done": 15,
+      "open_sigs": [],
       "done_sigs": [
         "159b0a13",
         "1afc2d3e",
         "3a590fc8",
         "3cf0920b",
         "451951e9",
+        "574bbce7",
         "5762f53a",
         "6902a808",
         "6f5d6c0a",
@@ -301,6 +345,21 @@
         "6f9c2842",
         "7536e52e",
         "911d45dd"
+      ]
+    },
+    "agent/plans/PLAN-cleanup-context-state-files.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 0,
+      "done": 4,
+      "open_sigs": [],
+      "done_sigs": [
+        "168b55cb",
+        "2fdf188d",
+        "3a5a72bd",
+        "ada37636"
       ]
     },
     "agent/plans/PLAN-cli-em-dash-lint-gate.md": {
@@ -452,22 +511,22 @@
     },
     "agent/plans/PLAN-env-to-bitwarden-v2.md": {
       "status": "draft",
-      "owner": "74de73ca",
+      "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "2026-09-21",
-      "open": 5,
-      "done": 4,
+      "open": 3,
+      "done": 6,
       "open_sigs": [
         "0f9caa1d",
-        "325f06ee",
         "40c785a1",
-        "7f9b838f",
-        "dc528af5"
+        "7f9b838f"
       ],
       "done_sigs": [
+        "325f06ee",
         "81feaa21",
         "a1196500",
         "c464bc97",
+        "dc528af5",
         "ee313a73"
       ]
     },
@@ -501,6 +560,27 @@
       "open_sigs": [],
       "done_sigs": []
     },
+    "agent/plans/PLAN-fix-guard-repo-context.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 0,
+      "done": 10,
+      "open_sigs": [],
+      "done_sigs": [
+        "0fa5c0d3",
+        "3786325b",
+        "45173c9b",
+        "51f7ecfd",
+        "88f0a526",
+        "8dda78a2",
+        "9333c413",
+        "cfa17a03",
+        "d09068dc",
+        "ef421565"
+      ]
+    },
     "agent/plans/PLAN-fix-in-session-rule.md": {
       "status": "compacted",
       "owner": "unowned",
@@ -511,14 +591,31 @@
       "open_sigs": [],
       "done_sigs": []
     },
-    "agent/plans/PLAN-fix-stop-hook-completion-evidence-refire.md": {
-      "status": "draft",
+    "agent/plans/PLAN-fix-python-lint-violations.md": {
+      "status": "done",
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 9,
-      "done": 0,
-      "open_sigs": [
+      "open": 0,
+      "done": 5,
+      "open_sigs": [],
+      "done_sigs": [
+        "1963f5d7",
+        "58c63df3",
+        "7647abdf",
+        "bf8a7d04",
+        "e7e6ed67"
+      ]
+    },
+    "agent/plans/PLAN-fix-stop-hook-completion-evidence-refire.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 0,
+      "done": 9,
+      "open_sigs": [],
+      "done_sigs": [
         "16cd049f",
         "332f91dd",
         "3a4b83e8",
@@ -528,8 +625,7 @@
         "ada4b291",
         "f1cb5023",
         "fffff5b8"
-      ],
-      "done_sigs": []
+      ]
     },
     "agent/plans/PLAN-fix-tutorial-player-debug-hook-attachment.md": {
       "status": "compacted",
@@ -638,7 +734,7 @@
     },
     "agent/plans/PLAN-haiku-model-routing.md": {
       "status": "phase",
-      "owner": "unowned",
+      "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
       "open": 15,
@@ -666,6 +762,28 @@
         "5bd1ecac",
         "972c0e48",
         "f219557d"
+      ]
+    },
+    "agent/plans/PLAN-hint-corpus-ci-assertions.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 0,
+      "done": 11,
+      "open_sigs": [],
+      "done_sigs": [
+        "13dc5108",
+        "34823b6b",
+        "3e8a16f5",
+        "54bb1c70",
+        "5f8f99f9",
+        "8110567d",
+        "8626cd0f",
+        "962ed14d",
+        "aaa645f7",
+        "ccd137ae",
+        "cdf8ba85"
       ]
     },
     "agent/plans/PLAN-judge-gate-worthiness-and-surface-scope.md": {
@@ -742,9 +860,10 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "2026-09-21",
-      "open": 23,
-      "done": 0,
-      "open_sigs": [
+      "open": 0,
+      "done": 23,
+      "open_sigs": [],
+      "done_sigs": [
         "0113778b",
         "0b5fc914",
         "2b7ea54e",
@@ -768,8 +887,7 @@
         "d322b58b",
         "e4adea50",
         "ebada9a3"
-      ],
-      "done_sigs": []
+      ]
     },
     "agent/plans/PLAN-nightly-retry-and-watchdog-noise.md": {
       "status": "compacted",
@@ -809,31 +927,32 @@
       ]
     },
     "agent/plans/PLAN-pipefail-grep-q-renet-gate.md": {
-      "status": "draft",
+      "status": "in-progress",
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "2026-09-21",
-      "open": 16,
-      "done": 0,
+      "open": 5,
+      "done": 11,
       "open_sigs": [
         "5f53f957",
+        "ac4c55db",
+        "af6a7ff7",
+        "da94040f",
+        "e2366f73"
+      ],
+      "done_sigs": [
         "695bedf8",
         "7644c1ee",
         "8f7e9c01",
         "95e70680",
         "9da858e5",
-        "ac4c55db",
-        "af6a7ff7",
         "b139bdbf",
         "b61a0445",
         "d8e5079e",
-        "da94040f",
         "e16543fc",
-        "e2366f73",
         "eb7aa103",
         "f1533f2e"
-      ],
-      "done_sigs": []
+      ]
     },
     "agent/plans/PLAN-plan-file-lifecycle.md": {
       "status": "ready",
@@ -860,42 +979,69 @@
         "ff0c1fc4"
       ]
     },
-    "agent/plans/PLAN-plan-path-migration.md": {
-      "status": "executing",
+    "agent/plans/PLAN-plan-implementation-enforcement.md": {
+      "status": "draft",
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 9,
-      "done": 0,
+      "open": 0,
+      "done": 16,
+      "open_sigs": [],
+      "done_sigs": [
+        "0a921c43",
+        "1e78ffe8",
+        "2ac6bfea",
+        "3000c34a",
+        "3668e9ca",
+        "445887e0",
+        "4764d799",
+        "4985c2b6",
+        "8afc3ce3",
+        "a1101d27",
+        "a29ea255",
+        "bbbbb3cf",
+        "bd4e5e87",
+        "d28bed5d",
+        "e60ff3c6",
+        "fac236ea"
+      ]
+    },
+    "agent/plans/PLAN-plan-path-migration.md": {
+      "status": "closing",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 2,
+      "done": 7,
       "open_sigs": [
+        "7d089114",
+        "f6ca72e2"
+      ],
+      "done_sigs": [
         "2987e7cd",
         "5c958896",
         "66294c19",
-        "7d089114",
         "86353c09",
         "8943bac5",
         "cac49b8f",
-        "d7f8350a",
-        "f6ca72e2"
-      ],
-      "done_sigs": []
+        "d7f8350a"
+      ]
     },
     "agent/plans/PLAN-plyr-css-on-demand-loading.md": {
       "status": "draft",
-      "owner": "74de73ca",
+      "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "2026-09-21",
-      "open": 4,
-      "done": 7,
-      "open_sigs": [
+      "open": 0,
+      "done": 11,
+      "open_sigs": [],
+      "done_sigs": [
         "29de6607",
         "3c769dac",
         "6018aa6e",
-        "9e2f805e"
-      ],
-      "done_sigs": [
         "7f7a85ec",
         "93207293",
+        "9e2f805e",
         "b53ee71d",
         "bce8eeed",
         "c1b2dbf9",
@@ -958,28 +1104,28 @@
       "done_sigs": []
     },
     "agent/plans/PLAN-prose-style-under-wrap.md": {
-      "status": "draft",
+      "status": "mostly-done",
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "2026-09-21",
-      "open": 12,
-      "done": 1,
+      "open": 3,
+      "done": 10,
       "open_sigs": [
         "0253b9bf",
         "037ff64e",
+        "de6c18f7"
+      ],
+      "done_sigs": [
         "0c71f11f",
         "0f2922c5",
         "5f0642e7",
         "8540cabb",
         "8db71822",
+        "93bc3a14",
         "9af03d8c",
         "a2d8e84e",
         "a41b0fdf",
-        "d4772b60",
-        "de6c18f7"
-      ],
-      "done_sigs": [
-        "93bc3a14"
+        "d4772b60"
       ]
     },
     "agent/plans/PLAN-pytest-parallelism.md": {
@@ -1174,35 +1320,39 @@
       "done_sigs": []
     },
     "agent/plans/PLAN-secret-namespace-migration.md": {
-      "status": "partially",
+      "status": "mostly",
       "owner": "unowned",
       "folder": "agent/plans",
       "moved_at": "2026-09-21",
-      "open": 9,
-      "done": 21,
+      "open": 8,
+      "done": 26,
       "open_sigs": [
         "02015bc4",
-        "04b509d8",
-        "3799ac3c",
-        "3a34cc77",
+        "0a36f1a1",
         "3dc0a0b5",
-        "59cb6f43",
-        "7423368e",
+        "5922423d",
+        "648bfaed",
+        "a5c06efb",
         "be5ce8f9",
         "cfe6a745"
       ],
       "done_sigs": [
+        "04b509d8",
         "16f8e04e",
         "1bc12aa2",
         "2a6460e3",
         "2b381052",
         "2b58a199",
         "2ec6fc05",
+        "3799ac3c",
+        "3a34cc77",
         "54be95b6",
         "567b8d06",
+        "59cb6f43",
         "59e5a656",
         "636d7c53",
         "668e3d6b",
+        "7423368e",
         "74468edf",
         "8e4ffef4",
         "af1e2217",
@@ -1226,25 +1376,24 @@
       "done_sigs": []
     },
     "agent/plans/PLAN-session-onboarding-marker.md": {
-      "status": "draft",
-      "owner": "74de73ca",
+      "status": "done",
+      "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "2026-09-21",
-      "open": 5,
-      "done": 5,
-      "open_sigs": [
-        "1cf39aeb",
-        "44e0a390",
-        "ac008cf3",
-        "c9c3f81c",
-        "fdd528a8"
-      ],
+      "open": 0,
+      "done": 10,
+      "open_sigs": [],
       "done_sigs": [
+        "1cf39aeb",
         "37cb2af4",
+        "44e0a390",
         "864ba50b",
         "94b8a59d",
         "9eb50a71",
-        "a07d0f8a"
+        "a07d0f8a",
+        "ac008cf3",
+        "c9c3f81c",
+        "fdd528a8"
       ]
     },
     "agent/plans/PLAN-shell-command-gate-regex-fix.md": {
@@ -1327,26 +1476,24 @@
       "done_sigs": []
     },
     "agent/plans/PLAN-stop-hook-behavioral-hints.md": {
-      "status": "executing",
+      "status": "done",
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 3,
-      "done": 17,
-      "open_sigs": [
-        "299409bb",
-        "bc819650",
-        "fcb9be74"
-      ],
+      "open": 0,
+      "done": 20,
+      "open_sigs": [],
       "done_sigs": [
         "0f630a91",
         "17083c91",
         "27a68907",
+        "299409bb",
         "4f755819",
         "64f5c214",
         "71e8cfb9",
         "746590c8",
         "7b2f2e64",
+        "bc819650",
         "bcd3ab41",
         "c2379c3a",
         "c28b0e1c",
@@ -1355,7 +1502,8 @@
         "e43a85ce",
         "eeded314",
         "f95260f7",
-        "f9d0ddf8"
+        "f9d0ddf8",
+        "fcb9be74"
       ]
     },
     "agent/plans/PLAN-stop-hook-cadence.md": {
@@ -1373,12 +1521,11 @@
       "owner": "f4da5c2e",
       "folder": "agent/plans",
       "moved_at": "2026-09-21",
-      "open": 31,
-      "done": 0,
+      "open": 30,
+      "done": 1,
       "open_sigs": [
         "06fcc45a",
         "071fec08",
-        "0a3321f6",
         "0f583c13",
         "12482630",
         "18dd4873",
@@ -1408,16 +1555,19 @@
         "eb55a6bd",
         "edc40d5b"
       ],
-      "done_sigs": []
+      "done_sigs": [
+        "0a3321f6"
+      ]
     },
     "agent/plans/PLAN-stop-hook-plan-backlog-nudge.md": {
-      "status": "draft",
+      "status": "done",
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 20,
-      "done": 0,
-      "open_sigs": [
+      "open": 0,
+      "done": 20,
+      "open_sigs": [],
+      "done_sigs": [
         "02dca5d3",
         "19a57a62",
         "3523e121",
@@ -1438,8 +1588,7 @@
         "deae49d4",
         "e20ff464",
         "f2337abd"
-      ],
-      "done_sigs": []
+      ]
     },
     "agent/plans/PLAN-stop-hook-refactor-enforcement.md": {
       "status": "draft",
@@ -1839,9 +1988,10 @@
       "owner": "f4da5c2e",
       "folder": "agent/plans",
       "moved_at": "2026-09-21",
-      "open": 10,
-      "done": 0,
-      "open_sigs": [
+      "open": 0,
+      "done": 10,
+      "open_sigs": [],
+      "done_sigs": [
         "39b0cd69",
         "4c8449fd",
         "52ccb61e",
@@ -1852,8 +2002,7 @@
         "a8bb75db",
         "d7595f6f",
         "e833223e"
-      ],
-      "done_sigs": []
+      ]
     },
     "agent/plans/PLAN-wire-account-vitest-ci.md": {
       "status": "compacted",
