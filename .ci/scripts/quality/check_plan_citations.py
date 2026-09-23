@@ -206,6 +206,33 @@ UUID_TAIL_RE = re.compile(
 #: run, which is the part HEXTOK_RE would otherwise have judged.
 DIGEST_RE = re.compile(r"sha256:([0-9a-f]{7,64})", re.IGNORECASE)
 
+#: A BACKGROUND AGENT ID IS NEVER A GIT OBJECT, and this is the third instance
+#: of the same false-positive class the two blocks above answer: a long hex run
+#: that satisfies HEXTOK_RE by coincidence of shape alone.
+#:
+#: The harness mints one id per background agent as `a` followed by 16 hex
+#: characters, so exactly 17. Plans name them constantly, because naming the
+#: worker that did a piece of work is how a plan records provenance -- `## Root
+#: cause (Plan agent a2fd17b15c79c8ceb)` is the shape, and there are three more
+#: in one paragraph of `agent/plans/_done/PLAN-fix-stop-hook-completion-evidence-refire.md`,
+#: whose own prose at :16 already says these are "worker ids that are not git
+#: objects". The gate was asking a plan to prove a subagent id is a commit.
+#:
+#: Measured over `agent/` on 2026-09-23: 13 distinct 17-character hex tokens
+#: across four plans. Every one begins with `a`, and not one resolves as a blob
+#: or a commit in this clone.
+#:
+#: THE LENGTH IS THE MARKER, since an agent id carries no `sha256:`-style prefix
+#: and the sentences around it vary too much to key on. 17 is a length git never
+#: emits here: `core.abbrev` is unset, `git rev-parse --short HEAD` yields 9 on
+#: this tree, and a full id is 40. Requiring the leading `a` as well keeps this
+#: from becoming the general amnesty for long tokens DIGEST_RE's note warns
+#: against -- a 16- or 18-character run is untouched, and so is a 17-character
+#: one that starts with anything else. The residual risk is a sha deliberately
+#: abbreviated to exactly 17 that also starts with `a`, and the cost of that is
+#: one missed dead pointer, never a false accusation.
+AGENT_ID_RE = re.compile(r"(?<![0-9a-zA-Z])(a[0-9a-f]{16})(?![0-9a-zA-Z])")
+
 #: How many findings are printed before the tail is summarised. A wall of
 #: findings is a wall nobody reads to the end of, and the fix for the first is
 #: usually the fix for the rest.
@@ -352,6 +379,7 @@ def citations(text):
     take(R.GATE_RE, "gate")
     uuid_tail_spans = [u.span(1) for u in UUID_TAIL_RE.finditer(text or "")]
     digest_spans = [d.span(1) for d in DIGEST_RE.finditer(text or "")]
+    agent_id_spans = [a.span(1) for a in AGENT_ID_RE.finditer(text or "")]
     for m in R.HEXTOK_RE.finditer(text or ""):
         if any(m.start() < e and s < m.end() for s, e in spans):
             continue
@@ -364,6 +392,9 @@ def citations(text):
             continue
         # A container image digest, not a git object. See DIGEST_RE.
         if (m.start(1), m.end(1)) in digest_spans:
+            continue
+        # A background agent id, not a git object. See AGENT_ID_RE.
+        if (m.start(1), m.end(1)) in agent_id_spans:
             continue
         # A SHAPE FINGERPRINT IS NOT A GIT OBJECT, and it looks exactly like one: 12 hex characters, which this gate judges as an abbreviated sha and can never resolve. `check:ci-shape-duplication` prints these and tells the reader to cite them -- "put its FINGERPRINT into shape-duplication-seed.json" -- so a plan explaining WHY a shape was accepted has to name it, and every such
         # plan line was an unresolvable-pointer failure. Measured 2026-09-08: `94f3f7e6f351` and `aea2bc733552` both reported that way, while an earlier plan's `98b21fa52e5d` passed only because it happens to prefix a real object in this clone -- so the gate was already wrong here and was being saved by coincidence.
@@ -572,12 +603,14 @@ def selftest(root):
                 print(f"        {detail}")
 
     plans = [f for f in _git("ls-files", "--", SCOPE_DIR).split("\n") if "/PLAN-" in f]
+    # IN-SCOPE ONLY, not just "the alphabetically first /PLAN- path under agent/": `git ls-files` sorts `agent/PLAN-*.md` before `agent/archive/...` while any flat-root stub existed, but the 2026-09-22 cleanup deleted every one of those, so plans[0] could silently become an archive path that neither PLAN_REF_RE nor in_scope() recognises -- exactly the failure that surfaced when it did.
+    scoped = [p for p in plans if in_scope(p)]
     head = _git("rev-parse", "HEAD").strip()
-    if not plans or not head:
+    if not plans or not scoped or not head:
         ck(
             "the control has something real to point at",
             False,
-            f"{len(plans)} plan(s), HEAD={head!r}",
+            f"{len(plans)} plan(s), {len(scoped)} in scope, HEAD={head!r}",
         )
         return bad
 
@@ -589,7 +622,7 @@ def selftest(root):
     ]
     live = [
         ("fileline", "package.json:1"),
-        ("plan", plans[0]),
+        ("plan", scoped[0]),
         ("gate", "check:ci-plan-record"),
         ("object", head),
     ]
@@ -710,7 +743,7 @@ def selftest(root):
     # this whole gate estate keeps getting caught by, and adding two of them to look thorough would be the same mistake in a new place. The independent check is the SUBSET one above (a path it invents would not be declared) and the tempdir fixture, whose expectation is built without calling the function at all.
 
     # The EXTRACTOR, separately from the resolvers: a line carrying all four shapes must yield all four. A resolver that works over an extractor that sees nothing is a gate that cannot fail.
-    probe = f"see {plans[0]}:12 and {plans[0]} plus check:ci-plan-record at {head[:12]}"
+    probe = f"see {scoped[0]}:12 and {scoped[0]} plus check:ci-plan-record at {head[:12]}"
     kinds = {k for k, _t in citations(probe)}
     ck(
         "the extractor finds all four citation kinds on one line",
@@ -737,6 +770,25 @@ def selftest(root):
         "CONTROL: the same 12 hex characters WITHOUT the UUID dashes ARE",
         any(k == "object" for k, _t in citations("Stripe secret 3fda6dabc123 leaked")),
     )
+    # THE AGENT-ID EXEMPTION, both directions and on the length boundary, because the whole narrowing is the length. See AGENT_ID_RE.
+    ck(
+        "a 17-character background agent id is NOT treated as an object",
+        not any(
+            k == "object" for k, _t in citations("Root cause (Plan agent a2fd17b15c79c8ceb)")
+        ),
+    )
+    ck(
+        "CONTROL: one character SHORTER, and it is an object again",
+        any(k == "object" for k, _t in citations("Root cause (Plan agent a2fd17b15c79c8ce)")),
+    )
+    ck(
+        "CONTROL: one character LONGER, and it is an object again",
+        any(k == "object" for k, _t in citations("Root cause (Plan agent a2fd17b15c79c8ceb0)")),
+    )
+    ck(
+        "CONTROL: 17 hex characters NOT starting with `a` are an object",
+        any(k == "object" for k, _t in citations("Root cause (Plan agent b2fd17b15c79c8ceb)")),
+    )
     # THE FLOOR, both directions. An 8-hex session prefix must not be judged and a 9-hex sha must be; a floor that silently drifted to 7 would red on every session id in every STATE.md, which is how a gate gets switched off.
     ck(
         "an 8-hex session prefix is NOT treated as an object",
@@ -747,7 +799,7 @@ def selftest(root):
         any(k == "object" for k, _t in citations("session d1589e0bc wrote this")),
     )
     # THE SCOPE PREDICATE, both directions. A narrowed scope is the one change that can quietly turn a working gate into one that reads nothing, so the boundary is pinned rather than described.
-    ck("a plan is in scope", in_scope(plans[0]))
+    ck("a plan is in scope", in_scope(scoped[0]))
     ck("...and so is the index", in_scope("agent/INDEX.md"))
     ck("CONTROL: a per-session STATE.md is NOT", not in_scope("agent/d1589e0b/STATE.md"))
     ck("CONTROL: a generated PR body is NOT", not in_scope("agent/pr/some-branch.md"))
