@@ -404,19 +404,16 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 54,
-      "done": 5,
+      "open": 45,
+      "done": 14,
       "open_sigs": [
         "0881924d",
         "126e279c",
-        "1786f319",
         "1b56afc3",
         "20fa54ca",
         "24d05963",
         "25fd4db0",
         "2a1e4062",
-        "31d63357",
-        "3918f842",
         "3b9f2a67",
         "3e8d7832",
         "3f64f815",
@@ -436,26 +433,20 @@
         "843e9d82",
         "8be0a1ba",
         "955765a3",
-        "979bea0b",
         "9843ff37",
         "9c6e8631",
         "a49ff99f",
         "a6792021",
         "a9721885",
-        "ac9bc9c2",
         "b1c49189",
         "bcb0d0c6",
         "c0e21510",
         "c25ceef5",
-        "cc16f28a",
         "cf3de542",
-        "d226044f",
         "dd6df2ed",
-        "de035f8e",
         "e2413159",
         "e2488abb",
         "e516ec35",
-        "ee81c1f3",
         "f0d7ac5d",
         "f2706431",
         "f4b8f5e1",
@@ -463,11 +454,20 @@
         "fc685d4e"
       ],
       "done_sigs": [
+        "1786f319",
+        "31d63357",
+        "3918f842",
         "51049618",
         "5e5e989c",
         "5f259ebe",
+        "979bea0b",
         "9f68b703",
-        "b3a63c90"
+        "ac9bc9c2",
+        "b3a63c90",
+        "cc16f28a",
+        "d226044f",
+        "de035f8e",
+        "ee81c1f3"
       ]
     },
     "agent/plans/PLAN-fix-tutorial-player-debug-hook-attachment.md": {
@@ -774,26 +774,6 @@
         "d28bed5d",
         "e60ff3c6",
         "fac236ea"
-      ]
-    },
-    "agent/plans/PLAN-plan-path-migration.md": {
-      "status": "closing",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 0,
-      "done": 9,
-      "open_sigs": [],
-      "done_sigs": [
-        "2987e7cd",
-        "5c958896",
-        "66294c19",
-        "7d089114",
-        "86353c09",
-        "8943bac5",
-        "cac49b8f",
-        "d7f8350a",
-        "f6ca72e2"
       ]
     },
     "agent/plans/PLAN-popup-reminder.md": {
@@ -1685,6 +1665,32 @@
         "cd510b2d"
       ]
     },
+    "agent/plans/PLAN-wl-wait-duplicate-listener.md": {
+      "status": "draft",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 15,
+      "done": 0,
+      "open_sigs": [
+        "06fd7f1a",
+        "0dd251c8",
+        "25d3d511",
+        "313df70f",
+        "392e5f4d",
+        "65367d5a",
+        "68811e65",
+        "877e6c4e",
+        "961627a6",
+        "a3c9229e",
+        "b6e6d4db",
+        "c394f280",
+        "cf8c4e39",
+        "e25cc76b",
+        "ef3adc89"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-www-bundle-determinism.md": {
       "status": "compacted",
       "owner": "74de73ca",
@@ -2081,6 +2087,26 @@
         "662affc2",
         "7cd0fbbb",
         "d581ca0d"
+      ]
+    },
+    "agent/plans/_done/PLAN-plan-path-migration.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-09-23",
+      "open": 0,
+      "done": 9,
+      "open_sigs": [],
+      "done_sigs": [
+        "2987e7cd",
+        "5c958896",
+        "66294c19",
+        "7d089114",
+        "86353c09",
+        "8943bac5",
+        "cac49b8f",
+        "d7f8350a",
+        "f6ca72e2"
       ]
     },
     "agent/plans/_done/PLAN-plyr-css-on-demand-loading.md": {
