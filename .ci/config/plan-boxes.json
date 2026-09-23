@@ -379,6 +379,30 @@
       "open_sigs": [],
       "done_sigs": []
     },
+    "agent/plans/PLAN-fix-console-ci-5day-failure.md": {
+      "status": "draft",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 13,
+      "done": 0,
+      "open_sigs": [
+        "1dcddd87",
+        "61fc13bb",
+        "6fe61842",
+        "7f611233",
+        "904ffbc2",
+        "962d5f35",
+        "b6fb6c28",
+        "b8e80be1",
+        "b9743d81",
+        "be8d374f",
+        "d06ce358",
+        "edf13c0b",
+        "f65f8bee"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-fix-german-translation-artifacts.md": {
       "status": "compacted",
       "owner": "unowned",
@@ -469,36 +493,6 @@
         "fa4ee95b",
         "fc685d4e"
       ]
-    },
-    "agent/plans/PLAN-fix-plan-implementation-check-regression.md": {
-      "status": "executing",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 19,
-      "done": 0,
-      "open_sigs": [
-        "00ef9382",
-        "0bd0172a",
-        "10b34ce9",
-        "1f32b7ee",
-        "30302728",
-        "3e6be5af",
-        "49ea62ba",
-        "4bdff4de",
-        "51eca112",
-        "5770f2fc",
-        "69112ab2",
-        "73a9d7f8",
-        "7891de4d",
-        "7a684ca0",
-        "86b48dbc",
-        "913f03ef",
-        "d37232f9",
-        "edbbf4d4",
-        "fba1cf51"
-      ],
-      "done_sigs": []
     },
     "agent/plans/PLAN-fix-tutorial-player-debug-hook-attachment.md": {
       "status": "compacted",
@@ -1916,6 +1910,36 @@
         "cfa17a03",
         "d09068dc",
         "ef421565"
+      ]
+    },
+    "agent/plans/_done/PLAN-fix-plan-implementation-check-regression.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-09-23",
+      "open": 0,
+      "done": 19,
+      "open_sigs": [],
+      "done_sigs": [
+        "00ef9382",
+        "0bd0172a",
+        "10b34ce9",
+        "1f32b7ee",
+        "30302728",
+        "3e6be5af",
+        "49ea62ba",
+        "4bdff4de",
+        "51eca112",
+        "5770f2fc",
+        "69112ab2",
+        "73a9d7f8",
+        "7891de4d",
+        "7a684ca0",
+        "86b48dbc",
+        "913f03ef",
+        "d37232f9",
+        "edbbf4d4",
+        "fba1cf51"
       ]
     },
     "agent/plans/_done/PLAN-fix-python-lint-violations.md": {
