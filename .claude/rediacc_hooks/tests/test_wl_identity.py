@@ -632,6 +632,8 @@ def test_186_meta_control_the_ambient_scrub_really_happened(wl):  # noqa: F811
         "the scrub left the ambient session id in place"
     )
     assert "CLAUDE_SESSION_ID" not in scrubbed, "the scrub left the ambient session id in place"
+    # REGRESSION 2026-09-23: wl_bgsweep.resolve_anchor() reads CLAUDE_PID (not a WORKLIST_* knob, so scrubbed_environ's prefix check never saw it) as its ancestor-walk cross-check. An unscrubbed CLAUDE_PID resolves to THIS suite's own real launching session, whose harness genuinely carries long-lived orphan shells after a long dev session -- and wl_bgsweep then blocks every case that expects "allow" with a real "ORPHAN BACKGROUND SHELL(S) FOUND" verdict that has nothing to do with what the case tests. Caught live: 181 of 7609 cases failed this way in one run, all of them ordinary "allow" expectations with no orphan-shell content at all.
+    assert "CLAUDE_PID" not in scrubbed, "the scrub left the ambient harness pid in place"
     assert wl.env["WORKLIST_SESSION_ID"] == wlfix.SID, "the fixture id is not the pinned one"
 
     # The probe: drop WORKLIST_SESSION_ID ONLY, then issue a command that would FIRE against any real session id, and require it to PASS. It can only pass if there is no ambient id left to compare against.

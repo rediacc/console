@@ -73,7 +73,7 @@ def scrubbed_environ() -> dict[str, str]:
     for key, value in os.environ.items():
         if key.startswith("WORKLIST_"):
             continue
-        if key in ("CLAUDE_CODE_SESSION_ID", "CLAUDE_SESSION_ID"):
+        if key in ("CLAUDE_CODE_SESSION_ID", "CLAUDE_SESSION_ID", "CLAUDE_PID"):
             continue
         out[key] = value
     return out
