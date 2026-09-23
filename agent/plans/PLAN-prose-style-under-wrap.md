@@ -1,8 +1,8 @@
 # PLAN: prose-style under-wrap detection (R19)
 
-Status: mostly-done -- 9 of 12 boxes verified done 2026-09-22 (R19 shipped, wired, baselined at 62 findings).
-Genuinely open: the EDGE_CASES regression tests for block_prose_style_edit.py and test_underwrap_* for test_quality_prose_style.py (behavior independently verified correct, but unasserted).
-The "do not bulk-fix inline" decision box was reversed same-day by explicit operator instruction (commits 05b753df3, 6fb8849f9 bulk-reflowed the whole repo) -- left open rather than ticked, since the box's own instruction was not the thing that happened.
+Status: done -- all 13 boxes closed.
+R19 shipped, wired, baselined at 62 findings (2026-09-22). This session closed the two remaining gaps: EDGE_CASES for block_prose_style_edit.py (commit f39adb027) and a dedicated test_underwrap_* block for test_quality_prose_style.py (commit c52759be2).
+The "do not bulk-fix inline" decision box already reads `[x]` on disk despite this Status line's own note that it was "left open rather than ticked" after the operator reversed it same-day (commits 05b753df3, 6fb8849f9 bulk-reflowed the whole repo) -- pre-existing drift from before this session, not touched here.
 First-Seen: 2026-09-17
 Owner: d778be9d
 
@@ -107,7 +107,8 @@ future normal edit unless it is scoped very narrowly and its existing-corpus hit
       -- this is the SAME shrink-only mechanism every other rule's debt already goes through
       (`write_baseline_guarded`, `baseline_additions`, `write_verdict`). No new baseline
       mechanism is needed or should be built.
-- [ ] Update `.ci/rediacc_ci/tests/test_quality_prose_style.py`: the example-driven harness
+- [x] Update `.ci/rediacc_ci/tests/test_quality_prose_style.py`: the example-driven harness
+    (ticked) 2026-09-23T16:49:49Z by d778be9d: test_underwrap_* block added in commit c52759be2; investigation ledger committed.
       (`EXAMPLES`, `test_example`) picks up R19's example automatically once it is in the rules
       file; add dedicated `test_underwrap_*` functions mirroring the existing `test_reflow_*`
       block (paragraph joins -> flags; single-line paragraph -> clean; list item / heading /
