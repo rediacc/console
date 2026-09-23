@@ -72,7 +72,7 @@
     },
     "agent/plans/PLAN-b2-emit-matrix.md": {
       "status": "partially",
-      "owner": "f4da5c2e",
+      "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "2026-09-21",
       "open": 6,
@@ -244,7 +244,7 @@
     },
     "agent/plans/PLAN-commit-author-identity.md": {
       "status": "draft",
-      "owner": "74de73ca",
+      "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "2026-09-21",
       "open": 3,
@@ -781,7 +781,7 @@
     },
     "agent/plans/PLAN-plan-file-lifecycle.md": {
       "status": "ready",
-      "owner": "74de73ca",
+      "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "2026-09-21",
       "open": 3,
@@ -1248,7 +1248,7 @@
     },
     "agent/plans/PLAN-stop-hook-overhaul.md": {
       "status": "ready",
-      "owner": "f4da5c2e",
+      "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "2026-09-21",
       "open": 30,
