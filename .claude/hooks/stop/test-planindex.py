@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import os
 import pathlib
+import re
 import sys
 import tempfile
 
@@ -357,6 +358,54 @@ eq(
 )
 arith.close()
 t.close()
+
+# == 8. BIG PIECES: derive the mark, do not hand-maintain it ==
+
+# Six plans, ranked by open count: 20, 15, 15, 12, 3, 1 (a sixth carries no boxes at all). BIG_TOP_N=5 finds the 5th-largest as 3 (a's, b's, c's, d's own counts, then e at 3), so the floor is 3: a, b, c, d and g (12, over BIG_OPEN_FLOOR anyway) all qualify, e (1) does not, and the boxless plan can never qualify regardless of rank.
+big = Tree(
+    [
+        ("PLAN-a.md", plan_text("a", "draft", open_n=20, done_n=0)),
+        ("PLAN-b.md", plan_text("b", "draft", open_n=15, done_n=0)),
+        ("PLAN-c.md", plan_text("c", "draft", open_n=15, done_n=0)),
+        ("PLAN-d.md", plan_text("d", "draft", open_n=3, done_n=0)),
+        ("PLAN-e.md", plan_text("e", "draft", open_n=1, done_n=0)),
+        ("PLAN-f.md", plan_text("f", "draft", open_n=0, done_n=0)),
+        ("PLAN-g.md", plan_text("g", "draft", open_n=12, done_n=0)),
+    ]
+)
+big.write_index()
+rows = PI.census_rows(big.root)
+live_rows = [r for r in rows if r[1] not in CK.PLAN_DONE_STATES]
+pieces = PI.big_pieces(live_rows)
+eq(
+    "top-N floor includes every tie at the Nth place, not a strict slice of 5",
+    pieces,
+    {"agent/PLAN-a.md", "agent/PLAN-b.md", "agent/PLAN-c.md", "agent/PLAN-d.md", "agent/PLAN-g.md"},
+)
+ck("a plan below the tie floor and the open floor is never big", "agent/PLAN-e.md" not in pieces, pieces)
+ck("a plan with no open boxes can never be big, whatever its rank", "agent/PLAN-f.md" not in pieces, pieces)
+eq("CONTROL: no boxed rows at all marks nothing big", PI.big_pieces([("PLAN-f.md", "draft", 1, 0, 0, 1)]), set())
+
+bl, blive = big.block()
+ck(
+    "plans_block MARKS every big piece in the printed listing",
+    all(("! BIG PIECE ! agent/PLAN-%s.md" % s) in bl for s in ("a", "b", "c", "d", "g")),
+    bl,
+)
+ck("plans_block does not mark a plan below the floor", "! BIG PIECE ! agent/PLAN-e.md" not in bl, bl)
+plan_lines = [ln for ln in bl.splitlines() if "PLAN-" in ln]
+first_five_rels = [re.search(r"agent/PLAN-\S+\.md", ln).group(0) for ln in plan_lines[:5]]
+ck(
+    "big pieces sort AHEAD of the mtime order in the printed listing",
+    all(rel in pieces for rel in first_five_rels),
+    (first_five_rels, pieces),
+)
+ck(
+    "the RETURNED live-records list keeps its own mtime order, unperturbed by the display sort",
+    [r[0] for r in blive] == [r[0] for r in live_rows],
+    (blive, live_rows),
+)
+big.close()
 
 # ANTI-VACUITY. A suite that plants nothing and asserts nothing exits 0 too, so the floor is asserted rather than assumed: if a future edit breaks the fixture setup, this fails loudly instead of reporting a clean run over no work.
 if Tally.count < 40:

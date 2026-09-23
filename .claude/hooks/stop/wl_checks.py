@@ -1014,15 +1014,19 @@ def plans_block(root):
     mtimes = {rel: mt for rel, _sz, mt in stats}
     rows = sorted(rows, key=lambda r: -mtimes.get(r[0], 0.0))
     live = [r for r in rows if r[1] not in PLAN_DONE_STATES]
+    big = PI.big_pieces(live)
     if not live:
         # PLANS EXIST BUT NONE ARE LIVE. This used to return ("", []), which made "every plan is done" indistinguishable from "this project has no plans" -- both printed nothing. It is a real and reportable state, so it now renders its summary lines. The `not stats` guard above still returns ("", []) for a project with no plans at all, which is the case the early return was
         # actually written for.
         tail = _plan_census_summary(rows)
         return (head + "\n".join(tail)) if tail else "", []
+    # Big pieces sort FIRST, ahead of the mtime order otherwise in force -- the plan this session should finish next is not necessarily the one it touched most recently. `sorted` is stable, so ties within "big" and within "not big" keep their existing mtime order.
+    ordered = sorted(live, key=lambda r: r[0] not in big)
     lines = []
-    for rel, status, n, n_open, n_done, _size in live:
+    for rel, status, n, n_open, n_done, _size in ordered:
         suffix = ", %d open box(es), %d ticked" % (n_open, n_done) if (n_open or n_done) else ""
-        lines.append("  %s [%s] (%d lines%s)" % (rel, status, n, suffix))
+        mark = "! BIG PIECE ! " if rel in big else ""
+        lines.append("  %s%s [%s] (%d lines%s)" % (mark, rel, status, n, suffix))
     done = len(rows) - len(live)
     if done:
         lines.append(

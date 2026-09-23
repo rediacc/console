@@ -247,6 +247,33 @@ def index_census(root, stats=None):
     return rows, CENSUS_FRESH, ()
 
 
+#: PLAN-stop-hook-overhaul.md section 5: "finish the big pieces first"
+#: (agent/RULES.md), encoded as a derived mark rather than a field to hand-maintain.
+#: Both are env-overridable for the same reason `wl_claimcheck`'s bounds are:
+#: a constant a test needs to shrink should not need a code edit to shrink it.
+BIG_TOP_N = int(os.environ.get("WORKLIST_BIG_TOP_N", "5"))
+BIG_OPEN_FLOOR = int(os.environ.get("WORKLIST_BIG_OPEN_FLOOR", "10"))
+
+
+def big_pieces(live):
+    """{rel} of LIVE rows whose open-box count puts them in the top `BIG_TOP_N` or at/over `BIG_OPEN_FLOOR`.
+
+    `live` is the caller's own already-status-filtered rows (finished plans excluded, exactly `plans_block`'s `live` list) -- deliberately, so this function needs no status filter of its own and no `PLAN_DONE_STATES` import, which would cycle straight back through `wl_checks` (see `census_rows`'s docstring for why that import is always deferred, never top-level, in this
+    module).
+
+    TIES AT THE Nth PLACE ALL COUNT. A strict top-N slice would arbitrarily keep one of several plans tied for 5th and drop the rest, which is exactly the kind of instability a derived-not-remembered mark is supposed to avoid: the same census would answer differently depending on sort stability alone. Instead this finds the Nth-LARGEST open count as a floor and returns every
+    plan at or above it, so a five-way tie for 5th yields nine "big" plans, not five.
+
+    A plan with `open == 0` can never be big, so `boxed` filters those out before ranking: an all-ticked plan sitting at the top of an mtime-sorted listing must not be marked as the thing to finish next.
+    """
+    boxed = sorted((r for r in live if r[3]), key=lambda r: -r[3])
+    if not boxed:
+        return set()
+    n = min(BIG_TOP_N, len(boxed))
+    top_n_floor = boxed[n - 1][3]
+    return {r[0] for r in boxed if r[3] >= top_n_floor or r[3] >= BIG_OPEN_FLOOR}
+
+
 def _names(paths, cap=4):
     """A capped, comma-joined path list. Capped because a stale index right after a compaction wave differs by dozens of files, and a banner that prints 33 paths is a banner the reader scrolls past."""
     shown = ", ".join(paths[:cap])
