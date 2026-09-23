@@ -17,6 +17,7 @@ import types as _types
 import wl_admit
 import wl_agents as A
 import wl_backlog
+import wl_bgsweep
 import wl_checklist
 import wl_ci
 import wl_claimcheck
@@ -4078,6 +4079,21 @@ def run_stop(event, event_ok, worklist, hook_file):
         _deflect_fired, _deflect_text = False, ""
     if _deflect_fired:
         vadd("deflected-finding", False, M.V_DEFLECTED_FINDING % _deflect_text)
+    try:
+        _bg_orphans = wl_bgsweep.sweep()
+    except Exception:  # noqa: BLE001 -- a detector must never crash a stop
+        _bg_orphans = []
+    if _bg_orphans:
+        _rows = "\n".join(
+            "    pid %d, %s min old: %s"
+            % (pid, ("%.1f" % age_min) if age_min is not None else "unknown", cmdline[:70])
+            for pid, age_min, cmdline in _bg_orphans
+        )
+        vadd(
+            "bg-orphan",
+            False,
+            M.V_BG_ORPHAN % (len(_bg_orphans), wl_bgsweep.BGSWEEP_AGE_MIN, _rows + "\n"),
+        )
     if unstated:
         vadd("unstated", False, M.V_UNSTATED % ", ".join("#" + i for i in unstated))
     if mislabelled:

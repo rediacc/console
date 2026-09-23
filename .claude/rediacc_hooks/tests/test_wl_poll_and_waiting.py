@@ -417,6 +417,8 @@ ARITY = {
     "V_GIVEUP_CLAIM": ("does-not-reproduce",),
     # (matched dismissal text): the deflected-finding check.
     "V_DEFLECTED_FINDING": ("that's pre-existing and unrelated",),
+    # (count, threshold_min, rows): the orphan-background-shell sweep.
+    "V_BG_ORPHAN": (2, 20, "    pid 123, 45.0 min old: bash\n"),
     "N_POLL_BACKOFF": (25, 5, "*/5 * * * *", "*/10 * * * *", 10),
     "N_POLL_BACKOFF_RESET": ("*/10 * * * *", "*/5 * * * *"),
     "N_QUIET_WAKE": (3, 5, "*/5 * * * *", "*/10 * * * *", 10),

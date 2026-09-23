@@ -412,6 +412,15 @@ V_MANY_WAITERS = (
     "`suspect` rather than gone and gets you told to start yet another one."
 )
 
+V_BG_ORPHAN = (
+    "%d ORPHAN BACKGROUND SHELL(S) FOUND UNDER THIS SESSION'S OWN HARNESS, %d minute(s) or "
+    "older, that nothing currently bookkeeps:\n%s"
+    "ADVISORY ONLY -- this check never kills anything. Each row is a real OS process, still "
+    "alive, resolved as a descendant of this session's own harness pid (never a sibling "
+    "session's tree). Read the command line, decide whether it is still needed, and if not, "
+    "kill it by hand; `worklist.py --reap` retires bookkeeping only, never an OS process."
+)
+
 V_AGENT_STATE = (
     "YOUR compact-recovery document agent/%s/STATE.md is %s%s. "
     "Compaction has "

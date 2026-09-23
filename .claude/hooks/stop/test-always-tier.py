@@ -89,6 +89,7 @@ HYGIENE_KEYS = frozenset(
         "idle",
         "deferred-finding",
         "deflected-finding",
+        "bg-orphan",
         "found-not-fixed",
         "no-remaining",
         "loop-died",
