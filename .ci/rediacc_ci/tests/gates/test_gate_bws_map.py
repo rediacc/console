@@ -67,9 +67,8 @@ REACHABILITY = {
 # The 3 names SECRET_MAP/EXEMPTIONS already home (ALPHA_TOKEN, ORPHAN_TOKEN, PREFIX_EU) go in active; 27 padding names go in commented, each a `kind: "opt-in"` entry in ENV_LOCAL_ALLOWLIST below -- opt-in is the one kind that needs no `derive` citation (check_bws_map.py:796), only a reason and being commented out (check_bws_map.py:833-836), which keeps the padding from needing a real map/exemption home each.
 PAD_NAMES = ["BWS_MAP_FIXTURE_PAD_%02d" % i for i in range(1, 28)]
 
-ENV_EXAMPLE = (
-    "ALPHA_TOKEN=x\nORPHAN_TOKEN=x\nPREFIX_EU=x\n"
-    + "".join("# %s=x\n" % n for n in PAD_NAMES)
+ENV_EXAMPLE = "ALPHA_TOKEN=x\nORPHAN_TOKEN=x\nPREFIX_EU=x\n" + "".join(
+    "# %s=x\n" % n for n in PAD_NAMES
 )
 
 ENV_LOCAL_ALLOWLIST = {
