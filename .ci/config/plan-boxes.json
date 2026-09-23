@@ -145,36 +145,6 @@
       "open_sigs": [],
       "done_sigs": []
     },
-    "agent/plans/PLAN-bws-rotation-on-failure.md": {
-      "status": "draft",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "2026-09-21",
-      "open": 1,
-      "done": 17,
-      "open_sigs": [
-        "b3eb3080"
-      ],
-      "done_sigs": [
-        "1d5e729e",
-        "2afc0785",
-        "46658c35",
-        "52ac972f",
-        "62628d42",
-        "7383d20e",
-        "93a9925c",
-        "95ad2397",
-        "9e2a5387",
-        "a1e323b0",
-        "d4ec61d3",
-        "d6ac16e4",
-        "d7124713",
-        "db1af832",
-        "ddcd42ae",
-        "ded91aaf",
-        "f807942d"
-      ]
-    },
     "agent/plans/PLAN-chunk-store-browse-DECISION.md": {
       "status": "compacted",
       "owner": "8f55d4f0",
@@ -706,40 +676,6 @@
       "open_sigs": [],
       "done_sigs": []
     },
-    "agent/plans/PLAN-migrate-plan-doc-discovery.md": {
-      "status": "draft",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "2026-09-21",
-      "open": 0,
-      "done": 23,
-      "open_sigs": [],
-      "done_sigs": [
-        "0113778b",
-        "0b5fc914",
-        "2b7ea54e",
-        "33ba7d0d",
-        "37b624e9",
-        "49436e10",
-        "5432c3c2",
-        "5d3503e8",
-        "66281be1",
-        "8914c94d",
-        "8ebb9b8b",
-        "8f4b4bfe",
-        "8f8c3a7c",
-        "904b992f",
-        "95a326e3",
-        "a1e07247",
-        "b5cd8cff",
-        "bf9839ce",
-        "c414058f",
-        "c4c07b5c",
-        "d322b58b",
-        "e4adea50",
-        "ebada9a3"
-      ]
-    },
     "agent/plans/PLAN-nightly-retry-and-watchdog-noise.md": {
       "status": "compacted",
       "owner": "854ac1c6",
@@ -859,28 +795,6 @@
         "8943bac5",
         "cac49b8f",
         "d7f8350a"
-      ]
-    },
-    "agent/plans/PLAN-plyr-css-on-demand-loading.md": {
-      "status": "draft",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "2026-09-21",
-      "open": 0,
-      "done": 11,
-      "open_sigs": [],
-      "done_sigs": [
-        "29de6607",
-        "3c769dac",
-        "6018aa6e",
-        "7f7a85ec",
-        "93207293",
-        "9e2f805e",
-        "b53ee71d",
-        "bce8eeed",
-        "c1b2dbf9",
-        "c65d7dea",
-        "f7e12115"
       ]
     },
     "agent/plans/PLAN-popup-reminder.md": {
@@ -1705,6 +1619,25 @@
         "e8822a18"
       ]
     },
+    "agent/plans/PLAN-w7p5a-real-run-dispatch.md": {
+      "status": "executing",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 8,
+      "done": 0,
+      "open_sigs": [
+        "3cee36fd",
+        "4cb49d45",
+        "86e7ccdc",
+        "8b4161ce",
+        "cbf8530c",
+        "ce14776f",
+        "d073162f",
+        "ff0cda58"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-w9p2-script-relocation.md": {
       "status": "draft",
       "owner": "f4da5c2e",
@@ -1805,6 +1738,35 @@
         "b2d470e4",
         "b316c657",
         "d301decb"
+      ]
+    },
+    "agent/plans/_done/PLAN-bws-rotation-on-failure.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-09-23",
+      "open": 0,
+      "done": 18,
+      "open_sigs": [],
+      "done_sigs": [
+        "1d5e729e",
+        "2afc0785",
+        "46658c35",
+        "52ac972f",
+        "62628d42",
+        "7383d20e",
+        "93a9925c",
+        "95ad2397",
+        "9e2a5387",
+        "a1e323b0",
+        "b3eb3080",
+        "d4ec61d3",
+        "d6ac16e4",
+        "d7124713",
+        "db1af832",
+        "ddcd42ae",
+        "ded91aaf",
+        "f807942d"
       ]
     },
     "agent/plans/_done/PLAN-ci-pr-head-ref-trigger-resolution.md": {
@@ -2058,6 +2020,40 @@
       "open_sigs": [],
       "done_sigs": []
     },
+    "agent/plans/_done/PLAN-migrate-plan-doc-discovery.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-09-23",
+      "open": 0,
+      "done": 23,
+      "open_sigs": [],
+      "done_sigs": [
+        "0113778b",
+        "0b5fc914",
+        "2b7ea54e",
+        "33ba7d0d",
+        "37b624e9",
+        "49436e10",
+        "5432c3c2",
+        "5d3503e8",
+        "66281be1",
+        "8914c94d",
+        "8ebb9b8b",
+        "8f4b4bfe",
+        "8f8c3a7c",
+        "904b992f",
+        "95a326e3",
+        "a1e07247",
+        "b5cd8cff",
+        "bf9839ce",
+        "c414058f",
+        "c4c07b5c",
+        "d322b58b",
+        "e4adea50",
+        "ebada9a3"
+      ]
+    },
     "agent/plans/_done/PLAN-pid-fallback-liveness-check.md": {
       "status": "done",
       "owner": "d778be9d",
@@ -2073,6 +2069,28 @@
         "662affc2",
         "7cd0fbbb",
         "d581ca0d"
+      ]
+    },
+    "agent/plans/_done/PLAN-plyr-css-on-demand-loading.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-09-23",
+      "open": 0,
+      "done": 11,
+      "open_sigs": [],
+      "done_sigs": [
+        "29de6607",
+        "3c769dac",
+        "6018aa6e",
+        "7f7a85ec",
+        "93207293",
+        "9e2f805e",
+        "b53ee71d",
+        "bce8eeed",
+        "c1b2dbf9",
+        "c65d7dea",
+        "f7e12115"
       ]
     },
     "agent/plans/_done/PLAN-reflow-comments-boundary-wrapping.md": {
