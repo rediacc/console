@@ -41,6 +41,8 @@ The check's intent is right and its docstring says so ("a change to `normalise` 
 And it does not self-heal on a clock. The only thing that re-emits the index is `wl_shapedup.run` (`.claude/hooks/stop/wl_checks.py:4621`), which sits inside `if judged_ok:` (`:4619`), inside `if (something_remains or reg_signals) and not wl_judge.JUDGE_DISABLED:` (`:4270`). So a rearm requires the judge to run at all, and the judge to say `stop`. A session that is blocked, quiet, or being told
 `continue` never rearms the commit guard.
 
+**FIXED in Commit 1 (commit `e31838a0f`).** `wl_shapedup.run` split into `refresh_index` (mechanical, no model call) and `judge` (the paid half); `wl_checks.py` now calls `refresh_index` unconditionally on every stop that reaches the allow path, independent of `judged_ok`, so the rearm window shrank from "however long the judge keeps saying `continue`" to one stop. `refresh_index` also gained `index_inputs_moved`, closing the residual gap where a change to a bundled dependency outside `CORPUS_GLOBS` (`scripts/lib/*.ts`) would leave a stale index undetected indefinitely. See Part 2, Commit 1's task list for the full account.
+
 ### 0.3 The detection engine itself works. Proven, not assumed.
 
 Driving the cached bundle directly with a synthetic third copy:
@@ -105,6 +107,8 @@ seed "accepted": 8  ->  8 still at >=3 copies,    0 absent   (deadAccepted is co
 
 The seed was generated 2026-09-09 over 351 files; the corpus is now 138. `deadAccepted` (`:1455-1468`) refuses when one of the 8 hand-written `accepted` entries goes dead -- but nothing checks the 267 anonymous `shapes` entries, and 95 of them (36%) describe shapes that no longer occur anywhere. A dead seed hash is permanent silence: if one of those 95 shapes is re-introduced at 3
 copies by a port, the gate will never say so. The liveness discipline the gate applies to its 8 exceptions is not applied to its 267.
+
+**FIXED in Commit 1 (commit `e31838a0f`).** `deadSeeded(perFile, shapes)` applies the same predicate to the anonymous half of the seed, REPORTED (never refused, unlike `deadAccepted`) on the success line -- 104 of 267 dead measured live on this corpus today, since the corpus has shrunk further since this section's measurement.
 
 ### 0.7 Cost of the widening, measured
 
