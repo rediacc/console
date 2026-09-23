@@ -17,7 +17,9 @@ THE THRESHOLD IS A SCALE PROXY, NOT A MECHANISM DETECTOR. This guard cannot tell
 FAILS OPEN ON AN UNRESOLVABLE RANGE, on the same reasoning `messages()`'s `-F <unreadable path>` arm already uses: a range this guard cannot compute is UNEXAMINED, not a finding. A branch with no upstream, or a push whose target this guard cannot resolve, is allowed rather than guessed at.
 """
 
+import json
 import os
+import pathlib
 import re
 import subprocess
 
@@ -104,6 +106,22 @@ def _range_commits(base, head, cwd):
     return shas[:RANGE_COMMIT_CAP]
 
 
+def _grandfathered_shas(cwd):
+    """{full-sha} named in .ci/config/bulk-transform-proof-baseline.json, or empty.
+
+    SHRINK-ONLY, the same convention every other baseline in this repo already follows: pre-existing debt at the moment the baseline landed, never a general escape hatch for a NEW bulk commit.
+
+    Missing file, unreadable JSON, or a wrong shape all read as empty -- a fixture repo with no such file must behave exactly as it did before this existed, and a corrupt baseline must fail toward MORE checking, not less.
+    """
+    path = pathlib.Path(cwd) / ".ci" / "config" / "bulk-transform-proof-baseline.json"
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return set()
+    shas = data.get("grandfathered")
+    return set(shas) if isinstance(shas, list) else set()
+
+
 def _proven_by_a_later_commit(sha, newer_messages):
     """Whether a commit NEWER than `sha` in the same range names it and shows proof.
 
@@ -122,8 +140,11 @@ def _first_unproven(shas, cwd):
 
     `shas` is newest-first (git rev-list's own order), so a commit's "later, in the same push/PR" proof sits at a LOWER index -- collected once, up front, so an N-commit range costs one pass rather than a quadratic re-scan.
     """
+    grandfathered = _grandfathered_shas(cwd)
     messages = [_commit_message(sha, cwd) for sha in shas]
     for i, sha in enumerate(shas):
+        if sha in grandfathered:
+            continue
         files = _commit_files(sha, cwd)
         if len(files) < BULK_FILE_THRESHOLD:
             continue

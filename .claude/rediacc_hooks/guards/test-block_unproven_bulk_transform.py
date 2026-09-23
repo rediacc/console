@@ -219,6 +219,38 @@ case(
     True,
 )
 
+# A SHA listed in the repo's own bulk-transform-proof-baseline.json is grandfathered -- pre-existing debt at the moment the baseline landed, the same shrink-only shape every other baseline in this repo uses.
+baseline_repo = scratch_repo()
+remote_b = tempfile.mkdtemp()
+git(remote_b, "init", "-q", "--bare")
+git(baseline_repo, "remote", "add", "origin", remote_b)
+git(baseline_repo, "push", "-q", "-u", "origin", "main")
+stage_files(baseline_repo, BULK, prefix="t")
+git(baseline_repo, "commit", "-qm", "style: bulk rewrite with no proof")
+baseline_sha = git(baseline_repo, "rev-parse", "HEAD").stdout.strip()
+config_dir = os.path.join(baseline_repo, ".ci", "config")
+os.makedirs(config_dir, exist_ok=True)
+with open(
+    os.path.join(config_dir, "bulk-transform-proof-baseline.json"), "w", encoding="utf-8"
+) as fh:
+    json.dump({"grandfathered": [baseline_sha]}, fh)
+case(
+    "a SHA listed in bulk-transform-proof-baseline.json is grandfathered",
+    "git push",
+    baseline_repo,
+    False,
+)
+
+# A DIFFERENT unproven bulk commit made AFTER the grandfathered one, in the same push, still blocks -- the baseline is shrink-only and must not become a blanket exemption for the whole range.
+stage_files(baseline_repo, BULK, prefix="u")
+git(baseline_repo, "commit", "-qm", "style: a second bulk rewrite with no proof")
+case(
+    "a NEW unproven bulk commit after the grandfathered one still blocks",
+    "git push",
+    baseline_repo,
+    True,
+)
+
 # A second scratch repo for the ALLOWED push, so the first repo's now-diverged history (it was blocked, never actually pushed) does not contaminate this case.
 push_repo2 = scratch_repo()
 remote2 = tempfile.mkdtemp()
