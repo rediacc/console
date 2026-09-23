@@ -340,6 +340,63 @@ def test_block_unlinked_commit_author(tmp_path):
         "unlinked-author CONTROL: a tag writes a tagger, not a commit author",
         env=env,
     )
+    # The plain-config path, which is the ONE shape a `git config`-reading guard would also have caught. It is here for the opposite reason to the three overrides above: those prove the guard sees what config cannot, and this proves it still sees config.
+    badconfig = tmp_path / "gitconfig-bad"
+    badconfig.write_text("[user]\n\tname = ctl\n\temail = bad@example.com\n", encoding="utf-8")
+    block.check(
+        "check 2 guards/block_unlinked_commit_author.py",
+        bash_json('git commit -m "x"'),
+        "unlinked-author: an unlinked address in plain config is refused",
+        env=env_with(COMMIT_IDENTITY_FILE=str(identity), GIT_CONFIG_GLOBAL=str(badconfig)),
+    )
+    # A MISSING CACHE MUST REFUSE, NEVER PERMIT. The allowed set is a tracked file, so inside this tree its absence means a broken checkout rather than a free pass, and a guard that failed open here would be silent exactly when it could check nothing.
+    block.check(
+        "check 2 guards/block_unlinked_commit_author.py",
+        bash_json('git commit -m "x"'),
+        "unlinked-author: an unreadable identity cache refuses rather than permitting",
+        env=env_with(
+            COMMIT_IDENTITY_FILE=str(tmp_path / "not-here.json"), GIT_CONFIG_GLOBAL=str(gitconfig)
+        ),
+    )
+    # THE SUBMODULE ARM, and the reason it needs a fixture of its own: this guard deliberately judges a commit into a repo UNDER the project root, where block-untagged-commit.sh exits on any foreign root. Three submodules carried the 2026-09-03 defect, so a nested checkout's own local identity is in scope.
+    sub_root = (tmp_path / "subroot").resolve()
+    (sub_root / "mod").mkdir(parents=True)
+    git(sub_root, "init", "-q")
+    git(sub_root / "mod", "init", "-q")
+    git(sub_root / "mod", "config", "user.name", "ctl")
+    git(sub_root / "mod", "config", "user.email", "bad@example.com")
+    sub_env = env_with(
+        COMMIT_IDENTITY_FILE=str(identity),
+        GIT_CONFIG_GLOBAL=str(gitconfig),
+        CLAUDE_PROJECT_DIR=str(sub_root),
+    )
+    block.check(
+        "check 2 guards/block_unlinked_commit_author.py",
+        bash_json('cd mod && git commit -m "x"'),
+        "unlinked-author: a nested checkout under the project root IS judged",
+        env=sub_env,
+    )
+    git(sub_root / "mod", "config", "user.email", "good@example.com")
+    block.check(
+        "check 0 guards/block_unlinked_commit_author.py",
+        bash_json('cd mod && git commit -m "x"'),
+        "unlinked-author CONTROL: the same nested checkout with a linked address passes",
+        env=sub_env,
+    )
+    # The false positive this guard's own introducing commit produced: the message EXPLAINING `--author=` is prose, and a guard that cannot be described in a commit message is a guard people route around.
+    block.check(
+        "check 0 guards/block_unlinked_commit_author.py",
+        bash_json('git commit -m "explain --author=bad@example.com in prose"'),
+        "unlinked-author CONTROL: --author= inside the message is prose, not an override",
+        env=env,
+    )
+    # GitHub's noreply forms attribute correctly, so they are allowed without being listed in the cache at all.
+    block.check(
+        "check 0 guards/block_unlinked_commit_author.py",
+        bash_json('git -c user.email=1+ctl@users.noreply.github.com commit -m "x"'),
+        "unlinked-author CONTROL: the id+login noreply form is allowed unlisted",
+        env=env,
+    )
     block.done()
 
 
