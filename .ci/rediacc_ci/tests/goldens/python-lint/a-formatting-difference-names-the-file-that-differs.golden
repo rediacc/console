@@ -1,0 +1,21 @@
+# twin .ci/scripts/quality/check-python-lint.sh blob 471b915b87984c59aeaca380951aa3dd5bd3b702
+exit: 1
+--- stdout ---
+info: linting 13 Python file(s) with ruff 0.16.1
+All checks passed!
+--- stderr ---
+unformatted: File would be reformatted
+ --> probe_fmt.py:1:8
+  |
+  - x = [1,2,3]
+  - def f( a ):
+1 + x = [1, 2, 3]
+2 +
+3 +
+4 + def f(a):
+5 |     return a
+  |
+
+1 file would be reformatted, 12 files already formatted
+
+[0;31m✗[0m Python formatting differs. Run: ruff format --no-cache -- probe_fmt.py 

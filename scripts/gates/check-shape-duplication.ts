@@ -115,7 +115,7 @@ interface Family {
 
 const FAMILIES: readonly Family[] = [
   { pathspec: 'scripts/gates/check-*.ts', floor: 100 },
-  { pathspec: '.ci/scripts/quality/check-*.sh', floor: 8 },
+  { pathspec: '.ci/scripts/quality/check-*.sh', floor: 3 },
   { pathspec: '.ci/scripts/test/gates/test-*.sh', floor: 5 },
   // THE `.claude/hooks/pre-bash/block-*.sh` FAMILY IS GONE, and this note stands in its place rather than a row with a floor of zero, which no deletion could ever breach. It held 43 guards; W5 ported 42 to `.claude/rediacc_hooks/guards/block_*.py` and left one bash file, and W7 P6 ported that one too, so the pathspec now matches nothing and `git ls-files` on it would refuse the
   // floor it used to carry. THE PYTHON SPELLING IS STILL NOT HERE, deliberately and with the cost measured: adding `.claude/rediacc_hooks/guards/block_*.py` on 2026-09-08 reported 26 new shapes, because the guards carry a shared scaffold of their own, so the widening is an extraction job like the quality half above and belongs in a commit of its own.
@@ -1846,8 +1846,12 @@ async function main(): Promise<void> {
   // family to 13 and the corpus to 151. Retiring `test-claude-hooks.sh` alongside its own subject, `.claude/hooks/test-hooks.sh`, took the gate-test family from 13 to 12 and the corpus to 150: the wrapper held no assertion of its own beyond translating the harness's summary line, and with the harness ported to pytest there was nothing left for it to wrap. Further bash-twin
   // retirements the same wave (including
   // `.ci/scripts/quality/check-go-deps.sh`, deleted once its K=5 shadow ledger licensed the retirement) took the quality family down to 9 and the gate-test family down to 5, and the corpus down to 139 -- measured directly against the tracked tree (126 `scripts/gates/check-*.ts` + 9 + 5, minus the opted-out file) rather than reconstructed batch by batch. Removing the Autopilot CI
-  // autonomy feature deleted `check-autopilot-no-bypass.sh`, its Python gate never having had a `.sh` shape of its own, taking the quality family from 9 to 8 and the corpus from 139 to 138.
-  if (files.length < 138) {
+  // autonomy feature deleted `check-autopilot-no-bypass.sh`, its Python gate never having had a `.sh` shape of its own, taking the quality family from 9 to 8 and the corpus from 139 to 138. W7P5-c then retired four more quality twins on their K=5 `EQUIVALENT` shadow ledgers -- `check-workflows.sh`, `check-plan-housekeeping.sh`, `check-dead-case-arms.sh` and
+  // `check-swallowed-failures.sh` -- taking the quality family from 8 to 4 and the corpus from 138 to 136. ONE MORE UNIT CAME FROM A CONCURRENT PEER, not from that wave, and the split is recorded rather than absorbed silently: the same session saw `.ci/scripts/test/gates/test-bws-rotate.sh` retired alongside its `scripts/dev/bws-rotate.py` port by another writer in the same tree,
+  // and then `test-agent-session-archival.sh` the same way, taking the gate-test family from 7 to 5 and the corpus from 136 to 134. THE SPLIT IS RECORDED RATHER THAN ABSORBED, because a floor re-measured inside a live tree otherwise reconstructs as one writer's work: TWO of the four units are the quality-twin wave above, and TWO belong to a concurrent bash-retirement wave that was
+  // landing gate-test deletions in this same tree while it ran. W7P5-c then retired `check-python-lint.sh` against recorded goldens once its fixture was made hermetic, taking the quality family from 4 to 3 and the corpus from 134 to 133. Measured against the tracked tree rather than subtracted from the previous line: 126 `scripts/gates/check-*.ts` + 3 + 5, minus the opted-out
+  // file, which is the same 133 the gate itself counts.
+  if (files.length < 133) {
     console.error(
       `${RED}✗${NC} only ${files.length} file(s) in the corpus; the globs are broken or the tree moved`
     );

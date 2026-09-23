@@ -485,19 +485,23 @@ def test_the_cannot_run_code_agrees_with_every_other_definition_in_the_repo():
     patterns = {
         "scripts/ci-runner/pool.ts": r"const CANNOT_RUN = (\d+)",
         ".ci/rediacc_ci/check_pytest.py": r"EXIT_CANNOT_RUN = (\d+)",
-        ".ci/scripts/security/shfmt.sh": r"^\s*exit (\d+)\s*$",
-        ".ci/scripts/quality/check-python-lint.sh": r"^\s*exit (\d+)\s*$",
+        # REPOINTED 2026-09-23 as a PRE-EXISTING RED, not as part of the python-lint deletion below: `.ci/scripts/security/shfmt.sh` is absent from HEAD (retired by an earlier bash-twin wave) and this row had been raising FileNotFoundError ever since, so the whole four-way agreement check was failing without ruling on anything. The port writes a bare `return 77` among four
+        # bare numeric returns rather than naming a constant, so the assertion stays MEMBERSHIP, exactly as strong as the one it replaces and no stronger.
+        ".ci/rediacc_ci/security/shfmt.py": r"^\s*return (\d+)\s*$",
+        # REPOINTED 2026-09-23, W7P5-c, when `.ci/scripts/quality/check-python-lint.sh` was deleted against recorded goldens. The old row read the TWIN for a bare `exit 77` among its nine `exit <digits>` lines, so it could only assert MEMBERSHIP. The port names the constant, so this row gets the same EQUALITY assertion the two other constant-naming files get, which is
+        # strictly stronger than what it replaces.
+        ".ci/rediacc_ci/quality/python_lint.py": r"EXIT_CANNOT_RUN = (\d+)",
     }
     for rel, pattern in patterns.items():
         text = (root / rel).read_text(encoding="utf-8")
         matches = {int(m) for m in re.findall(pattern, text, re.MULTILINE)}
         assert matches, "no cannot-run literal found in %s; the pattern has rotted" % rel
         found[rel] = matches
-    # The two shell files also `exit 0`/`exit 1` elsewhere, so the assertion is membership rather than equality for those, and equality for the two that name the constant.
+    # The shfmt port returns 0, 1 and 77 from the same function, so its assertion is membership; the three that name the constant get equality.
     assert found["scripts/ci-runner/pool.ts"] == {dockerx.CANNOT_RUN_RC}
     assert found[".ci/rediacc_ci/check_pytest.py"] == {dockerx.CANNOT_RUN_RC}
-    assert dockerx.CANNOT_RUN_RC in found[".ci/scripts/security/shfmt.sh"]
-    assert dockerx.CANNOT_RUN_RC in found[".ci/scripts/quality/check-python-lint.sh"]
+    assert found[".ci/rediacc_ci/quality/python_lint.py"] == {dockerx.CANNOT_RUN_RC}
+    assert dockerx.CANNOT_RUN_RC in found[".ci/rediacc_ci/security/shfmt.py"]
 
 
 def _module_run(bindir: pathlib.Path, args: list[str]) -> subprocess.CompletedProcess:

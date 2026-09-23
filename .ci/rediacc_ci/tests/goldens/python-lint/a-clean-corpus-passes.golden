@@ -1,0 +1,8 @@
+# twin .ci/scripts/quality/check-python-lint.sh blob 471b915b87984c59aeaca380951aa3dd5bd3b702
+exit: 0
+--- stdout ---
+info: linting 12 Python file(s) with ruff 0.16.1
+All checks passed!
+12 files already formatted
+[0;32m✓[0m 12 Python file(s) pass ruff lint and format (+ 12 checked for shebang/mode agreement)
+--- stderr ---

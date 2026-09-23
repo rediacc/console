@@ -28,24 +28,27 @@ PINNED BY PATH IN TWO HARNESSES, and the two rows take DIFFERENT arms.
     run-in-place row, so if it is ever repointed it must be repointed at THIS
     ENTRY POINT, never at the module. The bash twin that carried the same
     registry was retired 2026-09-21.
-  - `.ci/rediacc_ci/tests/test_core_dockerx.py:562` reads the same path as TEXT
-    and regex-matches a whole line of the form `exit <digits>`, asserting the
-    cannot-run code 77 is among them. That is a behavioural needle in the
-    SOURCE, and the needle is not in this three-line shim, so that row must be
-    repointed at the MODULE `.ci/rediacc_ci/quality/python_lint.py` if it is
-    repointed at all. AND ITS PATTERN MUST MOVE WITH IT, measured rather than
-    assumed: the twin carries a bare `exit 77` at line 191, while the module
-    writes `EXIT_CANNOT_RUN = 77` at python_lint.py:194 and never emits that
-    line shape at all. A repoint that kept the old pattern would find nothing,
-    which that test does catch -- it asserts the match set is non-empty and
-    says "the pattern has rotted" -- but a writer should not need the harness
-    to discover it.
-  - `.ci/rediacc_ci/tests/test_quality_python_lint.py:46` sets
-    `TWIN = ".ci/scripts/quality/check-python-lint.sh"`. That one is a
-    DIFFERENTIAL and MUST KEEP NAMING THE TWIN: repointing it would make the
-    port compare against itself.
+  - `.ci/rediacc_ci/tests/test_core_dockerx.py` used to read the TWIN as TEXT
+    and regex-match a whole line of the form `exit <digits>`, asserting the
+    cannot-run code 77 was among them. That is a behavioural needle in the
+    SOURCE, and the needle was never in this three-line shim, so W7P5-c
+    repointed the row at the MODULE `.ci/rediacc_ci/quality/python_lint.py`
+    when it deleted the twin. THE PATTERN MOVED WITH IT, measured rather than
+    assumed: the twin carried a bare `exit 77` at line 191 among nine `exit
+    <digits>` lines, so the assertion there was MEMBERSHIP; the module writes
+    `EXIT_CANNOT_RUN = 77` at python_lint.py:175 and never emits that line
+    shape at all, so the assertion is now EQUALITY, the same one the two other
+    constant-naming files already get. A repoint that had kept the old pattern
+    would have found nothing, which that test does catch -- it asserts the
+    match set is non-empty and says "the pattern has rotted".
+  - `.ci/rediacc_ci/tests/test_quality_python_lint.py` sets
+    `TWIN = ".ci/scripts/quality/check-python-lint.sh"` and still does, but it
+    is no longer a DIFFERENTIAL: it names the deleted twin so that
+    `test_the_twin_is_gone_and_its_recording_names_it` can assert the file is
+    absent AND that every golden's provenance header names it. Repointing that
+    constant at either Python file would make the port compare against itself.
 
-Repointing is the driver's call; all three go on working unchanged after this cutover because invariant 5 keeps the twin on disk.
+The first row still runs in place against this entry point; the other two moved with the deletion below.
 
 DRIVEN, on this tree, both streams captured SEPARATELY, `CI=true` on both:
 
@@ -74,7 +77,8 @@ refusal silently dropped in a port. The refusal is now in the module, in the twi
 
 THE REAL TREE WAS NEVER WRITTEN TO for this gate. `git status --porcelain` carries no probe file, and neither this twin nor any other was edited here.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-python-lint.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
+INVARIANT 5 IS DISCHARGED: `.ci/scripts/quality/check-python-lint.sh` stayed on disk as the differential twin through this cutover, and W7P5-c DELETED it on 2026-09-23 (blob `471b915b87984c59aeaca380951aa3dd5bd3b702`, `git cat-file -p` still yields it). The licence is `.ci/shadow/w7p2-python-lint.observations.jsonl`: 6 rows, 6 distinct trees, 6 distinct fingerprints,
+every one `EQUIVALENT`. The nine cases that executed the twin now compare against its own recorded bytes in `.ci/rediacc_ci/tests/goldens/python-lint/`, captured from the tracked script on its last day in the tree.
 
 ---- gate ----
 step: Python lint + format (ruff)
