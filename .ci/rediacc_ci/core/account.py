@@ -1,4 +1,4 @@
-"""The DETERMINISTIC half of `.ci/lib/account.sh`, ported function for function.
+"""The DETERMINISTIC half of `.ci/lib/account.sh`, ported function for function -- plus two more, `account_stop` and `account_rotation`, proved a different way. See below.
 
 PORTED FROM `.ci/lib/account.sh` (1143 lines, 22 functions). The twin still exists, is untouched by this file, and stays sourced at `.ci/legacy/run-legacy.sh:405` (the `account` verb) and `:443` (the `rotation` verb). Nothing is cut over here.
 This is a pre-cutover port on the same sequencing every other lib in this campaign used, and `.ci/lib/service.sh` is the worked precedent: its port `rediacc_ci/core/service.py` has carried a K=5 ledger since 2026-09-10 while `run-legacy.sh:48` still sources the bash.
@@ -6,14 +6,19 @@ This is a pre-cutover port on the same sequencing every other lib in this campai
 --------------------------------------------------------------------------
 WHAT IS HERE AND WHAT IS DELIBERATELY ABSENT
 --------------------------------------------------------------------------
-ELEVEN FUNCTIONS ARE PORTED, and they are the ones whose whole answer is computation, a file read or a file write: `account_allocate_ports`, `account_wait_port`, `account_rustfs_alive`, `account_generate_crypto_keys`, `account_generate_fresh_env`, `account_env_add_if_missing`, `account_ensure_env_keys`, `account_ensure_env`, `account_banner_row`, `account_totp`, and the decidable half of `account_db`.
+ELEVEN FUNCTIONS ARE PORTED AND SHADOW-DIFFERENTIALLY PROVED, and they are the ones whose whole answer is computation, a file read or a file write: `account_allocate_ports`, `account_wait_port`, `account_rustfs_alive`, `account_generate_crypto_keys`, `account_generate_fresh_env`, `account_env_add_if_missing`, `account_ensure_env_keys`, `account_ensure_env`, `account_banner_row`, `account_totp`, and the decidable half of `account_db`. `shadow_driver.py`'s five scenarios drive these against the live twin and a K=5 ledger records the equivalence.
 
-ELEVEN ARE NOT, and saying so here rather than leaving an absence is the point. `account_dev`, `account_stop`, `account_test`, `account_test_e2e`, `account_reset` and `account_seed_demo` start or stop long-running dev infrastructure: Docker containers, RustFS, a Vite server, an Astro server, a gateway held in the foreground.
-A shadow-gate row comparing two runs of `account_dev` would be comparing two dev-server boot transcripts rather than two reports, which is a different differential technique and a separate ruling.
-`account_cleanup` kills the tracked pid set and calls `exit`; `account_docker_ghost_clean` force-removes containers; `account_stripe_auto` starts a background `stripe listen`; `account_dev_credentials` drives the live gateway's provisioning routes; `account_rotation` is a two-line `cd` plus `npx tsx` shim. THERE IS NO PYTHON FUNCTION BELOW FOR ANY OF THOSE ELEVEN.
-The bash file is the only implementation of them and remains so.
+TWO MORE ARE PORTED, `account_stop` and `account_rotation`, but proved by a REAL RUN instead of a shadow differential, because both genuinely start and stop real infrastructure: `stop()` kills tracked dev pids and tears down real Docker containers, and `rotation()` dispatches to a real TypeScript CLI (`private/account/scripts/rotation/`) that mints and deletes real credentials at AWS IAM, Cloudflare and GitHub (see `private/account/CLAUDE.md`, "Secret Rotation").
+An input/output differential compares two ANSWERS; these two produce SIDE EFFECTS, so `test_core_account.py` instead drives each one for real -- `stop()` against a real tracked process and a real (sandboxed, compose-file-less) Docker daemon, confirmed by process and port checks rather than by exit code alone; `rotation()` only through the manifest-only, credential-free subcommands it shares with the twin (`list`, `status`, `history`).
+`rotate`/`check`/`deactivate`/`delete`/`sweep`/`init` need live production credentials and are never invoked, by anything, from this port or its tests. Neither joins `PORTED_FUNCTIONS` in `shadow_driver.py`'s sense: that module's own docstring still lists both under "WHAT IS NEVER DRIVEN HERE", and that is correct -- the differential technique genuinely does not apply to them.
+`test_core_account.py`'s `PORTED_FUNCTIONS`/`NOT_PORTED_FUNCTIONS` tuple is the one that moved.
 
-`account_db`'s LAUNCH is in the second group even though the function as a whole is in the first. Everything up to the launch, meaning argument parsing, the database path, the devbox-derived preferred port, the free-port search, the two refusals and the `sqlite_web` resolution, is decided in `db_plan()` and is what the differential drives.
+NINE ARE NOT PORTED AT ALL, and saying so here rather than leaving an absence is the point. `account_dev`, `account_test`, `account_test_e2e`, `account_reset` and `account_seed_demo` start or stop long-running dev infrastructure: Docker containers, RustFS, a Vite server, an Astro server, a gateway held in the foreground.
+A shadow-gate row comparing two runs of `account_dev` would be comparing two dev-server boot transcripts rather than two reports, which is a different differential technique and a separate ruling than even the real-run technique `stop()`/`rotation()` use above: those two start nothing of their own (one tears down, the other dispatches to an already-independent CLI), where `account_dev` would have to BE the thing under test.
+`account_cleanup` kills the tracked pid set and calls `exit`; `account_docker_ghost_clean` force-removes containers (its logic is now exercised, inlined and unnamed, inside `stop()` below -- see that function's body -- rather than exposed as its own ported function: it is not one of the two functions this slice was scoped to, and a module-level `docker_ghost_clean` would collide with `test_the_unported_half_has_no_python_counterpart`'s claim that no Python counterpart exists for it); `account_stripe_auto` starts a background `stripe listen`; `account_dev_credentials` drives the live gateway's provisioning routes.
+THERE IS NO PYTHON FUNCTION BELOW FOR ANY OF THOSE NINE. The bash file is the only implementation of them and remains so.
+
+`account_db`'s LAUNCH is grouped with the nine even though the function as a whole is ported. Everything up to the launch, meaning argument parsing, the database path, the devbox-derived preferred port, the free-port search, the two refusals and the `sqlite_web` resolution, is decided in `db_plan()` and is what the differential drives.
 `db_launch()` below execs a server and is NOT differentially proved; it is written out so the port is complete, and it is named here so nobody reads its green as evidence.
 
 --------------------------------------------------------------------------
@@ -32,6 +37,9 @@ FOUR TWIN BEHAVIOURS REPRODUCED ON PURPOSE, NOT FIXED
   `banner_row()` pads by bytes, not by characters, so a caller that ever passes a non-ASCII string gets the twin's broken box rather than a quietly different one.
   3. `cut -d= -f2` TAKES THE SECOND FIELD ONLY, so a state value containing `=` is truncated. Preserved in `state_gateway_port()`.
   4. `account_db`'s `--studio` arm still parses the REST of the argument list before acting, so `account db --studio --bogus` refuses with exit 2 rather than starting Drizzle. Preserved in `parse_db_args()`.
+  5. `account_stop` DIES THE SAME SILENT WAY, TWICE. Both `old_gateway=$(grep "^gateway_port=" ... | cut ...)` and `old_pids=$(grep "^pids=" ... | cut ...)` are the same bare, non-`local` pipeline as defect 1.
+  A state file that EXISTS but is missing either key kills the function under errexit before Docker teardown or `rm -f "$ACCOUNT_STATE_FILE"` ever run, leaving stale containers and a stale state file behind. Measured 2026-09-23 against a live bash reproduction (`set -euo pipefail`, a hand-crafted state file carrying only the other key).
+  `stop()` reproduces both dead ends: `state_gateway_port()`/`state_pids()` each raise `StateAbortedError` and `stop()` returns 1 having done nothing further, same as the twin.
 
 --------------------------------------------------------------------------
 THE ONE PLACE THE PORT REFUSES WHERE THE TWIN WOULD GUESS
@@ -47,10 +55,12 @@ WHY THE LOGGER IS `rediacc_ci.log`
 
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import pathlib
 import shutil
+import signal
 import subprocess
 import sys
 import time
@@ -588,6 +598,21 @@ def state_gateway_port(state_text: str) -> str:
     )
 
 
+def state_pids(state_text: str) -> str:
+    """`grep "^pids=" | cut -d= -f2`, the twin's other bare state-file assignment.
+
+    Same shape as `state_gateway_port`: raises `StateAbortedError` where grep matches nothing (defect 1's second occurrence, see defect 5), and truncates at the first `=` in the value (defect 3). `.ci/lib/account.sh:770,578`.
+    """
+    for line in state_text.split("\n"):
+        if line.startswith("pids="):
+            fields = line.split("=")
+            return fields[1] if len(fields) > 1 else ""
+    raise StateAbortedError(
+        "grep '^pids=' matched nothing, and the twin's bare assignment takes that "
+        "exit 1 through pipefail into errexit; it dies here printing nothing"
+    )
+
+
 def totp_fields(body: str) -> tuple[str, str]:
     """The twin's `node -e` JSON read at `.ci/lib/account.sh:754`.
 
@@ -654,6 +679,156 @@ def totp(email: str | None = None, env: dict[str, str] | None = None) -> int:
         return 1
     log.info("TOTP for %s: %s  (%ss remaining)" % (address, code, seconds))
     return 0
+
+
+# --------------------------------------------------------------------------- stop and rotation (real infrastructure, real-run verified) ---------------------------------------------------------------------------
+#
+# `stop()` and `rotation()` are NOT part of the shadow differential above -- see the module docstring's "TWO MORE ARE PORTED" section. `test_core_account.py` proves them with an actual run instead: a real tracked process and a real Docker daemon for `stop()`, and the real, credential-free, manifest-only subcommands for `rotation()`.
+
+
+def _kill_quiet(pid: str, sig: int) -> None:
+    """`kill [-9] "$pid" 2>/dev/null || true`. A non-numeric or already-gone pid is silent on both sides."""
+    with contextlib.suppress(ValueError, ProcessLookupError, PermissionError):
+        os.kill(int(pid), sig)
+
+
+def _lsof_port_pid(port: str) -> str:
+    """`lsof -ti:"$old_gateway" 2>/dev/null | head -1`. Empty on a closed port, a missing `lsof`, or no match."""
+    try:
+        proc = subprocess.run(
+            ["lsof", "-ti:%s" % port], capture_output=True, text=True, check=False
+        )
+    except FileNotFoundError:
+        return ""
+    return proc.stdout.split("\n")[0]
+
+
+def stop(env: dict[str, str] | None = None) -> int:
+    """`account_stop`, `.ci/lib/account.sh:763-808`.
+
+    Kills the dev pids and gateway-port occupant tracked in the state file, tears down the `account-server` container and any RustFS config-store ghosts, and removes the state file. Starts and stops REAL infrastructure, so this is real-run verified rather than shadow-differentially proved; see the module docstring.
+
+    Returns 1 where the twin's bare `old_gateway=$(...)` or `old_pids=$(...)` assignment matches nothing and dies under errexit/pipefail before Docker teardown or the `rm -f` ever run (defect 5). Returns 0 otherwise, same as the twin having nothing further to report.
+    """
+    log.step("Stopping account services")
+    path = state_file(env)
+    if os.path.isfile(path):
+        text = pathlib.Path(path).read_text(encoding="utf-8", errors="replace")
+        try:
+            old_gateway = state_gateway_port(text)
+        except StateAbortedError:
+            return 1
+        try:
+            old_pids = state_pids(text)
+        except StateAbortedError:
+            return 1
+
+        if old_pids:
+            # `for pid in ${old_pids//,/ }`: unquoted, so word-splitting drops any empty field the comma substitution leaves behind.
+            pids = old_pids.replace(",", " ").split()
+            for pid in pids:
+                _kill_quiet(pid, signal.SIGTERM)
+            time.sleep(1)
+            for pid in pids:
+                _kill_quiet(pid, signal.SIGKILL)
+
+        if old_gateway:
+            port_pid = _lsof_port_pid(old_gateway)
+            if port_pid:
+                _kill_quiet(port_pid, signal.SIGKILL)
+
+    # `(cd "$ACCOUNT_DIR" && docker compose down --remove-orphans) 2>/dev/null || true` and the container stop/rm loop below both run unconditionally in the twin, relying on `2>/dev/null || true` to swallow even a missing `docker` binary.
+    # Gating the whole section on `shutil.which("docker")` produces the identical observable outcome (no output, nothing torn down) without needing to catch `FileNotFoundError` at every one of the four call sites below.
+    if shutil.which("docker") is not None:
+        subprocess.run(
+            ["docker", "compose", "down", "--remove-orphans"],
+            cwd=account_dir(env),
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=False,
+        )
+
+        for container in ("account-server",):
+            names_proc = subprocess.run(
+                ["docker", "ps", "-a", "--format", "{{.Names}}"],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            names = names_proc.stdout.split("\n")
+            if container in names:
+                subprocess.run(
+                    ["docker", "stop", container],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    check=False,
+                )
+                subprocess.run(
+                    ["docker", "rm", container],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    check=False,
+                )
+
+        # `account_docker_ghost_clean`, `.ci/lib/account.sh:178-186`. Inlined here rather than a named function -- see the module docstring.
+        info = subprocess.run(
+            ["docker", "info"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False
+        )
+        if info.returncode == 0:
+            ids_proc = subprocess.run(
+                [
+                    "docker",
+                    "ps",
+                    "-aq",
+                    "--filter",
+                    "name=account-config-rustfs",
+                    "--filter",
+                    "name=rediacc-config-rustfs-dev",
+                ],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            ids = [line for line in ids_proc.stdout.split("\n") if line]
+            if ids:
+                subprocess.run(
+                    ["docker", "rm", "-f", *ids],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    check=False,
+                )
+
+    with contextlib.suppress(FileNotFoundError):
+        os.remove(path)
+    log.info("Account services stopped")
+    return 0
+
+
+def rotation(argv: list[str], env: dict[str, str] | None = None) -> int:
+    """`account_rotation`, `.ci/lib/account.sh:1018-1022`.
+
+    A thin dispatcher to the real TypeScript rotation CLI (`private/account/scripts/rotation/index.ts`), which mints, rotates and deletes REAL credentials at AWS IAM, Cloudflare and GitHub (see `private/account/CLAUDE.md`, "Secret Rotation").
+    This function only decides whether node is new enough and where to run the subprocess from; every side effect belongs to the TypeScript CLI, which this port does not touch.
+
+    NOT part of the shadow differential (see the module docstring): the twin itself is two lines with nothing computational to compare, and the mutating subcommands (`rotate`, `check`, `deactivate`, `delete`, `sweep`, `init`) need live production credentials that neither this port nor its tests may exercise.
+    The read-only, manifest-only subcommands (`list`, `status`, `history`) are credential-free and are what `test_core_account.py`'s real run actually drives.
+
+    Returns 1 where the twin's bare `check_node_version` call, or its `cd "$ACCOUNT_DIR" || exit 1`, aborts under errexit. Otherwise the dispatched subprocess's exit code, or 127 -- matching the shell's own "command not found" convention, since the twin does not swallow this one with `|| true` -- if `npx` itself is not on PATH.
+    """
+    if not check_node_version():
+        return 1
+    directory = account_dir(env)
+    if not os.path.isdir(directory):
+        log.error("cd to %s failed: not a directory" % directory)
+        return 1
+    try:
+        proc = subprocess.run(
+            ["npx", "tsx", "scripts/rotation/index.ts", *argv], cwd=directory, check=False
+        )
+    except FileNotFoundError:
+        log.error("npx: command not found")
+        return 127
+    return proc.returncode
 
 
 # --------------------------------------------------------------------------- the database browser ---------------------------------------------------------------------------

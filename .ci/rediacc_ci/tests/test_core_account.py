@@ -1,10 +1,11 @@
 """`rediacc_ci.core.account` against the live `.ci/lib/account.sh`.
 
-THE TWIN IS STILL HERE AND IS STILL THE ONLY IMPLEMENTATION OF ELEVEN OF ITS TWENTY-TWO FUNCTIONS.
+THE TWIN IS STILL HERE AND IS STILL THE ONLY IMPLEMENTATION OF NINE OF ITS TWENTY-TWO FUNCTIONS.
 `.ci/legacy/run-legacy.sh:405` and `:443` still source it, nothing is cut over, and this file drives the bash for real on every run: `rediacc_ci.core.shadow_driver` sources `account.sh` through the same prelude `run-legacy.sh` uses and calls the twin's own functions, then does the same work through the port, and the two transcripts are compared byte for byte.
 
-WHAT IS COVERED AND WHAT IS NOT is decided by the driver's five scenarios and stated in its module docstring rather than restated here.
-The short version: everything deterministic, and none of `account_dev`, `account_stop`, `account_test`, `account_test_e2e`, `account_reset`, `account_seed_demo`, `account_cleanup`, `account_docker_ghost_clean`, `account_stripe_auto`, `account_dev_credentials`, `account_rotation`, or `account_db`'s launch, all of which start or stop real infrastructure.
+WHAT THE SHADOW DIFFERENTIAL COVERS is decided by the driver's five scenarios and stated in its module docstring rather than restated here.
+The short version: everything deterministic, and none of `account_dev`, `account_test`, `account_test_e2e`, `account_reset`, `account_seed_demo`, `account_cleanup`, `account_docker_ghost_clean`, `account_stripe_auto`, `account_dev_credentials`, or `account_db`'s launch, all of which start or stop real infrastructure.
+`account_stop` and `account_rotation` are NOT in the differential either, for the same reason, but they ARE ported: the "stop and rotation: REAL-RUN verification" section below proves them a different way, against a real tracked process and a real Docker daemon, and against the real, credential-free `rotation` subcommands.
 
 WHY `XDIST_GROUP` IS DECLARED. The driver pins FIXED port numbers on both sides, because the two sides run as two processes and an ephemeral port would differ between them and land in a message text.
 Two workers running two scenarios at once would contend for those ports, which is the same host-port-space resource `test_core_ports.py` declares, so this joins the same group and is serialised against it.
@@ -12,12 +13,14 @@ Two workers running two scenarios at once would contend for those ports, which i
 THE ANTI-VACUITY CLAIMS, because a differential that compared two empty transcripts would pass forever: every scenario must produce a floor of observations, the tools the scenarios really use must be installed, and `test_the_differential_can_fail` mutates one side and demands a mismatch in each of the three places a mutation can hide.
 """
 
+import contextlib
 import json
 import os
 import pathlib
 import shutil
 import subprocess
 import sys
+import threading
 
 import pytest
 
@@ -148,6 +151,9 @@ PORTED_FUNCTIONS = (
     "account_banner_row",
     "account_totp",
     "account_db",
+    # These two are ported but NOT shadow-differentially proved: see the real-run tests below, and `rediacc_ci.core.account`'s module docstring, "TWO MORE ARE PORTED".
+    "account_stop",
+    "account_rotation",
 )
 
 NOT_PORTED_FUNCTIONS = (
@@ -156,12 +162,10 @@ NOT_PORTED_FUNCTIONS = (
     "account_stripe_auto",
     "account_dev",
     "account_dev_credentials",
-    "account_stop",
     "account_test",
     "account_test_e2e",
     "account_reset",
     "account_seed_demo",
-    "account_rotation",
 )
 
 
@@ -542,3 +546,287 @@ def test_the_repo_root_is_a_checkout_with_the_twin_in_it() -> None:
     assert (paths.repo_root() / TWIN).is_file()
     assert (paths.repo_root() / PORT).is_file()
     assert pathlib.Path(DRIVER).name == "shadow_driver.py"
+
+
+# -- stop and rotation: REAL-RUN verification, not shadow-differential -------
+#
+# `account_stop` and `account_rotation` genuinely start and stop real infrastructure (Docker containers, tracked dev pids, and, through `account_rotation`, a real TypeScript CLI that mints and deletes credentials at AWS IAM, Cloudflare and GitHub), so `shadow_driver.py` does not drive them -- see its own module docstring, "WHAT IS NEVER DRIVEN HERE", which still lists both by name.
+# These tests instead run the twin and the port against something real and check the OBSERVABLE SIDE EFFECT -- a process is actually dead, a port is actually free, real stdout from the real rotation CLI matches -- rather than trusting a return code alone.
+#
+# `rotation()`'s mutating subcommands (`rotate`, `check`, `deactivate`, `delete`, `sweep`, `init`) need live production credentials at AWS IAM / Cloudflare / GitHub and are NEVER invoked by anything below, or by anything else in this repository's test suite: only `list`, `status` and `history`, which read the committed, non-secret manifest and touch no platform.
+
+REAL_RUN_LIVE_CONTAINER_NAMES = (
+    "account-server",
+    "account-config-rustfs",
+    "rediacc-config-rustfs-dev",
+)
+
+ROTATION_CREDENTIAL_FREE_SUBCOMMANDS = ("list", "status", "history")
+
+ROTATION_MUTATING_SUBCOMMANDS = ("rotate", "check", "deactivate", "delete", "sweep", "init")
+
+
+def _skip_if_a_real_dev_stack_is_running() -> None:
+    """Refuse to run the `stop()` real-run test anywhere a real container by these names already exists.
+
+    `account_stop`'s Docker teardown targets these exact names with no scoping to this test's own sandbox -- it is a real `docker stop`/`docker rm` against the host's real Docker daemon -- so if a genuine `./run.sh account dev` is live elsewhere on this machine, running this test would actually tear it down.
+    Skipping is the only sound choice: this is a real-run test, and there is no mock arm to fall back to.
+    """
+    proc = subprocess.run(
+        ["docker", "ps", "-a", "--format", "{{.Names}}"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if proc.returncode != 0:
+        return
+    names = set(proc.stdout.split("\n"))
+    live = names & set(REAL_RUN_LIVE_CONTAINER_NAMES)
+    if live:
+        pytest.skip(
+            "a real container named %s already exists on this Docker daemon; account_stop's teardown "
+            "is unscoped, so running it here would tear down what looks like someone's real dev stack "
+            "instead of this test's own throwaway processes" % sorted(live)
+        )
+
+
+def _alive(pid: int) -> bool:
+    """`kill -0 "$pid"`: true process liveness, not zombie ambiguity.
+
+    A child THIS TEST forked stays a zombie -- still answering `kill -0` -- until reaped, which is why every spawn below is paired with a background `Thread(target=proc.wait)`.
+    The real dev-server processes `account_stop` targets in production are reaped by whatever forked them, not by the stopper, so a zombie-blind check here would report a killed process as still alive for a reason that is this test's own parentage rather than the port's behaviour.
+    """
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    return True
+
+
+def _spawn_reaped(argv: list[str], **kwargs) -> subprocess.Popen:
+    """A real child process, reaped by a background thread the moment it exits, so `_alive()` reads real process-table state rather than a zombie."""
+    proc = subprocess.Popen(argv, start_new_session=True, **kwargs)
+    threading.Thread(target=proc.wait, daemon=True).start()
+    return proc
+
+
+def test_stop_real_run_kills_a_real_tracked_pid_and_a_real_port_occupant() -> None:
+    """REAL RUN. A real `sleep` process and a real port listener are spawned -- not mocked -- `stop()` is pointed at them through a real state file, and the kill is confirmed with `kill -0` and the real socket bind, not by trusting the return code.
+
+    Runs inside `shadow_driver.build_sandbox()`, the same isolated `CONSOLE_ROOT_DIR` the differential uses: `stop()` also runs `docker compose down --remove-orphans` in `$ACCOUNT_DIR`, and the sandbox's `private/account` is a real, empty, un-symlinked directory (`shadow_driver.build_sandbox`'s own docstring), so that call finds no compose file and cannot reach whatever the real `private/account` submodule has running.
+    """
+    _skip_if_a_real_dev_stack_is_running()
+    work = shadow_driver.build_sandbox(paths.repo_root())
+    tracked = listener = None
+    try:
+        env = shadow_driver.sandbox_env(work)
+        state = pathlib.Path(account.state_file(env))
+
+        tracked = _spawn_reaped(["sleep", "20"])
+        listener = _spawn_reaped(
+            [
+                sys.executable,
+                "-c",
+                (
+                    "import socket, time\n"
+                    "s = socket.socket()\n"
+                    "s.bind(('127.0.0.1', 0))\n"
+                    "s.listen(1)\n"
+                    "print(s.getsockname()[1], flush=True)\n"
+                    "time.sleep(20)\n"
+                ),
+            ],
+            stdout=subprocess.PIPE,
+            text=True,
+        )
+        assert listener.stdout is not None, "stdout=subprocess.PIPE above, so this is always a pipe"
+        port = int(listener.stdout.readline().strip())
+        listener.stdout.close()
+
+        assert _alive(tracked.pid), (
+            "control: the tracked process must be alive before stop() runs, or killing it proves nothing"
+        )
+        assert _alive(listener.pid), (
+            "control: the port occupant must be alive before stop() runs, or killing it proves nothing"
+        )
+
+        state.write_text("gateway_port=%d\npids=%d\n" % (port, tracked.pid), encoding="utf-8")
+        rc = account.stop(env)
+
+        assert rc == 0
+        assert not _alive(tracked.pid), "stop() returned 0 but the real tracked pid is still alive"
+        assert not _alive(listener.pid), (
+            "stop() returned 0 but the real port occupant is still alive"
+        )
+        assert not state.is_file(), "stop() returned 0 but left the state file behind"
+    finally:
+        for proc in (tracked, listener):
+            if proc is not None:
+                with contextlib.suppress(OSError):
+                    proc.kill()
+                if proc.stdout is not None:
+                    proc.stdout.close()
+        shutil.rmtree(work, ignore_errors=True)
+
+
+# `$W` is substituted with the sandbox path before this runs; every other `%` and `$` is bash's own. `set +e` / `set -e` around `account_stop` mirrors `shadow_driver.py`'s own `step()` helper -- see its comment on why the naive `if ( set -e; "$@"; )` spelling is wrong (errexit-rearmed-in-a-tested-command, `docs/agent-reference/TRAPS.md`).
+BASH_STOP_REAL_RUN = r"""
+W="%(work)s"
+set -euo pipefail
+source "$W/.ci/config/constants.sh"
+source "$W/.ci/scripts/lib/toolchain.sh"
+source "$W/.ci/lib/local-common.sh"
+source "$W/.ci/lib/account.sh"
+
+TRACKED_PID=""
+LISTENER_PID=""
+cleanup() {
+    set +e
+    [[ -n "$TRACKED_PID" ]] && kill -9 "$TRACKED_PID" 2>/dev/null
+    [[ -n "$LISTENER_PID" ]] && kill -9 "$LISTENER_PID" 2>/dev/null
+    return 0
+}
+trap cleanup EXIT
+
+sleep 20 &
+TRACKED_PID=$!
+disown
+
+PORT=$(python3 -c "import socket; s=socket.socket(); s.bind(('127.0.0.1',0)); s.listen(1); print(s.getsockname()[1])")
+python3 -c "
+import socket, time
+s = socket.socket()
+s.bind(('127.0.0.1', $PORT))
+s.listen(1)
+time.sleep(20)
+" &
+LISTENER_PID=$!
+disown
+sleep 0.3
+
+kill -0 "$TRACKED_PID" || { echo "CONTROL_FAILED_TRACKED_NOT_ALIVE"; exit 90; }
+kill -0 "$LISTENER_PID" || { echo "CONTROL_FAILED_LISTENER_NOT_ALIVE"; exit 91; }
+
+printf 'gateway_port=%%s\npids=%%s\n' "$PORT" "$TRACKED_PID" >"$ACCOUNT_STATE_FILE"
+
+set +e
+account_stop
+RC=$?
+set -e
+echo "STOP_RC=$RC"
+
+sleep 0.3
+kill -0 "$TRACKED_PID" 2>/dev/null && echo "TRACKED_STILL_ALIVE"
+kill -0 "$LISTENER_PID" 2>/dev/null && echo "LISTENER_STILL_ALIVE"
+[[ -f "$ACCOUNT_STATE_FILE" ]] && echo "STATE_FILE_STILL_EXISTS"
+exit "$RC"
+"""
+
+
+def test_stop_real_run_matches_the_twin_on_the_same_kind_of_real_target() -> None:
+    """REAL RUN, the twin's side. `account_stop` itself -- sourced through the same prelude the differential uses -- kills a real `sleep` and a real port listener it did not spawn as its own child (`disown`ed background jobs, the same shape `account_dev` leaves behind), which is what the real `pids=`/`lsof` code paths actually target.
+
+    Not compared byte-for-byte against `stop()`'s transcript (this is a real-run proof, not a differential row): both sides are asserted independently, against their OWN real tracked process and real port occupant, to the same three observable outcomes -- process dead, port occupant dead, state file gone -- which is what `test_stop_real_run_kills_a_real_tracked_pid_and_a_real_port_occupant` above already proved for the port.
+    """
+    _skip_if_a_real_dev_stack_is_running()
+    work = shadow_driver.build_sandbox(paths.repo_root())
+    try:
+        script = work / "stop_real_run.sh"
+        script.write_text(BASH_STOP_REAL_RUN % {"work": work}, encoding="utf-8")
+        proc = subprocess.run(
+            ["bash", str(script)],
+            capture_output=True,
+            text=True,
+            timeout=60,
+            check=False,
+        )
+        assert "CONTROL_FAILED" not in proc.stdout, (
+            "the bash-side control failed, so this run proves nothing: %r" % proc.stdout
+        )
+        assert proc.returncode == 0, "bash real run failed: rc=%d stdout=%r stderr=%r" % (
+            proc.returncode,
+            proc.stdout,
+            proc.stderr,
+        )
+        assert "STOP_RC=0" in proc.stdout, proc.stdout
+        assert "TRACKED_STILL_ALIVE" not in proc.stdout, (
+            "the twin's account_stop did not kill the real tracked pid: %r" % proc.stdout
+        )
+        assert "LISTENER_STILL_ALIVE" not in proc.stdout, (
+            "the twin's account_stop did not kill the real port occupant: %r" % proc.stdout
+        )
+        assert "STATE_FILE_STILL_EXISTS" not in proc.stdout, (
+            "the twin's account_stop left the state file behind: %r" % proc.stdout
+        )
+    finally:
+        shutil.rmtree(work, ignore_errors=True)
+
+
+def _run_rotation_subcommand_via_bash(args: list[str]) -> subprocess.CompletedProcess:
+    """`./run.sh rotation <args>`, the real dispatcher, against the real `private/account` manifest."""
+    return subprocess.run(
+        ["./run.sh", "rotation", *args],
+        cwd=str(paths.repo_root()),
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=60,
+    )
+
+
+def _run_rotation_subcommand_via_port(args: list[str]) -> subprocess.CompletedProcess:
+    """`account.rotation(args)`, in a fresh interpreter so its child's real stdout/stderr are captured cleanly rather than sharing pytest's own streams."""
+    return subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            "import sys\nsys.path.insert(0, '.ci')\nfrom rediacc_ci.core import account\nsys.exit(account.rotation(sys.argv[1:]))",
+            *args,
+        ],
+        cwd=str(paths.repo_root()),
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=60,
+    )
+
+
+@pytest.mark.parametrize("subcommand", ROTATION_CREDENTIAL_FREE_SUBCOMMANDS)
+def test_rotation_real_run_matches_the_twin_on_credential_free_subcommands(subcommand: str) -> None:
+    """REAL RUN, both sides, real `npx tsx`, real manifest, no mock and no sandbox.
+
+    `list`/`status`/`history` are read-only against the committed, non-secret `private/account/rotation-manifest.json` (see `commands/list.ts`, `commands/status.ts`, `commands/history.ts`: each one's own docstring says "Reads from the manifest only; does not query platform state"), so running them for real touches no credential and no live platform.
+    This is deliberately NOT run inside a sandbox: the point is the real dispatcher against the real, committed manifest, and there is nothing here to isolate.
+    """
+    bash = _run_rotation_subcommand_via_bash([subcommand])
+    port = _run_rotation_subcommand_via_port([subcommand])
+    assert bash.returncode == port.returncode, (
+        subcommand,
+        bash.returncode,
+        port.returncode,
+        bash.stderr,
+        port.stderr,
+    )
+    assert bash.stdout == port.stdout, (subcommand, bash.stdout, port.stdout)
+    assert bash.stderr == port.stderr, (subcommand, bash.stderr, port.stderr)
+
+
+def test_rotation_mutating_subcommands_are_named_but_never_invoked() -> None:
+    """ANTI-VACUITY, the other direction: the credential-free list above is not simply everything the twin offers.
+
+    `rotate`/`check`/`deactivate`/`delete`/`sweep`/`init` need live AWS IAM, Cloudflare or GitHub credentials (`private/account/CLAUDE.md`, "Secret Rotation") and running any of them for real from a test would mint, rotate or delete a real credential.
+    This records the boundary as a checked fact -- the two lists partition the CLI's real subcommand set -- rather than as a comment nobody re-verifies against `index.ts` drifting.
+    """
+    index_ts = (paths.repo_root() / "private/account/scripts/rotation/index.ts").read_text(
+        encoding="utf-8"
+    )
+    all_named = set(ROTATION_CREDENTIAL_FREE_SUBCOMMANDS) | set(ROTATION_MUTATING_SUBCOMMANDS)
+    for subcommand in all_named:
+        assert "'%s'," % subcommand in index_ts or "'%s':" % subcommand in index_ts, (
+            "%s is no longer a real rotation subcommand; the safe/unsafe partition above needs updating"
+            % subcommand
+        )
+    for subcommand in ROTATION_MUTATING_SUBCOMMANDS:
+        assert subcommand not in ROTATION_CREDENTIAL_FREE_SUBCOMMANDS
