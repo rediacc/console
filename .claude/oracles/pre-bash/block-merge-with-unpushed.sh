@@ -27,9 +27,17 @@
 CMD=$(jq -r '.tool_input.command' 2>/dev/null)
 [ -z "$CMD" ] && exit 0
 
-# `gh pr merge` only. `gh pr view`, `gh pr list`, and a merge typed inside a heredoc that
-# documents this hook are all none of its business.
-printf '%s' "$CMD" | grep -qE '(^|[|;&[:space:]])gh[[:space:]]+pr[[:space:]]+merge([[:space:]]|$)' || exit 0
+# Bypass-resistant command scanning (unwraps sh -c/eval payloads, strips
+# heredocs+prose), same as block-admin-merge.sh: a worklist note or commit
+# message MENTIONING "gh pr merge" must not trip this guard, only a real
+# invocation. See lib/command-scan.sh.
+source "$(dirname "${BASH_SOURCE[0]}")/lib/command-scan.sh"
+SCAN=$(hook_scan_target "$CMD")
+
+# `gh pr merge` only, at command position. `gh pr view`, `gh pr list`, and a
+# merge typed inside a heredoc or quoted prose that documents this hook are
+# all none of its business.
+hook_gh_pr_at_command_pos "$SCAN" merge || exit 0
 
 cd "${CLAUDE_PROJECT_DIR:-.}" 2>/dev/null || exit 0
 

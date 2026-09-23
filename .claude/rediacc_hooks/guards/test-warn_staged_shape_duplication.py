@@ -302,6 +302,22 @@ for i in range(13):
     (ROOT / path).write_text(body("bk", 700 + i), encoding="utf-8")
     git(ROOT, "add", path)
 case("more corpus files than the cap", 'git commit -m "feat: many"', ROOT, NOTICE)
+
+# Reproduces the 2026-09-23 class fix (shellscan.target_root), and this state IS the discriminator: ROOT has 13 corpus files staged RIGHT NOW, which the case just above proved fires NOTICE when the guard reads ROOT.
+# A `-C <foreign>` targeting an unrelated, cleanly-committed repo must stay SILENT -- if the guard mistakenly resolved back to CLAUDE_PROJECT_DIR (ROOT) instead of the command's own target, it would see these same 13 staged files and speak NOTICE instead.
+FOREIGN = pathlib.Path(tempfile.mkdtemp(prefix="shapeprobe-foreign-"))
+git(FOREIGN, "init", "-q", "-b", "main")
+git(FOREIGN, "config", "user.email", "fixture@example.invalid")
+git(FOREIGN, "config", "user.name", "Fixture")
+(FOREIGN / "unrelated.txt").write_text("nothing shape-duplicated here\n", encoding="utf-8")
+git(FOREIGN, "add", "-A")
+case(
+    "a `-C <foreign>` commit is scanned against the FOREIGN repo, not CLAUDE_PROJECT_DIR's 13 staged corpus files",
+    'git -C %s commit -m "chore: unrelated"' % FOREIGN,
+    ROOT,
+    SILENT,
+)
+
 git(ROOT, "reset", "-q")
 for i in range(13):
     (ROOT / ("scripts/gates/check-genbulk%02d.ts" % i)).unlink()

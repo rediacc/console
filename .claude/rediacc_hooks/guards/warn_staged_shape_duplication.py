@@ -312,6 +312,11 @@ def _probe_commit(ev, deadline):
         return hookio.ALLOW
 
     root = ev.env("CLAUDE_PROJECT_DIR", "") or hookio.git_out(["rev-parse", "--show-toplevel"])
+
+    # ANOTHER REPO'S STAGED FILES ARE NOT THIS GUARD'S BUSINESS, same class as block_unproven_bulk_transform's 2026-09-23 fix (see shellscan.target_root's own docstring): a `-C <other-repo>`/`cd <other-repo> &&` commit would otherwise be scanned against CONSOLE's own staged paths.
+    if shellscan.target_root(scan, root) != "":
+        return hookio.ALLOW
+
     cwd = ev.field("cwd") or root
     if not root:
         return hookio.ALLOW

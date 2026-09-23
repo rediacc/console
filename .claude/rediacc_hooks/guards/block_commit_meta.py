@@ -22,7 +22,7 @@ prefix this clause exists for is a single emoji, which is four bytes and one cha
 import contextlib
 import pathlib
 
-from rediacc_hooks import hookio
+from rediacc_hooks import hookio, shellscan
 
 CHAIN = "pre-bash"
 TWIN = "pre-bash/block-commit-meta.sh"
@@ -102,7 +102,10 @@ def run(ev):
     if cmd == "":
         return hookio.ALLOW
 
-    if not hookio.grep_q(AUTHORS_A_MESSAGE, cmd):
+    # Bypass-resistant VERB detection (unwraps sh -c/eval payloads, strips heredocs+prose): worklist evidence or a python script's own argument text MENTIONING "git commit" or "gh pr create" must not trip this gate, only a real invocation.
+    # TRAILER_OR_FOOTER below still reads the RAW cmd, because for a real commit the message body IS the command string and stripping it would hide the content this guard exists to check.
+    scan = shellscan._command_substitution(shellscan.scan_target(cmd))
+    if not hookio.grep_q(AUTHORS_A_MESSAGE, scan):
         return hookio.ALLOW
 
     if hookio.grep_q(TRAILER_OR_FOOTER, cmd, ignore_case=True):

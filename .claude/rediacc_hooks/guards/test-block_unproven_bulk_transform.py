@@ -21,12 +21,17 @@ BULK = 20  # must match BULK_FILE_THRESHOLD's default
 
 
 def run(command, cwd):
+    # CLAUDE_PROJECT_DIR is pinned to the same value carried as `cwd`, which is the honest simulation of the real harness invariant block_blanket_git_add.py:110-111 documents: the harness resets the shell's directory after every call, so `ev.cwd` is the project directory on every invocation. Left unset, `root` inside the guard resolved from whatever ambient environment the test
+    # runner happened to hold, which was inert only while no case named a different repo via `-C`/`cd`.
+    env = dict(os.environ)
+    env["CLAUDE_PROJECT_DIR"] = cwd
     proc = subprocess.run(
         GUARD_ARGV,
         input=json.dumps({"tool_name": "Bash", "tool_input": {"command": command}, "cwd": cwd}),
         capture_output=True,
         text=True,
         check=False,
+        env=env,
     )
     return proc.returncode != 0, proc.stderr
 
@@ -126,6 +131,33 @@ case(
     False,
 )
 
+# ---- SCOPE: a command reached via `-C`/`cd` into a repo that is not this checkout ----
+# Reproduces the 2026-09-23 near-miss directly: CLAUDE_PROJECT_DIR points at a repo carrying an unproven bulk-sized staged change (standing in for the real console checkout's 255 staged files that day), and a `git -C <disposable fixture> commit` was refused citing THAT count -- the fixture's own tiny commit was never examined.
+bulk_root = scratch_repo()
+stage_files(bulk_root, BULK, prefix="w")
+
+foreign = scratch_repo()
+stage_files(foreign, 1, prefix="tiny")
+
+case(
+    "a bulk-staged CLAUDE_PROJECT_DIR does not leak into a `-C <foreign>` commit",
+    'git -C %s commit -m "fix: a small thing"' % foreign,
+    bulk_root,
+    False,
+)
+case(
+    "the same shape via a leading `cd <foreign> &&` is also not this guard's business",
+    'cd %s && git commit -m "fix: a small thing"' % foreign,
+    bulk_root,
+    False,
+)
+case(
+    "an unresolvable `-C` hint keeps guarding the ROOT (fail-safe, not fail-open)",
+    'git -C /no/such/path-xyz commit -m "style: reflow the tree"',
+    bulk_root,
+    True,
+)
+
 # ---- PUSH, range check over real commit history ----------------------------
 
 push_repo = scratch_repo()
@@ -181,7 +213,7 @@ case(
 )
 
 print()
-TOTAL_CASES = 12
+TOTAL_CASES = 15
 if Tally.blocked in (0, TOTAL_CASES):
     print(
         "*** FAIL *** %d of %d cases blocked: the guard answered the same way on every "

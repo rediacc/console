@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Shared command scanning for the gh-pr guardrail hooks (block-admin-merge,
-# block-nondraft-pr-create, block-premature-ready).
+# block-nondraft-pr-create, block-premature-ready, block-merge-with-unpushed)
+# and, via hook_scan_target alone, block-commit-meta's git/gh verb gate.
 #
 # The old inline approach (strip every quoted span, then anchor `gh pr <verb>`
 # at a command position) had a review-found bypass class: stripping ALL quotes

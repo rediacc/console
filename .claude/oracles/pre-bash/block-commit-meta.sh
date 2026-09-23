@@ -41,7 +41,16 @@ CMD=$(jq -r '.tool_input.command' 2>/dev/null)
 # commit that carries a trailer. Excluding `;|&` from the gap tokens keeps the
 # verb and its subcommand in one clause, which is the same fix
 # block-protected-files needed for the same reason on the same day.
-printf '%s' "$CMD" | grep -qE '(^|[;&|(]|[[:space:]])git[[:space:]]+([^[:space:];|&]+[[:space:]]+)*(commit|tag)\b|(^|[;&|(]|[[:space:]])gh[[:space:]]+pr[[:space:]]+(create|edit)\b' || exit 0
+# Bypass-resistant VERB detection (unwraps sh -c/eval payloads, strips
+# heredocs+prose): worklist evidence or another script's argument text
+# MENTIONING "git commit" or "gh pr create" must not trip this gate, only a
+# real invocation. The trailer check below still reads the RAW $CMD, because
+# for a real commit the message body IS the command string and stripping it
+# would hide the content this guard exists to check. See lib/command-scan.sh.
+source "$(dirname "${BASH_SOURCE[0]}")/lib/command-scan.sh"
+SCAN=$(hook_scan_target "$CMD")
+
+printf '%s' "$SCAN" | grep -qE '(^|[;&|(]|[[:space:]])git[[:space:]]+([^[:space:];|&]+[[:space:]]+)*(commit|tag)\b|(^|[;&|(]|[[:space:]])gh[[:space:]]+pr[[:space:]]+(create|edit)\b' || exit 0
 
 # THE COLON IS WHAT MAKES IT A TRAILER. `Co-Authored-By` was left unanchored on
 # the claim -- written into this file -- that it is "unambiguous anywhere". It is

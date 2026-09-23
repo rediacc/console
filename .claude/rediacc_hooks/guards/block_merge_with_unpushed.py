@@ -14,7 +14,7 @@ prose above. In Python the same chain is `run_out(..., want_rc=True)` returning
 None, which is why `git_out` is called with `want_rc` set rather than with the default: the default turns a git FAILURE into an empty string, and an empty string here would fall through to the next test instead of allowing the merge. Confusing those two is how a fail-open guard becomes a fail-closed one.
 """
 
-from rediacc_hooks import hookio
+from rediacc_hooks import hookio, shellscan
 
 CHAIN = "pre-bash"
 TWIN = "pre-bash/block-merge-with-unpushed.sh"
@@ -33,8 +33,6 @@ ENVS = [
     ("this-worktree", {"CLAUDE_PROJECT_DIR": "{FIXTURE:this-worktree-snapshot}"}, {}),
 ]
 
-VERB = hookio.rx(r"(^|[|;&{S}])gh[{S}]+pr[{S}]+merge([{S}]|$)")
-
 EDGE_CASES = [
     ("the verb at a command position", "gh pr merge 42"),
     # `gh pr view`, `gh pr list`, and a merge typed inside a heredoc that documents this hook are all none of its business.
@@ -51,7 +49,9 @@ def run(ev):
     if cmd == "":
         return hookio.ALLOW
 
-    if not hookio.grep_q(VERB, cmd):
+    # Bypass-resistant command scanning (unwraps sh -c/eval payloads, strips heredocs+prose), same as block_admin_merge.py: worklist evidence prose MENTIONING "gh pr merge" must not trip this guard, only a real invocation.
+    scan = shellscan._command_substitution(shellscan.scan_target(cmd))
+    if not shellscan.gh_pr_at_command_pos(scan, "merge"):
         return hookio.ALLOW
 
     # `cd "${CLAUDE_PROJECT_DIR:-.}" 2>/dev/null || exit 0`. Reproduced as the

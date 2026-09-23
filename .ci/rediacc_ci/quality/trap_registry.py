@@ -72,7 +72,7 @@ Adding an entry means bumping this number in the same commit; there is no other 
 
 THAT IS ALSO WHY THE FLOOR IS NOT DERIVED FROM THE CORPUS. A floor computed
 from the file it guards cannot fail, which is the whole class of defect this
-estate exists to refuse. It is a written number, moved by hand, in the commit that adds an entry, and the twin and this port must carry the SAME number: it was 75, then 76, then 77 within one session on 2026-09-06 as two entries landed. Read `.ci/scripts/quality/check-trap-registry.sh` line 118 before changing it here; a differential over a fixture corpus cannot see a divergence in
+estate exists to refuse. It is a written number, moved by hand, in the commit that adds an entry, and the twin and this port must carry the SAME number: it was 75, then 76, then 77 within one session on 2026-09-06 as two entries landed. Read `.ci/scripts/quality/check-trap-registry.sh` line 108 before changing it here; a differential over a fixture corpus cannot see a divergence in
 the default, because every fixture sets `TRAP_FLOOR` explicitly.
 
 -----------------------------------------------------------------------------
@@ -156,8 +156,8 @@ SEAMS = {
     "TRAP_FILE_ROOT": (),
 }
 
-# THE RATCHET. A written number, moved by hand; see the header for why it is not derived and for the two occasions an unratcheted floor disarmed F1's control. Must equal `.ci/scripts/quality/check-trap-registry.sh` line 118.
-TRAP_FLOOR_DEFAULT = 90
+# THE RATCHET. A written number, moved by hand; see the header for why it is not derived and for the two occasions an unratcheted floor disarmed F1's control. Must equal `.ci/scripts/quality/check-trap-registry.sh` line 108.
+TRAP_FLOOR_DEFAULT = 96
 
 ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]{2,48}$")
 
