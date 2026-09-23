@@ -1488,10 +1488,12 @@ V_BG_REPORT = (
     "Nothing is pending except %d background job(s), which is a LEGITIMATE "
     "state: this is not a demand for other work. The hook's own read of each "
     "worker's output stream:\n%s\n"
-    "    Confirm each worker in one line in your reply (what it is doing and "
-    "whether the stream evidence matches), --update any leased item riding "
-    "one, and restart or replace anything marked POSSIBLY STUCK. Then stop. "
-    "If nothing at all moves between wakes, this check-in stands down by "
+    "    Confirm each worker WITH A STREAM in one line (what it is doing and "
+    "whether the stream evidence matches); a row marked \"no output stream "
+    "yet\" is a teammate agent reporting at completion and needs no such "
+    "confirmation here. --update any leased item riding a worker, and "
+    "restart or replace anything marked POSSIBLY STUCK. Then stop. If "
+    "nothing at all moves between wakes, this check-in stands down by "
     "itself and the hook asks you to slow the poll cron instead."
 )
 

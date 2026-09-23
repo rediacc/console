@@ -413,6 +413,8 @@ ARITY = {
     "N_HINT_PROPOSALS_PENDING": (3,),
     # (claims, agent, matched terms): the give-up push-back.
     "V_AGENT_PUSHBACK": ("does-not-reproduce", "ops-vms", "ceph, ops, vms"),
+    # (claims): the agent-free half of the same conjunction.
+    "V_GIVEUP_CLAIM": ("does-not-reproduce",),
     "N_POLL_BACKOFF": (25, 5, "*/5 * * * *", "*/10 * * * *", 10),
     "N_POLL_BACKOFF_RESET": ("*/10 * * * *", "*/5 * * * *"),
     "N_QUIET_WAKE": (3, 5, "*/5 * * * *", "*/10 * * * *", 10),
