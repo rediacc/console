@@ -147,7 +147,8 @@ The corpus stands at 351 citation findings and no record findings, against 385 a
     (ticked) 2026-09-23T12:18:01Z by d778be9d: Investigated at 45d828cac. check:ci-plan-citations names no finding against PLAN-github-actions-to-bitwarden.md on a live run; the repointed workflow citations resolve, including .github/workflows/ci.yml:1354.
 - [x] `agent/plans/PLAN-haiku-model-routing.md` -- 3: 3 gate: no such `check:` script
     (ticked) 2026-09-23T10:35:44Z by d778be9d: check:ci-plan-citations names no finding in PLAN-haiku-model-routing.md on a live run; the repaired pointer is at agent/plans/PLAN-haiku-model-routing.md:41
-- [ ] `agent/plans/_done/PLAN-migrate-plan-doc-discovery.md` -- 11: 8 fileline: basename matches 2 files, ambiguous; 2 plan: cited plan file gone; 1 gate: no such `check:` script
+- [x] `agent/plans/_done/PLAN-migrate-plan-doc-discovery.md` -- 11: 8 fileline: basename matches 2 files, ambiguous; 2 plan: cited plan file gone; 1 gate: no such `check:` script
+    (ticked) 2026-09-23T12:30:02Z by d778be9d: Investigated at a20d282f8. check:ci-plan-citations names no finding against PLAN-migrate-plan-doc-discovery.md on a live run; the repointed pointers include .claude/hooks/stop/worklist.py:1167 and .claude/hooks/stop/wl_store.py:1804, both re-read against the claim they carry.
 - [x] `agent/plans/PLAN-npm-ci-parallel-parity.md` -- 1: 1 gate: no such `check:` script
     (ticked) 2026-09-23T10:35:44Z by d778be9d: check:ci-plan-citations names no finding in PLAN-npm-ci-parallel-parity.md on a live run; the repaired pointer is at agent/plans/PLAN-npm-ci-parallel-parity.md:35
 - [x] `agent/plans/PLAN-pipefail-grep-q-renet-gate.md` -- 14: 11 fileline: basename matches NOTHING in the tree; 2 fileline: right file, stale line, no unambiguous anchor; 1 fileline ON A BOX LINE (editing it re-keys the box signature)

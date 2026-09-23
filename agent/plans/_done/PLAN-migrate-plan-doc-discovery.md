@@ -109,7 +109,7 @@ of `PLAN-tooling-transformation.md` can never resurface, because the census `ope
 * Plans whose owner is `live` are excluded. Plans whose owner is `unknown` are
 INCLUDED with the verdict printed, because listing is not adopting -- the cost of a false positive is one line.
 * At most `WORKLIST_MIGRATE_PLANS_SHOW` (default 3) plans printed per candidate,
-with a `+N more` tail, matching the existing 3-item cap at `worklist.py:1133`.
+with a `+N more` tail, matching the existing 3-item cap at `.claude/hooks/stop/worklist.py:1165`.
 * Unowned plans are OUT OF SCOPE: `owned_by_me(None)` is True
 (`.claude/hooks/stop/wl_core.py:217`), so `PLAN-secret-namespace-migration.md`'s 9 boxes are already shown to every session by the per-stop advisory. Adding them here would duplicate a working surface and there is no prefix to migrate from.
 
@@ -164,7 +164,7 @@ body -- the same cycle-avoidance `wl_planindex.census_rows` documents for `wl_ch
       `WORKLIST_MIGRATE_PLAN_MIN_OPEN` (default `"1"`) as module constants in
       `wl_store.py` read via `os.environ.get`.
       BOTH NAMES EXIST WITH THE STATED DEFAULTS, read via `os.environ.get`:
-      MIN_OPEN at `.claude/hooks/stop/wl_store.py:1804`, PLANS_SHOW at `worklist.py:1035` and
+      MIN_OPEN at `.claude/hooks/stop/wl_store.py:1804`, PLANS_SHOW at `.claude/hooks/stop/worklist.py:1167` and
       `.claude/hooks/stop/wl_checks.py:2372`. DEVIATION: neither is lifted to a module constant in
       `wl_store.py`. PLANS_SHOW is a RENDER cap and `wl_store` renders nothing,
       so a constant there would have no reader in its own module; MIN_OPEN sits
@@ -206,9 +206,9 @@ body -- the same cycle-avoidance `wl_planindex.census_rows` documents for `wl_ch
       (`.claude/hooks/stop/worklist.py:1097-1140`) so `item_desc` reports plans
       when `total == 0` ("0 worklist item(s), but N committed plan(s) with M
       open box(es)"), and print up to `WORKLIST_MIGRATE_PLANS_SHOW` lines of the
-      form `PLAN agent/PLAN-x.md  [status]  N open / M ticked` plus a `+K more
+      form `PLAN agent/PLAN-<slug>.md  [status]  N open / M ticked` plus a `+K more
       plan(s)` tail.
-      DONE at `worklist.py:1006-1042`. Live 2026-09-23 the real tree prints
+      DONE at `.claude/hooks/stop/worklist.py:1140-1174`. Live 2026-09-23 the real tree prints
       `f4da5c2e  0 worklist item(s), but 2 committed plan(s) with 36 open box(es)`
       followed by two PLAN lines. Asserted by test_207 and test_208.
 - [x] Add a `--plan <path> [<path>...]` mode to `_migrate_cli`: for each path,
@@ -216,9 +216,9 @@ body -- the same cycle-avoidance `wl_planindex.census_rows` documents for `wl_ch
       refuse a status in `FINISHED_STATES`, refuse zero open boxes, no-op with a
       message when the owner already resolves to the requesting session,
       otherwise rewrite the `Owner:` line.
-      DONE at `worklist.py:1050-1109`. Demonstrated against a throwaway fixture
+      DONE at `.claude/hooks/stop/worklist.py:1182-1241`. Demonstrated against a throwaway fixture
       2026-09-23: first run printed
-      `adopted agent/plans/PLAN-demo-adopt.md (was 8f55d4f0, 2 open box(es))`,
+      `adopted agent/plans/PLAN-<demo>.md (was 8f55d4f0, 2 open box(es))`,
       second run printed `already belongs to deadbeef; nothing changed`. Both
       refusals are asserted byte-for-byte by test_210.
 - [x] The rewrite writes `Owner: <adopter8> (adopted from <prev8> <YYYY-MM-DD>)`
@@ -226,7 +226,7 @@ body -- the same cycle-avoidance `wl_planindex.census_rows` documents for `wl_ch
       WITHIN the first `PLAN_HEADER_LINES` (10) lines -- session-shaped token
       FIRST so `PLAN_OWNER_ID_RE` picks the adopter, and never inserting a line
       that would push the header past line 10.
-      DONE: the line is REPLACED in place at its own index (`worklist.py:1090-1095`)
+      DONE: the line is REPLACED in place at its own index (`.claude/hooks/stop/worklist.py:1222-1227`)
       through `wl_planfile.ADOPTED_OWNER_FMT`, so no line is inserted at all.
       Fixture diff: `Owner: 8f55d4f0` became
       `Owner: deadbeef (adopted from 8f55d4f0 2026-09-22)`. test_209 asserts the
@@ -237,7 +237,7 @@ body -- the same cycle-avoidance `wl_planindex.census_rows` documents for `wl_ch
       date and leave it absent when absent; touch NO box line, so
       `check:ci-plan-boxes` A0 task signatures and A1 never-deleted stay
       byte-identical.
-      DONE at `worklist.py:1097-1101`, keyed on a regex that only matches an
+      DONE at `.claude/hooks/stop/worklist.py:1229-1233`, keyed on a regex that only matches an
       existing `Updated: YYYY-MM-DD`. test_209 asserts that the list of every
       `- [ ]` and `- [x]` line is identical before and after adoption.
 - [x] Have `--plan` print `npm run check:ci-plan-record -- --update` after any
@@ -246,7 +246,7 @@ body -- the same cycle-avoidance `wl_planindex.census_rows` documents for `wl_ch
       `index_census` uses size as its freshness signal (`wl_planindex.py`
       module docstring) -- a stale census would otherwise put a loud banner on
       the next SessionStart.
-      DONE at `worklist.py:1107-1108`, gated on `any_written`. test_210 asserts
+      DONE at `.claude/hooks/stop/worklist.py:1239-1240`, gated on `any_written`. test_210 asserts
       the counterpart a reader would not think to check: a run that wrote
       NOTHING must not ask for a regeneration.
 - [x] Make `--migrate <me> <prefix>` PRINT that prefix's open plans and the
@@ -254,7 +254,7 @@ body -- the same cycle-avoidance `wl_planindex.census_rows` documents for `wl_ch
       exact `--plan` command rather than adopting them: a store migration must
       not silently rewrite committed documents, matching the skill's own rule
       that a predecessor's STATE.md is left alone as a peer's document.
-      DONE at `worklist.py:1138-1153`. test_209 asserts the printed command is
+      DONE at `.claude/hooks/stop/worklist.py:1271-1285`. test_209 asserts the printed command is
       runnable verbatim AND that the plan file's bytes are unchanged by the move.
 - [x] Extend `CLI_MIGRATE_USAGE` (`.claude/hooks/stop/worklist_messages.py:773`)
     (ticked) 2026-09-23T11:19:17Z by d778be9d: retroactive record: closed by 28d8f96e4 (2026-09-23) docs(agent): archive 3 done plans, verified box-complete before moving -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
@@ -352,8 +352,8 @@ Run, in order, and record the output of the first two in the commit message:
 -- must now name `agent/plans/PLAN-tooling-transformation.md [ready] 13 open` under `8f55d4f0` and `agent/plans/PLAN-stop-hook-overhaul.md [ready] 31 open` under `f4da5c2e`. Before the change, neither string appears anywhere in the output.
 2. `python3 .claude/hooks/stop/worklist.py --migrate d778be9d --candidates --json`
 -- every candidate object carries a `plans` array (possibly empty); the union of `plans[].rel` over all candidates must be exactly the 11 idle-owned plans tabulated in the Why section, and must NOT contain any plan owned by `d778be9d` or `PLAN-secret-namespace-migration.md`.
-3. `npm run check:ci-hook-worklist-suite` -- the whole v5 control suite, which
-sources the new `26-migrate.sh` cases. Every new case must be present in the PASS count, not merely absent from FAIL.
+3. `npm run check:ci-pytest` -- the pytest suite, which now carries the ported
+`.claude/rediacc_hooks/tests/test_wl_migrate.py` cases (the bash `26-migrate.sh` battery was retired repo-wide). Every new case must be present in the PASS count, not merely absent from FAIL.
 4. `python3 .claude/hooks/stop/test-planindex.py` -- proves the census contract
 this change now depends on is untouched.
 5. `npm run check:ci-plan-record` -- R8 byte-equality of `agent/INDEX.md`, after
