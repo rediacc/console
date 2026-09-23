@@ -781,15 +781,14 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 1,
-      "done": 8,
-      "open_sigs": [
-        "7d089114"
-      ],
+      "open": 0,
+      "done": 9,
+      "open_sigs": [],
       "done_sigs": [
         "2987e7cd",
         "5c958896",
         "66294c19",
+        "7d089114",
         "86353c09",
         "8943bac5",
         "cac49b8f",

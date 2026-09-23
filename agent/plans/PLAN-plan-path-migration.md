@@ -138,7 +138,8 @@ Either way, the two regeneration commands (`check-breakpoint-drift.sh --write`, 
     (ticked) 2026-09-22T20:14:09Z by d778be9d: ran npm run check:ci-plan-record -- --update live: wrote agent/INDEX.md: 75 record(s)
 - [x] Run `npm run check:cli-examples` to confirm the `EXCLUDED_FILES` fix.
     (ticked) 2026-09-22T20:05:09Z by d778be9d: ran validate-cli-examples.ts live: All CLI command examples are valid, exit 0
-- [ ] Run the exact final verification sweep from section 4 and confirm zero remaining output.
+- [x] Run the exact final verification sweep from section 4 and confirm zero remaining output.
+    (ticked) 2026-09-23T10:19:35Z by d778be9d: Ran the section-4 sweep directly: zero agent/PLAN-*.md stubs remain (retired by the 2026-09-22 cleanup), so the loop produces empty output, exactly the box's expected result. Investigation recorded in commit 0346c4eac.
 - [x] Run `check:ci-plan-citations`, `check:ci-plan-boxes`, `check:ci-plan-record`, `check:ci-plan-folders`, `check:ci-breakpoint-drift`.
     (ticked) 2026-09-23T10:14:50Z by d778be9d: All 5 named gates run this session, evidence recorded in commit 87bca423a's investigation row.
 
