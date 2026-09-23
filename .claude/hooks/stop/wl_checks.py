@@ -2045,6 +2045,7 @@ PRIORITY_LADDER = (
                 "bg-report",
                 "unread-reports",
                 "agent-pushback",
+                "giveup-claim",
                 # NB `ladder-ping` is an outq advisory, not a vadd key, so it is deliberately absent: test-always-tier.py fails on a ladder entry that no check can ever produce.
                 "ladder-investigate",
                 "ladder-gone",
@@ -3516,6 +3517,17 @@ def run_stop(event, event_ok, worklist, hook_file):
                     M.V_AGENT_PUSHBACK % (", ".join(_pb_claims), _pb_name, ", ".join(_pb_hits[:6])),
                 )
                 _pb_seen[_pb_name] = C.stamp_now()
+                S.save_state(worklist, session_id, state_doc)
+        elif _pb_claims:
+            # THE AGENT-FREE HALF: a give-up claim fired but no specialist cleared the hint's own confidence floor. Latched on the CLAIM SET, not on a name -- there is no name here, and the same claim set repeating (a session re-asserting the same impossibility) must not re-fire every stop.
+            _gc_key = ",".join(sorted(_pb_claims))
+            _gc_seen = state_doc.get("giveup_claims_seen")
+            if not isinstance(_gc_seen, dict):
+                _gc_seen = {}
+                state_doc["giveup_claims_seen"] = _gc_seen
+            if _gc_key not in _gc_seen:
+                vadd("giveup-claim:%s" % _gc_key, True, M.V_GIVEUP_CLAIM % ", ".join(_pb_claims))
+                _gc_seen[_gc_key] = C.stamp_now()
                 S.save_state(worklist, session_id, state_doc)
     # Explicit state mapping, NOT `!= "ok"`: a missing DIRECTORY gets the
     # bootstrap wall exactly once per session, latched on agent_boot_told, rather than the block every other bad verdict earns.

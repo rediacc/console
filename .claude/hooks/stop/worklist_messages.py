@@ -1430,6 +1430,18 @@ V_AGENT_PUSHBACK = (
     "  and this is the check that asks you to prove it. Fires ONCE per specialist."
 )
 
+# THE AGENT-FREE HALF of the same conjunction, PLAN-stop-hook-overhaul.md section 1.1: pushback_for now separates the CHALLENGE (a give-up claim was made) from the ROUTING (a specialist can be confidently named for it), and a claim that clears the give-up scan but not the hint's own confidence floor still deserves the challenge -- CLAUDE.md rule 3 forbids concluding something is
+# impossible WITHOUT PROBING, and that rule does not stop applying just because no specific file names the domain. Naming a specialist here would be the exact 1.0-score misrouting this split was built to remove ("verifi", "yet"), so this asks for the probe generically instead of guessing a file to read.
+V_GIVEUP_CLAIM = (
+    "You just claimed %s.\n"
+    "  No specialist file matched confidently enough to name one -- see .claude/agents/\n"
+    "  for the roster anyway, in case one applies. Whether or not one does, CLAUDE.md\n"
+    '  rule 3 still applies: "Cannot be done here" is a claim, not a finding, until\n'
+    "  something was actually run to test it. Clear it either way: run the probe and\n"
+    "  report what it said, or state in one line what was already tried. Fires ONCE\n"
+    "  per distinct claim set per session."
+)
+
 # A corpus that cannot be read degrades to SILENCE PLUS THIS NOTE, never to a crash and never to a quiet skip: the matcher runs on the path that ends every turn, so an exception here is a session that cannot stop, and a silent skip is an agent that has stopped being reachable while everything still looks fine.
 N_AGENT_CORPUS_ERR = "Agent corpus problem (specialist hints are degraded until fixed):\n%s"
 

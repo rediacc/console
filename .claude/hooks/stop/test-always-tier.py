@@ -49,6 +49,7 @@ ALWAYS_KEYS = frozenset(
         "plan-fidelity",
         "bg-report",
         "agent-pushback",
+        "giveup-claim",
         # I2 -- somebody else is blocked and cannot see this session stand down.
         "requests",
         "no-waiter",
@@ -62,6 +63,7 @@ ALWAYS_KEYS = frozenset(
 DYNAMIC_KEYS = frozenset(
     {
         "agent-pushback",
+        "giveup-claim",
         "cl-shape",
         "cl-flip",
         "cl-producing",
