@@ -2546,6 +2546,19 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   // <<< gen-manifest: region 18
+  // Hand-registered rather than folded into a gen-manifest region: agent/plans/PLAN-haiku-model-routing.md section 4. Every agent declaring a non-opus model must be named, by filename, with a reason, in docs/agent-reference/model-routing.md, in the same commit -- the same bargain check-naturalization-model-policy.ts already makes for the naturalization ledger.
+  {
+    id: 'check:ci-agent-model-roster',
+    run: 'npm run check:ci-agent-model-roster',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_agent_model_roster.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-content',
+      step: 'Agent model roster matches its documented reasons',
+    },
+  },
   {
     id: 'check:ci-lint-scope-coverage',
     run: 'npm run check:ci-lint-scope-coverage',

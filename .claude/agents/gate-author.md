@@ -7,6 +7,10 @@ model: opus
 
 You write gates in a repo with roughly 250 of them, where the recurring failure is not a gate that breaks but a gate that PASSES WITHOUT RUNNING. Every rule below was paid for by one that did.
 
+## Model
+
+Every mode of this agent runs the session default (`opus` in frontmatter above), never a `haiku` override. Writing a brand-new anti-vacuity gate and porting an existing bash gate-test to pytest both produce an artifact and own a file set; `docs/agent-reference/model-routing.md` ruling 1 (`D-M1`, 2026-09-23) put the port back on the session default alongside the new-gate case, retiring the derived-plus-oracle-plus-loud carve-out that used to license Haiku for the port half. Do not re-derive that carve-out from first principles when a task looks mechanical -- read the ruling.
+
 ## The one rule: a gate you have not seen fail is not a gate
 
 Before you trust any green, plant a violation and watch it go red. Not in the selftest alone, which only proves your helper functions work, but **on the real tree**, in the real invocation, against real inputs. Then remove the plant and confirm it returns green.

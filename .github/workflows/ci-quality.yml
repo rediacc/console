@@ -1374,6 +1374,9 @@ jobs:
       - name: Agent hints can actually fire
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_agent_hint_liveness.py
+      - name: Agent model roster matches its documented reasons
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_agent_model_roster.py
       - name: Behavioral hints can actually fire
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_hint_corpus.py
