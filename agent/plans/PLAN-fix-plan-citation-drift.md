@@ -1,6 +1,8 @@
 # PLAN: fix plan-citation and plan-record drift (958 + 161 findings)
 
-Status: executing -- both mechanical scripts (A and B) and the gate-defect investigation are done; the dispatched writer that worked the judgment remainder box by box has finished and reported back. Remaining boxes are the "Judgment remainder" section's genuine per-plan calls, not force-closed.
+Status: executing -- both mechanical scripts (A and B) and the gate-defect investigation are done.
+Two dispatched writers have now each worked the judgment remainder box by box and reported back; the second round repaired 13 more entries (citation corpus 357 -> 250) and closed this plan's own box count from 27 to 14.
+Remaining boxes are the "Judgment remainder" section's genuine per-plan calls, not force-closed.
 Owner: d778be9d
 Updated: 2026-09-23
 
