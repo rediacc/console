@@ -139,7 +139,8 @@ Either way, the two regeneration commands (`check-breakpoint-drift.sh --write`, 
 - [x] Run `npm run check:cli-examples` to confirm the `EXCLUDED_FILES` fix.
     (ticked) 2026-09-22T20:05:09Z by d778be9d: ran validate-cli-examples.ts live: All CLI command examples are valid, exit 0
 - [ ] Run the exact final verification sweep from section 4 and confirm zero remaining output.
-- [ ] Run `check:ci-plan-citations`, `check:ci-plan-boxes`, `check:ci-plan-record`, `check:ci-plan-folders`, `check:ci-breakpoint-drift`.
+- [x] Run `check:ci-plan-citations`, `check:ci-plan-boxes`, `check:ci-plan-record`, `check:ci-plan-folders`, `check:ci-breakpoint-drift`.
+    (ticked) 2026-09-23T10:14:50Z by d778be9d: All 5 named gates run this session, evidence recorded in commit 87bca423a's investigation row.
 
 ## Acceptance criteria
 

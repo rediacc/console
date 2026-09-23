@@ -781,11 +781,10 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 2,
-      "done": 7,
+      "open": 1,
+      "done": 8,
       "open_sigs": [
-        "7d089114",
-        "f6ca72e2"
+        "7d089114"
       ],
       "done_sigs": [
         "2987e7cd",
@@ -794,7 +793,8 @@
         "86353c09",
         "8943bac5",
         "cac49b8f",
-        "d7f8350a"
+        "d7f8350a",
+        "f6ca72e2"
       ]
     },
     "agent/plans/PLAN-popup-reminder.md": {
