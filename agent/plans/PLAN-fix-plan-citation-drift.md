@@ -126,6 +126,11 @@ Progress, 2026-09-23. The record half is finished: all 13 lines close, nine of t
 Fourteen of the 41 citation lines close as well. Seven were repaired in the plan text, five in archived plans, and two were never findings: a background agent id and a test's own content fingerprint are both long hex runs the object matcher claimed by coincidence of shape, and `AGENT_ID_RE` and `FINGERPRINT_RE` exempt each class with six controls between them.
 The corpus stands at 351 citation findings and no record findings, against 385 and 130 when this section was written.
 
+Second pass, 2026-09-23. Thirteen more citation lines close and the corpus stands at 250, against 351 above and 385 when this section opened. Three classes drained it.
+Twelve findings across two plans were never dead pointers: a stop-hook tick id is no more a git object than the background agent id and the content fingerprint the two earlier exemptions cover, so `TICK_ID_RE` and `MARKER_FILE_RE` exempt the class behind its own markers, with a control in both directions on each matcher.
+Twenty-one bare basenames across four plans sat on `- [x]` lines, the class item 3 above reverted, and the two hazards that forced that revert were re-measured rather than assumed: `check_plan_boxes.loose_sig` strips directory prefixes, so all seven touched box lines hash identically across the repoint and G-A1 sees no deletion, and `moved_to_done` judges only signatures that were OPEN at the merge base, so a re-keyed done box is never bound by P-A2. The strict signatures do move, and the six backfilled investigation rows that re-keyed with them were re-backfilled in the same pass.
+The rest were pointers into bash gates and tests the Python port retired: each names its surviving successor at a line that was read, or, where the code it described was genuinely deleted, says so instead of naming a line that does not exist.
+
 ### check:ci-plan-citations, 351 findings across 41 plans
 
 - [x] `agent/plans/PLAN-add-chunkstore-backup-verb.md` -- 1: 1 fileline: right file, stale line, no unambiguous anchor
