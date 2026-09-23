@@ -312,12 +312,6 @@ ASK_ANNOUNCEMENT_RE = re.compile(
     re.IGNORECASE,
 )
 
-#: A closing line that IS the question: it ends in `?` and it addresses the
-#: operator. Second-person is what separates "Do you want the cluster fixed?"
-#: from "Why did the rebase drop a commit?", and the second is a fact the
-#: session answers for itself.
-CLOSING_QUESTION_RE = re.compile(r"\byou\b|\byour\b", re.IGNORECASE)
-
 #: A line already carrying a DEFAULT is a PARKED deferral being restated, not an
 #: announcement. Restating `## Remaining` is required of every message, so
 #: without this the gate would fire on the very behaviour it asks for.
@@ -327,11 +321,6 @@ DEFAULT_TOKEN_RE = re.compile(r"\bDEFAULT\s*:", re.IGNORECASE)
 #: paragraph plus a `## Remaining` table, narrow enough that a question quoted
 #: in the body of a long report does not reach it.
 PENDING_ASK_TAIL = 800
-
-#: How many trailing non-empty lines the bare-question rule may look at. The
-#: announcement regexes are shape-anchored and get the whole closing span; the
-#: bare `?` rule is the loosest of the two, so it gets the least room.
-PENDING_ASK_CLOSING_LINES = 3
 
 
 def _is_operator_turn(rec):
@@ -451,13 +440,10 @@ def ask_announcement(last_msg):
     tail = stripped[-PENDING_ASK_TAIL:]
     lines = [ln.strip() for ln in tail.splitlines()]
     nonempty = [ln for ln in lines if ln]
-    closing = set(nonempty[-PENDING_ASK_CLOSING_LINES:])
     for ln in nonempty:
         if DEFAULT_TOKEN_RE.search(ln):
             continue
         if ASK_ANNOUNCEMENT_RE.search(ln):
-            return ln[:160]
-        if ln in closing and ln.endswith("?") and CLOSING_QUESTION_RE.search(ln):
             return ln[:160]
     return ""
 

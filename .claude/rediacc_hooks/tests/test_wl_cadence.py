@@ -638,6 +638,34 @@ def test_223c_control_the_same_message_with_a_defer_this_turn_is_silent(wl):  # 
     )
 
 
+def test_223cc_a_rhetorical_closing_question_no_longer_blocks(wl):  # noqa: F811
+    """PLAN-stop-hook-overhaul.md section 1.2: the bare `ln.endswith("?")` + `you`/`your` matcher (`CLOSING_QUESTION_RE`) is deleted. Its own comment called it "the loosest of the two", and it fired on any second-person closing line ending in `?` whether or not it was actually asking for something -- "Should the operator care about this?" is a rhetorical aside, not an announced
+    ask, and the deleted matcher could not tell the two apart.
+    """
+    wl.brief_now()
+    wl.hand_now()
+    wl.say(
+        "Wave 3 landed and the suite is 810/0. Should the operator care about this?\n\n"
+        "## Remaining\n- nothing outstanding"
+    )
+    wl.check_quiet(
+        "YOU ANNOUNCED A QUESTION",
+        "223cc: a rhetorical closing question ending in ? must not block",
+    )
+
+
+def test_223cd_control_want_me_to_still_blocks_after_the_deletion(wl):  # noqa: F811
+    """The other half of section 1.2's CONTROL: deleting the loose matcher must not have taken the shape-anchored one with it. `ASK_ANNOUNCEMENT_RE`'s `want me to` clause is untouched by this box."""
+    wl.brief_now()
+    wl.hand_now()
+    wl.say("Wave 3 landed and the suite is 810/0. Do you want me to land this?")
+    wl.check(
+        "block",
+        "YOU ANNOUNCED A QUESTION AND THEN STOPPED WITHOUT ASKING IT",
+        "223cd CONTROL: 'want me to' still announces and still blocks",
+    )
+
+
 def test_223d_control_writing_about_the_gate_does_not_trip_it(wl):  # noqa: F811
     """The V_FOUND_NOT_FIXED precedent, and the reason `wl_core.strip_quoted_spans` is shared rather than copied: every message describing this gate quotes its own triggers, and a gate that cannot survive being written about is too broad."""
     wl.brief_now()
