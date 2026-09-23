@@ -2007,6 +2007,9 @@ jobs:
       # because its subject is absent is the failure this programme exists to remove.
       #
       # PLACED AFTER THE BUILD for the same reason, not after `- id: setup`.
+      - name: Browser smoke
+        if: ${{ !cancelled() && steps.build-www.outcome == 'success' }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.browser_smoke
       - name: Captcha recovery
         if: ${{ !cancelled() && steps.build-www.outcome == 'success' }}
         run: npm run check:ci-captcha-recovery
@@ -2016,6 +2019,9 @@ jobs:
       - name: Landmarks
         if: ${{ !cancelled() && steps.build-www.outcome == 'success' }}
         run: npm run check:ci-landmarks
+      - name: Page density
+        if: ${{ !cancelled() && steps.build-www.outcome == 'success' }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.page_density
       - name: Player CSS scope
         if: ${{ !cancelled() && steps.build-www.outcome == 'success' }}
         run: npm run check:ci-player-css-scope
@@ -2023,15 +2029,6 @@ jobs:
         if: ${{ !cancelled() && steps.build-www.outcome == 'success' }}
         run: npm run check:ci-ssr-locale
       # <<< gate-bind
-
-      # HAND-REGISTERED BECAUSE THEY NO LONGER DECLARE. Both were emitted steps until W7 P5 batch A2 retired their bash twins, and the twins were what carried the `---- gate ----` headers; the Python ports at `.ci/rediacc_ci/quality/browser_smoke.py` and `page_density.py` record the loss in prose and re-declared nothing. Left inside the region above, `gate-bind --dry-run` refused outright -- "registered in the manifest but emitted by no declared gate" -- which made `gate:bind --write` unusable for EVERY lane, not just this one. Below the marker they are what they actually are.
-      - name: Browser smoke
-        if: ${{ !cancelled() && steps.build-www.outcome == 'success' }}
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.browser_smoke
-
-      - name: Page density
-        if: ${{ !cancelled() && steps.build-www.outcome == 'success' }}
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.page_density
 
       - name: Redirects
         if: ${{ !cancelled() && steps.build-www.outcome == 'success' }}
