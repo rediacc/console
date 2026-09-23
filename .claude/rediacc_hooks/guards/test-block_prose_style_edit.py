@@ -138,6 +138,39 @@ CASES = [
     ("no file path at all", {"content": "Did %s run it?" % Y}, False),
     ("no content at all", {"file_path": "docs/probe.md"}, False),
     ("an empty payload", {}, False),
+    # R19 EDGE_CASES, PLAN-prose-style-under-wrap.md: a fresh multi-line under-wrapped paragraph in a Write/content block is flagged (a), the same paragraph rewritten at full width passes (b), and a single-line Edit.new_string with no sibling context is NOT flagged, a documented limitation of a rule that needs 3+ lines to see the fixed-column signature at all (c).
+    (
+        "(a) a fresh hard-wrapped paragraph is flagged by R19",
+        {
+            "file_path": "docs/probe.md",
+            "content": (
+                "This paragraph is hard-wrapped at a narrow column width for no\n"
+                "real reason and every line here sits close to the same length\n"
+                "which is the classic fixed-width wrap signature to look for.\n"
+            ),
+        },
+        True,
+    ),
+    (
+        "(b) the same paragraph rewritten at full width passes",
+        {
+            "file_path": "docs/probe.md",
+            "content": (
+                "This paragraph is hard-wrapped at a narrow column width for no real reason "
+                "and every line here sits close to the same length which is the classic "
+                "fixed-width wrap signature to look for.\n"
+            ),
+        },
+        False,
+    ),
+    (
+        "(c) a single-line Edit.new_string is not flagged, R19 needs 3+ lines",
+        {
+            "file_path": "docs/probe.md",
+            "new_string": "This paragraph is hard-wrapped at a narrow column width for no reason.",
+        },
+        False,
+    ),
 ]
 
 
