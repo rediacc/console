@@ -1,7 +1,6 @@
 ---
 description: Surface every decision currently waiting on the operator and put them as structured multiple-choice questions, so the operator never has to write a long prompt to be asked. Collects the three places a pending decision hides - `[?]` worklist deferrals with their DEFAULT/WHY/HOW, DECISIONS logged in the active round log for post-hoc veto, and gate/finding choices this session parked - then asks in batches with a recommended option first. Free text after the command narrows the scope to matching items.
 argument-hint: "[filter: a substring, an item id, or a topic; omit to ask about everything pending]"
-disable-model-invocation: true
 allowed-tools: Bash(.claude/hooks/stop/worklist.py --list --open:*), Bash(git branch:*), Bash(ls:*), Bash(grep:*), Bash(date:*)
 ---
 
