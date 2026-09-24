@@ -2383,7 +2383,9 @@ def run_stop(event, event_ok, worklist, hook_file):
     # computed, and then nothing roster-shaped happens: no suppression, no roster key, the battery exactly as before.
     _roster = None
     with contextlib.suppress(Exception):
-        _roster = wl_roster.roster(event, fold, session_id, state_doc=state_doc, cwd=event.get("cwd"))
+        _roster = wl_roster.roster(
+            event, fold, session_id, state_doc=state_doc, cwd=event.get("cwd")
+        )
     # brief_line, NOT r["line"] -- and this was a live regression worth naming.
     #
     # v14 introduced brief_text precisely because rec["text"] accumulates every update forever and "every block that mentioned it printed them all" (wl_store.brief_text docstring). classify_items duly renders OPEN items through brief_line... and then hands deferred and in-flight back as raw records, so these two call sites reached past the fix to the full text.
@@ -4293,7 +4295,10 @@ def run_stop(event, event_ok, worklist, hook_file):
             for b in live_bg
             if not (
                 (b.get("type") == "subagent" and str(b.get("id") or "") in _roster["verified"])
-                or (b.get("type") == "shell" and bg_verdicts.get(str(b.get("id") or "")) == "confirmed")
+                or (
+                    b.get("type") == "shell"
+                    and bg_verdicts.get(str(b.get("id") or "")) == "confirmed"
+                )
             )
         ]
 

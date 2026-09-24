@@ -816,7 +816,9 @@ def selftest():
         check("CONTROL: the clean sealed module is counted", stats["sealed"] == 1)
 
     with tempfile.TemporaryDirectory() as tmp:
-        planted = plant(_FIXTURE_SEALED, "CAP = 4\n", 'import os\nCAP = 4\nX = os.environ.get("ANY")\n')
+        planted = plant(
+            _FIXTURE_SEALED, "CAP = 4\n", 'import os\nCAP = 4\nX = os.environ.get("ANY")\n'
+        )
         root = _fixture(tmp, sealed=planted)
         findings, _ = run(root)
         check(
@@ -827,7 +829,9 @@ def selftest():
     with tempfile.TemporaryDirectory() as tmp:
         # Registered, well-formed, read with its pinned default: every check above passes it. Sealing is the only thing that can say no, which is the whole reason it exists.
         planted = plant(
-            _FIXTURE_SEALED, "CAP = 4\n", 'import os\nCAP = 4\nL = os.environ.get("WORKLIST_LIMIT", "5")\n'
+            _FIXTURE_SEALED,
+            "CAP = 4\n",
+            'import os\nCAP = 4\nL = os.environ.get("WORKLIST_LIMIT", "5")\n',
         )
         root = _fixture(tmp, sealed=planted)
         findings, _ = run(root)

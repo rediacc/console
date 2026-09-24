@@ -112,11 +112,16 @@ def mk_sub(
         records.append(
             {
                 "type": "assistant",
-                "message": {"stop_reason": "end_turn", "content": [{"type": "text", "text": "done"}]},
+                "message": {
+                    "stop_reason": "end_turn",
+                    "content": [{"type": "text", "text": "done"}],
+                },
             }
         )
     else:
-        records.append({"type": "assistant", "message": {"content": [{"type": "text", "text": "…"}]}})
+        records.append(
+            {"type": "assistant", "message": {"content": [{"type": "text", "text": "…"}]}}
+        )
     tx = folder / ("agent-%s.jsonl" % aid)
     tx.write_text("".join(json.dumps(r) + "\n" for r in records), encoding="utf-8")
     backdate(tx, age_min)
@@ -352,7 +357,8 @@ def test_r5b_a_grown_status_event_resets_the_clock_and_a_silent_one_does_not(wl)
     plant_lease(wl, "st1", W1, lease_age_min=40)
     plant_status(wl, W1, 2, silent=False, size=tx_size(wl, W1) - 1)
     v = verdict(wl)
-    assert v["status_due"] == [] and v["silent"] == [], v
+    assert v["status_due"] == [], v
+    assert v["silent"] == [], v
     # CONTROL: the same status, recorded SILENT against the current size, leaves the clock alone and marks the worker silent.
     wl.setup()
     mk_sub(wl, W1, "general-purpose", 0)
@@ -419,10 +425,9 @@ def test_r6b_the_sealed_modules_read_no_environment_and_the_limits_are_literals(
             consts[node.targets[0].id] = node.value
     for name, want in (("WRITER_CAP", 4), ("STATUS_PING_MIN", 20)):
         node = consts.get(name)
-        assert isinstance(node, ast.Constant) and node.value == want, "%s is %s" % (
-            name,
-            ast.unparse(node) if node is not None else "absent",
-        )
+        shown = ast.unparse(node) if node is not None else "absent"
+        assert isinstance(node, ast.Constant), "%s is %s" % (name, shown)
+        assert node.value == want, "%s is %s" % (name, shown)
 
 
 def test_r7_a_blind_store_is_unknown_never_honest(wl):  # noqa: F811
@@ -491,7 +496,8 @@ def test_s1_an_honest_roster_allows_with_the_roster_and_without_the_old_pushes(w
     wl.say(SAID)
     got = wl.run()
     assert got.decision == "block", got.out[:400]
-    assert "UNLEASED WRITER" in got.out and W2 in got.out, got.out[:800]
+    assert "UNLEASED WRITER" in got.out, got.out[:800]
+    assert W2 in got.out, got.out[:800]
 
 
 def test_s2_five_writers_block_on_the_cap_and_no_variable_lifts_it(wl):  # noqa: F811
@@ -561,19 +567,28 @@ def test_s3b_status_on_a_transcript_that_did_not_grow_is_silent_and_blocks(wl): 
     wl.say(SAID)
     wl.run()
     first = wl.cli("--status", wlfix.ME, W1)
-    assert first.rc == 0 and "status recorded" in first.out, first.out[:400]
+    assert first.rc == 0, first.out[:400]
+    assert "status recorded" in first.out, first.out[:400]
     # Nothing written in between, and the transcript's last record is a streaming partial with no tool call in flight.
     tx = subagents_dir(wl) / ("agent-%s.jsonl" % W1)
     with tx.open("a", encoding="utf-8") as fh:
-        fh.write(json.dumps({"type": "assistant", "message": {"content": [{"type": "text", "text": "hm"}]}}) + "\n")
+        fh.write(
+            json.dumps(
+                {"type": "assistant", "message": {"content": [{"type": "text", "text": "hm"}]}}
+            )
+            + "\n"
+        )
     wl.cli("--status", wlfix.ME, W1)  # grew: resets, and records the new size
     second = wl.cli("--status", wlfix.ME, W1)
-    assert "SILENT" in second.out, "an unchanged transcript was accepted as a status: %s" % second.out[:400]
+    assert "SILENT" in second.out, (
+        "an unchanged transcript was accepted as a status: %s" % second.out[:400]
+    )
     wl.newturn()
     wl.say(SAID)
     got = wl.run()
     assert got.decision == "block", got.out[:400]
-    assert "SILENT WORKER" in got.out and W1 in got.out, got.out[:800]
+    assert "SILENT WORKER" in got.out, got.out[:800]
+    assert W1 in got.out, got.out[:800]
 
 
 def test_s4_a_due_ping_forfeits_the_silent_poll_path(wl):  # noqa: F811
@@ -584,7 +599,9 @@ def test_s4_a_due_ping_forfeits_the_silent_poll_path(wl):  # noqa: F811
     assert base.decision == "allow", wl.why("s4 baseline", "allow", base, "ROSTER HONEST")
     wl.cli("--poll", wlfix.ME)
     quiet = wl.run()
-    assert not quiet.out.strip(), "CONTROL: an honest roster's poll stop was not silent: %r" % quiet.out[:300]
+    assert not quiet.out.strip(), (
+        "CONTROL: an honest roster's poll stop was not silent: %r" % quiet.out[:300]
+    )
     # The same world with the ping due: one planted fact, the lease's age.
     wl.setup()
     stop_world(wl, lease_age_min=19.93)
@@ -608,8 +625,15 @@ def test_s5_the_incident_a_finished_parent_with_a_live_child_draws_neither_dead_
     wl.say(SAID)
     got = wl.run()
     assert got.out.strip(), "the hook produced no output: %r" % got.err[:300]
-    for needle in ("LEASED TO A FINISHED WORKER", "is NOT in the harness background list", "UNLEASED WRITER"):
-        assert needle not in got.out, "s5: %r fired for a covered lease: %s" % (needle, got.out[:800])
+    for needle in (
+        "LEASED TO A FINISHED WORKER",
+        "is NOT in the harness background list",
+        "UNLEASED WRITER",
+    ):
+        assert needle not in got.out, "s5: %r fired for a covered lease: %s" % (
+            needle,
+            got.out[:800],
+        )
     # CONTROL, one planted fact: no child, and the same lease is dead, named by the roster rather than the ladder.
     wl.setup()
     wl.brief_now()
@@ -619,8 +643,11 @@ def test_s5_the_incident_a_finished_parent_with_a_live_child_draws_neither_dead_
     wl.say(SAID)
     got = wl.run()
     assert got.decision == "block", got.out[:400]
-    assert "LEASED TO A FINISHED WORKER" in got.out and "#par1" in got.out, got.out[:800]
-    assert "is NOT in the harness background list" not in got.out, "the ladder still claims a roster lease"
+    assert "LEASED TO A FINISHED WORKER" in got.out, got.out[:800]
+    assert "#par1" in got.out, got.out[:800]
+    assert "is NOT in the harness background list" not in got.out, (
+        "the ladder still claims a roster lease"
+    )
 
 
 def test_r8_verified_is_supervised_or_a_fresh_reader_never_a_stale_one(wl):  # noqa: F811

@@ -104,12 +104,30 @@ def spawn(proj, kind, session=SID, tool="Agent"):
 # (name, world kwargs, spawn kwargs, want_rc, stderr needle or "" for silence)
 CASES = [
     ("a fifth writer is refused", {"writers": 4}, {"kind": "general-purpose"}, 2, "cap is 4"),
-    ("the refusal names every live writer", {"writers": 4}, {"kind": "gate-author"}, 2, "a0000000000000004"),
+    (
+        "the refusal names every live writer",
+        {"writers": 4},
+        {"kind": "gate-author"},
+        2,
+        "a0000000000000004",
+    ),
     ("a fourth writer is allowed", {"writers": 3}, {"kind": "general-purpose"}, 0, ""),
     ("an Explore spawn at the cap is allowed", {"writers": 4}, {"kind": "Explore"}, 0, ""),
     ("a Plan spawn at the cap is allowed", {"writers": 5}, {"kind": "Plan"}, 0, ""),
-    ("readers do not count toward the cap", {"writers": 3, "readers": 3}, {"kind": "general-purpose"}, 0, ""),
-    ("a finished writer does not count", {"writers": 3, "finished": 2}, {"kind": "general-purpose"}, 0, ""),
+    (
+        "readers do not count toward the cap",
+        {"writers": 3, "readers": 3},
+        {"kind": "general-purpose"},
+        0,
+        "",
+    ),
+    (
+        "a finished writer does not count",
+        {"writers": 3, "finished": 2},
+        {"kind": "general-purpose"},
+        0,
+        "",
+    ),
     (
         "the last Stop event's writers count even when their transcripts are old",
         {"writers": 4, "lastevent": True, "age_min": 90},
@@ -138,8 +156,20 @@ CASES = [
         0,
         "could not count",
     ),
-    ("a non-Agent payload is ignored", {"writers": 9}, {"kind": "general-purpose", "tool": "Bash"}, 0, ""),
-    ("the Task tool name is guarded too", {"writers": 4}, {"kind": "general-purpose", "tool": "Task"}, 2, "cap is 4"),
+    (
+        "a non-Agent payload is ignored",
+        {"writers": 9},
+        {"kind": "general-purpose", "tool": "Bash"},
+        0,
+        "",
+    ),
+    (
+        "the Task tool name is guarded too",
+        {"writers": 4},
+        {"kind": "general-purpose", "tool": "Task"},
+        2,
+        "cap is 4",
+    ),
 ]
 
 

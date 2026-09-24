@@ -76,7 +76,7 @@ def session_subagents_dir(cwd, session_id):
     if not proj.is_dir():
         return None
     direct = proj / session_id
-    if direct.is_dir() or len(session_id) >= 36:  # noqa: PLR2004 -- a full uuid is 36 characters
+    if direct.is_dir() or len(session_id) >= 36:
         return direct / "subagents"
     hits = [p for p in proj.glob(session_id + "*") if p.is_dir()]
     if len(hits) != 1:
@@ -195,7 +195,7 @@ def _epoch(stamp):
     if when is not None:
         return when.timestamp()
     try:
-        return datetime.datetime.fromisoformat(str(stamp).replace("Z", "+00:00")).timestamp()
+        return datetime.datetime.fromisoformat(str(stamp)).timestamp()
     except ValueError:
         return None
 
@@ -335,7 +335,7 @@ def _running(event):
     ]
 
 
-def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now=None):  # noqa: PLR0912, PLR0915 -- one verdict, read top to bottom
+def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now=None):
     """The roster verdict for one stop. Never raises for a missing input; it degrades to UNKNOWN."""
     now = time.time() if now is None else now
     cwd = cwd or event.get("cwd") or ""
@@ -400,7 +400,9 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
     readers = sorted(a for a, r in live.items() if not r["writer"])
 
     # The session's own items: plain open, and the leases grouped by worker.
-    mine = [r for r in getattr(fold, "items", []) or [] if C.owned_by_me(r.get("owner"), session_id)]
+    mine = [
+        r for r in getattr(fold, "items", []) or [] if C.owned_by_me(r.get("owner"), session_id)
+    ]
     live_ids = {str(b.get("id") or "") for b in running}
     open_ids = [r["id"] for r in mine if r.get("state") == " "]
     leases = {}
@@ -896,8 +898,8 @@ def explain_lastevent(prefix):
 
 if __name__ == "__main__":
     # `python3 .claude/hooks/stop/wl_roster.py <session-prefix>`: the read-only incident replay.
-    import sys  # noqa: PLC0415
+    import sys
 
-    if len(sys.argv) != 2:  # noqa: PLR2004
+    if len(sys.argv) != 2:
         sys.exit("usage: wl_roster.py <session-prefix>   (replays the last full Stop event)")
     print(explain_lastevent(sys.argv[1]))

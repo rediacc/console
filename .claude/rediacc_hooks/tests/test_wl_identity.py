@@ -462,15 +462,19 @@ def drive_l1(fix) -> L1Drive:
 
     # One live subagent for the --status row: a meta and a transcript in this suite's own projects store, so the verb reads a real transcript and records a status rather than failing blind.
     status_dir = (
-        fix.base / "claude" / "projects" / re.sub(r"[^A-Za-z0-9]", "-", str(fix.proj))
-    ) / wlfix.SID / "subagents"
+        (fix.base / "claude" / "projects" / re.sub(r"[^A-Za-z0-9]", "-", str(fix.proj)))
+        / wlfix.SID
+        / "subagents"
+    )
     status_dir.mkdir(parents=True, exist_ok=True)
     (status_dir / "agent-a9000000000000001.meta.json").write_text(
         json.dumps({"agentType": "general-purpose", "description": "l1 status probe"}),
         encoding="utf-8",
     )
     (status_dir / "agent-a9000000000000001.jsonl").write_text(
-        json.dumps({"type": "assistant", "message": {"content": [{"type": "tool_use", "name": "Bash"}]}})
+        json.dumps(
+            {"type": "assistant", "message": {"content": [{"type": "tool_use", "name": "Bash"}]}}
+        )
         + "\n",
         encoding="utf-8",
     )
