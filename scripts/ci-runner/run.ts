@@ -704,6 +704,14 @@ async function selftest(): Promise<number> {
     'CONTROL: an unnarrowed quick run must still report the whole lane, or the three above prove nothing'
   );
 
+  // THE RECEIPT NAMES THE TREE JUDGED FROM THE START, OR NONE.
+  require_(receiptTree('aaa', 'aaa') === 'aaa', 'an unmoved HEAD must be vouched for');
+  require_(
+    receiptTree('aaa', 'bbb') === '',
+    'a HEAD that moved mid-run must vouch for NO tree -- the end tree was never judged'
+  );
+  require_(receiptTree('', '') === '', 'CONTROL: an unreadable HEAD vouches for nothing either');
+
   // --receipt-out: a snapshot clone's run lands where the pushing checkout's guard reads, and nowhere else.
   require_(
     receiptPathFor(parseArgs(['--quick', '--receipt-out', '/snap/receipt.json'])) ===
@@ -853,6 +861,22 @@ function narrowingFlags(opts: Options): string[] {
   return flags;
 }
 
+/**
+ * The tree a receipt may vouch for. A run judges the tree HEAD named when it STARTED; if HEAD moved before the receipt was written (a commit landed mid-run), no single tree was judged, so the receipt vouches for none and the push guard, which demands tree equality, refuses it. Found 2026-09-24: the tree used to be read at write time, so a mid-run commit bound a verdict to a tree nothing had judged.
+ */
+function receiptTree(atStart: string, atEnd: string): string {
+  return atStart !== '' && atStart === atEnd ? atStart : '';
+}
+
+/** `git rev-parse HEAD^{tree}`, or '' when git cannot answer. */
+function headTreeNow(): string {
+  try {
+    return gitOut(['rev-parse', 'HEAD^{tree}']);
+  } catch {
+    return '';
+  }
+}
+
 /** The receipt's destination: `--receipt-out` when given, else this checkout's own cache. */
 function receiptPathFor(opts: Options): string {
   return opts.receiptOut ?? RECEIPT_PATH;
@@ -924,6 +948,7 @@ async function main(): Promise<number> {
 
   // BEFORE runPool, not after: manifest.ts:2817 records a gate that writes a temp .ts into packages/cli and breaks check:format, and check-python-lint plants an untracked probe. A digest taken afterwards would record the gates' own leavings and drift from the tree the session actually has.
   const dirtyAtStart = dirtyDigest();
+  const headTreeAtStart = headTreeNow();
   const started = Date.now();
   const meta = { jobs, failFast: opts.failFast, selection: selection.description, wallMs: 0 };
   reporter.header(graph.length, meta);
@@ -969,11 +994,14 @@ async function main(): Promise<number> {
     writeReceipt(
       {
         headTree: (() => {
-          try {
-            return gitOut(['rev-parse', 'HEAD^{tree}']);
-          } catch {
-            return '';
+          const tree = receiptTree(headTreeAtStart, headTreeNow());
+          if (tree === '' && headTreeAtStart !== '') {
+            humanOut(
+              'WARNING: HEAD moved while these gates ran, so this receipt vouches for no tree and\n' +
+                '  cannot authorise a push. Re-run on a HEAD that stays put.'
+            );
           }
+          return tree;
         })(),
         head: (() => {
           try {
