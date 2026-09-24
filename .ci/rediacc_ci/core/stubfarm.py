@@ -39,7 +39,10 @@ if [[ "%(logged)s" == 1 ]]; then
 fi
 joined="$*"
 n=0
-while IFS=$'\t' read -r name glob rc out err times sh || [[ -n "$name" ]]; do
+# The table is read on fd 3, NOT stdin: a row's `sh` runs inside this loop, and with `done <"$STUB_TABLE"` it
+# inherited the TABLE as its stdin, so a passthrough such as `exec node "$@"` read table rows instead of what
+# the caller piped in. Measured 2026-09-24: `echo from-caller | tool` with `sh='exec cat'` printed the next row.
+while IFS=$'\t' read -r -u 3 name glob rc out err times sh || [[ -n "$name" ]]; do
     n=$((n + 1))
     [[ "$name" == "$me" ]] || continue
     # shellcheck disable=SC2053
@@ -51,13 +54,14 @@ while IFS=$'\t' read -r name glob rc out err times sh || [[ -n "$name" ]]; do
         ((used >= times)) && continue
         printf '%%s\n' "$((used + 1))" >"$c"
     fi
+    exec 3<&-
     if [[ "$sh" != "-" ]]; then
         eval "$(printf '%%s' "$sh" | base64 -d)"
     fi
     [[ "$out" == "-" ]] || printf '%%b' "$out"
     [[ "$err" == "-" ]] || printf '%%b' "$err" >&2
     exit "$rc"
-done <"$STUB_TABLE"
+done 3<"$STUB_TABLE"
 exit 0
 """
 

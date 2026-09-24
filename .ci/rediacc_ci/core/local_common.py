@@ -893,7 +893,7 @@ def run_npm_script(script_name: str, description: str | None = None, env=None) -
 def check_node_version(min_version: str = "18.0.0") -> bool:
     """`check_node_version`, `.ci/lib/local-common.sh:388`.
 
-    `core/account.py` carries an OLDER copy with its own `version_tuple` compare; that file was under another writer's live rewrite when this landed, so the duplicate is handed over rather than removed, and `test_check_node_version_agrees_with_the_account_copy` pins the two together meanwhile.
+    The ONLY Python copy: `core/account.py` and `core/account_lifecycle.py` import it (their older duplicate with a `version_tuple` compare was deleted 2026-09-24).
 
     `node -v | cut -d'v' -f2` keeps the SECOND `v`-separated field (the whole line when there is no `v`), and `sort -V -C` asks whether min-then-current is already in version order, which is `version_gte(current, min)` under the same comparator, `filevercmp` included.
     """

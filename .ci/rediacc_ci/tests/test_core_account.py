@@ -1,11 +1,10 @@
 """`rediacc_ci.core.account` against the live `.ci/lib/account.sh`.
 
-THE TWIN IS STILL HERE AND IS STILL THE ONLY IMPLEMENTATION OF ELEVEN OF ITS TWENTY-ONE FUNCTIONS.
-`.ci/legacy/run-legacy.sh:405` and `:443` still source it, nothing is cut over, and this file drives the bash for real on every run: `rediacc_ci.core.shadow_driver` sources `account.sh` through the same prelude `run-legacy.sh` uses and calls the twin's own functions, then does the same work through the port, and the two transcripts are compared byte for byte.
-
-WHAT THE SHADOW DIFFERENTIAL COVERS is decided by the driver's four scenarios and stated in its module docstring rather than restated here.
-The short version: everything deterministic, and none of `account_dev`, `account_test`, `account_test_e2e`, `account_reset`, `account_seed_demo`, `account_cleanup`, `account_docker_ghost_clean`, `account_stripe_auto`, `account_dev_credentials`, or `account_db`'s launch, all of which start or stop real infrastructure, nor `account_load_defaults` and `account_state_gateway_port`, which serve only two of those.
-`account_stop`, `account_rotation` and `account_bws_exec` are NOT in the differential either, for the same reason, but they ARE ported: the "stop and rotation: REAL-RUN verification" section below proves them a different way, against a real tracked process and a real Docker daemon, and against the real, credential-free `rotation` subcommands, which reach `account_bws_exec` first.
+ALL TWENTY-TWO OF THE TWIN'S FUNCTIONS HAVE A PYTHON PORT, split across two modules, and the twin is still here.
+`.ci/legacy/run-legacy.sh:405` and `:443` still source it, nothing is cut over (that is W7P5-c), and this file drives the bash for real on every run, through THREE techniques:
+  * `rediacc_ci.core.shadow_driver` (pair `w7p5b-account`): the deterministic half of `rediacc_ci.core.account`, compared answer for answer inside one bash process per side.
+  * `rediacc_ci.core.account_lifecycle_shadow_driver` (pair `w7p5b-account-lifecycle`): the twelve side-effecting functions in `rediacc_ci.core.account_lifecycle`, each case its own process per side with the external programs stubbed, compared on rc, both streams, the ordered call transcript and the files left behind. See the "the lifecycle half" section at the end.
+  * REAL RUNS for `account_stop`, `account_rotation` and `account_bws_exec`, against a real tracked process, a real Docker daemon and the real credential-free `rotation` subcommands (the "stop and rotation" section).
 The twin's four `.env` writers are deleted from BOTH sides (`agent/plans/PLAN-account-env-to-bws.md`), so they appear in neither tuple below; the CI-only `mint-dev-keys` verb that replaced one of their uses has no twin and is tested directly at the end of this file.
 
 WHY `XDIST_GROUP` IS DECLARED. The driver pins FIXED port numbers on both sides, because the two sides run as two processes and an ephemeral port would differ between them and land in a message text.
@@ -27,7 +26,8 @@ import threading
 import pytest
 
 from rediacc_ci import paths
-from rediacc_ci.core import account, shadow_driver
+from rediacc_ci.core import account, account_lifecycle, shadow_driver, stubfarm
+from rediacc_ci.core import account_lifecycle_shadow_driver as lifecycle_driver
 
 # The host port space, the same resource `test_core_ports.py` names. See the header.
 XDIST_GROUP = "ports"
@@ -144,6 +144,7 @@ def twin_text() -> str:
     return (paths.repo_root() / TWIN).read_text(encoding="utf-8")
 
 
+# The deterministic half and the three real-run functions, in `rediacc_ci.core.account`.
 PORTED_FUNCTIONS = (
     "account_allocate_ports",
     "account_wait_port",
@@ -158,19 +159,21 @@ PORTED_FUNCTIONS = (
     "account_bws_exec",
 )
 
-NOT_PORTED_FUNCTIONS = (
-    "account_cleanup",
-    "account_docker_ghost_clean",
-    "account_stripe_auto",
-    "account_dev",
-    "account_dev_credentials",
-    "account_test",
-    "account_test_e2e",
-    "account_reset",
-    "account_seed_demo",
-    "account_load_defaults",
-    "account_state_gateway_port",
-)
+# The side-effecting half, in `rediacc_ci.core.account_lifecycle`, keyed by the twin's name. Proved by the stub-farm differential at the end of this file.
+LIFECYCLE_FUNCTIONS = {
+    "account_spawn": "spawn_background",
+    "account_cleanup": "cleanup",
+    "account_docker_ghost_clean": "docker_ghost_clean",
+    "account_stripe_auto": "stripe_auto",
+    "account_dev": "dev",
+    "account_dev_credentials": "dev_credentials",
+    "account_test": "test",
+    "account_test_e2e": "test_e2e",
+    "account_reset": "reset",
+    "account_seed_demo": "seed_demo",
+    "account_load_defaults": "load_defaults",
+    "account_state_gateway_port": "state_gateway_port",
+}
 
 # Deleted from BOTH sides with `private/account/.env`. Asserted gone rather than forgotten: a writer reappearing on either side is a file-based secret path coming back.
 DELETED_FUNCTIONS = (
@@ -182,22 +185,21 @@ DELETED_FUNCTIONS = (
 
 
 def test_the_twin_still_defines_every_function_this_slice_names() -> None:
-    """Twenty-one, split ten and eleven, measured rather than remembered.
+    """Twenty-two, split ten and twelve, measured rather than remembered.
 
-    The count is the twin's own definition count, so a function added to `account.sh` without being classified here fails this rather than slipping past both tuples.
+    The count is the twin's own definition count, so a function added to `account.sh` without being classified here fails this rather than slipping past both tables.
     """
     text = twin_text()
-    for name in PORTED_FUNCTIONS + NOT_PORTED_FUNCTIONS:
+    classified = set(PORTED_FUNCTIONS) | set(LIFECYCLE_FUNCTIONS)
+    for name in classified:
         assert "\n%s() {" % name in text, "%s is gone from %s" % (name, TWIN)
     defined = set(re.findall(r"^([A-Za-z_][A-Za-z0-9_]*)\(\) \{", text, flags=re.MULTILINE))
-    assert defined == set(PORTED_FUNCTIONS) | set(NOT_PORTED_FUNCTIONS), (
-        "unclassified: %s; classified but not defined: %s"
-        % (
-            sorted(defined - set(PORTED_FUNCTIONS) - set(NOT_PORTED_FUNCTIONS)),
-            sorted(set(PORTED_FUNCTIONS) | set(NOT_PORTED_FUNCTIONS) - defined),
-        )
+    assert defined == classified, "unclassified: %s; classified but not defined: %s" % (
+        sorted(defined - classified),
+        sorted(classified - defined),
     )
-    assert len(PORTED_FUNCTIONS) + len(NOT_PORTED_FUNCTIONS) == 21
+    assert not set(PORTED_FUNCTIONS) & set(LIFECYCLE_FUNCTIONS)
+    assert len(PORTED_FUNCTIONS) + len(LIFECYCLE_FUNCTIONS) == 22
 
 
 def test_the_env_writers_are_gone_from_both_sides() -> None:
@@ -207,22 +209,38 @@ def test_the_env_writers_are_gone_from_both_sides() -> None:
         assert "\n%s() {" % name not in text, "%s is back in %s" % (name, TWIN)
         stem = name[len("account_") :]
         assert not hasattr(account, stem), "%s is back in the port" % stem
-        assert name not in PORTED_FUNCTIONS + NOT_PORTED_FUNCTIONS
+        assert name not in PORTED_FUNCTIONS
+        assert name not in LIFECYCLE_FUNCTIONS
+        assert not hasattr(account_lifecycle, stem), "%s is back in the lifecycle port" % stem
     for helper in ("fresh_env_text", "env_path", "BRE_METACHARACTERS"):
         assert not hasattr(account, helper), "%s survived its only callers" % helper
 
 
-def test_the_unported_half_has_no_python_counterpart() -> None:
-    """The absence is the claim, so it is asserted rather than left to a reader.
+def test_every_twin_function_has_exactly_one_python_home() -> None:
+    """Each of the twenty-one is a callable in ONE of the two modules, never both.
 
-    A future session porting `account_dev` must delete its name from `NOT_PORTED_FUNCTIONS` here, which is the moment to ask how a dev-server boot transcript gets compared.
+    A function in both would be two implementations of one bash function, which is how `check_node_version` came to have two copies that needed a test to keep them agreeing.
     """
-    for name in NOT_PORTED_FUNCTIONS:
+    for name in PORTED_FUNCTIONS:
         stem = name[len("account_") :]
-        assert not hasattr(account, stem), (
-            "%s appeared in the port without this file's list being updated; a ledger row "
-            "is a claim of equivalence and nothing compares that function" % stem
-        )
+        if stem == "db":
+            continue
+        assert callable(getattr(account, stem, None)), "%s is missing from the port" % stem
+        assert not hasattr(account_lifecycle, stem), "%s is ported twice" % stem
+    assert callable(account.db)
+    for name, attr in LIFECYCLE_FUNCTIONS.items():
+        assert callable(getattr(account_lifecycle, attr, None)), "%s has no port" % name
+        assert not hasattr(account, attr), "%s is ported twice" % name
+        assert name in account_lifecycle.__doc__, "%s is not named in the module docstring" % name
+
+
+def test_check_node_version_has_one_python_copy() -> None:
+    """The duplicate is gone: both account modules borrow `rediacc_ci.core.local_common`'s port, which carries the twin's `sort -V` comparator."""
+    for gone in ("check_node_version", "version_tuple", "NODE_VERSION_MIN_DEFAULT"):
+        assert not hasattr(account, gone), "%s came back into core/account.py" % gone
+        assert not hasattr(account_lifecycle, gone), "%s is duplicated in the lifecycle port" % gone
+    source = (paths.repo_root() / PORT).read_text(encoding="utf-8")
+    assert "local_common.check_node_version()" in source
 
 
 def test_the_twin_is_sourced_by_run_legacy_and_nothing_is_cut_over() -> None:
@@ -275,6 +293,22 @@ def test_gateway_port_from_state_raises_where_the_twin_dies() -> None:
 def test_gateway_port_from_state_truncates_a_value_containing_an_equals_sign() -> None:
     """Defect 3. `cut -d= -f2` takes the second field only. Preserved, not fixed."""
     assert account.gateway_port_from_state("gateway_port=a=b\n") == "a"
+
+
+def test_grep_cut_keeps_every_match_the_way_the_twin_captures_them() -> None:
+    """`grep` prints EVERY matching line, so a key written twice reaches the twin as two lines. The port used to keep only the first."""
+    text = "gateway_port=4800\npids=1\ngateway_port=4801\n"
+    assert account.grep_cut(text, "gateway_port") == "4800\n4801"
+    assert account.gateway_port_from_state(text) == "4800\n4801"
+    assert account.state_pids("pids=1 2 3\n") == "1 2 3"
+    proc = subprocess.run(
+        ["bash", "-c", 'v=$(grep "^gateway_port=" | cut -d= -f2); printf "%s" "$v"'],
+        input=text,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    assert proc.stdout == account.grep_cut(text, "gateway_port")
 
 
 @pytest.mark.parametrize(
@@ -406,12 +440,6 @@ def test_a_missing_curl_degrades_on_both_sides_instead_of_raising(tmp_path) -> N
     assert account.curl_body(["definitely-not-a-binary-on-this-host"]) == ""
 
 
-def test_version_tuple_orders_the_way_sort_v_does() -> None:
-    assert account.version_tuple("22.14.0") > account.version_tuple("18.0.0")
-    assert account.version_tuple("18.0.0") == account.version_tuple("18.0.0")
-    assert account.version_tuple("9.0.0") < account.version_tuple("10.0.0")
-
-
 def test_devbox_state_get_matches_the_bash_it_duplicates(tmp_path) -> None:
     """`devbox_state_get` is `.ci/lib/devbox.sh:124`, which this slice does not touch.
 
@@ -472,7 +500,7 @@ def test_db_path_prefers_the_environment(tmp_path) -> None:
 def test_the_shadow_ledger_holds_five_equivalent_rows_over_five_trees() -> None:
     """The K=5 licence, read off disk rather than remembered from a session.
 
-    Two of the five rows (`env`, `fresh-env`) are HISTORY about writers deleted from both sides; the `keys` scenario that now proves `account_generate_crypto_keys` has no row of its own yet. The live differential above is what compares today's code.
+    Two of the first five rows (`env`, `fresh-env`) are HISTORY about writers deleted from both sides. Four more (`db`, `keys`, `probe`, `totp`) were appended on 2026-09-24 after `check_node_version`, `grep_cut` and the strict keygen changed this port, so the licence describes the bytes that ship. The live differential above is what compares today's code.
     """
     path = paths.repo_root() / LEDGER
     assert path.is_file(), "%s is missing; the port has no recorded licence" % LEDGER
@@ -938,3 +966,265 @@ def test_mint_dev_keys_covers_exactly_the_account_dev_required_names() -> None:
     required = supply["consumers"]["account-dev"]["required"]
     locals_ = [spec.split(">", 1)[-1].strip() for spec in required]
     assert sorted(locals_) == sorted(account.CRYPTO_KEYS)
+
+
+# -- the lifecycle half: a stub-farm transcript differential --------------------
+#
+# `rediacc_ci.core.account_lifecycle` ports the eleven functions that start, stop or talk to real infrastructure. `account_lifecycle_shadow_driver` runs each case as its own process per side with the external programs stubbed, and every case below is the LIVE twin against the live port, not a replay.
+
+LIFECYCLE_PORT = ".ci/rediacc_ci/core/account_lifecycle.py"
+LIFECYCLE_MODULE = "rediacc_ci.core.account_lifecycle_shadow_driver"
+LIFECYCLE_LEDGER = ".ci/shadow/w7p5b-account-lifecycle.observations.jsonl"
+LIFECYCLE_SCENARIOS = sorted(lifecycle_driver.SCENARIOS)
+
+# The floor each scenario must clear, rounded well down from the measured transcripts: the claim is that the scenario reached its subject, not a count.
+LIFECYCLE_FLOOR = {
+    "credentials": 300,
+    "dev": 600,
+    "e2e": 150,
+    "helpers": 60,
+    "reset": 60,
+    "seed": 60,
+    "stripe": 60,
+    "test": 20,
+}
+
+_LIFECYCLE_CACHE: dict[tuple[str, str], tuple[int, str, str]] = {}
+
+
+def drive_lifecycle(side: str, scenario: str) -> tuple[int, str, str]:
+    """One side of one lifecycle scenario, run once per session and remembered."""
+    key = (side, scenario)
+    if key not in _LIFECYCLE_CACHE:
+        proc = subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                LIFECYCLE_MODULE,
+                "--side",
+                side,
+                "--twin",
+                TWIN,
+                "--port",
+                LIFECYCLE_PORT,
+                scenario,
+            ],
+            cwd=str(paths.repo_root()),
+            env={**os.environ, "PYTHONPATH": ".ci"},
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=900,
+        )
+        _LIFECYCLE_CACHE[key] = (proc.returncode, proc.stdout, proc.stderr)
+    return _LIFECYCLE_CACHE[key]
+
+
+@pytest.mark.parametrize("scenario", LIFECYCLE_SCENARIOS)
+def test_the_lifecycle_port_matches_the_live_twin(scenario: str) -> None:
+    old_rc, old_out, old_err = drive_lifecycle("old", scenario)
+    new_rc, new_out, new_err = drive_lifecycle("new", scenario)
+    assert old_rc == 0, "the bash side could not run: %s" % old_err
+    assert new_rc == 0, "the port side could not run: %s" % new_err
+    if old_out != new_out:
+        diverged = sorted(set(old_out.splitlines()) ^ set(new_out.splitlines()))
+        pytest.fail("scenario %s diverged:\n%s" % (scenario, "\n".join(diverged[:40])))
+
+
+@pytest.mark.parametrize("scenario", LIFECYCLE_SCENARIOS)
+def test_each_lifecycle_scenario_reached_its_subject(scenario: str) -> None:
+    """ANTI-VACUITY. A transcript that collapsed to nothing would compare equal, and so would two sides that both failed to load the twin."""
+    _, out, _ = drive_lifecycle("old", scenario)
+    lines = [line for line in out.splitlines() if line.startswith("obs ")]
+    assert len(lines) >= LIFECYCLE_FLOOR[scenario], (scenario, len(lines))
+    cases = {case.name for case in lifecycle_driver.SCENARIOS[scenario]}
+    seen = {line.split(" ", 2)[1] for line in lines}
+    assert cases <= seen, "cases that printed nothing: %s" % sorted(cases - seen)
+    assert "command not found" not in "\n".join(
+        line for line in lines if "no-jq" not in line and "no-node" not in line
+    ), "a stub or a twin function was missing on PATH"
+
+
+def test_the_lifecycle_corpus_covers_every_side_effecting_function() -> None:
+    assert set(LIFECYCLE_SCENARIOS) == set(LIFECYCLE_FLOOR)
+    driven = {
+        lifecycle_driver.FN[case.verb]
+        for cases in lifecycle_driver.SCENARIOS.values()
+        for case in cases
+    }
+    # `account_spawn` has no verb of its own: the `tree` cleanup case calls it directly, and every `dev` case reaches it for Astro and Vite.
+    assert "account_spawn " in lifecycle_driver.OLD_PROGRAM
+    driven.add("account_spawn")
+    assert driven == set(LIFECYCLE_FUNCTIONS), sorted(driven ^ set(LIFECYCLE_FUNCTIONS))
+    assert set(lifecycle_driver.FN) == set(lifecycle_driver.INNER)
+
+
+def test_the_lifecycle_transcripts_carry_what_the_comparison_needs() -> None:
+    """A CONTROL ON THE COMPARISON: each of these is a line a wrong port would change, and each is really in the transcript."""
+    _, dev_out, _ = drive_lifecycle("old", "dev")
+    for needle in (
+        "obs previous-instance call#1| kill -9 4194303",
+        "obs reuse-rustfs side#9| env WEBAUTHN_ORIGIN=http://localhost:4800",
+        "obs no-docker-with-stripe side#16| state pids=N N N",
+        "obs no-docker-with-stripe bg| npx astro dev --port 4802 --host 192.0.2.10",
+        "obs gateway-fails rc=3",
+        "obs astro-never rc=1",
+        "obs state-missing-key rc=1",
+    ):
+        assert needle in dev_out, needle
+    assert "Dev logins (fresh passwords each start)" in dev_out, (
+        "the forked credentials job never printed"
+    )
+    _, cred_out, _ = drive_lifecycle("old", "credentials")
+    assert "obs seed-null rc=1" in cred_out
+    assert "obs hostname-fails rc=64" in cred_out
+    assert "obs seed-null out#" not in cred_out, "twin behaviour 3 is a SILENT death"
+    _, seed_out, _ = drive_lifecycle("old", "seed")
+    assert "obs curl-fails rc=7" in seed_out
+    assert "Could not reach" not in seed_out, "twin behaviour 1: that branch is dead code"
+    _, helpers_out, _ = drive_lifecycle("old", "helpers")
+    assert "obs cleanup-kills-foreign foreign alive=0 signal=15" in helpers_out
+    _, reset_out, _ = drive_lifecycle("old", "reset")
+    assert "obs whole side#2| len ACCOUNT_ED25519_PUBLIC_KEY=60" in reset_out
+    assert "obs push-fails tree| private/account/account.db file" in reset_out, (
+        "a failed push must leave the database alone"
+    )
+
+
+# Each plant is a defect a plausible port could have. Every one is run against a MUTATED COPY of the package, never the tracked file, and each must change the transcript of the case named.
+LIFECYCLE_PLANTS = (
+    ("helpers", "cleanup-kills-foreign", "os.kill(pid, signal.SIGTERM)", "pid and None"),
+    ("seed", "http-500-json", 'if http_code != "200":', 'if http_code not in ("200", "500"):'),
+    ("stripe", "happy", "secret[:12]", "secret[:11]"),
+    ("dev", "previous-instance", "for offset in (0, 1, 2):", "for offset in (0, 1):"),
+    ("dev", "reuse-rustfs", '" ".join(str(p) for p in PIDS)', '",".join(str(p) for p in PIDS)'),
+)
+
+
+def _planted_repo(
+    tmp_path: pathlib.Path, old: str, new: str, target_rel: str = LIFECYCLE_PORT
+) -> pathlib.Path:
+    """A repository view whose `.ci/rediacc_ci` and `.ci/lib` are COPIES, one of them carrying one plant, and everything else a symlink to the checkout."""
+    repo = paths.repo_root()
+    fake = tmp_path / "repo"
+    (fake / ".ci" / "scripts").mkdir(parents=True)
+    for rel in (".ci/config", ".ci/scripts/lib", ".devcontainer", "scripts"):
+        (fake / rel).symlink_to(repo / rel)
+    shutil.copytree(repo / ".ci" / "lib", fake / ".ci" / "lib")
+    shutil.copytree(
+        repo / ".ci" / "rediacc_ci",
+        fake / ".ci" / "rediacc_ci",
+        ignore=shutil.ignore_patterns("__pycache__", "tests"),
+    )
+    target = fake / target_rel
+    text = target.read_text(encoding="utf-8")
+    assert text.count(old) == 1, "the plant %r no longer matches the port exactly once" % old
+    target.write_text(text.replace(old, new), encoding="utf-8")
+    return fake
+
+
+@pytest.mark.parametrize(
+    ("scenario", "case_name", "old", "new"), LIFECYCLE_PLANTS, ids=[p[1] for p in LIFECYCLE_PLANTS]
+)
+def test_a_planted_defect_in_the_lifecycle_port_is_caught(
+    tmp_path, scenario, case_name, old, new
+) -> None:
+    """PLANTED-DEFECT RUNS. The live twin against a copy of the port with one defect; the case's transcript must differ."""
+    case = next(c for c in lifecycle_driver.SCENARIOS[scenario] if c.name == case_name)
+    repo = paths.repo_root()
+    fake = _planted_repo(tmp_path, old, new)
+    with lifecycle_driver.locked():
+        twin = lifecycle_driver.observe("old", repo, case)
+        planted = lifecycle_driver.observe("new", fake, case)
+        clean = lifecycle_driver.observe("new", repo, case)
+    assert clean == twin, (
+        "the unplanted port disagrees on %s, so the plant proves nothing" % case_name
+    )
+    assert planted != twin, "the plant %r -> %r went unnoticed on %s" % (old, new, case_name)
+
+
+# Worklist #e45fc13c: `account_cleanup` signalled only the pid it tracked, so a dev server behind `npx` could outlive `account dev` on its port. Each side WITHOUT the process-group kill must orphan the tree job's child; each side with it must not.
+UNGROUPED = {
+    "old": (
+        TWIN,
+        'kill -- "-$pid" 2>/dev/null || kill "$pid" 2>/dev/null || true',
+        'kill "$pid" 2>/dev/null || true',
+    ),
+    "new": (LIFECYCLE_PORT, "os.killpg(pid, signal.SIGTERM)", "os.kill(pid, signal.SIGTERM)"),
+}
+
+
+@pytest.mark.parametrize("side", sorted(UNGROUPED))
+def test_cleanup_without_the_group_kill_orphans_the_child(tmp_path, side) -> None:
+    """THE DIFFERENTIAL CASE THAT FAILS WITHOUT THE FIX, driven on each side separately."""
+    case = next(c for c in lifecycle_driver.SCENARIOS["helpers"] if c.name == "cleanup-kills-tree")
+    rel, old, new = UNGROUPED[side]
+    fake = _planted_repo(tmp_path, old, new, target_rel=rel)
+    with lifecycle_driver.locked():
+        fixed = lifecycle_driver.observe(side, paths.repo_root(), case)
+        unfixed = lifecycle_driver.observe(side, fake, case)
+    assert "obs cleanup-kills-tree child alive=0" in fixed, fixed
+    assert "obs cleanup-kills-tree child alive=1" in unfixed, (
+        "with only the tracked pid signalled, the job's child should have survived: %s" % unfixed
+    )
+
+
+def test_the_lifecycle_stub_farm_really_shadows_the_programs() -> None:
+    """ANTI-VACUITY for the harness: the stubs are FIRST on PATH, so the twin cannot be reaching a real docker or curl."""
+    case = lifecycle_driver.SCENARIOS["dev"][0]
+    with lifecycle_driver.locked():
+        root, farm = lifecycle_driver.build_sandbox(paths.repo_root(), case)
+        try:
+            env = lifecycle_driver.side_env(root, farm, case)
+            for name in ("docker", "curl", "sleep", "ss", "openssl", "hostname", "lsof", "kill"):
+                assert stubfarm.shadows(farm, name, env), "%s is not the stub" % name
+        finally:
+            shutil.rmtree(lifecycle_driver.base_dir(), ignore_errors=True)
+
+
+def test_a_stub_passthrough_keeps_the_callers_stdin(tmp_path) -> None:
+    """THE HARNESS DEFECT THIS WORK FOUND, pinned. A row's `sh` ran with the stub TABLE as its stdin, so the twin's `node -e ... <<<"$seed_json"` parsed table rows and `account_dev_credentials` died silently on every case."""
+    farm = stubfarm.Farm(tmp_path / "farm")
+    farm.stub("tool", logged=False)
+    farm.respond("tool", "*", sh="exec cat")
+    farm.respond("other", "*", out="A-LATER-ROW")
+    env = farm.env({"PATH": "/usr/bin:/bin"})
+    proc = subprocess.run(
+        ["tool"], input="from-the-caller\n", env=env, capture_output=True, text=True, check=True
+    )
+    assert proc.stdout == "from-the-caller\n", proc.stdout
+
+
+def test_the_lifecycle_ledger_holds() -> None:
+    """The K=5 licence on disk, re-derived rather than trusted."""
+    proc = subprocess.run(
+        [
+            "npx",
+            "tsx",
+            "scripts/lib/shadow-gate.ts",
+            "--pair",
+            "w7p5b-account-lifecycle",
+            "--assert",
+            "--k",
+            "5",
+        ],
+        cwd=str(paths.repo_root()),
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=180,
+    )
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    ledger = (paths.repo_root() / LIFECYCLE_LEDGER).read_text(encoding="utf-8")
+    assert LIFECYCLE_MODULE in ledger
+    assert LIFECYCLE_PORT in ledger
+
+
+def test_the_lifecycle_argv_surface_dispatches_like_run_legacy() -> None:
+    """`main` offers the verbs `.ci/legacy/run-legacy.sh` dispatches for this half, and refuses the rest."""
+    assert account_lifecycle.main([]) == 2
+    assert account_lifecycle.main(["--help"]) == 0
+    assert account_lifecycle.main(["nosuch"]) == 2
+    for verb in ("dev", "test", "reset", "seed-demo"):
+        assert verb in account_lifecycle.USAGE
+    assert "test e2e" in account_lifecycle.USAGE

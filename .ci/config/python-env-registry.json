@@ -163,6 +163,29 @@
       "REDIACC_DEV_PORT_BASE",
       "REDIACC_STARTUP_TIMEOUT"
     ],
+    ".ci/rediacc_ci/core/account_lifecycle.py": [
+      "CONFIG_R2_ACCESS_KEY_ID",
+      "CONFIG_R2_BUCKET",
+      "CONFIG_R2_ENDPOINT",
+      "CONFIG_R2_SECRET_ACCESS_KEY",
+      "GATEWAY_PORT",
+      "PYTHONPATH",
+      "REDIACC_ACCOUNT_SERVER",
+      "REDIACC_DEV_BIND",
+      "ROOT_EMAIL",
+      "STRIPE_E2E_WEBHOOK_SECRET",
+      "STRIPE_SANDBOX_SECRET_KEY"
+    ],
+    ".ci/rediacc_ci/core/account_lifecycle_shadow_driver.py": [
+      "*name",
+      "CONSOLE_ROOT_DIR",
+      "SHADOW_FOREIGN_PID",
+      "SHADOW_PIDS",
+      "SHADOW_PRE",
+      "SHADOW_REAL_SLEEP",
+      "SHADOW_SHOW",
+      "STUB_ROOT"
+    ],
     ".ci/rediacc_ci/core/advisory.py": [
       "CI"
     ],

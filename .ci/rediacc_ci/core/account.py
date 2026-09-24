@@ -17,19 +17,18 @@ An input/output differential compares two ANSWERS; these produce SIDE EFFECTS, s
 `rotate`/`check`/`deactivate`/`delete`/`sweep`/`init` need live production credentials and are never invoked, by anything, from this port or its tests. None of the three joins `PORTED_FUNCTIONS` in `shadow_driver.py`'s sense: that module's own docstring still lists them under "WHAT IS NEVER DRIVEN HERE", and that is correct -- the differential technique genuinely does not apply to them.
 `test_core_account.py`'s `PORTED_FUNCTIONS`/`NOT_PORTED_FUNCTIONS` tuple is the one that moved.
 
-ELEVEN ARE NOT PORTED AT ALL, and saying so here rather than leaving an absence is the point. `account_dev`, `account_test`, `account_test_e2e`, `account_reset` and `account_seed_demo` start or stop long-running dev infrastructure: Docker containers, RustFS, a Vite server, an Astro server, a gateway held in the foreground; `account_reset` also pushes a fresh DEV keypair to Bitwarden.
-A shadow-gate row comparing two runs of `account_dev` would be comparing two dev-server boot transcripts rather than two reports, which is a different differential technique and a separate ruling than even the real-run technique `stop()`/`rotation()` use above: those two start nothing of their own (one tears down, the other dispatches to an already-independent CLI), where `account_dev` would have to BE the thing under test.
-`account_cleanup` kills the tracked pid set and calls `exit`; `account_docker_ghost_clean` force-removes containers (its logic is now exercised, inlined and unnamed, inside `stop()` below -- see that function's body -- rather than exposed as its own ported function: it is not one of the two functions this slice was scoped to, and a module-level `docker_ghost_clean` would collide with `test_the_unported_half_has_no_python_counterpart`'s claim that no Python counterpart exists for it); `account_stripe_auto` starts a background `stripe listen`; `account_dev_credentials` drives the live gateway's provisioning routes.
-`account_load_defaults` and `account_state_gateway_port` serve only `account_dev` and `account_test_e2e`, which are not ported, so they are not either. The file-less `gateway_port_from_state()` below is `account_totp`'s and `account_stop`'s INLINE pipeline, not a port of the latter helper, and is named apart from it so the absence test can hold.
-THERE IS NO PYTHON FUNCTION BELOW FOR ANY OF THOSE ELEVEN. The bash file is the only implementation of them and remains so.
+THE OTHER ELEVEN ARE IN `rediacc_ci.core.account_lifecycle`, not here: `account_dev`, `account_dev_credentials`, `account_stripe_auto`, `account_cleanup`, `account_docker_ghost_clean`, `account_test`, `account_test_e2e`, `account_reset`, `account_seed_demo`, `account_load_defaults` and `account_state_gateway_port`.
+Each of them starts, stops or talks to real infrastructure (Docker, RustFS, a Vite and an Astro server, a foreground gateway, `stripe listen`, Bitwarden), so they are proved by a STUB-FARM TRANSCRIPT differential instead (`core/account_lifecycle_shadow_driver.py`, pair `w7p5b-account-lifecycle`), which compares the ordered calls each side makes to a directory of scripted programs rather than two runs of a live stack.
+`stop()` below still inlines `account_docker_ghost_clean` rather than calling the lifecycle module's `docker_ghost_clean()`, because `stop()` is real-run verified against its own inlined body and that proof would not transfer. `gateway_port_from_state()` below is `account_totp`'s and `account_stop`'s INLINE pipeline; `account_state_gateway_port`, the named helper, is the lifecycle module's.
 
 `account_db`'s LAUNCH is grouped with the eleven even though the function as a whole is ported. Everything up to the launch, meaning argument parsing, the database path, the devbox-derived preferred port, the free-port search, the two refusals and the `sqlite_web` resolution, is decided in `db_plan()` and is what the differential drives.
 `db_launch()` below execs a server and is NOT differentially proved; it is written out so the port is complete, and it is named here so nobody reads its green as evidence.
 
 --------------------------------------------------------------------------
-TWO FUNCTIONS THIS MODULE DEFINES THAT THE TWIN BORROWS FROM ITS SOURCER
+TWO FUNCTIONS THE TWIN BORROWS FROM ITS SOURCER
 --------------------------------------------------------------------------
-`check_node_version` is called at `.ci/lib/account.sh:951` and defined at `.ci/lib/local-common.sh:388`, the file `run-legacy.sh` sources BEFORE `account.sh`. `devbox_state_get` is called at `:997` and defined at `.ci/lib/devbox.sh:124`, which `account_db` sources on demand. A module cannot borrow a function from its importer, so both are re-implemented below, faithful to the definitions named. NEITHER `local-common.sh` NOR `devbox.sh` IS MODIFIED BY THIS CHANGE: both are still live-bridged into `rediacc_ci/setup/bridge.py` and are out of this slice's scope. This is exactly the shape `service.py` records for `check_docker`, which lives in `run-legacy.sh` for the same reason.
+`check_node_version` is called at `.ci/lib/account.sh:958` and defined at `.ci/lib/local-common.sh:391`, the file `run-legacy.sh` sources BEFORE `account.sh`. It is IMPORTED from `rediacc_ci.core.local_common`, the port of that file, which carries the twin's own `sort -V` comparator. This module used to carry a second copy with a simpler `version_tuple` compare, pinned to the first by a test; the copy is deleted, so there is one Python implementation of one bash function.
+`devbox_state_get` is called at `:1004` and defined at `.ci/lib/devbox.sh:124`, which `account_db` sources on demand. It is re-implemented below rather than imported, because `rediacc_ci.core.devbox` builds a whole `Devbox` context to answer it and this reader needs one key; `test_core_account.py` compares the two against the live bash.
 
 --------------------------------------------------------------------------
 FIVE TWIN BEHAVIOURS REPRODUCED ON PURPOSE, NOT FIXED
@@ -63,7 +62,7 @@ import sys
 import time
 
 from rediacc_ci import log, paths
-from rediacc_ci.core import ports
+from rediacc_ci.core import local_common, ports
 
 # `.ci/config/constants.sh:117-120` and `:135,145`. Plain readonly assignments derived from CONSOLE_ROOT_DIR, so they are derived here the same way rather than read from the environment: constants.sh overwrites any inherited value, and a port that honoured an override would answer a question the twin cannot be asked.
 ACCOUNT_DEV_PORT_PREFERRED = 4800
@@ -73,9 +72,6 @@ DEVBOX_OFFSET_STUDIO = 3
 # `.ci/lib/account.sh:977`. The devbox slot is preferred and then stepped aside from; this is the fallback when no `.devbox-state` exists.
 DB_BROWSER_PREFERRED = 4983
 DB_BROWSER_SCAN_SPAN = 40
-
-# `.ci/lib/local-common.sh:389`. The twin's default when no argument is passed, which is how `account_db` calls it.
-NODE_VERSION_MIN_DEFAULT = "18.0.0"
 
 # `.ci/lib/account.sh:628`.
 DEFAULT_TOTP_EMAIL = "dev-user@rediacc.io"
@@ -139,36 +135,15 @@ def devbox_state_file(env: dict[str, str] | None = None) -> str:
 # --------------------------------------------------------------------------- borrowed from the sourcer ---------------------------------------------------------------------------
 
 
-def check_node_version(min_version: str = NODE_VERSION_MIN_DEFAULT) -> bool:
-    """`.ci/lib/local-common.sh:418-436`, which `account.sh` calls and does not define.
+def node_version_ok() -> int:
+    """A bare `check_node_version` (`rediacc_ci.core.local_common`), as the status errexit would end the caller with: 0 to carry on.
 
-    Returns False where the twin returns 1. Under the twin's `errexit` a False here aborts the calling function, which `db_plan()` reproduces.
+    `local_common.check_node_version` returns False where the twin returns 1 and raises `LocalCommonError` where a failing `node -v` kills it through pipefail; both are the caller's death.
     """
-    if shutil.which("node") is None:
-        log.error("Node.js is not installed")
-        return False
-    proc = subprocess.run(["node", "-v"], capture_output=True, text=True, check=False)
-    # `node -v | cut -d'v' -f2`: the SECOND field, so `v22.1.0` gives `22.1.0`.
-    current = proc.stdout.strip().split("v")[1] if "v" in proc.stdout else proc.stdout.strip()
-    # `sort -V -C` is "already sorted?", which is min <= current under version order.
-    if version_tuple(current) < version_tuple(min_version):
-        log.error("Node.js version %s is too old (minimum: %s)" % (current, min_version))
-        return False
-    log.debug("Node.js version: %s" % current)
-    return True
-
-
-def version_tuple(text: str) -> tuple[int, ...]:
-    """`sort -V`'s ordering for the dotted-numeric shape these versions take."""
-    out: list[int] = []
-    for part in text.split("."):
-        digits = ""
-        for ch in part:
-            if not ch.isdigit():
-                break
-            digits += ch
-        out.append(int(digits) if digits else 0)
-    return tuple(out)
+    try:
+        return 0 if local_common.check_node_version() else 1
+    except local_common.LocalCommonError as exc:
+        return exc.code
 
 
 def devbox_state_get(key: str, env: dict[str, str] | None = None) -> str | None:
@@ -349,26 +324,37 @@ class CryptoKeys:
         self.api_key = api_key
 
 
-def keypair(curve: str) -> tuple[str, str]:
+def _keygen_child(argv: list[str], strict: bool) -> str:
+    """Run one keygen program and return its stdout.
+
+    STRICT IS THE TWIN, and the default is not. `keys=$(node --eval ...)` and `JWT_SEC=$(openssl ... | tr ... | cut ...)` are bare assignments under errexit and pipefail, so a failing `node` or `openssl` ends `account_reset` before anything is pushed to Bitwarden. `strict=True` raises `AccountError` with that status, and `account_lifecycle.reset()` uses it: without it a missing `node` would reach `store-from-env` with six empty values.
+    `mint_dev_keys()` keeps the lenient default and refuses empty values itself, because it has no twin to die the same way as.
+    """
+    try:
+        proc = subprocess.run(argv, capture_output=True, text=True, check=False)
+    except FileNotFoundError:
+        if strict:
+            sys.stderr.write("%s: command not found\n" % argv[0])
+            raise AccountError("%s is not installed" % argv[0], code=127) from None
+        return ""
+    if strict and proc.returncode != 0:
+        sys.stderr.write(proc.stderr)
+        raise AccountError("%s exited %d" % (argv[0], proc.returncode), code=proc.returncode)
+    return proc.stdout
+
+
+def keypair(curve: str, strict: bool = False) -> tuple[str, str]:
     """One `node --eval` producing a private and a public key, `head -1` and `tail -1`."""
-    proc = subprocess.run(
-        ["node", "--eval", KEYPAIR_JS % curve],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    lines = proc.stdout.split("\n")
+    lines = _keygen_child(["node", "--eval", KEYPAIR_JS % curve], strict).split("\n")
     # `tail -1` of a ONE-line capture is that same line, which is what a node failure would produce on both sides.
     return lines[0], lines[-1]
 
 
-def random_secret() -> str:
+def random_secret(strict: bool = False) -> str:
     """`openssl rand -base64 48 | tr -d '/+=' | cut -c1-64`."""
-    proc = subprocess.run(
-        ["openssl", "rand", "-base64", "48"], capture_output=True, text=True, check=False
-    )
+    stdout = _keygen_child(["openssl", "rand", "-base64", "48"], strict)
     out: list[str] = []
-    for line in proc.stdout.split("\n"):
+    for line in stdout.split("\n"):
         if line == "" and out:
             continue
         stripped = line.translate({ord(c): None for c in "/+="})
@@ -376,11 +362,11 @@ def random_secret() -> str:
     return "".join(out)
 
 
-def generate_crypto_keys() -> CryptoKeys:
-    """`account_generate_crypto_keys`, `.ci/lib/account.sh:223-251`."""
-    ed_priv, ed_pub = keypair("ed25519")
-    x_priv, x_pub = keypair("x25519")
-    return CryptoKeys(ed_priv, ed_pub, x_priv, x_pub, random_secret(), random_secret())
+def generate_crypto_keys(strict: bool = False) -> CryptoKeys:
+    """`account_generate_crypto_keys`, `.ci/lib/account.sh:223-251`. `strict` is the twin's errexit; see `_keygen_child`."""
+    ed_priv, ed_pub = keypair("ed25519", strict)
+    x_priv, x_pub = keypair("x25519", strict)
+    return CryptoKeys(ed_priv, ed_pub, x_priv, x_pub, random_secret(strict), random_secret(strict))
 
 
 # --------------------------------------------------------------------------- banner and TOTP ---------------------------------------------------------------------------
@@ -395,35 +381,30 @@ def banner_row(text: str) -> str:
     return "  │  %s%s│" % (text, " " * max(width, 0))
 
 
-def gateway_port_from_state(state_text: str) -> str:
-    """`grep "^gateway_port=" | cut -d= -f2` as the twin's bare assignment runs it.
+def grep_cut(state_text: str, key: str) -> str:
+    """`grep "^KEY=" FILE | cut -d= -f2` as the twin's bare assignment runs it.
 
-    Raises `StateAbortedError` where grep matches nothing, because that is what the twin does: exit 1 from grep, through `pipefail`, into `errexit`. Defect 1.
+    EVERY matching line, each cut to its SECOND `=`-field (defect 3), joined by the newlines `$(...)` keeps between them. Raises `StateAbortedError` where grep matches nothing, because that is what the twin does: exit 1 from grep, through `pipefail`, into `errexit`. Defect 1.
+    Until 2026-09-24 this returned the FIRST match only; a state file with the key twice gave the twin both values and the port one. Every state-file read in both account modules now goes through here.
     """
-    for line in state_text.split("\n"):
-        if line.startswith("gateway_port="):
-            # `cut -d= -f2` takes the SECOND field only, so `gateway_port=a=b` gives `a`.
-            fields = line.split("=")
-            return fields[1] if len(fields) > 1 else ""
-    raise StateAbortedError(
-        "grep '^gateway_port=' matched nothing, and the twin's bare assignment takes that "
-        "exit 1 through pipefail into errexit; it dies here printing nothing"
-    )
+    prefix = key + "="
+    values = [line.split("=")[1] for line in state_text.split("\n") if line.startswith(prefix)]
+    if not values:
+        raise StateAbortedError(
+            "grep '^%s' matched nothing, and the twin's bare assignment takes that "
+            "exit 1 through pipefail into errexit; it dies here printing nothing" % prefix
+        )
+    return "\n".join(values)
+
+
+def gateway_port_from_state(state_text: str) -> str:
+    """`grep "^gateway_port=" | cut -d= -f2`, `account_totp`'s and `account_stop`'s bare assignment. See `grep_cut`."""
+    return grep_cut(state_text, "gateway_port")
 
 
 def state_pids(state_text: str) -> str:
-    """`grep "^pids=" | cut -d= -f2`, the twin's other bare state-file assignment.
-
-    Same shape as `gateway_port_from_state`: raises `StateAbortedError` where grep matches nothing (defect 1's second occurrence, see defect 5), and truncates at the first `=` in the value (defect 3). `.ci/lib/account.sh:333,668`.
-    """
-    for line in state_text.split("\n"):
-        if line.startswith("pids="):
-            fields = line.split("=")
-            return fields[1] if len(fields) > 1 else ""
-    raise StateAbortedError(
-        "grep '^pids=' matched nothing, and the twin's bare assignment takes that "
-        "exit 1 through pipefail into errexit; it dies here printing nothing"
-    )
+    """`grep "^pids=" | cut -d= -f2`, `account_stop`'s other bare assignment (defect 5). `.ci/lib/account.sh:668`."""
+    return grep_cut(state_text, "pids")
 
 
 def totp_fields(body: str) -> tuple[str, str]:
@@ -673,8 +654,9 @@ def rotation(argv: list[str], env: dict[str, str] | None = None) -> int:
     Returns 1 where the twin's bare `check_node_version` call, or its `cd "$ACCOUNT_DIR" || exit 1`, aborts under errexit. Otherwise the dispatched subprocess's exit code, or 127 -- matching the shell's own "command not found" convention, since the twin does not swallow this one with `|| true` -- if `npx` itself is not on PATH.
     """
     bws_exec("rotation", ["rotation", *argv], env)
-    if not check_node_version():
-        return 1
+    status = node_version_ok()
+    if status != 0:
+        return status
     directory = account_dir(env)
     if not os.path.isdir(directory):
         log.error("cd to %s failed: not a directory" % directory)
@@ -759,9 +741,10 @@ def db_plan(argv: list[str], env: dict[str, str] | None = None) -> DbPlan:
 
     Raises `AccountError` carrying the twin's own exit codes: 2 for an unknown option, 1 for a missing database or no free port.
     """
-    if not check_node_version():
+    status = node_version_ok()
+    if status != 0:
         # The twin's bare `check_node_version` under `errexit` aborts the function.
-        raise AccountError("node version check failed", code=1)
+        raise AccountError("node version check failed", code=status)
     use_studio = parse_db_args(argv)
     database = db_path(env)
     if not os.path.isfile(database):

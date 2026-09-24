@@ -1662,12 +1662,14 @@ export function main(argv: string[]): number {
     console.log(USAGE);
     return 0;
   }
-  const repoRoot =
+  // RESOLVED, because the root is also a MASK: `normalize()` replaces every occurrence of this string in finding text with `<repo>`. A relative `--repo .` masked every DOT, so `dev.defaults.env` was compared as `dev<repo>defaults<repo>env` (found 2026-09-24 in the w7p5b-devbox and w7p5b-account-lifecycle rows).
+  const repoRoot = path.resolve(
     arg(argv, '--repo') ??
-    (() => {
-      const r = spawnSync('git', ['rev-parse', '--show-toplevel'], { encoding: 'utf8' });
-      return (r.stdout ?? '').trim() || process.cwd();
-    })();
+      (() => {
+        const r = spawnSync('git', ['rev-parse', '--show-toplevel'], { encoding: 'utf8' });
+        return (r.stdout ?? '').trim() || process.cwd();
+      })()
+  );
 
   if (argv.includes('--selftest')) return selftest(repoRoot);
 

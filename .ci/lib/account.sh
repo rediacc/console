@@ -67,10 +67,30 @@ account_state_gateway_port() {
     grep '^gateway_port=' "$ACCOUNT_STATE_FILE" 2>/dev/null | cut -d= -f2
 }
 
+# account_spawn DIR LOG CMD...: `(cd DIR && CMD...) >LOG 2>&1 &`, remembered in
+# ACCOUNT_PIDS, and started as the LEADER OF ITS OWN PROCESS GROUP (`set -m`), so
+# account_cleanup can end the whole tree rather than just the pid it holds. The
+# pid is left in ACCOUNT_SPAWNED for the caller's liveness checks.
+account_spawn() {
+    local dir="$1" log="$2"
+    shift 2
+    set -m
+    (cd "$dir" && "$@") >"$log" 2>&1 &
+    ACCOUNT_SPAWNED=$!
+    set +m
+    ACCOUNT_PIDS+=("$ACCOUNT_SPAWNED")
+}
+
 account_cleanup() {
     local exit_code=$?
     for pid in "${ACCOUNT_PIDS[@]}"; do
-        kill "$pid" 2>/dev/null || true
+        # The GROUP first. Signalling only the tracked pid left anything it did
+        # not take down with it running: a wrapper that dies before forwarding
+        # the signal, or a subshell that did not exec its last command, orphans
+        # the dev server, which then holds its port, and the next `account dev`
+        # drifts to the next free triple. A pid that leads no group (one this
+        # file did not start with account_spawn) falls back to the pid alone.
+        kill -- "-$pid" 2>/dev/null || kill "$pid" 2>/dev/null || true
         wait "$pid" 2>/dev/null || true
     done
     ACCOUNT_PIDS=()
@@ -177,18 +197,18 @@ account_wait_port() {
 }
 
 # True when a RustFS (S3) endpoint is answering on the port. RustFS returns 403
-# on GET / (no anonymous access), so any HTTP status — not just 2xx — means the
+# on GET / (no anonymous access), so any HTTP status -- not just 2xx -- means the
 # service is up; a closed port yields curl code 000.
 #
 # Do NOT reintroduce `|| echo 000` here. curl ALREADY prints 000 on a refused
 # connection and exits non-zero, so the fallback appended a second one and the
-# captured value became "000000" — which is != "000", so this reported ALIVE for
+# captured value became "000000" -- which is != "000", so this reported ALIVE for
 # a dead port. Everything downstream believed it: account_dev logged "Reusing
 # RustFS already serving", never started the container, still exported
 # CONFIG_R2_*, and the gateway advertised a config store that answered
 # ECONNREFUSED on first use.
 #
-# `|| true` is the repo's established shape for this — .ci/breakpoint/scripts/
+# `|| true` is the repo's established shape for this -- .ci/breakpoint/scripts/
 # {start-tunnel,hold-breakpoint,reap-breakpoint-orphans}.sh all document the same
 # trap. It also keeps the assignment from aborting under `set -e`, which today is
 # masked only because both callers invoke this inside an `if`. An empty value
@@ -202,7 +222,7 @@ account_rustfs_alive() {
 
 # Force-remove ghost RustFS containers by name. A corrupt `docker compose`
 # project state can leave containers that block a fresh recreate but survive a
-# plain `docker rm` — `rm -f` clears them. Best-effort and never touches the
+# plain `docker rm` -- `rm -f` clears them. Best-effort and never touches the
 # live :9100 reuse path (a running RustFS must survive).
 account_docker_ghost_clean() {
     command -v docker &>/dev/null || return 0
@@ -288,11 +308,14 @@ account_stripe_auto() {
     local stripe_log
     stripe_log=$(mktemp)
 
+    # Its own process group, like every job account_spawn starts; see account_cleanup.
+    set -m
     stripe listen \
         --api-key "$stripe_key" \
         --forward-to "http://localhost:${GATEWAY_PORT}/account/api/v1/webhooks/stripe" \
         >"$stripe_log" 2>&1 &
     local stripe_pid=$!
+    set +m
     ACCOUNT_PIDS+=("$stripe_pid")
 
     # Wait for webhook secret
@@ -310,7 +333,7 @@ account_stripe_auto() {
 
     if [[ -z "$webhook_secret" ]]; then
         log_warn "stripe listen did not output webhook secret within 30s"
-        log_info "Stripe features may not work — check stripe CLI auth"
+        log_info "Stripe features may not work -- check stripe CLI auth"
         return 0
     fi
 
@@ -440,7 +463,7 @@ account_dev() {
             log_warn "RustFS failed to start (config storage disabled). If 'docker compose' is stuck on a ghost container, run: docker run -d --name rediacc-config-rustfs-dev -p 9100:9000 -e RUSTFS_VOLUMES=/data -e RUSTFS_ADDRESS=0.0.0.0:9000 -e RUSTFS_ACCESS_KEY=configadmin -e RUSTFS_SECRET_KEY=configadmin rustfs/rustfs:latest"
         fi
     else
-        log_info "Docker not available — config blob storage disabled"
+        log_info "Docker not available -- config blob storage disabled"
     fi
 
     # Start Astro dev server (marketing site)
@@ -450,17 +473,15 @@ account_dev() {
     # the container network -- a 127.0.0.1 bind is invisible to it, and the
     # symptom is a 502 from Traefik rather than anything pointing at the bind.
     local dev_bind="${REDIACC_DEV_BIND:-127.0.0.1}"
-    (cd "$CONSOLE_ROOT_DIR/packages/www" && npx astro dev --port "$ASTRO_PORT" --host "$dev_bind") \
-        >"$ACCOUNT_LOG_DIR/astro.log" 2>&1 &
-    local astro_pid=$!
-    ACCOUNT_PIDS+=("$astro_pid")
+    account_spawn "$CONSOLE_ROOT_DIR/packages/www" "$ACCOUNT_LOG_DIR/astro.log" \
+        npx astro dev --port "$ASTRO_PORT" --host "$dev_bind"
+    local astro_pid=$ACCOUNT_SPAWNED
 
     # Start Vite dev server (account portal SPA)
     log_step "Starting Vite dev server on :${VITE_PORT}..."
-    (cd "$ACCOUNT_DIR/web" && npx vite --port "$VITE_PORT" --host "$dev_bind") \
-        >"$ACCOUNT_LOG_DIR/vite.log" 2>&1 &
-    local vite_pid=$!
-    ACCOUNT_PIDS+=("$vite_pid")
+    account_spawn "$ACCOUNT_DIR/web" "$ACCOUNT_LOG_DIR/vite.log" \
+        npx vite --port "$VITE_PORT" --host "$dev_bind"
+    local vite_pid=$ACCOUNT_SPAWNED
 
     # Wait for both to be ready
     # Cold caches are slow: Astro's first content sync alone can take ~30s.
@@ -481,7 +502,7 @@ account_dev() {
     # Provision + print dev login credentials once the gateway is healthy
     account_dev_credentials "$GATEWAY_PORT" &
 
-    # Start gateway (foreground — keeps terminal alive). Precompute the WebAuthn
+    # Start gateway (foreground -- keeps terminal alive). Precompute the WebAuthn
     # origin so its ${GATEWAY_PORT} isn't expanded from the same env-prefix that
     # (re)assigns GATEWAY_PORT (that ordering is a shellcheck SC2097/SC2098 trap).
     local webauthn_origin="http://localhost:${GATEWAY_PORT}"
@@ -553,7 +574,7 @@ account_dev_credentials() {
     # usable with a known password on a fresh start. This is a CONSTANT password
     # (never rotated): an idempotent re-seed cannot re-wrap the CEK without the
     # prior password, so a fixed one keeps re-runs working. Best-effort and does
-    # NOT gate the login banner below — config storage needs RustFS (Docker), so
+    # NOT gate the login banner below -- config storage needs RustFS (Docker), so
     # a Docker-less dev box still gets its logins printed.
     local store_pw="DevConsole123!"
     local seed_json seed_existing="" seed_recovery="" seed_totp=""
@@ -568,7 +589,7 @@ account_dev_credentials() {
     fi
 
     # 65 box-drawing dashes for the borders. account_banner_row's %-63s pads by
-    # BYTES, so every content string below stays ASCII-only — a multibyte glyph
+    # BYTES, so every content string below stays ASCII-only -- a multibyte glyph
     # (arrow / em dash) would shift the closing bar left and break the box.
     local rule
     printf -v rule '%*s' 65 ''
@@ -622,7 +643,7 @@ account_banner_row() {
 }
 
 # Print the current TOTP code for a dev user (default dev-user@rediacc.io). Reads
-# the running gateway's port from the state file — the store + TOTP secret are
+# the running gateway's port from the state file -- the store + TOTP secret are
 # seeded by `account dev`, so the gateway must be up. Dev-only route.
 account_totp() {
     local email="${1:-dev-user@rediacc.io}"
@@ -916,8 +937,8 @@ account_seed_demo() {
 # ROTATION (secret rotation lifecycle for AWS IAM, CF tokens, CF Turnstile)
 # =============================================================================
 # Thin bash wrapper around the TypeScript rotation CLI in
-# private/account/scripts/rotation/. All actual logic — manifest read/write,
-# platform calls, state transitions — lives in TS so it's type-checked,
+# private/account/scripts/rotation/. All actual logic -- manifest read/write,
+# platform calls, state transitions -- lives in TS so it's type-checked,
 # testable, and stays inside the private submodule (the public console repo
 # does not contain rotation orchestration).
 #

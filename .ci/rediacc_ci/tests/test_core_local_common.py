@@ -24,7 +24,7 @@ import sys
 import pytest
 
 from rediacc_ci import paths
-from rediacc_ci.core import account, local_common, stubfarm
+from rediacc_ci.core import local_common, stubfarm
 from rediacc_ci.core import local_common_actions_shadow_driver as actions_driver
 from rediacc_ci.core import local_common_shadow_driver as driver
 
@@ -761,22 +761,6 @@ def test_bash_q_matches_printf_q(word, locale, monkeypatch) -> None:
         check=True,
     )
     assert local_common.bash_q(word) == proc.stdout.decode("utf-8", "surrogateescape")
-
-
-def test_check_node_version_agrees_with_the_account_copy() -> None:
-    """TWO PYTHON COPIES OF ONE BASH FUNCTION EXIST, and this pins that they agree until one is deleted.
-
-    `core/account.py` re-implemented `check_node_version` with its own `version_tuple` compare before this module ported it with the twin's `sort -V` comparator. `account.py` was under another writer's live rewrite (PLAN-account-env-to-bws) when this port landed, so the duplicate is handed over rather than removed from under them; this case keeps the two from drifting in the meantime.
-    """
-    for have, want in (
-        ("22.1.0", "18.0.0"),
-        ("16.20.2", "18.0.0"),
-        ("22.9.0", "22.10.0"),
-        ("18.0.0", "18.0.0"),
-    ):
-        assert local_common.version_gte(have, want) == (
-            account.version_tuple(have) >= account.version_tuple(want)
-        ), (have, want)
 
 
 def test_the_actions_ledger_holds() -> None:
