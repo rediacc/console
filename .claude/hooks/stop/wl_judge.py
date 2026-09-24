@@ -856,7 +856,9 @@ def run_judge(
     # BEFORE sanitize_next_action, deliberately: the search command and the braver default are the MODEL's text, so they go through the operator-only filter like any other next_action rather than around it.
     fired = False
     if sweep_extra:
-        kind, note = CS.apply_verdict(out, sweep_outstanding, fixset_files=fixset_files, asked=sweep_asked)
+        kind, note = CS.apply_verdict(
+            out, sweep_outstanding, fixset_files=fixset_files, asked=sweep_asked
+        )
         fired = kind == "fire"
         if kind == "degraded":
             # Never a block (see wl_classsweep FAIL SEMANTICS), but never silent either: a paid question that produced no answer must be visible in the one field the session always reads.
@@ -865,7 +867,9 @@ def run_judge(
             ]
     if proof_extra:
         # BOTH RULES MAY FIRE ON ONE STOP, deliberately, on the same reasoning apply_order documents: a verdict already `continue` is APPENDED to, never overwritten, so a class-sweep order and a proof order both reach the session rather than one silently losing to the other.
-        kind, note = PF.apply_verdict(out, proof_outstanding, fixset_files=fixset_files, asked=proof_asked)
+        kind, note = PF.apply_verdict(
+            out, proof_outstanding, fixset_files=fixset_files, asked=proof_asked
+        )
         fired = fired or kind == "fire"
         if kind == "degraded":
             out["reason"] = (

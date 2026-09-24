@@ -677,7 +677,9 @@ def _rotation_notice_verb(raw_rc: str) -> int:
     try:
         rc = int(raw_rc)
     except ValueError:
-        print("bws-env: rotation-notice needs an integer exit code, got %r" % raw_rc, file=sys.stderr)
+        print(
+            "bws-env: rotation-notice needs an integer exit code, got %r" % raw_rc, file=sys.stderr
+        )
         return 2
     stderr = sys.stdin.read() if not sys.stdin.isatty() else ""
     verdict = classify_failure(rc, stderr)

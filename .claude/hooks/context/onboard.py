@@ -380,9 +380,7 @@ def audit_rows(paths, first_writes, floor, marker_state):
             skipped.append((sid8, "started before the log floor; attribution was compacted away"))
             continue
         wrote = first_writes.get(sid8)
-        refused_first = bool(got["first_refusal"]) and (
-            not wrote or got["first_refusal"] < wrote
-        )
+        refused_first = bool(got["first_refusal"]) and (not wrote or got["first_refusal"] < wrote)
         rows.append(
             {
                 "sid": sid8,
@@ -450,11 +448,25 @@ def audit_report(rows, summary, shape):
     out = []
     out.append(
         "onboard --audit  transcripts %d scanned, %d audited, %d skipped  |  store %d event(s), "
-        "floor %s" % (shape["scanned"], summary["audited"], shape["skipped"], shape["events"], shape["floor"] or "(none)")
+        "floor %s"
+        % (
+            shape["scanned"],
+            summary["audited"],
+            shape["skipped"],
+            shape["events"],
+            shape["floor"] or "(none)",
+        )
     )
     out.append("")
     head = "%-9s %-21s %9s %9s %8s %9s %10s  %s" % (
-        "sid", "start", "1st tool", "1st edit", "notice", "1st write", "1st refusal", "refused-before-write",
+        "sid",
+        "start",
+        "1st tool",
+        "1st edit",
+        "notice",
+        "1st write",
+        "1st refusal",
+        "refused-before-write",
     )
     out.append(head)
     out.append("-" * len(head))
@@ -496,7 +508,10 @@ def audit_report(rows, summary, shape):
     )
     out.append(
         "          start -> first store write: median %s (over the %d that ever wrote)"
-        % (fmt_lag(summary["median_start_to_write_min"]), summary["audited"] - summary["never_wrote"])
+        % (
+            fmt_lag(summary["median_start_to_write_min"]),
+            summary["audited"] - summary["never_wrote"],
+        )
     )
     out.append(
         "          notice -> first store write: median %s over the %d session(s) that wrote AFTER "

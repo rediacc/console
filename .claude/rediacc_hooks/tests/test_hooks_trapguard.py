@@ -325,23 +325,32 @@ CASES = [
     # 2026-09-24, both live false positives. A usage error never reached Bitwarden; `bws` inside a quoted grep pattern after a `|` is not a pipe into bws.
     inject(
         ("check_inject silent", ""),
-        inject_json('bws secret create FULL_CI "" proj', "error: value must not be empty\n\nFor more information, try '--help'."),
+        inject_json(
+            'bws secret create FULL_CI "" proj',
+            "error: value must not be empty\n\nFor more information, try '--help'.",
+        ),
         "trapguard CONTROL: a bws usage error is not an auth failure",
     ),
     inject(
         ("check_inject silent", ""),
-        inject_json('gh run view 1 --log-failed | grep -iE "error|bws|token"', "error: the access token could not be validated"),
+        inject_json(
+            'gh run view 1 --log-failed | grep -iE "error|bws|token"',
+            "error: the access token could not be validated",
+        ),
         "trapguard CONTROL: bws after a | INSIDE a quoted pattern is not a bws run",
     ),
     # The pair that proves neither fix went too far: a real auth string still fires beside usage-shaped noise, and a real pipe into bws still counts.
     inject(
         ("check_inject fires", "bws-auth-failure"),
-        inject_json("bws secret list", 'Error: [400 Bad Request] {"error":"invalid_client"}\nFor more information, try \'--help\'.'),
+        inject_json(
+            "bws secret list",
+            'Error: [400 Bad Request] {"error":"invalid_client"}\nFor more information, try \'--help\'.',
+        ),
         "trapguard: a rotation marker still fires even beside usage-shaped text",
     ),
     inject(
         ("check_inject fires", "bws-auth-failure"),
-        inject_json('echo x | bws secret list', "error: the access token could not be validated"),
+        inject_json("echo x | bws secret list", "error: the access token could not be validated"),
         "trapguard: a real pipe into bws still counts as a bws run",
     ),
 ]

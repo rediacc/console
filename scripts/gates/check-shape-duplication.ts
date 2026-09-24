@@ -88,7 +88,10 @@ let FAMILY_PATHSPECS: string[] = [];
 
 function setRoot(root: string): void {
   ROOT = path.resolve(root);
-  SEED_FILE = path.join(ROOT, PROFILES[PROFILE_NAME]?.seed ?? 'scripts/data/shape-duplication-seed.json');
+  SEED_FILE = path.join(
+    ROOT,
+    PROFILES[PROFILE_NAME]?.seed ?? 'scripts/data/shape-duplication-seed.json'
+  );
   // The tracked-path cache is keyed on nothing, so a root change has to drop it or the next resolution answers about the previous tree.
   TRACKED_CACHE = null;
 }
@@ -1423,7 +1426,8 @@ function controls(): { name: string; ok: boolean; detail?: string }[] {
           FAMILY_PATHSPECS.some((p) => p.includes('wl_*.py')) &&
           !FAMILY_PATHSPECS.some((p) => p === gatePaths[0]);
         setProfile('gate');
-        const restored = SEED_FILE === gateSeed && FAMILY_PATHSPECS.join('|') === gatePaths.join('|');
+        const restored =
+          SEED_FILE === gateSeed && FAMILY_PATHSPECS.join('|') === gatePaths.join('|');
         return advisorySwitched && restored;
       })(),
     },
@@ -2041,9 +2045,11 @@ async function main(): Promise<void> {
   // avoid. A refusing profile still requires one, unchanged: without it, `gate` would silently report the whole 219-span standing backlog as new and refuse every commit. Once an advisory seed file DOES exist -- the settle path writes to it exactly like the gate profile's -- it is read normally, same as `--no-seed`'s own agreement-test path never touches this branch either.
   const forcedNoSeed = !PROFILES[PROFILE_NAME]!.refuses && !existsSync(SEED_FILE);
   const noSeed = argv.includes('--no-seed') || forcedNoSeed;
-  const { silent: seed, accepted, shapes } = noSeed
-    ? { silent: new Set<string>(), accepted: [], shapes: [] }
-    : loadSeed();
+  const {
+    silent: seed,
+    accepted,
+    shapes,
+  } = noSeed ? { silent: new Set<string>(), accepted: [], shapes: [] } : loadSeed();
   if (!noSeed && seed.size === 0) {
     console.error(`${RED}✗${NC} no seed at ${SEED_FILE}; run --seed once, and commit it.`);
     console.error('    Without it every pre-existing shape reports as new.');

@@ -319,7 +319,9 @@ def attested_under_any_path(root, ledger, rel, sig):
     origin = legacy_path_of(root, rel)
     if origin and R.attested_at(ledger, origin, sig):
         return True
-    return any(R.attested_at(ledger, former, sig) for former in _former_paths_by_git_history(root, rel))
+    return any(
+        R.attested_at(ledger, former, sig) for former in _former_paths_by_git_history(root, rel)
+    )
 
 
 def names_this_record(root, rel, path):

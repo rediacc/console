@@ -1508,8 +1508,8 @@ V_BG_REPORT = (
     "state: this is not a demand for other work. The hook's own read of each "
     "worker's output stream:\n%s\n"
     "    Confirm each worker WITH A STREAM in one line (what it is doing and "
-    "whether the stream evidence matches); a row marked \"no output stream "
-    "yet\" is a teammate agent reporting at completion and needs no such "
+    'whether the stream evidence matches); a row marked "no output stream '
+    'yet" is a teammate agent reporting at completion and needs no such '
     "confirmation here. --update any leased item riding a worker, and "
     "restart or replace anything marked POSSIBLY STUCK. Then stop. If "
     "nothing at all moves between wakes, this check-in stands down by "

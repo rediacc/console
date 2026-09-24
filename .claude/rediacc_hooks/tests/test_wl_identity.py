@@ -163,15 +163,15 @@ def plant_backfill_target(fix) -> tuple[str, str]:
     design elsewhere in this file, see `wlfix.Fixture.setup`'s own comment -- into a real two-commit repo, mirroring the exact recipe `.claude/hooks/stop/test-planrec.py`'s own module-level `build()` uses for the same verb: one commit with the box open and the ledger's `open_sigs` naming it, a second with the box ticked and the ledger's `done_sigs` naming it. `commit^`
     then resolves to the first commit, which is the `head` the row wants.
     """
-    R = wlfix.import_wl("wl_planrec")
+    planrec = wlfix.import_wl("wl_planrec")
     rel = "agent/plans/PLAN-l1-backfill-target.md"
     body = "the one already-done box this row backfills"
-    sig = R.box_sig(body)
+    sig = planrec.box_sig(body)
     (fix.proj / "agent" / "plans").mkdir(parents=True, exist_ok=True)
 
     def write_ledger(done: bool) -> None:
-        (fix.proj / R.LEDGER_REL).parent.mkdir(parents=True, exist_ok=True)
-        (fix.proj / R.LEDGER_REL).write_text(
+        (fix.proj / planrec.LEDGER_REL).parent.mkdir(parents=True, exist_ok=True)
+        (fix.proj / planrec.LEDGER_REL).write_text(
             json.dumps(
                 {
                     "plans": {

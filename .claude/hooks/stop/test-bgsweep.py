@@ -10,7 +10,6 @@ import os
 import pathlib
 import subprocess
 import sys
-import time
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
@@ -78,7 +77,10 @@ ck(
 print("== 3. AGE CLASSIFICATION ==")
 os.environ["WORKLIST_HARNESS_PID"] = "1"
 below = [(1, 0, "anchor", 0), (2, 1, "young", B.BGSWEEP_AGE_MIN * 60 - 1)]
-ck("just under the threshold: not flagged", B.sweep(below, [(p, pp, c) for p, pp, c, _a in below]) == [])
+ck(
+    "just under the threshold: not flagged",
+    B.sweep(below, [(p, pp, c) for p, pp, c, _a in below]) == [],
+)
 at = [(1, 0, "anchor", 0), (2, 1, "boundary", B.BGSWEEP_AGE_MIN * 60)]
 ck(
     "exactly at the threshold: flagged (boundary)",
@@ -106,7 +108,7 @@ class _FakeCompleted:
     )
 
 
-subprocess.run = lambda *a, **k: _FakeCompleted()
+subprocess.run = lambda *_a, **_k: _FakeCompleted()
 rows = B._proc_table_with_age_ps()
 subprocess.run = _orig_run
 by_pid = {r[0]: r for r in rows}

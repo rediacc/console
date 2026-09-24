@@ -165,7 +165,11 @@ def sweep(table_with_age=None, anchor_table=None):
         table_with_age = proc_table_with_age()
     if not table_with_age:
         return []
-    anchor_source = anchor_table if anchor_table is not None else [(p, pp, c) for p, pp, c, _a in table_with_age]
+    anchor_source = (
+        anchor_table
+        if anchor_table is not None
+        else [(p, pp, c) for p, pp, c, _a in table_with_age]
+    )
     anchor = resolve_anchor(anchor_source)
     if anchor is None:
         return []

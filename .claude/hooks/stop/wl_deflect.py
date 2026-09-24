@@ -20,6 +20,7 @@ CORROBORATION WINDOW: the whole turn since the last genuine operator message, to
 FAIL-SAFE AND COST, matching every sibling detector: `always=False` (HYGIENE tier, rotates), a settled-signature cache (one free forced disposition per distinct dismissal per session, not a nag on every stop), and a crash here must never crash a stop.
 """
 
+import contextlib
 import hashlib
 import json
 import os
@@ -35,7 +36,9 @@ _HARMLESS_NOUN_RE = re.compile(
 )
 
 # Already tracked by the repo's own shrink-only baseline mechanism (see docs/agent-reference/suppressions.md); a dismissal in the SAME CLAUSE as one of these words is not this check's business.
-_BASELINE_EXEMPT_RE = re.compile(r"\b(baseline|ratchet(?:ed)?|floor|grandfathered)\b", re.IGNORECASE)
+_BASELINE_EXEMPT_RE = re.compile(
+    r"\b(baseline|ratchet(?:ed)?|floor|grandfathered)\b", re.IGNORECASE
+)
 
 _ATTRIBUTION_WORDS = r"(pre-existing|unrelated|environmental|not caused by|not my \w+)"
 
@@ -119,7 +122,9 @@ def deflected_findings(text):
         clause = text[clause_start : m.end() + 80]
         if _BASELINE_EXEMPT_RE.search(clause):
             continue
-        hits.append(("verdict", text[max(0, m.start() - 20) : m.end() + 40].replace("\n", " ").strip()))
+        hits.append(
+            ("verdict", text[max(0, m.start() - 20) : m.end() + 40].replace("\n", " ").strip())
+        )
     for m in _FINDING_NOUN_RE.finditer(text or ""):
         window = text[max(0, m.start() - 60) : m.end() + 60]
         aw = _ATTRIBUTION_WORD_RE.search(window)
@@ -161,10 +166,8 @@ def load_settled(worklist, session_id):
 
 def save_settled(worklist, session_id, settled):
     p = pathlib.Path(str(worklist) + ".deflect-settled-%s.json" % (session_id or "unknown")[:8])
-    try:
+    with contextlib.suppress(OSError):
         p.write_text(json.dumps({"settled": settled}, indent=1), encoding="utf-8")
-    except OSError:
-        pass
 
 
 def check(worklist, session_id, transcript_path):

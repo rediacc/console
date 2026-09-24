@@ -8,9 +8,9 @@
 # it exists to prevent, because a same-repo caller moves with its callee in one commit and
 # a cross-repo one resolves `@main` at run time.
 #
-# The blindness already cost something: `claude-review-reusable.yml` declares
-# BWS_ACCESS_TOKEN as `required: false` and guards its shadow steps on the repository name,
-# solely because these two callers would break on a required secret they do not pass. That
+# The blindness already cost something: `claude-review-reusable.yml` once declared
+# BWS_ACCESS_TOKEN `required: false` and guarded its shadow steps on the repository name,
+# solely because these two callers would break on a required secret they did not pass. That
 # workaround was reasoned out by hand. This file is so the next one is caught by a gate.
 #
 # Declaring a caller here does NOT make it testable pre-merge. It turns breaking it into a
@@ -25,16 +25,13 @@ callers:
     pinned_at: main
     calls: .github/workflows/claude-review-reusable.yml
     passes_inputs: [required_check, pr_number]
-    passes_secrets: []
-  # DIFFERS FROM THE ACCOUNT ENTRY ABOVE ON PURPOSE, and the difference is the point.
-  # The header's workaround -- BWS_ACCESS_TOKEN declared `required: false` plus a
-  # `github.repository == 'rediacc/console'` guard on the Bitwarden fetch -- rested on
-  # the guard, and the guard was removed on 2026-09-09 because it was skipping the fetch
-  # and reviewing with a blank credential. From the next console@main that step RUNS in
-  # every caller, with whatever token the caller passes. renet now passes it
-  # (rediacc/renet#111); account still does not, and its review will fetch with the empty
-  # string until it does. rediacc/account is under an operator freeze, so that half is
-  # raised on rediacc/account#87 rather than smuggled in here.
+    passes_secrets: [BWS_ACCESS_TOKEN]
+  # BWS_ACCESS_TOKEN is `required: true` in the callee since 2026-09-24. The earlier
+  # workaround -- the secret declared `required: false` plus a
+  # `github.repository == 'rediacc/console'` guard on the Bitwarden fetch -- skipped the
+  # fetch and reviewed with a blank credential, so the guard was removed on 2026-09-09
+  # and the fetch runs in every caller. renet passes the token (rediacc/renet#111) and
+  # account passes it (rediacc/account#87), so the callee can require it.
   - caller: private/renet/.github/workflows/claude-review.yml
     repo: rediacc/renet
     pinned_at: main

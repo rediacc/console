@@ -231,6 +231,9 @@ def main(argv=None) -> int:
     for commit, n in sorted(by_commit.items(), key=lambda kv: -kv[1]):
         short, date, subject = commit_facts(planrec, commit)
         parent = planrec._git_out(REPO_ROOT, "rev-parse", "--verify", "--quiet", "%s^" % commit)
+        if not parent:
+            # A root commit, or a failed rev-parse: say so instead of printing an empty sha.
+            parent = "(none)"
         print(f"    {n:4d}  {short} {date} {subject[:62]}")
         print(f"          head = {parent[:9]} (its parent)")
 

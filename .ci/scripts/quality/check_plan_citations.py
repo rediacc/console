@@ -831,7 +831,9 @@ def selftest(root):
     # THE FINGERPRINT EXEMPTION, both directions: the marker is what licenses it, so the same token without the marker must still be judged. See FINGERPRINT_RE.
     ck(
         "a hex run behind a `fingerprint:` marker is NOT treated as an object",
-        not any(k == "object" for k, _t in citations("the site hashes to fingerprint:c1e552fa19e9")),
+        not any(
+            k == "object" for k, _t in citations("the site hashes to fingerprint:c1e552fa19e9")
+        ),
     )
     ck(
         "CONTROL: the same token WITHOUT the marker IS",
@@ -863,9 +865,7 @@ def selftest(root):
     # THE AGENT-ID EXEMPTION, both directions and on the length boundary, because the whole narrowing is the length. See AGENT_ID_RE.
     ck(
         "a 17-character background agent id is NOT treated as an object",
-        not any(
-            k == "object" for k, _t in citations("Root cause (Plan agent a2fd17b15c79c8ceb)")
-        ),
+        not any(k == "object" for k, _t in citations("Root cause (Plan agent a2fd17b15c79c8ceb)")),
     )
     ck(
         "CONTROL: one character SHORTER, and it is an object again",

@@ -14,8 +14,8 @@ Every control is a PAIR, because asserting that the signal makes the field requi
 The third pair is the one that matters most and is easiest to get wrong: the builder must not mutate the module-level JUDGE_SCHEMA. A dict returned by reference would make the first fix-signal stop poison every later call in the same process.
 """
 
-import json
 import hashlib
+import json
 import os
 import pathlib
 import shutil
@@ -465,7 +465,9 @@ kind, _ = wl_classsweep.apply_verdict(
 )
 control("2g: a second fresh fire naming a different class also fires", kind, "fire")
 owed = wl_classsweep.SWEEP_DEMAND.peek(MARKER)["owed"]
-control("2g: class A is preserved in the owed slot", owed["defect_class"].startswith("class A"), True)
+control(
+    "2g: class A is preserved in the owed slot", owed["defect_class"].startswith("class A"), True
+)
 control(
     "2g: load_outstanding now answers class B, the new head",
     wl_classsweep.load_outstanding(MARKER)["defect_class"].startswith("class B"),
@@ -510,10 +512,16 @@ wl_classsweep.clear_outstanding(MARKER)
 # THE BOUND: three consecutive fresh fires leave exactly one record in owed, dropping the oldest.
 wl_classsweep.apply_verdict(answer(defect_class="class P"), None, path=MARKER, asked="fresh")
 wl_classsweep.apply_verdict(
-    answer(defect_class="class Q"), wl_classsweep.SWEEP_DEMAND.peek(MARKER), path=MARKER, asked="fresh"
+    answer(defect_class="class Q"),
+    wl_classsweep.SWEEP_DEMAND.peek(MARKER),
+    path=MARKER,
+    asked="fresh",
 )
 wl_classsweep.apply_verdict(
-    answer(defect_class="class R"), wl_classsweep.SWEEP_DEMAND.peek(MARKER), path=MARKER, asked="fresh"
+    answer(defect_class="class R"),
+    wl_classsweep.SWEEP_DEMAND.peek(MARKER),
+    path=MARKER,
+    asked="fresh",
 )
 rec = wl_classsweep.SWEEP_DEMAND.peek(MARKER)
 control(
@@ -522,21 +530,34 @@ control(
     True,
 )
 control("2g: the head is the third class", rec["defect_class"].startswith("class R"), True)
-control("2g: the oldest (class P) was dropped, not carried a second time", "class P" not in json.dumps(rec), True)
+control(
+    "2g: the oldest (class P) was dropped, not carried a second time",
+    "class P" not in json.dumps(rec),
+    True,
+)
 wl_classsweep.clear_outstanding(MARKER)
 
 # CARRY_MAX: a demand displaced CARRY_MAX (2) times is dropped rather than carried a third time.
 wl_classsweep.apply_verdict(answer(defect_class="class M"), None, path=MARKER, asked="fresh")
 wl_classsweep.apply_verdict(
-    answer(defect_class="class N1"), wl_classsweep.SWEEP_DEMAND.peek(MARKER), path=MARKER, asked="fresh"
+    answer(defect_class="class N1"),
+    wl_classsweep.SWEEP_DEMAND.peek(MARKER),
+    path=MARKER,
+    asked="fresh",
 )  # M carried into owed once (carried=1)
 wl_classsweep.SWEEP_DEMAND.promote(MARKER)  # M promoted back to head
 wl_classsweep.apply_verdict(
-    answer(defect_class="class N2"), wl_classsweep.SWEEP_DEMAND.peek(MARKER), path=MARKER, asked="fresh"
+    answer(defect_class="class N2"),
+    wl_classsweep.SWEEP_DEMAND.peek(MARKER),
+    path=MARKER,
+    asked="fresh",
 )  # M carried a second time (carried=2, at CARRY_MAX)
 wl_classsweep.SWEEP_DEMAND.promote(MARKER)  # M promoted back to head again
 wl_classsweep.apply_verdict(
-    answer(defect_class="class N3"), wl_classsweep.SWEEP_DEMAND.peek(MARKER), path=MARKER, asked="fresh"
+    answer(defect_class="class N3"),
+    wl_classsweep.SWEEP_DEMAND.peek(MARKER),
+    path=MARKER,
+    asked="fresh",
 )  # M's third displacement would exceed CARRY_MAX -> dropped
 control(
     "2g: CARRY_MAX -- a demand displaced a third time is dropped, not carried again",
@@ -548,7 +569,10 @@ wl_classsweep.clear_outstanding(MARKER)
 # An owed record past its own TTL is never promoted.
 wl_classsweep.apply_verdict(answer(defect_class="class S"), None, path=MARKER, asked="fresh")
 wl_classsweep.apply_verdict(
-    answer(defect_class="class T"), wl_classsweep.SWEEP_DEMAND.peek(MARKER), path=MARKER, asked="fresh"
+    answer(defect_class="class T"),
+    wl_classsweep.SWEEP_DEMAND.peek(MARKER),
+    path=MARKER,
+    asked="fresh",
 )
 raw = wl_classsweep.SWEEP_DEMAND._raw(MARKER)
 raw["owed"]["at"] = 0.0  # force TTL expiry on the owed slot only, without touching the head
@@ -566,7 +590,10 @@ wl_classsweep.clear_outstanding(MARKER)
 # THE FIRE COUNTER: a fresh fire followed by a follow-up fire on the SAME class reaches the cap rather than resetting to 1 -- the unbounded-re-fire guard this plan closes, since a bug that resets `fires` to 1 on every fix stop never reaches SWEEP_MAX_FIRES and the demand is never dropped as answered.
 wl_classsweep.apply_verdict(answer(defect_class="class U"), None, path=MARKER, asked="fresh")
 wl_classsweep.apply_verdict(
-    answer(defect_class="class U"), wl_classsweep.SWEEP_DEMAND.peek(MARKER), path=MARKER, asked="followup"
+    answer(defect_class="class U"),
+    wl_classsweep.SWEEP_DEMAND.peek(MARKER),
+    path=MARKER,
+    asked="followup",
 )
 control("2g: fresh-then-followup on the SAME class reaches the fire cap", fires(MARKER), 2)
 control(
@@ -578,12 +605,19 @@ wl_classsweep.clear_outstanding(MARKER)
 
 # FAIL-OPEN, at the wl_classsweep seam: a missing marker, a corrupt one, and an unwritable directory each yield no debt and no exception on the new verbs too, not only on the pre-existing `load_outstanding`/`clear_outstanding` pair.
 _missing = pathlib.Path(_TMP.name) / "does-not-exist-2g.json"
-control("2g fail-open: promote() on a missing marker never raises", wl_classsweep.SWEEP_DEMAND.promote(_missing), None)
+control(
+    "2g fail-open: promote() on a missing marker never raises",
+    wl_classsweep.SWEEP_DEMAND.promote(_missing),
+    None,
+)
 _corrupt = pathlib.Path(_TMP.name) / "corrupt-2g.json"
 _corrupt.write_text("{not json")
 control(
     "2g fail-open: displace() over a corrupt marker never raises and still writes a fresh head",
-    wl_classsweep.SWEEP_DEMAND.displace({"defect_class": "z", "search": "y"}, head=None, path=_corrupt) or True,
+    wl_classsweep.SWEEP_DEMAND.displace(
+        {"defect_class": "z", "search": "y"}, head=None, path=_corrupt
+    )
+    or True,
     True,
 )
 control(
@@ -749,19 +783,33 @@ wl_classsweep.clear_outstanding()
 
 v1 = judged(FIXSIG, answer(defect_class="planted class: two semantically linked fields"))
 control("3k: the planting fix stop blocks", v1["verdict"], "continue")
-control("3k: the demand is live at the default marker path afterward", bool(wl_classsweep.load_outstanding()), True)
+control(
+    "3k: the demand is live at the default marker path afterward",
+    bool(wl_classsweep.load_outstanding()),
+    True,
+)
 
 # A SECOND fix stop fires a genuinely different class -- the live shape: a fresh ask about a NEW fix-set while the first is still outstanding.
 v2 = judged(FIXSIG, answer(defect_class="new class: a table with more rows"))
-control("3k: the fix section is in the prompt", wl_classsweep.SWEEP_MARKER in CAPTURED["prompt"], True)
+control(
+    "3k: the fix section is in the prompt", wl_classsweep.SWEEP_MARKER in CAPTURED["prompt"], True
+)
 control(
     "3k: the planted class never leaks into the fresh SWEEP_PROMPT (it carries no interpolation)",
     "two semantically linked fields" in CAPTURED["prompt"],
     False,
 )
 control("3k: the second fix stop still blocks", v2["verdict"], "continue")
-control("3k: THE FIX -- the reason carries the STILL OWED sentence for the displaced class", "STILL OWED" in v2["reason"], True)
-control("3k: ...naming the displaced class by its own already-validated text", "two semantically linked fields" in v2["reason"], True)
+control(
+    "3k: THE FIX -- the reason carries the STILL OWED sentence for the displaced class",
+    "STILL OWED" in v2["reason"],
+    True,
+)
+control(
+    "3k: ...naming the displaced class by its own already-validated text",
+    "two semantically linked fields" in v2["reason"],
+    True,
+)
 control(
     "3k: the new head is now the second class",
     wl_classsweep.load_outstanding()["defect_class"].startswith("new class"),
@@ -775,7 +823,11 @@ control(
 
 # A NON-FIX stop that does not judge the class_sweep object at all (degraded) discharges the current head and promotes the first class back to it -- silent/degraded discharges only the question actually asked.
 v3 = judged("", {"verdict": "stop", "reason": "clean", "next_action": ""})
-control("3k: a follow-up stop asks about the CURRENT head (the second class)", "a table with more rows" in CAPTURED["prompt"], True)
+control(
+    "3k: a follow-up stop asks about the CURRENT head (the second class)",
+    "a table with more rows" in CAPTURED["prompt"],
+    True,
+)
 control(
     "3k: discharging it promotes the planted class back to head",
     wl_classsweep.load_outstanding()["defect_class"].startswith("planted class"),
@@ -790,7 +842,6 @@ control(
     True,
 )
 wl_classsweep.clear_outstanding()
-
 
 
 # ===========================================================================
@@ -1554,12 +1605,18 @@ try:
     _findings, _err = wl_shapedup.refresh_index(REPO, _st4)
     control("refresh_index runs the counter with NO model call involved", len(_refresh_calls), 1)
     control("refresh_index returns the counter's real findings", bool(_findings), True)
-    control("refresh_index records the signature so a later skip can happen", bool(_st4.get("shapedup_sig")), True)
+    control(
+        "refresh_index records the signature so a later skip can happen",
+        bool(_st4.get("shapedup_sig")),
+        True,
+    )
 
     # A SECOND call with an unchanged corpus and a now-present index is the skip path: no counter call, findings=None so `judge` can tell "did not run" from "ran and found nothing".
     wl_shapedup.index_present = lambda _root: True
     _findings2, _err2 = wl_shapedup.refresh_index(REPO, _st4)
-    control("refresh_index skips a second call on an unchanged, indexed corpus", len(_refresh_calls), 1)
+    control(
+        "refresh_index skips a second call on an unchanged, indexed corpus", len(_refresh_calls), 1
+    )
     control("...and signals the skip with findings=None, not an empty list", _findings2, None)
 
     # judge() NEVER TOUCHES THE COUNTER, only the findings it is handed -- the whole point of the split.
@@ -1567,7 +1624,11 @@ try:
     _fired3, _r3, _a3, _n3 = wl_shapedup.judge(REPO, None, "")
     control("judge(findings=None) fires nothing and stays silent", (_fired3, _n3), (False, ""))
     _fired4, _r4, _a4, _n4 = wl_shapedup.judge(REPO, [], "counter exploded")
-    control("judge still surfaces a counter error it was handed, without re-running the counter", "counter exploded" in _n4, True)
+    control(
+        "judge still surfaces a counter error it was handed, without re-running the counter",
+        "counter exploded" in _n4,
+        True,
+    )
     control("judge never called the counter itself for either case", len(_refresh_calls), 1)
 
     # THE REGRESSION THIS SPLIT FIXES, replayed directly: refresh_index alone -- exactly what a stop with judged_ok=False now calls -- still rearms the index, with no `ask`/judge call anywhere in the path.
@@ -1631,7 +1692,11 @@ _wide_apply_saved = wl_rules.apply_order
 
 
 def _wide_f(h, n, span=5, stem="w"):
-    return {"shape": h, "files": [".claude/hooks/stop/wl_%s%d.py:%d" % (stem, i, i + 1) for i in range(n)], "span": span}
+    return {
+        "shape": h,
+        "files": [".claude/hooks/stop/wl_%s%d.py:%d" % (stem, i, i + 1) for i in range(n)],
+        "span": span,
+    }
 
 
 def _wide_clear(*hashes):
@@ -1653,7 +1718,16 @@ class _FakeRunProc:
 
 def _wide_ask_fires(instances):
     _wide_asks.append(list(instances))
-    return {"shape_dup": {"applicable": True, "shape": "argv loop + exit 2", "harness": "", "consolidatable": "yes", "divergence": "", "instruction": "extract it"}}, ""
+    return {
+        "shape_dup": {
+            "applicable": True,
+            "shape": "argv loop + exit 2",
+            "harness": "",
+            "consolidatable": "yes",
+            "divergence": "",
+            "instruction": "extract it",
+        }
+    }, ""
 
 
 try:
@@ -1664,7 +1738,10 @@ try:
     )
     control(
         "wide ledger is a flat file in the reserved agent/reggate class, lock beside it",
-        (wl_shapedup.wide_ledger_path("br-6i").parent.name, wl_shapedup.wide_ledger_path("br-6i").with_suffix(".lock").name),
+        (
+            wl_shapedup.wide_ledger_path("br-6i").parent.name,
+            wl_shapedup.wide_ledger_path("br-6i").with_suffix(".lock").name,
+        ),
         ("reggate", "br-6i.shapedup-wide.lock"),
     )
 
@@ -1674,22 +1751,44 @@ try:
     _wide_clear("cap6i")
     _t1, _n1 = wl_shapedup.wide_report(REPO, [_wide_f("cap6i", 3)], "", "br-6i")
     control("CONTROL: under the cap the model IS asked (the stub can count)", len(_wide_asks), 1)
-    control("under the cap the ask is charged to the branch ledger", wl_shapedup.wide_spent("br-6i"), 1)
+    control(
+        "under the cap the ask is charged to the branch ledger", wl_shapedup.wide_spent("br-6i"), 1
+    )
     control("a judged wide finding carries the model's shape", "argv loop + exit 2" in _t1, True)
     _wide_clear("cap6i")
     _t2, _n2 = wl_shapedup.wide_report(REPO, [_wide_f("cap6i", 3)], "", "br-6i")
     control("THE CAP: at the cap no model call is made", len(_wide_asks), 1)
-    control("THE CAP: ...but the finding still lands, with the counter's own file:line list", ".claude/hooks/stop/wl_w0.py:1" in _t2 and "not judged" in _t2, True)
-    control("THE CAP: ...and names itself advisory", "ADVISORY: nothing is blocked on this." in _t2, True)
-    control("the ledger is branch-scoped: another branch has its own budget", wl_shapedup.wide_spent("br-other"), 0)
+    control(
+        "THE CAP: ...but the finding still lands, with the counter's own file:line list",
+        ".claude/hooks/stop/wl_w0.py:1" in _t2 and "not judged" in _t2,
+        True,
+    )
+    control(
+        "THE CAP: ...and names itself advisory",
+        "ADVISORY: nothing is blocked on this." in _t2,
+        True,
+    )
+    control(
+        "the ledger is branch-scoped: another branch has its own budget",
+        wl_shapedup.wide_spent("br-other"),
+        0,
+    )
     # Planted defect: a ledger line that is not a well-formed `ask` record must not count as a spend, and an unreadable ledger must not read as a fresh budget.
     _led = wl_shapedup.wide_ledger_path("br-6i-junk")
     _led.parent.mkdir(parents=True, exist_ok=True)
-    _led.write_text("not json\n{\"kind\": \"other\"}\n", encoding="utf-8")
-    control("PLANTED: junk ledger lines are not counted as spends", wl_shapedup.wide_spent("br-6i-junk"), 0)
+    _led.write_text('not json\n{"kind": "other"}\n', encoding="utf-8")
+    control(
+        "PLANTED: junk ledger lines are not counted as spends",
+        wl_shapedup.wide_spent("br-6i-junk"),
+        0,
+    )
     _led.unlink()
     _led.mkdir()
-    control("PLANTED: an unreadable ledger counts as spent in full, never as a fresh budget", wl_shapedup.wide_spent("br-6i-junk"), wl_shapedup.WIDE_CAP)
+    control(
+        "PLANTED: an unreadable ledger counts as spent in full, never as a fresh budget",
+        wl_shapedup.wide_spent("br-6i-junk"),
+        wl_shapedup.WIDE_CAP,
+    )
     _led.rmdir()
     _wide_clear("cap6i")
 
@@ -1697,19 +1796,37 @@ try:
     wl_shapedup.WIDE_CAP = 0
     control(
         "each wide shape gets its own latch file, apart from the narrow tier's",
-        len({wl_shapedup.demand_for("wide-aaaa6j").path(), wl_shapedup.demand_for("wide-bbbb6j").path(), wl_shapedup.demand_for("aaaa6j").path()}),
+        len(
+            {
+                wl_shapedup.demand_for("wide-aaaa6j").path(),
+                wl_shapedup.demand_for("wide-bbbb6j").path(),
+                wl_shapedup.demand_for("aaaa6j").path(),
+            }
+        ),
         3,
     )
     _two = [_wide_f("aaaa6j", 4, stem="a"), _wide_f("bbbb6j", 3, stem="b")]
     _ta, _ = wl_shapedup.wide_report(REPO, _two, "", "br-6j")
-    control("CONTROL: with no latch the LARGEST shape is reported", "aaaa6j" in _ta and "bbbb6j" not in _ta, True)
+    control(
+        "CONTROL: with no latch the LARGEST shape is reported",
+        "aaaa6j" in _ta and "bbbb6j" not in _ta,
+        True,
+    )
     for _ in range(wl_shapedup.SHAPE_MAX_FIRES):
         wl_shapedup.wide_report(REPO, [_wide_f("aaaa6j", 4, stem="a")], "", "br-6j")
     _tb, _ = wl_shapedup.wide_report(REPO, _two, "", "br-6j")
-    control("a capped shape A does not cap shape B: B is reported next", "bbbb6j" in _tb and "aaaa6j" not in _tb, True)
+    control(
+        "a capped shape A does not cap shape B: B is reported next",
+        "bbbb6j" in _tb and "aaaa6j" not in _tb,
+        True,
+    )
     for _ in range(wl_shapedup.SHAPE_MAX_FIRES):
         wl_shapedup.wide_report(REPO, _two, "", "br-6j")
-    control("once every shape is capped the tier is silent rather than repeating", wl_shapedup.wide_report(REPO, _two, "", "br-6j"), ("", ""))
+    control(
+        "once every shape is capped the tier is silent rather than repeating",
+        wl_shapedup.wide_report(REPO, _two, "", "br-6j"),
+        ("", ""),
+    )
     _wide_clear("aaaa6j", "bbbb6j")
 
     # 6k. A COUNTER ERROR NEVER FIRES. The planted half is the same call with findings and no error, which must report.
@@ -1724,14 +1841,26 @@ try:
     _tk, _nk = wl_shapedup.wide_run(REPO, _st6k, "br-6k")
     control("a broken wide counter queues no section", _tk, "")
     control("...but it is not silent about it", "counter exploded" in _nk, True)
-    control("the wide run asks the counter for the ADVISORY profile, not the gate's", _wide_calls, ["advisory"])
-    control("the wide run records its own signature key, not the narrow tier's", ("shapedup_wide_sig" in _st6k, "shapedup_sig" in _st6k), (True, False))
+    control(
+        "the wide run asks the counter for the ADVISORY profile, not the gate's",
+        _wide_calls,
+        ["advisory"],
+    )
+    control(
+        "the wide run records its own signature key, not the narrow tier's",
+        ("shapedup_wide_sig" in _st6k, "shapedup_sig" in _st6k),
+        (True, False),
+    )
 
     def _wide_counter_ok(_root, **_kw):
         return [_wide_f("okay6k", 3)], ""
 
     wl_shapedup.counter_findings = _wide_counter_ok
-    control("CONTROL: the same run with findings and no error DOES report", "okay6k" in wl_shapedup.wide_run(REPO, {}, "br-6k")[0], True)
+    control(
+        "CONTROL: the same run with findings and no error DOES report",
+        "okay6k" in wl_shapedup.wide_run(REPO, {}, "br-6k")[0],
+        True,
+    )
     wl_shapedup.counter_findings = _wide_counter_saved
     _wide_clear("okay6k")
 
@@ -1741,7 +1870,9 @@ try:
     wl_shapedup.WIDE_CAP = 5
     _tl, _ = wl_shapedup.wide_report(REPO, [_wide_f("fire6l", 3)], "", "br-6l")
     control("a judged-yes wide finding places no order", (_orders, bool(_tl)), ([], True))
-    wl_shapedup.apply_verdict(_sd(), ["a.ts:1", "b.ts:1", "c.ts:1"], "sh6l", path=_WIDE_TMP / "narrow-6l.json")
+    wl_shapedup.apply_verdict(
+        _sd(), ["a.ts:1", "b.ts:1", "c.ts:1"], "sh6l", path=_WIDE_TMP / "narrow-6l.json"
+    )
     control("CONTROL: the interceptor DOES see the narrow tier's order", len(_orders), 1)
     wl_rules.apply_order = _wide_apply_saved
     _wide_clear("fire6l")
@@ -1755,14 +1886,34 @@ try:
     _m1, _ = wl_shapedup.wide_report(REPO, [_wide_f("same6m", 3)], "", "br-6m")
     _m2, _ = wl_shapedup.wide_report(REPO, [_wide_f("same6m", 3)], "", "br-6m")
     control("the at-cap wide text is stable across two stops", _m1 == _m2 and bool(_m1), True)
-    control("first shapedup-wide section is queued", wl_checks.outq_add(_wl, "sess6m", _qdoc, "shapedup-wide", _m1, 2), True)
-    control("an identical second call inside REPORT_REFRESH_MIN is absorbed", wl_checks.outq_add(_wl, "sess6m", _qdoc, "shapedup-wide", _m2, 2), False)
-    control("CONTROL: a changed body is NOT absorbed", wl_checks.outq_add(_wl, "sess6m", _qdoc, "shapedup-wide", _m2 + " (changed)", 2), True)
+    control(
+        "first shapedup-wide section is queued",
+        wl_checks.outq_add(_wl, "sess6m", _qdoc, "shapedup-wide", _m1, 2),
+        True,
+    )
+    control(
+        "an identical second call inside REPORT_REFRESH_MIN is absorbed",
+        wl_checks.outq_add(_wl, "sess6m", _qdoc, "shapedup-wide", _m2, 2),
+        False,
+    )
+    control(
+        "CONTROL: a changed body is NOT absorbed",
+        wl_checks.outq_add(_wl, "sess6m", _qdoc, "shapedup-wide", _m2 + " (changed)", 2),
+        True,
+    )
     _wide_clear("same6m")
 
     # 6n. THE MOMENT. A fix landing in a wide family is the trigger (`touches_wide`), and `wide_sig_moved` filters it: an unchanged, indexed wide corpus is a stat sweep and no counter run.
-    control("touches_wide: a stop-hook file is in the wide corpus", wl_shapedup.touches_wide(["x.md", ".claude/hooks/stop/wl_rules.py"]), True)
-    control("CONTROL: touches_wide: a narrow-corpus gate is not", wl_shapedup.touches_wide(["scripts/gates/check-x.ts", "docs/a.md"]), False)
+    control(
+        "touches_wide: a stop-hook file is in the wide corpus",
+        wl_shapedup.touches_wide(["x.md", ".claude/hooks/stop/wl_rules.py"]),
+        True,
+    )
+    control(
+        "CONTROL: touches_wide: a narrow-corpus gate is not",
+        wl_shapedup.touches_wide(["scripts/gates/check-x.ts", "docs/a.md"]),
+        False,
+    )
     _mroot = _WIDE_TMP / "moment"
     (_mroot / ".claude" / "hooks" / "stop").mkdir(parents=True)
     (_mroot / ".claude" / "hooks" / "stop" / "wl_a.py").write_text("a = 1\n")
@@ -1771,12 +1922,24 @@ try:
     (_mcache / "index.json").write_text(json.dumps({"inputs": {}}))
     (_mcache / "probe.mjs").write_text("")
     _mst = {"shapedup_wide_sig": wl_shapedup.corpus_sig(str(_mroot), wl_shapedup.CORPUS_GLOBS_WIDE)}
-    control("an unchanged, indexed wide corpus is not a moment", wl_shapedup.wide_sig_moved(str(_mroot), _mst), False)
+    control(
+        "an unchanged, indexed wide corpus is not a moment",
+        wl_shapedup.wide_sig_moved(str(_mroot), _mst),
+        False,
+    )
     (_mroot / ".claude" / "hooks" / "stop" / "wl_b.py").write_text("b = 2\n")
-    control("CONTROL: a new file in a wide family IS a moment", wl_shapedup.wide_sig_moved(str(_mroot), _mst), True)
+    control(
+        "CONTROL: a new file in a wide family IS a moment",
+        wl_shapedup.wide_sig_moved(str(_mroot), _mst),
+        True,
+    )
     _mst["shapedup_wide_sig"] = wl_shapedup.corpus_sig(str(_mroot), wl_shapedup.CORPUS_GLOBS_WIDE)
     (_mcache / "probe.mjs").unlink()
-    control("CONTROL: a missing wide probe bundle IS a moment", wl_shapedup.wide_sig_moved(str(_mroot), _mst), True)
+    control(
+        "CONTROL: a missing wide probe bundle IS a moment",
+        wl_shapedup.wide_sig_moved(str(_mroot), _mst),
+        True,
+    )
     control(
         "the narrow signature is untouched by a wide-family edit",
         wl_shapedup.corpus_sig(str(_mroot)) == wl_shapedup.corpus_sig(str(_WIDE_TMP / "nowhere")),
@@ -1806,8 +1969,16 @@ try:
         (_argv_seen[0][0], "env" in _argv_seen[0][1]),
         (["npx", "tsx", wl_shapedup.COUNTER, "--json", "--emit-index"], False),
     )
-    control("a profiled call appends --profile and nothing else", _argv_seen[1][0][5:], ["--profile", "advisory"])
-    control("CONTROL: the default run DOES see an inherited SHAPE_PROBE_CACHE, so the drop below is observable", _argv_seen[0][2], str(_WIDE_TMP / "gate-cache"))
+    control(
+        "a profiled call appends --profile and nothing else",
+        _argv_seen[1][0][5:],
+        ["--profile", "advisory"],
+    )
+    control(
+        "CONTROL: the default run DOES see an inherited SHAPE_PROBE_CACHE, so the drop below is observable",
+        _argv_seen[0][2],
+        str(_WIDE_TMP / "gate-cache"),
+    )
     control("RISK 6: a profiled run never inherits SHAPE_PROBE_CACHE", _argv_seen[1][2], None)
 finally:
     wl_shapedup.ask = _wide_ask_saved
@@ -1823,7 +1994,11 @@ _PLANT_BODY = (
     "            zz_acc.append(zz_row['zz_value'] * 7)\n"
     "    return sorted(zz_acc, reverse=True)\n"
 )
-_PLANT_PRE = ("import os\n\n\ndef plant_a(zz_rows):\n", "import sys\nX = 3\n\n\ndef plant_b(zz_rows, extra=None):\n    del extra\n", "\n\nclass Holder:\n    pass\n\n\ndef plant_c(zz_rows):\n    assert zz_rows is not None\n")
+_PLANT_PRE = (
+    "import os\n\n\ndef plant_a(zz_rows):\n",
+    "import sys\nX = 3\n\n\ndef plant_b(zz_rows, extra=None):\n    del extra\n",
+    "\n\nclass Holder:\n    pass\n\n\ndef plant_c(zz_rows):\n    assert zz_rows is not None\n",
+)
 _PLANT_POST = ("\n\nprint(os.sep)\n", "\n\nY = sys.argv\n", "\n\nH = Holder()\n")
 _hx = pathlib.Path(tempfile.mkdtemp(prefix="wide-settle-"))
 _hx_env = os.environ.get("REDIACC_CI_ROOT")
@@ -1836,13 +2011,17 @@ try:
     os.symlink(pathlib.Path(REPO) / "node_modules", _hx / "node_modules")
     _corpus = subprocess.run(
         ["git", "-C", REPO, "ls-files", "--", *wl_shapedup.CORPUS_GLOBS_WIDE],
-        capture_output=True, text=True, check=True,
+        capture_output=True,
+        text=True,
+        check=True,
     ).stdout.split()
     for _rel in _corpus:
         (_hx / _rel).parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(pathlib.Path(REPO) / _rel, _hx / _rel)
     for _i, _tag in enumerate("abc"):
-        (_hx / ".claude" / "hooks" / "stop" / ("wl_zzplant_%s.py" % _tag)).write_text(_PLANT_PRE[_i] + _PLANT_BODY + _PLANT_POST[_i])
+        (_hx / ".claude" / "hooks" / "stop" / ("wl_zzplant_%s.py" % _tag)).write_text(
+            _PLANT_PRE[_i] + _PLANT_BODY + _PLANT_POST[_i]
+        )
     subprocess.run(["git", "init", "-q", str(_hx)], check=True)
     subprocess.run(["git", "-C", str(_hx), "add", "--", ".ci", ".claude"], check=True)
     # The BLOCKER validator resolves the canonical rules from its own file's checkout; the copy has no .ci/rediacc_ci/core, so point it at the real one.
@@ -1855,14 +2034,26 @@ try:
     _f0, _e0 = wl_shapedup.counter_findings(str(_hx), profile="advisory")
     _p0 = _planted(_f0)
     control("6o precondition: the real counter ran on the hermetic tree", _e0, "")
-    control("6o precondition: the planted shape is ONE single-window finding", [(len(f["files"]), f["span"]) for f in _p0], [(3, 5)])
-    control("6o precondition: the wide index went to the copy's own advisory cache", (_hx / wl_shapedup.SHAPE_INDEX_WIDE_REL / "index.json").is_file(), True)
+    control(
+        "6o precondition: the planted shape is ONE single-window finding",
+        [(len(f["files"]), f["span"]) for f in _p0],
+        [(3, 5)],
+    )
+    control(
+        "6o precondition: the wide index went to the copy's own advisory cache",
+        (_hx / wl_shapedup.SHAPE_INDEX_WIDE_REL / "index.json").is_file(),
+        True,
+    )
     if _p0:
         _ph = _p0[0]["shape"]
         _other = next(f["shape"] for f in _f0 if f not in _p0)
         _wide_clear(_ph)
         _t0, _ = wl_shapedup.wide_report(str(_hx), _p0, "", "br-6o")
-        control("before settling, the tier reports the planted shape by its accepted key", ("accepted key: %s" % _ph) in _t0, True)
+        control(
+            "before settling, the tier reports the planted shape by its accepted key",
+            ("accepted key: %s" % _ph) in _t0,
+            True,
+        )
         _wide_clear(_ph)
         _seed = _hx / "scripts" / "data" / "shape-duplication-seed-advisory.json"
         _seed.parent.mkdir(parents=True, exist_ok=True)
@@ -1873,14 +2064,26 @@ try:
         )
         _seed.write_text(json.dumps({"accepted": {_other: _why}}))
         _f1, _e1 = wl_shapedup.counter_findings(str(_hx), profile="advisory")
-        control("PLANTED: accepting a DIFFERENT shape leaves the planted one reported", (_e1, [f["shape"] for f in _planted(_f1)]), ("", [_ph]))
+        control(
+            "PLANTED: accepting a DIFFERENT shape leaves the planted one reported",
+            (_e1, [f["shape"] for f in _planted(_f1)]),
+            ("", [_ph]),
+        )
         _t1b, _ = wl_shapedup.wide_report(str(_hx), _planted(_f1), "", "br-6o")
         control("PLANTED: ...and the tier still queues it", _ph in _t1b, True)
         _wide_clear(_ph)
         _seed.write_text(json.dumps({"accepted": {_ph: _why}}))
         _f2, _e2 = wl_shapedup.counter_findings(str(_hx), profile="advisory")
-        control("RISK 1: an accepted entry with a BLOCKER reason removes the shape from the next counter run", (_e2, _planted(_f2)), ("", []))
-        control("RISK 1: ...so the same shape is silent on the next stop", wl_shapedup.wide_report(str(_hx), _planted(_f2), "", "br-6o"), ("", ""))
+        control(
+            "RISK 1: an accepted entry with a BLOCKER reason removes the shape from the next counter run",
+            (_e2, _planted(_f2)),
+            ("", []),
+        )
+        control(
+            "RISK 1: ...so the same shape is silent on the next stop",
+            wl_shapedup.wide_report(str(_hx), _planted(_f2), "", "br-6o"),
+            ("", ""),
+        )
         control("RISK 1: ...and nothing else was silenced with it", len(_f2), len(_f0) - 1)
         _wide_clear(_ph)
 finally:
@@ -2477,7 +2680,10 @@ control("3g: the reason still fits the 400-char cap", len(out_b["reason"]) <= 40
 
 # A fresh silent answer must not discharge the demand it displaced.
 kind, _ = wl_proofcheck.apply_verdict(
-    SILENT_PROOF, wl_proofcheck.PROOF_DEMAND.peek(PROOF_MARKER_PATH), path=PROOF_MARKER_PATH, asked="fresh"
+    SILENT_PROOF,
+    wl_proofcheck.PROOF_DEMAND.peek(PROOF_MARKER_PATH),
+    path=PROOF_MARKER_PATH,
+    asked="fresh",
 )
 control("3g: a fresh silent answer is read as silent", kind, "silent")
 control(
@@ -2487,17 +2693,26 @@ control(
 )
 control(
     "3g: ...and leaves the owed transform A untouched too",
-    wl_proofcheck.PROOF_DEMAND.peek(PROOF_MARKER_PATH)["owed"]["transform_kind"].startswith("transform A"),
+    wl_proofcheck.PROOF_DEMAND.peek(PROOF_MARKER_PATH)["owed"]["transform_kind"].startswith(
+        "transform A"
+    ),
     True,
 )
 
 # A follow-up that discharges the head promotes the owed transform to head.
 kind, _ = wl_proofcheck.apply_verdict(
-    SILENT_PROOF, wl_proofcheck.PROOF_DEMAND.peek(PROOF_MARKER_PATH), path=PROOF_MARKER_PATH, asked="followup"
+    SILENT_PROOF,
+    wl_proofcheck.PROOF_DEMAND.peek(PROOF_MARKER_PATH),
+    path=PROOF_MARKER_PATH,
+    asked="followup",
 )
 control("3g: a follow-up silent answer discharges the head", kind, "silent")
 promoted = wl_proofcheck.load_outstanding(PROOF_MARKER_PATH)
-control("3g: transform A is promoted to head", promoted["transform_kind"].startswith("transform A"), True)
+control(
+    "3g: transform A is promoted to head",
+    promoted["transform_kind"].startswith("transform A"),
+    True,
+)
 control(
     "3g: the promoted transform now appears in the follow-up prompt",
     "transform A" in wl_proofcheck.prompt_section(False, promoted),
@@ -2511,7 +2726,9 @@ control(
 wl_proofcheck.clear_outstanding(PROOF_MARKER_PATH)
 
 # THE BOUND: three consecutive fresh fires leave exactly one record in owed, dropping the oldest; CARRY_MAX is enforced the same way it is for wl_classsweep, since both ride wl_rules.Demand.
-wl_proofcheck.apply_verdict(proof_answer(transform_kind="transform P"), None, path=PROOF_MARKER_PATH, asked="fresh")
+wl_proofcheck.apply_verdict(
+    proof_answer(transform_kind="transform P"), None, path=PROOF_MARKER_PATH, asked="fresh"
+)
 wl_proofcheck.apply_verdict(
     proof_answer(transform_kind="transform Q"),
     wl_proofcheck.PROOF_DEMAND.peek(PROOF_MARKER_PATH),
@@ -2530,7 +2747,9 @@ control(
     rec["owed"]["transform_kind"].startswith("transform Q"),
     True,
 )
-control("3g: the head is the third transform", rec["transform_kind"].startswith("transform R"), True)
+control(
+    "3g: the head is the third transform", rec["transform_kind"].startswith("transform R"), True
+)
 control(
     "3g: the oldest (transform P) was dropped, not carried a second time",
     "transform P" not in json.dumps(rec),
@@ -2539,14 +2758,20 @@ control(
 wl_proofcheck.clear_outstanding(PROOF_MARKER_PATH)
 
 # The fire counter: fresh-then-followup on the SAME transform reaches the cap rather than resetting to 1.
-wl_proofcheck.apply_verdict(proof_answer(transform_kind="transform U"), None, path=PROOF_MARKER_PATH, asked="fresh")
+wl_proofcheck.apply_verdict(
+    proof_answer(transform_kind="transform U"), None, path=PROOF_MARKER_PATH, asked="fresh"
+)
 wl_proofcheck.apply_verdict(
     proof_answer(transform_kind="transform U"),
     wl_proofcheck.PROOF_DEMAND.peek(PROOF_MARKER_PATH),
     path=PROOF_MARKER_PATH,
     asked="followup",
 )
-control("3g: fresh-then-followup on the SAME transform reaches the fire cap", proof_fires(PROOF_MARKER_PATH), 2)
+control(
+    "3g: fresh-then-followup on the SAME transform reaches the fire cap",
+    proof_fires(PROOF_MARKER_PATH),
+    2,
+)
 control(
     "3g: a demand at the cap is never carried further",
     wl_proofcheck.load_outstanding(PROOF_MARKER_PATH),
@@ -2563,7 +2788,14 @@ wl_proofcheck.clear_outstanding(PROOF_MARKER_PATH)
 CAPTURED["answer"] = answer(defect_class="provenance test class")
 wl_classsweep.clear_outstanding()
 wl_judge.run_judge(
-    [], 0, "a message", 0, "none declared", extra=FIXSIG, fixset_files=["a.py"], fixset_provenance="diff-tree"
+    [],
+    0,
+    "a message",
+    0,
+    "none declared",
+    extra=FIXSIG,
+    fixset_files=["a.py"],
+    fixset_provenance="diff-tree",
 )
 control(
     "provenance: a resolved commit says so in the prompt",
@@ -2573,7 +2805,14 @@ control(
 wl_classsweep.clear_outstanding()
 
 wl_judge.run_judge(
-    [], 0, "a message", 0, "none declared", extra=FIXSIG, fixset_files=["a.py"], fixset_provenance="status-fallback"
+    [],
+    0,
+    "a message",
+    0,
+    "none declared",
+    extra=FIXSIG,
+    fixset_files=["a.py"],
+    fixset_provenance="status-fallback",
 )
 control(
     "provenance: the status fallback names itself, not a diff",
@@ -2583,14 +2822,25 @@ control(
 wl_classsweep.clear_outstanding()
 
 wl_judge.run_judge(
-    [], 0, "a message", 0, "none declared", extra=FIXSIG, fixset_files=["a.py"], fixset_provenance=None
+    [],
+    0,
+    "a message",
+    0,
+    "none declared",
+    extra=FIXSIG,
+    fixset_files=["a.py"],
+    fixset_provenance=None,
 )
 control(
     "provenance: an unrecognised/missing provenance never asserts the stronger diff-tree claim",
     "resolved from the fix-set's own commit(s)" in CAPTURED["prompt"],
     False,
 )
-control("provenance: ...and still renders something, never a raw KeyError", "provenance unknown" in CAPTURED["prompt"], True)
+control(
+    "provenance: ...and still renders something, never a raw KeyError",
+    "provenance unknown" in CAPTURED["prompt"],
+    True,
+)
 wl_classsweep.clear_outstanding()
 
 
@@ -2736,11 +2986,20 @@ with tempfile.TemporaryDirectory() as _fxroot:
     )
 
 
-
 # ---- THE INDEX REFRESH PRECEDES EVERY JUDGE EXIT (found 2026-09-24). `C.emit` calls `sys.exit`, so a refresh placed after the judge's `continue` emit, or inside the judge section that only runs when work remains, never runs on exactly the stops Commit 1 was written for. Pinned on the wiring itself: the call must sit at function level (one `try:` deep) and BEFORE the judge section's opening `if`.
-_wc_lines = (pathlib.Path(__file__).resolve().parent / "wl_checks.py").read_text(encoding="utf-8").splitlines()
-_refresh_at = [i for i, ln in enumerate(_wc_lines) if "wl_shapedup.refresh_index(str(root), state_doc)" in ln]
-_judge_if_at = [i for i, ln in enumerate(_wc_lines) if ln.startswith("    if (something_remains or reg_signals) and not wl_judge.JUDGE_DISABLED:")]
+_wc_lines = (
+    (pathlib.Path(__file__).resolve().parent / "wl_checks.py")
+    .read_text(encoding="utf-8")
+    .splitlines()
+)
+_refresh_at = [
+    i for i, ln in enumerate(_wc_lines) if "wl_shapedup.refresh_index(str(root), state_doc)" in ln
+]
+_judge_if_at = [
+    i
+    for i, ln in enumerate(_wc_lines)
+    if ln.startswith("    if (something_remains or reg_signals) and not wl_judge.JUDGE_DISABLED:")
+]
 control("exactly one refresh_index call site in wl_checks.py", len(_refresh_at), 1)
 control("the judge section's opening `if` is found", len(_judge_if_at), 1)
 control(
@@ -2750,7 +3009,9 @@ control(
 )
 control(
     "and at function level (inside one try:), not nested in any branch",
-    (len(_wc_lines[_refresh_at[0]]) - len(_wc_lines[_refresh_at[0]].lstrip())) if _refresh_at else -1,
+    (len(_wc_lines[_refresh_at[0]]) - len(_wc_lines[_refresh_at[0]].lstrip()))
+    if _refresh_at
+    else -1,
     8,
 )
 

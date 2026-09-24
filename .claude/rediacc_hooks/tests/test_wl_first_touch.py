@@ -334,7 +334,9 @@ def cohort(wl):  # noqa: F811
             rec_refusal(at(18)),
         ],
     )
-    mk_transcript(where, PREFLOOR_SID, [rec_start(at(-60)), rec_tool(at(-59)), rec_refusal(at(-50))])
+    mk_transcript(
+        where, PREFLOOR_SID, [rec_start(at(-60)), rec_tool(at(-59)), rec_refusal(at(-50))]
+    )
     # A RESUMED SESSION, in the shape f4da5c2e really has on disk: a new transcript that opens at +10 and whose next records are REPLAYED from the context it continues, stamps and all. Its only refusal happened at +3, two contexts ago, and belongs to neither this session's clock nor its conduct.
     mk_transcript(
         where,

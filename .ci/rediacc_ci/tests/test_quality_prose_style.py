@@ -999,14 +999,12 @@ def test_underwrap_a_single_line_paragraph_is_clean():
 
 
 def test_underwrap_list_item_adjacency_is_clean():
-    text = (
-        "- first short item here\n"
-        "- second short item here\n"
-        "- third short item here\n"
-    )
+    text = "- first short item here\n- second short item here\n- third short item here\n"
     findings, note = ps.lint_text("b.md", text, RULES, GLOBALS)
     assert note is None
-    assert "R19" not in [f.rule for f in findings], "a bulleted list is not a hard-wrapped paragraph"
+    assert "R19" not in [f.rule for f in findings], (
+        "a bulleted list is not a hard-wrapped paragraph"
+    )
 
 
 def test_underwrap_heading_adjacency_is_clean():
@@ -1019,9 +1017,9 @@ def test_underwrap_heading_adjacency_is_clean():
     findings, note = ps.lint_text("b.md", text, RULES, GLOBALS)
     assert note is None
     assert "R19" in [f.rule for f in findings], "the heading must not absorb the paragraph below it"
-    assert not any(
-        "A heading line" in f.text for f in findings if f.rule == "R19"
-    ), "the heading itself must never join into the R19 finding text"
+    assert not any("A heading line" in f.text for f in findings if f.rule == "R19"), (
+        "the heading itself must never join into the R19 finding text"
+    )
 
 
 def test_underwrap_fence_adjacency_is_clean():

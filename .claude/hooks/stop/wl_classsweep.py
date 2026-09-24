@@ -390,7 +390,8 @@ def enforce(out, payload, fixset_files=None, displaced=None):
     reason = V_REASON % (payload["defect_class"], V_ASSERTED if payload["asserted"] else "")
     if isinstance(displaced, dict) and displaced.get("defect_class"):
         reason += wl_rules.still_owed_sentence(
-            displaced["defect_class"], "run %s" % (displaced.get("search") or "(no search recorded)")
+            displaced["defect_class"],
+            "run %s" % (displaced.get("search") or "(no search recorded)"),
         )
     if not wl_rules.scope_grounded(payload.get("defect_class", ""), fixset_files):
         reason += (

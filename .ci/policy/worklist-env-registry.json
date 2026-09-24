@@ -111,6 +111,12 @@
         "'60'"
       ]
     },
+    "WORKLIST_BGSWEEP_AGE_MIN": {
+      "kind": "tuning",
+      "defaults": [
+        "'20'"
+      ]
+    },
     "WORKLIST_BG_OUTPUT_DIR": {
       "kind": "path",
       "defaults": [
@@ -731,6 +737,12 @@
         "NONE"
       ],
       "why": "The session identity, tried before CLAUDE_CODE_SESSION_ID in wl_core.py:313. Returns \"\" for CANNOT VERIFY, and the honest response to that is to say nothing rather than accuse, so a typo turns identity checking off without a word."
+    },
+    "WORKLIST_SHAPEDUP_WIDE_CAP": {
+      "kind": "tuning",
+      "defaults": [
+        "'5'"
+      ]
     },
     "WORKLIST_SHAPE_MAX_FIRES": {
       "kind": "tuning",

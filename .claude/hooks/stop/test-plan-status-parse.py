@@ -180,7 +180,11 @@ _alpha_moves = [
     {"owner": "e580532b", "upd": _LATER, "text": "PLAN-alpha.md [aa%02d]: box" % i}
     for i in range(C.PLAN_DRIFT_MIN_MOVES)
 ]
-control("moves naming PLAN-alpha flag PLAN-alpha only", drift_for(_alpha_moves), ["agent/plans/PLAN-alpha.md"])
+control(
+    "moves naming PLAN-alpha flag PLAN-alpha only",
+    drift_for(_alpha_moves),
+    ["agent/plans/PLAN-alpha.md"],
+)
 _unrelated = [
     {"owner": "e580532b", "upd": _LATER, "text": "npm 11 migration step %d" % i}
     for i in range(C.PLAN_DRIFT_MIN_MOVES + 3)

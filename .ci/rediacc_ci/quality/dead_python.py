@@ -107,6 +107,21 @@ GLOB_ROOTS = {
             "prefixes; dispatch.py calls it, so no guard is ever named individually"
         ),
     ),
+    ".claude/hooks/stop/": (
+        ("test-",),
+        (
+            "run by .claude/rediacc_hooks/tests/test_hooks_delegates.py:_discover_tailed, "
+            "which globs test-*.py under every _TAILED_ROOTS directory and asserts each "
+            "exits 0 with non-empty output; no suite is named individually"
+        ),
+    ),
+    ".claude/hooks/context/": (
+        ("test-",),
+        (
+            "run by .claude/rediacc_hooks/tests/test_hooks_delegates.py:_discover_tailed, "
+            "the same _TAILED_ROOTS glob as .claude/hooks/stop/"
+        ),
+    ),
 }
 
 # EXEMPT BY NAME, WITH THE REASON, AND PRINTED ON EVERY RUN. The `manual:` class of `.ci/policy/.dead-bash-allowlist`, in code rather than in a policy file because a seventeenth file in `.ci/policy/` has to be added to two POLICY_FILES lists and a README section in the same commit (see check:ci-policy-inventory), and one entry does not earn that.
@@ -120,6 +135,12 @@ GLOB_ROOTS = {
 # THE NEW ROUTE IS WEAKER THAN THE ONE IT REPLACED, and a future reader should know it: the exemption was unconditional, while the registry lists this module only for as long as it reads an environment variable. If that stops being true the file goes DEAD again with no exemption standing, and the answer then is to re-add an entry here with a fresh reason, not to assume the old one
 # still applies.
 MANUAL_ENTRY_POINTS: dict[str, str] = {
+    # Quoted from its own docstring: "NOT A GATE. This file carries no `---- gate ----` block and is not registered: it is a one-off recovery tool kept beside the gate it repairs, so a future session that hits the same class has the instrument rather than the archaeology." Run by hand as `python3 .ci/scripts/quality/backfill_plan_implementation.py --me <prefix> [--write]`.
+    ".ci/scripts/quality/backfill_plan_implementation.py": (
+        "a one-off recovery tool kept beside check_plan_implementation.py, run by hand "
+        "(--me <prefix> [--write]) to backfill the investigation trail for plan boxes "
+        "closed without one; not a gate and deliberately not registered"
+    ),
     # `.ci/rediacc_ci/version/resolve_version.py` was named here until W7P4-b's second family, with the reason "remove the entry the moment a real route lands". One landed: `.github/workflows/cd-v2.yml` calls the module, and `.ci/shadow/w7p4b-resolve-version.observations.jsonl` names it on the new side of ten rows. The gate reported the exemption as no longer true, in the direction
     # that is easy to leave unchecked, and this is that report being obeyed.
     # `.ci/rediacc_ci/ci_signal/create_complete.py` was named here with the reason "remove the entry the moment a real route lands". One landed: eight `ct-tests.yml` jobs call the module, and the greenlight closure that used to name the bash twin now names this file, so the gate reported the exemption as no longer true. The table is empty, which is the state it is

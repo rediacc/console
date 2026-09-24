@@ -44,9 +44,9 @@ ONLY_ALPHA = json.dumps([{"key": "ALPHA_TOKEN", "value": "a-val"}])
 MAP = '{ "project": "p", "secrets": { "ALPHA_TOKEN": { "id": "1" }, "BETA_TOKEN": { "id": "2" } } }'
 
 # The TRACKED notice, read once. Every fixture below plants this exact text rather than a paraphrase: a fixture carrying its own wording would keep passing after the shipped file was emptied, which is the one regression the notice can suffer.
-REAL_NOTICE = (
-    pathlib.Path(bws_env.root({})) / bws_env.ROTATION_NOTICE_REL
-).read_text(encoding="utf-8")
+REAL_NOTICE = (pathlib.Path(bws_env.root({})) / bws_env.ROTATION_NOTICE_REL).read_text(
+    encoding="utf-8"
+)
 
 # The driver the recording was taken through, kept verbatim: source the twin, load, then print the NAMES that are now set. `set +e` because the twin returned 1 on a partial load and the driver had to survive it to report anything at all.
 BASH_DRIVER = textwrap.dedent(

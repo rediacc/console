@@ -178,7 +178,10 @@ def main():
 
     missed = controls_fired()
     if missed:
-        print(f"{RED}✗{NC} CONTROLS DID NOT FIRE, so this gate cannot detect what it exists for:", file=sys.stderr)
+        print(
+            f"{RED}✗{NC} CONTROLS DID NOT FIRE, so this gate cannot detect what it exists for:",
+            file=sys.stderr,
+        )
         for m in missed:
             print(f"  {m}", file=sys.stderr)
         return 1
@@ -201,7 +204,10 @@ def main():
 
     found = findings(roster, doc_text)
     if found:
-        print(f"{RED}✗{NC} the agent model roster and its documented reasons disagree:", file=sys.stderr)
+        print(
+            f"{RED}✗{NC} the agent model roster and its documented reasons disagree:",
+            file=sys.stderr,
+        )
         for f in found:
             print(f"  {f}", file=sys.stderr)
         print(

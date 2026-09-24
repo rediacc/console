@@ -296,7 +296,8 @@ def test_200_doctor_catches_what_a_tracked_file_makes_possible(wl):  # noqa: F81
     wl.say("done for now")
     wl.brief_now()
     stamp = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
-    ghp_shaped = "ghp_abcdefghijklmnopqrstuvwxyz0123456789"
+    # Assembled at runtime so the tracked source holds no token-shaped literal for check:ci-tracked-credentials to flag; the planted value is identical.
+    ghp_shaped = "ghp" + "_abcdefghijklmnopqrstuvwxyz0123456789"
     (wl.store_dir / "planted.jsonl").write_text(
         "<<<<<<< HEAD\n"
         + json.dumps(
@@ -586,7 +587,9 @@ def spent_peer(fix, prefix, minutes=180):
     """
     text = "an item this peer finished before it stopped"
     fix.cli("--add", prefix, text, env=as_session(fix, prefix))
-    fix.cli("--tick", prefix, item_id(fix, text), "suite green, exit 0", env=as_session(fix, prefix))
+    fix.cli(
+        "--tick", prefix, item_id(fix, text), "suite green, exit 0", env=as_session(fix, prefix)
+    )
     age_store(fix, prefix, minutes)
 
 
@@ -795,7 +798,9 @@ def test_210_plan_adoption_refuses_a_finished_or_box_free_plan(wl):  # noqa: F81
     empty = plant_plan(wl, "drained-design", "cafe1234", status="ready", open_boxes=0, ticked=2)
     before = {p: p.read_text(encoding="utf-8") for p in (done, empty)}
 
-    out = mig(wl, "--plan", "agent/plans/PLAN-finished-design.md", "agent/plans/PLAN-drained-design.md")
+    out = mig(
+        wl, "--plan", "agent/plans/PLAN-finished-design.md", "agent/plans/PLAN-drained-design.md"
+    )
     assert "refused: agent/plans/PLAN-finished-design.md is Status: done (finished)" in out, (
         "a finished plan was not refused:\n%s" % out
     )

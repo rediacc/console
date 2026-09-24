@@ -792,7 +792,11 @@ def lint_line(line, rules, scope, max_len):
             # A table row and a record's `Touched:` list are single-line by grammar: a table cannot wrap a row and the plan-record parser reads only the first line of a `Touched:` value, so the width limit has nothing to fold.
             if TABLE_ROW.match(line.raw) or line.raw.startswith(MACHINE_LIST_KEYS):
                 continue
-            if max_len is not None and len(line.raw) > max_len and not _ends_with_sentence_period(line.raw):
+            if (
+                max_len is not None
+                and len(line.raw) > max_len
+                and not _ends_with_sentence_period(line.raw)
+            ):
                 # 768 is a FLOOR, not a ceiling (see `_sentence_break_offset`): a line past it is only a finding when a genuine sentence-ending period sat at or before the floor and the line ran past it anyway. A line with no such break -- one continuous clause with nowhere sane to stop -- is not flagged regardless of how long it runs.
                 # Nor is a line that reaches ITS OWN end on a genuine period: several whole sentences merged onto one long line are exactly the shape this floor is meant to allow, not the shape it exists to catch.
                 break_at = _sentence_break_offset(line.raw, max_len)

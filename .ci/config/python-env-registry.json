@@ -1517,6 +1517,11 @@
     ".claude/hooks/stop/test-backlog.py": [
       "WORKLIST_STORE_DIR"
     ],
+    ".claude/hooks/stop/test-judge-schema.py": [
+      "REDIACC_CI_ROOT",
+      "SHAPE_PROBE_CACHE",
+      "WORKLIST_STORE_DIR"
+    ],
     ".claude/hooks/stop/test-planrec.py": [
       "HOME",
       "PATH"
@@ -1532,6 +1537,11 @@
     ],
     ".claude/hooks/stop/wl_backlog.py": [
       "WORKLIST_BACKLOG_MAX_PER_SESSION"
+    ],
+    ".claude/hooks/stop/wl_bgsweep.py": [
+      "CLAUDE_PID",
+      "WORKLIST_BGSWEEP_AGE_MIN",
+      "WORKLIST_HARNESS_PID"
     ],
     ".claude/hooks/stop/wl_bravedefault.py": [
       "WORKLIST_BRAVE_MAX_FIRES",
@@ -1703,6 +1713,7 @@
     ],
     ".claude/hooks/stop/wl_shapedup.py": [
       "SHAPE_PROBE_CACHE",
+      "WORKLIST_SHAPEDUP_WIDE_CAP",
       "WORKLIST_SHAPE_MAX_FIRES",
       "WORKLIST_SHAPE_TTL_MIN"
     ],

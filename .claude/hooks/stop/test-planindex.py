@@ -382,9 +382,21 @@ eq(
     pieces,
     {"agent/PLAN-a.md", "agent/PLAN-b.md", "agent/PLAN-c.md", "agent/PLAN-d.md", "agent/PLAN-g.md"},
 )
-ck("a plan below the tie floor and the open floor is never big", "agent/PLAN-e.md" not in pieces, pieces)
-ck("a plan with no open boxes can never be big, whatever its rank", "agent/PLAN-f.md" not in pieces, pieces)
-eq("CONTROL: no boxed rows at all marks nothing big", PI.big_pieces([("PLAN-f.md", "draft", 1, 0, 0, 1)]), set())
+ck(
+    "a plan below the tie floor and the open floor is never big",
+    "agent/PLAN-e.md" not in pieces,
+    pieces,
+)
+ck(
+    "a plan with no open boxes can never be big, whatever its rank",
+    "agent/PLAN-f.md" not in pieces,
+    pieces,
+)
+eq(
+    "CONTROL: no boxed rows at all marks nothing big",
+    PI.big_pieces([("PLAN-f.md", "draft", 1, 0, 0, 1)]),
+    set(),
+)
 
 bl, blive = big.block()
 ck(
@@ -392,7 +404,11 @@ ck(
     all(("! BIG PIECE ! agent/PLAN-%s.md" % s) in bl for s in ("a", "b", "c", "d", "g")),
     bl,
 )
-ck("plans_block does not mark a plan below the floor", "! BIG PIECE ! agent/PLAN-e.md" not in bl, bl)
+ck(
+    "plans_block does not mark a plan below the floor",
+    "! BIG PIECE ! agent/PLAN-e.md" not in bl,
+    bl,
+)
 plan_lines = [ln for ln in bl.splitlines() if "PLAN-" in ln]
 first_five_rels = [re.search(r"agent/PLAN-\S+\.md", ln).group(0) for ln in plan_lines[:5]]
 ck(

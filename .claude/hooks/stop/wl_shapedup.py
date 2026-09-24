@@ -432,7 +432,7 @@ def refresh_index(root, state):
     return counter_findings(root)
 
 
-def judge(root, findings, err):
+def judge(_root, findings, err):
     """The judged half of the old `run`: given findings `refresh_index` already computed, ask the model about the largest shape and apply the verdict. (fired, reason, next_action, note). Never runs the counter itself."""
     if err:
         # NEVER FAILS CLOSED, same as wl_classsweep: the only thing this rule can do is turn an allowed stop into a block, so a counter that could not answer loses a demand rather than granting an exit.
