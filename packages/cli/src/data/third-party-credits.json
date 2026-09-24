@@ -48,11 +48,11 @@
       "kind": "embedded-binary",
       "asset": "rsync",
       "name": "rsync",
-      "version": "3.5.0",
+      "version": "3.5.1",
       "spdx": "GPL-3.0-or-later",
       "license": "GNU General Public License, version 3 or later; conveyed as a binary, invoked via exec.",
-      "upstreamSourceUrl": "https://download.samba.org/pub/rsync/src/rsync-3.5.0.tar.gz",
-      "plannedMirrorUrl": "https://releases.rediacc.com/third-party-src/rsync-3.5.0.tar.gz",
+      "upstreamSourceUrl": "https://download.samba.org/pub/rsync/src/rsync-3.5.1.tar.gz",
+      "plannedMirrorUrl": "https://releases.rediacc.com/third-party-src/rsync-3.5.1.tar.gz",
       "notes": "Built from unmodified upstream source (statically). The 3.4.1-era LinuxFromScratch security_fix patch is no longer applied — 3.4.4 already carries those fixes upstream."
     },
     {

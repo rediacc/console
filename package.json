@@ -162,6 +162,7 @@
     "check:ci-python-types": ".ci/scripts/quality/check_python_types.py",
     "check:ci-python-control-plants": ".ci/scripts/quality/check_python_control_plants.py",
     "check:ci-bws-map": ".ci/scripts/quality/check_bws_map.py",
+    "check:ci-actions-vars": ".ci/scripts/quality/check_actions_vars.py",
     "check:ci-bws-rotation-notice": ".ci/scripts/quality/check_bws_rotation_notice.py",
     "check:ci-actions-allowlist": ".ci/scripts/quality/check_actions_allowlist.py",
     "check:ci-plan-housekeeping": ".ci/scripts/quality/check_plan_housekeeping.py",
@@ -407,13 +408,13 @@
     "proper-lockfile": "^4.1.2"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.5.12",
+    "@biomejs/biome": "^2.5.14",
     "@eslint/js": "^9.39.2",
     "@eslint/json": "^2.1.0",
     "@types/node": "^22.20.0",
     "@types/proper-lockfile": "^4.1.4",
-    "@typescript-eslint/eslint-plugin": "^8.69.0",
-    "@typescript-eslint/parser": "^8.69.0",
+    "@typescript-eslint/eslint-plugin": "^8.70.1",
+    "@typescript-eslint/parser": "^8.70.1",
     "eslint": "^9.39.2",
     "eslint-import-resolver-typescript": "^4.4.5",
     "eslint-plugin-import": "^2.32.0",
@@ -421,8 +422,8 @@
     "eslint-plugin-playwright": "^2.12.0",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.1.1",
-    "eslint-plugin-regexp": "^3.3.0",
-    "eslint-plugin-sonarjs": "^4.2.0",
+    "eslint-plugin-regexp": "^3.3.1",
+    "eslint-plugin-sonarjs": "^4.2.1",
     "eslint-plugin-unicorn": "^65.0.1",
     "glob": "^11.0.0",
     "globals": "^17.12.0",
@@ -431,7 +432,7 @@
     "syncpack": "^15.3.3",
     "tsx": "^4.21.0",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.69.0"
+    "typescript-eslint": "^8.70.1"
   },
   "engines": {
     "node": ">=22.13.0"
@@ -446,7 +447,7 @@
     "smol-toml": ">=1.6.1",
     "h3": ">=1.15.9",
     "yaml": ">=2.8.3",
-    "svgo": "^4.0.2",
+    "svgo": "^4.1.0",
     "devalue": "^5.8.1",
     "hono": ">=4.12.25",
     "@hono/node-server": ">=1.19.13",
@@ -464,9 +465,9 @@
     "astro": {
       "zod": "^3.25.76"
     },
-    "js-yaml": ">=4.3.1 <5.0.0",
+    "js-yaml": ">=4.3.2 <5.0.0",
     "gray-matter": {
-      "js-yaml": "^3.15.0"
+      "js-yaml": "^3.15.2"
     },
     "linkify-it": ">=5.0.1",
     "brace-expansion@^1.1.7": "1.1.18",
@@ -482,7 +483,7 @@
     "smol-toml": "BLOCKER: force >=1.6.1 to pick up DoS-via-commented-lines fix; astro toolchain otherwise pulls older transitive versions",
     "h3": "BLOCKER: force >=1.15.9 to include SSE carriage-return sanitization + path traversal fixes; upstream astro/nitro transitives lag",
     "yaml": "BLOCKER: force >=2.8.3 to include stack-overflow-on-deeply-nested-collections fix; astro transitive chain otherwise holds tree at older version",
-    "svgo": "BLOCKER: pin ^4.0.2 to avoid the multiple older v2/v3 transitive versions pulled in via astro icon pipeline, and to clear GHSA-2p49-hgcm-8545 (removeScripts plugin leaves some executable scripts intact; vulnerable >=4.0.0 <4.0.2). astro@5.18.1 declares svgo ^4.0.0 and froze the lockfile at 4.0.1, so the patched 4.0.2 needs the override bumped even though it satisfies astro's own caret.",
+    "svgo": "BLOCKER: pin ^4.1.0 to avoid the multiple older v2/v3 transitive versions pulled in via astro icon pipeline, and to clear three removeScripts advisories against the v4 line: GHSA-2p49-hgcm-8545 (executable scripts left intact, vulnerable >=4.0.0 <4.0.2), plus GHSA-w27v-7q3p-w38r (namespace-prefixed anchors and tab/newline URL schemes bypass the check) and GHSA-4vpr-x523-8j87 (executable HTML inside foreignObject is not inspected), both vulnerable >=4.0.0 <4.1.0 and both published 2026-09-19, which is what moved this entry from ^4.0.2 to ^4.1.0 on 2026-09-23. astro@5.18.1 declares svgo ^4.0.0 and froze the lockfile below the patch, so every one of these needs the override bumped even though the patched version satisfies astro's own caret.",
     "devalue": "BLOCKER: force ^5.8.1 to include GHSA-77vg-94rm-hx3p (DoS via sparse array deserialization) fix; astro 5.x pulls 5.6.x by default which is in the affected range >=5.6.3, <=5.8.0",
     "hono": "BLOCKER: force >=4.12.25 to carry the >=4.12.18 fixes plus serve-static path traversal (GHSA-wwfh-h76j-fc44), CORS wildcard reflection (GHSA-88fw-hqm2-52qc), Set-Cookie merge (GHSA-j6c9-x7qj-28xf), body-limit bypass (GHSA-rv63-4mwf-qqc2), and Lambda@Edge header drop (GHSA-wgpf-jwqj-8h8p); @modelcontextprotocol/sdk transitively pulls older hono",
     "@hono/node-server": "BLOCKER: force >=1.19.13 to pair with hono >=4.12.25 override; pre-1.19 cannot start against hono 4.12.x",
@@ -495,8 +496,8 @@
     "@grpc/proto-loader": "BLOCKER: nested override pins protobufjs ^7.5.6 inside the @grpc/proto-loader chain since proto-loader@0.8.x requires the 7.x major and cannot accept 8.x; pairs with the outer protobufjs >=7.5.6 override which handles the 8.x consumers",
     "zod": "BLOCKER: force ^4.4.3 across the whole tree so @modelcontextprotocol/sdk and the cli workspace share the same physical zod copy; without the override the SDK satisfies its 'zod: ^3.25 || ^4.0' range with the older zod@3.25.x that other transitives drag in, creating two zod installs whose v4/core $ZodType interfaces TS treats as distinct nominal types (build breaks at registerTool inputSchema)",
     "astro": "BLOCKER: astro's config validator (validateConfigRefined) was written against zod v3 and calls config.image.remotePatterns.length on the parsed shape; under the root zod ^4.4.3 override it gets undefined and the build crashes with 'Cannot read properties of undefined (reading length)'. Nest a zod ^3.25.76 override scoped to astro to match astro's own peer dep declaration. @astrojs/sitemap and @astrojs/rss already declare zod ^4 themselves so they stay on the root override.",
-    "js-yaml": "BLOCKER: force >=4.2.0 <5.0.0 to include GHSA-h67p-54hq-rp68 (quadratic-complexity DoS via repeated merge-key aliases) fix while staying off the v5 major; @astrojs/markdown-remark and astro transitively pull js-yaml@4.1.1, and @astrojs/markdown-remark's `import yaml from \"js-yaml\"` default import breaks under js-yaml 5.x's ESM-only export shape (observed as a hard `astro build` SyntaxError)",
-    "gray-matter": "BLOCKER: nested override pins js-yaml ^3.15.0 inside the gray-matter chain since gray-matter's frontmatter parser is written against the js-yaml v3 API and cannot accept v4; GHSA-h67p-54hq-rp68 covers two disjoint ranges (>=4.0.0 <=4.1.1 AND <3.15.0), so the v3 line also needed bumping to its final 3.15.0 patch release",
+    "js-yaml": "BLOCKER: force >=4.3.2 <5.0.0 to include the GHSA-h67p-54hq-rp68 (quadratic-complexity DoS via repeated merge-key aliases) and GHSA-2883-xcg3-v3hh (maxTotalMergeKeys does not count empty mappings, so a large sequence of them burns CPU without ever reaching the configured limit, vulnerable >=4.0.0 <4.3.2) fixes while staying off the v5 major; the second of those was published 2026-09-19 and is what moved this bound from >=4.3.1 to >=4.3.2 on 2026-09-23. @astrojs/markdown-remark and astro transitively pull an unpatched js-yaml, and @astrojs/markdown-remark's `import yaml from \"js-yaml\"` default import breaks under js-yaml 5.x's ESM-only export shape (observed as a hard `astro build` SyntaxError)",
+    "gray-matter": "BLOCKER: nested override pins js-yaml ^3.15.2 inside the gray-matter chain since gray-matter's frontmatter parser is written against the js-yaml v3 API and cannot accept v4; both GHSA-h67p-54hq-rp68 and GHSA-2883-xcg3-v3hh cover two disjoint ranges apiece, and the second one's v3 arm is >=3.0.0 <3.15.2, so the v3 line needs 3.15.2 rather than the 3.15.0 that cleared the first",
     "linkify-it": "BLOCKER: force >=5.0.1 to include GHSA-22p9-wv53-3rq4 (quadratic-complexity DoS in LinkifyIt#match) fix; markdown-it (via @marp-team/marpit) transitively pulls linkify-it@5.0.0",
     "brace-expansion@^1.1.7": "BLOCKER: clear GHSA-3jxr-9vmj-r5cp (DoS via exponential-time expansion of consecutive non-expanding {} groups; vulnerable <1.1.16 || >=3.0.0 <5.0.7) for the six eslint/minimatch@3 edges that request ^1.1.7. Pin to 1.1.18 (the patched 1.x, raised from 1.1.16 for GHSA-rgw5-rvv9-x895: the CVE-2026-14257 maxLength mitigation was incomplete, intermediate arrays stayed unbounded) rather than blanket-bumping to v5: brace-expansion v5 became ESM-only and its CommonJS build changed from `module.exports = expand` to a NAMED export `{ expand, EXPANSION_MAX }`, so minimatch@3's `var expand = require('brace-expansion'); expand(pattern)` throws 'expand is not a function' and eslint crashes. 1.1.16 keeps the callable default export and is out of the vulnerable range.",
     "brace-expansion@^5.0.5": "BLOCKER: clear GHSA-3jxr-9vmj-r5cp and GHSA-mh99-v99m-4gvg (unbounded expansion LENGTH — expand() caps the result count but not each result's size, so chained brace groups OOM the process; vulnerable <=5.0.7, patched 5.0.8) plus GHSA-rgw5-rvv9-x895 (the 5.0.8 maxLength mitigation was incomplete, intermediate arrays stayed unbounded; completed in 5.0.9) for the single top-level minimatch@10 edge that requests ^5.0.5. This consumer expects the v5 named-export API, so it stays on the v5 line — kept separate from the ^1.1.7 override above so neither consumer is forced across brace-expansion's v4->v5 export-shape break.",
