@@ -470,6 +470,7 @@
           "alreadyEnabled": "Yapılandırma \"{{name}}\" zaten uzak depolamaya bağlı. Önce bağlantıyı kesin: rdc config remote disable",
           "description": "Bu yapılandırmayı uzak şifreli depolamaya bağla",
           "expired": "Cihaz kodu süresi doldu. Tekrar deneyin.",
+          "handoffUnreadable": "Tarayıcıdan gelen yapılandırma aktarımı okunamadı. Baştan başlayın: rdc config remote enable --headless",
           "openBrowser": "Kurulumu tamamlamak için bu URL'yi açın:",
           "optionApiUrl": "Hesap sunucusu URL'si",
           "optionForce": "Farklı olan yerel içeriği onay almadan sunucu kopyasıyla değiştir",

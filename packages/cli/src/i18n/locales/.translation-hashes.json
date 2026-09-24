@@ -2,7 +2,7 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 1763,
+    "keyCount": 1764,
     "sourceCommit": "7b5258e5132b3ed7a9bc470031d1982660be3891"
   },
   "hashes": {
@@ -327,6 +327,7 @@
     "commands.config.remote.enable.alreadyEnabled": "b33612c9",
     "commands.config.remote.enable.description": "26d99cec",
     "commands.config.remote.enable.expired": "04d8205a",
+    "commands.config.remote.enable.handoffUnreadable": "800a7c82",
     "commands.config.remote.enable.openBrowser": "2f98f7c7",
     "commands.config.remote.enable.optionApiUrl": "a3435115",
     "commands.config.remote.enable.optionForce": "6c3cebd2",

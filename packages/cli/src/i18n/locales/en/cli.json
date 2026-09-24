@@ -294,6 +294,7 @@
           "success": "Remote config enabled. Config \"{{name}}\" is now synced to {{apiUrl}}.",
           "alreadyEnabled": "Config \"{{name}}\" is already linked to remote storage. Disable first with: rdc config remote disable",
           "expired": "Device code expired. Try again.",
+          "handoffUnreadable": "The config handoff from the browser could not be read. Start again with: rdc config remote enable --headless",
           "optionPassword": "Enroll headlessly with a pre-provisioned password slot (no browser)",
           "passwordPrompt": "Config master password:",
           "passwordNonInteractive": "A config master password is required. Set REDIACC_CONFIG_PASSWORD, or run without --password in an interactive terminal.",

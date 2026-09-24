@@ -470,6 +470,7 @@
           "alreadyEnabled": "La configurazione \"{{name}}\" è già collegata allo storage remoto. Disabilita prima con: rdc config remote disable",
           "description": "Collega questa configurazione allo storage cifrato remoto",
           "expired": "Codice dispositivo scaduto. Riprova.",
+          "handoffUnreadable": "Impossibile leggere il passaggio di configurazione dal browser. Ricomincia con: rdc config remote enable --headless",
           "openBrowser": "Apri questo URL per completare la configurazione:",
           "optionApiUrl": "URL del server account",
           "optionForce": "Sostituisci il contenuto locale differente con la copia del server senza conferma",

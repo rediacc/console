@@ -470,6 +470,7 @@
           "alreadyEnabled": "Konfiguration \"{{name}}\" ist bereits mit dem Remote-Speicher verknüpft. Zuerst trennen mit: rdc config remote disable",
           "description": "Diese Konfiguration mit verschlüsseltem Remote-Speicher verknüpfen",
           "expired": "Gerätecode abgelaufen. Versuchen Sie es erneut.",
+          "handoffUnreadable": "Die Konfigurationsübergabe aus dem Browser ließ sich nicht lesen. Neu starten mit: rdc config remote enable --headless",
           "openBrowser": "Öffnen Sie diese URL, um die Einrichtung abzuschließen:",
           "optionApiUrl": "Account-Server-URL",
           "optionForce": "Abweichenden lokalen Inhalt ohne Bestätigung durch die Serverkopie ersetzen",

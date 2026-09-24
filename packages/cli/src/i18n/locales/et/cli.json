@@ -470,6 +470,7 @@
           "alreadyEnabled": "Konfiguratsioon \"{{name}}\" on juba seotud kaugsalvestusega. Keela kõigepealt käsuga: rdc config remote disable",
           "description": "Seo see konfiguratsioon kaugega krüpteeritud salvestusega",
           "expired": "Seadmekood aegus. Proovi uuesti.",
+          "handoffUnreadable": "Brauserist saadetud konfiguratsiooni ei õnnestunud lugeda. Alusta uuesti: rdc config remote enable --headless",
           "openBrowser": "Seadistuse lõpetamiseks ava see URL:",
           "optionApiUrl": "Kontosserveri URL",
           "optionForce": "Asenda erinev kohalik sisu serveri koopiaga ilma kinnituseta",

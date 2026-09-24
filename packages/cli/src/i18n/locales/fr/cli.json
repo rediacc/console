@@ -470,6 +470,7 @@
           "alreadyEnabled": "La configuration \"{{name}}\" est déjà liée au stockage distant. Déconnectez d'abord avec : rdc config remote disable",
           "description": "Lier cette configuration au stockage distant chiffré",
           "expired": "Code d'appareil expiré. Réessayez.",
+          "handoffUnreadable": "Impossible de lire la transmission de configuration envoyée par le navigateur. Recommencez avec : rdc config remote enable --headless",
           "openBrowser": "Ouvrez cette URL pour terminer la configuration :",
           "optionApiUrl": "URL du serveur de compte",
           "optionForce": "Remplacer le contenu local différent par la copie du serveur sans confirmation",

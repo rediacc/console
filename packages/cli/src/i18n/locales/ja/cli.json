@@ -470,6 +470,7 @@
           "alreadyEnabled": "設定 \"{{name}}\" は既にリモートストレージにリンクされています。先に無効化してください: rdc config remote disable",
           "description": "この設定をリモート暗号化ストレージにリンク",
           "expired": "デバイスコードの有効期限が切れました。もう一度お試しください。",
+          "handoffUnreadable": "ブラウザーから受け取った設定を読み取れませんでした。次のコマンドでやり直してください: rdc config remote enable --headless",
           "openBrowser": "このURLを開いてセットアップを完了してください:",
           "optionApiUrl": "アカウントサーバーURL",
           "optionForce": "確認なしでローカルの相違内容をサーバーのコピーで置き換える",

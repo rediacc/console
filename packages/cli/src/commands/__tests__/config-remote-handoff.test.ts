@@ -107,3 +107,33 @@ describe('handoff blob contract round-trip (real X25519)', () => {
     expect(error?.message).toMatch(/close every rediacc portal tab/i);
   });
 });
+
+// The device relay stores the sealed blob as a JSON STRING (device-code.dto.ts `configHandoff: z.string()`); before 2026-09-24 the CLI treated it as an object and decryption of the string failed.
+describe('device relay: parseHandoff', () => {
+  it('parses the stringified blob the relay returns, which then decrypts', async () => {
+    const { parseHandoff } = await import('../config-remote.js');
+    const keyPair = await generateX25519KeyPair();
+    const blob = await seal(BASE_PAYLOAD, keyPair.publicKey);
+    const decrypted = await decryptHandoff(parseHandoff(JSON.stringify(blob)), keyPair.privateKey);
+    expect(decrypted).toEqual(BASE_PAYLOAD);
+  });
+
+  it('fails with a ValidationError on an unreadable handoff instead of polling on', async () => {
+    const { parseHandoff } = await import('../config-remote.js');
+    const { ValidationError } = await import('../../utils/errors.js');
+    expect(() => parseHandoff('{not json')).toThrow(ValidationError);
+  });
+});
+
+// The portal posts the sealed handoff to /device-codes/<code>/config-handoff, a route that accepts only the
+// UUID device code; the headless URL carried the short user code and answered 404 (2026-09-24).
+describe('headless enable: headlessRemoteUrl', () => {
+  it('carries the device code the config-handoff route accepts, never the user code', async () => {
+    const { headlessRemoteUrl } = await import('../config-remote.js');
+    const deviceCode = '0f1e2d3c-4b5a-4968-8776-a5b4c3d2e1f0';
+    const url = new URL(headlessRemoteUrl('https://eu.rediacc.com', deviceCode, 'cHVi+/='));
+    expect(url.pathname).toBe('/account/config-remote');
+    expect(url.searchParams.get('code')).toBe(deviceCode);
+    expect(url.searchParams.get('key')).toBe('cHVi+/=');
+  });
+});

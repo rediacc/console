@@ -142,18 +142,31 @@ async function enableBrowser(
   }
 }
 
+/**
+ * The sealed handoff as the server returns it: a JSON string (device-code.dto.ts `configHandoff: z.string()`).
+ * A ValidationError escapes pollOnce's "still pending" catch, so a malformed handoff fails now instead of polling until the device code expires.
+ */
+export function parseHandoff(raw: string): CekHandoffBlob {
+  try {
+    return JSON.parse(raw) as CekHandoffBlob;
+  } catch {
+    throw new ValidationError(t('commands.config.remote.enable.handoffUnreadable'));
+  }
+}
+
 async function pollOnce(deviceCode: string, apiUrl: string): Promise<CekHandoffBlob | null> {
   try {
     const result = await accountServerFetch<{
       status: string;
-      configHandoff?: CekHandoffBlob;
+      // The server stores and returns the sealed handoff as a JSON string (device-code.dto.ts `configHandoff: z.string()`), so it is parsed here.
+      configHandoff?: string;
     }>(`/account/api/v1/device-codes/${deviceCode}`, {
       noAuth: true,
       serverUrl: apiUrl,
     });
 
     if (result.status === 'complete' && result.configHandoff) {
-      return result.configHandoff;
+      return parseHandoff(result.configHandoff);
     }
     if (result.status === 'expired') {
       throw new ValidationError(t('commands.config.remote.enable.expired'));
@@ -180,6 +193,11 @@ async function pollForDeviceCode(
   throw new ValidationError(t('commands.config.remote.enable.expired'));
 }
 
+/** The portal page a headless enable opens. `code` must be the device code, see enableHeadless. */
+export function headlessRemoteUrl(apiUrl: string, deviceCode: string, pubBase64: string): string {
+  return `${apiUrl}/account/config-remote?code=${encodeURIComponent(deviceCode)}&key=${encodeURIComponent(pubBase64)}`;
+}
+
 async function enableHeadless(
   apiUrl: string,
   configName: string,
@@ -200,10 +218,11 @@ async function enableHeadless(
     serverUrl: apiUrl,
   });
 
-  const { deviceCode, userCode, interval, expiresIn } = initResult;
+  const { deviceCode, interval, expiresIn } = initResult;
 
   // Portal route: /account/config-remote (ConfigRemote.tsx), the device-code leg of the same page enableBrowser drives; see the comment there.
-  const remoteUrl = `${apiUrl}/account/config-remote?code=${encodeURIComponent(userCode)}&key=${encodeURIComponent(pubBase64)}`;
+  // `code` is the DEVICE code (the UUID): the portal posts the sealed handoff to /device-codes/<code>/config-handoff, which accepts only that. The short user code there answered 404 "Invalid device code" (2026-09-24).
+  const remoteUrl = headlessRemoteUrl(apiUrl, deviceCode, pubBase64);
 
   outputService.info(t('commands.config.remote.enable.openBrowser'));
   outputService.info(`  ${remoteUrl}`);

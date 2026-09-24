@@ -470,6 +470,7 @@
           "alreadyEnabled": "配置 \"{{name}}\" 已链接到远程存储。请先断开连接: rdc config remote disable",
           "description": "将此配置链接到远程加密存储",
           "expired": "设备代码已过期。请重试。",
+          "handoffUnreadable": "无法读取浏览器传来的配置。请重新运行：rdc config remote enable --headless",
           "openBrowser": "打开此URL以完成设置:",
           "optionApiUrl": "账户服务器URL",
           "optionForce": "无需确认，直接用服务器副本替换不同的本地内容",

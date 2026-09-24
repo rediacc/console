@@ -470,6 +470,7 @@
           "alreadyEnabled": "A configuração \"{{name}}\" já está ligada ao armazenamento remoto. Desactive primeiro com: rdc config remote disable",
           "description": "Ligar esta configuração ao armazenamento encriptado remoto",
           "expired": "O código de dispositivo expirou. Tente novamente.",
+          "handoffUnreadable": "Não foi possível ler a entrega de configuração do navegador. Comece de novo com: rdc config remote enable --headless",
           "openBrowser": "Abra este URL para concluir a configuração:",
           "optionApiUrl": "URL do servidor de conta",
           "optionForce": "Substituir o conteúdo local divergente pela cópia do servidor sem confirmação",
