@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.3.8/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.5.14/schema.json",
   "formatter": {
     "enabled": true,
     "indentStyle": "space",
@@ -8,7 +8,7 @@
     "lineEnding": "lf"
   },
   "linter": {
-    "enabled": false
+    "enabled": true
   },
   "assist": {
     "actions": {
@@ -68,9 +68,11 @@
       ".github/actions/**/*.js",
       "packages/**/*.json",
       "packages/**/*.css",
+      "private/account/**/i18n/locales/**/*.json",
       "!.ci/cache/**",
       "!packages/cli/.config-migrations-check.tmp.ts",
       "!.claude/worktrees/**",
+      "!private/growth/**",
       "!packages/www/src/i18n/client/**",
       "!packages/www/src/i18n/client-route/**",
       "!**/.translation-hashes.json",
@@ -89,6 +91,7 @@
       "!**/*.min.js",
       "!**/*.min.css",
       "!**/*.generated.ts",
+      "!**/api-schema.zod.ts",
       "!**/renet-contract/data/*.schema.ts",
       "!**/cli-contract/data/**",
       "!**/search-index.json",
@@ -108,6 +111,17 @@
     ],
     "ignoreUnknown": true
   },
+  "plugins": [
+    { "path": "biome-plugins/no-d1-transaction.grit", "includes": ["**/private/account/**"] },
+    {
+      "path": "biome-plugins/no-route-db-dynamic-import.grit",
+      "includes": ["**/private/account/src/routes/**", "!**/private/account/src/routes/test.ts"]
+    },
+    {
+      "path": "biome-plugins/no-email-literal-copy.grit",
+      "includes": ["**/private/account/src/services/email.service.ts"]
+    }
+  ],
   "overrides": [
     {
       "includes": ["private/account/**/*.ts", "private/account/**/*.tsx"],
@@ -166,6 +180,453 @@
             }
           }
         }
+      }
+    },
+    {
+      "includes": ["**", "!private/account/**", "!packages/shared/src/**/__tests__/**"],
+      "plugins": [
+        "biome-plugins/no-constant-alias.grit",
+        "biome-plugins/no-ant-css-var.grit",
+        "biome-plugins/no-t-default-value.grit",
+        "biome-plugins/no-inline-style-prop.grit",
+        "biome-plugins/no-exported-type-alias.grit"
+      ]
+    },
+    {
+      "includes": ["**", "!private/account/**"],
+      "linter": {
+        "enabled": true,
+        "rules": {
+          "recommended": false,
+          "correctness": {
+            "noUnusedVariables": "error",
+            "noUnusedImports": "error",
+            "noUnusedFunctionParameters": "error",
+            "noChildrenProp": "error",
+            "noRenderReturnValue": "error",
+            "useJsxKeyInIterable": "error",
+            "useHookAtTopLevel": "error",
+            "useExhaustiveDependencies": "error",
+            "noNestedComponentDefinitions": "error",
+            "noEmptyCharacterClassInRegex": "error",
+            "noRestrictedElements": {
+              "level": "error",
+              "options": {
+                "elements": {
+                  "div": "Use Flex, Card, or other antd layout components.",
+                  "span": "Use Typography.Text.",
+                  "button": "Use antd Button component.",
+                  "input": "Use antd Input component.",
+                  "select": "Use antd Select component."
+                }
+              }
+            }
+          },
+          "suspicious": {
+            "noTsIgnore": "error",
+            "noNonNullAssertedOptionalChain": "error",
+            "noUnsafeDeclarationMerging": "error",
+            "noUnusedExpressions": "error",
+            "noExplicitAny": "error",
+            "noDeprecatedImports": "error",
+            "noConsole": {
+              "level": "error",
+              "options": {
+                "allow": ["warn", "error"]
+              }
+            },
+            "noDebugger": "error",
+            "noUnnecessaryConditions": "error",
+            "useAwait": "error",
+            "useArraySortCompare": "error",
+            "noDuplicateJsxProps": "error",
+            "noCommentText": "error",
+            "noDoubleEquals": {
+              "level": "error",
+              "options": {
+                "ignoreNull": true
+              }
+            },
+            "noVar": "error",
+            "noGlobalIsNan": "error",
+            "noGlobalIsFinite": "error",
+            "noDuplicateObjectKeys": "error"
+          },
+          "complexity": {
+            "useOptionalChain": "error",
+            "noExcessiveCognitiveComplexity": {
+              "level": "error",
+              "options": {
+                "maxAllowedComplexity": 10
+              }
+            },
+            "useArrowFunction": "error",
+            "noImplicitCoercions": {
+              "level": "error",
+              "options": {
+                "allowDoubleNegation": true
+              }
+            },
+            "noUselessFragments": "error",
+            "noAdjacentSpacesInRegex": "error",
+            "noUselessEscapeInRegex": "error"
+          },
+          "nursery": {
+            "noFloatingPromises": "error",
+            "useAwaitThenable": "error",
+            "noMisusedPromises": "error",
+            "useNullishCoalescing": "error",
+            "useIncludes": "error",
+            "useStringStartsEndsWith": "error",
+            "useRegexpExec": "error",
+            "noComponentHookFactories": "error",
+            "noReactStringRefs": "error",
+            "noExcessiveNestedCallbacks": {
+              "level": "error",
+              "options": {
+                "max": 3
+              }
+            }
+          },
+          "style": {
+            "noInferrableTypes": "error",
+            "useConsistentArrayType": {
+              "level": "error",
+              "options": {
+                "syntax": "shorthand"
+              }
+            },
+            "useReadonlyClassProperties": "error",
+            "noNamespace": "error",
+            "noCommonJs": "error",
+            "useForOf": "error",
+            "useConst": "error",
+            "useConsistentObjectDefinitions": {
+              "level": "error",
+              "options": {
+                "syntax": "shorthand"
+              }
+            },
+            "useTemplate": "error",
+            "noUselessElse": "error",
+            "useCollapsedElseIf": "error",
+            "noNestedTernary": "error",
+            "useNodejsImportProtocol": "error",
+            "useNumberNamespace": "error",
+            "noNegationElse": "error",
+            "useSelfClosingElements": "error",
+            "useConsistentCurlyBraces": "error",
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "paths": {
+                  "styled-components": {
+                    "message": "Use Ant Design components with CSS utility classes (className) instead."
+                  },
+                  "antd": {
+                    "importNames": ["Layout"],
+                    "message": "Layout has default grey/dark backgrounds. Use Flex component instead."
+                  },
+                  "@rediacc/shared/types": {
+                    "importNames": ["WithOptionalVault"],
+                    "message": "WithOptionalVault is deprecated. vaultContent and vaultVersion are now optional with SQL defaults in generated types. Use CreateXxxParams directly."
+                  }
+                },
+                "patterns": [
+                  {
+                    "group": ["styled-components/*"],
+                    "message": "Use Ant Design components instead."
+                  },
+                  {
+                    "group": [
+                      "antd/es/layout",
+                      "antd/es/layout/*",
+                      "antd/lib/layout",
+                      "antd/lib/layout/*"
+                    ],
+                    "message": "Layout has default grey/dark backgrounds. Use Flex component instead."
+                  }
+                ]
+              }
+            }
+          },
+          "a11y": {
+            "useButtonType": "error"
+          },
+          "security": {
+            "noBlankTarget": "error",
+            "noDangerouslySetInnerHtmlWithChildren": "error"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["**/*.js", "**/*.mjs", "**/*.cjs", "!private/account/**"],
+      "linter": {
+        "rules": {
+          "recommended": true,
+          "correctness": {
+            "noUndeclaredVariables": "error"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["scripts/**/*.ts"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noConsole": "off",
+            "useAwait": "off"
+          },
+          "complexity": {
+            "noExcessiveCognitiveComplexity": "off",
+            "noAdjacentSpacesInRegex": "off"
+          },
+          "nursery": {
+            "noFloatingPromises": "off"
+          },
+          "style": {
+            "useNumberNamespace": "off",
+            "noNegationElse": "off",
+            "noNestedTernary": "off",
+            "useTemplate": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "packages/*/scripts/**/*.js",
+        "packages/*/scripts/**/*.cjs",
+        "packages/*/scripts/**/*.mjs",
+        "packages/*/scripts/**/*.ts"
+      ],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noConsole": "off"
+          },
+          "complexity": {
+            "noExcessiveCognitiveComplexity": "off",
+            "noAdjacentSpacesInRegex": "off"
+          },
+          "style": {
+            "useNumberNamespace": "off",
+            "noNegationElse": "off",
+            "noNestedTernary": "off",
+            "useTemplate": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        ".ci/**/*.js",
+        ".ci/**/*.cjs",
+        ".ci/**/*.mjs",
+        ".ci/**/*.ts",
+        "eslint-rules/**/*.js",
+        "eslint-rules/**/*.cjs",
+        "eslint-rules/**/*.mjs",
+        ".github/actions/**/*.js",
+        "packages/cli/bundle.mjs",
+        "packages/www/src/plugins/*.mjs"
+      ],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noConsole": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["**/*.cjs"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noCommonJs": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "packages/e2e-tests/**/*.ts",
+        "packages/shared/src/**/__tests__/**/*.ts",
+        "packages/shared/src/**/__tests__/**/*.tsx",
+        "packages/cli/src/**/__tests__/**/*.ts"
+      ],
+      "linter": {
+        "rules": {
+          "nursery": {
+            "noPlaywrightWaitForTimeout": "error",
+            "noPlaywrightMissingAwait": "error",
+            "useExpect": "off",
+            "noExcessiveNestedCallbacks": {
+              "level": "error",
+              "options": {
+                "max": 5
+              }
+            }
+          },
+          "suspicious": {
+            "noFocusedTests": "error"
+          },
+          "correctness": {
+            "noRestrictedElements": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "packages/e2e-tests/tests/12a-full-integration-repository.test.ts",
+        "packages/e2e-tests/tests/13-postgres-fork-isolation.test.ts",
+        "packages/e2e-tests/tests/ops-lifecycle/18-ops-lifecycle.test.ts"
+      ],
+      "linter": {
+        "rules": {
+          "nursery": {
+            "useExpect": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "packages/shared/src/**/__tests__/**/*.ts",
+        "packages/shared/src/**/__tests__/**/*.tsx"
+      ],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noSkippedTests": "error"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/www/src/**/*.ts", "packages/www/src/**/*.tsx"],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "noRestrictedElements": "off"
+          },
+          "style": {
+            "noRestrictedImports": "off"
+          },
+          "a11y": {
+            "useAltText": "error"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["private/account/src/routes/**/*.ts", "!private/account/src/routes/test.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["../db/*", "../db", "drizzle-orm", "drizzle-orm/*"],
+                    "message": "Routes cannot import from the database layer. Use services and DTO schemas."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "packages/cli/src/commands/datastore.ts",
+        "packages/cli/src/commands/repo.ts",
+        "packages/cli/src/commands/repo-create-delete.ts",
+        "packages/cli/src/commands/repo-trim.ts",
+        "packages/cli/src/commands/mcp/tool-factory.ts",
+        "packages/cli/src/commands/mcp/__tests__/argv-acceptance.test.ts"
+      ],
+      "linter": {
+        "rules": {
+          "complexity": {
+            "noExcessiveCognitiveComplexity": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["**/*.generated.ts", "**/*.generated.tsx"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noInferrableTypes": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "packages/e2e-tests/src/base/bridge-global-setup.ts",
+        "packages/e2e-tests/src/base/bridge-global-teardown.ts",
+        "packages/e2e-tests/src/reporters/TextFileReporter.ts",
+        "packages/e2e-tests/src/utils/bridge/BridgeTestRunner.ts",
+        "packages/e2e-tests/src/utils/bridge/helpers/RepositoryHelpers.ts",
+        "packages/e2e-tests/src/utils/infrastructure/InfrastructureManager.ts",
+        "packages/e2e-tests/src/utils/image/ImageTestHelper.ts",
+        "packages/e2e-tests/tests/20-image-build.test.ts",
+        "packages/e2e-tests/tests/13-postgres-fork-isolation.test.ts",
+        "packages/e2e-tests/tests/19-rustfs-operations.test.ts",
+        "packages/e2e-tests/tests/12d-full-integration-multi-machine.test.ts",
+        "packages/cli/src/remote/sync/rsync.ts",
+        "packages/cli/src/commands/vscode.ts",
+        "packages/cli/src/services/core/output.ts"
+      ],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noConsole": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "packages/e2e-tests/tests/16-setup-installation-params.test.ts",
+        "packages/e2e-tests/tests/20-image-build.test.ts",
+        "packages/e2e-tests/tests/21-local-executor.test.ts",
+        "packages/e2e-tests/tests/22-setup-command.test.ts"
+      ],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "useAwait": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "packages/shared/src/utils/progress.ts",
+        "packages/www/scripts/lib/dev-server-ready.js"
+      ],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noControlCharactersInRegex": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["private/account/**/i18n/locales/**/*.json"],
+      "formatter": {
+        "enabled": false
       }
     }
   ]

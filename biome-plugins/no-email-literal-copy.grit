@@ -1,0 +1,50 @@
+// Bans hardcoded email copy passed to `sendEmail(...)`: a string literal or a
+// template literal in ANY argument position after the first (the recipient),
+// for the 2-, 3- and 4-argument call shapes. `EmailService.sendEmail` takes at
+// most 4 (to, subject, html, text), and every real call site passes all 4
+// (private/account/src/services/email.service.ts). Render subject/html/text
+// via translated email templates instead. Scoped to that one file by the
+// `includes` on the plugin reference in biome.json.
+//
+// THIS IS NEW ENFORCEMENT, NOT A PORT OF A LIVE ESLINT RULE. The intent comes
+// from eslint.config/i18n.js:350-363 (`no-restricted-syntax` with
+// `CallExpression[callee.property.name='sendEmail'] > Literal:nth-child(n+2)`
+// and a `TemplateLiteral` twin), but that entry never ran:
+// `calculateConfigForFile(email.service.ts)` shows the account block's own
+// `no-restricted-syntax` replacing it, and `nth-child(n+2)` is an esquery
+// syntax error that makes `Linter.verify` throw (verify3 VERDICT.md, N3).
+//
+// WHY `any` AND ONE ARM PER (ARITY, POSITION). A single arm binds one variable
+// once per call, so `sendEmail(to, 'a', 'b')` would report only 'a'. `any`
+// evaluates every arm, and each arm needs its OWN variable names: arms that
+// share `$x` conflict on the second binding and silently drop the second
+// literal. Positive and negative fixtures for every arm are in
+// .ci/cache/biome-parity/wave3/email-plugin/ (9 hits, 4 silent).
+language js
+
+any {
+  `$o21.sendEmail($_, $s21)` where {
+    $s21 <: or { string(), JsTemplateExpression() },
+    register_diagnostic(span = $s21, message = "Do not hardcode email copy in EmailService. Render subject/html/text via translated email templates.")
+  },
+  `$o31.sendEmail($_, $s31, $_)` where {
+    $s31 <: or { string(), JsTemplateExpression() },
+    register_diagnostic(span = $s31, message = "Do not hardcode email copy in EmailService. Render subject/html/text via translated email templates.")
+  },
+  `$o32.sendEmail($_, $_, $s32)` where {
+    $s32 <: or { string(), JsTemplateExpression() },
+    register_diagnostic(span = $s32, message = "Do not hardcode email copy in EmailService. Render subject/html/text via translated email templates.")
+  },
+  `$o41.sendEmail($_, $s41, $_, $_)` where {
+    $s41 <: or { string(), JsTemplateExpression() },
+    register_diagnostic(span = $s41, message = "Do not hardcode email copy in EmailService. Render subject/html/text via translated email templates.")
+  },
+  `$o42.sendEmail($_, $_, $s42, $_)` where {
+    $s42 <: or { string(), JsTemplateExpression() },
+    register_diagnostic(span = $s42, message = "Do not hardcode email copy in EmailService. Render subject/html/text via translated email templates.")
+  },
+  `$o43.sendEmail($_, $_, $_, $s43)` where {
+    $s43 <: or { string(), JsTemplateExpression() },
+    register_diagnostic(span = $s43, message = "Do not hardcode email copy in EmailService. Render subject/html/text via translated email templates.")
+  }
+}

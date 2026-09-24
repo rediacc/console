@@ -1,0 +1,11 @@
+// Replaces the ESLint `no-restricted-syntax` entry at eslint.config/typescript.js:364-367 (selector: `CallExpression[callee.name=/^t$|^tSystem$|^tCommon$/] ObjectExpression Property[key.name='defaultValue']`). Bans a `defaultValue` option on a translation call: add the key to the English translation JSON instead. The call's whole argument list binds to one metavariable and `contains` searches it for a `defaultValue: $dv` property, so this fires regardless of how many arguments the call has or where `defaultValue` sits among the options object's other properties: `t('k', { defaultValue: 'x' })`, `t('k', { count: 1, defaultValue: 'x' })` and `t('k', { defaultValue: 'x', count: 1 })` all match. An earlier version matched only the direct two-argument, sole-property shape `t($key, { defaultValue: $dv })`, which is what this replaces.
+language js
+
+`$fn($args)` where {
+    $fn <: r"^(?:t|tSystem|tCommon)$",
+    $args <: contains `defaultValue: $dv`,
+    register_diagnostic(
+        span = $dv,
+        message = "Do not use defaultValue in translation calls. Add the key to English translation JSON files instead."
+    )
+}

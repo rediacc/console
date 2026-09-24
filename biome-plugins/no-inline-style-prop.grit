@@ -1,0 +1,10 @@
+// Replaces the ESLint `no-restricted-syntax` entry at eslint.config/typescript.js:368-371 (selector: `JSXAttribute[name.name=/^styles?$/]`). Bans the `style`/`styles` JSX attribute: use CSS utility classes from global.css or Ant Design component props instead. Biome's own `nursery/noInlineStyles` covers only the singular `style` attribute, not `styles`, which is why this stays a plugin. Matches the `jsx_attribute` node directly rather than an `<$el ...>` snippet, so the attribute is caught in any position among an element's siblings and with or without a value: `<div className="x" style={{}} />`, `style` before `className`, and the boolean form `<span data-x style>`. An earlier version matched only `<$el style={$val} />`-shaped snippets, which required style to be the element's sole attribute, and that version is what this replaces.
+language js
+
+jsx_attribute($name) where {
+    $name <: r"^styles?$",
+    register_diagnostic(
+        span = $name,
+        message = "Inline styles are not allowed. Use CSS utility classes from global.css or Ant Design component props instead."
+    )
+}

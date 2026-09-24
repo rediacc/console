@@ -17,16 +17,9 @@ ADDING A RULE MEANS ADDING A SPECIMEN. That is deliberate friction. A rule with 
 Everything above stayed true and was still nearly worthless in scope. The implementation had three constants that fenced it in: one probe path (packages/www/src/i18n/translations/tr.json), a namespace filter that only looked at `i18n/`, and a hand-written specimen list of five. Repo-wide there are 30 enabled rules across the `custom`, `i18n` and `i18n-source` plugins, so a dead
 `custom/*` rule was invisible here AND to check_lint_scope_coverage.py, which names this gate as its backstop. No RuleTester exists anywhere in the repo, so nothing else covered them either.
 
-The logic now lives in the sibling lint-rule-liveness.mjs, which derives its
-universe from eslint.config.js instead of listing it -- a hand-written probe
-list is precisely the artefact that misses a config block -- and asserts set equality between the enabled rules and the matrix in BOTH directions. It also
-runs on ESLint's JS API in one process rather than spawning `npx eslint` per
-rule: 30 rules that way costs over 90 s, which is how a gate gets switched off. Measured end to end: about 10 s.
+The logic now lives in the sibling lint-rule-liveness.mjs, which derives its universe from scripts/data/source-rules.ts's flat RULE_IDS table instead of listing it or walking eslint.config.js -- a hand-written probe list is precisely the artefact that misses a rule -- and asserts set equality between the enabled rules and the matrix in BOTH directions. It also runs on ESLint's JS API in one process rather than spawning `npx eslint` per rule: 30 rules that way costs over 90 s, which is how a gate gets switched off. Measured end to end: about 10 s. The same driver also proves a second, independent half: every GritQL plugin under biome-plugins/ fires on a violation planted at its real repo-relative path, since a plugin's `includes` can silently fail to match a real path (measured 2026-09-24, see biome.json's own history) the same way a dead rule can silently fail to report. Those specimens live in an OS temp MIRROR carrying the verbatim biome.json, never in the shared tree: the 2026-09-24 first cut planted them in the tree and appended to the tracked private/account email.service.ts, which a hard kill would have left behind (verify3 VERDICT.md N2). So this gate writes nothing under the repo and needs no `tree:repo` mutex.
 
-THIS FILE STAYS THE ENTRY POINT and stays Python, because four places name this path: package.json, scripts/ci-runner/manifest.ts, .github/workflows/ci-quality.yml, and the anti-vacuity registry in .ci/rediacc_ci/tests/gates/test_gate_gate_anti_vacuity.py. Its remaining job is the two vacuity preconditions BELOW, which must be answered before Node is spawned -- against the
-empty-tree fixture the anti-vacuity harness
-uses, an unguarded `import('eslint')` dies with ERR_MODULE_NOT_FOUND, a non-zero
-exit for an environment reason wearing a vacuity failure's exit code.
+THIS FILE STAYS THE ENTRY POINT and stays Python, because four places name this path: package.json, scripts/ci-runner/manifest.ts, .github/workflows/ci-quality.yml, and the anti-vacuity registry in .ci/rediacc_ci/tests/gates/test_gate_gate_anti_vacuity.py. Its remaining job is the four vacuity preconditions BELOW, which must be answered before Node is spawned -- against the empty-tree fixture the anti-vacuity harness uses, an unguarded `import('eslint')` dies with ERR_MODULE_NOT_FOUND, a non-zero exit for an environment reason wearing a vacuity failure's exit code.
 
 DO NOT ADD lint-rule-liveness.mjs TO THE manifest.ts `leaves` LIST. The plan called for that, and it is wrong on two counts, both measured. `leaves` is a DERIVED field: check-ci-parity.ts:488-495 resolves the package.json command's own shell structure and fails when the declared list differs, so the extra entry is reported as a hygiene finding ("declares leaves [...] but
 package.json resolves to [...]"). And it buys nothing anyway -- scope-map.cjs:134 matches the whole of `.ci/` with `full: 'harness'`, so ANY edit under this directory already forces the full harness scope and reselects this gate.
@@ -49,12 +42,12 @@ import sys
 
 DRIVER = "lint-rule-liveness.mjs"
 
-# Checked BEFORE node starts. Without eslint.config.js there is no rule set to
-# resolve, and without node_modules/eslint there is nothing to resolve it with;
-# either way the gate would otherwise report that zero enabled rules are unhealthy, which is exactly what a healthy repo looks like.
+# Checked BEFORE node starts. Without node_modules/eslint there is nothing to resolve the custom/i18n/i18n-source rules with; without source-rules.ts there is no universe of ruleIds to prove; without biome-plugins/ or the biome binary there is no GritQL half to prove either. Either way the gate would otherwise report that zero enabled rules or plugins are unhealthy, which is exactly what a healthy repo looks like.
 REQUIRED = (
-    ("eslint.config.js", "no rule set can be resolved"),
-    ("node_modules/eslint", "there is no ESLint to resolve it with"),
+    ("node_modules/eslint", "there is no ESLint to resolve the custom/i18n rules with"),
+    ("scripts/data/source-rules.ts", "there is no host-rule universe to prove"),
+    ("biome-plugins", "there is no GritQL plugin to prove"),
+    ("node_modules/.bin/biome", "there is no Biome binary to run the plugin half with"),
 )
 
 

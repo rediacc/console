@@ -1,0 +1,11 @@
+// Replaces the ESLint `no-restricted-syntax` entry at eslint.config/typescript.js:360-363 (selector: `Literal[value=/var\(--ant-/]`). Bans CSS custom properties on the `--ant-*` namespace inside string literals: remove the color styling or use an Ant Design component prop instead.
+language js
+
+`$s` where {
+    $s <: string(),
+    $s <: r".*var\(--ant-.*",
+    register_diagnostic(
+        span = $s,
+        message = "Do not use CSS variables (var(--ant-*)). Remove color styling or use Ant Design component props instead."
+    )
+}
