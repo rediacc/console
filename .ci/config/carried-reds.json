@@ -20,18 +20,6 @@
     {
       "gate": "check:ci-gate-manifest",
       "reason": "A LOCAL MEASUREMENT ARTIFACT, and the gate's own comment describes this exact failure mode: 'a full run that overlapped two other sessions on 2026-09-02 pushed a 4.5s gate's average to 21s and this oracle demanded it be marked slow'. The three gates it names here (check:ci-guard-mention-anchoring 24.8s, check:ci-changed-selection 141.6s, gate-test:policy-liveness-floors 29.2s) were timed on a machine that spent today running a 22-worker gate battery and a 15919-test pytest suite, so the numbers are inflated by my own load. The oracle reads .ci/cache/gate-durations.json, which .gitignore:143 excludes, so CI's checkout does not have this file and the read sits inside a try/except -- these findings cannot reproduce there. Marking three gates `slow: true` on a contended measurement would change CI lane composition on bad data, which is the one thing the gate's comment warns against. Carried so CI can measure it honestly and say so."
-    },
-    {
-      "gate": "check:ci-plan-implementation",
-      "reason": "307 P-A2 findings across 21 plans this session never authored, a side effect of this session's own plan-boxes.json ledger regen. Triaged and deferred via worklist item d4132cbf, DEFAULT no mass investigation, window still open."
-    },
-    {
-      "gate": "check:ci-plan-citations",
-      "reason": "356 remaining, down from 964 after 614 mechanical repoints (b89a25b46) plus a real gate-defect fix (d231c8c30). The remainder is genuine per-plan judgment, categorized in PLAN-fix-plan-citation-drift.md's own new section, not force-closed."
-    },
-    {
-      "gate": "check:ci-plan-record",
-      "reason": "5 remaining, down from 161 (132 a real gate defect fixed in d231c8c30). The rest is hand-edited Record-Sig mismatches and unfilled placeholders needing a human read of the prose, not a mechanical fix."
     }
   ]
 }
