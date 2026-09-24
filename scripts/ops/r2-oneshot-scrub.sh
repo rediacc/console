@@ -83,13 +83,42 @@ export AWS_DEFAULT_REGION="auto"
 
 # Helpers -----------------------------------------------------------------
 
+# s3_ls <var> <prefix> [aws s3 ls flags...]
+#
+# Lists s3://$BUCKET/<prefix> into <var>, the way simulate-promotion.sh:185-207
+# does. `aws s3 ls` exits 1 with nothing on stderr when a prefix holds no
+# objects, so that one shape is an EMPTY listing. Every other non-zero exit is a
+# listing that FAILED: aws's own message is printed and the scrub stops, rather
+# than reading an expired credential as "empty or missing" and ending in "Done."
+# It exits the script itself, so it must be called directly, never inside $(...).
+s3_ls() {
+    local __s3_ls_var="$1" __s3_ls_prefix="$2"
+    shift 2
+    local __s3_ls_out __s3_ls_errf __s3_ls_err __s3_ls_rc=0
+    __s3_ls_errf="$(mktemp)"
+    __s3_ls_out="$(aws s3 ls "s3://${BUCKET}/${__s3_ls_prefix}" "$@" --endpoint-url "$CLOUDFLARE_R2_ENDPOINT" 2>"$__s3_ls_errf")" || __s3_ls_rc=$?
+    __s3_ls_err="$(<"$__s3_ls_errf")"
+    rm -f "$__s3_ls_errf"
+    # `--summarize` prints its totals even for an empty prefix; those lines are
+    # not objects, so they do not make an exit 1 a failure.
+    local __s3_ls_objects
+    __s3_ls_objects="$(grep -Ev '^[[:space:]]*(Total Objects:|Total Size:|$)' <<<"$__s3_ls_out" || true)"
+    if [[ $__s3_ls_rc -ne 0 ]] && { [[ $__s3_ls_rc -ne 1 ]] || [[ -n "$__s3_ls_objects" ]] || [[ "$__s3_ls_err" =~ [^[:space:]] ]]; }; then
+        [[ -n "$__s3_ls_err" ]] && printf '%s\n' "$__s3_ls_err" >&2
+        log_error "aws s3 ls s3://${BUCKET}/${__s3_ls_prefix} failed (exit ${__s3_ls_rc}); stopping the scrub here"
+        exit "$__s3_ls_rc"
+    fi
+    [[ $__s3_ls_rc -ne 0 ]] && __s3_ls_out=""
+    printf -v "$__s3_ls_var" '%s' "$__s3_ls_out"
+}
+
 # Pretty-print size + count under a prefix; returns 0 if prefix has content.
 describe_prefix() {
     local prefix="$1"
-    local out
-    out="$(aws s3 ls "s3://${BUCKET}/${prefix}" --recursive --summarize --human-readable \
-        --endpoint-url "$CLOUDFLARE_R2_ENDPOINT" 2>/dev/null | tail -3 || true)"
-    if [[ -z "$out" ]]; then
+    local listing out
+    s3_ls listing "$prefix" --recursive --summarize --human-readable
+    out="$(tail -3 <<<"$listing")"
+    if [[ -z "$listing" ]] || grep -Eq '^[[:space:]]*Total Objects:[[:space:]]*0[[:space:]]*$' <<<"$listing"; then
         log_info "  (empty or missing: ${prefix})"
         return 1
     fi
@@ -155,9 +184,9 @@ stage1() {
 
     # Dryrun orphans across every format dir
     for fmt in cli desktop npm apt rpm apk archlinux; do
-        local out
-        out="$(aws s3 ls "s3://${BUCKET}/${fmt}/" --endpoint-url "$CLOUDFLARE_R2_ENDPOINT" 2>/dev/null |
-            awk '/^[[:space:]]*PRE[[:space:]]dryrun-/ {print $2}' || true)"
+        local top out
+        s3_ls top "${fmt}/"
+        out="$(awk '/^[[:space:]]*PRE[[:space:]]dryrun-/ {print $2}' <<<"$top")"
         while IFS= read -r sub; do
             [[ -z "$sub" ]] && continue
             rm_prefix "${fmt}/${sub}" "dryrun orphan"
@@ -202,9 +231,9 @@ stage2() {
     for n in 1 2; do
         local prefix="desktop/v1.0.${n}/"
         log_step "  Processing $prefix"
-        local files
-        files="$(aws s3 ls "s3://${BUCKET}/${prefix}" --endpoint-url "$CLOUDFLARE_R2_ENDPOINT" 2>/dev/null |
-            awk '{print $NF}' | grep -E '^rediacc-desktop-0\.0\.0-dev-' || true)"
+        local raw files
+        s3_ls raw "$prefix"
+        files="$(awk '{print $NF}' <<<"$raw" | grep -E '^rediacc-desktop-0\.0\.0-dev-' || true)"
         if [[ -z "$files" ]]; then
             log_info "    no 0.0.0-dev-* files under $prefix"
             continue
@@ -274,18 +303,18 @@ stage2c() {
     now_epoch="$(date -u +%s)"
     local deleted=0
     for fmt in cli desktop npm apt rpm apk archlinux; do
-        local listing
-        listing="$(aws s3 ls "s3://${BUCKET}/${fmt}/" --endpoint-url "$CLOUDFLARE_R2_ENDPOINT" 2>/dev/null |
-            awk '/^[[:space:]]*PRE[[:space:]]pr-[0-9]+\// {print $2}')"
+        local top listing
+        s3_ls top "${fmt}/"
+        listing="$(awk '/^[[:space:]]*PRE[[:space:]]pr-[0-9]+\// {print $2}' <<<"$top")"
         [[ -z "$listing" ]] && continue
         while IFS= read -r sub; do
             [[ -z "$sub" ]] && continue
             local pr_num="${sub#pr-}"
             pr_num="${pr_num%/}"
             local prefix="${fmt}/${sub}"
-            local last
-            last="$(aws s3 ls "s3://${BUCKET}/${prefix}" --recursive --endpoint-url "$CLOUDFLARE_R2_ENDPOINT" 2>/dev/null |
-                awk 'NR==1 {print $1"T"$2"Z"; exit}')"
+            local objects last
+            s3_ls objects "$prefix" --recursive
+            last="$(awk 'NF && !done {print $1"T"$2"Z"; done = 1}' <<<"$objects")"
             [[ -z "$last" ]] && continue
             local last_epoch
             last_epoch="$(date -u -d "$last" +%s 2>/dev/null || echo 0)"
@@ -303,8 +332,17 @@ stage2c() {
                 fi
             fi
             if [[ -n "$reason" ]]; then
-                log_info "  reaping $prefix ($reason)"
-                aws s3 rm "s3://${BUCKET}/${prefix}" --recursive --endpoint-url "$CLOUDFLARE_R2_ENDPOINT" --quiet 2>/dev/null
+                # The default run is a dry run, and this stage once deleted
+                # during it: the rm below had no DRY_RUN or confirm guard.
+                if $DRY_RUN; then
+                    log_warn "  [DRY-RUN] Would reap $prefix ($reason)"
+                elif confirm "Reap s3://${BUCKET}/${prefix} (${reason})?"; then
+                    log_info "  reaping $prefix ($reason)"
+                    aws s3 rm "s3://${BUCKET}/${prefix}" --recursive --endpoint-url "$CLOUDFLARE_R2_ENDPOINT" --quiet
+                else
+                    log_info "  skipped: $prefix"
+                    continue
+                fi
                 deleted=$((deleted + 1))
             fi
         done <<<"$listing"
@@ -339,9 +377,9 @@ stage2d() {
         for channel in stable edge; do
             local root="${fmt}/${channel}/"
             log_step "  $root"
-            local listing
-            listing="$(aws s3 ls "s3://${BUCKET}/${root}" --recursive --endpoint-url "$CLOUDFLARE_R2_ENDPOINT" 2>/dev/null |
-                awk '{
+            local objects listing
+            s3_ls objects "$root" --recursive
+            listing="$(awk '{
                     n = split($4, p, "/"); fname = p[n];
                     if (fname !~ /^rediacc-(cli|desktop)[-_]/) next
                     rest = fname; sub(/^rediacc-(cli|desktop)[-_]/, "", rest);
@@ -351,7 +389,7 @@ stage2d() {
                         is_dev = (semver == "0.0.0" && after ~ /^-dev/) ? 1 : 0;
                         print $1"T"$2"Z""|"semver"|"is_dev"|"$4
                     }
-                }')"
+                }' <<<"$objects")"
             if [[ -z "$listing" ]]; then
                 log_info "    empty or no artifact files"
                 continue

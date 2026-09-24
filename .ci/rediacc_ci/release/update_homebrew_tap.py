@@ -258,21 +258,50 @@ def _git(args: list[str], *, quiet: bool = False, capture: bool = False, cwd=Non
     return subprocess.run(["git", *args], cwd=cwd, check=False)
 
 
+#: The twin's helper value, verbatim. It carries no secret: `$GITHUB_PAT` is read from the git child's environment when git asks, so neither argv nor any config file ever holds the token.
+CREDENTIAL_HELPER = '!f() { test "$1" = get && printf "username=x-access-token\\npassword=%s\\n" "$GITHUB_PAT"; }; f'
+
+
+def auth_args(env: dict[str, str] | None = None) -> list[str]:
+    """`AUTH_ARGS` (:76-87): per-command credentials, or nothing when GITHUB_PAT is unset or empty.
+
+    The empty helper entry first resets any inherited github.com helper (a `gh auth git-credential` in ~/.gitconfig, say), so the token is the one used.
+    """
+    pat = os.environ.get("GITHUB_PAT", "") if env is None else env.get("GITHUB_PAT", "")
+    if not pat:
+        return []
+    return [
+        "-c",
+        "credential.https://github.com.helper=",
+        "-c",
+        "credential.https://github.com.helper=" + CREDENTIAL_HELPER,
+    ]
+
+
 def sync_to_origin_main(directory: pathlib.Path, *, dry_run: bool) -> int:
-    """`:81-90`.
+    """`:89-106`.
+
+    A DIRTY TAP IS REFUSED, NEVER RESET. `checkout -B main` over uncommitted work would discard it, so a non-empty `git status --porcelain` ends the run with exit 1, in dry-run too; a failing `git status` ends it with git's own status.
 
     THE FETCH IS ALLOWED TO FAIL AND THE REV-PARSE IS NOT. `|| true` on the fetch means an offline machine still proceeds against whatever `origin/main` it already has; the `rev-parse` that follows is a bare assignment, so `set -e` kills the script when there is no `origin/main` at all. Both halves are reproduced, including the fact that DRY-RUN still runs both of them and only
     skips the checkout.
     """
-    _git(["-C", str(directory), "fetch", "origin", "main"], quiet=True)
+    status = _git(["-C", str(directory), "status", "--porcelain"], capture=True)
+    if status.returncode != 0:
+        return status.returncode
+    if status.stdout.rstrip("\n"):
+        log.error(
+            "Refusing to reset %s to origin/main: its working tree has uncommitted changes. "
+            "Commit or stash them, then re-run." % directory
+        )
+        return 1
+    _git(["-C", str(directory), *auth_args(), "fetch", "origin", "main"], quiet=True)
     proc = _git(["-C", str(directory), "rev-parse", "origin/main"], capture=True)
     if proc.returncode != 0:
         return proc.returncode
     origin = proc.stdout.rstrip("\n")
     if not dry_run:
-        rc = _git(
-            ["-C", str(directory), "checkout", "-B", "main", origin, "--force"], quiet=True
-        ).returncode
+        rc = _git(["-C", str(directory), "checkout", "-B", "main", origin], quiet=True).returncode
         if rc != 0:
             return rc
     log.info("Synced %s to origin/main (%s)" % (directory, origin))
@@ -456,7 +485,7 @@ def commit_and_push(tap_dir: pathlib.Path, version: str, *, dry_run: bool) -> in
         return rc
     log.info("Committed formula update")
 
-    rc = _git(["-C", str(tap_dir), "push", "origin", "HEAD:main"]).returncode
+    rc = _git(["-C", str(tap_dir), *auth_args(), "push", "origin", "HEAD:main"]).returncode
     if rc != 0:
         return rc
     log.info("Pushed to homebrew-tap")
@@ -508,7 +537,7 @@ def update_submodule_pointer(repo_root: pathlib.Path, *, dry_run: bool) -> int:
     ).returncode
     if rc != 0:
         return rc
-    rc = _git(["push", "origin", "HEAD:main"], cwd=str(repo_root)).returncode
+    rc = _git([*auth_args(), "push", "origin", "HEAD:main"], cwd=str(repo_root)).returncode
     if rc != 0:
         return rc
     log.info("Committed and pushed homebrew-tap submodule pointer update")
@@ -558,19 +587,6 @@ def main(argv: list[str]) -> int:
 
     tap_dir = root / TAP_SUBMODULE
     formula = tap_dir / HOMEBREW_FORMULA_PATH
-
-    pat = os.environ.get("GITHUB_PAT", "")
-    if pat:
-        rc = _git(
-            [
-                "config",
-                "--global",
-                "url.https://x-access-token:%s@github.com/.insteadOf" % pat,
-                "https://github.com/",
-            ]
-        ).returncode
-        if rc != 0:
-            return rc
 
     log.step("Updating Homebrew tap for version %s..." % opts.version)
 

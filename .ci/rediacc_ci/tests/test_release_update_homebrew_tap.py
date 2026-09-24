@@ -120,6 +120,9 @@ def rc(name, default="0"):
 
 if verb == "config":
     sys.exit(0)
+if verb == "status":
+    sys.stdout.write(os.environ.get("FAKE_GIT_STATUS_OUT", ""))
+    sys.exit(rc("FAKE_GIT_STATUS_RC"))
 if verb == "fetch":
     sys.exit(rc("FAKE_GIT_FETCH_RC"))
 if verb == "rev-parse":
@@ -276,7 +279,7 @@ def _run(
 
     env = {
         "PATH": stub,
-        # A SCRATCH HOME, because `git config --global` writes into it when GITHUB_PAT is set and the real one must not be touched even by a fake.
+        # A SCRATCH HOME, so the no-persistence test can prove nothing wrote a gitconfig, and so the real one is never in reach even of a fake.
         "HOME": str(tmp_path / ("%s-home" % side)),
         "TMPDIR": str(tmp_path / ("%s-tmp" % side)),
         "LC_ALL": "C",
@@ -707,16 +710,112 @@ def test_a_missing_git_bot_name_kills_the_run_after_the_formula_was_written(
     assert not any("\tcommit\t" in c for c in old[1])
 
 
-def test_github_pat_installs_the_insteadof_rewrite_before_anything_else(
+def test_github_pat_is_passed_per_command_and_never_persisted(
     tmp_path: pathlib.Path,
 ) -> None:
-    old, new = run_both(tmp_path, ["--version", "2.5.0"], GITHUB_PAT="ghp_secret")
-    assert old[0].returncode == 0
-    first = old[1][0]
-    assert first.startswith("git\tconfig\t--global\t"), first
-    assert "url.https://x-access-token:ghp_secret@github.com/.insteadOf" in first
-    assert first.endswith("\thttps://github.com/")
+    """The token authenticates the fetch and both pushes through `-c` credential-helper arguments that hold no secret, and nothing writes git config.
+
+    A `git config --global` insteadOf write once left a plaintext PAT in ~/.gitconfig, which the devbox shares with the host. Reverting either side to that write turns this red on three counts: a `config` call, the token in argv, and a scratch-HOME gitconfig.
+    """
+    old, new = run_both(
+        tmp_path,
+        ["--version", "2.5.0", "--push"],
+        GITHUB_PAT="ghp_secret",
+        GIT_BOT_NAME="B",
+        GIT_BOT_EMAIL="b@e",
+    )
+    assert old[0].returncode == 0, old[0].stderr
+    for side in (old, new):
+        calls = side[1]
+        assert not any("\tconfig\t" in c for c in calls), calls
+        assert not any("ghp_secret" in c for c in calls), "the token reached argv"
+        helper = "credential.https://github.com.helper=" + port.CREDENTIAL_HELPER
+        authed = [c for c in calls if helper in c]
+        verbs = sorted(c.rsplit("\t", 3)[1] if "fetch" not in c else "fetch" for c in authed)
+        assert verbs == ["fetch", "push", "push"], authed
+        for c in authed:
+            assert "\tcredential.https://github.com.helper=\t" in c, "the reset entry is missing"
+        assert not (tmp_path / "old-home" / ".gitconfig").exists()
+        assert not (tmp_path / "new-home" / ".gitconfig").exists()
     assert_agree(old, new, "github-pat")
+
+
+def test_no_github_pat_means_no_credential_arguments(tmp_path: pathlib.Path) -> None:
+    old, new = run_both(
+        tmp_path, ["--version", "2.5.0", "--push"], GIT_BOT_NAME="B", GIT_BOT_EMAIL="b@e"
+    )
+    assert old[0].returncode == 0, old[0].stderr
+    assert not any("credential." in c for c in old[1] + new[1])
+    assert_agree(old, new, "no-pat")
+
+
+def test_the_credential_helper_answers_real_git_with_the_token(tmp_path: pathlib.Path) -> None:
+    """The helper string is exercised against REAL git, not the fake: `git credential fill` must hand back the token from the environment, and the reset entry must shadow a helper inherited from the user's gitconfig."""
+    real_git = shutil.which("git")
+    assert real_git is not None
+    home = tmp_path / "cred-home"
+    home.mkdir()
+    (home / ".gitconfig").write_text(
+        '[credential "https://github.com"]\n\thelper = "!f() { echo username=inherited; echo password=inherited; }; f"\n',
+        encoding="utf-8",
+    )
+    env = {
+        "PATH": os.pathsep.join([os.path.dirname(real_git), "/usr/bin", "/bin"]),
+        "HOME": str(home),
+        "GIT_CONFIG_NOSYSTEM": "1",
+        "GIT_TERMINAL_PROMPT": "0",
+        "GITHUB_PAT": "ghp_probe",
+    }
+    proc = subprocess.run(
+        [real_git, *port.auth_args(env), "credential", "fill"],
+        input="protocol=https\nhost=github.com\n\n",
+        capture_output=True,
+        text=True,
+        env=env,
+        check=False,
+        timeout=30,
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert "username=x-access-token\n" in proc.stdout
+    assert "password=ghp_probe\n" in proc.stdout
+    assert "inherited" not in proc.stdout
+    assert port.auth_args({"GITHUB_PAT": ""}) == []
+    assert port.auth_args({}) == []
+
+
+def test_a_dirty_tap_is_refused_before_any_fetch_or_checkout(tmp_path: pathlib.Path) -> None:
+    """A forced `checkout -B main` used to run over the tap's working tree, discarding uncommitted work. A non-empty `git status --porcelain` now ends the run with exit 1 before anything is fetched, reset or rewritten, in dry-run too."""
+    for args in (["--version", "2.5.0", "--push"], ["--version", "2.5.0", "--dry-run"]):
+        old, new = run_both(
+            tmp_path,
+            args,
+            GIT_BOT_NAME="B",
+            GIT_BOT_EMAIL="b@e",
+            FAKE_GIT_STATUS_OUT=" M Formula/rediacc-cli.rb\n",
+        )
+        assert old[0].returncode == 1, old[0].stderr
+        assert "Refusing to reset" in old[0].stderr
+        assert "uncommitted changes" in old[0].stderr
+        verbs = [c.split("\t") for c in old[1]]
+        assert [v[3] for v in verbs] == ["status"], old[1]
+        assert old[2] == FORMULA, "the formula was rewritten despite the refusal"
+        assert_agree(old, new, "dirty-%s" % args[-1])
+
+
+def test_a_clean_tap_is_reset_without_force(tmp_path: pathlib.Path) -> None:
+    old, new = run_both(tmp_path, ["--version", "2.5.0"])
+    checkouts = [c for c in old[1] if "\tcheckout\t" in c]
+    assert len(checkouts) == 1, old[1]
+    assert "--force" not in checkouts[0]
+    assert old[1][0].split("\t")[3] == "status"
+    assert_agree(old, new, "clean-tap")
+
+
+def test_a_failing_git_status_ends_the_run_with_its_status(tmp_path: pathlib.Path) -> None:
+    old, new = run_both(tmp_path, ["--version", "2.5.0"], FAKE_GIT_STATUS_RC="128")
+    assert old[0].returncode == 128
+    assert not any("\tfetch\t" in c for c in old[1])
+    assert_agree(old, new, "status-fails")
 
 
 def test_gh_is_never_invoked(tmp_path: pathlib.Path) -> None:

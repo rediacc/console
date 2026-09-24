@@ -73,18 +73,35 @@ REPO_ROOT="$(get_repo_root)"
 TAP_DIR="$REPO_ROOT/private/homebrew-tap"
 FORMULA_FILE="$TAP_DIR/$HOMEBREW_FORMULA_PATH"
 
-# Ensure authenticated access for pushes in CI
+# GITHUB_PAT authenticates the fetch and the two pushes PER COMMAND, and nothing
+# persists it. A `git config --global` write here once left a plaintext token in
+# ~/.gitconfig, which the devbox shares with the host. The helper value holds no
+# secret: it reads $GITHUB_PAT from the git child's environment at call time,
+# and the empty entry first resets any inherited github.com helper.
+AUTH_ARGS=()
 if [[ -n "${GITHUB_PAT:-}" ]]; then
-    git config --global url."https://x-access-token:${GITHUB_PAT}@github.com/".insteadOf "https://github.com/"
+    # shellcheck disable=SC2016  # the helper expands GITHUB_PAT in git's child, not here
+    AUTH_ARGS=(
+        -c 'credential.https://github.com.helper='
+        -c 'credential.https://github.com.helper=!f() { test "$1" = get && printf "username=x-access-token\npassword=%s\n" "$GITHUB_PAT"; }; f'
+    )
 fi
 
 sync_to_origin_main() {
     local dir="$1"
-    git -C "$dir" fetch origin main >/dev/null 2>&1 || true
+    # A dirty tap is refused, never reset: `checkout -B main` over uncommitted
+    # work would discard it. `git status` failing (not a repository) is fatal too.
+    local dirty
+    dirty="$(git -C "$dir" status --porcelain)"
+    if [[ -n "$dirty" ]]; then
+        log_error "Refusing to reset $dir to origin/main: its working tree has uncommitted changes. Commit or stash them, then re-run."
+        exit 1
+    fi
+    git -C "$dir" "${AUTH_ARGS[@]}" fetch origin main >/dev/null 2>&1 || true
     local origin
     origin="$(git -C "$dir" rev-parse origin/main)"
     if [[ "$DRY_RUN" != "true" ]]; then
-        git -C "$dir" checkout -B main "$origin" --force >/dev/null 2>&1
+        git -C "$dir" checkout -B main "$origin" >/dev/null 2>&1
     fi
     log_info "Synced $dir to origin/main ($origin)"
 }
@@ -239,7 +256,7 @@ commit_and_push() {
         commit -m "chore(release): bump rediacc-cli to $VERSION [skip ci]"
     log_info "Committed formula update"
 
-    git -C "$TAP_DIR" push origin HEAD:main
+    git -C "$TAP_DIR" "${AUTH_ARGS[@]}" push origin HEAD:main
     log_info "Pushed to homebrew-tap"
 }
 
@@ -271,7 +288,7 @@ update_submodule_pointer() {
         else
             git -c user.name="$GIT_BOT_NAME" -c user.email="$GIT_BOT_EMAIL" \
                 commit -m "chore(release): update homebrew-tap submodule pointer [skip ci]"
-            git push origin HEAD:main
+            git "${AUTH_ARGS[@]}" push origin HEAD:main
             log_info "Committed and pushed homebrew-tap submodule pointer update"
         fi
     )
