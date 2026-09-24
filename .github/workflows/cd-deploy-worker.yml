@@ -155,6 +155,16 @@ jobs:
           VITE_TURNSTILE_SITE_KEY: ${{ env.BWS_TURNSTILE_SITE_KEY }}
           VITE_CI_MODE: 'false'
 
+      # The account worker enforces Turnstile whenever its secret is set, so a
+      # portal built without the site key renders no widget and refuses every
+      # login ("Captcha verification required", production 2026-09-24).
+      - name: Portal carries the Turnstile site key
+        run: |
+          test -n "$VITE_TURNSTILE_SITE_KEY" || { echo "::error::TURNSTILE_SITE_KEY resolved empty; refusing to deploy a portal nobody can log in to"; exit 1; }
+          grep -rqF -- "$VITE_TURNSTILE_SITE_KEY" workers/www/dist/account/assets || { echo "::error::workers/www/dist/account does not contain the Turnstile site key"; exit 1; }
+        env:
+          VITE_TURNSTILE_SITE_KEY: ${{ env.BWS_TURNSTILE_SITE_KEY }}
+
       - name: Install www worker dependencies
         run: npm install
         working-directory: workers/www
