@@ -599,6 +599,37 @@ def _prior_record_text(root, rel, current):
     return ""
 
 
+_BLOB_INDEX: dict[str, dict[str, list[str]]] = {}
+
+
+def _commits_touching_blob(root, blob):
+    """The newest 20 commits (all refs) whose diff adds or removes `blob`: `git log --all --find-object=<blob> -20`, answered from ONE history walk.
+
+    Profiled 2026-09-24: the census spent 178s of the gate's 222s in 84 `--find-object` walks, one per record, and quality-branch was cancelled at its 12-minute limit with this gate still running. `git log --all --raw -r --no-abbrev` lists every non-merge commit's old and new blob ids in about a second here, newest first, so indexing it once answers every record. Merges are skipped by both forms alike, because `git log` diffs no merge by default.
+    """
+    key = str(root)
+    if key not in _BLOB_INDEX:
+        index: dict[str, list[str]] = {}
+        sha = ""
+        raw = _git(
+            root, "log", "--all", "--format=C %H", "--raw", "-r", "--no-abbrev", "--no-renames"
+        )
+        for line in raw.splitlines():
+            if line.startswith("C "):
+                sha = line[2:].strip()
+                continue
+            if not line.startswith(":"):
+                continue
+            parts = line.split()
+            for obj in {parts[2], parts[3]}:
+                hits = index.setdefault(obj, [])
+                if len(hits) < 20 and (not hits or hits[-1] != sha):
+                    hits.append(sha)
+        _BLOB_INDEX[key] = index
+    full = _git(root, "rev-parse", "--verify", "--quiet", blob).strip() or blob
+    return list(_BLOB_INDEX[key].get(full, []))
+
+
 def candidate_findings(root, rel, text):
     """[(candidate_id, detail)] -- what a future BLOCKING rung would refuse about this one record. Advisory by construction: the caller records it and does not branch on it."""
     rec = R.parse(text)
@@ -642,9 +673,7 @@ def candidate_findings(root, rel, text):
     if rec["blob"] and not rec["full_text_sha"]:
         # EVERY COMMIT THAT TOUCHED THE BLOB, not just the newest, and the difference is not a refinement. `--find-object` matches ADDITIONS and DELETIONS alike, so the newest hit for a compacted plan is usually the commit that REMOVED the plan text -- which may sit on an unmerged branch. Taking `-1` therefore answered "not landed" for a blob that landed twenty commits ago; the
         # fixture caught it on the first run.
-        carried = _git(
-            root, "log", "--format=%H", "-20", "--all", "--find-object=" + rec["blob"]
-        ).split()
+        carried = _commits_touching_blob(root, rec["blob"])
         for sha in carried:
             ok, _why = R.resolve(root, "ancestor", sha)
             if ok:
