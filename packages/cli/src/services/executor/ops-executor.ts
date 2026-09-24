@@ -11,6 +11,7 @@ import { existsSync } from 'node:fs';
 import { DEFAULTS } from '@rediacc/shared/config';
 import { configService } from '../config/config-resources.js';
 import { extractRenetToLocal, isSEA } from '../core/embedded-assets.js';
+import { writeStderr, writeStdout } from '../core/request-context.js';
 
 /**
  * Default timeout for ops commands: 30 minutes, matching the E2E harness's own
@@ -154,7 +155,7 @@ class OpsExecutorService {
         const text = data.toString();
         stdout += text;
         if (!options.capture) {
-          process.stdout.write(data);
+          writeStdout(data);
         }
       });
 
@@ -162,7 +163,7 @@ class OpsExecutorService {
         const text = data.toString();
         stderr += text;
         if (!options.capture) {
-          process.stderr.write(data);
+          writeStderr(data);
         }
       });
 

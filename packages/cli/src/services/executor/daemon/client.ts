@@ -16,7 +16,7 @@
 import { randomUUID } from 'node:crypto';
 import * as net from 'node:net';
 import { debugEnabled } from '../../../utils/debug.js';
-import { currentRequestContext } from '../../core/request-context.js';
+import { currentRequestContext, writeStderr } from '../../core/request-context.js';
 import { renderJobEvent } from '../job-remote.js';
 import { shouldEchoRelayLive, writeWrappedToStderr } from '../output-lines.js';
 import type { ExecuteOptions, ExecuteResult, Executor, RenetEvent } from '../types.js';
@@ -86,7 +86,7 @@ export function routeLogEvent(
   // `echoAll`, not `debugEnabled()` alone. THE SECOND HALF OF THE SAME BUG: the direct path was fixed to honour `--debug` and this one was not, and `repo up` routes HERE, through the daemon. So `rdc repo up --debug` still withheld renet's info-level lines and the concurrent-fork-isolation suite still could not find "restored from checkpoint" in its own --debug log. Fixing the
   // instance in front of us instead of sweeping the class cost a second CI run. `shouldEchoRelayLive` is shared with the direct path deliberately: a third copy of this decision is what the extraction existed to prevent.
   if (event.level === 'error' || event.level === 'warning' || echoAll) {
-    process.stderr.write(`${event.msg}\n`);
+    writeStderr(`${event.msg}\n`);
     return;
   }
   remember(event.msg);
@@ -96,7 +96,7 @@ const DEFERRED_LOG_LIMIT = 200;
 
 function debug(message: string): void {
   if (debugEnabled('daemon')) {
-    process.stderr.write(`[executor-daemon] ${message}\n`);
+    writeStderr(`[executor-daemon] ${message}\n`);
   }
 }
 

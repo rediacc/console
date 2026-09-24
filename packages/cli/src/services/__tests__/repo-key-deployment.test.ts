@@ -125,7 +125,7 @@ describe('deployRepoKeyIfNeeded', () => {
   it('releases the lease and warns instead of throwing when exec fails', async () => {
     mockConfigService.getRepository.mockResolvedValue({ sshPublicKey: PUB_KEY });
     mockExec.mockRejectedValueOnce(new Error('boom'));
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const warnSpy = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
 
     await expect(deployRepoKeyIfNeeded('myrepo', 'm1')).resolves.toBeUndefined();
 

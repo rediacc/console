@@ -1,6 +1,6 @@
 import { DEFAULTS } from '@rediacc/shared/config';
 import { outputService } from '../services/core/output.js';
-import { exitProcess } from '../services/core/request-context.js';
+import { exitProcess, writeStdout } from '../services/core/request-context.js';
 import { telemetryService } from '../services/telemetry/telemetry.js';
 import { type CliError, ERROR_CODES, type NextAction, ValidationError } from '../types/errors.js';
 import { EXIT_CODES, type OutputFormat } from '../types/index.js';
@@ -66,7 +66,9 @@ function outputJsonError(cliError: CliError): void {
     warnings: outputService.getWarnings(),
     metrics: { duration_ms: outputService.getDurationMs() },
   };
-  process.stdout.write(`${JSON.stringify(envelope, null, 2)}\n`);
+  // writeStdout, not process.stdout: inside an executor dispatch the envelope belongs to the
+  // request that failed, and the client reads it from there.
+  writeStdout(`${JSON.stringify(envelope, null, 2)}\n`);
 }
 
 /** Output error in text format */

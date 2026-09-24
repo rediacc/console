@@ -1,7 +1,8 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import ts from 'typescript';
+import { parseSync, visitorKeys } from 'oxc-parser';
+import type { Argument, CallExpression, Node, ObjectExpression } from 'oxc-parser';
 import { describe, expect, it } from 'vitest';
 
 /**
@@ -76,42 +77,114 @@ function walk(dir: string, out: string[] = []): string[] {
   return out;
 }
 
-function enclosingName(node: ts.Node): string {
-  // A SourceFile's parent is undefined at runtime, whatever the declared type says.
-  for (let cur: ts.Node | undefined = node.parent; cur; cur = cur.parent as ts.Node | undefined) {
-    if ((ts.isFunctionDeclaration(cur) || ts.isMethodDeclaration(cur)) && cur.name !== undefined) {
-      return cur.name.getText();
-    }
-    if (
-      (ts.isArrowFunction(cur) || ts.isFunctionExpression(cur)) &&
-      ts.isVariableDeclaration(cur.parent)
-    ) {
-      return cur.parent.name.getText();
-    }
+/**
+ * oxc/ESTree has no single `parent` link (unlike the TS compiler API's
+ * `setParentNodes`), so the AST walk below builds the ancestor chain itself
+ * and `enclosingName` reads it back to front -- `ancestors.at(-1)` is the
+ * immediate parent, exactly what `node.parent` was in the TS version.
+ *
+ * `.getText()` doesn't exist either: it always returned the literal source
+ * slice of a name node, which `source.slice(start, end)` reproduces exactly,
+ * without needing to special-case an Identifier vs. a destructuring pattern.
+ *
+ * `nameFromAncestor` is the declared name of a single ancestor, if it's one
+ * of the containers `enclosingName` recognizes: a named function declaration,
+ * a class method (`MethodDefinition`), an object-literal method (`Property`
+ * with `method: true` -- there is no separate node type for it in ESTree,
+ * unlike the TS compiler API where both are `MethodDeclaration`), or a
+ * function expression assigned to a variable. `undefined` means "keep
+ * walking outward".
+ */
+function nameFromAncestor(cur: Node, parent: Node | undefined, source: string): string | undefined {
+  if (cur.type === 'FunctionDeclaration' && cur.id != null) {
+    return source.slice(cur.id.start, cur.id.end);
+  }
+  if (cur.type === 'MethodDefinition') {
+    return source.slice(cur.key.start, cur.key.end);
+  }
+  if (cur.type === 'Property' && cur.method) {
+    return source.slice(cur.key.start, cur.key.end);
+  }
+  if (
+    (cur.type === 'ArrowFunctionExpression' || cur.type === 'FunctionExpression') &&
+    parent?.type === 'VariableDeclarator'
+  ) {
+    return source.slice(parent.id.start, parent.id.end);
+  }
+  return undefined;
+}
+
+function enclosingName(ancestors: Node[], source: string): string {
+  for (let i = ancestors.length - 1; i >= 0; i--) {
+    const name = nameFromAncestor(ancestors[i], ancestors[i - 1], source);
+    if (name !== undefined) return name;
   }
   return '<module>';
 }
 
-function accessText(call: ts.CallExpression, where: number | { arg: number; property: string }) {
+/** A plain `key: value` property (ESLint/TS call it `PropertyAssignment`): not shorthand, not computed, not a method. */
+function propertyKeyText(property: ObjectExpression['properties'][number]): string | null {
+  if (property.type !== 'Property' || property.computed || property.shorthand || property.method) {
+    return null;
+  }
+  if (property.key.type === 'Identifier') return property.key.name;
+  if (property.key.type === 'Literal' && typeof property.key.value === 'string') {
+    return property.key.value;
+  }
+  return null;
+}
+
+/** The value of a named property on an object-expression argument, or `undefined` if it isn't a plain property. */
+function resolvePropertyArg(arg: Argument, property: string): Argument | undefined {
+  if (arg.type !== 'ObjectExpression') return undefined;
+  const prop = arg.properties.find((p) => propertyKeyText(p) === property);
+  return prop?.type === 'Property' ? prop.value : undefined;
+}
+
+function accessText(call: CallExpression, where: number | { arg: number; property: string }) {
   const index = typeof where === 'number' ? where : where.arg;
-  let arg: ts.Expression | undefined = call.arguments.at(index);
+  let arg = call.arguments.at(index);
   if (arg !== undefined && typeof where !== 'number') {
-    if (!ts.isObjectLiteralExpression(arg)) return '<missing>';
-    const prop = arg.properties.find(
-      (p): p is ts.PropertyAssignment =>
-        ts.isPropertyAssignment(p) && p.name.getText() === where.property
-    );
-    arg = prop?.initializer;
+    arg = resolvePropertyArg(arg, where.property);
   }
   if (arg === undefined) return '<missing>';
-  if (ts.isStringLiteral(arg)) return arg.text;
+  if (arg.type === 'Literal' && typeof arg.value === 'string') return arg.value;
   return '<forwarded>';
 }
 
-function calleeName(call: ts.CallExpression): string | null {
-  const expr = call.expression;
-  if (ts.isIdentifier(expr)) return expr.text;
+function calleeName(call: CallExpression): string | null {
+  const expr = call.callee;
+  if (expr.type === 'Identifier') return expr.name;
   return null;
+}
+
+/**
+ * Generic ESTree walk driven by oxc's own `visitorKeys`, tracking the
+ * ancestor stack `enclosingName` reads. `onCall` fires for every
+ * `CallExpression`, before that call is itself pushed onto `ancestors` --
+ * `ancestors` therefore holds exactly the call's proper ancestors, oldest
+ * first, matching the TS version's `node.parent` chain.
+ */
+function walkAst(
+  node: unknown,
+  ancestors: Node[],
+  onCall: (call: CallExpression, ancestors: Node[]) => void
+): void {
+  if (node === null || typeof node !== 'object' || !('type' in node)) return;
+  const current = node as Node;
+  if (current.type === 'CallExpression') onCall(current, ancestors);
+  ancestors.push(current);
+  const keys = visitorKeys[current.type] ?? [];
+  const record = current as unknown as Record<string, unknown>;
+  for (const key of keys) {
+    const child = record[key];
+    if (Array.isArray(child)) {
+      for (const c of child) walkAst(c, ancestors, onCall);
+    } else {
+      walkAst(child, ancestors, onCall);
+    }
+  }
+  ancestors.pop();
 }
 
 interface Scan {
@@ -127,21 +200,45 @@ function scan(): Scan {
     const text = readFileSync(file, 'utf-8');
     if (text.includes('renetProvisioner.provision(')) provisionCallers.push(rel);
     if (!Object.keys(ACCESS_CALLEES).some((name) => text.includes(name))) continue;
-    const source = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true);
-    const visit = (node: ts.Node) => {
-      if (ts.isCallExpression(node)) {
-        const name = calleeName(node);
-        if (name !== null && name in ACCESS_CALLEES) {
-          const key = `${rel}::${enclosingName(node)}::${name}`;
-          (ledger[key] ??= []).push(accessText(node, ACCESS_CALLEES[name]));
-        }
+    const { program } = parseSync(file, text, { sourceType: 'module' });
+    walkAst(program, [], (call, ancestors) => {
+      const name = calleeName(call);
+      if (name !== null && name in ACCESS_CALLEES) {
+        const key = `${rel}::${enclosingName(ancestors, text)}::${name}`;
+        (ledger[key] ??= []).push(accessText(call, ACCESS_CALLEES[name]));
       }
-      ts.forEachChild(node, visit);
-    };
-    visit(source);
+    });
   }
   return { ledger, provisionCallers };
 }
+
+/** The `enclosingName` of the first call expression found in a parsed source snippet. */
+function enclosingNameOfFirstCall(source: string): string {
+  const { program } = parseSync('fixture.ts', source, { sourceType: 'module' });
+  let found: string | undefined;
+  walkAst(program, [], (_call, ancestors) => {
+    found ??= enclosingName(ancestors, source);
+  });
+  if (found === undefined) throw new Error('fixture has no call expression');
+  return found;
+}
+
+describe('enclosingName', () => {
+  it('resolves a call inside an object-literal method to the method, not an outer name', () => {
+    const source = `
+      const handlers = {
+        outer() {
+          return {
+            innerMethod() {
+              return doSomething();
+            },
+          };
+        },
+      };
+    `;
+    expect(enclosingNameOfFirstCall(source)).toBe('innerMethod');
+  });
+});
 
 describe('renet access ledger', () => {
   const { ledger, provisionCallers } = scan();

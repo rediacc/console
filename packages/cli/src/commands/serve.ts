@@ -125,9 +125,20 @@ export function registerServeCommand(program: Command): void {
  * disk, which headless enrollment already taught this host to decrypt. No
  * per-session grant is involved, and no config leaves the customer's network.
  *
+ * It is the whole decrypted RdcConfig, policy document included. It used to be
+ * getLocalConfig(), a machines-and-SSH projection with no `policy` field cast
+ * to RdcConfig, so authorize() always saw "no policy document" and a daemon
+ * never enforced one.
+ *
  * The container tier's loader lives in services/serve/container-config.ts, where
  * the config is pulled encrypted and opened with the key the caller granted.
  */
-function loadDaemonConfig(): Promise<RdcConfig> {
-  return configService.getLocalConfig() as unknown as Promise<RdcConfig>;
+export async function loadDaemonConfig(): Promise<RdcConfig> {
+  const config = await configService.getDecryptedConfig();
+  if (!config) {
+    throw new ValidationError(
+      `The executor has no config named "${configService.getEffectiveConfigName()}" to run commands against.`
+    );
+  }
+  return config;
 }

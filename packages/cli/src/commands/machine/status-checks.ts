@@ -8,6 +8,7 @@ import {
 } from '@rediacc/shared/renet-contract/data/list-types.generated';
 import { t } from '../../i18n/index.js';
 import { outputService } from '../../services/core/output.js';
+import { setExitCode } from '../../services/core/request-context.js';
 import type { OutputFormat } from '../../types/index.js';
 
 /**
@@ -45,7 +46,7 @@ export function runContainerHealthCheck(
       outputService.info(`  - ${c.name} (${resolve(c.repository)})`);
     }
   }
-  process.exitCode = 2;
+  setExitCode(2);
 }
 
 /** `--stability-check`: gate on unstable services, exit 2 if any. */
@@ -80,7 +81,7 @@ export function runServiceStabilityCheck(
       );
     }
   }
-  process.exitCode = 2;
+  setExitCode(2);
 }
 
 /** `--search <text>`: filter the repositories section by name / mount path. */

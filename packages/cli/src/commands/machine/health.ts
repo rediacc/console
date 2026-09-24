@@ -3,6 +3,7 @@ import { Command } from 'commander';
 import { t } from '../../i18n/index.js';
 import { configService } from '../../services/config/config-resources.js';
 import { outputService } from '../../services/core/output.js';
+import { setExitCode } from '../../services/core/request-context.js';
 import { getStateProvider } from '../../services/state.js';
 import type { OutputFormat } from '../../types/index.js';
 import { handleError, ValidationError } from '../../utils/errors.js';
@@ -172,7 +173,7 @@ export function registerHealthCommand(machine: Command, program: Command): void 
         }
 
         if (health.exitCode !== 0) {
-          process.exitCode = health.exitCode;
+          setExitCode(health.exitCode);
         }
       } catch (error) {
         handleError(error);

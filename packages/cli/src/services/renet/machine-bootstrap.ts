@@ -11,6 +11,7 @@ import { NETWORK_DEFAULTS } from '@rediacc/shared/config';
 import { scanHostKeys } from '../../utils/host-keys.js';
 import { configService } from '../config/config-resources.js';
 import { outputService } from '../core/output.js';
+import { writeStdout } from '../core/request-context.js';
 import { createQuietStderrPump } from '../executor/output-lines.js';
 import { machineConnections } from '../machine/machine-connection.js';
 import { acquireRemoteRenet, readSSHKey } from './renet-execution.js';
@@ -63,7 +64,7 @@ export async function bootstrapMachine(
     const stderrPump = createQuietStderrPump({ echoAll: options.debug });
     const exitCode = await lease.sftp.execStreaming(cmd, {
       onStdout: (data) => {
-        if (options.debug) process.stdout.write(data);
+        if (options.debug) writeStdout(data);
       },
       onStderr: (data) => stderrPump.write(String(data)),
     });

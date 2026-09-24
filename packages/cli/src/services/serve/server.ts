@@ -20,7 +20,7 @@
  *   5. audit         - ship one event, awaited, before the result line lands
  */
 
-import { CLI_CONTRACT_VERSION } from '@rediacc/shared/cli-contract';
+import { CLI_CONTRACT_VERSION, type ContractCommand } from '@rediacc/shared/cli-contract';
 import {
   CONTRACT_VERSION_HEADER,
   CommandRequestSchema,
@@ -28,9 +28,16 @@ import {
   type ServerInfo,
   type StreamLine,
 } from '@rediacc/shared/cli-contract/wire';
+import type { RdcConfig } from '@rediacc/shared/config-schema';
 import { Hono } from 'hono';
 import { streamText } from 'hono/streaming';
 import { VERSION } from '../../version.js';
+import { outputService } from '../core/output.js';
+import {
+  createOutputState,
+  createRequestConfigScope,
+  runInRequestContext,
+} from '../core/request-context.js';
 import {
   assertJobId,
   InvalidJobIdError,
@@ -42,7 +49,7 @@ import { AuthError, type AuthVerifier } from './auth.js';
 import { CommandRejected, dispatchCommand, prepareCommand } from './command-dispatch.js';
 import type { ServeDeps } from './deps.js';
 import { CekHandoffBlobSchema } from './handoff-schema.js';
-import { PolicyDenied } from './policy.js';
+import { isReadOnlyCommand, PolicyDenied, resolveGrandRepoMutation } from './policy.js';
 import { SessionError } from './sessions.js';
 
 /**
@@ -170,10 +177,18 @@ export function createServeApp(deps: ServeDeps): Hono {
     const trimmedSession = c.req.header(CONFIG_SESSION_HEADER)?.trim();
     // A whitespace-only header collapses to "no session", not the empty string, `??` cannot express that, so the empty case is normalized explicitly.
     const configSessionId = trimmedSession === '' ? undefined : trimmedSession;
+    let requestConfig: RdcConfig | undefined;
     try {
       // A named session must exist and belong to the REQUEST principal, the same ownership rule grantCek enforces, before it may select the config the command runs against. Validated here, above the loader, so the rule holds in every tier, including a daemon whose loader ignores sessions.
       if (configSessionId) deps.sessions.sessionForExec(principal, configSessionId);
       const config = await deps.loadConfig(principal, configSessionId);
+      requestConfig = requestScopedConfig(deps, config);
+      const repoName = targetFrom(
+        entry.repoOption,
+        entry.repoPositional,
+        request.params,
+        request.positionals
+      );
       deps.authorize({
         principal,
         commandPath: request.pathKey,
@@ -184,17 +199,19 @@ export function createServeApp(deps: ServeDeps): Hono {
           request.params,
           request.positionals
         ),
-        repoName: targetFrom(
-          entry.repoOption,
-          entry.repoPositional,
-          request.params,
-          request.positionals
-        ),
+        repoName,
+        // Computed here, from the config the command will run against, never taken from the client. The CLI's own grand-repo guard runs only in an agent's local process, which a proxied command never reaches.
+        isGrandRepo: await resolveGrandRepoMutation(entry, repoName, requestConfig),
       });
     } catch (error) {
       const { status, message } = statusFor(error);
       return c.json({ error: message }, status);
     }
+
+    const auditGate = await checkAuditCapability(deps, entry, request.pathKey);
+    if (auditGate.refusal) return c.json({ error: auditGate.refusal }, 503);
+    const auditWarning = auditGate.warning;
+    if (auditWarning) outputService.warn(`${auditWarning} (caller: ${principal.userEmail})`);
 
     return streamText(c, async (stream) => {
       const write = async (streamLine: StreamLine) => {
@@ -203,9 +220,10 @@ export function createServeApp(deps: ServeDeps): Hono {
 
       const started = Date.now();
       try {
-        const { result, functionName, machineName, stdout, stderr } = await dispatchCommand({
+        const dispatched = await dispatchCommand({
           prepared,
           executor: deps.executor,
+          ...(requestConfig ? { config: requestConfig } : {}),
           // The executor detaches a proxied command by default (its connection cannot be assumed to outlive the work), overridable via deps.detach.
           detached: deps.detach ? deps.detach(entry) : entry.detachable,
           // Announce the job the instant it starts, before any event, so a dropped connection can be re-attached via GET /v1/jobs/:id/events.
@@ -216,6 +234,7 @@ export function createServeApp(deps: ServeDeps): Hono {
             void write({ kind: 'event', event, ...(line == null ? {} : { line }) });
           },
         });
+        const { result, functionName, machineName, stdout, stderr } = dispatched;
 
         // The audited function is the one the command actually called, observed as it went past, not one reconstructed from a table. A command that reached no machine has none, and is audited by its path alone.
         await deps.audit?.({
@@ -239,7 +258,20 @@ export function createServeApp(deps: ServeDeps): Hono {
           destructive: entry.destructive ?? false,
         });
 
-        await write({ kind: 'result', result, stdout, stderr });
+        await write({
+          kind: 'result',
+          result,
+          stdout,
+          ...(dispatched.stdoutBytes
+            ? { stdoutBase64: Buffer.from(dispatched.stdoutBytes).toString('base64') }
+            : {}),
+          stderr: withNotices(stderr, [
+            auditWarning,
+            dispatched.unpersistedConfigWrites > 0
+              ? `WARNING: "rdc ${request.pathKey}" changed its config, and the executor did not save the change: it runs against the config granted for this session and does not write it back to config storage.`
+              : undefined,
+          ]),
+        });
       } catch (error) {
         const message =
           error instanceof Error ? error.message : 'The executor failed to run this command.';
@@ -291,8 +323,10 @@ export function createServeApp(deps: ServeDeps): Hono {
     }
     const sinceLine = parseSinceLineParam(c.req.query('sinceLine'));
 
+    let requestConfig: RdcConfig | undefined;
     try {
       const config = await deps.loadConfig(principal);
+      requestConfig = requestScopedConfig(deps, config);
       deps.authorize({ principal, commandPath: 'job logs', config, machineName: machine });
     } catch (error) {
       const { status, message } = statusFor(error);
@@ -307,38 +341,41 @@ export function createServeApp(deps: ServeDeps): Hono {
       const started = Date.now();
       const cursor = new JobLogCursor(sinceLine);
       try {
-        const conn = await connectForJobs(machine, 'read-only');
-        try {
-          const interrupted = await followJobLogs(
-            conn.lease,
-            conn.remoteRenetPath,
-            jobId,
-            {
-              onEvent: (event, line) => {
-                void write({ kind: 'event', event, ...(line == null ? {} : { line }) });
-              },
-              // Client disconnect = detach, not cancel: the request's signal
-              // aborts the follow with one listener, and the job keeps running.
-              signal: c.req.raw.signal,
-            },
-            cursor
-          );
-
-          // A follow ended by the client dropping does not get a result line: there is no one left to read it, and the job is still running.
-          if (!interrupted) {
-            const status = await readJobStatus(
-              await conn.lease.ensure(),
+        // The machine lookup inside connectForJobs reads the config, so it runs under the same request-scoped config a dispatch would.
+        await withRequestConfig(requestConfig, async () => {
+          const conn = await connectForJobs(machine, 'read-only');
+          try {
+            const interrupted = await followJobLogs(
+              conn.lease,
               conn.remoteRenetPath,
-              jobId
+              jobId,
+              {
+                onEvent: (event, line) => {
+                  void write({ kind: 'event', event, ...(line == null ? {} : { line }) });
+                },
+                // Client disconnect = detach, not cancel: the request's signal
+                // aborts the follow with one listener, and the job keeps running.
+                signal: c.req.raw.signal,
+              },
+              cursor
             );
-            await write({
-              kind: 'result',
-              result: jobStatusToExecuteResult(status, Date.now() - started),
-            });
+
+            // A follow ended by the client dropping does not get a result line: there is no one left to read it, and the job is still running.
+            if (!interrupted) {
+              const status = await readJobStatus(
+                await conn.lease.ensure(),
+                conn.remoteRenetPath,
+                jobId
+              );
+              await write({
+                kind: 'result',
+                result: jobStatusToExecuteResult(status, Date.now() - started),
+              });
+            }
+          } finally {
+            conn.lease.release();
           }
-        } finally {
-          conn.lease.release();
-        }
+        });
       } catch (error) {
         const message =
           error instanceof Error ? error.message : 'The executor failed to re-attach to the job.';
@@ -351,6 +388,65 @@ export function createServeApp(deps: ServeDeps): Hono {
   });
 
   return app;
+}
+
+/**
+ * Whether the executor may run this command given what it can audit.
+ *
+ * An executor that cannot record what it runs must not change anything. This is
+ * checked before the stream opens, because the audit event is only sent after
+ * the command ran, which is too late to refuse. A read still runs, flagged
+ * loudly, since it changes nothing a missing record would hide. With no audit
+ * sink configured at all there is nothing to check.
+ */
+async function checkAuditCapability(
+  deps: ServeDeps,
+  entry: ContractCommand,
+  pathKey: string
+): Promise<{ refusal?: string; warning?: string }> {
+  if (!deps.audit) return {};
+  const capability = await deps.auth.canWriteAudit();
+  if (capability.ok) return {};
+  const fix = `Give the executor's token the audit:write scope alongside proxy:exec.`;
+  if (!isReadOnlyCommand(entry)) {
+    return {
+      refusal: `The executor refuses "rdc ${pathKey}": it cannot record it in the audit trail, because ${capability.reason}. ${fix}`,
+    };
+  }
+  return {
+    warning: `WARNING: "rdc ${pathKey}" ran WITHOUT an audit record, because ${capability.reason}. ${fix}`,
+  };
+}
+
+/**
+ * The config a command must run against in place of the disk, if any.
+ *
+ * The container tier's config exists only as the plaintext it decrypted for
+ * the session, so the dispatched command must be handed it. A daemon's loader
+ * reads its enrolled config file, which the dispatched command reads too, and
+ * whose writes must land on disk, so it gets none.
+ */
+function requestScopedConfig(deps: ServeDeps, config: RdcConfig): RdcConfig | undefined {
+  return deps.mode === 'container' ? config : undefined;
+}
+
+/** Run `fn` under a request-scoped config when there is one. */
+function withRequestConfig<T>(config: RdcConfig | undefined, fn: () => Promise<T>): Promise<T> {
+  if (!config) return fn();
+  return runInRequestContext(
+    {
+      output: createOutputState(),
+      stdout: [],
+      stderr: [],
+      config: createRequestConfigScope(config),
+    },
+    fn
+  );
+}
+
+/** Append the executor's own notices to what the command wrote to stderr. */
+function withNotices(stderr: string, notices: (string | undefined)[]): string {
+  return [stderr, ...notices].filter((line): line is string => !!line).join('\n');
 }
 
 /** Parse the `sinceLine` query param, defaulting to 0 and refusing anything else. */

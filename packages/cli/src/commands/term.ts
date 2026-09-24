@@ -7,6 +7,7 @@ import { applyClusterConnectionContext } from '../services/cluster/cluster-targe
 import { configService } from '../services/config/config-resources.js';
 import { auditService } from '../services/core/audit.js';
 import { outputService } from '../services/core/output.js';
+import { writeStderr } from '../services/core/request-context.js';
 import {
   type ConnectionDetails,
   getSSHConnectionDetails,
@@ -134,7 +135,7 @@ function enforceDirectRenetGuard(command: string): void {
       `Direct "${match.renetCommand}" is not allowed in agent mode.\n\nRun "${match.cliHelpCommand}" to see available CLI commands.`
     );
   }
-  process.stderr.write(
+  writeStderr(
     `\x1b[33mWarning:\x1b[0m Running "${match.renetCommand}" directly bypasses CLI orchestration.\nRun "${match.cliHelpCommand}" to see available CLI commands.\n`
   );
 }
@@ -145,7 +146,7 @@ function enforceFileWriteGuard(command: string): void {
   if (isAgentEnvironment()) {
     throw new ValidationError(t('errors.term.fileWriteDetected', { detected: match.label }));
   }
-  process.stderr.write(
+  writeStderr(
     `\x1b[33mHint:\x1b[0m Detected file write pattern (${match.label}). ` +
       `For file transfer, consider: rdc repo sync upload <ref> --local FILE --remote PATH\n`
   );
@@ -412,7 +413,7 @@ async function runInlineSSH(
 ): Promise<void> {
   if (!quiet) {
     // Progress message on stderr, keeps stdout reserved for command output when -c piping is in play, matching the Unix convention used by ssh's own progress / banner messages.
-    process.stderr.write(`${t('commands.term.connectingTo', { title })}\n`);
+    writeStderr(`${t('commands.term.connectingTo', { title })}\n`);
   }
 
   const child = spawnSSH(destination, sshConnection.sshOptions, remoteCommand, {

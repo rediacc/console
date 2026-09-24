@@ -1,4 +1,4 @@
-import { exitProcess } from '../services/core/request-context.js';
+import { exitProcess, writeStderr } from '../services/core/request-context.js';
 import { EXIT_CODES } from '../types/index.js';
 
 // Lazy-load inquirer (pulls in rxjs and the whole prompt graph) only when an interactive prompt is actually shown. Startup, including --version, --help, and every non-prompting command, never executes it. The dynamic
@@ -10,7 +10,7 @@ async function getPrompt(): Promise<ReturnType<typeof import('inquirer')['create
 
 function requireInteractive(context: string): void {
   if (process.stdin.isTTY !== true) {
-    console.error(`Error: ${context} required but stdin is not a TTY. Use --yes to auto-confirm.`);
+    writeStderr(`Error: ${context} required but stdin is not a TTY. Use --yes to auto-confirm.\n`);
     exitProcess(EXIT_CODES.INVALID_ARGUMENTS);
   }
 }

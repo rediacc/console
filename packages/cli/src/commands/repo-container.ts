@@ -29,6 +29,7 @@
 
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
+import { setExitCode } from '../services/core/request-context.js';
 import { getExecutor } from '../services/executor/executor-factory.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { handleError, ValidationError } from '../utils/errors.js';
@@ -164,7 +165,7 @@ export function registerRepoContainerCommands(repo: Command): void {
           if (!result.success) {
             // A NON-ZERO remote exit is not a CLI failure, it is the answer. Only a dispatch failure (exitCode 0 with success false, or an SSH-level error) becomes an exception.
             if (result.exitCode !== 0) {
-              process.exitCode = result.exitCode;
+              setExitCode(result.exitCode);
               return;
             }
             throw new Error(result.error ?? t('errors.container.execFailed'));

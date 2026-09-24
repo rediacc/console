@@ -33,7 +33,7 @@ describe('utils/prompt askConfirm', () => {
     const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => {
       throw new Error('process.exit called');
     });
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const errorSpy = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
 
     await expect(askConfirm('Delete?')).rejects.toThrow('process.exit called');
     expect(exitSpy).toHaveBeenCalledWith(2);

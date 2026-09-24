@@ -14,12 +14,13 @@ import {
   openResponse,
   sealRequest,
 } from '@rediacc/shared/e2e';
+import { configFileStorage } from '../../adapters/config-file-storage.js';
 import { t } from '../../i18n/index.js';
 import { ValidationError } from '../../utils/errors.js';
 import { getInstallMethod, getNpmUpdateCommand } from '../../utils/platform.js';
 import { VERSION } from '../../version.js';
-import { configFileStorage } from '../../adapters/config-file-storage.js';
 import { getEffectiveConfigName } from '../config/config-name.js';
+import { writeStderr } from '../core/request-context.js';
 import { resolveChannel } from '../update/updater.js';
 import { readAccountPointer } from './account-pointer.js';
 import {
@@ -169,7 +170,7 @@ function handle426Response(
     lines.push(`  Update: ${updateCmd}`);
   }
   const msg = lines.join('\n');
-  process.stderr.write(`\n${msg}\n\n`);
+  writeStderr(`\n${msg}\n\n`);
   throw createAccountError(msg, 426, 'CLI_UPGRADE_REQUIRED');
 }
 

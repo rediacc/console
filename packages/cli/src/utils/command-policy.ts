@@ -242,6 +242,7 @@ export async function assertCommandPolicy(
 
   if (!repoName) return;
 
+  // A bare (or `:base`) ref resolves to the family's grand whatever its tag (configService.getRepository).
   const repo = await configService.getRepository(repoName);
   if (!repo) return;
   const isFork = !!(repo.grandGuid && repo.grandGuid !== repo.repositoryGuid);

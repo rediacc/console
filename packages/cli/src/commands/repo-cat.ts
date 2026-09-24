@@ -2,6 +2,7 @@ import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
+import { setExitCode, writeStdout } from '../services/core/request-context.js';
 import { type ExecuteResult, getExecutor } from '../services/executor/executor-factory.js';
 import { handleError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
@@ -17,12 +18,13 @@ function renderCatFailure(result: ExecuteResult): void {
     .map((l) => l.replace(/^(Error|error):\s*/, ''))
     .at(-1);
   renderLocalExecutionFailure(result, detail ?? result.error ?? t('commands.repo.cat.failed'));
-  process.exitCode = 1;
+  setExitCode(1);
 }
 
 /**
  * Decode the `RDC_CAT_B64:<base64>` marker from repository_cat stdout and
- * write raw bytes to process.stdout. Uses indexOf to avoid O(n) line splits
+ * write the raw bytes to stdout (or, under the executor, to the request, which
+ * carries them to the proxy client as bytes). Uses indexOf to avoid O(n) line splits
  * on up-to-50 MiB output.
  */
 function decodeCatPayload(stdout: string): void {
@@ -30,7 +32,7 @@ function decodeCatPayload(stdout: string): void {
   const markerIdx = stdout.indexOf(marker);
   if (markerIdx === -1) {
     outputService.error(t('commands.repo.cat.failed'));
-    process.exitCode = 1;
+    setExitCode(1);
     return;
   }
   const valueStart = markerIdx + marker.length;
@@ -38,7 +40,7 @@ function decodeCatPayload(stdout: string): void {
   const b64Value = (
     newlineIdx === -1 ? stdout.slice(valueStart) : stdout.slice(valueStart, newlineIdx)
   ).trim();
-  process.stdout.write(Buffer.from(b64Value, 'base64'));
+  writeStdout(Buffer.from(b64Value, 'base64'));
 }
 
 /**

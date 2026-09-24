@@ -13,7 +13,7 @@
  * remain, but they are UX; this is the enforcement.
  */
 
-import { CLI_CONTRACT, getCommand } from '@rediacc/shared/cli-contract';
+import { CLI_CONTRACT, type ContractCommand, getCommand } from '@rediacc/shared/cli-contract';
 import type { RdcConfig } from '@rediacc/shared/config-schema';
 import {
   evaluatePolicy,
@@ -24,6 +24,13 @@ import {
   PolicyDocumentSchema,
   staleDenyRefusal,
 } from '@rediacc/shared/policy';
+import { parseRef } from '@rediacc/shared/ref';
+import { configService } from '../config/config-resources.js';
+import {
+  createOutputState,
+  createRequestConfigScope,
+  runInRequestContext,
+} from '../core/request-context.js';
 import type { SessionPrincipal } from './sessions.js';
 
 /** Every command this binary actually has, for checking policy globs against. */
@@ -82,7 +89,11 @@ export interface AuthorizeArgs {
   config: RdcConfig;
   machineName?: string;
   repoName?: string;
-  /** Whether the target repo is a grand (root) repo, when known. */
+  /**
+   * Whether this command MUTATES a grand (root) repo. Computed by the executor
+   * with resolveGrandRepoMutation(), never taken from the client; undefined for
+   * a command the CLI's grand-repo guard does not cover (every read).
+   */
   isGrandRepo?: boolean;
   /** Team slug the principal acts under, when the org models one. */
   teamSlug?: string;
@@ -98,19 +109,9 @@ export function authorize(args: AuthorizeArgs): PolicyDecision {
   const entry = getCommand(args.commandPath);
   const document = readPolicyDocument(args.config);
 
-  if (!document) {
-    const allowed = MISSING_POLICY_DEFAULT[args.principal.orgRole];
-    const decision: PolicyDecision = {
-      allowed,
-      reason: allowed
-        ? `No policy document exists yet, and ${args.principal.orgRole}s are allowed by default. Author one in the console under Permissions.`
-        : `No policy document exists yet, so only owners and admins may run commands through the executor. Ask an owner to grant your team access under Permissions.`,
-    };
-    if (!allowed) throw new PolicyDenied(decision);
-    return decision;
-  }
+  if (!document) return authorizeWithoutDocument(args);
 
-  const decision = evaluatePolicy(document, {
+  const context = {
     userEmail: args.principal.userEmail,
     teamSlug: args.teamSlug,
     orgRole: args.principal.orgRole,
@@ -118,9 +119,107 @@ export function authorize(args: AuthorizeArgs): PolicyDecision {
     machineName: args.machineName,
     repoName: args.repoName,
     destructive: entry?.destructive ?? false,
-    isGrandRepo: args.isGrandRepo,
-  });
-
+  };
+  const decision = evaluatePolicy(document, context);
   if (!decision.allowed) throw new PolicyDenied(decision);
+
+  // Grand-ness is judged on its own so its refusal can name the way out, which the shared evaluator's reason does not.
+  if (args.isGrandRepo && !evaluatePolicy(document, { ...context, isGrandRepo: true }).allowed) {
+    throw new PolicyDenied({ allowed: false, reason: grandRepoRefusal(args) });
+  }
   return decision;
+}
+
+/** The decision when the config carries no policy document at all. */
+function authorizeWithoutDocument(args: AuthorizeArgs): PolicyDecision {
+  // A grand-repo mutation is refused by default: with no document there is no `allowGrandRepos` to opt in with, whatever the role. This is the executor's copy of the CLI's agent grand-repo guard, which cannot run here (the executor is not an agent, and a proxied command never reaches the local guard).
+  if (args.isGrandRepo) {
+    throw new PolicyDenied({ allowed: false, reason: grandRepoRefusal(args) });
+  }
+  const allowed = MISSING_POLICY_DEFAULT[args.principal.orgRole];
+  const decision: PolicyDecision = {
+    allowed,
+    reason: allowed
+      ? `No policy document exists yet, and ${args.principal.orgRole}s are allowed by default. Author one in the console under Permissions.`
+      : `No policy document exists yet, so only owners and admins may run commands through the executor. Ask an owner to grant your team access under Permissions.`,
+  };
+  if (!allowed) throw new PolicyDenied(decision);
+  return decision;
+}
+
+function grandRepoRefusal(args: AuthorizeArgs): string {
+  const target = args.repoName
+    ? `would change ${args.repoName}, which is a grand repo (not a fork)`
+    : 'would change a grand repo (not a fork)';
+  return (
+    `"rdc ${args.commandPath}" ${target}, and the executor refuses grand-repo changes by default. ` +
+    `Fork it first (rdc repo fork <name> --tag <tag>) and target the fork, or allow grand repos in the policy (allowGrandRepos).`
+  );
+}
+
+/**
+ * A command that changes nothing: annotated as a read (timeout class `read`)
+ * and not destructive. Anything unannotated counts as a change, so a command
+ * nobody classified is held to the stricter rule.
+ */
+export function isReadOnlyCommand(entry: ContractCommand): boolean {
+  return entry.timeout === 'read' && entry.destructive !== true;
+}
+
+/**
+ * Commands whose effect lands on the GRAND repo whatever their ref names:
+ * `repo promote <fork>` swaps the fork into its grand's place.
+ */
+const MUTATES_GRAND_BY_DEFINITION: ReadonlySet<string> = new Set(['repo promote']);
+
+/**
+ * Whether a command would mutate a grand repo, decided at the executor.
+ *
+ * The COMMAND set is the CLI guard's own: the contract's `grandGuard`, the same
+ * COMMAND_METADATA flag `assertCommandPolicy` reads (utils/command-policy.ts).
+ * A command without it (every read, and `repo fork`, the safe way off a grand
+ * repo) returns undefined and is never refused on grand-ness.
+ *
+ * The REPO test is the CLI guard's own too: a repo is a fork exactly when its
+ * config record has a `grandGuid` naming another repository, looked up through
+ * configService.getRepository with the same `name[:tag]` key the action bodies
+ * pass. Unlike the local guard, it FAILS CLOSED: a ref that does not parse,
+ * does not resolve, or is absent counts as grand, because an executor facing
+ * the network must not wave through what it could not identify.
+ *
+ * `config` is the request-scoped config (the container tier); without it the
+ * lookup reads the daemon's enrolled config, as the dispatched command will.
+ */
+export async function resolveGrandRepoMutation(
+  entry: ContractCommand,
+  repoRef: string | undefined,
+  config?: RdcConfig
+): Promise<boolean | undefined> {
+  if (!entry.grandGuard) return undefined;
+  if (MUTATES_GRAND_BY_DEFINITION.has(entry.pathKey)) return true;
+  if (!repoRef) return true;
+
+  let key: string;
+  try {
+    const parsed = parseRef(repoRef);
+    key = parsed.tag ? `${parsed.name}:${parsed.tag}` : parsed.name;
+  } catch {
+    return true;
+  }
+
+  const lookup = () => configService.getRepository(key);
+  const repo = config
+    ? await runInRequestContext(
+        {
+          output: createOutputState(),
+          stdout: [],
+          stderr: [],
+          config: createRequestConfigScope(config),
+        },
+        lookup
+      )
+    : await lookup();
+
+  const isFork = !!(repo?.grandGuid && repo.grandGuid !== repo.repositoryGuid);
+  return !isFork;
 }

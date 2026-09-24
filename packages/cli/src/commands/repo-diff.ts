@@ -3,6 +3,7 @@ import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
+import { setExitCode, writeStdout } from '../services/core/request-context.js';
 import { type ExecuteResult, getExecutor } from '../services/executor/executor-factory.js';
 import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
@@ -128,9 +129,9 @@ function summaryLine(d: DiffResult): string {
 function renderNameStatus(d: DiffResult): void {
   for (const e of d.entries) {
     if (e.status === 'R') {
-      process.stdout.write(`${statusColor('R', 'R ')} ${e.old_path} -> ${e.path}\n`);
+      writeStdout(`${statusColor('R', 'R ')} ${e.old_path} -> ${e.path}\n`);
     } else {
-      process.stdout.write(`${statusColor(e.status, `${e.status} `)} ${e.path}\n`);
+      writeStdout(`${statusColor(e.status, `${e.status} `)} ${e.path}\n`);
     }
   }
   // Summary on stderr so stdout stays a clean A/M/D/R stream.
@@ -139,7 +140,7 @@ function renderNameStatus(d: DiffResult): void {
 
 function renderNameOnly(d: DiffResult): void {
   for (const e of d.entries) {
-    process.stdout.write(`${e.path}\n`);
+    writeStdout(`${e.path}\n`);
   }
 }
 
@@ -161,12 +162,10 @@ function statDetail(e: DiffEntry): string {
 function renderStat(d: DiffResult): void {
   const width = d.entries.reduce((m, e) => Math.max(m, e.path.length), 0);
   for (const e of d.entries) {
-    process.stdout.write(
-      `${statusColor(e.status, e.status)}  ${e.path.padEnd(width)}  ${statDetail(e)}\n`
-    );
+    writeStdout(`${statusColor(e.status, e.status)}  ${e.path.padEnd(width)}  ${statDetail(e)}\n`);
   }
   const blocks = Math.ceil(d.total_bytes_changed / (d.block_size || 4096));
-  process.stdout.write(
+  writeStdout(
     `\n${summaryLine(d)}; ${humanBytes(d.total_bytes_changed).replace('+', '')} across ${blocks} blocks\n`
   );
 }
@@ -182,7 +181,7 @@ function colorizeDiffLine(line: string): string {
 function renderContent(c: ContentDiffResult): void {
   if (c.binary) {
     const p = c.path.replace(/^\//, '');
-    process.stdout.write(`Binary files a/${p} and b/${p} differ\n`);
+    writeStdout(`Binary files a/${p} and b/${p} differ\n`);
     return;
   }
   if (c.identical) {
@@ -190,7 +189,7 @@ function renderContent(c: ContentDiffResult): void {
     return;
   }
   for (const line of (c.unified ?? '').split('\n')) {
-    process.stdout.write(`${colorizeDiffLine(line)}\n`);
+    writeStdout(`${colorizeDiffLine(line)}\n`);
   }
   if (c.truncated) {
     outputService.warn(t('commands.repo.diff.truncated'));
@@ -286,7 +285,7 @@ async function runDiff(ref: string, options: DiffOptions): Promise<void> {
 
   if (!result.success) {
     renderLocalExecutionFailure(result, result.error ?? t('commands.repo.diff.failed'));
-    process.exitCode = 1;
+    setExitCode(1);
     return;
   }
   renderResult(mode, result.stdout ?? '', asJson);

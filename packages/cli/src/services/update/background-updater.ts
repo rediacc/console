@@ -14,6 +14,7 @@ import {
   STAGED_UPDATE_DIR,
 } from '../../utils/platform.js';
 import { VERSION } from '../../version.js';
+import { writeStderr } from '../core/request-context.js';
 import { telemetryService } from '../telemetry/telemetry.js';
 import {
   cleanupStaleStagedFiles,
@@ -235,7 +236,7 @@ async function atomicBinarySwap(stagedPath: string): Promise<void> {
   } catch (renameErr) {
     await fs.rename(oldPath, execPath).catch((restoreErr: unknown) => {
       const msg = restoreErr instanceof Error ? restoreErr.message : String(restoreErr);
-      process.stderr.write(
+      writeStderr(
         `CRITICAL: Failed to restore original binary during update. CLI may be broken. Please reinstall. Error: ${msg}\n`
       );
     });
@@ -387,7 +388,7 @@ export async function applyPendingUpdate(): Promise<string | null> {
     await cleanupStaleStagedFiles(state).catch(() => {});
 
     telemetryService.trackEvent('update.apply.success', { from: VERSION, to: version });
-    process.stderr.write(`${t('commands.update.autoApplied', { version, from: VERSION })}\n`);
+    writeStderr(`${t('commands.update.autoApplied', { version, from: VERSION })}\n`);
     _appliedAtStartup = version;
     return version;
   } catch (err) {

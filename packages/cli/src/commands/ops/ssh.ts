@@ -3,6 +3,7 @@ import { DEFAULTS } from '@rediacc/shared/config';
 import { Command, Option } from 'commander';
 import { t } from '../../i18n/index.js';
 import { outputService } from '../../services/core/output.js';
+import { setExitCode } from '../../services/core/request-context.js';
 import type { OpsBackend } from '../../services/executor/ops-executor.js';
 import { opsExecutorService } from '../../services/executor/ops-executor.js';
 import { handleError } from '../../utils/errors.js';
@@ -41,7 +42,7 @@ export function registerOpsSSHCommand(ops: Command, _program: Command): void {
 
           if (vm?.status !== 'running') {
             outputService.error(t('commands.ops.ssh.vmNotFound', { id: vmId }));
-            process.exitCode = 1;
+            setExitCode(1);
             return;
           }
 
@@ -72,7 +73,7 @@ export function registerOpsSSHCommand(ops: Command, _program: Command): void {
 
           const child = spawn('ssh', sshArgs, { stdio: 'inherit' });
           child.on('close', (code) => {
-            process.exitCode = code ?? 0;
+            setExitCode(code ?? 0);
           });
         } catch (error) {
           handleError(error);

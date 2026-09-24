@@ -13,6 +13,7 @@ import type { SFTPClient } from '../../remote/sftp/index.js';
 import type { InfraConfig } from '../../types/index.js';
 import { configService } from '../config/config-resources.js';
 import { outputService } from '../core/output.js';
+import { writeStderr, writeStdout } from '../core/request-context.js';
 import { machineConnections } from '../machine/machine-connection.js';
 import { acquireRemoteRenet, readSSHKey } from '../renet/renet-execution.js';
 import { CloudflareDnsClient, type DnsAction } from './cloudflare-dns.js';
@@ -288,10 +289,10 @@ async function executeProxySetup(
   const configExitCode = await sftp.execStreaming(`sudo ${remoteRenetPath} proxy configure`, {
     stdin: infraJSON,
     onStdout: (data) => {
-      if (options.debug) process.stdout.write(data);
+      if (options.debug) writeStdout(data);
     },
     onStderr: (data) => {
-      process.stderr.write(data);
+      writeStderr(data);
     },
   });
 
@@ -320,10 +321,10 @@ async function executeProxySetup(
 
   const installExitCode = await sftp.execStreaming(`sudo ${remoteRenetPath} proxy install`, {
     onStdout: (data) => {
-      if (options.debug) process.stdout.write(data);
+      if (options.debug) writeStdout(data);
     },
     onStderr: (data) => {
-      process.stderr.write(data);
+      writeStderr(data);
     },
   });
 

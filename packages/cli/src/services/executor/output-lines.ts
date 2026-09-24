@@ -18,6 +18,7 @@
 
 import { debugEnabled } from '../../utils/debug.js';
 import { terminalWidth, wrapProse } from '../core/output.js';
+import { writeStderr } from '../core/request-context.js';
 
 /** `[<function>] ` as emitted by renet's output relay. */
 const RELAY_PREFIX_RE = /^\s*\[[A-Za-z_][A-Za-z0-9_]*\]\s?/;
@@ -84,7 +85,7 @@ const LOGRUS_PARTIAL_PREFIX = 'time="';
  * below and shreds the layout.
  */
 export function writeWrappedToStderr(line: string): void {
-  for (const row of wrapProse(line, terminalWidth())) process.stderr.write(`${row}\n`);
+  for (const row of wrapProse(line, terminalWidth())) writeStderr(`${row}\n`);
 }
 
 /**
@@ -137,19 +138,19 @@ export function createQuietStderrPump(options: { echoAll?: boolean } = {}) {
           withheld.push(line);
           if (withheld.length > WITHHELD_LIMIT) withheld.shift();
         } else {
-          process.stderr.write(`${line}\n`);
+          writeStderr(`${line}\n`);
         }
         nl = pending.indexOf('\n');
       }
       if (pending && !pending.startsWith(LOGRUS_PARTIAL_PREFIX)) {
-        process.stderr.write(pending);
+        writeStderr(pending);
         pending = '';
       }
     },
     /** Call once the outcome is known. On failure the withheld lines are replayed. */
     flush(failed: boolean): void {
       if (pending) {
-        if (echoAll || !isQuietLogrusLine(pending)) process.stderr.write(pending);
+        if (echoAll || !isQuietLogrusLine(pending)) writeStderr(pending);
         pending = '';
       }
       // WRAPPED on replay. These are 115-358 columns wide, and the moment they are replayed a human is reading them: an unwrapped line is wrapped by the TERMINAL instead, which interleaves it with the row below and shreds the layout. `run_cmd_expect_fail` demos in the tutorials are exactly this path - there the failure IS the demo, so the diagnostic is on camera and has to be

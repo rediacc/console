@@ -33,12 +33,20 @@
 
 import type { ContractCommand, ContractOption } from '@rediacc/shared/cli-contract';
 import { getCommand } from '@rediacc/shared/cli-contract';
+import type { RdcConfig } from '@rediacc/shared/config-schema';
 import type { Command } from 'commander';
 import { CommanderError } from 'commander';
 import { configFileStorage } from '../../adapters/config-file-storage.js';
 import { createCli } from '../../cli.js';
 import { configService } from '../config/config-resources.js';
-import { createOutputState, DispatchExit, runInRequestContext } from '../core/request-context.js';
+import {
+  type CommandRequestContext,
+  createOutputState,
+  createRequestConfigScope,
+  DispatchExit,
+  joinStdout,
+  runInRequestContext,
+} from '../core/request-context.js';
 import type { ExecuteResult, Executor, RenetEvent } from '../executor/types.js';
 
 /** A request the executor refuses before running anything. Answered as a 400. */
@@ -88,11 +96,22 @@ export interface DispatchArgs {
    * re-attach even if the connection drops before the first event.
    */
   onJobStarted?: (jobId: string) => void;
+  /**
+   * The config the command runs against, in place of the config on disk. The
+   * container tier passes the one it decrypted for the session (its disk holds
+   * none); a daemon omits it and runs against its enrolled config file.
+   */
+  config?: RdcConfig;
 }
 
 export interface DispatchOutcome {
   result: ExecuteResult;
   stdout: string;
+  /**
+   * The command's stdout as raw bytes, present instead of `stdout` when it
+   * wrote any (`repo cat` of a binary file). Text would corrupt them.
+   */
+  stdoutBytes?: Uint8Array;
   stderr: string;
   /**
    * The renet function the command actually ran, when it ran one.
@@ -111,6 +130,11 @@ export interface DispatchOutcome {
    * the audit would otherwise record `undefined` for it.
    */
   machineName?: string;
+  /**
+   * Config changes the command made that were NOT persisted, because it ran
+   * against a request-scoped config. Zero on a daemon, whose writes land on disk.
+   */
+  unpersistedConfigWrites: number;
 }
 
 /**
@@ -344,12 +368,13 @@ export async function dispatchCommand(args: DispatchArgs): Promise<DispatchOutco
     },
   };
 
-  const context = {
+  const context: CommandRequestContext = {
     output: createOutputState(),
-    stdout: [] as string[],
-    stderr: [] as string[],
+    stdout: [],
+    stderr: [],
     onEvent: args.onEvent,
     executor: recordingExecutor,
+    ...(args.config ? { config: createRequestConfigScope(args.config) } : {}),
   };
 
   const outcome = await runInRequestContext(context, async () => {
@@ -363,21 +388,36 @@ export async function dispatchCommand(args: DispatchArgs): Promise<DispatchOutco
     }
   });
 
-  const stdout = context.stdout.join('\n');
+  const { text: stdout, bytes: stdoutBytes } = joinStdout(context.stdout);
   const stderr = context.stderr.join('\n');
+  const unpersistedConfigWrites = context.config?.specWrites ?? 0;
+  const common = {
+    stdout,
+    ...(stdoutBytes ? { stdoutBytes } : {}),
+    stderr,
+    functionName,
+    machineName,
+    unpersistedConfigWrites,
+  };
 
   if (!outcome.failed) {
-    return {
-      result: lastResult ?? inertResult(Date.now() - started),
-      stdout,
-      stderr,
-      functionName,
-      machineName,
-    };
+    const result = lastResult ?? inertResult(Date.now() - started);
+    return { result: withRequestedExit(result, context.exitCode), ...common };
   }
 
   const failure = toFailure(outcome.error, lastResult, Date.now() - started, stderr);
-  return { result: failure, stdout, stderr, functionName, machineName };
+  return { result: failure, ...common };
+}
+
+/**
+ * Apply the exit status the command set without exiting (setExitCode, the
+ * request's process.exitCode). A command that ran its machine work cleanly but
+ * then judged the outcome a failure (`machine status` finding a degraded host,
+ * `repo cat` finding no payload) ends with that code, as it would on a laptop.
+ */
+function withRequestedExit(result: ExecuteResult, requested: number | undefined): ExecuteResult {
+  if (requested === undefined || requested === 0 || requested === result.exitCode) return result;
+  return { ...result, success: false, exitCode: requested };
 }
 
 /**

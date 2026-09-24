@@ -7,6 +7,7 @@
 import type { SFTPClient } from '../../remote/sftp/index.js';
 import { debugLog } from '../../utils/debug.js';
 import { configService } from '../config/config-resources.js';
+import { writeStderr } from '../core/request-context.js';
 import { machineConnections } from '../machine/machine-connection.js';
 import { REMOTE_RENET_PATH } from '../renet/renet-provisioner.js';
 
@@ -83,8 +84,8 @@ export async function deployRepoKeyIfNeeded(repoName: string, machineName: strin
     debugLog(`Deployed SSH key for ${repoName} to ${machineName}`);
   } catch (error) {
     // Log visibly, silent failures here cause hard-to-debug connection issues
-    console.warn(
-      `Warning: failed to deploy SSH key for ${repoName}: ${error instanceof Error ? error.message : error}`
+    writeStderr(
+      `Warning: failed to deploy SSH key for ${repoName}: ${error instanceof Error ? error.message : String(error)}\n`
     );
   }
 }

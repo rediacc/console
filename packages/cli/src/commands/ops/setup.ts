@@ -2,6 +2,7 @@ import { spawn } from 'node:child_process';
 import { Command } from 'commander';
 import { t } from '../../i18n/index.js';
 import { outputService } from '../../services/core/output.js';
+import { setExitCode } from '../../services/core/request-context.js';
 import { opsExecutorService } from '../../services/executor/ops-executor.js';
 import { handleError } from '../../utils/errors.js';
 
@@ -49,16 +50,16 @@ export function registerOpsSetupCommand(ops: Command, _program: Command): void {
     .action(async (options: { debug?: boolean }) => {
       try {
         if (process.platform === 'darwin') {
-          process.exitCode = await setupDarwin();
+          setExitCode(await setupDarwin());
         } else if (process.platform === 'win32') {
           outputService.info(t('commands.ops.setup.windows'));
-          process.exitCode = await setupRenet(options, false);
+          setExitCode(await setupRenet(options, false));
         } else if (process.platform === 'linux') {
           outputService.info(t('commands.ops.setup.linux'));
-          process.exitCode = await setupRenet(options, true);
+          setExitCode(await setupRenet(options, true));
         } else {
           outputService.error(t('commands.ops.setup.unsupported', { platform: process.platform }));
-          process.exitCode = 1;
+          setExitCode(1);
         }
       } catch (error) {
         handleError(error);

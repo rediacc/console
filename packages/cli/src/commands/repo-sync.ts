@@ -22,6 +22,7 @@ import type { SyncProgress } from '../remote/types/index.js';
 import { namedDatastoreMount } from '../services/cluster/cluster-target.js';
 import { configService } from '../services/config/config-resources.js';
 import { auditService } from '../services/core/audit.js';
+import { setExitCode, writeStderr, writeStdout } from '../services/core/request-context.js';
 import { withPooledSftp } from '../services/machine/machine-connection.js';
 import { getSSHConnectionDetails } from '../services/machine/ssh-connection.js';
 import {
@@ -73,22 +74,22 @@ function displaySyncResult(
   if (result.success) {
     spinner.succeed(t(`commands.sync.${mode}.completed`, { count: result.filesTransferred }));
     if (result.bytesTransferred > 0) {
-      process.stdout.write(
+      writeStdout(
         `${t('commands.sync.totalSize', { size: formatBytes(result.bytesTransferred) })}\n`
       );
     }
-    process.stdout.write(
+    writeStdout(
       `${t('commands.sync.duration', { seconds: (result.duration / 1000).toFixed(1) })}\n`
     );
   } else {
     spinner.fail(t(`commands.sync.${mode}.failed`));
     if (result.errors.length > 0) {
-      console.error(t('commands.sync.errors'));
+      writeStderr(`${t('commands.sync.errors')}\n`);
       for (const err of result.errors) {
-        console.error(`  ${err}`);
+        writeStderr(`  ${err}\n`);
       }
     }
-    process.exitCode = 1;
+    setExitCode(1);
   }
 }
 
@@ -250,7 +251,7 @@ function displaySftpDryRunResult(result: {
   filesTransferred: number;
   bytesTransferred: number;
 }): void {
-  process.stdout.write(
+  writeStdout(
     `\nSFTP fallback (rsync not available):\n  Files to transfer: ${result.filesTransferred}\n  Total size: ${formatBytes(result.bytesTransferred)}\n`
   );
 }

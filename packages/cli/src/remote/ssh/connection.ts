@@ -1,5 +1,6 @@
 import { type ChildProcess, spawn } from 'node:child_process';
 import { DEFAULTS } from '@rediacc/shared/config';
+import { writeStderr } from '../../services/core/request-context.js';
 import { getPlatform, windowsToUnixPath } from '../utils/platform.js';
 import { addKeyToAgent, isSSHAgentAvailable, startSSHAgent, stopSSHAgent } from './agent.js';
 import { createTempSSHKeyFile, decodeSSHKey, removeTempSSHKeyFile } from './keyManager.js';
@@ -341,9 +342,9 @@ export class SSHConnection {
         }
       } catch (error) {
         // Log the error prominently (matches Python CLI behavior)
-        console.warn(
+        writeStderr(
           `Warning: SSH agent setup failed, using file-based keys instead.\n` +
-            `  Reason: ${error instanceof Error ? error.message : String(error)}`
+            `  Reason: ${error instanceof Error ? error.message : String(error)}\n`
         );
       }
     }

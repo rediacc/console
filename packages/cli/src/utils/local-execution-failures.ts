@@ -1,6 +1,11 @@
 import { DEFAULTS } from '@rediacc/shared/config';
 import { outputService } from '../services/core/output.js';
-import { exitProcess, writeStderr, writeStdout } from '../services/core/request-context.js';
+import {
+  exitProcess,
+  setExitCode,
+  writeStderr,
+  writeStdout,
+} from '../services/core/request-context.js';
 import type { ExecuteResult } from '../services/executor/local-executor.js';
 import { isAgentEnvironment } from './agent-guard.js';
 import { getOutputFormat } from './errors.js';
@@ -77,7 +82,7 @@ export function renderLocalExecutionFailure(
     if (isAgentEnvironment()) {
       exitProcess(exitCode);
     }
-    process.exitCode = exitCode;
+    setExitCode(exitCode);
     return;
   }
 
@@ -88,5 +93,5 @@ export function renderLocalExecutionFailure(
   if (isAgentEnvironment()) {
     exitProcess(exitCode);
   }
-  process.exitCode = exitCode;
+  setExitCode(exitCode);
 }

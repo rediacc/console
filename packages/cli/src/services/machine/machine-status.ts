@@ -10,11 +10,12 @@ import type { ListResult } from '@rediacc/shared/renet-contract/data/list-types.
 import { isListResult } from '@rediacc/shared/renet-contract/data/list-types.generated';
 import { isDevBuild } from '../../utils/platform.js';
 import {
-  readRuntimeRepoLicenseStatuses,
   type RuntimeRepoLicenseStatus,
+  readRuntimeRepoLicenseStatuses,
 } from '../account/license.js';
 import { configService } from '../config/config-resources.js';
 import { outputService } from '../core/output.js';
+import { writeStderr } from '../core/request-context.js';
 import { buildRenetEnvPrefix } from '../executor/local-executor.js';
 import { acquireRemoteRenet } from '../renet/renet-execution.js';
 import { fetchOtlpCredentials } from '../telemetry/otlp-credentials.js';
@@ -115,7 +116,7 @@ export async function fetchMachineStatus(
       onStderr: (data) => {
         stderr += data.toString();
         if (options.debug) {
-          process.stderr.write(data);
+          writeStderr(data);
         }
       },
     });

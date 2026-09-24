@@ -28,6 +28,7 @@ import type {
   StorageConfig,
 } from '../../types/index.js';
 import { outputService } from '../core/output.js';
+import { currentRequestConfig } from '../core/request-context.js';
 import { ConfigServiceBase } from './config-base.js';
 import {
   assertClusterMembersUnique,
@@ -46,13 +47,47 @@ import {
   assertRestoredForkKeyIsExplicit,
   buildArchivedRecord,
   buildGuidMap,
+  grandTagsOf,
   resolveDestructiveTargetFromRepos,
-  resolveExactOrLatest,
+  resolveRepoKey,
 } from './config-resources-resolve.js';
+import type { ResourceState } from './resource-state.js';
 
 export { AmbiguousRepoTargetError } from './config-resources-resolve.js';
 
 class ConfigService extends ConfigServiceBase {
+  /**
+   * The current config. Inside a request-scoped dispatch (the container tier)
+   * it is the config decrypted for the session, never a file and never the
+   * process-wide remote snapshot.
+   */
+  override getCurrent(): Promise<RdcConfig | null> {
+    const scoped = currentRequestConfig();
+    if (scoped) return Promise.resolve(scoped.config);
+    return super.getCurrent();
+  }
+
+  override getDecryptedConfig(): Promise<RdcConfig | null> {
+    const scoped = currentRequestConfig();
+    if (scoped) return Promise.resolve(scoped.config);
+    return super.getDecryptedConfig();
+  }
+
+  /**
+   * The resource view, memoized on the REQUEST when a request-scoped config is
+   * in force. The process-wide memo on the base class would otherwise hand one
+   * tenant's machines to another tenant's concurrent command.
+   */
+  override async getResourceState(): Promise<ResourceState> {
+    const scoped = currentRequestConfig();
+    if (!scoped) return super.getResourceState();
+    if (!scoped.resourceState) {
+      const { LocalResourceState } = await import('./resource-state.js');
+      scoped.resourceState = LocalResourceState.load(scoped.config, this.getEffectiveConfigName());
+    }
+    return scoped.resourceState as ResourceState;
+  }
+
   /**
    * Load the current (or named) config, failing when none is active.
    */
@@ -340,14 +375,15 @@ class ConfigService extends ConfigServiceBase {
 
   /**
    * Resolve a repository reference to its config.
-   * Supports: direct key match, legacy names, and bare names (defaults to :latest).
+   * Supports: direct key match, and a bare (or `:base`) name, which resolves to
+   * the family's grand through its recorded grand pointer, whatever its tag.
    */
   async getRepository(repoRef: string): Promise<RepositoryConfig | undefined> {
     const config = await this.getCurrent();
     if (!config) return undefined;
     const state = await this.getResourceState();
     const repos = state.getRepositories();
-    const key = resolveExactOrLatest(repos, repoRef, !repoRef.includes(':'));
+    const key = resolveRepoKey(repos, repoRef, grandTagsOf(config.resources?.repositories));
     return key ? repos[key] : undefined;
   }
 
@@ -359,7 +395,11 @@ class ConfigService extends ConfigServiceBase {
     const config = await this.getCurrent();
     if (!config) return undefined;
     const state = await this.getResourceState();
-    return resolveExactOrLatest(state.getRepositories(), repoRef, !repoRef.includes(':'));
+    return resolveRepoKey(
+      state.getRepositories(),
+      repoRef,
+      grandTagsOf(config.resources?.repositories)
+    );
   }
 
   /**
@@ -369,7 +409,7 @@ class ConfigService extends ConfigServiceBase {
    *
    * - Exact-key match wins (same as `getRepositoryKey`).
    * - For a bare ref, refuses when more than one config key shares the base
-   *   name, even if the `:latest` fallback would otherwise resolve.
+   *   name, even if the grand-pointer fallback would otherwise resolve.
    * - For a bare ref that resolves to a fork (grandGuid set and !== guid),
    *   refuses, the operator must say `<name>:<tag>` explicitly so we do not
    *   destroy a fork registered in the grand slot by mistake.
@@ -381,7 +421,8 @@ class ConfigService extends ConfigServiceBase {
     if (!config) throw new Error(`Repository "${repoRef}" not found in context`);
     return resolveDestructiveTargetFromRepos(
       (await this.getResourceState()).getRepositories(),
-      repoRef
+      repoRef,
+      grandTagsOf(config.resources?.repositories)
     );
   }
 

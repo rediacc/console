@@ -47,8 +47,8 @@ import { outputService } from '../core/output.js';
 import { writeStderr, writeStdout } from '../core/request-context.js';
 import { machineConnections } from '../machine/machine-connection.js';
 import {
-  buildLocalVault,
   acquireRemoteRenet,
+  buildLocalVault,
   readOptionalSSHKey,
   readSSHKey,
   verifyMachineSetup,
@@ -66,8 +66,8 @@ import { isTelemetryDisabled, telemetryService } from '../telemetry/telemetry.js
 import {
   cleanRelayLine,
   createQuietStderrPump,
-  shouldEchoRelayLive,
   isLogrusLine,
+  shouldEchoRelayLive,
   stripRelayPrefix,
 } from './output-lines.js';
 
@@ -189,6 +189,19 @@ function buildLoadedRepoEntry(name: string, config: RepositoryConfig): LoadedRep
   };
 }
 
+/**
+ * Alias each family's bare name to its GRAND so lookups by bare name work,
+ * whatever tag the grand is stored under (getRepositoryKey follows the
+ * family's grand pointer rather than assuming `:latest`).
+ */
+async function aliasBareNamesToGrands(configs: Record<string, LoadedRepoEntry>): Promise<void> {
+  for (const base of new Set(Object.keys(configs).map((key) => key.split(':')[0]))) {
+    if (base in configs) continue;
+    const grandKey = await configService.getRepositoryKey(base);
+    if (grandKey && grandKey in configs) configs[base] = configs[grandKey];
+  }
+}
+
 async function loadContextRepositories(): Promise<{
   credentials: Record<string, string> | undefined;
   configs: Record<string, LoadedRepoEntry> | undefined;
@@ -202,16 +215,9 @@ async function loadContextRepositories(): Promise<{
       if (r.config.credential) {
         credentials[r.config.repositoryGuid] = r.config.credential;
       }
-      const entry = buildLoadedRepoEntry(r.name, r.config);
-      configs[r.name] = entry;
-      // Also add bare name alias for :latest repos so lookups by bare name work. NOTE: Only handles the default ":latest" tag. If custom tags for grand repos are supported in the future, commands should pass explicit guid/network_id in params (which buildSingleRepoEntry uses as fallback).
-      if (r.name.endsWith(':latest')) {
-        const bareName = r.name.slice(0, -7);
-        if (!(bareName in configs)) {
-          configs[bareName] = entry;
-        }
-      }
+      configs[r.name] = buildLoadedRepoEntry(r.name, r.config);
     }
+    await aliasBareNamesToGrands(configs);
     return { credentials, configs };
   } catch {
     return { credentials: undefined, configs: undefined };
@@ -405,10 +411,8 @@ async function resolveRestoreLicenseContext(
 ): Promise<Omit<RepoLicenseContext, 'requestedSizeGb'> | null> {
   const repoName = typeof params.repository === 'string' ? params.repository : '';
   if (!repoName) return null;
-  let repo = await configService.getRepository(repoName);
-  if (!repo && !repoName.includes(':')) {
-    repo = await configService.getRepository(`${repoName}:latest`);
-  }
+  // A bare name resolves to the family's grand, whatever its tag.
+  const repo = await configService.getRepository(repoName);
   if (!repo?.repositoryGuid) return null;
   const machine = await configService.getLocalMachine(machineName);
 
@@ -528,11 +532,8 @@ async function resolveRepoLicenseInputs(
   const repoName = typeof params.repository === 'string' ? params.repository : '';
   // For a tag-targeted verb `params.repository` names the SOURCE, and the licence target is `params.tag`; a missing source is not fatal here because buildRepoLicenseContext decides what it can build without one.
   if (!repoName && !usesTagAsProvisioningTarget(functionName)) return null;
-  // Try bare name first, then composite key (e.g., "my-app" → "my-app:latest")
-  let repo = await configService.getRepository(repoName);
-  if (!repo && !repoName.includes(':')) {
-    repo = await configService.getRepository(`${repoName}:latest`);
-  }
+  // A bare name resolves to the family's grand, whatever its tag.
+  const repo = await configService.getRepository(repoName);
   const machine = await configService.getLocalMachine(machineName);
   if (!repo && !usesTagAsProvisioningTarget(functionName)) return null;
   return { repo, machine };
@@ -736,9 +737,9 @@ function echoRenetFailure(exitCode: number, combined: string, options: ExecuteOp
   if (exitCode === 0 || options.debug || options.captureOutput) return false;
   const output = combined.trim();
   if (!output) return false;
-  process.stderr.write(`\n--- renet output (exit code ${exitCode}) ---\n`);
-  process.stderr.write(`${output}\n`);
-  process.stderr.write('---\n\n');
+  writeStderr(`\n--- renet output (exit code ${exitCode}) ---\n`);
+  writeStderr(`${output}\n`);
+  writeStderr('---\n\n');
   return true;
 }
 
@@ -863,7 +864,7 @@ function handleEventsStdout(onEvent: (event: RenetEvent) => void): StdoutHandler
         const event = JSON.parse(trimmed) as RenetEvent;
         onEvent(event);
       } catch {
-        process.stdout.write(`${line}\n`);
+        writeStdout(`${line}\n`);
       }
     }
   };
@@ -878,7 +879,7 @@ function handleEventsStdout(onEvent: (event: RenetEvent) => void): StdoutHandler
  */
 function renderStepEvent(
   parsed: Record<string, unknown>,
-  write: (text: string) => void = (text) => void process.stdout.write(text)
+  write: (text: string) => void = writeStdout
 ): void {
   if (parsed.step_start && typeof parsed.step_start === 'object') {
     const s = parsed.step_start as { name?: string };
@@ -979,7 +980,7 @@ function createStdoutHandler(
     return () => {};
   }
   if (options.debug) {
-    return (data: Buffer) => process.stdout.write(data);
+    return (data: Buffer) => writeStdout(data);
   }
   // Opt-in, per command: only the verbs whose output IS the answer ask for it, so every other command keeps the step-detection handler unchanged.
   if (options.passthroughOutput) {

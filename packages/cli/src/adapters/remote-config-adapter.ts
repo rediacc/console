@@ -281,6 +281,18 @@ export class RemoteConfigAdapter {
   // ─── Private Helpers ──────────────────────────────────────────────────
 
   /** Get the current token or throw a clear error */
+  /**
+   * Unwrap this device's config key (CEK) from its enrollment, without pulling
+   * the config. The `--proxy` client seals it to an executor's session key so
+   * the executor can open the config for that session (ProxyClient.ensureSession).
+   * Rotates the config token like any other request.
+   */
+  async unwrapCek(): Promise<CryptoKey> {
+    const token = await this.requireToken();
+    const session = await this.fetchSession(token);
+    return this.deriveCek(session.serverSecret);
+  }
+
   private async requireToken(): Promise<string> {
     const data = await this.tokenStorage.get(this.configName);
     if (!data?.token) {

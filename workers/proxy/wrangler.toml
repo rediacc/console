@@ -13,6 +13,13 @@ routes = [
 [vars]
 ACCOUNT_URL = "https://eu.rediacc.com"
 
+# Introspection goes through this binding, not a public fetch: this Worker and the account
+# worker share the rediacc.com zone, and a same-zone subrequest never reaches another Worker
+# (every caller got 401 on the first Phase 2 deploy, 2026-09-24). Same binding as workers/www.
+[[services]]
+binding = "ACCOUNT"
+service = "rediacc-account-eu"
+
 # EXECUTOR_TOKEN is a secret, never a var:
 #   npx wrangler secret put EXECUTOR_TOKEN --config workers/proxy/wrangler.toml
 

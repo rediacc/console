@@ -31,6 +31,7 @@ import {
   StreamLineSchema,
   VersionMismatchSchema,
 } from '@rediacc/shared/cli-contract/wire';
+import { cekHandoffEncrypt, exportAesKey, fromBase64 } from '@rediacc/shared/config-crypto';
 import { VERSION } from '../../version.js';
 import type { RenetEvent } from './types.js';
 
@@ -69,6 +70,29 @@ export interface ProxyClientOptions {
   contractVersion: string;
   /** Injectable for tests. */
   fetchImpl?: typeof fetch;
+  /**
+   * Unwraps this device's config key (CEK). Called only when the executor is a
+   * CONTAINER, which holds no key of its own and can open the config only with
+   * one granted per session. A daemon derives its own and is never sent one.
+   */
+  getCek?: () => Promise<CryptoKey>;
+}
+
+/**
+ * Grants already made by this process, keyed by executor and token, so a
+ * process grants once however many commands it sends. Holds the promise, so
+ * concurrent callers share one grant rather than racing two sessions.
+ */
+const grantedSessions = new Map<string, Promise<void>>();
+
+/** Forget every grant this process made. For tests. */
+export function resetProxySessions(): void {
+  grantedSessions.clear();
+}
+
+/** An ArrayBuffer view Web Crypto accepts, from a Uint8Array that may be a slice. */
+function toArrayBuffer(data: Uint8Array): ArrayBuffer {
+  return data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength) as ArrayBuffer;
 }
 
 /** What the executor reported: how it ended, and what the command printed. */
@@ -78,6 +102,8 @@ export interface ProxyCommandOutcome {
   error?: string;
   /** What the command rendered: its envelope, its table. Printed verbatim. */
   stdout: string;
+  /** Raw bytes the command wrote instead (`repo cat` of a binary file). Written verbatim. */
+  stdoutBytes?: Uint8Array;
   stderr: string;
   /**
    * Renet's own output, captured at the executor.
@@ -108,6 +134,9 @@ function toOutcome(line: Extract<StreamLine, { kind: 'result' }>): ProxyCommandO
     exitCode: line.result.exitCode,
     error: line.result.error,
     stdout: line.stdout ?? '',
+    ...(line.stdoutBase64 === undefined
+      ? {}
+      : { stdoutBytes: new Uint8Array(Buffer.from(line.stdoutBase64, 'base64')) }),
     stderr: line.stderr ?? '',
     renetStdout: line.result.stdout ?? '',
     renderedLiveOutput: false,
@@ -131,12 +160,67 @@ export class ProxyClient {
   private readonly getToken: () => Promise<string>;
   private readonly contractVersion: string;
   private readonly fetchImpl: typeof fetch;
+  private readonly getCek: (() => Promise<CryptoKey>) | undefined;
 
   constructor(options: ProxyClientOptions) {
     this.baseUrl = options.baseUrl.replace(/\/+$/, '');
     this.getToken = options.getToken;
     this.contractVersion = options.contractVersion;
     this.fetchImpl = options.fetchImpl ?? globalThis.fetch;
+    this.getCek = options.getCek;
+  }
+
+  /**
+   * Make sure a CONTAINER executor holds this caller's config key, once per
+   * process.
+   *
+   * A container starts with no key and answers every command "This session has
+   * no config key yet" until the caller grants one. So: ask the executor what it
+   * is; if it is a container, open a session (it mints an X25519 keypair and
+   * returns the public half), unwrap the local CEK from the `config remote`
+   * enrollment, seal it to that public key, and post the sealed blob. The key
+   * never crosses the wire in the clear, and a daemon, which derives its own
+   * key, is never sent it at all.
+   */
+  async ensureSession(): Promise<void> {
+    // A client with no key to give (a test harness, a caller that manages its own sessions) leaves the grant to whoever holds one.
+    if (!this.getCek) return;
+    const key = `${this.baseUrl}\u0000${await this.getToken()}`;
+    let grant = grantedSessions.get(key);
+    if (!grant) {
+      grant = this.grantSession();
+      grantedSessions.set(key, grant);
+      // A failed grant must not be remembered as done: the next command retries it.
+      grant.catch(() => grantedSessions.delete(key));
+    }
+    return grant;
+  }
+
+  private async grantSession(): Promise<void> {
+    const info = await this.serverInfo();
+    if (info.mode !== 'container') return;
+
+    const getCek = this.getCek;
+    if (!getCek) return;
+
+    const opened = await this.post(PROXY_ROUTES.session, {});
+    if (!opened.ok) throw new Error(await this.describeFailure(opened));
+    const { sessionId, publicKey } = (await opened.json()) as {
+      sessionId: string;
+      publicKey: string;
+    };
+
+    const executorKey = await crypto.subtle.importKey(
+      'spki',
+      toArrayBuffer(fromBase64(publicKey)),
+      { name: 'X25519' },
+      false,
+      []
+    );
+    const sealed = await cekHandoffEncrypt(await exportAesKey(await getCek()), executorKey);
+
+    const granted = await this.post(PROXY_ROUTES.sessionCek(sessionId), sealed);
+    if (!granted.ok) throw new Error(await this.describeFailure(granted));
   }
 
   /**
@@ -153,6 +237,8 @@ export class ProxyClient {
     onEvent: (event: RenetEvent) => void,
     reattach?: ReattachTarget
   ): Promise<ProxyCommandOutcome> {
+    await this.ensureSession();
+
     const request: CommandRequest = {
       contractVersion: this.contractVersion,
       pathKey,

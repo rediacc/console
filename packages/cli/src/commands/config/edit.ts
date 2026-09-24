@@ -48,6 +48,7 @@ import { redactClone, shortFingerprint } from '../../schema/fingerprint.js';
 import { configService } from '../../services/config/config-resources.js';
 import { auditLog } from '../../services/core/audit-log.js';
 import { outputService } from '../../services/core/output.js';
+import { writeStdout } from '../../services/core/request-context.js';
 import { configEditOverrideScope, isAgentEnvironment } from '../../utils/agent-guard.js';
 import { EditorError, openEditor } from '../../utils/editor-launcher.js';
 import { handleError, ValidationError } from '../../utils/errors.js';
@@ -102,7 +103,7 @@ async function promptRotationConfirmation(paths: string[]): Promise<boolean> {
     '',
     t('commands.config.edit.rotatePromptFooter'),
   ];
-  process.stdout.write(lines.join('\n'));
+  writeStdout(lines.join('\n'));
   const rl = createInterface({ input: process.stdin, output: process.stdout });
   return new Promise((resolve) => {
     rl.question('', (answer) => {
@@ -574,7 +575,7 @@ export function registerEditCommands(parent: Command, _program: Command): void {
             : undefined;
 
           if (options.dump) {
-            process.stdout.write(renderJsonc(config, { reveal }));
+            writeStdout(renderJsonc(config, { reveal }));
             return;
           }
 

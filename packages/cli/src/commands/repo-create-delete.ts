@@ -10,6 +10,7 @@ import {
 import { namedDatastoreMount } from '../services/cluster/cluster-target.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
+import { writeStdout } from '../services/core/request-context.js';
 import { getExecutor } from '../services/executor/executor-factory.js';
 import { assertAgentRepoCreate } from '../utils/agent-guard.js';
 import { notFound, stateMismatch } from '../utils/cli-exit-error.js';
@@ -37,7 +38,7 @@ function generateCredential(): string {
 /** Log total step duration and mark timeline as rendered. */
 function renderTimelineTotal(steps: { duration_ms: number }[]): void {
   const totalMs = steps.reduce((sum, s) => sum + s.duration_ms, 0);
-  process.stdout.write(`\nTotal: ${formatStepDuration(totalMs)}\n`);
+  writeStdout(`\nTotal: ${formatStepDuration(totalMs)}\n`);
   outputService.setTimelineRendered();
 }
 

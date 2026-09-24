@@ -3,6 +3,7 @@ import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
+import { setExitCode } from '../services/core/request-context.js';
 import { getExecutor } from '../services/executor/executor-factory.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { recordedDatastoreMount } from '../utils/repo-executor.js';
@@ -207,7 +208,7 @@ async function handleFsck(options: { machine: string }): Promise<void> {
       for (const g of orphans) outputService.info(`  ${g.slice(0, 12)}`);
       outputService.info(t('commands.repo.admin.fsck.orphanHint'));
     }
-    process.exitCode = 1;
+    setExitCode(1);
   } catch (error) {
     handleError(error);
   }

@@ -18,6 +18,7 @@ import { t } from '../i18n/index.js';
 import { validateTag } from '../services/addressing/ref-parser.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
+import { writeStderr, writeStdout } from '../services/core/request-context.js';
 import {
   type ExecuteResult,
   getExecutor,
@@ -81,21 +82,19 @@ const UP_PHASE_STEP_NAMES = new Set([
 /** Print one completed-step line in the streamed timeline format. */
 function printStepLine(step: TimelineStep): void {
   const detail = step.detail ? ` (${step.detail})` : '';
-  process.stdout.write(
-    `✔ ${getDoneLabel(step.name)}${detail} (${formatStepDuration(step.duration_ms)})\n`
-  );
+  writeStdout(`✔ ${getDoneLabel(step.name)}${detail} (${formatStepDuration(step.duration_ms)})\n`);
 }
 
 /** Print "Total: <wall>" once at the true end and mark the timeline rendered. */
 function renderTimelineTotal(wallMs: number): void {
-  process.stdout.write(`\nTotal: ${formatStepDuration(wallMs)}\n`);
+  writeStdout(`\nTotal: ${formatStepDuration(wallMs)}\n`);
   outputService.setTimelineRendered();
 }
 
 /** Handle a log event: only show errors/warnings. */
 function handleLogEvent(event: RenetEvent): void {
   if (event.level === 'error' || event.level === 'fatal' || event.level === 'warning') {
-    process.stderr.write(`  ${event.msg ?? ''}\n`);
+    writeStderr(`  ${event.msg ?? ''}\n`);
   }
 }
 
@@ -108,7 +107,7 @@ function handleStepDoneEvent(
   if (!event.name || event.duration_ms === undefined) return;
   const label = getDoneLabel(event.name);
   const detail = event.detail ? ` (${event.detail})` : '';
-  process.stdout.write(`\r✔ ${label}${detail} (${formatStepDuration(event.duration_ms)})\n`);
+  writeStdout(`\r✔ ${label}${detail} (${formatStepDuration(event.duration_ms)})\n`);
   allSteps.push({
     name: event.name,
     duration_ms: event.duration_ms,
@@ -128,7 +127,7 @@ function createForkEventHandler(allSteps: TimelineStep[]): (event: RenetEvent) =
         break;
       case 'step_start':
         if (event.name) stepStarts.set(event.name, Date.now());
-        process.stdout.write(`⠋ ${getActiveLabel(event.name ?? '')}...`);
+        writeStdout(`⠋ ${getActiveLabel(event.name ?? '')}...`);
         break;
       case 'step_done': {
         const startedAtMs = event.name ? stepStarts.get(event.name) : undefined;
@@ -141,7 +140,7 @@ function createForkEventHandler(allSteps: TimelineStep[]): (event: RenetEvent) =
           event.msg &&
           (event.msg.includes('✔') || event.msg.includes('✗') || event.msg.includes('Error'))
         ) {
-          process.stdout.write(`  ${event.msg}`);
+          writeStdout(`  ${event.msg}`);
         }
         break;
     }
@@ -338,7 +337,7 @@ function printTimingSummary(plan: ForkPlan, steps: TimelineStep[], wallMs: numbe
     epochMs: plan.startedAt,
     suggestDetach: Boolean(plan.options.up && !plan.options.detach),
   });
-  if (summary) process.stdout.write(`\n${summary}\n`);
+  if (summary) writeStdout(`\n${summary}\n`);
 }
 
 /**

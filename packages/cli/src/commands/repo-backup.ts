@@ -4,6 +4,7 @@ import { getSubscriptionTokenState } from '../services/account/subscription-auth
 import { resolveControlNode } from '../services/config/config-cluster-ops.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
+import { setExitCode } from '../services/core/request-context.js';
 import { type ExecuteResult, getExecutor } from '../services/executor/executor-factory.js';
 import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
 import { probeRepoMounted } from '../services/repo/repo-mount-check.js';
@@ -209,7 +210,7 @@ export async function postPushDeploy(
   const tokenState = getSubscriptionTokenState();
   if (tokenState.kind !== 'ready') {
     outputService.error(t('errors.license.preflightTokenNotReady', { machine: targetName }));
-    process.exitCode = 1;
+    setExitCode(1);
     return;
   }
   outputService.info(t('commands.repo.push.deploying', { repo, machine: targetName }));
@@ -370,7 +371,7 @@ async function postPullDeploy(
   const tokenState = getSubscriptionTokenState();
   if (tokenState.kind !== 'ready') {
     outputService.error(t('errors.license.preflightTokenNotReady', { machine: targetMachine }));
-    process.exitCode = 1;
+    setExitCode(1);
     return;
   }
   outputService.info(t('commands.repo.pull.deploying', { repo, machine: targetMachine }));

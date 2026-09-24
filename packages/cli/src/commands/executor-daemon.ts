@@ -12,6 +12,7 @@
  */
 
 import type { Command } from 'commander';
+import { writeStdout } from '../services/core/request-context.js';
 import { sendDaemonControl } from '../services/executor/daemon/client.js';
 import { startExecutorDaemon } from '../services/executor/daemon/server.js';
 import { handleError } from '../utils/errors.js';
@@ -48,10 +49,10 @@ export function registerExecutorDaemonCommands(program: Command): void {
       try {
         const reply = await sendDaemonControl({ type: 'stop' });
         if (!reply) {
-          process.stdout.write('No executor daemon is running.\n');
+          writeStdout('No executor daemon is running.\n');
           return;
         }
-        process.stdout.write('Executor daemon stopped.\n');
+        writeStdout('Executor daemon stopped.\n');
       } catch (error) {
         handleError(error);
       }
@@ -64,18 +65,18 @@ export function registerExecutorDaemonCommands(program: Command): void {
       try {
         const reply = await sendDaemonControl({ type: 'status' });
         if (!reply) {
-          process.stdout.write('No executor daemon is running.\n');
+          writeStdout('No executor daemon is running.\n');
           return;
         }
         if (reply.type === 'statusInfo') {
           const hosts = reply.warmHosts.length > 0 ? reply.warmHosts.join(', ') : '(none)';
-          process.stdout.write(`pid:        ${reply.pid}\n`);
-          process.stdout.write(`uptime:     ${formatUptime(reply.uptimeMs)}\n`);
-          process.stdout.write(`identity:   ${reply.identity}\n`);
-          process.stdout.write(`warm hosts: ${hosts}\n`);
+          writeStdout(`pid:        ${reply.pid}\n`);
+          writeStdout(`uptime:     ${formatUptime(reply.uptimeMs)}\n`);
+          writeStdout(`identity:   ${reply.identity}\n`);
+          writeStdout(`warm hosts: ${hosts}\n`);
           return;
         }
-        process.stdout.write('An executor daemon is running but is stale; it will exit.\n');
+        writeStdout('An executor daemon is running but is stale; it will exit.\n');
       } catch (error) {
         handleError(error);
       }

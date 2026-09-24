@@ -3,6 +3,7 @@ import { type Command, Option } from 'commander';
 import { t } from '../../i18n/index.js';
 import { configService } from '../../services/config/config-resources.js';
 import { outputService } from '../../services/core/output.js';
+import { setExitCode, writeStdout } from '../../services/core/request-context.js';
 import { createQuietStderrPump } from '../../services/executor/output-lines.js';
 import { machineConnections } from '../../services/machine/machine-connection.js';
 import { guardMachineRemoval } from '../../services/machine/machine-remove-guard.js';
@@ -301,7 +302,7 @@ function registerSetup(machine: Command): void {
           // Same treatment as machine-bootstrap: renet narrates setup at info level in 121+ column lines. Withhold, replay only on failure.
           const stderrPump = createQuietStderrPump({ echoAll: options.debug });
           const exitCode = await lease.sftp.execStreaming(cmd, {
-            onStdout: (data) => process.stdout.write(data),
+            onStdout: (data) => writeStdout(data),
             onStderr: (data) => stderrPump.write(String(data)),
           });
           stderrPump.flush(exitCode !== 0);
@@ -313,7 +314,7 @@ function registerSetup(machine: Command): void {
             outputService.error(
               t('commands.machine.setup.failed', { machine: name, error: `exit code ${exitCode}` })
             );
-            process.exitCode = exitCode;
+            setExitCode(exitCode);
           }
         } finally {
           lease.release();

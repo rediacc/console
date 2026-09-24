@@ -23,7 +23,6 @@ import { configService } from '../config/config-resources.js';
 import { outputService } from '../core/output.js';
 import { writeStderr, writeStdout } from '../core/request-context.js';
 import { type MachineConnectionLease, machineConnections } from '../machine/machine-connection.js';
-import { isMachineReadableRelayLine } from './output-lines.js';
 import { acquireRemoteRenet, type RenetAccess } from '../renet/renet-execution.js';
 import {
   buildJobCancelCommand,
@@ -39,6 +38,7 @@ import {
   parseJobList,
   parseJobStatus,
 } from './job-client.js';
+import { isMachineReadableRelayLine } from './output-lines.js';
 import type { RenetEvent } from './types.js';
 
 /**
@@ -259,7 +259,7 @@ async function followJobLogsOnce(
           cursor.consume(data);
         },
         onStderr: (data) => {
-          if (options.debug && !stopped) process.stderr.write(data);
+          if (options.debug && !stopped) writeStderr(data);
         },
       });
 

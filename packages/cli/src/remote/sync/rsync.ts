@@ -1,5 +1,6 @@
 import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
+import { writeStdout } from '../../services/core/request-context.js';
 import { getMsys2Environment, getRsyncPath, getSshPath } from '../msys2/paths.js';
 import type { SyncProgress, SyncResult } from '../types/index.js';
 import { commandExists, getPlatform } from '../utils/platform.js';
@@ -303,8 +304,7 @@ export async function executeRsync(options: RsyncExecutorOptions): Promise<SyncR
 
   // Verbose logging: output full command before execution
   if (options.verbose) {
-    // eslint-disable-next-line no-console
-    console.log(`[rsync] Executing: ${rsyncCommand} ${args.join(' ')}`);
+    writeStdout(`[rsync] Executing: ${rsyncCommand} ${args.join(' ')}\n`);
   }
 
   return new Promise((resolve) => {
@@ -441,8 +441,7 @@ export async function getRsyncPreview(options: RsyncExecutorOptions): Promise<Rs
 
   // Verbose logging: output full command before execution
   if (options.verbose) {
-    // eslint-disable-next-line no-console
-    console.log(`[rsync] Preview: ${rsyncCommand} ${args.join(' ')}`);
+    writeStdout(`[rsync] Preview: ${rsyncCommand} ${args.join(' ')}\n`);
   }
 
   return new Promise((resolve, reject) => {

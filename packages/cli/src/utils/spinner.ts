@@ -1,4 +1,5 @@
 import type { Ora } from 'ora';
+import { writeStderr } from '../services/core/request-context.js';
 import { getOutputFormat } from './errors.js';
 
 // esbuild bundles this literal `require` and defers ora's module init (chalk / cli-cursor / string-width setup) to the first interactive spinner. Spinners only run in a TTY, so piped/CI/JSON-output runs, including --version/--help, never pay ora's startup cost.
@@ -66,11 +67,11 @@ export async function withSpinner<T>(
       // Avoid polluting machine-readable output formats
       const format = getOutputFormat();
       if (successText && format === 'table') {
-        process.stderr.write(`✓ ${successText}\n`);
+        writeStderr(`✓ ${successText}\n`);
       }
       return result;
     } catch (error) {
-      console.error(`✗ ${text.replace('...', '')} failed`);
+      writeStderr(`✗ ${text.replace('...', '')} failed\n`);
       throw error;
     }
   }

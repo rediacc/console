@@ -26,6 +26,7 @@
  */
 
 import { z } from 'zod';
+import { writeStdout } from '../core/request-context.js';
 import type { ExecuteResult, RenetEvent } from './types.js';
 
 /**
@@ -64,7 +65,8 @@ const JobHandleSchema = z.object({
   log_path: z.string(),
 });
 
-export type JobHandle = z.infer<typeof JobHandleSchema>;
+type JobHandle = z.infer<typeof JobHandleSchema>;
+export type { JobHandle };
 
 /** What `renet job status --json` prints (renet pkg/jobs Status). */
 const JobStatusSchema = z.object({
@@ -84,7 +86,8 @@ const JobStatusSchema = z.object({
   pid: z.number().optional(),
 });
 
-export type JobStatus = z.infer<typeof JobStatusSchema>;
+type JobStatus = z.infer<typeof JobStatusSchema>;
+export type { JobStatus };
 
 /** renet's `job run` exit codes, which mirror the terminal state. */
 const EXIT_SUCCESS = 0;
@@ -384,7 +387,7 @@ export function createEventLineReader(
       try {
         onEvent(JSON.parse(trimmed) as RenetEvent, lineNumber);
       } catch {
-        process.stdout.write(`${line}\n`);
+        writeStdout(`${line}\n`);
       }
     }
   };

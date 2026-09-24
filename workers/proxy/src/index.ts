@@ -30,9 +30,25 @@ export interface Env {
   ACCOUNT_URL: string;
   /** This executor fleet's own account token, carrying proxy:exec. */
   EXECUTOR_TOKEN: string;
+  /**
+   * Service binding to the regional account worker. `proxy.eu.rediacc.com` and `eu.rediacc.com` share a zone, and a Worker's `fetch()` to a same-zone hostname does not reach another Worker on that zone, so on the first Phase 2 deploy (2026-09-24) every introspection failed and every caller got 401. The binding is the path the www worker already uses (workers/www/wrangler.toml `[[services]]`); `fetch(ACCOUNT_URL)` remains only for a deploy without it.
+   */
+  ACCOUNT?: Fetcher;
 }
 
-export class ExecutorContainer extends Container {
+/**
+ * The environment `rdc serve --mode container` boots with.
+ *
+ * `rdc serve` refuses to start without REDIACC_TOKEN (packages/cli/src/commands/serve.ts), and it verifies callers, pulls configs and posts audit events against REDIACC_ACCOUNT_SERVER. The Worker's own EXECUTOR_TOKEN and ACCOUNT_URL are those two values; nothing else hands them to the container, so an instance built without them exits at boot.
+ */
+export function executorEnvVars(env: Env): Record<string, string> {
+  return {
+    REDIACC_TOKEN: env.EXECUTOR_TOKEN,
+    REDIACC_ACCOUNT_SERVER: env.ACCOUNT_URL,
+  };
+}
+
+export class ExecutorContainer extends Container<Env> {
   /** `rdc serve` listens here. */
   defaultPort = 8080;
 
@@ -44,11 +60,10 @@ export class ExecutorContainer extends Container {
    * provisioned memory rather than active CPU, so a few minutes of idle is cheap
    * and a cold start (1 to 3 seconds, plus rebuilding the SSH pool) is not.
    */
-  sleepAfter = '4m';
+  sleepAfter = '2m';
 
-  envVars = {
-    REDIACC_EXECUTOR_MODE: 'container',
-  };
+  // A class field runs after super(), so this.env is already the Worker's env here.
+  envVars = executorEnvVars(this.env);
 }
 
 interface Introspection {
@@ -65,28 +80,43 @@ interface Introspection {
  * org. The Worker deliberately learns nothing else: it needs a routing key, not
  * an identity. The executor does the real verification again on its own.
  */
+/**
+ * Log WHY a caller was refused, as a reason code only (never a token), then answer null.
+ *
+ * Every refusal used to be a silent null, so the first Phase 2 deploy (2026-09-24) could say only "401" while its cause stayed invisible even in `wrangler tail`.
+ */
+function refuse(reason: string): null {
+  console.warn(`proxy: caller refused: ${reason}`);
+  return null;
+}
+
 async function resolveTenant(request: Request, env: Env): Promise<string | null> {
   const auth = request.headers.get('authorization');
   const token = auth?.replace(/^Bearer\s+/i, '').trim();
-  if (!token) return null;
+  if (!token) return refuse('no-bearer');
+  // Without its own token the Worker cannot ask who a caller is. Refuse as unauthenticated rather than introspecting with "Bearer undefined" (or throwing a 500).
+  if (!env.EXECUTOR_TOKEN) return refuse('no-executor-token');
 
-  const response = await fetch(`${env.ACCOUNT_URL}/account/api/v1/proxy/introspect`, {
+  const url = `${env.ACCOUNT_URL}/account/api/v1/proxy/introspect`;
+  const init: RequestInit = {
     method: 'POST',
     headers: {
       authorization: `Bearer ${env.EXECUTOR_TOKEN}`,
       'content-type': 'application/json',
     },
     body: JSON.stringify({ token }),
-  });
+  };
+  const response = env.ACCOUNT ? await env.ACCOUNT.fetch(url, init) : await fetch(url, init);
 
-  if (!response.ok) return null;
+  if (!response.ok) return refuse(`introspect-http-${response.status}`);
 
   // json<T>() rather than an `as` assertion: @cloudflare/workers-types declares `json<T>(): Promise<T>`, so the type parameter is the supported way to name the shape. The assertion form inferred T from its own target and was
   // therefore a no-op that @typescript-eslint/no-unnecessary-type-assertion
   // flagged the moment workers/ entered the lint scope (2026-09-06).
   const body = await response.json<Introspection>();
-  if (!body.active || !body.orgId) return null;
-  if (!body.scopes?.includes('proxy:exec')) return null;
+  if (!body.active) return refuse('inactive');
+  if (!body.orgId) return refuse('no-org');
+  if (!body.scopes?.includes('proxy:exec')) return refuse('no-proxy-exec-scope');
 
   // One warm executor per team. An org with no teams collapses to one instance, which is the right default for a small tenant.
   return `${body.orgId}:${body.teamId ?? 'default'}`;

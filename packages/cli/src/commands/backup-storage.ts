@@ -15,6 +15,7 @@ import { accountServerFetch } from '../services/account/account-client.js';
 import { recordBackupRun } from '../services/backup/backup-runs-state.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
+import { setExitCode } from '../services/core/request-context.js';
 import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
 import { createGuidResolver, loadGuidMap } from '../utils/guid-resolver.js';
 import { executeRepoFunction } from '../utils/repo-executor.js';
@@ -319,7 +320,7 @@ function registerBackupVerify(backup: Command): void {
         });
         // The renet verb exits non-zero on mismatch/failure; carry that out so a
         // script or CI step sees a failed verification as a failure.
-        if (!result.success) process.exitCode = 1;
+        if (!result.success) setExitCode(1);
       } catch (error) {
         handleError(error);
       }
@@ -388,9 +389,9 @@ function registerBackupSnapshot(backup: Command): void {
           }
           if (quotaRefused) {
             outputService.warn(t('commands.backup.snapshot.quotaRefused', { name: repoKey }));
-            process.exitCode = RENET_QUOTA_REFUSED_EXIT;
+            setExitCode(RENET_QUOTA_REFUSED_EXIT);
           } else if (!result.success) {
-            process.exitCode = 1;
+            setExitCode(1);
           }
         } catch (error) {
           handleError(error);

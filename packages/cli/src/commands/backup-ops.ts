@@ -4,6 +4,7 @@ import { t } from '../i18n/index.js';
 import type { SFTPClient } from '../remote/sftp/index.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
+import { writeStderr, writeStdout } from '../services/core/request-context.js';
 import { machineConnections } from '../services/machine/machine-connection.js';
 import { acquireRemoteRenet, readSSHKey } from '../services/renet/renet-execution.js';
 import { handleError } from '../utils/errors.js';
@@ -28,10 +29,10 @@ async function triggerDeployedUnit(
   outputService.info(`Triggering ${serviceName}...`);
   const exitCode = await sftp.execStreaming(`sudo systemctl start ${serviceName}`, {
     onStdout: (data) => {
-      if (debug) process.stdout.write(data);
+      if (debug) writeStdout(data);
     },
     onStderr: (data) => {
-      process.stderr.write(data);
+      writeStderr(data);
     },
   });
   if (exitCode === 0) {
@@ -92,10 +93,10 @@ async function triggerAdhocBackup(
 
   const exitCode = await sftp.execStreaming(systemdRunCmd, {
     onStdout: (data) => {
-      if (debug) process.stdout.write(data);
+      if (debug) writeStdout(data);
     },
     onStderr: (data) => {
-      process.stderr.write(data);
+      writeStderr(data);
     },
   });
 
@@ -186,10 +187,10 @@ async function tryCancelUnit(sftp: SFTPClient, unit: string, debug?: boolean): P
   outputService.info(t('commands.backup.cancel.cancelling', { name: unit }));
   const exitCode = await sftp.execStreaming(`sudo systemctl stop ${unit}`, {
     onStdout: (data) => {
-      if (debug) process.stdout.write(data);
+      if (debug) writeStdout(data);
     },
     onStderr: (data) => {
-      process.stderr.write(data);
+      writeStderr(data);
     },
   });
   if (exitCode === 0) {
@@ -331,7 +332,7 @@ async function showBackupStatus(machineName: string, strategyFilter?: string): P
         `journalctl -u rediacc-backup-${strategyFilter}.service --no-pager -n 20 2>/dev/null || echo "(no logs)"`,
         {
           onStdout: (data) => {
-            process.stdout.write(data);
+            writeStdout(data);
           },
           onStderr: () => {},
         }

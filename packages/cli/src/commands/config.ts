@@ -5,15 +5,16 @@ import { getSubscriptionServerUrl } from '../services/account/subscription-auth.
 import type { ReconcileDeps } from '../services/config/config-reconcile.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
+import { setExitCode } from '../services/core/request-context.js';
 import type { OutputFormat, RdcConfig } from '../types/index.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { registerAuditCommands } from './config/audit.js';
+import { registerCurrentCommand } from './config/current.js';
 import { registerEditCommands } from './config/edit.js';
 import { registerFieldCommands } from './config/field.js';
 import { registerPruneCommand as registerConfigPruneCommand } from './config-prune-cmd.js';
 import { registerRemoteCommands, rotateCek } from './config-remote.js';
 import { registerSSHCommands } from './config-ssh.js';
-import { registerCurrentCommand } from './config/current.js';
 
 /** Build display data for a self-hosted config. */
 async function buildSelfHostedDisplay(
@@ -336,7 +337,7 @@ async function runReconcileInner(program: Command, options: ReconcileCliOptions)
   );
   // Exit 6 (NETWORK) when nothing was reachable but machines were tried.
   if (report.machinesSeen.length === 0 && report.machinesUnreachable.length > 0) {
-    process.exitCode = 6;
+    setExitCode(6);
   }
 }
 

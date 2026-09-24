@@ -12,6 +12,7 @@ import {
 } from '@rediacc/shared/config-schema';
 import { getConfigDir } from '@rediacc/shared/paths';
 import lockfile from 'proper-lockfile';
+import { currentRequestConfig, type RequestConfigScope } from '../services/core/request-context.js';
 import {
   decryptConfigFields,
   encryptConfigFields,
@@ -37,6 +38,35 @@ const EXCLUDED_FILES = new Set(['update-state.json', 'server.json', 'api-token.j
  */
 function isReservedFile(fileName: string): boolean {
   return EXCLUDED_FILES.has(fileName) || fileName.startsWith('api-token-');
+}
+
+/**
+ * Refuse a file-level operation (create, delete, restore) inside a request that
+ * runs against a request-scoped config: there is no file behind it to act on.
+ */
+function refuseInRequestScope(what: string, name: string): void {
+  if (currentRequestConfig()) {
+    throw new Error(
+      `Cannot ${what} config "${name}" here: this command runs against the config granted for its session, not a config file.`
+    );
+  }
+}
+
+/**
+ * Apply a write to a request-scoped config, in memory only. A spec write is
+ * counted, so the executor can say it was not persisted.
+ */
+function writeScoped(
+  scope: RequestConfigScope,
+  updater: (config: RdcConfig) => RdcConfig,
+  bumpVersion: boolean
+): RdcConfig {
+  const updated = updater(scope.config);
+  scope.config = bumpVersion ? { ...updated, version: updated.version + 1 } : updated;
+  if (bumpVersion) scope.specWrites += 1;
+  // The memoized resource view was built from the previous config.
+  scope.resourceState = undefined;
+  return scope.config;
 }
 
 function isMasterPassword(config: RdcConfig): boolean {
@@ -225,6 +255,10 @@ export class ConfigFileStorage {
    * never prompt for the master password.
    */
   async load(name: string = DEFAULT_CONFIG_NAME): Promise<RdcConfig> {
+    // Inside a request-scoped dispatch the granted config IS the config; a file of the same name (or none, on a container) must not be read in its place.
+    const scoped = currentRequestConfig();
+    if (scoped) return scoped.config;
+
     const cached = this.cache.get(name);
     if (cached) return cached;
 
@@ -239,6 +273,10 @@ export class ConfigFileStorage {
    * only where a sensitive field is actually needed.
    */
   async loadDecrypted(name: string = DEFAULT_CONFIG_NAME): Promise<RdcConfig> {
+    // Already plaintext: the executor decrypted it for the session.
+    const scoped = currentRequestConfig();
+    if (scoped) return scoped.config;
+
     const config = await this.load(name);
     return this.decryptConfig(config);
   }
@@ -271,6 +309,11 @@ export class ConfigFileStorage {
    * (encrypted leaves are produced by this layer, not by callers).
    */
   async save(config: RdcConfig, name: string = DEFAULT_CONFIG_NAME): Promise<void> {
+    const scoped = currentRequestConfig();
+    if (scoped) {
+      writeScoped(scoped, () => config, true);
+      return;
+    }
     await this.withLock(name, async () => {
       await this.saveUnlocked(config, name);
     });
@@ -282,6 +325,8 @@ export class ConfigFileStorage {
     bumpVersion: boolean,
     opts: { createIfMissing?: boolean } = {}
   ): Promise<RdcConfig> {
+    const scoped = currentRequestConfig();
+    if (scoped) return writeScoped(scoped, updater, bumpVersion);
     return this.withLock(
       name,
       async () => {
@@ -312,6 +357,8 @@ export class ConfigFileStorage {
    * responsible for touching only `state.*`.
    */
   async updateState(name: string, updater: (config: RdcConfig) => RdcConfig): Promise<RdcConfig> {
+    const scoped = currentRequestConfig();
+    if (scoped) return writeScoped(scoped, updater, false);
     // A STATE write must never CREATE a config file. Status is subordinate to the config's existence: when the file is gone (the tutorial preambles
     // `rm` it between runs; `config prune` removes it), a background writer ,
     // the executor daemon's post-request provision bookkeeping above all, must not resurrect an empty config. Observed live: the daemon recreated the file between a preamble's `rm` and its `config init`, which then died on "Config already exists" and cascaded through the whole tutorial sequence. Callers of updateState are best-effort by contract, so a missing config surfaces as a
@@ -331,6 +378,8 @@ export class ConfigFileStorage {
    * racing a `config delete` must not bring the file back from the dead.
    */
   async updateCache(name: string, updater: (config: RdcConfig) => RdcConfig): Promise<RdcConfig> {
+    const scoped = currentRequestConfig();
+    if (scoped) return writeScoped(scoped, updater, false);
     try {
       await fs.access(this.getPath(name));
     } catch {
@@ -344,6 +393,7 @@ export class ConfigFileStorage {
    * Throws if a config with this name already exists.
    */
   async init(name: string = DEFAULT_CONFIG_NAME): Promise<RdcConfig> {
+    refuseInRequestScope('create', name);
     await this.ensureDirectory();
     const configPath = this.getPath(name);
 
@@ -366,6 +416,7 @@ export class ConfigFileStorage {
    * List available config names (*.json in config dir, excluding system files).
    */
   async list(): Promise<string[]> {
+    if (currentRequestConfig()) return [DEFAULT_CONFIG_NAME];
     await this.ensureDirectory();
     try {
       const files = await fs.readdir(this.configDir);
@@ -383,6 +434,8 @@ export class ConfigFileStorage {
    * Only applies to the default config name ("rediacc").
    */
   async getOrCreateDefault(): Promise<RdcConfig> {
+    const scoped = currentRequestConfig();
+    if (scoped) return scoped.config;
     await this.ensureConfigFile(DEFAULT_CONFIG_NAME);
     return this.load(DEFAULT_CONFIG_NAME);
   }
@@ -391,6 +444,8 @@ export class ConfigFileStorage {
    * Check if a config file exists.
    */
   async exists(name: string): Promise<boolean> {
+    // The request-scoped config answers for every name: it is the only config this request has.
+    if (currentRequestConfig()) return true;
     const configPath = this.getPath(name);
     try {
       await fs.access(configPath);
@@ -404,6 +459,7 @@ export class ConfigFileStorage {
    * Delete a config file and its backup.
    */
   async delete(name: string): Promise<void> {
+    refuseInRequestScope('delete', name);
     if (name === DEFAULT_CONFIG_NAME) {
       throw new Error('Cannot delete the default config "rediacc"');
     }
@@ -431,6 +487,7 @@ export class ConfigFileStorage {
    * Returns the recovered config, or null if no backup exists.
    */
   async recover(name: string = DEFAULT_CONFIG_NAME): Promise<RdcConfig | null> {
+    refuseInRequestScope('restore', name);
     const backupPath = this.getBackupPath(name);
     try {
       await fs.access(backupPath);
@@ -475,6 +532,8 @@ export class ConfigFileStorage {
    * Use for operations that read-modify-write and need a fresh read.
    */
   async withApiLock<T>(name: string, operation: () => Promise<T>): Promise<T> {
+    // No file, so nothing to lock: a request-scoped config is private to its request.
+    if (currentRequestConfig()) return operation();
     return this.withLock(name, async () => {
       this.cache.delete(name);
       return operation();

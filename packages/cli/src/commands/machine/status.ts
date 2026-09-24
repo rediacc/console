@@ -42,6 +42,7 @@ type RepoNameResolver = (
   serverRepoName?: string
 ) => { name: string; source: RepoNameSource };
 
+import { setExitCode, writeStderr, writeStdout } from '../../services/core/request-context.js';
 import { withSpinner } from '../../utils/spinner.js';
 
 /** Parse size strings like "71.9G", "180.3G" into GB numbers. */
@@ -507,17 +508,17 @@ function renderTableMode(
 
   if (machineConfig) {
     outputService.info(`\n${t('commands.machine.status.connection')}`);
-    process.stdout.write(`${outputService.formatTable([flattenConnection(machineConfig)])}\n`);
+    writeStdout(`${outputService.formatTable([flattenConnection(machineConfig)])}\n`);
   }
   if (infra) {
     outputService.info(`\n${t('commands.machine.status.infrastructure')}`);
-    process.stdout.write(`${outputService.formatTable([flattenInfra(infra)])}\n`);
+    writeStdout(`${outputService.formatTable([flattenInfra(infra)])}\n`);
   }
   for (const section of tableSections) {
     const data = section.getData(listResult);
     if (data.length === 0) continue;
     outputService.info(`\n${section.title}`);
-    process.stdout.write(`${outputService.formatTable(data)}\n`);
+    writeStdout(`${outputService.formatTable(data)}\n`);
   }
 
   const repoServerSourced = getRepositories(listResult).some(
@@ -744,7 +745,7 @@ export function registerStatusCommand(machine: Command, program: Command): void 
 
         // Hint: nudge toward --storage-health (stderr so it doesn't break JSON piping)
         if (!options.storageHealth) {
-          process.stderr.write(`\n${t('commands.machine.status.storageHealthHint')}\n`);
+          writeStderr(`\n${t('commands.machine.status.storageHealthHint')}\n`);
         }
 
         // --strict: exit non-zero when any container has crossed the health-drift threshold. Lets CI scripts gate deploys on post-deploy convergence without hand-parsing the JSON.
@@ -752,10 +753,8 @@ export function registerStatusCommand(machine: Command, program: Command): void 
         // 1 = warn, 2 = error).
         if (options.strict && (listResult.health_drift?.entries.length ?? 0) > 0) {
           const count = listResult.health_drift?.entries.length ?? 0;
-          process.stderr.write(
-            `\n${t('commands.machine.status.strictDriftDetected', { count })}\n`
-          );
-          process.exitCode = 2;
+          writeStderr(`\n${t('commands.machine.status.strictDriftDetected', { count })}\n`);
+          setExitCode(2);
         }
 
         if (options.syncCerts) {

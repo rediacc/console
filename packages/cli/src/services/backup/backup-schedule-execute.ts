@@ -11,6 +11,7 @@
 import type { SFTPClient } from '../../remote/sftp/index.js';
 import { shellQuote } from '../../utils/shell-quote.js';
 import { outputService } from '../core/output.js';
+import { writeStderr, writeStdout } from '../core/request-context.js';
 import { envFilePath } from './backup-env-file.js';
 import type {
   ReconcileOptions,
@@ -29,9 +30,9 @@ async function runRemoteCommand(
 ): Promise<void> {
   const exitCode = await sftp.execStreaming(command, {
     onStdout: (data) => {
-      if (options.debug) process.stdout.write(data);
+      if (options.debug) writeStdout(data);
     },
-    onStderr: (data) => process.stderr.write(data),
+    onStderr: (data) => writeStderr(data),
   });
   if (exitCode !== 0) {
     throw new Error(`${errorMessage} (exit ${exitCode})`);
@@ -64,9 +65,9 @@ async function stageFile(
   const exitCode = await sftp.execStreaming(writeCmd, {
     stdin: content,
     onStdout: (data) => {
-      if (options.debug) process.stdout.write(data);
+      if (options.debug) writeStdout(data);
     },
-    onStderr: (data) => process.stderr.write(data),
+    onStderr: (data) => writeStderr(data),
   });
   if (exitCode !== 0) {
     throw new Error(`Failed to stage ${stagingPath} (exit ${exitCode})`);

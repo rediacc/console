@@ -15,13 +15,13 @@
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { outputService } from '../services/core/output.js';
+import { setExitCode } from '../services/core/request-context.js';
 import {
   formatJobDuration,
   isTerminalState,
   JobLogCursor,
   type JobStatus,
 } from '../services/executor/job-client.js';
-import type { RenetAccess } from '../services/renet/renet-execution.js';
 import {
   cancelJob,
   connectForJobs,
@@ -33,6 +33,7 @@ import {
   renderJobEvent,
   replayJobLogs,
 } from '../services/executor/job-remote.js';
+import type { RenetAccess } from '../services/renet/renet-execution.js';
 import type { OutputFormat } from '../types/index.js';
 import { getOutputFormat, handleError } from '../utils/errors.js';
 
@@ -222,7 +223,7 @@ async function runJobLogs(jobId: string, options: JobCommandOptions): Promise<vo
 
     if (interrupted) {
       outputService.warn(t('commands.job.logs.detached', { jobId, machine: options.machine }));
-      process.exitCode = EXIT_DETACHED;
+      setExitCode(EXIT_DETACHED);
       return;
     }
 
@@ -246,7 +247,7 @@ function reportTerminalState(status: JobStatus): void {
       error: status.error ?? '',
     })
   );
-  process.exitCode = status.exit_code ?? 1;
+  setExitCode(status.exit_code ?? 1);
 }
 
 /** Cancel a running job, confirming first: it stops real work. */

@@ -1,6 +1,7 @@
 import { Command, Option } from 'commander';
 import { t } from '../../i18n/index.js';
 import { outputService } from '../../services/core/output.js';
+import { setExitCode } from '../../services/core/request-context.js';
 import type { OpsBackend } from '../../services/executor/ops-executor.js';
 import { opsExecutorService } from '../../services/executor/ops-executor.js';
 import { handleError } from '../../utils/errors.js';
@@ -49,7 +50,7 @@ export function registerOpsUpCommand(ops: Command, _program: Command): void {
             outputService.success(t('commands.ops.up.completed'));
           } else {
             outputService.error(t('commands.ops.up.failed'));
-            process.exitCode = exitCode;
+            setExitCode(exitCode);
           }
         } catch (error) {
           handleError(error);
