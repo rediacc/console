@@ -5191,6 +5191,18 @@ export const GATES: readonly GateSpec[] = [
       step: 'Container build context',
     },
   },
+  {
+    id: 'check:ci-portal-sitekey-guard',
+    run: 'npm run check:ci-portal-sitekey-guard',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_portal_sitekey_guard.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-static',
+      step: 'Portal site-key guard',
+    },
+  },
   // <<< gen-manifest: region 43
 ];
 

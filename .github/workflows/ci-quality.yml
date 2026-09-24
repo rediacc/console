@@ -392,6 +392,9 @@ jobs:
       - name: Pool-registered tests do not write the real tree
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_pool_writer_safety.py
+      - name: Portal site-key guard
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_portal_sitekey_guard.py
       - name: Python control plants
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_python_control_plants.py
