@@ -630,13 +630,13 @@ Scans: every tracked non-source, non-prose file carrying a `BLOCKER:` line.
 | .ci/policy/.profiler-coverage-allowlist | 4 | # comment |
 | .ci/policy/.runner-advice-allowlist | 1 | prose only (no live entry) |
 | .ci/policy/.unverified-download-allowlist | 4 | # comment |
-| .ci/policy/.w7p5a-real-run-blocklist | 9 | # comment |
+| .ci/policy/.w7p5a-real-run-blocklist | 6 | # comment |
 | .ci/policy/.w7p5a-real-run-leg-blocklist | 7 | # comment |
 | .ci/policy/hook-exec-baseline.json | 1 | JSON value |
 | .ci/shadow/w7p2-go-deps.observations.jsonl | 2 | inline |
 | .ci/shadow/w7p2-plan-housekeeping.observations.jsonl | 5 | inline |
 | .ci/shadow/w7p2-profiler-coverage.observations.jsonl | 3 | inline |
-| .ci/shadow/w7p5a-status.json | 13 | JSON value |
+| .ci/shadow/w7p5a-status.json | 7 | JSON value |
 | .ci/shadow/w7p5b-blocker-validator.observations.jsonl | 2 | inline |
 | .syncpackrc-reasons.json | 8 | JSON value |
 | agent/ledgers/plan-investigation.jsonl | 2 | inline |
