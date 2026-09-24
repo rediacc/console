@@ -175,7 +175,8 @@ def on_sys_path(directory: os.PathLike[str] | str) -> str:
 PRUNED_DIR_NAMES = (".git", "node_modules", ".worktrees")
 
 # Pruned as a (parent, name) PAIR rather than by name alone. `worktrees` is far too common a word to prune wherever it appears -- doing so would silently drop a real `docs/worktrees/` or `scripts/worktrees/` from a gate's corpus, which is the same class of invisible-corpus-loss this module exists to prevent. Only `.claude/worktrees` is a checkout holder.
-PRUNED_DIR_PAIRS = ((".claude", "worktrees"),)
+# `.ci/cache` is UNTRACKED build state (profiles, gate durations, stamps, generated scratch), different on every machine and absent from a fresh CI checkout until a run writes it. On 2026-09-24 a gate walking `.ci` read a number in a timing table as a label; five more walkers (go_module_sync, dead_case_arms, lockfile, staging_tag_guard, scope_scripts_reachability) had the same exposure, so it is pruned here once rather than at each site.
+PRUNED_DIR_PAIRS = ((".claude", "worktrees"), (".ci", "cache"))
 
 
 def walk_tree(

@@ -206,6 +206,9 @@ def grep_hits(root: pathlib.Path) -> tuple[list[str], int]:
         for path in sorted(base.rglob("*")):
             if not path.is_file():
                 continue
+            # `.ci/cache` is untracked machine-local build state (downloaded toolchains carry their own .sh files); the same prune `paths.walk_tree` applies, restated because this walk is an rglob.
+            if (root / ".ci" / "cache") in path.parents:
+                continue
             if path.suffix in SCAN_SUFFIXES:
                 pass
             elif path.suffix == PY_SUFFIX:
