@@ -302,7 +302,9 @@ def test_block_unlinked_commit_author(tmp_path):
     # CLAUDE_PROJECT_DIR IS SET EXPLICITLY, not left to the `git rev-parse --show-toplevel` fallback: this fixture's own `GIT_CONFIG_GLOBAL` override has no `safe.directory` entry for this checkout, so that fallback genuinely fails here ("dubious ownership"), and every case in this
     # function shared that failure silently until block_unlinked_commit_author.py's root-resolution-failure branch was fixed to fail CLOSED instead of ALLOW -- at which point every case here started returning the SAME blocked verdict regardless of its own real logic, which is what surfaced this.
     env = env_with(
-        COMMIT_IDENTITY_FILE=str(identity), GIT_CONFIG_GLOBAL=str(gitconfig), CLAUDE_PROJECT_DIR=str(ROOT)
+        COMMIT_IDENTITY_FILE=str(identity),
+        GIT_CONFIG_GLOBAL=str(gitconfig),
+        CLAUDE_PROJECT_DIR=str(ROOT),
     )
     block.check(
         "check 2 guards/block_unlinked_commit_author.py",
@@ -441,6 +443,47 @@ def test_warn_stale_index(tmp_path):
     # CONTROL: the mention-vs-target class. The first draft of this guard warned on this line, which is why it is pinned rather than remembered.
     probe("silent", "CONTROL: unquoted prose is not a command", "echo do not run git commit here")
     probe("silent", "CONTROL: a non-commit is out of scope", "git status")
+    block.done()
+
+
+# --- block_nonstandard_branch_name: the MMDD-N rule is THIS checkout's convention ------ Needs REAL repos, because the exemption resolves the `-C`/`cd` target with `git rev-parse --show-toplevel`. Found 2026-09-24 restoring branches in a different project with `git -C <that repo> branch chore/...`: the rule refused them. A nested repo under the checkout (a submodule) keeps the rule, because /pr-merge matches coordinated names there.
+@pytest.mark.xdist_group("hooks-fixtures")
+def test_block_nonstandard_branch_name_other_project(tmp_path):
+    block = hookblocks.Block("branch-name-other-project")
+    project = (tmp_path / "project").resolve()
+    nested = project / "private" / "sub"
+    foreign = (tmp_path / "elsewhere").resolve()
+    for repo in (project, nested, foreign):
+        repo.mkdir(parents=True, exist_ok=True)
+        git(repo, "init", "-q", ".")
+    env = dict(os.environ, CLAUDE_PROJECT_DIR=str(project))
+
+    def probe(want: int, desc: str, command: str) -> None:
+        code, _ = hookcases.run_guard(
+            "guards/block_nonstandard_branch_name.py",
+            bash_json(command),
+            want_stderr=False,
+            env=env,
+            cwd=str(project),
+        )
+        block.note(
+            0, "branch-name: " + desc, ok=code == want, detail="want %d, got %d" % (want, code)
+        )
+
+    probe(0, "another project via -C is exempt", "git -C %s branch chore/x" % foreign)
+    probe(0, "another project via cd is exempt", "cd %s && git checkout -b feat/y" % foreign)
+    # CONTROLS: the exemption must not leak into this checkout or its submodules.
+    probe(
+        2,
+        "CONTROL: a submodule under the checkout keeps the rule",
+        "git -C %s branch chore/x" % nested,
+    )
+    probe(2, "CONTROL: a plain creation here keeps the rule", "git checkout -b chore/x")
+    probe(
+        2,
+        "CONTROL: -C naming the checkout itself keeps the rule",
+        "git -C %s branch chore/x" % project,
+    )
     block.done()
 
 

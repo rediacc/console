@@ -38,8 +38,7 @@ middle. The two agree because `O_NONBLOCK` is a property of the open file DESCRI
 
 THE FOUR SHAPES, and the control that proves the instrument can see a crash at all, are the twin's five cases with their names intact.
 
-`xdist_group`: NONE, and the reason is worth stating because this one looks like it needs one. The hook is the real `.claude/hooks/stop/worklist.py`, which owns a shared append-only store -- but every case here feeds it a payload whose `session_id` is `test-stop-hook-stdin`, or no payload at all, and none of them ADDS an item. Reading the store concurrently is what the store's own
-lock is for. What would need a group is a case that wrote, and there is none.
+`xdist_group`: NONE, because every case runs the real `.claude/hooks/stop/worklist.py` against a DISPOSABLE store (`_isolated_store` below). This file once said no case writes, and that was false: the hook itself appends events (an unanswered-request notice, for one) under the payload's session prefix, and `agent/worklist/test-sto.jsonl` turned up untracked in the operator's tree on 2026-09-24. `test_the_real_store_is_untouched` pins it.
 """
 
 import contextlib
@@ -48,6 +47,8 @@ import os
 import subprocess
 import sys
 import time
+
+import pytest
 
 from rediacc_ci import paths
 
@@ -65,6 +66,18 @@ try:
 except (json.JSONDecodeError, ValueError):
     pass
 """
+
+
+STORE_DIR = ROOT / "agent" / "worklist"
+
+
+@pytest.fixture(autouse=True)
+def _isolated_store(tmp_path, monkeypatch):
+    """Point every store the hook can write at tmp_path; the hook inherits os.environ through Popen."""
+    for name in ("WORKLIST_STORE_DIR", "WORKLIST_REPORTS_DIR", "WORKLIST_AGENTS_DIR"):
+        target = tmp_path / name.lower()
+        target.mkdir()
+        monkeypatch.setenv(name, str(target))
 
 
 def drive(hook: str, mode: str, budget: float) -> str:
@@ -194,3 +207,19 @@ def test_closed_stdin_does_not_hang(gate):
         observed, "crashed=0", "an immediately-closed stdin must not crash (%s)" % observed
     )
     gate.log_pass("closed stdin terminates cleanly")
+
+
+def test_the_real_store_is_untouched(gate):
+    """The leak this file once had: a hook run under the `test-stop-hook-stdin` session wrote `agent/worklist/test-sto.jsonl`."""
+    hook = _require_hook(gate)
+
+    def snapshot():
+        return sorted((p.name, p.stat().st_size) for p in STORE_DIR.glob("*.jsonl"))
+
+    before = snapshot()
+    drive(hook, "late", BUDGET)
+    after = snapshot()
+    assert after == before, "the hook wrote into the real store: %s" % sorted(
+        set(after) - set(before)
+    )
+    gate.log_pass("a hook run leaves the real agent/worklist store byte-count identical")
