@@ -33,10 +33,9 @@
     "@opentelemetry/exporter-metrics-otlp-http": "^0.222.0",
     "@opentelemetry/sdk-logs": "^0.222.0",
     "@opentelemetry/sdk-metrics": "^2.11.0",
-    "@vitest/coverage-v8": "^4.1.11",
-    "@vitest/runner": "^4.1.11",
-    "@vitest/ui": "^4.1.11",
-    "@vitest/utils": "^4.1.11",
+    "@vitest/coverage-v8": "^5.0.1",
+    "@vitest/ui": "^5.0.1",
+    "@vitest/utils": "^5.0.1",
     "hono": "^4.13.8",
     "inquirer": "^14.2.2",
     "ssh2": "^1.17.0",
@@ -64,7 +63,7 @@
     "rimraf": "^6.1.2",
     "tsx": "^4.19.2",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.11",
+    "vitest": "^5.0.1",
     "yaml": "^2.9.1"
   },
   "engines": {

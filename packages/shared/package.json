@@ -15,11 +15,10 @@
   },
   "devDependencies": {
     "@types/node": "^22.20.0",
-    "@vitest/runner": "^4.1.11",
-    "@vitest/utils": "^4.1.11",
+    "@vitest/utils": "^5.0.1",
     "rimraf": "^6.1.2",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.11"
+    "vitest": "^5.0.1"
   },
   "exports": {
     ".": {

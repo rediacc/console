@@ -46,10 +46,9 @@
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@types/unist": "^3.0.3",
-    "@vitest/coverage-v8": "^4.1.11",
-    "@vitest/runner": "^4.1.11",
-    "@vitest/ui": "^4.1.11",
-    "@vitest/utils": "^4.1.11",
+    "@vitest/coverage-v8": "^5.0.1",
+    "@vitest/ui": "^5.0.1",
+    "@vitest/utils": "^5.0.1",
     "astro": "^5.17.3",
     "fast-xml-parser": "^5.11.0",
     "fuse.js": "^7.5.0",
@@ -68,6 +67,6 @@
     "@xmldom/xmldom": "^0.9.12",
     "playwright": "^1.61.1",
     "vfile": "^6.0.3",
-    "vitest": "^4.1.11"
+    "vitest": "^5.0.1"
   }
 }

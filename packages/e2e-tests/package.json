@@ -46,10 +46,9 @@
     "@playwright/test": "^1.61.1",
     "@rediacc/provisioning": "*",
     "@rediacc/shared": "*",
-    "@vitest/coverage-v8": "^4.1.11",
-    "@vitest/runner": "^4.1.11",
-    "@vitest/ui": "^4.1.11",
-    "@vitest/utils": "^4.1.11",
+    "@vitest/coverage-v8": "^5.0.1",
+    "@vitest/ui": "^5.0.1",
+    "@vitest/utils": "^5.0.1",
     "dotenv": "^18.0.3",
     "zod": "^4.6.5"
   },
@@ -58,6 +57,6 @@
     "@types/ssh2": "^1.15.1",
     "rimraf": "^6.0.1",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.11"
+    "vitest": "^5.0.1"
   }
 }

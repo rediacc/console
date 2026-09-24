@@ -37,3 +37,6 @@ playwright  # BLOCKER: a playwright version bump changes the bundled browser rev
 @playwright/test  # BLOCKER: same hold as playwright above, and not a separate judgement call — @playwright/test@X depends on playwright@X pinned EXACTLY (verified: @playwright/test@1.62.0 -> "playwright": "1.62.0"), so upgrading it upgrades the browser revisions the entry above defers. Listing only `playwright` left the gate demanding the bump through its sibling; move both with the E2E/bridge revalidation.
 # ESLint v10 core — same constraint as @eslint/js: plugin ecosystem lacks v10 support
 eslint  # BLOCKER: v10 requires typescript-eslint/import/react plugin majors that have no eslint v10 peer support yet; take together with @eslint/js in a dedicated lint-tooling PR
+
+# typescript v7 — the lint stack does not accept it yet (console and private/account alike)
+typescript  # BLOCKER: typescript-eslint 8.70.1, @typescript-eslint/parser 8.70.1 and @typescript-eslint/eslint-plugin 8.70.1 declare peer typescript ">=4.8.4 <6.1.0" and no release accepts 7 (newest tags 8.70.2-alpha.*); console and account both stay on ^6.0.3 so check:version agrees. Lift when typescript-eslint ships a TS 7 peer range (measured 2026-09-24).

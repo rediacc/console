@@ -7,10 +7,9 @@
     "test": "./test-templates.sh"
   },
   "dependencies": {
-    "@vitest/coverage-v8": "^4.1.11",
-    "@vitest/runner": "^4.1.11",
-    "@vitest/ui": "^4.1.11",
-    "@vitest/utils": "^4.1.11",
+    "@vitest/coverage-v8": "^5.0.1",
+    "@vitest/ui": "^5.0.1",
+    "@vitest/utils": "^5.0.1",
     "zod": "^4.6.5"
   }
 }
