@@ -10,7 +10,7 @@ from rediacc_hooks import hookio, shellscan
 
 CHAIN = "pre-bash"
 TWIN = "pre-bash/block-premature-ready.sh"
-ORDER = 26
+ORDER = 25
 
 # The `--undo` test read from the whole line instead of from this invocation: `gh pr ready --undo 1; gh pr ready 531` then looks like an always-allowed undo and the real flip skips the green gate entirely.
 DEFECT = ("hookio.grep_q_line(UNDO, seg)", "hookio.grep_q_line(UNDO, scan)")

@@ -145,24 +145,15 @@ def test_146b_a_focus_off_block_carries_the_guide_and_the_focused_one_drops_it(w
 def test_146c_zero_actionable_is_silent_and_one_real_item_brings_the_guide_back(wl):  # noqa: F811
     """(c) ZERO actionable is SILENT since v18.
 
-    This case used to assert the opposite ("a short honest line, never ambiguous silence") and the operator overruled it (2026-08-04, quoting a stop whose whole output was that line plus the wakeup times): "silent when there is nothing to act on... let's go for efficient ai context usage". The ambiguity the old line guarded against is also gone, because the poll fast path already
-    exits silently many times an hour, so zero bytes is the session's familiar "nothing to do".
+    This case used to assert the opposite ("a short honest line, never ambiguous silence") and the operator overruled it (2026-08-04, quoting a stop whose whole output was that line plus the wakeup times): "silent when there is nothing to act on... let's go for efficient ai context usage". Zero bytes is the session's familiar "nothing to do".
+
+    Until 2026-09-24 this fixture was never silent on its first stop, because a repo with no request traffic tripped the poll-backoff advisory, and a planted foreign request had to reset that clock first. With the poll layer gone the first stop is already the zero-byte case.
     """
     wl.brief_now()
     wl.hand_now()
     wl.say("all done")
-    got = wl.run()
-    wl.check_quiet("no actionable items in the store", "the empty-guide line survived", result=got)
-    # This fixture is NOT silent, and it should not be: a repo with no request traffic at all trips the poll-backoff advisory, which is a real thing to act on. Pinning that here keeps the zero-byte case below honest: it proves the silence there comes from having nothing to say, not from a muted report.
-    assert "INBOX HAS BEEN QUIET" in got.out, (
-        "the backoff advisory was swallowed with the guide: %s" % got.out[:260]
-    )
-
-    # NOW the zero-byte case: one fresh request in the log (between two OTHER sessions, so it never reaches this inbox) resets the quiet clock and silences the backoff advisory, leaving a stop with genuinely nothing to report.
-    wl.askid_as("cafe1234", "cafe1234", "beefcafe", "a question between two other sessions")
-    wl.newturn()
-    wl.say("all done")
     silent = wl.run()
+    assert "no actionable items in the store" not in silent.out, "the empty-guide line survived"
     assert silent.rc == 0, "the nothing-to-report stop was not silent (rc=%d): %s" % (
         silent.rc,
         silent.out[:260],
@@ -625,117 +616,3 @@ def test_151_a_requested_audit_with_no_answer_fails_closed(wl):  # noqa: F811
         "no usable defer_audit",
         "a requested audit with no defer_audit answer fails closed",
     )
-
-
-def test_152_the_silent_poll_forfeits_to_the_justification_demand(wl):  # noqa: F811
-    """A poll stop cannot slip past an unjustified aged `[?]`."""
-    wl.brief_now()
-    wl.hand_now()
-    plant_event(
-        wl,
-        {
-            "ev": "add",
-            "id": "dddd7771",
-            "at": stamp(40),
-            "by": "deadbeef",
-            "s": "?",
-            "o": "deadbeef",
-            "t": "bare aged question DEFAULT: option A",
-        },
-    )
-    wl.say("answer\n\n## Remaining\n- the bare deferral")
-    wl.check(
-        "block",
-        "NO justification on record",
-        "the full stop demands the justification (and banks the poll baseline)",
-    )
-    wl.cli("--poll", "deadbeef")
-    got = wl.run()
-    assert got.out, "the poll fast path swallowed the justification demand"
-    assert "NO justification on record" in got.out, got.out[:200]
-
-
-def test_152_control_the_same_age_with_a_justification_keeps_the_silent_poll(wl):  # noqa: F811
-    """CONTROL, one planted fact: the same item, justified, and the poll stays silent."""
-    wl.brief_now()
-    wl.hand_now()
-    plant_event(
-        wl,
-        {
-            "ev": "add",
-            "id": "dddd7772",
-            "at": stamp(40),
-            "by": "deadbeef",
-            "s": "?",
-            "o": "deadbeef",
-            "t": "aged question DEFAULT: option A WHY: only the operator can weigh the trade HOW: operator answers",
-        },
-    )
-    wl.say("answer\n\n## Remaining\n- the justified deferral")
-    wl.check("allow", "", "baseline stop allows")
-    wl.cli("--poll", "deadbeef")
-    got = wl.run()
-    assert got.rc == 0, "a justified deferral forfeited the fast path: rc=%d %r" % (
-        got.rc,
-        got.out[:160],
-    )
-    assert not got.out, "a justified deferral forfeited the fast path: rc=%d %r" % (
-        got.rc,
-        got.out[:160],
-    )
-
-
-def test_153_a_latched_ladder_rung_must_not_forfeit_the_silent_poll_forever(wl):  # noqa: F811
-    """WHAT BROKE. The ladder is latched (fire_once records each rung against the subject's stamp), but poll_fast_path forfeited on RAW AGE and never consulted that latch. So the two disagreed: the report went silent after firing once while the forfeit kept firing on every poll.
-
-    Measured 2026-07-30: task #20 sat in_progress for 298 minutes, legitimately, waiting on an operator decision and a running agent. Its rung had long since fired, yet every five-minute inbox poll paid the full battery and demanded a full report, with no way to discharge it short of finishing or abandoning a task that was not this session's to finish. That is the "a gate that
-    cannot be satisfied deadlocks the session" trap the v10 brief warned about, reintroduced by a threshold comparison that looked harmless.
-
-    The task must exist BEFORE the baseline stop banks the poll baseline: task statuses are part of the world signature, so creating it afterwards moves the signature and a DIFFERENT check fires. That fixture bug cost a round here, and it is worth stating because it makes a real fix look broken.
-    """
-    wl.brief_now()
-    wl.hand_now()
-    wl.task(20, "in_progress", "wave B acceptance, blocked on the operator")
-    wl.say("answer\n\n## Remaining\n| #20 | wave B acceptance | ongoing, the operator |")
-    wl.check("allow", "", "baseline stop allows")
-
-    # Its rung ALREADY fired against this exact stamp. Written straight into the state doc (which is NOT part of the world signature, so this is safe after the baseline) because the point is the latch, not how it got set.
-    doc_path = wl.stem(".state-deadbeef.json")
-    doc = json.loads(doc_path.read_text(encoding="utf-8")) if doc_path.exists() else {}
-    fired_at = "2026-07-30T06:29:37Z"
-    doc.setdefault("tasks_seen", {})["20"] = {"status": "in_progress", "since": fired_at}
-    doc.setdefault("ladder", {})["task:20"] = {"investigate": fired_at, "resolve": fired_at}
-    doc_path.write_text(json.dumps(doc), encoding="utf-8")
-
-    wl.cli("--poll", "deadbeef")
-    got = wl.run()
-    assert got.rc == 0, "a latched rung still forfeited the fast path: rc=%d %r" % (
-        got.rc,
-        got.out[:200],
-    )
-    assert not got.out, "a latched rung still forfeited the fast path: rc=%d %r" % (
-        got.rc,
-        got.out[:200],
-    )
-
-
-def test_153_control_an_unfired_rung_at_the_same_age_still_forfeits(wl):  # noqa: F811
-    """CONTROL, and it is the one that matters: the SAME task at the SAME age with the rung NOT yet fired must still forfeit. Without this the fix could be a blanket "never forfeit on tasks" and the suite would not notice."""
-    wl.brief_now()
-    wl.hand_now()
-    wl.task(20, "in_progress", "wave B acceptance, blocked on the operator")
-    wl.say("answer\n\n## Remaining\n| #20 | wave B acceptance | ongoing, the operator |")
-    wl.check("allow", "", "baseline stop allows")
-
-    doc_path = wl.stem(".state-deadbeef.json")
-    doc = json.loads(doc_path.read_text(encoding="utf-8")) if doc_path.exists() else {}
-    doc.setdefault("tasks_seen", {})["20"] = {
-        "status": "in_progress",
-        "since": "2026-07-30T06:29:37Z",
-    }
-    doc["ladder"] = {}  # never fired
-    doc_path.write_text(json.dumps(doc), encoding="utf-8")
-
-    wl.cli("--poll", "deadbeef")
-    got = wl.run()
-    assert got.out, "an unfired blocking rung was swallowed by the fast path"

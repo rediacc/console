@@ -21,7 +21,7 @@ THE HONESTY RULE, which is the whole design: the event payload is authoritative 
 ADDS facts. A worker the OS cannot find is SUSPECT, reported in those words;
 it is never demoted to dead, because "your worker is dead" said wrongly is worse than no check at all. The only verdict that says a delegate is gone -- GONE -- requires the harness itself to no longer list the declared worker id, which the OS cannot contradict into a false accusation.
 
-THE LADDER, and why it cannot deadlock (the poll_fast_path lesson, fixed by operator decision in 860f47b04: a gate needing a state only an allowed stop could write pinned a session all night):
+THE LADDER, and why it cannot deadlock (the lesson fixed by operator decision in 860f47b04: a gate needing a state only an allowed stop could write pinned a session all night):
   * every rung's exit is an action the session completes ALONE: refresh the
     item with evidence (--update), restart or replace the worker, or defer
     with a DEFAULT -- the last is unconditionally executable;
@@ -46,34 +46,6 @@ import wl_core as C
 LADDER_PING_MIN = int(os.environ.get("WORKLIST_LADDER_PING_MIN", "45"))
 LADDER_INVESTIGATE_MIN = int(os.environ.get("WORKLIST_LADDER_INVESTIGATE_MIN", "90"))
 LADDER_RESOLVE_MIN = int(os.environ.get("WORKLIST_LADDER_RESOLVE_MIN", "120"))
-
-
-def blocking_rung_due(state_doc, key, age_min, stampkey, gone=False, idle=False):
-    """Would the ladder actually FIRE a blocking rung for this subject?
-
-    WHY THIS EXISTS. The ladder is latched: `fire_once` records each rung against the subject's stamp, so "investigate" fires ONCE and then stays quiet until the stamp moves. `poll_fast_path` forfeited on raw age instead, never consulting that latch, so the two disagreed: the report went silent while the forfeit kept firing.
-
-    Measured 2026-07-30. Task #20 sat in_progress for 298 minutes, legitimately, waiting on an operator decision and a running agent. Its rung had long since fired, yet EVERY five-minute inbox poll forfeited the silent path and demanded the full battery and a full report. There was no way to discharge it short of finishing or abandoning a task that was not the session's to finish.
-    That is precisely the "a gate that cannot be satisfied deadlocks the session" trap the v10 brief warned any new time-based check to avoid, and it was reintroduced by a threshold comparison that looked harmless.
-
-    The 45-minute ping is deliberately NOT a blocking rung: it is report-only, the horizon bounds how long it can be deferred, and forfeiting a silent poll for it would reinstate the same noise at a lower threshold.
-    """
-    if age_min is None:
-        return False
-    fired = (state_doc.get("ladder") or {}).get(key) or {}
-    if gone:
-        return fired.get("gone") != stampkey
-    # THE `idle` KEY MUST LIVE HERE, not only at the ladder's call site. This
-    # function IS the poll fast path's oracle, and the docstring above records
-    # what happens when the two disagree: the report goes silent while the forfeit keeps firing, with no way to discharge it short of abandoning the item. An `idle` rung latched by the ladder but invisible to this function would reproduce that deadlock exactly. Checked BEFORE the age rungs because it is a different subject: `idle` is a proven state, the 90/120 rungs are raw age,
-    # and an idle worker quiet for 200 minutes must latch once as idle rather than re-firing as `resolve`.
-    if idle:
-        return fired.get("idle") != stampkey
-    if age_min >= LADDER_RESOLVE_MIN:
-        return fired.get("resolve") != stampkey
-    if age_min >= LADDER_INVESTIGATE_MIN:
-        return fired.get("investigate") != stampkey
-    return False
 
 
 # ---- process inspection -----------------------------------------------------
@@ -264,34 +236,6 @@ def verify_background(event_bg, table=None, ancestors=None):
     return out
 
 
-# The inbox waiter (wl_wait.py) launched as a background shell task. Matched on the SCRIPT NAME in the declared command, which is the only stable marker: the task id is per-launch and the description is free text.
-WAITER_MARK = "wl_wait.py"
-
-
-def waiter_tasks(live_bg):
-    """Running background tasks that are inbox waiters."""
-    return [
-        b
-        for b in live_bg or []
-        if isinstance(b, dict)
-        and b.get("type") == "shell"
-        and WAITER_MARK in str(b.get("command") or "")
-    ]
-
-
-def confirmed_waiters(live_bg, verdicts):
-    """Waiters whose liveness the OS has CONFIRMED, never merely claimed.
-
-    Both callers in wl_checks trade a supervision demand for this verdict, so `confirmed` is the only verdict that may buy the trade. A waiter that is `suspect` or `unverifiable` is treated exactly as any other background task: it still owes the check-in and it still does not substitute for a poll cron. That is the safe direction -- the whole argument for relaxing those checks is
-    that this process's EXIT is itself the wake-up, which is worth nothing if nobody can see the process.
-    """
-    return [
-        b
-        for b in waiter_tasks(live_bg)
-        if (verdicts or {}).get(str(b.get("id") or "")) == "confirmed"
-    ]
-
-
 TEAMMATE_FRESH_MIN = float(os.environ.get("WORKLIST_TEAMMATE_FRESH_MIN", "15"))
 
 
@@ -343,7 +287,7 @@ def all_waits_live(live_bg, verdicts, fresh_mates, facts=None):
 
     This is the predicate that lets the pure-wait check-in stand down (plan stop-hook-overhaul section 1.3). The check-in exists to learn whether a worker is still alive; where the hook can already answer that itself, a demand to confirm it buys nothing but ritual. One answer per task shape:
 
-    - `shell`: `verify_background` CONFIRMED the OS process (a waiter or any other job: its exit is the harness notification either way). `suspect` and `unverifiable` answer nothing.
+    - `shell`: `verify_background` CONFIRMED the OS process (its exit is the harness notification). `suspect` and `unverifiable` answer nothing.
     - `subagent`: the harness's `tasks/<id>.output` is a symlink to `subagents/agent-<id>.jsonl`, so the task id JOINS to its own transcript and `bg_output_facts` (`facts`) already carries its age. Answered when that stream exists and is not stale (BG_STALE_MIN). These metas carry no `taskKind`, so `live_teammate_transcripts` never counts them; measured 2026-09-24, 0 of 306 metas in a live session did.
     - `teammate`: counted, because a teammate has no such join (see `live_teammate_transcripts`). Covered only when the fresh-transcript count reaches the claimed count; `None` (store unreadable) is "cannot tell".
 
@@ -659,6 +603,10 @@ def worker_facts(event, session_id):
         v = verdicts.get(tid, "unverifiable")
         # The PARAMETER, not a second read of the event. Both carry the same value today (wl_checks.py:1471 derives it from this very event), but one source at the call boundary cannot drift from the other.
         quiet = output_quiet_min(session_id, tid)
+        if b.get("type") == "workflow":
+            wf = workflow_stream(event.get("cwd") or "", session_id, b.get("name"))
+            if wf is not None:
+                quiet = int(wf[0])
         if v == "confirmed":
             osword = "OS process confirmed"
         elif v == "suspect":
@@ -768,7 +716,6 @@ def ladder(fold, session_id, event, state_doc):
                 )
             )
 
-    _ = blocking_rung_due  # the poll fast path's forfeit must agree with fire_once below
     pings, investigates, resolves, gones, idles = [], [], [], [], []
     for key, label, age, stampkey, gone, wid in subjects:
         rung_rec = fired.get(key) or {}

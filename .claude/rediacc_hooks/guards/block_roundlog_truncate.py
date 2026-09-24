@@ -35,7 +35,7 @@ from rediacc_hooks import hookio
 
 CHAIN = "pre-bash"
 TWIN = "pre-bash/block-roundlog-truncate.sh"
-ORDER = 32
+ORDER = 31
 
 # The `--roundlog` carve-out. The verb IS the sanctioned path, and without this line the guard refuses the one command it spends its message telling people to use, which is the shape its own header calls "a guard that gets routed around".
 DEFECT = ('if hookio.case_glob(cmd, "*worklist.py*--roundlog*"):', "if False:")

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Stop hook: refuse to end a turn while tracked work remains unhandled.
 
-WHY: the failure this prevents is stopping to REPORT a discovery instead of acting on it. The full design history (v1-v9: the [ ]/[x]/[?]/[>] state machine, the harness task queue, cross-session requests, the regression gate, the poll fast path) lives in the sibling modules beside each piece of logic; this file is only the ENTRY POINT: the recursion guard, the CLI dispatch, and the
+WHY: the failure this prevents is stopping to REPORT a discovery instead of acting on it. The full design history (v1-v9: the [ ]/[x]/[?]/[>] state machine, the harness task queue, the regression gate) lives in the sibling modules beside each piece of logic; this file is only the ENTRY POINT: the recursion guard, the CLI dispatch, and the
 fail-closed wrapper.
 
 v10 (2026-07-30, operator request): the item store moved from the markdown file to an append-only JSONL event log (wl_store: the markdown stays as a synced INBOX, so nothing written there is ever silently ignored); every item carries start and last-update stamps; in-flight claims are verified against the OS and walked up a 45/90/120-minute ladder (wl_liveness); deferrals execute
@@ -12,19 +12,17 @@ fields; an aged [?] without them is demanded, bounded per stop (wl_checks);
 a justified one faces the judge's audit riding the existing judge call, and a rejected justification REOPENS the item as [ ] (wl_judge.apply_defer_audit fails closed); and a session whose only in-flight work is a CI watch is FORCED onto the aged backlog by id and verb (wl_ci.ci_watch_only). Every demand's exit is completable alone in one turn: do it and tick with evidence, execute
 the DEFAULT, or answer the WHY/HOW honestly.
 
-v17 (2026-08-04, operator report: "normally there is exponential backoff for the stop hook. It seems it's running every 5 mins."): it WAS, and the cause was scope, not cadence. wl_store.world_sig hashed the BYTES of the shared markdown, event log and requests file, so any teammate's --add or --tick broke every other session's poll baseline and invalidated its judge cache; measured
-on the live store, 32 of 32 events in a three-hour window were foreign and polluted half the five-minute windows. The signature is this session's own world now (wl_store.world_sig, wl_store.my_requests_sig). Two smaller fixes ride with it: the background check-in's clock is cleared when the wait ENDS (it used to freeze, so re-entering a wait fired the roster demand on arrival), and
-it prints its last-fired and next-earliest stamps so the latch it claims is checkable from the message. New: the NO-OP WAKE LADDER (wl_checks .quiet_wake_sig / quiet_wake_bump / quiet_wake_note) counts wakes on which nothing measurably moved and, after three, collapses the whole stop to one line asking for the next rung of the 5/10/20/40/60 poll ladder. It suppresses ADVISORY
-output only: every violation that can block still blocks.
+v17 (2026-08-04, operator report: "normally there is exponential backoff for the stop hook. It seems it's running every 5 mins."): it WAS, and the cause was scope, not cadence. wl_store.world_sig hashed the BYTES of the shared markdown and event log, so any teammate's --add or --tick invalidated every other session's judge cache; measured
+on the live store, 32 of 32 events in a three-hour window were foreign and polluted half the five-minute windows. The signature is this session's own world now (wl_store.world_sig). Two smaller fixes ride with it: the background check-in's clock is cleared when the wait ENDS (it used to freeze, so re-entering a wait fired the roster demand on arrival), and
+it prints its last-fired and next-earliest stamps so the latch it claims is checkable from the message.
 
 v18 (2026-08-04, operator: "we don't need to print next wakeup times. We should just track the hook moments and notify/warn when needed. let's go for efficient ai context usage"): two standing sections that printed on every full stop are DELETED rather than shortened. The NEXT WAKEUPS list (every scheduled task's next firing plus its prompt label) is gone; the schedules are still
-tracked by the cron-shape checks, the backoff ladder, the loop-death detector and the judge's loop line, and the one actionable thing the list carried is now its own silent-until-broken warning (wl_checks.broken_schedules, V_BROKEN_SCHEDULE). The empty WORKLIST GUIDE line ("no actionable items in the store") is gone too, which lets a clean stop with nothing queued exit with zero
-bytes the way the poll fast path does. Both supersede earlier deliberate choices ("a short honest line, never ambiguous silence"): silence is no longer ambiguous now that the fast path is silent many times an hour. The rule going forward is silent when there is nothing to act on, one focused message when there is.
+tracked by the cron-shape checks, the loop-death detector and the judge's loop line, and the one actionable thing the list carried is now its own silent-until-broken warning (wl_checks.broken_schedules, V_BROKEN_SCHEDULE). The empty WORKLIST GUIDE line ("no actionable items in the store") is gone too, which lets a clean stop with nothing queued exit with zero
+bytes. Both supersede earlier deliberate choices ("a short honest line, never ambiguous silence"). The rule going forward is silent when there is nothing to act on, one focused message when there is.
 
 MODULE MAP:
     wl_core       shared primitives (paths, git, regexes, tasks, transcript)
     wl_store      event log, markdown sync, sidecars, session state doc
-    wl_requests   cross-session requests (.requests) and their CLI
     wl_liveness   worker verification against /proc|ps, the 45/90/120 ladder
     wl_ci         publish divergence, PR freshness, submodule pointers, CI
     wl_reggate    v7/v8 regression-gate machinery
@@ -56,8 +54,6 @@ path blocks loudly instead of failing open.
 What still allows a stop:
   1. An empty world: no open items, no pending tasks, no obligations.
   2. Removing the hook from .claude/settings.json.
-  3. A VERIFIED no-op inbox-poll stop (wl_checks.poll_fast_path), silent by
-     design and bounded by POLL_FULL_MAX_MIN.
 """
 
 import contextlib
@@ -99,7 +95,6 @@ class _BrokenModule:
 for _name in (
     "wl_core",
     "wl_store",
-    "wl_requests",
     "wl_liveness",
     "wl_ci",
     "wl_reggate",
@@ -118,7 +113,6 @@ for _name in (
 
 C = _MODS["wl_core"]
 S = _MODS["wl_store"]
-R = _MODS["wl_requests"]
 CK = _MODS["wl_checks"]
 J = _MODS["wl_judge"]
 M = _MODS["worklist_messages"]
@@ -1315,7 +1309,6 @@ def _migrate_cli(argv):
                 "  adopt one:  worklist.py --migrate %s --plan %s"
                 % (me, " ".join(p["rel"] for p in prev_plans))
             )
-        print("\n  requests addressed to %s are NOT moved; read them with --requests" % prev)
         total_moved += len(moved)
         fold = S.load(worklist, sync=False)
     if total_moved:
@@ -1391,7 +1384,7 @@ def _adopt_cli(argv):
 def _reassign_cli(argv):
     """`--reassign <me> <phantom-prefix>`: take over a dead identity's work.
 
-    THE REPAIR VERB for what the identity check cannot heal by refusing: items and requests already written under a `<me>` that was never a session. The Stop hook's phantom backstop points here, and a backstop with no fix verb is a nag.
+    THE REPAIR VERB for what the identity check cannot heal by refusing: items already written under a `<me>` that was never a session. The Stop hook's phantom backstop points here, and a backstop with no fix verb is a nag.
 
     THREE RULES, each one guarding a way this could become a weapon:
 
@@ -1401,11 +1394,11 @@ def _reassign_cli(argv):
       stopped. This is what stops --reassign becoming a way to steal a LIVE
       peer's items, which CLAUDE.md forbids in as many words ("never tick or
       remove an item that is not yours").
-    * OPEN items and OPEN requests only. History is left exactly as it was:
+    * OPEN items only. History is left exactly as it was:
       the phantom really did write those events, and a log that lies about that
       is worse than one that is untidy.
 
-    Appends `reassign` events; nothing is ever rewritten. Both logs are append-only and fold-derived, which is what makes the lock-free design sound, and the fold arms that read these events live beside the events they interpret (wl_store._fold_events, wl_requests.read_requests).
+    Appends `reassign` events; nothing is ever rewritten. The log is append-only and fold-derived, which is what makes the lock-free design sound, and the fold arm that reads these events lives beside the events it interprets (wl_store._fold_events).
     """
     if len(argv) < 3:
         sys.stderr.write(M.CLI_REASSIGN_USAGE)
@@ -1423,7 +1416,7 @@ def _reassign_cli(argv):
     fold = S.load(worklist, sync=True)
     # AGE GATE, and without it the guarantee above is not delivered. The `.lastevent-` file is written exactly once, when the Stop hook first runs
     # for a session. A session that is mid-turn -- it has added items but has
-    # not yet reached its first stop -- has no such file either, so the check above cannot tell it from a genuine phantom. Any session can read a peer's prefix out of `--list --open` output, and concurrent sessions in one tree are routine here, so without this a peer's OPEN items and request routing could be moved onto the caller WHILE that peer was actively working on them. The
+    # not yet reached its first stop -- has no such file either, so the check above cannot tell it from a genuine phantom. Any session can read a peer's prefix out of `--list --open` output, and concurrent sessions in one tree are routine here, so without this a peer's OPEN items could be moved onto the caller WHILE that peer was actively working on them. The
     # docstring and the refusal message both promise this cannot happen; this is the code that makes the promise true.
     #
     # Same threshold and same derivation as the advisory backstop (wl_checks.phantom_identities), deliberately: two different answers to "is this identity a phantom" is how the two drift apart. BOTH the writer and the owner, via the derivation shared with the backstop. Scanning `by` alone made this gate refuse every phantom in a store that had ever been compacted, because compact()
@@ -1454,33 +1447,10 @@ def _reassign_cli(argv):
                 for rid in moved_items
             ],
         )
-    reqs = R.read_requests(worklist)
-    moved_reqs = []
-    for r in sorted(reqs.values(), key=lambda x: (x["at"], x.get("id", ""))):
-        if r["acked"] or R.request_resolved(r):
-            continue
-        ev = {"ev": "reassign", "id": r["id"], "at": stamp, "by": me}
-        if C.same_session(r["from"], phantom):
-            ev["from"] = me
-        if C.same_session(r["to"], phantom):
-            ev["to"] = me
-        if "from" in ev or "to" in ev:
-            R.append_request_event(worklist, ev)
-            moved_reqs.append(r["id"])
-    if not moved_items and not moved_reqs:
+    if not moved_items:
         print("nothing open under %s; the history stays as it is" % phantom)
         return
-    print(
-        M.CLI_REASSIGN_DONE
-        % (
-            phantom,
-            me,
-            ", ".join("#" + i for i in moved_items) or "(none)",
-            ", ".join("#" + i for i in moved_reqs) or "(none)",
-            me,
-            me,
-        )
-    )
+    print(M.CLI_REASSIGN_DONE % (phantom, me, ", ".join("#" + i for i in moved_items), me))
 
 
 def _teammate_idle_cli():
@@ -1821,7 +1791,7 @@ def main():
         sys.stderr.write(GIT_USAGE)
         sys.exit(2)
     if len(sys.argv) > 2 and sys.argv[1] == "--git":
-        # The mediated submodule / force-push capability, delegated whole the way --wait is, because it is far too large to inline here.
+        # The mediated submodule / force-push capability, delegated whole the way --reports is, because it is far too large to inline here.
         #
         # It drives git through subprocess, which the pre-bash guards never see, so a raw leased force push typed on a command line stays blocked while this path works. That is deliberate: the guard stays strict and the safety lives in the module's own checks, not in permission.
         import wl_git  # noqa: PLC0415 -- sibling, probed not assumed
@@ -1983,7 +1953,7 @@ def main():
         # `worklist.py --brief <session-prefix> <text...>` -- append, never rewrite, for the same lost-update reason the store appends. Self-contained so a broken sibling cannot take the brief channel down.
         wl = _local_worklist_path(_local_project_start())
         prefix = sys.argv[2]
-        # THE ROSTER. `.sessions` is the registry of who exists here -- it is what --ask's recipient check reads and what the liveness ladder counts -- and until now an unvalidated command-line string populated it. A phantom identity that briefs itself looks exactly like a real session.
+        # THE ROSTER. `.sessions` is the registry of who exists here -- it is what peer reporting reads and what the liveness ladder counts -- and until now an unvalidated command-line string populated it. A phantom identity that briefs itself looks exactly like a real session.
         _identity_or_die(prefix, _die2)
         text = " ".join(sys.argv[3:]).replace("\n", " ").strip()[:200]
         # A lone id is a MISREAD of this verb, not a short brief. The word reads both ways (publish a brief / brief me on X) and the argument shape is `--tick <me> <id> <evidence>` minus the evidence, so the id lands where the sentence goes and the roster then advertises it as live activity. Shape only, no store read: this branch stays self-contained on purpose (see above), and a
@@ -2011,17 +1981,7 @@ def main():
             pass
         print("brief recorded for %s (%d chars)" % (prefix, len(text)))
         return
-    if sys.argv[1:2] and sys.argv[1] in ("--ask", "--answer", "--decline", "--ack", "--requests"):
-        R.request_cli(sys.argv[1:], C.worklist_for(C.project_start()))
-        return
-    if sys.argv[1:2] == ["--poll"]:
-        R.poll_cli(
-            C.worklist_for(C.project_start()),
-            sys.argv[2] if len(sys.argv) > 2 else "",
-            __file__,
-        )
-        return
-    # ONE CLI DOOR. Everything a session is told to run goes through this file, so the report inbox and the waiter are reachable here too rather than by remembering two more script names. Both delegate; neither reimplements.
+    # ONE CLI DOOR. Everything a session is told to run goes through this file, so the report inbox is reachable here too rather than by remembering another script name. It delegates; it does not reimplement.
     if sys.argv[1:2] == ["--reap"]:
         # `worklist.py --reap <me> <task-id>...` -- retire roster entries this session knows are finished. Validated against the LAST EVENT the hook saw, so a typo cannot silently suppress a live worker, and a compacted session (which remembers nothing) can still see the id list.
         me = sys.argv[2] if len(sys.argv) > 2 else ""
@@ -2117,10 +2077,6 @@ def main():
         elif rest[0] not in wl_report.MODES:
             rest = ["--list", *rest]
         sys.exit(wl_report.main(rest))
-    if sys.argv[1:2] == ["--wait"]:
-        import wl_wait  # noqa: PLC0415 -- sibling, probed not assumed (see SIBLING IMPORTS above)
-
-        sys.exit(wl_wait.main(sys.argv[2:]))
     if sys.argv[1:2] and sys.argv[1] in ("--plan-compact", "--plan-revive"):
         _planrec_cli(sys.argv[1:])
         return

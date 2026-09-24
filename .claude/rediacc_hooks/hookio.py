@@ -156,7 +156,7 @@ class Event:
     def flag(self, *path):
         """`jq -r '.a // false'` -- the literal words `true` or `false`.
 
-        `block-shell-background-waiter.sh` compares the RESULT to the string `true`, so a Python bool here would silently never match.
+        `block-long-sleep.sh` compares the RESULT to the string `true`, so a Python bool here would silently never match.
         """
         got = _jq_raw(self.doc, path, empty=True)
         return got if got in ("true", "false") else "false"

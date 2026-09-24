@@ -600,30 +600,20 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
 
 
 def known_subagent_ids(cwd, session_id):
-    """Every agent id with a meta in this session. The ladder and the poll path skip their leases."""
+    """Every agent id with a meta in this session. The liveness ladder skips their leases."""
     return set(load_metas(session_subagents_dir(cwd, session_id)))
 
 
-def roster_covers_all(live_bg, verdict, bg_verdicts=None):
-    """True when every live background task is a roster-verified subagent or an OS-confirmed waiter.
+def roster_covers_all(live_bg, verdict):
+    """True when every live background task is a roster-verified subagent.
 
-    Roster-verified means SUPERVISED by the roster (leased directly, through an ancestor, or covering a lease as a live descendant), not silent and not owing a status. A shell that is not a confirmed waiter keeps its 15-minute check-in, and so does a teammate: the roster cannot read either one's clock.
+    Roster-verified means SUPERVISED by the roster (leased directly, through an ancestor, or covering a lease as a live descendant), not silent and not owing a status. A shell keeps its 15-minute check-in, and so does a teammate: the roster cannot read either one's clock. An OS-confirmed shell is still covered, by `wl_liveness.all_waits_live`, the other term of the same predicate in run_stop.
     """
-    import wl_liveness as L  # noqa: PLC0415
-
     bg = [b for b in live_bg or [] if isinstance(b, dict)]
     if not bg or not verdict or verdict.get("blind"):
         return False
-    waiters = {str(b.get("id") or "") for b in L.confirmed_waiters(bg, bg_verdicts or {})}
     verified = set(verdict.get("verified") or ())
-    for b in bg:
-        tid = str(b.get("id") or "")
-        if b.get("type") == "subagent":
-            if tid not in verified:
-                return False
-        elif tid not in waiters:
-            return False
-    return True
+    return all(b.get("type") == "subagent" and str(b.get("id") or "") in verified for b in bg)
 
 
 def lastevent_path(cwd, session_id):
@@ -936,7 +926,7 @@ def explain_lastevent(prefix):
         for i, w, _c in v["leased_dead"]
     )
     lines.extend("  unknown: #%s on worker:%s (%s)" % (i, w, why) for i, w, why in v["unknown"])
-    # THE REPLAY IS OLDER THAN THE TREE IT READS. The sidecar is the last FULL stop's event (a silent poll stop does not rewrite it), while the metas and transcripts are read as they are now, so an agent spawned after that stop is absent from the event and its lease reads as dead here. Said out loud rather than left to be mistaken for a verdict about the agent.
+    # THE REPLAY IS OLDER THAN THE TREE IT READS. The sidecar is the last stop's event, while the metas and transcripts are read as they are now, so an agent spawned after that stop is absent from the event and its lease reads as dead here. Said out loud rather than left to be mistaken for a verdict about the agent.
     try:
         since = side.stat().st_mtime
         later = sorted(

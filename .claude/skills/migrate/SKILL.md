@@ -29,7 +29,7 @@ One `AskUserQuestion` call, `multiSelect: true`, `header: "Continue"`. The quest
 
 > Which sessions should this session (`<me>`) continue? Their open, in-flight
 > and deferred items will be re-tagged to `<me>`; the originals are ticked
-> "migrated to", nothing is deleted, and cross-session requests are not moved.
+> "migrated to", and nothing is deleted.
 
 One option per candidate. Label is `<prefix> (<branch>) <n> open`, and `<n>` counts BOTH stores: the candidate's open, in-flight and deferred worklist items PLUS the open boxes of every plan it carries (`counts.open + counts.inflight + counts.deferred + sum(plans[].open)` in the JSON).
 A session whose only remaining work is a committed design must not read as `0 open`, or the option the operator most needs to see is the one that looks emptiest. `0 open` is still valid and now means exactly one thing: a STATE.md-only candidate, with real work named in prose and none of it counted anywhere.
@@ -57,8 +57,8 @@ by name. Adopting a plan is the statement that this session is executing it, and
 | moved | left alone |
 |---|---|
 | `[ ]` open items | `[x]` done items (history) |
-| `[>]` in-flight, **lease reset** | cross-session requests (`--requests`) |
-| `[?]` deferrals, **DEFAULT window preserved** | the predecessor's STATE.md (a peer's document) |
+| `[>]` in-flight, **lease reset** | the predecessor's STATE.md (a peer's document) |
+| `[?]` deferrals, **DEFAULT window preserved** | |
 | nothing at all, unless `--plan <path>` names it | the predecessor's committed plans |
 
 `--plan <path> [<path>...]` is the ONLY thing here that writes a peer's plan, and it writes only the paths it is handed. It re-stamps that plan's `Owner:` line to this session inside the header's first ten lines, sets an existing `Updated:` line to today, and touches no `- [ ]` or `- [x]` line, so `check:ci-plan-boxes` A0 signatures and A1 never-deleted stay byte-identical.

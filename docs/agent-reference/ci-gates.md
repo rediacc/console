@@ -21,7 +21,7 @@ EWMA per gate, and `check:ci-gate-manifest` asserts the marking against it in BO
 - **BLOCKED is not FAIL.** A gate that cannot run here (a toolchain this machine
 lacks) exits 77, is reported separately, and does NOT redden the run or block the push — it warns. A gate that ran and judged your code red still refuses. Before assuming a red is a missing tool, check the obvious: an empty `private/account/node_modules` presented as four separate gate failures including a "missing @cloudflare/workers-types".
 - **If a red is not yours** — this tree usually holds another session's
-uncommitted work — do not route around it and do not edit their file. Ask: `.claude/hooks/stop/worklist.py --ask <you> <them> '<gate>: <what you saw>'`.
+uncommitted work — do not route around it and do not edit their file. Ask the operator, or leave a `[?]` worklist item naming the conflict.
 
 
 The gate set lives in `scripts/ci-runner/manifest.ts`, which is also the input to `npm run check:ci-parity`. Every individual `check:*` npm key still exists and still works on its own; the manifest schedules them.

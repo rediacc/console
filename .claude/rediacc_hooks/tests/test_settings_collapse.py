@@ -101,10 +101,15 @@ def corpus_by_chain():
     A payload is routed by the chain of the guard whose case it came from, because that is the pattern the harness would have handed it to. Duplicates collapse: the chain runs every member regardless of which guard a case was written for, so the same bytes twice is the same comparison twice.
     """
     cases, _ = guardcorpus.harvest_cases()
+    live = set(guards.stems())
     routed = {}
     for guard, payload, label, _rc in cases:
         if guard.startswith("guards/"):
-            chain = guards.load(guard[len("guards/") : -len(".py")]).CHAIN
+            stem = guard[len("guards/") : -len(".py")]
+            # A RETIRED GUARD's recorded cases name a module that no longer exists, so nothing says which chain they belonged to. The frozen suite keeps them (it is a recording, not a list of live guards); the first retirement was `block_shell_background_waiter`, removed with cross-session messaging on 2026-09-24.
+            if stem not in live:
+                continue
+            chain = guards.load(stem).CHAIN
         else:
             chain = guard.split("/")[0]
         if chain in DRIVEN:

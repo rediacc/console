@@ -1,29 +1,23 @@
-"""Background waiting: check-ins, impure waits, drained waiters, roster reaping, and the transcript join that finds the task store.
+"""Background waiting: check-ins, impure waits, roster reaping, and the transcript join that finds the task store.
 
 Ported from `.claude/hooks/stop/worklist-cases/14-background-waits.sh`, one pytest function per numbered bash case, and one more wherever a bash block called `setup` again mid-case.
 
-EVERY FIRE CASE IS PAIRED WITH A SILENT CONTROL differing by one planted fact, and the waiter cases run a REAL `wl_wait.py` process rather than a fake command string: `confirmed` means the operating system can see a live descendant carrying the command, so a fixture that only claimed the command would prove the string match and not the verdict.
+EVERY FIRE CASE IS PAIRED WITH A SILENT CONTROL differing by one planted fact. The inbox-waiter cases (163r, 161, 163z, 163q, 163w, 13f) were removed with cross-session messaging on 2026-09-24. `confirmed` means the operating system can see a live descendant carrying the command, so a fixture that only claimed the command would prove the string match and not the verdict.
 """
 
 from __future__ import annotations
 
-import contextlib
 import json
 import os
-import pathlib
 import re
 import subprocess
-import sys
 import time
 
 from rediacc_hooks.tests import wlfix
 from rediacc_hooks.tests.wlfix import wl  # noqa: F401
 
-WAIT_PY = wlfix.STOP_DIR / "wl_wait.py"
-
 BW1 = [{"id": "bw1", "type": "shell", "status": "running", "description": "long CI watch"}]
 
-SAID_161 = "answer\n\n## Remaining\n- #7 operator-gated decision (pending)"
 SAID_163 = "answer\n\n## Remaining\n- #7 waiting on the nightly (in_progress)"
 SAID_163Y = "answer\n\n## Remaining\n- #7 fully planned and unblocked (pending)"
 SAID_163Y_C = (
@@ -31,14 +25,7 @@ SAID_163Y_C = (
 )
 SAID_163X = "answer\n\n## Remaining\n- #21 the mismatch fixture task (pending)"
 SAID_163X_C = "answer\n\n## Remaining\n(nothing tracked here)"
-SAID_INBOX = "answer\n\n## Remaining\n- #7 waiting on the inbox (in_progress)"
 SAID_MATES = "answer\n\n## Remaining\n- #7 waiting on the teammates (in_progress)"
-DRAINED_MSG = (
-    "all of it is finished and the tree is clean\n\n"
-    "## Remaining\n- nothing open, nothing in flight, no pending task"
-)
-WORK_LOOP_CRONS = [{"id": "c1", "schedule": "*/30 * * * *", "prompt": "work loop"}]
-WORK_LOOP_AND_POLL = [*WORK_LOOP_CRONS, {"id": "p", "schedule": "*/5 * * * *"}]
 
 
 def assert_in(result, needle: str, label: str) -> None:
@@ -74,279 +61,9 @@ def stream(fix, task_id: str, text: str = "worker stream content\n") -> None:
     (fix.base / "bgout" / ("%s.output" % task_id)).write_text(text, encoding="utf-8")
 
 
-def waiter_command() -> str:
-    """The command string a declared inbox waiter carries.
-
-    `sys.executable` rather than the bare `python3` the bash used: the verdict is a substring match against the child's real `/proc` cmdline, and the interpreter pytest runs under is the one the child will show.
-    """
-    return "%s %s deadbeef --timeout 3m" % (sys.executable, WAIT_PY)
-
-
-def waiter_row(task_id: str = "wt1", description: str = "inbox waiter") -> dict:
-    return {
-        "id": task_id,
-        "type": "shell",
-        "status": "running",
-        "command": waiter_command(),
-        "description": description,
-    }
-
-
-def waiter_verdict(task_id: str = "wt1") -> str:
-    """The liveness verdict for a declared waiter, asserted rather than assumed.
-
-    If the verdict is not `confirmed` the case built on it is vacuous and would pass for the wrong reason, which is why both 163z and 163q spend a premise assertion on it.
-    """
-    liveness = wlfix.import_wl("wl_liveness")
-    bg = [{"id": task_id, "type": "shell", "status": "running", "command": waiter_command()}]
-    return liveness.verify_background(bg, ancestors={os.getpid()}).get(task_id)
-
-
-@contextlib.contextmanager
-def live_waiter(fix, tmpdir_name: str = "waittmp"):
-    """A REAL `wl_wait.py` child of this process, torn down however the test leaves.
-
-    Its own TMPDIR and project dir, exactly as the bash launched it: the waiter writes a heartbeat beside the worklist it resolves, and pointing it at the fixture's own would plant the very artifact several of these cases assert about.
-    """
-    (fix.base / tmpdir_name).mkdir(parents=True, exist_ok=True)
-    env = dict(fix.env)
-    env["TMPDIR"] = str(fix.base / tmpdir_name)
-    env["CLAUDE_PROJECT_DIR"] = str(fix.base)
-    proc = subprocess.Popen(
-        [sys.executable, str(WAIT_PY), "deadbeef", "--timeout", "3m"],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-        env=env,
-    )
-    fix.env["WORKLIST_HARNESS_PID"] = str(os.getpid())
-    time.sleep(1)
-    try:
-        yield proc
-    finally:
-        proc.kill()
-        proc.wait()
-
-
-def waiter_world(fix, tmpdir_name: str):
-    """(env, worklist path) for a REAL waiter child, resolved the way the waiter itself resolves it.
-
-    `wl_core.worklist_for` reads TMPDIR from the ambient environment, so the variable is swapped for the length of the call rather than the slug formula being copied here -- a second copy would drift from the one under test.
-    """
-    core = wlfix.import_wl("wl_core")
-    (fix.base / tmpdir_name).mkdir(parents=True, exist_ok=True)
-    env = dict(fix.env)
-    env["TMPDIR"] = str(fix.base / tmpdir_name)
-    env["CLAUDE_PROJECT_DIR"] = str(fix.base)
-    previous = os.environ.get("TMPDIR")
-    os.environ["TMPDIR"] = env["TMPDIR"]
-    try:
-        worklist = pathlib.Path(core.worklist_for(str(fix.base)))
-    finally:
-        if previous is None:
-            os.environ.pop("TMPDIR", None)
-        else:
-            os.environ["TMPDIR"] = previous
-    return env, worklist
-
-
-def await_heartbeat(path, timeout_s: float = 8.0) -> None:
-    """Block until a launched waiter has written its first pulse, or fail the case saying so."""
-    deadline = time.time() + timeout_s
-    while time.time() < deadline:
-        if path.is_file() and path.stat().st_size:
-            return
-        time.sleep(0.2)
-    msg = "no waiter heartbeat appeared at %s within %.0fs" % (path, timeout_s)
-    raise AssertionError(msg)
-
-
-def test_163r_a_second_waiter_for_the_same_session_refuses_and_writes_nothing(wl):  # noqa: F811
-    """THE PILE, 2026-09-23: thirteen simultaneous `wl_wait.py <me> --timeout 60` processes over 55 minutes.
-
-    Every one of them was relaunched in the belief that a process started minutes earlier had finished, because `--timeout` is MINUTES and only `--help` said so. Nothing anywhere refused a duplicate: the script held no lock, the Stop hook treated `confirmed_waiters` as a boolean, and the PostToolUse nudge saw a heartbeat the duplicates themselves kept fresh.
-
-    Three claims are pinned here, and the third is the one that matters most. A refusing duplicate must write NOTHING: there is exactly ONE heartbeat path per session, so a duplicate that left a tombstone on the way out would mark the LIVE incumbent as lapsed -- manufacturing the failure the whole mechanism exists to detect.
-    """
-    env, worklist = waiter_world(wl, "duptmp")
-    wait_mod = wlfix.import_wl("wl_wait")
-    hb = wait_mod.heartbeat_path(worklist, "deadbeef")
-    lock = wait_mod.waiterlock_path(worklist, "deadbeef")
-
-    incumbent = subprocess.Popen(
-        [sys.executable, str(WAIT_PY), "deadbeef", "--timeout", "3m"],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-        env=env,
-    )
-    try:
-        await_heartbeat(hb)
-        before_mtime = hb.stat().st_mtime_ns
-        before_text = hb.read_text(encoding="utf-8")
-
-        second = subprocess.run(
-            [sys.executable, str(WAIT_PY), "deadbeef", "--timeout", "3m"],
-            capture_output=True,
-            text=True,
-            env=env,
-            check=False,
-            timeout=30,
-        )
-        merged = second.stdout + second.stderr
-        assert second.returncode == 3, (
-            "163r: the duplicate exited %d, not 3. Exit 0 is indistinguishable from a FIRED "
-            "waiter and a session acting on it relaunches again, turning a slow pile into a "
-            "spin: %s" % (second.returncode, merged[:300])
-        )
-        assert "ALREADY LISTENING" in merged, (
-            "163r: the refusal does not name itself: %s" % (merged[:300])
-        )
-        assert "DO NOT RELAUNCH" in merged, (
-            "163r: the refusal must say so in as many words, or a fast exit reads as a fired "
-            "waiter: %s" % merged[:300]
-        )
-
-        # IT WROTE NOTHING. The tombstone check is the load-bearing one: `_is_tombstone` reads the CONTENT of this exact path, and a tombstone here would make waiter_lapsed() accuse a waiter that is alive and counting down.
-        assert not wait_mod._is_tombstone(hb), (
-            "163r: the refusing duplicate tombstoned the INCUMBENT'S heartbeat, which is the "
-            "precise failure this guard exists to prevent: %r" % hb.read_text(encoding="utf-8")
-        )
-        assert not before_text.startswith(wait_mod.TOMBSTONE), (
-            "163r premise: the incumbent was already dead before the duplicate ran"
-        )
-        assert lock.is_file(), "163r: no instance-claim sidecar was created at %s" % lock
-        assert lock.stat().st_size == 0, (
-            "163r: the refuser wrote to its own sidecar (%d bytes); it is a claim, not a channel"
-            % lock.stat().st_size
-        )
-
-        # AND THE INCUMBENT IS STILL PULSING. A guard that refused by killing what it found would pass every assertion above and leave the session with no waiter at all.
-        time.sleep(float(wait_mod.TICK_S) + 1.5)
-        assert hb.stat().st_mtime_ns > before_mtime, (
-            "163r: the incumbent's heartbeat stopped advancing after the duplicate ran"
-        )
-        assert incumbent.poll() is None, "163r: the duplicate killed the incumbent"
-    finally:
-        incumbent.kill()
-        incumbent.wait()
-
-
-def test_163r_control_with_no_incumbent_the_same_launch_runs(wl):  # noqa: F811
-    """CONTROL: exit 3 is about CONTENTION, not about the command.
-
-    Without this, 163r would pass just as well if wl_wait had been changed to refuse every launch -- which would silence every waiter in the repo while looking like a working guard. Same argv, same env, same session prefix, and the only difference is that nobody holds the claim.
-    """
-    env, worklist = waiter_world(wl, "solotmp")
-    wait_mod = wlfix.import_wl("wl_wait")
-    got = subprocess.run(
-        [sys.executable, str(WAIT_PY), "deadbeef", "--timeout", "0.05m"],
-        capture_output=True,
-        text=True,
-        env=env,
-        check=False,
-        timeout=60,
-    )
-    merged = got.stdout + got.stderr
-    assert got.returncode == 0, "163r CONTROL: an uncontended waiter exited %d: %s" % (
-        got.returncode,
-        merged[:300],
-    )
-    assert "INBOX-WAIT" in merged, "163r CONTROL: it never actually waited: %s" % merged[:300]
-    # And having run to its timeout it leaves the tombstone, so the lapse detector the pile disabled works again once there is only ever one writer.
-    hb = wait_mod.heartbeat_path(worklist, "deadbeef")
-    assert wait_mod._is_tombstone(hb), (
-        "163r CONTROL: a waiter that ran to its timeout left no tombstone: %r"
-        % hb.read_text(encoding="utf-8")
-    )
-
-
-def nudge(fix) -> None:
-    """One PostToolUse nudge through `wl_wait.py --nudge`, the path that decays the ignored count."""
-    payload = json.dumps(
-        {
-            "session_id": fix.sid,
-            "cwd": str(fix.proj),
-            "transcript_path": str(fix.transcript),
-            "tool_name": "Bash",
-        }
-    )
-    env = dict(fix.env)
-    env["TMPDIR"] = str(fix.base / "tmp")
-    env["CLAUDE_PROJECT_DIR"] = str(fix.proj)
-    env["WORKLIST_TASKS_DIR"] = str(fix.base / "tasks")
-    subprocess.run(
-        [sys.executable, str(WAIT_PY), "--nudge"],
-        input=payload,
-        capture_output=True,
-        text=True,
-        env=env,
-        check=False,
-    )
-
-
 def backdate(path, minutes: float) -> None:
     old = time.time() - minutes * 60
     os.utime(path, (old, old))
-
-
-def test_161_an_open_operator_request_suppresses_the_stuck_exempt_overrun(wl):  # noqa: F811
-    """Terminal-hold shape: all work done, the one question posted to the operator with DEFAULT: hold, long-lived teammate tasks keeping live_bg nonempty.
-
-    The ball is verifiably out of this session's court, so the overrun must not nag it into fake motion; the suppression lifts when the request resolves.
-    """
-    wl.brief_now()
-    wl.hand_now()
-    wl.env["WORKLIST_STUCK_ROUNDS"] = "1"
-    wl.task(7, "pending", "operator-gated decision")
-    wl.cli("--ask", "deadbeef", "operator", "merge the green PR? DEFAULT: hold and do not merge")
-    wl.bg = json.dumps(
-        [
-            {
-                "id": "tz1",
-                "type": "teammate",
-                "status": "running",
-                "description": "long-lived teammate",
-            }
-        ]
-    )
-    fired = []
-    for _ in range(6):
-        wl.newturn()
-        wl.say(SAID_161)
-        got = wl.run()
-        if "CONSECUTIVE STOPS" in got.out:
-            fired.append(got.out[:250])
-    assert not fired, "161: the hold state was nagged as stuck: %s" % fired[0]
-
-
-def test_161_control_without_the_request_the_exempt_overrun_still_fires(wl):  # noqa: F811
-    """CONTROL: the same shape WITHOUT the operator request still overruns.
-
-    WORKLIST_STUCK_ROUNDS stays pinned here because the bash export outlived the `setup` that opened this half, and an unpinned one would make the control pass for want of rounds rather than for want of a request.
-    """
-    wl.brief_now()
-    wl.hand_now()
-    wl.env["WORKLIST_STUCK_ROUNDS"] = "1"
-    wl.task(7, "pending", "operator-gated decision")
-    wl.bg = json.dumps(
-        [
-            {
-                "id": "tz1",
-                "type": "teammate",
-                "status": "running",
-                "description": "long-lived teammate",
-            }
-        ]
-    )
-    fired = []
-    last = ""
-    for _ in range(6):
-        wl.newturn()
-        wl.say(SAID_161)
-        got = wl.run()
-        last = got.out
-        if "CONSECUTIVE STOPS" in got.out:
-            fired.append(got.out[:250])
-    assert fired, "161 CONTROL: the overrun never fired: %s" % last[:250]
 
 
 def test_163_a_pure_background_wait_gets_a_check_in_not_make_work(wl):  # noqa: F811
@@ -362,7 +79,9 @@ def test_163_a_pure_background_wait_gets_a_check_in_not_make_work(wl):  # noqa: 
     wl.task(7, "in_progress", "waiting on the nightly")
     wl.say(SAID_163)
     seed = wl.run()
-    wl.check_quiet("PURE BACKGROUND WAIT", "163 seed: first sight of the wait state", result=seed)
+    # First sight SEEDS the clock silently. Since the poll-backoff advisory went (2026-09-24) this stop is a clean allow with ZERO bytes, so check_quiet's non-empty guard does not apply; the fire below, on the same fixture, is what proves the needle can appear at all.
+    assert seed.rc == 0, "163 seed: rc=%d err=%s" % (seed.rc, seed.err[:200])
+    assert "PURE BACKGROUND WAIT" not in seed.out, "163 seed: first sight of the wait state fired"
 
     seed_bgwait(wl)
     wl.newturn()
@@ -379,8 +98,11 @@ def test_163_a_pure_background_wait_gets_a_check_in_not_make_work(wl):  # noqa: 
         "bw1 confirmed: the long CI watch stream matches; nothing stuck.\n\n"
         "## Remaining\n- #7 waiting on the nightly (in_progress)"
     )
-    wl.check_quiet(
-        "PURE BACKGROUND WAIT", "163 CONTROL: no second check-in inside the 15-minute window"
+    # A latched stop may now be a zero-byte allow (the poll-backoff advisory that used to fill it is gone), so the anti-vacuity guard of check_quiet does not apply; the fire above on this same fixture proves the needle can appear.
+    again = wl.run()
+    assert again.rc == 0, "163 CONTROL: rc=%d err=%s" % (again.rc, again.err[:200])
+    assert "PURE BACKGROUND WAIT" not in again.out, (
+        "163 CONTROL: a second check-in fired inside the 15-minute window: %s" % again.out[:300]
     )
 
 
@@ -501,155 +223,6 @@ def test_163x_control_two_candidate_directories_refuse_the_join(wl):  # noqa: F8
     wl.check_quiet("task #21", label, result=got)
 
 
-def test_163z_a_confirmed_waiter_owes_no_check_in_and_needs_no_poll_cron(wl):  # noqa: F811
-    """v18: the waiter blocks until something new arrives for this session and then EXITS, and its exit is the harness notification that wakes the session.
-
-    Its liveness IS its report, so the two supervision demands that exist to make a session account for a silent background job do not apply to it. Both relaxations are keyed on `confirmed` and on nothing weaker.
-    """
-    wl.brief_now()
-    wl.hand_now()
-    bgout(wl)
-    with live_waiter(wl):
-        verdict = waiter_verdict("wt1")
-        assert verdict == "confirmed", (
-            "163z premise: waiter verdict is %r, not confirmed, so this case is vacuous" % verdict
-        )
-        wl.bg = json.dumps([waiter_row("wt1")])
-        wl.crons = json.dumps(WORK_LOOP_CRONS)
-        wl.task(7, "in_progress", "waiting on the inbox")
-        wl.say(SAID_INBOX)
-        wl.run()
-        seed_bgwait(wl)
-        wl.newturn()
-        wl.say(SAID_INBOX)
-        got = wl.run()
-        why = "163z: the check-in or the no-poll demand fired at a waiter: %r" % got.out[:250]
-        assert "PURE BACKGROUND WAIT" not in got.out, (
-            "163z: an overdue check-in must be SUPPRESSED when the only live task is a confirmed waiter. %s"
-            % why
-        )
-        # The needle is lifted VERBATIM from V_NO_POLL_CRON. The first draft of this line grepped for "no inbox poll" and "poll cron", neither of which appears in that message at all, so the assertion was incapable of failing and passed for a reason unrelated to the waiter.
-        assert "NOTHING LISTENING FOR CROSS-SESSION MAIL" not in got.out, (
-            "163z: a work cron with NO poll cron is accepted beside a confirmed waiter. %s" % why
-        )
-        # `check_quiet` is deliberately NOT the instrument for those two, and this line is why: both relaxations landing means the stop says NOTHING at all, and a helper that refuses to pass on silence would report the passing state as the failure.
-        # The silence is the stronger claim and the one that goes red when either relaxation is removed: case 163z-c1 in the waiter-controls module drives the same fixture with a DEAD waiter and gets the check-in back.
-        assert not got.out.strip(), why
-
-
-def drained_setup(fix) -> None:
-    """The common 163q fixture: fresh world, queue drainable.
-
-    The advice is a QUEUED REPORT rather than a violation, and OUTQ_PER_STOP is 1 by default, so without the wider drain the case would be measuring queue position rather than the check.
-    """
-    fix.brief_now()
-    fix.hand_now()
-    bgout(fix)
-
-
-def test_163q_a_drained_session_is_told_to_stop_its_waiter(wl):  # noqa: F811
-    """THE OTHER HALF OF 163z and 163w. Those two force a session with work to LISTEN; nothing ever told a finished one to stop, so a drained session held a process for up to an hour and was nagged on every tool call to relaunch it.
-
-    Observed live 2026-08-19: zero open items, zero background jobs, VMs torn down, and still "NOT LISTENING".
-    """
-    drained_setup(wl)
-    with live_waiter(wl):
-        verdict = waiter_verdict("wt9")
-        assert verdict == "confirmed", (
-            "163q premise: waiter verdict is %r, not confirmed, so this case is vacuous" % verdict
-        )
-        wl.bg = json.dumps([waiter_row("wt9")])
-        wl.say(DRAINED_MSG)
-        got = wl.run()
-        assert_in(
-            got,
-            "DRAINED, AND STILL HOLDING A WAITER",
-            "163q: a drained session is told to stop its waiter",
-        )
-        # The remedy must name the task's OWN id. One that does not is a remedy the reader has to guess at, and there is nothing on a Stop event to guess from.
-        assert_in(got, "TaskStop wt9", "163q: it names the exact TaskStop command for that task id")
-        # GUIDANCE, NEVER A BLOCK. A stop that blocked on this would keep the session alive to argue about the process it is being told to shut down.
-        assert got.decision != "block", (
-            "163q: a drained session was BLOCKED over its waiter: %s" % got.out[:300]
-        )
-
-
-def test_163q_c1_control_a_session_with_a_pending_task_keeps_its_waiter(wl):  # noqa: F811
-    """CONTROL 1: WORK OUTSTANDING, same live waiter, so the advice must not fire.
-
-    A pending harness task rather than an open item, deliberately: an open item BLOCKS, and an absence asserted on a blocking stop proves nothing, because the report queue is not drained on that path.
-    """
-    drained_setup(wl)
-    with live_waiter(wl):
-        wl.bg = json.dumps([waiter_row("wt9")])
-        wl.task(9, "in_progress", "still doing the thing")
-        wl.say("still working\n\n## Remaining\n- #9 still doing the thing (in_progress)")
-        wl.check_quiet(
-            "DRAINED, AND STILL HOLDING A WAITER",
-            "163q-c1 CONTROL: told to stop listening while work was pending",
-        )
-
-
-def test_163q_c2_control_a_drained_session_with_no_waiter_is_told_nothing(wl):  # noqa: F811
-    """CONTROL 2: drained, but holding NO waiter. There is nothing to stop, and an advisory that fired here would be telling every finished session in the repo to kill a process it does not have."""
-    drained_setup(wl)
-    wl.bg = "[]"
-    wl.say(DRAINED_MSG)
-    wl.check_quiet(
-        "DRAINED, AND STILL HOLDING A WAITER",
-        "163q-c2 CONTROL: advice fired with no waiter to stop",
-    )
-
-
-def test_163q_c3_control_a_waiter_beside_a_live_worker_is_kept(wl):  # noqa: F811
-    """CONTROL 3: a waiter BESIDE another live background job.
-
-    That job's report arrives through this very channel, so telling the session to stop listening would make it deaf to the worker it is supervising. This is what `_only_waiters` guards, and it is the assertion that goes red without it.
-    """
-    drained_setup(wl)
-    with live_waiter(wl):
-        wl.bg = json.dumps(
-            [
-                waiter_row("wt9"),
-                {
-                    "id": "job1",
-                    "type": "teammate",
-                    "status": "running",
-                    "description": "a writer sub-agent still running",
-                },
-            ]
-        )
-        wl.say(
-            "waiting on the worker\n\n## Remaining\n"
-            "- job1 is still running; its report is what the session is waiting for"
-        )
-        wl.check_quiet(
-            "DRAINED, AND STILL HOLDING A WAITER",
-            "163q-c3 CONTROL: told to stop listening while a worker was running",
-        )
-
-
-def test_163q_c4_a_drained_session_with_duplicates_gets_one_message_not_two(wl):  # noqa: F811
-    """THE OVERLAP between the drained report and the `many-waiters` violation, resolved rather than left to chance.
-
-    Both conditions hold for a finished session that accumulated duplicates: every live task is a confirmed waiter and there is more than one of them. Firing both would tell one session, in the same stop, to stop ALL of its waiters and to stop all but one. The drained report wins because its remedy strictly contains the other's -- it already prints a TaskStop line per
-    waiter -- and because "stop listening entirely" is the correct advice for a session with nothing left to hear.
-    """
-    drained_setup(wl)
-    with live_waiter(wl):
-        wl.bg = json.dumps([waiter_row("wt9"), waiter_row("wt8", "inbox waiter (duplicate)")])
-        wl.say(DRAINED_MSG)
-        got = wl.run()
-        label = "163q-c4: a drained session with two waiters is told to stop both, once"
-        assert_in(got, "DRAINED, AND STILL HOLDING A WAITER", label)
-        assert_in(got, "TaskStop wt9", label)
-        assert_in(got, "TaskStop wt8", label)
-        assert "INBOX WAITERS ARE LIVE" not in got.out, (
-            "163q-c4: both messages fired, so the session is told to stop all of them and to "
-            "stop all but one: %s" % got.out[:400]
-        )
-
-
 def mk_mate(fix, session: str, name: str, age_min: float) -> None:
     """One teammate transcript in a fixture projects store, backdated by `age_min`.
 
@@ -673,7 +246,7 @@ def mk_mate(fix, session: str, name: str, age_min: float) -> None:
 def test_163v_an_unverifiable_roster_is_reaped_but_only_where_certain(wl):  # noqa: F811
     """THE BUG: after a compaction, or an operator reopening the session, the harness still reports every teammate ever spawned as `running`. Measured live: 20 claimed, exactly 1 transcript still growing.
 
-    That roster drives _in_pure_wait, the 15-minute check-in and confirmed_waiters, so a stale one means a session is told it supervises twenty workers forever and confirms phantoms every quarter hour. There is NO JOIN from a task id to an agent (a task carries only id, type, status and description, the description is the prompt truncated to about 50 characters, and that prefix is
+    That roster drives _in_pure_wait and the 15-minute check-in, so a stale one means a session is told it supervises twenty workers forever and confirms phantoms every quarter hour. There is NO JOIN from a task id to an agent (a task carries only id, type, status and description, the description is the prompt truncated to about 50 characters, and that prefix is
     provably not unique: 10 of 19 collided on a live roster), so the automatic reap fires only where it is a CERTAINTY: not one teammate transcript fresh means every teammate task is dead, whatever its id.
     """
     wl.brief_now()
@@ -777,175 +350,6 @@ def test_163v_c1_reap_retires_an_id_and_refuses_one_the_hook_never_saw(wl):  # n
     assert not got.out.strip(), why
 
 
-def nudge_file(fix):
-    return fix.stem(".waiternudge-deadbeef")
-
-
-def waiter_file(fix):
-    return fix.stem(".waiter-deadbeef")
-
-
-def test_163w_a_session_that_ignores_the_waiter_nudges_is_blocked(wl):  # noqa: F811
-    """v18. The operator asked to "force contexts to run in background". The trigger is deliberately NOT "no confirmed waiter right now": a waiter EXITS every time it fires, so that condition is true in exactly the window the session is supposed to be in, and keying on it blocked correct behaviour and broke 16 cases here.
-
-    It keys on the count of PostToolUse nudges the session has been given and not acted on, which only grows over half an hour of being asked.
-    """
-    wl.brief_now()
-    wl.hand_now()
-    wl.brief_other("peer1234")
-    wl.crons = json.dumps(WORK_LOOP_AND_POLL)
-    wl.say("answer")
-    # Below the grace threshold: asked twice, not yet blocked.
-    nudge_file(wl).write_text("2 2026-01-01T00:00:00Z\n", encoding="utf-8")
-    wl.check_quiet(
-        "AND IS NOT LISTENING", "163w: under the grace count the session is not blocked yet"
-    )
-    # At the threshold: three unheeded nudges is half an hour of being asked.
-    nudge_file(wl).write_text("3 2026-01-01T00:00:00Z\n", encoding="utf-8")
-    got = wl.run()
-    label = "163w: three ignored nudges blocks, and the block carries the command"
-    assert_in(got, "AND IS NOT LISTENING", label)
-    assert_in(got, "wl_wait.py", label)
-
-
-def test_163w_c1_control_a_confirmed_waiter_silences_it(wl):  # noqa: F811
-    """CONTROL: same ignored count, same peer, same loop, and only a live waiter differs."""
-    wl.brief_now()
-    wl.hand_now()
-    wl.brief_other("peer1234")
-    bgout(wl)
-    with live_waiter(wl, "wt1"):
-        wl.bg = json.dumps([waiter_row("wt1")])
-        wl.crons = json.dumps(WORK_LOOP_AND_POLL)
-        nudge_file(wl).write_text("9 2026-01-01T00:00:00Z\n", encoding="utf-8")
-        wl.say("answer")
-        wl.check_quiet(
-            "AND IS NOT LISTENING",
-            "163w-c1 CONTROL: blocked despite a live waiter at nine ignored nudges",
-        )
-
-
-def test_163w_c2_control_an_unverifiable_waiter_does_not_satisfy_it(wl):  # noqa: F811
-    """CONTROL: the case that could silently pass for the wrong reason.
-
-    Same command string, dead process, so the verdict is `suspect` rather than `confirmed`. A waiter nobody can see on the operating system is worth nothing: the whole argument is that its EXIT does the waking.
-    """
-    wl.brief_now()
-    wl.hand_now()
-    wl.brief_other("peer1234")
-    bgout(wl)
-    wl.env["WORKLIST_HARNESS_PID"] = str(os.getpid())
-    wl.bg = json.dumps([waiter_row("wt1", "inbox waiter (dead)")])
-    wl.crons = json.dumps(WORK_LOOP_AND_POLL)
-    nudge_file(wl).write_text("3 2026-01-01T00:00:00Z\n", encoding="utf-8")
-    wl.say("answer")
-    got = wl.run()
-    assert_in(
-        got, "AND IS NOT LISTENING", "163w-c2 CONTROL: an unseeable waiter satisfied the check"
-    )
-
-
-def test_163w_c3_control_no_live_peer_no_block(wl):  # noqa: F811
-    """CONTROL: the harm of not listening is TO SOMEBODY. With no peer there is nobody whose request could go unseen, so the check has no victim and must stay silent, which is the condition that makes blocking safe at all."""
-    wl.brief_now()
-    wl.hand_now()
-    wl.crons = json.dumps(WORK_LOOP_AND_POLL)
-    nudge_file(wl).write_text("9 2026-01-01T00:00:00Z\n", encoding="utf-8")
-    wl.say("answer")
-    wl.check_quiet("AND IS NOT LISTENING", "163w-c3 CONTROL: blocked with nobody to hear from")
-
-
-def test_163w_c4_the_tombstone_a_lapsed_waiter_blocks_with_zero_ignored_nudges(wl):  # noqa: F811
-    """THE PERVERSE INCENTIVE THIS CLOSES. wait() used to unlink the heartbeat on BOTH of its exits, so a waiter that had died left exactly what a session that never listened leaves: nothing.
-
-    Combined with nudge()'s counter RESET, arming a single 60-minute waiter therefore bought 30+ minutes of guaranteed silence after it lapsed, the cheapest way to be left alone being to arm one waiter every few hours and never relaunch it. Zero nudges here, deliberately: the ignored-count grace is for a session that merely COULD receive work, while a session whose waiter exited
-    already volunteered, was told on the way out to relaunch, and did not.
-    """
-    wl.brief_now()
-    wl.hand_now()
-    wl.brief_other("peer1234")
-    wl.crons = json.dumps(WORK_LOOP_AND_POLL)
-    nudge_file(wl).unlink(missing_ok=True)
-    waiter_file(wl).write_text("EXPIRED 2026-01-01T00:00:00Z timeout\n", encoding="utf-8")
-    # Aged past HEARTBEAT_STALE_S so the marker is a lapse rather than a waiter that exited seconds ago and is about to be relaunched in the same turn.
-    backdate(waiter_file(wl), 10)
-    wl.say("answer")
-    got = wl.run()
-    label = "163w-c4: a lapsed waiter blocks at once, and the block names WHICH exit it was"
-    assert_in(got, "YOUR WAITER LAPSED", label)
-    assert_in(got, "timeout", label)
-
-
-def test_163w_c5_control_never_armed_and_zero_nudges_is_silent(wl):  # noqa: F811
-    """CONTROL: the whole point of the tombstone is that these two states are different. If this fires too, the change has bought nothing and has just made the hook harsher at everybody."""
-    wl.brief_now()
-    wl.hand_now()
-    wl.brief_other("peer1234")
-    wl.crons = json.dumps(WORK_LOOP_AND_POLL)
-    nudge_file(wl).unlink(missing_ok=True)
-    waiter_file(wl).unlink(missing_ok=True)
-    wl.say("answer")
-    wl.check_quiet(
-        "YOUR WAITER LAPSED",
-        "163w-c5 CONTROL: never-armed and lapsed are still indistinguishable",
-    )
-
-
-def test_163w_c6_control_a_live_heartbeat_is_not_a_tombstone(wl):  # noqa: F811
-    """CONTROL: _is_tombstone reads the CONTENT, because a tombstone is a WRITE and therefore looks `fresh` for its first HEARTBEAT_STALE_S seconds. A live pulse must never be mistaken for one."""
-    wl.brief_now()
-    wl.hand_now()
-    wl.brief_other("peer1234")
-    wl.crons = json.dumps(WORK_LOOP_AND_POLL)
-    nudge_file(wl).unlink(missing_ok=True)
-    waiter_file(wl).write_text("2026-08-28T10:00:00Z\n", encoding="utf-8")
-    backdate(waiter_file(wl), 10)
-    wl.say("answer")
-    wl.check_quiet(
-        "YOUR WAITER LAPSED",
-        "163w-c6 CONTROL: an ordinary heartbeat was read as a tombstone",
-    )
-
-
-def compliant_window(fix) -> None:
-    """One window in which the session complied: the nudge throttle is backdated, a fresh heartbeat is planted, and one nudge runs."""
-    if nudge_file(fix).exists():
-        # Backdated past NUDGE_EVERY_S, or the throttle returns before the decay.
-        backdate(nudge_file(fix), 30)
-    waiter_file(fix).write_text("2026-08-28T10:00:00Z\n", encoding="utf-8")
-    nudge(fix)
-
-
-def test_163w_c7_the_nudge_decays_by_one_it_does_not_reset_to_zero(wl):  # noqa: F811
-    """The counter used to be UNLINKED the moment a heartbeat looked fresh, which made it resettable BY THE FAILURE: arming one waiter zeroed it, so when that waiter lapsed the Stop-side backstop had to climb from zero over another half hour of nudges.
-
-    Decay keeps it a measure of recent behaviour without letting one act of compliance erase a history of ignoring it.
-    """
-    nudge_file(wl).write_text("3 2026-01-01T00:00:00Z\n", encoding="utf-8")
-    compliant_window(wl)
-    count = (
-        nudge_file(wl).read_text(encoding="utf-8").split(" ")[0]
-        if nudge_file(wl).exists()
-        else "GONE"
-    )
-    assert count == "2", "163w-c7: the counter went to %r instead of 2" % count
-
-
-def test_163w_c8_control_complying_repeatedly_still_walks_it_all_the_way_down(wl):  # noqa: F811
-    """CONTROL: decay must not become a counter with no way back to zero.
-
-    A session doing the right thing for long enough gets back to zero, which is what the reset was rightly for. The bash chained this onto case 163w-c7's world; here the first window is replayed so the case owns its own precondition, and the two further windows are the ones it asserts about.
-    """
-    nudge_file(wl).write_text("3 2026-01-01T00:00:00Z\n", encoding="utf-8")
-    compliant_window(wl)
-    for _ in range(2):
-        compliant_window(wl)
-    assert not nudge_file(wl).exists(), (
-        "163w-c8 CONTROL: the counter is stuck at %s"
-        % nudge_file(wl).read_text(encoding="utf-8")[:40]
-    )
-
-
 def test_163w_c9_the_ci_waiting_force_must_not_claim_a_reason_the_item_denies():
     """THE FAILURE, 2026-09-04. When the only in-flight work is a CI watch, the force tells a session to execute an aged deferral's DEFAULT "because the wait was the only reason to hold it".
 
@@ -1022,7 +426,7 @@ def mate_world(fix, ages) -> None:
 def test_13a_a_fully_fresh_teammate_roster_owes_no_check_in(wl):  # noqa: F811
     """1.3: stream-less teammates whose transcripts are all still growing have an automatic liveness answer, so the overdue check-in stands down.
 
-    Goes red under the old `_only_waiters` predicate, which fired for any roster that was not wholly confirmed waiters. Case 13b is the paired control: one transcript aged past TEAMMATE_FRESH_MIN and the same fixture fires.
+    Goes red under the old predicate, which fired for any roster that was not wholly confirmed inbox waiters. Case 13b is the paired control: one transcript aged past TEAMMATE_FRESH_MIN and the same fixture fires.
     """
     mate_world(wl, [0, 0])
     got = overdue_stop(wl)
@@ -1104,25 +508,6 @@ def test_13e_control_the_same_shell_job_dead_fires(wl):  # noqa: F811
     wl.bg = json.dumps([sleeper_row()])
     got = overdue_stop(wl, SAID_163)
     assert_in(got, "PURE BACKGROUND WAIT", "13e CONTROL: a dead shell job must get the check-in")
-
-
-def test_13f_a_confirmed_waiter_beside_a_fresh_teammate_owes_no_check_in(wl):  # noqa: F811
-    """1.3: a mixed roster where every task is answered (an OS-confirmed waiter, a teammate its fresh transcript covers) stands down too.
-
-    The drained-waiter report still keys on `_only_waiters` and is not touched: 163q-c3 pins that a waiter beside a live worker is kept.
-    """
-    wl.brief_now()
-    wl.hand_now()
-    bgout(wl)
-    mk_mate(wl, wlfix.SID, "mate0", 0)
-    wl.env["CLAUDE_CONFIG_DIR"] = str(wl.base / "claude")
-    with live_waiter(wl):
-        assert waiter_verdict("wt1") == "confirmed", "13f premise: waiter not confirmed"
-        wl.bg = json.dumps([waiter_row("wt1"), MATE_ROSTER[0]])
-        got = overdue_stop(wl)
-        assert "PURE BACKGROUND WAIT" not in got.out, (
-            "13f: a fully-answered mixed roster still got the check-in: %r" % got.out[:400]
-        )
 
 
 SUBAGENT_ROSTER = [

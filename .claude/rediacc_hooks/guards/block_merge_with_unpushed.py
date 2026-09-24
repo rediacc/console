@@ -18,7 +18,7 @@ from rediacc_hooks import hookio, shellscan
 
 CHAIN = "pre-bash"
 TWIN = "pre-bash/block-merge-with-unpushed.sh"
-ORDER = 28
+ORDER = 27
 
 # On `main` there is no feature branch to strand, and /pr-merge deliberately ends there; without this arm the guard refuses the last step of the sanctioned landing sequence.
 DEFECT = ('if branch == "main":', "if False:")

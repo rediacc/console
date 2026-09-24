@@ -1614,7 +1614,6 @@
     ".claude/hooks/stop/wl_checks.py": [
       "WORKLIST_ALWAYS_FULL_MAX",
       "WORKLIST_ARCHIVE_HOURS",
-      "WORKLIST_BACKOFF_NOTE_MIN",
       "WORKLIST_CADENCE",
       "WORKLIST_CADENCE_MAX",
       "WORKLIST_CI_FORCE_MIN_AGE",
@@ -1630,23 +1629,17 @@
       "WORKLIST_PLAN_DRIFT_MIN",
       "WORKLIST_PLAN_ORIENT_BYTES",
       "WORKLIST_PLAN_ORIENT_FILES",
-      "WORKLIST_POLL_FULL_MAX_MIN",
-      "WORKLIST_POLL_SCHEDULE_RE",
-      "WORKLIST_POLL_WINDOW_S",
       "WORKLIST_PROFILE",
       "WORKLIST_PROGRAM_SURFACE",
       "WORKLIST_PROJECTS_DIR",
-      "WORKLIST_QUIET_WAKES",
       "WORKLIST_REPORT_REFRESH_MIN",
-      "WORKLIST_REQUEST_DEAD_MIN",
       "WORKLIST_SOLO_MIN",
       "WORKLIST_STUCK_ROUNDS",
       "WORKLIST_STUCK_SUPERVISED_MAX_MIN",
       "WORKLIST_SUBMODULE_DECIDED_LATCH_MIN",
       "WORKLIST_SUBMODULE_LATCH_MIN",
       "WORKLIST_UNREAD_INVARIANT_MIN",
-      "WORKLIST_UNREAD_ROTATE_MIN",
-      "WORKLIST_WAITER_GRACE_NUDGES"
+      "WORKLIST_UNREAD_ROTATE_MIN"
     ],
     ".claude/hooks/stop/wl_ci.py": [
       "WORKLIST_CI_CACHE_FINAL_S",
@@ -1765,11 +1758,6 @@
       "WORKLIST_REPORT_SURFACE_MAX",
       "WORKLIST_REPORT_TRANSCRIPT_MAX_BYTES"
     ],
-    ".claude/hooks/stop/wl_requests.py": [
-      "WORKLIST_REQUEST_DEAD_MIN",
-      "WORKLIST_REQUEST_GRACE_MIN",
-      "WORKLIST_REQUEST_STALE_MIN"
-    ],
     ".claude/hooks/stop/wl_resprofile.py": [
       "RESPROFILE_ROOT",
       "TMPDIR",
@@ -1803,14 +1791,6 @@
       "WORKLIST_LIVE_MIN",
       "WORKLIST_MIGRATE_PLAN_MIN_OPEN",
       "WORKLIST_STORE_DIR"
-    ],
-    ".claude/hooks/stop/wl_wait.py": [
-      "WORKLIST_REQUEST_DEAD_MIN",
-      "WORKLIST_WAITER_NUDGE_S",
-      "WORKLIST_WAITER_STALE_S",
-      "WORKLIST_WAIT_SCAN_S",
-      "WORKLIST_WAIT_TICK_S",
-      "WORKLIST_WAIT_TIMEOUT_MIN"
     ],
     ".claude/hooks/stop/worklist.py": [
       "CLAUDE_PROJECT_DIR",
@@ -1896,9 +1876,6 @@
     ".claude/rediacc_hooks/tests/test_shellscan_differential.py": [
       "HOME",
       "PATH"
-    ],
-    ".claude/rediacc_hooks/tests/test_wl_background_waits.py": [
-      "TMPDIR"
     ],
     ".claude/rediacc_hooks/tests/test_wl_report_inbox.py": [
       "TMPDIR"

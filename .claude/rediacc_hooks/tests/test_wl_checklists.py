@@ -129,9 +129,6 @@ Owner: cafe0000
 - [ ] w2 Wave B: land the rest
 """
 
-CL_LIVE_ANSWER = "answer\n\n## Remaining\n- nothing of mine"
-
-
 # --- the two helpers the bash defined here, and 23-priority-ladder.sh reused -
 
 
@@ -195,28 +192,6 @@ os.chdir(nested)
 print("CLI", C.project_start(), C.hook_repo_root())
 """
 
-PROBE_192 = """
-import sys
-sys.path.insert(0, ".")
-import wl_checks as W
-
-POLL = {"schedule": "37 * * * *", "prompt": "run .claude/hooks/stop/worklist.py --poll d136ac61"}
-WORK = {"schedule": "17 * * * *", "prompt": "pr-babysit HEARTBEAT: check CI, fix reds"}
-
-checks = {
-    "poll-offminute": W.is_poll_cron(POLL) is True,
-    "work-hourly-not-poll": W.is_poll_cron(WORK) is False,
-    "shape-still-sufficient": W.is_poll_cron({"schedule": "*/5 * * * *"}) is True,
-    "shape-zero-still-works": W.is_poll_cron({"schedule": "0 * * * *"}) is True,
-    "no-prompt-degrades": W.is_poll_cron({"schedule": "37 * * * *"}) is False,
-    "daily-not-poll": W.is_poll_cron({"schedule": "0 9 * * *"}) is False,
-}
-bad = [k for k, v in checks.items() if not v]
-print("CLASSIFY", "OK" if not bad else "BAD:" + ",".join(bad))
-print("CANON", W.canonical_poll_schedule("37 * * * *"))
-print("TIP", repr(W.poll_backoff_tip([POLL], 9999, False)))
-"""
-
 PROBE_202 = """
 import os
 import sys
@@ -231,9 +206,8 @@ try:
     print("READABLE yes")
 except OSError:
     print("READABLE no")
-print("SIG", CL.checklists_sig(root))
-v, a, live = CL.checklist_findings(root, None, "deadbeef-1111", "")
-print("V", v[0][0], v[0][1], live)
+v, a = CL.checklist_findings(root, None, "deadbeef-1111", "")
+print("V", v[0][0], v[0][1])
 print("TEXT", "THIS IS A HOOK BUG" in v[0][2])
 """
 
@@ -298,24 +272,6 @@ def test_191_root_resolution_must_not_walk_into_a_repo_nested_in_the_repo(wl):  
     assert path_outer == path_nested, "191 FIRE: --path moved with cwd (%s vs %s)" % (
         path_outer,
         path_nested,
-    )
-
-
-def test_192_an_hourly_poll_cron_parked_off_the_hour_is_still_a_poll_cron(wl):  # noqa: F811
-    """THE INCIDENT (2026-08-07): CronCreate tells every session to avoid the :00 and :30 marks so the fleet does not hit the API on one instant, and offers "hourly -> 7 * * * *" as its example. is_poll_cron knew the hourly rung only as `0 * * * *`, so a session obeying both instructions had its poll cron counted as a second WORK cron, and the next stop ordered it to CronDelete the
-    cron the previous stop had ordered it to create.
-
-    THE FIRST FIX WAS WRONG and this case exists to keep it wrong: widening the schedule regex to any `<minute> * * * *` took this harness from 1 failure to 168, because an hourly WORK cron is indistinguishable from an hourly poll by schedule alone. Hence the negative assertions in the probe, which are not padding but the guard rail that reverted change would trip.
-    """
-    probe = pyprobe(wl, PROBE_192, cwd=wlfix.STOP_DIR)
-    out = probe.stdout
-    classify = [line for line in out.splitlines() if line.startswith("CLASSIFY")]
-    assert "CLASSIFY OK" in out, "192: poll-cron classification wrong: %s" % (classify or out[:200])
-    assert "CANON 0 * * * *" in out, (
-        "192: canonical_poll_schedule did not map :37 to the hourly rung: %s" % out[:200]
-    )
-    assert "TIP ''" in out, (
-        "192: poll_backoff_tip mis-handled an off-minute hourly poll: %s" % out[:200]
     )
 
 
@@ -562,83 +518,10 @@ def test_200_the_shape_gate_collects_every_defect_and_scopes_itself_to_the_bad_f
     assert "agent/programs/good/CHECKLIST.md" not in got.out, smear
 
 
-def test_201_the_poll_fast_path_forfeits_on_a_live_checklist(wl):  # noqa: F811
-    """STAT-ONLY. The banked pollbase carries clsig and cl_live (wl_checks.bank_pollbase). This leg banks a LIVE-but-non-blocking world (wave claimed by a peer), so cl_live=1 with an unchanged signature, which is the only thing that can make the silent path forfeit here. The two controls below are the same dance with no checklist at all, and with a settled one.
+def test_202_an_unreadable_checklist_fails_closed_under_its_own_slug(wl):  # noqa: F811
+    """A chmod-000 checklist is the instrument: the ADJUDICATION (which reads) must fail closed into the ALWAYS-tier unreadable violation. The key it fails closed UNDER is asserted too, and it is per-slug (`cl-shape:locked`) for the reason case 204 pins: one unreadable checklist must not evict a second one from the rotation.
 
-    PADDED to at least 4 competing advisory sections (the checklist plus a foreign brief, a stale peer transcript and an orphaned item) so the assertion holds regardless of which 3 the fixed-3-per-stop randomized drain releases: at least one of the 4 always survives into the poll's own stop, keeping output non-empty."""
-    wl.brief_now()
-    wl.hand_now()
-    cldeliver(wl, "docs/demo/README.md", "the readme")
-    clfile(wl, "demo", CL_EXECUTING)
-    wl.cli_as("cafe0000", "--add", "cafe0000", "cl:demo/w1 Wave A: wire the thing")
-    wl.brief_other("cafe1234")
-    peer = wl.base / "cafe1234.jsonl"
-    peer.write_text("", encoding="utf-8")
-    aged = time.time() - 48 * 3600
-    os.utime(peer, (aged, aged))
-    wl.add_item("- [ ] (cafe1234) their abandoned item")
-    wl.say(CL_LIVE_ANSWER)
-    wl.check("allow", "", "201: the full stop allows and banks the checklist world")
-
-    bank = wl.stem(".pollbase-deadbeef").read_text(encoding="utf-8")
-    unbanked = "201: the checklist world was not banked: %s" % bank
-    assert '"cl_live": 1' in bank, unbanked
-    assert re.search(r'"clsig": "[0-9a-f]{16}"', bank), unbanked
-
-    wl.cli("--poll", "deadbeef")
-    got = wl.run()
-    assert got.out, "201: the poll went silent while a live handoff was outstanding"
-
-
-def test_201_control_a_repo_with_no_handoffs_keeps_the_poll_free(wl):  # noqa: F811
-    """CONTROL for 201: a repo with no handoffs banks cl_live=0, which is what keeps polls free, and the poll stop stays perfectly silent, so the gate has not broken the silent path for everyone."""
-    wl.brief_now()
-    wl.hand_now()
-    wl.say(CL_LIVE_ANSWER)
-    wl.check("allow", "", "201 CONTROL: baseline stop with no checklist at all")
-
-    bank = wl.stem(".pollbase-deadbeef").read_text(encoding="utf-8")
-    assert '"cl_live": 0' in bank, "201 CONTROL: an empty repo banked a live count: %s" % bank
-
-    wl.cli("--poll", "deadbeef")
-    got = wl.run()
-    broke = "201 CONTROL: the gate broke the silent path for everyone: rc=%d %r" % (
-        got.rc,
-        got.out[:200],
-    )
-    assert got.rc == 0, broke
-    assert not got.out, broke
-
-
-def test_201_control_a_settled_checklist_costs_polls_nothing_until_it_moves(wl):  # noqa: F811
-    """CONTROL for 201: a done program costs polls nothing, exactly as promised. Then the last leg edits it: the banked cl_live is still 0, so the ONLY thing that can forfeit the silent path on the next poll is the moved signature, and the battery it pays for is what catches the un-tick that edit smuggled in."""
-    wl.brief_now()
-    wl.hand_now()
-    cldeliver(wl, "docs/demo/README.md", "the readme")
-    clfile(wl, "demo", CL_DONE_HONEST)
-    wl.say(CL_LIVE_ANSWER)
-    wl.check("allow", "", "201 CONTROL: baseline stop with a SETTLED checklist")
-
-    wl.cli("--poll", "deadbeef")
-    got = wl.run()
-    charged = "201 CONTROL: a settled checklist still charged the poll: rc=%d %r" % (
-        got.rc,
-        got.out[:200],
-    )
-    assert got.rc == 0, charged
-    assert not got.out, charged
-
-    clfile(wl, "demo", CL_DONE_LYING)
-    wl.cli("--poll", "deadbeef")
-    got = wl.run()
-    assert "reality disagrees" in got.out, (
-        "201: an edited checklist slipped past the poll fast path: %r" % got.out[:200]
-    )
-
-
-def test_202_checklists_sig_is_stat_only_and_the_unreadable_file_proves_it(wl):  # noqa: F811
-    """A contract, not an optimisation: the poll path compares this value, and a version that opened files would pay exactly the cost the fast path exists to avoid. A chmod-000 checklist is the instrument, since stat still answers where read cannot, so the signature must come back while the ADJUDICATION (which does read) fails closed into the ALWAYS-tier unreadable violation. The
-    key it fails closed UNDER is asserted too, and it is per-slug (`cl-shape:locked`) for the reason case 204 pins: one unreadable checklist must not evict a second one from the rotation.
+    The stat-only `checklists_sig` half of this case went with the poll fast path on 2026-09-24.
     """
     folder = wl.proj / "agent" / "programs" / "locked"
     folder.mkdir(parents=True, exist_ok=True)
@@ -655,12 +538,8 @@ def test_202_checklists_sig_is_stat_only_and_the_unreadable_file_proves_it(wl): 
         "202 CONTROL: chmod 000 did not deny this process (running as root?): %s"
         % (out + probe.stderr)[:200]
     )
-    assert re.search(r"(?m)^SIG [0-9a-f]{16}$", out), (
-        "202: the stat-only signature raised or came back malformed: %s"
-        % (out + probe.stderr)[:300]
-    )
     closed = "202: an unreadable checklist did not fail closed: %s" % (out + probe.stderr)[:300]
-    assert "V cl-shape:locked True 1" in out, closed
+    assert "V cl-shape:locked True" in out, closed
     assert "TEXT True" in out, closed
     locked.unlink()
 

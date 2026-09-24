@@ -81,10 +81,10 @@ still the whole set.
 
 If a gate it names is not yours -- another session's uncommitted file often
 reddens this shared tree -- do not work around it and do not fix their file.
-Ask them, and keep working while they answer:
+Ask the operator, or leave a [?] worklist item naming the conflict, and
+keep working meanwhile:
 
   .claude/hooks/stop/worklist.py --list --open        # who else is live here
-  .claude/hooks/stop/worklist.py --ask <you> <them> '<gate>: <what you saw>'
 
 If a gate cannot RUN here (a toolchain this machine lacks), that is not a red
 you can fix by pushing: the gate's own message names the install line.

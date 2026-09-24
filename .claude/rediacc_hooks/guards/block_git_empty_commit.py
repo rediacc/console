@@ -26,7 +26,7 @@ from rediacc_hooks import hookio, shellscan
 
 CHAIN = "pre-bash"
 TWIN = "pre-bash/block-git-empty-commit.sh"
-ORDER = 21
+ORDER = 20
 
 # Removing the verified escape restores exactly the 2026-08-26 defect: the block goes back to being unconditional, so the one case where its own advice is unreachable is refused again.
 DEFECT = ('if claim != "":', "if False:")

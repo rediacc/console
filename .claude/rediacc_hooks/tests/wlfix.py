@@ -41,18 +41,14 @@ STATE_BODY = """You are picking up the ci-overhaul session driving PR #543 to gr
 
 Push and watch the run, then bump the submodule pointers to the squash commits before the merge chain."""
 
-# TWO live crons by default, since v9: the enforced shape is one work loop plus the 5-minute inbox poll, and a session missing the poll now blocks.
-DEFAULT_CRONS = [
-    {"id": "w", "schedule": "17 * * * *"},
-    {"id": "p", "schedule": "*/5 * * * *"},
-]
+# ONE live cron by default: the enforced shape is a single work loop, and a second cron fires `many-work-crons`.
+DEFAULT_CRONS = [{"id": "w", "schedule": "17 * * * *"}]
 
 # Reset by `setup()` for the reason the bash comment gave: a plain assignment in one case leaked into the next two and silently suppressed a check.
 RESET_KNOBS = (
     "WORKLIST_OUTQ_MAX",
     "WORKLIST_BG_OUTPUT_DIR",
     "WORKLIST_HARNESS_PID",
-    "WORKLIST_QUIET_WAKES",
     "WORKLIST_PROJECTS_DIR",
     "WORKLIST_DEAD_HOURS",
     "WORKLIST_ARCHIVE_HOURS",
@@ -119,6 +115,8 @@ class Result:
         self.out = stdout
         self.err = stderr
         self.rc = rc
+        # Set by Fixture.python on a Stop event: exit 0 AND this stop rewrote a `.lastevent-` file, i.e. the battery really ran.
+        self.battery_ran = False
 
     @property
     def decision(self) -> str:
@@ -448,6 +446,8 @@ class Fixture:
         base = dict(env or self.env)
         base.setdefault("CLAUDE_PROJECT_DIR", str(self.proj))
         base.setdefault("WORKLIST_TASKS_DIR", str(self.base / "tasks"))
+        # A Stop event (no argv): snapshot the `.lastevent-` files so check_quiet can tell a battery that ran and had nothing to say from a hook that died before deciding.
+        before = self._lastevents() if not argv else None
         proc = subprocess.run(
             [sys.executable, str(self.hook), *argv],
             input=stdin,
@@ -456,7 +456,19 @@ class Fixture:
             env=base,
             check=False,
         )
-        return Result(proc.stdout, proc.stderr, proc.returncode)
+        got = Result(proc.stdout, proc.stderr, proc.returncode)
+        if before is not None:
+            got.battery_ran = proc.returncode == 0 and self._lastevents() != before
+        return got
+
+    def _lastevents(self) -> dict:
+        out = {}
+        for path in self.wl.parent.glob(self.wl.stem + ".lastevent-*.json"):
+            try:
+                out[path.name] = path.stat().st_mtime_ns
+            except OSError:
+                continue
+        return out
 
     def cli(self, *argv: str, env: dict | None = None, stdin: str = "") -> Result:
         """Drive the worklist CLI against the fixture store."""
@@ -467,23 +479,6 @@ class Fixture:
         env = dict(self.env)
         env["WORKLIST_SESSION_ID"] = peer_id(prefix)
         return self.python(list(argv), stdin=stdin, env=env)
-
-    def askid(self, *argv: str) -> str:
-        """`--ask ...`, returning the new request id the CLI printed."""
-        out = self.cli("--ask", *argv).out
-        found = re.search(r"#([0-9a-f]{8})", out)
-        return found.group(1) if found else ""
-
-    def askid_as(self, prefix: str, *argv: str) -> str:
-        """The same, for a request sent BY another session.
-
-        IT DOES NOT MIRROR THE BASH HELPER OF THIS NAME, and the difference costs a caller nine red tests if it is missed. Bash `askid_as` was `as_peer "$1" askid "$@"`, and `"$@"` still carried its own first argument, so the prefix was both the identity and the `<from>` argument of the `--ask`.
-
-        Here the first argument ONLY chooses the identity, so the faithful call repeats the prefix: `askid_as("cafe1234", "cafe1234", "deadbeef", text)`. Doubling is explicit rather than implied because a helper that silently supplies an argument posts nothing when a caller supplies it too, and an `allow` control then passes for the wrong reason.
-        """
-        out = self.cli_as(prefix, "--ask", *argv).out
-        found = re.search(r"#([0-9a-f]{8})", out)
-        return found.group(1) if found else ""
 
     def event(self, session_id: str | None = None) -> str:
         return json.dumps(
@@ -563,15 +558,17 @@ class Fixture:
         return got
 
     def check_quiet(self, needle: str, label: str = "", result: Result | None = None) -> Result:
-        """DECISION-AGNOSTIC absence, which still refuses to pass on SILENCE.
+        """DECISION-AGNOSTIC absence, which still refuses to pass on an UNPROVEN silence.
 
-        An empty stdout means the hook died before deciding, and a needle is trivially absent from nothing, which is the vacuity this suite exists to catch.
+        A needle is trivially absent from nothing, so an empty stdout is accepted only with proof the battery RAN: exit 0, and a `.lastevent-*.json` written by this very stop (run_stop writes it on every full battery, before any verdict). A hook that died before deciding writes none, which is the vacuity this suite exists to catch.
+
+        Since 2026-09-24 a clean stop with nothing to report is a legitimate zero-byte allow: the poll-backoff advisory that used to fill such stops is gone. Before, an empty stdout was refused outright.
         """
         got = result if result is not None else self.run()
-        if not got.out.strip():
+        if not got.out.strip() and not got.battery_ran:
             raise AssertionError(
-                "%s: the needle %r is absent, but the hook produced NO output at all. err: %s"
-                % (label or "check_quiet", needle, got.err[:200])
+                "%s: the needle %r is absent, but the hook produced NO output and no proof the battery ran (rc=%d). err: %s"
+                % (label or "check_quiet", needle, got.rc, got.err[:200])
             )
         if needle in got.out:
             raise AssertionError(self.why(label, got.decision, got, needle))

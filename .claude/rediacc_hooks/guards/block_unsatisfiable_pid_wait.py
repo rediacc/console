@@ -31,7 +31,7 @@ from rediacc_hooks import hookio
 
 CHAIN = "pre-bash"
 TWIN = None
-ORDER = 45
+ORDER = 44
 
 # THE TEST IS THE BUG ITSELF. Without it, every /proc/$(cat X || echo N) inside a wait loop is refused regardless of N, including the safe case (N=0, which is provably NEVER alive) and the unexaminable case (N is a variable the guard could not resolve). Nullifying this turns the incident's own fire-case into a silent allow.
 DEFECT = ("if _is_provably_always_alive(fallback):", "if False:")

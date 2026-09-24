@@ -3271,13 +3271,6 @@
       "message": "Need type annotation for \"out\" (hint: \"out: list[<type>] = ...\")"
     },
     {
-      "id": "36271e27007c5576",
-      "file": ".claude/hooks/stop/wl_requests.py",
-      "code": "var-annotated",
-      "count": 1,
-      "message": "Need type annotation for \"reqs\" (hint: \"reqs: dict[<type>, <type>] = ...\")"
-    },
-    {
       "id": "716e77f197d440ca",
       "file": ".claude/hooks/stop/wl_resprofile.py",
       "code": "arg-type",
@@ -3402,13 +3395,6 @@
       "code": "var-annotated",
       "count": 1,
       "message": "Need type annotation for \"records\" (hint: \"records: dict[<type>, <type>] = ...\")"
-    },
-    {
-      "id": "43a95b98a5fbd1a3",
-      "file": ".claude/hooks/stop/wl_wait.py",
-      "code": "var-annotated",
-      "count": 1,
-      "message": "Need type annotation for \"woke_rq\""
     },
     {
       "id": "5109558d9576f9ee",
@@ -3794,27 +3780,6 @@
       "code": "var-annotated",
       "count": 1,
       "message": "Need type annotation for \"orphans\" (hint: \"orphans: list[<type>] = ...\")"
-    },
-    {
-      "id": "0adac913ea8714ce",
-      "file": ".claude/rediacc_hooks/tests/test_wl_poll_and_waiting.py",
-      "code": "arg-type",
-      "count": 1,
-      "message": "Argument 1 to \"module_from_spec\" has incompatible type \"ModuleSpec | None\"; expected \"ModuleSpec\""
-    },
-    {
-      "id": "4dab16c626ccc5a8",
-      "file": ".claude/rediacc_hooks/tests/test_wl_poll_and_waiting.py",
-      "code": "union-attr",
-      "count": 1,
-      "message": "Item \"None\" of \"Loader | Any | None\" has no attribute \"exec_module\""
-    },
-    {
-      "id": "8b1722d726edb8bb",
-      "file": ".claude/rediacc_hooks/tests/test_wl_poll_and_waiting.py",
-      "code": "union-attr",
-      "count": 1,
-      "message": "Item \"None\" of \"ModuleSpec | None\" has no attribute \"loader\""
     },
     {
       "id": "e3f33fbc3373c14f",

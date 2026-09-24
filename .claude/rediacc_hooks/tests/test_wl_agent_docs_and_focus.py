@@ -27,21 +27,18 @@ CRONS_WITH_PROMPTS = json.dumps(
             "schedule": "17 * * * *",
             "prompt": "HOURLY LOOP fixture: advance the campaign.",
         },
-        {"id": "p", "schedule": "*/5 * * * *", "prompt": "INBOX POLL fixture."},
     ]
 )
 
 CRONS_BROKEN = json.dumps(
     [
         {"id": "w", "schedule": "not a cron", "prompt": "BROKEN fixture."},
-        {"id": "p", "schedule": "*/5 * * * *", "prompt": "INBOX POLL fixture."},
     ]
 )
 
 CRONS_VALID = json.dumps(
     [
         {"id": "w", "schedule": "17 * * * *", "prompt": "HOURLY LOOP fixture."},
-        {"id": "p", "schedule": "*/5 * * * *", "prompt": "INBOX POLL fixture."},
     ]
 )
 
@@ -288,34 +285,6 @@ def test_153f_the_live_traps_file_is_not_silently_truncated(wl):  # noqa: F811
     assert not any("further entries" in head for head in got_at), "CONTROL: at-cap grew a sentinel"
 
 
-def test_153e_the_silent_poll_survives_an_old_state_document_on_a_quiet_world(wl):  # noqa: F811
-    """T12. The poll fast path needs NO new forfeit: STATE.md staleness is world-keyed, so an unchanged world cannot stale it, and a moved world already forfeits the fast path at the world_sig comparison. Adding a forfeit would reintroduce the 5-minute-poll trap the world-keying exists to kill."""
-    wl.brief_now()
-    wl.hand_now()
-    wl.add_item(
-        "- [?] (deadbeef) keep the flag? DEFAULT: keep it WHY: operator trade HOW: operator answers"
-    )
-    wl.say("answer\n\n## Remaining\n- the flag decision, deferred with a default")
-    wl.check("allow", "", "T12 baseline stop allows")
-
-    wl.age_state("deadbeef", 25)
-    wl.cli("--poll", "deadbeef")
-    quiet = wl.run()
-    assert quiet.rc == 0, "T12: the old STATE.md forfeited the fast path: rc=%d %r" % (
-        quiet.rc,
-        quiet.out[:160],
-    )
-    assert not quiet.out, "T12: the old STATE.md forfeited the fast path: rc=%d %r" % (
-        quiet.rc,
-        quiet.out[:160],
-    )
-
-    wl.task(9, "pending", "world moved")
-    wl.cli("--poll", "deadbeef")
-    moved = wl.run()
-    assert moved.out, "T12 CONTROL: the moved world stayed silent"
-
-
 def test_154_next_wakeups_is_gone_from_both_emit_paths(wl):  # noqa: F811
     """Operator, 2026-08-04: "we don't need to print next wakeup times. We should just track the hook moments and notify/warn when needed. let's go for efficient ai context usage". The section printed every task's next firing on every full stop.
 
@@ -336,7 +305,6 @@ def test_154_next_wakeups_is_gone_from_both_emit_paths(wl):  # noqa: F811
         "154a: the wakeup display survived on allow: %s" % got.out[:260]
     )
     assert "HOURLY LOOP fixture" not in got.out, got.out[:260]
-    assert "INBOX POLL fixture" not in got.out, got.out[:260]
     # CONTROL that 154a is not vacuous: the stop DID produce its normal report, so the absence above is the section being gone rather than the hook being mute.
     assert "WORKLIST GUIDE" in got.out, (
         "154a CONTROL: the stop emitted nothing at all: %s" % got.out[:260]

@@ -16,9 +16,8 @@ All three have an answer here:
               session-to-session is unreachable after exactly the event this
               mechanism exists to survive.
   unread-ness a separate append-only `read.jsonl`, keyed PER READER. There is NO
-              existing read marker anywhere in this system to copy (the
-              `.requests` ack ledger is the ASKER's terminal close, not a
-              recipient's read receipt), so the semantics are stated
+              existing read marker anywhere in this system to copy, so the
+              semantics are stated
               deliberately in `read_marks()` rather than inherited from a
               precedent that does not exist. Note the two keys are different on
               purpose: a REPORT is addressed by branch, a READ MARK is scoped by
@@ -183,7 +182,7 @@ def is_phantom(agent_type, transcript):
 
     THE LOOP THIS CLOSES, and it inverted the feature. `SubagentStop` also fires
     for the session's own main-loop turns, which the design never modelled. Each
-    such turn was captured as a "report"; the waiter saw a new report and fired;
+    such turn was captured as a "report"; the inbox waiter (since removed) saw a new report and fired;
     the session spent a turn reading and re-arming; THAT turn was captured; the waiter fired again. Two consecutive firings served the lead its own session summary three minutes apart. It does not converge, and every cycle costs the exact turn the waiter exists to save.
 
     REJECTS ONLY WHEN BOTH SIGNALS FAIL, which is the safe direction and is the opposite of over-strict. A real agent whose transcript has not flushed yet still has a type; a hypothetical typeless agent kind still has a transcript. Only the phantom class fails both.
@@ -197,7 +196,7 @@ def is_phantom(agent_type, transcript):
 
 
 def read_index(store, max_bytes=INDEX_READ_MAX_BYTES):
-    """Parseable index lines, oldest first. An UNPARSEABLE line is skipped, never fatal -- same rule every `.requests` reader follows, and the reason a crash mid-append cannot wedge the inbox.
+    """Parseable index lines, oldest first. An UNPARSEABLE line is skipped, never fatal -- same rule every event-log reader follows, and the reason a crash mid-append cannot wedge the inbox.
 
     BOUNDED BY DEFAULT, because since v18 this file is read on EVERY stop and it grows forever by design (a line is the durable record that an agent ran and whether it said anything, so nothing prunes it; only bodies are pruned). At roughly 200 bytes a line and ~140 agents a session, an unbounded read would be a few megabytes per stop within months. The index is append-ordered, so
     the tail is the recent end -- exactly what every hook path wants. `--list --all` passes None to see the whole history.
@@ -795,7 +794,7 @@ def scan(store, start, idle_min=None):
             if not isinstance(info, dict):
                 info = {}
             # ONE BAD AGENT MUST NOT ABORT THE WHOLE PASS. Without this guard a single entry that raises -- an oversized index line, an unreadable transcript, a surprise in the meta shape -- kills the loop before it reaches anything sorted after it. And because a failed entry is never recorded as `known`, the NEXT scan hits the same wall at the same place: the self-heal starves
-            # permanently, silently, and worst of all invisibly, since wl_wait's periodic scan wraps this in a blanket except of its own. Isolating per agent means a bad entry costs exactly itself.
+            # permanently, silently, and worst of all invisibly, since a caller may wrap this in a blanket except of its own. Isolating per agent means a bad entry costs exactly itself.
             try:
                 sends, final, rec = harvest_transcript(jsonl)
                 entry = capture(

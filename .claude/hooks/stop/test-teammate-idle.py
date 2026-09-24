@@ -126,21 +126,7 @@ def run():
             "working",
         )
 
-        print("== 5. blocking_rung_due learns the idle key (the poll/latch deadlock guard) ==")
-        check(
-            "the idle rung is due once",
-            L.blocking_rung_due({"ladder": {}}, "k", 200, "s1", idle=True),
-            True,
-        )
-        latched = {"ladder": {"k": {"idle": "s1"}}}
-        check(
-            "it latches (fire_once)", L.blocking_rung_due(latched, "k", 200, "s1", idle=True), False
-        )
-        check(
-            "a moved stamp re-arms it",
-            L.blocking_rung_due(latched, "k", 200, "s2", idle=True),
-            True,
-        )
+        print("== 5. the idle-worker block threshold ==")
         check("WORKER_IDLE_BLOCK_MIN is the operator's 15", L.WORKER_IDLE_BLOCK_MIN, 15)
 
         print("== 6. the sidecar SHARPENS the number and never manufactures the verdict ==")

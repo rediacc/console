@@ -57,10 +57,6 @@ ALWAYS_KEYS = frozenset(
         "roster-unleased",
         "roster-dead",
         # I2 -- somebody else is blocked and cannot see this session stand down.
-        "requests",
-        "no-waiter",
-        "no-waiter-asked",
-        "waiter-lapsed",
         "unread-reports",
     }
 )

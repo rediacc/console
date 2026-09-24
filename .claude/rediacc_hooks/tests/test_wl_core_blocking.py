@@ -275,21 +275,19 @@ def test_25_two_live_work_crons_block(wl):  # noqa: F811
         [
             {"id": "aaa", "schedule": "*/23 * * * *"},
             {"id": "bbb", "schedule": "17 * * * *"},
-            {"id": "p", "schedule": "*/5 * * * *"},
         ]
     )
     wl.check("block", "2 work crons are live", "two live work crons block")
 
 
 def test_26_the_canonical_cron_shape_does_not_block(wl):  # noqa: F811
+    """The canonical shape is ONE work cron since the poll cron went (2026-09-24). Case 25 is the paired fire: add a second cron and `many-work-crons` blocks."""
     wl.brief_now()
     wl.hand_now()
     wl.say("answer\n\n## Remaining\n- #7 thing (pending)")
     wl.task(7, "pending", "thing")
-    wl.crons = json.dumps(
-        [{"id": "bbb", "schedule": "17 * * * *"}, {"id": "p", "schedule": "*/5 * * * *"}]
-    )
-    wl.check("allow", "", "work cron + poll cron is fine")
+    wl.crons = json.dumps([{"id": "bbb", "schedule": "17 * * * *"}])
+    wl.check("allow", "", "one work cron is the shape")
 
 
 def test_27_an_unconfirmed_operator_block_is_rejected(wl):  # noqa: F811

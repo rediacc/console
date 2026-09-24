@@ -13,7 +13,7 @@ from rediacc_hooks import hookio, shellscan
 
 CHAIN = "pre-bash"
 TWIN = "pre-bash/block-nondraft-pr-create.sh"
-ORDER = 23
+ORDER = 22
 
 # Reading `--draft` from the whole line instead of from this invocation's segment is the exact donation the header describes: a sibling create's flag makes an unrelated one look compliant.
 DEFECT = ("hookio.grep_q_line(HAS_DRAFT, seg)", "hookio.grep_q_line(HAS_DRAFT, scan)")

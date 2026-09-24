@@ -1,8 +1,6 @@
-"""The phantom-stop guard, unread sub-agent reports, waiter-confirmation controls, and stuck output-stream detection.
+"""The phantom-stop guard, unread sub-agent reports, and stuck output-stream detection.
 
-Ported from `.claude/hooks/stop/worklist-cases/15-waiter-controls.sh`, one pytest function per numbered bash case, and one more wherever a bash block called `setup` again mid-case.
-
-THE WAITER CONTROLS ARE THE HALF THAT KEEPS CASE 163z HONEST. That case relaxes two supervision demands for a CONFIRMED inbox waiter, and the relaxations are worth nothing unless a dead waiter and a real job running beside a live one both fail to buy them, which is what 163z-c1 and 163z-c2 plant.
+Ported from `.claude/hooks/stop/worklist-cases/15-waiter-controls.sh`, one pytest function per numbered bash case, and one more wherever a bash block called `setup` again mid-case. The inbox-waiter controls (163z-c1, 163z-c2, 163s, 163d) were removed with cross-session messaging on 2026-09-24.
 """
 
 from __future__ import annotations
@@ -16,13 +14,8 @@ import time
 from rediacc_hooks.tests import wlfix
 from rediacc_hooks.tests.wlfix import wl  # noqa: F401
 
-WAIT_PY = wlfix.STOP_DIR / "wl_wait.py"
-
-SAID_INBOX = "answer\n\n## Remaining\n- #7 waiting on the inbox (in_progress)"
-SAID_BOTH = "answer\n\n## Remaining\n- #7 waiting on both (in_progress)"
 SAID_THING = "answer\n\n## Remaining\n- #7 thing (pending)"
 SAID_DONE = "all done, nothing outstanding"
-WORK_LOOP_CRONS = [{"id": "c1", "schedule": "*/30 * * * *", "prompt": "work loop"}]
 
 
 def assert_in(result, needle: str, label: str) -> None:
@@ -51,35 +44,6 @@ def bgout(fix) -> None:
     """Point the output-stream reader at a fixture directory."""
     (fix.base / "bgout").mkdir(parents=True, exist_ok=True)
     fix.env["WORKLIST_BG_OUTPUT_DIR"] = str(fix.base / "bgout")
-
-
-def waiter_command() -> str:
-    """The command string a declared inbox waiter carries.
-
-    LOCAL to this module although the background-waits module has the same helper: the bash set WAITER_CMD once in `14-background-waits.sh` and the cases here read it across a file boundary, which is the coupling a per-module copy removes. `sys.executable` rather than the bare `python3` the bash used, because the verdict is a substring match against the child's real cmdline.
-    """
-    return "%s %s deadbeef --timeout 3m" % (sys.executable, WAIT_PY)
-
-
-def waiter_row(task_id: str = "wt1", description: str = "inbox waiter") -> dict:
-    return {
-        "id": task_id,
-        "type": "shell",
-        "status": "running",
-        "command": waiter_command(),
-        "description": description,
-    }
-
-
-def spawn(fix, argv: list[str], tmpdir_name: str):
-    """One real background child of this process, so the liveness verdict has something to see."""
-    (fix.base / tmpdir_name).mkdir(parents=True, exist_ok=True)
-    env = dict(fix.env)
-    env["TMPDIR"] = str(fix.base / tmpdir_name)
-    env["CLAUDE_PROJECT_DIR"] = str(fix.base)
-    proc = subprocess.Popen(argv, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, env=env)
-    fix.env["WORKLIST_HARNESS_PID"] = str(os.getpid())
-    return proc
 
 
 def mk_report(fix, at: str, silent: bool, title: str) -> None:
@@ -316,132 +280,6 @@ def test_163y_unread_sub_agent_reports_are_surfaced_on_an_ordinary_stop(wl):  # 
     assert not foreign.out.strip(), why
 
 
-def test_163z_c1_control_a_waiter_that_is_not_confirmed_buys_nothing(wl):  # noqa: F811
-    """CONTROL: same fixture, same command string, but the process is DEAD, so the verdict is `suspect`.
-
-    Without this control, case 163z would equally pass if the code had simply stopped running either check at all.
-    """
-    wl.brief_now()
-    wl.hand_now()
-    bgout(wl)
-    wl.env["WORKLIST_HARNESS_PID"] = str(os.getpid())
-    wl.bg = json.dumps([waiter_row("wt1", "inbox waiter (dead)")])
-    wl.crons = json.dumps(WORK_LOOP_CRONS)
-    wl.task(7, "in_progress", "waiting on the inbox")
-    wl.say(SAID_INBOX)
-    wl.run()
-    seed_bgwait(wl)
-    wl.newturn()
-    wl.say(SAID_INBOX)
-    got = wl.run()
-    assert_in(
-        got,
-        "PURE BACKGROUND WAIT",
-        "163z-c1 CONTROL: the check-in was skipped for a DEAD waiter",
-    )
-
-
-def test_163z_c2_control_a_waiter_does_not_silence_a_real_job_beside_it(wl):  # noqa: F811
-    """CONTROL: relaxing on "any waiter present" would let one waiter suppress supervision of everything else.
-
-    The suppression requires EVERY live task to be a confirmed waiter, and this is the case that pins that word.
-    """
-    wl.brief_now()
-    wl.hand_now()
-    bgout(wl)
-    (wl.base / "bgout" / "bw1.output").write_text("worker stream content\n", encoding="utf-8")
-    proc = spawn(wl, [sys.executable, str(WAIT_PY), "deadbeef", "--timeout", "3m"], "waittmp2")
-    try:
-        time.sleep(1)
-        wl.bg = json.dumps(
-            [
-                waiter_row("wt1"),
-                {
-                    "id": "bw1",
-                    "type": "shell",
-                    "status": "running",
-                    "command": "sleep 999",
-                    "description": "long CI watch",
-                },
-            ]
-        )
-        wl.task(7, "in_progress", "waiting on both")
-        wl.say(SAID_BOTH)
-        wl.run()
-        seed_bgwait(wl)
-        wl.newturn()
-        wl.say(SAID_BOTH)
-        got = wl.run()
-        assert_in(
-            got,
-            "PURE BACKGROUND WAIT",
-            "163z-c2 CONTROL: one waiter silenced supervision of a real job",
-        )
-    finally:
-        proc.kill()
-        proc.wait()
-
-
-def test_163s_two_confirmed_waiters_are_a_violation(wl):  # noqa: F811
-    """THE OS-TRUTH BACKSTOP for the 2026-09-23 pile, and the check that did not exist.
-
-    The Stop hook SAW all thirteen: they were in `background_tasks`, they verified `confirmed`, and `confirmed_waiters` returned every one of them. Then every consumer discarded the count -- `_only_waiters`, the no-poll relaxation, `no-waiter`, `no-waiter-asked` all treat the list as a boolean, so thirteen satisfied them exactly as one would. The only site that ever
-    rendered the number fires solely for a drained session, which a session busy enough to accumulate duplicates never is.
-
-    `many-work-crons` has been the template for "more than one of this instrument is a violation" all along; it was simply never pointed here.
-    """
-    wl.brief_now()
-    wl.hand_now()
-    bgout(wl)
-    proc = spawn(wl, [sys.executable, str(WAIT_PY), "deadbeef", "--timeout", "3m"], "waittmp3")
-    try:
-        time.sleep(1)
-        # PREMISE, asserted rather than assumed: both declared tasks must reach `confirmed`, or the case would pass for want of a verdict instead of for the count.
-        liveness = wlfix.import_wl("wl_liveness")
-        rows = [waiter_row("wt1"), waiter_row("wt2", "inbox waiter (duplicate)")]
-        verdicts = liveness.verify_background(rows, ancestors={os.getpid()})
-        assert set(verdicts.values()) == {"confirmed"}, (
-            "163s premise: verdicts are %r, so the count is not what is being measured" % verdicts
-        )
-        wl.bg = json.dumps(rows)
-        wl.task(7, "in_progress", "waiting on the inbox")
-        wl.say(SAID_INBOX)
-        got = wl.run()
-        label = "163s: two live waiters on one session is a violation"
-        assert_in(got, "2 INBOX WAITERS ARE LIVE", label)
-        # The remedy names the SURPLUS task's own id, and TaskStop rather than kill: killing leaves the task declared, which rates `suspect` and gets the session nagged into starting another one.
-        assert_in(got, "TaskStop wt2", label)
-        assert "TaskStop wt1" not in got.out, (
-            "163s: it told the session to stop ALL its waiters, leaving it deaf: %s" % got.out[:300]
-        )
-    finally:
-        proc.kill()
-        proc.wait()
-
-
-def test_163s_control_one_confirmed_waiter_is_the_shape(wl):  # noqa: F811
-    """CONTROL: the identical fixture with ONE declared waiter must stay silent.
-
-    Without it the assertion above is satisfied by a check that fires whenever any waiter is confirmed -- which would accuse every correctly-behaving session in the repo.
-    """
-    wl.brief_now()
-    wl.hand_now()
-    bgout(wl)
-    proc = spawn(wl, [sys.executable, str(WAIT_PY), "deadbeef", "--timeout", "3m"], "waittmp4")
-    try:
-        time.sleep(1)
-        wl.bg = json.dumps([waiter_row("wt1")])
-        wl.task(7, "in_progress", "waiting on the inbox")
-        wl.say(SAID_INBOX)
-        wl.check_quiet(
-            "INBOX WAITERS ARE LIVE",
-            "163s CONTROL: a single waiter was accused of being a pile",
-        )
-    finally:
-        proc.kill()
-        proc.wait()
-
-
 def test_163b_a_stale_output_stream_is_flagged_possibly_stuck(wl):  # noqa: F811
     """A stream that has not grown for 25 minutes is direct evidence no self-report can fake, so the check-in calls it out."""
     wl.brief_now()
@@ -475,34 +313,6 @@ def test_163c_control_an_open_item_means_normal_battery_no_wait_check_in(wl):  #
     wl.add_item("- [ ] (deadbeef) real open work")
     wl.say("answer\n\n## Remaining\n- the open work")
     wl.check_quiet("PURE BACKGROUND WAIT", "163c: check-in fired despite open work")
-
-
-def test_163d_a_due_check_in_forfeits_the_silent_poll(wl):  # noqa: F811
-    """A fresh check-in mark keeps the poll fast path; a due one pays the battery and delivers the worker facts."""
-    wl.brief_now()
-    wl.hand_now()
-    bgout(wl)
-    (wl.base / "bgout" / "bw4.output").write_text("stream\n", encoding="utf-8")
-    wl.bg = json.dumps(
-        [{"id": "bw4", "type": "shell", "status": "running", "description": "watch"}]
-    )
-    wl.task(6, "in_progress", "the live prerequisite")
-    # v19: blocked scenery so the pure-wait premise holds.
-    wl.task(7, "pending", "thing", "6")
-    wl.say(SAID_THING)
-    wl.run()  # establishes the bgwait mark via the first check-in
-    wl.cli("--poll", "deadbeef")
-    fresh = wl.run()
-    assert not fresh.out.strip(), (
-        "163d: poll paid the battery inside the window: %r" % fresh.out[:200]
-    )
-
-    seed_bgwait(wl)
-    wl.cli("--poll", "deadbeef")
-    due = wl.run()
-    label = "163d CONTROL: a due check-in forfeits the silent poll and delivers the facts"
-    assert due.out.strip(), "%s: due check-in stayed silent" % label
-    assert_in(due, "PURE BACKGROUND WAIT", label)
 
 
 def derivation_probe(fix, faketmp, session_id: str) -> str:

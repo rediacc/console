@@ -17,11 +17,10 @@ The checklist is the machine-readable half of a handoff. Its two halves are enfo
 
 FAIL CLOSED, everywhere. A checklist this module cannot parse gates nothing, so it BLOCKS rather than passing quietly (the V_CI_UNREADABLE precedent), and an unexpected exception becomes an ALWAYS-tier violation naming itself. The hook never WRITES a checklist: every exit is one file edit or one worklist command a session can complete alone in a single turn.
 
-COST: the full Stop battery reads these files, because they are the enforcement point, and a repo with none pays exactly one glob. The poll fast path never opens one -- checklists_sig() is stat-only and is banked in the pollbase, so a live checklist forfeits the silent path without ever costing a read on it.
+COST: the full Stop battery reads these files, because they are the enforcement point, and a repo with none pays exactly one glob.
 """
 
 import glob
-import hashlib
 import os
 import re
 import stat
@@ -57,24 +56,6 @@ def _rel(root, path):
         return os.path.relpath(path, str(root))
     except ValueError:
         return str(path)
-
-
-def checklists_sig(root):
-    """A STAT-ONLY signature of every checklist: sha1 over sorted (relpath, mtime_ns, size).
-
-    Never opens a file, and that is a contract rather than an optimisation: this is what the poll fast path compares against its banked baseline, and a poll that read files would pay the cost the fast path exists to avoid. A path that cannot be stat'd contributes a sentinel instead of raising, so a permission-denied checklist still MOVES the signature (which forfeits the silent
-    path) rather than wedging the poll.
-    """
-    h = hashlib.sha1()
-    for path in checklist_paths(root):
-        rel = _rel(root, path)
-        try:
-            st = os.stat(path)
-            row = (rel, st.st_mtime_ns, st.st_size)
-        except OSError:
-            row = (rel, -1, -1)
-        h.update(("%s|%d|%d\n" % row).encode("utf-8", "replace"))
-    return h.hexdigest()[:16]
 
 
 def _err(lineno, line, why):
@@ -349,16 +330,16 @@ def _ckey(prefix, slug):
 
 
 def _adjudicate(root, path, fold, session_id, projects_dir):
-    """(violations, advisories, live) for ONE checklist. See checklist_findings."""
+    """(violations, advisories) for ONE checklist. See checklist_findings."""
     v, a = [], []
     parsed = parse_checklist(root, path)
     rel, slug, status, owner = parsed["rel"], parsed["slug"], parsed["status"], parsed["owner"]
     if parsed["errors"]:
         # A malformed checklist is adjudicated NO FURTHER: every verdict below would be read off a file the parser has already said it misread.
         rows = "\n".join("    " + e for e in parsed["errors"])
-        return [(_ckey("cl-shape", slug), False, M.V_CL_SHAPE % (rel, rows))], a, 1
+        return [(_ckey("cl-shape", slug), False, M.V_CL_SHAPE % (rel, rows))], a
     if status == "superseded":
-        return v, a, 0  # the terminal escape for an abandoned program
+        return v, a  # the terminal escape for an abandoned program
     drows, met, total = _deliverable_rows(root, parsed)
 
     if status == "done":
@@ -369,7 +350,7 @@ def _adjudicate(root, path, fold, session_id, projects_dir):
             if not w["ticked"]
         )
         if not rows:
-            return v, a, 0
+            return v, a
         if C.owned_by_me(owner or None, session_id):
             v.append(
                 (
@@ -386,7 +367,7 @@ def _adjudicate(root, path, fold, session_id, projects_dir):
                     2,
                 )
             )
-        return v, a, 1
+        return v, a
 
     if status == "producing":
         # Owner is guaranteed present here: its absence is a shape error above.
@@ -409,7 +390,7 @@ def _adjudicate(root, path, fold, session_id, projects_dir):
                     2,
                 )
             )
-        return v, a, 1
+        return v, a
 
     # executing: two INDEPENDENT checks, because a program can lose an artifact and drop a wave at the same time and each has its own exit.
     if drows:
@@ -472,41 +453,39 @@ def _adjudicate(root, path, fold, session_id, projects_dir):
                 2,
             )
         )
-    return v, a, 1
+    return v, a
 
 
 def checklist_findings(root, fold, session_id, projects_dir):
-    """(violations, advisories, live_count) for every checklist in the repo.
+    """(violations, advisories) for every checklist in the repo.
 
-    violations are (key, always, text) ready for run_stop's vadd; advisories are (key, text, prio) ready for outq_add. live_count is what the poll fast path banks: 0 means no checklist can block, so a poll may still take the silent path.
+    violations are (key, always, text) ready for run_stop's vadd; advisories are (key, text, prio) ready for outq_add.
 
-    NEVER RAISES. Any unexpected exception becomes the ALWAYS-tier unreadable violation and counts as live, because a gate that went blind must say so and must not also hand the poll path a clean baseline.
+    NEVER RAISES. Any unexpected exception becomes the ALWAYS-tier unreadable violation, because a gate that went blind must say so.
     """
-    violations, advisories, live = [], [], 0
+    violations, advisories = [], []
     try:
         paths = checklist_paths(root)
     except Exception as exc:  # noqa: BLE001 -- fail CLOSED
         # UNSCOPED, and deliberately so: the glob itself failed, so there is no slug to scope by, and this path returns immediately -- at most one such finding can exist per stop, so it has nothing to collide with.
-        return [("cl-shape", True, M.V_CL_UNREADABLE % str(exc)[:160])], [], 1
+        return [("cl-shape", True, M.V_CL_UNREADABLE % str(exc)[:160])], []
     for path in paths:
         try:
-            v, a, n = _adjudicate(root, path, fold, session_id, projects_dir)
+            v, a = _adjudicate(root, path, fold, session_id, projects_dir)
         except Exception as exc:  # noqa: BLE001 -- fail CLOSED, per file
             # Per FILE, so scoped like every other per-checklist finding. The slug is read off the path rather than out of the parse, because the parse is what just threw.
             slug = os.path.basename(os.path.dirname(str(path)))
             violations.append((_ckey("cl-shape", slug), True, M.V_CL_UNREADABLE % str(exc)[:160]))
-            live += 1
             continue
         violations.extend(v)
         advisories.extend(a)
-        live += n
-    return violations, advisories, live
+    return violations, advisories
 
 
 def checklists_block(root):
     """(listing, n): one line per live-or-malformed checklist, for SessionStart and PostCompact. ("", 0) when there is nothing to say, so a repo without handoffs emits no block at all.
 
-    Reading files HERE is fine: these two events fire once each, unlike the poll path this module is otherwise careful never to charge.
+    Reading files HERE is fine: these two events fire once each.
     """
     lines = []
     for path in checklist_paths(root):

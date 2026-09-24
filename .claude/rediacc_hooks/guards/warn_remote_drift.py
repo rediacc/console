@@ -23,7 +23,7 @@ from rediacc_hooks import hookio, shellscan
 
 CHAIN = "pre-bash"
 TWIN = "pre-bash/warn-remote-drift.sh"
-ORDER = 20
+ORDER = 19
 
 # Remote strictly behind local is a NORMAL push of new commits. Without this arm every push of anything ever is refused as drift, which makes the guard an outage rather than a check -- the exact failure its own header forbids.
 DEFECT = ("if _is_ancestor(remote, local, root):", "if False:")

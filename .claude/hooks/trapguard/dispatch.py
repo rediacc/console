@@ -3,7 +3,7 @@
 
 Two modes. `--posttool` is the live one, running the misread-outcome rules below. `--probe-payload` is a retired diagnostic, kept because the next rule that wants a payload field should re-run it rather than trust this docstring.
 
-THE PROBE CAME FIRST, AND THAT ORDER WAS THE POINT. No hook in this repo had ever read `tool_response`; the only evidence it arrives was a docstring (`wl_wait.py:139-143`) recording a payload someone captured. That is a ruling
+THE PROBE CAME FIRST, AND THAT ORDER WAS THE POINT. No hook in this repo had ever read `tool_response`; the only evidence it arrives was a docstring in the since-removed inbox waiter recording a payload someone captured, with the keys tool_name, tool_input, tool_response, tool_use_id, agent_id, agent_type, cwd, duration_ms, effort, permission_mode, prompt_id, session_id, transcript_path and hook_event_name. That is a ruling
 from an artifact, which is itself a trap in this corpus, so it was probed before
 anything depended on it (plan section 7.1). Writing the rules first would have been building a check on an unverified payload shape, which is how a check that cannot fire ships believing it works.
 

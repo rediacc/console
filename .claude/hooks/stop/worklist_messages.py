@@ -23,10 +23,10 @@ WHAT IS DELIBERATELY NOT HERE:
     worklist.py. Those must work when THIS file is missing or broken, so
     they cannot live in it.
   - Short one-line formats entangled with control flow (CLI die() one
-    liners, systemMessage part headers, xsession_ok reason returns). Moving
+    liners, systemMessage part headers, phantom-check reason returns). Moving
     a two-line string behind a name saves nothing and costs a hop.
 
-FAILURE MODE (decided, not accidental): worklist.py imports this module inside a try/except. On ImportError or any load-time breakage it installs a shim whose every attribute access raises, so query modes that use no messages (--path, --brief, --poll on an empty inbox) keep working, while the first message USE on the Stop path raises and is caught by the __main__ crash handler,
+FAILURE MODE (decided, not accidental): worklist.py imports this module inside a try/except. On ImportError or any load-time breakage it installs a shim whose every attribute access raises, so query modes that use no messages (--path, --brief) keep working, while the first message USE on the Stop path raises and is caught by the __main__ crash handler,
 which BLOCKS with the traceback. A broken catalogue therefore fails closed and names itself; it can never fail open (a top-level crash used to read as ALLOW) and never wedges the path-query plumbing.
 """
 
@@ -146,23 +146,6 @@ V_UNDEFAULTED = (
     "unanswered -- 'hold' is not one>' to each, then execute the default next turn:\n%s"
 )
 
-V_REQUESTS_WAITING = (
-    "%d cross-session REQUEST(S) are waiting on you. The asker cannot see your "
-    "context, so silence is a black hole: do it or answer with what you know, or "
-    "decline with a real reason. A broadcast wants whoever owns the area; if that "
-    "is not you, declining 'not my area: <why>' releases you:\n%s\n"
-    "    .claude/hooks/stop/worklist.py --answer %s <id> '<what you did or know>'\n"
-    "    .claude/hooks/stop/worklist.py --decline %s <id> '<why not>'"
-)
-
-V_ANSWERS_UNACKED = (
-    "your request(s) were ANSWERED and the answer is unacknowledged. This block IS "
-    "the delivery (the block reason is the only channel you actually read): act on "
-    "each answer now -- a decline means route around it or raise a [?] to the "
-    "operator -- then acknowledge so it never blocks you again:\n%s\n"
-    "    .claude/hooks/stop/worklist.py --ack %s <id>"
-)
-
 V_COMPLETION_EVIDENCE = (
     "COMPLETION WITHOUT EVIDENCE. S-2 was marked completed on another spike's "
     "evidence, nothing recorded a result anywhere, and the hole surfaced hours "
@@ -177,8 +160,7 @@ V_COMPLETION_TASKS = "  task(s) flipped to completed with no evidence near their
 
 V_IDLE = (
     "NOTHING WILL WAKE THIS SESSION. Task(s) %s wait, yet no background task is "
-    "running, no [>] lease is fresh, and no work cron is scheduled (the "
-    "5-minute inbox poll does not count: it only reacts to other sessions), "
+    "running, no [>] lease is fresh, and no work cron is scheduled, "
     "so after this stop the work sits until the operator notices -- the Wave "
     "C shape, where no third stop ever came and the stuck counter never had "
     "a chance to fire. Give the work a wake-up before stopping: start it "
@@ -186,15 +168,6 @@ V_IDLE = (
     "loop (CronCreate, then declare it with --loop), or if a task truly "
     "waits on the operator, ask with AskUserQuestion and record it as "
     "'You (User Thinks So)'."
-)
-
-V_XSESSION_BAD = (
-    "'waiting-cross-session' must cite an OPEN request YOU asked, or it is "
-    "just a synonym for blocked wearing a checkable-looking name:\n%s\n"
-    "Post the ask and put its #id on the Remaining line:\n"
-    "    .claude/hooks/stop/worklist.py --ask %s <recipient|*> '<what you "
-    "need> DEFAULT: <the ACTION you take alone if unanswered -- 'hold' is not one>'\n"
-    "or change the state word to one that is true."
 )
 
 V_BRIEF = (
@@ -347,69 +320,17 @@ still red and still yours to decide about:
 %s"""
 
 V_LOOP_DIED = (
-    "YOUR WORK LOOP DIED. This session had %d work cron(s) and now has none "
-    "(the 5-minute inbox poll does not count: it only reacts to other "
-    "sessions), so nothing will drive the work forward again. That is the "
+    "YOUR WORK LOOP DIED. This session had %d work cron(s) and now has none, "
+    "so nothing will drive the work forward again. That is the "
     "failure this check exists for. Recreate it with CronCreate, or say out "
     "loud in your message that the loop is deliberately finished."
 )
 
-V_NO_POLL_CRON = (
-    "THIS SESSION HAS A LOOP BUT NOTHING LISTENING FOR CROSS-SESSION MAIL. "
-    "Requests land between your stops, and an hourly loop makes the asker wait "
-    "up to an hour for what costs you seconds.\n"
-    "TWO shapes satisfy this check. The waiter is the better one and is listed "
-    "first deliberately -- it was built, shipped, and then not adopted because "
-    "nothing ever mentioned it:\n"
-    "  (a) A WAITER, launched as a BACKGROUND task (run_in_background: true), "
-    "no quotes anywhere in the command line:\n"
-    "        python3 .claude/hooks/stop/wl_wait.py %s --timeout 60m\n"
-    "      It blocks until something NEW arrives for you and then exits, and "
-    "its EXIT is the notification -- seconds of latency instead of up to a "
-    "cron period, and no turn spent on an empty inbox. It fires ONCE, so "
-    "relaunch it in the same turn you act on what it reports. Run "
-    "`python3 .claude/hooks/stop/wl_wait.py --help` for the full contract.\n"
-    "  (b) A POLL CRON, which is also still worth keeping BESIDE a waiter:\n"
-    "        CronCreate with schedule '0 * * * *' (or a faster rung on the "
-    "5/10/20/40/60 ladder) and a prompt that runs\n"
-    "            .claude/hooks/stop/worklist.py --poll %s\n"
-    "        and, if it prints NOTHING, stops immediately with no summary and "
-    "no commentary; if it prints requests, acts on them.\n"
-    "WHY BOTH IS NOT REDUNDANT: a waiter arms against a snapshot taken when it "
-    "launched, so it is a CHANGE detector and can never see a request that "
-    "predates it. The cron is what still surfaces a backlog. The stop after an "
-    "empty poll is silent and near-free, so the cadence costs almost nothing."
-)
-
 V_MANY_WORK_CRONS = (
-    "%d work crons are live on this session: %s. ONE work loop plus the "
-    "5-minute inbox poll is the required shape; a second work schedule fires "
+    "%d work crons are live on this session: %s. ONE work loop is the "
+    "required shape; a second work schedule fires "
     "the same review twice at different phases and each firing costs a turn. "
     "Delete the redundant one with CronDelete."
-)
-
-V_MANY_POLL_CRONS = (
-    "%d poll crons (*/5, */10, */20, */40 or hourly) are live; one is the shape. Delete the "
-    "extra with CronDelete."
-)
-
-# THE OS-TRUTH BACKSTOP FOR DUPLICATE WAITERS, modelled on V_MANY_WORK_CRONS above: more than one of this instrument is a violation, and the remedy names the exact verb per surplus id.
-#
-# WHY IT IS NOT MERELY WASTE, which is the reading that kept the 2026-09-23 pile invisible for 55 minutes. There is ONE heartbeat path per session (wl_wait.heartbeat_path) and every live instance re-touches it every two seconds, so the TOMBSTONE an exiting waiter writes in place of that pulse is overwritten by a survivor within a tick. That tombstone is the only evidence
-# `waiter-lapsed` has, so a pile does not just cost processes: it switches off the check built to notice that the session stopped listening. The script now refuses a duplicate at launch (exit 3); this fires on a surplus that is already declared, which the script cannot retract.
-#
-# TaskStop AND NEVER kill. Killing the process leaves the harness task declared, which rates `suspect` under verify_background, does not satisfy confirmed_waiters, and gets the session nagged by `no-waiter` into launching another one -- converting waste into a self-amplifying loop.
-V_MANY_WAITERS = (
-    "%d INBOX WAITERS ARE LIVE ON THIS SESSION, and one is the shape. A second waiter hears "
-    "nothing the first does not: they arm on the same two files, poll the same two stats and "
-    "rescan the same report store, and only one of them can be the exit that wakes you.\n"
-    "%s"
-    "IT IS WORSE THAN DUPLICATED WORK. Every instance re-touches the one per-session heartbeat "
-    "every couple of seconds, so the exit marker a dying waiter leaves is clobbered by a "
-    "survivor's live pulse and the `waiter-lapsed` check can never fire -- the pile disables "
-    "the very mechanism that would tell you your waiter had gone.\n"
-    "TaskStop, never kill: killing the process leaves the task declared, which reads as "
-    "`suspect` rather than gone and gets you told to start yet another one."
 )
 
 V_BG_ORPHAN = (
@@ -535,8 +456,8 @@ CLI_UNKNOWN_VERB = (
     "battery run against an empty event), and with stdin open it hung forever.\n"
     "A typo must not be able to do either.\n"
     "Verbs: --add --triage --tick --defer --lease --update --list --state --path\n"
-    "       --compact --brief --loop --poll --ask --answer --decline --ack\n"
-    "       --requests --reports --wait --session-start --post-compact --help\n"
+    "       --compact --brief --loop --reports --session-start --post-compact\n"
+    "       --help\n"
     "The Stop hook itself takes NO arguments; that is how it stays reachable.\n"
 )
 
@@ -564,123 +485,6 @@ N_ROSTER_STALE = (
     "agent. They are kept rather than guessed at, because dropping a live "
     "worker's supervision is worse than a stale row. Retire the ones you know "
     "are done: python3 %s --reap %s <task-id>..."
-)
-
-N_WAITER_NUDGE = (
-    "NOT LISTENING: %d live peer session(s) can send you work and nothing here "
-    "would wake you. Start a waiter as a BACKGROUND task (run_in_background: "
-    "true), no quotes anywhere in the command:\n"
-    "    python3 %s %s --timeout %dm\n"
-    "It blocks until something new arrives and then EXITS -- the exit is the "
-    "notification. It fires once, so relaunch it in the turn you act on it."
-)
-
-N_WAITER_DRAINED = (
-    "DRAINED, AND STILL HOLDING A WAITER. Nothing of yours is open, in flight "
-    "or pending as a task, and every live background task you have is an inbox "
-    "waiter (%d). A waiter earns its keep while you have work to do with what "
-    "it hears; with none it is a process holding for up to an hour on behalf of "
-    "a session that has finished. Stop it and end clean:\n"
-    "%s\n"
-    "Start a FRESH one the moment you pick work up again (a stopped waiter "
-    "cannot be resumed, and it would not see anything that arrived meanwhile "
-    "anyway): python3 %s %s --timeout %dm"
-)
-
-# FIVE ROUNDS, FIVE DIFFERENT STATEMENTS, AND IT NEVER GIVES UP.
-#
-# A violation that repeats itself verbatim becomes wallpaper: the session reads the first line, recognises it, and skips the rest -- so an identical fifth nudge is weaker than the first, not stronger. Each rung here adds a FACT the previous one did not carry (who is blocked, that the answer may already be sitting unread, that withdrawing is a legitimate exit, how long this has gone
-# on) rather than simply raising its voice.
-#
-# Past the last rung the message stops changing but the check keeps firing. Giving up would return the session to exactly the state this exists to prevent -- stopped, not listening, waiting forever for something it cannot hear -- and a check that tires before the session does is not a check.
-V_ASK_NOLISTEN_LADDER = (
-    # 1 -- plainest statement of the fact plus the command.
-    (
-        "YOU ASKED %(n)d QUESTION%(s)s AND ARE NOT LISTENING FOR THE ANSWER.\n"
-        "%(rows)s"
-        "Posting a request is this session choosing to depend on a reply. Without a\n"
-        "waiter the answer sits unseen until your next stop, so if you stop now you\n"
-        "may wait indefinitely for something already delivered.\n"
-        "%(cmd)s"
-    ),
-    # 2 -- name who is holding the obligation.
-    (
-        "STILL NOT LISTENING (round 2). The session%(s2)s below %(is_are)s holding an\n"
-        "obligation to answer YOU, and cannot know you have stopped reading:\n"
-        "%(rows)s"
-        "They answer into a channel nothing here is watching.\n"
-        "%(cmd)s"
-    ),
-    # 3 -- the answer may ALREADY be there.
-    (
-        "ROUND 3, AND THE REPLY MAY ALREADY BE WAITING. A waiter is not only for\n"
-        "future answers: it exits the moment anything new arrives, including a reply\n"
-        "posted minutes ago that you have not read.\n"
-        "%(rows)s"
-        "Check now, before assuming silence: python3 %(hook)s --poll %(me)s\n"
-        "%(cmd)s"
-    ),
-    # 4 -- withdrawing is a legitimate exit, and the honest one.
-    (
-        "ROUND 4. There are TWO ways out of this and only one of them is a waiter.\n"
-        "%(rows)s"
-        "If you no longer need the answer, SAY SO to the recipient instead of\n"
-        "leaving the question open -- an open request is an obligation on them, and\n"
-        "abandoning it silently is the thing this whole channel exists to stop:\n"
-        "    python3 %(hook)s --ask %(me)s <them> 'withdrawing #<id>, no longer needed'\n"
-        "%(cmd)s"
-    ),
-    # 5 and after -- terminal, and honest that it will not relent.
-    (
-        "ROUND %(round)d. THIS CHECK WILL NOT STOP FIRING, and it is not going to\n"
-        "tire before you do. It has now asked %(round)d times.\n"
-        "%(rows)s"
-        "Nothing here is a judgement about the work; it is that you are waiting on\n"
-        "an answer through a channel you are not watching, which ends one of two\n"
-        "ways: start the waiter, or withdraw the question. Both are one command.\n"
-        "%(cmd)s"
-    ),
-)
-
-V_ASK_NOLISTEN_CMD = (
-    "Start one as a BACKGROUND task (run_in_background: true), NO QUOTES anywhere\n"
-    "in the command line (a quoted path renders the waiter `unverifiable`, which\n"
-    "does not satisfy this check -- it is confirmed against the OS, not believed):\n"
-    # SIXTY MINUTES, SPELLED `60m`, and the suffix is now mandatory rather than advisory. This line used to read `--timeout 900`, which asked for a FIFTEEN-HOUR wait while V_NO_WAITER and wl_wait.HELP both said 60; correcting the literal fixed that message and left the ambiguity standing, and on 2026-09-23 it fired again as thirteen overlapping instances. wl_wait.parse_timeout_min
-    # refuses a bare number outright now, so a message that dropped the `m` would be caught by the tool instead of believed.
-    "    python3 %s %s --timeout 60m\n"
-    "Its EXIT is the notification, and it fires ONCE: relaunch it in the same\n"
-    "turn you act on what it reports.\n"
-)
-
-V_NO_WAITER = (
-    "THIS SESSION HAS A WORK LOOP AND %d LIVE PEER(S), AND IS NOT LISTENING. "
-    "No confirmed waiter is running, so a request addressed to you sits unseen "
-    "until your next stop or poll -- and a peer blocked on your answer waits "
-    "that long for something that costs you seconds.\n"
-    "Start one as a BACKGROUND task (run_in_background: true), NO QUOTES "
-    "anywhere in the command line (a quoted path renders the waiter "
-    "`unverifiable`, which does not satisfy this check):\n"
-    "    python3 %s %s --timeout 60m\n"
-    "Its EXIT is the notification. It fires ONCE, so relaunch it in the same "
-    "turn you act on what it reports; this check is what catches you if you "
-    "forget. `--help` on that path explains the whole contract.\n"
-    "This does NOT replace the poll cron: a waiter cannot see a request that "
-    "predates it, so keep the hourly cron as the backlog backstop."
-)
-
-# THE LAPSE, which used to be invisible. wl_wait.wait() unlinked its heartbeat on both exits, so "my waiter died 40 minutes ago" and "I have never listened" left the filesystem in the same state -- and the hook is far more lenient about the second. The tombstone makes the difference readable; this message is what the difference is FOR, so it names which of the two exits happened.
-V_WAITER_LAPSED = (
-    "YOUR WAITER LAPSED (%s) %d MINUTE(S) AGO AND YOU HAVE NOT RELAUNCHED IT. "
-    "%d live peer(s) can address you and nothing here is listening. This is not "
-    "the gentle 'you have never started one' nudge: you started one, it told "
-    "you on the way out that it fires ONCE and must be relaunched, and it was "
-    "not. Every request sent since then is sitting unread.\n"
-    "    python3 %s %s --timeout 60m\n"
-    "as a BACKGROUND task (run_in_background: true), NO QUOTES anywhere in the "
-    "command line. If you are genuinely finished, say so and close your open "
-    "items instead -- a drained session is told to stop its waiter, not to keep "
-    "one."
 )
 
 # THE FINISH LINE OF A pr-babysit WAVE, rendered as the markdown checkboxes it already is. The four boxes are read off `.claude/commands/pr-babysit.md` ("The console PR rides as a draft until green; stops at green + Claude-reviewed + threads-resolved PRs; never merges") rather than invented here, and the two the hook cannot observe are backed by ticked worklist items, which is the
@@ -715,7 +519,7 @@ N_UNREAD_REPORTS = (
 
 CLI_REASSIGN_USAGE = (
     "usage: --reassign <my-prefix> <phantom-prefix>\n"
-    "Moves OPEN items and OPEN requests off an identity that never stopped "
+    "Moves OPEN items off an identity that never stopped "
     "(no .lastevent-<prefix>.json) and onto you. History is not rewritten: the "
     "events still record who wrote them.\n"
 )
@@ -730,7 +534,7 @@ CLI_REASSIGN_YOUNG = (
     "floor, so it may be a session mid-turn rather than a phantom.\n"
     "The .lastevent- file is written at a session's FIRST STOP, so a peer that "
     "has added items and not yet stopped looks exactly like a dead one. Moving "
-    "its OPEN items and request routing now would take work from someone still "
+    "its OPEN items now would take work from someone still "
     "doing it.\n"
     "Wait until it is past the same age the advisory backstop uses, or confirm "
     "with the operator that %s is genuinely gone.\n"
@@ -746,11 +550,9 @@ CLI_REASSIGN_ALIVE = (
 CLI_REASSIGN_DONE = (
     "reassigned %s -> %s\n"
     "  items:    %s\n"
-    "  requests: %s\n"
-    "Both logs were APPENDED to, never rewritten, so the history still says the "
-    "phantom wrote them -- only the ownership and the routing moved.\n"
-    "Check the inbox you could not see before:\n"
-    "    worklist.py --poll %s\n"
+    "The log was APPENDED to, never rewritten, so the history still says the "
+    "phantom wrote them -- only the ownership moved.\n"
+    "Check the items you could not see before:\n"
     "    worklist.py --list --open %s"
 )
 
@@ -816,10 +618,10 @@ N_PHANTOM_IDENTITY = (
     "that file is written on every Stop hook, so a real session always has one. "
     "The commonest cause is a session that mistyped its own <me> once and kept "
     "using it: writes and reads then key off the same wrong string, every call "
-    "succeeds, and the session ends up with two inboxes and reads only one. "
-    "That cost a peer's message 34 hours here.\n%s\n"
+    "succeeds, and the session ends up with two identities and sees the items "
+    "of only one.\n%s\n"
     "    take the work over:  python3 %s --reassign %s <prefix>\n"
-    "It moves OPEN items and OPEN requests only; the history stays truthful "
+    "It moves OPEN items only; the history stays truthful "
     "about who wrote what. If you know the prefix is a live peer that simply "
     "has not stopped yet, ignore this -- it is report-only and never blocks."
 )
@@ -884,14 +686,12 @@ N_CADENCE_PAUSE = (
     "same checks are waiting at the next stop.%s"
 )
 
-# A PAUSE SPENDS THE DEMAND, NOT THE INFORMATION -- and until 2026-08-27 it spent both. The pause named the check CATEGORIES ("open-items; requests") and nothing else, so a session paused over a `requests` check was told a label
-# while ANOTHER session sat blocked on an answer it could have given in
-# seconds. Reported by the operator watching exactly that happen.
+# A PAUSE SPENDS THE DEMAND, NOT THE INFORMATION -- and until 2026-08-27 it spent both. The pause named the check CATEGORIES and nothing else, so a session paused over a check that somebody else was waiting on was told a label and nothing more.
 #
-# Cross-session obligations are carried through the pause in full, because they are the one class where the cost of staying quiet lands on somebody else. A session may reasonably defer its own open items for a turn; it cannot reasonably defer a peer without knowing the peer is there.
+# Obligations a worker or teammate is waiting on are carried through the pause in full, because they are the one class where the cost of staying quiet lands on somebody else. A session may reasonably defer its own open items for a turn; it cannot reasonably defer a waiting worker without knowing it is there.
 N_CADENCE_PAUSE_CARRIED = (
-    "\n\nCARRIED THROUGH THE PAUSE, because another session is waiting on you "
-    "and cannot see that you stood down:\n%s"
+    "\n\nCARRIED THROUGH THE PAUSE, because a worker or teammate is waiting on "
+    "you and cannot see that you stood down:\n%s"
 )
 
 N_CL_DOOR_PARKED = (
@@ -1012,8 +812,8 @@ CLI_STATE_NO_DIR = (
 V_BROKEN_SCHEDULE = (
     "%d scheduled task(s) carry a schedule this hook CANNOT PARSE:\n%s\n"
     "    An unparseable schedule is invisible to every other check here -- it "
-    "counts as neither an inbox poll nor a work loop, so the cron-shape "
-    "checks, the poll backoff ladder and the loop-death detector all skip it, "
+    "counts as no work loop, so the cron-shape checks and the loop-death "
+    "detector both skip it, "
     "and the task may never fire at all. Fix the schedule (delete the job and "
     "recreate it with a valid 5-field cron expression, same prompt verbatim), "
     "or delete it if it is no longer wanted."
@@ -1531,7 +1331,7 @@ V_BG_REPORT = (
     "confirmation here. --update any leased item riding a worker, and "
     "restart or replace anything marked POSSIBLY STUCK. Then stop. If "
     "nothing at all moves between wakes, this check-in stands down by "
-    "itself and the hook asks you to slow the poll cron instead."
+    "itself."
 )
 
 V_BG_REPORT_TASKS = (
@@ -1625,39 +1425,7 @@ R_REGGATE_HALLUCINATED = (
     "exists, so that coverage is HALLUCINATED and counts as none.\n"
 )
 
-# ---- CLI texts (request_cli) ------------------------------------------------
-
-CLI_REQUEST_USAGE = (
-    "usage: --ask <my-prefix> <to-prefix|*> <text...>\n"
-    "       --answer <my-prefix> <id> <text...>\n"
-    "       --decline <my-prefix> <id> <reason...>\n"
-    "       --ack <my-prefix> <id>"
-)
-
-CLI_ASK_OPERATOR_NO_DEFAULT = (
-    "REFUSED: a request to the operator must carry a DEFAULT:. It leaves this "
-    "machine as an email and is answered by a human who may be asleep, so "
-    "without a stated fallback you have volunteered to stall until they wake "
-    "up. Re-ask with '... DEFAULT: <the ACTION you take alone -- 'hold' is not one>'."
-)
-
-CLI_ASK_UNKNOWN_RECIPIENT = (
-    "REFUSED: %s has never briefed in this store, so a request addressed there "
-    "lands in an inbox nobody reads. That is not hypothetical -- peers asked an "
-    "identity that never existed and their request sat until it auto-escalated "
-    "34 hours later with 'recipient silent for 2062min'.\n"
-    "Sessions that HAVE briefed here: %s\n"
-    "Use one of those, '*' to broadcast to every live session, or 'operator' "
-    "for the human. If you believe that session is real but silent, it has "
-    "never run --brief; ask it to, or broadcast."
-)
-
-CLI_BODY_REFUSED = (
-    "%s is %d chars, limit %d. REFUSED rather than silently truncated: "
-    "the tail is often the crucial part, and a clipped payload that "
-    "reports success is how findings get lost. Shorten it, or put the "
-    "detail in a file and cite the path."
-)
+# ---- CLI texts (item verbs) -------------------------------------------------
 
 CLI_ITEM_USAGE = (
     "usage: --add <my-prefix> <text...>\n"
@@ -2130,7 +1898,7 @@ Never use em dashes. Keep next_action concrete and small enough to do now.
 
 
 # `--help` used to fall through to the Stop-hook path, where stdin is not JSON, so asking this tool how to use it produced a BLOCK accusing the caller of a hook bug. A tool whose help text is an error message teaches people to guess.
-USAGE = """worklist.py -- shared per-repo worklist and cross-session inbox.
+USAGE = """worklist.py -- shared per-repo worklist.
 
 Items (v10: a JSONL event store; the old markdown file still works as an
 inbox and is synced in, but the verbs are the first-class interface):
@@ -2159,14 +1927,6 @@ inbox and is synced in, but the verbs are the first-class interface):
 
 Query:
   --path                        print the worklist file path
-  --requests <me>               list cross-session requests addressed to you
-  --poll <me>                   inbox poll; prints NOTHING when empty (exit 0)
-
-Cross-session messaging:
-  --ask <me> <to> <text...>     ask another session (or '*') a question
-  --answer <me> <id> <text...>  answer a request addressed to you
-  --decline <me> <id> <why...>  decline it, with a real reason
-  --ack <me> <id>               acknowledge without answering
 
 Session state:
   --brief <me> <text...>        publish what you are changing right now
@@ -2194,14 +1954,14 @@ Plan records (W12):
 
 Maintenance:
   --compact                     drop tombstones and fold the event log
-  --reassign <me> <phantom>     take over the OPEN items and requests of an
+  --reassign <me> <phantom>     take over the OPEN items of an
                                 identity that never stopped (the Stop hook
                                 names one when it finds one); history is
                                 appended to, never rewritten
 
 Every <me> is checked against this process's real session id
 (CLAUDE_CODE_SESSION_ID) and a mismatch is REFUSED, because writing as one
-identity and reading as another gives you two inboxes and neither is complete.
+identity and reading as another splits your items and neither view is complete.
 To act deliberately as another session, declare it: WORKLIST_SESSION_ID=<id>.
 
 Item states: `- [ ]` open, `- [x]` done, `- [?]` deferred with a DEFAULT,
@@ -2229,52 +1989,6 @@ Decide explicitly, then act:
         git submodule update --checkout <path>
     which is safe ONLY while that submodule's worktree is clean and its commit
     is pushed. Verify both first; this is not an undo you can take back."""
-
-
-# ---- poll backoff (advisory) ------------------------------------------------- The inbox poll defaults to every 5 minutes, which costs 12 firings an hour forever on a session nobody is talking to. These two notes tell the session to move along the ladder in wl_checks.POLL_BACKOFF_LADDER. They are notes, never violations: the session performs the cron swap itself so the change is
-# visible, and can decline.
-N_POLL_BACKOFF = (
-    "ADVISORY (this stop is already allowed; nothing here blocks you).\n"
-    "INBOX HAS BEEN QUIET FOR %d MINUTES at a %d-minute poll. Double the interval so a\n"
-    "session nobody is talking to stops paying for it. Swap the poll cron in ONE turn --\n"
-    "a stop landing between the delete and the create trips the no-poll-cron check:\n"
-    "    CronDelete <the '%s' job id>\n"
-    "    CronCreate cron '%s'   (%d minutes), same prompt VERBATIM, recurring true\n"
-    "The ladder is 5 -> 10 -> 20 -> 40 -> 60 and stops at 60, because a poll slower than\n"
-    "the 70-minute fast-path horizon would pay the full battery on every firing. Drop back\n"
-    "to */5 as soon as a real request arrives."
-)
-# ---- v17: the no-op wake ladder --------------------------------------------- The backoff notes above are advisory sections that ride a full report. These two REPLACE the report: on a wake where the hook can prove nothing changed, they are the entire output of the stop. See wl_checks.quiet_wake_note for what "nothing changed" is measured against.
-N_QUIET_WAKE = (
-    "ADVISORY (this stop is already allowed; nothing here blocks you).\n"
-    "%d CONSECUTIVE QUIET WAKES: same items, same tasks, same HEAD, no inbox\n"
-    "traffic, and not one new byte on any worker's output stream. Waking every\n"
-    "%d minutes to learn that is the only thing this session is spending, so\n"
-    "the one useful action is to wake less often. Swap the poll cron in ONE\n"
-    "turn -- a stop landing between the delete and the create trips the\n"
-    "no-poll-cron check:\n"
-    "    delete the current poll job ('%s')\n"
-    "    create it again with '%s'   (%d minutes), same prompt VERBATIM, recurring true\n"
-    "This message is the WHOLE stop report on purpose: the worker roster, the\n"
-    "worklist guide and the advisory sections are all suppressed while nothing\n"
-    "is moving, and every one of them returns the moment something does. The\n"
-    "ladder is 5 -> 10 -> 20 -> 40 -> 60. Drop straight back to */5 when a real\n"
-    "request arrives."
-)
-N_QUIET_WAKE_CAPPED = (
-    "ADVISORY (this stop is already allowed; nothing here blocks you).\n"
-    "%d CONSECUTIVE QUIET WAKES at the %d-minute cap, which is the slowest rung\n"
-    "(a poll slower than the 70-minute fast-path horizon would pay the full\n"
-    "battery on every firing, so the ladder stops here). Nothing to reschedule.\n"
-    "This one line is the whole stop report while nothing moves; if the wait\n"
-    "itself has stopped being worth holding, end it and say so."
-)
-
-N_POLL_BACKOFF_RESET = (
-    "A REQUEST IS WAITING while the poll is backed off to '%s'. Latency matters again:\n"
-    "swap back to the bottom rung in ONE turn -- CronDelete the current poll job, then\n"
-    "CronCreate cron '%s' with the same prompt verbatim."
-)
 
 
 # --------------------------------------------------------------------------- --roundlog: the pr-babysit round log's STATUS block.

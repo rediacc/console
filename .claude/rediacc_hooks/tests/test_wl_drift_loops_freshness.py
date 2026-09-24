@@ -105,9 +105,7 @@ def test_34_a_loop_that_died_blocks(wl):  # noqa: F811
     wl.hand_now()
     wl.say("answer\n\n## Remaining\n- #7 thing (pending)")
     wl.task(7, "pending", "thing")
-    wl.crons = json.dumps(
-        [{"id": "bbb", "schedule": "17 * * * *"}, {"id": "p", "schedule": "*/5 * * * *"}]
-    )
+    wl.crons = json.dumps([{"id": "bbb", "schedule": "17 * * * *"}])
     wl.run()
     wl.crons = "[]"
     wl.check("block", "WORK LOOP DIED", "losing the last cron blocks")
@@ -135,9 +133,7 @@ def test_34b_declaring_the_loop_finished_clears_it_and_stays_cleared(wl):  # noq
     wl.hand_now()
     wl.task(7, "pending", "thing")
     wl.bg = json.dumps([{"status": "running", "description": "agent"}])
-    wl.crons = json.dumps(
-        [{"id": "bbb", "schedule": "17 * * * *"}, {"id": "p", "schedule": "*/5 * * * *"}]
-    )
+    wl.crons = json.dumps([{"id": "bbb", "schedule": "17 * * * *"}])
     wl.say("answer\n\n## Remaining\n- #7 thing (pending)")
     wl.run()
     wl.crons = "[]"
@@ -157,9 +153,7 @@ def test_34c_control_merely_quoting_the_instruction_does_not_opt_out(wl):  # noq
     wl.hand_now()
     wl.task(7, "pending", "thing")
     wl.bg = json.dumps([{"status": "running", "description": "agent"}])
-    wl.crons = json.dumps(
-        [{"id": "bbb", "schedule": "17 * * * *"}, {"id": "p", "schedule": "*/5 * * * *"}]
-    )
+    wl.crons = json.dumps([{"id": "bbb", "schedule": "17 * * * *"}])
     wl.say("answer\n\n## Remaining\n- #7 thing (pending)")
     wl.run()
     wl.crons = "[]"

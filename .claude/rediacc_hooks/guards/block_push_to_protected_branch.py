@@ -46,7 +46,7 @@ from rediacc_hooks import hookio, shellscan
 CHAIN = "pre-bash"
 TWIN = None
 # AHEAD OF block_unverified_push (its old position, now 40), deliberately: "this branch may not be pushed to at all" is the more fundamental refusal, and telling a session to go run `npm run ci:quick` for a push it was never going to be allowed to make, regardless of that run's colour, is the wrong message to lead with. Every guard from here on was re-keyed by one to make room.
-ORDER = 39
+ORDER = 38
 
 # `run` reaching the branch check is the whole reason this guard exists for the IMPLICIT forms; the header records why the check itself must fire on "main" rather than skip it.
 DEFECT = ('if branch == "main":', "if False:")

@@ -29,7 +29,7 @@ from rediacc_hooks import hookio, shellscan
 
 CHAIN = "pre-bash"
 TWIN = "pre-bash/warn-stale-index.sh"
-ORDER = 22
+ORDER = 21
 
 # `git commit <pathspec>` and `-a` both take the WORKING TREE for those paths, so the staleness this guard is about cannot arise for them. Dropping the test makes the advisory fire on the one commit form that is provably NOT at risk, which is how a warning stops being read.
 DEFECT = ("if hookio.grep_q(WORKING_TREE_FORM, scan):", "if False:")

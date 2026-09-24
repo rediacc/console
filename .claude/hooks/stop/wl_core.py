@@ -37,7 +37,7 @@ VAGUE_WHY_RE = re.compile(
     r"|got around))\b",
     re.IGNORECASE,
 )
-# Same charset the worklist owner tag accepts, so a request's from/to can be written into a `- [?]` line on escalation without re-validation.
+# Same charset the worklist owner tag accepts.
 PREFIX_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,31}$")
 
 # Leases beyond this horizon are invalid: a `- [>]` marked "until next year" would be a bypass, not a delegation. 120 also aligns the lease horizon with the top rung of the v10 liveness ladder.
@@ -181,27 +181,12 @@ def owned_by_me(owner, session_id):
 def same_session(a, b):
     """Two prefixes/ids denote one session when either is a prefix of the other. Symmetric, because CLI callers pass short prefixes while the Stop event carries the full id, and either side of a comparison can be either.
 
-    DELIBERATELY NOT LINEAGE-AWARE, and that is not an oversight. Its ~40 callers compare PEERS -- request routing, the brief roster, the dead-session sweep, the waiter -- and a predecessor is genuinely gone for every one of those purposes. Widening this would silently change all forty; the ancestor branch belongs in `owned_by_me`, which is about who may RESOLVE an item.
+    DELIBERATELY NOT LINEAGE-AWARE, and that is not an oversight. Its callers compare PEERS -- the brief roster, the dead-session sweep, phantom detection -- and a predecessor is genuinely gone for every one of those purposes. Widening this would silently change all of them; the ancestor branch belongs in `owned_by_me`, which is about who may RESOLVE an item.
     """
     return bool(a) and bool(b) and (a.startswith(b) or b.startswith(a))
 
 
-# The identity a `<me>` argument may name without being checked against the environment. "operator" is the HUMAN's reply handle: the Stop report prints `worklist.py --answer operator <id> '<words>'` for a person to run in whatever shell they have open, and if that shell happens to be a Claude session's Bash the env check would refuse the one command that line exists to get run. It
-# is a name, not a session prefix, and it was never verifiable.
-#
-# THE HOLE THIS LEAVES, ACCEPTED AND UNDECIDABLE. Because "operator" is exempt, a session can run `--answer operator <its-own-request-id>` and answer its own question, slipping past the self-answer refusal in wl_requests (which compares `me` to the asker). This is PRE-EXISTING -- it was true before any identity checking existed and is not a regression from it -- and it is recorded
-# here rather than fixed because both obvious fixes are worse than the hole:
-#
-# * "refuse when a session id IS resolvable" breaks the exact case the exemption exists for. The documented path is a human pasting the mailed command into a Claude session's Bash, and that process has a perfectly resolvable CLAUDE_CODE_SESSION_ID. The fix would refuse the operator. * "refuse when the answering session is the asker" fails too: the operator may legitimately paste
-# the answer into the very session that asked, which is the commonest way it happens.
-#
-# There is no narrower rule, and the reason is structural rather than a gap in imagination: from inside this process, a session forging an operator answer and the operator answering through that session's shell are the SAME syscall,
-# from the same pid, with the same environment. Nothing observable separates
-# them. Any check would be inferring intent from evidence that does not carry it -- which is the shape of validation that produced the incident this module exists to prevent.
-#
-# If this is ever worth closing, the honest mechanism is a SHARED SECRET carried alongside the request (a per-request token the report prints and --answer requires), not an inference. That makes the operator's answer provable instead of assumed. Until someone wants that, an operator answer is trusted by construction, and this comment is why.
-UNCHECKED_ME = ("operator",)
-# A `<me>` must be at least this long. GENERALISED from --poll/--wait, which have carried the floor since they were written for a reason that applies everywhere: a short prefix names a DIFFERENT sidecar than the Stop hook derives from the full session id, so it half-works instead of failing. It also closes the hole `same_session`'s symmetry would leave open -- `--add d` would
+# A `<me>` must be at least this long, for a reason that applies everywhere: a short prefix names a DIFFERENT sidecar than the Stop hook derives from the full session id, so it half-works instead of failing. It also closes the hole `same_session`'s symmetry would leave open -- `--add d` would
 # otherwise be accepted by every session whose id starts with "d".
 ME_MIN_LEN = 8
 
@@ -231,7 +216,7 @@ def check_me(me):
     THE DEFECT THIS CLOSES, in one paragraph because the fix is only obvious once you have seen it. Every `<me>` in this CLI was accepted on SHAPE alone (PREFIX_RE), and nothing had ever compared one to reality. A session copied a SUB-AGENT's namespace token out of a Task-spawn tool result (`agent_id: search-renet2@session-4c3e095a`) and used it as its own `<me>`
     for 26 hours: 219 calls under the wrong identity and 20 under the right one,
     from the same process. Every individual operation SUCCEEDED, because writes
-    and reads key off the same unvalidated string -- so one typo splits a session into two half-sessions, each internally consistent, and nothing downstream can tell. The cost was a peer's message sitting unread in the other half's inbox for 34 hours while it auto-escalated.
+    and reads key off the same unvalidated string -- so one typo splits a session into two half-sessions, each internally consistent, and nothing downstream can tell. The cost was work sitting unseen in the other half for 34 hours.
 
     ASYMMETRIC on purpose: `sid.startswith(me)`, not `same_session(me, sid)`. On the CLI `me` is always a claim about SELF, never a peer id, so the symmetry that makes same_session right for peer comparisons is exactly what
     would let a one-character `me` through here. same_session is NOT changed;
@@ -240,8 +225,6 @@ def check_me(me):
     REFUSES rather than warns (operator decision). A warning beside a successful command is what the failing session skimmed past for a day: shape-only validation passing silently is what let this through in the first place, and a warning would be read past the same way. A non-zero exit costs one turn and the message carries the copy-paste fix.
     """
     me = me or ""
-    if me in UNCHECKED_ME:
-        return True, ""
     sid = resolve_session_id()
     if not sid:
         # UNVERIFIABLE, so silent. A plain operator terminal has no session id and must not be accused of impersonating one.
@@ -273,10 +256,9 @@ def _identity_msg(me, sid, why):
     )
     return (
         "identity mismatch: you passed <me>=%s but %s (%s).\n"
-        "Writing as one identity and reading as another gives you two inboxes "
-        "and neither of them is complete: every call succeeds, the halves stay "
-        "internally consistent, and a peer's message waits in the one you are "
-        "not reading.\n"
+        "Writing as one identity and reading as another splits your items in "
+        "two and neither half is complete: every call succeeds, the halves stay "
+        "internally consistent, and items wait in the one you are not reading.\n"
         "  rerun with <me>=%s\n"
         "If you really mean to act as another session, declare it rather than "
         "assert it by hand:\n"

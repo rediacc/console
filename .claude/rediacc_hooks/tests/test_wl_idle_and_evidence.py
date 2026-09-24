@@ -40,21 +40,8 @@ def test_91_a_stop_with_nothing_inbound_blocks_on_the_first_stop(wl):  # noqa: F
 def test_92a_control_a_live_work_cron_is_a_wake_up(wl):  # noqa: F811
     """CONTROL: a wake-up source suppresses the idle block."""
     i6_fixture(wl)
-    wl.crons = json.dumps(
-        [{"id": "w", "schedule": "17 * * * *"}, {"id": "p", "schedule": "*/5 * * * *"}]
-    )
+    wl.crons = json.dumps([{"id": "w", "schedule": "17 * * * *"}])
     wl.check("allow", "", "a live work cron is a wake-up")
-
-
-def test_92b_a_poll_cron_alone_is_not_a_wake_up(wl):  # noqa: F811
-    """v9: a poll cron only reacts to others, so on its own it wakes nobody."""
-    i6_fixture(wl)
-    wl.crons = json.dumps([{"id": "p", "schedule": "*/5 * * * *"}])
-    wl.check(
-        "block",
-        "NOTHING WILL WAKE THIS SESSION",
-        "v9: a poll cron ALONE is not a wake-up",
-    )
 
 
 def test_92c_control_a_running_background_task_is_a_wake_up(wl):  # noqa: F811
@@ -260,7 +247,5 @@ def test_100_control_the_unmodified_hook_still_allows_a_clean_stop(wl):  # noqa:
     wl.brief_now()
     wl.hand_now()
     wl.say("all done")
-    wl.crons = json.dumps(
-        [{"id": "c", "schedule": "17 * * * *"}, {"id": "p", "schedule": "*/5 * * * *"}]
-    )
+    wl.crons = json.dumps([{"id": "c", "schedule": "17 * * * *"}])
     wl.check("allow", "", "a clean stop is still allowed")

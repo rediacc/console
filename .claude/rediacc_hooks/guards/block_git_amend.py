@@ -15,7 +15,7 @@ from rediacc_hooks import hookio, shellscan
 
 CHAIN = "pre-bash"
 TWIN = "pre-bash/block-git-amend.sh"
-ORDER = 18
+ORDER = 17
 
 # BUT STRIPPING QUOTES ALONE OPENS AN EVASION: without the wrapper payload appended, `sh -c "git commit --amend"` has the whole command inside a quoted span, the span is removed, and the guard returns 0.
 DEFECT = (r'"%s\n%s" % (stripped, wrapped)', r'"%s\n%s" % (stripped, "")')

@@ -30,7 +30,7 @@ from rediacc_hooks import hookio, shellscan
 
 CHAIN = "pre-bash"
 TWIN = "pre-bash/block-destructive-git-restore.sh"
-ORDER = 31
+ORDER = 30
 
 # `git clean -n` and `--dry-run` PRINT what they would remove and delete nothing. Dropping the exclusion turns the one safe way to inspect the untracked set into a refusal, which is how this guard would start being routed around.
 DEFECT = ("and not hookio.grep_q(DRY_RUN, scan)", "and True")

@@ -2,7 +2,7 @@
 
 Ported from `.claude/hooks/stop/worklist-cases/23-priority-ladder.sh`, one pytest function per numbered bash case, except where a bash leg continued its predecessor's world with no fresh setup: those legs stay inside one function, where the sequence is visible in one place.
 
-WHY THIS BATTERY EXISTS. Rotation used to break ties on the position of a `vadd` call in a 5,000-line file, and every never-served key ties at -1, so line order decided the FIRST pick of every crowded session. Nothing tested that, because line order is not a behaviour anyone thinks to assert, which is how the check for an unanswered peer ask came to sort 24th while its escalation
+WHY THIS BATTERY EXISTS. Rotation used to break ties on the position of a `vadd` call in a 5,000-line file, and every never-served key ties at -1, so line order decided the FIRST pick of every crowded session. Nothing tested that, because line order is not a behaviour anyone thinks to assert, which is how an owed check came to sort 24th while its escalation
 ladder burned a rung per stop, unseen.
 
 The bash file got `clfile`, `cldeliver`, `ci_setup`, `ci_rollup` and `ci_job` by being sourced after 19-checklists.sh and 09-ci-status.sh; here they are imported from the two modules those files became, so there is still exactly one definition of each.
@@ -12,23 +12,14 @@ from __future__ import annotations
 
 import json
 import re
+import shutil
 
 from rediacc_hooks.tests.test_wl_checklists import cldeliver, clfile
 from rediacc_hooks.tests.test_wl_ci_status import ci_job, ci_rollup, ci_setup
 from rediacc_hooks.tests.wlfix import wl  # noqa: F401
 
-# One work loop and NO poll cron: that is `no-poll`, and it is also what makes the ask ladder reachable at all, since a poll cron is a listener, just a slower one.
+# One work loop, the canonical cron shape.
 WORK_ONLY_CRONS = '[{"id":"c1","schedule":"*/30 * * * *","prompt":"work loop"}]'
-
-# The same crowd plus the 5-minute poll cron V_NO_WAITER's own text calls the slower-but-real alternative to a waiter.
-WORK_PLUS_POLL_CRONS = (
-    '[{"id":"c1","schedule":"*/30 * * * *","prompt":"work loop"},'
-    '{"id":"p","schedule":"*/5 * * * *"}]'
-)
-
-OPEN_ITEM = "- [ ] (deadbeef) the thing I was actually asked to do"
-
-CROWD_MESSAGE = "I looked at it.\n\n- Agent finding I did not fix: the dead symlink under .ci"
 
 # The checklist 231b plants: its only mission member is a wave, whose `vadd` sits ~500 lines BELOW `brief` in the battery.
 CL_HANDED = """# Handoff checklist: demo
@@ -41,12 +32,6 @@ Owner: deadbeef
 ## Waves
 - [ ] w1 Wave A: the thing this session was handed
 """
-
-
-def outstanding(out: str) -> int:
-    """The count the focused block prints, as the bash `sed -n 's/.*Stop hook: \\([0-9]*\\) check(s) outstanding.*/\\1/p'` read it."""
-    found = re.search(r"Stop hook: ([0-9]+) check\(s\) outstanding", out)
-    return int(found.group(1)) if found else 0
 
 
 def prf_log(fix, round_no) -> None:
@@ -92,44 +77,6 @@ def prf_run(fix, message: str = "work done", extra_env=None):
     return fix.python([], stdin=payload, env=env)
 
 
-def test_230_a_crowded_session_still_hears_not_listening_on_the_first_stop(wl):  # noqa: F811
-    """THE PROVING CASE, the one this whole change is for. Before the ladder this FAILED: with an open ask plus five unrelated rotating violations, `no-waiter-asked` sorted 23rd behind open-items, brief, agent-state and the rest, so the first stop surfaced the worklist queue and the ask ladder advanced a rung nobody saw.
-
-    Every violation below is planted deliberately, and the count is asserted rather than assumed: a "crowded" fixture that turned out to hold two checks would pass on the old code too and prove nothing. No brief_now, so `brief` is outstanding; no hand_now, so `agent-state` is too.
-
-    RUNG 1, not rung 5. The old failure was not only that the text was late: the counter bumped at COMPUTE time, so by the time a crowded session saw the check it was already at the terminal rung, claiming five askings about a question asked once. As an invariant, compute and display coincide.
-    """
-    wl.crons = WORK_ONLY_CRONS
-    wl.brief_other("peer1234")
-    wl.add_item(OPEN_ITEM)
-    ask = wl.askid("deadbeef", "peer1234", "which baseline do we measure against?")
-    wl.say(CROWD_MESSAGE)
-    got = wl.run()
-    count = outstanding(got.out)
-    premise = "230 premise: fixture is not crowded (n=%d ask=%r): %s" % (count, ask, got.out[:300])
-    assert ask, premise
-    assert count >= 6, premise
-    assert "NOT LISTENING FOR THE ANSWER" in got.out, (
-        "230 THE PROVING CASE: buried behind the rotating queue again: %s" % got.out[:400]
-    )
-    assert "YOU ASKED 1 QUESTION AND ARE NOT LISTENING" in got.out, (
-        "230: the first sighting was not rung 1, so rungs 2-4 are unreachable: %s" % got.out[:400]
-    )
-
-
-def test_230b_control_the_compliant_shape_stays_silent_in_the_same_crowd(wl):  # noqa: F811
-    """CONTROL: the check must be silenced by listening, not by the crowd thinning. Identical fixture with one difference, a 5-minute poll cron, and with that listener armed the ladder says nothing while the stop still blocks on the rest."""
-    wl.crons = WORK_PLUS_POLL_CRONS
-    wl.brief_other("peer1234")
-    wl.add_item(OPEN_ITEM)
-    wl.askid("deadbeef", "peer1234", "which baseline do we measure against?")
-    wl.say(CROWD_MESSAGE)
-    got = wl.run()
-    listening = "230b CONTROL: fired at a session that IS listening: %s" % got.out[:400]
-    assert '"decision": "block"' in got.out, listening
-    assert "NOT LISTENING FOR THE ANSWER" not in got.out, listening
-
-
 def test_231_the_ladder_decides_the_first_pick_where_line_order_used_to(wl):  # noqa: F811
     """The operator's ask: "There should be list of 'has to show with this order'".
 
@@ -168,22 +115,9 @@ def test_231b_a_mission_check_defined_later_in_the_battery_still_wins(wl):  # no
     assert "session brief is missing" not in got.out, lineorder
 
 
-def test_232_the_collapse_three_invariants_two_quoted_the_third_named(wl):  # noqa: F811
-    """The invariant tier buys UN-ROTATABILITY and nothing more. The battery's own warning, that a prompt which fires always is a prompt that gets skimmed, is the constraint, and three promotions in one change is exactly when it bites. NOTHING IS DROPPED: the third is named on one line with its opening sentence.
-
-    THE NEEDLES ARE HEADLINES, NOT KEYS, and that is not a stylistic choice: a QUOTED invariant renders its message, which never contains its own key, so grepping for `unread-reports` passed only for whichever one got collapsed, an assertion that would have gone green on a hook that dropped the other two. A headline matches both ways, because the collapse line is exactly "<key>:
-    <that message's first line>".
-    """
-    wl.crons = WORK_ONLY_CRONS
-    wl.brief_now()
-    wl.hand_now()
-    wl.brief_other("peer1234")
-    # invariant 1: a peer's request addressed to this session.
-    wl.askid_as("peer1234", "peer1234", "deadbeef", "please confirm the baseline number")
-    # invariant 2: this session's own open ask with nothing listening.
-    wl.askid("deadbeef", "peer1234", "which baseline do we measure against?")
-    # invariant 3: an unread teammate report old enough to have graduated.
-    store = wl.base / "reports"
+def plant_unread_report(fix) -> None:
+    """An unread teammate report old enough to have graduated, which is the `unread-reports` invariant."""
+    store = fix.base / "reports"
     (store / "agenttest").mkdir(parents=True, exist_ok=True)
     (store / "agenttest" / "r.md").write_text(
         "A TEAMMATE FINDING NOBODY READ\nbody", encoding="utf-8"
@@ -210,7 +144,33 @@ def test_232_the_collapse_three_invariants_two_quoted_the_third_named(wl):  # no
         + "\n",
         encoding="utf-8",
     )
-    wl.say("status")
+
+
+# An announced question with no AskUserQuestion call, which is the `pending-ask` invariant (test_wl_cadence case 223 owns its controls).
+PENDING_ASK_MSG = """status
+
+## Remaining
+- nothing outstanding
+
+Two questions for you before I pick the branch."""
+
+
+def test_232_the_collapse_three_invariants_two_quoted_the_third_named(wl):  # noqa: F811
+    """The invariant tier buys UN-ROTATABILITY and nothing more. The battery's own warning, that a prompt which fires always is a prompt that gets skimmed, is the constraint, and three promotions in one change is exactly when it bites. NOTHING IS DROPPED: the third is named on one line with its opening sentence.
+
+    THE NEEDLES ARE HEADLINES, NOT KEYS, and that is not a stylistic choice: a QUOTED invariant renders its message, which never contains its own key, so grepping for `unread-reports` passed only for whichever one got collapsed, an assertion that would have gone green on a hook that dropped the other two. A headline matches both ways, because the collapse line is exactly "<key>:
+    <that message's first line>".
+
+    Rebuilt 2026-09-24 on three invariants that survive the removal of cross-session messaging (it was a peer request, an unheard ask and an unread report).
+    """
+    wl.crons = WORK_ONLY_CRONS
+    wl.brief_now()
+    # invariant 1: no agent/<me>/ folder, so the bootstrap wall.
+    shutil.rmtree(wl.proj / "agent" / "deadbeef", ignore_errors=True)
+    # invariant 2: an announced question never asked.
+    wl.say(PENDING_ASK_MSG)
+    # invariant 3: an unread teammate report.
+    plant_unread_report(wl)
     got = wl.run()
     assert "ALSO BLOCKING, IN BRIEF" in got.out, (
         "232: no collapse block with three invariants: %s" % got.out[:400]
@@ -219,8 +179,8 @@ def test_232_the_collapse_three_invariants_two_quoted_the_third_named(wl):  # no
     missing = [
         needle
         for needle in (
-            "cross-session REQUEST(S) are waiting on you",
-            "NOT LISTENING FOR THE ANSWER",
+            "you have no agent/deadbeef/ folder",
+            "YOU ANNOUNCED A QUESTION AND THEN STOPPED WITHOUT ASKING IT",
             "UNREAD SUB-AGENT REPORTS",
         )
         if needle not in got.out
@@ -229,17 +189,15 @@ def test_232_the_collapse_three_invariants_two_quoted_the_third_named(wl):  # no
 
 
 def test_232b_control_two_invariants_are_both_quoted_with_no_collapse_line(wl):  # noqa: F811
-    """ALWAYS_FULL_MAX is 2, so at the boundary the block must look exactly as it did before this change. A collapse that fired at two would be a regression wearing the new feature's clothes."""
+    """ALWAYS_FULL_MAX is 2, so at the boundary the block must look exactly as it did before this change. A collapse that fired at two would be a regression wearing the new feature's clothes. One planted fact apart from 232: the report store is empty."""
     wl.crons = WORK_ONLY_CRONS
     wl.brief_now()
-    wl.hand_now()
-    wl.brief_other("peer1234")
-    wl.askid_as("peer1234", "peer1234", "deadbeef", "please confirm the baseline number")
-    wl.askid("deadbeef", "peer1234", "which baseline do we measure against?")
-    wl.say("status")
+    shutil.rmtree(wl.proj / "agent" / "deadbeef", ignore_errors=True)
+    wl.say(PENDING_ASK_MSG)
     got = wl.run()
     boundary = "232b CONTROL: the boundary is wrong: %s" % got.out[:400]
-    assert "NOT LISTENING FOR THE ANSWER" in got.out, boundary
+    assert "you have no agent/deadbeef/ folder" in got.out, boundary
+    assert "YOU ANNOUNCED A QUESTION AND THEN STOPPED WITHOUT ASKING IT" in got.out, boundary
     assert "ALSO BLOCKING, IN BRIEF" not in got.out, boundary
 
 

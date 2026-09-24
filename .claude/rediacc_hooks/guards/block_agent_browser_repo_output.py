@@ -27,7 +27,7 @@ from rediacc_hooks import hookio, shellscan
 
 CHAIN = "pre-bash"
 TWIN = "pre-bash/block-agent-browser-repo-output.sh"
-ORDER = 34
+ORDER = 33
 
 # Silencing the catch-all is the one change this guard's header forbids by name: the unrecognised-flag arm IS case 1, and without it `--full-page` goes back to being eaten as the output path.
 DEFECT = ('if hookio.case_glob(tok, "--*"):', "if False:")

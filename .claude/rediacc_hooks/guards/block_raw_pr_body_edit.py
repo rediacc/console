@@ -41,7 +41,7 @@ from rediacc_hooks import hookio, shellscan
 
 CHAIN = "pre-bash"
 TWIN = "pre-bash/block-raw-pr-body-edit.sh"
-ORDER = 37
+ORDER = 36
 
 # The `gh api ... -X PATCH -F body=` arm, added 2026-09-04. Without it the door
 # this file's own message points people at has no marker check, which is exactly the state it was in until that day.
@@ -288,7 +288,7 @@ def run(ev):
         readable = not (need and not saw)
         patch_ok = readable and _has_every_marker(patch_body)
         # THE LIVE BODY IS CONSULTED ONLY FOR THIS ARM, and only once the static rule has already said no, which is what keeps the lookup off the common path and out of every case that never needed it. Two reasons it is this arm rather than both: this is the door the message above prescribes, and the `gh pr edit --body`/`--body-file` door is refused one guard earlier by
-        # block-adhoc-sanctioned.sh (ORDER 33 against this file's 37) on the deprecated projectCards field, so its copy of the over-block is unreachable.
+        # block-adhoc-sanctioned.sh (ORDER 32 against this file's 36) on the deprecated projectCards field, so its copy of the over-block is unreachable.
         #
         # A WRITE CARRYING NO GENERATED MARKER AT ALL IS STILL REFUSED WITHOUT ASKING GitHub. That is a hand-written body, the thing this guard exists for, and it is also every negative case in the suite: making the verdict depend on a network read there would trade a deterministic refusal for one that answers differently depending on what a PR looks like today.
         if not patch_ok and readable and any(_carries(m, patch_body) for m in GENERATED_MARKERS):

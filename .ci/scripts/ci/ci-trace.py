@@ -45,10 +45,8 @@ EXIT_RED = 1
 EXIT_NO_VERDICT = 2
 EXIT_HEAD_MOVED = 3
 
-# `--timeout` TAKES A UNIT SUFFIX HERE TOO, although this one's unit was never in doubt on its own.
-#
-# THE AMBIGUITY IS BETWEEN THE TWO TOOLS, NOT INSIDE EITHER. This script and .claude/hooks/stop/wl_wait.py are the two sanctioned long-lived background processes in this repo, they carry the same flag name, and their units are OPPOSITE: seconds here, minutes there. On 2026-09-23 a session read `--timeout 60` on the waiter as a minute and relaunched it every few minutes,
-# accumulating thirteen simultaneous instances -- each of them correctly counting down an hour. Fixing only the waiter would leave the pair still readable off each other, so both ends require the suffix and neither guesses. The CI_TRACE_TIMEOUT_S environment default keeps its bare number: its name carries the unit.
+# `--timeout` TAKES A MANDATORY UNIT SUFFIX. A bare number is the one spelling a reader has to guess the unit of, and a long-lived background process with a guessed timeout is relaunched or abandoned on the wrong schedule. The suffix makes the unit part of the token, so nothing is read off a convention. The CI_TRACE_TIMEOUT_S environment default keeps its bare number: its
+# name carries the unit.
 TIMEOUT_UNITS = {"s": 1, "m": 60, "h": 3600}
 
 
@@ -58,8 +56,7 @@ def _timeout_seconds(text):
     if not token or token[-1] not in TIMEOUT_UNITS:
         msg = (
             "%r needs an explicit unit: write 5400s, 90m or 1h. A bare number is refused because "
-            "the sibling instrument .claude/hooks/stop/wl_wait.py takes --timeout in MINUTES "
-            "while this one is SECONDS, and neither can be read off the other." % token
+            "its unit would have to be guessed." % token
         )
         raise argparse.ArgumentTypeError(msg)
     try:
@@ -492,15 +489,15 @@ def _selftest():
         "rc=%r out=%r" % (rc, out),
     )
 
-    # THE UNIT SUFFIX, paired with its control. A bare `--timeout 5400` used to be accepted here while `--timeout 60` on wl_wait.py meant sixty MINUTES, and on 2026-09-23 a session read the waiter's flag through this one's convention and piled up thirteen instances. Refusing the bare form is worth nothing unless the suffixed form still works, so both are asserted.
+    # THE UNIT SUFFIX, paired with its control. Refusing the bare form is worth nothing unless the suffixed form still works, so both are asserted.
     bare = None
     try:
         _timeout_seconds("5400")
     except argparse.ArgumentTypeError as exc:
         bare = str(exc)
     check(
-        "a bare --timeout is refused and the refusal names the sibling tool's opposite unit",
-        bare is not None and "wl_wait.py" in bare and "MINUTES" in bare,
+        "a bare --timeout is refused and the refusal asks for an explicit unit",
+        bare is not None and "needs an explicit unit" in bare,
         "refusal=%r" % bare,
     )
     check(

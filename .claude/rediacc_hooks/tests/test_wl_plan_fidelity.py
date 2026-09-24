@@ -118,8 +118,10 @@ def plan_file(fix, name: str, body: str, minutes_ago: float = 0) -> pathlib.Path
     return path
 
 
-def tick_n(fix, count: int, label: str = "work %d that outran the plan") -> None:
+def tick_n(fix, count: int, plan: str, label: str = "work %d that outran the plan") -> None:
     """A TICKED item, deliberately.
+
+    Each item NAMES ITS PLAN (`PLAN-<plan>.md`), because plan_drift_rows counts only this plan's work: a session driving several plans must not see each flagged by work on the others. The fixture predated that scoping and named no plan, so 215 and 216 could never fire and failed on every tree (found 2026-09-24; the poll-backoff advisory had been the only output of those stops).
 
     It stamps `upd` (which is what a session's own work moving reads) without leaving anything open, so plan-drift is the ONLY rotating check outstanding. The focused block surfaces exactly one of those, so an open item here would win the rotation and the case would score whichever check happened to be picked, which is how its first version passed its three controls while the
     thing they
@@ -128,7 +130,7 @@ def tick_n(fix, count: int, label: str = "work %d that outran the plan") -> None
     FOUR ticked items, not one: the check requires a THRESHOLD of moved work (PLAN_DRIFT_MIN_MOVES) rather than any movement at all, because a single tick is not a plan going stale, and treating it as one made the check unsatisfiable (update the plan, tick the next item, stale again immediately).
     """
     for index in range(1, count + 1):
-        ident = added_id(fix.cli("--add", wlfix.ME, label % index))
+        ident = added_id(fix.cli("--add", wlfix.ME, "PLAN-%s.md %s" % (plan, label % index)))
         fix.cli("--tick", wlfix.ME, ident, "landed, suite green, exit 0")
 
 
@@ -142,7 +144,7 @@ def test_215_a_plan_the_work_has_moved_past_is_flagged(wl):  # noqa: F811
     wl.brief_now()
     wl.hand_now()
     plan_file(wl, "thing", PLAN_EXECUTING, minutes_ago=120)
-    tick_n(wl, 4)
+    tick_n(wl, 4, "thing")
     wl.check("block", "PLAN-thing.md", "215: a plan the work has moved past is flagged")
 
 
@@ -155,7 +157,7 @@ def test_215a_one_tick_is_not_a_plan_going_stale(wl):  # noqa: F811
     wl.brief_now()
     wl.hand_now()
     path = plan_file(wl, "thing", PLAN_EXECUTING, minutes_ago=120)
-    ident = added_id(wl.cli("--add", wlfix.ME, "one small thing"))
+    ident = added_id(wl.cli("--add", wlfix.ME, "PLAN-thing.md one small thing"))
     wl.cli("--tick", wlfix.ME, ident, "landed, exit 0")
     assert "PLAN-thing.md" not in wl.run().out, "215a CONTROL: one tick flagged the plan"
 
@@ -191,7 +193,7 @@ def test_216_an_unknown_plan_carries_a_description_and_file_pointers(wl):  # noq
     wl.brief_now()
     wl.hand_now()
     plan_file(wl, "mystery", PLAN_MYSTERY, minutes_ago=120)
-    tick_n(wl, 4, "work %d")
+    tick_n(wl, 4, "mystery", "work %d")
     out = wl.run().out
     assert "the mystery subject" in out, "216: no orientation on an UNKNOWN plan: %s" % out[:320]
     assert "pkg/chunkstore/pipeline_linux.go" in out, out[:320]

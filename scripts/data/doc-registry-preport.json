@@ -693,6 +693,9 @@
       ".ci/docker/tts": "removed in 8243c3a97 (registry spine, gate and hook ports, three lane cutovers); confirmed with `git log --diff-filter=D -- .ci/docker/tts`."
     },
     "hook-guards": {
+      ".claude/hooks/stop/wl_requests.py": "removed with cross-session messaging on 2026-09-24 (operator ruling; agent/plans/PLAN-remove-cross-session-messaging.md): the request log, the --ask/--answer/--decline/--ack/--requests verbs and the --poll inbox went with it, and nothing replaces them.",
+      ".claude/hooks/stop/wl_wait.py": "removed with cross-session messaging on 2026-09-24 (agent/plans/PLAN-remove-cross-session-messaging.md): the inbox waiter, its PostToolUse --nudge member and the worklist.py --wait forwarder went with it, and the post-tool timeout dropped from 135 to 75 seconds.",
+      ".claude/rediacc_hooks/guards/block_shell_background_waiter.py": "removed with its only target, .claude/hooks/stop/wl_wait.py, on 2026-09-24 (agent/plans/PLAN-remove-cross-session-messaging.md); its oracle .claude/oracles/pre-bash/block-shell-background-waiter.sh was deleted beside it and the pre-bash ORDER after it closed up by one.",
       ".claude/hooks/pre-bash/block-pathspecless-git-commit.sh": "ported to .claude/rediacc_hooks/guards/block_pathspecless_git_commit.py by W7 P6; the bash original is kept as the differential's oracle at .claude/oracles/pre-bash/block-pathspecless-git-commit.sh, which this provider does not scan.",
       ".claude/hooks/post-bash/cancel-old-ci.sh": "ported to .claude/hooks/post-bash/cancel_old_ci.py by W7 P6; the bash original is kept as the differential's oracle at .claude/oracles/post-bash/cancel-old-ci.sh, which this provider does not scan.",
       ".claude/hooks/post-bash/refresh-pr-body.sh": "ported to .claude/hooks/post-bash/refresh_pr_body.py by W7 P6; the bash original is kept as the differential's oracle at .claude/oracles/post-bash/refresh-pr-body.sh, which this provider does not scan.",

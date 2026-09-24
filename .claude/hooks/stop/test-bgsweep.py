@@ -152,6 +152,35 @@ finally:
     proc.wait()
     os.environ.pop("WORKLIST_HARNESS_PID", None)
 
+print("== 7. A LISTED TASK'S PROCESS TREE IS BOOKKEPT ==")
+os.environ["WORKLIST_HARNESS_PID"] = "1"
+old_age = B.BGSWEEP_AGE_MIN * 60 + 60
+tree = [
+    (1, 0, "anchor", 0),
+    (2, 1, "bash (task bgtask01)", old_age),
+    (3, 2, "run-legacy.sh", old_age),
+    (4, 3, "docker exec", old_age),
+    (5, 1, "bash (forgotten)", old_age),
+]
+fake_stdout = {2: "bgtask01", 5: "gonetask"}.get
+anchors = [(p, pp, c) for p, pp, c, _a in tree]
+listed = B.sweep(tree, anchors, live_ids={"bgtask01"}, stdout_task=fake_stdout)
+ck(
+    "a running task's shell and every descendant are not orphans (2026-09-24: 21 false rows)",
+    sorted(r[0] for r in listed) == [5],
+    repr(listed),
+)
+ck(
+    "RED CONTROL: without the live task ids the same tree is all flagged",
+    sorted(r[0] for r in B.sweep(tree, anchors, live_ids=None, stdout_task=fake_stdout))
+    == [2, 3, 4, 5],
+)
+ck(
+    "a shell writing to a task the harness no longer lists is still an orphan",
+    5 in [r[0] for r in listed],
+)
+os.environ.pop("WORKLIST_HARNESS_PID", None)
+
 print()
 if Tally.count < 12:
     print("VACUOUS: only %d checks ran; this suite has 12+" % Tally.count)

@@ -590,8 +590,7 @@ The standing rule to commit and push everything every round is what keeps a shar
 Measured 2026-07-30: sweep `cefa43ca7` picked up another session's `check-solution-video-engine.ts` mid-campaign. It is wired into `npm run ci`, is absent from `origin/main`, and failed `273 of 273` on every run of branch 0730-2 (run 30554973713, job 90913300683). Its owner's answer when asked: drop it, it was never meant to be committed yet, and `273/273 unknown` is CORRECT output
 because no manifest entry carries the field until the publish writes it.
 
-So: when a sweep-imported file reds the branch, ASK THE OWNER via
-`worklist.py --ask` before touching it. Do not weaken another session's gate to get your own branch green, and do not assume a red gate is a broken gate. Removing it needs EVERY site at once (script, `package.json` ci chain, workflow step) or it stays red.
+So: when a sweep-imported file reds the branch, ask the operator, or leave a `[?]` worklist item naming the conflict, before touching it. Do not weaken another session's gate to turn a branch green, and do not assume a red gate is a broken gate. Removing it needs EVERY site at once (script, `package.json` ci chain, workflow step) or it stays red.
 
 ## A failed existence check with the WRONG PATH proves nothing
 Trap-Id: existence-check-with-the-wrong-path

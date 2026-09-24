@@ -403,17 +403,43 @@ def test_r9_a_running_workflow_is_judged_by_its_agents_transcripts(wl):  # noqa:
     """2026-09-24: a workflow's own .output stays empty until it returns, so every live workflow read POSSIBLY STUCK. Its agents' transcripts are the stream."""
     tid, _desc, age, size, stale = workflow_facts(wl, 1)
     assert tid == "wtest0001", tid
-    assert age is not None, (age, size, stale)
-    assert age <= 2, (age, size, stale)
-    assert size > 0, (age, size, stale)
-    assert stale is False, (age, size, stale)
+    assert age is not None, "no stream found for the workflow"
+    assert age <= 2, age
+    assert size > 0, size
+    assert stale is False, (age, stale)
 
 
 def test_r9b_a_workflow_whose_agents_went_quiet_is_stale(wl):  # noqa: F811
     """The control: the same run with its only transcript 30 minutes old must still read stale, so r9 cannot pass vacuously."""
     _tid, _desc, age, _size, stale = workflow_facts(wl, 30)
     assert stale is True, (age, stale)
-    assert age >= 29, (age, stale)
+    assert age >= 29, age
+
+
+WORKER_FACTS_SNIPPET = r"""
+import json, sys
+sys.path.insert(0, sys.argv[1])
+import wl_liveness as L
+ev = {"cwd": sys.argv[2], "background_tasks": [
+    {"id": "wtest0001", "type": "workflow", "status": "running", "description": "wf", "name": "demo-flow"}]}
+rows = L.worker_facts(ev, sys.argv[3])
+print(json.dumps(rows[0] if isinstance(rows, tuple) else rows))
+"""
+
+
+def test_r9c_the_roster_line_reads_a_workflow_by_its_agents_too(wl):  # noqa: F811
+    """`worker_facts` is the second reader of a workflow's quiet time; it read the empty .output and printed 'output quiet 65m' for a live workflow on 2026-09-24."""
+    workflow_facts(wl, 1)
+    proc = subprocess.run(
+        [sys.executable, "-c", WORKER_FACTS_SNIPPET, str(wlfix.STOP_DIR), str(wl.proj), wlfix.SID],
+        capture_output=True,
+        text=True,
+        env=wl.stop_env(),
+        check=False,
+    )
+    assert proc.returncode == 0, proc.stderr[-800:]
+    line = next(r for r in json.loads(proc.stdout) if "wtest0001" in r)
+    assert "output quiet 1m" in line or "output quiet 0m" in line, line
 
 
 def test_r4_five_leased_writers_exceed_the_cap_and_the_newest_is_the_excess(wl):  # noqa: F811
@@ -735,30 +761,6 @@ def test_s3b_status_on_a_transcript_that_did_not_grow_is_silent_and_blocks(wl): 
     assert got.decision == "block", got.out[:400]
     assert "SILENT WORKER" in got.out, got.out[:800]
     assert W1 in got.out, got.out[:800]
-
-
-def test_s4_a_due_ping_forfeits_the_silent_poll_path(wl):  # noqa: F811
-    """The silent poll stop is the one path that skips the battery; a roster defect must forfeit it."""
-    stop_world(wl, lease_age_min=5)
-    wl.say(SAID)
-    base = wl.run()
-    assert base.decision == "allow", wl.why("s4 baseline", "allow", base, "ROSTER HONEST")
-    wl.cli("--poll", wlfix.ME)
-    quiet = wl.run()
-    assert not quiet.out.strip(), (
-        "CONTROL: an honest roster's poll stop was not silent: %r" % quiet.out[:300]
-    )
-    # The same world with the ping due: one planted fact, the lease's age.
-    wl.setup()
-    stop_world(wl, lease_age_min=19.93)
-    wl.say(SAID)
-    base = wl.run()
-    assert base.decision == "allow", wl.why("s4 due baseline", "allow", base, "ROSTER HONEST")
-    time.sleep(5)
-    wl.cli("--poll", wlfix.ME)
-    got = wl.run()
-    assert got.out.strip(), "a due status ping was slept through on the silent poll path"
-    assert "WORKER STATUS DUE" in got.out, got.out[:600]
 
 
 def test_s5_the_incident_a_finished_parent_with_a_live_child_draws_neither_dead_nor_gone(wl):  # noqa: F811

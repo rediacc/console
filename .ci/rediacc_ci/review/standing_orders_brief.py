@@ -1,6 +1,6 @@
 """The live-state brief printed by the `/standing-orders` slash command, ported from a 120-line bash twin that W7 P6 deleted.
 
-What it prints: the session identity, the open worklist slice, the ownership split against peer sessions, whether the `[>]` leases are believable, what peers are waiting on, and the durable context under `agent/`.
+What it prints: the session identity, the open worklist slice, the ownership split against peer sessions, whether the `[>]` leases are believable, and the durable context under `agent/`.
 
 THE ONLY LIVE CALLER, repointed onto this module when the twin went:
   * `.claude/commands/standing-orders.md:10` -- the `!`python3
@@ -12,7 +12,7 @@ THE ONLY LIVE CALLER, repointed onto this module when the twin went:
     in lockstep: a frontmatter that does not match the body is a permission
     prompt on the operator's first invocation.
 
-READ-ONLY BY CONSTRUCTION, on both sides. Nothing here writes to the worklist store; `worklist.py` is invoked only with `--list` and `--poll`.
+READ-ONLY BY CONSTRUCTION, on both sides. Nothing here writes to the worklist store; `worklist.py` is invoked only with `--list`.
 
 EVERY PATH IS RELATIVE TO THE PROCESS'S CURRENT DIRECTORY, deliberately. The twin uses `.claude/hooks/stop/worklist.py`, `agent/...` and a bare `pwd`, so it reports on whatever checkout it is run from. `paths.repo_root()` is NOT used: that resolver honours $REDIACC_CI_ROOT and would make the port describe a different tree from the twin when the two are compared side by side.
 
@@ -273,12 +273,6 @@ def main(argv: list[str]) -> int:
                     "do not assume death.",
                     flush=True,
                 )
-    print(flush=True)  # the twin's bare `echo ""`
-
-    print("WAITING FOR ME FROM PEER SESSIONS (silence means nothing is waiting):", flush=True)
-    _, poll_raw = _run(["python3", WL, "--poll", me], merge_stderr=True)
-    sys.stdout.write(head(poll_raw, 30))
-    sys.stdout.flush()
     print(flush=True)  # the twin's bare `echo ""`
 
     agent = _agent_dir()

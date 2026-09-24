@@ -45,7 +45,7 @@ from rediacc_hooks import hookio, shellscan
 CHAIN = "pre-bash"
 PREFIX_HATCH = r"(^|[;&|(][ \t]*)PR_BRANCH_DATE_OK=1[ \t]+([A-Za-z_][A-Za-z0-9_]*=[^ \t]*[ \t]+)*gh[ \t]+pr[ \t]+create"
 TWIN = "pre-bash/block-stale-pr-branch-date.sh"
-ORDER = 24
+ORDER = 23
 
 # The escape hatch. Without it a deliberately long-lived branch (resuming a multi-day wave onto its existing PR) can never file its PR, which is the shape that gets a guard bypassed rather than obeyed.
 DEFECT = ('if ev.env("PR_BRANCH_DATE_OK") != "":', "if False:")

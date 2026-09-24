@@ -15,6 +15,7 @@ NOTIFICATION, NOT ACTION. No code here calls `os.kill`/`terminate()` against a d
 """
 
 import os
+import re
 import subprocess
 from typing import Any
 
@@ -157,7 +158,50 @@ def descendants(anchor_pid, table_with_age):
     return out
 
 
-def sweep(table_with_age=None, anchor_table=None):
+_TASK_OUTPUT = re.compile(r"/tasks/([A-Za-z0-9_-]+)\.output$")
+
+
+def _stdout_task(pid):
+    """The background task id whose `tasks/<id>.output` this pid writes to (fd 1 or 2), or None."""
+    for fd in (1, 2):
+        try:
+            target = os.readlink("/proc/%d/fd/%d" % (pid, fd))
+        except OSError:
+            continue
+        m = _TASK_OUTPUT.search(target)
+        if m:
+            return m.group(1)
+    return None
+
+
+def bookkept(rows, live_ids, stdout_task=_stdout_task):
+    """The pids that belong to a task the harness lists as running: a process whose stdout (or an ancestor's, within `rows`) is that task's `tasks/<id>.output`.
+
+    2026-09-24: the sweep reported 21 "orphans" that were the process trees of two LISTED tasks (an M-live run's `devbox exec -> run-legacy.sh -> docker exec` chain and a writer's `pytest -n 8`), and blocked every stop on them.
+    """
+    if not live_ids:
+        return set()
+    parent = {pid: ppid for pid, ppid, _c, _a in rows}
+    owned: dict[Any, bool] = {}
+
+    def is_owned(pid, depth=0):
+        if pid in owned:
+            return owned[pid]
+        task = stdout_task(pid)
+        if task is not None:
+            owned[pid] = task in live_ids
+            if owned[pid]:
+                return True
+        up = parent.get(pid)
+        owned[pid] = bool(
+            up is not None and up in parent and depth < 64 and is_owned(up, depth + 1)
+        )
+        return owned[pid]
+
+    return {pid for pid, _pp, _c, _a in rows if is_owned(pid)}
+
+
+def sweep(table_with_age=None, anchor_table=None, live_ids=None, stdout_task=_stdout_task):
     """[(pid, age_min_or_None, cmdline)] -- orphan rows to report, or [] when the anchor cannot be resolved or nothing qualifies.
 
     A row with age >= BGSWEEP_AGE_MIN is flagged. A row with age=None (unreadable start time) is ALSO flagged, labelled "age unknown" by the caller -- never silently dropped and never treated as 0 or as infinite, per this module's own design note.
@@ -175,7 +219,11 @@ def sweep(table_with_age=None, anchor_table=None):
     if anchor is None:
         return []
     out = []
-    for pid, _ppid, cmdline, age in descendants(anchor, table_with_age):
+    rows = descendants(anchor, table_with_age)
+    owned = bookkept(rows, set(live_ids or ()), stdout_task)
+    for pid, _ppid, cmdline, age in rows:
+        if pid in owned:
+            continue
         if age is None or age >= BGSWEEP_AGE_MIN * 60:
             age_min = (age / 60.0) if age is not None else None
             out.append((pid, age_min, cmdline))

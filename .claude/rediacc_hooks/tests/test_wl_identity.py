@@ -5,7 +5,7 @@ Ported from `.claude/hooks/stop/worklist-cases/18-identity.sh`, one pytest funct
 v19: RUNTIME CALLER IDENTITY. Every `<me>` argument used to be accepted on SHAPE alone (PREFIX_RE), and nothing had ever compared one to reality. THE DEFECT, replayed verbatim by case 184: a session copied a SUB-AGENT's namespace token out of a Task-spawn tool result (`agent_id: search-renet2@session-4c3e095a`) and passed it as its own `<me>` for 26 hours, 219 calls under
 4c3e095a and 20 under its real id, from ONE process. Every call SUCCEEDED, because writes and reads key off the same unvalidated string, so one typo splits a session into two internally-consistent halves, and a peer's message waited 34 hours in the half nobody was reading.
 
-CASES 184, 184w AND 185 READ ONE DRIVER and share an xdist group for that reason. Case 185 refuses to type the verb list out: it derives it from `worklist.py`'s own dispatch and checks it against a coverage set the driver records AS IT DRIVES EACH VERB. A table written by hand would be the same bug one layer up, and a coverage set grepped out of this file would pass on a battery
+CASES 184 AND 185 READ ONE DRIVER and share an xdist group for that reason. Case 185 refuses to type the verb list out: it derives it from `worklist.py`'s own dispatch and checks it against a coverage set the driver records AS IT DRIVES EACH VERB. A table written by hand would be the same bug one layer up, and a coverage set grepped out of this file would pass on a battery
 that never ran.
 """
 
@@ -25,7 +25,7 @@ from rediacc_hooks.tests.wlfix import wl  # noqa: F401
 # The literal from the incident: a sub-agent namespace token passed as a session's own `<me>`.
 FOREIGN = "4c3e095a"
 
-# Cases 184, 184w and 185 read ONE driver, `l1` below, because the bash ran them against one unbroken world: 184 drove every identity-taking verb, 184w drove the waiter beside it, and 185 read the coverage file both had written. A module-scoped fixture keeps that world, and keeps each of the three selectable on its own.
+# Cases 184 and 185 read ONE driver, `l1` below, because the bash ran them against one unbroken world: 184 drove every identity-taking verb, and 185 read the coverage file it had written. A module-scoped fixture keeps that world, and keeps each case selectable on its own.
 XDIST_GROUP = "wl-identity-l1"
 
 
@@ -51,12 +51,6 @@ def both(got: wlfix.Result) -> str:
 def added_id(text: str) -> str:
     """The item id `--add` printed."""
     found = re.search(r"^added #([0-9a-f]+)", text, re.MULTILINE)
-    return found.group(1) if found else ""
-
-
-def request_id(text: str) -> str:
-    """The request id `--ask` printed."""
-    found = re.search(r"#([0-9a-f]{8})", text)
     return found.group(1) if found else ""
 
 
@@ -218,9 +212,9 @@ def probe_phantom(fix) -> str:
     code = (
         "import pathlib, sys\n"
         "sys.path.insert(0, %r)\n"
-        "import wl_checks as CK, wl_store as S, wl_requests as R\n"
+        "import wl_checks as CK, wl_store as S\n"
         "wl = pathlib.Path(%r)\n"
-        "found, blind = CK.phantom_identities(wl, %r, S.load(wl, sync=False), R.read_requests(wl))\n"
+        "found, blind = CK.phantom_identities(wl, %r, S.load(wl, sync=False))\n"
         "print('BLIND: %%s' %% blind if blind else 'FLAGGED: %%s' %% ','.join(f[0] for f in found))"
     ) % (str(wlfix.STOP_DIR), str(fix.wl), wlfix.SID)
     proc = subprocess.run(
@@ -249,7 +243,6 @@ def test_181_isolation_the_suite_can_never_reach_the_live_worklist(wl):  # noqa:
 
     # The env half. Every WORKLIST_* knob the operator's shell might carry is scrubbed by `wlfix.scrubbed_environ`, and `setup()` re-scrubs the ones cases set, so a stop here runs on the suite's own configuration whatever the launching shell had.
     knobs = (
-        "WORKLIST_QUIET_WAKES",
         "WORKLIST_BG_OUTPUT_DIR",
         "WORKLIST_HARNESS_PID",
         "WORKLIST_BG_REPORT_MIN",
@@ -418,13 +411,10 @@ class L1Drive:
     def __init__(self):
         self.covered: set[str] = set()
         self.failures: list[str] = []
-        self.poll_marker = False
-        self.wait_fire: wlfix.Result | None = None
-        self.wait_control: wlfix.Result | None = None
 
 
 def drive_l1(fix) -> L1Drive:
-    """Drive every identity-taking verb four ways, then the waiter, against one fixture world."""
+    """Drive every identity-taking verb four ways against one fixture world."""
     drive = L1Drive()
     fix.brief_now()
     fix.brief_other("cafe1234")
@@ -439,18 +429,11 @@ def drive_l1(fix) -> L1Drive:
     i_update = mkitem("l1-update-item")
     i_lease = mkitem("l1-lease-item")
     mkitem("l1-list-item")  # the --list row asserts on the TEXT, not the id
-    r_answer = fix.askid_as("cafe1234", "cafe1234", wlfix.ME, "l1-answer-me")
-    r_decline = fix.askid_as("cafe1234", "cafe1234", wlfix.ME, "l1-decline-me")
-    r_ack = request_id(both(l1run(fix, "--ask", wlfix.ME, "cafe1234", "l1-ack-me")))
-    l1run(fix, "--answer", "cafe1234", r_ack, "l1-their-answer", peer="cafe1234")
     for name, value in (
         ("i_tick", i_tick),
         ("i_defer", i_defer),
         ("i_update", i_update),
         ("i_lease", i_lease),
-        ("r_answer", r_answer),
-        ("r_decline", r_decline),
-        ("r_ack", r_ack),
     ):
         assert value, "FIXTURE BROKEN: %s was never created, so its row proves nothing" % name
     inv_rel, inv_selector = plant_investigate_target(fix)
@@ -501,11 +484,6 @@ def drive_l1(fix) -> L1Drive:
         ("--intent", "--intent @WHO@ l1-intent-text --for 30", "intent recorded"),
         ("--reap", "--reap @WHO@ l1task9", "reaped 1 task"),
         ("--migrate", "--migrate @WHO@ --candidates", ""),
-        ("--ask", "--ask @WHO@ cafe1234 l1-table-ask", "request #"),
-        ("--answer", "--answer @WHO@ %s l1-my-answer" % r_answer, "answered #"),
-        ("--decline", "--decline @WHO@ %s l1-my-decline" % r_decline, "declined #"),
-        ("--ack", "--ack @WHO@ %s" % r_ack, "acked #"),
-        ("--poll", "--poll @WHO@", ""),
         ("--reports", "--reports --read @WHO@ l1report0001", "marked 1 report"),
         ("--reports", "--reports --list --as @WHO@", "L1 FIXTURE REPORT"),
         # Both take a `<me>` and both must prove their effect, not merely exit 0.
@@ -575,32 +553,13 @@ def drive_l1(fix) -> L1Drive:
                 "184 CONTROL B %s: accused a caller it could not verify: %s" % (verb, text[:200])
             )
 
-        # CONTROL C: the length floor, generalised from --poll's. `dead` IS a prefix of this session's id, so only the floor can refuse it, which is the whole point: same_session's symmetry would have accepted `--add d`.
+        # CONTROL C: the length floor. `dead` IS a prefix of this session's id, so only the floor can refuse it, which is the whole point: same_session's symmetry would have accepted `--add d`.
         got = l1run(fix, *short_args)
         if got.rc == 0:
             drive.failures.append(
                 "184 CONTROL C %s: accepted a 4-char `<me>`: %s" % (verb, both(got)[:200])
             )
 
-    # --poll's effect is a FILE, not a line: an empty inbox prints nothing by contract, so CONTROL A above can only check the exit code for it.
-    drive.poll_marker = fix.stem(".pollmark-deadbeef").is_file()
-
-    # THE WAITER, on the same world and in the same pass, exactly as the bash drove it. It is a different entry point (wl_wait.py, not worklist.py) and getting it wrong is expensive in a way the others are not: a waiter armed against the wrong slice blocks for MINUTES on an inbox that is not its own, then reports nothing new.
-    waitbin = wlfix.STOP_DIR / "wl_wait.py"
-
-    def wait(prefix: str) -> wlfix.Result:
-        proc = subprocess.run(
-            [sys.executable, str(waitbin), prefix, "--timeout", "0.02m"],
-            capture_output=True,
-            text=True,
-            env=dict(fix.env, CLAUDE_PROJECT_DIR=str(fix.proj)),
-            check=False,
-        )
-        return wlfix.Result(proc.stdout, proc.stderr, proc.returncode)
-
-    drive.covered.add("--wait")
-    drive.wait_fire = wait(FOREIGN)
-    drive.wait_control = wait(wlfix.ME)
     return drive
 
 
@@ -608,7 +567,7 @@ def drive_l1(fix) -> L1Drive:
 def l1(tmp_path_factory) -> L1Drive:
     """The L1 battery, run ONCE for the three cases that read it.
 
-    Module-scoped so 184, 184w and 185 see one world without depending on each other's ordering, and pinned to one xdist worker so the battery is paid for once rather than per worker.
+    Module-scoped so 184 and 185 see one world without depending on each other's ordering, and pinned to one xdist worker so the battery is paid for once rather than per worker.
     """
     fixture = wlfix.Fixture(tmp_path_factory.mktemp("l1") / "hookfix")
     fixture.setup()
@@ -625,23 +584,6 @@ def test_184_every_verb_taking_a_me_refuses_an_identity_this_session_is_not(l1):
       C  the prefix is too short             -> refused by the length floor
     """
     assert not l1.failures, "\n".join(l1.failures)
-    assert l1.poll_marker, "184 CONTROL A --poll: exit 0 but no marker, so the verb did nothing"
-
-
-@pytest.mark.xdist_group(XDIST_GROUP)
-def test_184w_wait_is_on_the_same_rule_and_it_is_the_one_that_blocks_on_the_answer(l1):
-    """The waiter is on the same rule, and it is the one that BLOCKS on the answer."""
-    assert l1.wait_fire.rc != 0, (
-        "FIRE: the waiter armed against a foreign identity: %s" % both(l1.wait_fire)[:200]
-    )
-    assert "identity mismatch" in both(l1.wait_fire), both(l1.wait_fire)[:200]
-
-    # The heartbeat is UNLINKED on a clean timeout exit, so the effect to assert is the report line naming the session it actually listened for: a waiter armed against the wrong slice would name that one.
-    assert l1.wait_control.rc == 0, "CONTROL A: the check broke the waiter (rc=%d): %s" % (
-        l1.wait_control.rc,
-        both(l1.wait_control)[:200],
-    )
-    assert "nothing new for deadbeef" in both(l1.wait_control), both(l1.wait_control)[:200]
 
 
 @pytest.mark.xdist_group(XDIST_GROUP)
@@ -678,8 +620,6 @@ def test_185_anti_vacuity_the_verb_list_is_derived_from_the_source_not_typed_her
         # Store-level queries, no identity.
         "--path",
         "--compact",
-        # An unfiltered listing of everybody's requests.
-        "--requests",
         # Harness hooks; identity is in the event.
         "--session-start",
         "--post-compact",
@@ -698,8 +638,13 @@ def test_185_anti_vacuity_the_verb_list_is_derived_from_the_source_not_typed_her
     }
 
     # The derivation's own control. An empty or broken regex would produce an empty `verbs` and this whole case would pass by finding nothing to check, exactly the can't-fail shape it exists to prevent.
-    assert {"--add", "--tick", "--ask", "--poll", "--state", "--brief"} <= verbs, (
+    assert {"--add", "--tick", "--lease", "--defer", "--state", "--brief"} <= verbs, (
         "DERIVATION BROKEN: the dispatch scan found %s" % sorted(verbs)
+    )
+    # The cross-session messaging verbs were removed on 2026-09-24 and must stay gone: a dispatch arm reappearing for one of them would reopen a surface nothing owns any more.
+    removed = {"--ask", "--answer", "--decline", "--ack", "--requests", "--poll", "--wait"}
+    assert not (verbs & removed), "removed messaging verb(s) back in the dispatch: %s" % sorted(
+        verbs & removed
     )
     gap = sorted((verbs - no_me) - l1.covered)
     assert not gap, "UNCOVERED identity-taking verb(s), add a row to the 184 table: %s" % gap
@@ -744,7 +689,7 @@ def test_184x_a_short_me_that_exactly_matches_an_explicit_declaration_is_honoure
     Legacy sub-agents tagged items with their NAME rather than a session prefix, and `w2s-en` is 6 characters. The floor refused it even WITH the override declared, and the refusal then advised a rerun with the exact value it had just rejected. An instruction to retry the thing it refused leaves no next move: the listing path was closed, so the only way to see those items was to
     reassign them BLIND, which is the opposite of inspect-then-decide. A capability reachable only by acting blind is not reachable.
 
-    The floor guards against an UNDER-SPECIFIED GUESS about self. An exact match to an explicit declaration is not a guess, so it is honoured, and the three controls below are what keep that from being a loophole.
+    The floor guards against an UNDER-SPECIFIED GUESS about self. An exact match to an explicit declaration is not a guess, so it is honoured, and the two controls below are what keep that from being a loophole.
 
     The bash placed this case after 186 so that `setup`'s `rm -rf` could not wipe the coverage file case 185 reads. pytest gives every test its own sandbox, so that constraint no longer binds, and the order is kept only so the two files read the same way.
     """
@@ -771,69 +716,6 @@ def test_184x_a_short_me_that_exactly_matches_an_explicit_declaration_is_honoure
     got = wl.python(["--add", "w2s-en", "x"], env=near)
     assert got.rc != 0, "CONTROL B: near-enough counted as exact: %s" % both(got)[:200]
     assert "shorter than 8 characters" in both(got), both(got)[:200]
-
-    # CONTROL C: THE PROPERTY THAT MAKES THE ESCAPE SAFE, and nothing else asserts it. --poll and --wait key SIDECAR FILENAMES off `<me>`[:8], so a short prefix there names a different marker than the Stop hook derives from the full session id and silently disables the fast path. Those two carry their own floor, ahead of check_me, and the escape must not reach them.
-    got = wl.python(["--poll", "w2s-en"], env=declared)
-    assert got.rc != 0, "CONTROL C: a declared short prefix reached the poll marker: %s" % (
-        both(got)[:200],
-    )
-    assert "8-char" in both(got), both(got)[:200]
-
-    proc = subprocess.run(
-        [sys.executable, str(wlfix.STOP_DIR / "wl_wait.py"), "w2s-en", "--timeout", "0.01m"],
-        capture_output=True,
-        text=True,
-        env=dict(declared, CLAUDE_PROJECT_DIR=str(wl.proj)),
-        check=False,
-    )
-    assert proc.returncode != 0, "CONTROL C: a declared short prefix armed the waiter"
-    assert "8-char" in proc.stdout + proc.stderr, (proc.stdout + proc.stderr)[:200]
-
-
-def test_187_ask_refuses_a_recipient_that_has_never_briefed_here(wl):  # noqa: F811
-    """The same defect from the SENDER'S side, and it cost the same incident 34 hours: peers addressed `4c3e095a`, an identity that never existed, and the request sat until it auto-escalated with "recipient silent for 2062min"."""
-    wl.brief_now()
-    wl.brief_other("cafe1234")
-    got = wl.cli("--ask", wlfix.ME, FOREIGN, "into the void")
-    assert got.rc != 0, "posted into an inbox nobody reads: %s" % both(got)[:200]
-    assert "has never briefed" in both(got), both(got)[:200]
-    assert "cafe1234" in both(got), "the refusal did not list who is real: %s" % both(got)[:200]
-
-    # CONTROL A: one planted fact, the recipient HAS briefed.
-    got = wl.cli("--ask", wlfix.ME, "cafe1234", "a real recipient")
-    assert got.rc == 0, "CONTROL A: the check refused a real session: %s" % both(got)[:200]
-    assert "request #" in both(got), both(got)[:200]
-
-    # CONTROL B: '*' and 'operator' are not roster entries and never will be.
-    assert wl.cli("--ask", wlfix.ME, "*", "broadcast").rc == 0, (
-        "CONTROL B: the roster check swallowed a broadcast"
-    )
-    assert (
-        wl.cli("--ask", wlfix.ME, "operator", "a question DEFAULT: proceed as planned").rc == 0
-    ), "CONTROL B: the roster check swallowed an operator ask"
-
-
-def test_187_control_c_with_an_empty_roster_the_check_abstains(wl):  # noqa: F811
-    """CONTROL C: the INSTRUMENT BLIND. An empty roster means the check has no data (a fresh worktree, a wiped TMPDIR) and refusing every ask there would break the mechanism exactly where nothing is wrong."""
-    got = wl.cli("--ask", wlfix.ME, "nobody99", "no roster at all")
-    assert got.rc == 0, "an empty roster refused every ask: %s" % both(got)[:200]
-    assert "request #" in both(got), both(got)[:200]
-
-
-def test_188_operator_is_exempt_and_the_exemption_is_narrow(wl):  # noqa: F811
-    """The stop report prints `worklist.py --answer operator <id> '<words>'` for the HUMAN, who runs it in whatever shell is open, and if that is a Claude session's Bash the identity check would refuse the one command the mail exists to get run. "operator" is a name, not a session prefix, and was never verifiable."""
-    wl.brief_now()
-    wl.brief_other("cafe1234")
-    rid = wl.askid_as("cafe1234", "cafe1234", wlfix.ME, "for the operator to answer")
-    assert rid, "FIXTURE BROKEN: no request was posted"
-    got = wl.cli("--answer", "operator", rid, "the human's answer")
-    assert got.rc == 0, "the identity check broke the operator's reply path: %s" % both(got)[:200]
-    assert "answered #" in both(got), both(got)[:200]
-
-    # CONTROL: the exemption is ONE literal, not "any non-session word".
-    got = wl.cli("--answer", "operator2", rid, "an impostor")
-    assert got.rc != 0, "CONTROL: the exemption is wider than one literal: %s" % both(got)[:200]
-    assert "identity mismatch" in both(got), both(got)[:200]
 
 
 def test_189_an_identity_that_writes_here_and_has_never_stopped_is_reported(wl):  # noqa: F811
@@ -958,37 +840,27 @@ def test_189e_control_for_189d_one_lastevent_file_and_the_same_call_flags(wl):  
 
 
 def test_190_reassign_moves_the_open_work_and_leaves_the_history_alone(wl):  # noqa: F811
-    """v19 L3. BEFORE AND AFTER in one run. The before-assert is the control: without it the test passes on a store that already contained the item and the request."""
+    """v19 L3. BEFORE AND AFTER in one run. The before-assert is the control: without it the test passes on a store that already contained the item."""
     wl.brief_now()
     wl.hand_now()
     wl.say("all done, nothing outstanding")
     wl.run()
     wl.phantom_store("phantom1", 90)
-    # A request the phantom sent, and one sent TO it. The incident's real damage was in .requests, so a repair that leaves those unreachable fixes the symptom nobody complained about and skips the one they did.
-    wl.brief_other("phantom1")
-    sent = wl.askid_as("phantom1", "phantom1", wlfix.ME, "the message that was lost")
-    assert sent, "FIXTURE BROKEN: the phantom's own request was never posted"
-    wl.brief_other("cafe1234")
-    prid_to = wl.askid_as("cafe1234", "cafe1234", "phantom1", "a question nobody read")
-    assert prid_to, "FIXTURE BROKEN: the request TO the phantom was never posted"
 
     before_list = both(wl.cli("--list", "--open", wlfix.ME))
-    before_poll = both(wl.cli("--poll", wlfix.ME))
     assert "phantom-owned item" not in before_list, (
         "BEFORE: the fixture already showed the items, so the after-assert proves nothing"
-    )
-    assert prid_to not in before_poll, (
-        "BEFORE: the fixture already showed the request, so the after-assert proves nothing"
     )
 
     got = wl.cli("--reassign", wlfix.ME, "phantom1")
     assert got.rc == 0, "--reassign failed: %s" % both(got)[:300]
     assert "reassigned phantom1 -> deadbeef" in both(got), both(got)[:300]
+    # Items only since 2026-09-24: the report names no request log and no inbox poll any more.
+    assert "requests:" not in both(got), both(got)[:300]
+    assert "--poll" not in both(got), both(got)[:300]
 
     after_list = both(wl.cli("--list", "--open", wlfix.ME))
-    after_poll = both(wl.cli("--poll", wlfix.ME))
     assert "phantom-owned item" in after_list, "the items did not move: %s" % after_list[:300]
-    assert prid_to in after_poll, "the lost request is still unreachable: %s" % after_poll[:300]
 
     # The history must still say the phantom wrote them. A tidy log that lies about who did what is worse than an untidy one.
     events = wl.wl_events()
@@ -1001,7 +873,7 @@ def test_190b_control_reassign_refuses_a_peer_that_is_fresh_but_never_stopped(wl
     """THE REVIEW FINDING THIS PINS (medium, PR #551).
 
     The `.lastevent-` guard alone does not deliver the guarantee the docstring claims. That file is written at a session's FIRST STOP, so a peer that has added items and not yet stopped has no file either and is indistinguishable from a genuine phantom. Any session can read a peer's prefix out of `--list --open`, and concurrent sessions in one tree are routine here, so without an
-    age gate a peer's OPEN items and request routing could be moved onto the caller WHILE that peer was working on them.
+    age gate a peer's OPEN items could be moved onto the caller WHILE that peer was working on them.
 
     Case 190 ages its target 90 minutes and 190a's target has already stopped; NEITHER covers a merely-fresh, still-working target, so the untested path was the vulnerable one.
     """

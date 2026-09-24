@@ -23,7 +23,7 @@ from rediacc_hooks import hookio, shellscan
 
 CHAIN = "pre-bash"
 TWIN = "pre-bash/block-second-open-pr.sh"
-ORDER = 25
+ORDER = 24
 
 # FAILS CLOSED is the property, and this is the line that holds it: without the status test an unreadable list becomes an empty list, and "gh is down" reads as "you have no open PRs".
 DEFECT = ("if rc != 0:", "if False:")

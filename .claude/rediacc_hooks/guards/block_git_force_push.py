@@ -15,7 +15,7 @@ from rediacc_hooks import hookio, shellscan
 
 CHAIN = "pre-bash"
 TWIN = "pre-bash/block-git-force-push.sh"
-ORDER = 19
+ORDER = 18
 
 # Re-qualifying the plus arm to `+refs/` is precisely the first attempt the header records: `+main:main` and `+HEAD:main` go back to being allowed while the long form is still refused, which is what made the hole look closed.
 DEFECT = (r"]\+[^", r"]\+refs/[^")

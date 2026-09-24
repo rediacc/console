@@ -43,7 +43,6 @@
   ".claude/rediacc_hooks/guards/block_second_open_pr.py",
   ".claude/rediacc_hooks/guards/block_self_matching_pgrep.py",
   ".claude/rediacc_hooks/guards/block_settled_questions.py",
-  ".claude/rediacc_hooks/guards/block_shell_background_waiter.py",
   ".claude/rediacc_hooks/guards/block_ssh_docker.py",
   ".claude/rediacc_hooks/guards/block_ssh_file_write.py",
   ".claude/rediacc_hooks/guards/block_stale_pr_branch_date.py",

@@ -1,6 +1,6 @@
 """Epics: a label over N worklist items, for PR structure and per-epic review.
 
-WHY A SIDECAR AND NOT AN EVENT KIND. `compact()` in wl_store.py rewrites the event log down to the minimal item-reproducing set (md, add, lease), so a novel event kind there is SILENTLY DESTROYED. `record_intent` already learned this and says so at its own definition; `.requests` and `.intents` are the precedents this follows. An epic that vanished on the next compact would take a
+WHY A SIDECAR AND NOT AN EVENT KIND. `compact()` in wl_store.py rewrites the event log down to the minimal item-reproducing set (md, add, lease), so a novel event kind there is SILENTLY DESTROYED. `record_intent` already learned this and says so at its own definition; `.intents` is the precedent this follows. An epic that vanished on the next compact would take a
 PR's whole structure with it, and the failure would look like an empty section rather than an error.
 
 WHY EPICS ARE NOT WORKLIST ITEMS. `wl_planfid.is_umbrella()` actively refuses an item that stands for several tasks ("Waves B-D", "phases 1 through 3"), because one item covering many tasks is how work goes untracked. An epic is a LABEL OVER items, never an item: the items stay individually tracked, ticked and evidenced, and the epic only groups them for rendering and review.

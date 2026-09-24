@@ -31,7 +31,7 @@ from rediacc_hooks import hookio, shellscan
 
 CHAIN = "pre-bash"
 TWIN = "pre-bash/block-blanket-git-add.sh"
-ORDER = 30
+ORDER = 29
 
 # The PR #566 finding, undone: with `>` and a redirection out of the terminator set, `git add -A > /dev/null` and `git add -A 2>&1` stage the whole tree and walk straight past this guard, which is what they did before review caught it.
 DEFECT = (r"($|[;&|<>]|[0-9]*>)", r"($|[;&|])")

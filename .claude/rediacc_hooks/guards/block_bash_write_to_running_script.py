@@ -34,7 +34,7 @@ from rediacc_hooks import hookio, proc
 
 CHAIN = "pre-bash"
 TWIN = "pre-bash/block-bash-write-to-running-script.sh"
-ORDER = 16
+ORDER = 15
 
 # AN ASCII ARROW IS NOT A REDIRECT, and this is the FIFTH round of the same
 # class. Measured 2026-09-01: writing a plain markdown file was refused because

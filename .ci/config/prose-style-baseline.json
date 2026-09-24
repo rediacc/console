@@ -16,16 +16,16 @@
   "that shrank by 29 can still hide one brand-new violation. Comparing sizes is not",
   "the same claim as diffing the sets."
  ],
- "count": 2976,
- "files": 733,
+ "count": 2956,
+ "files": 731,
  "by_rule": {
-  "R1": 1617,
+  "R1": 1611,
   "R11": 150,
   "R14": 1,
   "R18": 14,
   "R19": 62,
-  "R2": 639,
-  "R7": 493
+  "R2": 634,
+  "R7": 484
  },
  "findings": {
   ".ci/breakpoint/README.md": {
@@ -1645,8 +1645,6 @@
   ".claude/hooks/stop/wl_checks.py": {
    "R1": [
     "113acc200d5bd2a1",
-    "289ed5fa71af39c8",
-    "30139fc1deec6dbc",
     "4b4d0acbc82d4b8c",
     "55ac9a11a02d142b",
     "55c68295b24a1b8c",
@@ -1669,7 +1667,6 @@
     "32f4a03ab276ef9b",
     "51b470d2c15f65e5",
     "5852f31badedee4c",
-    "5ac0015f911dfcdd",
     "7f9d14bb0b3c27c8",
     "83968b3f5230faad",
     "8e420aaf6cda9d55",
@@ -1697,20 +1694,13 @@
     "2f3da51105c7810e",
     "34235d150448d68a",
     "4824b2336549bd98",
-    "6980b4747187ab0d",
     "7a99d09f2d6a94bf",
-    "83d6ed83931d8f51",
     "8c3e3617c13cd73b",
     "9e3469c0fa5de048",
     "a0a43f06e2f04623",
-    "aea97b4f118b54cc",
     "b4e8a36d76f1c89c",
     "b686d99284010e1c",
-    "d11a95bf7e0da060",
-    "dbdada92a6421db8",
-    "f0ec409a5f0c64e3",
-    "f53e2dc0b6614566",
-    "fbed5a899930fc38"
+    "d11a95bf7e0da060"
    ]
   },
   ".claude/hooks/stop/wl_ci.py": {
@@ -1854,11 +1844,6 @@
     "265ca6642da74a43"
    ]
   },
-  ".claude/hooks/stop/wl_requests.py": {
-   "R1": [
-    "382b46571d0035b7"
-   ]
-  },
   ".claude/hooks/stop/wl_rules.py": {
    "R1": [
     "19f67bf297c0028e",
@@ -1898,21 +1883,9 @@
    ],
    "R7": [
     "0bd11fd19011a86c",
-    "31d6d48a64b23b8e",
     "77b2e8fcbb04d405",
     "ba25795126abd04a",
     "d27a9a1bb1afdd6e"
-   ]
-  },
-  ".claude/hooks/stop/wl_wait.py": {
-   "R1": [
-    "d13b606fb2241a41",
-    "feb52f5d14fd747d"
-   ],
-   "R2": [
-    "83c7178941216e57",
-    "c14b993b99d846eb",
-    "c86cc73f43203e38"
    ]
   },
   ".claude/hooks/stop/worklist.py": {
@@ -1943,9 +1916,6 @@
     "95a0c8f14716a5ae",
     "c4d5a42582c31272",
     "d0d8f0afb20394fe"
-   ],
-   "R2": [
-    "b3900a7772340fcc"
    ],
    "R7": [
     "8e9bef8ffd13d583",
@@ -3487,7 +3457,6 @@
     "df649ffb12b5d971",
     "e36fddf872dc3995",
     "e45820837621c8c6",
-    "e64a0ae9d6d47068",
     "e88b331fa0515997",
     "eb43d654cebac205",
     "ebcdc089b5fdfd5a",
@@ -3608,9 +3577,6 @@
   "docs/agent-reference/worklist-v10-brief.md": {
    "R1": [
     "3afc937f8ced5fe9"
-   ],
-   "R7": [
-    "5bbe0e7a6b4a8297"
    ]
   },
   "docs/backup-storage/01-verified-context.md": {

@@ -6,8 +6,10 @@ tree. Nothing here is a hand-written expectation.
 
 THE SEAM IS THE CURRENT DIRECTORY, not the subject's own location. The port reads `.claude/hooks/stop/worklist.py`, `agent/...` and a bare `pwd` relative to wherever it is RUN, so it never has to be copied into the fixture: each case builds a tree and runs the real tracked module with `cwd` set to it.
 
-THE WORKLIST IS A CANNED STAND-IN, AND THAT IS THE POINT. The subject here is the BRIEF, not `worklist.py`; the real store is append-only and shared with other live sessions, so driving it would make this suite depend on what a peer did thirty seconds ago. Each case writes a scripted `.claude/hooks/stop/worklist.py` into the fixture that answers `--list`/`--poll` from a table.
-`test_the_real_worklist_answers_the_same_three_verbs` is the anti-vacuity control on that substitution: it drives the REAL tracked `worklist.py` with the brief's own three argument vectors and asserts each one is answered, so the stand-in cannot be standing in for something that no longer exists.
+THE WORKLIST IS A CANNED STAND-IN, AND THAT IS THE POINT. The subject here is the BRIEF, not `worklist.py`; the real store is append-only and shared with other live sessions, so driving it would make this suite depend on what a peer did thirty seconds ago. Each case writes a scripted `.claude/hooks/stop/worklist.py` into the fixture that answers `--list` from a table.
+`test_the_real_worklist_answers_the_same_two_verbs` is the anti-vacuity control on that substitution: it drives the REAL tracked `worklist.py` with the brief's own two argument vectors and asserts each one is answered, so the stand-in cannot be standing in for something that no longer exists.
+
+ONE RECORDED BLOCK IS STRIPPED FROM THE GOLDENS, a NAMED DIVERGENCE: see `_without_peer_poll_block`.
 
 TWO THINGS ARE NORMALIZED, and both have a control. The `at <ts>` stamp comes
 from `datetime.now`, which advances between the recording and the run; and
@@ -52,7 +54,6 @@ FAKE_WORKLIST = """#!/usr/bin/env python3
 import sys
 LIST_ALL = %(list_all)r
 LIST_MINE = %(list_mine)r
-POLL = %(poll)r
 STDERR = %(stderr_text)r
 RC = %(rc)d
 argv = sys.argv[1:]
@@ -61,8 +62,6 @@ if STDERR:
     sys.stderr.flush()
 if argv[:2] == ["--list", "--open"]:
     sys.stdout.write(LIST_MINE if len(argv) > 2 else LIST_ALL)
-elif argv[:1] == ["--poll"]:
-    sys.stdout.write(POLL)
 sys.stdout.flush()
 sys.exit(RC)
 """
@@ -73,7 +72,6 @@ def _fixture(
     *,
     list_all: str = RICH_SLICE + QUIET_SLICE,
     list_mine: str = RICH_SLICE,
-    poll: str = "",
     worklist_stderr: str = "",
     worklist_rc: int = 0,
     with_worklist: bool = True,
@@ -96,7 +94,6 @@ def _fixture(
             % {
                 "list_all": list_all,
                 "list_mine": list_mine,
-                "poll": poll,
                 "stderr_text": worklist_stderr,
                 "rc": worklist_rc,
             },
@@ -179,6 +176,24 @@ def _run(
     )
 
 
+# THE PEER-POLL BLOCK, the one NAMED DIVERGENCE between the port and the twin's recorded bytes (2026-09-24). The twin, and the port until cross-session messaging was removed from the worklist Stop hook, printed a `WAITING FOR ME FROM PEER SESSIONS` section fed by `worklist.py --poll`. That verb no longer exists, so the brief no longer prints the section. The
+# goldens stay the twin's own recording and are not rewritten: the block, from its header line through the first blank line after it, is removed from each one before comparing, and everything else is still compared byte for byte. `test_the_peer_poll_block_is_gone_from_live_output` is the control that the live brief really stopped printing it.
+PEER_POLL_HEADER = "WAITING FOR ME FROM PEER SESSIONS (silence means nothing is waiting):"
+
+
+def _without_peer_poll_block(recorded: str) -> str:
+    lines = recorded.split("\n")
+    if PEER_POLL_HEADER not in lines:
+        return recorded
+    start = lines.index(PEER_POLL_HEADER)
+    end = lines.index("", start + 1)
+    return "\n".join(lines[:start] + lines[end + 1 :])
+
+
+def _golden(name: str) -> str:
+    return _without_peer_poll_block((GOLDENS / ("%s.golden" % name)).read_text(encoding="utf-8"))
+
+
 def _render(proc: subprocess.CompletedProcess[str], root: pathlib.Path, base: pathlib.Path) -> str:
     """The recorded shape: one exit line, then the two streams under their own markers."""
     return "exit: %d\n--- stdout ---\n%s--- stderr ---\n%s" % (
@@ -204,15 +219,13 @@ CASES: list[tuple[str, dict[str, object]]] = [
     ),
     ("worker-named-but-no-output-stream", {"tasks": {"someone-else": (10, 10)}}),
     ("no-workers-at-all", {"list_mine": QUIET_SLICE, "tasks": {"x": (1, 1)}}),
-    ("empty-worklist-output", {"list_all": "", "list_mine": "", "poll": ""}),
+    ("empty-worklist-output", {"list_all": "", "list_mine": ""}),
     (
         "worklist-writes-to-stderr-and-fails",
         {"worklist_stderr": "Traceback: boom\n", "worklist_rc": 1},
     ),
     ("worklist-script-missing-entirely", {"with_worklist": False}),
-    ("poll-has-content", {"poll": "PEER f0f0f0f0 is waiting on #11112222\n"}),
     ("head-60-truncation", {"list_mine": "".join("  - [ ] #%08d line\n" % i for i in range(90))}),
-    ("head-30-truncation-on-poll", {"poll": "".join("peer line %d\n" % i for i in range(50))}),
     ("inside-a-git-repo", {"with_git": True}),
     ("no-agent-directory-at-all", {"with_agent": False}),
     ("state-md-missing", {"with_state": False}),
@@ -231,7 +244,7 @@ def test_port_matches_the_twins_recorded_output(name: str, kwargs: dict[str, obj
         base.mkdir()
         root = _fixture(base, **kwargs)  # type: ignore[arg-type]
         actual = _render(_run(root, base), root, base)
-    expected = (GOLDENS / ("%s.golden" % name)).read_text(encoding="utf-8")
+    expected = _golden(name)
     assert actual == expected, (
         "%s diverged from the twin's recorded bytes:\n--- twin ---\n%s\n--- port ---\n%s"
         % (name, expected, actual)
@@ -265,11 +278,26 @@ def test_the_output_is_not_trivially_short() -> None:
         "OPEN DEFERRALS OF MINE: 1.",
         "ARE MY [>] LEASES BELIEVABLE:",
         "    deadbeefcafe1234: 4096 bytes,",
-        "WAITING FOR ME FROM PEER SESSIONS",
         "DURABLE CONTEXT: my STATE.md 2023-11-14 22:13:20; 3 plan file(s) under agent/",
         "  2 peer session folder(s) beside mine under agent/.",
     ):
         assert marker in out, "the brief did not print %r:\n%s" % (marker, out)
+
+
+def test_the_peer_poll_block_is_gone_from_live_output() -> None:
+    """The CONTROL for the named divergence: the stripped block really is absent from what the brief prints now, and really is present in the recordings it was stripped from, so the strip is not hiding a live section."""
+    with tempfile.TemporaryDirectory() as td:
+        base = pathlib.Path(td) / "v"
+        base.mkdir()
+        root = _fixture(base, tasks={"deadbeefcafe1234": (4096, 30), "": (12, 30)})
+        out = _run(root, base).stdout
+    assert "WAITING FOR ME FROM PEER SESSIONS" not in out
+    assert "DURABLE CONTEXT:" in out
+    recorded = (GOLDENS / "live-worker-with-a-growing-output-file.golden").read_text(
+        encoding="utf-8"
+    )
+    assert PEER_POLL_HEADER in recorded
+    assert PEER_POLL_HEADER not in _without_peer_poll_block(recorded)
 
 
 def test_the_phantom_worker_token_is_reproduced() -> None:
@@ -304,7 +332,7 @@ def test_empty_session_id_reaches_the_guard_the_unset_one_cannot() -> None:
         base.mkdir()
         root = _fixture(base)
         actual = _render(_run(root, base, session_id=""), root, base)
-    expected = (GOLDENS / ("%s.golden" % EMPTY_ID_CASE)).read_text(encoding="utf-8")
+    expected = _golden(EMPTY_ID_CASE)
     assert actual == expected
     assert "cannot tell my items from a peer's" in expected
 
@@ -320,12 +348,12 @@ def test_state_age_missing_is_really_reported() -> None:
     assert "^ SUSPECT: agent/ holds 3 session dir(s) and" in new.stdout
 
 
-def test_the_real_worklist_answers_the_same_three_verbs() -> None:
-    """ANTI-VACUITY for the canned stand-in: the three argument vectors the brief uses must still be answered by the REAL tracked `worklist.py`, or the fixture would be standing in for something that no longer exists."""
+def test_the_real_worklist_answers_the_same_two_verbs() -> None:
+    """ANTI-VACUITY for the canned stand-in: the two argument vectors the brief uses must still be answered by the REAL tracked `worklist.py`, or the fixture would be standing in for something that no longer exists."""
     assert REAL_WORKLIST.is_file(), "the brief's worklist target is gone: %s" % REAL_WORKLIST
     # WORKLIST_SESSION_ID IS DECLARED RATHER THAN THE PREFIX GUESSED. Driven: `worklist.py --list --open zzzzzzzz` under this session exits 1 with
     # "identity mismatch: you passed <me>=zzzzzzzz but this session is ...",
-    # because reading as one identity while writing as another gives a session two inboxes. The brief itself never trips this -- it derives the prefix
+    # because reading as one identity while writing as another gives a session two identities. The brief itself never trips this -- it derives the prefix
     # from the very variable the store checks -- but a probe with a synthetic
     # prefix has to say so. Every verb here is READ-ONLY.
     env = dict(os.environ)
@@ -333,7 +361,6 @@ def test_the_real_worklist_answers_the_same_three_verbs() -> None:
     for args in (
         ["--list", "--open"],
         ["--list", "--open", "zzzzzzzz"],
-        ["--poll", "zzzzzzzz"],
     ):
         proc = subprocess.run(
             ["python3", str(REAL_WORKLIST), *args],
@@ -365,7 +392,7 @@ def test_planted_defect_is_caught_by_the_goldens() -> None:
     broken_src = source.replace(anchor, 'WORKER_RE = re.compile(r"worker:[A-Za-z0-9._-]+")\n')
     assert broken_src != source
 
-    expected = (GOLDENS / "rich-slice-tasks-dir-unresolvable.golden").read_text(encoding="utf-8")
+    expected = _golden("rich-slice-tasks-dir-unresolvable")
     with tempfile.TemporaryDirectory() as td:
         base = pathlib.Path(td) / "b"
         base.mkdir()

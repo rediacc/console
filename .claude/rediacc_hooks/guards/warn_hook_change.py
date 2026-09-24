@@ -21,7 +21,7 @@ from rediacc_hooks import hookio
 
 CHAIN = "pre-bash"
 TWIN = "pre-bash/warn-hook-change.sh"
-ORDER = 36
+ORDER = 35
 
 # Without the `git commit` test the note fires on every Bash call the session makes while anything under .claude/hooks/ is staged -- which, during hook work, is most of them. That is the difference between "the reminder at the moment of the act" and a banner nobody reads.
 DEFECT = ('if not hookio.case_glob(cmd, "*git commit*"):', "if False:")

@@ -43,7 +43,7 @@ from rediacc_hooks import hookio, shellscan
 CHAIN = "pre-bash"
 TWIN = "pre-bash/block-pathspecless-git-commit.sh"
 # Re-keyed from 43 to 44 on 2026-09-22 by the insertion of block_push_to_protected_branch.py at 39.
-ORDER = 44
+ORDER = 43
 
 # The escape this guard advertises is the one line worth planting on: a `--` that requires a real pathspec after it is what separates the documented form from the bare one wearing its clothes.
 DEFECT = (r'r"(^|[{S}])--[{S}]+[^{S};&|<>]"', r'r"(^|[{S}])--"')

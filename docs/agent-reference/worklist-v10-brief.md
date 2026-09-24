@@ -32,7 +32,7 @@ This session reported watches as live that had already completed, and one watch 
 - **The 250-600 character handover was too tight and burned rounds.** Three
 rewrites in one night landed at 649, 620 and 611 characters before fitting. Raising it to ~1500 removes a real tax.
 - **The handover's 10-minute staleness limit is outpaced by the 5-minute poll
-cron**, so a quiet session goes stale every other poll and can never take the silent path.
+cron**, so a quiet session goes stale every other poll and the silent path stays out of reach. (Historical: the poll cron, `poll_fast_path` and the rest of cross-session messaging were removed on 2026-09-24.)
 - **A gate that cannot be satisfied deadlocks the session, and it happened.**
 `poll_fast_path` needs a baseline that only an allowed stop wrote, but any open task blocks the stop, so the baseline was never written all night and every 5-minute poll paid the full battery. Fixed by operator decision in `860f47b04`. Any new time-based check must be built so it cannot trap the session the same way.
 - **Thirty-plus open `- [?]` deferrals is the symptom item 6 names.** They are

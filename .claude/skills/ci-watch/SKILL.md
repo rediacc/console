@@ -17,7 +17,7 @@ self-improving: true
 
 `--wait` goes in a background task (`run_in_background: true`). It owns its polling interval, so no loop is ever hand-written; the process exit is the wake-up. Exits: **0** green, **1** red *or superseded*, **2** no verdict (in flight, no open PR, unreadable), **3** head moved by a push (`--json` for machine-readable output).
 
-**`--timeout` requires a unit suffix**: `90m`, `5400s` or `1h`, default `5400s`. A bare number is refused, because the other sanctioned long-lived background process here, `.claude/hooks/stop/wl_wait.py`, carries the same flag name in MINUTES. Thirteen duplicate waiters were once launched on that confusion, so neither tool guesses any more.
+**`--timeout` requires a unit suffix**: `90m`, `5400s` or `1h`, default `5400s`. A bare number is refused, because its unit would have to be guessed.
 
 Ad-hoc `gh` watch commands are **refused**, and a hand-rolled watch left running **blocks the Stop hook** ([incidents.md](incidents.md): five incidents in one week). It keys on the **PR head commit**, so a watchdog rerun *replaces* the old attempt.
 

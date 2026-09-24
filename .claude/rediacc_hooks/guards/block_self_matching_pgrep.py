@@ -25,7 +25,7 @@ from rediacc_hooks import hookio
 
 CHAIN = "pre-bash"
 TWIN = "pre-bash/block-self-matching-pgrep.sh"
-ORDER = 15
+ORDER = 14
 
 # THE TEST IS THE BUG ITSELF. Without it every wait loop with a `pgrep -f` is refused, including the documented remedy -- the bracket class that makes the regex not match its own literal text -- so the guard would refuse the very form its own message tells you to write.
 DEFECT = ("if not _matches(pat, cmd):\n            continue", "if False:\n            continue")

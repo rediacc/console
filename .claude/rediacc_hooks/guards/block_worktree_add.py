@@ -19,7 +19,7 @@ from rediacc_hooks import hookio, shellscan
 
 CHAIN = "pre-bash"
 TWIN = "pre-bash/block-worktree-add.sh"
-ORDER = 29
+ORDER = 28
 
 # THE WRAPPER SAILED STRAIGHT PAST THE FIRST CHECK, and removing the second one puts it back: `./run.sh worktree create` runs the banned command through a script whose text never contains it.
 DEFECT = ("if hookio.grep_q(RUN_SH_CREATE, scan):", "if False:")

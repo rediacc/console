@@ -40,7 +40,7 @@ from rediacc_hooks import hookio, shellscan
 
 CHAIN = "pre-bash"
 TWIN = "pre-bash/block-host-toolchain-run.sh"
-ORDER = 35
+ORDER = 34
 
 # The host-bound arm, added 2026-08-28. Without it a command reaching into a component with its own `.venv` is routed into the container, where the venv's absolute shebangs and host glibc do not exist: the measured symptom was `ModuleNotFoundError: No module named anyio`.
 DEFECT = ("if hostbound:", "if False:")

@@ -8,14 +8,14 @@ WHY a diff sync and not an append offset: the markdown is MUTATED in place by it
 
 WHY events and not a JSON document: a document is a whole-file rewrite by nature, which is the lost-update hazard the old `>>` discipline existed to
 avoid. One event = one write() on an O_APPEND fd under a blocking flock on
-<events>.lock, the discipline proven by the .requests sidecar. Readers take no lock; a torn tail line (crash mid-write) fails json.loads and is skipped. NEW hardening over the .requests original: before appending, the writer checks the file's last byte under the lock and heals a missing newline, so a torn tail can never concatenate with the next event and corrupt both.
+<events>.lock. Readers take no lock; a torn tail line (crash mid-write) fails json.loads and is skipped. Before appending, the writer checks the file's last byte under the lock and heals a missing newline, so a torn tail can never concatenate with the next event and corrupt both.
 
 CRASH STORY, complete: append crash = torn tail, healed on next append,
 skipped by every reader. Session-doc crash = tempfile + os.replace, old doc
 survives. Compact crash = tempfile + os.replace, log intact. Sync crash
 after fold, before append = nothing written, next invocation re-syncs.
 
-The sidecars (.requests, .sessions, .loop, .reggate-*, .pollbase-*, .pollmark-*, .cistate-*, .cimark-*, .ciqueue-*, .stuck-*, .croncount-*, .blocks-*, .waiter-*, .waiternudge-*, .state-*, .events.*, .lastevent-*, .reaped-*, .agentstate.*, .epics, .resprofile.*) keep their v5-v9 formats and names: their shapes are pinned by the suite and by living sessions, and consolidating them
+The sidecars (.sessions, .loop, .reggate-*, .cistate-*, .cimark-*, .ciqueue-*, .stuck-*, .croncount-*, .blocks-*, .state-*, .events.*, .lastevent-*, .reaped-*, .agentstate.*, .epics, .resprofile.*) keep their v5-v9 formats and names: their shapes are pinned by the suite and by living sessions, and consolidating them
 buys nothing. New v10 state (liveness ladder, task ages, judge cache, autonomy windows, STATE.md world-signature) lives in ONE new per-session doc, <worklist>.state-<prefix>.json.
 
 THIS LIST IS LOAD-BEARING, not documentation. .ci/scripts/quality/ check_tracked_sidecars.py parses it to decide what git must never track, so a sidecar missing from it is a sidecar the gate is blind to. That already happened: .waiter-* and .state-* were absent when the gate was written, so a planted tracked heartbeat passed cleanly. It happened AGAIN and was found
@@ -53,7 +53,7 @@ def _flock(handle, flags):
 
     WHY A SHIM RATHER THAN A BARE MODULE-SCOPE IMPORT. `import fcntl` at the top of this file means the module does not DEGRADE on Windows, it DIES at
     import -- and it takes every read-only path down with it, including the
-    report inbox and the waiter, which import this module purely to reuse its fold and take no lock at all. The read paths never needed fcntl; only the writes do. So the import is guarded, reads keep working everywhere, and a write on a platform without locking fails with a sentence naming the reason instead of an ImportError raised from a file nobody was looking at.
+    report inbox, which imports this module purely to reuse its fold and takes no lock at all. The read paths never needed fcntl; only the writes do. So the import is guarded, reads keep working everywhere, and a write on a platform without locking fails with a sentence naming the reason instead of an ImportError raised from a file nobody was looking at.
 
     This does NOT make the hook Windows-complete: `_append_lines` still uses os.pwrite, and ~20 sibling hooks are bash. It makes the read-only surfaces usable there, which is what the new inbox needs.
     """
@@ -515,10 +515,6 @@ def trap_prompt_lines(root):
     return kept
 
 
-def requests_path(worklist):
-    return worklist.with_suffix(".requests")
-
-
 def intents_path(worklist):
     return worklist.with_suffix(".intents")
 
@@ -532,7 +528,7 @@ INTENT_MAX_MIN = int(os.environ.get("WORKLIST_INTENT_MAX_MIN", "120"))
 def record_intent(worklist, me, text, covers, minutes):
     """Append one intent. A SIDECAR, never the event log.
 
-    The event log is folded by `compact` down to the minimal item-reproducing set, so a novel event kind there would be silently destroyed. `.requests` is the precedent this follows.
+    The event log is folded by `compact` down to the minimal item-reproducing set, so a novel event kind there would be silently destroyed.
     """
     _append_lines(
         intents_path(worklist),
@@ -2050,7 +2046,7 @@ def cleanup_dead_sessions(worklist, fold, session_id, projects_dir):
 
 
 def compact(worklist):
-    """Operator-run. Drops `[~]` markdown lines (the v5 behavior, verbatim: exclusive blocking lock, size re-check, atomic replace), then rewrites the event log to the minimal set reproducing the current fold, under the events lock so appenders serialize against it. The .requests sidecar is never touched.
+    """Operator-run. Drops `[~]` markdown lines (the v5 behavior, verbatim: exclusive blocking lock, size re-check, atomic replace), then rewrites the event log to the minimal set reproducing the current fold, under the events lock so appenders serialize against it.
 
     "Minimal" means minimal EVENTS, not minimal information: the retained `add` carries the derived display identity, triage verdict and deferral justification forward, because those are folded state that no surviving event would otherwise reproduce."""
     tomb = re.compile(r"^\s*-\s*\[~\]")
@@ -2153,17 +2149,6 @@ def brief_state(worklist, session_id, briefs=None):
     if age > SESSION_BRIEF_STALE_MIN:
         return "stale", int(age), others
     return "ok", int(age), others
-
-
-def brief_age_min(worklist, prefix, briefs=None):
-    """Minutes since `prefix` last refreshed its .sessions brief, or None if it never briefed. Freshest match wins when a short prefix matches several -- the conservative direction, as in owner_age_hours."""
-    ages = []
-    now = C.utcnow()
-    briefs = read_briefs(worklist) if briefs is None else briefs
-    for k, (when, _text) in briefs.items():
-        if C.same_session(k, prefix) and when is not None:
-            ages.append((now - when).total_seconds() / 60.0)
-    return min(ages) if ages else None
 
 
 def sole_live_session(worklist, session_id):
@@ -2466,15 +2451,14 @@ def agent_state_briefing(root, session_id, projects_dir=""):
 
 
 def world_sig(root, worklist, session_id, fold=None, transcript_path=None):
-    """THIS SESSION's world: task statuses + HEAD + the structure of the items it owns + the requests that involve it. Keyed by the poll fast path (has anything moved since the last full stop?) and by the judge verdict cache.
+    """THIS SESSION's world: task statuses + HEAD + the structure of the items it owns. Keyed by the judge verdict cache.
 
-    v17 (2026-08-04): it used to hash the BYTES of the markdown, the event log and the requests file. All three are SHARED across every session in the repo, so one teammate's --add, --tick, --lease or --update broke every other session's baseline, forfeited their silent poll and invalidated their judge cache. Measured on the live store before the fix: 32 of 32 events in a 3-hour
-    window came from other sessions, polluting 18 of the 36 five-minute windows -- roughly half of all poll stops paid the full battery, plus a paid judge call, for work that was none of their business. That is the exact failure the docstring below already argued against for a dirty-tree hash, committed one paragraph later against shared files.
+    v17 (2026-08-04): it used to hash the BYTES of the markdown and the event log. Both are SHARED across every session in the repo, so one teammate's --add, --tick, --lease or --update invalidated every other session's judge cache. Measured on the live store before the fix: 32 of 32 events in a 3-hour
+    window came from other sessions, polluting 18 of the 36 five-minute windows -- roughly half of all stops paid for a judge call on work that was none of their business. That is the exact failure the docstring below already argued against for a dirty-tree hash, committed one paragraph later against shared files.
 
     A dirty-tree hash was considered and rejected for the same reason -- other sessions edit this tree continuously. Known residual, shared with the stuck detector and documented rather than papered over: this session's own uncommitted source edits with no task/tick/commit are invisible.
 
-    Nothing foreign that could change this session's OBLIGATIONS is dropped: a request addressed to it or broadcast is inside the slice below, and poll_fast_path re-checks the inbox, the ladder and the deferral windows
-    from artifacts anyway. What is dropped is foreign BOOKKEEPING, which was
+    Nothing foreign that could change this session's OBLIGATIONS is dropped. What is dropped is foreign BOOKKEEPING, which was
     never this session's business.
 
     An UNOWNED item counts as this session's (C.owned_by_me), matching the rule that an untagged item belongs to this session: such an item blocks this session, so it must move the signature."""
@@ -2500,45 +2484,7 @@ def world_sig(root, worklist, session_id, fold=None, transcript_path=None):
             ",".join("%s:%s" % (i, st) for i, (st, _s) in sorted(ts.items())),
             C._git(root, "rev-parse", "HEAD"),
             items,
-            my_requests_sig(worklist, session_id),
         ]
-    )
-    return hashlib.sha1(blob.encode("utf-8", "replace")).hexdigest()[:16]
-
-
-def my_requests_sig(worklist, session_id):
-    """A digest of the request events that involve THIS session, and only those. Deliberately parsed here rather than through wl_requests, which imports this module: the poll baseline must not depend on an import cycle.
-
-    Two passes, because a follow-up event (answer, ack, decline, escalation) carries the request id but not its from/to: pass one collects the ids of asks this session sent, was sent, or that were broadcast; pass two hashes every event touching one of those ids."""
-    p = requests_path(worklist)
-    try:
-        lines = p.read_text(encoding="utf-8", errors="replace").splitlines()
-    except OSError:
-        # An ABSENT file must hash exactly like a file holding only other sessions' traffic, or the first foreign --ask in a repo moves this session's signature and forfeits its silent poll -- the very bug this function exists to close, reintroduced by a sentinel string.
-        lines = []
-    evs = []
-    for line in lines:
-        try:
-            ev = json.loads(line)
-        except ValueError:
-            continue
-        if isinstance(ev, dict):
-            evs.append(ev)
-    mine = set()
-    for ev in evs:
-        if ev.get("ev") != "ask":
-            continue
-        to = str(ev.get("to", "*"))
-        if (
-            to == "*"
-            or C.same_session(to, session_id)
-            or C.same_session(str(ev.get("from", "")), session_id)
-        ):
-            mine.add(str(ev.get("id") or ""))
-    blob = "\n".join(
-        json.dumps(ev, sort_keys=True, separators=(",", ":"))
-        for ev in evs
-        if str(ev.get("id") or "") in mine
     )
     return hashlib.sha1(blob.encode("utf-8", "replace")).hexdigest()[:16]
 

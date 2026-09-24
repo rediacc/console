@@ -2019,47 +2019,6 @@ STATIC: list[Case] = [
         ),
         "inline-python CONTROL: TypeScript that merely MENTIONS python",
     ),
-    # --- the shell-backgrounded mail waiter ------------------------------------- Also zero cases in either direction, and grandfathered into the coverage baseline since it was written. The whole guard is one regex matching a single literal behind a two-stage heredoc stripper: if the stripper ever over-strips, the guard silently becomes a no-op and every existing check stays
-    # green. It cannot detect its own neutering, so something else has to.
-    case(
-        "check 2 guards/block_shell_background_waiter.py",
-        bash_json("python3 .claude/hooks/stop/wl_wait.py abc --timeout 60m &"),
-        "background-waiter: a shell & makes it untracked",
-    ),
-    case(
-        "check 0 guards/block_shell_background_waiter.py",
-        bash_json("python3 .claude/hooks/stop/wl_wait.py abc --timeout 60m"),
-        "background-waiter CONTROL: the same command in the foreground",
-    ),
-    case(
-        "check 0 guards/block_shell_background_waiter.py",
-        bash_json('ps -eo pid,args | grep "[p]ython3.*wl_wait"'),
-        "background-waiter CONTROL: checking whether one already runs",
-    ),
-    case(
-        "check 0 guards/block_shell_background_waiter.py",
-        bash_json(
-            "worklist.py --state abc <<'EOF'\n- wl_wait.py must never run with a shell &.\nEOF"
-        ),
-        "background-waiter CONTROL: a QUOTED-delimiter heredoc body is data, not commands",
-    ),
-    case(
-        "check 0 guards/block_shell_background_waiter.py",
-        bash_json(
-            "worklist.py --state abc <<EOF\n- wl_wait.py must never run with a shell &.\nEOF"
-        ),
-        "background-waiter CONTROL: the unquoted-delimiter form too",
-    ),
-    case(
-        "check 2 guards/block_shell_background_waiter.py",
-        bash_json("bash <<'EOF'\npython3 wl_wait.py x &\nEOF"),
-        "background-waiter: a heredoc feeding a SHELL is still the command",
-    ),
-    case(
-        "check 0 guards/block_shell_background_waiter.py",
-        bash_json("grep -n timeout .claude/hooks/stop/wl_wait.py"),
-        "background-waiter CONTROL: merely reading the module",
-    ),
     # INVERTED 2026-08-09: a well-shaped whole-file Write used to PASS here, and that is the hole the incident went through. It is now denied like every other direct write, and it lives up in the deny block above only in spirit -- it is asserted here, beside its controls, so the pair reads as one decision.
     case(
         "check_out 2 guards/block_agent_state_shape.py",

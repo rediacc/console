@@ -144,7 +144,6 @@ PATTERNS = {
         "head": False,
         "collapsed": True,
         "members": _members(
-            "python3 " + _P % "hooks/stop/wl_wait.py" + " --nudge",
             {"command": "python3 " + _P % "hooks/context/band-notice.py", "timeout": 15},
             "python3 " + _P % "hooks/context/onboard.py",
         ),

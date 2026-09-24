@@ -43,7 +43,7 @@ from rediacc_hooks import hookio, shellscan
 
 CHAIN = "pre-bash"
 TWIN = "pre-bash/block-untagged-commit.sh"
-ORDER = 38
+ORDER = 37
 
 # The id-validation arm is the one the 2026-08-27 typo finding added, and the one that makes a trailer worth more than its shape. With it gone every well-formed id passes, including one that names no epic.
 DEFECT = ("if known and not _grep_qx(found, known):", "if False:")

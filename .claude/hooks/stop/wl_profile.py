@@ -22,7 +22,7 @@ Findings (see agent/plans/PLAN-shell-resource-profiling.md sections 3 and 3b):
   E4  UNDECLARED CONCURRENT WRITER    enforceable  (two captures, one run id)
   E5  INTRA-SHAPE MEMORY OUTLIER      report-only until J>=20 (sibling-relative, not MemTotal)
   E6  ZOMBIES UNDER A LIVE PARENT     enforceable  (a count at an instant)
-Deliberately absent: anything in seconds; a poll-loop detector (fires on the sanctioned waiters wl_wait.py and ci-trace.py --wait); the ~880-spawn count (the process boundary IS the suite's fixture); fork depth (a fact, not a finding).
+Deliberately absent: anything in seconds; a poll-loop detector (fires on the sanctioned waiter ci-trace.py --wait); the ~880-spawn count (the process boundary IS the suite's fixture); fork depth (a fact, not a finding).
 """
 
 from __future__ import annotations

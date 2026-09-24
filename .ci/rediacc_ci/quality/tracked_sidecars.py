@@ -10,8 +10,8 @@ WHY THIS EXISTS. On 2026-08-05 a `git add -A` swept two runtime files into a com
 while a session runs, so no linter, type-check or dead-code scan can see them.
 The only observable that distinguishes the defect is `git ls-files`.
 
-WHY A TRACKED SIDECAR IS WORSE THAN UNTIDY. The PostToolUse nudge reads a `.waiter-<prefix>` heartbeat to decide whether a session is listening for peer messages. A committed heartbeat tells every fresh clone that a waiter is already running when none is, so the nudge goes quiet and the session is silently deaf -- the exact failure the waiter was built to remove. A committed
-`.sessions` brief describes a session that no longer exists, and a committed `.requests` would replay other sessions' questions into a clone as if new.
+WHY A TRACKED SIDECAR IS WORSE THAN UNTIDY. A committed `.sessions` brief describes a session that no longer exists, and a committed `.state-<prefix>.json` hands every fresh clone another session's liveness ladder, task ages and judge cache as if they were its own. (The `.waiter-*` heartbeat and the `.requests` log this paragraph first
+named were removed with cross-session messaging on 2026-09-24.)
 
 THE PATTERN LIST IS DERIVED, NOT COPIED. wl_store.py's module docstring is the single source for the sidecar family. Hard-coding the list here would let the two drift, and a gate that checks a stale list is the vacuity this repo keeps paying for. If that docstring is reworded so the list cannot be parsed, this gate FAILS rather than silently checking nothing.
 
@@ -180,8 +180,8 @@ def main(argv: list[str] | None = None) -> int:
             err("    %s" % path)
         err("")
         err("  These are per-session runtime state, not source. A tracked")
-        err("  .waiter-* heartbeat tells a fresh clone a waiter is running when")
-        err("  none is, so its session goes silently deaf to peer messages.")
+        err("  .state-* document hands a fresh clone another session's")
+        err("  liveness and judge state as if it were its own.")
         err("")
         err("  Fix: git rm --cached <path>, and add the pattern to .gitignore.")
         err("  Do not just delete the file -- it will be recreated on the next run.")
@@ -194,8 +194,8 @@ def main(argv: list[str] | None = None) -> int:
 # A docstring shaped exactly like wl_store.py's, small enough to read. The selftest mutates copies of this rather than the real file, because a control built by substituting into real source silently stops controlling anything the day that source is reworded (see check-control-vacuity.sh).
 _STORE_DOC = '''"""The worklist store.
 
-The sidecars (.requests, .sessions, .loop, .reggate-*,
-.waiter-*, .events.*)
+The sidecars (.epics, .sessions, .loop, .reggate-*,
+.state-*, .events.*)
 keep their v5-v9 formats and names.
 """
 '''
@@ -212,7 +212,7 @@ def selftest() -> int:
     ctl.check(
         "CONTROL: the real-shaped docstring yields its six patterns",
         parse_patterns(_STORE_DOC),
-        [".requests", ".sessions", ".loop", ".reggate-*", ".waiter-*", ".events.*"],
+        [".epics", ".sessions", ".loop", ".reggate-*", ".state-*", ".events.*"],
     )
     # VACUITY: a reworded docstring yields nothing, and nothing is a refusal.
     ctl.check(
@@ -241,7 +241,7 @@ def selftest() -> int:
     )
 
     # -- the control's own control -----------------------------------------
-    ctl.truthy("CONTROL: the matcher self-matches a real pattern set", control_fires([".waiter-*"]))
+    ctl.truthy("CONTROL: the matcher self-matches a real pattern set", control_fires([".state-*"]))
     ctl.falsy("MIRROR: an empty pattern set cannot self-match", control_fires([]))
     ctl.falsy("MIRROR: a list of empty strings cannot self-match", control_fires(["", ""]))
 
@@ -301,8 +301,8 @@ def selftest() -> int:
         )
     with tempfile.TemporaryDirectory() as tmp:
         ctl.check(
-            "PLANT: a tracked .waiter-<prefix> is caught, through its glob",
-            run(build(tmp, store=_STORE_DOC, tracked=(".waiter-aaaaaaaa",))),
+            "PLANT: a tracked .state-<prefix> is caught, through its glob",
+            run(build(tmp, store=_STORE_DOC, tracked=(".state-aaaaaaaa",))),
             1,
         )
     with tempfile.TemporaryDirectory() as tmp:

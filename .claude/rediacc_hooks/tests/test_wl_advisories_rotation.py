@@ -326,9 +326,11 @@ def test_209a_control_neutral_text_earns_no_hint(wl):  # noqa: F811
     wl.say("done for now, the meeting notes are filed")
     wl.brief_now()
     wl.hand_now()
+    # The positive-presence section: a live peer brief. It was the poll-backoff advisory until that went on 2026-09-24.
+    wl.brief_other("cafe1234")
     got = wl.run()
     neutral = "209A CONTROL: neutral text hinted, or the stop said nothing: %s" % got.out[:400]
-    assert "INBOX HAS BEEN QUIET" in got.out, neutral
+    assert "Other sessions in this worktree" in got.out, neutral
     assert hint_n(got.out) == 0, neutral
 
 
@@ -447,9 +449,11 @@ def test_209i_the_kill_switch_silences_the_hint_and_nothing_else(wl):  # noqa: F
     wl.env["WORKLIST_AGENT_HINT"] = "off"
     wl.mk_agent("fixtureagent", HINT_DESC)
     hint_fixture(wl)
+    # The positive-presence section, as in 209A's control.
+    wl.brief_other("cafe1234")
     got = wl.run()
     killed = "209I the kill switch did not kill, or it killed the whole report: %s" % got.out[:400]
-    assert "INBOX HAS BEEN QUIET" in got.out, killed
+    assert "Other sessions in this worktree" in got.out, killed
     assert hint_n(got.out) == 0, killed
 
 
@@ -496,13 +500,11 @@ def test_209k_priority_3_never_displaces_a_real_section(wl):  # noqa: F811
     aged = time.time() - 48 * 3600
     os.utime(peer, (aged, aged))
     wl.add_item("- [ ] (cafe1234) their abandoned item")
-    # The fixture queues 4 priority-2 sections plus this priority-3 hint; the fixed 3-per-stop budget fills entirely from the priority-2 tier, so the hint stays queued behind the one priority-2 leftover -- outranked, not lost.
+    # The fixture queues 3 priority-2 sections plus this priority-3 hint; the fixed 3-per-stop budget fills entirely from the priority-2 tier, so the hint stays queued -- outranked, not lost.
     got = wl.run()
     displaced = "209K the hint displaced a real section, or nothing was queued: %s" % got.out[:400]
     assert hint_n(got.out) == 0, displaced
-    assert re.search(
-        r"INBOX HAS BEEN QUIET|ORPHANED item\(s\)|Other sessions in this worktree", got.out
-    ), displaced
+    assert re.search(r"ORPHANED item\(s\)|Other sessions in this worktree", got.out), displaced
     assert "more report section(s) queued" in got.out, displaced
 
     wl.newturn()

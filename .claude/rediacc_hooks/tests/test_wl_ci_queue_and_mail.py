@@ -1,11 +1,10 @@
-"""CI-queue backpressure and its cache, operator requests (ask, answer loop, escalation exemption), and the v14 gap set.
+"""CI-queue backpressure and its cache, and the v14 gap set.
 
 Ported from `.claude/hooks/stop/worklist-cases/13-ci-queue-and-mail.sh`, one pytest function per numbered bash case. Case 157's heading sits at the bottom of `12-agent-docs-and-focus.sh` while its whole body is in this file, so it is ported here, beside the rest of the queue battery.
 
 THE OPERATOR'S LIVE INCIDENT (2026-07-31) behind the queue cases: pushes queued runs behind each other and a run sat pending 25+ minutes. The hook must see the jam and tell the session to work locally instead of pushing more.
 
-THE EMAIL CHANNEL that used to carry the operator questions was removed: it was dormant rather than disabled (WORKLIST_EMAIL defaulted to "on", and only a failed-send backoff was silencing it, so a credential rotation would have re-armed it without anyone asking). The REQUEST layer it fed is not email-specific and is what actually holds these questions, so everything it proved that
-was not about SES is still proved here.
+The operator-request cases (159, 159d, 159g) were removed with cross-session messaging on 2026-09-24.
 """
 
 from __future__ import annotations
@@ -182,126 +181,6 @@ def test_157f_the_queue_read_is_cached_two_stops_one_gh_hit(wl):  # noqa: F811
     ci_run(wl)
     count = len(hits.read_text(encoding="utf-8").splitlines()) if hits.is_file() else 0
     assert count == 1, "expected exactly 1 runs-endpoint hit, got %d" % count
-
-
-def test_159_operator_requests_are_asked_once_and_relayed_then_answered_and_acked(wl):  # noqa: F811
-    """159: the stop report carries the question, its id and the relay command, and an ordinary session request is still reported (the relay line is for the OPERATOR, not decoration on every request).
-
-    159c shares this fixture and follows in sequence, because the answer loop is about the very requests 159 opened: `--answer operator` reaches the asker, `--ack` ends the delivery permanently, and the self-answer guard is untouched by the operator recipient.
-    """
-    wl.brief_now()
-    wl.hand_now()
-    rid = wl.askid("deadbeef", "operator", "which tier map? DEFAULT: ship the draft map")
-    wl.say("answer\n\n## Remaining\n- the tier map question, now with the operator")
-    got = wl.run()
-    assert "which tier map?" in got.out, got.out[:400]
-    assert rid, got.out[:400]
-    assert rid in got.out, got.out[:400]
-    assert "--answer operator <id>" in got.out, got.out[:400]
-
-    # THE BASH CONTROL HERE COULD NOT FAIL (13-ci-queue-and-mail.sh:162-174). `askid deadbeef cafe1234 ...` was REFUSED, because a request addressed to a session that has never briefed lands in an inbox nobody reads, so RIDS was the empty string and `grep -qF "$RIDS"` matched anything at all, including the empty output that stop really produced.
-    # What it MEANT to assert is ported instead, with two fixture repairs and the same subject: the recipient is briefed so the ask lands, and the report is drained wide enough to reach the request section (the trick case 151 uses), because one section is released per stop and the peers section goes first.
-    wl.brief_other("cafe1234")
-    rids = wl.askid("deadbeef", "cafe1234", "restart the ceph leg? DEFAULT: restart it")
-    wl.newturn()
-    wl.say("answer\n\n## Remaining\n- the tier map question and a session request")
-    session_req = wl.run()
-    assert rids, "159 CONTROL: the ask to a briefed peer was refused, so nothing was planted"
-    assert rids in session_req.out, (
-        "159 CONTROL: the session request vanished: %s" % session_req.out[:400]
-    )
-
-    rid2 = wl.askid("deadbeef", "operator", "ship the ceph leg? DEFAULT: hold it for the next wave")
-    wl.newturn()
-    wl.say("answer\n\n## Remaining\n- two operator questions outstanding")
-    wl.run()
-
-    wl.cli("--answer", "operator", rid, "use tier map B, the draft undercounts seats")
-    wl.newturn()
-    wl.say("answer\n\n## Remaining\n- act on the operator's tier map answer")
-    wl.env["WORKLIST_FOCUS"] = "off"
-    wl.check(
-        "block",
-        "use tier map B, the draft undercounts seats",
-        "the operator's answer blocks its asker with the text in the reason",
-    )
-
-    wl.cli("--ack", "deadbeef", rid)
-    wl.newturn()
-    wl.say("acted on it\n\n## Remaining\n- one operator question still open")
-    acked = wl.run()
-    wl.env.pop("WORKLIST_FOCUS", None)
-    assert "use tier map B" not in acked.out, (
-        "159c: the acked answer still blocked: %s" % acked.out[:300]
-    )
-
-    self_answer = wl.cli("--answer", "deadbeef", rid2, "answering myself")
-    both = self_answer.out + self_answer.err
-    assert self_answer.rc != 0, (
-        "159c CONTROL: answering the session's own request was accepted: %s" % both[:200]
-    )
-    assert "your own request" in both, both[:200]
-
-
-def test_159d_an_operator_request_does_not_escalate_into_a_duplicate_deferral(wl):  # noqa: F811
-    """Without the exemption every operator question would ALSO clone itself into a deferral carrying the same text and its own DEFAULT window. The CONTROL is the dead-recipient rule itself, which must still work for an ordinary session."""
-    wl.brief_now()
-    wl.hand_now()
-    oldreq = stamp(300)
-    requests = wl.stem(".requests")
-    with requests.open("a", encoding="utf-8") as handle:
-        handle.write(
-            json.dumps(
-                {
-                    "ev": "ask",
-                    "id": "aaaa1111",
-                    "from": "deadbeef",
-                    "to": "operator",
-                    "at": oldreq,
-                    "body": "which tier map? DEFAULT: ship the draft",
-                }
-            )
-            + "\n"
-        )
-    wl.say("answer\n\n## Remaining\n- the operator question")
-    wl.run()
-    text = requests.read_text(encoding="utf-8")
-    assert '"ev":"escalate"' not in text, "159d: the operator request escalated: %s" % text[-200:]
-    assert "aaaa1111" not in wl.wl_events(), "159d: the operator request was cloned into the store"
-
-    with requests.open("a", encoding="utf-8") as handle:
-        handle.write(
-            json.dumps(
-                {
-                    "ev": "ask",
-                    "id": "bbbb2222",
-                    "from": "deadbeef",
-                    "to": "zzzzzzzz",
-                    "at": oldreq,
-                    "body": "restart the leg? DEFAULT: restart it",
-                }
-            )
-            + "\n"
-        )
-    wl.newturn()
-    wl.say("answer\n\n## Remaining\n- the operator question and the dead-recipient one")
-    wl.run()
-    assert '"ev":"escalate"' in requests.read_text(encoding="utf-8"), (
-        "159d CONTROL: dead-recipient escalation stopped working"
-    )
-    assert "bbbb2222" in wl.wl_events(), (
-        "159d CONTROL: the escalated request never reached the store"
-    )
-
-
-def test_159g_an_operator_ask_needs_a_default(wl):  # noqa: F811
-    """An operator request with no DEFAULT: is refused at the door."""
-    wl.brief_now()
-    wl.hand_now()
-    got = wl.cli("--ask", "deadbeef", "operator", "just tell me what you think")
-    both = got.out + got.err
-    assert got.rc != 0, "a DEFAULT-less operator ask was accepted: %s" % both[:200]
-    assert "must carry a DEFAULT:" in both, both[:200]
 
 
 def test_160_displays_show_basetext_and_the_latest_note_never_the_whole_history(wl):  # noqa: F811

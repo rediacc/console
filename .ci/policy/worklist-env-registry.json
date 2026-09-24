@@ -117,12 +117,6 @@
         "'3'"
       ]
     },
-    "WORKLIST_BACKOFF_NOTE_MIN": {
-      "kind": "tuning",
-      "defaults": [
-        "'60'"
-      ]
-    },
     "WORKLIST_BGSWEEP_AGE_MIN": {
       "kind": "tuning",
       "defaults": [
@@ -543,25 +537,6 @@
         "'4'"
       ]
     },
-    "WORKLIST_POLL_FULL_MAX_MIN": {
-      "kind": "tuning",
-      "defaults": [
-        "'70'"
-      ]
-    },
-    "WORKLIST_POLL_SCHEDULE_RE": {
-      "kind": "corpus",
-      "defaults": [
-        "'^(\\\\*/(5|10|20|40)( \\\\*){4}|0( \\\\*){4})$'"
-      ],
-      "why": "The regex deciding which cron schedules count as polling, wl_checks.py:115. A corpus because it selects the subject: a narrower pattern does not make the check stricter, it makes it see less, which is the failure shape this registry is against."
-    },
-    "WORKLIST_POLL_WINDOW_S": {
-      "kind": "tuning",
-      "defaults": [
-        "'600'"
-      ]
-    },
     "WORKLIST_POPUP_PROBABILITY": {
       "kind": "tuning",
       "defaults": [
@@ -614,12 +589,6 @@
         "'$(git rev-parse --show-toplevel 2>/dev/null || echo .)'",
         "''",
         "NONE"
-      ]
-    },
-    "WORKLIST_QUIET_WAKES": {
-      "kind": "tuning",
-      "defaults": [
-        "'3'"
       ]
     },
     "WORKLIST_RECORD_BLOB_RATIO": {
@@ -729,24 +698,6 @@
       "kind": "tuning",
       "defaults": [
         "str(16 * 1024 * 1024)"
-      ]
-    },
-    "WORKLIST_REQUEST_DEAD_MIN": {
-      "kind": "tuning",
-      "defaults": [
-        "'180'"
-      ]
-    },
-    "WORKLIST_REQUEST_GRACE_MIN": {
-      "kind": "tuning",
-      "defaults": [
-        "'30'"
-      ]
-    },
-    "WORKLIST_REQUEST_STALE_MIN": {
-      "kind": "tuning",
-      "defaults": [
-        "'240'"
       ]
     },
     "WORKLIST_REVIEW_MAX_BLOCKS": {
@@ -887,42 +838,6 @@
       "kind": "tuning",
       "defaults": [
         "'15'"
-      ]
-    },
-    "WORKLIST_WAITER_GRACE_NUDGES": {
-      "kind": "tuning",
-      "defaults": [
-        "'3'"
-      ]
-    },
-    "WORKLIST_WAITER_NUDGE_S": {
-      "kind": "tuning",
-      "defaults": [
-        "'600'"
-      ]
-    },
-    "WORKLIST_WAITER_STALE_S": {
-      "kind": "tuning",
-      "defaults": [
-        "'60'"
-      ]
-    },
-    "WORKLIST_WAIT_SCAN_S": {
-      "kind": "tuning",
-      "defaults": [
-        "'300'"
-      ]
-    },
-    "WORKLIST_WAIT_TICK_S": {
-      "kind": "tuning",
-      "defaults": [
-        "'2'"
-      ]
-    },
-    "WORKLIST_WAIT_TIMEOUT_MIN": {
-      "kind": "tuning",
-      "defaults": [
-        "'60'"
       ]
     },
     "WORKLIST_WHY_MAX_CHARS": {

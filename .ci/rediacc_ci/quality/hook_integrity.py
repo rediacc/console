@@ -132,7 +132,7 @@ The twin's header, carried whole. Every paragraph of it records a hole this gate
       * a missing chain-head.sh means both toolchain preconditions go unchecked
 
     DELIBERATELY EXCLUDED, and this is the other half of the rule: stop/worklist.py,
-    stop/wl_wait.py, stop/wl_report.py and the context/*.py hooks are MACHINERY,
+    stop/wl_report.py and the context/*.py hooks are MACHINERY,
     not guards, and their absence is LOUD -- a missing stop hook errors on every
     single stop rather than quietly permitting something. A gate that cannot tell
     those apart would be inventorying files that already announce their own death.
