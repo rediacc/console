@@ -1153,7 +1153,7 @@ describe('localExecutorService create/fork licensing flow', () => {
         machineName: 'hostinger',
       });
       expect(mockAcquireRemoteRenet).toHaveBeenCalled();
-      expect(mockAcquireRemoteRenet.mock.calls[0][0]).toBe('read-only');
+      expect((mockAcquireRemoteRenet.mock.calls[0] as unknown[])[0]).toBe('read-only');
     });
 
     it('a mutating function provisions renet', async () => {
@@ -1163,7 +1163,7 @@ describe('localExecutorService create/fork licensing flow', () => {
         machineName: 'hostinger',
       });
       expect(mockAcquireRemoteRenet).toHaveBeenCalled();
-      expect(mockAcquireRemoteRenet.mock.calls[0][0]).toBe('provision');
+      expect((mockAcquireRemoteRenet.mock.calls[0] as unknown[])[0]).toBe('provision');
     });
   });
 });
