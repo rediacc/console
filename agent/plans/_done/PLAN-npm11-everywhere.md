@@ -43,16 +43,16 @@ Rejected: `devEngines.packageManager` with `onFail: error`. Measured: npm 10.9.8
 
 ## Tasks
 
-- [x] Plan written
-- [x] `NPM_VERSION` pin in toolchain.env, toolchain.sh and `rediacc_ci.core.toolchain`
-- [x] Composite `.github/actions/setup-node-npm`; setup-workspace and eleven direct sites switched
-- [x] devcontainer, root, workers/proxy and private/account Dockerfiles install the pin
-- [x] audit.py reads the pin instead of hard-coding 11.17.0
-- [x] Lockfile gate: npm 11 only, canonical-form refusal, CI-npm property, `.venv` prune; selftest and pytest updated
-- [x] Planted defects: a bare setup-node step, a stale lockfile, a Dockerfile stage without the pin
-- [x] Lockfiles regenerated (console root, workers/*, account x3)
-- [x] CLAUDE.md, ci-gates.md, pr-babysitter.md, local-common.sh comments
-- [x] Verification recorded below
+- [ ] Plan written
+- [ ] `NPM_VERSION` pin in toolchain.env, toolchain.sh and `rediacc_ci.core.toolchain`
+- [ ] Composite `.github/actions/setup-node-npm`; setup-workspace and eleven direct sites switched
+- [ ] devcontainer, root, workers/proxy and private/account Dockerfiles install the pin
+- [ ] audit.py reads the pin instead of hard-coding 11.17.0
+- [ ] Lockfile gate: npm 11 only, canonical-form refusal, CI-npm property, `.venv` prune; selftest and pytest updated
+- [ ] Planted defects: a bare setup-node step, a stale lockfile, a Dockerfile stage without the pin
+- [ ] Lockfiles regenerated (console root, workers/*, account x3)
+- [ ] CLAUDE.md, ci-gates.md, pr-babysitter.md, local-common.sh comments
+- [ ] Verification recorded below
 - [x] #587 closed by the parent session
     (ticked) 2026-09-24T05:41:03Z by d778be9d: closed https://github.com/rediacc/console/issues/587 after an independent rerun: check:ci-lockfile exit 0 across 10 lockfiles, check:ci-npmrc exit 0
 

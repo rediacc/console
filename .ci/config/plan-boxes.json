@@ -689,9 +689,11 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 0,
-      "done": 28,
-      "open_sigs": [],
+      "open": 1,
+      "done": 27,
+      "open_sigs": [
+        "9d4a6a18"
+      ],
       "done_sigs": [
         "098e1f06",
         "0f563652",
@@ -710,7 +712,6 @@
         "86ed52a8",
         "893aaa35",
         "90f5d990",
-        "9d4a6a18",
         "9da6913e",
         "a17a8400",
         "d0c74ee1",
@@ -1026,9 +1027,14 @@
       "owner": "unowned",
       "folder": "agent/plans",
       "moved_at": "2026-09-21",
-      "open": 0,
-      "done": 34,
-      "open_sigs": [],
+      "open": 4,
+      "done": 30,
+      "open_sigs": [
+        "5922423d",
+        "648bfaed",
+        "be5ce8f9",
+        "cfe6a745"
+      ],
       "done_sigs": [
         "02015bc4",
         "04b509d8",
@@ -1043,11 +1049,9 @@
         "3dc0a0b5",
         "54be95b6",
         "567b8d06",
-        "5922423d",
         "59cb6f43",
         "59e5a656",
         "636d7c53",
-        "648bfaed",
         "668e3d6b",
         "6f3c6ed6",
         "7423368e",
@@ -1056,10 +1060,8 @@
         "9d3ee1dc",
         "a5c06efb",
         "af1e2217",
-        "be5ce8f9",
         "c1771330",
         "ca9878e4",
-        "cfe6a745",
         "d8dfde77",
         "e75b47b5",
         "f56f0a22",
@@ -1202,11 +1204,12 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "2026-09-21",
-      "open": 0,
-      "done": 9,
-      "open_sigs": [],
+      "open": 1,
+      "done": 8,
+      "open_sigs": [
+        "071fec08"
+      ],
       "done_sigs": [
-        "071fec08",
         "0a3321f6",
         "18dd4873",
         "823d5963",
@@ -1251,8 +1254,8 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 16,
-      "done": 1,
+      "open": 17,
+      "done": 0,
       "open_sigs": [
         "0f583c13",
         "15eb2fa3",
@@ -1266,14 +1269,13 @@
         "82a0f082",
         "9e32e800",
         "ab3e3872",
+        "c63cd990",
         "d2374200",
         "dbdc8bbc",
         "e97f9440",
         "eb55a6bd"
       ],
-      "done_sigs": [
-        "c63cd990"
-      ]
+      "done_sigs": []
     },
     "agent/plans/PLAN-stop-report-queue.md": {
       "status": "compacted",
@@ -1613,19 +1615,19 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 2,
-      "done": 7,
+      "open": 6,
+      "done": 3,
       "open_sigs": [
+        "4cb49d45",
+        "8b4161ce",
         "a65f7c80",
-        "ba2c9c8c"
+        "ba2c9c8c",
+        "ce14776f",
+        "d073162f"
       ],
       "done_sigs": [
         "3cee36fd",
-        "4cb49d45",
-        "8b4161ce",
         "cbf8530c",
-        "ce14776f",
-        "d073162f",
         "ff0cda58"
       ]
     },
@@ -2335,10 +2337,9 @@
       "owner": "d778be9d",
       "folder": "agent/plans/_done",
       "moved_at": "2026-09-24",
-      "open": 0,
-      "done": 11,
-      "open_sigs": [],
-      "done_sigs": [
+      "open": 10,
+      "done": 1,
+      "open_sigs": [
         "088fe5b1",
         "0a7328d3",
         "1d09988f",
@@ -2346,10 +2347,12 @@
         "30427d90",
         "31b2cad6",
         "4644c81b",
-        "6180ca30",
         "9a9b5fe2",
         "d83c6b3d",
         "daf83f5c"
+      ],
+      "done_sigs": [
+        "6180ca30"
       ]
     },
     "agent/plans/_done/PLAN-pid-fallback-liveness-check.md": {
@@ -2401,12 +2404,9 @@
       "owner": "d778be9d",
       "folder": "agent/plans/_done",
       "moved_at": "",
-      "open": 0,
-      "done": 13,
-      "open_sigs": [],
-      "done_sigs": [
-        "24fbc5fc",
-        "35f8115e",
+      "open": 10,
+      "done": 3,
+      "open_sigs": [
         "54cca06b",
         "6be59355",
         "7a89c5be",
@@ -2416,8 +2416,12 @@
         "a69a55a5",
         "daffe83e",
         "e77bfe5f",
-        "f27685d2",
         "ff0c1fc4"
+      ],
+      "done_sigs": [
+        "24fbc5fc",
+        "35f8115e",
+        "f27685d2"
       ]
     },
     "agent/plans/_done/PLAN-plan-implementation-enforcement.md": {

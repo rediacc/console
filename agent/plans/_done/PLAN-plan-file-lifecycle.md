@@ -274,14 +274,14 @@ fetches. `git diff --name-status --find-renames` FIRST (trees only, free), then 
 
 ## Tasks
 
-- [x] Land the ledger alone: `check_plan_boxes.py` with A0 and A6 only, generate `.ci/config/plan-boxes.json`, wire three points plus the anti-vacuity registry
+- [ ] Land the ledger alone: `check_plan_boxes.py` with A0 and A6 only, generate `.ci/config/plan-boxes.json`, wire three points plus the anti-vacuity registry
       DONE 2026-09-03 as the A0/A6 half, then extended with A1-A5 in place.
-- [x] Add `Owner:` headers to `PLAN-secret-names-one-to-one.md` and `PLAN-secret-namespace-migration.md` so A4 is green
+- [ ] Add `Owner:` headers to `PLAN-secret-names-one-to-one.md` and `PLAN-secret-namespace-migration.md` so A4 is green
       NOT NEEDED as written: A4 only judges plans this BRANCH adds, and it is green.
       The two files named here are unowned but the rule that would have caught them
       judges added plans, which they are -- so this was re-checked rather than assumed,
       and the gate passes because plan_owner resolves an owner for both.
-- [x] Turn on A1, A3, A4, A5 with `--selftest` and `.ci/scripts/test/gates/test-plan-boxes.sh` (18 cases)
+- [ ] Turn on A1, A3, A4, A5 with `--selftest` and `.ci/scripts/test/gates/test-plan-boxes.sh` (18 cases)
       DONE 2026-09-03. 22 controls, each plant paired with a proof that the LEGITIMATE
       path stays silent -- ticking a box, moving it to another plan, leaving it open, an
       in-scope status over open boxes, an untouched plan, an existing unowned plan.
@@ -291,32 +291,32 @@ fetches. `git diff --name-status --find-renames` FIRST (trees only, free), then 
       retired plan takes its boxes with it -- and without that, the housekeeping gate
       would DEMAND a deletion A1 then REFUSES. A5 also now fires only when deletion
       actually LOSES a box; a husk whose boxes all moved is free to delete.
-- [x] Turn on A2 and create `agent/archive/plans/.gitkeep`; move `agent/archive/0730-2/PLAN-stop-hook-migration.md` in (0 boxes, free). Do NOT migrate anything else -- there is nothing pre-existing
+- [ ] Turn on A2 and create `agent/archive/plans/.gitkeep`; move `agent/archive/0730-2/PLAN-stop-hook-migration.md` in (0 boxes, free). Do NOT migrate anything else -- there is nothing pre-existing
       DONE 2026-09-03 (the rule; no migration, because there is nothing pre-existing to
       archive -- 88 of 88 open boxes are branch-new). A2 refuses anything but an R100
       rename into the archive, plus any M or D on an archived path, plus an A (a fresh
       file there is a plan whose history was left behind).
-- [x] Create `.ci/config/plan-lifecycle.json` with `warn_days` 26 / `delete_days` 33, referenced by BOTH gates so their delete predicates cannot deadlock
+- [ ] Create `.ci/config/plan-lifecycle.json` with `warn_days` 26 / `delete_days` 33, referenced by BOTH gates so their delete predicates cannot deadlock
       DONE 2026-09-03: warn_days 26 / delete_days 33, read by the age gate and named
       in its manifest leaves. A5 will read the same file rather than inlining 33.
-- [x] Write `.ci/scripts/test/gates/test-plan-housekeeping.sh` FIRST (10 cases) -- with zero live offenders it is the only evidence the age gate is not a comment
+- [ ] Write `.ci/scripts/test/gates/test-plan-housekeeping.sh` FIRST (10 cases) -- with zero live offenders it is the only evidence the age gate is not a comment
       DONE 2026-09-03: 12 cases, all passing. The two no other gate here has are the
       shallow pair -- a `git clone --depth 1` fixture must REFUSE under CI and SKIP
       LOUDLY without it. Proven able to fail: making the gate never refuse a shallow
       clone reds it. Case 2 (a 40-day plan AMENDED today must PASS) is what makes the
       last-commit-vs-added-date choice testable rather than asserted.
-- [x] Write `.ci/scripts/quality/check-plan-housekeeping.sh` until that selftest passes; wire it into `quality-i18n`
+- [ ] Write `.ci/scripts/quality/check-plan-housekeeping.sh` until that selftest passes; wire it into `quality-i18n`
       DONE 2026-09-03, wired into quality-i18n. One placement trap paid for: the step
       first landed AFTER the next job's banner comment. YAML did not care, but
       check-ci-parity's line parser breaks at the indent-2 banner and reported the step
       as missing -- and a reader would have seen it under the wrong job heading.
-- [x] Create `.plan-housekeeping-allowlist` (header comment, zero entries) and add its row to `docs/agent-reference/suppressions.md`'s Current sites table
+- [ ] Create `.plan-housekeeping-allowlist` (header comment, zero entries) and add its row to `docs/agent-reference/suppressions.md`'s Current sites table
       DONE 2026-09-03: header plus zero entries, which is the correct and safe state --
       the floor and the three liveness rules mean an empty list cannot make the gate
       vacuous. Registered in docs/agent-reference/suppressions.md's Current sites table.
 - [x] Delete the 19 finished-and-uncited plans to flatten the 2026-09-23 cliff (list in the age agent's report; 33 of 61 are FINISHED, 19 of those cited by nothing outside `agent/`)
     (ticked) 2026-09-23T12:03:53Z by d778be9d: PRESENT, superseded: deletion is forbidden and the cliff is already flat. .ci/config/plan-lifecycle.json:16 records THE THIRD DOOR (W12, 2026-09-06) -- a finished plan is COMPACTED into an attested record that keeps its own path, because the operator standing rule is that nothing is deleted. Today is the 2026-09-23 cliff date and npm run check:ci-plan-housekeeping reports rc=0, 101 tracked plan file(s), none over 33 days, 0 within 7 days, 74 compacted. Investigation row in f9aba8ad3.
-- [x] Ship S1, the SessionStart census -- cheapest change here and the operator-visible half; do not let it wait on the CI work
+- [ ] Ship S1, the SessionStart census -- cheapest change here and the operator-visible half; do not let it wait on the CI work
       DONE 2026-09-03: wl_checks.plan_box_census + plans_block now carry per-plan box
       counts and two tree-wide summary lines. Live output: "10 plan file(s) carry 82 open
       box(es) and 38 ticked, tree-wide. / 3 of them are in scope for the per-stop advisory;
@@ -331,7 +331,7 @@ fetches. `git diff --name-status --find-renames` FIRST (trees only, free), then 
       already imports wl_planfile at module level, so the arm was UNREACHABLE and the
       control had to fake sys.modules to reach it -- a control for a branch production
       cannot take. Both removed rather than kept as decoration.
-- [x] Ship S2 and S3, and amend `wl_planfile`'s design notes 2 and 4 to cite the measurement that overtook them
+- [ ] Ship S2 and S3, and amend `wl_planfile`'s design notes 2 and 4 to cite the measurement that overtook them
       DONE 2026-09-03, and BOTH design notes amended rather than left behind.
       S2: render_all shows up to PLAN_PLANS_SHOW plans sharing ONE PLAN_TASK_SHOW
       budget -- three plans now cost exactly as many quoted recipes as one did.

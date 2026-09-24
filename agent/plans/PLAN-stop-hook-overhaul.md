@@ -63,8 +63,8 @@ by-design case.
       arms -- `.claude/hooks/stop/wl_checks.py:3426` explains why.
 - [x] Strip the "whether the stream evidence matches" clause for stream-less rows.
     (ticked) 2026-09-23T16:40:56Z by d778be9d: V_BG_REPORT wording fixed in commit c8e36d98a.
-- [x] CONTROL in `.claude/hooks/stop/worklist-cases/14-background-waits.sh`: a roster of
-    (ticked) 2026-09-24T07:52:02Z by d778be9d: uncommitted: 14-background-waits.sh retired, control is test_13a..13i at .claude/rediacc_hooks/tests/test_wl_background_waits.py line 1022-1199 (blob 908418654f10), 9 passed; planted defects: predicate reverted to _only_waiters fails 13a/13d/13f/13g, always-live fails 13b/13c/13e/13h/13i, subagent arm removed fails 13g
+- [ ] CONTROL in `.claude/hooks/stop/worklist-cases/14-background-waits.sh`: a roster of
+    (earlier tick, re-investigated 2026-09-24) 2026-09-24T07:52:02Z by d778be9d: uncommitted: 14-background-waits.sh retired, control is test_13a..13i at .claude/rediacc_hooks/tests/test_wl_background_waits.py line 1022-1199 (blob 908418654f10), 9 passed; planted defects: predicate reverted to _only_waiters fails 13a/13d/13f/13g, always-live fails 13b/13c/13e/13h/13i, subagent arm removed fails 13g
       fresh-transcript teammates with no `.output` gives NO check-in; the same roster aged
       past `TEAMMATE_FRESH_MIN` DOES fire and says POSSIBLY STUCK.
 

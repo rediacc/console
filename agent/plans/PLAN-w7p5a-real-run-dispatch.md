@@ -62,15 +62,15 @@ The operator runs the command personally, at a time of their choosing (low-traff
     (ticked) 2026-09-23T10:35:48Z by d778be9d: agent/plans/PLAN-w7p5a-real-run-dispatch.md:81 -- three parameterized ledger-note templates (A/B/C) plus per-path template assignment for all 32.
 - [x] Tier R (2): get operator per-item go, run, record ledger note.
     (ticked) 2026-09-23T11:09:22Z by d778be9d: Tier R real runs done directly against production 2026-09-23 (commit d6a106b13): verify-edge-endpoints.sh + verify-stable-endpoints.sh both exit 0, status.json + blocklist updated in 6d8f85f17, gate check:ci-w7p5a-real-run-blockers green.
-- [x] Tier Q (3): operator chooses personal-run vs scoped-credential path per item; execute; revoke any minted credential immediately; record ledger note.
+- [ ] Tier Q (3): operator chooses personal-run vs scoped-credential path per item; execute; revoke any minted credential immediately; record ledger note.
     (done 2026-09-24 by d778be9d under the operator ruling of that day) assert-edge-tag-exists.sh and reprobe-r2-sentinel.sh gained their Python legs against production with a minted 2h R2 read token, revoked and proven dead; assert-artifact-version.sh cannot clear until a push-triggered green CI run on main exists (0 cli-manifest artifacts on 2026-09-24), post-merge run sheet under "Results of the 2026-09-24 session run".
-- [x] Tier M-contained (9): operator provisions each disposable substitute; writer drafts the retargeted command against it; operator approves; run; record ledger note naming the substitute explicitly.
+- [ ] Tier M-contained (9): operator provisions each disposable substitute; writer drafts the retargeted command against it; operator approves; run; record ledger note naming the substitute explicitly.
     (done 2026-09-24 by d778be9d under the operator ruling of that day) eight of nine graduated against disposable substitutes, each note carrying `real run each done directly` and `DISPOSABLE SUBSTITUTE`; purge-media-cache.sh was never run and moved to the M-live queue.
 - [ ] assert-artifact-version.sh (Tier Q, time-gated): run both sides within 24h of the next push-triggered green Console CI run on main, per the post-merge run sheet under "Results of the 2026-09-24 session run"; graduate with Template A.
 - [ ] Tier M-live (19, including purge-media-cache.sh since 2026-09-24): operator personally executes each, at a time of their choosing, with a rollback step identified beforehand; writer transcribes redacted output into the ledger note afterward.
-- [x] Re-run `check:ci-w7p5a-real-run-blockers` after every graduation; confirm rc=0 and the blocked/ledgered counts move as expected.
+- [ ] Re-run `check:ci-w7p5a-real-run-blockers` after every graduation; confirm rc=0 and the blocked/ledgered counts move as expected.
     (done 2026-09-24) rc=0 after each of the eight graduations, 28/20/13 -> 20/28/21 (blocked / ledgered / confirmed), 7 leg-blocked throughout.
-- [x] Full re-run of `.ci/rediacc_ci/tests/test_w7p5a_dry_run_ledgers.py` after all graduations to confirm no dry-run note accidentally claims a real run.
+- [ ] Full re-run of `.ci/rediacc_ci/tests/test_w7p5a_dry_run_ledgers.py` after all graduations to confirm no dry-run note accidentally claims a real run.
     (done 2026-09-24) `setsid --wait .ci/cache/toolchain/uv-tools/bin/pytest -q .ci/rediacc_ci/tests/test_w7p5a_dry_run_ledgers.py`: 44 passed (4 failed before the EXPECTED_DRY_RUN_PATHS fix).
 
 ## Drafted commands and ledger-note templates, ready for operator sign-off
