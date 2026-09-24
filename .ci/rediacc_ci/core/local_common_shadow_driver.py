@@ -43,8 +43,7 @@ THE SIX SCENARIOS, AND WHAT EACH ONE WOULD CATCH
               Then the missing-file case, which exits 2 rather than 1. `LOCAL_ROOT_DIR`, `LOCAL_CI_DIR` and `LOCAL_LIB_DIR` are emitted on both sides, so the two independent derivations are compared rather than one being fed the other's.
   sed         `_sed_i` on one file, on two files at once, with a pattern that matches nothing, on a file with no trailing newline, and on a file that does not exist. Every touched file is dumped afterwards, so a port that wrote the right exit code over the wrong bytes is caught.
 
-WHAT IS NEVER DRIVEN HERE: `ensure_deps`, `ensure_packages_built`, `ensure_cli_built`, `ensure_cpu_features_gypi`, `ensure_go_installed`, `ensure_bashcov_sup`, `ensure_host_tools`, `ensure_docker_installed`, `_ensure_docker_group`, `ensure_renet_built`, `run_npm_script`, `prompt_continue`, `open_browser`, `reexec_with_docker_group`, `check_node_version`, `check_go_installed`, `_renet_source_hash`, `_renet_artifact_fp`, `gate_lane_decide`, `gate_lane_should_route` and `gate_lane_run`.
-None of them is ported, and a ledger row is a claim of equivalence.
+WHAT IS NEVER DRIVEN HERE: the other twenty-one functions. They ARE ported (2026-09-24) and are driven by `core/local_common_actions_shadow_driver.py` under their own pair, `w7p5b-local-common-actions`, because they need a stub farm and a process per case rather than one bash process per side.
 """
 
 from __future__ import annotations

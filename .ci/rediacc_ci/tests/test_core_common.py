@@ -16,11 +16,13 @@ FOUR CLASSES OF TEST, and the second and third are the ones that matter:
 """
 
 import pathlib
+import subprocess
 
 import pytest
 
 from rediacc_ci import paths
-from rediacc_ci.core import common
+from rediacc_ci.core import common, stubfarm
+from rediacc_ci.core import common_stub_shadow_driver as r2_driver
 from rediacc_ci.core import platform as ci_platform
 from rediacc_ci.tests import differential as diff
 
@@ -491,3 +493,52 @@ def test_planted_an_is_ci_that_accepts_one_would_disagree_with_the_twin():
     assert common.is_ci({"CI": "1"}) is False
     # The plant: a permissive reading.
     assert bool({"CI": "1"}.get("CI")) is True, "which is what a naive port would do"
+
+
+# -- r2_count_objects, against a stub `aws` ------------------------------------
+#
+# Driven by `rediacc_ci.core.common_stub_shadow_driver` against the LIVE twin on every run: both sides see the same scripted `aws` first on PATH, and the comparison is rc, both streams and the argv the function builds.
+
+R2_CASES = [(scenario, case) for scenario, cases in r2_driver.SCENARIOS.items() for case in cases]
+
+
+@pytest.mark.parametrize(
+    ("scenario", "case"), R2_CASES, ids=["%s/%s" % (s, c.name) for s, c in R2_CASES]
+)
+def test_r2_count_objects_matches_the_live_twin(scenario, case) -> None:
+    repo = paths.repo_root()
+    assert r2_driver.observe("old", repo, case) == r2_driver.observe("new", repo, case), (
+        "case %s/%s diverged" % (scenario, case.name)
+    )
+
+
+def test_r2_stub_is_what_both_sides_reach(tmp_path) -> None:
+    """ANTI-VACUITY: a count case must log exactly one `aws` call, on both sides."""
+    case = r2_driver.SCENARIOS["count"][0]
+    for side in ("old", "new"):
+        lines = r2_driver.observe(side, paths.repo_root(), case)
+        assert sum(" call#" in line for line in lines) == 1, (side, lines)
+    farm = stubfarm.Farm(tmp_path)
+    farm.stub("aws")
+    assert stubfarm.shadows(farm, "aws", farm.env({"PATH": "/usr/bin:/bin"}))
+
+
+def test_the_common_stub_ledger_holds() -> None:
+    proc = subprocess.run(
+        [
+            "npx",
+            "tsx",
+            "scripts/lib/shadow-gate.ts",
+            "--pair",
+            "w7p5b-common-stub",
+            "--assert",
+            "--k",
+            "5",
+        ],
+        cwd=paths.repo_root(),
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=180,
+    )
+    assert proc.returncode == 0, proc.stdout + proc.stderr

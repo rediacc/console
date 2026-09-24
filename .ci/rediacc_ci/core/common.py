@@ -37,11 +37,8 @@ DETECT_OS AND DETECT_ARCH ARE HERE ON PURPOSE, EVEN THOUGH `core.platform` EXIST
 driver rather than reproduced." That refusal is right for a module whose job is building download URLs, and it leaves a hole: `CI_OS` and `CI_ARCH` are EXPORTED by common.sh into every one of the 208 sourcers' child processes carrying exactly that third spelling, and `sed_in_place` branches on it. So the spelling is reproduced here, in the file whose twin owns it, with the
 fail-open arm intact and named -- `platform.os_name()` RAISES where this returns the string `unknown`, and a caller comparing against `unknown` is comparing against something that reads like an answer.
 
-  * `r2_count_objects` (common.sh:381-413, 6 referring files). It shells out to
-    `aws s3api list-objects-v2`, and there is no `aws` binary on this machine
-    (`which aws` finds nothing, 2026-09-10). A port nobody can drive against the
-    twin is a second implementation rather than a replacement, so it is a
-    deliberate gap and whoever closes it owns finding an `aws` to compare on.
+  * `r2_count_objects` WAS a gap here until 2026-09-24: there is still no `aws` on this machine, so it is proved the way W7P5-b proved every other function that shells out, against a STUB `aws` on PATH that logs its argv and answers from a script (`core/stubfarm.py`, driven by `core/common_stub_shadow_driver.py`). It is `r2_count_objects` below.
+  * `wait_for` (common.sh:245) has NO CALLER anywhere in the tree (2026-09-24; `.ci/breakpoint/lib/breakpoint-common.sh:239` names it only to explain why it does not use it), and the 2026-09-10 table above attributed it to `rediacc_ci.proc`, which never defined it. It is ported below, `wait_for`, on the same stub technique (`sleep` scripted), so the claim the table makes is now true.
   * The review-budget half (common.sh:516-772, thirteen functions). It is its
     own concern, it is bigger than everything above put together, and it is in
     `core.review_budget` beside this file.
@@ -132,6 +129,7 @@ from __future__ import annotations
 import os
 import pathlib
 import platform as _stdlib_platform
+import re
 import shutil
 import subprocess
 import sys
@@ -543,6 +541,105 @@ def ci_env(env: dict[str, str] | None = None) -> dict[str, str]:
 
 # --------------------------------------------------------------------------- CLI -- the surface the shadow differential drives ---------------------------------------------------------------------------
 
+# --------------------------------------------------------------------------- R2 / AWS HELPERS (common.sh:355-413) ---------------------------------------------------------------------------
+
+
+class R2ListError(RefusalError):
+    """`list-objects-v2` failing: the refusal line, plus the captured stderr the twin replays indented under it."""
+
+    def __init__(self, line: str, detail: bytes) -> None:
+        super().__init__(line)
+        self.detail = detail
+
+
+class ParameterDeathError(Exception):
+    """`${VAR:?message}` failing: bash prints `VAR: message` and the non-interactive shell EXITS, status 1. Not a `log_error`, so it carries no `✗`."""
+
+    def __init__(self, name: str, message: str) -> None:
+        super().__init__("%s: %s" % (name, message))
+        self.line = "%s: %s" % (name, message)
+
+
+def r2_count_objects(
+    bucket: str | None, prefix: str | None, endpoint: str | None = None, env=None
+) -> str:
+    """`r2_count_objects <bucket> <prefix> [<endpoint>]`, common.sh:382. Returns the count line's value.
+
+    Raises `ParameterDeathError` where a `${...:?}` expansion kills the shell (an empty or absent bucket or prefix, or no `AWS_ACCESS_KEY_ID`), and `RefusalError` where the twin logs and returns 1. `aws` runs as a PROGRAM with its stderr held back, and is replayed indented under the refusal exactly as `sed 's/^/    /'` does, a final line without a newline included.
+    """
+    environ = _env(env)
+    if not bucket:
+        raise ParameterDeathError("1", "bucket required")
+    if not prefix:
+        raise ParameterDeathError("2", "prefix required")
+    if not environ.get("AWS_ACCESS_KEY_ID"):
+        raise ParameterDeathError(
+            "AWS_ACCESS_KEY_ID",
+            "r2_count_objects: AWS_ACCESS_KEY_ID must be exported (map it from CLOUDFLARE_R2_ACCESS_KEY_ID)",
+        )
+    endpoint = endpoint or environ.get("CLOUDFLARE_R2_ENDPOINT") or ""
+    argv = ["aws", "s3api", "list-objects-v2", "--bucket", bucket, "--prefix", prefix]
+    if endpoint:
+        argv += ["--endpoint-url", endpoint]
+    argv += ["--query", "length(Contents || `[]`)", "--output", "text"]
+    sys.stdout.flush()
+    sys.stderr.flush()
+    try:
+        proc = subprocess.run(argv, capture_output=True, check=False)
+        status, out, err = proc.returncode, proc.stdout, proc.stderr
+    except FileNotFoundError:
+        status, out, err = 127, b"", b"aws: command not found\n"
+    if status != 0:
+        where = "s3://%s/%s" % (bucket, prefix)
+        raise R2ListError(
+            "r2_count_objects: list-objects-v2 failed for %s (exit %d)" % (where, status), err
+        )
+    count = out.decode("utf-8", "surrogateescape").rstrip("\n")
+    if count == "None":
+        count = "0"
+    if not re.fullmatch(r"[0-9]+", count):
+        raise RefusalError(
+            "r2_count_objects: unparseable count '%s' for s3://%s/%s" % (count, bucket, prefix)
+        )
+    return count
+
+
+def wait_for(timeout: int, interval: int, argv: list[str]) -> int:
+    """`wait_for <timeout> <interval> <command...>`, common.sh:245. 0 once the command succeeds, 1 when the budget runs out.
+
+    The probe runs with BOTH streams discarded (`&>/dev/null`), so a command that is not there is simply a failed probe. `sleep` runs as a PROGRAM, as the twin's does, and the `[DEBUG]` line follows every sleep including the last. The budget is checked BEFORE the probe and the count grows AFTER the sleep, so an interval that does not divide the budget overshoots it and says so: a 7-second wait at 2-second intervals probes four times and reports `Waiting... (8s / 7s)`. Reproduced, and pinned by the `never-debug` case.
+    """
+    elapsed = 0
+    while elapsed < timeout:
+        sys.stdout.flush()
+        sys.stderr.flush()
+        try:
+            probe = subprocess.run(
+                argv, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False
+            )
+            if probe.returncode == 0:
+                return 0
+        except (FileNotFoundError, PermissionError):
+            pass
+        subprocess.run(["sleep", str(interval)], check=False)
+        elapsed += interval
+        log.debug("Waiting... (%ds / %ds)" % (elapsed, timeout))
+    return 1
+
+
+def _indent_detail(blob: bytes) -> None:
+    """`[[ -s "$err" ]] && sed 's/^/    /' "$err" >&2`: every line indented four spaces, bytes otherwise untouched."""
+    if not blob:
+        return
+    text = blob.decode("utf-8", "surrogateescape")
+    lines = text.split("\n")
+    tail = lines.pop() if not text.endswith("\n") else None
+    out = "".join("    %s\n" % line for line in (lines if tail is not None else lines[:-1]))
+    if tail is not None:
+        out += "    " + tail
+    sys.stderr.write(out)
+
+
 USAGE = """common -- the refuse-early half of .ci/scripts/lib/common.sh.
 
   require-cmd <name>              refuse unless the command resolves
@@ -560,6 +657,8 @@ USAGE = """common -- the refuse-early half of .ci/scripts/lib/common.sh.
   detect-os
   detect-arch
   sed-argv <sed-args...>          print the argv sed_in_place would run
+  r2-count-objects <bucket> <prefix> [<endpoint>]
+  wait-for <timeout> <interval> <command...>
 """
 
 
@@ -621,8 +720,30 @@ def _dispatch(verb: str, rest: list[str]) -> int:
     if verb == "sed-argv":
         print(" ".join(sed_in_place_argv(list(rest))))
         return 0
+    if verb == "r2-count-objects":
+        return _r2_count(rest)
+    if verb == "wait-for":
+        return wait_for(int(rest[0]), int(rest[1]), list(rest[2:]))
     print(USAGE, file=sys.stderr)
     return 2
+
+
+def _r2_count(rest: list[str]) -> int:
+    """The CLI face of `r2_count_objects`: the refusal's extra stderr detail is written after its `✗` line, as the twin orders them."""
+    args = [*rest, None, None, None]
+    try:
+        print(r2_count_objects(args[0], args[1], args[2]))
+    except ParameterDeathError as death:
+        sys.stderr.write(death.line + "\n")
+        return 1
+    except R2ListError as refusal:
+        refusal.report()
+        _indent_detail(refusal.detail)
+        return 1
+    except RefusalError as refusal:
+        refusal.report()
+        return 1
+    return 0
 
 
 if __name__ == "__main__":

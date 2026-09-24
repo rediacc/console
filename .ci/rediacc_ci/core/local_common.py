@@ -1,32 +1,19 @@
-"""The PURE-COMPUTATION half of `.ci/lib/local-common.sh`, ported function for function.
+"""`.ci/lib/local-common.sh`, ported function for function: all thirty.
 
-PORTED FROM `.ci/lib/local-common.sh` (1008 lines, 30 functions).
-The twin still exists, is untouched by this file, and is still sourced at `rdc.sh:18`, `.ci/legacy/run-legacy.sh:47`, `.ci/media/media-entry.sh:50`, `.ci/rediacc_ci/native.py:137` (inside a `bash -c`) and `.ci/scripts/test/gates/test-run-sh.sh:116`. Those five are the real `source` sites, found anchored rather than by bare string match; nothing is cut over here.
-This is a pre-cutover port on the same sequencing every other lib in this campaign used, and `.ci/rediacc_ci/core/account.py` is the worked precedent from the same session: its twin `.ci/lib/account.sh` is still sourced at `.ci/legacy/run-legacy.sh:405` while the port carries a K=5 ledger.
-
---------------------------------------------------------------------------
-WHAT IS HERE AND WHAT IS DELIBERATELY ABSENT
---------------------------------------------------------------------------
-NINE FUNCTIONS ARE PORTED, and they are the ones whose whole answer is computation over a local file or a local git read: `_sha256sum` (`:37`), `_sed_i` (`:46`), `compute_hash_for_package_dirs` (`:58`), `_git_tree_fingerprint` (`:92`), `compute_tree_hash` (`:137`), `read_stamp_hash` (`:148`), `write_stamp_hash` (`:156`), `_version_gte` (`:545`) and `has_npm_script` (`:401`).
-
-TWENTY-ONE ARE NOT, and saying so here rather than leaving an absence is the point. THERE IS NO PYTHON FUNCTION BELOW FOR ANY OF THEM:
-
-  installers and builders, which mutate the machine     `ensure_cpu_features_gypi:178` (compiles), `ensure_deps:203` (`npm install`), `ensure_packages_built:308`, `ensure_cli_built:333`, `ensure_go_installed:458` (downloads a tarball, `sudo tar` into `/usr/local`), `ensure_bashcov_sup:566` (`gcc`), `ensure_host_tools:587` (`sudo apt-get install`), `ensure_docker_installed:669`,
-  `_ensure_docker_group:721` (`sudo usermod`), `ensure_renet_built:789` (`go build`), `run_npm_script:408`.
-  interactive or session-altering                       `prompt_continue:371` reads stdin, `open_browser:381` launches a browser, `reexec_with_docker_group:630` calls `exec sg docker`.
-  DEVBOX-COUPLED, and out of scope by ruling            `gate_lane_decide:934`, `gate_lane_should_route:980` and `gate_lane_run:1005` all source `.ci/lib/devbox.sh` and call `devbox_state_get` / `devbox_container_running` / `devbox_mount_ok` / `devbox_identity_ok` / `devbox_exec`. `.ci/lib/devbox.sh` is not read, not modified and not ported by this slice.
+PORTED FROM `.ci/lib/local-common.sh` (978 lines, 30 functions at 2026-09-24).
+The twin still exists and is still sourced at `rdc.sh:18`, `.ci/legacy/run-legacy.sh:47`, `.ci/media/media-entry.sh:50`, `.ci/rediacc_ci/native.py:137` (inside a `bash -c`) and `.ci/scripts/test/gates/test-run-sh.sh:116`, and `.ci/rediacc_ci/setup/bridge.py` still runs four of its functions as bash. Nothing is cut over here: this is a pre-cutover port on the sequencing every other lib in W7P5-b used, and the deletion is W7P5-c's.
 
 --------------------------------------------------------------------------
-FOUR FUNCTIONS THAT ARE DETERMINISTIC AND ARE STILL NOT PORTED HERE
+TWO HALVES, TWO DIFFERENTIALS
 --------------------------------------------------------------------------
-The brief this slice was written to named nine functions. A function-by-function read of all thirty found FOUR MORE that are equally pure, and each is left out for a stated reason rather than by oversight:
+THE PURE HALF (2026-09-23), nine functions whose whole answer is computation over a local file or a local git read: `_sha256sum`, `_sed_i`, `compute_hash_for_package_dirs`, `_git_tree_fingerprint`, `compute_tree_hash`, `read_stamp_hash`, `write_stamp_hash`, `_version_gte` and `has_npm_script`. Proved by `core/local_common_shadow_driver.py`, ledger `w7p5b-local-common`.
 
-  `check_node_version:418`   ALREADY PORTED, at `rediacc_ci/core/account.py:143`, because `account.sh` calls it and does not define it and a module cannot borrow a function from its importer. A second copy here would be two Python implementations of one bash function, which is the duplicate-instrument risk this campaign's invariant 5 exists to prevent.
-                             When `account.sh` is cut over, that definition should MOVE here and `account.py` should import it.
-  `check_go_installed:439`   Pure (`command -v go`), but it calls `exit 1` rather than returning, so its only real behaviour is killing the sourcing shell. It has no caller outside `ensure_renet_built`, which is not portable.
-  `_renet_source_hash:749`   Pure, and the same `find | sort -z | xargs sha256sum` shape as `compute_hash_for_package_dirs`, with renet-specific prunes.
-  `_renet_artifact_fp:785`   Pure (`stat -c '%s:%Y'` with a BSD fallback).
-                             Both exist solely to serve `ensure_renet_built`, which is not portable, so porting them would add differential surface for a caller that cannot move.
+THE MACHINE-MUTATING HALF (2026-09-24), the other twenty-one: the installers and builders (`ensure_cpu_features_gypi`, `ensure_deps`, `ensure_packages_built`, `ensure_cli_built`, `run_npm_script`, `ensure_go_installed`, `ensure_bashcov_sup`, `ensure_host_tools`, `ensure_docker_installed`, `_ensure_docker_group`, `ensure_renet_built`), the interactive and session-altering ones (`prompt_continue`, `open_browser`, `reexec_with_docker_group`), the checks (`check_node_version`, `check_go_installed`), renet's two fingerprints (`_renet_source_hash`, `_renet_artifact_fp`) and the three lane functions (`gate_lane_decide`, `gate_lane_should_route`, `gate_lane_run`), which reach devbox through `core.devbox`, the port of `.ci/lib/devbox.sh`.
+Proved by `core/local_common_actions_shadow_driver.py`, ledger `w7p5b-local-common-actions`, by the STUB-FARM TRANSCRIPT technique (`core/stubfarm.py`): every external program the function would run is a stub that logs its argv, and the comparison covers rc, both streams, the ordered call list and the sandbox tree afterwards. See the section note above `ensure_cpu_features_gypi` for what that forces on the code.
+
+`check_node_version` exists TWICE in Python: here, and an older copy in `core/account.py` with its own version compare. `account.py` was under another writer's live rewrite when this landed, so removing its copy is handed over; `test_check_node_version_agrees_with_the_account_copy` pins the two together meanwhile.
+
+TWO LIVE TWIN DEFECTS WERE FIXED IN THE TWIN IN THE SAME CHANGE, both found by this port's scenarios: `ensure_bashcov_sup` read an undefined `$REPO_ROOT` and died on `set -u` every time (so `./run.sh setup` never built the supervisor), and `ensure_cli_built` died silently whenever `build-packages.stamp` was missing. Each function's docstring has the detail.
 
 --------------------------------------------------------------------------
 THE MEASUREMENT THIS PORT IS TRUE AGAINST, WHICH IS NOT THE ONE ANYBODY EXPECTS
@@ -64,17 +51,20 @@ WHY THE LOGGER IS `rediacc_ci.log`: `log_error` / `log_debug` here are `.ci/scri
 
 from __future__ import annotations
 
+import contextlib
 import fnmatch
 import hashlib
 import os
 import pathlib
 import platform
+import re
 import shutil
 import stat
 import subprocess
 import sys
 
 from rediacc_ci import log, paths
+from rediacc_ci.core import devbox
 
 # `.ci/lib/local-common.sh:65`. `-path` in find is plain fnmatch: `*` crosses `/`, which is what makes a bare `*/dist/*` prune everything under any `dist` below the start point.
 PRUNE_PATH_GLOBS = ("*/dist/*", "*/node_modules/*", "*/reports/*", "*/test-results/*")
@@ -634,21 +624,941 @@ def has_npm_script(script_name: str, env: dict[str, str] | None = None) -> bool:
     return ('"%s":' % script_name) in text
 
 
+# --------------------------------------------------------------------------- the machine-mutating half ---------------------------------------------------------------------------
+#
+# EVERYTHING BELOW CHANGES THE MACHINE OR TALKS TO A PERSON, and is proved by the STUB-FARM TRANSCRIPT differential (`core/stubfarm.py`, driven by `core/local_common_shadow_driver.py`): both sides run with `npm`, `node`, `go`, `sudo`, `curl`, `tar`, `gcc`, `docker`, `sg` and the rest replaced by stubs that log their argv, and the comparison is rc, both streams, the files written AND the ordered call list.
+# That is why the port calls PROGRAMS where a Python programmer would reach for a library: `uname`, `mktemp` and `go version` are the twin's questions, and a scenario answers them through the stubs. A port that asked `platform.system()` instead could not be put on the other branch at all.
+#
+# ERREXIT. Every sourcer arms `set -euo pipefail`, so a bare command that fails ENDS THE PROCESS rather than returning. `_must()` is that: it raises `LocalCommonError` with the command's own status, and `main()` exits with it.
+
+
+def _flush() -> None:
+    """Flush both streams before a child writes to the same descriptors, so the twin's line order survives."""
+    sys.stdout.flush()
+    sys.stderr.flush()
+
+
+def _run(
+    argv: list[str],
+    *,
+    cwd: str | None = None,
+    quiet_out: bool = False,
+    quiet_err: bool = False,
+    stdout=None,
+    env: dict[str, str] | None = None,
+) -> int:
+    """A bare command line of the twin's: streams inherited unless it redirects them."""
+    _flush()
+    out = subprocess.DEVNULL if quiet_out else stdout
+    return subprocess.run(
+        argv,
+        cwd=cwd,
+        stdout=out,
+        stderr=subprocess.DEVNULL if quiet_err else None,
+        env=env,
+        check=False,
+    ).returncode
+
+
+def _must(argv: list[str], **kwargs) -> None:
+    """A bare command under errexit: a non-zero status ends the process with that status."""
+    status = _run(argv, **kwargs)
+    if status != 0:
+        raise LocalCommonError("%s exited %d under errexit" % (argv[0], status), code=status)
+
+
+def _capture(
+    argv: list[str], *, quiet_err: bool = False, cwd: str | None = None
+) -> subprocess.CompletedProcess:
+    """`$(argv)`: stdout captured, stderr inherited unless the twin discards it."""
+    _flush()
+    return subprocess.run(
+        argv,
+        cwd=cwd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL if quiet_err else None,
+        text=True,
+        check=False,
+    )
+
+
+def _subst(text: str) -> str:
+    """What `$(...)` keeps: everything but the trailing newlines."""
+    return text.rstrip("\n")
+
+
+def _uname(flag: str) -> str:
+    """`$(uname <flag>)`, asked of the PROGRAM. See the section note above."""
+    return _subst(_capture(["uname", flag]).stdout)
+
+
+def ci_os() -> str:
+    """`CI_OS`, which `common.sh:510` sets once at load time from `detect_os`, i.e. from `uname -s`."""
+    raw = _uname("-s")
+    for prefix, name in (
+        ("Linux", "linux"),
+        ("Darwin", "macos"),
+        ("CYGWIN", "windows"),
+        ("MINGW", "windows"),
+        ("MSYS", "windows"),
+    ):
+        if raw.startswith(prefix):
+            return name
+    return "unknown"
+
+
+def _hex_of(stream: bytes) -> str:
+    """`| _sha256sum | awk '{print $1}'` over a stream: the digest alone."""
+    return hashlib.sha256(stream).hexdigest()
+
+
+def ensure_cpu_features_gypi(node_modules_dir: str) -> bool:
+    """`ensure_cpu_features_gypi`, `.ci/lib/local-common.sh:178`. False where the twin returns 1.
+
+    The `>` into `buildcheck.gypi.tmp` belongs to the SUBSHELL, so the file exists before `node` runs and whether or not it succeeds; the failure arm removes it. Publishing only after success is the twin's whole point and is kept.
+    """
+    features = os.path.join(node_modules_dir, "cpu-features")
+    gypi = os.path.join(features, "buildcheck.gypi")
+    if os.path.isfile(gypi) and os.path.getsize(gypi) == 0:
+        log.debug("Removing empty buildcheck.gypi left by a failed run")
+        os.remove(gypi)
+    if os.path.isfile(os.path.join(features, "buildcheck.js")) and not os.path.isfile(gypi):
+        temporary = os.path.join(features, "buildcheck.gypi.tmp")
+        with open(temporary, "wb") as handle:
+            status = _run(["node", "buildcheck.js"], cwd=features, stdout=handle)
+        if status != 0:
+            with contextlib.suppress(OSError):
+                os.remove(temporary)
+            log.error("cpu-features buildcheck failed (is a C compiler installed?)")
+            return False
+        os.replace(temporary, gypi)
+    return True
+
+
+def _hash_line(path: str) -> bytes:
+    """`_sha256sum <file>`'s line inside `ensure_deps`' `{ ...; }` group.
+
+    AN UNREADABLE FILE DOES NOT STOP THE HASH. The group's status is its LAST command's (the `printf 'runtime=...'`), so `sha256sum` naming a missing lockfile on stderr and exiting 1 is invisible to `pipefail`; the line is simply absent from what gets hashed. No tool at all is different: `_sha256sum` calls `exit 1`, which ends the group and, through `pipefail`, the assignment.
+    """
+    return sha256sum([path]).out.encode("utf-8", "surrogateescape")
+
+
+def deps_hash(env: dict[str, str] | None = None) -> str:
+    """`ensure_deps`' `current_hash`: the manifests, the lockfile, `.npmrc` when present, and the runtime tag.
+
+    `_sha256sum` prints the path AS GIVEN, which is absolute, so the hash depends on where the checkout lives. Reproduced, not normalised: the stamp is per checkout anyway.
+    """
+    environ = os.environ if env is None else env
+    root = local_root_dir(env)
+    stream = _hash_line(os.path.join(root, "package.json"))
+    stream += _hash_line(os.path.join(root, "package-lock.json"))
+    if os.path.isfile(os.path.join(root, ".npmrc")):
+        stream += _hash_line(os.path.join(root, ".npmrc"))
+    stream += ("runtime=%s\n" % (environ.get("REDIACC_NPM_RUNTIME") or "host")).encode()
+    return _hex_of(stream)
+
+
+def ensure_deps(env: dict[str, str] | None = None) -> bool:
+    """`ensure_deps`, `.ci/lib/local-common.sh:203`. False where the twin returns 1; errexit deaths raise."""
+    root = local_root_dir(env)
+    node_modules = os.path.join(root, "node_modules")
+    stamp = os.path.join(root, ".ci", "cache", "npm-install.stamp")
+    current = deps_hash(env)
+    saved = _subst(read_stamp_hash(stamp))
+    if (
+        os.path.isdir(node_modules)
+        and os.access(os.path.join(node_modules, ".bin", "tsx"), os.X_OK)
+        and os.path.islink(os.path.join(node_modules, "@rediacc", "cli"))
+        and saved == current
+    ):
+        log.debug("Dependencies are up-to-date (stamp matched)")
+        return True
+    log.step("Installing dependencies...")
+    _must(["npm", "install"], cwd=root)
+    if not ensure_cpu_features_gypi(node_modules):
+        return False
+    log.step("Compiling native modules (blocked at install by ignore-scripts)...")
+    _must(["npm", "run", "install:natives"], cwd=root)
+    write_stamp_hash(stamp, current)
+    return True
+
+
+def _tree_hash_or_die(root: str, points: list[str]) -> str:
+    """`current_hash="$(compute_tree_hash ...)"`: a bare assignment, so a failing hash is the twin's death."""
+    outcome = compute_tree_hash(root, points)
+    if outcome.code != 0:
+        raise LocalCommonError("compute_tree_hash failed", code=outcome.code)
+    return outcome.out
+
+
+def ensure_packages_built(env: dict[str, str] | None = None) -> bool:
+    """`ensure_packages_built`, `.ci/lib/local-common.sh:278`."""
+    root = local_root_dir(env)
+    stamp = os.path.join(root, ".ci", "cache", "build-packages.stamp")
+    current = _subst(_tree_hash_or_die(root, ["packages/shared", "packages/provisioning"]))
+    saved = _subst(read_stamp_hash(stamp))
+    if (
+        os.path.isdir(os.path.join(root, "packages", "shared", "dist"))
+        and os.path.isdir(os.path.join(root, "packages", "provisioning", "dist"))
+        and saved == current
+    ):
+        log.debug("Shared packages are up-to-date (stamp matched)")
+        return True
+    log.step("Building shared packages...")
+    _must([os.path.join(local_ci_dir(env), "scripts", "setup", "build-packages.sh")])
+    write_stamp_hash(stamp, current)
+    return True
+
+
+def ensure_cli_built(env: dict[str, str] | None = None) -> bool:
+    """`ensure_cli_built`, `.ci/lib/local-common.sh:303`.
+
+    A MISSING `build-packages.stamp` hashes as empty. It used to KILL THE TWIN SILENTLY: the stamp `cat` was the last command of the `{ ...; }` group feeding `| _sha256sum | awk` in a bare assignment, so its exit 1 became the pipeline's status under `pipefail` and errexit ended the process with no message. Found by this port's `cli-no-packages-stamp` case on 2026-09-24 and fixed in the twin in the same change (`|| true`); both sides now build.
+    """
+    root = local_root_dir(env)
+    entry = os.path.join(root, "packages", "cli", "dist", "cli-bundle.cjs")
+    stamp = os.path.join(root, ".ci", "cache", "build-cli.stamp")
+    packages_stamp = os.path.join(root, ".ci", "cache", "build-packages.stamp")
+    tree = compute_tree_hash(root, ["packages/cli"])
+    try:
+        with open(packages_stamp, "rb") as handle:
+            stamp_bytes = handle.read()
+    except OSError:
+        stamp_bytes = b""
+    current = _hex_of(tree.out.encode("utf-8", "surrogateescape") + stamp_bytes)
+    saved = _subst(read_stamp_hash(stamp))
+    if os.path.isfile(entry) and saved == current:
+        log.debug("CLI build is up-to-date (stamp matched)")
+        return True
+    log.step("Building CLI...")
+    _must(["npm", "run", "build", "-w", "@rediacc/cli"], cwd=root)
+    _must(["npm", "run", "build:bundle", "-w", "@rediacc/cli"], cwd=root)
+    if not os.path.isfile(entry):
+        log.error("CLI build failed: entrypoint not found at %s" % entry)
+        raise LocalCommonError("no CLI entrypoint", code=1)
+    write_stamp_hash(stamp, current)
+    return True
+
+
+def prompt_continue(message: str = "Continue?") -> bool:
+    """`prompt_continue`, `.ci/lib/local-common.sh:341`.
+
+    `read -p` PRINTS ITS PROMPT ONLY WHEN STDIN IS A TERMINAL, to stderr, and that is bash's rule rather than the twin's; piped input answers silently. End of input is a `read` failure, which the documented call shape `prompt_continue ... || exit 1` turns into "no". A backslash in the answer is an escape to `read` without `-r`, so `\\y` reads as `y`.
+    """
+    if sys.stdin.isatty():
+        sys.stderr.write("%s (y/N): " % message)
+        sys.stderr.flush()
+    line = sys.stdin.readline()
+    if not line:
+        return False
+    # A trailing UNESCAPED backslash (an odd run) is a line CONTINUATION to `read` without `-r`.
+    while line.endswith("\n"):
+        body = line[:-1]
+        run = len(body) - len(body.rstrip("\\"))
+        if run % 2 == 0:
+            break
+        more = sys.stdin.readline()
+        line = body[:-1] + more
+        if not more:
+            break
+    answer = line.rstrip("\n")
+    unescaped, index = [], 0
+    while index < len(answer):
+        if answer[index] == "\\" and index + 1 < len(answer):
+            index += 1
+        unescaped.append(answer[index])
+        index += 1
+    answer = "".join(unescaped).strip(" \t")
+    return answer in ("y", "Y")
+
+
+def open_browser(url: str) -> None:
+    """`open_browser`, `.ci/lib/local-common.sh:351`. Every arm swallows its failure."""
+    system = ci_os()
+    if system == "macos":
+        _run(["open", url], quiet_err=True)
+    elif system == "linux":
+        if shutil.which("xdg-open") is not None:
+            _run(["xdg-open", url], quiet_err=True)
+    elif system == "windows":
+        _run(["cmd", "/c", "start", "", url], quiet_err=True)
+
+
+def run_npm_script(script_name: str, description: str | None = None, env=None) -> None:
+    """`run_npm_script`, `.ci/lib/local-common.sh:378`. A failing script is the twin's errexit death."""
+    log.step(description or "Running npm script: %s" % script_name)
+    _must(["npm", "run", script_name], cwd=local_root_dir(env))
+
+
+def check_node_version(min_version: str = "18.0.0") -> bool:
+    """`check_node_version`, `.ci/lib/local-common.sh:388`.
+
+    `core/account.py` carries an OLDER copy with its own `version_tuple` compare; that file was under another writer's live rewrite when this landed, so the duplicate is handed over rather than removed, and `test_check_node_version_agrees_with_the_account_copy` pins the two together meanwhile.
+
+    `node -v | cut -d'v' -f2` keeps the SECOND `v`-separated field (the whole line when there is no `v`), and `sort -V -C` asks whether min-then-current is already in version order, which is `version_gte(current, min)` under the same comparator, `filevercmp` included.
+    """
+    if shutil.which("node") is None:
+        log.error("Node.js is not installed")
+        return False
+    proc = _capture(["node", "-v"])
+    if proc.returncode != 0:
+        raise LocalCommonError("node -v failed under pipefail", code=proc.returncode)
+    lines = []
+    for line in proc.stdout.split("\n"):
+        fields = line.split("v")
+        lines.append(fields[1] if len(fields) > 1 else line)
+    current = _subst("\n".join(lines))
+    if not version_gte(current, min_version):
+        log.error("Node.js version %s is too old (minimum: %s)" % (current, min_version))
+        return False
+    log.debug("Node.js version: %s" % current)
+    return True
+
+
+def check_go_installed() -> None:
+    """`check_go_installed`, `.ci/lib/local-common.sh:409`: `exit 1` where Go is missing."""
+    found = shutil.which("go")
+    if found is None:
+        log.error("Go is not installed (required for building renet)")
+        log.info("Install Go from: https://go.dev/dl/")
+        raise LocalCommonError("go is not installed", code=1)
+    log.debug("Go present: %s" % found)
+
+
+def _gomod_version(gomod: str) -> str:
+    """The `toolchain goX` line's version, else the `go X` line's, as the twin's two `sed -n ... | head -1` read them."""
+    text = pathlib.Path(gomod).read_text(encoding="utf-8", errors="surrogateescape")
+    for pattern in (r"^toolchain go([0-9.]*)", r"^go ([0-9.]*)"):
+        for line in text.split("\n"):
+            match = re.match(pattern, line)
+            if match:
+                if match.group(1):
+                    return match.group(1)
+                break
+    return ""
+
+
+def ensure_go_installed(env: dict[str, str] | None = None) -> bool:
+    """`ensure_go_installed`, `.ci/lib/local-common.sh:428`."""
+    root = local_root_dir(env)
+    gomod = os.path.join(root, "private", "renet", "go.mod")
+    want = _gomod_version(gomod) if os.path.isfile(gomod) else ""
+    if not want:
+        log.error("Cannot determine the required Go version (no readable %s)" % gomod)
+        return False
+
+    if shutil.which("go") is not None:
+        proc = _capture(["go", "version"])
+        if proc.returncode != 0:
+            raise LocalCommonError("go version failed under pipefail", code=proc.returncode)
+        have = ""
+        for line in proc.stdout.split("\n"):
+            match = re.match(r".*go([0-9][0-9.]*).*", line)
+            if match:
+                have = match.group(1)
+                break
+        if version_gte(have, want):
+            log.debug("Go %s present (>= %s)" % (have, want))
+            return True
+        log.info("Go %s is older than the required %s" % (have, want))
+
+    if _uname("-s") != "Linux":
+        log.error("Go %s is required and this helper only installs it on Linux" % want)
+        log.info("Install it from https://go.dev/dl/ and re-run")
+        return False
+
+    machine = _uname("-m")
+    if machine in ("x86_64", "amd64"):
+        arch = "amd64"
+    elif machine in ("aarch64", "arm64"):
+        arch = "arm64"
+    else:
+        log.error("Unsupported architecture for the Go tarball: %s" % _uname("-m"))
+        return False
+
+    tarball = "go%s.linux-%s.tar.gz" % (want, arch)
+    url = "https://go.dev/dl/%s" % tarball
+    tmp = _subst(_capture(["mktemp", "-d"]).stdout)
+    download = os.path.join(tmp, tarball)
+
+    log.step("Installing Go %s (%s) into /usr/local/go" % (want, arch))
+    log.info(url)
+    if _run(["curl", "-fL", "--progress-bar", "-o", download, url]) != 0:
+        shutil.rmtree(tmp, ignore_errors=True)
+        log.error("Download failed: %s" % url)
+        return False
+    if _run(["tar", "-tzf", download], quiet_out=True, quiet_err=True) != 0:
+        shutil.rmtree(tmp, ignore_errors=True)
+        log.error("Downloaded file is not a valid tarball: %s" % tarball)
+        return False
+
+    _must(["sudo", "rm", "-rf", "/usr/local/go"])
+    if _run(["sudo", "tar", "-C", "/usr/local", "-xzf", download]) != 0:
+        shutil.rmtree(tmp, ignore_errors=True)
+        log.error("Failed to unpack %s into /usr/local" % tarball)
+        return False
+    shutil.rmtree(tmp, ignore_errors=True)
+
+    os.environ["PATH"] = "/usr/local/go/bin:%s" % os.environ.get("PATH", "")
+    if shutil.which("go") is None:
+        log.error("Go was unpacked but /usr/local/go/bin/go is not on PATH")
+        return False
+    log.info("Go installed: %s" % _subst(_capture(["go", "version"]).stdout))
+
+    if not os.path.isfile("/etc/profile.d/golang.sh"):
+        _flush()
+        # `echo ... | sudo tee ... >/dev/null`, a bare pipeline under pipefail: tee's status decides.
+        tee = subprocess.run(
+            ["sudo", "tee", "/etc/profile.d/golang.sh"],
+            input=b'export PATH="/usr/local/go/bin:$PATH"\n',
+            stdout=subprocess.DEVNULL,
+            check=False,
+        )
+        if tee.returncode != 0:
+            raise LocalCommonError("sudo tee failed", code=tee.returncode)
+        _must(["sudo", "chmod", "0644", "/etc/profile.d/golang.sh"])
+        log.info("Added /etc/profile.d/golang.sh (new shells get go on PATH)")
+    return True
+
+
+def ensure_bashcov_sup(env: dict[str, str] | None = None) -> bool:
+    """`ensure_bashcov_sup`, `.ci/lib/local-common.sh:536`. Always True, as the twin always returns 0.
+
+    TWIN DEFECT FIXED IN THE SAME CHANGE, 2026-09-24: the twin read `$REPO_ROOT`, which nothing on its load path defines, so under `set -u` it died with "REPO_ROOT: unbound variable" on EVERY call and `./run.sh setup` (which calls it through `setup/bridge.py`) never built the supervisor. The twin now reads `LOCAL_ROOT_DIR`; so does this.
+    """
+    src = os.path.join(local_root_dir(env), ".devcontainer", "bashcov-sup.c")
+    binary = os.path.join(
+        os.environ.get("HOME", ""), ".local", "share", "rediacc", "bin", "bashcov-sup"
+    )
+    if not os.path.isfile(src):
+        return True
+    if os.access(binary, os.X_OK) and not _newer(src, binary):
+        return True
+    if shutil.which("gcc") is None:
+        log.warn(
+            "gcc missing: bashcov-sup not built; Bash profiling stays off until setup runs with a compiler"
+        )
+        return True
+    os.makedirs(os.path.dirname(binary), exist_ok=True)
+    if _run(["gcc", "-O2", "-Wall", "-o", binary, src]) == 0 and _run([binary, "--", "true"]) == 0:
+        log.info("built bashcov-sup -> %s" % binary)
+    else:
+        log.warn("bashcov-sup build failed; Bash profiling stays off")
+        with contextlib.suppress(OSError):
+            os.remove(binary)
+    return True
+
+
+def _newer(one: str, two: str) -> bool:
+    """`[[ one -nt two ]]`: true when `one` is newer, or exists while `two` does not."""
+    try:
+        first = os.stat(one).st_mtime_ns
+    except OSError:
+        return False
+    try:
+        second = os.stat(two).st_mtime_ns
+    except OSError:
+        return True
+    return first > second
+
+
+def ensure_host_tools() -> bool:
+    """`ensure_host_tools`, `.ci/lib/local-common.sh:557`."""
+    missing = [tool for tool in ("jq", "zstd", "curl", "git") if shutil.which(tool) is None]
+    if shutil.which("cc") is None and shutil.which("gcc") is None:
+        missing.append("build-essential")
+    if not missing:
+        return True
+    joined = " ".join(missing)
+    if _uname("-s") != "Linux" or shutil.which("apt-get") is None:
+        log.error("Missing required tools: %s" % joined)
+        log.info("Install them with your package manager and re-run")
+        return False
+    log.step("Installing host tools: %s" % joined)
+    if (
+        _run(["sudo", "apt-get", "update", "-qq"]) != 0
+        or _run(["sudo", "apt-get", "install", "-y", "-qq", *missing]) != 0
+    ):
+        log.error("Failed to install: %s" % joined)
+        return False
+    return True
+
+
+# `printf %q`'s backslash set, measured against bash 5.3 over every printable ASCII byte; `#` and `~` are quoted only as the FIRST character.
+_Q_ALWAYS = set(" !\"$&'()*,;<>?[\\]^`{|}")
+_Q_LEADING = set("#~")
+_Q_NAMED = {7: "\\a", 8: "\\b", 9: "\\t", 10: "\\n", 11: "\\v", 12: "\\f", 13: "\\r", 27: "\\E"}
+
+
+def _utf8_locale() -> bool:
+    """Whether bash's `%q` would treat a byte above 0x7f as printable: the first of LC_ALL, LC_CTYPE, LANG that is set decides."""
+    for value in (
+        os.environ.get("LC_ALL", ""),
+        os.environ.get("LC_CTYPE", ""),
+        os.environ.get("LANG", ""),
+    ):
+        if value:
+            return "utf-8" in value.lower() or "utf8" in value.lower()
+    return False
+
+
+def bash_q(text: str) -> str:
+    """bash's `printf %q`, for the argument shapes a command line carries. Measured, not read from a manual.
+
+    Empty is `''`. A string with a control byte (or, outside a UTF-8 locale, a byte above 0x7f) takes the `$'...'` form, with bash's named escapes, `\\'` and `\\\\`, and three-digit octal for the rest. Anything else is backslash-quoted character by character.
+    """
+    if text == "":
+        return "''"
+    utf8 = _utf8_locale()
+    raw = text.encode("utf-8", "surrogateescape")
+    needs_ansi = any(b < 0x20 or b == 0x7F for b in raw) or (
+        not utf8 and any(b >= 0x80 for b in raw)
+    )
+    if needs_ansi:
+        out = []
+        if utf8:
+            for char in text:
+                code = ord(char)
+                if code in _Q_NAMED:
+                    out.append(_Q_NAMED[code])
+                elif char in ("'", "\\"):
+                    out.append("\\" + char)
+                elif code < 0x20 or code == 0x7F:
+                    out.append("\\%03o" % code)
+                else:
+                    out.append(char)
+        else:
+            for byte in raw:
+                if byte in _Q_NAMED:
+                    out.append(_Q_NAMED[byte])
+                elif byte in (0x27, 0x5C):
+                    out.append("\\" + chr(byte))
+                elif byte < 0x20 or byte >= 0x7F:
+                    out.append("\\%03o" % byte)
+                else:
+                    out.append(chr(byte))
+        return "$'" + "".join(out) + "'"
+    out = []
+    for index, char in enumerate(text):
+        if char in _Q_ALWAYS or (index == 0 and char in _Q_LEADING):
+            out.append("\\" + char)
+        else:
+            out.append(char)
+    return "".join(out)
+
+
+def _required(name: str, value: str | None) -> str:
+    """`$NAME` under `set -u`: the value, or bash's unbound-variable death (its location prefix is not reproducible and the drivers strip it). The caller reads the variable itself, by its literal name, so every environment read in this module stays declarable."""
+    if value is None:
+        sys.stderr.write("%s: unbound variable\n" % name)
+        raise LocalCommonError("%s is unset under set -u" % name, code=1)
+    return value
+
+
+def _docker_group_members() -> str | None:
+    """`getent group docker | cut -d: -f4`, or None where `getent group docker` fails."""
+    proc = _capture(["getent", "group", "docker"], quiet_err=True)
+    if proc.returncode != 0:
+        return None
+    first = _subst(proc.stdout).split("\n")
+    return "\n".join(
+        [*line.split(":"), "", "", "", ""][3] if ":" in line else line for line in first
+    )
+
+
+def reexec_with_docker_group(args: list[str]) -> bool:
+    """`reexec_with_docker_group`, `.ci/lib/local-common.sh:600`. Returns True where the twin returns 0; on success it never returns at all, because the twin `exec`s."""
+    if os.environ.get("REDIACC_DOCKER_GROUP_REEXEC"):
+        return True
+    if _run(["docker", "version"], quiet_out=True, quiet_err=True) == 0:
+        return True
+    if shutil.which("docker") is None or shutil.which("sg") is None:
+        return True
+    if _run(["getent", "group", "docker"], quiet_out=True, quiet_err=True) != 0:
+        return True
+    members = _docker_group_members() or ""
+    if ",%s," % _required("USER", os.environ.get("USER")) not in ",%s," % members:
+        return True
+    if _run(["sg", "docker", "-c", "docker version"], quiet_out=True, quiet_err=True) != 0:
+        return True
+    log.info("Applying your docker group membership to this run (no logout needed)")
+    os.environ["REDIACC_DOCKER_GROUP_REEXEC"] = "1"
+    command = "".join(
+        bash_q(word) + " "
+        for word in [_required("SCRIPT_ENTRYPOINT", os.environ.get("SCRIPT_ENTRYPOINT")), *args]
+    )
+    _flush()
+    os.execvp("sg", ["sg", "docker", "-c", command])  # noqa: S606 -- forwarding exec, same shape as the twin's
+    return True  # pragma: no cover -- execvp does not return
+
+
+def ensure_docker_installed(env: dict[str, str] | None = None) -> bool:
+    """`ensure_docker_installed`, `.ci/lib/local-common.sh:639`."""
+    root = local_root_dir(env)
+    if _run(["docker", "version"], quiet_out=True, quiet_err=True) == 0:
+        version = _subst(_capture(["docker", "--version"], quiet_err=True).stdout)
+        log.debug("Docker present and usable: %s" % version)
+        return True
+    if (
+        shutil.which("docker") is not None
+        and _run(["sudo", "docker", "version"], quiet_out=True, quiet_err=True) == 0
+    ):
+        log.warn(
+            "Docker is installed but not usable as %s (group membership not active in this shell)"
+            % _required("USER", os.environ.get("USER"))
+        )
+        ensure_docker_group()
+        return True
+    if _uname("-s") != "Linux":
+        log.error("Automatic Docker installation is Linux-only")
+        log.info("Install Docker Desktop, then re-run")
+        return False
+    log.step("Installing Docker via renet's installer (official docker.com repository)")
+    if not ensure_host_tools():
+        return False
+    if not ensure_go_installed(env):
+        return False
+    if not ensure_renet_built(env):
+        return False
+    renet = os.path.join(root, "private", "renet", "bin", "renet")
+    if not (os.path.isfile(renet) and os.access(renet, os.X_OK)):
+        log.error("renet was built but %s is not executable" % renet)
+        return False
+    if _run(["sudo", renet, "install-docker", "--source=docker-repo"]) != 0:
+        log.error("renet install-docker failed")
+        return False
+    ensure_docker_group()
+    with contextlib.suppress(OSError):
+        os.remove(os.path.join(root, ".ci", "cache", "build-renet.stamp"))
+    log.info("Cleared the renet build stamp so assets get embedded on the next build")
+    return True
+
+
+def ensure_docker_group() -> bool:
+    """`_ensure_docker_group`, `.ci/lib/local-common.sh:691`. Always True, as the twin always returns 0."""
+    if _run(["getent", "group", "docker"], quiet_out=True, quiet_err=True) != 0:
+        log.warn("No docker group exists; skipping group membership")
+        return True
+    user = _required("USER", os.environ.get("USER"))
+    members = _docker_group_members() or ""
+    if ",%s," % user in ",%s," % members:
+        if _run(["docker", "version"], quiet_out=True, quiet_err=True) != 0:
+            log.info(
+                "Group membership is not active in this shell; ./run.sh re-execs itself under it automatically."
+            )
+            log.info("New login shells get it without help.")
+        return True
+    log.step("Adding %s to the docker group" % user)
+    if _run(["sudo", "usermod", "-aG", "docker", user]) != 0:
+        log.warn("usermod failed; you will need sudo for docker commands")
+        return True
+    log.info(
+        "Added. ./run.sh applies it to this run automatically (via sg); new shells get it on login."
+    )
+    return True
+
+
+# `_renet_source_hash`'s prunes and names, `.ci/lib/local-common.sh:719-735`.
+RENET_PRUNE = ("./bin", "./build", "./pkg/embed/assets")
+RENET_NAMES = ("*.go", "*.c", "*.h", "go.mod", "go.sum", "build.sh", "docker-compose.yml")
+
+
+def renet_source_hash(renet_dir: str) -> str | None:
+    """`_renet_source_hash`, `.ci/lib/local-common.sh:719`. The digest line, or None where `cd` fails.
+
+    `find .` from inside the directory, so every name starts `./`; `-path` prunes are exact paths here, not globs. `LC_ALL=C sort -z` is a byte sort. `xargs -0 sha256sum` over no names at all still runs the tool once on its own empty stdin (reproduced behaviour 1).
+    """
+    failure = cd_error(renet_dir)
+    if failure is not None:
+        sys.stderr.write(failure + "\n")
+        return None
+    names: list[str] = []
+    stack = ["."]
+    while stack:
+        current = stack.pop()
+        if current in RENET_PRUNE:
+            continue
+        absolute = os.path.join(renet_dir, current)
+        try:
+            status = os.lstat(absolute)
+        except OSError:
+            continue
+        if stat.S_ISDIR(status.st_mode):
+            try:
+                children = os.listdir(absolute)
+            except OSError:
+                continue
+            stack.extend(join_under(current, child) for child in children)
+        elif stat.S_ISREG(status.st_mode):
+            base = os.path.basename(current)
+            if any(fnmatch.fnmatchcase(base, glob) for glob in RENET_NAMES):
+                names.append(current)
+    ordered = sorted(names, key=os.fsencode)
+    stream = sha256_lines(renet_dir, ordered)
+    return hashlib.sha256(stream.encode("utf-8", "surrogateescape")).hexdigest() + "\n"
+
+
+def renet_artifact_fp(path: str) -> str:
+    """`_renet_artifact_fp`, `.ci/lib/local-common.sh:755`: `size:mtime` in whole seconds, empty when absent."""
+    try:
+        status = os.stat(path)
+    except OSError:
+        return ""
+    return "%d:%d" % (status.st_size, int(status.st_mtime))
+
+
+def ensure_renet_built(env: dict[str, str] | None = None) -> bool:
+    """`ensure_renet_built`, `.ci/lib/local-common.sh:759`."""
+    environ = os.environ if env is None else env
+    root = local_root_dir(env)
+    renet_dir = os.path.join(root, "private", "renet")
+    renet_bin = os.path.join(renet_dir, "bin", "renet")
+    system = _uname("-s")
+    if system.startswith(("MINGW", "MSYS", "CYGWIN")):
+        renet_bin = os.path.join(renet_dir, "bin", "renet.exe")
+
+    check_go_installed()
+
+    stamp = os.path.join(root, ".ci", "cache", "build-renet.stamp")
+    license_mode = "enforce" if environ.get("RDC_RENET_LICENSE", "0") == "1" else "nolicense"
+    account_key = environ.get("ACCOUNT_ED25519_PUBLIC_KEY", "")
+    # The public-key cache `./run.sh setup` writes from Bitwarden, never private/account/.env (PLAN-account-env-to-bws T15).
+    key_cache = os.path.join(renet_dir, "..", "account", ".cache", "public-keys.env")
+    if not account_key and os.path.isfile(key_cache):
+        text = pathlib.Path(key_cache).read_text(encoding="utf-8", errors="surrogateescape")
+        hits = [
+            line[len("ACCOUNT_ED25519_PUBLIC_KEY=") :]
+            for line in text.split("\n")
+            if line.startswith("ACCOUNT_ED25519_PUBLIC_KEY=")
+        ]
+        account_key = _subst("\n".join(hits).replace("\r", ""))
+
+    # `if ! { _src_hash="$(_git_tree_fingerprint ...)" && [[ -n ... ]]; }` is an `if` CONDITION, so errexit is suppressed inside it.
+    fingerprint = git_tree_fingerprint(renet_dir, ["."], env, errexit=False)
+    source = _subst(fingerprint) if fingerprint is not None else ""
+    if fingerprint is None or not source:
+        computed = renet_source_hash(renet_dir)
+        if computed is None:
+            raise LocalCommonError("cd %s failed" % renet_dir, code=1)
+        source = _subst(computed)
+
+    current = _hex_of(
+        ("src=%s\nlicense=%s\nkey=%s\n" % (source, license_mode, account_key)).encode(
+            "utf-8", "surrogateescape"
+        )
+    )
+    saved_stamp = _subst(read_stamp_hash(stamp))
+    saved_lines = saved_stamp.split("\n")
+    saved = saved_lines[0]
+    saved_bin = "\n".join(line[len("bin=") :] for line in saved_lines if line.startswith("bin="))
+
+    if (
+        os.path.isfile(renet_bin)
+        and current
+        and saved == current
+        and saved_bin
+        and saved_bin == renet_artifact_fp(renet_bin)
+    ):
+        log.debug("Renet binary is up-to-date (stamp matched)")
+        return True
+
+    if os.path.isfile(renet_bin):
+        log.step("Renet sources changed, rebuilding...")
+    else:
+        log.step("Building renet (first time, requires Docker for asset extraction)...")
+
+    if _run(["./build.sh", "dev"], cwd=renet_dir) != 0:
+        log.error("renet build failed (see the output above)")
+        return False
+    if not os.path.isfile(renet_bin):
+        log.error("Renet build failed: binary not found at %s" % renet_bin)
+        raise LocalCommonError("no renet binary", code=1)
+
+    if _uname("-s") != "Linux":
+        key_flags = ""
+        if account_key:
+            key_flags = (
+                "-X github.com/rediacc/renet/pkg/license/keys.ProductionPublicKey=%s" % account_key
+            )
+        described = (
+            _capture(["git", "describe", "--tags", "--always"], quiet_err=True, cwd=root)
+            if os.path.isdir(root)
+            else None
+        )
+        tag = (
+            _subst(described.stdout)
+            if described is not None and described.returncode == 0
+            else "dev"
+        )
+        version = "%s-dev" % tag
+        for arch in ("amd64", "arm64"):
+            log.step("Cross-compiling renet for linux/%s (remote provisioning)..." % arch)
+            _must(
+                [
+                    "go",
+                    "build",
+                    "-ldflags=-s -w -X main.Version=%s %s" % (version, key_flags),
+                    "-o",
+                    "bin/renet-linux-%s" % arch,
+                    "./cmd/renet",
+                ],
+                cwd=renet_dir,
+                env={**os.environ, "CGO_ENABLED": "0", "GOOS": "linux", "GOARCH": arch},
+            )
+
+    write_stamp_hash(stamp, "%s\nbin=%s" % (current, renet_artifact_fp(renet_bin)))
+    log.info("Renet built successfully")
+    return True
+
+
+# --------------------------------------------------------------------------- the gate lane ---------------------------------------------------------------------------
+#
+# The twin's three `gate_lane_*` functions source `.ci/lib/devbox.sh` on demand and call its functions; here they call `core.devbox.Devbox`, the port of that file, so the devbox half of the answer is the same differentially proved code either way. All three log through the Devbox's own `log`, because that is `common.sh`'s colour rule (decided once from the stderr tty and `NO_COLOR`), which is the rule the twin's `log_*` use.
+
+
+def _devbox():
+    """One `Devbox` per top-level call, over this process's environment and binary streams."""
+    _flush()
+    return devbox, devbox.Devbox()
+
+
+def gate_lane_decide() -> str:
+    """`gate_lane_decide`, `.ci/lib/local-common.sh:904`: `host` or `devbox`, printed WITHOUT a newline by the twin.
+
+    Four rules in order: inside the container is always `host`; `REDIACC_LANE` wins when it is `host` or `devbox`; the sticky `gate_lane=` in `.devbox-state`; otherwise `devbox` exactly when its container is running. The state read and the running probe both discard stderr and run as CONDITIONS, so neither can end the process.
+    """
+    if os.environ.get("REDIACC_IN_DEVBOX"):
+        return "host"
+    lane = os.environ.get("REDIACC_LANE", "")
+    if lane in ("host", "devbox"):
+        return lane
+    module, box = _devbox()
+    status, sticky = box.sub(box.state_get, "gate_lane", err=module.NULL)
+    if status == 0 and sticky:
+        return sticky
+    with box.redirected(err=module.NULL):
+        running = box.cond(box.container_running)
+    return "devbox" if running == 0 else "host"
+
+
+def gate_lane_should_route() -> int:
+    """`gate_lane_should_route`, `.ci/lib/local-common.sh:950`. 0 route, 1 stay on the host, 2 refuse: the devbox is unusable."""
+    if gate_lane_decide() != "devbox":
+        return 1
+    module, box = _devbox()
+    with box.redirected(err=module.NULL):
+        running = box.cond(box.container_running)
+    if running != 0:
+        box.log("warn", "gate lane is 'devbox' but no container is running; staying on the host")
+        box.log("info", "Start it with ./run.sh devbox up, or pin the lane with REDIACC_LANE=host")
+        return 1
+    # `devbox_mount_ok && devbox_identity_ok || { ...; return 2; }`: both run as conditions, and the second only when the first passed.
+    if box.cond(box.mount_ok) != 0 or box.cond(box.identity_ok) != 0:
+        box.log(
+            "error", "refusing to route gates into an unusable devbox (see ./run.sh devbox doctor)"
+        )
+        return 2
+    return 0
+
+
+def gate_lane_run(args: list[str]) -> int:
+    """`gate_lane_run`, `.ci/lib/local-common.sh:975`: the routed command's own status, nothing layered on it.
+
+    `devbox_exec "./run.sh $*"` passes ONE argument, the words joined by single spaces, so the devbox side sees shell syntax rather than re-quoted argv: an argument carrying a space splits inside the container. Reproduced.
+    """
+    _, box = _devbox()
+    box.log("info", "lane: devbox (matches CI; REDIACC_LANE=host to opt out)")
+    return box.invoke("devbox_exec", ["./run.sh %s" % " ".join(args)])
+
+
 # --------------------------------------------------------------------------- argv ---------------------------------------------------------------------------
 
-USAGE = """rediacc_ci.core.local_common -- the pure half of .ci/lib/local-common.sh
+USAGE = """rediacc_ci.core.local_common -- .ci/lib/local-common.sh, every function
 
-  tree-hash <root> <path>...     compute_tree_hash
-  full-hash <root> <path>...     compute_hash_for_package_dirs (no git fast path)
-  git-fp <root> <path>...        _git_tree_fingerprint
-  read-stamp <file>              read_stamp_hash
-  write-stamp <file> <value>     write_stamp_hash
-  version-gte <a> <b>            _version_gte (exit 0 when a >= b)
-  has-npm-script <name>          has_npm_script
+  tree-hash <root> <path>...         compute_tree_hash
+  full-hash <root> <path>...         compute_hash_for_package_dirs (no git fast path)
+  git-fp <root> <path>...            _git_tree_fingerprint
+  read-stamp <file>                  read_stamp_hash
+  write-stamp <file> <value>         write_stamp_hash
+  version-gte <a> <b>                _version_gte (exit 0 when a >= b)
+  has-npm-script <name>              has_npm_script
+  cpu-features-gypi <node_modules>   ensure_cpu_features_gypi
+  ensure-deps                        ensure_deps
+  ensure-packages-built              ensure_packages_built
+  ensure-cli-built                   ensure_cli_built
+  prompt-continue [message]          prompt_continue (exit 0 on y/Y)
+  open-browser <url>                 open_browser
+  run-npm-script <name> [desc]       run_npm_script
+  check-node-version [min]           check_node_version
+  check-go-installed                 check_go_installed
+  ensure-go-installed                ensure_go_installed
+  ensure-bashcov-sup                 ensure_bashcov_sup
+  ensure-host-tools                  ensure_host_tools
+  reexec-docker-group [args...]      reexec_with_docker_group (reads SCRIPT_ENTRYPOINT)
+  ensure-docker-installed            ensure_docker_installed
+  ensure-docker-group                _ensure_docker_group
+  renet-source-hash <dir>            _renet_source_hash
+  renet-artifact-fp <path>           _renet_artifact_fp
+  ensure-renet-built                 ensure_renet_built
+  lane-decide                        gate_lane_decide
+  lane-should-route                  gate_lane_should_route (0 route, 1 host, 2 refuse)
+  lane-run <args...>                 gate_lane_run
 
-The ensure_*, gate_lane_*, prompt_continue, open_browser and reexec verbs are
-NOT here: they install software, start containers or read stdin. See the module
-docstring for the full list and why each one stayed in bash."""
+Each verb is the twin's function of the same name: its streams, its files and
+its exit status, an errexit death included."""
+
+# verb -> (callable taking the argument list, returning the exit status)
+_BOOL_VERBS = {
+    "cpu-features-gypi": lambda rest: ensure_cpu_features_gypi(rest[0]),
+    "ensure-deps": lambda _rest: ensure_deps(),
+    "ensure-packages-built": lambda _rest: ensure_packages_built(),
+    "ensure-cli-built": lambda _rest: ensure_cli_built(),
+    "prompt-continue": lambda rest: prompt_continue(rest[0] if rest else "Continue?"),
+    "check-node-version": lambda rest: check_node_version(
+        rest[0] if rest and rest[0] else "18.0.0"
+    ),
+    "ensure-go-installed": lambda _rest: ensure_go_installed(),
+    "ensure-bashcov-sup": lambda _rest: ensure_bashcov_sup(),
+    "ensure-host-tools": lambda _rest: ensure_host_tools(),
+    "reexec-docker-group": reexec_with_docker_group,
+    "ensure-docker-installed": lambda _rest: ensure_docker_installed(),
+    "ensure-docker-group": lambda _rest: ensure_docker_group(),
+    "ensure-renet-built": lambda _rest: ensure_renet_built(),
+}
+
+
+def _dispatch_actions(verb: str, rest: list[str]) -> int | None:
+    """The machine-mutating verbs. None when `verb` is not one of them."""
+    if verb in _BOOL_VERBS:
+        return 0 if _BOOL_VERBS[verb](rest) else 1
+    if verb == "open-browser" and rest:
+        open_browser(rest[0])
+        return 0
+    if verb == "run-npm-script" and rest:
+        run_npm_script(rest[0], rest[1] if len(rest) > 1 and rest[1] else None)
+        return 0
+    if verb == "check-go-installed":
+        check_go_installed()
+        return 0
+    if verb == "lane-decide":
+        sys.stdout.write(gate_lane_decide())
+        return 0
+    if verb == "lane-should-route":
+        return gate_lane_should_route()
+    if verb == "lane-run":
+        return gate_lane_run(rest)
+    if verb == "renet-source-hash" and rest:
+        digest = renet_source_hash(rest[0])
+        if digest is None:
+            return 1
+        sys.stdout.write(digest)
+        return 0
+    if verb == "renet-artifact-fp" and rest:
+        fingerprint = renet_artifact_fp(rest[0])
+        if fingerprint:
+            sys.stdout.write(fingerprint + "\n")
+        return 0
+    return None
 
 
 def main(argv: list[str]) -> int:
@@ -679,6 +1589,8 @@ def main(argv: list[str]) -> int:
             return 0 if version_gte(rest[0], rest[1]) else 1
         elif verb == "has-npm-script" and len(rest) == 1:
             return 0 if has_npm_script(rest[0]) else 1
+        elif (status := _dispatch_actions(verb, rest)) is not None:
+            return status
         else:
             log.error("Unknown local-common command: %s" % verb)
             return 2

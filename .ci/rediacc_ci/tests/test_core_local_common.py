@@ -24,7 +24,8 @@ import sys
 import pytest
 
 from rediacc_ci import paths
-from rediacc_ci.core import local_common
+from rediacc_ci.core import account, local_common, stubfarm
+from rediacc_ci.core import local_common_actions_shadow_driver as actions_driver
 from rediacc_ci.core import local_common_shadow_driver as driver
 
 TWIN = ".ci/lib/local-common.sh"
@@ -158,7 +159,7 @@ def twin_text() -> str:
     return (paths.repo_root() / TWIN).read_text(encoding="utf-8")
 
 
-# (bash name, the attribute it became here). `_version_gte` loses its underscore because a module-private name in bash is not a module-private name in Python.
+# (bash name, the attribute it became here). `_version_gte` loses its underscore because a module-private name in bash is not a module-private name in Python; `_ensure_docker_group`, `_renet_source_hash` and `_renet_artifact_fp` the same.
 PORTED_FUNCTIONS = (
     ("_sha256sum", "sha256sum"),
     ("_sed_i", "sed_i"),
@@ -169,36 +170,36 @@ PORTED_FUNCTIONS = (
     ("write_stamp_hash", "write_stamp_hash"),
     ("_version_gte", "version_gte"),
     ("has_npm_script", "has_npm_script"),
+    # The machine-mutating half, 2026-09-24, proved by `core/local_common_actions_shadow_driver.py`.
+    ("ensure_cpu_features_gypi", "ensure_cpu_features_gypi"),
+    ("ensure_deps", "ensure_deps"),
+    ("ensure_packages_built", "ensure_packages_built"),
+    ("ensure_cli_built", "ensure_cli_built"),
+    ("prompt_continue", "prompt_continue"),
+    ("open_browser", "open_browser"),
+    ("run_npm_script", "run_npm_script"),
+    ("check_node_version", "check_node_version"),
+    ("check_go_installed", "check_go_installed"),
+    ("ensure_go_installed", "ensure_go_installed"),
+    ("ensure_bashcov_sup", "ensure_bashcov_sup"),
+    ("ensure_host_tools", "ensure_host_tools"),
+    ("reexec_with_docker_group", "reexec_with_docker_group"),
+    ("ensure_docker_installed", "ensure_docker_installed"),
+    ("_ensure_docker_group", "ensure_docker_group"),
+    ("_renet_source_hash", "renet_source_hash"),
+    ("_renet_artifact_fp", "renet_artifact_fp"),
+    ("ensure_renet_built", "ensure_renet_built"),
+    ("gate_lane_decide", "gate_lane_decide"),
+    ("gate_lane_should_route", "gate_lane_should_route"),
+    ("gate_lane_run", "gate_lane_run"),
 )
 
-# The other twenty-one. `check_node_version` is on this list even though it IS ported, at `rediacc_ci/core/account.py:143`: what this file asserts is that `local_common` does not carry a SECOND copy of it, which is the duplicate-instrument risk the port's docstring names.
-NOT_PORTED_FUNCTIONS = (
-    "ensure_cpu_features_gypi",
-    "ensure_deps",
-    "ensure_packages_built",
-    "ensure_cli_built",
-    "prompt_continue",
-    "open_browser",
-    "run_npm_script",
-    "check_node_version",
-    "check_go_installed",
-    "ensure_go_installed",
-    "ensure_bashcov_sup",
-    "ensure_host_tools",
-    "reexec_with_docker_group",
-    "ensure_docker_installed",
-    "_ensure_docker_group",
-    "_renet_source_hash",
-    "_renet_artifact_fp",
-    "ensure_renet_built",
-    "gate_lane_decide",
-    "gate_lane_should_route",
-    "gate_lane_run",
-)
+# Nothing is left. Kept as a named empty tuple so the "defines these AND NOTHING ELSE" assertion below still has both halves to add up.
+NOT_PORTED_FUNCTIONS: tuple[str, ...] = ()
 
 
 def test_the_twin_still_defines_every_function_this_slice_names() -> None:
-    """Thirty, split nine and twenty-one, measured rather than remembered."""
+    """Thirty, measured rather than remembered."""
     text = twin_text()
     for name, _ in PORTED_FUNCTIONS:
         assert "\n%s() {" % name in text, "%s is gone from %s" % (name, TWIN)
@@ -247,27 +248,20 @@ def test_the_twin_is_still_sourced_and_nothing_is_cut_over() -> None:
         )
 
 
-def test_devbox_is_not_touched_by_this_slice() -> None:
-    """The scope ruling, asserted rather than trusted.
+def test_the_lane_reaches_devbox_only_through_the_port() -> None:
+    """The three `gate_lane_*` functions call `.ci/lib/devbox.sh` in the twin; the port must reach `core.devbox`, never the bash file.
 
-    `gate_lane_decide`, `gate_lane_should_route` and `gate_lane_run` are the twin's only devbox-coupled functions and are the reason `local-common.sh` cannot be retired yet.
-
-    ASSERTED AGAINST THE AST AND NOT AGAINST THE TEXT, because both files DISCUSS `devbox.sh` at length in their docstrings and a plain substring search reds on the explanation rather than on the reach. What is checked is every identifier and every non-docstring string literal, which is where a real reach would have to live.
+    ASSERTED AGAINST THE AST: a live string naming `devbox.sh` in the port would be a bash bridge wearing a Python name. The walk must find `devbox` tokens in the port (it imports `core.devbox`) and must find NO `devbox.sh` literal. The pure-half driver stays devbox-free, as that slice ruled.
     """
     twin = twin_text()
     for name in ("devbox_state_get", "devbox_container_running", "devbox_exec"):
         assert name in twin, "%s left the twin, so the coupling claim is stale" % name
-    for relative in (PORT, DRIVER):
-        offenders = live_tokens_naming(relative, "devbox")
-        assert offenders == [], "%s reaches into devbox, which this slice does not touch: %s" % (
-            relative,
-            offenders,
-        )
-    # THE CONTROL, IN THE OTHER DIRECTION. The same walk over `core/account.py`, which really does define `devbox_state_get` and read `.devbox-state`, must FIND something. A walk that silently collected nothing would pass the loop above forever.
-    control = live_tokens_naming(".ci/rediacc_ci/core/account.py", "devbox")
-    assert control != [], (
-        "the walk found nothing in a file that genuinely names devbox, so it proves nothing"
+    port_tokens = live_tokens_naming(PORT, "devbox")
+    assert port_tokens != [], (
+        "the port names nothing devbox-shaped, so the lane cannot be reaching core.devbox"
     )
+    assert not any("devbox.sh" in token for token in port_tokens), port_tokens
+    assert live_tokens_naming(DRIVER, "devbox") == []
 
 
 def live_tokens_naming(relative: str, needle: str) -> list[str]:
@@ -667,3 +661,140 @@ def test_the_repo_root_is_a_checkout_with_the_twin_in_it() -> None:
     assert (paths.repo_root() / TWIN).is_file()
     assert (paths.repo_root() / PORT).is_file()
     assert pathlib.Path(DRIVER).name == "local_common_shadow_driver.py"
+
+
+# -- the machine-mutating half, against a stub farm ---------------------------
+#
+# Driven by `rediacc_ci.core.local_common_actions_shadow_driver`: each case runs both sides as child processes in one fixed sandbox with `npm`, `node`, `go`, `sudo`, `curl`, `tar`, `gcc`, `docker` and `sg` stubbed, and compares rc, both streams, the ordered stub transcript and the whole sandbox tree afterwards. Every case drives the LIVE twin.
+
+ACTION_CASES = [
+    (scenario, case) for scenario, cases in actions_driver.SCENARIOS.items() for case in cases
+]
+
+
+@pytest.mark.parametrize(
+    ("scenario", "case"), ACTION_CASES, ids=["%s/%s" % (s, c.name) for s, c in ACTION_CASES]
+)
+def test_actions_match_the_live_twin(scenario, case) -> None:
+    repo = paths.repo_root()
+    with actions_driver.locked():
+        old = actions_driver.observe("old", repo, case)
+        new = actions_driver.observe("new", repo, case)
+    assert old == new, "case %s/%s diverged" % (scenario, case.name)
+
+
+def test_every_ported_action_is_driven() -> None:
+    """ANTI-VACUITY: every machine-mutating function has at least one case."""
+    driven = {actions_driver.FN[c.verb] for _, c in ACTION_CASES}
+    actions = {name for name, _ in PORTED_FUNCTIONS[9:]}
+    assert len(actions) == 21
+    assert actions <= driven, "not driven: %s" % sorted(actions - driven)
+
+
+def test_the_action_farm_really_shadows_npm() -> None:
+    """ANTI-VACUITY: the stubs are what the cases reach, and the cases reach them."""
+    case = actions_driver.SCENARIOS["deps"][0]
+    with actions_driver.locked():
+        root, farm = actions_driver.build_sandbox(paths.repo_root(), case)
+        env = actions_driver.side_env(root, farm, case)
+        for name in ("npm", "node", "sudo", "docker", "uname"):
+            assert stubfarm.shadows(farm, name, env), "%s is not the stub" % name
+        lines = actions_driver.observe("old", paths.repo_root(), case)
+    assert sum(" call#" in line for line in lines) >= 3
+
+
+def test_a_hidden_tool_is_really_absent() -> None:
+    """CONTROL ON `Farm.host_path`: a hidden name must not resolve, and an unhidden one must."""
+    case = actions_driver.Case("probe", "ensure-host-tools", hidden=("jq",), unstub=("curl",))
+    with actions_driver.locked():
+        root, farm = actions_driver.build_sandbox(paths.repo_root(), case)
+        env = actions_driver.side_env(root, farm, case)
+    assert shutil.which("jq", path=env["PATH"]) is None
+    assert shutil.which("python3", path=env["PATH"]) is not None
+
+
+@pytest.mark.parametrize(
+    "word",
+    [
+        "",
+        "a",
+        "a b",
+        "it's",
+        'say "hi"',
+        "$HOME",
+        "`x`",
+        "a,b",
+        "#c",
+        "c#",
+        "~d",
+        "d~",
+        "=x",
+        "x=y",
+        "a\\b",
+        "tab\there",
+        "line\nbreak",
+        "\x01",
+        "\x7f",
+        "esc\x1b",
+        "é",
+        "ü ö",
+        "!bang",
+        "*?[]",
+        "{a,b}",
+        "(x)",
+        "a|b&c;d",
+        "<in>out",
+        "^caret",
+        "100%",
+        "@at",
+        "+plus",
+    ],
+)
+@pytest.mark.parametrize("locale", ["C", "C.UTF-8"])
+def test_bash_q_matches_printf_q(word, locale, monkeypatch) -> None:
+    """`bash_q` against the live `printf %q`, byte for byte, in both locales the twin can run under."""
+    monkeypatch.setenv("LC_ALL", locale)
+    proc = subprocess.run(
+        ["bash", "-c", 'printf "%q" "$1"', "q", word],
+        capture_output=True,
+        env={"PATH": "/usr/bin:/bin", "LC_ALL": locale},
+        check=True,
+    )
+    assert local_common.bash_q(word) == proc.stdout.decode("utf-8", "surrogateescape")
+
+
+def test_check_node_version_agrees_with_the_account_copy() -> None:
+    """TWO PYTHON COPIES OF ONE BASH FUNCTION EXIST, and this pins that they agree until one is deleted.
+
+    `core/account.py` re-implemented `check_node_version` with its own `version_tuple` compare before this module ported it with the twin's `sort -V` comparator. `account.py` was under another writer's live rewrite (PLAN-account-env-to-bws) when this port landed, so the duplicate is handed over rather than removed from under them; this case keeps the two from drifting in the meantime.
+    """
+    for have, want in (
+        ("22.1.0", "18.0.0"),
+        ("16.20.2", "18.0.0"),
+        ("22.9.0", "22.10.0"),
+        ("18.0.0", "18.0.0"),
+    ):
+        assert local_common.version_gte(have, want) == (
+            account.version_tuple(have) >= account.version_tuple(want)
+        ), (have, want)
+
+
+def test_the_actions_ledger_holds() -> None:
+    proc = subprocess.run(
+        [
+            "npx",
+            "tsx",
+            "scripts/lib/shadow-gate.ts",
+            "--pair",
+            "w7p5b-local-common-actions",
+            "--assert",
+            "--k",
+            "5",
+        ],
+        cwd=paths.repo_root(),
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=180,
+    )
+    assert proc.returncode == 0, proc.stdout + proc.stderr

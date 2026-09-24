@@ -11,13 +11,17 @@ drift apart through the harness.
 `check_docker` IS DEFINED BY THE HARNESS ON THE BASH SIDE because the twin does not define it: it lives in `.ci/legacy/run-legacy.sh`, the file that SOURCES `service.sh`, and only late binding makes the twin work at all. The definition below is copied from that file verbatim. That is defect 3 in the port's docstring, and the harness having to supply it is the evidence for it.
 """
 
+import pathlib
+import re
 import shutil
+import subprocess
 import textwrap
 import time
 
 import pytest
 
-from rediacc_ci.core import service
+from rediacc_ci.core import service, stubfarm
+from rediacc_ci.core import service_shadow_driver as svc_driver
 from rediacc_ci.tests import differential as diff
 
 TWIN = ".ci/lib/service.sh"
@@ -278,3 +282,91 @@ def test_now_defaults_to_the_wall_clock() -> None:
     before = int(time.time())
     assert service.state_path("/x") == "/x/.service-state"
     assert before <= int(time.time())
+
+
+# -- the lifecycle half, against a stub farm ---------------------------------
+#
+# `service_start`, `service_stop`, `service_health` and `service_logs`'s attach are proved by `rediacc_ci.core.service_shadow_driver`: each case runs both sides as child processes with `docker`, `curl`, `sleep`, `ss`, `node` and `openssl` stubbed, and compares rc, stdout, stderr, the files written AND the ordered transcript of every stubbed call. See that module's docstring. These cases drive the LIVE twin on every run.
+
+LIFECYCLE_CASES = [
+    (scenario, case) for scenario, cases in svc_driver.SCENARIOS.items() for case in cases
+]
+
+
+@pytest.mark.parametrize(
+    ("scenario", "case"),
+    LIFECYCLE_CASES,
+    ids=["%s/%s" % (s, c.name) for s, c in LIFECYCLE_CASES],
+)
+def test_lifecycle_matches_the_live_twin(scenario, case) -> None:
+    repo = pathlib.Path(diff.repo())
+    old = svc_driver.observe("old", repo, case)
+    new = svc_driver.observe("new", repo, case)
+    assert old == new, "case %s/%s diverged" % (scenario, case.name)
+
+
+def test_every_twin_function_is_driven_by_a_scenario() -> None:
+    """ANTI-VACUITY. The twin's six functions, and the driver reaches every public one."""
+    twin = (pathlib.Path(diff.repo()) / TWIN).read_text(encoding="utf-8")
+    defined = set(re.findall(r"^([a-z_]+)\(\) \{", twin, flags=re.MULTILINE))
+    assert defined == {
+        "_service_compose",
+        "service_start",
+        "service_health",
+        "service_stop",
+        "service_status",
+        "service_logs",
+    }
+    driven = {svc_driver.FN[c.verb] for _, c in LIFECYCLE_CASES}
+    assert driven == defined - {"_service_compose"}
+    assert {"build-fails", "all-present", "timeout-debug", "unknown"} <= {
+        c.name for _, c in LIFECYCLE_CASES
+    }
+
+
+def test_the_stub_farm_really_shadows_docker(tmp_path) -> None:
+    """ANTI-VACUITY. If `docker` on the case PATH were the real one, a transcript would be empty on both sides and every case would compare two nothings."""
+    case = svc_driver.SCENARIOS["stop"][0]
+    farm = svc_driver.build_farm(tmp_path, case)
+    env = svc_driver.side_env(tmp_path, farm, case)
+    for name in ("docker", "curl", "sleep", "ss"):
+        assert stubfarm.shadows(farm, name, env), "%s is not the stub" % name
+    lines = svc_driver.observe("old", pathlib.Path(diff.repo()), case)
+    calls = [line for line in lines if " call#" in line]
+    assert len(calls) >= 8, "the twin made %d stubbed calls; the farm is not being reached" % len(
+        calls
+    )
+
+
+def test_a_transcript_difference_is_a_divergence() -> None:
+    """CONTROL ON THE COMPARISON. One dropped call must make two otherwise-equal observation lists unequal."""
+    case = svc_driver.SCENARIOS["health"][1]
+    old = svc_driver.observe("old", pathlib.Path(diff.repo()), case)
+    tampered = [line for line in old if "call#3|" not in line]
+    assert tampered != old
+
+
+def test_the_lifecycle_ledger_holds() -> None:
+    """The K=5 licence on disk, re-derived rather than trusted."""
+    proc = subprocess.run(
+        [
+            "npx",
+            "tsx",
+            "scripts/lib/shadow-gate.ts",
+            "--pair",
+            "w7p5b-service",
+            "--assert",
+            "--k",
+            "5",
+        ],
+        cwd=diff.repo(),
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=180,
+    )
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    ledger = (pathlib.Path(diff.repo()) / ".ci/shadow/w7p5b-service.observations.jsonl").read_text(
+        encoding="utf-8"
+    )
+    assert "rediacc_ci.core.service_shadow_driver" in ledger

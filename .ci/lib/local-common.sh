@@ -312,7 +312,10 @@ ensure_cli_built() {
     current_hash="$(
         {
             compute_tree_hash "$LOCAL_ROOT_DIR" packages/cli
-            cat "$packages_stamp" 2>/dev/null
+            # `|| true`: this `cat` is the group's LAST command, so without it a
+            # missing packages stamp became the pipeline's status under pipefail
+            # and the bare assignment killed the function with no message.
+            cat "$packages_stamp" 2>/dev/null || true
         } | _sha256sum | awk '{print $1}'
     )"
 
@@ -534,7 +537,10 @@ _version_gte() {
 # BASH_ENV file skips profiling when the binary is absent, and ensure_host_tools
 # already installs build-essential, so the next setup closes the gap.
 ensure_bashcov_sup() {
-    local src="$REPO_ROOT/.devcontainer/bashcov-sup.c"
+    # LOCAL_ROOT_DIR, not REPO_ROOT: nothing on this file's load path defines
+    # REPO_ROOT, so under the `set -u` every sourcer arms this line died with
+    # "REPO_ROOT: unbound variable" and `./run.sh setup` never built the binary.
+    local src="$LOCAL_ROOT_DIR/.devcontainer/bashcov-sup.c"
     local bin="$HOME/.local/share/rediacc/bin/bashcov-sup"
     [[ -f "$src" ]] || return 0
     if [[ -x "$bin" && ! "$src" -nt "$bin" ]]; then
@@ -787,9 +793,14 @@ ensure_renet_built() {
     if [[ "${RDC_RENET_LICENSE:-0}" == "1" ]]; then
         _license_mode="enforce"
     fi
+    # The DEV public key: the environment wins, else the public-key cache that
+    # `./run.sh setup` writes from Bitwarden (`bws_env cache-to`, the
+    # ACCOUNT_ED25519_PUBLIC_KEY_DEV entry). PUBLIC values only, so builds stay
+    # offline (agent/plans/PLAN-account-env-to-bws.md T15).
     local _account_key="${ACCOUNT_ED25519_PUBLIC_KEY:-}"
-    if [[ -z "$_account_key" ]] && [[ -f "$renet_dir/../account/.env" ]]; then
-        _account_key=$(sed -n 's/^ACCOUNT_ED25519_PUBLIC_KEY=//p' "$renet_dir/../account/.env" | tr -d '\r')
+    local _key_cache="$renet_dir/../account/.cache/public-keys.env"
+    if [[ -z "$_account_key" ]] && [[ -f "$_key_cache" ]]; then
+        _account_key=$(sed -n 's/^ACCOUNT_ED25519_PUBLIC_KEY=//p' "$_key_cache" | tr -d '\r')
     fi
     # Git-index fast path with the renet-specific full walk as fallback (the
     # generic walk lacks renet's bin//embed-assets prunes, so compute_tree_hash
