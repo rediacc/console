@@ -424,6 +424,30 @@
       "open_sigs": [],
       "done_sigs": []
     },
+    "agent/plans/PLAN-fix-console-ci-5day-failure.md": {
+      "status": "draft",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 13,
+      "done": 0,
+      "open_sigs": [
+        "1dcddd87",
+        "61fc13bb",
+        "6fe61842",
+        "7f611233",
+        "904ffbc2",
+        "962d5f35",
+        "b6fb6c28",
+        "b8e80be1",
+        "b9743d81",
+        "be8d374f",
+        "d06ce358",
+        "edf13c0b",
+        "f65f8bee"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-fix-german-translation-artifacts.md": {
       "status": "compacted",
       "owner": "unowned",
@@ -807,40 +831,6 @@
       "open_sigs": [],
       "done_sigs": []
     },
-    "agent/plans/PLAN-rdc-readonly-mode.md": {
-      "status": "executing",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 23,
-      "done": 0,
-      "open_sigs": [
-        "003b2b57",
-        "0124b4f1",
-        "03938685",
-        "04f04754",
-        "0514dd6c",
-        "0b161f6d",
-        "0e1fa03c",
-        "4099c8ef",
-        "4593234f",
-        "5fd59dd5",
-        "840471e7",
-        "9efc0cfa",
-        "a20702c9",
-        "a8f0a4b6",
-        "c310726b",
-        "c764effe",
-        "dfb11c54",
-        "e1352cfb",
-        "e81d7cd8",
-        "eb12994a",
-        "f48c9f93",
-        "f8126cb5",
-        "f951d924"
-      ],
-      "done_sigs": []
-    },
     "agent/plans/PLAN-reggate-effort-cap.md": {
       "status": "compacted",
       "owner": "unowned",
@@ -1205,7 +1195,7 @@
     },
     "agent/plans/PLAN-stop-hook-rulings-campaign.md": {
       "status": "draft",
-      "owner": "d778be9d",
+      "owner": "unowned",
       "folder": "agent/plans",
       "moved_at": "",
       "open": 21,
@@ -1951,31 +1941,6 @@
         "e136a3fe",
         "f281ea08"
       ]
-    },
-    "agent/plans/_done/PLAN-fix-console-ci-5day-failure.md": {
-      "status": "superseded",
-      "owner": "d778be9d",
-      "folder": "agent/plans/_done",
-      "moved_at": "2026-09-24",
-      "open": 13,
-      "done": 0,
-      "open_sigs": [
-        "1dcddd87",
-        "61fc13bb",
-        "6fe61842",
-        "7f611233",
-        "904ffbc2",
-        "962d5f35",
-        "b6fb6c28",
-        "b8e80be1",
-        "b9743d81",
-        "be8d374f",
-        "d06ce358",
-        "edf13c0b",
-        "f65f8bee"
-      ],
-      "done_sigs": [],
-      "ruling": "#d9785655"
     },
     "agent/plans/_done/PLAN-fix-guard-repo-context.md": {
       "status": "done",
