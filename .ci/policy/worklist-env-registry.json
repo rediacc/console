@@ -263,6 +263,24 @@
         "'3'"
       ]
     },
+    "WORKLIST_DEFER_SETTLE_BATCH": {
+      "kind": "tuning",
+      "defaults": [
+        "'4'"
+      ]
+    },
+    "WORKLIST_DEFER_SETTLE_CAP": {
+      "kind": "tuning",
+      "defaults": [
+        "'5'"
+      ]
+    },
+    "WORKLIST_DEFER_SETTLE_MIN": {
+      "kind": "tuning",
+      "defaults": [
+        "'30'"
+      ]
+    },
     "WORKLIST_DEFER_WINDOW_MIN": {
       "kind": "tuning",
       "defaults": [

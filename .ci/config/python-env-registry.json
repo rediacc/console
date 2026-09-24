@@ -1615,6 +1615,12 @@
       "WORKLIST_TAIL_BYTES",
       "WORKLIST_TASKS_DIR"
     ],
+    ".claude/hooks/stop/wl_defersettle.py": [
+      "WORKLIST_DEFER_SETTLE_BATCH",
+      "WORKLIST_DEFER_SETTLE_CAP",
+      "WORKLIST_DEFER_SETTLE_MIN",
+      "WORKLIST_JUDGE"
+    ],
     ".claude/hooks/stop/wl_hints.py": [
       "TMPDIR",
       "WORKLIST_HINTS_FILE"
