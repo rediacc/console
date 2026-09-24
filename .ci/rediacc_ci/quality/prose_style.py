@@ -1677,6 +1677,9 @@ def _python_reflow_lines(text):
             # tracked `.py` files: 8,859 comment bodies sit at the conventional one space after the hash and 218 at none, while just 51 sit two columns or deeper, so requiring a flush body costs almost no reflow and protects every hanging line.
             if len(body) - len(body.lstrip(" ")) >= COMMENT_BODY_FLUSH:
                 continue
+            # The same marker rule as the C-style branch below: a line the linter skips is not the reflow's to fold.
+            if is_marked(_nth_line(text, chunk.start), DEFAULT_MARKERS):
+                continue
             found[chunk.start] = (indent, body, "#", (None, None))
             continue
         base = chunk.col
@@ -1750,6 +1753,9 @@ def _cstyle_reflow_lines(text):
         if _is_structural_comment_line(body):
             continue
         if len(body) - len(body.lstrip(" ")) >= COMMENT_BODY_FLUSH:
+            continue
+        # A MARKED LINE IS OUT OF BOUNDS FOR BOTH SIDES. The linter skips a line carrying a style-ok marker (`_emit`), so folding it into a paragraph rewrote prose the linter never polices (2026-09-24, check-em-dash-surfaces.ts:65).
+        if is_marked(_nth_line(text, lineno), DEFAULT_MARKERS):
             continue
         found[lineno] = (indent, body, "//", (None, None))
     return found
