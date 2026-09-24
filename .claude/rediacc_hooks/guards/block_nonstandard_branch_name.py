@@ -15,6 +15,7 @@ PORT NOTE ON `read -ra TOKENS <<<"$BRANCH_ARGS"`. `read` splits on IFS (space, t
 `split()`.
 """
 
+import os
 import re
 
 from rediacc_hooks import hookio, shellscan
@@ -92,6 +93,12 @@ def run(ev):
     cmd = shellscan._command_substitution(shellscan._strip_heredocs(cmd))
 
     if not hookio.grep_q(HAS_BRANCH_VERB, cmd):
+        return hookio.ALLOW
+
+    # ANOTHER PROJECT'S BRANCHES ARE NOT THIS REPO'S CONVENTION. Found 2026-09-24 restoring four branches in /home/developer/rovaip (a different project) with `git -C /home/developer/rovaip branch chore/... <sha>`: the MMDD-N rule refused them. Exempt only a target OUTSIDE this checkout; submodules under private/ are separate git roots but keep the rule, because /pr-merge matches their coordinated branch names exactly.
+    root = ev.env("CLAUDE_PROJECT_DIR") or hookio.git_out(["rev-parse", "--show-toplevel"])
+    other = shellscan.target_root(cmd, root) if root else ""
+    if other and not os.path.realpath(other).startswith(os.path.realpath(root) + os.sep):
         return hookio.ALLOW
 
     candidate = ""
