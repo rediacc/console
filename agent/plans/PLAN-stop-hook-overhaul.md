@@ -13,14 +13,14 @@ The operator's words: *"This is a very big general problem with stop hook!"* The
 
 ### 1.1 The specialist push-back -- DELETE THE ROUTING, KEEP THE CHALLENGE
 
-Fired three times this session, twice wrongly. `named` folds to `name`, discriminative for **config-universe** at 1.0; `verifi` and `yet` are discriminative for **gate-author** at 1.0. The block fires when `top_score >= PUSHBACK_MIN_SCORE` with the margin clearing `PUSHBACK_MIN_MARGIN` -- `1.0` and `0.5` at `.claude/hooks/stop/wl_agents.py:582` and
-`.claude/hooks/stop/wl_agents.py:583`, against `WORD_WEIGHT = 1.0` at `.claude/hooks/stop/wl_agents.py:150`. **One ordinary English word, with no competitor, blocks a stop.**
+Fired three times this session, twice wrongly. `named` folds to `name`, discriminative for **config-universe** at 1.0; `verifi` and `yet` are discriminative for **gate-author** at 1.0. The block fires when `top_score >= PUSHBACK_MIN_SCORE` with the margin clearing `PUSHBACK_MIN_MARGIN` -- `1.0` and `0.5` at `.claude/hooks/stop/wl_agents.py line 582 (blob efdf3fdb8767)` and
+`.claude/hooks/stop/wl_agents.py line 583 (blob efdf3fdb8767)`, against `WORD_WEIGHT = 1.0` at `.claude/hooks/stop/wl_agents.py:150`. **One ordinary English word, with no competitor, blocks a stop.**
 
-Not fixable by tuning, and the repo already proved that: `.ci/scripts/quality/check_agent_hint_liveness.py:544` says the floor cannot be raised because the motivating sentence scores exactly 1.0. The stopword list at `.claude/hooks/stop/wl_agents.py:160` has absorbed six rounds of live misfires already.
+Not fixable by tuning, and the repo already proved that: `.ci/scripts/quality/check_agent_hint_liveness.py line 544 (blob 7f38a18348d9)` says the floor cannot be raised because the motivating sentence scores exactly 1.0. The stopword list at `.claude/hooks/stop/wl_agents.py:160` has absorbed six rounds of live misfires already.
 
-The damage is the ROUTING, not the DETECTION -- `.claude/hooks/stop/worklist-cases/20-advisories-rotation.sh:645` records exactly that conclusion from an earlier misfire.
+The damage is the ROUTING, not the DETECTION -- `.claude/hooks/stop/worklist-cases/20-advisories-rotation.sh line 645 (blob a79fb1fbae44)` records exactly that conclusion from an earlier misfire.
 
-- [x] Split `pushback_for` (`.claude/hooks/stop/wl_agents.py:667`) so it returns
+- [x] Split `pushback_for` (`.claude/hooks/stop/wl_agents.py line 667 (blob efdf3fdb8767)`) so it returns
     (ticked) 2026-09-23T16:07:22Z by d778be9d: pushback_for split landed in commit 00b0a0957; investigation ledger committed at 4e05a9d03.
       `(claims, agent_or_None)`, naming an agent only above the HINT's own floor
       (`.claude/hooks/stop/wl_agents.py:51`, `.claude/hooks/stop/wl_agents.py:57`). Delete
@@ -64,7 +64,7 @@ by-design case.
 - [x] Strip the "whether the stream evidence matches" clause for stream-less rows.
     (ticked) 2026-09-23T16:40:56Z by d778be9d: V_BG_REPORT wording fixed in commit c8e36d98a.
 - [x] CONTROL in `.claude/hooks/stop/worklist-cases/14-background-waits.sh`: a roster of
-    (ticked) 2026-09-24T07:52:02Z by d778be9d: uncommitted: 14-background-waits.sh retired, control is test_13a..13i at .claude/rediacc_hooks/tests/test_wl_background_waits.py:1022-1199, 9 passed; planted defects: predicate reverted to _only_waiters fails 13a/13d/13f/13g, always-live fails 13b/13c/13e/13h/13i, subagent arm removed fails 13g
+    (ticked) 2026-09-24T07:52:02Z by d778be9d: uncommitted: 14-background-waits.sh retired, control is test_13a..13i at .claude/rediacc_hooks/tests/test_wl_background_waits.py line 1022-1199 (blob 908418654f10), 9 passed; planted defects: predicate reverted to _only_waiters fails 13a/13d/13f/13g, always-live fails 13b/13c/13e/13h/13i, subagent arm removed fails 13g
       fresh-transcript teammates with no `.output` gives NO check-in; the same roster aged
       past `TEAMMATE_FRESH_MIN` DOES fire and says POSSIBLY STUCK.
 

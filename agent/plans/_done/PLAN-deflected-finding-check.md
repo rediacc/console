@@ -13,7 +13,7 @@ The operator wants a fast, mechanical (regex, not judge-call) Stop-hook check fo
 ## What already exists
 
 `wl_admit.py` already scans the assistant's whole-turn text (since the last genuine operator turn, via `_is_operator_turn`) for evasive/admission phrasing, with its own regex family, settled-signature cache, and REAL/SYNTHETIC test corpus.
-`DEFERRED_FINDING_RE`/`deferred_findings()` in `wl_checks.py:602-632` is a closer, simpler precedent: a hand-written regex firing on "found/reported/flagged ... not fixed" language, `last_msg`-scoped, `always=False` (HYGIENE tier), with message template `V_DEFERRED_FINDING`.
+`DEFERRED_FINDING_RE`/`deferred_findings()` in `.claude/hooks/stop/wl_checks.py:602-632` is a closer, simpler precedent: a hand-written regex firing on "found/reported/flagged ... not fixed" language, `last_msg`-scoped, `always=False` (HYGIENE tier), with message template `V_DEFERRED_FINDING`.
 
 Neither covers the "dismissed responsibility without saying not-fixed" family (pre-existing/unrelated/environmental/out of scope), and `DEFERRED_FINDING_RE`'s `last_msg`-only scope is the wrong window for this class: the real incident's corroboration (worklist --add/--triage calls) landed in later tool calls in the SAME turn, not adjacent prose, ~30 seconds after the flagged sentence.
 
@@ -54,7 +54,7 @@ New `V_DEFLECTED_FINDING` in `worklist_messages.py`, sibling to `V_DEFERRED_FIND
     (ticked) 2026-09-23T17:21:35Z by d778be9d: Landed in commit 770b9e9c2; investigation ledger committed at ef28c2183.
 - [x] Add `V_DEFLECTED_FINDING` to `worklist_messages.py`.
     (ticked) 2026-09-23T17:21:36Z by d778be9d: Landed in commit 770b9e9c2; investigation ledger committed at ef28c2183.
-- [x] Wire `wl_deflect` into `wl_checks.py` beside the `DEFERRED_FINDING_RE` call site (`wl_checks.py:4030-4051`), `always=False`.
+- [x] Wire `wl_deflect` into `wl_checks.py` beside the `DEFERRED_FINDING_RE` call site (`.claude/hooks/stop/wl_checks.py:4030-4051`), `always=False`.
     (ticked) 2026-09-23T17:21:36Z by d778be9d: Landed in commit 770b9e9c2; investigation ledger committed at ef28c2183.
 - [x] Test coverage: phrase-family MUST_HIT/MUST_MISS pairs (verdict shape, finding-noun shape, harmless-noun exclusion, baseline exemption) using this session's own real quoted lines as fixtures.
     (ticked) 2026-09-23T17:21:36Z by d778be9d: Landed in commit 770b9e9c2; investigation ledger committed at ef28c2183.

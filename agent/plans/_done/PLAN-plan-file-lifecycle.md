@@ -38,7 +38,7 @@ Three asks, one subject: creation, maintenance, retirement of `agent/PLAN-*.md`.
 | `wl_planfile.raw_box_counts` (anchored, no fence tracking) | 89 | 24 | 9 |
 | `wl_planfid.plan_tasks` (the REAL parser) | 88 | 24 | 8 |
 
-**5 of 93 raw hits are false positives.** Four are mid-line prose about the grammar (`agent/plans/PLAN-secret-namespace-migration.md:45`, `:1269`, and two in `PLAN-stop-plan-box-enforcement.md`); one is a fenced code SAMPLE at `PLAN-fix-in-session-rule.md:352`, a depiction of a line the hook prints.
+**5 of 93 raw hits are false positives.** Four are mid-line prose about the grammar (`agent/plans/PLAN-secret-namespace-migration.md:45`, `:1269`, and two in `PLAN-stop-plan-box-enforcement.md`); one is a fenced code SAMPLE at `agent/plans/PLAN-fix-in-session-rule.md` line 352 at the time, a depiction of a line the hook prints.
 
 **This dictates the implementation language.** A gate built on `grep` reds on 5 non-tasks. A gate on `raw_box_counts` reds on 1. Only `plan_tasks` is correct, and it is Python in `.claude/hooks/stop/`. So the gate is Python and imports it. There is no second parser to drift, which turns the fence rule from a test into a structural property.
 
@@ -56,7 +56,7 @@ PLAN-stop-plan-box-enforcement.md    open= 6  status=draft      inscope=False
 ```
 
 1. `_pf_rows[0]` at `wl_checks.py:3758` renders exactly one row. This is the cause
-`agent/PLAN-stop-plan-box-enforcement.md` named, and it is at least REPORTED.
+`agent/archive/plans/PLAN-stop-plan-box-enforcement.md` named, and it is at least REPORTED.
 2. **`NOT_STARTED_STATES` exempts 6 of 8 files -- 72 of the 88 boxes -- before
 `plan_rows` ever opens them.** `wl_planfile` can see 16 boxes in 2 files, total, and then shows one of those two.
 
@@ -197,19 +197,19 @@ Bash, because the BLOCKER validator (`.ci/scripts/lib/blocker-validator.sh`) is 
 - Glob: `git ls-files 'agent/PLAN-*.md'`, non-recursive, tracked-only. Same glob as the
 Stop hook (asserted as a subset control), so the two cannot enforce rules about different sets. Excludes `docs/PLAN-*.md` -- those are published docs with a different lifecycle, and they are the only two files that WOULD fail at 33 days (140 and 150).
 - **The shallow-clone refusal, which nothing else in this repo has.**
-`.ci/scripts/lib/age-check.sh:41-44` is the anti-pattern: it `echo 0` (silently "fresh") when the log answer is empty, using the exact command that lies on a shallow clone. Instead: in CI a shallow checkout is a HARD failure naming the required `fetch-depth: 0` / `filter: blob:none`; locally it is a LOUD skip of the age verdict only, so the floor, the allowlist liveness and the
+`.ci/scripts/lib/age-check.sh line 41-44 (blob 9784326b7a36)` is the anti-pattern: it `echo 0` (silently "fresh") when the log answer is empty, using the exact command that lies on a shallow clone. Instead: in CI a shallow checkout is a HARD failure naming the required `fetch-depth: 0` / `filter: blob:none`; locally it is a LOUD skip of the age verdict only, so the floor, the allowlist liveness and the
 whole control battery still run.
 - Floor: `>= 30` plan files (61 today), env-overridable like `BWS_MIN_MAP_ENTRIES`.
 - Placement: **`quality-i18n`, last step.** It already pays the `fetch-depth: 0
 --filter=blob:none` checkout at .github/workflows/ci-quality.yml:1646-1655, and its `if: inputs.is_bot != 'true'` covers PR + nightly + dispatch. A clock-driven gate NEEDS the nightly, or a plan crossing 33 days first surfaces by ambushing an unrelated PR. `quality-branch` is rejected only because it is `pull_request`-only. A new `quality-history` lane is rejected on cost:
-`.profiler-coverage-allowlist:29`'s BLOCKER makes it a 5-point wiring. **No checkout needs to change** -- that is the whole reason for the choice.
+`.ci/policy/.profiler-coverage-allowlist:29`'s BLOCKER makes it a 5-point wiring. **No checkout needs to change** -- that is the whole reason for the choice.
 - Hatch: `.plan-housekeeping-allowlist`, `# BLOCKER:` + `YYYY-MM-DD  path`, with three
 re-derived liveness rules: the path must exist in the glob; the plan must actually be over the threshold (an exemption that suppresses nothing is red -- the converse direction, lifted from `.ci/scripts/quality/check_bws_map.py:551-554`); and a hard UTC expiry that reds on its own date whether or not anyone looked. Rule 3 alone is what stops a dumping ground.
 - **`Status: executing` does NOT auto-exempt.** A status is self-reported free text
 costing one word: no reason, no expiry, no reviewer. It converts the gate into "type `executing` to opt out". And the corpus will not support a whitelist -- measured statuses include `W1 LANDED 2026-08-27; W2 to W4 still draft`. The question dissolves anyway: an edit is a commit and a commit resets the clock. An "executing" plan nobody has committed to in 33 days is abandoned with
 an optimistic header, which is exactly the file this gate exists to find. The status IS printed in the failure line, because `Status: done` beside `41 days` tells the reader the answer is `git rm`.
 - **WARN band at 26 days**, naming the exact date each plan goes red. This is the only
-thing that makes 2026-09-23 visible a week early, and it is the repo's existing idiom (`age-check.sh:22-23`).
+thing that makes 2026-09-23 visible a week early, and it is the repo's existing idiom (`.ci/scripts/lib/age-check.sh line 22-23 (blob 9784326b7a36)`).
 
 ### The seam that stops the two gates deadlocking
 
@@ -255,7 +255,7 @@ include the plan path.
 `.ci/scripts/test/gates/test-plan-boxes.sh`, 18 cases modelled on `test-bws-map.sh`, ten planted defects and four proving the gate stays QUIET on legitimate work: `clean_fixture_passes`, `deleted_box_reds`, `debulleted_box_reds`, `fenced_box_reds`, `retexted_box_reds`, **`ticked_box_passes`** (or the gate teaches agents not to tick), `rewrapped_box_passes`, `archive_r100_passes`,
 `archive_edited_reds`, **`archive_edited_two_commits_reds`** (the load-bearing case), `archive_modified_reds`, `status_done_over_open_reds`, `status_draft_over_open_passes`, `new_plan_no_owner_reds`, `stale_ledger_reds`, `young_delete_reds`, **`aged_delete_passes`** (the seam, proven not to deadlock), `empty_tree_reds`.
 
-`.ci/scripts/test/gates/test-plan-housekeeping.sh`, 10 cases, backdating with `GIT_AUTHOR_DATE`/`GIT_COMMITTER_DATE` as `test-age-check.sh:26-30` already does. The two no existing gate has: `git clone --depth 1` with `CI=true` must red with "cannot answer", and the same with `CI` unset must print SKIPPED and exit 0. Plus `case 2`: a plan committed 40 days ago but AMENDED 5 days ago
+`.ci/scripts/test/gates/test-plan-housekeeping.sh`, 10 cases, backdating with `GIT_AUTHOR_DATE`/`GIT_COMMITTER_DATE` as `.ci/scripts/test/gates/test-age-check.sh line 26-30 (blob 2e0ca1ba912c)` already does. The two no existing gate has: `git clone --depth 1` with `CI=true` must red with "cannot answer", and the same with `CI` unset must print SKIPPED and exit 0. Plus `case 2`: a plan committed 40 days ago but AMENDED 5 days ago
 must pass -- the case that makes the last-commit-vs-added-date decision testable rather than asserted.
 
 ### Wiring

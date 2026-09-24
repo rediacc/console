@@ -11,8 +11,8 @@ written to Bitwarden, AWS, Cloudflare or GitHub. No value of any secret was read
 
 ## Tasks
 
-- [x] Fix `private/growth/video_pipeline/publish-solutions.sh:55` and `publish.py:40` — they
-      AUDIT: DONE 2026-09-02 (audit): publish-solutions.sh:55 and publish.py:40 both guard the CLOUDFLARE_R2_MEDIA_* names; the blindness itself is recorded at scripts/ops/secret-rename.py:112-121 (NON_SUBMODULE_REPOS).
+- [x] Fix `private/growth/video_pipeline/publish-solutions.sh line 55 (growth repo)` and `publish.py line 40 (growth repo)` — they
+      AUDIT: DONE 2026-09-02 (audit): growth's publish-solutions.sh line 55 and publish.py line 40 both guard the CLOUDFLARE_R2_MEDIA_* names; the blindness itself is recorded at scripts/ops/secret-rename.py:112-121 (NON_SUBMODULE_REPOS).
       still require the pre-rename names `R2_MEDIA_{ACCESS_KEY_ID,SECRET_ACCESS_KEY,ENDPOINT}`
       while `.env` now holds `CLOUDFLARE_R2_MEDIA_*`. **The solution-video publish pipeline
       aborts at step 0 today.** Part 3, defect D1. Operator/`private/growth` write access.
@@ -80,7 +80,7 @@ against v1's implied 0. Alias handling is still needed, but for **three** names,
 
 ### 0.3 The rename broke a consumer that no console-side scan can see
 
-`private/growth` is its own git repository. `git grep --recurse-submodules` from console is blind to it — the trap `agent/plans/PLAN-secret-namespace-migration.md` Part 18 records paying for once already — and `secret-rename.py`'s file walk never reaches it. So the rename updated `.env` and left `private/growth/video_pipeline/publish-solutions.sh:55` asserting the old names against
+`private/growth` is its own git repository. `git grep --recurse-submodules` from console is blind to it — the trap `agent/plans/PLAN-secret-namespace-migration.md` Part 18 records paying for once already — and `secret-rename.py`'s file walk never reaches it. So the rename updated `.env` and left `private/growth/video_pipeline/publish-solutions.sh line 55 (growth repo)` asserting the old names against
 a file that no longer has them. Details and severity in Part 3, D1.
 
 **This is not a migration risk. It is a live outage, today, in the publish pipeline.**
@@ -154,7 +154,7 @@ for one string.
 **Why the nine `SELLER_*` become one entry.** They are one object: a company's registration identity, read together at `private/account/src/app.ts:308-310` and pushed together as nine `--arg`s at `.ci/scripts/deploy/set-account-worker-secrets.sh:239-269` and `.ci/scripts/deploy/set-www-worker-secrets.sh:107-132`. Nine store entries make nine independent things that can disagree; one JSON blob cannot
 half-update. It also keeps the store's entry count honest — adding nine rows for one fact inflates `MIN_MAP_ENTRIES`-style floors with no coverage gain. The fetch helper expands it: `bws_export --json SELLER_PROFILE_JSON` binds the nine `SELLER_*` names from the object's keys, and refuses if any of the nine is missing.
 
-**Counter-argument, recorded rather than hidden:** nine flat entries mirror CI's nine `vars.SELLER_*` (`cd-deploy-account.yml:401-405,…`) one-to-one, and a flat name is greppable. If the operator prefers that symmetry, it is nine `create`s and one line of helper code less; the cost is nine ways to have a stale address. Recommendation stands at one blob.
+**Counter-argument, recorded rather than hidden:** nine flat entries mirror CI's nine `vars.SELLER_*` (`.github/workflows/cd-deploy-account.yml line 401-405 (blob c83efbe56a06),…`) one-to-one, and a flat name is greppable. If the operator prefers that symmetry, it is nine `create`s and one line of helper code less; the cost is nine ways to have a stale address. Recommendation stands at one blob.
 
 ### (d) MOVE, admin-tier — 4 names, destination is `## Remaining` Q2
 
@@ -291,7 +291,7 @@ lesson did not generalise to the rename.
 
 **Severity, precisely.** It fails LOUDLY (`die`, exit 1) rather than publishing nothing and exiting 0 — the `die` at `:56` was written for a different reason and happens to catch this. So it is an outage, not a silent corruption. `CF_GLOBAL_API_KEY`/`CF_EMAIL` at `:58` are unaffected; those names did not change.
 
-**Fix**: rename the three names in `private/growth/video_pipeline/publish-solutions.sh:55` and `private/growth/video_pipeline/publish.py:40`. Outside
+**Fix**: rename the three names in `private/growth/video_pipeline/publish-solutions.sh line 55 (growth repo)` and `private/growth/video_pipeline/publish.py line 40 (growth repo)`. Outside
 this session's write access (`door:no-write-access` for a design-only agent) — it belongs to whoever holds `private/growth`.
 
 **And the class, not the instance**: any `private/growth` or `private/generative` file that sources console's `.env` must be swept for all 25 rename pre-images, not just these three. `grep -rIn -E '\b(R2_|BACKUP_S3_|TURNSTILE_|BREAKPOINT_|SES_AK_|APP_PRIVATE_KEY|AUTOPILOT_|CLAUDE_CODE_OAUTH|GPG_|OTLP_CLIENT_)' private/growth private/generative` is the sweep.
@@ -468,7 +468,7 @@ the gap is named rather than assumed covered.
 created** — its 21 names now MOVE. `dev.local.env` shrinks from 5 names to the 8 non-bootstrap entries of Part 1 (a), and `private/account/.cache/public-keys.env` replaces its public-key role (0.4).
 - **v1 Part 2's consumer table stands**, with two corrections: the `.env` names in it are
 pre-rename (0.2), and `programs/backup-storage/start-local-plane.sh:60-64`'s reliance on `ACCOUNT_BACKUP_S3_*` being ABSENT from `.env` becomes *load-bearing*, because v2 fetches from a store that DOES hold those three names. The explicit-list rule is what protects it; `bws_export` must never be given a wildcard.
-- **v1 Part 5's `check:env-is-token-only` is replaced** by harness C. v1's version asserted
+- **v1 Part 5's `env-is-token-only` gate (retired) is replaced** by harness C. v1's version asserted
 `.env` contains only `BWS_ACCESS_TOKEN*`; under v2 `.env` legitimately holds 9 names, so the assertion becomes "every key in `.env` is in the allowlist or was fetched" — and it runs in CI against `.env.example` instead of only locally against a file CI cannot see. Keep a local-only companion in `./run.sh setup` that applies 8a to the real `.env`. **Correction to v1 while placing
 it:** v1 said to land it "as a blocking preflight … beside the drift check (now `.ci/rediacc_ci/setup/machine.py:373-388`, `run.sh`'s setup logic having since been ported to Python)". That neighbour is explicitly **not** blocking — `.ci/rediacc_ci/setup/machine.py:382-388` runs `check:env-credential-drift` inside an `if ... .rc != 0` that only `ctx.warn()`s, and says so in its own text ("ROTATION IS AN OPS TASK … so this does not stop setup"). Copying its placement would silently copy its severity.
 The completeness check **must** exit non-zero: a `.env` key with no home is a developer-fixable error, not an ops backlog item, and a warning in a 200-line `setup` transcript is not read.
@@ -487,7 +487,7 @@ each machine minting its own and no way to tell them apart.
 
 - `[?]` **Q2 — where do the 4 admin credentials live, and does `CF_GLOBAL_API_KEY` survive?**
 `AWS_IAM_ADMIN_*` + `CF_GLOBAL_API_KEY`/`CF_EMAIL` are the most powerful credentials in the file. Seeding them into `ci-shared` upgrades `BWS_ACCESS_TOKEN` from "everything CI can deploy" to "everything the AWS and Cloudflare accounts can do" — for a token that sits unencrypted in a file every local script sources. v1 proposed a second `admin-bootstrap` project readable only by
-`mc-rotate`; the snag is `private/growth/video_pipeline/publish-solutions.sh:58`, which needs `CF_GLOBAL_API_KEY` for a CDN purge and would then need the privileged token.
+`mc-rotate`; the snag is `private/growth/video_pipeline/publish-solutions.sh line 58 (growth repo)`, which needs `CF_GLOBAL_API_KEY` for a CDN purge and would then need the privileged token.
   **DEFAULT: `admin-bootstrap` for all four, AND set `CLOUDFLARE_API_TOKEN` (already in
 `ci-shared`, already in `.env.example`, absent from `.env`) as the local Cloudflare path so `publish-solutions.sh` requires the scoped token instead of the global key.** That is what makes the two-account split mean anything: it shrinks every non-rotation local script from "full Cloudflare account" to a scoped token.
 

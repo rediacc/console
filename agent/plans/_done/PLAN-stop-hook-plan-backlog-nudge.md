@@ -1,7 +1,7 @@
 # PLAN: a Stop-hook advisory that names the ONE next plan to implement, newest-first, validated against other sessions
 
 Status: done 2026-09-22 -- all 20 boxes ticked.
-`wl_backlog.py` (eligibility chain, Depends-On redirect, claim check, dead-peer count, render with the bulk-mtime-cluster note, wiring, per-session cap) is live and verified against the real tree; `test-backlog.py` carries 39 controls (not 7 -- the plan's own estimate was low) and passes clean. `WORKLIST_BACKLOG_MAX_PER_SESSION` is registered in both env registries; `.claude/hooks/stop/test-backlog.py` is registered in `test_canonical_sys_path_hop.py`'s BASELINE at fingerprint `5163c1cfecb6`. Part 4a records a fresh re-run against the live tree (120 plans scanned, self-nominated, with the rendered-vs-fresh open-box-count staleness noted and explained).
+`wl_backlog.py` (eligibility chain, Depends-On redirect, claim check, dead-peer count, render with the bulk-mtime-cluster note, wiring, per-session cap) is live and verified against the real tree; `test-backlog.py` carries 39 controls (not 7 -- the plan's own estimate was low) and passes clean. `WORKLIST_BACKLOG_MAX_PER_SESSION` is registered in both env registries; `.claude/hooks/stop/test-backlog.py` is registered in `test_canonical_sys_path_hop.py`'s BASELINE at fingerprint `fingerprint:5163c1cfecb6`. Part 4a records a fresh re-run against the live tree (120 plans scanned, self-nominated, with the rendered-vs-fresh open-box-count staleness noted and explained).
 Owner: d778be9d
 First-Seen: 2026-09-22
 Updated: 2026-09-22
@@ -110,14 +110,14 @@ Implementing a plan whose header names another session, without that act, produc
 **No convention exists today.** Grepped across all 108 top-level plans: zero occurrences of any `Depends-On:` / `Blocked-By:` / `After:` header. Three prose hits exist and two of them are FALSE POSITIVES for a prose matcher:
 
 - `agent/plans/PLAN-github-actions-to-bitwarden.md:111` -- "a composite whose contract depends on an ambient env name". Not a plan dependency.
-- `PLAN-ci-vacuity-baseline-registry.md:130` -- "Sequencing: the conversion touches 11 files under `.ci/rediacc_ci/quality/`". About files touched, not plan order.
-- `PLAN-stop-hook-behavioral-hints.md:112` -- "This plan lands AFTER `PLAN-eliminate-worklist-report-per-stop-env.md`". A real one.
+- `agent/plans/_done/PLAN-ci-vacuity-baseline-registry.md:130` -- "Sequencing: the conversion touches 11 files under `.ci/rediacc_ci/quality/`". About files touched, not plan order.
+- `agent/plans/_done/PLAN-stop-hook-behavioral-hints.md:112` -- "This plan lands AFTER `PLAN-eliminate-worklist-report-per-stop-env.md`". A real one.
 
 A prose matcher is two-for-three wrong on the only three hits in the corpus. So: a machine-readable header, or nothing.
 
 `DEPENDS_ON_RE`, matching the defensive shape `PLAN_OWNER_RE` uses (`.claude/hooks/stop/wl_checks.py:762`) -- optional markdown emphasis, header block only -- read from the first `PLAN_HEADER_LINES` (10) lines, value a comma-separated list of plan basenames or relative paths.
 
-**Semantics: a dependency blocks only while its target is NEITHER finished NOR claimed.** Not "until the target is finished", and the live tree shows why. `PLAN-stop-hook-behavioral-hints.md:257` states "`pick_random` is extracted from work that has not landed yet.
+**Semantics: a dependency blocks only while its target is NEITHER finished NOR claimed.** Not "until the target is finished", and the live tree shows why. `agent/plans/_done/PLAN-stop-hook-behavioral-hints.md:257` states "`pick_random` is extracted from work that has not landed yet.
   Section 3.1 names the fallback so this plan cannot be blocked by that one", and `:264` scopes the dependency to ONE of its twenty boxes. Its target is in flight right now. A rule demanding FINISHED would serialize a 24-plan backlog into a single chain and reintroduce, as policy, the stall the operator asked to remove.
 
 **A blocked plan REDIRECTS the nomination to its dependency rather than being silently skipped.** DESC order picks the newest; the dependency edge walks down to the thing that must land first; the body prints the walk. This is strictly better than jumping to an unrelated plan, and it removes the reader's last excuse to re-litigate the ordering, because the reasoning is shown rather than implied.
@@ -235,7 +235,7 @@ NEXT PLAN TO IMPLEMENT -- agent/plans/PLAN-stop-hook-behavioral-hints.md
 
 **Forward projection, one step.** Once the printed `--add` runs, behavioral-hints is disqualified by its own acknowledgement and the next nomination is `PLAN-github-actions-to-bitwarden.md` (16 open). Report-per-stop remains correctly skipped. The advisory settles by being acted on, which is the property `PLAN-fix-stop-hook-completion-evidence-refire.md` was written because the completion-evidence check lacked.
 
-**The DESC-versus-dependency tension, resolved on the real corpus.** `PLAN-stop-hook-behavioral-hints.md:112` declares in prose that it "lands AFTER" the report-per-stop plan, and it is simultaneously the newest by mtime. Three candidate rules give three answers, and only one of them is right:
+**The DESC-versus-dependency tension, resolved on the real corpus.** `agent/plans/_done/PLAN-stop-hook-behavioral-hints.md:112` declares in prose that it "lands AFTER" the report-per-stop plan, and it is simultaneously the newest by mtime. Three candidate rules give three answers, and only one of them is right:
 
 - Prose matching on "lands AFTER" would DEFER the nominee -- overruling an author who wrote at `:257` that the plan "cannot be blocked by that one", over a dependency that scopes to 1 of its 20 boxes. Also two-for-three false-positive on this corpus (section 1.5).
 - A `Depends-On:` header with FINISHED semantics would also defer it, and would serialize the backlog into a chain.
@@ -281,7 +281,7 @@ Three deltas from the original dry run, all expected rather than concerning:
     (ticked) 2026-09-22T19:46:30Z by d778be9d: .claude/hooks/stop/wl_backlog.py:1-289 implements next_plan() and render(); signature deviates from spec (worklist path + wl_store.session_liveness direct import, not an injected liveness callable) -- functionally equivalent, noted honestly
 - [x] Implement the eligibility chain of section 1.2 in the documented order (status, open boxes, ownership, claim, dependency), sourcing box counts from `wl_planindex.index_census` with the `census_rows` fallback, and verify against the STALE index state the tree is in today.
     (ticked) 2026-09-22T19:46:23Z by d778be9d: .claude/hooks/stop/wl_backlog.py:200-224 filters status/FINISHED_STATES, open boxes via _open_boxes() (PI.index_census + census_rows fallback), ownership via C.owned_by_me, in the documented order
-- [x] Implement `DEPENDS_ON_RE` and `plan_depends_on(root, rel)` modelled on `PLAN_OWNER_RE` / `plan_owner` (`wl_checks.py:762`, `:781`), header-block only, comma-separated, with the redirect walk, a visited set for cycles, and an explicit report for an unresolvable target.
+- [x] Implement `DEPENDS_ON_RE` and `plan_depends_on(root, rel)` modelled on `PLAN_OWNER_RE` / `plan_owner` (`.claude/hooks/stop/wl_checks.py:762`, `:781`), header-block only, comma-separated, with the redirect walk, a visited set for cycles, and an explicit report for an unresolvable target.
     (ticked) 2026-09-22T19:46:30Z by d778be9d: .claude/hooks/stop/wl_backlog.py:39-97 DEPENDS_ON_RE, plan_depends_on(), _resolve_dep(), _redirect() with visited-set cycle detection and unresolved-target reporting
 - [x] Implement the claim check: basename containment against every worklist item in `(' ', '>', '?')` from any owner, sourced from the fold already loaded at the call site.
     (ticked) 2026-09-22T19:46:24Z by d778be9d: .claude/hooks/stop/wl_backlog.py:107-124 _claimed(): basename containment against _OPEN_ITEM_STATES = (' ', '>', '?'), any owner
@@ -289,13 +289,13 @@ Three deltas from the original dry run, all expected rather than concerning:
     (ticked) 2026-09-22T19:46:24Z by d778be9d: .claude/hooks/stop/wl_backlog.py:147-169 _dead_peer(): wl_store.session_liveness unmodified, names newest idle-owned plan, --migrate --plan recipe printed by render()
 - [x] Implement `render(...)` to the shape in Part 4, including the "N scanned, M eligible" second count, the DESC reasoning sentence, the passed-over list with reasons, and the bulk-mtime-cluster note; carry no live time counter.
     (ticked) 2026-09-23T11:19:18Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
-- [x] Wire the call site in `wl_checks.py` beside the `wl_planfile` block (`wl_checks.py:3109-3151`), inside its own `try/except Exception` with the same "a plan read must never wedge a stop" contract, calling `outq_add(..., key="plan-backlog:<rel>", prio=2)`.
+- [x] Wire the call site in `wl_checks.py` beside the `wl_planfile` block (`.claude/hooks/stop/wl_checks.py:3109-3151`), inside its own `try/except Exception` with the same "a plan read must never wedge a stop" contract, calling `outq_add(..., key="plan-backlog:<rel>", prio=2)`.
     (ticked) 2026-09-22T19:46:30Z by d778be9d: .claude/hooks/stop/wl_checks.py:3158-3176 wiring call site beside the wl_planfile block, inside try/except Exception, calling outq_add(key='plan-backlog:%s' % rel, prio=2)
-- [x] Add the per-session cap `WORKLIST_BACKLOG_MAX_PER_SESSION` (default 3) in the state doc, counting ADDS not matches, following `agent_hint_queue` (`wl_checks.py:1466-1471`).
+- [x] Add the per-session cap `WORKLIST_BACKLOG_MAX_PER_SESSION` (default 3) in the state doc, counting ADDS not matches, following `agent_hint_queue` (`.claude/hooks/stop/wl_checks.py:1466-1471`).
     (ticked) 2026-09-22T19:46:31Z by d778be9d: .claude/hooks/stop/wl_checks.py:3167-3172 backlog_nominated dict in state_doc, incremented only after outq_add returns True (counts ADDS not matches), WORKLIST_BACKLOG_MAX_PER_SESSION=3 default in .claude/hooks/stop/wl_backlog.py:38
 - [x] Register every new `WORKLIST_BACKLOG_*` env var in `.ci/policy/worklist-env-registry.json` and `.ci/config/python-env-registry.json`, matching the existing `WORKLIST_PLANFILE_*` entries.
     (ticked) 2026-09-23T11:19:18Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
-- [x] Write `.claude/hooks/stop/test-backlog.py` using `rediacc_ci.controls.Controls` with an explicit floor, paired positive/negative cases per `test-planrec.py:6`; it is auto-discovered by `TAILED` in `.claude/rediacc_hooks/tests/test_hooks_delegates.py:104-115`, so no table edit is needed.
+- [x] Write `.claude/hooks/stop/test-backlog.py` using `rediacc_ci.controls.Controls` with an explicit floor, paired positive/negative cases per `.claude/hooks/stop/test-planrec.py:6`; it is auto-discovered by `TAILED` in `.claude/rediacc_hooks/tests/test_hooks_delegates.py:104-115`, so no table edit is needed.
     (ticked) 2026-09-23T11:19:18Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] Control -- ORDERING: a fixture of three eligible plans with controlled mtimes must nominate the newest; the control reds if any other is named.
     (ticked) 2026-09-23T11:19:18Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
@@ -305,7 +305,7 @@ Three deltas from the original dry run, all expected rather than concerning:
     (ticked) 2026-09-23T11:19:19Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] Control -- DEPENDENCY: a `Depends-On:` pointing at an unclaimed plan with open boxes redirects the nomination to the target; pointing at a claimed target does NOT block; pointing at a missing target reports and does not block; a two-plan cycle is reported and resolved by mtime.
     (ticked) 2026-09-23T11:19:18Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
-- [x] Control -- NEVER BLOCKS: assert no code path in `wl_backlog` reaches `vadd` or mutates a plan file, in the shape `test-planfile.py` uses to pin that `plan-tasks` is never a `vadd` (`wl_checks.py:3114`).
+- [x] Control -- NEVER BLOCKS: assert no code path in `wl_backlog` reaches `vadd` or mutates a plan file, in the shape `test-planfile.py` uses to pin that `plan-tasks` is never a `vadd` (`.claude/hooks/stop/wl_checks.py:3114`).
     (ticked) 2026-09-23T11:19:18Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] Control -- PEER: a plan owned by an `idle` peer is counted and never nominated; the same plan with the owner line removed IS nominated.
     (ticked) 2026-09-23T11:19:19Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites

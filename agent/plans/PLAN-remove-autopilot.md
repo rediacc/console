@@ -1,7 +1,7 @@
 # PLAN: remove Autopilot completely
 Status: compacted
 Full-Text-Blob: d2f66802c91b406d26dcbf5a82eca82444b45c4b
-Record-Sig: fa090543
+Record-Sig: 0903996c
 
 ## Why
 The operator asked for the GitHub-side CI autonomy feature -- Autopilot, its workflow, its harness, its gates and its design doc -- to be removed completely.
@@ -58,7 +58,7 @@ The live-side work -- deleting the two GitHub labels, the Actions variables, the
     (record) sig=2f6b2fc6 done=dfabd8052
 - [x] Delete the 18 `.ci/shadow/{w7p2-autopilot-no-bypass,w7p6-autopilot-gate,w7p6-autopilot-push,w7p6-check-autopilot-workflow-invariants,w7p6-<each-remaining-module>}.observations.jsonl` files.
     (record) sig=80e4d54c done=dfabd8052
-- [x] Remove check:ci-autopilot-workflow / check:ci-autopilot-bp-align from package.json (lines 35, 296) and scripts/ci-runner/manifest.ts (~4231-4241, ~4282-4292).
+- [x] Remove the ci-autopilot-workflow / ci-autopilot-bp-align scripts from package.json (lines 35, 296) and scripts/ci-runner/manifest.ts (~4231-4241, ~4282-4292).
     (record) sig=0ab601ac done=dfabd8052
 - [x] Regenerate scripts/ci-runner/gates.lock.json (gen-gates-lock.ts --write).
     (record) sig=3bb35bb2 done=dfabd8052

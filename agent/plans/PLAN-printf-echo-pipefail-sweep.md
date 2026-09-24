@@ -3,7 +3,7 @@ Status: compacted
 First-Seen: 2026-09-20
 Owner: d778be9d
 Full-Text-Blob: b78238643fecdaf894630b6245b3dc7244a1ccff
-Record-Sig: 5197a6c5
+Record-Sig: cd2a6e77
 
 ## Why
 The pipefail/grep-q safety gate had been widened to catch 16 scaling commands but explicitly deferred printf and echo as untriaged and unbounded. The operator overruled that deferral and required the remaining class to be closed before shipping.
@@ -22,7 +22,7 @@ pathspecs widened from 478 to 504 files.
 ## Boxes
 - [x] Re-derive the 11-site list by importing `rediacc_ci.quality.pipefail_grep_q` and substituting `SCALING_PRODUCERS`; confirm it matches §1 exactly before touching anything. If it does not, this plan is stale — say so, do not adjust the code to fit it
     (record) sig=f2775b0e done=94f9e2e21
-- [x] Add `printf` and `echo` to `SCALING_PRODUCERS` in BOTH `.ci/scripts/quality/check-pipefail-grep-q.sh:120` and `.ci/rediacc_ci/quality/pipefail_grep_q.py:241`, keeping the sorted spelling byte-equal
+- [x] Add `printf` and `echo` to `SCALING_PRODUCERS` in BOTH `.ci/scripts/quality/check-pipefail-grep-q.sh line 120 (blob 1814ff6ad1da)` and `.ci/rediacc_ci/quality/pipefail_grep_q.py:241`, keeping the sorted spelling byte-equal
     (record) sig=43a64fc3 done=94f9e2e21
 - [x] Widen the pathspecs in BOTH twins to add `:(glob).ci/lib/**/*.sh`, `:(glob).devcontainer/**/*.sh`, `:(glob).ci/media/**/*.sh` — ONE line each, as `check:ci-pathspec-scope` requires, and byte-equal across the twins
     (record) sig=fe98f8bf done=94f9e2e21
@@ -32,7 +32,7 @@ pathspecs widened from 478 to 504 files.
     (record) sig=e4666161 done=94f9e2e21
 - [x] Rewrite the green-banner blind-spot paragraph in both twins; it currently says the opposite of what will be true
     (record) sig=15933b53 done=94f9e2e21
-- [x] Record the `.claude/oracles/**` exclusion and its reason (frozen twins, README.md:49-54, live code is Python) in the gate header, so the next sweep does not re-derive it
+- [x] Record the `.claude/oracles/**` exclusion and its reason (frozen twins, .claude/oracles/README.md line 49-54 (blob 3fc44d4ff4e4), live code is Python) in the gate header, so the next sweep does not re-derive it
     (record) sig=9f7c0b08 done=94f9e2e21
 - [x] Record the per-FILE pipefail limitation in the header, citing `.ci/scripts/test/test-install-methods.sh:1129` as the live false positive and `.ci/lib/devbox.sh:1082` as the live false negative
     (record) sig=bc30c6ec done=94f9e2e21
@@ -46,13 +46,13 @@ pathspecs widened from 478 to 504 files.
     (record) sig=9aff61e7 done=94f9e2e21
 - [x] Bump `Controls("pipefail-grep-q", floor=18)` in `selftest()` to the new count (21 pass today)
     (record) sig=a9832229 done=94f9e2e21
-- [x] Convert `.ci/scripts/test/gates/test-shadow-gate.sh:217` and `:357`
+- [x] Convert `.ci/scripts/test/gates/test-shadow-gate.sh line 217 (blob d35b92df696a)` and `:357`
     (record) sig=858c5f97 done=94f9e2e21
 - [x] Convert `.ci/scripts/test/proxies/proxy-go-unit.sh:124` — `grep -qx` becomes `grep -Fx`, inside the loop
     (record) sig=21ee2737 done=94f9e2e21
-- [x] Convert `.ci/scripts/test/gates/test-media-shims.sh:119` and `:121`, preserving the `||` / `&&` line continuations
+- [x] Convert `.ci/scripts/test/gates/test-media-shims.sh line 119 (blob f88e9f746cb0)` and `:121`, preserving the `||` / `&&` line continuations
     (record) sig=1b4ab335 done=94f9e2e21
-- [x] Convert `.ci/scripts/test/gates/test-installmethods-linuxpkg-idiom.sh:105`, preserving `&& old=0 || old=1`. This line is a deliberate CONTROL proving the old container idiom accepts a longer version; the conversion must not change what it proves
+- [x] Convert `.ci/scripts/test/gates/test-installmethods-linuxpkg-idiom.sh line 105 (blob 1871a7e676bc)`, preserving `&& old=0 || old=1`. This line is a deliberate CONTROL proving the old container idiom accepts a longer version; the conversion must not change what it proves
     (record) sig=3093b1de done=94f9e2e21
 - [x] Convert `.ci/scripts/test/test-install-methods.sh:1129` AND record in place that the inner `bash -c` shell sets `set -e` only, so this is a defensive conversion, not a bug fix
     (record) sig=ea27bbe1 done=94f9e2e21

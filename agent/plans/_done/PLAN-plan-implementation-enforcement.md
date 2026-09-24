@@ -39,7 +39,7 @@ What IS reused from it, by import rather than by re-derivation: `_dead_peer` (`.
 
 ### 0.3 The `plan-adopted` vadd (`.claude/hooks/stop/wl_checks.py:3128`) is the ONLY existing blocking plan-box check, and its scope is one marker
 
-It fires only when `wl_planfile.is_adopted` (`.claude/hooks/stop/wl_planfile.py:321`) finds `(adopted from` in the Owner line -- the string `worklist.py --migrate --plan` writes via `ADOPTED_OWNER_FMT` (`.claude/hooks/stop/wl_planfile.py:316`, written at `worklist.py:1016`). It sits at `T_MISSION` (`.claude/hooks/stop/wl_checks.py:1999`). Its message is `V_PLAN_ADOPTED` (`.claude/hooks/stop/worklist_messages.py:1070-1081`).
+It fires only when `wl_planfile.is_adopted` (`.claude/hooks/stop/wl_planfile.py:321`) finds `(adopted from` in the Owner line -- the string `worklist.py --migrate --plan` writes via `ADOPTED_OWNER_FMT` (`.claude/hooks/stop/wl_planfile.py:316`, written at `.claude/hooks/stop/worklist.py:1016`). It sits at `T_MISSION` (`.claude/hooks/stop/wl_checks.py:1999`). Its message is `V_PLAN_ADOPTED` (`.claude/hooks/stop/worklist_messages.py:1070-1081`).
 
 **This is the precedent, and the new gate is its scope widened from "adopted" to "ALL", per the operator's ruling.** The call-site comment at `.claude/hooks/stop/wl_checks.py:3119-3121` states the existing boundary in as many words: "a plan a session merely OWNS can carry eighteen boxes and would wedge every turn. A plan the session ADOPTED is different in kind".
 The operator has now overruled that boundary. What the comment was RIGHT about is the wedge, and Part 5 is the answer to it.
@@ -64,11 +64,11 @@ All three are inside this plan's own subject matter and are drained as Task 0 be
 The first is a perfect specimen of the failure being fixed: the box at `agent/plans/PLAN-stop-hook-behavioral-hints.md:264` carries, **inside the box text**, the sentence "NOT extracted: implemented independently ... matching the plan's own stated fallback for exactly this case".
 The work is done, the finding was written into the box instead of into a tick, and the box is still `- [ ]`.
 
-### 0.5 `worklist.py --plan-tick` (`worklist.py:576-637`, `wl_planrec.plan_tick` at `.claude/hooks/stop/wl_planrec.py:1879`) is the tick primitive, and its evidence floor is 12 CHARACTERS
+### 0.5 `worklist.py --plan-tick` (`.claude/hooks/stop/worklist.py:576-637`, `wl_planrec.plan_tick` at `.claude/hooks/stop/wl_planrec.py:1879`) is the tick primitive, and its evidence floor is 12 CHARACTERS
 
 `.claude/hooks/stop/wl_planrec.py:1889-1895`: the only evidence test is `len(ev) < TICK_EVIDENCE_MIN`, and `TICK_EVIDENCE_MIN` is `12` (`.claude/hooks/stop/wl_planrec.py:1764`). **`plan_tick` never calls `wl_checks.completion_evidence`** -- grep for it in `wl_planrec.py` returns only docstring mentions at lines 416 and 454. So `--plan-tick <me> <plan> <sig> "done it, works"` is accepted today.
 
-**This is the single widest hole in the tree and it is in the verb this plan must depend on.** The worklist's own `--tick` is stricter: `worklist.py:703-705` calls `CK.completion_evidence(root, rest)` and dies with `M.CLI_TICK_NO_EVIDENCE` (`.claude/hooks/stop/worklist_messages.py:1583-1586`, "a real sha, a run id, a file:line that resolves, an exit code, or a URL").
+**This is the single widest hole in the tree and it is in the verb this plan must depend on.** The worklist's own `--tick` is stricter: `.claude/hooks/stop/worklist.py:703-705` calls `CK.completion_evidence(root, rest)` and dies with `M.CLI_TICK_NO_EVIDENCE` (`.claude/hooks/stop/worklist_messages.py:1583-1586`, "a real sha, a run id, a file:line that resolves, an exit code, or a URL").
 The two verbs have drifted, and closing that drift is Task 2.
 
 ### 0.6 `wl_checks.completion_evidence` (`.claude/hooks/stop/wl_checks.py:455-486`) is half shape-check and half re-derivation, and the shape half is the lie surface
@@ -217,7 +217,7 @@ A block with one door is a wedge. All five are printed in the message:
 1. `worklist.py --plan-investigate <me> <plan> <sig> <pointer>...` then `--plan-tick ... --write` -- the box is done and now says so.
 2. The door is `worklist.py --add <me> "<box text>"`, which puts the box on the worklist where `open-items` already owns it. The plan's debt becomes worklist debt, which is the mechanism the whole hook is built on.
 3. `worklist.py --migrate <me> --plan <path>` -- take a peer's idle plan, which stamps the adoption marker and moves it into door 1 or 2.
-4. `worklist.py --defer <me> <id> '<q> DEFAULT: <action> WHY: ... HOW: ...'` -- the box is genuinely the operator's call. `worklist.py:716-729` already enforces the WHY/HOW shape.
+4. `worklist.py --defer <me> <id> '<q> DEFAULT: <action> WHY: ... HOW: ...'` -- the box is genuinely the operator's call. `.claude/hooks/stop/worklist.py:716-729` already enforces the WHY/HOW shape.
 5. `worklist.py --plan-compact <me> <path> --park` -- the plan's TEXT is compacted while its work stays unfinished; `.claude/hooks/stop/wl_planfile.py:158-161` records that `parked` deliberately stays on every clock, so this buys a smaller file and never an exemption.
 
 Editing `Status:` to a finished word is **not** a door: `check_plan_boxes.py` G-A3 reds on it, which is exactly what is happening on `PLAN-stop-hook-behavioral-hints.md` today (0.4). The message says so, because a door the gate will punish is worse than no door.
@@ -240,7 +240,7 @@ Today, a session or a subagent can write into `--tick` or `--plan-tick` a string
 - `--tick` accepts `"exit 0"`, `"123456789"` or any URL by shape alone (`.claude/hooks/stop/wl_checks.py:462`, 0.6).
 - Nothing anywhere asserts that an investigation happened BEFORE the implementation, which is the half of `CLAUDE.md:161-163` ("Search first") that has no mechanism at all.
 
-And the live corpus proves the failure is real in both directions: `PLAN-stop-hook-behavioral-hints.md:264` is an implemented box left open with its own finding typed into the box text, and the 478 evidence-free done boxes of 1.6 are ticks nobody can check.
+And the live corpus proves the failure is real in both directions: `agent/plans/_done/PLAN-stop-hook-behavioral-hints.md:264` is an implemented box left open with its own finding typed into the box text, and the 478 evidence-free done boxes of 1.6 are ticks nobody can check.
 
 ### 3.2 Four mechanisms, scored
 
@@ -283,7 +283,7 @@ One row per investigated box:
 `verdict` is one of three, and the vocabulary matters:
 
 - `absent` -- the work is not in the tree. Implement it.
-- `present` -- **the work is ALREADY DONE and only the record is stale.** This is the case `CLAUDE.md:163` names ("Several campaign boxes closed by finding the work already landed and only the record was stale, not by doing it again") and `PLAN-stop-hook-behavioral-hints.md:264` is a live instance of.
+- `present` -- **the work is ALREADY DONE and only the record is stale.** This is the case `CLAUDE.md:163` names ("Several campaign boxes closed by finding the work already landed and only the record was stale, not by doing it again") and `agent/plans/_done/PLAN-stop-hook-behavioral-hints.md:264` is a live instance of.
   A `present` verdict is a complete, honourable answer and licenses an immediate `--plan-tick`.
 - `partial` -- some of it exists; `note` says which part, and the box stays open.
 
@@ -302,7 +302,7 @@ Behaviour, all of it re-derivation and none of it trust:
 5. Refuse a `<note>` under 40 characters. A note is what a later reader uses; the 12-character floor at `.claude/hooks/stop/wl_planrec.py:1764` is the mistake being corrected, not copied.
 6. Append the row. **Never commits** -- the same contract every verb in `worklist.py` keeps.
 
-Ordinary shell quoting is the interface; no new parser is introduced. `--dry-run` prints the resolution table and writes nothing, matching `--plan-tick`'s own dry/`--write` split (`worklist.py:619-623`).
+Ordinary shell quoting is the interface; no new parser is introduced. `--dry-run` prints the resolution table and writes nothing, matching `--plan-tick`'s own dry/`--write` split (`.claude/hooks/stop/worklist.py:619-623`).
 
 ### 3.6 The rule that makes it "investigation BEFORE implementation" rather than a post-hoc story
 
@@ -443,7 +443,7 @@ The block's text partitions the over-ceiling debt:
 
 - **`MINE`** (`owned_by_me` true): named, with one box and its `--plan-investigate` / `--plan-tick` pair. Today: 212 boxes across 16 plans.
 - **A PEER'S, and the peer reads IDLE**: named with `worklist.py --migrate <me> --plan <path>` and nothing else. Today: all three peers are idle, so all 86 boxes across 10 plans are in this bucket.
-  Migration stamps the adoption marker via `ADOPTED_OWNER_FMT` (`.claude/hooks/stop/wl_planfile.py:316`, written at `worklist.py:1016`), after which the plan is `MINE` and the existing `plan-adopted` vadd also applies -- the two blocks agree by construction because they read the same marker.
+  Migration stamps the adoption marker via `ADOPTED_OWNER_FMT` (`.claude/hooks/stop/wl_planfile.py:316`, written at `.claude/hooks/stop/worklist.py:1016`), after which the plan is `MINE` and the existing `plan-adopted` vadd also applies -- the two blocks agree by construction because they read the same marker.
 - **A PEER'S, and the peer reads LIVE**: **counted and subtracted from the ceiling comparison, with the subtraction stated in the text.** This is the one arithmetic concession in the design and it is necessary: demanding drainage of boxes a live peer is actively working would make the ceiling unreachable by any action this session can take, which is the no-reachable-exit shape Part 2.4 exists to avoid. A peer that goes idle drops back into bucket two on the next stop, with no state to remember.
 
 Peer-owned boxes are **never** silently excluded from the census -- they are named and counted. `wl_backlog.render`'s own dead-peer block (`.claude/hooks/stop/wl_backlog.py:298-307`) is the format to follow.
@@ -515,7 +515,7 @@ Stop-hook side: `.claude/hooks/stop/test-planenforce.py`, beside its module, run
     (ticked) 2026-09-22T21:03:30Z by d778be9d: Clause 1 is at .claude/hooks/stop/wl_planrec.py:2141 and Clause 2 at :2174, both driven by controls C5 and C6, at 2ed7d6726e82098eddb62f1488670ad6e43ba872
 - [x] T6. Write `.claude/hooks/stop/wl_planenforce.py`: the scope predicate (Part 1.1), the ceiling read (Part 5.2), the three-way ownership split calling `wl_backlog._dead_peer` (Part 6), and the render with no live counter.
     (ticked) 2026-09-22T21:03:30Z by d778be9d: the module is .claude/hooks/stop/wl_planenforce.py:358 (evaluate), with the ceiling, the three-way ownership split and the render that carries no live counter, at 2ed7d6726e82098eddb62f1488670ad6e43ba872
-- [x] T7. Add the `plan-unimplemented` message to `worklist_messages.py`, modelled on `V_PLAN_ADOPTED` (`worklist_messages.py:1070`), printing all five doors and the arithmetic exit.
+- [x] T7. Add the `plan-unimplemented` message to `worklist_messages.py`, modelled on `V_PLAN_ADOPTED` (`.claude/hooks/stop/worklist_messages.py:1070`), printing all five doors and the arithmetic exit.
     (ticked) 2026-09-22T21:04:14Z by d778be9d: V_PLAN_UNIMPLEMENTED is at .claude/hooks/stop/worklist_messages.py:1085, one hole for a body wl_planenforce.render computes, registered in the arity table, at 2ed7d6726e82098eddb62f1488670ad6e43ba872
 - [x] T8. Wire one `vadd` call site in `wl_checks.py` beside the existing `plan-adopted` block, and one `plan-unimplemented` entry in `PRIORITY_LADDER`'s `T_MISSION` frozenset.
     (ticked) 2026-09-22T21:04:14Z by d778be9d: the vadd is at .claude/hooks/stop/wl_checks.py:3194 and the ladder entry at :2002; check_tier('plan-unimplemented') returns T_MISSION, at 2ed7d6726e82098eddb62f1488670ad6e43ba872
@@ -529,7 +529,7 @@ Stop-hook side: `.claude/hooks/stop/test-planenforce.py`, beside its module, run
     (ticked) 2026-09-22T21:04:13Z by d778be9d: gen-docs and gen-gates-lock regenerated; check:ci-gates-lock exit 0, check:ci-gate-bind exit 0, check:ci-parity exit 0 (347 gates, 2 workflow scopes, 9 exempt), check:ci-gate-reachability-coverage exit 0 over 337 registrations, check:ci-test-file-orphans exit 0 over 494 files, test_gate_docs_gen 6 passed
 - [x] T13. Add the `plan_check` prompt-section addition to `wl_claimcheck`'s existing judge ride (3.8) -- investigation `verdict` and `note` beside the claim. No new judge call, no change to its advisory character, no change to its graduation criterion.
     (ticked) 2026-09-22T21:04:15Z by d778be9d: CLAIM_INVESTIGATION is at .claude/hooks/stop/wl_claimcheck.py:319 and rides the existing call site, no new judge call and no change to apply_verdict, at 2ed7d6726e82098eddb62f1488670ad6e43ba872
-- [x] T14. Append a `TRAPS.md` entry for the lesson this plan is built on: an evidence string that satisfies a shape check is not a verification, and `wl_checks.py:462` is where the shape-only branch lives. `Enforced-By: gate:check:ci-plan-implementation`.
+- [x] T14. Append a `TRAPS.md` entry for the lesson this plan is built on: an evidence string that satisfies a shape check is not a verification, and `.claude/hooks/stop/wl_checks.py:462` is where the shape-only branch lives. `Enforced-By: gate:check:ci-plan-implementation`.
     (ticked) 2026-09-22T21:03:32Z by d778be9d: the entry is at docs/agent-reference/TRAPS.md:1707 and check:ci-trap-registry resolves its Enforced-By pointer, floor bumped to 91 in both twins, at 2ed7d6726e82098eddb62f1488670ad6e43ba872
 - [x] T15. Dogfood: run the full sequence on one real box -- `--plan-investigate`, then `--plan-tick --write` -- and record the resulting ledger row and plan diff as this plan's own first evidence.
     (ticked) 2026-09-22T21:03:32Z by d778be9d: the first real row and the resulting evidence line are at agent/plans/PLAN-plan-implementation-enforcement.md:504, written by the real CLI, at 2ed7d6726e82098eddb62f1488670ad6e43ba872
@@ -554,7 +554,7 @@ Stop-hook side: `.claude/hooks/stop/test-planenforce.py`, beside its module, run
 - Read `wl_claimcheck.py`'s docstring (`:1-32`) before writing any semantic check. Its measurements are the reason this design has none, and re-deriving them costs a day.
 - Read `wl_reggate.prove_new_gate` (`:544-620`) before writing the `gate:` pointer path. The hash cache at `:596-600` is what makes it affordable, and the "first sight of an untouched gate" branch at `:559-566` is the guard against a glob widening turning one stop into a sixteen-minute gate run.
 - `wl_planfid.TASK_MATCH` and the token-overlap matcher in `wl_planfile.match_item` (`:245`) are **not** used by this design. The box signature (`wl_planrec.box_sig`, `:648`) is exact and is what the ledger, the record and the investigation row all speak. Do not reintroduce fuzzy matching into a blocking path.
-- `--plan-tick` writes **two files** and they must land in the same commit (`worklist.py:632-637`). The investigation ledger is a **third**. Say so in the success message, or `check:ci-plan-boxes` reads the ledger's staleness as a box that vanished.
+- `--plan-tick` writes **two files** and they must land in the same commit (`.claude/hooks/stop/worklist.py:632-637`). The investigation ledger is a **third**. Say so in the success message, or `check:ci-plan-boxes` reads the ledger's staleness as a box that vanished.
 
 ### Critical Files for Implementation
 

@@ -40,7 +40,7 @@ The freshness asymmetry is half the answer (`.claude/hooks/stop/wl_store.py:116`
 **Defect A -- the latch is session-local.** `_sub` reads `state_doc["subptr"]` (`.claude/hooks/stop/wl_checks.py:4174`), so a new session fires on its first stop. The cross-session door, `submodule_decision_recorded` (`.claude/hooks/stop/wl_checks.py:1737`), is a SUBSTRING scan requiring both the path and `sha[:9]` in one event's values -- a correct decision recorded in prose gets
 no credit. That is the likely `I decided it and it fired again`.
 
-**Defect B -- the latch is spent only if the text wins rotation.** `submodule` is `always=False` (`.claude/hooks/stop/wl_checks.py:4186`); its latch is spent by `spend_display_latches` (`.claude/hooks/stop/wl_checks.py:3655`) with the keys actually rendered (`.claude/hooks/stop/wl_checks.py:5579`). **But the violation was already appended** and a non-empty list blocks regardless.
+**Defect B -- the latch is spent only if the text wins rotation.** `submodule` is `always=False` (`.claude/hooks/stop/wl_checks.py:4186`); its latch is spent by `spend_display_latches` (`.claude/hooks/stop/wl_checks.py:3655`) with the keys actually rendered (`.claude/hooks/stop/wl_checks.py line 5579 (blob d86d0bcbd3be)`). **But the violation was already appended** and a non-empty list blocks regardless.
 That is the three-identical-stops mechanism exactly.
 
 - [ ] Extend `vadd` with `subject=` and `latch_min=`: compute `sig`, consult
@@ -86,7 +86,7 @@ Declined by the operator's ruling on #373907ed; its five boxes live unchanged in
 
 ## 6. Cron: NO
 
-Three reasons. **(1)** The cron shape is already fixed and enforced: a second work schedule is blocked at `.claude/hooks/stop/wl_checks.py:5000` and a second poll cron at `.claude/hooks/stop/wl_checks.py:5011`. **(2)** A cron wakes a session to check a fact that only changes when a file changes, and this repo has paid that bill -- `.claude/hooks/stop/wl_store.py:121` records a
+Three reasons. **(1)** The cron shape is already fixed and enforced: a second work schedule is blocked at `.claude/hooks/stop/wl_checks.py line 5000 (blob 5a8904da5ad6)` and a second poll cron at `.claude/hooks/stop/wl_checks.py line 5011 (blob 5a8904da5ad6)`. **(2)** A cron wakes a session to check a fact that only changes when a file changes, and this repo has paid that bill -- `.claude/hooks/stop/wl_store.py:121` records a
 pure-age rule "outpaced by the 5-minute poll cron". **(3)** A clock cannot express "once per context".
 
 - [ ] Instead, fold ONE conditional line into the existing `worklist.py --poll`, emitted only

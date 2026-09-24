@@ -125,11 +125,11 @@ assertions fail; and a submodule fan-out where console is clean but `rediacc/acc
 - [x] Write `.ci/scripts/quality/check-commit-identity.sh` (verdict + `--refresh`)
     (ticked) 2026-09-23T19:20:44Z by d778be9d: Box already ticked before the plan moved to _done/ via check_plan_folders.py --move (commit da2670983, git mv preserving content); backfilling the investigation row under the new path.
       LEDGER LAG, closed 2026-09-09: on disk, executable, `--refresh` implemented at
-      `.ci/scripts/quality/check-commit-identity.sh:130`; `.ci/scripts/test/gates/test-commit-identity.sh` drives it live (rc=0).
+      `.ci/scripts/quality/check-commit-identity.sh line 130 (blob 42e35d83656e)`; `.ci/scripts/test/gates/test-commit-identity.sh` drives it live (rc=0).
 - [x] Generate `.ci/config/commit-identity.json`; confirm it derives the address with no `user` scope
     (ticked) 2026-09-23T19:20:40Z by d778be9d: Box already ticked before the plan moved to _done/ via check_plan_folders.py --move (commit da2670983, git mv preserving content); backfilling the investigation row under the new path.
       LEDGER LAG, closed 2026-09-09: file on disk (1 identity, `mfbayraktar`). `refresh_identity()` at
-      `.ci/scripts/quality/check-commit-identity.sh:93-99` explicitly falls back to deriving from
+      `.ci/scripts/quality/check-commit-identity.sh line 93-99 (blob 42e35d83656e)` explicitly falls back to deriving from
       attributed commits (`repos/{repo}/commits`) specifically because `gh api user/emails` needs the
       `user` scope this token lacks -- confirmed by reading the fallback branch, not just its comment.
 - [x] Write `.ci/scripts/test/gates/test-commit-identity.sh` with the ten fixtures; watch them fail before the gate is finished
@@ -140,9 +140,9 @@ assertions fail; and a submodule fan-out where console is clean but `rediacc/acc
       `bash .ci/scripts/test/gates/test-commit-identity.sh` -> all 8 PASS, rc=0.
 - [x] Register `gate-test:commit-identity` in `scripts/ci-runner/manifest.ts`
     (ticked) 2026-09-23T19:20:46Z by d778be9d: Box already ticked before the plan moved to _done/ via check_plan_folders.py --move (commit da2670983, git mv preserving content); backfilling the investigation row under the new path.
-      LEDGER LAG, closed 2026-09-09: `scripts/ci-runner/manifest.ts:7262-7270`, wired to
+      LEDGER LAG, closed 2026-09-09: `scripts/ci-runner/manifest.ts line 7262-7270 (blob ed30f4a07063)`, wired to
       `ci-quality.yml` job `quality-security`, step `Quality-gate unit tests`; also present in
-      `scripts/ci-runner/gates.lock.json:7234`.
+      `scripts/ci-runner/gates.lock.json line 7234 (blob 8133ac2f4438)`.
 - [x] Add the `ci-only` BLOCKER entry to `.ci-parity-exempt`; run `check:ci-parity`
     (ticked) 2026-09-23T19:20:48Z by d778be9d: Box already ticked before the plan moved to _done/ via check_plan_folders.py --move (commit da2670983, git mv preserving content); backfilling the investigation row under the new path.
       LEDGER LAG, closed 2026-09-09: `.ci/policy/.ci-parity-exempt:33-34` carries the BLOCKER reason
@@ -182,7 +182,7 @@ assertions fail; and a submodule fan-out where console is clean but `rediacc/acc
     (ticked) 2026-09-23T19:20:38Z by d778be9d: Box already ticked before the plan moved to _done/ via check_plan_folders.py --move (commit da2670983, git mv preserving content); backfilling the investigation row under the new path.
       LEDGER LAG, closed 2026-09-09: `npm run check:ci-hook-integrity` live -> rc=0, "43 guard(s)
       present across 3 chain(s), none newly uncovered." `guards/block_unlinked_commit_author.py` is on
-      disk with 3 block-direction + 3 allow-direction cases in `.claude/hooks/test-hooks.sh:466-489`,
+      disk with 3 block-direction + 3 allow-direction cases in `.claude/hooks/test-hooks.sh line 466-489 (blob 5be28c8d1ebf)`,
       so both directions are covered for this guard specifically, even though the box below it
       (eleven cases) is not fully met.
 - [x] Re-run the gate after the rewrite; confirm exit 0 on all four repos

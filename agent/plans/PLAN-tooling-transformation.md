@@ -98,7 +98,7 @@ worth keeping visible because the CONCLUSION survives it while the obvious go/no
 
 `scripts/ci-runner/gate-spec.ts` has no `env` field (complete list: noProfile, id, run, gate, needs, mutex, reads, weight, heavy, paths, slow, qualityGateTest, leaves, ci) and `emitStep` (`scripts/gate-bind.ts:408-419`) hardcodes `if: ${{ !cancelled() && steps.${guard}.outcome == 'success' }}` with no extension point. **Six gate files already carry the literal blocker string
 `gate-bind cannot emit one`** and sit at `emit: false` for that reason alone; ~14 steps carry an extra `if:` conjunct. All 26 `env:` blocks sit outside the regions, which is why 126 of 276 steps are hand-written. Fixing `env` alone leaves those unshardable. This is W2.4's missing `reads?: string[]` recurring, and it violates the programme's own acceptance test at
-`docs/ci-overhaul/08-driver-contract.md:377-385`.
+`docs/ci-overhaul/08-driver-contract.md line 377-385 (blob c4fd78da6fc6)`.
 
 Two further holes in the same machinery:
 - `scripts/gate-bind.ts:1567-1569` filters `dropped` to `claimed` and refuses only on `claimed`. Bare
@@ -267,7 +267,7 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       `test-autopilot-breakpoint-alignment.sh` was briefed to batch 4 with an explicit
       instruction to REFUSE rather than drop, and the writer did, having enumerated the
       gate's whole input surface instead of assuming it
-      (`.ci/rediacc_ci/quality/autopilot_breakpoint_alignment.py:104-105` pins
+      (`.ci/rediacc_ci/quality/autopilot_breakpoint_alignment.py line 104-105 (blob 220904d25e70)` pins
       `.ci/breakpoint/workflow/breakpoint.yml` and `.github/workflows/autopilot.yml`).
       Every plant target is closed: the first by invariant 8, the second by the
       driver-only list, and the THIRD blocker is new and will recur -- the gate's own
@@ -530,7 +530,7 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       a missed twin-header removal and a missed port-header addition.
       **Also fix `.ci/rediacc_ci/check_pytest.py:74-78`** in batch 1: it still says the binder "only scans
       `.ci/scripts/` and `scripts/`" and that a header there "would be inert". False since
-      2026-09-06 (`docs/ci-overhaul/08-driver-contract.md:303-311`), and it is the only in-code statement of the
+      2026-09-06 (`docs/ci-overhaul/08-driver-contract.md line 303-311 (blob c4fd78da6fc6)`), and it is the only in-code statement of the
       rule anyone porting a gate will find.
       **Trap:** a NEW file not yet in a git index is invisible to the binder (`ls-files` reads the
       index). Use the throwaway-index technique in `08-driver-contract.md` section 5b, and
@@ -1111,7 +1111,7 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
         can see. **A caller list derived only by grep is a hypothesis; the suite is the
         refutation.** Run the tests before believing the grep is complete.
       * `age-check.sh`: **2 real production callers, not 17**, namely
-        `.ci/scripts/quality/check-go-deps.sh:40` and `.ci/scripts/security/audit.sh:42`,
+        `.ci/scripts/quality/check-go-deps.sh line 40 (blob d8d7166e61dc)` and `.ci/scripts/security/audit.sh line 42 (blob 103122849b81)`,
         plus 3 test surfaces whose whole subject is the shim.
       **AND `.ci/lib/age-check.sh` DOES NOT EXIST AND NEVER DID.** The file is
       `.ci/scripts/lib/age-check.sh`. `git log --all --diff-filter=D -- '*age-check.sh'`
@@ -1215,10 +1215,10 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       first, at which point age-check.sh has zero production callers and deletes for
       free.** Full surface: the 2 callers; 3 test surfaces (`test-age-check.sh` and its
       pytest port `.ci/rediacc_ci/tests/gates/test_gate_age_check.py`, both wholly
-      obsolete; 3 cases at `.ci/rediacc_ci/tests/test_core_age.py:186,198,209` to rehouse
+      obsolete; 3 cases at `.ci/rediacc_ci/tests/test_core_age.py line 186 (blob 4570b9f9b9ec),198,209` to rehouse
       the way `test_core_ports.py`'s four were); 2 entries in
       `.ci/config/language-policy-baseline.json:110,251`; the manifest and lock entries;
-      `docs/agent-reference/suppressions.md:163`; `.ci/shadow/twin-parity.ledger.jsonl`;
+      `docs/agent-reference/suppressions.md line 163 (blob 12318ffdebb2)`; `.ci/shadow/twin-parity.ledger.jsonl`;
       and **one DRIVER-ONLY edit, `.github/workflows/ci-quality.yml:1872` and `:2034`**,
       identical comment text in two jobs, which must change
       `# TOPOLOGY. audit.sh and check-go-deps.sh call entry_age_days (.ci/scripts/` /
@@ -1231,7 +1231,7 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       keeps its path, full stop; it now says the shim stage is not the end state and
       clause 3 governs WHEN deletion is allowed, not whether),
       `.ci/rediacc_ci/quality/account_probes.py:56` and
-      `.ci/scripts/quality/check-account-probes.sh:95`. The `source find-port.sh` lines
+      `.ci/scripts/quality/check-account-probes.sh line 95 (blob 0956c40aae6f)`. The `source find-port.sh` lines
       INSIDE `account_probes.py`'s fixtures at :461 and :483 are deliberately KEPT and now
       labelled archaeology: those literals are the frozen 2026-08-04 shape, the fixture
       writes its own stub sibling, and editing them to track the live file is precisely the
@@ -1346,9 +1346,9 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       **THE LICENCE IS REAL AND IT IS ON DISK.** `.ci/shadow/w7p5b-local-common.observations.jsonl`, 7 rows, `npx tsx scripts/lib/shadow-gate.ts --pair w7p5b-local-common --assert --k 5` prints "equivalence holds over 7 distinct trees": 7 rows, 7 distinct clean trees, 7 distinct finding sets, every row EQUIVALENT, 196 observations, comment ratio 1.0416 against the 0.90 floor. Recorded against a disposable git repository outside this checkout (this tree is never clean), holding a copy of `.ci/lib`, `.ci/config`, `.ci/scripts`, `.ci/policy`, `.ci/rediacc_ci`, `scripts` and `.devcontainer`, with the ledger written here via `--ledger` and every command relative so `reachesOutside` passes honestly. The fixture's `local-common.sh`, `local_common.py` and `local_common_shadow_driver.py` are `diff`-verified against the shipped ones BEFORE recording, and the whole ledger was re-recorded from scratch THREE times, after the 125 defect below and after each prose-style reflow, so the rows describe the bytes that ship rather than an earlier draft.
       **BOTH SIDES REALLY RAN.** `.ci/rediacc_ci/core/local_common_shadow_driver.py` drives them: the old side sources `local-common.sh` through `run-legacy.sh`'s own prelude (`constants.sh`, `toolchain.sh`) and calls the twin's functions, the new side calls the port. Seven scenarios, 196 observation lines, byte-identical on every one. `hash` covers the six prune rules, a symlink, an empty directory, a name with a SPACE and one with a BACKSLASH (which the tool escapes, changing the bytes the outer hash sees), a missing start point, a trailing-slash start point and two unusable roots. `git-fp` runs against a real git repository the driver builds with a committed history, a modified file, a deleted file, a staged file and an untracked file. `version` drives 72 ordered pairs.
       **THE FIXTURES ARE BUILT IN PYTHON FOR BOTH SIDES**, which is the one place this driver departs from `core/shadow_driver.py`'s shape: two hand-written builders for a git repository are two things that can drift, and a fingerprint differing because the two repositories differ is a mismatch that says nothing about the port.
-      **TEN PLANTED CONTROLS, ALL TEN WATCHED GOING RED AND THEN REMOVED**, with the port restored byte-identical by sha256 after each (`d0a6baffc9309595...`): the sha256 line printed with one space instead of two, the empty file set hashed as an empty stream, the `.DS_Store` prune rule dropped, the walk following symlinks, the `cd` diagnostic silenced, the errexit reproduction ignored, the stamp's trailing newline dropped, `filevercmp` replaced by a plausible dotted split, `has_npm_script` narrowed to the `scripts` object, and `_sed_i` losing its in-place flag.
+      **TEN PLANTED CONTROLS, ALL TEN WATCHED GOING RED AND THEN REMOVED**, with the port restored byte-identical by sha256 after each (`sha256:d0a6baffc9309595...`): the sha256 line printed with one space instead of two, the empty file set hashed as an empty stream, the `.DS_Store` prune rule dropped, the walk following symlinks, the `cd` diagnostic silenced, the errexit reproduction ignored, the stamp's trailing newline dropped, `filevercmp` replaced by a plausible dotted split, `has_npm_script` narrowed to the `scripts` object, and `_sed_i` losing its in-place flag.
       **THREE REAL DEFECTS FOUND BY RUNNING IT, all fixed rather than papered over.** (1) THE ONE A CONTROL FOUND THAT THE DIFFERENTIAL COULD NOT: with no `sha256sum` and no `shasum` on PATH, `compute_hash_for_package_dirs` exits **125**, not 0. `$_SHA256SUM_CMD` expands to nothing, `xargs -0` with no command defaults to `echo`, the next two pipeline stages are empty commands so nothing reads the pipe, `echo` takes SIGPIPE, GNU xargs reports a signal-killed child as 125, and `pipefail` carries it out. Every ledger scenario runs with the tool installed, so the branch is unreachable from the differential; `test_no_sha256_tool_degrades_the_same_way_on_both_sides` builds a PATH farm of every binary in `/usr/bin` and `/bin` except those two and compares the two sides live rather than against the constant. (2) The port's `sha256sum` RAISED `OSError` on an unreadable input where the tool names the file on stderr, omits its line and carries on; found by the `sha-missing` row and fixed at the call site. (3) The driver's own `while IFS= read -r l` loops DROPPED a final line with no trailing newline, so the BASH side under-reported what the twin really printed for `read_stamp_hash` over a hand-written stamp and for `_sed_i` over a file with no final newline. `|| [[ -n "$l" ]]` fixed it. That third one is a harness defect, and finding it is the reason the fix is recorded here rather than in a commit message.
-      **SIX TWIN BEHAVIOURS REPRODUCED RATHER THAN FIXED**, each named in the port's docstring and pinned by a case. (1) An EMPTY file set is not the hash of nothing: `xargs` still runs the tool once, which hashes its own empty stdin, so an empty directory fingerprints as `abcfa6a9d4df...` and not as `e3b0c442...`. (2) `_git_tree_fingerprint` DIES OR SURVIVES DEPENDING ON WHO CALLED IT: `existing="$(while ...)"` is a bare assignment taking the loop's LAST status, so a `changed` list ending in a DELETED file kills it under armed errexit and does not when `compute_tree_hash` calls it from an `if` condition. Both directions are in the ledger: `fp-src` exits 1 with no output while `th-git-src` over the same repository and the same path prints a fingerprint. (3) `has_npm_script` greps the WHOLE `package.json`, so a dependency called `zod` answers true. (4) A missing `package.json` exits 2, not 1, because that is grep's status. (5) `write_stamp_hash` appends a newline `read_stamp_hash` never removes. (6) A missing sha256 tool has TWO different failure modes, `exit 1` from `_sha256sum` and the silent 125 above.
+      **SIX TWIN BEHAVIOURS REPRODUCED RATHER THAN FIXED**, each named in the port's docstring and pinned by a case. (1) An EMPTY file set is not the hash of nothing: `xargs` still runs the tool once, which hashes its own empty stdin, so an empty directory fingerprints as `sha256:abcfa6a9d4df...` and not as `e3b0c442...`. (2) `_git_tree_fingerprint` DIES OR SURVIVES DEPENDING ON WHO CALLED IT: `existing="$(while ...)"` is a bare assignment taking the loop's LAST status, so a `changed` list ending in a DELETED file kills it under armed errexit and does not when `compute_tree_hash` calls it from an `if` condition. Both directions are in the ledger: `fp-src` exits 1 with no output while `th-git-src` over the same repository and the same path prints a fingerprint. (3) `has_npm_script` greps the WHOLE `package.json`, so a dependency called `zod` answers true. (4) A missing `package.json` exits 2, not 1, because that is grep's status. (5) `write_stamp_hash` appends a newline `read_stamp_hash` never removes. (6) A missing sha256 tool has TWO different failure modes, `exit 1` from `_sha256sum` and the silent 125 above.
       **THE ONE PLACE THE PORT REFUSES WHERE THE TWIN WOULD GUESS:** `has_npm_script` raises on a script name carrying a BRE metacharacter, because the twin's `grep -q "\"$name\":"` makes that name a pattern. All 388 script names in `package.json` are `[a-z0-9:-]+`, where a BRE and a literal agree, so the refusal is free for the whole live corpus. Same shape as `account.py`'s `env_add_if_missing`.
       **THE TOOL SET THIS LICENCE IS TRUE AGAINST IS NOT GNU.** Measured 2026-09-23: `sha256sum`, `sort`, `tr`, `head`, `cat`, `uname` and `stat` on this machine are **uutils coreutils 0.8.0**, `find` is **bfs 4.1.1** and `grep` is **ugrep 7.8.4**; only `xargs` (GNU findutils 4.10.0), `awk` (GNU awk 5.3.2) and `sed` (GNU sed 4.9) are the GNU originals. That is recorded in the port's docstring rather than left implicit, because `sort -V`'s ordering and `sha256sum`'s backslash escaping are both reproduced from measurement. `version_gte` transcribes gnulib's `filevercmp` and was validated against the live `sort -V` over 2,401 ordered pairs from a 49-string corpus with zero divergences before any of it was written down.
       **THE PERMANENT SURFACE** is `.ci/rediacc_ci/tests/test_core_local_common.py`, 52 tests, about 5 seconds, all passing. It drives the live twin on every run rather than replaying a recording, asserts the K=5 ledger off disk, asserts the twin still defines all 30 functions AND NOTHING ELSE, asserts the 21 unported ones have no Python counterpart, and asserts all five real `source` sites are still there.
@@ -1437,8 +1437,8 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       **THREE BLOCKERS ON `run-all.sh` SPECIFICALLY, each verified against the enforcing code
       on 2026-09-09, not inferred.** The wiring is done (W7P3-BAT) and the licence is granted
       at `27 == 27`; these are what still stops the file being removed.
-      * **`docs/agent-reference/TRAPS.md:2463` carries
-        `Enforced-By: file:.ci/scripts/test/run-all.sh:149`,** and
+      * **`docs/agent-reference/TRAPS.md line 2463 (blob 290fa2cb639d)` carries
+        `Enforced-By: file:.ci/scripts/test/run-all.sh line 149 (blob 22fe1c3edde3)`,** and
         `.ci/rediacc_ci/quality/trap_registry.py:35-37` and `:446` require a `file:` pointer
         to exist on disk with a non-blank `:line`. Line 149 is `guard_selftest() {`, part of a
         peer's uncommitted 185-line addition.
@@ -1459,11 +1459,11 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
         The peer's uncommitted lines are not a blocker on anyone's decision either: nothing
         in this session deletes the runner, and whoever runs W7P5-c re-checks the peer state
         at that moment rather than against a note written now.
-      * **`.ci/config/language-policy-baseline.json:423`** --
+      * **`.ci/config/language-policy-baseline.json line 423 (blob 40bde2910f74)`** --
         `.ci/scripts/quality/check_language_policy.py:841-857` returns 1 on a baselined bash
         file that has left the tree ("Ratchet the baseline in the same commit"), so the drain
         must ride the deletion commit.
-      * **`.ci/scripts/test/gates/test-run-all-parallel.sh:44-47`** hard-fails with
+      * **`.ci/scripts/test/gates/test-run-all-parallel.sh line 44-47 (blob cfcfcd680f3f)`** hard-fails with
         `$RUNNER is missing or not executable` -- 231 lines whose entire subject is the
         deleted runner, plus its `gate-test:run-all-parallel` manifest and lock entries.
       * **RE-VERIFIED 2026-09-20, TWO MORE.** (4) No shadow ledger pairs `battery.py` with
@@ -1541,12 +1541,12 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       here, as the call site below proves.
 
       **A LIVE BASH CALL SITE THE C3 SCAN WOULD MISS, found by the census and confirmed by
-      the driver.** `.github/workflows/autopilot.yml:252` still runs
+      the driver.** `.github/workflows/autopilot.yml line 252 (blob 1d3f9e6d878b)` still runs
       `.ci/scripts/quality/check-resolved-threads.sh` while `.github/workflows/ci.yml:624`
       runs the Python `check_resolved_threads.py`. Both exist and both are invoked, so that
       twin is maintained twice AND executed twice per PR on different paths -- and it HAS a
       K=5 ledger (`.ci/shadow/w7p2-resolved-threads.observations.jsonl`), so it would
-      otherwise read as licensed. **Deleting it without repointing `.github/workflows/autopilot.yml:252` breaks
+      otherwise read as licensed. **Deleting it without repointing `.github/workflows/autopilot.yml line 252 (blob 1d3f9e6d878b)` breaks
       autopilot**, and the repoint is a driver-only workflow edit. This is the shape C3
       exists to catch and a reminder that a ledger licences EQUIVALENCE, never reachability.
       **PRECONDITION STATUS 2026-09-08, measured not claimed.** `agent/plans/PLAN-extension-shaped-matchers.md`
@@ -1670,7 +1670,7 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       `.ci/rediacc_ci/quality/pool_writer_safety.py`, `.ci/rediacc_ci/xdist_groups.py`) and
       frozen `.ci/shadow/w7p2-*.observations.jsonl` rows recorded before the deletion. None
       is a live call site. The C3 trap example this box's own census flagged
-      (`.github/workflows/autopilot.yml:252` running the bash `check-resolved-threads.sh`
+      (`.github/workflows/autopilot.yml line 252 (blob 1d3f9e6d878b)` running the bash `check-resolved-threads.sh`
       while `ci.yml` ran the Python) is also resolved: `check-resolved-threads.sh` no longer
       exists anywhere in the tree; only `check_resolved_threads.py` remains and both
       workflow files now call it.
@@ -2416,7 +2416,7 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       in 6 of writer F's files that the lint gate caught, re-verified 55/55 still pass;
       full `check:ci-python-lint` across the combined 832-file corpus: exit code 0.
       **Real defects found in the twins, reproduced not fixed, two independently confirmed
-      by the driver**: `.ci/scripts/autopilot/submodule-prs.sh:83`'s `jq '... | length'` on a non-integer
+      by the driver**: `.ci/scripts/autopilot/submodule-prs.sh line 83 (blob e613fefe9d86)`'s `jq '... | length'` on a non-integer
       `submodules` count silently wipes the PR-body submodule-links block while exiting 0
       (driver-verified: `jq -r '(.submodules // []) | length'` on `3.5` returns `3.5`, not
       an integer; defence-in-depth only, the upstream validator already bounds this field);
@@ -3183,7 +3183,7 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       exists in the code (every `package.json` here is a fixed `0.0.0-dev` placeholder by
       design); `--version ''` is silently auto-derived rather than refused, because the
       guard is presence-only (`${2?...}`) not emptiness-checked -- latent today only because
-      the one live caller (`.ci/scripts/ci/set-image-tags.sh:24`) already guards non-empty before
+      the one live caller (`.ci/scripts/ci/set-image-tags.sh line 24 (blob 6922deff8d4d)`) already guards non-empty before
       forwarding.
       **A race the writer found via the shadow-gate comparator itself, then reproduced
       independently**: `cancel-older-runs.sh`'s elapsed-time check reads the wall clock
@@ -3644,7 +3644,7 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       **Real defects found, the headline one independently confirmed by the driver against
       both the tree and a live workflow file**: `clone-d1.sh --sanitize` has been silently
       dead since 2026-04-06, when `sanitize-d1.sql` (the file it redirects into) was deleted
-      in an unrelated commit and nothing recreated it -- yet `.github/workflows/edge-clone-d1.yml:78` is a LIVE caller still passing `--sanitize` on every run -- driver-
+      in an unrelated commit and nothing recreated it -- yet `.github/workflows/edge-clone-d1.yml line 78 (blob cface6e34bd0)` is a LIVE caller still passing `--sanitize` on every run -- driver-
       confirmed both halves directly (the SQL file is genuinely absent from the tree; the
       workflow line genuinely still passes the flag). The script fails closed (dies on the
       redirection before the import step), so the practical exposure is an availability
@@ -4166,7 +4166,7 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       **THE FIRST PLANT DID NOT FIRE AND THE CONTROL WAS AT FAULT.** The corpus was
       `gitx.ls_files("*.py")` without `untracked=True`, and a new file is untracked by
       definition, so the plant sat in the one file the scan could not see. `gitx.ls_files`'s
-      own docstring records the identical defect in `.ci/scripts/quality/check-python-lint.sh:88`. Fixing it moved
+      own docstring records the identical defect in `.ci/scripts/quality/check-python-lint.sh line 88 (blob 471b915b8798)`. Fixing it moved
       the corpus 567 -> 655 and surfaced **3 hops added AFTER PRE-A1**, invisible to any
       committed enumeration: `.ci/rediacc_ci/tests/test_wl_proc.py:43`,
       `.ci/rediacc_ci/tests/test_worklist_state_stdin.py:42` and
@@ -5031,7 +5031,7 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       **A FOURTH NUMBER EXISTS** and would have read as a fifth disagreement: **318.2s** in
       `docs/ci-overhaul/11-timing-baseline.md`, same gate, older corpus.
       The floor ruling is confirmed at `scripts/gates/check-gate-manifest.ts:527`, and BOTH existing
-      citations of it have drifted -- this box said `:511-520` and `scripts/ci-runner/manifest.ts:5818`
+      citations of it have drifted -- this box said `:511-520` and `scripts/ci-runner/manifest.ts line 5818 (blob d97d75e8a2b0)`
       says `:503`. **No new measurement was taken and the doc says so:** `git status
       --porcelain` returns 352 lines here, so nothing timed in this checkout is admissible,
       and `git worktree add` is hook-blocked.
@@ -5359,7 +5359,7 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       **DONE 2026-09-09 and registered.** `check:ci-worklist-env-registry` rc=0.
       **All three of the box's numbers are the GREP answers and all three are wrong.**
       Distinct names: 134 by grep, **133 live** -- `WORKLIST_EMAIL` is prose-only history at
-      `.claude/hooks/stop/worklist-cases/13-ci-queue-and-mail.sh:142`, read nowhere. Files:
+      `.claude/hooks/stop/worklist-cases/13-ci-queue-and-mail.sh line 142 (blob 7e7a13219e5c)`, read nowhere. Files:
       the box says "~56-60", and a range in a plan means nobody counted; **60 mention one, 28
       actually READ one**, the other 32 being shell fixtures that only ASSIGN. Read sites:
       **181, not 178**, plus 153 bash assignment sites the box did not count at all.
@@ -5375,7 +5375,7 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       stops being read.
 - [x] **D3 S, long pole** Shard the hook suite. `test-hooks.sh` is **2,774 lines**, `slow: true,
       // 537.4s`, one `run:`. `run_tests.py` (100 lines) is wired to nothing and says so.
-      **Invariant 2 bites in six places, all verified:** `.ci/config/language-policy-baseline.json:476`;
+      **Invariant 2 bites in six places, all verified:** `.ci/config/language-policy-baseline.json line 476 (blob 0e1546cc707c)`;
       `.ci/policy/.dead-bash-allowlist:42` plus three golden files encoding the line index;
       `.ci/rediacc_ci/quality/trap_registry.py:227` (`TRAP_HOOK_SUITE`, a single path constant, plus two control
       fixtures); `.ci/rediacc_ci/quality/hook_integrity.py:69` (`SUITE=`, single path); and two line-numbered measurement
@@ -5392,7 +5392,7 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       with `baseline_additions` reaching `return 1` at `:535`). The precedent it reaches for --
       `test-worklist-v5.sh` split into 27 files -- predates the freeze and cannot be
       repeated. **D3 is a PORT TO PYTEST, not a split**, which is what
-      `.ci/rediacc_ci/tests/gates/test_gate_claude_hooks.py:31` already says in code.
+      `.ci/rediacc_ci/tests/gates/test_gate_claude_hooks.py line 31 (blob 030cb68cd2ff)` already says in code.
       Cheaper than billed: `pyproject.toml:237-241` already has `.claude/rediacc_hooks/tests`
       in `testpaths`, so the destination needs NO driver edit until the terminal commit.
       Measured: 2,774 lines correct; **456 direct assertion calls**, not the runtime 2,229
@@ -5443,7 +5443,7 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       also right. But **"8 of the 12 processes" is wrong: it is 4 of 12.**
       (1) **It needs a bash chain head and that is illegal.** One command per pattern means a
       bash script that inlines both checks then execs `dispatch.py`, and
-      `.claude/hooks/require-python.sh:5-12` argues it may never be ported -- written in Python it cannot
+      `.claude/hooks/require-python.sh line 5-12 (blob 08b62590651f)` argues it may never be ported -- written in Python it cannot
       run in the one condition it exists to report. A new tracked `.sh` under `.claude/` is
       the same 522nd-path refusal that makes D3 illegal. PROVEN, and the first attempt at the
       proof was VACUOUS: an untracked probe left `check:ci-language-policy` green because the
@@ -5469,13 +5469,13 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       `require-jq.sh` and `require-python.sh` that runs when Python is missing, or the language policy admitting
       one bash file for it. Neither is reachable without an operator ruling.
       **RE-RUN 2026-09-20 LATER THE SAME DAY, NOTHING CLEARED.** `.claude/settings.json` reads 30 commands in 18
-      groups over 11 patterns; `require-python.sh:5-12` still argues it may never be ported;
+      groups over 11 patterns; `.claude/hooks/require-python.sh line 5-12 (blob 08b62590651f)` still argues it may never be ported;
       `.ci/scripts/quality/check_hooks_resolvable.py:107` pins `FIRST_GUARD = "require-jq.sh"` (line moved from 103);
       `scripts/lib/doc-providers.ts:295` still reads the hooks table; and the language policy still counts 582 bash
       files, 507 frozen, so one more tracked `.sh` for a chain head is refused. The exit condition is
       unchanged and needs an operator ruling.
       **RE-RUN 2026-09-21, NOTHING CLEARED.** Four probes with full stderr, all rc=0 and no stderr: settings.json
-      reads 30 commands in 18 groups over 11 patterns; `require-python.sh:5-12` still argues it may never be
+      reads 30 commands in 18 groups over 11 patterns; `.claude/hooks/require-python.sh line 5-12 (blob 08b62590651f)` still argues it may never be
       ported; `FIRST_GUARD = "require-jq.sh"` is at `.ci/scripts/quality/check_hooks_resolvable.py:107` and the hooks table is read at
       `scripts/lib/doc-providers.ts:295`; the language policy reports 539 bash files, 464 frozen, none added, so a new
       tracked `.sh` is still refused.
@@ -5528,7 +5528,7 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       `setup_check()` 99 + `.ci/lib/setup.sh` 845 = **1,117**.
       **But "seven functions" is SIX.** `setup_docker_probe` at the deleted `.ci/lib/setup.sh`, pre-flip line 575,
       (35 lines) is called by NOTHING -- `grep` over the tree returns its own definition
-      and one prose mention in `docs/ci-overhaul/06-progress.md:5109`, verified by me.
+      and one prose mention in `docs/ci-overhaul/06-progress.md line 5109 (blob 0d3568dda439)`, verified by me.
       `setup()` runs `ensure_docker_installed` instead, and `scripts/gates/check-dead-bash.ts`
       cannot see it because that gate asks whether a FILE's basename is mentioned. It is
       ported anyway, named in `phases.DEFINED_BUT_UNCALLED`, and clause A4 of the new gate
@@ -5571,7 +5571,7 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       `check:ci-language-policy`, and `test_twin_parity[test_gate_run_sh]` under
       `TWIN_PARITY_ALWAYS_DRIVE=1`. pytest over `test_main.py`,
       `test_gate_run_sh.py` and `test_setup_port.py`: 47 passed, 17 skipped.
-      **The skips are the design, not a gap:** `.ci/rediacc_ci/tests/test_setup_port.py:226,283` skip with "the
+      **The skips are the design, not a gap:** `.ci/rediacc_ci/tests/test_setup_port.py line 226 (blob 1852e9271c9c),283` skip with "the
       bash twin has been deleted; the ledger is the surviving evidence", and
       `check:ci-setup-port-parity` prints `FLIPPED (bash gone)` rather than redding. A gate
       that guards a migration has to survive the migration succeeding -- the same
@@ -5677,7 +5677,7 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       `bws_env_load` cannot return any name set: it reaches the real API and gets
       `[400 Bad Request] {"error":"invalid_client"}`. **MAPPED_NAMES_PRESENT_IN_SHELL=0**
       of the map's 58 names. Streams read separately; no value was ever printed, per
-      `.ci/lib/bws-env.sh:16-18`.
+      `.ci/lib/bws-env.sh line 16-18 (blob 60766fb1b77e)`.
       **The failure is the CREDENTIAL, not the network and not the helper.** Control:
       `curl https://vault.bitwarden.com/` returns http 200 from this box. The first guard
       (`BWS_ACCESS_TOKEN` unset) was passed by loading the name out of
@@ -5711,7 +5711,7 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       is not edited forward, and no row is invented for the credential CI is really using,
       because this session cannot see it.
       **Door: `door:operator-only`.** Minting and rotating a machine-account token is the
-      one thing no `bws` verb does (`.ci/lib/bws-env.sh:45-47`), and reading the live GitHub
+      one thing no `bws` verb does (`.ci/lib/bws-env.sh line 45-47 (blob 60766fb1b77e)`), and reading the live GitHub
       secret is outside this session's access.
       **THE CLASS WAS SWEPT, NOT JUST THIS INSTANCE, AND IT IS CLEAN.** The class is "a
       credential in a local config file goes stale when the credential is rotated
@@ -5836,7 +5836,7 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       the moment they were written. Rewritten as history at `scripts/lib/policy-paths.ts:79-86`.
 - [x] **W4 P4a S** Python `policy_path`. Five hardcoded literals (`.ci/rediacc_ci/quality/go_deps.py:178`,
       `.ci/rediacc_ci/quality/plan_housekeeping.py:238`, `.ci/rediacc_ci/quality/profiler_coverage.py:166`, `.ci/scripts/quality/check_language_policy.py:112/114`,
-      `.ci/scripts/quality/check_runner_advice.py:899`). **Design constraint:** `.ci/scripts/test/gates/test-policy-path.sh:79` asserts the TS
+      `.ci/scripts/quality/check_runner_advice.py line 899 (blob b27ea5d7437e)`). **Design constraint:** `.ci/scripts/test/gates/test-policy-path.sh line 79 (blob 48f0db193184)` asserts the TS
       seam does "no stat, no readdir" and proves it with an `rmdir`. The Python twin must satisfy
       the same property, so `policy_path()` is a pure join and the inventory readdir is a SEPARATE
       instrument. Every env override stays in front of the seam.
@@ -5852,7 +5852,7 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       differing from `scripts/lib/policy-paths.ts:57`; no comment may cite a policy file by a root path.
       **P4a/P4b/P4c ALL DONE 2026-09-08, registered by the driver and green.**
       `.ci/rediacc_ci/policy_paths.py` is the Python twin and its purity is PROVEN the way
-      `.ci/scripts/test/gates/test-policy-path.sh:79` proves the TypeScript one: `policy_path()` answers for an
+      `.ci/scripts/test/gates/test-policy-path.sh line 79 (blob 48f0db193184)` proves the TypeScript one: `policy_path()` answers for an
       empty tmpdir and that tmpdir then `rmdir`s clean, so nothing was stat'ed, cached or
       created. I re-ran that myself. The default root is `paths.CI_DIR.parent`, a module
       constant, NOT `paths.repo_root()` -- the latter would `is_dir()` an env override on
@@ -5919,7 +5919,7 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       missing ALREADY EXISTS (`.ci/rediacc_ci/core/allowlist.py`, 525 lines, with a
       byte-compatibility corpus), so P3b is effectively done. The subset claim it calls "the
       provable one" is ALREADY ASSERTED at
-      `.ci/scripts/test/gates/test-breakpoint-portability.sh:357-441`, with a planted-defect
+      `.ci/scripts/test/gates/test-breakpoint-portability.sh line 357-441 (blob 548774b4fb79)`, with a planted-defect
       regression, so it was not re-asserted.
       **What was genuinely missing became `check:ci-vendored-blocker-derivation`:**
       `bp_substrings == the empty set` (asserted nowhere), and the DERIVATION of the corpus's
@@ -5962,7 +5962,7 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       message digest rather than a verdict.
       **F1, repaired forward and not asked for:** `aaba93b29` routed 81 entry points through
       `import _cipath`, found only via `sys.path[0]`, so
-      `.ci/scripts/test/gates/test-language-policy.sh:414,424` -- which copies the gate to a
+      `.ci/scripts/test/gates/test-language-policy.sh line 414 (blob 57b42df6c0fc),424` -- which copies the gate to a
       tmpdir -- died `ModuleNotFoundError` and its COMPOSITION TRAP control was asserting on
       a traceback. Two previously unreachable assertions now run.
       **F3 recorded, not removed:** `check_language_policy` shells to `blocker-validator.sh`
@@ -6346,7 +6346,7 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       is still at 9 and `## Architecture` still at 234, so the frozen span has not moved.
       Remaining to acceptance: 100 lines and 3,135 bytes.
       **THE LOCKFILE SECTION IS CUT, 51 lines to an 11-line pointer -- AND CUTTING IT BLIND
-      WOULD HAVE ORPHANED A CITATION.** `.ci/scripts/quality/check-lockfile.sh:69` said "For
+      WOULD HAVE ORPHANED A CITATION.** `.ci/scripts/quality/check-lockfile.sh line 69 (blob 1f1180a8be4b)` said "For
       a real install check, use CLAUDE.md's clean-room recipe", so the enforcement pointed AT
       the prose being deleted and the recipe would have survived nowhere. The recipe now
       lives in `check-lockfile.sh` beside the limit it answers, and the pointer is
@@ -6469,7 +6469,7 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
     (ticked) 2026-09-15T07:22:49Z by f4da5c2e: Verified live: env-manifest region now has a home, built by W8 P3 (not P5c itself) once W8 P2 unblocked it. check:ci-doc-region-parity rc=0, region 'env-manifest' at scripts/data/doc-registry.md:1076 matches with 904 rows, 14/14 providers used. P5c's entire scope was to record the blocked status until W8 P2 existed; W8 P2 landed 2026-09-09 and W8 P3 built the region the same day, so the blocker this box named is resolved and the box closes on that evidence rather than new work.
       it as blocked so P5 is not ticked at three of four.
 - [x] **W12 P2.7a S, before the wave** `check_plan_boxes.py` rule `G-A5` becomes never-delete. The
-      deadlock A5 avoided no longer exists: `.ci/scripts/quality/check-plan-housekeeping.sh:51` states "THE REMEDY IS
+      deadlock A5 avoided no longer exists: `.ci/scripts/quality/check-plan-housekeeping.sh line 51 (blob f985c1c71a92)` states "THE REMEDY IS
       NO LONGER 'DELETE IT', AND THAT WORD IS GONE ON PURPOSE." **New control: a 41-day-old plan
       with one surviving-nowhere open box must be REFUSED** -- the exact case that passes today.
       **DONE 2026-09-09.** The rule lives in exactly one place,
@@ -6838,10 +6838,10 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       **`scripts/ci/` is dropped: zero `.cjs` exist under `scripts/`.**
 - [x] **U1 C** Requirement 15: a `json-inventory` provider + region over root / `.ci/config` /
       `scripts/data` / `.ci/policy`, with `Discovered by` and `Configurable path?` cells. The
-      predicate exists only as prose at `docs/ci-overhaul/08-driver-contract.md:318-334` and **three of its numbers
+      predicate exists only as prose at `docs/ci-overhaul/08-driver-contract.md line 318-334 (blob c4fd78da6fc6)` and **three of its numbers
       went stale in one day**, which is the argument for generating it.
       **DONE 2026-09-09:** `jsonInventoryProvider` at `scripts/lib/doc-providers.ts:1791`, registered
-      at `scripts/lib/doc-providers.ts:2098`, emitting the region at `scripts/data/doc-registry.md:945`
+      at `scripts/lib/doc-providers.ts line 2098 (blob 8c766895bc68)`, emitting the region at `scripts/data/doc-registry.md:945`
       with both required cells. It refuses rather than reports on two conditions -- a namer corpus
       that collapses (`scripts/lib/doc-providers.ts:1822`) and a home that matches no `.json`
       (`scripts/lib/doc-providers.ts:1845`) -- so an empty table cannot read as a clean one.
@@ -6862,7 +6862,7 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       (commit `959a196da`): the sibling repo's own PR lands first and only on the operator's explicit request, then the console PR, and no console PR carries a pointer for it. Owner: the operator, since no other
       session may merge to that remote. Promoting it to a real submodule stays available and is the only choice
       that changes every checkout.
-- [x] **U3 C, DONE 2026-09-08** Widen `.ci/scripts/test/gates/test-shrink-only-composition.sh:97-102`. It greps `--include=*.ts
+- [x] **U3 C, DONE 2026-09-08** Widen `.ci/scripts/test/gates/test-shrink-only-composition.sh line 97-102 (blob 6a876e839fa5)`. It greps `--include=*.ts
       --include=*.js` over `scripts/` and `packages/www/scripts/` -- **two** blind spots: it
       excludes `.py` AND its roots exclude the entire `.ci/` tree. Live subjects today: exactly
       one tracked `.py` offers `--write-baseline` (`check_language_policy.py`) plus
@@ -7070,7 +7070,7 @@ So the safe default STAYS and the escape is ARGUED: `needs-not:` subtracts one i
 ## Invariants every box must respect
 
 1. **Emitter and its parity gate land in the same change.** Anything that becomes generated (manifest, workflow regions, docs) takes its checker with it. This is the rediacc/console#549 failure class.
-2. **Shrink-only and extension-keyed inventories are re-keyed in the same change as the move that would trip them:** `.ci/scripts/security/shfmt.sh:71-72`, `check-hook-integrity.sh`, `scripts/gates/check-dead-bash.ts:152` and `:198`, `scripts/gates/check-em-dash-surfaces.ts:137`, `.ci/scripts/quality/check-gate-id-convention.sh:79-80`, `scripts/gates/check-ci-parity.ts:72-73`.
+2. **Shrink-only and extension-keyed inventories are re-keyed in the same change as the move that would trip them:** `.ci/scripts/security/shfmt.sh line 71-72 (blob 5a9fd57994b4)`, `check-hook-integrity.sh`, `scripts/gates/check-dead-bash.ts:152` and `:198`, `scripts/gates/check-em-dash-surfaces.ts:137`, `.ci/scripts/quality/check-gate-id-convention.sh line 79-80 (blob 6555995452c7)`, `scripts/gates/check-ci-parity.ts:72-73`.
 3. **`manifest.ts` keeps every entry literal** until the three text readers (`.claude/hooks/stop/wl_reggate.py:364`, `check-gate-id-convention.sh`, `check_test_file_orphans.py`) read `gates.lock.json`.
 4. **The anti-vacuity contract survives the port:** exit 0 with zero PASS lines is a failure, `--selftest` runs before every real scan, MIN floors hold, exit 77 means cannot-run and never a verdict, planted-defect controls stay with their gate.
 5. **Shadow before cutover.** A ported gate runs against its bash twin over K distinct trees with a committed differential artifact before the twin is deleted. Repetition on one tree does not count.
@@ -7101,7 +7101,7 @@ The twelve workstreams were drafted independently and contradict each other in t
 
 | Conflict | Resolution |
 |---|---|
-| Python package path (four proposals) | `.ci/rediacc_ci`. `.ci/scripts/test/gates/test-gate-anti-vacuity.sh:299-312` copies only `scripts`, `.ci/scripts` and `.ci/config` into its fixture, so W1's first phase must add `.ci/rediacc_ci` to that copy list, in the same change. |
+| Python package path (four proposals) | `.ci/rediacc_ci`. `.ci/scripts/test/gates/test-gate-anti-vacuity.sh line 299-312 (blob 6e281eadc28d)` copies only `scripts`, `.ci/scripts` and `.ci/config` into its fixture, so W1's first phase must add `.ci/rediacc_ci` to that copy list, in the same change. |
 | Python config home (three proposals) | One `pyproject.toml` at the repo root holding ruff and pytest config; `ruff.toml` is deleted and the four `--config` arguments in `check-python-lint.sh` are removed, since both tools discover it. `.ci/ruff.toml` is dropped. |
 | Test runner and roots (three proposals) | pytest, provisioned by the uv shim. Tests live beside their package: `.ci/rediacc_ci/tests`, `.ci/tests/gates`, `.claude/rediacc_hooks/tests`. One edit adds all three to `check_test_file_orphans` SEARCH_DIRS. |
 | `run-all.sh` fate (four futures) | Re-key in place (W2, W3), then W7 replaces it with `battery.py` at the end. Never concurrent. |
@@ -7220,7 +7220,7 @@ Goal: land every fix later workstreams silently assume, each box one worktree, e
 - [x] C Record ruling 7 in `docs/ci-overhaul/04-decisions.md` section A: the single-language rule, what bash survives, and that it supersedes `agent/plans/PLAN-shell-resource-profiling.md:7`. Mark that line superseded.
 
 #### W0.1 Bitwarden token schema and cutover (serial, after W0.0 and W0.4a)
-- [x] S Restructure `.ci/config/bws-token-expiry.json` to a `tokens[]` array and update its only reader. **DONE, box was simply never ticked:** the file carries warn_days plus tokens[], and the sole reader consumes the array at scripts/dev/bws-map-refresh.py:87. NOTE the plan's old path for that reader (.ci/scripts/quality/bws-map-refresh.py) does not exist and never did.
+- [x] S Restructure `.ci/config/bws-token-expiry.json` to a `tokens[]` array and update its only reader. **DONE, box was simply never ticked:** the file carries warn_days plus tokens[], and the sole reader consumes the array at scripts/dev/bws-map-refresh.py line 87 (blob 6e572ef64edb). NOTE the plan's old path for that reader (.ci/scripts/quality/bws-map-refresh.py) does not exist and never did.
 - (round 1, SUPERSEDED by a Round 2 box above) S Cut CI and local over to `mc-ci-read` and prove it by fingerprint, not by greenness: dispatch one workflow printing `sha256(client-id)` and compare.
 
 Merge waves: wave 1 is W0.5, W0.0, all of W0.2, all of W0.3, W0.4a, all of W0.4b in parallel worktrees; wave 2 is the W0.1 schema box rebased on W0.4a; wave 3 is the cutover.
@@ -7239,7 +7239,7 @@ Merge waves: wave 1 is W0.5, W0.0, all of W0.2, all of W0.3, W0.4a, all of W0.4b
 - [x] W2.1 Registry loader and a committed `gates.lock.json` in manifest file order (pool.ts uses array index as its scheduling tiebreaker), with a drift gate.  **DONE 2026-09-06:** W2.1 gates.lock.json, 420 entries in manifest file order, drift gate in the same file
 - [x] W2.2 Shadow-gate core: compare exit code plus finding sets, both-empty and new-side-true both count as mismatch, ledger records only clean trees. Usable by W4, W7 and W8.  **DONE 2026-09-06:** W2.2 shadow comparator, registered, 8 verdicts of which one is a pass
 - (round 1, SUPERSEDED by a Round 2 box above) W2.3 Headers on every gate, then the lock and the generated manifest region (generated literal region plus a hand region for composites).  **HEADERS DONE 2026-09-06 (3e00bf8f4, fb42bb1ce): 148 of 148 gate tests declare, and the binder now READS them, which it did not when they landed. The generated manifest region is still open, so this box stays open.**
-- [x] W2.4 Isolation as a path-scoped contract defined once and implemented identically in `pool.ts` and `run-all.sh`; inventories re-keyed; the three text readers drained; counts fixed.  **PARTIAL, CORRECTED 2026-09-07 BY MEASURING THE LOCK.** The three text readers WERE drained and pool.ts and the battery both implement the contract, so half the box is real. But the DECLARATIONS never landed: of the 148 gate-test entries in gates.lock.json, `mutex`, `reads`, `heavy` and `weight` are populated on **ZERO**, and only `slow` is set (34 of 148). No entry anywhere in the lock carries a `reads` key at all; `mutex` exists on 12 entries repo-wide, none of them a gate test. The consequence is observable rather than theoretical: the battery is running on its LOUD FALLBACK today, printing "no 'tree:' isolation declared in scripts/ci-runner/gates.lock.json; falling back to the hand-maintained W/S lists in this file" at :303-304. So the hand-maintained lists this box exists to retire are still the live source of truth, and W7 P3's `battery.py` inherits the same fallback. A contract implemented by two readers with no data to read is not done. **CLOSED 2026-09-07, and the root cause was a MISSING TYPE, which is why this sat green for a day.** `scripts/ci-runner/gate-spec.ts:45` declared `mutex?: string[]` and there was NO `reads` field at all, so the 21 scanner gate tests were UNDECLARABLE by construction while `.ci/scripts/test/run-all.sh:275-276` asked `classify_from_lock` for exactly that claim. Added `reads?: string[]` to the spec, then wrote 25 declarations into manifest.ts -- `mutex: ['tree:repo']` on the 4 writers, `reads: ['tree:repo']` on the 21 scanners -- 25 insertions and ZERO deletions, derived FROM the existing fallback arrays rather than invented, so this moves the classification into the registry instead of restating it. Lock regenerated, 456 gates, and it now carries `tree:` on exactly 4 mutex and 21 reads entries. THE PROOF IS A WARNING THAT STOPPED: the battery no longer prints "no 'tree:' isolation declared ... falling back to the hand-maintained W/S lists", stderr is clean and it exits 0.
+- [x] W2.4 Isolation as a path-scoped contract defined once and implemented identically in `pool.ts` and `run-all.sh`; inventories re-keyed; the three text readers drained; counts fixed.  **PARTIAL, CORRECTED 2026-09-07 BY MEASURING THE LOCK.** The three text readers WERE drained and pool.ts and the battery both implement the contract, so half the box is real. But the DECLARATIONS never landed: of the 148 gate-test entries in gates.lock.json, `mutex`, `reads`, `heavy` and `weight` are populated on **ZERO**, and only `slow` is set (34 of 148). No entry anywhere in the lock carries a `reads` key at all; `mutex` exists on 12 entries repo-wide, none of them a gate test. The consequence is observable rather than theoretical: the battery is running on its LOUD FALLBACK today, printing "no 'tree:' isolation declared in scripts/ci-runner/gates.lock.json; falling back to the hand-maintained W/S lists in this file" at :303-304. So the hand-maintained lists this box exists to retire are still the live source of truth, and W7 P3's `battery.py` inherits the same fallback. A contract implemented by two readers with no data to read is not done. **CLOSED 2026-09-07, and the root cause was a MISSING TYPE, which is why this sat green for a day.** `scripts/ci-runner/gate-spec.ts:45` declared `mutex?: string[]` and there was NO `reads` field at all, so the 21 scanner gate tests were UNDECLARABLE by construction while `.ci/scripts/test/run-all.sh line 275-276 (blob 22fe1c3edde3)` asked `classify_from_lock` for exactly that claim. Added `reads?: string[]` to the spec, then wrote 25 declarations into manifest.ts -- `mutex: ['tree:repo']` on the 4 writers, `reads: ['tree:repo']` on the 21 scanners -- 25 insertions and ZERO deletions, derived FROM the existing fallback arrays rather than invented, so this moves the classification into the registry instead of restating it. Lock regenerated, 456 gates, and it now carries `tree:` on exactly 4 mutex and 21 reads entries. THE PROOF IS A WARNING THAT STOPPED: the battery no longer prints "no 'tree:' isolation declared ... falling back to the hand-maintained W/S lists", stderr is clean and it exits 0.
 The arrays remain on purpose as a fail-loud backstop -- their own comment says "no declarations yet" and "lock is broken" must not silently become "nothing needs isolating" -- but they are no longer the source of truth
 - (round 1, SUPERSEDED by a Round 2 box above) W2.5 `paths` in two tiers: statically enumerable first with `paths_origin` recorded, traced second and only where the soundness oracle covers everything. No `private/<x>/**` globs.  **PARTIAL 2026-09-06:** REVERTED to open 2026-09-06: this box was marked done and it is not. `paths_origin` DOES NOT EXIST anywhere in the tree -- grep returns nothing, and gate-spec.ts declares only `paths?: string[]`. What landed is a PROSE COMMENT convention that nothing enforces and no gate can read. Only 35 of 420 lock entries carry `paths` at all. Tier 2 remains correctly unstarted.
 - [x] W2.6 Shadow headers, CI emission, cutover procedure, and one real pilot pair cut over end to end.  **DONE 2026-09-07 (910933a57):** regions emit and own their steps; 112 hand-written duplicates removed, 10 jobs and 264 unique step names both before and after, actionlint green. The deleter guard written for one job-boundary failure found a SECOND at the other end of each span. **CORRECTED 2026-09-07 by measuring HEAD rather than believing the earlier note: this box is [x] for the REGIONS and carries a live defect. `gate:bind --write` does not emit per-step `env:` at all -- grep for `env` in scripts/gate-bind.ts returns only shebangs and test fixtures -- so the emission at 910933a57 landed steps with their env stripped. HEAD's ci-quality.yml holds 20 `env:` blocks where the correct file holds 26; the 11 missing lines sit on steps that READ them, including `check:ci-pr-task-trailers` (PR_HEAD_REF, PR_BASE_REF) and the Docker image freshness step (DOCKERHUB_TOKEN). The repair exists ONLY as uncommitted working-tree work in this shared checkout (711/340, 11 env lines added and zero removed, step-name set byte-identical at 274 = 274, check:ci-gate-bind green at 377 declared gates). An earlier session note in STATE.md said W2.6 was REVERTED; that is false and is corrected there too. main is unaffected -- it is far behind this branch -- so the defect is branch-local.
@@ -7365,8 +7365,8 @@ Record grammar: header lines within the first 10 (`Status: compacted|parked`, `F
 
 #### W12.P2 History pushed at the edit; second wave (before 2026-10-06)
 - [x] P2.1 `why_lines()` and `--plan-why <path>`, with an affirmative empty answer.  **DONE 2026-09-06:** W12 P2.1: why_lines and --plan-why in worklist.py
-- [x] P2.2 `why-on-edit.py`. **DONE at 8243c3a97, never ticked:** 322 lines, registered at .claude/settings.json:179. Every clause present: once-per-path-per-epoch (:186-193), the cap (:87, :282), silence with no edge (:24-28, :288), similar-plan block on a new plan Write (:127, :273).
-- [x] P2.3 PostCompact and the CI-red history hook both append why lines.  **DONE at 8243c3a97, never ticked; verified 2026-09-07 against the tree rather than the note:** both halves are self-labelled `W12 P2.3`, PostCompact at `.claude/hooks/stop/wl_checks.py:2348-2361` and the CI-red hook at `.claude/hooks/stop/wl_histfirst.py:173-189` (208 lines, wired at `.claude/hooks/stop/wl_checks.py:4272`).
+- [x] P2.2 `why-on-edit.py`. **DONE at 8243c3a97, never ticked:** 322 lines, registered at .claude/settings.json line 179 (blob 084759dab362). Every clause present: once-per-path-per-epoch (:186-193), the cap (:87, :282), silence with no edge (:24-28, :288), similar-plan block on a new plan Write (:127, :273).
+- [x] P2.3 PostCompact and the CI-red history hook both append why lines.  **DONE at 8243c3a97, never ticked; verified 2026-09-07 against the tree rather than the note:** both halves are self-labelled `W12 P2.3`, PostCompact at `.claude/hooks/stop/wl_checks.py:2348-2361` and the CI-red hook at `.claude/hooks/stop/wl_histfirst.py line 173-189 (blob 600c3473cbf4)` (208 lines, wired at `.claude/hooks/stop/wl_checks.py:4272`).
 - [x] P2.4 `check_plan_citations.py`. **DONE at 8243c3a97, never ticked:** 568 lines, parser-blind floor documented at :60-65 and implemented at :366, registered in all three places (package.json, manifest.ts with paths, .github/workflows/ci-quality.yml:569). It is live and catching things: it refused two of this plan's own citations today.
 - [x] P2.5 `--plan-tick` with evidence, flipping the box and updating the ledger in one run.  **DONE 2026-09-06:** W12 P2.5: --plan-tick in worklist.py
 - [x] P2.6 Pointer stamps on store compaction and on every STATE.md write. **DONE, never ticked:** both halves use the real pointer_stamp from .claude/hooks/stop/wl_planrec.py:1371. Store compaction at .claude/hooks/stop/wl_store.py:1814-1820 (dict.fromkeys, not a set, because the compactor's own file is both in `clear` and the target). STATE.md at .claude/hooks/stop/worklist.py:1521-1529, taken INSIDE the lock and BEFORE the os.replace, which is the only ordering that makes the stamp true. Both imports suppressed, so a stamp never gates a write.
@@ -7437,7 +7437,7 @@ Critical path, **RE-DERIVED 2026-09-07 and different from the original in two wa
 
 The original read: W0.2 to W1:P1 to W1:P2 to W2.0 to W2.1 to W2.3 to W2.4 to W7:P0 to W7:P1 to W7:P2 to W7:P3 to W7:P4 to W7:P5 to W11:P6.
 
-**W2.3 HAS FALLEN OFF THE PATH**, proven empirically rather than argued: 41 subjects are ported and running with NO manifest region and no manifest entries at all, under the single `check:ci-pytest` entry (`scripts/ci-runner/manifest.ts:5573`), because `testpaths` already covers `.ci/rediacc_ci/tests/gates`. So W7 P3 needs no registration and no driver involvement, and W2.3's open
+**W2.3 HAS FALLEN OFF THE PATH**, proven empirically rather than argued: 41 subjects are ported and running with NO manifest region and no manifest entries at all, under the single `check:ci-pytest` entry (`scripts/ci-runner/manifest.ts line 5573 (blob 7f1ed8fc8683)`), because `testpaths` already covers `.ci/rediacc_ci/tests/gates`. So W7 P3 needs no registration and no driver involvement, and W2.3's open
 half blocks nothing.
 
 **A PREREQUISITE IS MISSING FROM THE PATH ENTIRELY**: W7 P5's third clause is "language gate blocking for `.ci`", and that gate does not exist (see the Gaps section). It has to be BUILT before W7 P5 can be flipped.
@@ -7450,7 +7450,7 @@ Live path: **W7 P3 (107 of 148 remaining) to W7 P4 (201 unique scripts, 334 call
 
 **That gate covers Python only, and the sweep found the other two surfaces uneven:**
 
-* **Python** -- one live instance, `.ci/rediacc_ci/quality/git_op_conditionals.py:1114`,
+* **Python** -- one live instance, `.ci/rediacc_ci/quality/git_op_conditionals.py line 1114 (blob 5664acd2cde0)`,
 fixed; the gate is rc=0 so the language is clean by its own instrument.
 * **TypeScript** -- no gate, two candidates. `scripts/gates/check-guard-mutations.ts:193-199`
 already counts occurrences and throws unless exactly one, which is `plant`'s contract inlined and correct. `scripts/gates/check-backup-bucket-conformance.ts:149` had no check; a vanished needle there fails LOUDLY rather than passing, because the assertion's polarity happens to run the other way, but it fails with a message about the wrong thing. Given the same occurrence check.

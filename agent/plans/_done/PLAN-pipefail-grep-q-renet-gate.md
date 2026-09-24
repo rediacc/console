@@ -69,7 +69,7 @@ into `grep -q`. That is a 20-line second detector with a real coupling behind it
 
 **CORRECTION (2026-09-24, re-measured before Phase 4 was built): the coupling above is wrong, and so was the Phase 4 scope it produced.** `private/renet/pkg/functions/executor_ssh.go:235` calls `ExecuteCommandStreaming` (`private/renet/pkg/ssh/manager.go:777`), which runs `session.Start(command)` directly; its own doc comment says "not via bash -s stdin", and it never reaches `buildScript`.
 `buildSSHCommand` (`private/renet/pkg/functions/executor_ssh.go:369`) wraps shell-needing commands in `/bin/sh -c`, which sets no pipefail either. The only caller of `buildScript` is `SendShellCommands` (`private/renet/pkg/ssh/streaming.go:78`, via `:137`), and its only callers are `private/renet/pkg/ssh/keys.go:51`, `:94`, `:123` and `:153`.
-Those scripts hold two `grep -q` sites (`keys.go:117`, `keys.go:211`), both reading a file directly with no pipe, so the class is still not live in Go today. A detector scoped to `pkg/functions/**` would police code that cannot race and miss the code that can.
+Those scripts hold two `grep -q` sites (`private/renet/pkg/ssh/keys.go:117`, `private/renet/pkg/ssh/keys.go:211`), both reading a file directly with no pipe, so the class is still not live in Go today. A detector scoped to `pkg/functions/**` would police code that cannot race and miss the code that can.
 The built detector is therefore scoped to Go files that name an entry point in `PIPEFAIL_GO_ENTRYPOINTS` (`SendShellCommands`) or set pipefail inside a string literal, with a floor that reds if the entry point disappears.
 
 ## 4. Decision: a standalone bash gate in renet, not a Go check and not a Python import
@@ -258,13 +258,13 @@ Phase 4 -- the Go-embedded-bash detector (coupling verified in section 3)
       path proven to run under pipefail -- `private/renet/pkg/functions/executor_ssh.go:235`
       into `buildScript` at `private/renet/pkg/ssh/streaming.go:183`.
 - [x] Give it its own planted-defect control (a fixture Go file carrying the shape in a raw
-    (ticked) 2026-09-24T07:42:36Z by d778be9d: planted cat pipe grep -q at pkg/ssh/keys.go:117 turns the gate red with exit 1; controls G1-G6 plus 3 fail-closed floors; test_gate_renet_pipefail_grep_q.py 22 passed
+    (ticked) 2026-09-24T07:42:36Z by d778be9d: planted cat pipe grep -q at private/renet/pkg/ssh/keys.go:117 turns the gate red with exit 1; controls G1-G6 plus 3 fail-closed floors; test_gate_renet_pipefail_grep_q.py 22 passed
       string must be FLAGGED; the same line in a `//` comment must be silent) and its own
       corpus floor (zero Go files scanned -> fail). Today it finds zero sites, and the
       control is the only thing that makes that zero mean anything.
 
 Phase 4 state (2026-09-24): BUILT AND VERIFIED, NOT YET APPLIED. The writer sub-agent was forbidden to edit `private/renet`, so both boxes above stay open until the owner applies two patches, verified against a full mirror of the renet tree (1126 tracked files) as a scratch git index: the renet gate (`go_scan_files`, `go_lex`, `go_is_pipefail_bearing`, `go_offenders`, six Go controls G1-G6, and three floors: zero Go files, zero entry-point files, zero pipefail-bearing files), and the console test (`test_gate_renet_pipefail_grep_q.py` section 3, seven cases).
-Scope is per section 3's CORRECTION, not the box text's `pkg/functions/**`. Measured: 998 Go files enumerated, 19 lexed, 2 pipefail-bearing, 0 hits, exit 0. A plant at `pkg/ssh/keys.go:117` reds with exit 1 naming that line; the same shape in `pkg/functions/commands/backup.go` stays silent. Inverting the detector reds G1/G4/G5 (blind) and G2/G3/G6 (over-broad).
+Scope is per section 3's CORRECTION, not the box text's `pkg/functions/**`. Measured: 998 Go files enumerated, 19 lexed, 2 pipefail-bearing, 0 hits, exit 0. A plant at `private/renet/pkg/ssh/keys.go:117` reds with exit 1 naming that line; the same shape in `pkg/functions/commands/backup.go` stays silent. Inverting the detector reds G1/G4/G5 (blind) and G2/G3/G6 (over-broad).
 
 Commit / PR
 

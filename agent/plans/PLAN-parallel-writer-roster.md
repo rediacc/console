@@ -20,21 +20,21 @@ Every fact below was read from the working tree or from this session's live harn
 - The task id matches the transcript file name exactly: `~/.claude/projects/-home-developer-console/<sid>/subagents/agent-<id>.{jsonl,meta.json}`. `wl_report.running_agent_ids` (`.claude/hooks/stop/wl_report.py:591`) already relies on this.
 - Each task's `tasks/<id>.output` is a symlink to that transcript, so `bg_output_facts` (`.claude/hooks/stop/wl_liveness.py:168`) already reads transcript freshness for subagents.
 
-**F2. The liveness code for agents only recognises the old task kind.** `live_teammate_transcripts` counts only metas with `taskKind == "in_process_teammate"` (`wl_liveness.py:293`). `prune_background` only looks at `type == "teammate"` (`wl_liveness.py:534`).
+**F2. The liveness code for agents only recognises the old task kind.** `live_teammate_transcripts` counts only metas with `taskKind == "in_process_teammate"` (`.claude/hooks/stop/wl_liveness.py:293`). `prune_background` only looks at `type == "teammate"` (`.claude/hooks/stop/wl_liveness.py:534`).
 
 - None of this session's 305 subagent metas carries `taskKind`. They carry `agentType`, `spawnDepth`, `parentAgentId`, `requestShape` and `model`.
 - So for the harness as it runs today, the "teammate count" is always 0 and the reaping step does nothing for subagents.
-- This matters for section 1.3 (see Coordination). Its box widens the predicate "using the teammate count from `wl_liveness.py:318`", and that count is 0 for every `type: "subagent"` task.
+- This matters for section 1.3 (see Coordination). Its box widens the predicate "using the teammate count from `.claude/hooks/stop/wl_liveness.py:318`", and that count is 0 for every `type: "subagent"` task.
 
 **F3. The session was honest, and the hook could not tell.** The store `agent/worklist/d778be9d.jsonl` folds to 38 `[>]` items, 11 `[?]` items and no plain `[ ]` items.
 
 - 36 of the 38 leases name an id that is in the live event.
-- 30 or more of those carry `worker_verified: false` even though the id is live. `--lease` checks the id against the previous stop's snapshot (`worklist.py:1030-1047`), and the lease is taken seconds after the spawn, before any snapshot has seen it. **Checking at lease time is structurally blind for a worker that was just spawned.** Any honesty check has to verify at stop time, against the current event.
+- 30 or more of those carry `worker_verified: false` even though the id is live. `--lease` checks the id against the previous stop's snapshot (`.claude/hooks/stop/worklist.py:1030-1047`), and the lease is taken seconds after the spawn, before any snapshot has seen it. **Checking at lease time is structurally blind for a worker that was just spawned.** Any honesty check has to verify at stop time, against the current event.
 
 **F4. The "dead worker" push was wrong, and the cause is missing parent/child tracking.**
 
 - Agent `ac4d98abd37e1deb3` (general-purpose, depth 2, "Port devbox.sh remainder") is a child of `a7bd52e4028757e77`. The link exists only in the child's meta `parentAgentId`. The Stop event lists the child with no parent marker.
-- When a parent that holds leases (items `6f60b65e`, `cfbcfa7a`, `e44fe9c0` are on `a7bd52e4028757e77`) finishes while its child keeps working, the ladder computes `gone = wid not in now_bg and worker_verified` (`wl_liveness.py:663`). That fires `ladder-gone` (`wl_checks.py:4006`) with no knowledge of the child.
+- When a parent that holds leases (items `6f60b65e`, `cfbcfa7a`, `e44fe9c0` are on `a7bd52e4028757e77`) finishes while its child keeps working, the ladder computes `gone = wid not in now_bg and worker_verified` (`.claude/hooks/stop/wl_liveness.py:663`). That fires `ladder-gone` (`.claude/hooks/stop/wl_checks.py:4006`) with no knowledge of the child.
 
 **F5. One lease really was dead, and nothing named it cleanly.** Item `8ea2de80` is leased to `ad404a11224579535`. That is a finished haiku "Survey plans citing retired .sh files" whose transcript last moved at 06:31Z and which is absent from the event. It is a `general-purpose` agent doing read-only work. So the harness agent type alone does not settle whether an agent writes.
 
@@ -44,21 +44,21 @@ Every fact below was read from the working tree or from this session's live harn
 - **Custom agent types are mostly writers.** Of the custom types, only `test-advisor` omits Edit and Write in its frontmatter `tools:` line (`.claude/agents/test-advisor.md`).
 - **Many agents do write.** 169 of 305 transcripts contain an edit tool call.
 
-**F7. Workers already send status that the lead cannot fake.** SendMessage calls with `"to":"main"` appear in worker transcripts (`agent-a149262d8b6a1601f.jsonl`, 16 of them). `harvest_transcript` (`wl_report.py:679`) already parses them, with timestamps.
+**F7. Workers already send status that the lead cannot fake.** SendMessage calls with `"to":"main"` appear in worker transcripts (`agent-a149262d8b6a1601f.jsonl`, 16 of them). `harvest_transcript` (`.claude/hooks/stop/wl_report.py:679`) already parses them, with timestamps.
 
 **F8. The sequence that pushed on every stop.**
 
-1. `open-items` (`wl_checks.py:2873`, rotating, highest tier) fires whenever any item is unleased, or a lease expires on a worker the harness no longer lists.
+1. `open-items` (`.claude/hooks/stop/wl_checks.py:2873`, rotating, highest tier) fires whenever any item is unleased, or a lease expires on a worker the harness no longer lists.
 2. `ladder-gone` fires, per F4.
-3. `agent-state` goes stale (`wl_checks.py:3573`), because the structural world signature moves each time a worker ticks an item.
-4. `bg-report` fires every `BG_REPORT_MIN` (15 minutes) in a pure wait (`wl_checks.py:2650`).
+3. `agent-state` goes stale (`.claude/hooks/stop/wl_checks.py:3573`), because the structural world signature moves each time a worker ticks an item.
+4. `bg-report` fires every `BG_REPORT_MIN` (15 minutes) in a pure wait (`.claude/hooks/stop/wl_checks.py:2650`).
 5. `stuck` fires when the lead itself moves nothing, even though its workers are moving things.
 
 None of these can ask "is every open item leased to a verified live writer?", because nothing computes that.
 
-**F9. Every current liveness threshold can be overridden from the environment.** Examples: `LADDER_*_MIN` (`wl_liveness.py:45-47`), `BG_STALE_MIN`/`BG_REPORT_MIN` (`:200-201`), `TEAMMATE_FRESH_MIN` (`:258`), `WORKER_IDLE_BLOCK_MIN` (`:313`) and `ROSTER_MAX` (`:578`). All of them are registered in `.ci/policy/worklist-env-registry.json`, which only requires that a variable be registered, not that it be absent.
+**F9. Every current liveness threshold can be overridden from the environment.** Examples: `LADDER_*_MIN` (`.claude/hooks/stop/wl_liveness.py:45-47`), `BG_STALE_MIN`/`BG_REPORT_MIN` (`:200-201`), `TEAMMATE_FRESH_MIN` (`:258`), `WORKER_IDLE_BLOCK_MIN` (`:313`) and `ROSTER_MAX` (`:578`). All of them are registered in `.ci/policy/worklist-env-registry.json`, which only requires that a variable be registered, not that it be absent.
 
-**F10. The spawn cannot be intercepted today.** `.claude/settings.json` has PreToolUse matchers only for `Bash`, the Edit family and `AskUserQuestion`. There is none for `Agent` or `Task`. The settings file is generated from `lifecycle.PATTERNS` (`.claude/rediacc_hooks/lifecycle.py:84`), and `test_settings_collapse.py:184` checks that the two agree.
+**F10. The spawn cannot be intercepted today.** `.claude/settings.json` has PreToolUse matchers only for `Bash`, the Edit family and `AskUserQuestion`. There is none for `Agent` or `Task`. The settings file is generated from `lifecycle.PATTERNS` (`.claude/rediacc_hooks/lifecycle.py:84`), and `.claude/rediacc_hooks/tests/test_settings_collapse.py:184` checks that the two agree.
 
 **F11. The cap is written down in six places, and one of them is a gate.**
 
@@ -87,7 +87,7 @@ The three sources are the Stop event, the subagent metas and transcripts, and th
 | Term | Definition (all computed at stop time) |
 |---|---|
 | **Subagent** | An event task with `type == "subagent"`, joined by id to `subagents/agent-<id>.meta.json`. |
-| **LIVE(id)** | The id is in the event's running list (the harness is authoritative for existence, as the honesty rule at `wl_liveness.py:20` already requires), **and** its transcript is not proven finished (`_record_is_idle` on the last record, `wl_liveness.py:383`, with quiet ≥ `IDLE_EDGE_EPSILON_S`). The `--reap` list is **ignored** for any subagent whose transcript is not proven finished. Otherwise reaping a live writer would hide it from the cap. |
+| **LIVE(id)** | The id is in the event's running list (the harness is authoritative for existence, as the honesty rule at `.claude/hooks/stop/wl_liveness.py:20` already requires), **and** its transcript is not proven finished (`_record_is_idle` on the last record, `.claude/hooks/stop/wl_liveness.py:383`, with quiet ≥ `IDLE_EDGE_EPSILON_S`). The `--reap` list is **ignored** for any subagent whose transcript is not proven finished. Otherwise reaping a live writer would hide it from the cap. |
 | **Lineage** | The transitive `parentAgentId` chain from the metas. `descendants(id)` and `ancestors(id)` are computed once per stop from the session's `subagents/` directory. |
 | **Covered lease** | A `[>]` item of this session with `worker:<id>`, where LIVE holds for `id` or any of its descendants. This fixes F4. |
 | **Leased-dead** | A `[>]` item of this session whose worker is a known subagent (a meta exists) and is not covered. This catches F5. |
@@ -111,33 +111,33 @@ The three sources are the Stop event, the subagent metas and transcripts, and th
 
 **What each outcome does inside `run_stop`**
 
-1. **Defects add violations in the always tier.** Each defect is added with `vadd(key, True, text)`, which means it is never rotated away (`wl_checks.py:4327`) and defeats the cadence pause (guard A, `wl_checks.py:4207`). The keys:
+1. **Defects add violations in the always tier.** Each defect is added with `vadd(key, True, text)`, which means it is never rotated away (`.claude/hooks/stop/wl_checks.py:4327`) and defeats the cadence pause (guard A, `.claude/hooks/stop/wl_checks.py:4207`). The keys:
    - `roster-cap`, in the "someone else is waiting" tier (the operator's order). The text is the exact writer roster: id, agent type, description, depth/parent, age, and leased items. The remedy is `TaskStop <newest excess ids>`, then release or re-lease their items.
    - `roster-status`, same tier. Each due worker is named with its status age and the source of its last status, plus the command `worklist.py --status <me> all`.
    - `roster-silent`, same tier. The transcript has not grown for ≥ `STATUS_PING_MIN` and the last record is not an in-flight tool call. The remedy is `SendMessage` to `<id>`, or `TaskStop`, then release or re-lease.
    - `roster-unleased`, in the integrity tier. Remedy: `--lease <me> <item> +N worker:<id>`.
    - `roster-dead`, integrity tier. Remedy: tick with evidence, `--lease <id> release`, or re-lease.
 
-   Every remedy is something the session can do on its own, so the "every rung's exit is a solo action" rule (`wl_liveness.py:24-27`) still holds and no deadlock is possible.
+   Every remedy is something the session can do on its own, so the "every rung's exit is a solo action" rule (`.claude/hooks/stop/wl_liveness.py:24-27`) still holds and no deadlock is possible.
 
-2. **HONEST suppresses the push, in one place.** Just before the cadence gate (the `always_now` computation above `wl_checks.py:4207`), drop from `violations` every key in `ROSTER_SUPPRESSES`:
+2. **HONEST suppresses the push, in one place.** Just before the cadence gate (the `always_now` computation above `.claude/hooks/stop/wl_checks.py:4207`), drop from `violations` every key in `ROSTER_SUPPRESSES`:
    - `bg-report`, `ladder-investigate`, `ladder-resolve`, `ladder-gone` and `ladder-idle`, but only for subjects the roster owns
    - `stuck`, `idle-stall` and `solo-grind`
    - `agent-state`, only when its verdict is `stale` (`missing`, `thin`, `bloated`, `aimless` and `waitled` still fire)
 
-   Nothing else is dropped. Requests, CI red, pr-finish, the judge tier and integrity checks all still block. If nothing is left after the drop, the stop is **allowed** with a `systemMessage` roster summary: "ROSTER HONEST: N writer(s)/4, M reader(s), next status due HH:MMZ", one line per worker, capped by the existing `ROSTER_MAX` display budget. That replaces today's `What the OS could verify about your background workers` block (`worklist_messages.py:1366/1379/1391`) for subagent rows.
+   Nothing else is dropped. Requests, CI red, pr-finish, the judge tier and integrity checks all still block. If nothing is left after the drop, the stop is **allowed** with a `systemMessage` roster summary: "ROSTER HONEST: N writer(s)/4, M reader(s), next status due HH:MMZ", one line per worker, capped by the existing `ROSTER_MAX` display budget. That replaces today's `What the OS could verify about your background workers` block (`.claude/hooks/stop/worklist_messages.py:1366/1379/1391`) for subagent rows.
 
 3. **The 45/90/120 ladder is replaced for subagent leases and kept for everything else.** `wl_liveness.ladder` (`:632`) skips any `item:` subject whose worker is a known subagent id. For those subjects the roster's 20-minute ping and lineage-aware dead check take over. The ladder keeps shell-worker leases, teammates leased by name, and `task:*` harness tasks, whose clocks the roster cannot read.
    - Nesting was rejected. Nested, the same item would get a report at 45 minutes, a block at 90 and another at 120 on top of the 20-minute ping. The ladder's `gone` branch would also keep producing the false death from F4.
-   - `poll_fast_path` (`wl_checks.py:1164`, rung forfeit at `:1247`) skips the same subjects and gains a roster forfeit: any cap, status, silent or dead defect returns `False`. **Without this, the silent poll path would be an escape hatch.**
+   - `poll_fast_path` (`.claude/hooks/stop/wl_checks.py:1164`, rung forfeit at `:1247`) skips the same subjects and gains a roster forfeit: any cap, status, silent or dead defect returns `False`. **Without this, the silent poll path would be an escape hatch.**
 
-4. **`bg-report` fits on top of section 1.3.** After 1.3 lands, the suppression test at `wl_checks.py:2650` becomes `if not (_only_waiters or <1.3's automatic-liveness predicate> or roster_covers_all(live_bg)) or _bg_actionable`. `roster_covers_all` is true when every live background task is a roster-verified subagent or a confirmed waiter. Shell tasks keep the 15-minute check-in, and subagents move to the 20-minute status clock. The clock is restamped on both branches, as 1.3's box requires.
+4. **`bg-report` fits on top of section 1.3.** After 1.3 lands, the suppression test at `.claude/hooks/stop/wl_checks.py:2650` becomes `if not (_only_waiters or <1.3's automatic-liveness predicate> or roster_covers_all(live_bg)) or _bg_actionable`. `roster_covers_all` is true when every live background task is a roster-verified subagent or a confirmed waiter. Shell tasks keep the 15-minute check-in, and subagents move to the 20-minute status clock. The clock is restamped on both branches, as 1.3's box requires.
 
 **The new verb: `worklist.py --status <me> [<id>|all]`.** It is the only way the lead answers a ping, and it is hook code reading the worker's transcript, not the lead typing a claim.
 
 - **Output:** agent type, description, depth/parent, live children, minutes since the transcript last grew, the last assistant text (at most 600 characters), the last tool call and its target, and the edit-tool count.
 - **Record:** it appends `{"ev":"status","worker":id,"at":now,"size":…,"mtime":…,"inflight":<tool or "">,"by":me}`.
-- **When it resets the clock:** only if the transcript grew since the previous status event, **or** the last record is an in-flight tool call. The in-flight case covers a worker legitimately sitting in a 25-minute gate run, which is F7's lesson from `wl_report.py:59`.
+- **When it resets the clock:** only if the transcript grew since the previous status event, **or** the last record is an in-flight tool call. The in-flight case covers a worker legitimately sitting in a 25-minute gate run, which is F7's lesson from `.claude/hooks/stop/wl_report.py:59`.
 - **Otherwise:** it records `silent: true`, does not reset the clock, and the next stop raises `roster-silent`.
 - `all` answers every due worker in one command, so the operator's ping costs one tool call per 20 minutes.
 
@@ -167,7 +167,7 @@ The three sources are the Stop event, the subagent metas and transcripts, and th
 - **Gate:** a `"sealed_modules"` map is added to `.ci/policy/worklist-env-registry.json`, keyed by path with a `why` for each. `rediacc_ci/quality/worklist_env_registry.py` treats *any* environment read inside a sealed module as a finding that registering the variable cannot clear, with a selftest that plants one. This turns "don't add a knob" from a comment into CI red.
 - **Belt:** an AST test in the new pytest module checks that the constants are `== 4` and `== 20`.
 - The roster keys are always-tier, so `WORKLIST_CADENCE`, `WORKLIST_FOCUS=off` (which renders every violation) and rotation cannot hide them.
-- The quiet-wake path (`wl_checks.py:4163`) only stands down when `bg-report` is the *only* violation, so roster keys defeat it.
+- The quiet-wake path (`.claude/hooks/stop/wl_checks.py:4163`) only stands down when `bg-report` is the *only* violation, so roster keys defeat it.
 - The poll fast path forfeits on them.
 - `--reap` cannot remove a writer whose transcript is not proven finished.
 
@@ -190,24 +190,24 @@ The three sources are the Stop event, the subagent metas and transcripts, and th
 - [x] In `wl_store.py`, fold a new `status` event kind beside the `lease` fold at `.claude/hooks/stop/wl_store.py:962`, and add an `S.status_event()` writer next to `lease_item` at `:1189`.
     (ticked) 2026-09-24T08:59:00Z by d778be9d: .claude/hooks/stop/wl_store.py:917 status fold arm, :1232 status_event writer; .claude/rediacc_hooks/tests/test_wl_roster.py:542 test_s3 and :559 test_s3b pass (pytest exit 0)
 - [x] Add the `--status <me> [<id>|all]` verb to `.claude/hooks/stop/worklist.py` beside `--lease` (`:979`). It records a reset only when the transcript grew or a tool call is in flight, and records `silent` otherwise. Add the usage text to `worklist_messages.CLI_ITEM_USAGE`.
-    (ticked) 2026-09-24T08:59:00Z by d778be9d: .claude/hooks/stop/worklist.py:902 --status branch; .claude/rediacc_hooks/tests/test_wl_roster.py:559 test_s3b passes (pytest exit 0); test_wl_identity.py:492 row passes 184/185; live run on agent a15d3a8f exit 0
+    (ticked) 2026-09-24T08:59:00Z by d778be9d: .claude/hooks/stop/worklist.py:902 --status branch; .claude/rediacc_hooks/tests/test_wl_roster.py:559 test_s3b passes (pytest exit 0); .claude/rediacc_hooks/tests/test_wl_identity.py:492 row passes 184/185; live run on agent a15d3a8f exit 0
 - [x] Add the templates `V_ROSTER_CAP`, `V_ROSTER_STATUS`, `V_ROSTER_SILENT`, `V_ROSTER_UNLEASED`, `V_ROSTER_DEAD` and `N_ROSTER_HONEST` to `.claude/hooks/stop/worklist_messages.py`. Each must name the exact ids and commands.
-    (ticked) 2026-09-24T08:59:00Z by d778be9d: .claude/hooks/stop/worklist_messages.py:2682 V_ROSTER_CAP onward; test_wl_poll_and_waiting.py:624 test_117 arity passes (pytest exit 0)
+    (ticked) 2026-09-24T08:59:00Z by d778be9d: .claude/hooks/stop/worklist_messages.py line 2682 (blob d04fe08cdd5d) V_ROSTER_CAP onward; .claude/rediacc_hooks/tests/test_wl_poll_and_waiting.py line 624 (blob 644924843f5f) test_117 arity passes (pytest exit 0)
 - [x] Wire `wl_roster.roster()` into `run_stop` right after `worker_facts` and `ladder` (`.claude/hooks/stop/wl_checks.py:2708-2710`), with the defect `vadd`s in the always tier. Register the five keys in `PRIORITY_LADDER` (`:2028`) and in `ALWAYS_KEYS` in `.claude/hooks/stop/test-always-tier.py:23`.
-    (ticked) 2026-09-24T08:59:00Z by d778be9d: .claude/hooks/stop/wl_checks.py:2386 roster call, .claude/hooks/stop/wl_checks.py:2843 roster vadds, ladder at .claude/hooks/stop/wl_checks.py:2093; test-always-tier.py:54 ALWAYS_KEYS, test-always-tier.py exit 0; .claude/rediacc_hooks/tests/test_wl_roster.py:497 test_s2 fails when the cap vadd is removed
-- [x] Add the HONEST suppression and summary allow in `run_stop`: filter `ROSTER_SUPPRESSES` out of `violations` immediately before the cadence gate (`wl_checks.py:4207`), dropping `agent-state` only for the `stale` verdict, and emit `N_ROSTER_HONEST` when nothing remains.
+    (ticked) 2026-09-24T08:59:00Z by d778be9d: .claude/hooks/stop/wl_checks.py:2386 roster call, .claude/hooks/stop/wl_checks.py:2843 roster vadds, ladder at .claude/hooks/stop/wl_checks.py:2093; .claude/hooks/stop/test-always-tier.py:54 ALWAYS_KEYS, test-always-tier.py exit 0; .claude/rediacc_hooks/tests/test_wl_roster.py:497 test_s2 fails when the cap vadd is removed
+- [x] Add the HONEST suppression and summary allow in `run_stop`: filter `ROSTER_SUPPRESSES` out of `violations` immediately before the cadence gate (`.claude/hooks/stop/wl_checks.py:4207`), dropping `agent-state` only for the `stale` verdict, and emit `N_ROSTER_HONEST` when nothing remains.
     (ticked) 2026-09-24T08:59:01Z by d778be9d: .claude/hooks/stop/wl_checks.py:4290 HONEST block; .claude/rediacc_hooks/tests/test_wl_roster.py:481 test_s1 passes (pytest exit 0) and fails when the HONEST branch is disabled
-- [x] Make `wl_liveness.ladder` (`.claude/hooks/stop/wl_liveness.py:632`) skip `item:` subjects whose worker is a known subagent id, and make `poll_fast_path`'s rung forfeit (`wl_checks.py:1247`) skip the same subjects.
+- [x] Make `wl_liveness.ladder` (`.claude/hooks/stop/wl_liveness.py:632`) skip `item:` subjects whose worker is a known subagent id, and make `poll_fast_path`'s rung forfeit (`.claude/hooks/stop/wl_checks.py:1247`) skip the same subjects.
     (ticked) 2026-09-24T08:59:01Z by d778be9d: .claude/hooks/stop/wl_liveness.py:699 skip, .claude/hooks/stop/wl_checks.py:1265 poll skip; .claude/rediacc_hooks/tests/test_wl_roster.py:601 test_s5 passes (pytest exit 0) and fails when the ladder skip is removed
-- [x] Add a roster forfeit to `poll_fast_path` (`wl_checks.py:1164`) that returns False on any cap, status, silent or dead defect.
+- [x] Add a roster forfeit to `poll_fast_path` (`.claude/hooks/stop/wl_checks.py:1164`) that returns False on any cap, status, silent or dead defect.
     (ticked) 2026-09-24T08:59:01Z by d778be9d: .claude/hooks/stop/wl_checks.py:1224 roster forfeit; .claude/rediacc_hooks/tests/test_wl_roster.py:579 test_s4 passes (pytest exit 0) and fails when the forfeit is disabled
-- [x] After 1.3 lands, extend the `bg-report` suppression at `wl_checks.py:2650` with `roster_covers_all(live_bg)`, keeping 1.3's restamp on both branches.
-    (ticked) 2026-09-24T08:59:01Z by d778be9d: .claude/hooks/stop/wl_checks.py:2695 roster_covers_all term; test_wl_background_waits.py:1189 test_13h passes (pytest exit 0), it failed while roster_covers_all used rows instead of verified
-- [x] Add a `pre-agent` pattern (matcher `^(Agent|Task)$`) to `.claude/rediacc_hooks/lifecycle.py:84` and a guard at `.claude/rediacc_hooks/guards/agent_cap.py` that refuses a writer-class spawn at `WRITER_CAP`. Regenerate `.claude/settings.json` from `lifecycle.hooks_block()` and keep `test_settings_collapse.py:184` green.
+- [x] After 1.3 lands, extend the `bg-report` suppression at `.claude/hooks/stop/wl_checks.py:2650` with `roster_covers_all(live_bg)`, keeping 1.3's restamp on both branches.
+    (ticked) 2026-09-24T08:59:01Z by d778be9d: .claude/hooks/stop/wl_checks.py:2695 roster_covers_all term; .claude/rediacc_hooks/tests/test_wl_background_waits.py line 1189 (blob 908418654f10) test_13h passes (pytest exit 0), it failed while roster_covers_all used rows instead of verified
+- [x] Add a `pre-agent` pattern (matcher `^(Agent|Task)$`) to `.claude/rediacc_hooks/lifecycle.py:84` and a guard at `.claude/rediacc_hooks/guards/agent_cap.py` that refuses a writer-class spawn at `WRITER_CAP`. Regenerate `.claude/settings.json` from `lifecycle.hooks_block()` and keep `.claude/rediacc_hooks/tests/test_settings_collapse.py:184` green.
     (ticked) 2026-09-24T08:59:01Z by d778be9d: .claude/rediacc_hooks/lifecycle.py:120 pre-agent; .claude/rediacc_hooks/guards/block_agent_cap.py:77 run; test_settings_collapse.py passes (pytest exit 0); live chain-head pre-agent exit 2 on a writer at cap, exit 0 on Explore
 - [x] Add `sealed_modules` to `.ci/policy/worklist-env-registry.json` and enforce it in `.ci/rediacc_ci/quality/worklist_env_registry.py`: any environment read in a sealed module is a finding, with a selftest plant.
     (ticked) 2026-09-24T08:59:02Z by d778be9d: .ci/rediacc_ci/quality/worklist_env_registry.py:208 check_sealed, .ci/policy/worklist-env-registry.json:9 sealed_modules; --selftest exit 0 with 7 new PLANT controls; real-tree plant in wl_roster.py exit 1
-- [x] CONTROL, in the new `.claude/rediacc_hooks/tests/test_wl_roster.py`, with a `mk_sub(wl, aid, agent_type, age_min, parent=None, last="tool_use", edits=False)` helper modelled on `mk_mate` (`test_wl_background_waits.py:655`, using `CLAUDE_CONFIG_DIR`) and `type: "subagent"` rows in `wl.bg`. Each case is listed below.
+- [x] CONTROL, in the new `.claude/rediacc_hooks/tests/test_wl_roster.py`, with a `mk_sub(wl, aid, agent_type, age_min, parent=None, last="tool_use", edits=False)` helper modelled on `mk_mate` (`.claude/rediacc_hooks/tests/test_wl_background_waits.py line 655 (blob 908418654f10)`, using `CLAUDE_CONFIG_DIR`) and `type: "subagent"` rows in `wl.bg`. Each case is listed below.
     (ticked) 2026-09-24T08:59:02Z by d778be9d: .claude/rediacc_hooks/tests/test_wl_roster.py:58 mk_sub; 25 cases pass (pytest exit 0); 13 planted defects across wl_roster, wl_checks and wl_liveness each turned at least one case red
 - [x] Control, honest roster: 3 writers and 1 Plan agent, every item leased, statuses 5 minutes old → decision allow, "ROSTER HONEST" present, no `bg-report` or `ladder` text. Positive control in the same test: unleasing one item makes it block.
     (ticked) 2026-09-24T08:59:02Z by d778be9d: .claude/rediacc_hooks/tests/test_wl_roster.py:242 test_r1 and .claude/rediacc_hooks/tests/test_wl_roster.py:481 test_s1 pass (pytest exit 0), positive control inside each
@@ -227,7 +227,7 @@ The three sources are the Stop event, the subagent metas and transcripts, and th
     (ticked) 2026-09-24T08:59:04Z by d778be9d: .claude/rediacc_hooks/guards/test-block_agent_cap.py:105 CASES, exit 0 with 13 cases and 4 refusals; exit 1 with the comparison planted as >
 - [x] Docs: rewrite the writer bullet at `CLAUDE.md:131` to "at most 4 at a time, enforced by the Stop hook roster (`wl_roster.WRITER_CAP`) and the pre-agent guard; lease every writer; read-only work goes to Plan/Explore, which do not count". Change "max 2" to "max 4" at `CLAUDE.md:37`, and update the pinned sentence at `.ci/scripts/quality/check_hint_corpus.py:209` in the same commit.
     (ticked) 2026-09-24T08:59:04Z by d778be9d: CLAUDE.md:37 max 4, CLAUDE.md:131 at most 4 enforced by wl_roster.WRITER_CAP and the pre-agent guard; .ci/scripts/quality/check_hint_corpus.py:210; check_hint_corpus.py exit 0; stale-cap grep 0 matches
-- [x] Docs: update `worklist_messages.py:1739` and `:1781` and `.claude/commands/handoff.md:69` to "at most 4". Confirm `docs/agent-reference/model-routing.md` has no copy of the cap (re-run the grep). Add the incident to `docs/agent-reference/TRAPS.md` beside the ListAgents trap at `:260`.
+- [x] Docs: update `.claude/hooks/stop/worklist_messages.py:1739` and `:1781` and `.claude/commands/handoff.md:69` to "at most 4". Confirm `docs/agent-reference/model-routing.md` has no copy of the cap (re-run the grep). Add the incident to `docs/agent-reference/TRAPS.md` beside the ListAgents trap at `:260`.
     (ticked) 2026-09-24T08:59:04Z by d778be9d: .claude/hooks/stop/worklist_messages.py:1740, .claude/commands/handoff.md:69, docs/agent-reference/TRAPS.md:273; check_trap_registry.py exit 0 at floor 97
 
 ## Critical files, with anchors verified on the working tree 2026-09-24
@@ -267,7 +267,7 @@ The last command needs a read-only `explain_lastevent(prefix)` helper in `wl_ros
 ## Coordination with the section-1.3 writer (`a305ee07a5e707b64`, items `cb7cc1db` and `507de6b3`) and the defer-settle writer (`a2b593dbefc625beb`)
 
 **Must wait for 1.3 to land.** These touch the same lines or the same fixture file:
-- The `bg-report` suppression box at `wl_checks.py:2650`. 1.3 widens that exact predicate, and this plan adds a third term to it.
+- The `bg-report` suppression box at `.claude/hooks/stop/wl_checks.py:2650`. 1.3 widens that exact predicate, and this plan adds a third term to it.
 - Any edit to `wl_liveness.live_teammate_transcripts` or `prune_background` (none is planned, but see the message below).
 - New test functions in `test_wl_background_waits.py`. 1.3's control goes there, which is why this plan's controls live in a new module, `test_wl_roster.py`.
 
@@ -289,7 +289,7 @@ Both writers edit `wl_checks.py` without committing, and a third writer in the s
 
 The `wl_liveness.ladder` skip box touches only `wl_liveness.py`, which 1.3's box does not edit (its box edits `wl_checks.py`), so it can also start now. Recheck with `git diff -- .claude/hooks/stop/wl_liveness.py` before editing.
 
-**Tell the 1.3 writer now (F2).** Its box says to widen the predicate "using the teammate count from `wl_liveness.py:318`". That count filters `taskKind == "in_process_teammate"`, which none of this harness's `type: "subagent"` metas carry (0 of 305). So the widened predicate would stay false for every subagent in today's event. Its control should plant `type: "subagent"` rows and metas with no `taskKind`, or it proves only the old teammate shape.
+**Tell the 1.3 writer now (F2).** Its box says to widen the predicate "using the teammate count from `.claude/hooks/stop/wl_liveness.py:318`". That count filters `taskKind == "in_process_teammate"`, which none of this harness's `type: "subagent"` metas carry (0 of 305). So the widened predicate would stay false for every subagent in today's event. Its control should plant `type: "subagent"` rows and metas with no `taskKind`, or it proves only the old teammate shape.
 
 ### Critical Files for Implementation
 - /home/developer/console/.claude/hooks/stop/wl_checks.py

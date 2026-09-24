@@ -240,7 +240,7 @@ Same contract as the model's `controls_fired()` (`.ci/scripts/quality/check_agen
 
 A helper writes one `HINTS.md`-shaped fixture to a temp path and returns `(entries, parse_errors)` via `hints_mod.load_corpus(path)`, exactly mirroring the model's `judge()` closure at `.ci/scripts/quality/check_agent_hint_liveness.py:238-248`.
 
-**The healthy fixture** (used for CONTROL 0 and as the base every plant mutates one property of): 9 entries (one above `MIN_HINTS`, so a plant that trims one entry to breach the floor is a single deletion, not a full rewrite), unique kebab-case ids, headings between 40 and 150 characters with no pronoun, and `Source:` pointers built only from things already true of this repository so they resolve without needing a second fixture tree -- `file:CLAUDE.md:1` (line 1 of `CLAUDE.md` will exist as long as the file is non-empty, which `check:ci-plan-*`-class gates already assume elsewhere) and `trap:check-cannot-fail` (stable, cited by the real corpus itself).
+**The healthy fixture** (used for CONTROL 0 and as the base every plant mutates one property of): 9 entries (one above `MIN_HINTS`, so a plant that trims one entry to breach the floor is a single deletion, not a full rewrite), unique kebab-case ids, headings between 40 and 150 characters with no pronoun, and `Source:` pointers built only from things already true of this repository so they resolve without needing a second fixture tree -- `file:CLAUDE.md:1` (line 1 of `CLAUDE.md` will exist as long as the file is non-empty, which plan-class gates already assume elsewhere) and `trap:check-cannot-fail` (stable, cited by the real corpus itself).
 `R.resolve`'s `root` argument is always `REPO_ROOT`, the real checkout, never the fixture's own temp directory -- fixtures replace only the `HINTS.md` file being parsed, not the file tree the pointers are checked against.
 
 **CONTROL 0 -- the healthy fixture must be silent.** `judge_corpus(entries, errors) == []` and `cycle_findings(hints_mod.hint_pick, entries) == []`. If not, `die()` immediately, naming the findings, before any plant is trusted (identical reasoning to the model's own CONTROL 0 at `.ci/scripts/quality/check_agent_hint_liveness.py:250-256`: "every planted-defect result below is meaningless" otherwise).
@@ -251,7 +251,7 @@ A helper writes one `HINTS.md`-shaped fixture to a temp path and returns `(entri
 
 **CONTROL 3 (H2b, malformed id).** The healthy fixture with one `Hint-Id:` changed to `Record_The_Order` (uppercase, underscore -- both outside `[a-z0-9-]`). Must produce a finding starting with `"MALFORMED ID"`.
 
-**CONTROL 4 (H3).** The healthy fixture with one `Source:` changed to `file:docs/agent-reference/DOES-NOT-EXIST-PLANTED.md:1`. Must produce a finding containing `"does not resolve"`.
+**CONTROL 4 (H3).** The healthy fixture with one `Source:` changed to a `file:` source naming a planted, nonexistent doc. Must produce a finding containing `"does not resolve"`.
 
 **CONTROL 5 (H4).** The healthy fixture with one heading rewritten to `"Should remember to check the artifact"` (a second-person pronoun) AND, as a second plant sharing the control, one heading padded to 161 characters. Both must fire, independently checked so a fix for one cannot mask a miss on the other.
 
@@ -339,7 +339,7 @@ Traced against `check:ci-agent-hint-liveness`, the sibling gate in the same lane
     (ticked) 2026-09-22T19:45:20Z by d778be9d: broke H1 population-floor assertion in a scratch copy; controls_fired correctly reported it missed and exited 1 before judging the real corpus
 - [x] Add `"check:ci-hint-corpus": ".ci/scripts/quality/check_hint_corpus.py"` to `package.json` beside `check:ci-agent-hint-liveness` (`package.json:221`).
     (ticked) 2026-09-22T19:45:30Z by d778be9d: package.json:222 check:ci-hint-corpus entry present
-- [x] Hand-add the `manifest.ts` entry parallel to `manifest.ts:2380-2391`, `step: 'Behavioral hints can actually fire'`.
+- [x] Hand-add the `manifest.ts` entry parallel to `scripts/ci-runner/manifest.ts:2380-2391`, `step: 'Behavioral hints can actually fire'`.
     (ticked) 2026-09-22T19:45:30Z by d778be9d: scripts/ci-runner/manifest.ts:2393-2404 check:ci-hint-corpus GateSpec entry present, step: 'Behavioral hints can actually fire'
 - [x] Run `npx tsx scripts/gen/gen-manifest.ts --write`; confirm its report counts the new entry as generated (or investigate why it landed in "hand" if it does not).
     (ticked) 2026-09-22T19:45:42Z by d778be9d: ran npx tsx scripts/gen/gen-manifest.ts --write this session: 124 generated, 220 hand -- entry landed in the generated bucket cleanly (confirmed via git diff scripts/ci-runner/manifest.ts: only region-marker renumbering, zero field changes)
@@ -349,7 +349,7 @@ Traced against `check:ci-agent-hint-liveness`, the sibling gate in the same lane
     (ticked) 2026-09-22T19:45:30Z by d778be9d: npm run check:ci-parity: 'The local gate set and the CI quality surface agree in both directions'; npm run check:ci-gate-reachability-coverage: 'gate-reachability probe agrees with all 333 manifest registrations'
 - [x] Tick the two open boxes in `agent/plans/PLAN-stop-hook-behavioral-hints.md`'s task list (the "Write `.ci/scripts/quality/check_hint_corpus.py`..." and "Wire `check:ci-hint-corpus`..." lines) with evidence pointing at this plan and the commit that lands it.
     (ticked) 2026-09-22T19:45:47Z by d778be9d: PLAN-stop-hook-behavioral-hints.md commit 2ed7d6726 ticked both open boxes, Status changed to done
-- [x] Register this plan file itself in `.ci/config/plan-boxes.json`, or run `python3 .ci/scripts/quality/check_plan_boxes.py --update`, so `check:ci-plan-boxes` G-A0 (`check_plan_boxes.py:28,236`) does not red on a tracked plan carrying open boxes with no ledger row.
+- [x] Register this plan file itself in `.ci/config/plan-boxes.json`, or run `python3 .ci/scripts/quality/check_plan_boxes.py --update`, so `check:ci-plan-boxes` G-A0 (`.ci/scripts/quality/check_plan_boxes.py:28,236`) does not red on a tracked plan carrying open boxes with no ledger row.
     (ticked) 2026-09-22T19:45:47Z by d778be9d: python3 .ci/scripts/quality/check_plan_boxes.py --update ran, ledger now has an entry for this plan (verified via grep hint-corpus-ci-assertions .ci/config/plan-boxes.json)
 - [x] Run `python3 .ci/scripts/quality/check_prose_style.py reflow --write` then `check` on this plan file before it is committed, matching the parent plan's own closing convention (`PLAN-stop-hook-behavioral-hints.md`'s task list, last-but-one box).
     (ticked) 2026-09-22T19:45:48Z by d778be9d: check_prose_style.py check agent/plans/PLAN-hint-corpus-ci-assertions.md: zero blocking R1x findings, confirmed this session after fixing 4 R18 violations
