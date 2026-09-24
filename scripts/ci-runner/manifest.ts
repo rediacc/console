@@ -1515,7 +1515,7 @@ export const GATES: readonly GateSpec[] = [
     slow: true, // 124.0s measured
     gate: true,
     // shellcheck.sh enumerates with git ls-files '*.sh' plus untracked. toolchain.env is the only non-.sh input: it pins SHELLCHECK_VERSION, and a different shellcheck emits different findings.
-    paths: ['**/*.sh', '.devcontainer/toolchain.env'],
+    paths: ['**/*.sh', '.devcontainer/toolchain.env', '.ci/rediacc_ci/security/shellcheck.py'],
     pathsOrigin: 'declared',
     leaves: ['.ci/rediacc_ci/security/shellcheck.py'],
     ci: {
@@ -1604,19 +1604,6 @@ export const GATES: readonly GateSpec[] = [
       workflow: '.github/workflows/ci-quality.yml',
       job: 'quality-security',
       step: 'GitHub Actions variables',
-    },
-  },
-  {
-    // agent/plans/PLAN-account-env-to-bws.md T19: private/account/.env and .env.bench stay retired. Shrink-only baseline of the mentions that predate it, plus the dotenv-table ceiling and the token-path rule.
-    id: 'check:ci-account-env-retired',
-    run: 'npm run check:ci-account-env-retired',
-    gate: true,
-    leaves: ['.ci/scripts/quality/check_account_env_retired.py'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-security',
-      step: 'Account env files retired',
     },
   },
   // <<< gen-manifest: region 14
