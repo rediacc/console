@@ -487,7 +487,7 @@ def clause_controls():
             R._git_ok(root, "merge-base", "--is-ancestor", c0, c1),
         )
         # The row's head is c1, and the tick cites c0. c0 cannot descend from a head recorded later.
-        inv(root, rel, sig, "present", c1, [("fileline", "seed.txt:1"), ("commit", c1)])
+        inv(root, rel, sig, "absent", c1, [("fileline", "seed.txt:1"), ("commit", c1)])
         refused(
             "C5: a row whose head POSTDATES the cited commit is refused by Clause 1",
             lambda: R.plan_tick(root, rel, sig, "implemented in %s, see seed.txt:1" % c0, ME),
@@ -495,8 +495,41 @@ def clause_controls():
         )
         accepted(
             "C5 CONTROL: the same row with a tick citing c1 is ACCEPTED",
-            lambda: R.plan_tick(root, rel, sig, "implemented in %s and seed.txt:1" % c1, ME),
+            lambda: R.plan_tick(root, rel, sig, "implemented in commit %s" % c1, ME),
         )
+
+    # C5b -- A `present` ROW CITING THE COMMIT THAT DID THE WORK. `present` means the work landed BEFORE the investigation, so that commit cannot descend from the row's head by construction; Clause 1 refusing it made every honest "search first" tick uncitable by sha (three writers, 2026-09-24).
+    with tempfile.TemporaryDirectory() as tmp:
+        root, rel, sigs, c0 = make_tree(tmp)
+        sig = sigs[0]
+        (root / "later.txt").write_text("added after c0\n", encoding="utf-8")
+        git(root, "add", "-A")
+        git(root, "commit", "-q", "-m", "fixture c1")
+        c1 = git(root, "rev-parse", "HEAD").stdout.strip()
+        inv(root, rel, sig, "present", c1, [("fileline", "seed.txt:1"), ("commit", c1)])
+        accepted(
+            "C5b: a PRESENT row citing the earlier commit that did the work is ACCEPTED",
+            lambda: R.plan_tick(root, rel, sig, "landed in %s, see seed.txt:1" % c0, ME),
+        )
+
+    # C11 -- WHERE THE EVIDENCE LINE GOES. Inserting it at box+1 split a wrapped box from its own continuation (three writers, 2026-09-24); it belongs after the continuation, and never past the next box.
+    wrapped = [
+        "- [ ] Rename the thing and keep\n",
+        "      its continuation attached.\n",
+        "- [ ] The next box.\n",
+    ]
+    truthy(
+        "C11: the evidence slot follows a wrapped box's continuation",
+        R._evidence_slot(wrapped, 0) == 2,
+    )
+    truthy(
+        "C11 CONTROL: an unwrapped box's slot is the next line",
+        R._evidence_slot(["- [ ] One line.\n", "- [ ] Two.\n"], 0) == 1,
+    )
+    truthy(
+        "C11 CONTROL: a blank line ends the box",
+        R._evidence_slot(["- [ ] Box\n", "\n", "      not a continuation\n"], 0) == 1,
+    )
 
     # C6 -- THE FALSIFIABLE NEGATIVE CLAIM. The most important plant in the set.
     with tempfile.TemporaryDirectory() as tmp:
@@ -525,6 +558,15 @@ def clause_controls():
         accepted(
             "C6 CONTROL: the SAME `absent` row is ACCEPTED when the tick cites a file that did not exist at that head",
             lambda: R.plan_tick(root, rel, sig, "implemented it, see later.txt:1 in %s" % c1, ME),
+        )
+        # C6d -- THE FIX THAT EDITS AN EXISTING LINE. The file existed at the head, but the cited line CHANGED after it, so the citation points at new work, not at something the investigation could have found (2026-09-24: an edit to an existing file was uncitable by file:line).
+        seed = root / "seed.txt"
+        rows = seed.read_text(encoding="utf-8").splitlines()
+        rows[1] = rows[1] + " -- edited by the fix"
+        seed.write_text("\n".join(rows) + "\n", encoding="utf-8")
+        accepted(
+            "C6d: an `absent` row is ACCEPTED when the cited line changed after its head",
+            lambda: R.plan_tick(root, rel, sig, "implemented it, see seed.txt:2 in %s" % c1, ME),
         )
         # AND THE OTHER DIRECTION: a `present` row is never subject to Clause 2, or the clause would be a blanket ban on citing anything old.
         with tempfile.TemporaryDirectory() as tmp2:

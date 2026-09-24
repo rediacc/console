@@ -206,10 +206,22 @@ control(
 )
 
 # --------------------------------------------------------------------------- 5. SCOPE. Each exemption gets a pair, because an exemption that swallows everything is the quietest possible way for this check to stop existing. ---------------------------------------------------------------------------
+# #87cff418 CHANGED THIS CONTRACT ON PURPOSE (2026-09-24). A finished plan used to be dropped outright even over open boxes, which made an unexplained finished header the one shape every plan reader in the hook agreed to ignore. It is still history -- never quoted, never asked to track its boxes -- but over open boxes it is silent only under a `Ruling:` that resolves; section 8b holds the plant and its pairs.
 for st in ("done", "superseded", "landed", "implemented"):
+    _hist = rows_for(plan_body(status=st, open_tasks=[TASK_A]), [])
     control(
-        "CONTROL: a %s plan is history, not checked" % st,
-        rows_for(plan_body(status=st, open_tasks=[TASK_A]), []),
+        "CONTROL: a %s plan over open boxes demands no tracking, only a Ruling" % st,
+        [(r.get("untracked"), bool(r.get("unruled"))) for r in _hist],
+        [([], True)],
+    )
+    control(
+        "PAIR: a %s plan under a resolving Ruling is history, not checked" % st,
+        rows_for(
+            plan_body(status=st, open_tasks=[TASK_A]).replace(
+                "Status: %s\n" % st, "Status: %s\nRuling: #aaaa1111\n" % st, 1
+            ),
+            [item("aaaa1111", "x", "operator ruling")],
+        ),
         [],
     )
 # S3 CHANGED THIS CONTRACT ON PURPOSE, so the controls assert the new one and say what moved. A not-started plan used to be EXEMPT -- dropped before plan_rows opened it. It is now a CENSUS row: counted, named, and demanding nothing. The premise that justified the exemption ("a proposal's boxes are a sketch") stopped holding here, because `draft` became this repo's default header on
@@ -544,6 +556,43 @@ control(
     "S2: a census row spends no budget, so the finding behind it keeps its quotes",
     F.render_all(mixed).count("worklist.py --add"),
     F.PLAN_TASK_SHOW,
+)
+
+
+# --------------------------------------------------------------------------- 8b. DECIDED, NOT DONE (worklist #87cff418). A FINISHED plan over open boxes is silent ONLY under a `Ruling:` that re-resolves against the fold; otherwise it is surfaced, because every other plan reader in the hook stops counting a finished plan. The same resolver check_plan_boxes.py's G-A3 imports, so the hook and CI give one answer. ---------------------------------------------------------------------------
+def ruled_body(status, ruling):
+    extra = "Ruling: %s\n" % ruling if ruling is not None else ""
+    return plan_body(status=status, open_tasks=[TASK_A]).replace(
+        "Status: %s\n" % status, "Status: %s\n%s" % (status, extra), 1
+    )
+
+
+decided = [item("aaaa1111", "x", "operator ruling: drop it")]
+got = rows_for(ruled_body("superseded", None), decided)
+control("THE PLANT: a finished plan over open boxes with NO Ruling is surfaced", len(got), 1)
+control(
+    "  as an `unruled` census row, never a quoted recipe", bool(got and got[0].get("unruled")), True
+)
+truthy("  and its render names G-A3", got and "G-A3" in F.render(got[0]))
+got = rows_for(ruled_body("superseded", "#aaaa1111"), decided)
+control("PAIR: the same plan under a Ruling citing a CLOSED item is silent", got, [])
+got = rows_for(ruled_body("superseded", "#aaaa1111"), [item("aaaa1111", "?", "a question")])
+control("CONTROL: a Ruling citing a [?] item does not resolve", len(got), 1)
+got = rows_for(ruled_body("superseded", "#deadbeef"), decided)
+control("CONTROL: a Ruling citing an id the fold lacks does not resolve", len(got), 1)
+got = rows_for(plan_body(status="superseded", done_tasks=[TASK_A]), [])
+control("CONTROL: a finished plan with nothing open needs no Ruling", got, [])
+line = F.ruling_line(ruled_body("done", "#aaaa1111 plus prose"))
+control("ruling_line reads the header value", line, "#aaaa1111 plus prose")
+control(
+    "ruling_refs reads 8- and 12-character ids and a quote",
+    F.ruling_refs('#aaaa1111 #aaaabbbbcccc "a quote long enough" in docs/x.md'),
+    (["aaaa1111", "aaaabbbbcccc"], [("a quote long enough", "docs/x.md")]),
+)
+control(
+    "CONTROL: a Ruling line below the header block is not read",
+    F.ruling_line("Status: done\n" + "\n" * F.RULING_HEADER_LINES + "Ruling: #aaaa1111\n"),
+    "",
 )
 
 # --------------------------------------------------------------------------- 9. THE CONTROL FOR THE CONTROLS. A green run over fixtures that produced no tasks proves nothing at all -- this is assertion 5 of test-always-tier.py in a different suit. ---------------------------------------------------------------------------

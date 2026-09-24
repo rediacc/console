@@ -1766,6 +1766,24 @@ def records(root, plan_records):
 #: check_plan_boxes.py's A1 reports as a box that VANISHED.
 TICK_EVIDENCE = "    (ticked) %s by %s: %s"
 
+
+def _evidence_slot(lines, i):
+    """Where a box's evidence line goes: after the box AND its continuation lines.
+
+    Inserting at `i + 1` split a wrapped box from its own continuation, so the continuation read as the evidence line's text (found by three writers on 2026-09-24). A continuation is a following non-blank line indented deeper than the box's own bullet that is not itself a box.
+    """
+    indent = len(lines[i]) - len(lines[i].lstrip())
+    j = i + 1
+    while j < len(lines):
+        nxt = lines[j]
+        if not nxt.strip() or BOX_LINE_RE.match(nxt) or TICK_LINE_RE.match(nxt):
+            break
+        if len(nxt) - len(nxt.lstrip()) <= indent:
+            break
+        j += 1
+    return j
+
+
 #: Evidence is capped so a paste cannot push a plan past its own budget, and
 #: floored so "done" is not accepted as evidence. The floor is the same shape the
 #: worklist's own `--tick` uses: a claim with no pointer is not evidence.
@@ -2186,6 +2204,22 @@ def _blob_lines_at(root, commit, rel):
     return len(_git_raw(root, "show", "%s:%s" % (commit, rel)).splitlines())
 
 
+def _line_at(root, commit, rel, line):
+    """Line `line` (1-based) of `rel` at `commit`, or None."""
+    text = _git_raw(root, "show", "%s:%s" % (commit, rel))
+    rows = text.splitlines()
+    return rows[line - 1] if 0 < line <= len(rows) else None
+
+
+def _line_now(root, rel, line):
+    """Line `line` (1-based) of `rel` in the working tree, or None."""
+    try:
+        rows = (pathlib.Path(root) / rel).read_text(encoding="utf-8", errors="replace").splitlines()
+    except OSError:
+        return None
+    return rows[line - 1] if 0 < line <= len(rows) else None
+
+
 def clause1_ordering(root, row, evidence):
     """ "" when the ordering holds, else the refusal text. Clause 1 of Part 3.6.
 
@@ -2193,6 +2227,9 @@ def clause1_ordering(root, row, evidence):
 
     SILENT WHEN THE EVIDENCE NAMES NO COMMIT. Clause 1 is a statement about two commits and has nothing to say about a tick whose evidence is a file:line or a run id; Clause 2 is what covers that case, and inventing a demand for a sha here would make every honest non-commit tick refusable on a technicality.
     """
+    # A `present` VERDICT SAYS THE WORK LANDED BEFORE THE INVESTIGATION, so the commit that did it cannot descend from the investigation's head by construction. Holding it to this ordering refused every honest "search first" tick that cited its commit (2026-09-24, three writers).
+    if str(row.get("verdict") or "").strip().lower() == "present":
+        return ""
     head = str(row.get("head") or "").strip()
     if not head:
         return ""
@@ -2237,6 +2274,9 @@ def clause2_falsifiable(root, row, evidence):
         cited_rel, line = m.group(1), int(m.group(2))
         n = _blob_lines_at(root, head, cited_rel)
         if n is None or line > n:
+            continue
+        # A LINE THAT CHANGED SINCE THE HEAD IS THE FIX, not a contradiction. The file existing is not the claim an `absent` verdict makes; the WORK existing is. Refusing every citation into a pre-existing file made a fix that edits an existing line uncitable (2026-09-24).
+        if _line_at(root, head, cited_rel, line) != _line_now(root, cited_rel, line):
             continue
         return (
             "CLAUSE 2 (the negative claim is falsifiable): the investigation row for this box "
@@ -2330,7 +2370,7 @@ def plan_tick(root, rel, selector, evidence, me, now=None):
     stamp = now or C.stamp_now()
     lines[i] = flipped + eol
     note_line = TICK_EVIDENCE % (stamp, (me or "?")[:8], clip(ev, TICK_EVIDENCE_MAX))
-    lines.insert(i + 1, note_line + "\n")
+    lines.insert(_evidence_slot(lines, i), note_line + "\n")
     out = "".join(lines)
 
     # THE INVARIANT, checked here and not only in CI, for the same reason `_assert_boxes_preserved` is: the plan's text is in memory right now and a refusal costs a message rather than a file. The task must MOVE from open to done and the union must be unchanged -- a tick that also re-worded the box, or that made the evidence line parse as a task, is indistinguishable to
@@ -2497,7 +2537,8 @@ def plan_backfill_investigation(
 
     # THE EVIDENCE LINE IS INSERTED ONLY IF ABSENT. 95 of the 316 boxes this was written for already carry a well-formed one citing real commits; overwriting those would replace a contemporaneous record with a reconstruction, which is strictly worse. Idempotent for the same reason: a second run over a plan must be a no-op on its text.
     lines = text.splitlines(keepends=True)
-    already = i + 1 < len(lines) and TICK_LINE_RE.match(lines[i + 1])
+    slot = _evidence_slot(lines, i)
+    already = slot < len(lines) and TICK_LINE_RE.match(lines[slot])
     if already:
         out = text
     else:
@@ -2506,7 +2547,7 @@ def plan_backfill_investigation(
             lines[i] = lines[i] + "\n"
         stamp = now or C.stamp_now()
         note_line = TICK_EVIDENCE % (stamp, (me or "?")[:8], clip(ev, TICK_EVIDENCE_MAX))
-        lines.insert(i + 1, note_line + "\n")
+        lines.insert(_evidence_slot(lines, i), note_line + "\n")
         out = "".join(lines)
 
     # THE INVARIANT, the same one `plan_tick` checks at the same point and for the same reason. A backfill must move NOTHING: the box was done before and is done after, the open set is untouched, and the inserted line must stay invisible to `wl_planfid.BULLET_RE`. Anything else is indistinguishable to check_plan_boxes.py's A1 from a box being deleted, and the whole point of this
