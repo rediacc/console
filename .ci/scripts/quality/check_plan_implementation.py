@@ -574,6 +574,21 @@ def controls_fired(enforce, planfile):
         "in_scope: the FINISHED/zero-box filter returned %r, wanted (1, 4)" % (scoped,),
         scoped == (1, 4),
     )
+    # MOVED PLAN: a row written under the plan's pre-move path must still be found once the plan sits in _done/, and a same-sig row from a DIFFERENT plan must not be.
+    moved_rows = [{"plan": "agent/plans/PLAN-m.md", "sig": "bbbbbbbb", "head": "H0"}]
+    caught(
+        "row_under_any_path did not find the pre-move row for a plan moved into _done/",
+        row_under_any_path(moved_rows, "agent/plans/_done/PLAN-m.md", "bbbbbbbb") is moved_rows[0],
+    )
+    caught(
+        "row_under_any_path borrowed a same-sig row from a different plan",
+        row_under_any_path(
+            [{"plan": "agent/plans/PLAN-other.md", "sig": "bbbbbbbb"}],
+            "agent/plans/_done/PLAN-m.md",
+            "bbbbbbbb",
+        )
+        is None,
+    )
     return missed, len(driven)
 
 
@@ -708,7 +723,7 @@ def main(argv=None) -> int:
                 tick_findings(
                     judged,
                     lambda rel, sig: _evidence_line(REPO_ROOT, planrec, rel, sig),
-                    lambda rel, sig: planrec.investigation_for(REPO_ROOT, rel, sig, rows),
+                    lambda rel, sig: row_under_any_path(rows, rel, sig, follow_names(planrec, rel)),
                     lambda kind, token: planrec.resolve(REPO_ROOT, kind, token),
                     lambda rel, sig: planrec.done_commit(history, rel, sig),
                     lambda commit: planrec._git_out(REPO_ROOT, "log", "-1", "--format=%cI", commit),
@@ -747,6 +762,42 @@ def main(argv=None) -> int:
             )
     print("  every plant above was caught first, so this green means the check can fail")
     return 0
+
+
+def pre_move_paths(rel, follow_names=()):
+    """Every path the plan at `rel` has had, `rel` first.
+
+    A PLAN THAT CLOSES MOVES, AND ITS INVESTIGATION ROWS DO NOT. `check:ci-plan-folders --move` takes `agent/plans/PLAN-x.md` into `_done/` or `_removed/`, while every row in agent/ledgers/plan-investigation.jsonl keeps the `plan` it was written under. Matching rows by the CURRENT path alone read 78 honestly investigated boxes across nine closed plans as "closed with no row" on 2026-09-24,
+    and the remedy it printed (investigate now) is the one P-A4 then refuses, because a row written after the tick records a head the tick cannot descend from. `check_plan_record.attested_under_any_path` answers the same question for the box ledger. The derived pre-move path comes first; `follow_names` (git's own rename walk) covers a plan that moved more than once.
+    """
+    out = [rel]
+    out.extend(rel.replace(seg, "/", 1) for seg in ("/_done/", "/_removed/") if seg in rel)
+    out.extend(n for n in follow_names if n not in out)
+    return out
+
+
+def row_under_any_path(rows, rel, sig, follow_names=()):
+    """The LATEST investigation row for box `sig` under any path the plan has had, or None.
+
+    LATEST across all of them, for the reason `wl_planrec.investigation_for` gives for taking the latest: an earlier row must not outrank a later one. The sig must match exactly, so a different plan's box can never be borrowed.
+    """
+    paths = set(pre_move_paths(rel, follow_names))
+    hits = [r for r in rows if r.get("sig") == sig and r.get("plan") in paths]
+    return hits[-1] if hits else None
+
+
+_FOLLOW: dict[str, tuple[str, ...]] = {}
+
+
+def follow_names(planrec, rel):
+    """`git log --follow` names of `rel`, walked once per path."""
+    if rel not in _FOLLOW:
+        out = (
+            planrec._git_out(REPO_ROOT, "log", "--follow", "--name-only", "--format=", "--", rel)
+            or ""
+        )
+        _FOLLOW[rel] = tuple(sorted({ln.strip() for ln in out.splitlines() if ln.strip()} - {rel}))
+    return _FOLLOW[rel]
 
 
 def registration_findings(boxes_gate):

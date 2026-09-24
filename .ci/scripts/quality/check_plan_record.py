@@ -110,6 +110,7 @@ Exit 0 green, 1 findings or vacuous input, 2 instrument control failed.
 from __future__ import annotations
 
 import datetime
+import functools
 import io
 import json
 import os
@@ -350,8 +351,7 @@ def _named_by_git_history(root, rel, path):
     `git log --follow` walks the rename graph through the deletion just as reliably as through a live stub -- `agent/plans/PLAN-lint-css-ci-wiring.md`'s own history shows a `C099` copy from `agent/PLAN-lint-css-ci-wiring.md` at `fce51e202`, so this recovers exactly what the stub used to assert without needing it to still exist.
     Returns `False` on anything git cannot answer (no repo, no history, no match) rather than guessing.
     """
-    names = _git(root, "log", "--follow", "--name-only", "--format=", "--", rel)
-    return path in {line.strip() for line in names.splitlines() if line.strip()}
+    return path in _follow_names(root, rel)
 
 
 def _former_paths_by_git_history(root, rel):
@@ -359,8 +359,17 @@ def _former_paths_by_git_history(root, rel):
 
     The reverse of `_named_by_git_history`'s question: instead of "was `path` once this file's name", this asks "what were ALL of this file's names". Same `--follow` walk, same fallback role -- for when the stub `attested_under_any_path` would otherwise read through has been deleted.
     """
+    return set(_follow_names(root, rel)) - {rel}
+
+
+@functools.cache
+def _follow_names(root, rel):
+    """frozenset -- every name `git log --follow` reports for `rel`, walked ONCE per path.
+
+    The walk is the whole cost of this gate: profiled 2026-09-24 at 517s wall, 223s of it in 131 calls to `_former_paths_by_git_history` and 47s in 35 to `_named_by_git_history`, the same `--follow` walk repeated for the same plan because `problems_for` runs once in the verdict and again in `census_row`. The history cannot change during one run, so one walk per path answers every later ask.
+    """
     names = _git(root, "log", "--follow", "--name-only", "--format=", "--", rel)
-    return {line.strip() for line in names.splitlines() if line.strip()} - {rel}
+    return frozenset(line.strip() for line in names.splitlines() if line.strip())
 
 
 def problems_for(root, rel, text, current_ledger):
