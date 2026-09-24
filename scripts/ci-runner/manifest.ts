@@ -1606,6 +1606,19 @@ export const GATES: readonly GateSpec[] = [
       step: 'GitHub Actions variables',
     },
   },
+  {
+    // agent/plans/PLAN-account-env-to-bws.md T19: the two account env files the Bitwarden move retired stay retired. Shrink-only baseline of the mentions that predate it, plus the dotenv-table ceiling and the token-path rule.
+    id: 'check:ci-account-env-retired',
+    run: 'npm run check:ci-account-env-retired',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_account_env_retired.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-security',
+      step: 'Account env files retired',
+    },
+  },
   // <<< gen-manifest: region 14
   {
     // The other half of `agent/plans/PLAN-bws-rotation-on-failure.md`. That plan deleted `.ci/config/bws-token-expiry.json` and its one reader, on the ruling that a hand-written date is a second source of truth nothing can check, and that a non-zero `bws` is the only signal there is. What remains is a PROCEDURE, and this asserts the three claims that procedure rests on: one

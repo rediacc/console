@@ -1684,6 +1684,20 @@
     }
   },
   {
+    "id": "check:ci-account-env-retired",
+    "run": "npm run check:ci-account-env-retired",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_account_env_retired.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-security",
+      "step": "Account env files retired"
+    }
+  },
+  {
     "id": "check:ci-bws-rotation-notice",
     "run": "npm run check:ci-bws-rotation-notice",
     "gate": true,
