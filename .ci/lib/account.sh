@@ -256,7 +256,7 @@ ACCOUNT_JWT_SECRET=${JWT_SEC}
 STRIPE_E2E_WEBHOOK_SECRET=whsec_e2e_test_webhook_secret_for_simulation_only
 
 # Root email (receives alerts for disputes, refunds, etc.)
-# Set via GitHub variable ROOT_EMAIL or environment
+# Set via the ROOT_EMAIL Bitwarden secret (ci-shared) or environment
 ROOT_EMAIL="${ROOT_EMAIL:-}"
 
 # Server port (used by standalone node entry, not the dev gateway)

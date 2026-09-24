@@ -1,10 +1,10 @@
 """`rediacc_ci.core.devbox` against the live `.ci/lib/devbox.sh`.
 
-THE TWIN IS STILL HERE AND IS STILL THE ONLY IMPLEMENTATION OF THIRTY-SIX OF ITS THIRTY-NINE FUNCTIONS.
+THE TWIN IS STILL HERE AND IS STILL THE ONLY IMPLEMENTATION OF THIRTY-NINE OF ITS FORTY-TWO FUNCTIONS.
 `.ci/legacy/run-legacy.sh:456`, `.ci/rediacc_ci/setup/bridge.py:35`, `.ci/rediacc_ci/setup/shadow_driver.py:136`, `.ci/rediacc_ci/dev/shadow_driver.py:140` and `.ci/lib/account.sh:1090` all still source it, nothing is cut over, and this file drives the bash for real on every run: `rediacc_ci.core.devbox_shadow_driver` sources `devbox.sh` through the same prelude `bridge.py` uses and calls the twin's own functions, then does the same work through the port, and the two transcripts are compared byte for byte.
 
 WHAT IS COVERED AND WHAT IS NOT is decided by the driver's seven scenarios and stated in its module docstring rather than restated here.
-The short version: the three functions whose whole answer is computation over their own arguments, and none of the thirty-six that reach git, docker, the filesystem, a port allocator or the network.
+The short version: the three functions whose whole answer is computation over their own arguments, and none of the thirty-nine that reach git, docker, the filesystem, a port allocator or the network.
 
 THE ANTI-VACUITY CLAIMS, because a differential that compared two empty transcripts would pass forever: every scenario must produce a floor of observations, the tools the scenarios really use must be installed, and the whole corpus must exercise more than one answer.
 `test_a_planted_defect_is_caught` plants five real defects into the port IN PROCESS, one at a time, and requires the live bash transcript to disagree with each.
@@ -59,7 +59,8 @@ PORTED_FUNCTIONS = (
     ("devbox_route_label", "route_label"),
 )
 
-# The other thirty-six. Every one of them reaches git, docker, the filesystem, the port allocator or the network, and NONE of them has a Python counterpart in the port.
+# The other thirty-nine. Every one of them but `devbox_script_binds` and `devbox_home_binds` reaches git, docker, the filesystem, the port allocator or the network, and NONE of them has a Python counterpart in the port.
+# Those two are constant lists rather than computations, and they are left unported because their only readers are `devbox_up` and `devbox_missing_binds`, both docker-coupled.
 NOT_PORTED_FUNCTIONS = (
     "devbox_worktree",
     "devbox_mount_root",
@@ -86,6 +87,9 @@ NOT_PORTED_FUNCTIONS = (
     "devbox_container_id",
     "devbox_container_running",
     "_devbox_bind_if_present",
+    "devbox_script_binds",
+    "devbox_home_binds",
+    "devbox_missing_binds",
     "devbox_up",
     "devbox_status",
     "devbox_stop",
@@ -300,13 +304,13 @@ def twin_text() -> str:
 
 
 def test_the_twin_still_defines_every_function_this_slice_names() -> None:
-    """Thirty-nine, split three and thirty-six, measured rather than remembered."""
+    """Forty-two, split three and thirty-nine, measured rather than remembered."""
     text = twin_text()
     for name, _ in PORTED_FUNCTIONS:
         assert "\n%s() {" % name in text, "%s is gone from %s" % (name, TWIN)
     for name in NOT_PORTED_FUNCTIONS:
         assert "\n%s() {" % name in text, "%s is gone from %s" % (name, TWIN)
-    assert len(PORTED_FUNCTIONS) + len(NOT_PORTED_FUNCTIONS) == 39
+    assert len(PORTED_FUNCTIONS) + len(NOT_PORTED_FUNCTIONS) == 42
     # And the twin defines NOTHING ELSE, so a function added later cannot slip past the classification above unnoticed.
     defined = [
         line.split("(")[0] for line in text.split("\n") if line.startswith(("devbox_", "_devbox"))
@@ -323,7 +327,7 @@ def test_the_ported_three_are_here() -> None:
         )
 
 
-def test_the_unported_thirty_six_have_no_python_counterpart() -> None:
+def test_the_unported_thirty_nine_have_no_python_counterpart() -> None:
     """The absence is the claim, so it is asserted rather than left to a reader.
 
     A future session porting `devbox_up` must delete its name from `NOT_PORTED_FUNCTIONS` here, which is the moment to ask how a `docker run` gets compared.
@@ -581,7 +585,7 @@ def test_the_shadow_ledger_holds_five_equivalent_rows_over_five_trees() -> None:
 def test_the_ledger_carries_no_comment_audit_and_says_why() -> None:
     """THE ONE EXEMPTION THIS SLICE TAKES, kept visible rather than quiet.
 
-    The comment-byte floor compares the WHOLE twin against the WHOLE port, which is the right denominator for a whole-file port and the wrong one for three functions out of thirty-nine: the other thirty-six carry comment archaeology this slice does not claim.
+    The comment-byte floor compares the WHOLE twin against the WHOLE port, which is the right denominator for a whole-file port and the wrong one for three functions out of forty-two: the other thirty-nine carry comment archaeology this slice does not claim.
     Measured, so the number is on the record rather than asserted: the whole file scores 0.49, and the three ported functions' own comments score far above the floor. The rows are therefore recorded WITHOUT the two file arguments, on the `w7p5b-common` precedent, and this case fails if a row ever appears with a comment block whose ratio is below the floor.
     """
     path = paths.repo_root() / LEDGER
@@ -598,7 +602,7 @@ def test_the_ledger_carries_no_comment_audit_and_says_why() -> None:
     twin = twin_text().split("\n")
     twin_comment_bytes = sum(
         len(line) + 1
-        for start, end in ((181, 197), (240, 253), (810, 844))
+        for start, end in ((181, 197), (240, 253), (882, 916))
         for line in twin[start - 1 : end]
         if line.strip().startswith("#")
     )

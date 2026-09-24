@@ -40,7 +40,7 @@ THE SEVEN SCENARIOS, AND WHAT EACH ONE WOULD CATCH
   route-label   every code arm (000, 502, 404 and the catch-all) crossed with an empty and a non-empty hint and with every `routed` value including the empty string, which `${3:-unknown}` turns into `unknown`. Plus the codes that look like an arm and are not: `0`, `00`, `0000`, `4040`, a trailing space, a leading dash and a newline.
   arity         each function at 0, 1, 2, 3 and 4 arguments. Zero is the case worth the scenario: `devbox_slugify` answers the empty string because it is written `"${1:-}"`, while `devbox_slug_drift` and `devbox_route_label` die on `$1: unbound variable` under the `set -u` every sourcer runs with. Four arguments pins that the extra one is IGNORED rather than read.
 
-WHAT IS NEVER DRIVEN HERE: the other thirty-six functions in `.ci/lib/devbox.sh`. None of them is ported, and a ledger row is a claim of equivalence.
+WHAT IS NEVER DRIVEN HERE: the other thirty-nine functions in `.ci/lib/devbox.sh`. None of them is ported, and a ledger row is a claim of equivalence.
 """
 
 from __future__ import annotations

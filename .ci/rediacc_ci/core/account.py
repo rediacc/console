@@ -8,7 +8,7 @@ WHAT IS HERE AND WHAT IS DELIBERATELY ABSENT
 --------------------------------------------------------------------------
 ELEVEN FUNCTIONS ARE PORTED AND SHADOW-DIFFERENTIALLY PROVED, and they are the ones whose whole answer is computation, a file read or a file write: `account_allocate_ports`, `account_wait_port`, `account_rustfs_alive`, `account_generate_crypto_keys`, `account_generate_fresh_env`, `account_env_add_if_missing`, `account_ensure_env_keys`, `account_ensure_env`, `account_banner_row`, `account_totp`, and the decidable half of `account_db`. `shadow_driver.py`'s five scenarios drive these against the live twin and a K=5 ledger records the equivalence.
 
-TWO MORE ARE PORTED, `account_stop` and `account_rotation`, but proved by a REAL RUN instead of a shadow differential, because both genuinely start and stop real infrastructure: `stop()` kills tracked dev pids and tears down real Docker containers, and `rotation()` dispatches to a real TypeScript CLI (`private/account/scripts/rotation/`) that mints and deletes real credentials at AWS IAM, Cloudflare and GitHub (see `private/account/CLAUDE.md`, "Secret Rotation").
+TWO MORE ARE PORTED, `account_stop` and `account_rotation`, but proved by a REAL RUN instead of a shadow differential, because both genuinely start and stop real infrastructure: `stop()` kills tracked dev pids and tears down real Docker containers, and `rotation()` dispatches to a real TypeScript CLI (`private/account/scripts/rotation/`) that mints and deletes real credentials at AWS IAM and Cloudflare, and pushes them to Bitwarden Secrets Manager (see `private/account/CLAUDE.md`, "Secret Rotation").
 An input/output differential compares two ANSWERS; these two produce SIDE EFFECTS, so `test_core_account.py` instead drives each one for real -- `stop()` against a real tracked process and a real (sandboxed, compose-file-less) Docker daemon, confirmed by process and port checks rather than by exit code alone; `rotation()` only through the manifest-only, credential-free subcommands it shares with the twin (`list`, `status`, `history`).
 `rotate`/`check`/`deactivate`/`delete`/`sweep`/`init` need live production credentials and are never invoked, by anything, from this port or its tests. Neither joins `PORTED_FUNCTIONS` in `shadow_driver.py`'s sense: that module's own docstring still lists both under "WHAT IS NEVER DRIVEN HERE", and that is correct -- the differential technique genuinely does not apply to them.
 `test_core_account.py`'s `PORTED_FUNCTIONS`/`NOT_PORTED_FUNCTIONS` tuple is the one that moved.
@@ -24,9 +24,7 @@ THERE IS NO PYTHON FUNCTION BELOW FOR ANY OF THOSE NINE. The bash file is the on
 --------------------------------------------------------------------------
 TWO FUNCTIONS THIS MODULE DEFINES THAT THE TWIN BORROWS FROM ITS SOURCER
 --------------------------------------------------------------------------
-`check_node_version` is called at `.ci/lib/account.sh:1048` and defined at `.ci/lib/local-common.sh:418`, the file `run-legacy.sh` sources BEFORE `account.sh`. `devbox_state_get` is called at `:1093` and defined at `.ci/lib/devbox.sh:124`, which `account_db` sources on demand.
-A module cannot borrow a function from its importer, so both are re-implemented below, faithful to the definitions named. NEITHER `local-common.sh` NOR `devbox.sh` IS MODIFIED BY THIS CHANGE: both are still live-bridged into `rediacc_ci/setup/bridge.py` and are out of this slice's scope.
-This is exactly the shape `service.py` records for `check_docker`, which lives in `run-legacy.sh` for the same reason.
+`check_node_version` is called at `.ci/lib/account.sh:1048` and defined at `.ci/lib/local-common.sh:418`, the file `run-legacy.sh` sources BEFORE `account.sh`. `devbox_state_get` is called at `:1093` and defined at `.ci/lib/devbox.sh:124`, which `account_db` sources on demand. A module cannot borrow a function from its importer, so both are re-implemented below, faithful to the definitions named. NEITHER `local-common.sh` NOR `devbox.sh` IS MODIFIED BY THIS CHANGE: both are still live-bridged into `rediacc_ci/setup/bridge.py` and are out of this slice's scope. This is exactly the shape `service.py` records for `check_docker`, which lives in `run-legacy.sh` for the same reason.
 
 --------------------------------------------------------------------------
 FOUR TWIN BEHAVIOURS REPRODUCED ON PURPOSE, NOT FIXED
@@ -436,7 +434,7 @@ ACCOUNT_JWT_SECRET=%(jwt)s
 STRIPE_E2E_WEBHOOK_SECRET=whsec_e2e_test_webhook_secret_for_simulation_only
 
 # Root email (receives alerts for disputes, refunds, etc.)
-# Set via GitHub variable ROOT_EMAIL or environment
+# Set via the ROOT_EMAIL Bitwarden secret (ci-shared) or environment
 ROOT_EMAIL="%(root_email)s"
 
 # Server port (used by standalone node entry, not the dev gateway)
@@ -807,7 +805,7 @@ def stop(env: dict[str, str] | None = None) -> int:
 def rotation(argv: list[str], env: dict[str, str] | None = None) -> int:
     """`account_rotation`, `.ci/lib/account.sh:1018-1022`.
 
-    A thin dispatcher to the real TypeScript rotation CLI (`private/account/scripts/rotation/index.ts`), which mints, rotates and deletes REAL credentials at AWS IAM, Cloudflare and GitHub (see `private/account/CLAUDE.md`, "Secret Rotation").
+    A thin dispatcher to the real TypeScript rotation CLI (`private/account/scripts/rotation/index.ts`), which mints, rotates and deletes REAL credentials at AWS IAM and Cloudflare, and pushes them to Bitwarden Secrets Manager (see `private/account/CLAUDE.md`, "Secret Rotation").
     This function only decides whether node is new enough and where to run the subprocess from; every side effect belongs to the TypeScript CLI, which this port does not touch.
 
     NOT part of the shadow differential (see the module docstring): the twin itself is two lines with nothing computational to compare, and the mutating subcommands (`rotate`, `check`, `deactivate`, `delete`, `sweep`, `init`) need live production credentials that neither this port nor its tests may exercise.

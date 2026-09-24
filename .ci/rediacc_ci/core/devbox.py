@@ -1,21 +1,22 @@
 """The three PURE functions of `.ci/lib/devbox.sh`, ported function for function.
 
-PORTED FROM `.ci/lib/devbox.sh` (1112 lines, 39 functions).
+PORTED FROM `.ci/lib/devbox.sh` (1184 lines, 42 functions).
 The twin still exists, is untouched by this file, and is still sourced at `.ci/legacy/run-legacy.sh:456`, `.ci/rediacc_ci/setup/bridge.py:35` (inside the bridged `bash -c` prelude), `.ci/rediacc_ci/setup/shadow_driver.py:136`, `.ci/rediacc_ci/dev/shadow_driver.py:140` and `.ci/lib/account.sh:1090`. Those five are the real `source` sites; nothing is cut over here.
 This is a pre-cutover port on the same sequencing every other lib in this campaign used, and `.ci/rediacc_ci/core/local_common.py` is the worked precedent from the same day: its twin `.ci/lib/local-common.sh` is still sourced at five sites while the port carries a K=5 ledger.
 
 --------------------------------------------------------------------------
 WHAT IS HERE AND WHAT IS DELIBERATELY ABSENT
 --------------------------------------------------------------------------
-THREE FUNCTIONS ARE PORTED, and they are the three whose whole answer is computation over their own arguments: `devbox_slugify` (`:186`), `devbox_slug_drift` (`:242`) and `devbox_route_label` (`:830`). Two of the three say so in the twin's own comments, which this port re-measured rather than believed.
+THREE FUNCTIONS ARE PORTED, and they are the three whose whole answer is computation over their own arguments: `devbox_slugify` (`:186`), `devbox_slug_drift` (`:242`) and `devbox_route_label` (`:902`). Two of the three say so in the twin's own comments, which this port re-measured rather than believed.
 
-THIRTY-SIX ARE NOT, and saying so here rather than leaving an absence is the point. THERE IS NO PYTHON FUNCTION BELOW FOR ANY OF THEM:
+THIRTY-NINE ARE NOT, and saying so here rather than leaving an absence is the point. THERE IS NO PYTHON FUNCTION BELOW FOR ANY OF THEM:
 
   git-coupled                                           `devbox_worktree:55`, `devbox_branch:176`, `devbox_slug_basename:199` (`basename` of a git-derived path), `devbox_slug:204` (calls `devbox_branch`).
   docker-coupled                                        `devbox_docker:93`, `devbox_container_name:84`, `devbox_container_id:438`, `devbox_container_running:444`, `devbox_slug_active:224`, `devbox_slug_conflicts:255`, `devbox_router_hosts:274`, `devbox_network_ensure:297`, `devbox_proxy_running:305`,
-  `devbox_proxy_ensure:311`, `devbox_proxy_stop:356`, `devbox_image_present:370`, `devbox_image_digest:376`, `devbox_ensure_image:382`, `devbox_build_image:413`, `devbox_up:465`, `devbox_stop:932`, `devbox_remove:944`, `devbox_logs:956`, `devbox_shell:968`, `devbox_exec:998`, `devbox_mount_ok:1068`, `devbox_identity_ok:1079`, `devbox_writable_ok:1097`, `devbox_doctor:1105`.
+  `devbox_proxy_ensure:311`, `devbox_proxy_stop:356`, `devbox_image_present:370`, `devbox_image_digest:376`, `devbox_ensure_image:382`, `devbox_build_image:413`, `devbox_missing_binds:492`, `devbox_up:515`, `devbox_stop:1004`, `devbox_remove:1016`, `devbox_logs:1028`, `devbox_shell:1040`, `devbox_exec:1070`, `devbox_mount_ok:1140`, `devbox_identity_ok:1151`, `devbox_writable_ok:1169`, `devbox_doctor:1177`.
   filesystem-coupled or port-allocating                 `devbox_mount_root:70`, `devbox_state_write:107`, `devbox_state_get:124`, `devbox_base_port:136` (runs `rediacc_ci.core.ports` as a child), `_devbox_bind_if_present:452`.
-  network-probing                                       `devbox_status:846` curls every route, `devbox_url:283` builds its answer from `devbox_slug_active`.
+  constant data                                         `devbox_script_binds:468` and `devbox_home_binds:480`, the bind lists `devbox_up` and `devbox_missing_binds` both read; nothing but those two docker-coupled readers calls them.
+  network-probing                                       `devbox_status:918` curls every route, `devbox_url:283` builds its answer from `devbox_slug_active`.
 
 `devbox_url:283` deserves its own sentence, because it is the near miss: its body is pure string formatting, and its DEFAULT for the slug argument is `devbox_slug_active`, which inspects a running container. A port of it would be pure only for callers that pass both arguments, and a function that is pure on some call paths is not a function this campaign ports.
 
@@ -64,7 +65,7 @@ UPPER_TO_LOWER_DELTA = ord("a") - ord("A")
 DRIFT_CONTAINER = "drift: the container serves %s, this checkout would use %s\n"
 DRIFT_STATE = "drift: .devbox-state records %s, the container serves %s\n"
 
-# The five route labels, `.ci/lib/devbox.sh:832-842`. `ROUTE_LIVE` is both the catch-all and the answer for a 404 the caller has confirmed a router for, which is the one place the same words are reached two ways.
+# The five route labels, `.ci/lib/devbox.sh:904-914`. `ROUTE_LIVE` is both the catch-all and the answer for a 404 the caller has confirmed a router for, which is the one place the same words are reached two ways.
 ROUTE_PROXY_UNREACHABLE = "proxy unreachable"
 ROUTE_NO_BACKEND = "no backend yet"
 ROUTE_NO_ROUTER = "no such router -- nothing serves this hostname"
@@ -186,7 +187,7 @@ def slug_drift(want: str | None = None, baked: str = "", recorded: str = "") -> 
 
 
 def route_label(code: str | None = None, hint: str = "", routed: str = ROUTED_UNKNOWN) -> Outcome:
-    """`devbox_route_label`, `.ci/lib/devbox.sh:830-844`.
+    """`devbox_route_label`, `.ci/lib/devbox.sh:902-916`.
 
     THE INVARIANT IT CARRIES IS THAT THE WORD NEVER CONTRADICTS THE CODE, and the twin's own comment records "OK (404)" shipping for one commit as the failure that motivated it.
     A 404 is "live" only when the CALLER has confirmed a router exists for that hostname, because the status code alone cannot tell traefik's no-such-router 404 from a backend's own not-found.

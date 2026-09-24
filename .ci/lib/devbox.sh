@@ -462,6 +462,56 @@ _devbox_bind_if_present() {
     fi
 }
 
+# The tracked scripts bound into every devbox, one "<source under .devcontainer/>:<container path>" pair per line. Data rather than inline `-v` flags so devbox_up and devbox_missing_binds read ONE list: a bind exists only from `docker run` on, so a container created before a line was added lacks it forever, and devbox_missing_binds is how devbox_up notices and recreates.
+#
+# devbox-bws.sh is the login-shell hook that exports BWS_ACCESS_TOKEN from the host's private/account/.env (reached through the repo bind, never copied), so `bws` works inside the devbox without the token entering the image, Config.Env, a label or a log.
+devbox_script_binds() {
+    printf '%s\n' \
+        "devbox-entrypoint.sh:/usr/local/bin/devbox-entrypoint.sh" \
+        "devbox-autostart.sh:/usr/local/bin/devbox-autostart.sh" \
+        "start-ttyd.sh:/usr/local/bin/start-ttyd.sh" \
+        "devbox-bws.sh:/etc/profile.d/zz-devbox-bws.sh"
+}
+
+# Host files bound by NAME into the container user's home, one "<path relative to $HOME>:<mode>" pair per line (mode empty for read-write). Each is bound only when it exists on the host (_devbox_bind_if_present says why).
+#
+# .config/rediacc-console holds the console's own bootstrap credential, the token-only file bws-access-token that devbox-bws.sh reads first. Read-only, and deliberately NOT inside .config/rediacc: that directory is the rdc CLI's read-write state, and a CLI or E2E run must not be able to delete the console's root credential.
+DEVBOX_CONTAINER_HOME="/home/vscode"
+devbox_home_binds() {
+    printf '%s\n' \
+        ".gitconfig:ro" \
+        ".git-credentials:ro" \
+        ".config/gh:" \
+        ".config/rediacc-console:ro" \
+        ".claude:" \
+        ".claude.json:" \
+        ".config/rediacc:"
+}
+
+# Print each bind destination the existing container does NOT have mounted, one per line: every devbox_script_binds entry, plus every devbox_home_binds entry whose host source exists now (one created on the host after the container was, such as .config/rediacc-console, is drift too). Empty when there is no container, or when docker cannot inspect it: an unanswerable probe must never be the reason a container is destroyed.
+devbox_missing_binds() {
+    local d cid mounts pair dest
+    d="$(devbox_docker)"
+    cid="$(devbox_container_id)"
+    [[ -n "$cid" ]] || return 0
+    mounts="$($d inspect -f '{{range .Mounts}}{{.Destination}}{{"\n"}}{{end}}' "$cid" 2>/dev/null)" || return 0
+    [[ -n "$mounts" ]] || return 0
+    while IFS= read -r pair; do
+        dest="${pair#*:}"
+        if ! grep -qxF -- "$dest" <<<"$mounts"; then
+            printf '%s\n' "$dest"
+        fi
+    done < <(devbox_script_binds)
+    while IFS= read -r pair; do
+        pair="${pair%%:*}"
+        [[ -e "$HOME/$pair" ]] || continue
+        dest="$DEVBOX_CONTAINER_HOME/$pair"
+        if ! grep -qxF -- "$dest" <<<"$mounts"; then
+            printf '%s\n' "$dest"
+        fi
+    done < <(devbox_home_binds)
+}
+
 devbox_up() { # devbox_up [force_pull] [--no-rehost]
     local force_pull="${1:-false}"
     # The opt-out, honoured from either side: the positional flag for a direct
@@ -503,6 +553,27 @@ devbox_up() { # devbox_up [force_pull] [--no-rehost]
                 log_info "  killed:     anything running inside it (account dev, VS Code sessions, agents)"
                 log_info "  kept:       the repo itself -- it is a bind mount from the host"
                 log_info "  keep the old hostname instead: DEVBOX_NO_REHOST=1 ./run.sh devbox up"
+                devbox_remove || return 1
+                cid=""
+            fi
+        fi
+    fi
+
+    # RECREATE ON BIND DRIFT, under the same guard and opt-out as the hostname. Without it, a bind added to devbox_script_binds never reaches an existing container: "already running" returns early below and `docker start` keeps the old mount table.
+    if [[ -n "$cid" ]]; then
+        local missing_binds missing_one
+        missing_binds="$(devbox_missing_binds)"
+        if [[ -n "$missing_binds" ]]; then
+            log_warn "Bind drift: the container predates these bind mounts:"
+            while IFS= read -r missing_one; do log_info "  $missing_one"; done <<<"$missing_binds"
+            if [[ "$rehost" != true ]]; then
+                log_info "--no-rehost given: leaving it alone. Those files stay absent inside it."
+            else
+                log_warn "About to DESTROY and recreate this container to add them:"
+                log_info "  container:  $(devbox_container_name)"
+                log_info "  killed:     anything running inside it (account dev, VS Code sessions, agents)"
+                log_info "  kept:       the repo itself -- it is a bind mount from the host"
+                log_info "  keep the container as it is instead: DEVBOX_NO_REHOST=1 ./run.sh devbox up"
                 devbox_remove || return 1
                 cid=""
             fi
@@ -646,7 +717,11 @@ devbox_up() { # devbox_up [force_pull] [--no-rehost]
     # absolute, and a nested `docker -v $(pwd)` is resolved by the host daemon,
     # so only an identical path is correct in both.
     binds+=(-v "$mount_root:$mount_root")
-    binds+=(-v "$DEVBOX_LIB_DIR/../../.devcontainer/devbox-entrypoint.sh:/usr/local/bin/devbox-entrypoint.sh:ro")
+    # The tracked scripts, from devbox_script_binds, all read-only. The notes below say why autostart and start-ttyd are bound rather than baked; devbox-bws.sh is bound so the token is read from the host file at shell start and never baked.
+    local script_pair
+    while IFS= read -r script_pair; do
+        binds+=(-v "$DEVBOX_LIB_DIR/../../.devcontainer/${script_pair%%:*}:${script_pair#*:}:ro")
+    done < <(devbox_script_binds)
     # The entrypoint resolves its helper as `$(dirname "$0")/devbox-autostart.sh`,
     # i.e. /usr/local/bin/. Bind-mounted rather than baked into the image for the
     # same reason as the entrypoint itself: both are edited far more often than
@@ -654,7 +729,6 @@ devbox_up() { # devbox_up [force_pull] [--no-rehost]
     # simply never be tested. Missing this bind is silent -- the entrypoint's
     # `[ -x "$AUTOSTART" ]` guard turns "the file is not there" into "autostart
     # is disabled", which looks exactly like working as intended.
-    binds+=(-v "$DEVBOX_LIB_DIR/../../.devcontainer/devbox-autostart.sh:/usr/local/bin/devbox-autostart.sh:ro")
     # start-ttyd.sh, for the third time and the same reason. It is ALSO baked into
     # the image (Dockerfile COPYs it, and the hub invokes that copy by name), so
     # skipping this bind looks harmless -- the file is there either way. It is not:
@@ -662,20 +736,18 @@ devbox_up() { # devbox_up [force_pull] [--no-rehost]
     # terminal would be untestable locally and land unverified. Measured while
     # wiring this up: the container was running an August 23 copy whose idempotency
     # guard read a PID file nothing ever wrote.
-    binds+=(-v "$DEVBOX_LIB_DIR/../../.devcontainer/start-ttyd.sh:/usr/local/bin/start-ttyd.sh:ro")
     [[ -S /var/run/docker.sock ]] && binds+=(-v /var/run/docker.sock:/var/run/docker.sock)
 
     # Credentials and agent config, named rather than the whole $HOME: ~/.ssh
     # and cloud credentials stay out of the container.
-    local container_home="/home/vscode"
-    while IFS= read -r line; do [[ -n "$line" ]] && binds+=("$line"); done < <(
-        _devbox_bind_if_present "$HOME/.gitconfig" "$container_home/.gitconfig" ro
-        _devbox_bind_if_present "$HOME/.git-credentials" "$container_home/.git-credentials" ro
-        _devbox_bind_if_present "$HOME/.config/gh" "$container_home/.config/gh"
-        _devbox_bind_if_present "$HOME/.claude" "$container_home/.claude"
-        _devbox_bind_if_present "$HOME/.claude.json" "$container_home/.claude.json"
-        _devbox_bind_if_present "$HOME/.config/rediacc" "$container_home/.config/rediacc"
-    )
+    # The list is devbox_home_binds, shared with devbox_missing_binds.
+    local home_pair home_rel
+    while IFS= read -r home_pair; do
+        home_rel="${home_pair%%:*}"
+        while IFS= read -r line; do [[ -n "$line" ]] && binds+=("$line"); done < <(
+            _devbox_bind_if_present "$HOME/$home_rel" "$DEVBOX_CONTAINER_HOME/$home_rel" "${home_pair#*:}"
+        )
+    done < <(devbox_home_binds)
 
     local slug conflicts line
     slug="$(devbox_slug)"

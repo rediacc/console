@@ -101,6 +101,25 @@
       ]
     },
     {
+      "id": "devbox-rotation",
+      "paths": ["scripts/dev/bws-rotate.py"],
+      "home": "scripts/dev",
+      "stays": true,
+      "why": "The BWS_ACCESS_TOKEN rotation procedure, born here 2026-09-23 as the Python port of scripts/dev/bws-rotate.sh. A human with a terminal is the only thing that can run it (non-tty stdin exits 2), which reads like the operator-bash rule below, but scripts/ops (`why`: no workflow, npm key, run.sh verb or gate invokes them) would be a false description of it: a gate READS this exact path and a gate test IMPORTS the module. It is pinned, not merely inconvenient to move, so this is a STAYS declaration for the same reason devbox-bash above is one.",
+      "breaksIfMoved": [
+        ".ci/scripts/quality/check_bws_rotation_notice.py:63 SCRIPT_REL = \"scripts/dev/bws-rotate.py\", and it is load-bearing three ways: :115 fails when the notice text does not name it, :397 fails when the file is absent at that path, :400 fails when it is not executable. A move reds this gate until all of them are repointed.",
+        ".ci/config/bws-rotation-notice.txt:15 prints the path as the one actionable line of the notice, which is what :115 above asserts. The notice is what an operator reads when a build has just died on an expired token, so a stale path there is wrong at the worst moment.",
+        ".ci/rediacc_ci/core/bws_env.py:136 ROTATE_SCRIPT_REL = os.path.join(\"scripts\", \"dev\", \"bws-rotate.py\"), built from parts, so a path-literal grep cannot see it. Same shape as the check_bws_map.py entry under operator-bash below.",
+        ".ci/rediacc_ci/tests/gates/test_gate_bws_rotate.py:35 MODULE_PATH = paths.from_root(\"scripts\", \"dev\", \"bws-rotate.py\"), also built from parts and also invisible to a literal grep. It reaches the functions by importing the module at that path, so a move makes the whole gate test unable to find its subject.",
+        ".claude/hooks/trapguard/dispatch.py:427 prints `scripts/dev/bws-rotate.py` in the text it shows a session that reached for `bws`. Its matcher at :385 uses `bws(?![\\w.-])` specifically so this script's own name does NOT trip it, so the file name is load-bearing in two directions there.",
+        ".ci/config/python-env-registry.json:1825 keys the script's seven environment variables (BWS_ACCESS_TOKEN, BWS_BIN, BWS_ROTATE_ENV_FILE, BWS_ROTATE_GITMODULES, BWS_ROTATE_MIN_SECRETS, BWS_ROTATE_SECRET_MAP, GH_BIN) on this path."
+      ],
+      "notes": [
+        "Placed immediately after devbox-bash so the two scripts/dev declarations read together. No rule below it matches scripts/dev/*.py, so first-match order is not load-bearing for this entry today; it would become so if a broader scripts/dev/** rule were ever added, which is the reason to keep it above operator-bash rather than at the end.",
+        "The retired bash twin is gone and the port was born at the same path, so nothing is in flight here: this rule declares an existing home, it does not ask for a move."
+      ]
+    },
+    {
       "id": "ci-node-helpers",
       "paths": ["scripts/ci/*.cjs"],
       "home": "scripts/ci",
