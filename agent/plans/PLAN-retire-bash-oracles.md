@@ -1,6 +1,7 @@
 # PLAN: retire the bash hook oracles, transform the remaining bash into Python
 
 Status: APPROVED 2026-09-24 by the operator (/ask): run as one big-bang; use sonnet for any sub-agent task it can handle; re-judge the three tree exemptions per file; reverse the 2026-09-21 ruling BUT keep the real-bash benefit for some cases (task A0). Worklist #52383b75.
+Owner: d778be9d
 
 ## Tasks
 

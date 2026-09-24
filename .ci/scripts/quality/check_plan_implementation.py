@@ -587,6 +587,16 @@ def controls_fired(enforce, planfile, planrec=None):
             "evidence_in_lines invented an evidence line for a box that has none",
             evidence_in_lines(planrec, [box, "      a continuation note", "", "text"], sig) == "",
         )
+    # ABSENT SUBMODULE: a pointer into an unpopulated submodule is skipped, one into a populated path is still resolved, and a non-fileline token under that prefix is never excused.
+    if planrec is not None:
+        caught(
+            "resolve_here failed a fileline into an unpopulated submodule",
+            resolve_here(planrec, "fileline", "private/zz-absent/x.sh:1", ["private/zz-absent"])[0],
+        )
+        caught(
+            "resolve_here excused a dead fileline outside every absent submodule",
+            not resolve_here(planrec, "fileline", "no/such/file-zz.py:1", ["private/zz-absent"])[0],
+        )
     # MOVED PLAN: a row written under the plan's pre-move path must still be found once the plan sits in _done/, and a same-sig row from a DIFFERENT plan must not be.
     moved_rows = [{"plan": "agent/plans/PLAN-m.md", "sig": "bbbbbbbb", "head": "H0"}]
     caught(
@@ -737,7 +747,9 @@ def main(argv=None) -> int:
                     judged,
                     lambda rel, sig: _evidence_line(REPO_ROOT, planrec, rel, sig),
                     lambda rel, sig: row_under_any_path(rows, rel, sig, follow_names(planrec, rel)),
-                    lambda kind, token: planrec.resolve(REPO_ROOT, kind, token),
+                    lambda kind, token: resolve_here(
+                        planrec, kind, token, absent_submodules(REPO_ROOT)
+                    ),
                     lambda rel, sig: planrec.done_commit(history, rel, sig),
                     lambda commit: planrec._git_out(REPO_ROOT, "log", "-1", "--format=%cI", commit),
                     lambda a, b: planrec._git_ok(REPO_ROOT, "merge-base", "--is-ancestor", a, b),
@@ -811,6 +823,41 @@ def follow_names(planrec, rel):
         )
         _FOLLOW[rel] = tuple(sorted({ln.strip() for ln in out.splitlines() if ln.strip()} - {rel}))
     return _FOLLOW[rel]
+
+
+def absent_submodules(root):
+    """Declared submodule paths whose working tree is NOT populated in this checkout.
+
+    `quality-branch` checks out with no `submodules:` key, so in CI `private/renet/**` is an empty directory, and on run 36016859754 a correct `fileline:private/renet/.ci/ci.sh:26` pointer read as P-A3 "does not resolve". check_plan_citations.absent_submodules answers the same question for the citation gate and gives the reasoning in full: the filter lives in the CALLER, and the shared resolver keeps failing closed, because a session that DOES have the submodule checked out must still be refused.
+    """
+    out: list[str] = []
+    manifest = os.path.join(root, ".gitmodules")
+    if not os.path.isfile(manifest):
+        return out
+    import subprocess  # noqa: PLC0415 -- used only here
+
+    listing = subprocess.run(
+        ["git", "config", "-f", manifest, "--get-regexp", r"\.path$"],
+        capture_output=True,
+        text=True,
+        check=False,
+    ).stdout
+    for line in listing.splitlines():
+        parts = line.split()
+        if len(parts) != 2:
+            continue
+        path = os.path.join(root, parts[1])
+        # Populated means "has content": an uninitialised submodule is an empty directory, not a missing one.
+        if not os.path.isdir(path) or not os.listdir(path):
+            out.append(parts[1])
+    return sorted(out)
+
+
+def resolve_here(planrec, kind, token, absent):
+    """(ok, why) for one investigation pointer. A `fileline` into a submodule this checkout did not populate is SKIPPED, never failed: it is a pointer this lane chose not to fetch, not a dead one. Every other pointer goes to the shared resolver unchanged."""
+    if kind == "fileline" and any(token.startswith(sub + "/") for sub in absent):
+        return True, "skipped: %s is not populated in this checkout" % token.split(":", 1)[0]
+    return planrec.resolve(REPO_ROOT, kind, token)
 
 
 def registration_findings(boxes_gate):
