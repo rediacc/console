@@ -8,7 +8,7 @@ Every case runs inside a fresh tmp_path and the subject is pointed at it with th
 WHY A PTY, and it is not an affectation. The module's first refusal is `sys.stdin.isatty()`, which exists to make an AI session physically unable to feed it a credential.
 That refusal is tested as a REAL process with stdin from a pipe (`run_lib_process`), and everything downstream of the prompt is tested through a real stdin pty (`run_full`), which `getpass.getpass` needs to turn echo off and actually read the pasted value. Without one, the whole write path would be unreachable and this file would only ever prove that the door is shut.
 
-THE INPUT IS DELAYED ON PURPOSE, same reason the bash twin delayed it: a value written to the pty before `getpass` has had a chance to open it and turn echo off can be echoed back by the terminal driver itself and appear in the captured output, which would make the "nothing is printed" assertion fire on the harness rather than on the subject.
+THE INPUT WAITS FOR ECHO-OFF, not a fixed sleep. A value written to the pty before `getpass` has turned echo off can be echoed back by the terminal driver and appear in the captured output (the "nothing is printed" assertion would then fire on the harness rather than on the subject); worse, `getpass` turns echo off with `termios.TCSAFLUSH`, which discards unread input at the moment it runs, so a write that lands a hair too early is silently dropped rather than merely echoed -- the exact shape of the pty hang `_bounded_stdout` guards against. `_wait_for_echo_off` polls the pty's ECHO bit through the master fd (which mirrors the slave's termios state, see pty(7)) until `getpass`'s own `tcsetattr` has run, which is deterministic where a fixed sleep before it was a bet against machine load. This assumes `getpass` turns echo off on THIS pty rather than on some other terminal: verified for this harness, `getpass.getpass` tries `/dev/tty` first and only falls back to `sys.stdin` when that open fails, and neither pytest nor a child spawned the way `run_full` spawns one has a controlling terminal at all here (`os.open('/dev/tty', ...)` raises ENXIO for both), so the `sys.stdin` fallback -- this test's own pty -- is the path that always runs.
 
 EVERY REFUSAL HAS A MIRROR. A rail that cannot be crossed on purpose is indistinguishable from a verb that never writes anything, which is the exact failure mode a script guarding five credentials must not have.
 
@@ -17,6 +17,7 @@ FUNCTIONS ARE DRIVEN BY IMPORT, not by sourcing: unlike the bash twin, which nee
 
 from __future__ import annotations
 
+import contextlib
 import importlib.util
 import os
 import pty as pty_module
@@ -25,6 +26,7 @@ import selectors
 import stat
 import subprocess
 import sys
+import termios
 import time
 from typing import TYPE_CHECKING, Any
 
@@ -202,7 +204,7 @@ def _read_pty(master_fd: int, proc: subprocess.Popen, timeout: float) -> bytes:
 def _bounded_stdout(proc: subprocess.Popen, timeout: float) -> bytes:
     """The child's stdout to EOF, but never longer than `timeout`.
 
-    WHY. This used to be `proc.stdout.read()`, which returns only when the child closes stdout, that is when it exits, and it ran BEFORE the bounded `_read_pty`. A child still waiting on its pty (the input written half a second in can lose that race on a loaded machine) therefore held the test forever: on 2026-09-24 three xdist workers sat in exactly that read for 51 minutes and the run never finished. Now the wait is bounded, the child is killed, and the case FAILS with what it printed.
+    WHY. This used to be `proc.stdout.read()`, which returns only when the child closes stdout, that is when it exits, and it ran BEFORE the bounded `_read_pty`. A child still waiting on its pty (the input, written after a fixed sleep rather than a readiness wait, could lose that race on a loaded machine and never arrive at all) therefore held the test forever: on 2026-09-24 three xdist workers sat in exactly that read for 51 minutes and the run never finished. Now the wait is bounded, the child is killed, and the case FAILS with what it printed. `_wait_for_echo_off` has since closed the race itself; this bound stays as the control for the hang shape, proven by `test_a_child_stuck_on_its_pty_fails_the_case_instead_of_hanging` below.
     """
     try:
         out, _ = proc.communicate(timeout=timeout)
@@ -214,6 +216,37 @@ def _bounded_stdout(proc: subprocess.Popen, timeout: float) -> bytes:
             % (timeout, (out or b"")[-800:])
         ) from None
     return out or b""
+
+
+# Bound for _wait_for_echo_off, not an expected wait: getpass reaches its tcsetattr well
+# under a second even on the loaded box this was written for (control passes in 1.44s per
+# _bounded_stdout's own docstring). This only needs to be longer than that.
+_ECHO_WAIT_TIMEOUT = 10.0
+
+
+def _wait_for_echo_off(master_fd: int, proc: subprocess.Popen, deadline: float) -> None:
+    """Block until the pty's ECHO bit goes low or the child exits, or raise once `deadline` seconds have passed with neither.
+
+    REPLACES A FIXED time.sleep(0.5). On a loaded box that sleep can expire before `getpass` has reached its own `termios.tcsetattr` call, and writing before that call does not just risk an echoed value: `tcsetattr` runs with TCSAFLUSH, which discards any input already sitting unread in the pty at that instant, so an early write can vanish outright and leave the subject waiting on a pty nothing will ever fill again -- the hang `_bounded_stdout` exists to bound rather than actually prevent.
+
+    Polling removes the guess. A write to the pty's master is reliably reflected in the slave's termios state as read back through the master fd (pty(7)), so observing ECHO go low here IS observing that `getpass`'s `tcsetattr` has already completed -- which happens before it starts reading, so a write issued right after this returns lands after any flush, never before it.
+
+    THE CHILD-EXIT CHECK IS NOT AN AFTERTHOUGHT. `test_an_unreachable_fingerprint_tool_...` dies in `require_fingerprint_tool` before `read_candidate` ever runs `getpass`, so ECHO never moves at all; without this check every run of that case would burn the whole deadline and then fail on a subject that had already produced its own correct verdict. A refusal that fires before the prompt is not the race this function exists to close.
+    """
+    deadline_at = time.monotonic() + deadline
+    while True:
+        attrs = termios.tcgetattr(master_fd)
+        if not attrs[3] & termios.ECHO:
+            return
+        if proc.poll() is not None:
+            return
+        if time.monotonic() >= deadline_at:
+            raise AssertionError(
+                "the pty's ECHO bit never went low within %ss and the child is still running; "
+                "getpass never reached its tcsetattr, so bws-rotate is probably still blocked "
+                "before the prompt" % deadline
+            )
+        time.sleep(0.01)
 
 
 def run_full(
@@ -242,12 +275,10 @@ def run_full(
         text=False,
     )
     os.close(slave_fd)
-    try:
-        # HALF A SECOND ON PURPOSE, same reason the bash twin delayed it: writing before the subject's getpass has opened /dev/tty and turned echo off risks the terminal driver echoing the paste back into the transcript, which would make the "nothing is printed" assertion fire on the harness rather than on the subject.
-        time.sleep(0.5)
+    _wait_for_echo_off(master_fd, proc, _ECHO_WAIT_TIMEOUT)
+    # The child exited before the prompt (an earlier refusal fired); the paste is moot.
+    with contextlib.suppress(OSError):
         os.write(master_fd, (pasted + "\n").encode("utf-8"))
-    finally:
-        pass
     out = _bounded_stdout(proc, timeout)
     tty_leak = _read_pty(master_fd, proc, timeout)
     proc.wait(timeout=timeout)
@@ -400,8 +431,10 @@ def test_an_unreachable_fingerprint_tool_refuses_instead_of_blaming_the_candidat
         text=False,
     )
     os.close(slave_fd)
-    time.sleep(0.5)
-    os.write(master_fd, (FIXTURE_TOKEN + "\n").encode("utf-8"))
+    _wait_for_echo_off(master_fd, proc, _ECHO_WAIT_TIMEOUT)
+    # The child exited before the prompt (the expected refusal fired); the paste is moot.
+    with contextlib.suppress(OSError):
+        os.write(master_fd, (FIXTURE_TOKEN + "\n").encode("utf-8"))
     stdout_bytes = _bounded_stdout(proc, 20)
     out_bytes = stdout_bytes + _read_pty(master_fd, proc, 20)
     proc.wait(timeout=20)
