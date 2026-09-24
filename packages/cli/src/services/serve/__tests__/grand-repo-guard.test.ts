@@ -28,6 +28,13 @@ import { PROXY_ROUTES } from '@rediacc/shared/cli-contract/wire';
 import type { RdcConfig } from '@rediacc/shared/config-schema';
 import type { PolicyDocument } from '@rediacc/shared/policy';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+
+// The executor never runs under an AI agent, and the agent path exits early with the renet code, which hid
+// both defects these tests pin from any agent-driven run. Pin the production (non-agent) path.
+vi.mock('../../../utils/agent-guard.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../../utils/agent-guard.js')>()),
+  isAgentEnvironment: () => false,
+}));
 import { configFileStorage } from '../../../adapters/config-file-storage.js';
 import type { ExecuteOptions, ExecuteResult } from '../../executor/types.js';
 import { AuthVerifier } from '../auth.js';
@@ -265,7 +272,8 @@ describe('executor pre-run refusals', () => {
       const { status } = await run('repo up', { ref: 'shop' });
 
       expect(status).toBe(200);
-      expect(executed).toHaveLength(1);
+      // A mutating verb first probes the machine for the repo (repository_list), then runs once.
+      expect(executed.filter((call) => call.functionName === 'repository_up')).toHaveLength(1);
     });
 
     it('refuses under a policy that allows the command but not grand repos', async () => {

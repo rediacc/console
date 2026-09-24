@@ -17,8 +17,8 @@ function renderCatFailure(result: ExecuteResult): void {
     .filter((l) => /^(Error:|error:)/.test(l))
     .map((l) => l.replace(/^(Error|error):\s*/, ''))
     .at(-1);
+  // renderLocalExecutionFailure sets renet's own exit code (1 when it reported none); overriding it here lost that code.
   renderLocalExecutionFailure(result, detail ?? result.error ?? t('commands.repo.cat.failed'));
-  setExitCode(1);
 }
 
 /**

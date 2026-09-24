@@ -17,6 +17,13 @@ import { serve } from '@hono/node-server';
 import { CLI_CONTRACT_VERSION } from '@rediacc/shared/cli-contract';
 import type { RdcConfig } from '@rediacc/shared/config-schema';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+
+// The executor never runs under an AI agent, and the agent path exits early with the renet code, which hid
+// both defects these tests pin from any agent-driven run. Pin the production (non-agent) path.
+vi.mock('../../utils/agent-guard.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../utils/agent-guard.js')>()),
+  isAgentEnvironment: () => false,
+}));
 import type { ExecuteResult } from '../../services/executor/types.js';
 
 await vi.hoisted(async () => {

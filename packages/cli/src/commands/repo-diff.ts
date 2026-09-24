@@ -3,7 +3,7 @@ import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
-import { setExitCode, writeStdout } from '../services/core/request-context.js';
+import { writeStdout } from '../services/core/request-context.js';
 import { type ExecuteResult, getExecutor } from '../services/executor/executor-factory.js';
 import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
@@ -284,8 +284,8 @@ async function runDiff(ref: string, options: DiffOptions): Promise<void> {
   });
 
   if (!result.success) {
+    // renderLocalExecutionFailure sets renet's own exit code (1 when it reported none).
     renderLocalExecutionFailure(result, result.error ?? t('commands.repo.diff.failed'));
-    setExitCode(1);
     return;
   }
   renderResult(mode, result.stdout ?? '', asJson);
