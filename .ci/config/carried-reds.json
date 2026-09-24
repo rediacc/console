@@ -20,6 +20,86 @@
     {
       "gate": "check:ci-gate-manifest",
       "reason": "A LOCAL MEASUREMENT ARTIFACT, and the gate's own comment describes this exact failure mode: 'a full run that overlapped two other sessions on 2026-09-02 pushed a 4.5s gate's average to 21s and this oracle demanded it be marked slow'. The three gates it names here (check:ci-guard-mention-anchoring 24.8s, check:ci-changed-selection 141.6s, gate-test:policy-liveness-floors 29.2s) were timed on a machine that spent today running a 22-worker gate battery and a 15919-test pytest suite, so the numbers are inflated by my own load. The oracle reads .ci/cache/gate-durations.json, which .gitignore:143 excludes, so CI's checkout does not have this file and the read sits inside a try/except -- these findings cannot reproduce there. Marking three gates `slow: true` on a contended measurement would change CI lane composition on bad data, which is the one thing the gate's comment warns against. Carried so CI can measure it honestly and say so."
+    },
+    {
+      "gate": "check:format",
+      "reason": "OPERATOR RULING 2026-09-24 (/ask, 'Carry the reds, push'): the pr-babysitter was stopped because its CI write/fix loop took too long; the lead now commits verified batches and pushes 0923-1 only as a BACKUP. This gate was red on the ci:quick run of the shared tree at push time, which also holds other writers' uncommitted in-flight work (A3 deleting .claude/oracles with 55 staged deletions, the A4 and W-A batches held for it), so the failure is not yet triaged to a commit. CI still runs and fails on it; remove this entry when the gate goes green or is fixed."
+    },
+    {
+      "gate": "check:ci-i18n-www-translation-freshness",
+      "reason": "OPERATOR RULING 2026-09-24 (/ask, 'Carry the reds, push'): the pr-babysitter was stopped because its CI write/fix loop took too long; the lead now commits verified batches and pushes 0923-1 only as a BACKUP. This gate was red on the ci:quick run of the shared tree at push time, which also holds other writers' uncommitted in-flight work (A3 deleting .claude/oracles with 55 staged deletions, the A4 and W-A batches held for it), so the failure is not yet triaged to a commit. CI still runs and fails on it; remove this entry when the gate goes green or is fixed."
+    },
+    {
+      "gate": "check:ci-shape-duplication",
+      "reason": "OPERATOR RULING 2026-09-24 (/ask, 'Carry the reds, push'): the pr-babysitter was stopped because its CI write/fix loop took too long; the lead now commits verified batches and pushes 0923-1 only as a BACKUP. This gate was red on the ci:quick run of the shared tree at push time, which also holds other writers' uncommitted in-flight work (A3 deleting .claude/oracles with 55 staged deletions, the A4 and W-A batches held for it), so the failure is not yet triaged to a commit. CI still runs and fails on it; remove this entry when the gate goes green or is fixed."
+    },
+    {
+      "gate": "check:ci-shell-declared-commands",
+      "reason": "OPERATOR RULING 2026-09-24 (/ask, 'Carry the reds, push'): the pr-babysitter was stopped because its CI write/fix loop took too long; the lead now commits verified batches and pushes 0923-1 only as a BACKUP. This gate was red on the ci:quick run of the shared tree at push time, which also holds other writers' uncommitted in-flight work (A3 deleting .claude/oracles with 55 staged deletions, the A4 and W-A batches held for it), so the failure is not yet triaged to a commit. CI still runs and fails on it; remove this entry when the gate goes green or is fixed."
+    },
+    {
+      "gate": "check:ci-tree-shape",
+      "reason": "OPERATOR RULING 2026-09-24 (/ask, 'Carry the reds, push'): the pr-babysitter was stopped because its CI write/fix loop took too long; the lead now commits verified batches and pushes 0923-1 only as a BACKUP. This gate was red on the ci:quick run of the shared tree at push time, which also holds other writers' uncommitted in-flight work (A3 deleting .claude/oracles with 55 staged deletions, the A4 and W-A batches held for it), so the failure is not yet triaged to a commit. CI still runs and fails on it; remove this entry when the gate goes green or is fixed."
+    },
+    {
+      "gate": "check:ci-shell-format",
+      "reason": "OPERATOR RULING 2026-09-24 (/ask, 'Carry the reds, push'): the pr-babysitter was stopped because its CI write/fix loop took too long; the lead now commits verified batches and pushes 0923-1 only as a BACKUP. This gate was red on the ci:quick run of the shared tree at push time, which also holds other writers' uncommitted in-flight work (A3 deleting .claude/oracles with 55 staged deletions, the A4 and W-A batches held for it), so the failure is not yet triaged to a commit. CI still runs and fails on it; remove this entry when the gate goes green or is fixed."
+    },
+    {
+      "gate": "check:ci-python-lint",
+      "reason": "OPERATOR RULING 2026-09-24 (/ask, 'Carry the reds, push'): the pr-babysitter was stopped because its CI write/fix loop took too long; the lead now commits verified batches and pushes 0923-1 only as a BACKUP. This gate was red on the ci:quick run of the shared tree at push time, which also holds other writers' uncommitted in-flight work (A3 deleting .claude/oracles with 55 staged deletions, the A4 and W-A batches held for it), so the failure is not yet triaged to a commit. CI still runs and fails on it; remove this entry when the gate goes green or is fixed."
+    },
+    {
+      "gate": "check:ci-account-env-retired",
+      "reason": "OPERATOR RULING 2026-09-24 (/ask, 'Carry the reds, push'): the pr-babysitter was stopped because its CI write/fix loop took too long; the lead now commits verified batches and pushes 0923-1 only as a BACKUP. This gate was red on the ci:quick run of the shared tree at push time, which also holds other writers' uncommitted in-flight work (A3 deleting .claude/oracles with 55 staged deletions, the A4 and W-A batches held for it), so the failure is not yet triaged to a commit. CI still runs and fails on it; remove this entry when the gate goes green or is fixed."
+    },
+    {
+      "gate": "check:ci-env-manifest",
+      "reason": "OPERATOR RULING 2026-09-24 (/ask, 'Carry the reds, push'): the pr-babysitter was stopped because its CI write/fix loop took too long; the lead now commits verified batches and pushes 0923-1 only as a BACKUP. This gate was red on the ci:quick run of the shared tree at push time, which also holds other writers' uncommitted in-flight work (A3 deleting .claude/oracles with 55 staged deletions, the A4 and W-A batches held for it), so the failure is not yet triaged to a commit. CI still runs and fails on it; remove this entry when the gate goes green or is fixed."
+    },
+    {
+      "gate": "check:ci-plan-boxes",
+      "reason": "OPERATOR RULING 2026-09-24 (/ask, 'Carry the reds, push'): the pr-babysitter was stopped because its CI write/fix loop took too long; the lead now commits verified batches and pushes 0923-1 only as a BACKUP. This gate was red on the ci:quick run of the shared tree at push time, which also holds other writers' uncommitted in-flight work (A3 deleting .claude/oracles with 55 staged deletions, the A4 and W-A batches held for it), so the failure is not yet triaged to a commit. CI still runs and fails on it; remove this entry when the gate goes green or is fixed."
+    },
+    {
+      "gate": "check:ci-plan-implementation",
+      "reason": "OPERATOR RULING 2026-09-24 (/ask, 'Carry the reds, push'): the pr-babysitter was stopped because its CI write/fix loop took too long; the lead now commits verified batches and pushes 0923-1 only as a BACKUP. This gate was red on the ci:quick run of the shared tree at push time, which also holds other writers' uncommitted in-flight work (A3 deleting .claude/oracles with 55 staged deletions, the A4 and W-A batches held for it), so the failure is not yet triaged to a commit. CI still runs and fails on it; remove this entry when the gate goes green or is fixed."
+    },
+    {
+      "gate": "check:ci-plan-citations",
+      "reason": "OPERATOR RULING 2026-09-24 (/ask, 'Carry the reds, push'): the pr-babysitter was stopped because its CI write/fix loop took too long; the lead now commits verified batches and pushes 0923-1 only as a BACKUP. This gate was red on the ci:quick run of the shared tree at push time, which also holds other writers' uncommitted in-flight work (A3 deleting .claude/oracles with 55 staged deletions, the A4 and W-A batches held for it), so the failure is not yet triaged to a commit. CI still runs and fails on it; remove this entry when the gate goes green or is fixed."
+    },
+    {
+      "gate": "check:ci-plan-record",
+      "reason": "OPERATOR RULING 2026-09-24 (/ask, 'Carry the reds, push'): the pr-babysitter was stopped because its CI write/fix loop took too long; the lead now commits verified batches and pushes 0923-1 only as a BACKUP. This gate was red on the ci:quick run of the shared tree at push time, which also holds other writers' uncommitted in-flight work (A3 deleting .claude/oracles with 55 staged deletions, the A4 and W-A batches held for it), so the failure is not yet triaged to a commit. CI still runs and fails on it; remove this entry when the gate goes green or is fixed."
+    },
+    {
+      "gate": "check:ci-hooks-resolvable",
+      "reason": "OPERATOR RULING 2026-09-24 (/ask, 'Carry the reds, push'): the pr-babysitter was stopped because its CI write/fix loop took too long; the lead now commits verified batches and pushes 0923-1 only as a BACKUP. This gate was red on the ci:quick run of the shared tree at push time, which also holds other writers' uncommitted in-flight work (A3 deleting .claude/oracles with 55 staged deletions, the A4 and W-A batches held for it), so the failure is not yet triaged to a commit. CI still runs and fails on it; remove this entry when the gate goes green or is fixed."
+    },
+    {
+      "gate": "check:ci-shell-commands",
+      "reason": "OPERATOR RULING 2026-09-24 (/ask, 'Carry the reds, push'): the pr-babysitter was stopped because its CI write/fix loop took too long; the lead now commits verified batches and pushes 0923-1 only as a BACKUP. This gate was red on the ci:quick run of the shared tree at push time, which also holds other writers' uncommitted in-flight work (A3 deleting .claude/oracles with 55 staged deletions, the A4 and W-A batches held for it), so the failure is not yet triaged to a commit. CI still runs and fails on it; remove this entry when the gate goes green or is fixed."
+    },
+    {
+      "gate": "check:ci-locale-sources",
+      "reason": "OPERATOR RULING 2026-09-24 (/ask, 'Carry the reds, push'): the pr-babysitter was stopped because its CI write/fix loop took too long; the lead now commits verified batches and pushes 0923-1 only as a BACKUP. This gate was red on the ci:quick run of the shared tree at push time, which also holds other writers' uncommitted in-flight work (A3 deleting .claude/oracles with 55 staged deletions, the A4 and W-A batches held for it), so the failure is not yet triaged to a commit. CI still runs and fails on it; remove this entry when the gate goes green or is fixed."
+    },
+    {
+      "gate": "check:ci-search-index",
+      "reason": "OPERATOR RULING 2026-09-24 (/ask, 'Carry the reds, push'): the pr-babysitter was stopped because its CI write/fix loop took too long; the lead now commits verified batches and pushes 0923-1 only as a BACKUP. This gate was red on the ci:quick run of the shared tree at push time, which also holds other writers' uncommitted in-flight work (A3 deleting .claude/oracles with 55 staged deletions, the A4 and W-A batches held for it), so the failure is not yet triaged to a commit. CI still runs and fails on it; remove this entry when the gate goes green or is fixed."
+    },
+    {
+      "gate": "check:ci-paths-origin",
+      "reason": "OPERATOR RULING 2026-09-24 (/ask, 'Carry the reds, push'): the pr-babysitter was stopped because its CI write/fix loop took too long; the lead now commits verified batches and pushes 0923-1 only as a BACKUP. This gate was red on the ci:quick run of the shared tree at push time, which also holds other writers' uncommitted in-flight work (A3 deleting .claude/oracles with 55 staged deletions, the A4 and W-A batches held for it), so the failure is not yet triaged to a commit. CI still runs and fails on it; remove this entry when the gate goes green or is fixed."
+    },
+    {
+      "gate": "check:ci-gate-bind",
+      "reason": "OPERATOR RULING 2026-09-24 (/ask, 'Carry the reds, push'): the pr-babysitter was stopped because its CI write/fix loop took too long; the lead now commits verified batches and pushes 0923-1 only as a BACKUP. This gate was red on the ci:quick run of the shared tree at push time, which also holds other writers' uncommitted in-flight work (A3 deleting .claude/oracles with 55 staged deletions, the A4 and W-A batches held for it), so the failure is not yet triaged to a commit. CI still runs and fails on it; remove this entry when the gate goes green or is fixed."
+    },
+    {
+      "gate": "check:ci-enumeration-vacuity",
+      "reason": "OPERATOR RULING 2026-09-24 (/ask, 'Carry the reds, push'): the pr-babysitter was stopped because its CI write/fix loop took too long; the lead now commits verified batches and pushes 0923-1 only as a BACKUP. This gate was red on the ci:quick run of the shared tree at push time, which also holds other writers' uncommitted in-flight work (A3 deleting .claude/oracles with 55 staged deletions, the A4 and W-A batches held for it), so the failure is not yet triaged to a commit. CI still runs and fails on it; remove this entry when the gate goes green or is fixed."
     }
   ]
 }
