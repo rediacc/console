@@ -4,6 +4,7 @@ This is the v5-v9 main() stop path, extracted, consuming the v10 store fold inst
 """
 
 import contextlib
+import datetime
 import hashlib
 import json
 import os
@@ -21,6 +22,7 @@ import wl_bgsweep
 import wl_checklist
 import wl_ci
 import wl_claimcheck
+import wl_common
 import wl_core as C
 import wl_defersettle
 import wl_deflect
@@ -261,13 +263,87 @@ def cited_excerpts(root, message, limit=3, span=4):
 
 
 RUN_ID_RE = re.compile(r"\b\d{9,}\b")
-EXIT_RE = re.compile(r"\bexit(?:\s+code)?\s*[:=]?\s*\d+\b", re.IGNORECASE)
+# `rc=0` and `rc 0` are exit codes too (agent/plans/PLAN-stop-hook-retro-20260924.md R.8): four ticks on 2026-09-24 were refused for spelling one that way.
+EXIT_RE = re.compile(r"\bexit(?:\s+code)?\s*[:=]?\s*\d+\b|\brc\s*[:= ]\s*\d+\b", re.IGNORECASE)
+# A bare `name.ext:N`, which resolves when exactly ONE tracked file carries that basename (R.8). Eight refusals on 2026-09-24 cited a real file this way.
+BARE_CITE_RE = re.compile(r"(?<![\w./-])([\w-][\w.-]*\.[A-Za-z0-9]+):(\d+)\b")
+# `ASKED:<ISO minute>`: an operator /ask answer, which passes only when the lead transcript holds an AskUserQuestion result within ASKED_WINDOW_S of that minute (R.8).
+ASKED_RE = re.compile(r"\bASKED:(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})(?::\d{2})?Z")
+ASKED_WINDOW_S = 300
+# The transcript tail `ASKED:` is checked against; a 200 MB lead transcript is never read whole.
+ASKED_TAIL_BYTES = 64 * 1024 * 1024
 URL_RE = re.compile(r"https?://\S+")
 SHA_RE = re.compile(r"\b[0-9a-f]{7,40}\b")
 
 
-def completion_evidence(root, text):
+def _bare_cite_resolves(root, text):
+    """True when some bare `name.ext:N` in `text` names exactly one tracked file (`git ls-files`) whose length reaches line N. An ambiguous basename resolves nothing: picking one of several would verify a file the tick may not mean."""
+    bare = [(m.group(1), int(m.group(2))) for m in BARE_CITE_RE.finditer(text or "")]
+    if not bare:
+        return False
+    listed = C._git(root, "ls-files") or ""
+    by_name: dict[str, list[str]] = {}
+    for rel in listed.splitlines():
+        by_name.setdefault(rel.rsplit("/", 1)[-1], []).append(rel)
+    for name, line in bare:
+        hits = by_name.get(name) or []
+        if len(hits) != 1:
+            continue
+        try:
+            n = len((pathlib.Path(root) / hits[0]).read_text(errors="replace").splitlines())
+        except OSError:
+            continue
+        if 1 <= line <= n:
+            return True
+    return False
+
+
+def _asked_in_transcript(text, transcript):
+    """True when an `ASKED:<minute>` in `text` matches an AskUserQuestion tool_result in the lead transcript within ASKED_WINDOW_S. The transcript is the harness's record of the question being answered, which the session cannot write by describing it."""
+    stamps = []
+    for m in ASKED_RE.finditer(text or ""):
+        with contextlib.suppress(ValueError):
+            stamps.append(
+                datetime.datetime.strptime(m.group(1), "%Y-%m-%dT%H:%M")
+                .replace(tzinfo=datetime.UTC)
+                .timestamp()
+            )
+    if not stamps or not transcript:
+        return False
+    asks = set()
+    try:
+        with open(transcript, "rb") as fh:
+            fh.seek(0, 2)
+            size = fh.tell()
+            fh.seek(max(0, size - ASKED_TAIL_BYTES))
+            lines = fh.read().splitlines()
+    except (OSError, TypeError):
+        return False
+    for rec in wl_common.records(lines, need=b'"tool_'):
+        content = (rec.get("message") or {}).get("content")
+        if not isinstance(content, list):
+            continue
+        for block in content:
+            if not isinstance(block, dict):
+                continue
+            if block.get("type") == "tool_use" and block.get("name") == "AskUserQuestion":
+                asks.add(str(block.get("id") or ""))
+            elif block.get("type") == "tool_result" and str(block.get("tool_use_id") or "") in asks:
+                try:
+                    at = datetime.datetime.fromisoformat(
+                        str(rec.get("timestamp") or "")
+                    ).timestamp()
+                except ValueError:
+                    continue
+                if any(abs(at - st) <= ASKED_WINDOW_S for st in stamps):
+                    return True
+    return False
+
+
+def completion_evidence(root, text, transcript=None):
     """Does `text` carry something evidence-shaped for a completion claim?
+
+    Since agent/plans/PLAN-stop-hook-retro-20260924.md R.8 it also accepts `rc=N`, a bare `name.ext:N` that names exactly one tracked file, and `ASKED:<ISO minute>` checked against `transcript` (the lead's own), which only a caller that knows the transcript can verify.
 
     Shapes, cheapest first: a run-id-sized number, an exit code, a URL, a file:line that RESOLVES (citation_state, so a fabricated path or line fails), or a hex string naming a REAL git object (verified, so a decorative 'deadbee' cannot pass; at most five git subprocess calls total across every candidate and every submodule root, to bound the cost). Deliberately shape-based: whether the evidence SUPPORTS the claim is the reggate
     judge's question, since every new tick already flows into it. This check only guarantees a completion leaves a RECORD, which is exactly what S-2 lacked.
@@ -281,6 +357,8 @@ def completion_evidence(root, text):
     for m in CITE_RE.finditer(text or ""):
         if citation_state(root, m.group(0))[0]:
             return True
+    if _bare_cite_resolves(root, text) or _asked_in_transcript(text, transcript):
+        return True
     # LONGEST candidates first, then the cap. The cap bounds git calls (above), but taking the first five in TEXT order spent the entire budget on short hex tokens that can never be object ids. Every rendered line opens with the mandatory session tag TWICE (`- [x] (0ad063bf) (0ad063bf) ...`), and cited worklist item ids are 8 hex as well, so an item that cross-references its
     # siblings poisons its own evidence check -- the more carefully it is written, the more certainly it fails. Found live 2026-08-23 on a tick whose only real SHA sat at position 6, behind ['0ad063bf', '0ad063bf', '23d99308', 'ebe8b570', 'e263d2cc']; it blocked five consecutive stops while carrying a tree hash that resolves. This is the same shape as the CITE_RE fix above, which
     # this arm never received. Ordering by length is the cheap discriminator: a 40-hex object id outranks an 8-hex id, and ties keep first-seen order so the choice stays deterministic.
@@ -1097,6 +1175,35 @@ def outq_add(
     return added
 
 
+def blocklog(worklist, me8, key, named=(), judge=None):
+    """Append one row per BLOCKED stop to `.blocklog-<me8>.jsonl` beside the worklist: the key the block leads with, every other outstanding key it named, and the judge's flags when the judge blocked (agent/plans/PLAN-stop-hook-retro-20260924.md R.10).
+
+    The retro counts blocks per key from this file instead of grepping a 222 MB transcript. One small O_APPEND line; a log that cannot be written never changes the block.
+    """
+    row = {"at": C.stamp_now(), "key": key, "named": list(named)[:40], "judge": judge or {}}
+    with contextlib.suppress(OSError):
+        fd = os.open(
+            str(worklist.with_suffix(".blocklog-%s.jsonl" % me8)),
+            os.O_WRONLY | os.O_CREAT | os.O_APPEND,
+            0o644,
+        )
+        try:
+            os.write(fd, (json.dumps(row) + "\n").encode("utf-8"))
+        finally:
+            os.close(fd)
+
+
+def judge_flags(verdict, reggate=""):
+    """The judge facts a blocklog row carries: the verdict, and which obligations its reason shows fired."""
+    reason = str((verdict or {}).get("reason") or "")
+    return {
+        "verdict": str((verdict or {}).get("verdict") or ""),
+        "sweep": "SWEEP THE CLASS" in reason,
+        "proof": "PROOF OBLIGATION" in reason,
+        "reggate": reggate,
+    }
+
+
 def outq_drain(worklist, session_id, state_doc, n, rng=None):
     """(texts, remaining): up to n entries, TIER ORDER preserved, same-tier choice randomized.
 
@@ -1154,6 +1261,20 @@ def _outq_display_key(e):
     return key[: -len(sig) - 1] if e.get("sticky") and sig and key.endswith(":" + sig) else key
 
 
+def _outq_group_line(key, entries):
+    """The one digest line for every multi-line entry under `key`. The ladder names its quiet subjects by id; any other key shows its newest entry's first line and a count."""
+    if key == "ladder":
+        ids = []
+        for e in entries:
+            for ident in re.findall(r"#([0-9a-f]{6,})", str(e.get("text") or "")):
+                if ident not in ids:
+                    ids.append(ident)
+        return M.N_OUTQ_LADDER_LINE % (len(ids), ", ".join("#" + i for i in ids[:8]))
+    newest = max(entries, key=lambda e: int(e.get("seq") or 0))
+    first = (str(newest.get("text") or "").strip("\n").splitlines() or [""])[0]
+    return first if len(entries) == 1 else "%d queued, newest: %s" % (len(entries), first)
+
+
 def outq_digest(worklist, session_id, state_doc, n=OUTQ_DIGEST_MAX, skip=()):
     """The blocked stop's view of the advisory queue: (digest text or "", delivered count).
 
@@ -1165,13 +1286,31 @@ def outq_digest(worklist, session_id, state_doc, n=OUTQ_DIGEST_MAX, skip=()):
     )
     if not items:
         return "", 0
-    head, rest = items[: max(0, n)], len(items) - max(0, n)
+    # SAME-KEY MULTI-LINE ENTRIES COLLAPSE INTO ONE LINE (agent/plans/PLAN-stop-hook-retro-20260924.md R.9): six identical `ladder` lines once filled the whole digest, stop after stop, so no one-line advisory behind them was ever delivered. A one-line entry keeps its own line, because that line IS its delivery.
+    rows: list[tuple[str, Any]] = []
+    grouped: dict[str, list[dict]] = {}
+    for e in items:
+        body = str(e.get("text") or "").strip("\n")
+        if "\n" in body:
+            key = _outq_display_key(e)
+            if key in grouped:
+                grouped[key].append(e)
+                continue
+            grouped[key] = [e]
+            rows.append(("group", key))
+        else:
+            rows.append(("one", e))
+    head, rest = rows[: max(0, n)], len(rows) - max(0, n)
     lines, delivered = [], set()
-    for e in head:
+    for kind, what in head:
+        if kind == "group":
+            lines.append("    %s: %s" % (what, _outq_group_line(what, grouped[what])[:150]))
+            continue
+        e = what
         body = str(e.get("text") or "").strip("\n")
         first = (body.splitlines() or [""])[0]
         lines.append("    %s: %s" % (_outq_display_key(e), first[:150]))
-        if "\n" not in body and len(first) <= 150:
+        if len(first) <= 150:
             delivered.add(id(e))
             if not e.get("sticky"):
                 q["shown"][e["key"]] = {"sig": e.get("sig", ""), "at": C.stamp_now()}
@@ -1793,6 +1932,8 @@ PRIORITY_LADDER = (
                 # The roster's integrity half: a live writer nothing leases, and a lease on a worker with no live agent in its lineage. Both are claims about in-flight work that the store and the harness contradict.
                 "roster-unleased",
                 "roster-dead",
+                # Queued writer work with a writer slot free (agent/plans/PLAN-stop-hook-retro-20260924.md R.5): split out of roster-dead, because a queue is not a finished worker.
+                "queue-slot",
             }
         ),
     ),
@@ -2268,11 +2409,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     cur_sig = S.world_sig(
         root, worklist, session_id, fold=fold, transcript_path=event.get("transcript_path")
     )
-    # v14 gap 5: STATE.md staleness keys on STRUCTURE, not bytes, so a session's own bookkeeping (lease renewals, update notes) does not stale the document it just refreshed. The judge keeps cur_sig.
-    st_sig = S.state_world_sig(
-        root, worklist, session_id, fold=fold, transcript_path=event.get("transcript_path")
-    )
-    # JUDGMENT FACTS ONLY for the STATE.md verdict (P1.2): the owned item set, and the items `## Next action` names. `st_sig` above still keys the report banking below, which is a different question.
+    # JUDGMENT FACTS ONLY for the STATE.md verdict (P1.2): the owned item set, and the items `## Next action` names. The judge keeps cur_sig; the report banking below keys on the owned items' structure (R.4).
     items_sig = S.state_items_sig(fold, session_id)
     # session_id, not blank: the verdict is about THIS session's own section. Without it the check judged whichever document happened to be on disk, so a peer's write reset everyone's clock and -- worse than a skipped stop -- the adopt below banked the PEER'S world signature as this session's own, making a document describing someone else's world read as this one's recovery
     # artifact.
@@ -2299,10 +2436,11 @@ def run_stop(event, event_ok, worklist, hook_file):
     # cannot work, because the constraint is authority, not knowledge. Measured 2026-08-15: the two survivors were "set four Worker secrets with the operator's Cloudflare session" and "delete the last restore path once a machine has round-tripped a repo"; no agent can return an approach to either, so the check could only be satisfied by spawning a decorative agent, i.e. by gaming
     # it. `[>]` still counts as actionable: work on a worker genuinely can stall, and the bg-wait check reports it separately.
     actionable_remains = bool(open_items or tasks or in_flight)
-    # v14 gap 6: BANK a message that carries a '## Remaining' section, keyed to the structural world sig. A later stop on an UNCHANGED world (a bookkeeping-only turn) is then not ordered to re-type a byte-identical table; any real move changes st_sig and the demand returns. Banked before the battery so the stop that writes the report banks it even when it blocks
-    # for some other reason.
+    # v14 gap 6: BANK a message that carries a '## Remaining' section, keyed to the owned items' structure. A later stop on an UNCHANGED item set is then not ordered to re-type a byte-identical table; an add, tick, deferral or state change moves the key and the demand returns. Banked before the battery so the stop that writes the report banks it even when it blocks
+    # for some other reason.NOT the retired `state_world_sig` any more (agent/plans/PLAN-stop-hook-retro-20260924.md R.4): that one also hashed HEAD and the harness task statuses, and a peer's commit or a shell finishing is not a change to what this session has left to do.
+    report_sig = S.report_items_sig(fold, session_id)
     if msg_readable and REMAINING_HEADING.search(last_msg or ""):
-        state_doc["last_report_sig"] = st_sig
+        state_doc["last_report_sig"] = report_sig
 
     # ---- v15 PURE BACKGROUND WAIT (operator, 2026-07-31): "sometimes you only have background jobs and wait for them without any other pending task. The hook should respect that but have information about them,
     # with a 15 min timeout to have a report, since they may stuck."
@@ -2419,8 +2557,11 @@ def run_stop(event, event_ok, worklist, hook_file):
         )
     except Exception:  # noqa: BLE001 -- liveness must never break gating
         ladder_pings, ladder_inv, ladder_res, ladder_gone, ladder_idle = [], [], [], [], []
+    # ONE ENTRY, REBUILT EVERY STOP (agent/plans/PLAN-stop-hook-retro-20260924.md R.9). The pings are recomputed on every stop from the items' own ages (wl_liveness.ladder does not fire-once the 45-minute rung), so the entry is regenerable and needs no sticky key. As a sticky `ladder:<sig>` per ping set it was never retracted when its item moved, and on 2026-09-24 twenty of them held the
+    # digest's head for every blocked stop: 0 of 52 one-line advisories delivered. Class 0 still: the wording is a direct instruction that becomes a block at the 90-minute rung. The first line drops the legacy sticky entries, a migration that is a no-op once they are gone.
+    _q = _outq(state_doc)
+    _q["items"] = [e for e in _q["items"] if not str(e.get("key") or "").startswith("ladder:")]
     if ladder_pings:
-        # STICKY AND CLASS 0. Sticky because ladder() has already recorded the fired rung against the item's stamp, so the text cannot be regenerated until the item moves; class 0 because the wording is a direct instruction that becomes a block at the 90-minute rung.
         outq_add(
             worklist,
             session_id,
@@ -2428,8 +2569,11 @@ def run_stop(event, event_ok, worklist, hook_file):
             "ladder",
             M.N_LADDER_PING % ("\n".join("  " + p for p in ladder_pings), me8),
             0,
-            sticky=True,
+            refresh_min=wl_liveness.LADDER_PING_MIN,
+            on_change=False,
         )
+    else:
+        _q["items"] = [e for e in _q["items"] if e.get("key") != "ladder"]
     S.save_state(worklist, session_id, state_doc)
 
     # ---- v11: the store-derived guide, present on EVERY full stop (allow and block alike), so the session reports from the store, not memory. Never breaks gating, and a broken guide SAYS SO rather than vanishing.
@@ -2528,6 +2672,18 @@ def run_stop(event, event_ok, worklist, hook_file):
                 "roster-dead",
                 True,
                 M.V_ROSTER_DEAD % (len(_roster["leased_dead"]), _rrows["dead"], me8, me8),
+            )
+        if _roster.get("queue_start"):
+            vadd(
+                "queue-slot",
+                True,
+                M.V_QUEUE_SLOT
+                % {
+                    "free": _roster["queue_free"],
+                    "queued": _roster["queued"],
+                    "ids": ", ".join("#" + i for i in _roster["queue_start"]),
+                    "me": me8,
+                },
             )
 
     if bgwait_due:
@@ -2747,7 +2903,11 @@ def run_stop(event, event_ok, worklist, hook_file):
             ),
         )
     # ---- I7: a completion claim must leave a RECORD (see wl_reggate) --------
-    ev_ticks = [ev[:150] for _tid, _line, ev in reg_new_ticks if not completion_evidence(root, ev)]
+    ev_ticks = [
+        ev[:150]
+        for _tid, _line, ev in reg_new_ticks
+        if not completion_evidence(root, ev, event.get("transcript_path"))
+    ]
     ev_tasks = []
     for i, sub in reg_done_tasks:
         row = next(
@@ -3653,7 +3813,7 @@ def run_stop(event, event_ok, worklist, hook_file):
         something_remains
         and not REMAINING_HEADING.search(last_msg or "")
         # v14 gap 6: an unchanged world accepts the banked report instead of demanding a byte-identical restatement.
-        and state_doc.get("last_report_sig") != st_sig
+        and state_doc.get("last_report_sig") != report_sig
     ):
         vadd(
             "no-remaining",
@@ -3826,6 +3986,7 @@ def run_stop(event, event_ok, worklist, hook_file):
             # EVERY violation is rendered on this path, so every display latch is genuinely spent. Saved explicitly because this branch emits (and therefore exits) without reaching the save below -- the same trap the queue's compute-time persistence was moved for.
             spend_display_latches([k for k, _a, _t in violations])
             S.save_state(worklist, session_id, state_doc)
+            blocklog(worklist, me8, violations[0][0], [k for k, _a, _t in violations[1:]])
             C.emit(
                 {
                     "systemMessage": "Stop hook: %d check(s) failed, continuing. %s%s"
@@ -3929,6 +4090,8 @@ def run_stop(event, event_ok, worklist, hook_file):
         # COUNTED AGAINST THE VIOLATIONS, not against `shown`. `shown` may now carry one synthetic entry (the collapse block) and fewer entries than invariants, so `len(violations) - len(shown)` would report a number that is not the number of anything. What the reader needs is how many outstanding checks got neither a quote nor a name, which is exactly the rotating ones this stop
         # did not pick.
         n_more = len(rot) - (1 if pick is not None else 0)
+        _lead_key = pick[0] if pick is not None else _inv[0][0]
+        blocklog(worklist, me8, _lead_key, [k for k, _a, _t in violations if k != _lead_key])
         C.emit(
             {
                 # SURFACED, not len(shown): `shown` may carry the synthetic collapse block, which is one entry standing for several checks. Every invariant is surfaced (quoted or named) plus at most one rotating pick.
@@ -4028,7 +4191,11 @@ def run_stop(event, event_ok, worklist, hook_file):
         # UNCONDITIONALLY (one cheap git call when reg_ids is empty) so a follow-up proof/sweep question on a later stop is grounded too, not only a fresh fire.
         reg_fixset_files, reg_fixset_provenance = [], None
         with contextlib.suppress(Exception):
-            reg_fixset_files, reg_fixset_provenance = wl_reggate.fixset_files(root, reg_ids)
+            reg_fixset_files, reg_fixset_provenance = wl_reggate.fixset_files(
+                root,
+                reg_ids,
+                live_paths=wl_roster.live_writer_paths(event.get("cwd"), session_id, event),
+            )
         reg_extra = ""
         # v19: the claim-check profile for the ONE tick this fix-set is about, or None when no claim was put to the judge. `claim_prior` is the latch record as it stood BEFORE the ask, which is what makes the fire count increment by one rather than reset. See wl_claimcheck.
         claim_prof, claim_prior = None, None
@@ -4152,11 +4319,16 @@ def run_stop(event, event_ok, worklist, hook_file):
                 traps=S.trap_prompt_lines(root),
                 fixset_files=reg_fixset_files,
                 fixset_provenance=reg_fixset_provenance,
+                transcript=event.get("transcript_path") or None,
+                fixset_instance=(
+                    (str(root), list(reg_ids)) if reg_fixset_provenance == "diff-tree" else None
+                ),
             )
         if err is not None:
             # FAIL CLOSED, by operator instruction. A judge that cannot answer must not become the way out.
             counter.write_text(str(streak + 1))
             wl_judge.log_verdict(judge_log, "unavailable", "", err)
+            blocklog(worklist, me8, "judge-unavailable", judge={"error": err[:160]})
             C.emit(
                 {
                     "systemMessage": "Stop hook: judge unavailable (%s). Blocking, per "
@@ -4246,6 +4418,9 @@ def run_stop(event, event_ok, worklist, hook_file):
             wl_reggate.save_reggate(reg_marker, reg_state)  # persist gate_runs regardless
             if kind == "malformed":
                 counter.write_text(str(streak + 1))
+                blocklog(
+                    worklist, me8, "reggate-malformed", judge=judge_flags(verdict, "malformed")
+                )
                 C.emit(
                     {
                         "systemMessage": "Stop hook: fix landed but the judge "
@@ -4362,6 +4537,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                             str(verdict.get("reason") or "")[:700],
                             str(verdict.get("next_action") or "")[:200],
                         )
+                    blocklog(worklist, me8, "reggate", judge=judge_flags(verdict, kind))
                     C.emit(
                         {
                             "systemMessage": "Stop hook: a fix landed with no "
@@ -4377,6 +4553,7 @@ def run_stop(event, event_ok, worklist, hook_file):
             )
             if akind == "malformed":
                 counter.write_text(str(streak + 1))
+                blocklog(worklist, me8, "defer-audit-malformed", judge=judge_flags(verdict))
                 C.emit(
                     {
                         "systemMessage": "Stop hook: a deferral audit was "
@@ -4414,6 +4591,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                         "REOPENED by the stop-gate judge: %s" % order[:160],
                     )
                 counter.write_text(str(streak + 1))
+                blocklog(worklist, me8, "defer-audit", judge=judge_flags(verdict))
                 C.emit(
                     {
                         "systemMessage": "Stop hook: the deferral audit "
@@ -4433,6 +4611,7 @@ def run_stop(event, event_ok, worklist, hook_file):
         wl_judge.log_verdict(judge_log, verdict["verdict"], verdict.get("reason", ""))
         if verdict["verdict"] == "continue":
             counter.write_text(str(streak + 1))
+            blocklog(worklist, me8, "judge", judge=judge_flags(verdict))
             C.emit(
                 {
                     "systemMessage": "Stop hook: judge says continue (%d in a row). %s"
@@ -4472,6 +4651,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                 outq_add(worklist, session_id, state_doc, "shapedup", sd_note[:300], 2)
             if sd_fired:
                 counter.write_text(str(streak + 1))
+                blocklog(worklist, me8, "shapedup", judge=judge_flags(verdict))
                 C.emit(
                     {
                         "systemMessage": "Stop hook: a shape reached its Nth copy. %s"

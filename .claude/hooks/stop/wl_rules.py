@@ -220,6 +220,10 @@ class Demand:
             payload = dict(fields)
             payload["fires"] = int((prior or {}).get("fires", 0)) + 1
             payload["at"] = time.time()
+            # THE FIRST FIRE'S TIME rides through a re-fire, because `at` moves on every bank and evidence the session produced between two fires is still evidence (agent/plans/PLAN-stop-hook-retro-20260924.md R.2).
+            payload["first_at"] = (
+                (prior or {}).get("first_at") or (prior or {}).get("at") or payload["at"]
+            )
             payload["owed"] = (prior or {}).get("owed")
             if prior and "carried" in prior:
                 payload["carried"] = prior["carried"]
@@ -235,6 +239,7 @@ class Demand:
             payload = dict(fields)
             payload["fires"] = 1
             payload["at"] = time.time()
+            payload["first_at"] = payload["at"]
             payload["owed"] = owed
             p.write_text(json.dumps(payload, indent=1), encoding="utf-8")
 

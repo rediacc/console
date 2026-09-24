@@ -279,16 +279,47 @@ def unread(store, branch=None, reader=None):
 
     Branch filtering is on the REPORT, not on the read mark: a report captured
     while the tree was on branch X is about work on X, and surfacing it to a
-    session that has since moved to Y is noise, not memory."""
+    session that has since moved to Y is noise, not memory.
+
+    AN INTERIM WAIT IS HELD, NOT DROPPED (agent/plans/PLAN-stop-hook-retro-20260924.md R.7). A silent capture carrying `interim` was an agent ending its turn to wait on its own shell. While that agent is still waiting it is not a report yet; once a later capture from the same agent exists it is `superseded` and marked read. If the agent stops waiting with no later capture, the entry is unread again: it fails closed."""
     marks = read_marks(store, reader)
+    entries = read_index(store)
     out = []
-    for ev in read_index(store):
+    for pos, ev in enumerate(entries):
         if str(ev["id"]) in marks:
             continue
         if branch is not None and str(ev.get("branch", "")) != branch:
             continue
+        if ev.get("interim"):
+            base = str(ev["id"]).split("-", 1)[0]
+            if any(str(e.get("id") or "").split("-", 1)[0] == base for e in entries[pos + 1 :]):
+                if reader:
+                    _append_line(
+                        read_path(store),
+                        {
+                            "ev": "read",
+                            "id": ev["id"],
+                            "by": str(reader)[:32],
+                            "at": C.stamp_now(),
+                            "branch": ev.get("branch", ""),
+                            "via": "superseded",
+                        },
+                    )
+                continue
+            if _still_waiting(ev):
+                continue
         out.append(ev)
     return out
+
+
+def _still_waiting(entry):
+    """True while the agent behind an interim capture is still waiting on a shell of its own, read from its transcript alone (wl_roster.transcript_waiting)."""
+    import wl_roster  # noqa: PLC0415 -- wl_roster imports this module lazily too
+
+    path = str(entry.get("transcript") or "")
+    if not path:
+        return False
+    return bool(wl_roster.transcript_waiting(pathlib.Path(path), time.time()))
 
 
 # ---- delivery the lead already received (agent/plans/PLAN-stop-hook-continuity.md P1.5) --------
@@ -315,8 +346,10 @@ def _record_epoch(raw):
     return _iso_epoch(rec.get("timestamp")) if isinstance(rec, dict) else None
 
 
-def delivered_ids(transcript_path, cursor=None):
+def delivered_ids(transcript_path, cursor=None, require_result=True):
     """(({short id: newest delivery epoch}, cursor)): the sub-agents whose COMPLETED task notification, with a non-empty `<result>`, reached the lead's own transcript.
+
+    `require_result=False` drops the `<result>` filter and answers "whose completion reached the lead at all", which is what the writer-cap estimate needs (wl_roster.live_estimate, agent/plans/PLAN-stop-hook-retro-20260924.md R.6): a silent finish still frees its slot.
 
     The lead's transcript already holds `<task-notification>` records carrying `<task-id><agent id></task-id>`, `<status>completed</status>` and the agent's final text in `<result>` (measured 2026-09-24: 3,457 of them in one lead transcript), while the report store kept demanding `--read` for the same text. An EMPTY `<result>` is not a delivery: that is the [SILENT] case, which stays a real signal.
 
@@ -340,7 +373,9 @@ def delivered_ids(transcript_path, cursor=None):
     cut = blob.rfind(b"\n")
     if cut >= 0:
         for raw in blob[: cut + 1].splitlines():
-            if b"<status>completed</status>" not in raw or b"<result>" not in raw:
+            if b"<status>completed</status>" not in raw or (
+                require_result and b"<result>" not in raw
+            ):
                 continue
             marks = list(_NOTE_TASK.finditer(raw))
             for i, m in enumerate(marks):
@@ -348,7 +383,7 @@ def delivered_ids(transcript_path, cursor=None):
                 if b"<status>completed</status>" not in seg:
                     continue
                 res = _NOTE_RESULT.search(seg)
-                if res is None or res.group(2) is not None:
+                if require_result and (res is None or res.group(2) is not None):
                     continue  # no result, or an empty one: the [SILENT] shape
                 at = _record_epoch(raw)
                 if at is None:
@@ -447,6 +482,7 @@ def capture(
     title=None,
     sends=0,
     tx="ok",
+    interim="",
 ):
     """Write the body whole, then append one index line. Returns the entry, or None when this exact report is already indexed, so the hook and `--scan` can both run over the same agent without producing a duplicate.
 
@@ -544,6 +580,12 @@ def capture(
             # WHETHER THE TRANSCRIPT PATH ACTUALLY RESOLVED, checked at capture. A stored path that silently does not exist is worse than a null: every reader treats it as readable and quietly gets nothing, which is the vacuous-check class -- a lookup that cannot succeed and never says so. Found live: a stop fired with a well-formed path to a file that was never written, and the
             # SendMessage harvest read nothing from it without anybody being able to tell that from an agent that simply sent nothing.
             "tx": tx,
+            # The shell a SILENT capture's agent ended its turn to wait on (agent/plans/PLAN-stop-hook-retro-20260924.md R.7); `unread` holds such an entry while that wait lasts. Only a silent capture carries it: a report with substance is never held.
+            **(
+                {"interim": interim}
+                if interim and sends == 0 and len(body.strip()) < SILENT_FLOOR
+                else {}
+            ),
             "title": title,
             "transcript": str(transcript or ""),
             "src": source,
@@ -592,6 +634,12 @@ def handle_subagent_stop(event):
         sends, t_final, _rec = harvest_transcript(pathlib.Path(transcript))
         final = final or t_final
     body = assemble_body(sends, final)
+    interim = ""
+    if tx == "ok":
+        import wl_roster  # noqa: PLC0415 -- wl_roster imports this module lazily too
+
+        with contextlib.suppress(Exception):
+            interim = wl_roster.transcript_waiting(pathlib.Path(transcript), time.time())
     capture(
         store,
         _branch_of(start),
@@ -605,6 +653,7 @@ def handle_subagent_stop(event):
         title=_title_of(sends, final),
         sends=len(sends),
         tx=tx,
+        interim=interim,
     )
 
 

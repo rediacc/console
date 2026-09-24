@@ -98,6 +98,7 @@ ARITY = {
     "V_ROSTER_SILENT": (1, 20, "rows", "m"),
     "V_ROSTER_UNLEASED": (1, "rows", "m"),
     "V_ROSTER_DEAD": (1, "rows", "m", "m"),
+    "V_QUEUE_SLOT": {"free": 1, "queued": 12, "ids": "#a", "me": "m"},
     "N_ROSTER_HONEST": (3, 4, 1, "12:00Z", "rows"),
     "CLI_STATUS_ROW": {
         "id": "a1",
@@ -149,6 +150,7 @@ ARITY = {
     "N_UNBLOCKED": ("i", "t"),
     "CLI_RELAY_USAGE": None,
     "N_OUTQ_DIGEST_MORE": (3,),
+    "N_OUTQ_LADDER_LINE": (2, "#a, #b"),
     "N_ONBOARD_DELIVERED": (17,),
     "N_AGENT_HINT": ("a", "a", "t, t"),
     "N_AGENT_CORPUS_ERR": ("rows",),

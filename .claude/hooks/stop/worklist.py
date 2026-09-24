@@ -850,6 +850,22 @@ def _planbackfill_cli(argv):
     print(CLI_PLANBACKFILL_WROTE % payload)
 
 
+def _lead_transcript(me):
+    """The lead session's own transcript path, or None: `<projects>/<munged root>/<session>.jsonl`, beside its `subagents/` directory. `ASKED:` tick evidence is checked against it (agent/plans/PLAN-stop-hook-retro-20260924.md R.8)."""
+    import wl_roster  # noqa: PLC0415
+
+    sub = wl_roster.session_subagents_dir(os.getcwd(), C.resolve_session_id() or me)
+    return str(sub.parent.with_suffix(".jsonl")) if sub is not None else None
+
+
+def _log_tick_refusal(worklist, me, item_id, evidence, why):
+    """One row per refused `--tick` in `.tick-refusals-<me8>.jsonl`, so the next retro counts refusals without grepping a transcript (agent/plans/PLAN-stop-hook-retro-20260924.md R.8). A log that cannot be written never changes the refusal."""
+    row = {"at": C.stamp_now(), "id": item_id, "why": why, "evidence": (evidence or "")[:300]}
+    log = worklist.with_suffix(".tick-refusals-%s.jsonl" % me[:8])
+    with contextlib.suppress(OSError), log.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(row) + "\n")
+
+
 def _item_cli(argv, worklist):
     """--add / --triage / --tick / --defer / --lease / --update / --list: the v10 item verbs. Exits non-zero on misuse, so a rejected write cannot be mistaken for a delivered one."""
 
@@ -943,11 +959,13 @@ def _item_cli(argv, worklist):
     rest = " ".join(argv[3:]).replace("\n", " ").strip()
     root = C.project_root(C.project_start())
     if mode == "--tick":
-        if not rest or not CK.completion_evidence(root, rest):
+        if not rest or not CK.completion_evidence(root, rest, _lead_transcript(me)):
+            _log_tick_refusal(worklist, me, item_id, rest, "no-evidence")
             die(M.CLI_TICK_NO_EVIDENCE % item_id)
         # v16 THE DOOR GATE. completion_evidence passes on ANY URL by shape, so a bare issue link closed a finding: filing WAS a resolution, in code, whatever the prose said. An issue now settles an item only when the tick names the last-resort door that made filing the right answer. Shape-only; whether the door is TRUE is the judge's question, and every tick already flows into
         # that path.
         if CK.issue_only_evidence(root, rest):
+            _log_tick_refusal(worklist, me, item_id, rest, "issue-without-door")
             die(M.CLI_TICK_ISSUE_DOOR % item_id)
         S.set_state(worklist, me, item_id, "x", rest)
         print("ticked #%s (%s)" % (item_id, rest[:80]))
@@ -1054,13 +1072,39 @@ def _item_cli(argv, worklist):
                 "an in-flight claim with no worker to trace is the gap this "
                 "program exists to catch"
             )
+        _hold = ""
         if wm == "worker:queue":
             # QUEUED BEHIND THE CAP, accepted only when the cap really is full: otherwise the queue would be an escape hatch for work that could start now.
             import wl_roster  # noqa: PLC0415
 
+            _hold = wl_roster.hold_target({"lease_note": " ".join(argv[4:])})
+            if _hold:
+                # ONE BOUNDED RESERVATION (agent/plans/PLAN-stop-hook-retro-20260924.md R.5, operator default 2026-09-24): at most one per session, naming an open or in-flight item the session owns, and expiring with this lease. The lead needed exactly this at 13:34 and was forced to fill the slot instead.
+                _sid = C.resolve_session_id() or me
+                if not wl_roster.hold_valid(_hold, fold.by_id, _sid):
+                    die(
+                        "HOLD_FOR:#%s names no open or in-flight item this session owns; a slot "
+                        "can only be held for live work of this session" % _hold
+                    )
+                _holders = [
+                    r
+                    for r in fold.items
+                    if r["id"] != item_id
+                    and r["state"] == ">"
+                    and r.get("worker") == wl_roster.QUEUE_WORKER
+                    and C.owned_by_me(r.get("owner"), _sid)
+                    and C.lease_state(r.get("line") or "") == "fresh"
+                    and wl_roster.hold_target(r)
+                ]
+                if len(_holders) >= wl_roster.HOLD_MAX:
+                    die(
+                        "a slot is already held (%s); at most %d HOLD_FOR reservation per "
+                        "session. Release that lease first"
+                        % (", ".join("#" + r["id"] for r in _holders), wl_roster.HOLD_MAX)
+                    )
             busy = wl_roster.live_writers_estimate(os.getcwd(), me)
-            if busy is None or len(busy) < wl_roster.WRITER_CAP:
-                # NO RESERVATION KNOB, deliberately (2026-09-24): a slot held for a writer about to be spawned is taken by SPAWNING that writer, after which this same call succeeds. A reservation would be a second, unverifiable claim on the cap, which is the escape hatch the roster exists to refuse.
+            if not _hold and (busy is None or len(busy) < wl_roster.WRITER_CAP):
+                # A slot held for a writer about to be spawned is taken by SPAWNING that writer, or by the one bounded HOLD_FOR reservation above; an unmarked queue lease with a free slot is still refused.
                 die(
                     "worker:queue is only for writer work the cap forbids starting, and %s of %d "
                     "writer slots are busy: start the work instead. If the free slot is meant for "

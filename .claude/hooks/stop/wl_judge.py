@@ -718,8 +718,13 @@ def run_judge(
     traps=None,
     fixset_files=None,
     fixset_provenance=None,
+    transcript=None,
+    fixset_instance=None,
 ):
-    """(verdict_dict, error_string). Exactly one is non-None."""
+    """(verdict_dict, error_string). Exactly one is non-None.
+
+    `transcript` is the lead's transcript path: an outstanding sweep demand it already answers is discharged before the prompt is built (wl_classsweep.discharge_if_evidenced). `fixset_instance` is `(root, commit ids)` for a commit-based fix-set, which grounds a fresh sweep's search in the fix's own diff (wl_classsweep.search_hits_instance).
+    """
     exe = resolve_claude()
     if not exe or not os.path.exists(exe):
         return None, "claude CLI not found (looked at PATH and ~/.local/bin/claude)"
@@ -734,13 +739,17 @@ def run_judge(
     # LOADED UNCONDITIONALLY (agent/plans/PLAN-sweep-obligation-carry-forward.md), where it used to be forced to `None` on a fix stop. The forced `None` was itself the bug: apply_verdict never saw the outstanding demand at all on exactly the stops where a fresh fix-set's answer would otherwise overwrite or clear it. `sweep_asked`/`proof_asked` tell CS.apply_verdict/PF.apply_verdict
     # WHICH question this stop actually asked, so a fresh fire displaces the old demand into its `owed` slot instead of destroying it, and a fresh silent/degraded answer -- which is about a DIFFERENT fix-set -- leaves the old demand alone rather than discharging it.
     fix_stop_now = is_fix_stop(extra)
-    sweep_outstanding = CS.load_outstanding()
-    sweep_extra = CS.prompt_section(fix_stop_now, sweep_outstanding)
-    sweep_asked = "fresh" if fix_stop_now else "followup"
+    # NOTHING OF THE LEAD'S IS LEFT (agent/plans/PLAN-stop-hook-retro-20260924.md R.1): a tick-based fix-set whose every dirty file a live writer is still editing is that writer's work in flight, so no fresh sweep or proof is asked about it. The regression-gate question still is, and an outstanding demand is still followed up. A commit-based fix-set never takes this arm.
+    sweep_proof_fresh = fix_stop_now and not (
+        fixset_provenance == "status-minus-live-writers" and not fixset_files
+    )
+    sweep_outstanding = CS.discharge_if_evidenced(CS.load_outstanding(), transcript)
+    sweep_extra = CS.prompt_section(sweep_proof_fresh, sweep_outstanding, transcript)
+    sweep_asked = "fresh" if sweep_proof_fresh else "followup"
     # THE PROOF OBLIGATION rides the same call for the same reason the class sweep does: the question is about the same fix-set the regression gate already shows the judge, and a second model call would double the cost of every fix stop.
     proof_outstanding = PF.load_outstanding()
-    proof_extra = PF.prompt_section(fix_stop_now, proof_outstanding)
-    proof_asked = "fresh" if fix_stop_now else "followup"
+    proof_extra = PF.prompt_section(sweep_proof_fresh, proof_outstanding)
+    proof_asked = "fresh" if sweep_proof_fresh else "followup"
     # THE BRAVE-DEFAULT rule rides the same call on its own trigger: a parked decision whose DEFAULT does nothing. Its trigger is the remaining list, not `extra`, so the two rules are independent and either may be asked alone.
     #
     # NOT ON A FIX STOP. A regression-gate stop is already asking the judge to rule on a fix's test coverage AND its sibling sweep; adding "and by the way, is that parked question's DEFAULT brave enough" makes one call carry three unrelated judgements, and the parked question is the one least connected to what the session just did. It is not dropped, only deferred: the trigger is
@@ -862,7 +871,11 @@ def run_judge(
     fired = False
     if sweep_extra:
         kind, note = CS.apply_verdict(
-            out, sweep_outstanding, fixset_files=fixset_files, asked=sweep_asked
+            out,
+            sweep_outstanding,
+            fixset_files=fixset_files,
+            asked=sweep_asked,
+            instance=fixset_instance,
         )
         fired = kind == "fire"
         if kind == "degraded":

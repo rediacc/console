@@ -48,7 +48,7 @@ READ_ONLY_AGENT_TYPES = frozenset({"Plan", "Explore"})
 # is dropped only for its `stale` verdict; the caller enforces that.
 ROSTER_SUPPRESSES = frozenset({"bg-report", "stuck", "idle-stall", "solo-grind", "agent-state"})
 # The four defect keys. `roster-status` was merged into `roster-silent` on 2026-09-24 ("Evidence counts as status").
-ROSTER_KEYS = ("roster-cap", "roster-silent", "roster-unleased", "roster-dead")
+ROSTER_KEYS = ("roster-cap", "roster-silent", "roster-unleased", "roster-dead", "queue-slot")
 # How long an agent that ended its turn with a background shell still armed counts as WAITING rather than finished, when no fresh Stop event can confirm the shell. The lease cap: a wait longer than any lease is not supervision the estimate should vouch for.
 WAIT_HORIZON_MIN = 120
 
@@ -62,6 +62,25 @@ SCAN_STEP_BYTES = 8 * 1024 * 1024
 STATUS_TEXT_MAX = 600
 # Rows printed in the HONEST summary before a counted remainder line.
 SUMMARY_ROWS_MAX = 8
+
+
+# A `worker:queue` lease whose note carries `HOLD_FOR:#<id>` holds ONE free writer slot for that item (agent/plans/PLAN-stop-hook-retro-20260924.md R.5, operator default 2026-09-24): at most one per session, it must name an open or in-flight item the session owns, and it lasts exactly as long as its own lease (at most 120 minutes).
+HOLD_FOR = re.compile(r"\bHOLD_FOR:#?([0-9a-f]{6,})\b")
+HOLD_MAX = 1
+
+
+def hold_target(rec):
+    """The item id a queue lease reserves a slot for, or ""."""
+    m = HOLD_FOR.search(str((rec or {}).get("lease_note") or ""))
+    return m.group(1) if m else ""
+
+
+def hold_valid(target, by_id, session_id):
+    """True when `target` is an open or in-flight item this session owns: the only thing a slot may be held for."""
+    rec = by_id.get(target)
+    if not isinstance(rec, dict):
+        return False
+    return rec.get("state") in (" ", ">") and C.owned_by_me(rec.get("owner"), session_id)
 
 
 # ---- locating the session's agents -------------------------------------------
@@ -354,12 +373,10 @@ def shell_waiters(running, metas):
     for aid, m in metas.items():
         if aid in listed or m.get("jsonl") is None:
             continue
-        try:
-            data = m["jsonl"].read_bytes()
-        except OSError:
-            continue
+        # ARMED, not merely launched (agent/plans/PLAN-stop-hook-retro-20260924.md R.6): a shell whose `<task-id>` notification already reached the agent's own transcript is one it is no longer waiting on, even while the event still lists that shell as running. Without this a finished writer held a slot (2026-09-24 15:08, a9130421).
+        armed = armed_shells(m["jsonl"])
         for sid in shell_ids:
-            if b'"backgroundTaskId":"%s"' % sid.encode() in data:
+            if sid in armed:
                 out[aid] = sid
                 break
     return out
@@ -514,16 +531,26 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
     covered: list[Any] = []
     leased_dead: list[Any] = []
     unknown: list[Any] = []
+    # THE QUEUE IS NOT A FINISHED WORKER (agent/plans/PLAN-stop-hook-retro-20260924.md R.5). Every queued item used to read as `leased_dead` the moment one slot was free, so 15 "start it" lines were printed for 1 free slot. Now only the K oldest are named, K being the free slots less at most one HOLD_FOR reservation; the rest stay covered behind the cap.
+    queued = sorted(
+        leases.get(QUEUE_WORKER, ()), key=lambda r: (_epoch(r.get("lease_at")) or 0, r["id"])
+    )
+    hold = next(
+        (r for r in queued if hold_valid(hold_target(r), by_id, session_id)),
+        None,
+    )
+    free = max(0, WRITER_CAP - len(writers))
+    slots = max(0, free - (HOLD_MAX if hold is not None else 0))
+    rest = [r for r in queued if r is not hold]
+    queue_start = [r["id"] for r in rest[:slots]]
+    covered.extend((r["id"], QUEUE_WORKER, QUEUE_WORKER) for r in rest[slots:])
+    if hold is not None:
+        covered.append((hold["id"], QUEUE_WORKER, QUEUE_WORKER))
     for w, recs in leases.items():
         if w == LH.LEAD_WORKER:
             covered.extend((r["id"], w, w) for r in recs)
             continue
         if w == QUEUE_WORKER:
-            full = len(writers) >= WRITER_CAP
-            for r in recs:
-                (covered if full else leased_dead).append(
-                    (r["id"], w, QUEUE_WORKER if full else "")
-                )
             continue
         if w and (w in metas or w in live):
             coverer = covered_by(w)
@@ -635,7 +662,7 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
     }
     verified = sorted((({c for _i, _w, c in covered if c} | leased_live) - owing) | fresh_readers)
 
-    defects = bool(unleased or leased_dead or over_cap or status_due or silent)
+    defects = bool(unleased or leased_dead or over_cap or status_due or silent or queue_start)
     if defects:
         state = "DISHONEST"
     elif blind or open_ids or unknown or not covered:
@@ -668,6 +695,10 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
         "finished": sorted(finished),
         "unleased": unleased,
         "leased_dead": leased_dead,
+        "queue_start": queue_start,
+        "queue_free": slots,
+        "queue_held": hold["id"] if hold is not None else "",
+        "queued": len(queued),
         "over_cap": over_cap,
         "status_due": status_due,
         "status_rows": status_rows,
@@ -678,6 +709,64 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
         "open": open_ids,
         "known_ids": set(metas),
     }
+
+
+def edit_paths(jsonl, root):
+    """The repo-relative `file_path` (or `notebook_path`) of every edit tool call in one transcript. Paths outside `root` are kept absolute, which never matches a `git status` line and so subtracts nothing."""
+    try:
+        data = jsonl.read_bytes()
+    except (OSError, AttributeError):
+        return set()
+    base = str(root).rstrip("/") + "/"
+    out = set()
+    for rec in wl_common.records(data.splitlines(), need=b'"tool_use"'):
+        if rec.get("type") != "assistant":
+            continue
+        content = (rec.get("message") or {}).get("content")
+        if not isinstance(content, list):
+            continue
+        for block in content:
+            if not isinstance(block, dict) or block.get("type") != "tool_use":
+                continue
+            if block.get("name") not in EDIT_TOOLS:
+                continue
+            raw = block.get("input")
+            inp = raw if isinstance(raw, dict) else {}
+            path = str(inp.get("file_path") or inp.get("notebook_path") or "")
+            if path:
+                out.add(path.removeprefix(base))
+    return out
+
+
+def live_writer_paths(cwd, session_id, event, now=None):
+    """Every path a writer that is LIVE NOW has edited, repo-relative (agent/plans/PLAN-stop-hook-retro-20260924.md R.1).
+
+    The judge's tick-based fix-set is the whole dirty tree, which carries every in-flight writer's uncommitted edits; on 2026-09-24 six of ten judge blocks demanded a sweep or a proof for work a writer still had in flight. Live is the roster's own predicate: listed running by the event (or a shell waiter) and not proven finished. A FINISHED writer's edits are not subtracted, since they have landed and are the lead's to account for. Never raises: an unreadable roster subtracts nothing, which keeps the demand.
+    """
+    now = time.time() if now is None else now
+    try:
+        metas = load_metas(session_subagents_dir(cwd, session_id))
+        if not metas:
+            return set()
+        running = _running(event or {})
+        waiters = shell_waiters(running, metas)
+        listed = {str(b.get("id") or "") for b in running if b.get("type") == "subagent"} | set(
+            waiters
+        )
+        root = C.project_root(C.project_start({"cwd": cwd}))
+        out = set()
+        for aid in sorted(listed):
+            m = metas.get(aid)
+            if not m or m.get("jsonl") is None:
+                continue
+            if aid not in waiters and proven_finished(
+                m["jsonl"], now, m.get("name", ""), cwd, session_id
+            ):
+                continue
+            out |= edit_paths(m["jsonl"], root)
+        return out
+    except Exception:  # noqa: BLE001 -- subtracting nothing keeps the demand, the safe side
+        return set()
 
 
 def known_subagent_ids(cwd, session_id):
@@ -741,6 +830,7 @@ def live_estimate(cwd, session_id, now=None):
             if wshell:
                 waiters[aid] = wshell
                 types[aid] = m["type"]
+    done = _completed_since(sub_dir, since)
     rows = []
     for aid, typ in sorted(types.items()):
         m = metas.get(aid) or {}
@@ -748,7 +838,10 @@ def live_estimate(cwd, session_id, now=None):
         if (
             m
             and aid not in waiters
-            and proven_finished(m["jsonl"], now, m.get("name", ""), cwd, session_id)
+            and (
+                proven_finished(m["jsonl"], now, m.get("name", ""), cwd, session_id)
+                or _done_after(done.get(_short(aid)), m)
+            )
         ):
             # ONE NUMBER FOR BOTH CALLERS: an agent listed as running by the last event that has since ended its turn to wait on a shell is a live writer, not a finished one. The spawn guard and `--lease worker:queue` both read this function, so they now agree.
             wshell = transcript_waiting(m["jsonl"], now)
@@ -765,6 +858,33 @@ def live_estimate(cwd, session_id, now=None):
             }
         )
     return rows, metas
+
+
+def _short(aid):
+    import wl_report as RPT  # noqa: PLC0415
+
+    return RPT.short_id(aid)
+
+
+def _completed_since(sub_dir, since):
+    """{short agent id: epoch} of every COMPLETED task notification that reached the LEAD's transcript after `since` (the last Stop event's mtime), result or not. {} when there is no event or no transcript.
+
+    The lead transcript sits beside the session's `subagents/` directory as `<session>.jsonl`. Reuses `wl_report.delivered_ids` without its non-empty `<result>` filter (agent/plans/PLAN-stop-hook-retro-20260924.md R.6).
+    """
+    if since is None or sub_dir is None:
+        return {}
+    import wl_report as RPT  # noqa: PLC0415
+
+    try:
+        ids, _cur = RPT.delivered_ids(sub_dir.parent.with_suffix(".jsonl"), require_result=False)
+    except Exception:  # noqa: BLE001 -- an unreadable transcript drops nobody, the safe side for a cap
+        return {}
+    return {k: v for k, v in ids.items() if v > since}
+
+
+def _done_after(done_at, meta):
+    """True when the harness reported this agent completed AFTER its last (re)start. A resumed agent rewrites its meta, so a later `spawned` means the completion is history."""
+    return done_at is not None and (meta.get("spawned") or 0) <= done_at
 
 
 def live_writers_estimate(cwd, session_id, now=None):
@@ -941,12 +1061,7 @@ def defect_rows(verdict):
             % (w, _mins(age), src, "" if coverer == w else "; its live descendant is %s" % coverer)
         )
     dead = [
-        (
-            "    #%s is queued behind the writer cap, and a slot is free now: start it" % i
-            if w == QUEUE_WORKER
-            else "    #%s leased to worker:%s, which is not live and has no live descendant"
-            % (i, w)
-        )
+        "    #%s leased to worker:%s, which is not live and has no live descendant" % (i, w)
         for i, w, _c in verdict.get("leased_dead") or []
     ]
     # MERGED (operator ruling 2026-09-24, "Evidence counts as status"): a worker whose newest evidence is STATUS_PING_MIN old is the same fact as a silent one, so its status row rides the silent block rather than a second key.

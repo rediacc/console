@@ -55,6 +55,8 @@ ALWAYS_KEYS = frozenset(
         "roster-silent",
         "roster-unleased",
         "roster-dead",
+        # Split out of roster-dead by agent/plans/PLAN-stop-hook-retro-20260924.md R.5 and kept at its strength: queued writer work beside a free slot is the same roster verdict, and a rotating key would let the queue park work the cap allows.
+        "queue-slot",
         # I2 -- somebody else is blocked and cannot see this session stand down.
         "unread-reports",
     }

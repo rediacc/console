@@ -104,7 +104,11 @@ def test_p02_a_blocked_stop_carries_the_advisory_digest(wl):  # noqa: F811
         wl,
         [
             outq_entry(
-                "ladder", "LIVENESS PING: #abcd1234 has had no live worker for 46 min.", 0, 1, True
+                "claim-check",
+                "CLAIM CHECK: #abcd1234 evidence does not show the claim.",
+                0,
+                1,
+                True,
             ),
             outq_entry(
                 "plan-tasks", "PLAN TASKS: 3 open box(es)\n  - [ ] box one\n  - [ ] box two", 2, 2
@@ -116,23 +120,27 @@ def test_p02_a_blocked_stop_carries_the_advisory_digest(wl):  # noqa: F811
     got = wl.run()
     reason = json.loads(got.out)["reason"]
     assert "QUEUED ADVISORIES" in reason, reason[-800:]
-    assert "LIVENESS PING: #abcd1234" in reason, reason[-800:]
+    assert "CLAIM CHECK: #abcd1234" in reason, reason[-800:]
     assert "plan-tasks: PLAN TASKS: 3 open box(es)" in reason, reason[-800:]
-    assert "ladder: LIVENESS PING" in reason, (
+    assert "claim-check: CLAIM CHECK" in reason, (
         "the sticky key's :sig suffix leaked: %s" % reason[-800:]
     )
     assert "CANNOT be shown" not in reason
 
 
 def test_p02_a_one_line_advisory_is_delivered_and_a_body_stays_queued(wl):  # noqa: F811
-    """The one-line ping is DELIVERED by the digest and leaves the queue; the multi-line body is only named and waits for a clean stop."""
+    """The one-line advisory is DELIVERED by the digest and leaves the queue; the multi-line body is only named and waits for a clean stop."""
     three_rotating(wl)
     wl.run()
     plant_outq(
         wl,
         [
             outq_entry(
-                "ladder", "LIVENESS PING: #abcd1234 has had no live worker for 46 min.", 0, 1, True
+                "claim-check",
+                "CLAIM CHECK: #abcd1234 evidence does not show the claim.",
+                0,
+                1,
+                True,
             ),
             outq_entry("plan-tasks", "PLAN TASKS: 3 open box(es)\n  - [ ] box one", 2, 2),
         ],
@@ -142,11 +150,11 @@ def test_p02_a_one_line_advisory_is_delivered_and_a_body_stays_queued(wl):  # no
     wl.run()
     keys = [e["key"] for e in load_state(wl)["outq"]["items"]]
     assert "plan-tasks" in keys, keys
-    assert not any(k.startswith("ladder") for k in keys), keys
+    assert not any(k.startswith("claim-check") for k in keys), keys
     wl.newturn()
     wl.say("answer with no remaining section")
     third = json.loads(wl.run().out)["reason"]
-    assert "LIVENESS PING" not in third, "the delivered ping was shown twice: %s" % third[-600:]
+    assert "CLAIM CHECK" not in third, "the delivered one-liner was shown twice: %s" % third[-600:]
     assert "plan-tasks: PLAN TASKS" in third, third[-600:]
 
 

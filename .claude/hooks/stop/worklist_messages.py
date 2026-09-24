@@ -1193,6 +1193,8 @@ N_OUTQ_MORE = (
 # most OUTQ_DIGEST_MAX of them. A section whose whole text is one line is DELIVERED by the digest and leaves the queue; a longer body is only named here and still releases in full on a clean stop.
 N_OUTQ_DIGEST = "QUEUED ADVISORIES (%d queued; one-line ones are delivered here, longer ones are named and release in full on a clean stop):\n%s"
 N_OUTQ_DIGEST_MORE = "    (+%d more queued)"
+# The ladder's collapsed digest line (agent/plans/PLAN-stop-hook-retro-20260924.md R.9).
+N_OUTQ_LADDER_LINE = "%d quiet in-flight subject(s) (%s); the full ping releases on a clean stop"
 
 # PURELY OBSERVATIONAL, changes no verdict: names whether the first-touch onboarding notice (onboard.py) was already delivered this session, so a reader of a refusal does not have to separately wonder whether the session ever saw it.
 # P2.4: an item whose every BLOCKED_BY blocker has closed is open work again.
@@ -1658,6 +1660,9 @@ FIXSET_PROVENANCE = {
     "diff-tree": "resolved from the fix-set's own commit(s)",
     "status-fallback": (
         "the fix-set has no resolvable commit yet, so this is the whole working tree's current `git status --porcelain`"
+    ),
+    "status-minus-live-writers": (
+        "the fix-set has no resolvable commit yet, so this is the working tree's current `git status --porcelain` minus every file a writer agent that is still live has edited; those belong to that writer's own tick"
     ),
     None: "provenance unknown",
 }
@@ -2434,6 +2439,15 @@ V_ROSTER_DEAD = (
     "live worker:\n"
     "    .claude/hooks/stop/worklist.py --tick %s <id> '<evidence>'\n"
     "    .claude/hooks/stop/worklist.py --lease %s <id> release"
+)
+
+# agent/plans/PLAN-stop-hook-retro-20260924.md R.5: only the K oldest queued items are named, K being the free writer slots less a HOLD_FOR reservation.
+V_QUEUE_SLOT = (
+    "QUEUED WORK AND A FREE WRITER SLOT: %(free)d slot(s) free, %(queued)d queued: start "
+    "%(ids)s. Spawn a writer for each and move its lease onto it:\n"
+    "    .claude/hooks/stop/worklist.py --lease %(me)s <id> +60 worker:<agent-id>\n"
+    "  The other queued items stay covered behind the cap. A slot meant for one named item is "
+    "held by leasing ONE queued item with HOLD_FOR:#<id> in its note."
 )
 
 N_ROSTER_HONEST = (

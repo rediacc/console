@@ -494,7 +494,9 @@ def test_r4q2_a_queued_item_with_a_free_slot_is_a_defect(wl):  # noqa: F811
         plant_lease(wl, "cap%d" % i, aid)
     plant_lease(wl, "queued1", "queue")
     v = verdict(wl)
-    assert [tuple(d)[:2] for d in v["leased_dead"]] == [("queued1", "queue")], v["leased_dead"]
+    # Its own key since agent/plans/PLAN-stop-hook-retro-20260924.md R.5: a queue is not a finished worker.
+    assert v["queue_start"] == ["queued1"], v["queue_start"]
+    assert v["leased_dead"] == [], v["leased_dead"]
     assert v["state"] == "DISHONEST"
 
 

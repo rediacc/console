@@ -978,6 +978,8 @@ def _fold_events(events, statuses=None):
                 # The lease's OWN time, kept apart from `upd`: the roster counts a lease as a fresh status, and `upd` also moves on an --update, which is prose from the lead and deliberately not a status.
                 rec["lease_at"] = at
                 note = str(ev.get("note", "")).strip()
+                # The CURRENT lease's own note, kept apart from `lastnote` (which an --update overwrites): a `HOLD_FOR:#<id>` slot reservation is read from it (wl_roster, agent/plans/PLAN-stop-hook-retro-20260924.md R.5).
+                rec["lease_note"] = note or str(ev.get("lnote", "")).strip()
                 if note:
                     rec["lastnote"] = note
                 if note and note not in rec["text"]:
@@ -989,6 +991,7 @@ def _fold_events(events, statuses=None):
                 rec["state"] = " "
                 rec["until"] = ""
                 rec["worker"] = ""
+                rec["lease_note"] = ""
                 note = str(ev.get("t", "")).strip()
                 if note:
                     rec["lastnote"] = note
@@ -1475,6 +1478,8 @@ def snapshot_events(fold, by="compact"):
                     "by": by,
                     "until": r.get("until", ""),
                     "worker": r.get("worker", ""),
+                    # `lnote`, not `note`: the lease's own note survives compaction (a HOLD_FOR reservation lives in it) without the fold re-appending it to `text` or overwriting a later `lastnote`.
+                    **({"lnote": r["lease_note"]} if r.get("lease_note") else {}),
                 }
             )
     return out
@@ -2560,43 +2565,25 @@ def world_sig(root, worklist, session_id, fold=None, transcript_path=None):
     return hashlib.sha1(blob.encode("utf-8", "replace")).hexdigest()[:16]
 
 
-def state_world_sig(root, worklist, session_id, fold=None, transcript_path=None):
-    """The STATE.md staleness key (v14 gap 5): task statuses + HEAD + item STRUCTURE (id, state, owner, basetext), deliberately NOT the raw byte digests world_sig used to take. Under the byte key every self-inflicted append (--lease renewal, --update note, --brief) staled the very document the session had just refreshed: six near-identical forced rewrites in one night. Structure
-    moves when work moves (an item added, ticked, reopened, a commit, a task flip), which is exactly when the recovery document genuinely needs rewriting.
+def report_items_sig(fold, session_id):
+    """The `## Remaining` banking key (agent/plans/PLAN-stop-hook-retro-20260924.md R.4): `id:state:owner:basetext-hash` for every item this session owns, and nothing else.
 
-    Still SEPARATE from world_sig after v17 made that one structural too, but NO LONGER by covering every item byte-for-byte. That was the v18 bug: with ~48 addressable agents in one worktree, ANY peer's --add/--tick/--state moved this key, so a check whose contract is "an unchanged world never stales it" degenerated into "fires every 15 minutes" and was indistinguishable from
-    wall-clock at the point of observation. A session measured TEN forced continuations in one night, several of them this check firing while the session was doing exactly what its STATE.md already described.
-
-    The fix is the one v17 already applied to world_sig (see :1519): scope the detail to MY items. A peer's bookkeeping is not a reason to rewrite my recovery document. But a peer starting a genuinely new program still is, so their items survive as a COARSE BUCKET (count//10) rather than as content: ten peer items appearing moves the key, one peer ticking one does not.
-    Deliberately asymmetric, and the asymmetry is the whole point."""
-    ts = C.task_statuses(session_id, transcript_path)
+    It was `state_world_sig`, which also hashed the harness task statuses and HEAD. In a session with a babysitter committing and shells flipping, that moved nearly every turn, so a short progress reply was ordered to restate a report that had not changed: 45 `no-remaining` blocks in nine days. An add, a tick, a deferral or a state change still moves this key. `state_world_sig` had no other caller once STATE.md moved to `state_items_sig` (P1.2), so it is gone.
+    """
     try:
-        f = fold if fold is not None else load(worklist, sync=False)
-        mine, peers = [], 0
-        for r in sorted(f.items, key=lambda x: x["id"]):
-            if C.owned_by_me(r.get("owner"), session_id):
-                mine.append(
-                    "%s:%s:%s:%s"
-                    % (
-                        r["id"],
-                        r["state"],
-                        r.get("owner") or "",
-                        hashlib.sha1(
-                            str(r.get("basetext") or r.get("text") or "").encode("utf-8", "replace")
-                        ).hexdigest()[:8],
-                    )
-                )
-            else:
-                peers += 1
-        # Peers as a bucket, not as content: a new PROGRAM arriving on the branch still stales the recovery document, a peer's routine tick does not.
-        items = "|".join(mine) + "|peers:%d" % (peers // 10)
-    except Exception:  # noqa: BLE001 -- an unreadable store must still yield a stable key
-        items = "unreadable"
-    blob = "|".join(
-        [
-            ",".join("%s:%s" % (i, st) for i, (st, _s) in sorted(ts.items())),
-            C._git(root, "rev-parse", "HEAD"),
-            items,
+        mine = [
+            "%s:%s:%s:%s"
+            % (
+                r["id"],
+                r["state"],
+                r.get("owner") or "",
+                hashlib.sha1(
+                    str(r.get("basetext") or r.get("text") or "").encode("utf-8", "replace")
+                ).hexdigest()[:8],
+            )
+            for r in sorted(fold.items, key=lambda x: x["id"])
+            if C.owned_by_me(r.get("owner"), session_id)
         ]
-    )
-    return hashlib.sha1(blob.encode("utf-8", "replace")).hexdigest()[:16]
+    except Exception:  # noqa: BLE001 -- an unreadable store must still yield a stable key
+        mine = ["unreadable"]
+    return hashlib.sha1("|".join(mine).encode("utf-8", "replace")).hexdigest()[:16]

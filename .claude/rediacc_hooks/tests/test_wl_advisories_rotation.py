@@ -9,9 +9,13 @@ from __future__ import annotations
 
 import json
 import re
+import subprocess
+import sys
 
 from rediacc_hooks.tests import wlfix
 from rediacc_hooks.tests.test_wl_checklists import additem, cldeliver, clfile, pyprobe
+from rediacc_hooks.tests.test_wl_event_store import LEASE_BG, plant
+from rediacc_hooks.tests.test_wl_event_store import stamp as evstamp
 from rediacc_hooks.tests.wlfix import wl  # noqa: F401
 
 # --- the checklist bodies the cases plant -----------------------------------
@@ -604,3 +608,116 @@ def test_209m_counting_words_never_route_a_dismissal_to_a_specialist(wl):  # noq
     )
     assert "already covers" in got.out, proves
     assert "zorbops" in got.out, proves
+
+
+# ---- R.9 of agent/plans/PLAN-stop-hook-retro-20260924.md: the ladder no longer starves the digest ----------
+
+DIGEST_SNIPPET = r"""
+import json, pathlib, sys
+sys.path.insert(0, sys.argv[1])
+import wl_checks as K
+doc = json.loads(pathlib.Path(sys.argv[2]).read_text())
+text, delivered = K.outq_digest(pathlib.Path(sys.argv[3]), "deadbeef", doc)
+print(json.dumps([text, delivered]))
+"""
+
+
+def ladder_backlog(fix):
+    """The 2026-09-24 queue: 20 sticky multi-line `ladder:<sig>` entries at priority 0 ahead of 30 one-line priority-2 advisories. Returns the state document's path."""
+    items = [
+        {
+            "key": "ladder:%012x" % i,
+            "prio": 0,
+            "sticky": True,
+            "sig": "%012x" % i,
+            "text": "Liveness ping (45-minute rung, report-only): these in-flight subjects\n"
+            "  #aaaa%04d long docs job   (no update for 50m)\n    --update" % i,
+            "at": "2026-09-23T13:06:00Z",
+            "seq": i,
+        }
+        for i in range(20)
+    ]
+    items.extend(
+        {
+            "key": "claim-check:%012x" % (100 + i),
+            "prio": 2,
+            "sticky": True,
+            "sig": "%012x" % (100 + i),
+            "text": "claim-check: one-line advisory %d" % i,
+            "at": "2026-09-24T10:00:00Z",
+            "seq": 100 + i,
+        }
+        for i in range(30)
+    )
+    path = fix.base / "doc.json"
+    path.write_text(
+        json.dumps({"outq": {"seq": 200, "items": items, "shown": {}}}), encoding="utf-8"
+    )
+    return path
+
+
+def test_r9_the_digest_collapses_the_ladder_and_delivers_the_one_liners(wl):  # noqa: F811
+    """CONTROL: before R.9 the digest was six identical `ladder` lines and delivered nothing."""
+    doc = ladder_backlog(wl)
+    proc = subprocess.run(
+        [sys.executable, "-c", DIGEST_SNIPPET, str(wlfix.STOP_DIR), str(doc), str(wl.wl)],
+        capture_output=True,
+        text=True,
+        env=wl.stop_env(),
+        check=False,
+    )
+    assert proc.returncode == 0, proc.stderr[-600:]
+    text, delivered = json.loads(proc.stdout)
+    ladder_lines = [ln for ln in text.splitlines() if ln.strip().startswith("ladder:")]
+    assert len(ladder_lines) == 1, text
+    assert "20 quiet in-flight subject(s)" in ladder_lines[0], ladder_lines[0]
+    assert delivered >= 5, text
+
+
+def quiet_lease(fix) -> None:
+    fix.brief_now()
+    fix.hand_now()
+    old = evstamp(50)
+    plant(
+        fix,
+        {
+            "ev": "add",
+            "id": "aaaa1111",
+            "at": old,
+            "by": "deadbeef",
+            "s": " ",
+            "o": "deadbeef",
+            "t": "long docs job",
+        },
+        {
+            "ev": "lease",
+            "id": "aaaa1111",
+            "at": old,
+            "by": "deadbeef",
+            "until": evstamp(-30, "%Y-%m-%dT%H:%MZ"),
+            "worker": "bw1",
+        },
+    )
+    fix.bg = LEASE_BG
+
+
+def ladder_entries(fix) -> list:
+    doc = json.loads(fix.stem(".state-deadbeef.json").read_text(encoding="utf-8"))
+    return [
+        e
+        for e in (doc.get("outq") or {}).get("items", [])
+        if str(e.get("key")).startswith("ladder")
+    ]
+
+
+def test_r9_the_ladder_entry_is_retracted_once_its_item_moves(wl):  # noqa: F811
+    """CONTROL: before R.9 the sticky entry outlived its item's move and kept the digest's head."""
+    quiet_lease(wl)
+    wl.say("answer with no report section")  # blocks, so the multi-line ping stays queued
+    wl.run()
+    assert ladder_entries(wl), "FIXTURE BROKEN: no ladder entry was queued"
+    assert wl.cli("--update", "deadbeef", "aaaa1111", "moved: chapter two drafted").rc == 0
+    wl.newturn()
+    wl.say("answer with no report section")
+    wl.run()
+    assert ladder_entries(wl) == [], ladder_entries(wl)

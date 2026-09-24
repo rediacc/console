@@ -35,6 +35,7 @@ FAIL SEMANTICS. Unlike regression_gate, a missing or malformed class_sweep objec
 which is the one thing this rule cannot afford.
 """
 
+import datetime
 import os
 import re
 import shlex
@@ -213,13 +214,188 @@ mention the sweep at all, swept=false with evidence_kind `none`.
 """
 
 
-def prompt_section(fix_signal, outstanding=None):
+_SEARCH_TOOLS = ("grep", "egrep", "fgrep", "rg")
+# Options of those tools that take a SEPARATE value, so the value is not mistaken for the pattern.
+_VALUED_OPTS = frozenset(
+    {"-A", "-B", "-C", "-m", "--max-count", "-g", "--glob", "-t", "--type", "-T", "--type-not"}
+    | {"--include", "--exclude", "--exclude-dir", "-f", "--file", "-d", "-D", "--context"}
+)
+_CMD_SEPARATORS = frozenset({"|", "||", "&&", ";"})
+
+
+def search_pattern(search):
+    """The pattern argument of the first `grep`, `rg` or `git grep` in a search command, or "".
+
+    Shared by the transcript discharge (R.2) and the instance grounding (R.3) of agent/plans/PLAN-stop-hook-retro-20260924.md, so both read one command the same way. "" whenever the command does not parse or names no such tool: the callers then change nothing.
+    """
+    try:
+        tokens = shlex.split(search or "")
+    except ValueError:
+        return ""
+    i = 0
+    while i < len(tokens):
+        base = os.path.basename(tokens[i])
+        if base in _SEARCH_TOOLS:
+            j = i + 1
+        elif base == "git" and i + 1 < len(tokens) and tokens[i + 1] == "grep":
+            j = i + 2
+        else:
+            i += 1
+            continue
+        while j < len(tokens):
+            tok = tokens[j]
+            if tok in _CMD_SEPARATORS:
+                break
+            if tok in ("-e", "--regexp") and j + 1 < len(tokens):
+                return tokens[j + 1]
+            if tok.startswith("--regexp="):
+                return tok.split("=", 1)[1]
+            if tok == "--":
+                return tokens[j + 1] if j + 1 < len(tokens) else ""
+            if tok.startswith("-"):
+                j += 2 if tok in _VALUED_OPTS else 1
+                continue
+            return tok
+        i = j + 1
+    return ""
+
+
+def search_hits_instance(search, root, ids):
+    """Whether the search's pattern matches any +/- line of the fix-set's own commits: True, False, or None when it cannot tell (agent/plans/PLAN-stop-hook-retro-20260924.md R.3).
+
+    A search that cannot find the fixed instance cannot find its siblings either. On 2026-09-24 the judge twice handed over `grep -r 'post-tool' ...` for a fix that changed a timeout number, and a session told to run a search that matches nothing is told nothing. Only a COMMIT-based fix-set has its own diff; the caller passes `ids` only for provenance `diff-tree`.
+    """
+    pattern = search_pattern(search)
+    if not pattern or not ids:
+        return None
+    import wl_core as C  # noqa: PLC0415
+
+    changed: list[str] = []
+    for sha in ids:
+        diff = C._git(root, "show", "--format=", "--no-color", "--no-ext-diff", "-U0", sha) or ""
+        changed.extend(
+            ln[1:]
+            for ln in diff.splitlines()
+            if ln[:1] in ("+", "-") and not ln.startswith(("+++", "---"))
+        )
+    if not changed:
+        return None
+    try:
+        tokens = shlex.split(search)
+    except ValueError:
+        return None
+    shorts = "".join(t[1:] for t in tokens if t.startswith("-") and not t.startswith("--"))
+    ignore_case = "i" in shorts or "--ignore-case" in tokens
+    literal = "F" in shorts or "--fixed-strings" in tokens
+    regex = None
+    if not literal:
+        # grep's basic-regex alternation and grouping, spelled the way Python's `re` reads them.
+        spelled = pattern.replace("\\|", "|").replace("\\(", "(").replace("\\)", ")")
+        try:
+            regex = re.compile(spelled, re.IGNORECASE if ignore_case else 0)
+        except re.error:
+            regex = None
+    needle = pattern.lower() if ignore_case else pattern
+    for line in changed:
+        if regex is not None and regex.search(line):
+            return True
+        if needle in (line.lower() if ignore_case else line):
+            return True
+    return False
+
+
+# How much of the lead transcript's tail the discharge reads. A demand lives SWEEP_TTL_MIN, so its evidence is near the end; a whole 200 MB transcript is never parsed on a stop.
+EVIDENCE_TAIL_BYTES = 32 * 1024 * 1024
+
+
+def _tail_lines(path, max_bytes):
+    try:
+        with open(path, "rb") as fh:
+            fh.seek(0, 2)
+            size = fh.tell()
+            fh.seek(max(0, size - max_bytes))
+            data = fh.read()
+    except (OSError, TypeError):
+        return []
+    lines = data.split(b"\n")
+    return lines[1:] if size > max_bytes else lines
+
+
+def _epoch(stamp):
+    """Epoch seconds of a transcript timestamp (`2026-09-24T15:00:00.123Z`), or None."""
+    try:
+        return datetime.datetime.fromisoformat(str(stamp)).timestamp()
+    except (TypeError, ValueError):
+        return None
+
+
+def sweep_evidenced(outstanding, transcript):
+    """True when the lead transcript, AFTER the demand first fired, holds a Bash tool call whose command contains the demand's own search pattern AND whose tool_result came back (agent/plans/PLAN-stop-hook-retro-20260924.md R.2).
+
+    WHY. A FOLLOWUP judges only the last message, so a sweep the session really ran two turns earlier had to be re-run to be seen (2026-09-24 14:57). The transcript is the harness's record, not the session's narration, so it is evidence the lead cannot fabricate by describing it.
+
+    Fails toward "not evidenced": no pattern, a pattern under 3 characters, no timestamp on the call, a call before the demand, or a call with no result each keep the demand.
+    """
+    if not isinstance(outstanding, dict) or not transcript:
+        return False
+    pattern = search_pattern(outstanding.get("search") or "")
+    if len(pattern) < 3:
+        return False
+    try:
+        since = float(outstanding.get("first_at") or outstanding.get("at") or 0)
+    except (TypeError, ValueError):
+        return False
+    if since <= 0:
+        return False
+    calls = set()
+    for rec in wl_common.records(_tail_lines(transcript, EVIDENCE_TAIL_BYTES), need=b'"tool_'):
+        content = (rec.get("message") or {}).get("content")
+        if not isinstance(content, list):
+            continue
+        if rec.get("type") == "assistant":
+            when = _epoch(rec.get("timestamp"))
+            if when is None or when < since:
+                continue
+            for block in content:
+                if (
+                    isinstance(block, dict)
+                    and block.get("type") == "tool_use"
+                    and block.get("name") == "Bash"
+                    and pattern in str((block.get("input") or {}).get("command") or "")
+                ):
+                    calls.add(str(block.get("id") or ""))
+        elif rec.get("type") == "user" and calls:
+            for block in content:
+                if (
+                    isinstance(block, dict)
+                    and block.get("type") == "tool_result"
+                    and str(block.get("tool_use_id") or "") in calls
+                ):
+                    return True
+    return False
+
+
+def discharge_if_evidenced(outstanding, transcript, path=None):
+    """The outstanding demand after discharging every head the transcript already answers, or None. A discharged head is PROMOTED, so a demand parked in `owed` is asked next rather than lost."""
+    for _ in range(2):  # a head plus its one `owed` slot
+        if not outstanding or not sweep_evidenced(outstanding, transcript):
+            return outstanding
+        SWEEP_DEMAND.promote(path)
+        outstanding = load_outstanding(path)
+    return outstanding
+
+
+def prompt_section(fix_signal, outstanding=None, transcript=None):
     """The prompt text to append, or "" when this stop asks nothing.
 
     The fix signal wins over an outstanding demand: a NEW fix-set is asked about fresh, on SWEEP_PROMPT, which never mentions the outstanding class -- that demand is not dropped, it is carried forward in the marker's `owed` slot (wl_rules.Demand.displace) and asked in full on a later stop that is not a fix stop.
+
+    `transcript`: an outstanding demand the lead transcript already answers (`sweep_evidenced`) asks nothing.
     """
     if fix_signal:
         return SWEEP_PROMPT
+    if outstanding and transcript and sweep_evidenced(outstanding, transcript):
+        return ""
     if outstanding:
         return FOLLOWUP_PROMPT % {
             "defect_class": (outstanding.get("defect_class") or "(not recorded)")[:300],
@@ -364,6 +540,11 @@ V_ACTION = (
     "Run: %s -- other copies of the CHANGED code? Consolidate into one home or fix each; "
     "say the COUNT, or that none exist."
 )
+# R.3 of agent/plans/PLAN-stop-hook-retro-20260924.md: the demand stays, only the command is replaced.
+V_ACTION_UNGROUNDED = (
+    "The judge's search does not match the fix's own changed lines; name a search that finds "
+    "the fixed instance, then count its siblings."
+)
 V_ACTION_NOSEARCH = (
     "Grep for siblings of the CHANGED code (its function, constant or pattern): consolidate "
     "copies into one home or fix each, say the COUNT, or that none exist. %s"
@@ -375,8 +556,10 @@ V_ACTION_DROPPED = (
 )
 
 
-def enforce(out, payload, fixset_files=None, displaced=None):
+def enforce(out, payload, fixset_files=None, displaced=None, instance=None):
     """Write the sweep order into a judge verdict, in place. Returns the note.
+
+    `instance` is `(root, commit ids)` for a commit-based fix-set, or None. When given, a runnable search whose pattern matches none of the fix's own changed lines is replaced by V_ACTION_UNGROUNDED (`search_hits_instance`); the demand itself is unchanged.
 
     `search` IS MODEL PROSE TOO, and `validate_search` was never asked to know that: it checks whether a string PARSES as a read-only shell command, not whether its English happens to name a reserved act. "commit the reflow now" carries no `git` token and no verb `_DESTRUCTIVE` recognises, so it validated as `ok` and would have reached the session as `Run: commit the reflow now`,
     the exact second-door shape the comment two lines below was written about for `instruction` and left open here. Found by this module's own sibling, `wl_proofcheck`, planting the identical case against an `instruction` field and noticing `search` had never been asked the same question.
@@ -407,6 +590,8 @@ def enforce(out, payload, fixset_files=None, displaced=None):
         }
     elif ok and search_verb:
         action = V_ACTION_DROPPED % {"why": "it names `%s`, and a sweep only reads" % search_verb}
+    elif ok and instance and search_hits_instance(payload["search"], *instance) is False:
+        action = V_ACTION_UNGROUNDED
     elif ok:
         action = V_ACTION % payload["search"]
     elif payload["search"]:
@@ -459,7 +644,7 @@ def clear_outstanding(path=None):
     SWEEP_DEMAND.clear(path)
 
 
-def apply_verdict(out, outstanding=None, path=None, fixset_files=None, asked=None):
+def apply_verdict(out, outstanding=None, path=None, fixset_files=None, asked=None, instance=None):
     """(kind, note). Mutates `out` when the rule fires; owns the marker lifecycle.
 
     kind is 'fire', 'silent' or 'degraded'. A verdict discharges only the question it was actually asked (agent/plans/PLAN-sweep-obligation-carry-forward.md): `asked` is `"fresh"` on a stop that asked SWEEP_PROMPT about a NEW fix-set, `"followup"` on a stop that asked FOLLOWUP_PROMPT about `outstanding` itself, and `None` (the default) reproduces the byte-identical legacy behaviour for any caller that has not adopted the parameter -- fire always banks over `outstanding`, silent/degraded always clears it.
@@ -469,11 +654,13 @@ def apply_verdict(out, outstanding=None, path=None, fixset_files=None, asked=Non
     On `asked="followup"`: a fire is a re-fire of the SAME `outstanding` head, banked as before; a silent or degraded answer discharges the head and promotes a live `owed` record to take its place, since the question just answered was actually about `outstanding`.
 
     `fixset_files` defaults to `None`, so every existing call site that does not know about it behaves byte-identically to before this parameter existed (see `wl_rules.scope_grounded`).
+
+    `instance` (see `enforce`) is honoured on a FRESH ask only: a follow-up's search is about an older fix-set, not about these commits.
     """
     kind, payload = read_verdict(out)
     if kind == "fire":
         if asked == "fresh":
-            note = enforce(out, payload, fixset_files, displaced=outstanding)
+            note = enforce(out, payload, fixset_files, displaced=outstanding, instance=instance)
             SWEEP_DEMAND.displace(
                 {"defect_class": payload["defect_class"], "search": payload["search"]},
                 head=outstanding,

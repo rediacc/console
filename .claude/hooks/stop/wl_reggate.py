@@ -313,12 +313,23 @@ def _diff_tree_files(root, sha):
     return [f.strip() for f in files if f.strip()]
 
 
-def fixset_files(root, ids):
+def _porcelain_path(line):
+    """The path one `git status --porcelain` line names (the NEW path of a rename).
+
+    `C._git` strips the WHOLE output, so the first line's leading space is gone: ` M a.ts` arrives as `M a.ts`, and the old `ln[3:]` answered `ackages/x/a.ts` for `packages/x/a.ts` (found 2026-09-24 by the R.1 fixture of agent/plans/PLAN-stop-hook-retro-20260924.md). A two-character status is followed by one space; a stripped one-character status is not.
+    """
+    path = line[2:] if line[1:2] == " " and line[2:3] != " " else line[3:]
+    return path.split(" -> ", 1)[-1].strip().strip('"')
+
+
+def fixset_files(root, ids, live_paths=None):
     """(files, provenance). The real files THIS fix-set touched, computed by git, never narrated. `provenance` is `"diff-tree"` when every id resolved to a real commit, or `"status-fallback"` when nothing did and the answer is the whole working tree's `git status --porcelain` instead -- named so a caller can tell the judge WHICH ground truth it is being shown, since the two answer
     different questions (agent/plans/PLAN-sweep-obligation-carry-forward.md task "Label the injected file list with its provenance").
 
     `ids` are fix_signals' own ids: commit shas for a commit-based fix-set, a single tick id for a tick-based one. A tick id is not a tree-ish, so `_diff_tree_files` answers `[]` for it -- correct, because a tick-based fix-set's evidence is necessarily still UNCOMMITTED. Falls back to `git status --porcelain`, the same ground truth `gate_only_fixset`'s own docstring already calls
-    out as the honest answer for that shape, so a hallucinated bulk transform can be checked against what git ACTUALLY shows changed rather than trusted from the judge's own prose (agent/plans/PLAN-judge-prompt-trap-conflation.md). No behaviour change to the fallback itself: only its label is new.
+    out as the honest answer for that shape, so a hallucinated bulk transform can be checked against what git ACTUALLY shows changed rather than trusted from the judge's own prose (agent/plans/PLAN-judge-prompt-trap-conflation.md).
+
+    `live_paths` (wl_roster.live_writer_paths) is subtracted on the status arm ONLY, under provenance `"status-minus-live-writers"` (agent/plans/PLAN-stop-hook-retro-20260924.md R.1): the dirty tree is shared, and a live writer's uncommitted edits are not the lead's fix-set. The obligation for them belongs in that writer's own tick. A commit-based fix-set is never trimmed.
     """
     files = set()
     for i in ids or []:
@@ -326,7 +337,11 @@ def fixset_files(root, ids):
     if files:
         return sorted(files), "diff-tree"
     status = C._git(root, "status", "--porcelain") or ""
-    files.update(ln[3:].strip() for ln in status.splitlines() if ln.strip())
+    files.update(_porcelain_path(ln) for ln in status.splitlines() if ln.strip())
+    if live_paths:
+        kept = {f for f in files if f not in live_paths}
+        if kept != files:
+            return sorted(kept), "status-minus-live-writers"
     return sorted(files), "status-fallback"
 
 

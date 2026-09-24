@@ -1336,6 +1336,33 @@
         "d54e3a5b"
       ]
     },
+    "agent/plans/PLAN-stop-hook-retro-20260924.md": {
+      "status": "ready",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 5,
+      "done": 10,
+      "open_sigs": [
+        "39fccafe",
+        "45268745",
+        "6981d5e0",
+        "874cd0d4",
+        "fe5f27ef"
+      ],
+      "done_sigs": [
+        "00e15331",
+        "56e79ec7",
+        "8d27f484",
+        "95685b6b",
+        "961791b3",
+        "9c1023b5",
+        "a221c310",
+        "d41dc495",
+        "dd0a9bdf",
+        "ec7e1350"
+      ]
+    },
     "agent/plans/PLAN-stop-hook-rulings-campaign.md": {
       "status": "draft",
       "owner": "d778be9d",
