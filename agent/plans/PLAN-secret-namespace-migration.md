@@ -113,7 +113,7 @@ Post-migration cleanup (detail in Part 6):
 ## Decisions locked by the operator, 2026-09-02 (Part 0)
 
 1. **Provider-named prefixes.** `CLOUDFLARE_`, `DOCKERHUB_`, `AWS_`, `STRIPE_`,
-`ANTHROPIC_` — the vendor is the namespace, because minting and revoking is what you actually do with these. Component prefixes (`ACCOUNT_`, `RENET_`, `RDC_`) stay for values a component owns.
+`ANTHROPIC_` — the vendor is the namespace, because minting and revoking is what actually happens to these. Component prefixes (`ACCOUNT_`, `RENET_`, `RDC_`) stay for values a component owns.
 2. **Unify the namespaces — one name everywhere.** The Worker reads the full name
 directly; the `SECRET_*` shim and the suffix collapse go away. This is the fix for "we struggled what is for what".
 3. **Bitwarden gets the clean names; GitHub keeps the old ones**, transitionally. No
@@ -292,7 +292,7 @@ Boolean probes confirming it is one single-region dev instance rather than a mir
 
 - **`check:env-credential-drift` tracked a category error, now fixed.** Its `TRACKED` list
 checked `SES_AK_ID` against the `ses-eu`/`ses-us`/`ses-asia` slugs. But `SES_AK_ID` is the AWS **IAM admin** credential the rotation tool uses to create and delete the SES sending keys (`private/account/scripts/rotation/lib/credentials.ts:59-61`), not a sending key itself. No manifest slug records it and none can, so the check could never pass — a permanently red gate, which is worse than one that
-cannot fail because it teaches you to skip the output. Removed, with the honest consequence stated in the source: **the admin credential is outside the rotation record entirely, so nothing tracks its age.** Closing that means an `aws-admin` slug in the manifest — operator's call.
+cannot fail because it teaches readers to skip the output. Removed, with the honest consequence stated in the source: **the admin credential is outside the rotation record entirely, so nothing tracks its age.** Closing that means an `aws-admin` slug in the manifest — operator's call.
 - **One real drift survives and is the operator's** (`[?] #2d728f0a`): `.env`'s
 `AWS_SES_ACCESS_KEY_ID` matches no version the manifest records for any `ses-*` slug. Either a stale key or a separate never-rotated dev key. Resolving it needs `rotation rotate ses-eu` (mints and pushes a real AWS key) or a paste from the AWS console. The gate is local-only, not in CI, so nothing is blocked meanwhile.
 
@@ -381,7 +381,7 @@ consumers, get the id and sha256(value)). Verified behaviour-preserving: the man
 
 ### 5a-original. The findings as first written
 
-Both block the migration because you cannot rotate the affected credentials at all today.
+Both block the migration because the affected credentials cannot be rotated at all today.
 
 1. **`rotate cf-breakpoint` mints a token, pushes it nowhere, and reports success.**
 `rotateCloudflareToken` (`commands/rotate.ts:388`) branches only on `cf-cd` (`:488`) and `cf-r2`/`cf-r2-media` (`:495`). `cf-breakpoint` falls through with `pushErrors` empty, so it reaches `saveManifest` at `:563` and exits 0. Its manifest entry declares `consumers: ['github-secret:BREAKPOINT_TUNNEL_TOKEN']`, which is **never read**. Result: GitHub keeps the old value while the
@@ -543,7 +543,7 @@ validity on 2026-09-01 for the migration and holds read-WRITE on `ci-shared`. Th
 
 # THE RENAME SLICE — everything a fresh session needs (Part 7)
 
-**Read this if you are picking up after compaction.** The backup fix (`#5914a537`) is a separate, smaller slice. This section is the big one, deliberately over-specified so nobody has to re-derive it. Every claim here was verified in-session; the file:line references resolve.
+**Read this first when picking up after compaction.** The backup fix (`#5914a537`) is a separate, smaller slice. This section is the big one, deliberately over-specified so nobody has to re-derive it. Every claim here was verified in-session; the file:line references resolve.
 
 ## What this slice is
 
@@ -584,7 +584,7 @@ The shim is contracted at `.ci/scripts/deploy/set-account-worker-secrets.sh:26-4
 
 ## Ready-to-paste sub-agent prompts
 
-Investigation parallelises here; writing does not. Spawn these read-only, then implement yourself or with at most 2 writers on disjoint files.
+Investigation parallelises here; writing does not. Spawn these read-only, then implement in-session or with at most 2 writers on disjoint files.
 
 **Agent A — mechanical rename inventory**
 > Repo /home/developer/console. Produce the exact sed-able rename table for a secret-name
@@ -692,7 +692,7 @@ otlp slugs it triggers `Renet sources changed, rebuilding...` and a full Docker 
 
 ## Part 9 — what EXECUTING bw against the vault found (2026-09-02)
 
-The operator pointed out that a name-equality diff undercounts, and told me to run the Bitwarden CLI rather than reason about it. Doing so overturned a locked decision.
+The operator pointed out that a name-equality diff undercounts, and directed a run of the Bitwarden CLI rather than reason about it. Doing so overturned a locked decision.
 
 ### GPG IS RECOVERABLE. Decision 7's premise was false.
 
@@ -722,7 +722,7 @@ say whether `S3_*` there is the backup plane.**
 
 ### An exposure to record
 
-While classifying note shapes I printed a 60-character preview of `passphrase - info@rediacc.com`, which exposed that value in the session transcript. Same class as the `AUTOPILOT_PRIVATE_KEY` leak in Part 1, different cause: previewing content to classify it rather than a tool echoing an argument. Treat the GPG passphrase as exposed.
+Classifying note shapes printed a 60-character preview of `passphrase - info@rediacc.com`, which exposed that value in the session transcript. Same class as the `AUTOPILOT_PRIVATE_KEY` leak in Part 1, different cause: previewing content to classify it rather than a tool echoing an argument. Treat the GPG passphrase as exposed.
 
 ---
 
@@ -734,7 +734,7 @@ Authoritative from 2026-09-02. This is the table Part 7's "Agent A" prompt was m
 
     <OWNER>_<THING>[_<REGION>]
 
-`OWNER` is a **provider** when minting/revoking is what you do with the value (`CLOUDFLARE_`, `AWS_`, `STRIPE_`, `DOCKERHUB_`, `GITHUB_`, `ANTHROPIC_`, `BITWARDEN_`), and a **component** when a component owns it (`ACCOUNT_`, `RENET_`, `RDC_`, `OBS_`, `RELEASE_`). `REGION` is `EU`/`US`/`ASIA` and appears ONLY where the value genuinely differs per region. Decision 1 chose
+`OWNER` is a **provider** when minting/revoking is what happens to the value (`CLOUDFLARE_`, `AWS_`, `STRIPE_`, `DOCKERHUB_`, `GITHUB_`, `ANTHROPIC_`, `BITWARDEN_`), and a **component** when a component owns it (`ACCOUNT_`, `RENET_`, `RDC_`, `OBS_`, `RELEASE_`). `REGION` is `EU`/`US`/`ASIA` and appears ONLY where the value genuinely differs per region. Decision 1 chose
 provider-first; this is that rule applied.
 
 ## The table
@@ -940,7 +940,7 @@ keyed on "zero tasks" would have waved that straight through, which is why the h
 - **`rotate cf-breakpoint` is safe to run and will refuse.** This guard used to say it
 "reports success while pushing nothing" — that was wrong; see Part 5a. As of 2026-09-02 it refuses before touching Cloudflare, naming `.ci/breakpoint/README.md` as the place the missing permission set is recorded. Agent C's task is therefore smaller than it was written: transcribe those scopes into `CF_TOKEN_PERMISSIONS`, nothing else.
 - **`ANTHROPIC_API_KEY` is GONE, not absent — decided 2026-09-02.** The operator ruled
-out pay-as-you-go API billing, so this credential will never exist. It used to be referenced-but-absent, held in place by an `OPTIONAL` allowlist entry in `check_secret_reachability.py`; both the reference and the entry were deleted, that allowlist is now empty, and the watchdog's tier 2 authenticates with `CLAUDE_CODE_OAUTH_TOKEN` alone. **Do not re-add it, and do not mint a
+out pay-per-use API billing, so this credential will never exist. It used to be referenced-but-absent, held in place by an `OPTIONAL` allowlist entry in `check_secret_reachability.py`; both the reference and the entry were deleted, that allowlist is now empty, and the watchdog's tier 2 authenticates with `CLAUDE_CODE_OAUTH_TOKEN` alone. **Do not re-add it, and do not mint a
 key.** If a future reader finds this name in a comment, that comment is the record of its removal.
 - **`AWS_SES_*_ASIA` are NOT dead.** They are held for when AWS grants `ap-northeast-1`;
 `.ci/scripts/deploy/set-account-worker-secrets.sh:84` substitutes EU at deploy time only.
@@ -1040,7 +1040,7 @@ the names its builder reads, both directions. This is the gate for §2's class.
 - `check:ci-bws-map` — the replacement for `check-workflow-gates.sh` CHECK 2, which goes
 structurally vacuous once secrets arrive as `$GITHUB_ENV` injections.
 - `check_secret_reachability.py`'s `OPTIONAL` allowlist is now EMPTY. Its only entry
-excused a reference to `ANTHROPIC_API_KEY`; the operator ruled out pay-as-you-go API billing on 2026-09-02, so the reference was DELETED rather than excused. That is the right end for every entry in that list: a suppression outlives its reason silently, a deleted reference cannot.
+excused a reference to `ANTHROPIC_API_KEY`; the operator ruled out pay-per-use API billing on 2026-09-02, so the reference was DELETED rather than excused. That is the right end for every entry in that list: a suppression outlives its reason silently, a deleted reference cannot.
 
 ### 5. The Worker-side namespace is NOT the GitHub namespace, and conflating them is a live hazard
 
@@ -1385,7 +1385,7 @@ The operator took every recommended option. Executing them changed three things 
 
 ### The rename needs THREE secrets minted, not five
 
-The ruling was "mint the 5, then apply". Executing it found the preflight I had just written was **over-strict**: it demanded a map entry for every rename TARGET, but `SES_AK_ID`/`SES_AK_SECRET` -> `AWS_IAM_ADMIN_*` is a rename of names that live only in `private/account/.env`. They are not GitHub org secrets (`secret-reachability.json` confirms), nothing fetches them from
+The ruling was "mint the 5, then apply". Executing it found the just-written preflight was **over-strict**: it demanded a map entry for every rename TARGET, but `SES_AK_ID`/`SES_AK_SECRET` -> `AWS_IAM_ADMIN_*` is a rename of names that live only in `private/account/.env`. They are not GitHub org secrets (`secret-reachability.json` confirms), nothing fetches them from
 Bitwarden, and blocking the whole rename on creating a secret with no consumer is a refusal to act dressed as caution.
 
 `scripts/dev/secret-rename.py` now re-derives the set from reachability: a target must be mapped only when its SOURCE is a console-reachable org secret. That leaves exactly three, all genuinely operator-only: `OBS_OTLP_CREDENTIALS_{EU,US,ASIA}` via `./run.sh rotation rotate otlp-eu|otlp-us|otlp-asia`, which MINTS. Never `rotation sweep`.
@@ -1432,8 +1432,8 @@ Scope, stated honestly: only the BITWARDEN copy was read. Deployed Workers take 
 
 ### 2. I destroyed 26 workflow files, and the recovery is the interesting part
 
-`actionlint` correctly flagged the duplicate keys the `STRIPE_SECRET_KEY_{EU,US,ASIA}` collapse produced — the hand-edit this plan's own AFTER--apply list names. I wrote a script instead. Its indent tracking treated same-depth keys in DIFFERENT blocks as duplicates, so it kept the first `name:`/`run:`/`env:`/`uses:` per indent and deleted the rest: **2001 keys across 26 files, 12
-left unparseable.** I ran it across all 26 without reading the first file's output.
+`actionlint` correctly flagged the duplicate keys the `STRIPE_SECRET_KEY_{EU,US,ASIA}` collapse produced — the hand-edit this plan's own AFTER--apply list names. A script was written instead. Its indent tracking treated same-depth keys in DIFFERENT blocks as duplicates, so it kept the first `name:`/`run:`/`env:`/`uses:` per indent and deleted the rest: **2001 keys across 26 files, 12
+left unparseable.** It ran across all 26 without reading the first file's output.
 
 Recovery, with the operator's approval, from four sources: 8 files from `.bak` copies taken earlier the same turn (which still carried the shadow wiring), 2 from harness file-history snapshots, `breakpoint.yml` from `.ci/breakpoint/workflow/` — the vendored copy the glob never touched — and 15 from `HEAD`, losing their wiring.
 
@@ -1445,7 +1445,7 @@ only second-and-later occurrences.
 
 ### 3. CHECK 4 caught a cross-repo break within hours of being written
 
-Repairing the contract, I declared `BWS_ACCESS_TOKEN` **required** in `claude-review-reusable.yml` — which `private/account` and `private/renet` call and cannot pass. That breaks THEIR next run, an hour later, in a log nobody on the console PR reads. CHECK 4 (Part 17's D3) reported it immediately and named the fix. It is back to `required: false` with both shadow steps
+Repairing the contract declared `BWS_ACCESS_TOKEN` **required** in `claude-review-reusable.yml` — which `private/account` and `private/renet` call and cannot pass. That breaks THEIR next run, an hour later, in a log nobody on the console PR reads. CHECK 4 (Part 17's D3) reported it immediately and named the fix. It is back to `required: false` with both shadow steps
 repo-guarded, which is the design it always had.
 
 ### 4. The rename broke a repo it could not see
@@ -1560,7 +1560,7 @@ Second-order: after deletion Bitwarden is the only copy CI can reach and `gh sec
 
 An agent audited the whole uncommitted diff, because the tree had been through rename -> destruction -> recovery from four sources and nobody had read it end to end.
 
-**P1, mine, fail-OPEN on production**: `cd-deploy-worker.yml` had lost the per-channel ternary on `STRIPE_SECRET_KEY` while the webhook four lines below kept its — an EDGE deploy would have configured the www Worker with the LIVE Stripe key against a SANDBOX webhook secret, a pair no code path expects. Restored. **My first restore used HEAD's `STRIPE_SECRET_KEY_EU`, which the
+**P1, introduced by this session, fail-OPEN on production**: `cd-deploy-worker.yml` had lost the per-channel ternary on `STRIPE_SECRET_KEY` while the webhook four lines below kept its — an EDGE deploy would have configured the www Worker with the LIVE Stripe key against a SANDBOX webhook secret, a pair no code path expects. Restored. **The first restore used HEAD's `STRIPE_SECRET_KEY_EU`, which the
 collapse had removed, and assertion 9 — written an hour earlier — is what caught it.**
 
 **P2, fail-closed but total**: the `cd-deploy-account` matrix projection never emitted `backupBucket`, `edgeBackupBucket` or `r2Jurisdiction`, so all three resolved empty and every account deploy exited 1. `regions.json` nests two of them, so the jq had to map as well as select. The dead `STRIPE_KEY_${SUFFIX}` indirection was DELETED rather than repaired: the collapse had made all

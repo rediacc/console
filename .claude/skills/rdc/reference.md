@@ -190,7 +190,7 @@ Destroy a cloud-provisioned machine and remove from config
 
 ### rdc machine prune <name>
 
-Remove orphaned datastore resources and stale snapshots from a machine. The base run cleans renet-internal datastore artifacts (BTRFS subvolumes, lock files, tmpfiles). The optional flags below enable progressively narrower repo cleanups: --orphaned-repos uses the local CLI config as the only signal, while --prune-unknown additionally consults the renet .interim/state mirror so legitimate forks created by other tools survive even when missing from your local config. Both deletion paths run a mount-safety preflight; pass --force-delete-mounted to override.
+Remove orphaned datastore resources and stale snapshots from a machine. The base run cleans renet-internal datastore artifacts (BTRFS subvolumes, lock files, tmpfiles). The optional flags below enable progressively narrower repo cleanups: --orphaned-repos uses the local CLI config as the only signal, while --prune-unknown additionally consults the renet .interim/state mirror so legitimate forks created by other tools survive even when missing from the local config. Both deletion paths run a mount-safety preflight; pass --force-delete-mounted to override.
 
 **Options:**
 

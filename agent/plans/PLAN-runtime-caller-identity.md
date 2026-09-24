@@ -12,7 +12,7 @@ the session id is live in every Bash-tool child, so the CLI can warn AT THE CALL
 ## Outcome
 SHIPPED IN FULL, AND THE HEADER IS WRONG. It still reads `Status: DESIGN`, i.e. nothing built; the tree shows the entire three-layer design landed in 626efcb26 on the same day the plan was written. Measured 2026-09-06: `.claude/hooks/stop/wl_core.py:261` is `resolve_session_id()` and `:293` is `check_me()`; the report reader was refactored onto that shared resolver; the
 `_identity_or_die` helper is called at 15 `<me>` parse sites, WIDER than the 13 the plan enumerated, with direct `check_me` calls in the requests, wait and report modules besides. The report-only phantom backstop with its blindness control, `--reassign` as an appended event rather than a rewrite, the `--ask` roster check, the ambient-env scrub in the suite, and the anti-vacuity
-case that DERIVES the me-taking verb list from the dispatch source all exist. Do not record this plan as unimplemented.
+case that DERIVES the `<me>`-taking verb list from the dispatch source all exist. Do not record this plan as unimplemented.
 
 ## Lessons
 - A plan written by a planning sub-agent can be executed within hours and never

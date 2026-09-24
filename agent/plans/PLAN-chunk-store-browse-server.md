@@ -7,7 +7,7 @@ Record-Sig: f6e46844
 
 ## Why
 The operator wanted to ask whether a particular file is inside a backup. This plan was one of two competing angles, assigned "server-and-client-first, renet changes as a last resort". Its verdict: the engine must PRODUCE a file index (no listing is derivable from a manifest, which hashes LUKS ciphertext in a fixed grid and carries no namespace at all), but the engine is the wrong
-place to SERVE one. A browse whose whole purpose is "should I restore?" must work when no machine survives, so routing it through an executor makes it useless in the disaster it exists for. It proposed a per-snapshot encrypted table of contents written at snapshot time, stored opaquely by the account server, and decrypted by the CLI.
+place to SERVE one. A browse whose whole purpose is deciding whether to restore must work when no machine survives, so routing it through an executor makes it useless in the disaster it exists for. It proposed a per-snapshot encrypted table of contents written at snapshot time, stored opaquely by the account server, and decrypted by the CLI.
 
 ## Outcome
 NOT ADOPTED. The rival engine-first angle shipped instead, and none of this plan's own deliverables exist. Measured 2026-09-06.

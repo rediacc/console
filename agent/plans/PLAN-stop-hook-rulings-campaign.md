@@ -38,7 +38,7 @@ The freshness asymmetry is half the answer (`.claude/hooks/stop/wl_store.py:116`
 `outq_add` (`.claude/hooks/stop/wl_checks.py:1861`) dedupes advisories on `sha1(text)`. The VIOLATION path has nothing equivalent: `vadd` (`.claude/hooks/stop/wl_checks.py:3634`) is three lines that append to a list.
 
 **Defect A -- the latch is session-local.** `_sub` reads `state_doc["subptr"]` (`.claude/hooks/stop/wl_checks.py:4174`), so a new session fires on its first stop. The cross-session door, `submodule_decision_recorded` (`.claude/hooks/stop/wl_checks.py:1737`), is a SUBSTRING scan requiring both the path and `sha[:9]` in one event's values -- a correct decision recorded in prose gets
-no credit. That is the likely "I decided it and it fired again".
+no credit. That is the likely `I decided it and it fired again`.
 
 **Defect B -- the latch is spent only if the text wins rotation.** `submodule` is `always=False` (`.claude/hooks/stop/wl_checks.py:4186`); its latch is spent by `spend_display_latches` (`.claude/hooks/stop/wl_checks.py:3655`) with the keys actually rendered (`.claude/hooks/stop/wl_checks.py:5579`). **But the violation was already appended** and a non-empty list blocks regardless.
 That is the three-identical-stops mechanism exactly.

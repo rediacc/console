@@ -11,7 +11,7 @@ STATE.md was keyed per BRANCH while sessions are per SESSION, and this repo rout
 recovered only because the writer read the single-slot backup before writing again; one write later and recovery would have been impossible. The staleness gate DROVE the collision, nagging every session on the branch on a 15-minute clock to rewrite the one shared file.
 
 ## Outcome
-SHIPPED, as ONE commit exactly as the plan demanded, b93097be1. Measured 2026-09-06: the section parser and renderer, the mine/dead/briefing predicates, the reap archive path and the future-skew constant are all in the store module; the new message constants are consumed by the PostCompact peers note and the class-2 peer note in the checks module; and the pre-edit guard now denies
+SHIPPED, as ONE commit exactly as the plan demanded, b93097be1. Measured 2026-09-06: the section parser and renderer, the `mine`/`dead`/`briefing` predicates, the reap archive path and the future-skew constant are all in the store module; the new message constants are consumed by the PostCompact peers note and the class-2 peer note in the checks module; and the pre-edit guard now denies
 ALL tool writes to STATE.md, leaving `worklist.py` the only writer. ONE HEADER CORRECTION AND ONE LATER DEVIATION. The header says "IMPLEMENTED, uncommitted" and it was committed the same day. And the document is no longer branch-keyed at all: f7a5351a9 re-keyed it to `agent/<session-prefix>/STATE.md`, which is the alternative this plan's section 3.10 explicitly REJECTED. The
 sectioning, merge, reap and peer machinery survived on top of that change.
 

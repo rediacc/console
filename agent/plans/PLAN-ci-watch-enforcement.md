@@ -32,8 +32,8 @@ Security` (hook suite, PASS=1557 FAIL=2, machine-specific test paths). The secon
 - run 33135196245: `Quality / Submodule Branches`, because a pointer bump
 demanded a reply to an automated review on rediacc/renet#109. Found only when the operator asked "what are we waiting for more than 3 hours?".
 
-Operator: *"Why you don't watch the PR CI process? Actually, stop judge should
-have caught that!"*
+> Operator: *"Why you don't watch the PR CI process? Actually, stop judge should
+> have caught that!"*
 
 ONE head carries SEVERAL runs (3c151275 has 33135268915 success AND 33135196245 cancelled), so a receipt keyed on a run id would be wrong. The head SHA is the key, which is what `.ci/scripts/ci/ci-trace.py` already keys on.
 
@@ -95,11 +95,11 @@ command-position matcher; and a silently disabled chain would make it vacuous �
 
 **Rejected:**
 - **Process id** (the operator's suggestion). The defect is the ABSENCE of a
-watcher; you cannot detect an absent thing by its pid. A pid is not durable across turns and says nothing about WHICH head is watched, which is the fact that matters.
+watcher; an absent thing cannot be detected by its pid. A pid is not durable across turns and says nothing about WHICH head is watched, which is the fact that matters.
 - **`HEAD` vs `@{u}` at Stop time.** Shared worktree: a peer moves HEAD between
-turns. This session publishes with `HEAD:<branch>`, so `@{u}` is often unset. And it cannot distinguish my push from a peer's to the same branch.
+turns. This session publishes with `HEAD:<branch>`, so `@{u}` is often unset. And it cannot distinguish this session's push from a peer's to the same branch.
 - **`gh pr list --head`.** A network call on every stop: cost, rate limit, and a
-flaky gate. It also answers "is there a PR", not "did I push".
+flaky gate. It also answers "is there a PR", not "did this session push".
 - **`.ci/cache/prepush-receipt.json`.** Written BEFORE the push, keyed on tree not
 on a push event, and a single file in a shared worktree. It proves gates ran, never that a push happened.
 
@@ -154,15 +154,15 @@ new hook selects the gates that judge it.
 
 The blocking path touches no network, spawns no subprocess and reads no shared mutable state. Two honest residuals: a SIGKILLed watch writes no receipt, so the gate asks for a re-arm (a false positive toward more diligence, bounded by the ceiling); and a push outside the session's Bash tool is out of scope by design.
 
-**What CANNOT be enforced without flakiness:** "the head has a run in flight" is not knowable at Stop time without a network read, and a network read every stop is a flaky gate that will be routed around. This plan does NOT enforce that. It enforces the local proxy — *you pushed, and there is neither a running sanctioned reader nor a recorded verdict* — which covers all three of
+**What CANNOT be enforced without flakiness:** "the head has a run in flight" is not knowable at Stop time without a network read, and a network read every stop is a flaky gate that will be routed around. This plan does NOT enforce that. It enforces the local proxy — *a push happened, and there is neither a running sanctioned reader nor a recorded verdict* — which covers all three of
 tonight's incidents.
 
 ## 12. Shared-worktree safety
 
 1. PostToolUse fires only in the session that ran the command.
 2. The ledger is per-session, like every other sidecar.
-3. The receipt is SHARED and sha-keyed, so a peer's receipt can DISCHARGE my
-entry but never create one. Shared state only ever makes this gate quieter — the safe direction, and why the receipt needs no session key.
+3. The receipt is SHARED and sha-keyed, so a peer's receipt can DISCHARGE this
+session's entry but never create one. Shared state only ever makes this gate quieter — the safe direction, and why the receipt needs no session key.
 4. Case 141 pins properties 1 and 2 with a planted peer entry.
 
 ## 13. Sequencing

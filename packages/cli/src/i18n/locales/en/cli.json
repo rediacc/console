@@ -538,7 +538,7 @@
         "dnsCleanedUp": "Removed {{count}} DNS record(s)"
       },
       "prune": {
-        "description": "Remove orphaned datastore resources and stale snapshots from a machine. The base run cleans renet-internal datastore artifacts (BTRFS subvolumes, lock files, tmpfiles). The optional flags below enable progressively narrower repo cleanups: --orphaned-repos uses the local CLI config as the only signal, while --prune-unknown additionally consults the renet .interim/state mirror so legitimate forks created by other tools survive even when missing from your local config. Both deletion paths run a mount-safety preflight; pass --force-delete-mounted to override.",
+        "description": "Remove orphaned datastore resources and stale snapshots from a machine. The base run cleans renet-internal datastore artifacts (BTRFS subvolumes, lock files, tmpfiles). The optional flags below enable progressively narrower repo cleanups: --orphaned-repos uses the local CLI config as the only signal, while --prune-unknown additionally consults the renet .interim/state mirror so legitimate forks created by other tools survive even when missing from the local config. Both deletion paths run a mount-safety preflight; pass --force-delete-mounted to override.",
         "descriptionShort": "Prune orphaned resources and stale snapshots",
         "dryRunOption": "Show what would be removed without making changes",
         "startingDatastore": "Scanning for orphaned datastore resources on {{machine}}...",

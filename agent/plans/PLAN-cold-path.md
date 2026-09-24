@@ -31,7 +31,7 @@ finished and it carries NO checkbox boxes, so `--park` is a silent no-op on it (
 - A seam can hide a predicate. The first quiesce verification refused every repository it
 had just selected, three live runs in a row, and no unit test could see it because the fixture stubbed the very function whose meaning was wrong.
 - Fail closed on an unverifiable quiesce: an unreachable socket counts as still running,
-because a quiesce you cannot verify is exactly what must not be labelled cold.
+because an unverifiable quiesce is exactly what must not be labelled cold.
 
 ## Boxes
 (this plan carried no checkbox tasks)
