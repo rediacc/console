@@ -693,7 +693,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/review | 6 | .py 6 |
 | .ci/rediacc_ci/security | 10 | .py 10 |
 | .ci/rediacc_ci/setup | 12 | .py 12 |
-| .ci/rediacc_ci/tests | 284 | .py 284 |
+| .ci/rediacc_ci/tests | 283 | .py 283 |
 | .ci/rediacc_ci/tests/data | 2 | .json 1, .yml 1 |
 | .ci/rediacc_ci/tests/gates | 173 | .py 172, .fixture 1 |
 | .ci/rediacc_ci/tests/goldens/actionlint | 17 | .golden 17 |
