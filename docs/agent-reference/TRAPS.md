@@ -1547,7 +1547,7 @@ Two things make the redo safe, and the first alone is not enough. Anchor the pat
 
 ## A title-deriving function fails SILENTLY and at scale
 Trap-Id: derived-title-silent-fallback
-Enforced-By: file:.claude/hooks/stop/test-planrec.py:206
+Enforced-By: file:.claude/hooks/stop/test-planrec.py:216
 Residue: The control pins ONE of the three failure modes (H1 vs the `Status:` header block). The fenced-code case and the `Word:`-header-guard case are unpinned, so either could regress and the corpus would look fine.
 
 `title_of()` in `.claude/hooks/stop/wl_planrec.py:1547` derives a plan record's title from the plan. It has a FALLBACK, and that is the whole problem: a derivation with a fallback never fails, it just quietly produces the wrong answer for a subset it cannot report. Three separate defects hid in it, and each one produced titles that looked plausible:
