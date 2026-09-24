@@ -55,11 +55,11 @@ Add `plan_backfill_investigation(root, rel, sig, me)` plus a `--plan-backfill` C
     (ticked) 2026-09-23T11:31:20Z by d778be9d: BACKFILL_VERDICT is pinned at .claude/hooks/stop/wl_planrec.py:2381 and asserted at .claude/hooks/stop/test-planrec.py:906
 - [x] Builds the row in the same shape `plan_investigate` returns, then calls the existing `append_investigation(root, row)` -- no new ledger-writing code.
     (ticked) 2026-09-23T11:31:20Z by d778be9d: the row literal is at .claude/hooks/stop/wl_planrec.py:2481 and the single append path at .ci/scripts/quality/backfill_plan_implementation.py:297
-- [x] Inserts the `TICK_EVIDENCE` line (`.claude/hooks/stop/wl_planrec.py:1766`) beneath the box only if absent (idempotent for the 95 that already have one), using the same 4-space, no-bullet grammar so `BULLET_RE` still can't see it. Never touches the box mark.
+- [x] Inserts the `TICK_EVIDENCE` line (`wl_planrec.py` :1766) beneath the box only if absent (idempotent for the 95 that already have one), using the same 4-space, no-bullet grammar so `BULLET_RE` still can't see it. Never touches the box mark.
     (ticked) 2026-09-23T11:31:20Z by d778be9d: the guarded insertion is at .claude/hooks/stop/wl_planrec.py:2499 and idempotence is pinned at .claude/hooks/stop/test-planrec.py:1009
-- [x] Asserts `PF.plan_boxes()` open/done sets are byte-identical before/after, the same invariant `plan_tick` checks at `.claude/hooks/stop/wl_planrec.py:2295-2309`.
+- [x] Asserts `PF.plan_boxes()` open/done sets are byte-identical before/after, the same invariant `plan_tick` checks at `wl_planrec.py` :2295-2309.
     (ticked) 2026-09-23T11:31:20Z by d778be9d: the invariant is asserted at .claude/hooks/stop/wl_planrec.py:2513 and the byte-identical box sets are controlled at .claude/hooks/stop/test-planrec.py:906
-- [x] Refuses loudly (never silently skips) any box where `done_commit_of` returns `""` (abandoned per `.claude/hooks/stop/wl_planrec.py:90-93` vocabulary) -- must not manufacture a trail for that case.
+- [x] Refuses loudly (never silently skips) any box where `done_commit_of` returns `""` (abandoned per `wl_planrec.py` :90-93 vocabulary) -- must not manufacture a trail for that case.
     (ticked) 2026-09-23T11:31:21Z by d778be9d: the abandoned refusal is at .claude/hooks/stop/wl_planrec.py:2440; a mutant that accepts such a box is caught at .claude/hooks/stop/test-planrec.py:1055
 - [x] Unit tests: a planted defect (a box missing its evidence line) is caught by the enumeration; a clean box is left alone; the guard refuses an already-open box; the guard refuses an abandoned box.
     (ticked) 2026-09-23T11:31:21Z by d778be9d: section 14c at .claude/hooks/stop/test-planrec.py:906 raises the suite to 228 controls, and four mutants were driven against it with every one caught

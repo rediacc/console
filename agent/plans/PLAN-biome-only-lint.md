@@ -161,14 +161,14 @@ Key: **B** means a Biome rule, with overrides mirroring the ESLint file scope. *
   - Parse with oxc-parser (ESTree, `range`, tsx/ts/js by extension) and momoa (`ranges`).
   - Set `parent` on each node, walk in ESTree order, and dispatch `Type(node)` and `Document(node)` visitors.
   - Provide `context.{options, report, filename, physicalFilename, cwd}` and `sourceCode.{getText, getAncestors, getScope}`. The scope shim only needs Program, function, arrow, non-body block, for, switch, catch and class scopes, with `block`, `variables[].defs[].node` and `upper`.
-- [ ] Write `scripts/data/source-rules.ts`. It is a flat per-rule `{files, ignores, options}` table translated from eslint.config/i18n.js:146-331 (including the `i18nLocaleConfigs` generator), eslint.config/packages.js:128-235, eslint.config/tests.js:17-71 and eslint.config/tooling.js:22-27. There is no cascade, so order stops being a contract. Replace the 6 account `eslint-disable custom/no-hardcoded-text` comments with `ignores` entries, each with a reason.
+- [ ] Write `scripts/data/source-rules.ts`. It is a flat per-rule `{files, ignores, options}` table translated from i18n.js :146-331 (including the `i18nLocaleConfigs` generator), packages.js :128-235, tests.js :17-71 and tooling.js :22-27. There is no cascade, so order stops being a contract. Replace the 6 account `eslint-disable custom/no-hardcoded-text` comments with `ignores` entries, each with a reason.
 - [ ] Add `scripts/gates/check-source-rules.ts` with a `---- gate ----` header and `--selftest` (planted-defect controls). It fails on any `eslint-disable`/`eslint-enable` token in its scope.
 - [ ] Differential:
   - Host config resolution must equal the Phase 0 ESLint snapshot for every path.
   - Host findings must be byte-identical to the Phase 0 tuples, both on HEAD and on the planted tree.
   - Record both results in this plan.
 - [ ] Port `eslint-rules/__tests__/harness.js:40-41` (`RuleTester` and `@eslint/json`) to a host-backed tester, and move `scripts/gates/check-lint-rule-units.ts` onto it. The 5 off-rule specs still run.
-- [ ] Port `.ci/scripts/quality/lint-rule-liveness.mjs:480-716` and `.ci/scripts/quality/check_lint_rule_liveness.py:52-57`. Derive the universe from `scripts/data/source-rules.ts` instead of `eslint.config.js`, and add a Biome half: every `.grit` plugin must fire on a planted violation.
+- [ ] Port `.ci/scripts/quality/lint-rule-liveness.mjs:480-716` and `check_lint_rule_liveness.py` :52-57. Derive the universe from `scripts/data/source-rules.ts` instead of `eslint.config.js`, and add a Biome half: every `.grit` plugin must fire on a planted violation.
 - [ ] Add `scripts/gates/check-max-lines.ts`. It counts lines that are not blank and not comments, with a 512 cap and the exemptions listed in the Rule map. Check it against ESLint `max-lines` on HEAD (0 findings on both) and on a planted 513-line file.
 - [ ] Write the 9 GritQL plugins in `biome-plugins/`, each scoped with `includes`. Add `biome-plugins/` to `.ci/policy/tree-shape.json` in place of `eslint.config.js` and `eslint.config` (`:59`, `:86`). Add `.grit` to `.ci/policy/.language-policy-allowlist` if `check:ci-language-policy` rejects it.
 - [ ] Rewrite `biome.json`:
@@ -178,7 +178,7 @@ Key: **B** means a Biome rule, with overrides mirroring the ESLint file scope. *
   - Add per-file overrides replacing the 140 `no-console`, 17 `require-await` (the four `packages/e2e-tests/tests/{16,20,21,22}-*.test.ts` files) and 2 `no-control-regex` disables. List files explicitly; no globs.
   - Add the account locale JSON includes.
 - [ ] Run `npx biome lint . --max-diagnostics=none` and record per-rule counts. For each rule with findings, record fix or scoped-off with a reason. Expect differences in cognitive complexity, nullish coalescing and misused promises.
-- [ ] Delete every `eslint-disable`/`-enable` line: 176 in console, 6 in line 1 of `private/account/web/src/pages/*.tsx`. Use Edit, or a Bash-scripted edit. A full-file Write that still contains another token is refused by `block_suppressions.py`.
+- [ ] Delete every `eslint-disable`/`-enable` line: 176 in console, 6 in `private/account/web/src/pages/*.tsx :1`. Use Edit, or a Bash-scripted edit. A full-file Write that still contains another token is refused by `block_suppressions.py`.
 
 **Phase 2: cut over**
 

@@ -68,10 +68,12 @@ The operator runs the command personally, at a time of their choosing (low-traff
     (done 2026-09-24 by d778be9d under the operator ruling of that day) eight of nine graduated against disposable substitutes, each note carrying `real run each done directly` and `DISPOSABLE SUBSTITUTE`; purge-media-cache.sh was never run and moved to the M-live queue.
 - [ ] assert-artifact-version.sh (Tier Q, time-gated): run both sides within 24h of the next push-triggered green Console CI run on main, per the post-merge run sheet under "Results of the 2026-09-24 session run"; graduate with Template A.
 - [ ] Tier M-live (19, including purge-media-cache.sh since 2026-09-24): operator personally executes each, at a time of their choosing, with a rollback step identified beforehand; writer transcribes redacted output into the ledger note afterward.
-- [ ] Re-run `check:ci-w7p5a-real-run-blockers` after every graduation; confirm rc=0 and the blocked/ledgered counts move as expected.
+- [x] Re-run `check:ci-w7p5a-real-run-blockers` after every graduation; confirm rc=0 and the blocked/ledgered counts move as expected.
     (done 2026-09-24) rc=0 after each of the eight graduations, 28/20/13 -> 20/28/21 (blocked / ledgered / confirmed), 7 leg-blocked throughout.
-- [ ] Full re-run of `.ci/rediacc_ci/tests/test_w7p5a_dry_run_ledgers.py` after all graduations to confirm no dry-run note accidentally claims a real run.
+    (ticked) 2026-09-24T14:15:07Z by d778be9d: investigated present at U: check:ci-w7p5a-real-run-blockers, b0fd91c1c; check:ci-w7p5a-real-run-blockers was re-run after the graduations (7 blocked / 41 ledgered, rc=0); the graduation commit removing the entries is cited
+- [x] Full re-run of `.ci/rediacc_ci/tests/test_w7p5a_dry_run_ledgers.py` after all graduations to confirm no dry-run note accidentally claims a real run.
     (done 2026-09-24) `setsid --wait .ci/cache/toolchain/uv-tools/bin/pytest -q .ci/rediacc_ci/tests/test_w7p5a_dry_run_ledgers.py`: 44 passed (4 failed before the EXPECTED_DRY_RUN_PATHS fix).
+    (ticked) 2026-09-24T14:15:08Z by d778be9d: investigated present at U: .ci/rediacc_ci/tests/test_w7p5a_dry_run_ledgers.py:67, b0fd91c1c; the dry-run ledger test was re-run after the graduations (its note records the setsid pytest command); the test file and the graduation commit are cited
 
 ## Drafted commands and ledger-note templates, ready for operator sign-off
 

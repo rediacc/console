@@ -43,16 +43,26 @@ Rejected: `devEngines.packageManager` with `onFail: error`. Measured: npm 10.9.8
 
 ## Tasks
 
-- [ ] Plan written
-- [ ] `NPM_VERSION` pin in toolchain.env, toolchain.sh and `rediacc_ci.core.toolchain`
-- [ ] Composite `.github/actions/setup-node-npm`; setup-workspace and eleven direct sites switched
-- [ ] devcontainer, root, workers/proxy and private/account Dockerfiles install the pin
-- [ ] audit.py reads the pin instead of hard-coding 11.17.0
-- [ ] Lockfile gate: npm 11 only, canonical-form refusal, CI-npm property, `.venv` prune; selftest and pytest updated
-- [ ] Planted defects: a bare setup-node step, a stale lockfile, a Dockerfile stage without the pin
-- [ ] Lockfiles regenerated (console root, workers/*, account x3)
-- [ ] CLAUDE.md, ci-gates.md, pr-babysitter.md, local-common.sh comments
-- [ ] Verification recorded below
+- [x] Plan written
+    (ticked) 2026-09-24T14:14:57Z by d778be9d: investigated present at U: agent/plans/_done/PLAN-npm11-everywhere.md, a75483358; the plan itself is on disk in _done/ with its design, box list and verification section; the commit that added it is cited
+- [x] `NPM_VERSION` pin in toolchain.env, toolchain.sh and `rediacc_ci.core.toolchain`
+    (ticked) 2026-09-24T14:14:58Z by d778be9d: investigated present at U: .ci/rediacc_ci/core/toolchain.py:143, f80bfc5e4; the pin is NPM_VERSION in .devcontainer/toolchain.env (introduced in the cited commit), and rediacc_ci.core.toolchain maps npm to it; toolchain.sh reads the same file
+- [x] Composite `.github/actions/setup-node-npm`; setup-workspace and eleven direct sites switched
+    (ticked) 2026-09-24T14:14:58Z by d778be9d: investigated present at U: .github/actions/setup-node-npm/action.yml:3, f80bfc5e4, check:ci-lockfile; the composite action installs the exact pin; check:ci-lockfile refuses a bare setup-node step outside it (its selftest plants one)
+- [x] devcontainer, root, workers/proxy and private/account Dockerfiles install the pin
+    (ticked) 2026-09-24T14:14:58Z by d778be9d: investigated present at U: check:ci-lockfile, f80bfc5e4; the root Dockerfile installs npm@${NPM_VERSION} from the pinned ARG; check:ci-lockfile asserts every image stage installs that pin
+- [x] audit.py reads the pin instead of hard-coding 11.17.0
+    (ticked) 2026-09-24T14:14:59Z by d778be9d: investigated present at U: .ci/rediacc_ci/security/audit.py:171, 28c2779a4; audit.py reads the npm pin from toolchain.env at call time instead of a hard-coded 11.17.0
+- [x] Lockfile gate: npm 11 only, canonical-form refusal, CI-npm property, `.venv` prune; selftest and pytest updated
+    (ticked) 2026-09-24T14:14:59Z by d778be9d: investigated present at U: .ci/rediacc_ci/quality/lockfile.py:28, f80bfc5e4, check:ci-lockfile; property C (canonical form under the one pin) and the npm-11-only probe are in rediacc_ci.quality.lockfile, driven by check:ci-lockfile
+- [x] Planted defects: a bare setup-node step, a stale lockfile, a Dockerfile stage without the pin
+    (ticked) 2026-09-24T14:15:00Z by d778be9d: investigated present at U: .ci/rediacc_ci/quality/lockfile.py:840, f80bfc5e4; the gate's selftest plants a bare setup-node step, among its other controls, and requires the red
+- [x] Lockfiles regenerated (console root, workers/*, account x3)
+    (ticked) 2026-09-24T14:15:00Z by d778be9d: investigated present at U: check:ci-lockfile, f80bfc5e4; check:ci-lockfile's canonical-form property refuses any lockfile the pinned npm would rewrite, so a green gate proves every committed lockfile is in the pinned form; the pin's commit is cited
+- [x] CLAUDE.md, ci-gates.md, pr-babysitter.md, local-common.sh comments
+    (ticked) 2026-09-24T14:15:01Z by d778be9d: investigated present at U: CLAUDE.md:216, f80bfc5e4; CLAUDE.md carries the npm 11 section naming the pin, the composite action and the lockfile command
+- [x] Verification recorded below
+    (ticked) 2026-09-24T14:15:01Z by d778be9d: investigated present at U: agent/plans/_done/PLAN-npm11-everywhere.md:68, check:ci-lockfile; the plan's Verification section records the runs; the gate it verifies is cited
 - [x] #587 closed by the parent session
     (ticked) 2026-09-24T05:41:03Z by d778be9d: closed https://github.com/rediacc/console/issues/587 after an independent rerun: check:ci-lockfile exit 0 across 10 lockfiles, check:ci-npmrc exit 0
 

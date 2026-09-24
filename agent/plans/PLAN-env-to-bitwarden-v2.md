@@ -11,7 +11,7 @@ written to Bitwarden, AWS, Cloudflare or GitHub. No value of any secret was read
 
 ## Tasks
 
-- [x] Fix `private/growth/video_pipeline/publish-solutions.sh line 55 (growth repo)` and `publish.py line 40 (growth repo)` — they
+- [x] Fix `private/growth/video_pipeline/publish-solutions.sh` :55 and `publish.py` :40 — they
       AUDIT: DONE 2026-09-02 (audit): growth's publish-solutions.sh line 55 and publish.py line 40 both guard the CLOUDFLARE_R2_MEDIA_* names; the blindness itself is recorded at scripts/ops/secret-rename.py:112-121 (NON_SUBMODULE_REPOS).
       still require the pre-rename names `R2_MEDIA_{ACCESS_KEY_ID,SECRET_ACCESS_KEY,ENDPOINT}`
       while `.env` now holds `CLOUDFLARE_R2_MEDIA_*`. **The solution-video publish pipeline

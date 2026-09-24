@@ -3,7 +3,7 @@ Status: compacted
 First-Seen: 2026-09-20
 Owner: f4da5c2e
 Full-Text-Blob: 0bc5643419d3a228acd5a16a7e47c6de6d393e0f
-Record-Sig: b8b25806
+Record-Sig: ffe4c955
 
 ## Why
 The gh command swallow pattern (gh ... 2>/dev/null || echo <default>) silently turned failures into fabricated empty responses, creating false-green risks in registered CI gates that block merges. Four quality gates carried defects: check-pr-description, check-submodule-branches, check-label-inventory, and mark-production. A stop-hook judge required a sweep; hand re-deriving found
@@ -20,11 +20,11 @@ Verification: bash -n clean, python3 -m ast clean, gates re-run against real tre
 - Production scripts live outside merge gates but carry highest severity: mark-production tag-move bug corrupts production ref silently and would have shipped undetected in a registered-gates-only scope.
 
 ## Boxes
-- [x] Fix instance #2 (.ci/scripts/quality/check-pr-description.sh line 59-62 (blob 5a0213016d65) + .ci/rediacc_ci/quality/pr_description.py:287-291): a swallowed LATEST_COMMIT_TIME fetch failure now escalates (exit 1 / return 1), not warn-and-skip
+- [x] Fix instance #2 (.ci/scripts/quality/check-pr-description.sh :59-62 + .ci/rediacc_ci/quality/pr_description.py:287-291): a swallowed LATEST_COMMIT_TIME fetch failure now escalates (exit 1 / return 1), not warn-and-skip
     (record) sig=b7697c16 done=6b1a1b060
 - [x] Fix instance #8 (check-submodule-branches.sh get_console_pr_body + submodule_branches.py console_pr_body): now routes through gh_retry/gh_probe, distinguishes fetch-failed from empty-body, escalates on failure
     (record) sig=75434b8e done=771a172c5
-- [x] Fix instance #9 (.ci/scripts/quality/check-label-inventory.sh line 346-351 (blob 13627d4c05ed) + .ci/rediacc_ci/quality/label_inventory.py:602-621): a failed live-label API fetch now refuses the drift comparison instead of silently reporting "all agree"
+- [x] Fix instance #9 (.ci/scripts/quality/check-label-inventory.sh :346-351 + .ci/rediacc_ci/quality/label_inventory.py:602-621): a failed live-label API fetch now refuses the drift comparison instead of silently reporting "all agree"
     (record) sig=9b15a996 done=6b1a1b060
 - [x] Fix instances #11/#12 (.ci/scripts/release/mark-production.sh:102-110): a failed tag object-type/deref lookup now aborts instead of silently moving the production tag to the wrong object
     (record) sig=518a6b31 done=6b1a1b060

@@ -13,6 +13,7 @@
       ],
       "done_sigs": [
         "078f11bf",
+        "5c2210f0",
         "5f73eba3",
         "726d310b",
         "77ab269d",
@@ -25,11 +26,10 @@
         "b3b9ef75",
         "b6efac36",
         "c3e62dfb",
-        "c6e69ac4",
         "d1914c2c",
         "dff62fa7",
+        "e69bf057",
         "ea043761",
-        "ed0e4104",
         "fbda21cd"
       ]
     },
@@ -168,19 +168,18 @@
         "031d4b3d",
         "05d94f07",
         "0ed323d9",
-        "1817c144",
         "2616c389",
-        "28a55538",
         "2c61ce10",
         "4b5f738a",
         "57dfc419",
         "5b1bb5da",
-        "62f63524",
         "6b7864bb",
         "6d253913",
+        "80521723",
         "8b32fe16",
         "b3a64bda",
         "be28a628",
+        "c1fcfef2",
         "c252b0e4",
         "c9d3538b",
         "caf9f4b7",
@@ -188,6 +187,7 @@
         "cf3eb8e8",
         "d8978b81",
         "e01d11c9",
+        "e471495f",
         "e98b7a2e",
         "f4dd96de",
         "f684f77e",
@@ -437,12 +437,12 @@
         "0f9caa1d",
         "325f06ee",
         "40c785a1",
-        "68d6981e",
         "7f9b838f",
         "81feaa21",
         "a1196500",
         "c464bc97",
-        "dc528af5"
+        "dc528af5",
+        "ee313a73"
       ]
     },
     "agent/plans/PLAN-extension-shaped-matchers.md": {
@@ -504,12 +504,12 @@
       "done": 6,
       "open_sigs": [],
       "done_sigs": [
-        "0c16aed5",
         "2712c77e",
-        "3042de5c",
         "418da40b",
         "518a6b31",
-        "75434b8e"
+        "75434b8e",
+        "9b15a996",
+        "b7697c16"
       ]
     },
     "agent/plans/PLAN-git-history-media-rewrite.md": {
@@ -689,11 +689,9 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 1,
-      "done": 27,
-      "open_sigs": [
-        "9d4a6a18"
-      ],
+      "open": 0,
+      "done": 28,
+      "open_sigs": [],
       "done_sigs": [
         "098e1f06",
         "0f563652",
@@ -703,21 +701,22 @@
         "2dba3d29",
         "36042f18",
         "37c3a51d",
-        "4f362d85",
         "57436fda",
         "6594b374",
+        "68be51db",
+        "69fbc830",
         "6a5511bb",
         "71fb7723",
         "85489441",
         "86ed52a8",
         "893aaa35",
-        "90f5d990",
+        "96204989",
+        "9d4a6a18",
         "9da6913e",
         "a17a8400",
         "d0c74ee1",
         "d7e248eb",
         "df1a5955",
-        "e6e9ee17",
         "eea83d0e",
         "f818ed1e",
         "fe1334a2",
@@ -734,28 +733,28 @@
       "open_sigs": [],
       "done_sigs": [
         "15933b53",
+        "1b4ab335",
         "1cb3b673",
         "21ee2737",
         "22187554",
         "26469fef",
         "29621864",
-        "2b4f099e",
+        "3093b1de",
         "38755a03",
-        "394244dd",
+        "43a64fc3",
         "476ab2f6",
         "4f7cfee9",
         "5c2fe67f",
         "61ca1ffc",
         "6497d4f3",
         "692fe229",
-        "723670c0",
+        "858c5f97",
         "90ca5c01",
         "9aff61e7",
-        "a0b22597",
+        "9f7c0b08",
         "a2aa105c",
         "a4c1ff44",
         "a9832229",
-        "afbd963c",
         "bc30c6ec",
         "beaf467f",
         "d288cb32",
@@ -817,20 +816,20 @@
       "open": 1,
       "done": 22,
       "open_sigs": [
-        "debce53b"
+        "03938685"
       ],
       "done_sigs": [
         "003b2b57",
+        "0124b4f1",
         "04f04754",
         "0514dd6c",
         "0b161f6d",
         "0e1fa03c",
-        "1cd216c1",
-        "311a9978",
         "4099c8ef",
-        "4266fa1e",
-        "63658efe",
+        "4593234f",
+        "5fd59dd5",
         "840471e7",
+        "9efc0cfa",
         "a20702c9",
         "a8f0a4b6",
         "c310726b",
@@ -864,6 +863,7 @@
       "open_sigs": [],
       "done_sigs": [
         "082e0867",
+        "0ab601ac",
         "12bb0cfa",
         "14fc2afe",
         "1bc3916f",
@@ -884,7 +884,6 @@
         "abbba5dd",
         "b0c3c466",
         "b5a5df62",
-        "ba098ddd",
         "bf45959c",
         "ccc43e6c",
         "ce45ab14",
@@ -1040,10 +1039,11 @@
         "04b509d8",
         "0a36f1a1",
         "16f8e04e",
-        "1cce31f7",
+        "1bc12aa2",
         "2a6460e3",
         "2b381052",
         "2b58a199",
+        "2ec6fc05",
         "3799ac3c",
         "3a34cc77",
         "3dc0a0b5",
@@ -1053,17 +1053,16 @@
         "59e5a656",
         "636d7c53",
         "668e3d6b",
-        "6f3c6ed6",
         "7423368e",
         "74468edf",
         "8e4ffef4",
-        "9d3ee1dc",
         "a5c06efb",
         "af1e2217",
         "c1771330",
+        "c2623422",
         "ca9878e4",
-        "d8dfde77",
         "e75b47b5",
+        "e82d384c",
         "f56f0a22",
         "feb3060c"
       ]
@@ -1204,17 +1203,16 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "2026-09-21",
-      "open": 1,
-      "done": 8,
-      "open_sigs": [
-        "071fec08"
-      ],
+      "open": 0,
+      "done": 9,
+      "open_sigs": [],
       "done_sigs": [
+        "071fec08",
         "0a3321f6",
         "18dd4873",
+        "6e5642b2",
         "823d5963",
         "909cdb2d",
-        "a4b74cba",
         "afcec761",
         "bcc0098f",
         "ea9dc74a"
@@ -1254,8 +1252,8 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 17,
-      "done": 0,
+      "open": 16,
+      "done": 1,
       "open_sigs": [
         "0f583c13",
         "15eb2fa3",
@@ -1269,13 +1267,14 @@
         "82a0f082",
         "9e32e800",
         "ab3e3872",
-        "c63cd990",
         "d2374200",
         "dbdc8bbc",
         "e97f9440",
         "eb55a6bd"
       ],
-      "done_sigs": []
+      "done_sigs": [
+        "c63cd990"
+      ]
     },
     "agent/plans/PLAN-stop-report-queue.md": {
       "status": "compacted",
@@ -1394,9 +1393,7 @@
         "3f4c7179",
         "428fc5e7",
         "434e1f52",
-        "4a3473c7",
         "4eedb1b2",
-        "4f18b52c",
         "4f27a8e1",
         "501c6171",
         "5120018c",
@@ -1490,6 +1487,7 @@
         "d1980763",
         "d1b032b8",
         "d2055bc1",
+        "d2324f27",
         "d246be2c",
         "d2b9da78",
         "d3de479e",
@@ -1506,6 +1504,7 @@
         "ee0a8c81",
         "ef6e9b9b",
         "f07d4967",
+        "f62e4449",
         "f7d225a8",
         "f806fbc8",
         "f81620de",
@@ -1615,19 +1614,19 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 6,
-      "done": 3,
+      "open": 4,
+      "done": 5,
       "open_sigs": [
         "4cb49d45",
-        "8b4161ce",
         "a65f7c80",
         "ba2c9c8c",
-        "ce14776f",
         "d073162f"
       ],
       "done_sigs": [
         "3cee36fd",
+        "8b4161ce",
         "cbf8530c",
+        "ce14776f",
         "ff0cda58"
       ]
     },
@@ -1767,8 +1766,8 @@
       "done": 7,
       "open_sigs": [],
       "done_sigs": [
+        "015849d7",
         "0aac02ba",
-        "35447a0f",
         "4dd8ec1f",
         "77eaad77",
         "bc40b973",
@@ -1930,9 +1929,9 @@
       "done_sigs": [
         "08c6f913",
         "3f255c42",
+        "580863a5",
         "594a5819",
         "cd80c1d4",
-        "e0b604ae",
         "e2125fb3"
       ]
     },
@@ -1950,6 +1949,7 @@
         "359e3d31",
         "490b0271",
         "505ff916",
+        "71f60ec9",
         "7a720e1c",
         "7c7cd2ea",
         "802384b6",
@@ -1959,7 +1959,6 @@
         "9bbb36b7",
         "c7a17791",
         "cf927b54",
-        "d2d67b01",
         "d993beae",
         "de38e3d6",
         "f119c54a",
@@ -1979,6 +1978,7 @@
         "005ec1ee",
         "09f3d27f",
         "0a85b234",
+        "238c7cd3",
         "2be0cd08",
         "356b7ff4",
         "3b332409",
@@ -1987,7 +1987,6 @@
         "66e6f871",
         "71e1c727",
         "721d9837",
-        "7c5c2567",
         "8c384889",
         "93689cf4",
         "b3c4a804",
@@ -2140,23 +2139,23 @@
       "done_sigs": [
         "00ef9382",
         "0bd0172a",
-        "0cba5219",
         "10b34ce9",
+        "1f32b7ee",
         "30302728",
         "3e6be5af",
         "49ea62ba",
         "4bdff4de",
         "51eca112",
         "5770f2fc",
-        "6500b285",
         "69112ab2",
         "73a9d7f8",
         "7891de4d",
         "7a684ca0",
         "86b48dbc",
+        "913f03ef",
         "d37232f9",
-        "d385a004",
-        "edbbf4d4"
+        "edbbf4d4",
+        "fba1cf51"
       ]
     },
     "agent/plans/_done/PLAN-fix-python-lint-violations.md": {
@@ -2252,7 +2251,7 @@
         "5f8f99f9",
         "8110567d",
         "8626cd0f",
-        "8f47b4c4",
+        "962ed14d",
         "aaa645f7",
         "ccd137ae",
         "cdf8ba85"
@@ -2337,9 +2336,10 @@
       "owner": "d778be9d",
       "folder": "agent/plans/_done",
       "moved_at": "2026-09-24",
-      "open": 10,
-      "done": 1,
-      "open_sigs": [
+      "open": 0,
+      "done": 11,
+      "open_sigs": [],
+      "done_sigs": [
         "088fe5b1",
         "0a7328d3",
         "1d09988f",
@@ -2347,12 +2347,10 @@
         "30427d90",
         "31b2cad6",
         "4644c81b",
+        "6180ca30",
         "9a9b5fe2",
         "d83c6b3d",
         "daf83f5c"
-      ],
-      "done_sigs": [
-        "6180ca30"
       ]
     },
     "agent/plans/_done/PLAN-pid-fallback-liveness-check.md": {
@@ -2404,10 +2402,14 @@
       "owner": "d778be9d",
       "folder": "agent/plans/_done",
       "moved_at": "",
-      "open": 10,
-      "done": 3,
+      "open": 1,
+      "done": 12,
       "open_sigs": [
-        "54cca06b",
+        "54cca06b"
+      ],
+      "done_sigs": [
+        "24fbc5fc",
+        "35f8115e",
         "6be59355",
         "7a89c5be",
         "7adc2d9f",
@@ -2416,13 +2418,10 @@
         "a69a55a5",
         "daffe83e",
         "e77bfe5f",
+        "f27685d2",
         "ff0c1fc4"
       ],
-      "done_sigs": [
-        "24fbc5fc",
-        "35f8115e",
-        "f27685d2"
-      ]
+      "ruling": "box 54cca06b stays open by decision, because the gate it served judges only branch-added plans: \"a plan this branch ADDS with open boxes must resolve an\" in .ci/scripts/quality/check_plan_boxes.py"
     },
     "agent/plans/_done/PLAN-plan-implementation-enforcement.md": {
       "status": "done",
@@ -2433,6 +2432,7 @@
       "done": 16,
       "open_sigs": [],
       "done_sigs": [
+        "0a921c43",
         "1e78ffe8",
         "2ac6bfea",
         "3000c34a",
@@ -2440,7 +2440,6 @@
         "445887e0",
         "4764d799",
         "4985c2b6",
-        "765ea512",
         "8afc3ce3",
         "a1101d27",
         "a29ea255",
@@ -2590,7 +2589,6 @@
       "done": 20,
       "open_sigs": [],
       "done_sigs": [
-        "0514ed17",
         "0f630a91",
         "17083c91",
         "27a68907",
@@ -2602,11 +2600,12 @@
         "7b2f2e64",
         "bc819650",
         "bcd3ab41",
-        "bcfc2f93",
         "c2379c3a",
         "c28b0e1c",
         "d95f4819",
+        "d9a2fb3d",
         "e43a85ce",
+        "eeded314",
         "f95260f7",
         "f9d0ddf8",
         "fcb9be74"
@@ -2640,12 +2639,12 @@
       "done_sigs": [
         "02dca5d3",
         "19a57a62",
+        "3523e121",
         "41df3c85",
         "4eed7471",
         "5414fc16",
         "57c29019",
         "6fa268dc",
-        "708737c3",
         "734de6d2",
         "786549bb",
         "7923ae6d",
@@ -2653,11 +2652,11 @@
         "94d9d0bf",
         "9833ea9b",
         "a70daa15",
+        "bc23fd8a",
         "c01bd041",
         "deae49d4",
         "e20ff464",
-        "f2337abd",
-        "fdafba12"
+        "f2337abd"
       ]
     },
     "agent/plans/_done/PLAN-stop-hook-task-verification.md": {
@@ -2671,7 +2670,6 @@
       "done_sigs": [
         "07198838",
         "237eb8f8",
-        "397eb425",
         "3ba5b00a",
         "4192f407",
         "76db9494",
@@ -2680,6 +2678,7 @@
         "b4ece53f",
         "b56aa2fc",
         "b5eb0eef",
+        "c5fa6ca5",
         "c6ba223d",
         "ebe8974d",
         "f98d7ead",
@@ -2785,17 +2784,17 @@
       "done_sigs": [
         "06fd7f1a",
         "0dd251c8",
+        "25d3d511",
         "313df70f",
+        "392e5f4d",
         "65367d5a",
-        "68560074",
         "68811e65",
-        "838121ab",
         "877e6c4e",
+        "961627a6",
         "a3c9229e",
-        "bb874f65",
+        "b6e6d4db",
         "c394f280",
-        "c85b647b",
-        "dd83d6de",
+        "cf8c4e39",
         "e25cc76b",
         "ef3adc89"
       ]

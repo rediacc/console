@@ -68,11 +68,12 @@ Declined by the operator's ruling on #373907ed; its five boxes live unchanged in
 
 **A big piece is a census row that is not finished and whose open count is in the top N (default 5) or `>= 10`.** No new field, nothing to hand-maintain, nothing to go stale. It encodes the ruling already at `agent/RULES.md`: finish the big pieces first.
 
-- [ ] Add `BIG_TOP_N`, `BIG_OPEN_FLOOR` and `big_pieces(root)` to
+- [x] Add `BIG_TOP_N`, `BIG_OPEN_FLOOR` and `big_pieces(root)` to
     (earlier tick, re-investigated 2026-09-24) 2026-09-23T15:53:30Z by d778be9d: BIG_TOP_N/BIG_OPEN_FLOOR/big_pieces(live) landed in commit 70c29ad2e; investigation ledger committed at 76577f2ee.
       `.claude/hooks/stop/wl_planindex.py`; sort and mark them in `plans_block`
       (`.claude/hooks/stop/wl_checks.py:1377`) so the session copies from what the hook just
       handed it.
+    (ticked) 2026-09-24T14:15:07Z by d778be9d: investigated present at U: .claude/hooks/stop/wl_planindex.py:254, 70c29ad2e; BIG_TOP_N, BIG_OPEN_FLOOR and big_pieces(root) are in wl_planindex.py
 - [ ] Add an `unfocused` verdict to `agent_state_shape` (`.claude/hooks/stop/wl_store.py:2420`)
       -- the one choke point BOTH write paths share -- requiring a `## Big pieces` section
       exactly as `## Next action` is required.

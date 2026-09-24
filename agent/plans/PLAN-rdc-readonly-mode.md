@@ -119,17 +119,17 @@ Decision point for the operator: rows 2, 4, 5 and 7 are access sessions. They de
     (ticked) 2026-09-24T07:55:17Z by d778be9d: 27 read-only functions, rest provision; renet-function-access.test 4/4; mutation 3 red then restored (packages/cli/src/services/executor/renet-function-access.ts:17)
 - [x] 6. Sites 6, 9, 12, 13, 15: pass `'provision'`.
     (ticked) 2026-09-24T07:55:18Z by d778be9d: all 5 mutating sites pass 'provision', pinned in renet-access-ledger.test (packages/cli/src/services/provision/infra-provision.ts:369)
-- [x] 7. Sites 2, 4, 5, 7, 10, 11: pass `'read-only'`. Update the flow comment at `packages/cli/src/services/machine/machine-status.ts:45-53`, step 2 ("Resolve remote renet (read-only, never uploads)"), and the debug message at :69-71.
+- [x] 7. Sites 2, 4, 5, 7, 10, 11: pass `'read-only'`. Update the flow comment at `machine-status.ts` :45-53, step 2 ("Resolve remote renet (read-only, never uploads)"), and the debug message at :69-71.
     (ticked) 2026-09-24T07:55:18Z by d778be9d: 6 session/status sites read-only, flow comment and debug text updated; mutation 1 red then restored (packages/cli/src/services/machine/machine-status.ts:80)
-- [x] 8. Site 14: delete `packages/cli/src/commands/backup-ops.ts:314-318`. Keep the `Connecting to` info line.
+- [x] 8. Site 14: delete `backup-ops.ts` :314-318. Keep the `Connecting to` info line.
     (ticked) 2026-09-24T07:55:18Z by d778be9d: backup status call deleted with its unused debug param; ledger asserts none; mutation 6 red (packages/cli/src/commands/backup-ops.ts:311)
-- [x] 9. Site 8: change `connectForJobs(machineName, access: RenetAccess)` and `withJobConnection(machineName, access, fn)` in `packages/cli/src/commands/job.ts:55`. Pass `'read-only'` at packages/cli/src/commands/job.ts:119, :140, :205 and packages/cli/src/services/serve/server.ts:310, and `'provision'` at :254 and :288. Rewrite the doc comment at `packages/cli/src/services/executor/job-remote.ts:92-98`: an untouched machine now fails `job list` with the setup hint.
+- [x] 9. Site 8: change `connectForJobs(machineName, access: RenetAccess)` and `withJobConnection(machineName, access, fn)` in `job.ts` :55. Pass `'read-only'` at job.ts :119, :140, :205 and serve/server.ts :310, and `'provision'` at :254 and :288. Rewrite the doc comment at `job-remote.ts` :92-98: an untouched machine now fails `job list` with the setup hint.
     (ticked) 2026-09-24T07:55:18Z by d778be9d: job paths declare access, doc comment rewritten; ledger pins them; mutation 2 red then restored (packages/cli/src/services/executor/job-remote.ts:104)
 - [x] 10. Site 3: `resolveMachineContext(machineName, access)`. `executeMachineStatus` (:328) passes `'read-only'`, and `resolveSubscriptionCommandContext` (:98) passes `'provision'`.
     (ticked) 2026-09-24T07:55:18Z by d778be9d: subscription access split; subscription.test asserts both, 19/19 green (packages/cli/src/commands/subscription-actions.ts:337)
 - [x] 11. Site 1: `ensureRenetProvisioned(machineName, access)` and `prepareSyncConnection(validated, remoteSubPath, opts & { access })`. `syncUpload` (:332) passes `'provision'`. `syncDownload` (:440) passes `'read-only'`, which also covers `sync status` (:586). Keep the non-fatal `catch` for both.
     (ticked) 2026-09-24T07:55:19Z by d778be9d: sync access split, non-fatal catch kept; pinned in the ledger (packages/cli/src/commands/repo-sync.ts:448)
-- [x] 12. Rename the mocks in 6 existing test files: `packages/cli/src/services/executor/__tests__/detached-jobs.test.ts:113`, `packages/cli/src/commands/__tests__/subscription.test.ts:117`, `packages/cli/src/services/__tests__/local-executor.test.ts:100`, `packages/cli/src/services/__tests__/local-executor-license-size.test.ts:96`, `packages/cli/src/services/__tests__/local-executor-restore-license.test.ts:111`, `packages/cli/src/services/__tests__/backup-schedule.test.ts:48`. Also `packages/cli/src/services/__tests__/machine-status.test.ts:35`.
+- [x] 12. Rename the mocks in 6 existing test files: `detached-jobs.test.ts` :113, `subscription.test.ts` :117, `local-executor.test.ts` :100, `local-executor-license-size.test.ts` :96, `local-executor-restore-license.test.ts` :111, `backup-schedule.test.ts` :48. Also `machine-status.test.ts` :35.
     (ticked) 2026-09-24T07:55:19Z by d778be9d: mocks renamed in 7 test files; all green in the full CLI suite (packages/cli/src/services/__tests__/local-executor.test.ts:100)
 - [x] 13. Test `renet-provisioner.test.ts`, new `describe('inspect (read-only)')`:
     (ticked) 2026-09-24T07:55:19Z by d778be9d: renet-provisioner.test 45/45; mutations 5 and 7a red then restored (packages/cli/src/services/__tests__/renet-provisioner.test.ts:758)
@@ -167,7 +167,7 @@ Decision point for the operator: rows 2, 4, 5 and 7 are access sessions. They de
     (ticked) 2026-09-24T07:55:21Z by d778be9d: 13 installation.md files; translation-freshness and docs-structure-parity exit 0 (packages/www/src/content/docs/en/installation.md:216)
 - [x] 22. Help text: append "Read-only: never updates renet on the machine; warns when its version differs." to `commands.machine.status.description` in all 13 `packages/cli/src/i18n/locales/*/cli.json`, then `cd packages/cli && npm run generate:cli-contract && npm run generate:skill-reference`. The claim at `packages/cli/src/i18n/locales/en/cli.json:468` ("Read-only queries") and `packages/www/src/content/docs/en/ai-agents-claude-code.md:51` ("read-only status checks") become true and need no edit.
     (ticked) 2026-09-24T07:55:21Z by d778be9d: 13 locales, EN hash manifest updated, generate:cli-contract and skill reference regenerated; check:ci-cli-contract exit 0 (packages/cli/src/i18n/locales/en/cli.json:687)
-- [ ] 23. Commit with the `PR-TASK` trailer for worklist item `#f8ff8ede` (`agent/pr/0923-1.md line 74 (blob e31f5018a9c4)`).
+- [ ] 23. Commit with the `PR-TASK` trailer for worklist item `#f8ff8ede` (`agent/pr/0923-1.md` :74).
 
 **Order:** 1-2 (provisioner), then 3-5 (entry point and table). tsc then lists every broken site, which drives 6-12. After that the tests (13-18), then env and docs (19-22).
 

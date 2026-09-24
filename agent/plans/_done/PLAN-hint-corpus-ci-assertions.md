@@ -339,7 +339,7 @@ Traced against `check:ci-agent-hint-liveness`, the sibling gate in the same lane
     (ticked) 2026-09-22T19:45:20Z by d778be9d: broke H1 population-floor assertion in a scratch copy; controls_fired correctly reported it missed and exited 1 before judging the real corpus
 - [x] Add `"check:ci-hint-corpus": ".ci/scripts/quality/check_hint_corpus.py"` to `package.json` beside `check:ci-agent-hint-liveness` (`package.json:221`).
     (ticked) 2026-09-22T19:45:30Z by d778be9d: package.json:222 check:ci-hint-corpus entry present
-- [x] Hand-add the `manifest.ts` entry parallel to `scripts/ci-runner/manifest.ts:2380-2391`, `step: 'Behavioral hints can actually fire'`.
+- [x] Hand-add the `manifest.ts` entry parallel to `manifest.ts` :2380-2391, `step: 'Behavioral hints can actually fire'`.
     (ticked) 2026-09-22T19:45:30Z by d778be9d: scripts/ci-runner/manifest.ts:2393-2404 check:ci-hint-corpus GateSpec entry present, step: 'Behavioral hints can actually fire'
 - [x] Run `npx tsx scripts/gen/gen-manifest.ts --write`; confirm its report counts the new entry as generated (or investigate why it landed in "hand" if it does not).
     (ticked) 2026-09-22T19:45:42Z by d778be9d: ran npx tsx scripts/gen/gen-manifest.ts --write this session: 124 generated, 220 hand -- entry landed in the generated bucket cleanly (confirmed via git diff scripts/ci-runner/manifest.ts: only region-marker renumbering, zero field changes)

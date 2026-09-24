@@ -54,7 +54,7 @@ New `V_DEFLECTED_FINDING` in `worklist_messages.py`, sibling to `V_DEFERRED_FIND
     (ticked) 2026-09-23T17:21:35Z by d778be9d: Landed in commit 770b9e9c2; investigation ledger committed at ef28c2183.
 - [x] Add `V_DEFLECTED_FINDING` to `worklist_messages.py`.
     (ticked) 2026-09-23T17:21:36Z by d778be9d: Landed in commit 770b9e9c2; investigation ledger committed at ef28c2183.
-- [x] Wire `wl_deflect` into `wl_checks.py` beside the `DEFERRED_FINDING_RE` call site (`.claude/hooks/stop/wl_checks.py:4030-4051`), `always=False`.
+- [x] Wire `wl_deflect` into `wl_checks.py` beside the `DEFERRED_FINDING_RE` call site (`wl_checks.py` :4030-4051), `always=False`.
     (ticked) 2026-09-23T17:21:36Z by d778be9d: Landed in commit 770b9e9c2; investigation ledger committed at ef28c2183.
 - [x] Test coverage: phrase-family MUST_HIT/MUST_MISS pairs (verdict shape, finding-noun shape, harmless-noun exclusion, baseline exemption) using this session's own real quoted lines as fixtures.
     (ticked) 2026-09-23T17:21:36Z by d778be9d: Landed in commit 770b9e9c2; investigation ledger committed at ef28c2183.

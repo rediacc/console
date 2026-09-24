@@ -882,6 +882,7 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       | `release/tag-submodules.sh` | git push | push credential for the target repo | .github/workflows/cd-v2.yml:673 |
       | `release/update-homebrew-tap.sh` | curl, git push | none unless the URL is private; push credential for the target repo | .github/workflows/cd-v2.yml:680 |
 - [x] **W7P5-b S, the true long pole** The 13 real bash libs, **6,840 lines**. `common.sh` has
+    (ticked) 2026-09-24T14:30:00Z by d778be9d: evidence from its investigation row of 2026-09-24 (verdict present): .ci/rediacc_ci/core/account_lifecycle.py:811, check:ci-dead-python; account.sh's last 11 functions are ported in core/account_lifecycle.py and proved by the w7p5b-account-lifecycle stub-farm ledger (8 trees, K=5 assert rc=0); with that all 14 bash libs are ported (9) or deleted (5).
       **251 sourcers** -- the highest fan-in file in the programme. Order by fan-in ascending:
       `gate-controls` (41), `bws-env` (111), `emit-advisory` (218), `service` (225),
       `blocker-validator` (237), `release-age` (237), `toolchain` (466),
@@ -6862,7 +6863,7 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       (commit `959a196da`): the sibling repo's own PR lands first and only on the operator's explicit request, then the console PR, and no console PR carries a pointer for it. Owner: the operator, since no other
       session may merge to that remote. Promoting it to a real submodule stays available and is the only choice
       that changes every checkout.
-- [x] **U3 C, DONE 2026-09-08** Widen `.ci/scripts/test/gates/test-shrink-only-composition.sh line 97-102 (blob 6a876e839fa5)`. It greps `--include=*.ts
+- [x] **U3 C, DONE 2026-09-08** Widen `.ci/scripts/test/gates/test-shrink-only-composition.sh` :97-102. It greps `--include=*.ts
       --include=*.js` over `scripts/` and `packages/www/scripts/` -- **two** blind spots: it
       excludes `.py` AND its roots exclude the entire `.ci/` tree. Live subjects today: exactly
       one tracked `.py` offers `--write-baseline` (`check_language_policy.py`) plus
@@ -7365,7 +7366,7 @@ Record grammar: header lines within the first 10 (`Status: compacted|parked`, `F
 
 #### W12.P2 History pushed at the edit; second wave (before 2026-10-06)
 - [x] P2.1 `why_lines()` and `--plan-why <path>`, with an affirmative empty answer.  **DONE 2026-09-06:** W12 P2.1: why_lines and --plan-why in worklist.py
-- [x] P2.2 `why-on-edit.py`. **DONE at 8243c3a97, never ticked:** 322 lines, registered at .claude/settings.json line 179 (blob 084759dab362). Every clause present: once-per-path-per-epoch (:186-193), the cap (:87, :282), silence with no edge (:24-28, :288), similar-plan block on a new plan Write (:127, :273).
+- [x] P2.2 `why-on-edit.py`. **DONE at 8243c3a97, never ticked:** 322 lines, registered at .claude/settings.json :179. Every clause present: once-per-path-per-epoch (:186-193), the cap (:87, :282), silence with no edge (:24-28, :288), similar-plan block on a new plan Write (:127, :273).
 - [x] P2.3 PostCompact and the CI-red history hook both append why lines.  **DONE at 8243c3a97, never ticked; verified 2026-09-07 against the tree rather than the note:** both halves are self-labelled `W12 P2.3`, PostCompact at `.claude/hooks/stop/wl_checks.py:2348-2361` and the CI-red hook at `.claude/hooks/stop/wl_histfirst.py line 173-189 (blob 600c3473cbf4)` (208 lines, wired at `.claude/hooks/stop/wl_checks.py:4272`).
 - [x] P2.4 `check_plan_citations.py`. **DONE at 8243c3a97, never ticked:** 568 lines, parser-blind floor documented at :60-65 and implemented at :366, registered in all three places (package.json, manifest.ts with paths, .github/workflows/ci-quality.yml:569). It is live and catching things: it refused two of this plan's own citations today.
 - [x] P2.5 `--plan-tick` with evidence, flipping the box and updating the ledger in one run.  **DONE 2026-09-06:** W12 P2.5: --plan-tick in worklist.py

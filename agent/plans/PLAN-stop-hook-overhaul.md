@@ -20,7 +20,7 @@ Not fixable by tuning, and the repo already proved that: `.ci/scripts/quality/ch
 
 The damage is the ROUTING, not the DETECTION -- `.claude/hooks/stop/worklist-cases/20-advisories-rotation.sh line 645 (blob a79fb1fbae44)` records exactly that conclusion from an earlier misfire.
 
-- [x] Split `pushback_for` (`.claude/hooks/stop/wl_agents.py line 667 (blob efdf3fdb8767)`) so it returns
+- [x] Split `pushback_for` (`.claude/hooks/stop/wl_agents.py` :667) so it returns
     (ticked) 2026-09-23T16:07:22Z by d778be9d: pushback_for split landed in commit 00b0a0957; investigation ledger committed at 4e05a9d03.
       `(claims, agent_or_None)`, naming an agent only above the HINT's own floor
       (`.claude/hooks/stop/wl_agents.py:51`, `.claude/hooks/stop/wl_agents.py:57`). Delete
@@ -63,10 +63,11 @@ by-design case.
       arms -- `.claude/hooks/stop/wl_checks.py:3426` explains why.
 - [x] Strip the "whether the stream evidence matches" clause for stream-less rows.
     (ticked) 2026-09-23T16:40:56Z by d778be9d: V_BG_REPORT wording fixed in commit c8e36d98a.
-- [ ] CONTROL in `.claude/hooks/stop/worklist-cases/14-background-waits.sh`: a roster of
+- [x] CONTROL in `.claude/hooks/stop/worklist-cases/14-background-waits.sh`: a roster of
     (earlier tick, re-investigated 2026-09-24) 2026-09-24T07:52:02Z by d778be9d: uncommitted: 14-background-waits.sh retired, control is test_13a..13i at .claude/rediacc_hooks/tests/test_wl_background_waits.py line 1022-1199 (blob 908418654f10), 9 passed; planted defects: predicate reverted to _only_waiters fails 13a/13d/13f/13g, always-live fails 13b/13c/13e/13h/13i, subagent arm removed fails 13g
       fresh-transcript teammates with no `.output` gives NO check-in; the same roster aged
       past `TEAMMATE_FRESH_MIN` DOES fire and says POSSIBLY STUCK.
+    (ticked) 2026-09-24T14:15:09Z by d778be9d: investigated present at U: .claude/rediacc_hooks/tests/test_wl_background_waits.py:426, .claude/rediacc_hooks/tests/test_wl_background_waits.py:501, agent/plans/PLAN-stop-hook-overhaul.md; the controls test_13a..13e are in test_wl_background_waits.py; the earlier pointers :1022/:1034 went stale when the messaging removal shortened the file
 
 ### 1.4 What stays
 
