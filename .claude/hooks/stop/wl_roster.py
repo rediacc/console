@@ -26,7 +26,6 @@ import json
 import pathlib
 import re
 import time
-from typing import Any
 
 import wl_core as C
 
@@ -93,7 +92,7 @@ def load_metas(sub_dir):
     Each meta carries `type`, `parent` (the `parentAgentId`, or ""), `depth`, `desc`, `name`, the `jsonl` path and `spawned`: the meta file's mtime, which is the agent's last (re)START rather than its first spawn. Measured 2026-09-24: an agent listed in a 07:16Z Stop event carried a meta mtime of 08:05Z, because the harness rewrites the meta when an agent is resumed. That is the right clock for both
     consumers -- the newest (re)started writer is the excess the cap names, and an agent (re)started after the last Stop event is exactly one that event cannot list.
     """
-    out: dict[Any, Any] = {}
+    out = {}
     if sub_dir is None:
         return out
     try:
@@ -122,7 +121,7 @@ def load_metas(sub_dir):
 
 
 def children_map(metas):
-    kids: dict[Any, Any] = {}
+    kids = {}
     for aid, m in metas.items():
         if m["parent"]:
             kids.setdefault(m["parent"], []).append(aid)
@@ -347,7 +346,7 @@ def shell_waiters(running, metas):
     shell_ids = [
         str(b.get("id") or "") for b in running if b.get("type") == "shell" and b.get("id")
     ]
-    out: dict[Any, Any] = {}
+    out = {}
     if not shell_ids:
         return out
     for aid, m in metas.items():
@@ -414,7 +413,6 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
         cache = state_doc.setdefault("roster", {}).setdefault("scan", {})
         for stale in [k for k in cache if k not in live]:
             del cache[stale]
-    row: Any
     for aid, row in live.items():
         ent = cache.get(aid) or {}
         if row["jsonl"] is not None:
@@ -441,7 +439,7 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
     ]
     live_ids = {str(b.get("id") or "") for b in running}
     open_ids = [r["id"] for r in mine if r.get("state") == " "]
-    leases: dict[Any, Any] = {}
+    leases = {}
     for r in mine:
         if r.get("state") != ">":
             continue
@@ -460,9 +458,7 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
                 return d
         return ""
 
-    covered: list[Any] = []
-    leased_dead: list[Any] = []
-    unknown: list[Any] = []
+    covered, leased_dead, unknown = [], [], []
     for w, recs in leases.items():
         if w == QUEUE_WORKER:
             full = len(writers) >= WRITER_CAP
@@ -562,7 +558,7 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
     else:
         state = "HONEST"
 
-    lease_of: dict[Any, Any] = {}
+    lease_of = {}
     for w, recs in leases.items():
         for r in recs:
             lease_of.setdefault(w, []).append(r["id"])
@@ -712,8 +708,7 @@ def _tail_facts(jsonl):
             if not isinstance(block, dict):
                 continue
             if not tool and block.get("type") == "tool_use":
-                raw_inp = block.get("input")
-                inp = raw_inp if isinstance(raw_inp, dict) else {}
+                inp = block.get("input") if isinstance(block.get("input"), dict) else {}
                 target = next(
                     (
                         str(inp[k])
@@ -732,7 +727,7 @@ def _tail_facts(jsonl):
 
 def full_edit_count(jsonl):
     """Edit tool calls across the WHOLE transcript, read in SCAN_STEP_BYTES steps."""
-    ent: dict[Any, Any] = {}
+    ent = {}
     for _ in range(100000):
         before = int(ent.get("off") or 0)
         ent = scan_transcript(jsonl, ent)
@@ -768,7 +763,7 @@ def status_verb(worklist, me, target, session_id=None, cwd=None, now=None):
     out = []
     for aid in picked:
         m = metas.get(aid) or {}
-        jsonl: Any = m.get("jsonl")
+        jsonl = m.get("jsonl")
         try:
             st = jsonl.stat()
         except (OSError, AttributeError):
