@@ -12,6 +12,7 @@ import json
 import os
 import pathlib
 import shutil
+import subprocess
 
 import pytest
 
@@ -74,6 +75,91 @@ def test_assert_exit_code_keeps_the_opposite_argument_order(gate):
     gate.log_pass("assert_exit_code passes on a match and reports expected-then-actual on a miss")
 
 
+OUT_SENTINEL = "OUT-SENTINEL-7f3a"
+ERR_SENTINEL = "ERR-SENTINEL-c41e"
+
+
+def _noisy_run() -> harness.RunResult:
+    return harness.run(
+        ["bash", "-c", "echo %s; echo %s >&2; exit 5" % (OUT_SENTINEL, ERR_SENTINEL)]
+    )
+
+
+def _failure_text(action) -> str:
+    try:
+        action()
+    except harness.GateAssertionError as caught:
+        return str(caught)
+    return "no failure raised"
+
+
+def _output_problems(text: str) -> list[str]:
+    """Everything wrong with a failure message that claims to carry a run's output.
+
+    ONE CHECKER FOR THE REAL RUN AND THE PLANTED DEFECTS, so the planted runs prove this very function fires rather than a sibling written to be easy to satisfy.
+    """
+    problems = []
+    if OUT_SENTINEL not in text:
+        problems.append("stdout missing")
+    if ERR_SENTINEL not in text:
+        problems.append("stderr missing")
+    out_label, err_label = text.find("--- stdout ---"), text.find("--- stderr ---")
+    if not (0 <= out_label < text.find(OUT_SENTINEL) < err_label < text.find(ERR_SENTINEL)):
+        problems.append("the streams are not labelled in order")
+    return problems
+
+
+def test_assert_exit_carries_the_subjects_output_on_failure(gate, monkeypatch):
+    result = _noisy_run()
+    inner = subject()
+    inner.assert_exit(5, result, "a matching code passes")
+    gate.assert_eq(inner.assertions, 1, "a passing assert_exit is still counted")
+    gate.ok("assert_exit accepts a run whose exit code matches")
+
+    text = _failure_text(lambda: inner.assert_exit(0, result, "the message"))
+    gate.assert_contains(text, "the message: expected 0, got 5", "expected first, then actual")
+    gate.assert_eq(_output_problems(text), [], "the failure carries both streams, labelled")
+    gate.ok("control: a failing assert_exit carries the subject's stdout and stderr")
+
+    completed = subprocess.run(
+        ["bash", "-c", "echo %s; echo %s >&2; exit 3" % (OUT_SENTINEL, ERR_SENTINEL)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    text = _failure_text(lambda: inner.assert_exit(0, completed, "a CompletedProcess"))
+    gate.assert_eq(_output_problems(text), [], "a CompletedProcess carries its streams too")
+    gate.ok("control: a subprocess.CompletedProcess is accepted and its output attached")
+
+    text = _failure_text(lambda: inner.log_fail("a hand-written failure", result))
+    gate.assert_eq(_output_problems(text), [], "log_fail(message, result) attaches the output")
+    gate.ok("control: log_fail attaches a run's output when handed the run")
+
+    long = harness.run(["bash", "-c", "head -c 9000 /dev/zero | tr '\\0' x; echo; echo TAIL-END"])
+    text = _failure_text(lambda: inner.assert_exit(1, long, "a long run"))
+    gate.assert_contains(text, "TAIL-END", "the end of a long stream survives the cut")
+    gate.assert_contains(text, "earlier chars dropped", "and the cut says so")
+    gate.ok("control: a long stream keeps its tail and names what it dropped")
+
+    # PLANTED DEFECTS. Each one is a harness that has regressed to the shape this helper replaced, and the checker above must refuse every one; a checker that passed any of them would have proved nothing about the real run.
+    planted = {
+        "the output is dropped": lambda _run: "",
+        "only stderr is kept": lambda run: "--- stderr ---\n%s" % run.err,
+        "the streams are swapped": lambda run: (
+            "--- stdout ---\n%s\n--- stderr ---\n%s" % (run.err, run.out)
+        ),
+    }
+    for defect, render in planted.items():
+        with monkeypatch.context() as patch:
+            patch.setattr(harness, "render_output", render)
+            text = _failure_text(lambda: subject().assert_exit(0, result, "planted"))
+        if _output_problems(text):
+            gate.ok("planted defect caught: %s" % defect)
+        else:
+            gate.no("planted defect NOT caught: %s" % defect)
+    gate.tally_finish("assert_exit output attachment")
+
+
 def test_temp_dir_removes_its_directory_even_when_the_body_raises(gate):
     with harness.temp_dir() as path:
         (path / "file").write_text("x", encoding="utf-8")
@@ -99,7 +185,7 @@ def test_fake_gh_shims_gh_and_restores_path(gate, tmp_path):
     before = os.environ.get("PATH")
     with harness.fake_gh(payload):
         result = harness.run(["gh", "api", "whatever"])
-        gate.assert_exit_code(0, result.rc, "the shim runs")
+        gate.assert_exit(0, result, "the shim runs")
         gate.assert_contains(result.out, "v9.9.9", "and serves the fixture bytes")
     gate.assert_eq(os.environ.get("PATH"), before, "PATH is restored on the way out")
 
@@ -122,9 +208,7 @@ def test_fake_bin_admits_only_what_the_spec_names(gate):
         harness.run([str(fakes.dir / "someprobe"), "--flag", "value"])
         gate.assert_contains(fakes.record("someprobe"), "--flag value", "the fake records its argv")
         gate.assert_eq(fakes.record("nevercalled"), "", "a fake never called records nothing")
-        gate.assert_exit_code(
-            3, harness.run([str(fakes.dir / "failing")]).rc, "name!<n> exits with <n>"
-        )
+        gate.assert_exit(3, harness.run([str(fakes.dir / "failing")]), "name!<n> exits with <n>")
     gate.assert_eq(shutil.which("curl") is not None, True, "PATH is restored afterwards")
     gate.log_pass("fake_bin empties PATH, admits by name, records argv and honours name!<n>")
 
@@ -179,7 +263,7 @@ def test_the_ledger_is_written_only_when_the_env_names_a_file(gate, tmp_path):
 
 def test_run_keeps_the_two_streams_apart(gate):
     result = harness.run(["bash", "-c", "echo to-stdout; echo to-stderr >&2; exit 5"])
-    gate.assert_exit_code(5, result.rc, "the real exit code is returned")
+    gate.assert_exit(5, result, "the real exit code is returned")
     gate.assert_contains(result.out, "to-stdout", "stdout carries stdout")
     gate.assert_not_contains(
         result.out, "to-stderr", "and NOT stderr -- merging hides swallowed output"

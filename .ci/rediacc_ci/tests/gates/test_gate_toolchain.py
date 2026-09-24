@@ -115,7 +115,7 @@ def test_toolchain_check_match_mismatch_absent(gate, tmp_path):
     fake(tmp_path, "shfmt", "v%s" % pinned("SHFMT_VERSION"))
     result = source_run("toolchain_check shfmt >/dev/null 2>&1", env=with_path(tmp_path))
     if result.rc != 0:
-        gate.log_fail("a PATH binary AT the pin was rejected: %s" % result.combined)
+        gate.log_fail("a PATH binary AT the pin was rejected", result)
     gate.ok("a PATH binary at the pin is accepted")
 
     fake(tmp_path, "shfmt", "v0.0.1")

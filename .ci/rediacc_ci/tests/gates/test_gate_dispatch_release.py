@@ -182,7 +182,7 @@ def test_bump_none_skips_the_release(gate, tmp_path):
     fx = make_fixture(gate, tmp_path)
     fx.pulls_for(SHA, merged_pr(561, "bump-none"))
     fx.run()
-    gate.assert_exit_code(0, fx.rc, "the decision must never fail the sentinel job")
+    gate.assert_exit(0, fx, "the decision must never fail the sentinel job")
     assert_not_dispatched(gate, fx, "a bump-none PR must NOT dispatch cd-v2")
     gate.assert_contains(
         fx.out, "::notice title=Release skipped::", "it announces the skip as an annotation"
@@ -206,7 +206,7 @@ def test_an_unlabelled_pr_releases(gate, tmp_path):
     fx = make_fixture(gate, tmp_path)
     fx.pulls_for(SHA, merged_pr(561, ""))
     fx.run()
-    gate.assert_exit_code(0, fx.rc, "a normal release path exits clean")
+    gate.assert_exit(0, fx, "a normal release path exits clean")
     assert_dispatched(gate, fx, "an unlabelled PR must dispatch cd-v2")
     gate.assert_not_contains(fx.out, "Release skipped", "and say nothing about skipping")
     gate.log_pass("CONTROL: no bump-none => the release dispatches as before")
@@ -247,7 +247,7 @@ def test_a_lookup_failure_fails_open(gate, tmp_path):
     """FAIL OPEN. A flaky API must never silently kill a release."""
     fx = make_fixture(gate, tmp_path)
     fx.run(env={"GH_FAIL_ALL": "1"})
-    gate.assert_exit_code(0, fx.rc, "a lookup failure must not fail the job either")
+    gate.assert_exit(0, fx, "a lookup failure must not fail the job either")
     assert_dispatched(gate, fx, "an unresolvable PR must still dispatch")
     gate.assert_contains(fx.out, "PR lookup failed", "and say the lookup failed")
     gate.assert_contains(
@@ -294,7 +294,7 @@ def test_decide_only_signals_the_skip(gate, tmp_path):
     fx = make_fixture(gate, tmp_path)
     fx.pulls_for(SHA, merged_pr(570, "bump-none"))
     fx.run("--decide-only")
-    gate.assert_exit_code(0, fx.rc, "the decide step must never fail the sentinel job")
+    gate.assert_exit(0, fx, "the decide step must never fail the sentinel job")
     assert_not_dispatched(gate, fx, "--decide-only must not dispatch, ever")
     gate.assert_contains(
         fx.step_output(),
@@ -315,7 +315,7 @@ def test_decide_only_stays_silent_for_a_release(gate, tmp_path):
     fx = make_fixture(gate, tmp_path)
     fx.pulls_for(SHA, merged_pr(570, ""))
     fx.run("--decide-only")
-    gate.assert_exit_code(0, fx.rc, "the decide step exits clean on the release path too")
+    gate.assert_exit(0, fx, "the decide step exits clean on the release path too")
     gate.assert_not_contains(
         fx.step_output(),
         "skip_release",
@@ -332,7 +332,7 @@ def test_decide_only_fail_open_paths_never_signal_skip(gate, tmp_path):
     fx = make_fixture(gate, tmp_path)
 
     fx.run("--decide-only", env={"GH_FAIL_ALL": "1"})
-    gate.assert_exit_code(0, fx.rc, "a lookup failure must not fail the decide step")
+    gate.assert_exit(0, fx, "a lookup failure must not fail the decide step")
     gate.assert_not_contains(
         fx.step_output(), "skip_release", "a failed PR lookup must not withhold the release"
     )
@@ -373,7 +373,7 @@ def test_dispatch_only_asks_nothing_and_dispatches(gate, tmp_path):
     fx = make_fixture(gate, tmp_path)
     fx.pulls_for(SHA, merged_pr(570, "bump-none"))
     fx.run("--dispatch-only")
-    gate.assert_exit_code(0, fx.rc, "--dispatch-only exits clean")
+    gate.assert_exit(0, fx, "--dispatch-only exits clean")
     assert_dispatched(gate, fx, "--dispatch-only dispatches unconditionally")
     gate.assert_not_contains(
         fx.gh_calls(),
@@ -400,7 +400,7 @@ def test_dispatch_only_survives_a_dead_api(gate, tmp_path):
     """If --dispatch-only ever grew a lookup, a dead API would show up as a non-dispatch."""
     fx = make_fixture(gate, tmp_path)
     fx.run("--dispatch-only", env={"GH_FAIL_ALL": "1"})
-    gate.assert_exit_code(0, fx.rc, "a dead API cannot fail the dispatch step")
+    gate.assert_exit(0, fx, "a dead API cannot fail the dispatch step")
     assert_dispatched(gate, fx, "--dispatch-only dispatches even when every gh call would fail")
     gate.log_pass("CONTROL: --dispatch-only with GH_FAIL_ALL=1 still dispatches")
 
@@ -409,7 +409,7 @@ def test_an_unknown_flag_is_a_wiring_bug(gate, tmp_path):
     """A typo'd flag must not silently restore the old lookup-and-dispatch behaviour."""
     fx = make_fixture(gate, tmp_path)
     fx.run("--decide-onlyy")
-    gate.assert_exit_code(2, fx.rc, "an unknown mode flag fails loudly rather than defaulting")
+    gate.assert_exit(2, fx, "an unknown mode flag fails loudly rather than defaulting")
     assert_not_dispatched(gate, fx, "and dispatches nothing")
     gate.log_pass("an unrecognised flag exits 2 instead of falling through to the legacy path")
 

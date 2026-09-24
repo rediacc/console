@@ -71,7 +71,7 @@ def test_the_extractor_matches_the_twins_awk(gate):
     RANGE (`/^fetch_retry\\(\\) \\{/,/^\\}/`); this file uses a Python regex. A
     port that swaps the reader without comparing it against the original has replaced a tested extractor with an untested one, and every case below would then be exercising whatever the new one happened to grab."""
     awk = harness.run(["awk", r"/^fetch_retry\(\) \{/,/^\}/", str(TARGET)])
-    gate.assert_exit_code(0, awk.rc, "the twin's awk still runs")
+    gate.assert_exit(0, awk, "the twin's awk still runs")
     gate.assert_eq(
         fetch_retry_source() + "\n", awk.out, "the Python extractor agrees with the awk one"
     )

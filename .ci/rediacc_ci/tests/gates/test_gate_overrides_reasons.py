@@ -79,7 +79,7 @@ def test_accepts_real_package_json(gate):
 
 def test_rejects_missing_reason(gate):
     result = run_validator_with_pkg(gate, '{"overrides":{"somepkg":"^1.0.0"}}')
-    gate.assert_exit_code(1, result.rc, "missing reason should fail")
+    gate.assert_exit(1, result, "missing reason should fail")
     gate.assert_contains(
         result.combined, "has no matching _overridesReasons", "error message names the problem"
     )
@@ -91,7 +91,7 @@ def test_rejects_low_effort_reason(gate):
         gate,
         '{"overrides":{"somepkg":"^1.0.0"},"_overridesReasons":{"somepkg":"tbd"}}',
     )
-    gate.assert_exit_code(1, result.rc, "tbd reason should fail")
+    gate.assert_exit(1, result, "tbd reason should fail")
     gate.assert_contains(
         result.combined, "low-effort placeholder", "error message identifies the issue"
     )
@@ -104,7 +104,7 @@ def test_rejects_stale_reason(gate):
         '{"overrides":{},"_overridesReasons":'
         '{"ghost":"BLOCKER: this reason has no corresponding override in the tree"}}',
     )
-    gate.assert_exit_code(1, result.rc, "stale reason should fail")
+    gate.assert_exit(1, result, "stale reason should fail")
     gate.assert_contains(result.combined, "stale reason", "error message names drift")
     gate.log_pass("stale (orphaned) reason is rejected")
 
@@ -128,7 +128,7 @@ def test_the_real_manifest_declares_overrides_to_check(gate):
             "overrides or this port is reading the wrong file."
         )
     result = run_validator_on_real_tree(gate)
-    gate.assert_exit_code(0, result.rc, "the real manifest must still validate")
+    gate.assert_exit(0, result, "the real manifest must still validate")
     gate.assert_contains(
         result.combined,
         "All %d package.json overrides" % len(overrides),

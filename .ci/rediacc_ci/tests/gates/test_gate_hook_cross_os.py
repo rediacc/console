@@ -79,7 +79,7 @@ def test_the_real_hook_package_is_fully_seamed(gate):
             if not subject.is_file():
                 gate.log_fail("subject under test is missing: %s" % paths.relative_to_root(subject))
         result = _run()
-        gate.assert_exit_code(0, result.rc, "clean tree (stderr: %s)" % result.err)
+        gate.assert_exit(0, result, "clean tree")
         gate.assert_contains(result.combined, "0 unclaimed, 0 dead", "set equality both ways")
         gate.assert_contains(result.combined, "Python file(s) under", "prints the corpus size")
         # The scope table is printed on SUCCESS as well as on failure. An exemption only visible when something is already broken is an exemption nobody drains.
@@ -94,7 +94,7 @@ def test_the_corpus_is_not_trivially_small(gate):
     with _plant_guard():
         gate.log_test("the corpus the gate reports is the corpus on disk")
         result = _run()
-        gate.assert_exit_code(0, result.rc, "clean run")
+        gate.assert_exit(0, result, "clean run")
         on_disk = len(
             [
                 p
@@ -118,11 +118,11 @@ def test_a_planted_platform_read_reds_on_the_real_tree(gate):
                 "asserting about somebody else's file" % paths.relative_to_root(PLANT_TARGET)
             )
         before = _run()
-        gate.assert_exit_code(0, before.rc, "the tree is green before the plant")
+        gate.assert_exit(0, before, "the tree is green before the plant")
         try:
             PLANT_TARGET.write_text(PLANTED, encoding="utf-8")
             result = _run()
-            gate.assert_exit_code(1, result.rc, "an unclaimed platform read must red")
+            gate.assert_exit(1, result, "an unclaimed platform read must red")
             gate.assert_contains(result.combined, "__gate_test_plant.py", "names the file")
             gate.assert_contains(result.combined, "(procfs)", "and the class")
             gate.assert_contains(result.combined, "(proc-tool)", "and the second class")
@@ -135,7 +135,7 @@ def test_a_planted_platform_read_reds_on_the_real_tree(gate):
             PLANT_TARGET.unlink(missing_ok=True)
         gate.assert_eq(PLANT_TARGET.exists(), False, "the planted file is gone")
         after = _run()
-        gate.assert_exit_code(0, after.rc, "and the tree is green again once the plant is gone")
+        gate.assert_exit(0, after, "and the tree is green again once the plant is gone")
         gate.log_pass("red with the plant, gone after it, green again")
 
 
@@ -150,7 +150,7 @@ def test_the_plant_left_the_tree_exactly_as_it_found_it(gate):
             text=True,
             check=False,
         )
-        gate.assert_exit_code(0, proc.returncode, "git status ran")
+        gate.assert_exit(0, proc, "git status ran")
         leftovers = [ln for ln in proc.stdout.splitlines() if "__gate_test_plant" in ln]
         gate.assert_eq(leftovers, [], "no planted file remains under the hook package")
         gate.log_pass("git status agrees the scan root is as it was")
@@ -159,7 +159,7 @@ def test_the_plant_left_the_tree_exactly_as_it_found_it(gate):
 def test_the_selftest_covers_both_directions(gate):
     gate.log_test("--selftest runs, and asserts non-findings as well as findings")
     result = _run("--selftest")
-    gate.assert_exit_code(0, result.rc, "selftest (stderr: %s)" % result.err)
+    gate.assert_exit(0, result, "selftest")
     passes = [ln for ln in result.combined.splitlines() if "PASS " in ln]
     gate.assert_eq(len(passes) >= 16, True, "%d control(s) ran, floor 16" % len(passes))
     plants = [ln for ln in passes if "PLANT:" in ln]

@@ -56,7 +56,7 @@ def _edit_spec(root: pathlib.Path, fn) -> None:
 
 def _green(gate, root, label: str) -> None:
     result = _run(root)
-    gate.assert_exit_code(0, result.rc, "%s (stderr: %s)" % (label, result.err))
+    gate.assert_exit(0, result, label)
 
 
 def test_the_gate_is_green_on_the_real_tree(gate):
@@ -65,7 +65,7 @@ def test_the_gate_is_green_on_the_real_tree(gate):
         if not subject.is_file():
             gate.log_fail("subject under test is missing: %s" % paths.relative_to_root(subject))
     result = _run()
-    gate.assert_exit_code(0, result.rc, "clean tree (stderr: %s)" % result.err)
+    gate.assert_exit(0, result, "clean tree")
     # THE SHAPE, NOT JUST THE VERDICT. A gate whose corpus collapsed would still print a tick; these lines are what say it did not.
     gate.assert_contains(result.combined, "workflow file(s) scanned", "prints the corpus size")
     gate.assert_contains(result.combined, "BWS_ACCESS_TOKEN", "and the secrets it saw, by name")
@@ -92,7 +92,7 @@ def test_the_real_commented_mentions_do_not_fire(gate):
             "%s still carries %s" % (rel, needle),
         )
     result = _run()
-    gate.assert_exit_code(0, result.rc, "the real tree stays green with them present")
+    gate.assert_exit(0, result, "the real tree stays green with them present")
     gate.assert_not_contains(
         result.combined, "ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN", "the commented secret is not reported"
     )
@@ -114,7 +114,7 @@ def test_plant_an_undeclared_vars_read(gate):
         )
         _edit_text(root, BREAKPOINT, ANCHOR, planted)
         result = _run(root)
-        gate.assert_exit_code(1, result.rc, "an undeclared read reds")
+        gate.assert_exit(1, result, "an undeclared read reds")
         gate.assert_contains(result.combined, "UNDECLARED %s:" % BREAKPOINT, "names the file")
         gate.assert_contains(
             result.combined, "job session reads vars.PLANTED_VAR", "and the job and name"
@@ -143,7 +143,7 @@ def test_plant_an_entry_whose_last_read_is_removed(gate):
         _green(gate, root, "a declared read with a real twin is green first")
         _edit_text(root, BREAKPOINT, planted, ANCHOR)
         result = _run(root)
-        gate.assert_exit_code(1, result.rc, "an entry nothing reads reds")
+        gate.assert_exit(1, result, "an entry nothing reads reds")
         gate.assert_contains(result.combined, "RESOLVED PLANTED_VAR", "names the drained entry")
         _edit_spec(root, lambda o: o["vars"].pop("PLANTED_VAR"))
         _green(gate, root, "and green again once the entry is drained")
@@ -175,7 +175,7 @@ def test_plant_a_no_fetch_job_row_whose_job_no_longer_reads(gate):
         _green(gate, root, "a live no-fetch-job exemption is green first")
         _edit_text(root, BREAKPOINT, planted, ANCHOR)
         result = _run(root)
-        gate.assert_exit_code(1, result.rc, "an exemption that forgives nothing reds")
+        gate.assert_exit(1, result, "an exemption that forgives nothing reds")
         gate.assert_contains(
             result.combined, "STALE no_fetch_jobs '%s#session'" % BREAKPOINT, "names the stale row"
         )
@@ -201,7 +201,7 @@ def test_plant_a_new_github_secret_read(gate):
         )
         _edit_text(root, BREAKPOINT, ANCHOR, planted)
         result = _run(root)
-        gate.assert_exit_code(1, result.rc, "a new GitHub secret read reds")
+        gate.assert_exit(1, result, "a new GitHub secret read reds")
         gate.assert_contains(result.combined, "GITHUB SECRET %s:" % BREAKPOINT, "names the file")
         gate.assert_contains(result.combined, "reads secrets.SOMETHING", "and the secret")
         _edit_text(root, BREAKPOINT, planted, ANCHOR)
@@ -223,7 +223,7 @@ def test_false_positive_guards_do_not_fire(gate):
         )
         _edit_text(root, BREAKPOINT, ANCHOR, planted)
         result = _run(root)
-        gate.assert_exit_code(0, result.rc, "neither shape is a read (stderr: %s)" % result.err)
+        gate.assert_exit(0, result, "neither shape is a read")
         gate.assert_not_contains(result.combined, "PLANTED_", "and neither is reported")
     gate.log_pass("a path ending in secrets.sh and a commented reference stay silent")
 
@@ -235,6 +235,6 @@ def test_deleting_the_spec_refuses_rather_than_passing(gate):
         _green(gate, root, "the untouched mirror is green first")
         (root / SPEC_REL).unlink()
         result = _run(root)
-        gate.assert_exit_code(1, result.rc, "a missing spec refuses")
+        gate.assert_exit(1, result, "a missing spec refuses")
         gate.assert_contains(result.combined, "does not exist", "says which file is gone")
     gate.log_pass("the file cannot be deleted to make every finding disappear at once")

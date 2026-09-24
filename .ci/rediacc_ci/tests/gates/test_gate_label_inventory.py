@@ -104,11 +104,7 @@ def test_matching_sets_are_clean(gate):
         write_labels(d / "labels.yml", "one", "two", "three", "four", "five", "six")
         (d / "live.txt").write_text("one\ntwo\nthree\nfour\nfive\nsix\n", encoding="utf-8")
         result = run_gate(gate, d / "labels.yml", d / "live.txt")
-        gate.assert_exit_code(
-            0,
-            result.rc,
-            "matching declaration and live sets must pass (output: %s)" % result.combined,
-        )
+        gate.assert_exit(0, result, "matching declaration and live sets must pass")
         gate.assert_contains(result.combined, "reconciled", "and say so")
         gate.log_pass("matching sets reconcile cleanly")
 
@@ -119,7 +115,7 @@ def test_declared_but_absent_fires(gate):
         write_labels(d / "labels.yml", "one", "two", "three", "four", "five", "ghost-label")
         (d / "live.txt").write_text("one\ntwo\nthree\nfour\nfive\n", encoding="utf-8")
         result = run_gate(gate, d / "labels.yml", d / "live.txt")
-        gate.assert_exit_code(1, result.rc, "a declared-but-absent label must fail the gate")
+        gate.assert_exit(1, result, "a declared-but-absent label must fail the gate")
         gate.assert_contains(result.combined, "ghost-label", "the offender is named")
         gate.assert_contains(
             result.combined, "FAILS OPEN", "and the fail-open consequence is stated"
@@ -133,7 +129,7 @@ def test_live_but_undeclared_fires(gate):
         write_labels(d / "labels.yml", "one", "two", "three", "four", "five")
         (d / "live.txt").write_text("one\ntwo\nthree\nfour\nfive\nstowaway\n", encoding="utf-8")
         result = run_gate(gate, d / "labels.yml", d / "live.txt")
-        gate.assert_exit_code(1, result.rc, "a live-but-undeclared label must fail the gate")
+        gate.assert_exit(1, result, "a live-but-undeclared label must fail the gate")
         gate.assert_contains(result.combined, "stowaway", "the offender is named")
         gate.assert_contains(
             result.combined,
@@ -149,7 +145,7 @@ def test_both_directions_report_together(gate):
         write_labels(d / "labels.yml", "one", "two", "three", "four", "five", "ghost-label")
         (d / "live.txt").write_text("one\ntwo\nthree\nfour\nfive\nstowaway\n", encoding="utf-8")
         result = run_gate(gate, d / "labels.yml", d / "live.txt")
-        gate.assert_exit_code(1, result.rc, "both-direction drift fails")
+        gate.assert_exit(1, result, "both-direction drift fails")
         gate.assert_contains(result.combined, "ghost-label", "the absent one is reported")
         gate.assert_contains(result.combined, "stowaway", "and the undeclared one, in the same run")
         gate.assert_contains(result.combined, "2 label inventory mismatch", "the count is exact")
@@ -162,11 +158,7 @@ def test_create_on_demand_label_is_forgiven_when_absent(gate):
         write_labels(d / "labels.yml", "one", "two", "three", "four", "five", "nightly-red")
         (d / "live.txt").write_text("one\ntwo\nthree\nfour\nfive\n", encoding="utf-8")
         result = run_gate(gate, d / "labels.yml", d / "live.txt")
-        gate.assert_exit_code(
-            0,
-            result.rc,
-            "an absent create-on-demand label must NOT fail (output: %s)" % result.combined,
-        )
+        gate.assert_exit(0, result, "an absent create-on-demand label must NOT fail")
         gate.assert_contains(
             result.combined,
             "created on demand",
@@ -181,11 +173,7 @@ def test_create_on_demand_label_is_still_fine_when_present(gate):
         write_labels(d / "labels.yml", "one", "two", "three", "four", "five", "nightly-red")
         (d / "live.txt").write_text("one\ntwo\nthree\nfour\nfive\nnightly-red\n", encoding="utf-8")
         result = run_gate(gate, d / "labels.yml", d / "live.txt")
-        gate.assert_exit_code(
-            0,
-            result.rc,
-            "a present create-on-demand label is ordinary (output: %s)" % result.combined,
-        )
+        gate.assert_exit(0, result, "a present create-on-demand label is ordinary")
         gate.log_pass("the create-on-demand label passes once it exists")
 
 
@@ -200,9 +188,7 @@ def test_a_stale_allowlist_entry_is_refused(gate):
         result = run_gate(
             gate, d / "labels.yml", d / "live.txt", LABEL_INVENTORY_VERIFY_ALLOWLIST="true"
         )
-        gate.assert_exit_code(
-            1, result.rc, "an allowlist entry naming an undeclared label must fail"
-        )
+        gate.assert_exit(1, result, "an allowlist entry naming an undeclared label must fail")
         gate.assert_contains(result.combined, "not declared", "and say the exemption is stale")
         gate.log_pass("a stale create-on-demand entry is refused, so the exemption cannot rot")
 
@@ -213,7 +199,7 @@ def test_empty_live_list_is_a_refusal_not_a_clean_tree(gate):
         write_labels(d / "labels.yml", "one", "two", "three", "four", "five")
         (d / "live.txt").write_text("", encoding="utf-8")
         result = run_gate(gate, d / "labels.yml", d / "live.txt")
-        gate.assert_exit_code(1, result.rc, "an empty live list must be refused")
+        gate.assert_exit(1, result, "an empty live list must be refused")
         gate.assert_contains(result.combined, "EMPTY", "and named as a failed read")
         gate.assert_contains(result.combined, "failed read", "explicitly, not as a tree state")
         gate.log_pass("an empty live list is a refusal, not a clean tree")
@@ -223,7 +209,7 @@ def test_unreadable_live_source_is_a_refusal(gate):
     with harness.temp_dir() as d:
         write_labels(d / "labels.yml", "one", "two", "three", "four", "five")
         result = run_gate(gate, d / "labels.yml", d / "does-not-exist.txt")
-        gate.assert_exit_code(1, result.rc, "an unreadable live source must be refused")
+        gate.assert_exit(1, result, "an unreadable live source must be refused")
         gate.assert_contains(result.combined, "refuses to pass blind", "and say it is blind")
         gate.log_pass("an unreadable live source refuses rather than passing blind")
 
@@ -234,7 +220,7 @@ def test_a_broken_declaration_read_trips_the_floor(gate):
         write_labels(d / "labels.yml", "one", "two")
         (d / "live.txt").write_text("one\ntwo\n", encoding="utf-8")
         result = run_gate(gate, d / "labels.yml", d / "live.txt")
-        gate.assert_exit_code(1, result.rc, "a two-label declaration file must trip the floor")
+        gate.assert_exit(1, result, "a two-label declaration file must trip the floor")
         gate.assert_contains(result.combined, "floor", "and say the reader is broken, not the file")
         gate.log_pass("the declaration floor refuses a broken read")
 
@@ -257,11 +243,7 @@ def test_a_stale_list_read_is_re_verified_before_accusing(gate):
             d / "live.txt",
             LABEL_INVENTORY_PROBE_FILE=os.fspath(d / "probe.txt"),
         )
-        gate.assert_exit_code(
-            0,
-            result.rc,
-            "a label the re-read finds must NOT be reported (output: %s)" % result.combined,
-        )
+        gate.assert_exit(0, result, "a label the re-read finds must NOT be reported")
         gate.assert_contains(
             result.combined, "re-read found it", "the re-verification is stated, not silent"
         )
@@ -284,7 +266,7 @@ def test_a_genuinely_absent_label_still_fires_after_re_verification(gate):
             d / "live.txt",
             LABEL_INVENTORY_PROBE_FILE=os.fspath(d / "probe.txt"),
         )
-        gate.assert_exit_code(1, result.rc, "a label both reads agree is absent must still fail")
+        gate.assert_exit(1, result, "a label both reads agree is absent must still fail")
         gate.assert_contains(result.combined, "ghost-label", "the offender is still named")
         gate.assert_contains(result.combined, "FAILS OPEN", "with the full fail-open explanation")
         gate.assert_not_contains(
@@ -305,9 +287,7 @@ def test_re_verification_does_not_touch_the_undeclared_direction(gate):
             d / "live.txt",
             LABEL_INVENTORY_PROBE_FILE=os.fspath(d / "probe.txt"),
         )
-        gate.assert_exit_code(
-            1, result.rc, "the undeclared direction is unaffected by re-verification"
-        )
+        gate.assert_exit(1, result, "the undeclared direction is unaffected by re-verification")
         gate.assert_contains(result.combined, "stowaway", "and still names the offender")
         gate.log_pass("re-verification applies to the absent direction only")
 
@@ -318,7 +298,7 @@ def test_injected_mode_without_a_probe_seam_still_reports(gate):
         write_labels(d / "labels.yml", "one", "two", "three", "four", "five", "ghost-label")
         (d / "live.txt").write_text("one\ntwo\nthree\nfour\nfive\n", encoding="utf-8")
         result = run_gate(gate, d / "labels.yml", d / "live.txt")
-        gate.assert_exit_code(1, result.rc, "an unprobeable absence is reported, not forgiven")
+        gate.assert_exit(1, result, "an unprobeable absence is reported, not forgiven")
         gate.assert_contains(result.combined, "ghost-label", "naming it")
         gate.log_pass("with no probe available the finding stands (offline seam unchanged)")
 
@@ -349,11 +329,7 @@ def test_indented_fields_are_never_mistaken_for_names(gate):
         )
         (d / "live.txt").write_text("one\ntwo\nthree\nfour\nfive\n", encoding="utf-8")
         result = run_gate(gate, d / "labels.yml", d / "live.txt")
-        gate.assert_exit_code(
-            0,
-            result.rc,
-            "indented fields must not be read as label names (output: %s)" % result.combined,
-        )
+        gate.assert_exit(0, result, "indented fields must not be read as label names")
         gate.assert_contains(
             result.combined, "5 declared", "exactly the five names, not their field values"
         )
@@ -377,11 +353,7 @@ def test_real_tree_reconciles_against_an_injected_live_list(gate):
             cwd=paths.repo_root(),
             env={"LABEL_INVENTORY_LIVE_FILE": os.fspath(live)},
         )
-        gate.assert_exit_code(
-            0,
-            result.rc,
-            "the real labels file must reconcile against itself (output: %s)" % result.combined,
-        )
+        gate.assert_exit(0, result, "the real labels file must reconcile against itself")
         gate.assert_contains(result.combined, "reconciled", "the real run reports a reconciliation")
 
         # Control on the real tree: drop one real label from the live list and the real gate must fire. Without this, the case above would also pass if the gate had quietly become a no-op on the real file.
@@ -393,8 +365,8 @@ def test_real_tree_reconciles_against_an_injected_live_list(gate):
             cwd=paths.repo_root(),
             env={"LABEL_INVENTORY_LIVE_FILE": os.fspath(short)},
         )
-        gate.assert_exit_code(
-            1, result.rc, "removing a real label from the live list must fire the real gate"
+        gate.assert_exit(
+            1, result, "removing a real label from the live list must fire the real gate"
         )
         gate.assert_contains(result.combined, dropped, "naming the real label that went missing")
 
@@ -408,7 +380,7 @@ def test_real_tree_reconciles_against_an_injected_live_list(gate):
             cwd=paths.repo_root(),
             env={"LABEL_INVENTORY_LIVE_FILE": os.fspath(extra)},
         )
-        gate.assert_exit_code(1, result.rc, "an extra live label must fire the real gate too")
+        gate.assert_exit(1, result, "an extra live label must fire the real gate too")
         gate.assert_contains(result.combined, "an-undeclared-live-label", "naming it")
 
         gate.log_pass(
@@ -434,12 +406,7 @@ def test_malformed_live_json_fails_closed(gate):
             "LABEL_INVENTORY_LIVE_JSON_FILE": os.fspath(bad_json),
         }
         result = harness.run([python3, os.fspath(GATE)], cwd=paths.repo_root(), env=env)
-        gate.assert_exit_code(
-            1,
-            result.rc,
-            "malformed LIVE_JSON must fail closed, not report a clean tree (output: %s)"
-            % result.combined,
-        )
+        gate.assert_exit(1, result, "malformed LIVE_JSON must fail closed, not report a clean tree")
         gate.assert_contains(
             result.combined,
             "FAILED to run",
@@ -464,11 +431,8 @@ def test_malformed_live_json_fails_closed(gate):
             gate.log_fail(
                 "CONTROL DID NOT FIRE: the mutant with the old sys.exit(0) still failed closed"
             )
-        gate.assert_exit_code(
-            0,
-            result.rc,
-            "control: the pre-fix behavior swallows malformed JSON as a clean tree "
-            "(output: %s)" % result.combined,
+        gate.assert_exit(
+            0, result, "control: the pre-fix behavior swallows malformed JSON as a clean tree"
         )
         gate.log_pass("malformed LIVE_JSON fails closed; control proves the old code did not")
 

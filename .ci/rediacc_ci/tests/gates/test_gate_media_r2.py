@@ -91,9 +91,7 @@ def test_a_planted_mutation_is_visible_to_the_behaviour_cases(gate):
         calls = stage_sync_scripts(d)
         with harness.fake_bin(BASE_SPEC):
             result = run_r2(d, CREDENTIALS + "www_tutorial_audio_restore", module_dir=mutant)
-            gate.assert_exit_code(
-                0, result.rc, "the mutated copy still runs; only its flag changed"
-            )
+            gate.assert_exit(0, result, "the mutated copy still runs; only its flag changed")
             media_verify.media_assert_mutation_swapped(
                 gate,
                 calls.read_text(encoding="utf-8"),
@@ -117,7 +115,7 @@ def test_the_cache_is_optional_in_both_directions(gate):
                 d,
                 NO_CREDENTIALS + "www_tutorial_audio_restore\nwww_tutorial_audio_upload\n",
             )
-            gate.assert_exit_code(0, result.rc, "no credentials must SKIP, never fail the pipeline")
+            gate.assert_exit(0, result, "no credentials must SKIP, never fail the pipeline")
             gate.assert_contains(
                 result.combined,
                 "skipping tutorial-audio cache restore",
@@ -139,9 +137,7 @@ def test_the_cache_is_optional_in_both_directions(gate):
             result = run_r2(
                 d, CREDENTIALS + "www_tutorial_audio_restore\nwww_tutorial_audio_upload\n"
             )
-            gate.assert_exit_code(
-                0, result.rc, "the credentialed path must succeed (output: %s)" % result.combined
-            )
+            gate.assert_exit(0, result, "the credentialed path must succeed")
             recorded = calls.read_text(encoding="utf-8")
             gate.assert_contains(
                 recorded,
@@ -166,7 +162,7 @@ def test_a_broken_sync_never_fails_the_pipeline(gate):
             result = run_r2(
                 d, CREDENTIALS + "www_tutorial_audio_restore\nwww_tutorial_audio_upload\n"
             )
-            gate.assert_exit_code(0, result.rc, "a failed cache sync must not fail the pipeline")
+            gate.assert_exit(0, result, "a failed cache sync must not fail the pipeline")
             gate.assert_contains(
                 result.combined,
                 "Audio cache restore failed, continuing without it",

@@ -72,7 +72,7 @@ def offenders_of(gate, tmp_path, name: str, *lines: str) -> str:
     fixture = tmp_path / ("%s.sh" % name)
     fixture.write_text("".join("%s\n" % line for line in lines), encoding="utf-8")
     result = source_and_run(gate, "offenders '%s' || true" % fixture)
-    gate.assert_exit_code(0, result.rc, "driving offenders over %s should not crash" % name)
+    gate.assert_exit(0, result, "driving offenders over %s should not crash" % name)
     return result.out
 
 
@@ -96,7 +96,7 @@ def assert_silent(gate, tmp_path, name: str, message: str, *lines: str) -> None:
 def renet_list(gate, variable: str) -> list[str]:
     """One of the subject's producer lists, word-split, as the shell sees it."""
     result = source_and_run(gate, 'printf "%%s\\n" "$%s"' % variable)
-    gate.assert_exit_code(0, result.rc, "reading $%s out of the subject" % variable)
+    gate.assert_exit(0, result, "reading $%s out of the subject" % variable)
     return result.out.split()
 
 
@@ -341,9 +341,9 @@ def go_offenders_of(gate, tmp_path, name: str, *lines: str) -> str:
     fixture = tmp_path / ("%s.go" % name)
     fixture.write_text("".join("%s\n" % line for line in lines), encoding="utf-8")
     result = source_and_run(gate, "go_offenders '%s' || true" % fixture)
-    gate.assert_exit_code(0, result.rc, "driving go_offenders over %s should not crash" % name)
+    gate.assert_exit(0, result, "driving go_offenders over %s should not crash" % name)
     if "command not found" in result.combined:
-        gate.log_fail("renet's gate has no go_offenders(): %s" % result.combined.strip())
+        gate.log_fail("renet's gate has no go_offenders()", result)
     return result.out
 
 
@@ -475,10 +475,7 @@ def test_the_real_pipefail_coupling_still_exists(gate):
     )
     words = result.out.split()
     if "BEARING" not in words:
-        gate.log_fail(
-            "renet's gate does not see pipefail in %s: %s"
-            % (streaming.name, result.combined.strip())
-        )
+        gate.log_fail("renet's gate does not see pipefail in %s" % streaming.name, result)
     entrypoints = [w for w in words if w != "BEARING"]
     if not entrypoints:
         gate.log_fail(

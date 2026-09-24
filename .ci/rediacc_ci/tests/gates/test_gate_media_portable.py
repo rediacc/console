@@ -93,7 +93,7 @@ def test_every_seam_answers_on_this_host(gate):
 
         result = probe_portable(gate, "\"${MEDIA_SHA256[@]}\" '%s/f' | cut -d' ' -f1" % d)
         if result.rc != 0:
-            gate.log_fail("the sha256 seam failed on a host that has one: %s" % result.combined)
+            gate.log_fail("the sha256 seam failed on a host that has one", result)
         gate.assert_eq(
             result.combined.strip(),
             ABC_SHA256,
@@ -102,7 +102,7 @@ def test_every_seam_answers_on_this_host(gate):
 
         result = probe_portable(gate, "media_file_size '%s/f'" % d)
         if result.rc != 0:
-            gate.log_fail("media_file_size failed: %s" % result.combined)
+            gate.log_fail("media_file_size failed", result)
         gate.assert_eq(
             result.combined.strip(),
             "4",
@@ -111,7 +111,7 @@ def test_every_seam_answers_on_this_host(gate):
 
         result = probe_portable(gate, "media_mtime '%s/f'" % d)
         if result.rc != 0:
-            gate.log_fail("media_mtime failed: %s" % result.combined)
+            gate.log_fail("media_mtime failed", result)
         mtime = result.combined.strip()
         if not mtime.isdigit():
             gate.log_fail("media_mtime printed '%s', which is not an epoch second" % mtime)
@@ -124,7 +124,7 @@ def test_every_seam_answers_on_this_host(gate):
 
         result = probe_portable(gate, "media_cpu_count")
         if result.rc != 0:
-            gate.log_fail("media_cpu_count failed: %s" % result.combined)
+            gate.log_fail("media_cpu_count failed", result)
         cpus = result.combined.strip()
         if not cpus.isdigit() or int(cpus) < 1:
             gate.log_fail("media_cpu_count printed '%s', which is not a count of processors" % cpus)
@@ -132,7 +132,7 @@ def test_every_seam_answers_on_this_host(gate):
 
         result = probe_portable(gate, "media_avail_mem_gb")
         if result.rc != 0:
-            gate.log_fail("media_avail_mem_gb failed: %s" % result.combined)
+            gate.log_fail("media_avail_mem_gb failed", result)
         mem = result.combined.strip()
         if not mem.isdigit():
             gate.log_fail(
@@ -188,9 +188,7 @@ def test_the_bsd_fallbacks_are_reachable(gate):
 
             result = probe_portable(gate, "\"${MEDIA_SHA256[@]}\" '%s/f' | cut -d' ' -f1" % d)
             if result.rc != 0:
-                gate.log_fail(
-                    "the sha256 seam did not fall through to shasum: %s" % result.combined
-                )
+                gate.log_fail("the sha256 seam did not fall through to shasum", result)
             gate.assert_eq(
                 result.combined.strip(),
                 ABC_SHA256,
@@ -199,9 +197,7 @@ def test_the_bsd_fallbacks_are_reachable(gate):
 
             result = probe_portable(gate, "media_mtime '%s/f'" % d)
             if result.rc != 0:
-                gate.log_fail(
-                    "media_mtime did not fall through to stat -f %%m: %s" % result.combined
-                )
+                gate.log_fail("media_mtime did not fall through to stat -f %m", result)
             gate.assert_eq(
                 result.combined.strip(),
                 "1700000000",
@@ -210,7 +206,7 @@ def test_the_bsd_fallbacks_are_reachable(gate):
 
             result = probe_portable(gate, "media_file_size '%s/f'" % d)
             if result.rc != 0:
-                gate.log_fail("media_file_size did not fall through: %s" % result.combined)
+                gate.log_fail("media_file_size did not fall through", result)
             gate.assert_eq(
                 result.combined.strip(),
                 "4",
@@ -219,9 +215,7 @@ def test_the_bsd_fallbacks_are_reachable(gate):
 
             result = probe_portable(gate, "media_cpu_count")
             if result.rc != 0:
-                gate.log_fail(
-                    "media_cpu_count did not fall through to sysctl: %s" % result.combined
-                )
+                gate.log_fail("media_cpu_count did not fall through to sysctl", result)
             gate.assert_eq(
                 result.combined.strip(),
                 "11",

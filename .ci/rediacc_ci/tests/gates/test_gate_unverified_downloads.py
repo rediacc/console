@@ -27,9 +27,7 @@ def run(gate, env: dict[str, str] | None = None) -> harness.RunResult:
 
 def test_real_tree_passes(gate):
     result = run(gate)
-    gate.assert_exit_code(
-        0, result.rc, "the real tree must pass; every fetch is verified or allowlisted"
-    )
+    gate.assert_exit(0, result, "the real tree must pass; every fetch is verified or allowlisted")
     gate.log_pass("real tree passes")
 
 
@@ -48,9 +46,7 @@ def test_bare_allowlist_entry_is_refused(gate, tmp_path):
     allow = tmp_path / "allow"
     allow.write_text("some-vendor.example.com\n", encoding="utf-8")
     result = run(gate, env={"UNVERIFIED_DOWNLOAD_ALLOWLIST": str(allow)})
-    gate.assert_exit_code(
-        1, result.rc, "an allowlist entry with no BLOCKER reason must fail the gate"
-    )
+    gate.assert_exit(1, result, "an allowlist entry with no BLOCKER reason must fail the gate")
     gate.assert_contains(
         result.combined, "invalid entries", "the error names the malformed allowlist"
     )
@@ -62,8 +58,8 @@ def test_allowlist_is_load_bearing(gate, tmp_path):
     allow = tmp_path / "allow"
     allow.write_text("", encoding="utf-8")
     result = run(gate, env={"UNVERIFIED_DOWNLOAD_ALLOWLIST": str(allow)})
-    gate.assert_exit_code(
-        1, result.rc, "with an empty allowlist the tree's curl|bash fetches must be reported"
+    gate.assert_exit(
+        1, result, "with an empty allowlist the tree's curl|bash fetches must be reported"
     )
     gate.assert_contains(
         result.combined, "unverified remote artifact", "the failure names the class"

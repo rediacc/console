@@ -52,7 +52,7 @@ def test_the_gate_is_green_on_the_real_tree(gate):
         if not subject.is_file():
             gate.log_fail("subject under test is missing: %s" % paths.relative_to_root(subject))
     result = _run()
-    gate.assert_exit_code(0, result.rc, "clean tree (stderr: %s)" % result.err)
+    gate.assert_exit(0, result, "clean tree")
     # The shape line, not just the verdict. A gate whose corpus collapsed to nothing would still print a tick; the numbers are what says it did not.
     gate.assert_contains(result.combined, "harness command entries", "prints its shape")
     gate.assert_contains(result.combined, "probe tool(s)", "and its probe-set size")
@@ -63,7 +63,7 @@ def test_a_removed_hook_command_reds_and_says_shrank(gate):
     gate.log_test("PLANT: delete one REAL hook command from a copy of settings.json")
     with harness.temp_dir() as tmp:
         root = _mirror(tmp)
-        gate.assert_exit_code(0, _run(root).rc, "the untouched copy is green first")
+        gate.assert_exit(0, _run(root), "the untouched copy is green first")
 
         def drop(obj):
             for group in obj["hooks"]["SubagentStop"]:
@@ -71,7 +71,7 @@ def test_a_removed_hook_command_reds_and_says_shrank(gate):
 
         _edit_settings(root, drop)
         result = _run(root)
-        gate.assert_exit_code(1, result.rc, "a cheaper wiring is still a finding")
+        gate.assert_exit(1, result, "a cheaper wiring is still a finding")
         gate.assert_contains(result.combined, "entryCount SHRANK", "names the direction")
         gate.assert_contains(
             result.combined, "repin it with 10", "and hands over the value to paste"
@@ -89,7 +89,7 @@ def test_an_added_hook_command_reds_and_says_grew(gate):
 
         _edit_settings(root, add)
         result = _run(root)
-        gate.assert_exit_code(1, result.rc, "a more expensive wiring is a finding")
+        gate.assert_exit(1, result, "a more expensive wiring is a finding")
         gate.assert_contains(result.combined, "entryCount GREW", "names the direction")
         gate.assert_contains(result.combined, "Bash/fullmatch/total GREW", "and the tool row")
     gate.log_pass("growth reds, per tool as well as in the total")
@@ -107,7 +107,7 @@ def test_a_matcher_no_probe_selects_reds(gate):
 
         _edit_settings(root, add)
         result = _run(root)
-        gate.assert_exit_code(1, result.rc, "an uncounted matcher is a finding")
+        gate.assert_exit(1, result, "an uncounted matcher is a finding")
         gate.assert_contains(result.combined, "selected by no probe tool", "says why")
     gate.log_pass("a matcher whose cost no row carries cannot be added quietly")
 
@@ -118,7 +118,7 @@ def test_an_empty_wiring_is_refused_not_passed(gate):
         root = _mirror(tmp)
         (root / ".claude" / "settings.json").write_text('{"hooks": {}}\n', encoding="utf-8")
         result = _run(root)
-        gate.assert_exit_code(1, result.rc, "zero inputs is a refusal, never a pass")
+        gate.assert_exit(1, result, "zero inputs is a refusal, never a pass")
         gate.assert_contains(result.combined, "ZERO hook commands", "and says so in words")
     gate.log_pass("a wiring the counter cannot see is refused rather than counted as zero")
 
@@ -126,7 +126,7 @@ def test_an_empty_wiring_is_refused_not_passed(gate):
 def test_the_counter_runs_standalone_and_agrees_with_the_pin(gate):
     gate.log_test("the counter is runnable by hand and its JSON matches the pin")
     result = harness.run([sys.executable, str(COUNTER), "--json"], cwd=paths.repo_root())
-    gate.assert_exit_code(0, result.rc, "execcount.py --json (stderr: %s)" % result.err)
+    gate.assert_exit(0, result, "execcount.py --json")
     live = json.loads(result.out)
     pinned = json.loads(BASELINE.read_text(encoding="utf-8"))["measured"]
     # The bare CLI derives its probe set from the matchers, so it measures FEWER tools than the baseline declares. Comparing the intersection is the honest claim: the two implementations agree wherever they overlap. Comparing the whole dict would fail for a reason that is not a disagreement.
@@ -142,7 +142,7 @@ def test_the_counter_runs_standalone_and_agrees_with_the_pin(gate):
 def test_the_selftest_runs_and_is_not_empty(gate):
     gate.log_test("--selftest runs its controls and prints them")
     result = harness.run([sys.executable, str(GATE), "--selftest"], cwd=paths.repo_root())
-    gate.assert_exit_code(0, result.rc, "selftest (stderr: %s)" % result.err)
+    gate.assert_exit(0, result, "selftest")
     passes = [ln for ln in result.combined.splitlines() if "PASS " in ln]
     # A floor, not a count: controls get added. Zero PASS lines with exit 0 is the shape this whole file exists to refuse, and it is what a `--selftest` that silently returned early would print.
     gate.assert_eq(len(passes) >= 12, True, "%d control(s) ran, floor 12" % len(passes))

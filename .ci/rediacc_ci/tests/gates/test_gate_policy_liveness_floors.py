@@ -127,7 +127,7 @@ def test_real_tree_reports_per_probe_numbers(gate):
     gate.log_test("the live tree reports a per-probe census, and the census adds up")
     _require_tools(gate)
     result = harness.run([str(TSX), str(GATE)], cwd=paths.repo_root())
-    gate.assert_exit_code(0, result.rc, "the live tree has no unmet input floor")
+    gate.assert_exit(0, result, "the live tree has no unmet input floor")
     gate.assert_contains(result.out, "Per-probe inputs", "prints the per-probe census")
     gate.assert_contains(result.out, "floor 1", "each row carries the floor it was judged against")
     gate.assert_contains(result.out, "probe(s),", "and a roll-up of probes and entries")
@@ -161,7 +161,7 @@ def test_full_fixture_is_green(gate):
     gate.log_test("the baseline every mutation below is measured against")
     with harness.temp_dir() as base:
         result = run_gate(make_full_fixture(gate, base))
-        gate.assert_exit_code(0, result.rc, "the untouched full-shaped fixture must pass")
+        gate.assert_exit(0, result, "the untouched full-shaped fixture must pass")
         gate.assert_not_contains(result.out, "BELOW FLOOR", "nothing starved in the baseline")
         gate.assert_not_contains(result.out, "MISSING FILE", "nothing missing in the baseline")
         gate.assert_not_contains(
@@ -180,7 +180,7 @@ def test_emptying_one_list_fails(gate):
             encoding="utf-8",
         )
         result = run_gate(root)
-        gate.assert_exit_code(1, result.rc, "an emptied list must fail the gate")
+        gate.assert_exit(1, result, "an emptied list must fail the gate")
         gate.assert_contains(result.out, "BELOW FLOOR", "the census marks the starved probe")
         gate.assert_contains(
             result.out, 'the "deps" probe parsed 0 entr(ies)', "names the probe and the count"
@@ -199,7 +199,7 @@ def test_declared_empty_lists_do_not_fail(gate):
     # Three lists are DELIBERATELY empty in this repo (.actions-upgrade-blocklist, .embed-assets-upgrade-blocklist, .devcontainer-upgrade-blocklist each say so in their own header). The fixture copies them as-is, so this asserts the floors distinguish "allowed to hold nothing" from "went empty". No mutation: the baseline IS the case.
     with harness.temp_dir() as base:
         result = run_gate(make_full_fixture(gate, base))
-        gate.assert_exit_code(0, result.rc, "declared-empty lists are not starvation")
+        gate.assert_exit(0, result, "declared-empty lists are not starvation")
         gate.assert_contains(
             result.out, "empty by design", "and they are labelled as such, not hidden"
         )
@@ -212,7 +212,7 @@ def test_missing_file_fails_in_a_full_checkout(gate):
         root = make_full_fixture(gate, base)
         (root / ".ci" / "policy" / ".cli-i18n-orphan-allowlist").unlink()
         result = run_gate(root)
-        gate.assert_exit_code(1, result.rc, "a probe whose file is not there must fail the gate")
+        gate.assert_exit(1, result, "a probe whose file is not there must fail the gate")
         gate.assert_contains(result.out, "MISSING FILE", "the census marks the missing input")
         gate.assert_contains(
             result.out,
@@ -233,9 +233,7 @@ def test_missing_file_is_silent_in_a_partial_checkout(gate):
         (root / ".ci" / "policy" / ".cli-i18n-orphan-allowlist").unlink()
         shutil.rmtree(root / ".ci" / "scripts" / "quality")
         result = run_gate(root)
-        gate.assert_exit_code(
-            0, result.rc, "a partial root must not be judged for files it never had"
-        )
+        gate.assert_exit(0, result, "a partial root must not be judged for files it never had")
         gate.assert_not_contains(
             result.out, "MISSING FILE", "and says nothing about the missing file"
         )
@@ -247,6 +245,6 @@ def test_undeclared_probe_is_refused(gate):
     _require_tools(gate)
     # Driven through --probe with a name no probe has, which is the nearest reachable proof that the lookup is REQUIRED rather than optional.
     result = harness.run([str(TSX), str(GATE), "--probe", "not-a-probe"], cwd=paths.repo_root())
-    gate.assert_exit_code(2, result.rc, "an unknown probe name is refused")
+    gate.assert_exit(2, result, "an unknown probe name is refused")
     gate.assert_contains(result.combined, "unknown probe", "and named")
     gate.log_pass("an unknown probe name is refused rather than silently running nothing")

@@ -91,13 +91,9 @@ def drive(gate, kind: str, *needles: str) -> None:
         missing = [needle for needle in needles if needle not in result.combined]
         if missing:
             gate.log_fail(
-                "%s (exit %d) never said: %s\n%s"
-                % (
-                    kind,
-                    result.rc,
-                    " ".join("[%s]" % n for n in missing),
-                    "\n".join("        " + line for line in result.combined.splitlines()[:16]),
-                )
+                "%s (exit %d) never said: %s"
+                % (kind, result.rc, " ".join("[%s]" % n for n in missing)),
+                result,
             )
         gate.log_pass("%s (exit %d)" % (kind, result.rc))
     finally:
@@ -165,14 +161,7 @@ def exec_case(gate, label: str, kind: str, want_done: bool, needle: str) -> None
         if after < before:
             problems.append("[commits went %d -> %d]" % (before, after))
         if problems:
-            gate.log_fail(
-                "%s:%s\n%s"
-                % (
-                    label,
-                    " " + " ".join(problems),
-                    "\n".join("        " + line for line in result.combined.splitlines()[:12]),
-                )
-            )
+            gate.log_fail("%s: %s" % (label, " ".join(problems)), result)
         gate.log_pass(label)
     finally:
         fixture_cleanup(directory)

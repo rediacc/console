@@ -59,7 +59,7 @@ def test_named_without_credentials_fails_hard(gate):
     """THE HEADLINE PROPERTY."""
     with harness.temp_dir() as tmp:
         run = select_mode(gate, tmp, "--mode", "named")
-        gate.assert_exit_code(3, run.rc, "named mode with no credentials must fail")
+        gate.assert_exit(3, run, "named mode with no credentials must fail")
         gate.assert_eq(run.out, "", "a failed selection must put NOTHING on stdout")
         # Lowercased in the helper so this catches the real message too, which shouts "FALLING BACK TO QUICK MODE" in capitals.
         gate.assert_not_contains(run.err, "falling back", "named mode must not fall back silently")
@@ -76,7 +76,7 @@ def test_named_half_configured_still_fails(gate):
     """Token present, account id missing is THE DANGEROUS SHAPE: it LOOKS configured to a reader, and a script that only checked the token would proceed into a broken API call and then "recover" into quick mode."""
     with harness.temp_dir() as tmp:
         run = select_mode(gate, tmp, "--mode", "named", env=FAKE_TOKEN)
-        gate.assert_exit_code(3, run.rc, "named mode with only a token must fail")
+        gate.assert_exit(3, run, "named mode with only a token must fail")
         gate.assert_eq(run.out, "", "half-configured named mode must produce no stdout")
         gate.assert_contains(
             run.err, "cloudflare_account_id", "the error must name the missing piece"
@@ -84,7 +84,7 @@ def test_named_half_configured_still_fails(gate):
 
         # And the mirror: account id present, token missing.
         run = select_mode(gate, tmp, "--mode", "named", env=FAKE_ACCOUNT)
-        gate.assert_exit_code(3, run.rc, "named mode with only an account id must fail")
+        gate.assert_exit(3, run, "named mode with only an account id must fail")
         gate.assert_contains(
             run.err, "breakpoint_tunnel_token", "the error must name the missing piece"
         )
@@ -94,7 +94,7 @@ def test_named_half_configured_still_fails(gate):
 def test_named_fully_configured_succeeds(gate):
     with harness.temp_dir() as tmp:
         run = select_mode(gate, tmp, "--mode", "named", env=FAKE_BOTH)
-        gate.assert_exit_code(0, run.rc, "fully configured named mode must succeed: %s" % run.err)
+        gate.assert_exit(0, run, "fully configured named mode must succeed")
         gate.assert_eq(run.out, "named", "stdout must be exactly the word 'named'")
     gate.log_pass("fully configured named mode prints exactly 'named'")
 
@@ -102,7 +102,7 @@ def test_named_fully_configured_succeeds(gate):
 def test_quick_without_credentials(gate):
     with harness.temp_dir() as tmp:
         run = select_mode(gate, tmp, "--mode", "quick")
-        gate.assert_exit_code(0, run.rc, "quick mode needs no credentials")
+        gate.assert_exit(0, run, "quick mode needs no credentials")
         gate.assert_eq(run.out, "quick", "stdout must be exactly the word 'quick'")
     gate.log_pass("quick without credentials prints exactly 'quick'")
 
@@ -110,7 +110,7 @@ def test_quick_without_credentials(gate):
 def test_quick_with_credentials_is_not_upgraded(gate):
     with harness.temp_dir() as tmp:
         run = select_mode(gate, tmp, "--mode", "quick", env=FAKE_BOTH)
-        gate.assert_exit_code(0, run.rc, "an explicit quick request must succeed")
+        gate.assert_exit(0, run, "an explicit quick request must succeed")
         gate.assert_eq(
             run.out, "quick", "credentials being present must not silently upgrade to named"
         )
@@ -125,7 +125,7 @@ def test_default_is_quick_not_auto(gate):
     """No `--mode` at all, with credentials present. If the default were `auto` this would print `named`; the safe default is the one that needs no secrets and creates no account-side state."""
     with harness.temp_dir() as tmp:
         run = select_mode(gate, tmp, env=FAKE_BOTH)
-        gate.assert_exit_code(0, run.rc, "the no-flag default must succeed")
+        gate.assert_exit(0, run, "the no-flag default must succeed")
         gate.assert_eq(run.out, "quick", "the default must be quick, NOT auto")
     gate.log_pass("no --mode flag defaults to quick, not auto")
 
@@ -133,7 +133,7 @@ def test_default_is_quick_not_auto(gate):
 def test_auto_with_credentials_picks_named(gate):
     with harness.temp_dir() as tmp:
         run = select_mode(gate, tmp, "--mode", "auto", env=FAKE_BOTH)
-        gate.assert_exit_code(0, run.rc, "auto with credentials must succeed")
+        gate.assert_exit(0, run, "auto with credentials must succeed")
         gate.assert_eq(run.out, "named", "auto must prefer the authenticated mode when it can")
     gate.log_pass("auto with credentials selects named")
 
@@ -141,7 +141,7 @@ def test_auto_with_credentials_picks_named(gate):
 def test_auto_without_credentials_warns(gate):
     with harness.temp_dir() as tmp:
         run = select_mode(gate, tmp, "--mode", "auto")
-        gate.assert_exit_code(0, run.rc, "auto without credentials must still succeed")
+        gate.assert_exit(0, run, "auto without credentials must still succeed")
         gate.assert_eq(run.out, "quick", "auto must fall through to quick")
         # The warning is the whole difference between auto and a silent downgrade.
         gate.assert_contains(
@@ -157,7 +157,7 @@ def test_repeated_mode_flag_is_last_wins(gate):
     """`parse_args` eval-assigns the same variable name per flag, so repeats overwrite rather than accumulate. Pinned so nobody later writes a script that expects `--mode a --mode b` to mean "a and b" or to be an error."""
     with harness.temp_dir() as tmp:
         run = select_mode(gate, tmp, "--mode", "named", "--mode", "quick", env=FAKE_BOTH)
-        gate.assert_exit_code(0, run.rc, "a repeated flag must not be an error")
+        gate.assert_exit(0, run, "a repeated flag must not be an error")
         gate.assert_eq(run.out, "quick", "repeated flags are LAST-WINS, not accumulate")
 
         # ...and in the other order, so this is a real ordering pin and not a test that would pass on any single-valued behaviour.
@@ -169,7 +169,7 @@ def test_repeated_mode_flag_is_last_wins(gate):
 def test_invalid_mode_rejected(gate):
     with harness.temp_dir() as tmp:
         run = select_mode(gate, tmp, "--mode", "sneaky")
-        gate.assert_exit_code(4, run.rc, "an unknown mode must be rejected")
+        gate.assert_exit(4, run, "an unknown mode must be rejected")
         gate.assert_eq(run.out, "", "a rejected mode must produce no stdout")
         # Listing the valid ones is what turns a typo into a ten-second fix.
         for mode in ("quick", "named", "auto"):
@@ -197,7 +197,7 @@ def test_named_never_falls_back_to_quick(gate):
         # is the load-bearing half: callers do `MODE=$(select-mode.sh ...)`, so a stray
         # "quick" on stdout would be consumed as a successful choice.
         run = select_mode(gate, tmp, "--mode", "named")
-        gate.assert_exit_code(3, run.rc, "an unconfigurable named request must fail, not downgrade")
+        gate.assert_exit(3, run, "an unconfigurable named request must fail, not downgrade")
         gate.assert_eq(
             run.out, "", "a refusal must produce EMPTY stdout, or the caller consumes it as a mode"
         )
@@ -217,7 +217,7 @@ def test_named_never_falls_back_to_quick(gate):
 
         # Same with an interactive session, which is the case that most needs auth.
         run = select_mode(gate, tmp, "--mode", "named", env={"BREAKPOINT_DEBUG_SHELL": "true"})
-        gate.assert_exit_code(3, run.rc, "named + debug-shell must fail rather than downgrade")
+        gate.assert_exit(3, run, "named + debug-shell must fail rather than downgrade")
         gate.assert_eq(run.out, "", "no stdout on refusal")
     gate.log_pass("named mode never downgrades to quick, with or without the removed flag")
 

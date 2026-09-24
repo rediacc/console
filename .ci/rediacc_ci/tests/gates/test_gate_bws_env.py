@@ -112,6 +112,8 @@ def run_load(gate, directory, *names: str, no_token: bool = False) -> str:
         merged = dict(os.environ)
         merged.pop(BOOTSTRAP_CREDENTIAL_ENV, None)
         merged.update(env)
+        # And the token FILE is pointed at a path that does not exist, for the same reason: the operator's real `~/.config/rediacc-console/bws-access-token` is the second place the port looks (PLAN-account-env-to-bws T1).
+        merged[bws_env.BOOTSTRAP_FILE_ENV] = str(directory / "no-such-token-file")
         return harness.run(argv, env=merged, env_replace=True).combined
     env[BOOTSTRAP_CREDENTIAL_ENV] = FIXTURE_CREDENTIAL
     return harness.run(argv, env=env).combined
@@ -168,7 +170,7 @@ def test_the_shim_really_shadows_any_real_bws(gate, tmp_path):
         "`bws` on PATH is not the shim; the cases below would hit the real CLI",
     )
     naked = harness.run(["bash", str(shim / "bws"), "secret", "list", "--output", "json"])
-    gate.assert_exit_code(3, naked.rc, "what PATH resolved to does not behave like the fake")
+    gate.assert_exit(3, naked, "what PATH resolved to does not behave like the fake")
     gate.log_pass("the shim shadows any real bws, so no case below can reach a live store")
 
 
@@ -271,7 +273,7 @@ def test_the_fake_bws_is_load_bearing(gate, tmp_path):
     fixture(tmp_path, BOTH)
     fake = tmp_path / "bin" / "bws"
     naked = harness.run(["bash", str(fake), "secret", "list", "--output", "json"])
-    gate.assert_exit_code(3, naked.rc, "the fake must refuse a caller that drops --color")
+    gate.assert_exit(3, naked, "the fake must refuse a caller that drops --color")
     gate.assert_contains(
         naked.combined, "did not pass --color", "and must say which flag was missing"
     )

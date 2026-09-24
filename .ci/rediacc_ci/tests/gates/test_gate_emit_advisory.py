@@ -126,7 +126,7 @@ def test_emit_returns_zero_even_with_empty_hints(gate):
         "echo 'after-emit'\n" % (EMIT, EMPTY_TABLES),
         env=with_ci(),
     )
-    gate.assert_exit_code(0, result.rc, "emit_advisory does not fail caller under set -e")
+    gate.assert_exit(0, result, "emit_advisory does not fail caller under set -e")
     gate.assert_contains(result.combined, "after-emit", "execution continues past emit_advisory")
     gate.log_pass("emit_advisory returns 0 (set -e safe)")
 
@@ -139,7 +139,7 @@ def test_production_order_keeps_common_logger(gate):
         % (COMMON, BLOCKER_VALIDATOR),
         env=without_ci(),
     )
-    gate.assert_exit_code(0, result.rc, "production-order logging exits clean")
+    gate.assert_exit(0, result, "production-order logging exits clean")
     gate.assert_eq(result.out, "", "stdout stays empty while a gate logs")
     gate.assert_contains(result.err, "x", "log_info reaches stderr, not stdout")
     gate.assert_contains(result.err, "y", "log_warn reaches stderr, not stdout")
@@ -157,7 +157,7 @@ def test_no_escape_bytes_on_stdout_off_tty(gate):
         % (COMMON, BLOCKER_VALIDATOR),
         env=without_ci(),
     )
-    gate.assert_exit_code(0, result.rc, "off-tty logging exits clean")
+    gate.assert_exit(0, result, "off-tty logging exits clean")
     gate.assert_eq(result.out.count("\x1b"), 0, "zero ESC bytes on stdout when stderr is not a tty")
     gate.log_pass("off a tty, stdout carries no colour escapes")
 
@@ -171,7 +171,7 @@ def test_standalone_source_still_defines_logger(gate):
         "log_info x\nlog_success z\nlog_warn y\nlog_error a b\n" % EMIT,
         env=without_ci(),
     )
-    gate.assert_exit_code(0, result.rc, "standalone source defines all four log_* helpers")
+    gate.assert_exit(0, result, "standalone source defines all four log_* helpers")
     gate.assert_contains(result.out, "x", "standalone log_info still writes to stdout")
     gate.assert_contains(result.out, "z", "standalone log_success still writes to stdout")
     gate.assert_contains(result.out, "y", "standalone log_warn still writes to stdout")

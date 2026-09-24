@@ -104,7 +104,7 @@ def run_gate(gate, root, registry: str = "playwright.fixture.config.ts") -> harn
 
 def test_fires_on_dark_only_verb(gate, tmp_path):
     result = run_gate(gate, build_fixture(gate, tmp_path))
-    gate.assert_exit_code(1, result.rc, "gate must fire when a verb is covered only by a dark file")
+    gate.assert_exit(1, result, "gate must fire when a verb is covered only by a dark file")
     gate.assert_contains(result.combined, "dead_verb", "the red list names the uncovered verb")
     gate.log_pass("RED-FIRST: gate fires and names the dark-only verb")
 
@@ -148,7 +148,7 @@ def test_allowlist_silences_dead_verb(gate, tmp_path):
         encoding="utf-8",
     )
     result = run_gate(gate, root)
-    gate.assert_exit_code(0, result.rc, "a BLOCKER-allowlisted uncovered verb should pass")
+    gate.assert_exit(0, result, "a BLOCKER-allowlisted uncovered verb should pass")
     gate.log_pass("allowlist with a valid BLOCKER silences the uncovered verb")
 
 
@@ -156,7 +156,7 @@ def test_missing_blocker_rejected(gate, tmp_path):
     root = build_fixture(gate, tmp_path)
     (root / "allowlist").write_text("dead_verb\n", encoding="utf-8")
     result = run_gate(gate, root)
-    gate.assert_exit_code(1, result.rc, "allowlist entry without a BLOCKER should fail")
+    gate.assert_exit(1, result, "allowlist entry without a BLOCKER should fail")
     gate.assert_contains(result.combined, "BLOCKER", "error demands a BLOCKER reason")
     gate.log_pass("allowlist entry without a BLOCKER is rejected")
 
@@ -170,7 +170,7 @@ def test_stale_allowlist_entry_rejected(gate, tmp_path):
         encoding="utf-8",
     )
     result = run_gate(gate, root)
-    gate.assert_exit_code(1, result.rc, "an allowlisted-but-covered verb should fail as stale")
+    gate.assert_exit(1, result, "an allowlisted-but-covered verb should fail as stale")
     gate.assert_contains(result.combined, "live_verb", "the stale entry is named")
     gate.log_pass("stale allowlist entry (now covered) is rejected")
 
@@ -179,9 +179,7 @@ def test_registry_workflow_drift_rejected(gate, tmp_path):
     root = build_fixture(gate, tmp_path)
     # Registry names a second config that no workflow runs -> drift.
     result = run_gate(gate, root, "playwright.fixture.config.ts,playwright.ghost.config.ts")
-    gate.assert_exit_code(
-        1, result.rc, "a config in the registry that no workflow runs should fail"
-    )
+    gate.assert_exit(1, result, "a config in the registry that no workflow runs should fail")
     gate.assert_contains(
         result.combined, "playwright.ghost.config.ts", "the drift error names the ghost config"
     )

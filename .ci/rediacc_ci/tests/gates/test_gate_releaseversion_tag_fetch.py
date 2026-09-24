@@ -113,18 +113,18 @@ def seed_source_repo(gate, directory, tag: str = "") -> None:
     ):
         result = harness.run([git, "-C", str(directory), *args])
         if result.rc != 0:
-            gate.log_fail("git %s failed: %s" % (" ".join(args), result.combined))
+            gate.log_fail("git %s failed" % " ".join(args), result)
     if tag:
         result = harness.run([git, "-C", str(directory), "tag", tag])
         if result.rc != 0:
-            gate.log_fail("could not tag the fixture: %s" % result.combined)
+            gate.log_fail("could not tag the fixture", result)
 
 
 def init_workdir(gate, directory):
     directory.mkdir(parents=True, exist_ok=True)
     result = harness.run([_git(), "-C", str(directory), "init", "-q"])
     if result.rc != 0:
-        gate.log_fail("could not init the working fixture: %s" % result.combined)
+        gate.log_fail("could not init the working fixture", result)
     return directory
 
 

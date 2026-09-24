@@ -98,7 +98,7 @@ def test_null_author_fails(gate, tmp_path):
     result = run_gate(
         tmp_path, [commit_json("0d6611aaaa", None, "mfbayraktar", "muhammed@rediacc.com")]
     )
-    gate.assert_exit_code(1, result.rc, "a commit GitHub attributes to nobody must fail")
+    gate.assert_exit(1, result, "a commit GitHub attributes to nobody must fail")
     gate.assert_contains(result.combined, "0d6611a", "naming the sha")
     gate.assert_contains(result.combined, "muhammed@rediacc.com", "and the email")
     gate.log_pass("an unattributed author is reported by sha and address")
@@ -111,9 +111,7 @@ def test_attributed_passes(gate, tmp_path):
     result = run_gate(
         tmp_path, [commit_json("1111111aaa", "mfbayraktar", "mfbayraktar", "mfbayraktar@live.com")]
     )
-    gate.assert_exit_code(
-        0, result.rc, "a fully attributed commit must pass, or every PR fails forever"
-    )
+    gate.assert_exit(0, result, "a fully attributed commit must pass, or every PR fails forever")
     gate.assert_contains(result.combined, "all attributed", "and say what it cleared")
     gate.log_pass("CONTROL: an attributed commit passes, so case 1 means something")
 
@@ -133,7 +131,7 @@ def test_bot_passes(gate, tmp_path):
             )
         ],
     )
-    gate.assert_exit_code(0, result.rc, "a bot commit resolves to an account and must pass")
+    gate.assert_exit(0, result, "a bot commit resolves to an account and must pass")
     gate.log_pass("bot commits pass without an exemption")
 
 
@@ -144,9 +142,7 @@ def test_null_committer_fails(gate, tmp_path):
     result = run_gate(
         tmp_path, [commit_json("3333333aaa", "mfbayraktar", None, "mfbayraktar@live.com")]
     )
-    gate.assert_exit_code(
-        1, result.rc, "an unattributed COMMITTER must fail even when the author is fine"
-    )
+    gate.assert_exit(1, result, "an unattributed COMMITTER must fail even when the author is fine")
     # `rc=1` ALONE IS NOT THIS CASE. The gate exits 1 for an unreadable API, a
     # missing token and a failed probe too, so without naming the finding this
     # case passed whenever anything at all went wrong.
@@ -163,7 +159,7 @@ def test_null_committer_fails(gate, tmp_path):
 
 def test_empty_list_refuses(gate, tmp_path):
     result = run_gate(tmp_path, [])
-    gate.assert_exit_code(1, result.rc, "an EMPTY commit list is a failed read, not a clean PR")
+    gate.assert_exit(1, result, "an EMPTY commit list is a failed read, not a clean PR")
     gate.assert_contains(result.combined, "empty", "and say so")
     gate.log_pass("an empty commit list refuses instead of passing vacuously")
 
@@ -174,7 +170,7 @@ def test_gh_failure_refuses(gate, tmp_path):
         [commit_json("4444444aaa", "mfbayraktar", "mfbayraktar", "ok@example.com")],
         gh_rc=1,
     )
-    gate.assert_exit_code(1, result.rc, "a failed gh call must refuse, never report clean")
+    gate.assert_exit(1, result, "a failed gh call must refuse, never report clean")
     gate.assert_contains(result.combined, "Cannot certify", "with the fail-closed wording")
     gate.log_pass("an unreadable API refuses rather than clearing the PR")
 
@@ -186,7 +182,7 @@ def test_short_read_refuses(gate, tmp_path):
         [commit_json("6666666aaa", "mfbayraktar", "mfbayraktar", "ok@example.com")],
         declared=3,
     )
-    gate.assert_exit_code(1, result.rc, "reading 1 of a declared 3 commits cannot clear the PR")
+    gate.assert_exit(1, result, "reading 1 of a declared 3 commits cannot clear the PR")
     gate.assert_contains(result.combined, "read 1 commit(s)", "naming what it actually read")
     gate.assert_contains(result.combined, "the PR reports 3", "and what the PR says it should have")
     gate.log_pass("an incomplete commit list is refused, not judged in part")
@@ -199,9 +195,7 @@ def test_over_the_old_cap_is_judged(gate, tmp_path):
         for i in range(1, 255)
     ]
     result = run_gate(tmp_path, commits)
-    gate.assert_exit_code(
-        0, result.rc, "254 complete commits must be JUDGED; refusing on size is the bug"
-    )
+    gate.assert_exit(0, result, "254 complete commits must be JUDGED; refusing on size is the bug")
     gate.assert_contains(
         result.combined, "254 commit(s), all attributed", "and say how many it cleared"
     )
@@ -216,7 +210,7 @@ def test_over_the_old_cap_still_finds_the_offender(gate, tmp_path):
     ]
     commits.append(commit_json("917d1902dd", None, None, "muhammed@rediacc.com"))
     result = run_gate(tmp_path, commits)
-    gate.assert_exit_code(1, result.rc, "one unattributed commit among 254 must still fail")
+    gate.assert_exit(1, result, "one unattributed commit among 254 must still fail")
     gate.assert_contains(result.combined, "917d190", "naming the sha")
     gate.assert_contains(result.combined, "muhammed@rediacc.com", "and the address")
     gate.log_pass("PLANT: an offender hidden in a 254-commit PR is found")

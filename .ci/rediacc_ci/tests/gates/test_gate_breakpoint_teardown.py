@@ -117,9 +117,7 @@ def test_kills_recorded_pids(gate):
                 gate.log_fail("fixture is broken: a fixture process never started")
 
             run = run_stop(tmp)
-            gate.assert_exit_code(
-                0, run.rc, "teardown with live recorded pids must succeed: %s" % run.out
-            )
+            gate.assert_exit(0, run, "teardown with live recorded pids must succeed")
             if not wait_gone(tmate):
                 gate.log_fail("tmate pid %d survived teardown" % tmate.pid)
             if not wait_gone(origin):
@@ -140,16 +138,12 @@ def test_second_teardown_is_clean(gate):
         try:
             record_pid(state, "cloudflared", proc.pid)
             run = run_stop(tmp, GITHUB_RUN_ID="990011")
-            gate.assert_exit_code(0, run.rc, "first teardown must succeed: %s" % run.out)
+            gate.assert_exit(0, run, "first teardown must succeed")
             if not wait_gone(proc):
                 gate.log_fail("recorded pid %d survived the first teardown" % proc.pid)
 
             run = run_stop(tmp, GITHUB_RUN_ID="990011")
-            gate.assert_exit_code(
-                0,
-                run.rc,
-                "SECOND teardown against clean state must exit 0, not 1: %s" % run.out,
-            )
+            gate.assert_exit(0, run, "SECOND teardown against clean state must exit 0, not 1")
         finally:
             kill_quietly(proc)
     gate.log_pass("a second teardown over already-clean state exits 0 (sweeper re-run is normal)")
@@ -161,7 +155,7 @@ def test_no_state_dir_at_all(gate):
         if state.is_dir():
             gate.log_fail("fixture is broken: the state dir should not exist yet")
         run = run_stop(tmp)
-        gate.assert_exit_code(0, run.rc, "teardown with no state at all must exit 0: %s" % run.out)
+        gate.assert_exit(0, run, "teardown with no state at all must exit 0")
         gate.assert_contains(
             run.out, "nothing to stop", "it should say why there was nothing to do"
         )
@@ -181,7 +175,7 @@ def test_stale_pidfile_is_not_an_error(gate):
         record_pid(state, "cloudflared", dead.pid)
 
         run = run_stop(tmp)
-        gate.assert_exit_code(0, run.rc, "a stale pidfile must not fail teardown: %s" % run.out)
+        gate.assert_exit(0, run, "a stale pidfile must not fail teardown")
         gate.assert_not_contains(
             run.out, "No such process", "a stale pid must not leak a kill(1) error"
         )
@@ -200,7 +194,7 @@ def test_does_not_touch_unrecorded_processes(gate):
         try:
             record_pid(state, "tmate", mine.pid)
             run = run_stop(tmp)
-            gate.assert_exit_code(0, run.rc, "teardown must succeed: %s" % run.out)
+            gate.assert_exit(0, run, "teardown must succeed")
             if not wait_gone(mine):
                 gate.log_fail("recorded pid %d survived teardown" % mine.pid)
             if not alive(theirs):

@@ -235,7 +235,7 @@ def test_fires_on_unused_function(gate):
         with (t / ".ci/scripts/lib/helpers.sh").open("a", encoding="utf-8") as fh:
             fh.write("orphan_fn() {\n    echo dead\n}\n")
         result = run_gate(t)
-        gate.assert_exit_code(1, result.rc, "an uncalled function must fail the gate")
+        gate.assert_exit(1, result, "an uncalled function must fail the gate")
         gate.assert_contains(result.combined, "orphan_fn", "names the dead function")
         gate.assert_contains(result.combined, "helpers.sh:", "cites file:line")
     gate.log_pass("fires on an unused shell function")
@@ -245,7 +245,7 @@ def test_no_false_positive_on_cross_file_call(gate):
     with harness.temp_dir() as t:
         make_fixture(t)
         result = run_gate(t)
-        gate.assert_exit_code(0, result.rc, "a function called from another file is not dead")
+        gate.assert_exit(0, result, "a function called from another file is not dead")
         gate.assert_not_contains(result.combined, "live_helper", "cross-file call is recognised")
     gate.log_pass("does not condemn a function called from another file")
 
@@ -257,7 +257,7 @@ def test_fires_on_orphan_file(gate):
             "#!/bin/bash\necho nobody-calls-me\n", encoding="utf-8"
         )
         result = run_gate(t)
-        gate.assert_exit_code(1, result.rc, "an unreferenced script must fail the gate")
+        gate.assert_exit(1, result, "an unreferenced script must fail the gate")
         gate.assert_contains(result.combined, "orphan-script.sh", "names the orphan file")
     gate.log_pass("fires on an orphaned shell script")
 
@@ -275,7 +275,7 @@ def test_glob_root_exempts_a_directory(gate):
             "individually\nglob:scripts/globbed/\n",
         )
         result = run_gate(t)
-        gate.assert_exit_code(0, result.rc, "a glob-discovered file must not be reported")
+        gate.assert_exit(0, result, "a glob-discovered file must not be reported")
         gate.assert_not_contains(
             result.combined, "test-thing.sh", "glob root exempts the directory"
         )
@@ -293,9 +293,7 @@ def test_dispatch_prefix_exempts_functions(gate):
             "exist for these\ndispatch:phase_\n",
         )
         result = run_gate(t)
-        gate.assert_exit_code(
-            0, result.rc, "a dynamically dispatched function must not be reported"
-        )
+        gate.assert_exit(0, result, "a dynamically dispatched function must not be reported")
         gate.assert_not_contains(
             result.combined, "phase_alpha", "dispatch prefix exempts the function"
         )
@@ -314,7 +312,7 @@ def test_manual_entry_exempts_a_file(gate):
             "needed, never from CI\nmanual:scripts/manual-tool.sh\n",
         )
         result = run_gate(t)
-        gate.assert_exit_code(0, result.rc, "an allowlisted manual entrypoint must not be reported")
+        gate.assert_exit(0, result, "an allowlisted manual entrypoint must not be reported")
         gate.assert_not_contains(
             result.combined, "manual-tool.sh:", "manual entry exempts the script"
         )
@@ -326,7 +324,7 @@ def test_rejects_low_effort_blocker(gate):
         make_fixture(t)
         allowlist(t, "# BLOCKER: tbd\nglob:scripts/\n")
         result = run_gate(t)
-        gate.assert_exit_code(1, result.rc, "a low-effort BLOCKER must be rejected")
+        gate.assert_exit(1, result, "a low-effort BLOCKER must be rejected")
         gate.assert_contains(
             result.combined, "BLOCKER validation failed", "shared validator rejects it"
         )
@@ -342,7 +340,7 @@ def test_rejects_unknown_entry_kind(gate):
             "silently ignored\nscripts/whatever.sh\n",
         )
         result = run_gate(t)
-        gate.assert_exit_code(1, result.rc, "an entry with no kind prefix must fail")
+        gate.assert_exit(1, result, "an entry with no kind prefix must fail")
         gate.assert_contains(result.combined, "must start with", "explains the required prefixes")
     gate.log_pass("entry without glob:/dispatch:/manual: prefix is rejected")
 
@@ -351,9 +349,7 @@ def test_empty_tree_is_vacuous(gate):
     """ANTI-VACUITY, driven through the real detector: a scan that saw no input must REFUSE rather than report the cleanest run in its history."""
     with harness.temp_dir() as t:
         result = run_gate(t)
-        gate.assert_exit_code(
-            1, result.rc, "a tree with no shell files must fail, not pass vacuously"
-        )
+        gate.assert_exit(1, result, "a tree with no shell files must fail, not pass vacuously")
         gate.assert_contains(result.combined, "ZERO shell files", "says the gate is blind")
     gate.log_pass("empty tree fails as vacuous")
 

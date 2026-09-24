@@ -56,7 +56,7 @@ def require_subject(gate) -> str:
 def run_validator(gate, *args: str) -> harness.RunResult:
     """`npx tsx scripts/gates/check-knip-blockers.ts [...]`, from the repo root.
 
-    The twin captures `2>&1` and asserts on the merged text, so callers read `.combined` for the same reason. It matters here beyond fidelity: npm prints an `Unknown project config "minimum-release-age"` warning to stderr on every `npx` invocation in this repo, so a port reading only `.out` would be fine and a port reading only `.err` would be matching npm's noise.
+    The twin captures `2>&1` and asserts on the merged text, so callers read `.combined` for the same reason. It matters here beyond fidelity: npm writes its own warnings to stderr (until `minimum-release-age` left `.npmrc` on 2026-09-24, every `npx` call here printed an `Unknown project config` warning), so a port reading only `.out` would be fine and a port reading only `.err` would be matching npm's noise.
     """
     npx = require_subject(gate)
     return harness.run([npx, "tsx", SUBJECT_REL, *args], cwd=paths.repo_root())
@@ -95,11 +95,7 @@ def test_accepts_real_config(gate):
     if not REAL_CONFIG.is_file():
         gate.log_fail("knip.jsonc missing at repo root")
     result = run_validator(gate)
-    gate.assert_exit_code(
-        0,
-        result.rc,
-        "real knip.jsonc should pass BLOCKER validation (output: %s)" % result.combined,
-    )
+    gate.assert_exit(0, result, "real knip.jsonc should pass BLOCKER validation")
     gate.log_pass("real knip.jsonc passes validation")
 
 
@@ -115,7 +111,7 @@ def test_accepts_group_blocker(gate):
   ]
 }""",
     )
-    gate.assert_exit_code(0, result.rc, "grouped BLOCKER should cover following entries")
+    gate.assert_exit(0, result, "grouped BLOCKER should cover following entries")
     gate.log_pass("group BLOCKER covers multiple entries")
 
 
@@ -129,7 +125,7 @@ def test_rejects_missing_blocker(gate):
   ]
 }""",
     )
-    gate.assert_exit_code(1, result.rc, "entry without BLOCKER should fail")
+    gate.assert_exit(1, result, "entry without BLOCKER should fail")
     gate.assert_contains(result.combined, "missing a", "error message names the problem")
     gate.log_pass("missing BLOCKER is rejected")
 
@@ -145,7 +141,7 @@ def test_rejects_low_effort_blocker(gate):
   ]
 }""",
     )
-    gate.assert_exit_code(1, result.rc, "low-effort BLOCKER should fail")
+    gate.assert_exit(1, result, "low-effort BLOCKER should fail")
     gate.assert_contains(
         result.combined, "low-effort placeholder", "error message identifies the issue"
     )
@@ -165,7 +161,7 @@ def test_blank_line_resets_blocker(gate):
   ]
 }""",
     )
-    gate.assert_exit_code(1, result.rc, "entry after blank line should not inherit BLOCKER")
+    gate.assert_exit(1, result, "entry after blank line should not inherit BLOCKER")
     gate.assert_contains(result.combined, "xterm", "the uncovered entry is named")
     gate.log_pass("blank line resets BLOCKER coverage")
 
@@ -189,7 +185,7 @@ def test_entry_project_exempt(gate):
   }
 }""",
     )
-    gate.assert_exit_code(0, result.rc, "entry/project globs are configuration, not suppressions")
+    gate.assert_exit(0, result, "entry/project globs are configuration, not suppressions")
     gate.log_pass("entry/project arrays are exempt")
 
 
@@ -203,7 +199,7 @@ def test_the_real_config_declares_a_non_trivial_corpus(gate):
     if not REAL_CONFIG.is_file():
         gate.log_fail("knip.jsonc missing at repo root")
     result = run_validator(gate)
-    gate.assert_exit_code(0, result.rc, "the real config must pass before its shape means anything")
+    gate.assert_exit(0, result, "the real config must pass before its shape means anything")
     count = validated_count(gate, result.combined)
     if count < CORPUS_FLOOR:
         gate.log_fail(

@@ -130,7 +130,7 @@ def test_fixture_keys_are_corpus_derived(gate):
 def test_passes_when_current(gate, tmp_path):
     require_submodule(gate)
     result = run_gate(tmp_path, upstream_map(gate))
-    gate.assert_exit_code(0, result.rc, "nothing behind upstream should pass")
+    gate.assert_exit(0, result, "nothing behind upstream should pass")
     gate.log_pass("current pins pass")
 
 
@@ -138,7 +138,7 @@ def test_fires_when_stale(gate, tmp_path):
     require_submodule(gate)
     stale = upstream_map(gate, k3s={"version": "9999.0.0", "publishedAt": "2020-01-01T00:00:00Z"})
     result = run_gate(tmp_path, stale)
-    gate.assert_exit_code(1, result.rc, "a pin behind upstream should fail")
+    gate.assert_exit(1, result, "a pin behind upstream should fail")
     gate.assert_contains(result.combined, "k3s", "error names the stale component")
     gate.assert_contains(result.combined, "--upgrade", "red output gives the --upgrade fix")
     gate.log_pass("stale pin fires")
@@ -152,9 +152,7 @@ def test_defers_fresh_release(gate, tmp_path):
         k3s={"version": "9999.0.0", "publishedAt": recent.strftime("%Y-%m-%dT%H:%M:%SZ")},
     )
     result = run_gate(tmp_path, fresh)
-    gate.assert_exit_code(
-        0, result.rc, "a just-released upstream version should be deferred, not failed"
-    )
+    gate.assert_exit(0, result, "a just-released upstream version should be deferred, not failed")
     gate.assert_contains(
         result.combined, "deferred", "fresh release is reported as deferred (soak)"
     )
@@ -164,7 +162,7 @@ def test_defers_fresh_release(gate, tmp_path):
 def test_fails_soft_when_uncheckable(gate, tmp_path):
     require_submodule(gate)
     result = run_gate(tmp_path, {})
-    gate.assert_exit_code(0, result.rc, "sources that cannot be checked must not fail the build")
+    gate.assert_exit(0, result, "sources that cannot be checked must not fail the build")
     gate.log_pass("uncheckable sources fail soft")
 
 
@@ -172,9 +170,7 @@ def test_blocklist_rejects_missing_reason(gate, tmp_path):
     """The blocklist is a BLOCKER-gated suppression list; a bare entry with no substantive reason must fail the gate, not silently hold the pin."""
     require_submodule(gate)
     result = run_gate(tmp_path, upstream_map(gate), blocklist="criu\n")
-    gate.assert_exit_code(
-        1, result.rc, "a blocklist entry lacking a BLOCKER reason must fail the gate"
-    )
+    gate.assert_exit(1, result, "a blocklist entry lacking a BLOCKER reason must fail the gate")
     gate.assert_contains(result.combined, "invalid entries", "error names the malformed blocklist")
     gate.log_pass("blocklist entry without a BLOCKER reason fires")
 
@@ -187,7 +183,7 @@ def test_blocklist_accepts_valid_reason(gate, tmp_path):
         "fixed\ncriu\n"
     )
     result = run_gate(tmp_path, upstream_map(gate), blocklist=good)
-    gate.assert_exit_code(
-        0, result.rc, "a blocklist entry with a substantive BLOCKER reason must be accepted"
+    gate.assert_exit(
+        0, result, "a blocklist entry with a substantive BLOCKER reason must be accepted"
     )
     gate.log_pass("well-formed blocklist entry is accepted")

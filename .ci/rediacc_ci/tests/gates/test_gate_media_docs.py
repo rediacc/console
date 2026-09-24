@@ -211,7 +211,7 @@ def test_the_coverage_probe_still_measures_something(gate):
     # ONE fast test rather than the whole set: this is a gate, and a full probe run drives every media gate test. What is under test is the instrument, not the number.
     result = harness.run([str(COVERAGE), "--only", "r2"], timeout=600)
     if result.rc != 0:
-        gate.log_fail("the coverage probe failed to run: %s" % result.combined)
+        gate.log_fail("the coverage probe failed to run", result)
     gate.assert_contains(
         result.combined, "r2.sh", "the probe must report the module the measured test exercises"
     )
@@ -412,7 +412,7 @@ def test_the_commit_citation_scan_can_fail(gate, tmp_path):
 def test_no_media_module_is_without_a_test(gate):
     result = harness.run([str(COVERAGE), "--modules-without-tests"], timeout=600)
     if result.rc != 0:
-        gate.log_fail("a .ci/media module has no gate test naming it:\n%s" % result.combined)
+        gate.log_fail("a .ci/media module has no gate test naming it", result)
     gate.assert_contains(
         result.combined,
         "named in the code of at least one media gate test",
@@ -449,7 +449,7 @@ def test_the_untested_module_report_can_fail(gate, tmp_path):
         )
 
     result = probe(mods, gates)
-    gate.assert_exit_code(1, result.rc, "a module no test names must make the probe exit non-zero")
+    gate.assert_exit(1, result, "a module no test names must make the probe exit non-zero")
     gate.assert_contains(
         result.combined,
         "lonely.sh",
@@ -466,17 +466,11 @@ def test_the_untested_module_report_can_fail(gate, tmp_path):
         encoding="utf-8",
     )
     result = probe(mods, gates)
-    gate.assert_exit_code(
-        0,
-        result.rc,
-        "with every module named in code the probe must pass: %s" % result.combined,
-    )
+    gate.assert_exit(0, result, "with every module named in code the probe must pass")
 
     # AND THE VACUOUS CORPUS, which is the failure this whole check guards against elsewhere: an empty module list reports nothing wrong and looks identical to a folder in which everything is tested.
     result = probe(empty, gates)
-    gate.assert_exit_code(
-        1, result.rc, "an empty module folder must be refused, not reported as clean"
-    )
+    gate.assert_exit(1, result, "an empty module folder must be refused, not reported as clean")
     gate.assert_contains(
         result.combined, "no subject modules", "the refusal must say the corpus was empty"
     )

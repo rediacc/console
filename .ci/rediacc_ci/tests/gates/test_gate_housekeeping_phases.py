@@ -283,7 +283,7 @@ def test_drift_fails_the_run(gate, tmp_path):
     world.r2_has_version("v1.2.27")
     world.r2_has_sentinel("v1.2.27")
     world.run()
-    gate.assert_exit_code(1, world.rc, "release-state drift must fail the housekeeping run")
+    gate.assert_exit(1, world, "release-state drift must fail the housekeeping run")
     gate.assert_contains(
         world.out,
         "drift: cli/v1.2.27/.released exists but git tag v1.2.27 missing",
@@ -305,7 +305,7 @@ def test_no_drift_passes_cleanly(gate, tmp_path):
     world.r2_has_sentinel("v1.2.27")
     world.git_has_tag("v1.2.27")
     world.run()
-    gate.assert_exit_code(0, world.rc, "a committed release is not drift")
+    gate.assert_exit(0, world, "a committed release is not drift")
     gate.assert_not_contains(world.out, "::error title=", "and emits no error annotation")
     gate.assert_not_contains(world.out, "Housekeeping FAILED", "and does not report failure")
     gate.log_pass("CONTROL: sentinel AND tag => exit 0, no annotation")
@@ -317,7 +317,7 @@ def test_drift_does_not_skip_phase_8f(gate, tmp_path):
     world.r2_has_version("v1.2.27")
     world.r2_has_sentinel("v1.2.27")
     world.run()
-    gate.assert_exit_code(1, world.rc, "the run still fails")
+    gate.assert_exit(1, world, "the run still fails")
     gate.assert_contains(
         world.out,
         "8f: channel artifact retention",
@@ -345,7 +345,7 @@ def test_drift_does_not_skip_phases_9_to_12(gate, tmp_path):
     world.r2_has_version("v1.2.27")
     world.r2_has_sentinel("v1.2.27")
     world.run()
-    gate.assert_exit_code(1, world.rc, "the drift still fails the run at the very end")
+    gate.assert_exit(1, world, "the drift still fails the run at the very end")
     gate.assert_contains(world.out, "Phase 9: Cleaning up stale branches", "Phase 9 ran")
     gate.assert_contains(world.out, "Phase 10: Cleaning up completed workflow runs", "Phase 10 ran")
     gate.assert_contains(world.out, "Phase 11", "Phase 11 ran")
@@ -386,7 +386,7 @@ def test_a_stale_branch_is_deleted(gate, tmp_path):
     world = make_world(gate, tmp_path)
     world.branch("feature/old", 40)
     world.run()
-    gate.assert_exit_code(0, world.rc, "a clean sweep exits 0")
+    gate.assert_exit(0, world, "a clean sweep exits 0")
     gate.assert_contains(
         world.gh_calls(),
         "DELETE repos/rediacc/console/git/refs/heads/feature/old",
@@ -472,7 +472,7 @@ def test_dry_run_deletes_nothing_and_says_so(gate, tmp_path):
     world = make_world(gate, tmp_path)
     world.branch("feature/old", 40)
     world.run("--dry-run")
-    gate.assert_exit_code(0, world.rc, "a dry run exits 0")
+    gate.assert_exit(0, world, "a dry run exits 0")
     gate.assert_contains(
         world.out, "[DRY-RUN] Would delete feature/old", "it says what it would delete"
     )
@@ -527,7 +527,7 @@ def test_a_failed_delete_fails_the_run(gate, tmp_path):
     world = make_world(gate, tmp_path)
     world.branch("feature/old", 40)
     world.run(env={"GH_DELETE_FAIL": "1"})
-    gate.assert_exit_code(1, world.rc, "a failed branch delete must fail the run")
+    gate.assert_exit(1, world, "a failed branch delete must fail the run")
     gate.assert_contains(
         world.out, "::error title=Stale-branch delete failed::", "as a GHA annotation"
     )
@@ -537,7 +537,7 @@ def test_a_failed_delete_fails_the_run(gate, tmp_path):
     world.setup()
     world.branch("feature/old", 40)
     world.run()
-    gate.assert_exit_code(0, world.rc, "CONTROL: a succeeding delete exits 0")
+    gate.assert_exit(0, world, "CONTROL: a succeeding delete exits 0")
     gate.assert_not_contains(
         world.out,
         "::error title=Stale-branch delete failed::",

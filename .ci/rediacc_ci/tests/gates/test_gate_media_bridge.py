@@ -134,7 +134,7 @@ def test_a_planted_mutation_is_visible_to_the_behaviour_cases(gate, tmp_path):
     with harness.fake_bin("+grep +cut +uname"):
         result = run_bridge(staged, 'echo "w1=$(_worker_ip 1)"', module_dir=mutant)
     if result.rc != 0:
-        gate.log_fail("the mutated copy did not run at all (output: %s)" % result.combined)
+        gate.log_fail("the mutated copy did not run at all", result)
     media_verify.media_assert_mutation_swapped(
         gate, result.combined, "w1=10.9.8.21", "w1=10.9.8.22", "worker address"
     )
@@ -149,9 +149,7 @@ def test_run_sh_still_reaches_this_module(gate, tmp_path):
     with harness.fake_bin("+uname +dirname"):
         result = media_verify_ext.run(repo, "run.sh", "provision", "start", "--basic")
     if result.rc != 0:
-        gate.log_fail(
-            "./run.sh provision start failed in the sandbox: %s" % result.combined.strip()
-        )
+        gate.log_fail("./run.sh provision start failed in the sandbox", result)
     gate.assert_eq(
         result.combined.strip(),
         "MEDIA_CHAIN_REACHED:provision_start:--basic",
@@ -197,7 +195,7 @@ def test_address_resolution_reads_state_then_falls_back(gate, tmp_path):
     with harness.fake_bin("+grep +cut +uname"):
         staged_run = run_bridge(staged, probe)
     if staged_run.rc != 0:
-        gate.log_fail("IP resolution failed (output: %s)" % staged_run.combined)
+        gate.log_fail("IP resolution failed", staged_run)
     gate.assert_contains(
         staged_run.combined, "bridge=10.9.8.1", "the bridge IP comes from .provision-state"
     )
@@ -211,7 +209,7 @@ def test_address_resolution_reads_state_then_falls_back(gate, tmp_path):
     with harness.fake_bin("+grep +cut +uname"):
         bare_run = run_bridge(bare, probe)
     if bare_run.rc != 0:
-        gate.log_fail("IP resolution failed (output: %s)" % bare_run.combined)
+        gate.log_fail("IP resolution failed", bare_run)
     gate.assert_contains(
         bare_run.combined,
         "bridge=192.168.111.1",
@@ -236,7 +234,7 @@ def test_the_ssh_and_rsync_wrappers_build_the_right_command(gate, tmp_path):
     with harness.fake_bin("ssh +grep +cut +uname") as fake:
         result = run_bridge(staged, "_bridge_ssh whoami")
         if result.rc != 0:
-            gate.log_fail("the ssh call failed (output: %s)" % result.combined)
+            gate.log_fail("the ssh call failed", result)
         call = fake.record("ssh")
     gate.assert_contains(
         call,
@@ -259,7 +257,7 @@ def test_the_ssh_and_rsync_wrappers_build_the_right_command(gate, tmp_path):
     with harness.fake_bin("rsync ssh +grep +cut +uname") as fake:
         result = run_bridge(staged, "_bridge_rsync /src/ host:/dst/")
         if result.rc != 0:
-            gate.log_fail("the rsync call failed (output: %s)" % result.combined)
+            gate.log_fail("the rsync call failed", result)
         call = fake.record("rsync")
     gate.assert_contains(
         call, "-e ssh -F %s" % config, "rsync tunnels over the SAME generated config"
@@ -285,7 +283,7 @@ def test_provisioning_is_a_thin_wrapper_over_rdc_ops(gate, tmp_path):
         for code in ("provision_start --basic", "provision_stop", "provision_status"):
             result = run_bridge(root, code)
             if result.rc != 0:
-                gate.log_fail("%s failed (output: %s)" % (code, result.combined))
+                gate.log_fail("%s failed" % code, result)
     recorded = calls.read_text(encoding="utf-8")
     gate.assert_contains(recorded, "ops up --basic", "start forwards its arguments to rdc ops up")
     gate.assert_contains(recorded, "ops down", "stop is rdc ops down")

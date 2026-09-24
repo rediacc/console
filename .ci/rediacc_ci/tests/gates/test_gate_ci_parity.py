@@ -152,9 +152,7 @@ def test_declared_step_that_really_runs_it_passes(gate):
         assert_manifest_is_json(gate, MANIFEST_ALPHA)
         manifest(d, MANIFEST_ALPHA)
         result = run_gate(d)
-        gate.assert_exit_code(
-            0, result.rc, "a manifest gate whose declared step really runs it must pass"
-        )
+        gate.assert_exit(0, result, "a manifest gate whose declared step really runs it must pass")
         gate.assert_contains(
             result.combined, "agree in both directions", "reports the clean verdict"
         )
@@ -177,7 +175,7 @@ def test_chain_only_gate_fails(gate):
             '"job":"lane","step":"Beta"}}]',
         )
         result = run_gate(d)
-        gate.assert_exit_code(1, result.rc, "a gate no workflow step runs must fail")
+        gate.assert_exit(1, result, "a gate no workflow step runs must fail")
         gate.assert_contains(result.combined, "check:ci-beta", "names the chain-only gate")
         gate.assert_contains(result.combined, "R3", "reports it in the local-only direction")
     gate.log_pass("a gate that runs locally and in no workflow step fails (the #549 control)")
@@ -199,9 +197,7 @@ def test_step_name_is_not_an_invocation(gate):
             '"job":"lane","step":"npm run check:ci-beta"}}]',
         )
         result = run_gate(d)
-        gate.assert_exit_code(
-            1, result.rc, "a step whose NAME names the gate must not count as coverage"
-        )
+        gate.assert_exit(1, result, "a step whose NAME names the gate must not count as coverage")
         gate.assert_contains(result.combined, "check:ci-beta", "still reports the uncovered gate")
         gate.assert_contains(
             result.combined, "runs something else", "says the pointed-at step runs something else"
@@ -214,7 +210,7 @@ def test_npm_run_ci_in_a_run_block_is_a_tautology(gate):
         scaffold(d, "      - name: Everything\n        run: npm run ci")
         manifest(d, MANIFEST_ALPHA)
         result = run_gate(d)
-        gate.assert_exit_code(1, result.rc, "npm run ci inside the surface must fail")
+        gate.assert_exit(1, result, "npm run ci inside the surface must fail")
         gate.assert_contains(result.combined, "tautology", "reports it as a tautology")
         gate.assert_contains(
             result.combined, "vacuous", "explains that it makes every assertion vacuous"
@@ -235,7 +231,7 @@ def test_ci_only_gate_fails(gate):
         )
         manifest(d, MANIFEST_ALPHA)
         result = run_gate(d)
-        gate.assert_exit_code(1, result.rc, "a CI-run shell gate with no manifest entry must fail")
+        gate.assert_exit(1, result, "a CI-run shell gate with no manifest entry must fail")
         gate.assert_contains(result.combined, "check-orphan.sh", "names the CI-only gate")
         gate.assert_contains(result.combined, "R2", "reports it in the ci-only direction")
     gate.log_pass("a shell gate CI runs with no manifest entry fails")
@@ -253,7 +249,7 @@ def test_defined_gate_absent_from_the_manifest_fails(gate):
             '"job":"lane","step":"Alpha"}}]',
         )
         result = run_gate(d)
-        gate.assert_exit_code(1, result.rc, "a defined-but-unlisted check:ci-* key must fail")
+        gate.assert_exit(1, result, "a defined-but-unlisted check:ci-* key must fail")
         gate.assert_contains(result.combined, "check:ci-alpha", "names the inert gate")
         gate.assert_contains(result.combined, "R1", "reports it as the defined-but-never-run break")
     gate.log_pass("a check:ci-* key absent from the manifest fails")
@@ -279,8 +275,8 @@ def test_aggregator_transitivity(gate):
             '  "leaves":["scripts/check-beta.ts"],\n  %s}]' % (local_only, local_only),
         )
         result = run_gate(d)
-        gate.assert_exit_code(
-            0, result.rc, "a gate reached only through an aggregator must count as covered"
+        gate.assert_exit(
+            0, result, "a gate reached only through an aggregator must count as covered"
         )
     gate.log_pass("coverage through an aggregator resolves transitively")
 
@@ -302,9 +298,7 @@ def test_workspace_scoping(gate):
             '"job":"lane","step":"CLI units"}}]',
         )
         result = run_gate(d)
-        gate.assert_exit_code(
-            1, result.rc, "the declared leaves must not silently match the root manifest"
-        )
+        gate.assert_exit(1, result, "the declared leaves must not silently match the root manifest")
         gate.assert_contains(
             result.combined, "vitest", "the workspace script resolved to its real leaf"
         )
@@ -327,7 +321,7 @@ def test_manifest_rot_is_reported(gate):
             '"job":"ghost-lane","step":"Alpha"}}]',
         )
         result = run_gate(d)
-        gate.assert_exit_code(1, result.rc, "a pointer naming a job that does not exist must fail")
+        gate.assert_exit(1, result, "a pointer naming a job that does not exist must fail")
         gate.assert_contains(result.combined, "ghost-lane", "names the job that is not there")
     gate.log_pass("a stale ci pointer is reported rather than trusted")
 
@@ -341,9 +335,7 @@ def test_exemption_clears_a_finding(gate):
         manifest(d, MANIFEST_ALPHA)
         exempt(d, "%s\nci-only  .ci/scripts/quality/check-orphan.sh\n" % GOOD_BLOCKER)
         result = run_gate(d)
-        gate.assert_exit_code(
-            0, result.rc, "a direction-tagged BLOCKER exemption must clear the finding"
-        )
+        gate.assert_exit(0, result, "a direction-tagged BLOCKER exemption must clear the finding")
     gate.log_pass("a valid direction-tagged exemption silences a finding")
 
 
@@ -357,9 +349,7 @@ def test_low_effort_blocker_is_rejected(gate):
         manifest(d, MANIFEST_ALPHA)
         exempt(d, "# BLOCKER: tbd\nci-only  .ci/scripts/quality/check-orphan.sh\n")
         result = run_gate(d)
-        gate.assert_exit_code(
-            1, result.rc, "a low-effort BLOCKER must be rejected by the shared validator"
-        )
+        gate.assert_exit(1, result, "a low-effort BLOCKER must be rejected by the shared validator")
         gate.assert_contains(
             result.combined, "BLOCKER validation failed", "names the validator failure"
         )
@@ -376,7 +366,7 @@ def test_missing_direction_tag_is_rejected(gate):
         manifest(d, MANIFEST_ALPHA)
         exempt(d, "%s\n.ci/scripts/quality/check-orphan.sh\n" % GOOD_BLOCKER)
         result = run_gate(d)
-        gate.assert_exit_code(1, result.rc, "an exemption with no direction must be rejected")
+        gate.assert_exit(1, result, "an exemption with no direction must be rejected")
         gate.assert_contains(result.combined, "ci-only", "tells the author which directions exist")
     gate.log_pass("an exemption without a direction tag is rejected")
 
@@ -390,8 +380,8 @@ def test_path_in_a_yaml_comment_is_not_an_invocation(gate):
         )
         manifest(d, MANIFEST_ALPHA)
         result = run_gate(d)
-        gate.assert_exit_code(
-            0, result.rc, "a script path inside a YAML comment must not count as an invocation"
+        gate.assert_exit(
+            0, result, "a script path inside a YAML comment must not count as an invocation"
         )
     gate.log_pass("a path mentioned in a comment is not treated as a gate invocation")
 
@@ -406,7 +396,7 @@ def test_non_gate_scripts_are_not_swept_in(gate):
         )
         manifest(d, MANIFEST_ALPHA)
         result = run_gate(d)
-        gate.assert_exit_code(0, result.rc, "deploy/build helpers must not be treated as gates")
+        gate.assert_exit(0, result, "deploy/build helpers must not be treated as gates")
     gate.log_pass("only quality/security check-*.sh and test/test-*.sh count as gates")
 
 
@@ -420,9 +410,7 @@ def test_test_dir_gates_are_swept_in(gate):
         )
         manifest(d, MANIFEST_ALPHA)
         result = run_gate(d)
-        gate.assert_exit_code(
-            1, result.rc, "a .ci/scripts/test/test-*.sh gate CI runs must be swept in"
-        )
+        gate.assert_exit(1, result, "a .ci/scripts/test/test-*.sh gate CI runs must be swept in")
         gate.assert_contains(result.combined, "test-write-once-guard.sh", "names the test-dir gate")
     gate.log_pass("a .ci/scripts/test/test-*.sh gate counts as gate-shaped (F3)")
 
@@ -437,7 +425,7 @@ def test_ported_python_gates_are_swept_in(gate):
         )
         manifest(d, MANIFEST_ALPHA)
         result = run_gate(d)
-        gate.assert_exit_code(1, result.rc, "a ported check_*.py gate CI runs must be swept in")
+        gate.assert_exit(1, result, "a ported check_*.py gate CI runs must be swept in")
         gate.assert_contains(result.combined, "check_planted_port.py", "names the ported gate")
     gate.log_pass(
         "a .ci/scripts/quality/check_*.py gate counts as gate-shaped (the W7 P4 widening)"
@@ -449,9 +437,7 @@ def test_empty_manifest_refuses(gate):
         scaffold(d, STEP_ALPHA)
         manifest(d, "[]")
         result = run_gate(d)
-        gate.assert_exit_code(
-            1, result.rc, "an empty manifest means nothing asserted, which must fail"
-        )
+        gate.assert_exit(1, result, "an empty manifest means nothing asserted, which must fail")
         gate.assert_contains(
             result.combined, "Refusing to run", "refuses rather than reporting a clean run"
         )
@@ -467,8 +453,8 @@ def test_empty_workflow_tree_refuses(gate):
         )
         manifest(d, MANIFEST_ALPHA)
         result = run_gate(d)
-        gate.assert_exit_code(
-            1, result.rc, "an empty workflow tree means nothing asserted, which must fail"
+        gate.assert_exit(
+            1, result, "an empty workflow tree means nothing asserted, which must fail"
         )
         gate.assert_contains(
             result.combined, "Refusing to run", "refuses rather than reporting a clean run"
@@ -488,9 +474,7 @@ def test_missing_entry_job_collapses_the_surface(gate):
         ci.write_text(text.replace("\n  quality:\n", "\n  quality-renamed:\n"), encoding="utf-8")
         manifest(d, MANIFEST_ALPHA)
         result = run_gate(d)
-        gate.assert_exit_code(
-            1, result.rc, "a missing entry job must refuse, not report a clean run"
-        )
+        gate.assert_exit(1, result, "a missing entry job must refuse, not report a clean run")
         gate.assert_contains(
             result.combined, "Refusing to run", "refuses rather than passing over an empty surface"
         )
@@ -515,9 +499,7 @@ def test_parity_surface_is_computed_not_named(gate):
         )
         manifest(d, MANIFEST_ALPHA)
         result = run_gate(d)
-        gate.assert_exit_code(
-            1, result.rc, "a gate in a transitively reachable lane must be in scope"
-        )
+        gate.assert_exit(1, result, "a gate in a transitively reachable lane must be in scope")
         gate.assert_contains(
             result.combined, "check-brand-new.sh", "names the gate from the new lane"
         )
@@ -537,8 +519,8 @@ def test_external_wrapper_is_transparent(gate):
         )
         manifest(d, MANIFEST_ALPHA)
         result = run_gate(d)
-        gate.assert_exit_code(
-            0, result.rc, "a gate wrapped in run_external_gate must still count as CI-covered"
+        gate.assert_exit(
+            0, result, "a gate wrapped in run_external_gate must still count as CI-covered"
         )
     gate.log_pass("run_external_gate is transparent to leaf resolution")
 
@@ -554,9 +536,7 @@ def test_unknown_wrapper_is_not_transparent(gate):
         (d / ".ci/scripts/quality/run-mystery-wrapper.sh").write_text("", encoding="utf-8")
         manifest(d, MANIFEST_ALPHA)
         result = run_gate(d)
-        gate.assert_exit_code(
-            1, result.rc, "an unknown wrapper must not count as running the wrapped gate"
-        )
+        gate.assert_exit(1, result, "an unknown wrapper must not count as running the wrapped gate")
         gate.assert_contains(result.combined, "runs something else", "reports the pointer mismatch")
     gate.log_pass("an unknown wrapper is not transparent (the transparency cannot leak)")
 
@@ -573,9 +553,7 @@ def test_battery_equality_is_enforced(gate):
         (d / ".ci/scripts/test/gates/test-only-on-disk.sh").write_text("", encoding="utf-8")
         manifest(d, MANIFEST_ALPHA)
         result = run_gate(d)
-        gate.assert_exit_code(
-            1, result.rc, "a battery test on disk with no manifest entry must fail"
-        )
+        gate.assert_exit(1, result, "a battery test on disk with no manifest entry must fail")
         gate.assert_contains(
             result.combined, "test-only-on-disk.sh", "names the unscheduled battery test"
         )

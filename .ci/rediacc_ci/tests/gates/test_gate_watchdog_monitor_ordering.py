@@ -98,9 +98,7 @@ def plant(gate, *extra: str) -> str:
 def expect(gate, tmp_path, want: int, label: str, workflow_text: str) -> harness.RunResult:
     result = run_check(gate, tmp_path, workflow_text)
     if result.rc != want:
-        gate.log_fail(
-            "%s: CHECK 6 exited %d, expected %d\n%s" % (label, result.rc, want, result.combined)
-        )
+        gate.log_fail("%s: CHECK 6 exited %d, expected %d" % (label, result.rc, want), result)
     gate.assertions += 1
     gate.log_pass("%s (rc=%d)" % (label, result.rc))
     return result

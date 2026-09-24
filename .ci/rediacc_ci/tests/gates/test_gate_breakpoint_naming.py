@@ -68,7 +68,7 @@ def test_zone_is_what_the_expectations_assume(gate):
 def test_exact_tunnel_name(gate):
     with harness.temp_dir() as tmp:
         run = derive(gate, tmp, "--field", "name", "--label", "rdc-ci", "--run-id", "12345678901")
-        gate.assert_exit_code(0, run.rc, "deriving a name for a valid run id")
+        gate.assert_exit(0, run, "deriving a name for a valid run id")
         gate.assert_eq(run.out.rstrip("\n"), "breakpoint-rdc-ci-12345678901", "tunnel-name grammar")
     gate.log_pass("tunnel name is exactly breakpoint-<label>-<run-id>")
 
@@ -114,11 +114,11 @@ def test_non_numeric_run_id_rejected(gate):
         run = derive(
             gate, tmp, "--field", "name", "--label", "rdc-ci", "--run-id", "12345; rm -rf /"
         )
-        gate.assert_exit_code(4, run.rc, "a non-numeric run id must be rejected")
+        gate.assert_exit(4, run, "a non-numeric run id must be rejected")
         gate.assert_eq(run.out.rstrip("\n"), "", "rejected input must produce no stdout")
 
         run = derive(gate, tmp, "--field", "name", "--label", "rdc-ci", "--run-id", "abc")
-        gate.assert_exit_code(4, run.rc, "an alphabetic run id must be rejected")
+        gate.assert_exit(4, run, "an alphabetic run id must be rejected")
     gate.log_pass("non-numeric run ids are rejected with exit 4 and empty stdout")
 
 
@@ -126,9 +126,7 @@ def test_unlisted_label_rejected(gate):
     """The sweeper's regex is BUILT from `BREAKPOINT_TUNNEL_LABELS`, so a label that is used but not listed is invisible to cleanup permanently. Refusing here is the only thing keeping that promise true."""
     with harness.temp_dir() as tmp:
         run = derive(gate, tmp, "--field", "name", "--label", "rdc-notalabel", "--run-id", "99")
-        gate.assert_exit_code(
-            4, run.rc, "a label outside BREAKPOINT_TUNNEL_LABELS must be rejected"
-        )
+        gate.assert_exit(4, run, "a label outside BREAKPOINT_TUNNEL_LABELS must be rejected")
         gate.assert_eq(run.out.rstrip("\n"), "", "a rejected label must produce no stdout")
         gate.assert_contains(
             run.err, "BREAKPOINT_TUNNEL_LABELS", "the refusal must point at the closed set"
@@ -137,7 +135,7 @@ def test_unlisted_label_rejected(gate):
         # CONTROL: the listed labels are all accepted, so the check above is a real filter and not a script that rejects everything.
         for label in LISTED_LABELS:
             run = derive(gate, tmp, "--field", "name", "--label", label, "--run-id", "99")
-            gate.assert_exit_code(0, run.rc, "listed label %r must be accepted" % label)
+            gate.assert_exit(0, run, "listed label %r must be accepted" % label)
             gate.assert_eq(
                 run.out.rstrip("\n"),
                 "breakpoint-%s-99" % label,
@@ -181,7 +179,7 @@ def test_dns_label_capped_at_63(gate):
     """An 80-digit run id is not realistic; the CAP is, and it has to be exercised by an input that actually EXCEEDS it -- a 40-digit id produces a 49-octet label, so the truncation branch never runs and the assertion is decorative. Over-long labels are rejected by the DNS API with a message that does not point back here, so truncation must happen before the call."""
     with harness.temp_dir() as tmp:
         run = derive(gate, tmp, "--field", "hostname", "--label", "rdc-demo", "--run-id", "7" * 80)
-        gate.assert_exit_code(0, run.rc, "an over-long descriptor must be truncated, not refused")
+        gate.assert_exit(0, run, "an over-long descriptor must be truncated, not refused")
         label = run.out.rstrip("\n").split(".", 1)[0]
         gate.assert_eq(
             len(label), 63, "an over-long DNS label must be truncated to exactly the RFC 1035 cap"

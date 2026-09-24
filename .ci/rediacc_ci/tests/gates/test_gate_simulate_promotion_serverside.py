@@ -142,9 +142,7 @@ def promote_or_fail(gate, fx: Fixture) -> harness.RunResult:
     result = run_promotion(fx)
     if result.rc != 0:
         gate.log_error("simulate-promotion.sh exited %d under the stub:" % result.rc)
-        gate.log_fail(
-            "simulate-promotion.sh exited %d under the stub:\n%s" % (result.rc, result.combined)
-        )
+        gate.log_fail("simulate-promotion.sh exited %d under the stub" % result.rc, result)
     return result
 
 

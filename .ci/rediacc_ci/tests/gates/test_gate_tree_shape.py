@@ -103,7 +103,7 @@ def test_git_is_available_or_this_file_asserts_nothing(gate):
 
 def test_the_real_tree_passes_and_says_what_it_counted(gate):
     result = harness.run([sys.executable, str(GATE)], cwd=paths.repo_root())
-    gate.assert_exit_code(0, result.rc, "the real tree must be green")
+    gate.assert_exit(0, result, "the real tree must be green")
     gate.assert_contains(result.out, "✓ tree shape:", "the success line names the corpus")
     gate.assert_contains(result.out, "Blind spot:", "a green says what it did not check")
     gate.log_pass("the real tree passes and reports what it enumerated")
@@ -119,7 +119,7 @@ def test_the_controls_run_before_the_verdict(gate):
 
 def test_selftest_alone_is_green(gate):
     result = harness.run([sys.executable, str(GATE), "--selftest"], cwd=paths.repo_root())
-    gate.assert_exit_code(0, result.rc, "the planted controls must pass")
+    gate.assert_exit(0, result, "the planted controls must pass")
     gate.log_pass("--selftest is green")
 
 
@@ -157,7 +157,7 @@ def test_a_directory_that_is_not_a_checkout_is_blocked_rather_than_judged(gate, 
     bare = tmp_path / "bare"
     bare.mkdir()
     result = _gate(bare)
-    gate.assert_exit_code(77, result.rc, "no checkout means no verdict, which is 77 not 0")
+    gate.assert_exit(77, result, "no checkout means no verdict, which is 77 not 0")
     gate.assert_contains(result.combined, "CANNOT RUN", "and it says so rather than passing")
     gate.log_pass("a non-checkout is BLOCKED, never a silent green")
 
@@ -167,7 +167,7 @@ def test_a_tree_without_the_hook_cannot_derive_the_reserved_set(gate, tmp_path):
     root = _seed(tmp_path)
     shutil.rmtree(root / ".claude")
     result = _gate(root)
-    gate.assert_exit_code(77, result.rc, "without wl_store there is nothing to derive T5 from")
+    gate.assert_exit(77, result, "without wl_store there is nothing to derive T5 from")
     gate.assert_contains(
         result.combined, "AGENT_RESERVED_DIRS", "the refusal names what is missing"
     )
@@ -180,14 +180,14 @@ def test_a_tree_without_the_hook_cannot_derive_the_reserved_set(gate, tmp_path):
 def test_a_clean_fixture_tree_is_green(gate, tmp_path):
     """The mirror for every case below. Without it the gate could be a function that always reds."""
     result = _gate(_seed(tmp_path))
-    gate.assert_exit_code(0, result.rc, "a tree that obeys every class must be silent")
+    gate.assert_exit(0, result, "a tree that obeys every class must be silent")
     gate.log_pass("a clean fixture tree is green")
 
 
 def test_a_stray_root_file_is_fatal(gate, tmp_path):
     root = _seed(tmp_path, {"aa.jsonl": "{}\n"})
     result = _gate(root)
-    gate.assert_exit_code(1, result.rc, "a file at the root in no class is a finding")
+    gate.assert_exit(1, result, "a file at the root in no class is a finding")
     gate.assert_contains(result.err, "T1 aa.jsonl", "T1 names the file")
     gate.log_pass("T1 fires on a stray root file")
 
@@ -200,7 +200,7 @@ def test_an_untracked_stray_is_seen_too(gate, tmp_path):
     root = _seed(tmp_path)
     (root / "zz.jsonl").write_text("{}\n", encoding="utf-8")
     result = _gate(root)
-    gate.assert_exit_code(1, result.rc, "an untracked stray is still a stray")
+    gate.assert_exit(1, result, "an untracked stray is still a stray")
     gate.assert_contains(result.err, "T1 zz.jsonl", "T1 names the untracked file")
     gate.log_pass("an untracked-not-ignored stray is a finding")
 
@@ -212,7 +212,7 @@ def test_a_gitignored_file_is_output_rather_than_a_stray(gate, tmp_path):
     _git(root, "add", ".gitignore")
     _git(root, "commit", "-qm", "ignore")
     result = _gate(root)
-    gate.assert_exit_code(0, result.rc, "an ignored file is output and must not red the tree")
+    gate.assert_exit(0, result, "an ignored file is output and must not red the tree")
     gate.assert_not_contains(result.combined, "ignored.log", "and it is not named either")
     gate.log_pass("--exclude-standard keeps build output out of the verdict")
 
@@ -220,7 +220,7 @@ def test_a_gitignored_file_is_output_rather_than_a_stray(gate, tmp_path):
 def test_a_new_top_level_directory_is_fatal(gate, tmp_path):
     root = _seed(tmp_path, {"claude/notes.md": "x\n"})
     result = _gate(root)
-    gate.assert_exit_code(1, result.rc, "a new top-level directory is a new concept")
+    gate.assert_exit(1, result, "a new top-level directory is a new concept")
     gate.assert_contains(result.err, "T2 claude", "T2 names the directory")
     gate.log_pass("T2 fires on an undeclared top-level directory")
 
@@ -228,7 +228,7 @@ def test_a_new_top_level_directory_is_fatal(gate, tmp_path):
 def test_a_loose_file_under_agent_is_fatal(gate, tmp_path):
     root = _seed(tmp_path, {"agent/zz.jsonl": "{}\n"})
     result = _gate(root)
-    gate.assert_exit_code(1, result.rc, "a loose file under agent/ is a finding")
+    gate.assert_exit(1, result, "a loose file under agent/ is a finding")
     gate.assert_contains(result.err, "T3 agent/zz.jsonl", "T3 names the file")
     gate.log_pass("T3 fires on a loose file under agent/")
 
@@ -236,7 +236,7 @@ def test_a_loose_file_under_agent_is_fatal(gate, tmp_path):
 def test_a_directory_under_agent_that_is_not_a_session_is_fatal(gate, tmp_path):
     root = _seed(tmp_path, {"agent/not-a-session/NOTES.md": "x\n"})
     result = _gate(root)
-    gate.assert_exit_code(1, result.rc, "the hook would report it as a peer session")
+    gate.assert_exit(1, result, "the hook would report it as a peer session")
     gate.assert_contains(result.err, "T4 agent/not-a-session", "T4 names the directory")
     gate.log_pass("T4 fires on a directory that is neither reserved nor a session slug")
 
@@ -249,7 +249,7 @@ def test_a_policy_that_disagrees_with_the_hook_is_fatal(gate, tmp_path):
     ]
     (root / ".ci/policy/tree-shape.json").write_text(json.dumps(policy, indent=2), encoding="utf-8")
     result = _gate(root)
-    gate.assert_exit_code(1, result.rc, "a policy that has lost a reserved directory is a finding")
+    gate.assert_exit(1, result, "a policy that has lost a reserved directory is a finding")
     gate.assert_contains(result.err, "T5 ", "T5 fires")
     gate.assert_contains(result.err, "AGENT_RESERVED_DIRS", "and it names the other list")
     gate.log_pass("T5 catches the policy drifting away from the hook")
@@ -265,7 +265,7 @@ def test_a_bare_relative_repository_path_is_fatal(gate, tmp_path):
     _git(root, "add", "-A")
     _git(root, "commit", "-qm", "offender")
     result = _gate(root)
-    gate.assert_exit_code(1, result.rc, "a literal the filesystem is touched through is a finding")
+    gate.assert_exit(1, result, "a literal the filesystem is touched through is a finding")
     gate.assert_contains(result.err, "T6 .ci/rediacc_ci/offender.py", "T6 names the file and line")
     gate.log_pass("T6 fires on a repository path built from a bare relative string")
 
@@ -282,7 +282,7 @@ def test_a_relative_constant_joined_to_a_root_is_silent(gate, tmp_path):
     _git(root, "add", "-A")
     _git(root, "commit", "-qm", "careful")
     result = _gate(root)
-    gate.assert_exit_code(0, result.rc, "the correct pattern must not be a finding")
+    gate.assert_exit(0, result, "the correct pattern must not be a finding")
     gate.log_pass("a relative constant a caller joins to a root is silent")
 
 
@@ -297,10 +297,10 @@ def test_a_baselined_stray_is_silent_and_a_new_one_is_not(gate, tmp_path):
         json.dumps({"note": "fixture", "strays": ["aa.jsonl"]}, indent=2) + "\n",
     )
     silent = _gate(root)
-    gate.assert_exit_code(0, silent.rc, "a baselined stray is frozen debt, not a finding")
+    gate.assert_exit(0, silent, "a baselined stray is frozen debt, not a finding")
     (root / "zz.jsonl").write_text("{}\n", encoding="utf-8")
     loud = _gate(root)
-    gate.assert_exit_code(1, loud.rc, "a NEW stray beside a baselined one still fires")
+    gate.assert_exit(1, loud, "a NEW stray beside a baselined one still fires")
     gate.assert_contains(loud.err, "T1 zz.jsonl", "and only the new one is named")
     gate.assert_not_contains(loud.err, "T1 aa.jsonl", "the baselined one stays silent")
     gate.log_pass("the baseline freezes exactly its own entries")
@@ -314,7 +314,7 @@ def test_a_baseline_entry_that_no_longer_fires_is_reported(gate, tmp_path):
         json.dumps({"note": "fixture", "strays": ["aa.jsonl"]}, indent=2) + "\n",
     )
     result = _gate(root)
-    gate.assert_exit_code(1, result.rc, "a stale baseline entry hides the next regression")
+    gate.assert_exit(1, result, "a stale baseline entry hides the next regression")
     gate.assert_contains(result.err, "T8 aa.jsonl", "T8 names the stale entry")
     gate.log_pass("T8 reports a baseline entry that no longer fires")
 
@@ -322,7 +322,7 @@ def test_a_baseline_entry_that_no_longer_fires_is_reported(gate, tmp_path):
 def test_write_baseline_refuses_a_first_seed_that_was_not_declared(gate, tmp_path):
     root = _seed(tmp_path, {"aa.jsonl": "{}\n"})
     result = _gate(root, "--write-baseline")
-    gate.assert_exit_code(1, result.rc, "deleting the baseline must not be a way to reseed it")
+    gate.assert_exit(1, result, "deleting the baseline must not be a way to reseed it")
     gate.assert_contains(result.combined, "--first-seed", "the refusal names the declaration")
     gate.log_pass("--write-baseline refuses a missing baseline unless a first seed is declared")
 
@@ -336,7 +336,7 @@ def test_write_baseline_refuses_growth(gate, tmp_path):
     )
     (root / "zz.jsonl").write_text("{}\n", encoding="utf-8")
     result = _gate(root, "--write-baseline")
-    gate.assert_exit_code(1, result.rc, "the baseline shrinks and never grows")
+    gate.assert_exit(1, result, "the baseline shrinks and never grows")
     gate.assert_contains(result.combined, "zz.jsonl", "the refusal names what would be added")
     gate.assert_contains(result.combined, "never grows", "and why a total is not the claim")
     gate.log_pass("--write-baseline refuses a reseed that would GROW the set")
@@ -345,11 +345,11 @@ def test_write_baseline_refuses_growth(gate, tmp_path):
 def test_write_baseline_seeds_and_then_drains(gate, tmp_path):
     root = _seed(tmp_path, {"aa.jsonl": "{}\n"})
     seeded = _gate(root, "--write-baseline", "--first-seed")
-    gate.assert_exit_code(0, seeded.rc, "a declared first seed is allowed")
+    gate.assert_exit(0, seeded, "a declared first seed is allowed")
     path = root / ".ci/config/tree-shape-baseline.json"
     gate.assert_eq(json.loads(path.read_text(encoding="utf-8"))["strays"], ["aa.jsonl"], "seeded")
-    gate.assert_exit_code(0, _gate(root).rc, "and the tree is green against its own baseline")
+    gate.assert_exit(0, _gate(root), "and the tree is green against its own baseline")
     _git(root, "rm", "-q", "aa.jsonl")
-    gate.assert_exit_code(0, _gate(root, "--write-baseline").rc, "a genuine shrink is allowed")
+    gate.assert_exit(0, _gate(root, "--write-baseline"), "a genuine shrink is allowed")
     gate.assert_eq(json.loads(path.read_text(encoding="utf-8"))["strays"], [], "drained to empty")
     gate.log_pass("--write-baseline seeds once, then only ever drains")

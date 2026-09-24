@@ -22,7 +22,7 @@ def _git(gate, args: list[str], cwd) -> harness.RunResult:
     git = harness.require_tool("git", GIT_FIX)
     result = harness.run([git, *args], cwd=cwd)
     if result.rc != 0:
-        gate.log_fail("git %s failed in %s: %s" % (" ".join(args), cwd, result.combined))
+        gate.log_fail("git %s failed in %s" % (" ".join(args), cwd), result)
     return result
 
 
@@ -38,7 +38,7 @@ def make_fixture(gate, directory: pathlib.Path, age_days: int, content: str) -> 
     date = harness.require_tool("date", "install coreutils; the fixture backdates its commit")
     stamp = harness.run([date, "-u", "-d", "%d days ago" % age_days, "+%Y-%m-%dT%H:%M:%S"])
     if stamp.rc != 0:
-        gate.log_fail("could not compute a backdate: %s" % stamp.combined)
+        gate.log_fail("could not compute a backdate", stamp)
     when = stamp.out.strip()
     git = harness.require_tool("git", GIT_FIX)
     commit = harness.run(
@@ -47,7 +47,7 @@ def make_fixture(gate, directory: pathlib.Path, age_days: int, content: str) -> 
         env={"GIT_AUTHOR_DATE": when, "GIT_COMMITTER_DATE": when},
     )
     if commit.rc != 0:
-        gate.log_fail("could not create the backdated commit: %s" % commit.combined)
+        gate.log_fail("could not create the backdated commit", commit)
 
 
 def make_shallow_pair(gate, directory: pathlib.Path, age_days: int, content: str) -> None:

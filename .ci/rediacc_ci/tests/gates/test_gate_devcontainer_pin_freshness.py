@@ -175,14 +175,14 @@ def arg_value(text: str, name: str) -> str:
 def test_passes_when_current(gate, tmp_path):
     dockerfile = build_fixtures(gate, tmp_path)
     result = run_gate(gate, tmp_path, dockerfile, "all-current.json")
-    gate.assert_exit_code(0, result.rc, "nothing behind upstream should pass")
+    gate.assert_exit(0, result, "nothing behind upstream should pass")
     gate.log_pass("current pins pass")
 
 
 def test_fires_when_stale(gate, tmp_path):
     dockerfile = build_fixtures(gate, tmp_path)
     result = run_gate(gate, tmp_path, dockerfile, "stale.json")
-    gate.assert_exit_code(1, result.rc, "a pin behind upstream should fail")
+    gate.assert_exit(1, result, "a pin behind upstream should fail")
     gate.assert_contains(result.combined, "Bitwarden CLI", "error names the stale component")
     gate.assert_contains(result.combined, "--upgrade", "red output gives the --upgrade fix")
     gate.log_pass("stale pin fires")
@@ -191,9 +191,7 @@ def test_fires_when_stale(gate, tmp_path):
 def test_defers_fresh_release(gate, tmp_path):
     dockerfile = build_fixtures(gate, tmp_path)
     result = run_gate(gate, tmp_path, dockerfile, "fresh.json")
-    gate.assert_exit_code(
-        0, result.rc, "a just-released upstream version should be deferred, not failed"
-    )
+    gate.assert_exit(0, result, "a just-released upstream version should be deferred, not failed")
     gate.assert_contains(
         result.combined, "deferred", "fresh release is reported as deferred (soak)"
     )
@@ -203,16 +201,14 @@ def test_defers_fresh_release(gate, tmp_path):
 def test_fails_soft_when_uncheckable(gate, tmp_path):
     dockerfile = build_fixtures(gate, tmp_path)
     result = run_gate(gate, tmp_path, dockerfile, "empty.json")
-    gate.assert_exit_code(0, result.rc, "sources that cannot be checked must not fail the build")
+    gate.assert_exit(0, result, "sources that cannot be checked must not fail the build")
     gate.log_pass("uncheckable sources fail soft")
 
 
 def test_blocklist_rejects_missing_reason(gate, tmp_path):
     dockerfile = build_fixtures(gate, tmp_path)
     result = run_gate_blocklist(gate, tmp_path, dockerfile, "all-current.json", "blocklist-bad")
-    gate.assert_exit_code(
-        1, result.rc, "a blocklist entry lacking a BLOCKER reason must fail the gate"
-    )
+    gate.assert_exit(1, result, "a blocklist entry lacking a BLOCKER reason must fail the gate")
     gate.assert_contains(result.combined, "invalid entries", "error names the malformed blocklist")
     gate.log_pass("blocklist entry without a BLOCKER reason fires")
 
@@ -220,8 +216,8 @@ def test_blocklist_rejects_missing_reason(gate, tmp_path):
 def test_blocklist_accepts_valid_reason(gate, tmp_path):
     dockerfile = build_fixtures(gate, tmp_path)
     result = run_gate_blocklist(gate, tmp_path, dockerfile, "all-current.json", "blocklist-good")
-    gate.assert_exit_code(
-        0, result.rc, "a blocklist entry with a substantive BLOCKER reason must be accepted"
+    gate.assert_exit(
+        0, result, "a blocklist entry with a substantive BLOCKER reason must be accepted"
     )
     gate.log_pass("well-formed blocklist entry is accepted")
 
@@ -229,7 +225,7 @@ def test_blocklist_accepts_valid_reason(gate, tmp_path):
 def test_upgrade_moves_version_and_hashes(gate, tmp_path):
     dockerfile = build_fixtures(gate, tmp_path)
     result = run_gate(gate, tmp_path, dockerfile, "stale.json", "--upgrade")
-    gate.assert_exit_code(0, result.rc, "--upgrade with every digest resolvable should succeed")
+    gate.assert_exit(0, result, "--upgrade with every digest resolvable should succeed")
     gate.assert_contains(
         result.combined, "sha256 pin", "output says the hashes moved too, not just the version"
     )
@@ -257,9 +253,7 @@ def test_upgrade_refuses_when_a_digest_is_missing(gate, tmp_path):
     before = dockerfile.read_bytes()
     result = run_gate(gate, tmp_path, dockerfile, "stale-missing-digest.json", "--upgrade")
     after = dockerfile.read_bytes()
-    gate.assert_exit_code(
-        1, result.rc, "--upgrade must fail when a required digest cannot be resolved"
-    )
+    gate.assert_exit(1, result, "--upgrade must fail when a required digest cannot be resolved")
     gate.assert_contains(result.combined, "no digest", "the error names the missing digest")
     gate.assert_eq(after, before, "the Dockerfile must be left untouched, not half-written")
     gate.log_pass("--upgrade refuses a partial rewrite when a digest is missing")

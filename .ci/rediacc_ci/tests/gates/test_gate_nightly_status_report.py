@@ -162,7 +162,7 @@ def test_cancelled_is_not_green(gate, tmp_path):
         '["",r.isGreen("")]].map(([k,v])=>k+"="+v).join(","));'
     )
     out = harness.run([reporter.node, "-e", probe, str(REPORTER)])
-    gate.assert_exit_code(0, out.rc, "the isGreen probe must run (stderr: %s)" % out.err)
+    gate.assert_exit(0, out, "the isGreen probe must run")
     gate.assert_eq(
         out.out,
         "success=true,cancelled=false,failure=false,=false",

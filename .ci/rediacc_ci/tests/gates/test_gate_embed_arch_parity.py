@@ -57,7 +57,7 @@ def run_with_mutation(gate, tmp_path, mutate) -> harness.RunResult:
 def test_accepts_real_lockfile(gate):
     real_lockfile(gate)  # refuses loudly rather than skipping; see the module docstring
     result = run_gate(gate)
-    gate.assert_exit_code(0, result.rc, "the real lockfile should pass arch parity")
+    gate.assert_exit(0, result, "the real lockfile should pass arch parity")
     gate.assert_contains(result.combined, "arch entries", "success output reports what it checked")
     gate.log_pass("real lockfile passes arch parity")
 
@@ -67,7 +67,7 @@ def test_rejects_missing_arch(gate, tmp_path):
         del data["components"]["criu"]["arches"]["arm64"]
 
     result = run_with_mutation(gate, tmp_path, mutate)
-    gate.assert_exit_code(1, result.rc, "a component missing an arch should fail")
+    gate.assert_exit(1, result, "a component missing an arch should fail")
     gate.assert_contains(result.combined, "architectures", "error names the arch mismatch")
     gate.log_pass("a component that loses an architecture is rejected")
 
@@ -77,7 +77,7 @@ def test_rejects_malformed_digest(gate, tmp_path):
         data["components"]["k3s"]["arches"]["amd64"]["sha256"] = "not-a-digest"
 
     result = run_with_mutation(gate, tmp_path, mutate)
-    gate.assert_exit_code(1, result.rc, "a malformed download digest should fail")
+    gate.assert_exit(1, result, "a malformed download digest should fail")
     gate.assert_contains(result.combined, "sha256", "error names the digest")
     gate.log_pass("a malformed download digest is rejected")
 
@@ -87,7 +87,7 @@ def test_rejects_unpinned_source(gate, tmp_path):
         data["components"]["criu"]["source"].pop("commit", None)
 
     result = run_with_mutation(gate, tmp_path, mutate)
-    gate.assert_exit_code(1, result.rc, "a source build without a commit pin should fail")
+    gate.assert_exit(1, result, "a source build without a commit pin should fail")
     gate.assert_contains(result.combined, "commit", "error names the missing pin")
     gate.log_pass("a source build with no immutable pin is rejected")
 
@@ -97,7 +97,7 @@ def test_rejects_bad_class(gate, tmp_path):
         data["components"]["zot"]["class"] = "bogus"
 
     result = run_with_mutation(gate, tmp_path, mutate)
-    gate.assert_exit_code(1, result.rc, "an invalid class should fail")
+    gate.assert_exit(1, result, "an invalid class should fail")
     gate.assert_contains(result.combined, "base|cluster", "error names the valid classes")
     gate.log_pass("an invalid asset class is rejected")
 
@@ -109,7 +109,7 @@ def test_rejects_empty_lockfile(gate, tmp_path):
         data["components"] = {}
 
     result = run_with_mutation(gate, tmp_path, mutate)
-    gate.assert_exit_code(1, result.rc, "an empty lockfile should fail, not vacuously pass")
+    gate.assert_exit(1, result, "an empty lockfile should fail, not vacuously pass")
     gate.assert_contains(result.combined, "blind", "error says the gate would be blind")
     gate.log_pass("an empty lockfile is rejected rather than vacuously passing")
 

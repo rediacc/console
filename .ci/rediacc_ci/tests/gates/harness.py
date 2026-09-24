@@ -84,6 +84,47 @@ class RunResult:
         return "RunResult(rc=%d, out=%r, err=%r)" % (self.rc, self.out, self.err)
 
 
+OUTPUT_TAIL = 4000
+
+
+def _rc_of(result: object) -> int:
+    rc = getattr(result, "rc", None)
+    if rc is None:
+        rc = result.returncode
+    return rc
+
+
+def _stream_of(result: object, short: str, long: str) -> str:
+    text = getattr(result, short, None)
+    if text is None:
+        text = getattr(result, long, None)
+    if isinstance(text, bytes):
+        text = text.decode("utf-8", "replace")
+    return text or ""
+
+
+def _tail(text: str) -> str:
+    if not text:
+        return "(empty)"
+    if len(text) <= OUTPUT_TAIL:
+        return text.rstrip("\n")
+    return "(%d earlier chars dropped)\n%s" % (
+        len(text) - OUTPUT_TAIL,
+        text[-OUTPUT_TAIL:].rstrip("\n"),
+    )
+
+
+def render_output(result: object) -> str:
+    """The two streams of a run, labelled and kept apart, for a failure message.
+
+    Accepts a `RunResult` (`.out`/`.err`) or a `subprocess.CompletedProcess` (`.stdout`/`.stderr`). Each stream keeps its last OUTPUT_TAIL characters, because the end of a failing run is where the reason usually is.
+    """
+    return "--- stdout ---\n%s\n--- stderr ---\n%s" % (
+        _tail(_stream_of(result, "out", "stdout")),
+        _tail(_stream_of(result, "err", "stderr")),
+    )
+
+
 def run(
     argv: list[str],
     *,
@@ -298,9 +339,14 @@ class Harness:
         self._record("pass", message)
         print(self._paint(GREEN, "PASS:", message))
 
-    def log_fail(self, message: str) -> None:
-        """A control FAILED. Raises; `log_fail` in bash prints and exits 1."""
+    def log_fail(self, message: str, result: object = None) -> None:
+        """A control FAILED. Raises; `log_fail` in bash prints and exits 1.
+
+        `result`, when given, is the run the failure is about, and its stdout and stderr are appended to the raised message. The ledger records the bare `message`, so a label stays a label.
+        """
         self._record("fail", message)
+        if result is not None:
+            raise GateAssertionError(message + "\n" + render_output(result))
         raise GateAssertionError(message)
 
     def log_test(self, message: str) -> None:
@@ -346,6 +392,20 @@ class Harness:
                 % (msg or "wrong exit code", expected, describe_exit(actual))
             )
 
+    def assert_exit(self, expected: int, result: object, msg: str = "") -> None:
+        """`assert_exit_code` for a RUN rather than a bare number: EXPECTED FIRST, then the RunResult (or `subprocess.CompletedProcess`) itself.
+
+        THE OUTPUT TRAVELS WITH THE FAILURE. A wrong exit code with no output says only that something went wrong; the subject's own stdout and stderr say what. Taking the whole result lets the helper attach both streams, so no call site has to remember to append them and none can forget. `assert_exit_code` stays for the cases that genuinely hold only an integer.
+        """
+        self.assertions += 1
+        actual = _rc_of(result)
+        if actual != expected:
+            self.log_fail(
+                "%s: expected %d, got %s"
+                % (msg or "wrong exit code", expected, describe_exit(actual)),
+                result,
+            )
+
     def assert_vacuous_tree_fails(self, runner, directory: pathlib.Path, needle: str, label: str):
         """The anti-vacuity case every gate test taking a ROOT override owes.
 
@@ -354,7 +414,7 @@ class Harness:
         empty = directory / "empty"
         empty.mkdir(parents=True, exist_ok=True)
         result = runner(empty)
-        self.assert_exit_code(1, result.rc, label)
+        self.assert_exit(1, result, label)
         self.assert_contains(result.combined, needle, "says the check has nothing to assert")
         self.log_pass("empty tree fails (anti-vacuity), it does not pass silently")
 

@@ -247,10 +247,7 @@ def test_gate_header_parser_both_directions(gate):
 
     total = total_line(result.combined)
     if total is None:
-        gate.log_fail(
-            "the probe printed no TOTAL line, so nothing was actually asserted. Last five "
-            "lines:\n%s" % "\n".join(result.combined.splitlines()[-5:])
-        )
+        gate.log_fail("the probe printed no TOTAL line, so nothing was actually asserted", result)
 
     for word, label in rows:
         if word == "PASS":

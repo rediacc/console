@@ -51,7 +51,7 @@ WHERE THIS REIMPLEMENTS sed, grep, awk, sort, wc AND cmp, AND WHY THE ANSWERS AG
 
 THE STREAMS ARE KEPT APART. The twin says why and it is worth repeating: a stream swap is a class of defect this repo has actually shipped, and `2>&1` is how a test stops being able to see it. Every case below reads `.out` or `.err`, never `.combined`, in the same places the twin reads `$SG_OUT` or `$SG_ERR`.
 
-`node_modules/.bin/tsx` IS USED RATHER THAN `npx`, and that is not a preference: npx re-resolves the package on every call and prints an unrelated "Unknown project config minimum-release-age" warning on STDERR, which would land in output this file asserts on. Its absence is a loud failure naming `npm install`.
+`node_modules/.bin/tsx` IS USED RATHER THAN `npx`, and that is not a preference: npx re-resolves the package on every call, and any warning npm prints lands on STDERR, in output this file asserts on. Until `minimum-release-age` left `.npmrc` on 2026-09-24, that was an "Unknown project config" warning on every call. Its absence is a loud failure naming `npm install`.
 
 NO `xdist_group`. Every fixture, mutant and ledger repository is under `tmp_path`;
 the only writes outside it are none.
@@ -251,7 +251,7 @@ def count_prefix(text: str, prefix: str) -> int:
 
 def test_selftest_battery(gate):
     result = sg(gate, "--selftest")
-    gate.assert_exit_code(0, result.rc, "the module selftest must pass")
+    gate.assert_exit(0, result, "the module selftest must pass")
     controls = count_prefix(result.out, "PASS: ")
     # A FLOOR, not an exact count, so new cases may be added -- but a selftest that quietly shrinks to two cases is the shape this whole file distrusts.
     if controls < 20:
@@ -325,7 +325,7 @@ def test_mutation_controls(gate, tmp_path):
 def test_real_pair_is_equivalent(gate, tmp_path):
     fx = Fixtures(gate, tmp_path)
     result = sg(gate, "--pair", "t-match", "--old", fx.old_side, "--new", fx.new_side)
-    gate.assert_exit_code(0, result.rc, "the two live implementations must be EQUIVALENT")
+    gate.assert_exit(0, result, "the two live implementations must be EQUIVALENT")
     gate.assert_contains(result.out, "EQUIVALENT", "the verdict")
     gate.assert_contains(result.out, "agreeing finding(s)", "the summary names the agreeing set")
     # Both fingerprints equal is the strong form: identical normalized sets, not merely sets the diff happened not to separate.

@@ -78,9 +78,7 @@ def test_a_planted_mutation_is_visible_to_the_behaviour_cases(gate):
         with harness.fake_bin(BASE_SPEC) as fake:
             script_python(fake.dir, "no", "false")
             result = run_cuda(d, module_dir=mutant)
-            gate.assert_exit_code(
-                0, result.rc, "the mutated copy still runs; only its wording changed"
-            )
+            gate.assert_exit(0, result, "the mutated copy still runs; only its wording changed")
             media_verify.media_assert_mutation_swapped(
                 gate, result.combined, "CUDA not available in torch", "CUDA MUTATED", "message"
             )
@@ -94,7 +92,7 @@ def test_all_four_exits(gate):
         with harness.fake_bin(BASE_SPEC) as fake:
             script_python(fake.dir, "yes", "true")
             result = run_cuda(d)
-            gate.assert_exit_code(0, result.rc, "an already-importable flash_attn must return 0")
+            gate.assert_exit(0, result, "an already-importable flash_attn must return 0")
             gate.assert_eq(
                 fake.record("pip"), "", "nothing may be installed when it already imports"
             )
@@ -103,7 +101,7 @@ def test_all_four_exits(gate):
         with harness.fake_bin(BASE_SPEC) as fake:
             script_python(fake.dir, "no", "false")
             result = run_cuda(d)
-            gate.assert_exit_code(0, result.rc, "no CUDA in torch must SKIP, not fail")
+            gate.assert_exit(0, result, "no CUDA in torch must SKIP, not fail")
             gate.assert_contains(
                 result.combined, "CUDA not available in torch", "says why it skipped"
             )
@@ -113,7 +111,7 @@ def test_all_four_exits(gate):
         with harness.fake_bin(BASE_SPEC) as fake:
             script_python(fake.dir, "no", "true")
             result = run_cuda(d)
-            gate.assert_exit_code(0, result.rc, "a missing nvcc must SKIP, not fail")
+            gate.assert_exit(0, result, "a missing nvcc must SKIP, not fail")
             gate.assert_contains(
                 result.combined, "nvcc not found", "says which tool the source build needs"
             )
@@ -123,7 +121,7 @@ def test_all_four_exits(gate):
         with harness.fake_bin(BASE_SPEC + " nvcc") as fake:
             script_python(fake.dir, "no", "true")
             result = run_cuda(d)
-            gate.assert_exit_code(0, result.rc, "the supported path must return 0")
+            gate.assert_exit(0, result, "the supported path must return 0")
             pip_calls = fake.record("pip")
             gate.assert_contains(
                 pip_calls, "install --upgrade packaging ninja", "build deps come first"
@@ -145,9 +143,7 @@ def test_a_failing_install_only_warns(gate):
     with harness.temp_dir() as d, harness.fake_bin("python pip!1 nvcc +cat +chmod +uname") as fake:
         script_python(fake.dir, "no", "true")
         result = run_cuda(d)
-        gate.assert_exit_code(
-            0, result.rc, "a failed accelerator install must not fail the pipeline"
-        )
+        gate.assert_exit(0, result, "a failed accelerator install must not fail the pipeline")
         gate.assert_contains(
             result.combined, "flash-attn install failed", "says the install failed"
         )

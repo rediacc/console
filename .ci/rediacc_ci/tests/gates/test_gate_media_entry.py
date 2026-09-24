@@ -285,9 +285,7 @@ def test_every_routed_verb_reaches_the_module_that_owns_it(gate, tmp_path):
         with harness.fake_bin("+uname +dirname"):
             result = media_verify_ext.run(repo, script, *argv.split(" "))
         if result.rc != 0:
-            gate.log_fail(
-                "./%s %s failed in the sandbox: %s" % (script, argv, result.combined.strip())
-            )
+            gate.log_fail("./%s %s failed in the sandbox" % (script, argv), result)
         gate.assert_eq(
             result.combined.strip(),
             "MEDIA_CHAIN_REACHED:%s:%s" % (function, expected),
@@ -313,8 +311,8 @@ def test_the_chain_probe_can_fail(gate, tmp_path):
     media_verify_ext.mutate(repo, "run.sh", r"^        www\) exec .*", "        www) exit 9 ;;")
     with harness.fake_bin("+uname +dirname"):
         result = media_verify_ext.run(repo, "run.sh", "www", "tutorials", "extract")
-    gate.assert_exit_code(
-        9, result.rc, "the mutated run.sh must reach its own replacement arm, not the module"
+    gate.assert_exit(
+        9, result, "the mutated run.sh must reach its own replacement arm, not the module"
     )
     gate.assert_not_contains(
         result.combined,
@@ -335,17 +333,17 @@ def test_the_tree_routes_and_refuses(gate):
     ):
         result = drive_entry(argv)
         if result.rc != 0:
-            gate.log_fail("%s failed: %s" % (argv, result.combined.strip()))
+            gate.log_fail("%s failed" % argv, result)
         gate.assert_eq(result.combined.strip(), expected, "%s forwards its arguments" % argv)
 
     unknown = drive_entry("nosuchsurface")
-    gate.assert_exit_code(1, unknown.rc, "an unknown top-level verb must exit 1")
+    gate.assert_exit(1, unknown, "an unknown top-level verb must exit 1")
     gate.assert_contains(
         unknown.combined, "provision", "the usage names the surfaces it does route"
     )
 
     unknown = drive_entry("www tutorials nosuchverb")
-    gate.assert_exit_code(1, unknown.rc, "an unknown tutorials verb must exit 1")
+    gate.assert_exit(1, unknown, "an unknown tutorials verb must exit 1")
     gate.assert_contains(
         unknown.combined,
         "Unknown tutorials command: nosuchverb",
@@ -353,7 +351,7 @@ def test_the_tree_routes_and_refuses(gate):
     )
 
     unknown = drive_entry("growth nosuchverb")
-    gate.assert_exit_code(1, unknown.rc, "an unknown growth verb must exit 1")
+    gate.assert_exit(1, unknown, "an unknown growth verb must exit 1")
     gate.assert_contains(
         unknown.combined,
         "cwd = private/growth",

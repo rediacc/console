@@ -445,6 +445,6 @@ def test_assert_ci_complete_judges_the_job(gate):
     if not ASSERT_CI_COMPLETE.is_file():
         gate.log_fail("the aggregator is missing: %s" % paths.relative_to_root(ASSERT_CI_COMPLETE))
     result = harness.run(["bash", str(ASSERT_CI_COMPLETE)])
-    gate.assert_exit_code(1, result.rc, "the assertion script must fail when nothing is passed")
+    gate.assert_exit(1, result, "the assertion script must fail when nothing is passed")
     gate.assert_contains(result.combined, "LABEL_GUIDE", "LABEL_GUIDE is one of the judged jobs")
     gate.log_pass("assert-ci-complete.sh judges LABEL_GUIDE")

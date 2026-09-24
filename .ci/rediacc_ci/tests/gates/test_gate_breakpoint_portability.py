@@ -420,9 +420,7 @@ def test_drift_gate_runs_standalone(gate):
         drift = bp / "scripts" / "check-breakpoint-drift.sh"
         env = {"PATH": os.environ.get("PATH", ""), "HOME": str(tmp), "RUNNER_TEMP": str(tmp)}
         result = harness.run([bash, str(drift)], env=env, env_replace=True, timeout=600)
-        gate.assert_exit_code(
-            0, result.rc, "check-breakpoint-drift.sh must pass inside an isolated copy"
-        )
+        gate.assert_exit(0, result, "check-breakpoint-drift.sh must pass inside an isolated copy")
         gate.assert_contains(
             result.combined, "Verified", "the drift gate must report what it verified"
         )

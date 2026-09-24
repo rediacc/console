@@ -117,9 +117,7 @@ def test_normal_profile_renders(gate, tmp_path):
     write_samples(sample, 37, 10, 420, 1200)
     result = run_panel(gate, sample, 370, "true")
     out = result.combined
-    gate.assert_exit_code(
-        0, result.rc, "a healthy profile must pass even under strict (output: %s)" % out
-    )
+    gate.assert_exit(0, result, "a healthy profile must pass even under strict")
     gate.assert_contains(out, "## Runner Profile: fixture-job", "panel carries the job title")
     gate.assert_contains(
         out, "**Runner:** ubuntu-slim (tier CGROUP_V2", "panel names runner and tier"
@@ -149,7 +147,7 @@ def test_short_sample_file_fails_the_floor(gate, tmp_path):
     write_meta(sample)
     write_samples(sample, 2, 10, 420, 1200)
     result = run_panel(gate, sample, 370, "true")
-    gate.assert_exit_code(1, result.rc, "2 samples over 370s must fail the floor under strict")
+    gate.assert_exit(1, result, "2 samples over 370s must fail the floor under strict")
     gate.assert_contains(result.combined, "sample floor", "names the floor it broke")
     gate.log_pass("a too-short sample file fails the anti-vacuity floor")
 
@@ -160,18 +158,14 @@ def test_starved_sampler_fails_the_ratio(gate, tmp_path):
     write_meta(starved)
     write_samples(starved, 10, 10, 420, 1200)
     result = run_panel(gate, starved, 600, "true")
-    gate.assert_exit_code(1, result.rc, "10 samples over a 600s job must fail 0.8x of 61 expected")
+    gate.assert_exit(1, result, "10 samples over a 600s job must fail 0.8x of 61 expected")
     gate.assert_contains(result.combined, "died early", "explains the sampler was starved or died")
 
     healthy = tmp_path / "ok.tsv"
     write_meta(healthy)
     write_samples(healthy, 10, 10, 420, 1200)
     control = run_panel(gate, healthy, 100, "true")
-    gate.assert_exit_code(
-        0,
-        control.rc,
-        "CONTROL: 10 samples over 100s is the expected count (output: %s)" % control.combined,
-    )
+    gate.assert_exit(0, control, "CONTROL: 10 samples over 100s is the expected count")
     gate.log_pass("the 0.8x ratio fires on a starved sampler and stays silent on a short job")
 
 
@@ -185,7 +179,7 @@ def test_all_zero_cpu_fails(gate, tmp_path):
             for i in range(1, 31)
         )
     result = run_panel(gate, zeros, 300, "true")
-    gate.assert_exit_code(1, result.rc, "an all-zero CPU series must fail")
+    gate.assert_exit(1, result, "an all-zero CPU series must fail")
     gate.assert_contains(result.combined, "degenerate CPU series", "names the degenerate series")
 
     # CONTROL: one single non-zero CPU sample in an otherwise identical file must pass. Without this, a checker that failed EVERYTHING would look right.
@@ -198,11 +192,7 @@ def test_all_zero_cpu_fails(gate, tmp_path):
             for i in range(1, 31)
         )
     control = run_panel(gate, idle, 300, "true")
-    gate.assert_exit_code(
-        0,
-        control.rc,
-        "CONTROL: one non-zero CPU sample is a real (idle) profile (output: %s)" % control.combined,
-    )
+    gate.assert_exit(0, control, "CONTROL: one non-zero CPU sample is a real (idle) profile")
     gate.log_pass("all-zero CPU fails; a single non-zero reading passes")
 
 
@@ -215,7 +205,7 @@ def test_flat_ram_fails(gate, tmp_path):
             for i in range(1, 31)
         )
     result = run_panel(gate, flat, 300, "true")
-    gate.assert_exit_code(1, result.rc, "an identical-RAM series must fail")
+    gate.assert_exit(1, result, "an identical-RAM series must fail")
     gate.assert_contains(result.combined, "degenerate RAM series", "names the constant RAM series")
 
     # CONTROL: move exactly one byte of one sample. Real memory never repeats byte
@@ -229,11 +219,7 @@ def test_flat_ram_fails(gate, tmp_path):
             for i in range(1, 31)
         )
     control = run_panel(gate, moved, 300, "true")
-    gate.assert_exit_code(
-        0,
-        control.rc,
-        "CONTROL: a one-byte difference is a measurement (output: %s)" % control.combined,
-    )
+    gate.assert_exit(0, control, "CONTROL: a one-byte difference is a measurement")
     gate.log_pass("identical RAM across every sample fails; a one-byte difference passes")
 
 
@@ -241,7 +227,7 @@ def test_host_leak_fails(gate, tmp_path):
     sample = tmp_path / "s.tsv"
     write_meta(sample, "HOST_LEAK")
     result = run_panel(gate, sample, 300, "true")
-    gate.assert_exit_code(1, result.rc, "a HOST_LEAK meta line must fail")
+    gate.assert_exit(1, result, "a HOST_LEAK meta line must fail")
     gate.assert_contains(result.combined, "HOST_LEAK", "names the leak")
     gate.assert_not_contains(
         result.combined, "**Advisory:** MOVE TO", "a leaked profile must never advise a move"
@@ -255,9 +241,7 @@ def test_proc_host_tier_advises_only_when_the_label_disambiguates(gate, tmp_path
     write_meta(vm, "PROC_HOST", "ubuntu-latest")
     write_samples(vm, 37, 10, 420, 1200)
     result = run_panel(gate, vm, 370, "true")
-    gate.assert_exit_code(
-        0, result.rc, "PROC_HOST on a VM is a valid profile (output: %s)" % result.combined
-    )
+    gate.assert_exit(0, result, "PROC_HOST on a VM is a valid profile")
     gate.assert_contains(
         result.combined,
         "**Advisory:** MOVE TO ubuntu-slim",
@@ -271,7 +255,7 @@ def test_proc_host_tier_advises_only_when_the_label_disambiguates(gate, tmp_path
     write_meta(unknown, "PROC_HOST", "unknown")
     write_samples(unknown, 37, 10, 420, 1200)
     result = run_panel(gate, unknown, 370, "true")
-    gate.assert_exit_code(0, result.rc, "an unlabelled PROC_HOST profile still renders")
+    gate.assert_exit(0, result, "an unlabelled PROC_HOST profile still renders")
     gate.assert_contains(
         result.combined,
         "**Advisory:** none",
@@ -305,7 +289,7 @@ def test_mislabelled_container_is_caught(gate, tmp_path):
     )
     write_samples(mislabelled, 37, 10, 420, 1200)
     result = run_panel(gate, mislabelled, 370, "true")
-    gate.assert_exit_code(1, result.rc, "a container wearing a VM label must be a finding")
+    gate.assert_exit(1, result, "a container wearing a VM label must be a finding")
     gate.assert_contains(result.combined, "MISLABEL SUSPECTED", "names the contradiction")
     gate.assert_contains(
         result.combined,
@@ -332,9 +316,7 @@ def test_mislabelled_container_is_caught(gate, tmp_path):
     )
     write_samples(genuine, 37, 10, 420, 1200)
     control = run_panel(gate, genuine, 370, "true")
-    gate.assert_exit_code(
-        0, control.rc, "CONTROL: a genuine VM is not a finding (output: %s)" % control.combined
-    )
+    gate.assert_exit(0, control, "CONTROL: a genuine VM is not a finding")
     gate.assert_contains(
         control.combined, "**Advisory:** MOVE TO ubuntu-slim", "a real VM still gets sized"
     )
@@ -361,11 +343,7 @@ def test_unlabelled_cgroup_job_is_sized_by_its_ceiling(gate, tmp_path):
     write_meta(slim_sized, "CGROUP_V2", "unknown")
     write_samples(slim_sized, 37, 10, 420, 1200)
     result = run_panel(gate, slim_sized, 370, "true")
-    gate.assert_exit_code(
-        0,
-        result.rc,
-        "an unlabelled cgroup profile still renders (output: %s)" % result.combined,
-    )
+    gate.assert_exit(0, result, "an unlabelled cgroup profile still renders")
     gate.assert_contains(
         result.combined,
         "**Advisory:** slim fits",
@@ -380,9 +358,7 @@ def test_unlabelled_cgroup_job_is_sized_by_its_ceiling(gate, tmp_path):
     write_meta(mislabelled, "CGROUP_V2", "ubuntu-latest", 10, "CONTAINER")
     write_samples(mislabelled, 37, 10, 420, 1200)
     result = run_panel(gate, mislabelled, 370, "true")
-    gate.assert_exit_code(
-        0, result.rc, "a mislabelled cgroup profile renders (output: %s)" % result.combined
-    )
+    gate.assert_exit(0, result, "a mislabelled cgroup profile renders")
     gate.assert_contains(
         result.combined,
         "**Advisory:** slim fits",
@@ -404,11 +380,7 @@ def test_unlabelled_cgroup_job_is_sized_by_its_ceiling(gate, tmp_path):
     )
     write_samples(big, 37, 10, 420, 1200)
     control = run_panel(gate, big, 370, "true")
-    gate.assert_exit_code(
-        0,
-        control.rc,
-        "an unlabelled large-quota profile renders (output: %s)" % control.combined,
-    )
+    gate.assert_exit(0, control, "an unlabelled large-quota profile renders")
     gate.assert_contains(
         control.combined,
         "**Advisory:** MOVE TO ubuntu-slim",
@@ -424,7 +396,7 @@ def test_long_job_buckets_to_five_minutes(gate, tmp_path):
     write_samples(sample, 2100, 10, 300, 900)
     result = run_panel(gate, sample, 21000, "true")
     out = result.combined
-    gate.assert_exit_code(0, result.rc, "a long healthy profile must pass (output: %s)" % out[:400])
+    gate.assert_exit(0, result, "a long healthy profile must pass")
     gate.assert_contains(out, "| Minutes | CPU mean |", "long jobs switch to a Minutes header")
     rows = len(LONG_ROW_RE.findall(out))
     if not 69 <= rows <= 71:
@@ -442,9 +414,7 @@ def test_step_shorter_than_interval_is_unsampled_not_zero(gate, tmp_path):
     sample = tmp_path / "s.tsv"
     write_meta(sample)
     result = run_panel(gate, sample, 4, "true")
-    gate.assert_exit_code(
-        0, result.rc, "an unsampleable step is not a finding (output: %s)" % result.combined
-    )
+    gate.assert_exit(0, result, "an unsampleable step is not a finding")
     gate.assert_contains(
         result.combined, "<interval, unsampled", "reports the unsampled state verbatim"
     )
@@ -458,15 +428,13 @@ def test_step_shorter_than_interval_is_unsampled_not_zero(gate, tmp_path):
 def test_missing_sample_file_says_so(gate, tmp_path):
     missing = tmp_path / "never-written.tsv"
     result = run_panel(gate, missing, 300, "false")
-    gate.assert_exit_code(0, result.rc, "a missing file warns in non-strict mode")
+    gate.assert_exit(0, result, "a missing file warns in non-strict mode")
     gate.assert_contains(
         result.combined, "no sample file was produced", "panel says the profile is missing"
     )
     gate.assert_contains(result.combined, "::warning::", "a missing profile is annotated")
     strict = run_panel(gate, missing, 300, "true")
-    gate.assert_exit_code(
-        1, strict.rc, "CONTROL: strict turns the same missing file into a failure"
-    )
+    gate.assert_exit(1, strict, "CONTROL: strict turns the same missing file into a failure")
     gate.log_pass("a missing sample file is reported as missing, and is fatal under strict")
 
 
@@ -476,11 +444,11 @@ def test_strict_flag_is_the_only_difference(gate, tmp_path):
     write_meta(sample)
     write_samples(sample, 2, 10, 420, 1200)
     lenient = run_panel(gate, sample, 370, "false")
-    gate.assert_exit_code(0, lenient.rc, "non-strict keeps a bad profile green")
+    gate.assert_exit(0, lenient, "non-strict keeps a bad profile green")
     gate.assert_contains(lenient.combined, "::warning::profiler:", "non-strict warns")
     gate.assert_contains(lenient.combined, "## Runner Profile", "non-strict still writes the panel")
     strict = run_panel(gate, sample, 370, "true")
-    gate.assert_exit_code(1, strict.rc, "strict fails on the identical input")
+    gate.assert_exit(1, strict, "strict fails on the identical input")
     gate.assert_contains(strict.combined, "::error::profiler:", "strict escalates the annotation")
     gate.log_pass("strict flips exit code and annotation level on identical input")
 
@@ -499,11 +467,7 @@ def test_sampler_rejects_host_leak(gate, tmp_path):
         ["bash", str(SAMPLER), "--out", str(sample), "--interval", "1"],
         env={"PROFILER_CGROUP_ROOT": str(cgroup), "PROFILER_RUNNER_LABEL": "ubuntu-slim"},
     )
-    gate.assert_exit_code(
-        3,
-        result.rc,
-        "an unquota'd cgroup on a slim label must abort (output: %s)" % result.combined,
-    )
+    gate.assert_exit(3, result, "an unquota'd cgroup on a slim label must abort")
     gate.assert_contains(result.combined, "HOST_LEAK", "names the failure mode")
     gate.assert_contains(result.combined, "memory ceiling", "names the memory number")
     gate.assert_contains(result.combined, "CPU quota", "names the cpu number")
@@ -523,11 +487,7 @@ def test_sampler_rejects_host_leak(gate, tmp_path):
         },
         timeout=20,
     )
-    gate.assert_exit_code(
-        0,
-        control.rc,
-        "CONTROL: the same limits on ubuntu-latest are not a leak (output: %s)" % control.combined,
-    )
+    gate.assert_exit(0, control, "CONTROL: the same limits on ubuntu-latest are not a leak")
     gate.log_pass("the sampler aborts on HOST_LEAK under a slim label and runs normally otherwise")
 
 
@@ -541,7 +501,7 @@ def test_sampler_produces_a_real_profile(gate, tmp_path):
         env={"PROFILER_RUNNER_LABEL": "selftest", "PROFILER_MAX_SECONDS": "6"},
         timeout=40,
     )
-    gate.assert_exit_code(0, run.rc, "the sampler must exit cleanly on this machine")
+    gate.assert_exit(0, run, "the sampler must exit cleanly on this machine")
     text = sample.read_text(encoding="utf-8")
     lines = len([line for line in text.splitlines() if line.startswith("S")])
     if lines < 4:
@@ -549,11 +509,7 @@ def test_sampler_produces_a_real_profile(gate, tmp_path):
     gate.assert_contains(text.splitlines()[0], "#META", "first line is the meta record")
     # STRICT on purpose. A healthy 6-second capture must not trip the starvation ratio: the first sample lands one interval IN, so a W-second run yields int(W/interval) samples and not one more. The off-by-one version of that arithmetic flagged this exact capture as "starved or died early", and a false alarm is how an anti-vacuity check ends up switched off.
     result = run_panel(gate, sample, 7, "true")
-    gate.assert_exit_code(
-        0,
-        result.rc,
-        "a healthy short capture must not trip the ratio (output: %s)" % result.combined,
-    )
+    gate.assert_exit(0, result, "a healthy short capture must not trip the ratio")
     gate.assert_contains(result.combined, "## Runner Profile", "a real capture renders a panel")
     gate.assert_contains(
         result.combined, "**Samples:** %d" % lines, "the panel counts every sample it was given"
@@ -594,9 +550,7 @@ def test_sampler_reads_a_real_containers_ceiling(gate, tmp_path):
             env={"PROFILER_RUNNER_LABEL": "selftest", "PROFILER_MAX_SECONDS": "3"},
             timeout=40,
         )
-        gate.assert_exit_code(
-            0, run.rc, "the sampler must run cleanly in this constrained environment"
-        )
+        gate.assert_exit(0, run, "the sampler must run cleanly in this constrained environment")
         meta = next(
             (
                 line
@@ -671,7 +625,7 @@ def test_sampler_reads_a_real_containers_ceiling(gate, tmp_path):
     # arms reading as a passing host-leak guard is precisely the vacuous green this whole file exists to refuse.
     meta = next((line for line in result.combined.splitlines() if line.startswith("#META")), "")
     if not meta:
-        gate.log_fail("no #META line came back from the container: %s" % result.combined[:300])
+        gate.log_fail("no #META line came back from the container", result)
     fields = meta.split("\t")
     tier = fields[1]
     cpu_ceiling = int(fields[2])

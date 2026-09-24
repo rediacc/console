@@ -63,7 +63,7 @@ def test_thin_blocks_never_count(gate):
     with harness.temp_dir() as d:
         write_workflow(d / "clean.yml", 0)
         result = run_check(gate, d)
-        gate.assert_exit_code(0, result.rc, "a file with only thin run: blocks must pass")
+        gate.assert_exit(0, result, "a file with only thin run: blocks must pass")
     gate.log_pass("thin (<=%d line) run: blocks never count as violations" % INLINE_MAX_LOGIC)
 
 
@@ -73,7 +73,7 @@ def test_fails_any_over_threshold_block(gate):
     with harness.temp_dir() as d:
         write_workflow(d / "newbie.yml", 1)
         result = run_check(gate, d)
-        gate.assert_exit_code(1, result.rc, "any file with inline logic must fail")
+        gate.assert_exit(1, result, "any file with inline logic must fail")
         gate.assert_contains(result.combined, "newbie.yml", "names the offending file")
         gate.assert_contains(
             result.combined,
@@ -94,7 +94,7 @@ def test_reports_line_and_step_name(gate):
     with harness.temp_dir() as d:
         write_workflow(d / "located.yml", 1)
         result = run_check(gate, d)
-        gate.assert_exit_code(1, result.rc, "over-threshold block must fail")
+        gate.assert_exit(1, result, "over-threshold block must fail")
         gate.assert_contains(result.combined, "located.yml:8", "cites file:line of the run: block")
         gate.assert_contains(result.combined, "step: Violating 1", "names the offending step")
         gate.assert_contains(
@@ -108,16 +108,14 @@ def test_boundary_at_threshold(gate):
     with harness.temp_dir() as d:
         write_workflow(d / "at.yml", 1, INLINE_MAX_LOGIC)
         result = run_check(gate, d)
-        gate.assert_exit_code(
-            0, result.rc, "exactly %d logic lines is at the limit and must pass" % INLINE_MAX_LOGIC
+        gate.assert_exit(
+            0, result, "exactly %d logic lines is at the limit and must pass" % INLINE_MAX_LOGIC
         )
         (d / "at.yml").unlink()
         write_workflow(d / "over.yml", 1, INLINE_MAX_LOGIC + 1)
         result = run_check(gate, d)
-        gate.assert_exit_code(
-            1,
-            result.rc,
-            "%d logic lines is over the limit and must fail" % (INLINE_MAX_LOGIC + 1),
+        gate.assert_exit(
+            1, result, "%d logic lines is over the limit and must fail" % (INLINE_MAX_LOGIC + 1)
         )
     gate.log_pass(
         "boundary is exact: %d passes, %d fails" % (INLINE_MAX_LOGIC, INLINE_MAX_LOGIC + 1)
@@ -142,9 +140,7 @@ def test_comments_and_blanks_are_not_logic(gate):
             body += ["          # explanation %d" % i, "", "          echo line%d" % i]
         (d / "commented.yml").write_text("\n".join(body) + "\n", encoding="utf-8")
         result = run_check(gate, d)
-        gate.assert_exit_code(
-            0, result.rc, "comments and blank lines must not count toward the limit"
-        )
+        gate.assert_exit(0, result, "comments and blank lines must not count toward the limit")
     gate.log_pass("only non-blank, non-comment lines count as logic")
 
 
@@ -153,7 +149,7 @@ def test_counts_blocks_within_a_file(gate):
     with harness.temp_dir() as d:
         write_workflow(d / "multi.yml", 3)
         result = run_check(gate, d)
-        gate.assert_exit_code(1, result.rc, "3 over-threshold blocks must fail")
+        gate.assert_exit(1, result, "3 over-threshold blocks must fail")
         gate.assert_contains(
             result.combined, "3 inline run: block(s)", "reports the actual block count"
         )
@@ -169,7 +165,7 @@ def test_reports_every_offending_file(gate):
         write_workflow(d / "alpha.yml", 1)
         write_workflow(d / "beta.yml", 2)
         result = run_check(gate, d)
-        gate.assert_exit_code(1, result.rc, "multiple offending files must fail")
+        gate.assert_exit(1, result, "multiple offending files must fail")
         gate.assert_contains(result.combined, "alpha.yml", "names the first offending file")
         gate.assert_contains(result.combined, "beta.yml", "names the second offending file")
     gate.log_pass("reports every offending file in one pass")
@@ -185,7 +181,7 @@ def test_no_baseline_escape_hatch(gate):
         result = run_check(
             gate, d, extra_env={"WORKFLOW_INLINE_BASELINE": str(d / "baseline.json")}
         )
-        gate.assert_exit_code(1, result.rc, "a baseline file must not grandfather anything")
+        gate.assert_exit(1, result, "a baseline file must not grandfather anything")
         gate.assert_contains(
             result.combined,
             "legacy.yml",
@@ -226,8 +222,8 @@ def test_the_fixture_directory_is_what_is_judged(gate):
         write_workflow(good / "fine.yml", 0)
         bad_result = run_check(gate, bad)
         good_result = run_check(gate, good)
-        gate.assert_exit_code(1, bad_result.rc, "the violating fixture directory reds")
-        gate.assert_exit_code(0, good_result.rc, "the clean fixture directory passes")
+        gate.assert_exit(1, bad_result, "the violating fixture directory reds")
+        gate.assert_exit(0, good_result, "the clean fixture directory passes")
         gate.assert_contains(
             bad_result.combined,
             str(bad),

@@ -46,9 +46,7 @@ def test_accepts_real_inventories(gate):
     require_submodule(gate)
     result = run_gate(gate)
     if result.rc != 0:
-        gate.log_fail(
-            "real in-tree inventories should pass the embed-credits gate: %s" % result.combined
-        )
+        gate.log_fail("real in-tree inventories should pass the embed-credits gate", result)
     gate.log_pass("real inventories pass validation")
 
 
@@ -74,7 +72,7 @@ def test_rejects_dockerfile_pin_drift(gate, tmp_path):
     fixture = tmp_path / "Dockerfile"
     fixture.write_text("".join(drifted), encoding="utf-8")
     result = run_gate(gate, env={"EMBED_CREDITS_DOCKERFILE": str(fixture)})
-    gate.assert_exit_code(1, result.rc, "a Dockerfile pin drifting from the lockfile should fail")
+    gate.assert_exit(1, result, "a Dockerfile pin drifting from the lockfile should fail")
     gate.assert_contains(result.combined, "CRIU_VERSION", "error names the drifted ARG")
     gate.log_pass("a Dockerfile pin that drifts from the lockfile is rejected")
 
@@ -87,6 +85,6 @@ def test_rejects_stale_generated_artifact(gate, tmp_path):
         CREDITS_GO.read_text(encoding="utf-8") + "\n// hand-edited\n", encoding="utf-8"
     )
     result = run_gate(gate, env={"EMBED_CREDITS_GO_FILE": str(fixture)})
-    gate.assert_exit_code(1, result.rc, "a stale generated artifact should fail")
+    gate.assert_exit(1, result, "a stale generated artifact should fail")
     gate.assert_contains(result.combined, "stale", "error says the artifact is stale")
     gate.log_pass("a stale generated attribution artifact is rejected")

@@ -58,14 +58,14 @@ def strict_callers(root) -> int:
 
 def test_accepts_a_real_version(gate):
     result = run_inject(gate, "--version", "1.2.17", "--strict", "--print")
-    gate.assert_exit_code(0, result.rc, "a real version must pass --strict")
+    gate.assert_exit(0, result, "a real version must pass --strict")
     gate.assert_eq(result.out.strip(), "1.2.17", "and print unchanged")
     gate.log_pass("--strict accepts 1.2.17")
 
 
 def test_rejects_the_placeholder(gate):
     result = run_inject(gate, "--version", "0.0.0-dev", "--strict", "--print")
-    gate.assert_exit_code(1, result.rc, "0.0.0-dev must fail under --strict")
+    gate.assert_exit(1, result, "0.0.0-dev must fail under --strict")
     gate.assert_contains(result.err, "0.0.0-dev", "the failure must name the placeholder")
     gate.log_pass("--strict rejects 0.0.0-dev")
 
@@ -73,33 +73,33 @@ def test_rejects_the_placeholder(gate):
 def test_rejects_an_empty_version(gate):
     """THE CONTROL for the hole the original check had: it compared only against the literal "0.0.0-dev", so an empty version was "not 0.0.0-dev" and passed."""
     result = run_inject(gate, "--version", "", "--strict", "--print")
-    gate.assert_exit_code(1, result.rc, "an empty --version must fail under --strict")
+    gate.assert_exit(1, result, "an empty --version must fail under --strict")
     gate.assert_contains(result.err, "empty", "the failure must say the version was empty")
 
     # And it is refused without --strict too: an explicitly-supplied empty version used to fall through to the resolver and silently pick up the CURRENT tag, i.e. the version that is already published.
     result = run_inject(gate, "--version", "", "--print")
-    gate.assert_exit_code(1, result.rc, "an empty --version must fail even without --strict")
+    gate.assert_exit(1, result, "an empty --version must fail even without --strict")
     gate.log_pass("empty --version is refused, strict or not")
 
 
 def test_rejects_a_malformed_version(gate):
     for value in ("1.2.x", "latest", "none", "<html>404</html>"):
         result = run_inject(gate, "--version", value, "--strict", "--print")
-        gate.assert_exit_code(1, result.rc, "'%s' must fail under --strict" % value)
+        gate.assert_exit(1, result, "'%s' must fail under --strict" % value)
     # Without --strict the same values still resolve: dev and local builds are not in the business of policing versions.
     result = run_inject(gate, "--version", "latest", "--print")
-    gate.assert_exit_code(0, result.rc, "non-strict resolution must stay permissive")
+    gate.assert_exit(0, result, "non-strict resolution must stay permissive")
     gate.assert_eq(result.out.strip(), "latest", "and yield the value it was given")
     gate.log_pass("--strict rejects malformed versions, non-strict does not")
 
 
 def test_reads_the_VERSION_env(gate):  # noqa: N802 -- the twin's case name; parity compares by name
     result = run_inject(gate, "--strict", "--print", VERSION="1.4.0")
-    gate.assert_exit_code(0, result.rc, "VERSION env must be used when no --version is given")
+    gate.assert_exit(0, result, "VERSION env must be used when no --version is given")
     gate.assert_eq(result.out.strip(), "1.4.0", "and its value is what is printed")
 
     result = run_inject(gate, "--strict", "--print", VERSION="0.0.0-dev")
-    gate.assert_exit_code(1, result.rc, "VERSION=0.0.0-dev must fail under --strict")
+    gate.assert_exit(1, result, "VERSION=0.0.0-dev must fail under --strict")
     gate.log_pass("$VERSION path is policed the same way")
 
 
@@ -117,7 +117,7 @@ def test_empty_resolver_output_is_not_a_version(gate, tmp_path):
     result = harness.run(
         ["bash", "./version/inject-env.sh", "--strict", "--print"], cwd=tmp_path, timeout=120
     )
-    gate.assert_exit_code(1, result.rc, "an empty resolver result must not pass --strict")
+    gate.assert_exit(1, result, "an empty resolver result must not pass --strict")
 
     # Non-strict must degrade to the documented dev placeholder, not to "".
     result = harness.run(["bash", "./version/inject-env.sh", "--print"], cwd=tmp_path, timeout=120)

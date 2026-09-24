@@ -127,7 +127,7 @@ def run_assert(gate, expected: int, name: str, overrides: dict | None = None, dr
     env["PATH"] = os.environ.get("PATH", "")
     env["HOME"] = os.environ.get("HOME", "")
     result = harness.run(["bash", str(SUT)], env=env, env_replace=True)
-    gate.assert_exit_code(expected, result.rc, name)
+    gate.assert_exit(expected, result, name)
     gate.log_pass(name)
 
 

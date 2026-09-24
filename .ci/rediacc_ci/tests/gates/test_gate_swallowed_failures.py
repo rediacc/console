@@ -187,7 +187,7 @@ def test_fires_on_the_prefix_go_deps_probe(gate):
             r'    echo "All Go direct dependencies are up-to-date"',
         )
         result = run_gate(gate, tree)
-        gate.assert_eq(result.rc, 1, "the pre-fix go-deps probe must FIRE: %s" % result.combined)
+        gate.assert_exit(1, result, "the pre-fix go-deps probe must FIRE")
         gate.assert_contains(
             result.combined, "outdated", "the finding must name the swallowed variable"
         )
@@ -216,7 +216,7 @@ def test_clean_file_passes(gate):
             r'echo "$raw"',
         )
         result = run_gate(gate, tree)
-        gate.assert_eq(result.rc, 0, "a properly guarded probe must pass: %s" % result.combined)
+        gate.assert_exit(0, result, "a properly guarded probe must pass")
         gate.assert_contains(result.combined, "no gate captures a probe", "and say so")
         gate.log_pass("a capture that keeps its exit status and stderr passes")
 
@@ -315,9 +315,7 @@ def test_distinguishable_sentinel_is_silent(gate):
             r'echo "$STATUS"',
         )
         result = run_gate(gate, tree)
-        gate.assert_eq(
-            result.rc, 0, "a fallback to a real sentinel must not fire: %s" % result.combined
-        )
+        gate.assert_exit(0, result, "a fallback to a real sentinel must not fire")
         gate.log_pass("a distinguishable sentinel (|| echo missing) is not a swallowed failure")
 
 
@@ -332,11 +330,7 @@ def test_stderr_folded_in_is_silent(gate):
             r'echo "$output"',
         )
         result = run_gate(gate, tree)
-        gate.assert_eq(
-            result.rc,
-            0,
-            "2>&1 keeps the failure in the value, so it must not fire: %s" % result.combined,
-        )
+        gate.assert_exit(0, result, "2>&1 keeps the failure in the value, so it must not fire")
         gate.log_pass("a capture that folds stderr into the value is not flagged")
 
 
@@ -353,7 +347,7 @@ def test_answer_is_exit_commands_are_silent(gate):
             r'echo "$matches $found"',
         )
         result = run_gate(gate, tree)
-        gate.assert_eq(result.rc, 0, "grep and command -v must not fire: %s" % result.combined)
+        gate.assert_exit(0, result, "grep and command -v must not fire")
         gate.log_pass("commands whose non-zero exit is the answer are exempt")
 
 
@@ -370,9 +364,7 @@ def test_bare_command_without_capture_is_silent(gate):
             r'aws s3 rm "s3://b/k" --quiet 2>/dev/null || true',
         )
         result = run_gate(gate, tree)
-        gate.assert_eq(
-            result.rc, 0, "bare best-effort commands must not fire: %s" % result.combined
-        )
+        gate.assert_exit(0, result, "bare best-effort commands must not fire")
         gate.log_pass("an uncaptured || true (cleanup) is not flagged")
 
 
@@ -390,7 +382,7 @@ def test_reported_empty_case_is_silent(gate):
             r"fi",
         )
         result = run_gate(gate, tree)
-        gate.assert_eq(result.rc, 0, "an escalated empty case must not fire: %s" % result.combined)
+        gate.assert_exit(0, result, "an escalated empty case must not fire")
         gate.log_pass("an emptiness test that reports the problem is not flagged")
 
 
@@ -442,11 +434,7 @@ def test_waiver_suppresses(gate):
             r'echo "$cached"',
         )
         result = run_gate(gate, tree)
-        gate.assert_eq(
-            result.rc,
-            0,
-            "a properly reasoned waiver must suppress the finding: %s" % result.combined,
-        )
+        gate.assert_exit(0, result, "a properly reasoned waiver must suppress the finding")
         gate.assert_contains(result.combined, "1 waived", "and be counted in the summary")
         gate.log_pass("a waiver with a substantive reason suppresses the finding")
 
@@ -545,9 +533,7 @@ def test_real_tree_is_clean(gate):
     result = harness.run([runner, os.fspath(GATE)], cwd=paths.repo_root())
     count = len(FINDING_RE.findall(result.combined))
     if result.rc != 0:
-        gate.log_fail(
-            "the live tree regrew %d swallowed-failure finding(s):\n%s" % (count, result.combined)
-        )
+        gate.log_fail("the live tree regrew %d swallowed-failure finding(s)" % count, result)
     gate.assert_eq(count, 0, "no capture may discard a probe failure on the live tree")
     gate.assert_contains(
         result.combined,
@@ -630,11 +616,8 @@ def test_this_module_plants_no_capture_the_real_sweep_can_see(gate):
             "SWALLOWED_SCAN_DIRS": HERE_REL,
         },
     )
-    gate.assert_exit_code(
-        1,
-        result.rc,
-        "pointing the subject at the ports' own directory must REFUSE as blind "
-        "(output: %s)" % result.combined,
+    gate.assert_exit(
+        1, result, "pointing the subject at the ports' own directory must REFUSE as blind"
     )
     gate.assert_contains(
         result.combined,

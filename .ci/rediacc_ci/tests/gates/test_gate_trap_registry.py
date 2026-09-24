@@ -175,11 +175,7 @@ def test_real_tree_is_green_and_the_controls_fired(gate):
     """
     bash = require_gate(gate)
     result = harness.run([bash, os.fspath(GATE)], cwd=paths.repo_root(), timeout=GATE_TIMEOUT)
-    gate.assert_exit_code(
-        0,
-        result.rc,
-        "the real corpus must pass the registry gate (output: %s)" % result.combined,
-    )
+    gate.assert_exit(0, result, "the real corpus must pass the registry gate")
     gate.assert_contains(
         result.combined,
         "planted defects red",
@@ -216,7 +212,7 @@ def test_a_missing_trap_id_is_caught(gate):
             lambda text: _drop_lines(text, "Trap-Id: cancelled-run-not-passed"),
         )
         result = scan_corpus(gate, d / "p.md")
-        gate.assert_exit_code(1, result.rc, "an entry with no Trap-Id must red (F2)")
+        gate.assert_exit(1, result, "an entry with no Trap-Id must red (F2)")
         gate.assert_contains(
             result.combined, "has no Trap-Id", "the finding must name the missing field"
         )
@@ -235,7 +231,7 @@ def test_a_dangling_gate_pointer_is_caught(gate):
             ),
         )
         result = scan_corpus(gate, d / "p.md")
-        gate.assert_exit_code(1, result.rc, "a gate: pointer at a non-existent id must red (F4)")
+        gate.assert_exit(1, result, "a gate: pointer at a non-existent id must red (F4)")
         gate.assert_contains(
             result.combined,
             "check:does-not-exist",
@@ -259,9 +255,7 @@ def test_a_scheduled_but_unrun_gate_is_caught(gate):
             ),
         )
         result = scan_corpus(gate, d / "p.md")
-        gate.assert_exit_code(
-            1, result.rc, "a pointer at a manifest entry with gate:false must red (F5)"
-        )
+        gate.assert_exit(1, result, "a pointer at a manifest entry with gate:false must red (F5)")
         gate.assert_contains(
             result.combined,
             "never schedules it",
@@ -287,7 +281,7 @@ def test_a_deleted_entry_is_caught(gate):
     with harness.temp_dir() as d:
         plant(gate, d / "p.md", lambda text: _drop_entry(text, "git branch --merged"))
         result = scan_corpus(gate, d / "p.md")
-        gate.assert_exit_code(1, result.rc, "a shrinking corpus must red (F1)")
+        gate.assert_exit(1, result, "a shrinking corpus must red (F1)")
         gate.assert_contains(result.combined, "below the floor", "the finding must name the floor")
         gate.log_pass("F1: deleting an entry drops below the floor and reds")
 
@@ -297,11 +291,7 @@ def test_an_unchanged_copy_is_green(gate):
     with harness.temp_dir() as d:
         (d / "clean.md").write_text(corpus_text(gate), encoding="utf-8")
         result = scan_corpus(gate, d / "clean.md")
-        gate.assert_exit_code(
-            0,
-            result.rc,
-            "an unmodified copy of the corpus must stay green (output: %s)" % result.combined,
-        )
+        gate.assert_exit(0, result, "an unmodified copy of the corpus must stay green")
         gate.log_pass("CONTROL: an unmodified copy of the corpus is green")
 
 
@@ -419,12 +409,12 @@ def test_the_real_corpus_is_over_its_own_floor(gate):
     """
     bash = require_gate(gate)
     result = harness.run([bash, os.fspath(GATE)], cwd=paths.repo_root(), timeout=GATE_TIMEOUT)
-    gate.assert_exit_code(0, result.rc, "the real run must pass before its shape means anything")
+    gate.assert_exit(0, result, "the real run must pass before its shape means anything")
     match = SHAPE_RE.search(result.combined)
     if not match:
         gate.log_fail(
-            "the real run exited 0 without printing its population and floor, so nobody "
-            'can see a collapse. Output: "%s"' % result.combined
+            "the real run exited 0 without printing its population and floor, so nobody can see a collapse",
+            result,
         )
     entries, floor = int(match.group(1)), int(match.group(2))
     if floor <= 0:

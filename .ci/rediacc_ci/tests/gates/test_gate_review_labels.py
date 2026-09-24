@@ -341,7 +341,7 @@ def test_valid_verdict_applies_exactly_that_set(gate, tmp_path):
         report_with_verdict('{"bump": "minor", "kind": ["bug"], "why": "new flag plus a fix"}')
     )
     world.run_apply()
-    gate.assert_exit_code(0, world.rc, "the arm is advisory and always exits 0")
+    gate.assert_exit(0, world, "the arm is advisory and always exits 0")
     gate.assert_eq(world.added(), "bug bump-minor", "exactly the mapped verdict, nothing else")
     gate.assert_eq(world.removed(), "", "nothing to remove on a first pass")
     gate.assert_eq(
@@ -585,9 +585,7 @@ def test_unreadable_file_list_skips_the_mechanical_floor(gate, tmp_path):
     (world.fixtures / "files.json").unlink()  # the files endpoint fails
     world.execution_file(report_with_verdict('{"bump": "minor", "kind": [], "why": "x"}'))
     world.run_apply()
-    gate.assert_exit_code(
-        0, world.rc, "a failed file listing is advisory, like everything else here"
-    )
+    gate.assert_exit(0, world, "a failed file listing is advisory, like everything else here")
     gate.assert_eq(
         world.added(),
         "bump-minor",
@@ -686,7 +684,7 @@ def test_bump_none_verdict_applies_the_label(gate, tmp_path):
         report_with_verdict('{"bump": "none", "kind": ["ci"], "why": "CI plumbing only"}')
     )
     world.run_apply()
-    gate.assert_exit_code(0, world.rc, "the arm stays advisory")
+    gate.assert_exit(0, world, "the arm stays advisory")
     gate.assert_contains(" %s " % world.added(), " bump-none ", "a none verdict applies bump-none")
     gate.assert_not_contains(
         " %s " % world.added(), " bump-minor ", "and nothing else from the bump family"
@@ -867,9 +865,7 @@ def test_mark_does_not_count_the_ledger_comment_as_output(gate, tmp_path):
         }
     )
     world.run_mark(REVIEW_OUTCOME="success")
-    gate.assert_exit_code(
-        1, world.rc, "a ledger comment alone must NOT satisfy the posted-something guard"
-    )
+    gate.assert_exit(1, world, "a ledger comment alone must NOT satisfy the posted-something guard")
     gate.assert_contains(world.out, "posted NOTHING", "and the refusal says why")
 
     # CONTROL: a real report comment in the same slot DOES satisfy it, so the assertion above is about the prefix and not about a broken fixture.
@@ -884,9 +880,7 @@ def test_mark_does_not_count_the_ledger_comment_as_output(gate, tmp_path):
     if world.capture.exists():
         world.capture.unlink()
     world.run_mark(REVIEW_OUTCOME="success")
-    gate.assert_exit_code(
-        0, world.rc, "CONTROL: a genuine posted report DOES let the SHA be marked"
-    )
+    gate.assert_exit(0, world, "CONTROL: a genuine posted report DOES let the SHA be marked")
     gate.assert_contains(world.captured(), "claude-reviewed:", "and the marker is written")
     gate.log_pass(
         "--mark ignores the label ledger as evidence of output (CONTROL: a real report still counts)"
@@ -909,7 +903,7 @@ def test_fence_only_in_posted_comment_is_found(gate, tmp_path):
         }
     )
     world.run_apply()
-    gate.assert_exit_code(0, world.rc, "advisory always")
+    gate.assert_exit(0, world, "advisory always")
     gate.assert_eq(world.added(), "bug ci", "the comment-borne verdict is found and applied")
     gate.log_pass("FIRE: a fence living only in the posted comment is found by the fallback")
 
@@ -938,7 +932,7 @@ def test_total_api_failure_is_advisory(gate, tmp_path):
     world = make_world(gate, tmp_path)
     world.execution_file(report_with_verdict('{"bump": "minor", "kind": ["bug"], "why": "x"}'))
     world.run_apply(GH_FAIL_ALL="1")
-    gate.assert_exit_code(0, world.rc, "no label failure may fail the review job or block a merge")
+    gate.assert_exit(0, world, "no label failure may fail the review job or block a merge")
     gate.assert_contains(
         world.out, "could not", "and every failure is logged rather than swallowed"
     )

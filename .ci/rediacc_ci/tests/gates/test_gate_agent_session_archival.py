@@ -130,7 +130,7 @@ def test_an_abandoned_directory_moves_and_leaves_nothing_behind(gate, tmp_path):
     root = seed(tmp_path)
     result = _gate(root, "--move", "deadbeef", "--label", LABEL)
     if result.rc != 0:
-        gate.log_fail("the abandoned directory was refused: %s" % result.combined)
+        gate.log_fail("the abandoned directory was refused", result)
     gate.assert_contains(
         result.combined,
         "agent/deadbeef -> agent/archive/%s/deadbeef" % LABEL,
@@ -164,7 +164,7 @@ def test_the_promotion_reminder_is_printed_before_it_acts(gate, tmp_path):
     root = seed(tmp_path)
     result = _gate(root, "--move", "deadbeef", "--label", LABEL)
     if result.rc != 0:
-        gate.log_fail("the move failed: %s" % result.combined)
+        gate.log_fail("the move failed", result)
     gate.assert_contains(
         result.combined,
         "promote anything in agent/RULES.md",
@@ -180,17 +180,14 @@ def test_the_promotion_reminder_is_printed_before_it_acts(gate, tmp_path):
 def test_a_reserved_name_is_refused_outright(gate, tmp_path):
     root = seed(tmp_path)
     result = _gate(root, "--move", "archive", "--label", LABEL)
-    gate.assert_exit_code(1, result.rc, "a reserved directory name was accepted as a session")
+    gate.assert_exit(1, result, "a reserved directory name was accepted as a session")
     gate.assert_contains(result.combined, "reserved directory", "the refusal does not say why")
     if not (root / "agent/archive").is_dir():
         gate.log_fail("agent/archive was moved into itself; the reserved-name rail did not hold")
     # MIRROR: the same verb, one fact changed, moves. Without it this case is satisfied by a verb that refuses everything.
     mirror = _gate(root, "--move", "deadbeef", "--label", LABEL)
     if mirror.rc != 0:
-        gate.log_fail(
-            "the mirror move was refused too, so the rail above proves nothing: %s"
-            % mirror.combined
-        )
+        gate.log_fail("the mirror move was refused too, so the rail above proves nothing", mirror)
     gate.log_pass("--move refuses every reserved name and still moves a real session")
 
 
@@ -198,7 +195,7 @@ def test_every_reserved_name_is_refused_not_just_the_first(gate, tmp_path):
     root = seed(tmp_path)
     for name in RESERVED:
         result = _gate(root, "--move", name, "--label", LABEL)
-        gate.assert_exit_code(1, result.rc, "the reserved name '%s' was accepted" % name)
+        gate.assert_exit(1, result, "the reserved name '%s' was accepted" % name)
         gate.assert_contains(
             result.combined, "reserved directory", "'%s' was refused for the wrong reason" % name
         )
@@ -210,8 +207,8 @@ def test_every_reserved_name_is_refused_not_just_the_first(gate, tmp_path):
 def test_a_live_target_is_refused_without_force_and_moves_with_it(gate, tmp_path):
     root = seed(tmp_path)
     result = _gate(root, "--move", "live5678", "--label", LABEL)
-    gate.assert_exit_code(
-        1, result.rc, "a session the oracle still calls LIVE was archived without --force"
+    gate.assert_exit(
+        1, result, "a session the oracle still calls LIVE was archived without --force"
     )
     gate.assert_contains(
         result.combined, "still LIVE", "the refusal does not name liveness as the reason"
@@ -221,7 +218,7 @@ def test_a_live_target_is_refused_without_force_and_moves_with_it(gate, tmp_path
     # MIRROR: --force is the README's own same-day self-archival door and must still open.
     forced = _gate(root, "--move", "live5678", "--label", LABEL, "--force")
     if forced.rc != 0:
-        gate.log_fail("--force did not open the door for a live session: %s" % forced.combined)
+        gate.log_fail("--force did not open the door for a live session", forced)
     if (root / "agent/live5678").exists():
         gate.log_fail("--force reported success without moving anything")
     gate.log_pass("--move refuses a live target and --force archives it deliberately")
@@ -231,8 +228,8 @@ def test_a_dirty_target_is_refused_because_a_peer_may_be_writing(gate, tmp_path)
     root = seed(tmp_path)
     _write(root, "agent/deadbeef/NOTE.md", "half a note another session is still typing\n")
     result = _gate(root, "--move", "deadbeef", "--label", LABEL)
-    gate.assert_exit_code(
-        1, result.rc, "a directory with uncommitted content was moved out from under its writer"
+    gate.assert_exit(
+        1, result, "a directory with uncommitted content was moved out from under its writer"
     )
     gate.assert_contains(
         result.combined, "race a live writer", "the refusal does not name the hazard"
@@ -244,10 +241,7 @@ def test_a_dirty_target_is_refused_because_a_peer_may_be_writing(gate, tmp_path)
     _git(root, "commit", "-qm", "note")
     mirror = _gate(root, "--move", "deadbeef", "--label", LABEL)
     if mirror.rc != 0:
-        gate.log_fail(
-            "a quiet tree was still refused, so the dirty rail is unconditional: %s"
-            % mirror.combined
-        )
+        gate.log_fail("a quiet tree was still refused, so the dirty rail is unconditional", mirror)
     if not (root / "agent/archive" / LABEL / "deadbeef" / "NOTE.md").is_file():
         gate.log_fail("the committed note did not travel with the directory")
     gate.log_pass("--move refuses a dirty target and accepts the same one once the tree is quiet")
@@ -262,9 +256,7 @@ def test_an_occupied_archive_path_is_refused(gate, tmp_path):
         "an earlier archive of a different session that happened to share the name\n",
     )
     result = _gate(root, "--move", "deadbeef", "--label", LABEL)
-    gate.assert_exit_code(
-        1, result.rc, "two sessions' directories were merged into one archive path"
-    )
+    gate.assert_exit(1, result, "two sessions' directories were merged into one archive path")
     gate.assert_contains(
         result.combined, "already exists", "the refusal does not say the path is taken"
     )
@@ -279,9 +271,7 @@ def test_an_occupied_archive_path_is_refused(gate, tmp_path):
 def test_a_missing_directory_is_refused(gate, tmp_path):
     root = seed(tmp_path)
     result = _gate(root, "--move", "nosuchxx", "--label", LABEL)
-    gate.assert_exit_code(
-        1, result.rc, "a session directory that is not there was reported as moved"
-    )
+    gate.assert_exit(1, result, "a session directory that is not there was reported as moved")
     gate.assert_contains(
         result.combined, "does not exist", "the refusal does not say what is missing"
     )
@@ -291,9 +281,7 @@ def test_a_missing_directory_is_refused(gate, tmp_path):
 def test_move_without_a_target_is_a_setup_error_not_a_verdict(gate, tmp_path):
     root = seed(tmp_path)
     result = _gate(root, "--move")
-    gate.assert_exit_code(
-        2, result.rc, "a missing argument was reported as a finding about the tree"
-    )
+    gate.assert_exit(2, result, "a missing argument was reported as a finding about the tree")
     gate.assert_contains(
         result.combined, "needs a session directory name", "the error does not say what is missing"
     )
@@ -325,9 +313,7 @@ def test_check_and_status_write_nothing_at_all(gate, tmp_path):
 def test_the_gate_fires_on_the_backlog_and_goes_green_once_it_is_archived(gate, tmp_path):
     root = seed(tmp_path)
     red = _gate(root)
-    gate.assert_exit_code(
-        1, red.rc, "the gate stayed green over a directory 34 days idle; it cannot fire"
-    )
+    gate.assert_exit(1, red, "the gate stayed green over a directory 34 days idle; it cannot fire")
     gate.assert_contains(
         red.combined, "agent/deadbeef/ has been idle", "the finding does not name the directory"
     )
@@ -336,11 +322,9 @@ def test_the_gate_fires_on_the_backlog_and_goes_green_once_it_is_archived(gate, 
     )
     fix = _gate(root, "--move", "deadbeef", "--label", LABEL)
     if fix.rc != 0:
-        gate.log_fail("the fix the finding named failed: %s" % fix.combined)
+        gate.log_fail("the fix the finding named failed", fix)
     green = _gate(root)
-    gate.assert_exit_code(
-        0, green.rc, "the gate stayed red after its own remedy was applied: %s" % green.combined
-    )
+    gate.assert_exit(0, green, "the gate stayed red after its own remedy was applied")
     gate.assert_contains(
         green.combined, "1 session director(ies)", "the green line does not print what it counted"
     )
@@ -352,8 +336,8 @@ def test_an_empty_agent_tree_refuses_rather_than_passing(gate, tmp_path):
     shutil.rmtree(root / "agent/deadbeef")
     shutil.rmtree(root / "agent/live5678")
     result = _gate(root)
-    gate.assert_exit_code(
-        77, result.rc, "an enumeration that found NO session directory reported a clean tree"
+    gate.assert_exit(
+        77, result, "an enumeration that found NO session directory reported a clean tree"
     )
     gate.assert_contains(
         result.combined, "CANNOT RUN", "the vacuity floor did not announce itself as a refusal"
@@ -365,7 +349,7 @@ def test_a_missing_archive_directory_refuses_rather_than_passing(gate, tmp_path)
     root = seed(tmp_path)
     shutil.rmtree(root / "agent/archive")
     result = _gate(root)
-    gate.assert_exit_code(77, result.rc, "a tree with nowhere to archive to reported a clean bill")
+    gate.assert_exit(77, result, "a tree with nowhere to archive to reported a clean bill")
     gate.assert_contains(
         result.combined, "nowhere to archive", "the refusal does not say what is missing"
     )
@@ -376,8 +360,8 @@ def test_a_missing_oracle_refuses_rather_than_inventing_one(gate, tmp_path):
     root = seed(tmp_path)
     (root / ".claude").unlink()
     result = _gate(root)
-    gate.assert_exit_code(
-        77, result.rc, "the gate reached a verdict with no liveness oracle to reach it with"
+    gate.assert_exit(
+        77, result, "the gate reached a verdict with no liveness oracle to reach it with"
     )
     gate.assert_contains(
         result.combined, "cannot import wl_store", "the refusal does not name the missing oracle"

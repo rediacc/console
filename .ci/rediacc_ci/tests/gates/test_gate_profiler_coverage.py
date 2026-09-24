@@ -150,9 +150,7 @@ def test_full_coverage_passes(gate):
     with harness.temp_dir() as d:
         wf, allow = scaffold(gate, d)
         result = run_gate(gate, wf, allow, 1, 2, 2)
-        gate.assert_exit_code(
-            0, result.rc, "a fully covered fixture must pass (output: %s)" % result.combined
-        )
+        gate.assert_exit(0, result, "a fully covered fixture must pass")
         gate.assert_contains(
             result.combined, "2/2 Linux job(s) profiled", "counts both covered jobs"
         )
@@ -165,7 +163,7 @@ def test_missing_action_fails(gate):
         scaffold(gate, d)
         wf, allow = one_profiled_one_bare(gate, d)
         result = run_gate(gate, wf, allow, 1, 2, 2)
-        gate.assert_exit_code(1, result.rc, "an unprofiled Linux job must fail")
+        gate.assert_exit(1, result, "an unprofiled Linux job must fail")
         gate.assert_contains(
             result.combined,
             "fixture.yml:fixture-latest",
@@ -189,11 +187,7 @@ def test_allowlisted_with_good_reason_passes(gate):
             encoding="utf-8",
         )
         result = run_gate(gate, wf, allow, 1, 2, 2)
-        gate.assert_exit_code(
-            0,
-            result.rc,
-            "an allowlisted job with a real reason must pass (output: %s)" % result.combined,
-        )
+        gate.assert_exit(0, result, "an allowlisted job with a real reason must pass")
         gate.assert_contains(
             result.combined, "1 allowlisted", "reports the suppression rather than hiding it"
         )
@@ -207,7 +201,7 @@ def test_low_effort_blocker_rejected(gate):
         wf, allow = one_profiled_one_bare(gate, d)
         allow.write_text("# BLOCKER: tbd\nfixture.yml:fixture-latest\n", encoding="utf-8")
         result = run_gate(gate, wf, allow, 1, 2, 2)
-        gate.assert_exit_code(1, result.rc, "a low-effort BLOCKER must be rejected")
+        gate.assert_exit(1, result, "a low-effort BLOCKER must be rejected")
         gate.assert_contains(
             result.combined, "low-effort placeholder", "uses the shared validator's own wording"
         )
@@ -220,7 +214,7 @@ def test_missing_blocker_rejected(gate):
         wf, allow = one_profiled_one_bare(gate, d)
         allow.write_text("fixture.yml:fixture-latest\n", encoding="utf-8")
         result = run_gate(gate, wf, allow, 1, 2, 2)
-        gate.assert_exit_code(1, result.rc, "an entry with no BLOCKER at all must be rejected")
+        gate.assert_exit(1, result, "an entry with no BLOCKER at all must be rejected")
         gate.assert_contains(
             result.combined, "missing a '# BLOCKER:", "names the missing convention"
         )
@@ -239,11 +233,7 @@ def test_non_linux_jobs_not_required(gate):
             bare_job("fixture-mac-intel", "macos-15-intel"),
         )
         result = run_gate(gate, wf, allow, 1, 3, 0)
-        gate.assert_exit_code(
-            0,
-            result.rc,
-            "non-Linux jobs must not be required to be profiled (output: %s)" % result.combined,
-        )
+        gate.assert_exit(0, result, "non-Linux jobs must not be required to be profiled")
         gate.assert_contains(
             result.combined, "0/0 Linux job(s)", "classifies all three as out of scope"
         )
@@ -261,11 +251,7 @@ def test_caller_job_not_required(gate):
             profiled_job("fixture-slim", "ubuntu-slim", "interval: '10'"),
         )
         result = run_gate(gate, wf, allow, 1, 2, 1)
-        gate.assert_exit_code(
-            0,
-            result.rc,
-            "a reusable-workflow caller must not be required (output: %s)" % result.combined,
-        )
+        gate.assert_exit(0, result, "a reusable-workflow caller must not be required")
         gate.assert_contains(
             result.combined, "1 reusable-workflow caller(s) excluded", "reports the exclusion"
         )
@@ -289,7 +275,7 @@ def test_matrix_with_linux_leg_is_required(gate):
             "      - run: echo work\n",
         )
         result = run_gate(gate, wf, allow, 1, 1, 1)
-        gate.assert_exit_code(1, result.rc, "a matrix with a Linux leg must be required")
+        gate.assert_exit(1, result, "a matrix with a Linux leg must be required")
         gate.assert_contains(
             result.combined, "runs on ubuntu-24.04-arm", "resolves the matrix leg by name"
         )
@@ -311,11 +297,7 @@ def test_matrix_without_linux_leg_is_not_required(gate):
             "      - run: echo work\n",
         )
         result = run_gate(gate, wf, allow, 1, 1, 0)
-        gate.assert_exit_code(
-            0,
-            result.rc,
-            "an all-non-Linux matrix must not be required (output: %s)" % result.combined,
-        )
+        gate.assert_exit(0, result, "an all-non-Linux matrix must not be required")
         gate.log_pass("a matrix job with no Linux leg is out of scope (inline-list form resolved)")
 
 
@@ -331,7 +313,7 @@ def test_unresolvable_runs_on_is_required(gate):
             "      - run: echo work\n",
         )
         result = run_gate(gate, wf, allow, 1, 1, 1)
-        gate.assert_exit_code(1, result.rc, "an unresolvable runs-on must fail closed")
+        gate.assert_exit(1, result, "an unresolvable runs-on must fail closed")
         gate.assert_contains(
             result.combined,
             "no static parse can resolve",
@@ -346,20 +328,18 @@ def test_bad_interval_fails(gate):
             gate, d, profiled_job("fixture-slim", "ubuntu-slim", "interval: '0'")
         )
         result = run_gate(gate, wf, allow, 1, 1, 1)
-        gate.assert_exit_code(1, result.rc, "interval 0 must fail")
+        gate.assert_exit(1, result, "interval 0 must fail")
         gate.assert_contains(result.combined, "outside 1..300s", "names the range")
 
         write_workflow(gate, d, profiled_job("fixture-slim", "ubuntu-slim", "interval: fast"))
         result = run_gate(gate, wf, allow, 1, 1, 1)
-        gate.assert_exit_code(1, result.rc, "a non-numeric interval must fail")
+        gate.assert_exit(1, result, "a non-numeric interval must fail")
         gate.assert_contains(result.combined, "is not an integer", "names the type problem")
 
         # CONTROL: the same job with a sane interval passes.
         write_workflow(gate, d, profiled_job("fixture-slim", "ubuntu-slim", "interval: '10'"))
         result = run_gate(gate, wf, allow, 1, 1, 1)
-        gate.assert_exit_code(
-            0, result.rc, "a sane interval must pass (output: %s)" % result.combined
-        )
+        gate.assert_exit(0, result, "a sane interval must pass")
         gate.log_pass("interval is validated as a positive integer in a sane range")
 
 
@@ -370,7 +350,7 @@ def test_undeclared_input_fails(gate):
             gate, d, profiled_job("fixture-slim", "ubuntu-slim", "sampling-rate: '10'")
         )
         result = run_gate(gate, wf, allow, 1, 1, 1)
-        gate.assert_exit_code(1, result.rc, "an input the action does not declare must fail")
+        gate.assert_exit(1, result, "an input the action does not declare must fail")
         gate.assert_contains(
             result.combined, "does not declare", "names the contract it was checked against"
         )
@@ -392,7 +372,7 @@ def test_runner_label_problems_fail(gate):
             "      - run: echo work\n",
         )
         result = run_gate(gate, wf, allow, 1, 1, 1)
-        gate.assert_exit_code(1, result.rc, "a runner-label that disagrees with runs-on must fail")
+        gate.assert_exit(1, result, "a runner-label that disagrees with runs-on must fail")
         gate.assert_contains(result.combined, "disagrees with runs-on", "names the disagreement")
 
         # Omitted entirely: the check cannot fire at all.
@@ -408,7 +388,7 @@ def test_runner_label_problems_fail(gate):
             "      - run: echo work\n",
         )
         result = run_gate(gate, wf, allow, 1, 1, 1)
-        gate.assert_exit_code(1, result.rc, "a missing runner-label must fail")
+        gate.assert_exit(1, result, "a missing runner-label must fail")
         gate.assert_contains(
             result.combined, "without runner-label", "says the HOST_LEAK check is unarmed"
         )
@@ -430,7 +410,7 @@ def test_malformed_reference_fails(gate):
             "      - run: echo work\n",
         )
         result = run_gate(gate, wf, allow, 1, 1, 1)
-        gate.assert_exit_code(1, result.rc, "a malformed action reference must fail")
+        gate.assert_exit(1, result, "a malformed action reference must fail")
         gate.assert_contains(
             result.combined, "malformed profiler reference", "names the malformed reference"
         )
@@ -453,7 +433,7 @@ def test_nest_probe_is_not_coverage(gate):
     with harness.temp_dir() as d:
         wf, allow = write_workflow(gate, d, NESTED_JOB)
         result = run_gate(gate, wf, allow, 1, 1, 1)
-        gate.assert_exit_code(1, result.rc, "a nested wrapper must not count as coverage")
+        gate.assert_exit(1, result, "a nested wrapper must not count as coverage")
         gate.assert_contains(
             result.combined,
             "does not use ./.github/actions/profiler",
@@ -480,11 +460,7 @@ def test_declared_wrapper_counts_as_coverage(gate):
             1,
             PROFILER_COVERAGE_COVERING_ACTIONS="./.github/actions/profiler/nest-probe",
         )
-        gate.assert_exit_code(
-            0,
-            result.rc,
-            "a declared covering wrapper must count as coverage (output: %s)" % result.combined,
-        )
+        gate.assert_exit(0, result, "a declared covering wrapper must count as coverage")
         gate.assert_contains(
             result.combined, "1/1 Linux job(s) profiled", "counts the wrapped job as covered"
         )
@@ -508,11 +484,8 @@ def test_setup_workspace_is_builtin_coverage(gate):
             "      - run: echo work\n",
         )
         result = run_gate(gate, wf, allow, 1, 1, 1)
-        gate.assert_exit_code(
-            0,
-            result.rc,
-            "a job using setup-workspace must count as covered with no seam set "
-            "(output: %s)" % result.combined,
+        gate.assert_exit(
+            0, result, "a job using setup-workspace must count as covered with no seam set"
         )
         gate.assert_contains(
             result.combined, "1/1 Linux job(s) profiled", "counts the wrapped job as covered"
@@ -533,7 +506,7 @@ def test_other_composite_is_not_coverage(gate):
             "      - run: echo work\n",
         )
         result = run_gate(gate, wf, allow, 1, 1, 1)
-        gate.assert_exit_code(1, result.rc, "an unrelated composite must not count as coverage")
+        gate.assert_exit(1, result, "an unrelated composite must not count as coverage")
         gate.assert_contains(
             result.combined,
             "does not use ./.github/actions/profiler",
@@ -574,7 +547,7 @@ def test_wrapper_that_lost_the_profiler_refuses(gate):
         result = run_gate(
             gate, wf, allow, 1, 1, 1, PROFILER_COVERAGE_WRAPPER_DIRS=os.fspath(hollow)
         )
-        gate.assert_exit_code(1, result.rc, "a wrapper that does not use the profiler must refuse")
+        gate.assert_exit(1, result, "a wrapper that does not use the profiler must refuse")
         gate.assert_contains(result.combined, "covering wrapper", "names the wrapper it checked")
         gate.assert_not_contains(
             result.combined, "Linux job(s) profiled", "must not print a success line"
@@ -590,7 +563,7 @@ def test_wrapper_that_lost_the_profiler_refuses(gate):
             1,
             PROFILER_COVERAGE_WRAPPER_DIRS=os.fspath(d / "no-such-wrapper"),
         )
-        gate.assert_exit_code(1, result.rc, "a wrapper directory with no action.yml must refuse")
+        gate.assert_exit(1, result, "a wrapper directory with no action.yml must refuse")
         gate.assert_contains(result.combined, "has no action.yml", "names the missing contract")
 
         # CONTROL: the REAL wrapper, named explicitly, is accepted -- so the two refusals above are the verification working, not the seam being unusable.
@@ -603,11 +576,7 @@ def test_wrapper_that_lost_the_profiler_refuses(gate):
             1,
             PROFILER_COVERAGE_WRAPPER_DIRS=".github/actions/setup-workspace",
         )
-        gate.assert_exit_code(
-            0,
-            result.rc,
-            "the real setup-workspace wrapper must verify (output: %s)" % result.combined,
-        )
+        gate.assert_exit(0, result, "the real setup-workspace wrapper must verify")
         gate.log_pass("a wrapper is verified to carry the profiler, and refuses when it does not")
 
 
@@ -618,13 +587,13 @@ def test_stale_allowlist_entries_fail(gate):
         # (1) names a job that does not exist
         allow.write_text("%s\nfixture.yml:no-such-job\n" % GOOD_REASON, encoding="utf-8")
         result = run_gate(gate, wf, allow, 1, 2, 2)
-        gate.assert_exit_code(1, result.rc, "an entry naming no job must fail")
+        gate.assert_exit(1, result, "an entry naming no job must fail")
         gate.assert_contains(result.combined, "names no job", "says the entry suppresses nothing")
 
         # (2) names a job that IS profiled now -- paid-down debt must not linger
         allow.write_text("%s\nfixture.yml:fixture-slim\n" % GOOD_REASON, encoding="utf-8")
         result = run_gate(gate, wf, allow, 1, 2, 2)
-        gate.assert_exit_code(1, result.rc, "an entry for a now-covered job must fail as stale")
+        gate.assert_exit(1, result, "an entry for a now-covered job must fail as stale")
         gate.assert_contains(
             result.combined, "IS profiled now", "says the exemption exempts nothing"
         )
@@ -638,7 +607,7 @@ def test_stale_allowlist_entries_fail(gate):
         )
         allow.write_text("%s\nfixture.yml:fixture-mac\n" % GOOD_REASON, encoding="utf-8")
         result = run_gate(gate, wf, allow, 1, 2, 1)
-        gate.assert_exit_code(1, result.rc, "an entry for a non-Linux job must fail as stale")
+        gate.assert_exit(1, result, "an entry for a non-Linux job must fail as stale")
         gate.assert_contains(result.combined, "does not run on Linux", "says it was never required")
         gate.log_pass(
             "the allowlist can only shrink: dead, covered and never-required entries all fail"
@@ -653,9 +622,7 @@ def test_empty_workflow_dir_refuses(gate):
         allow = d / "allow"
         allow.write_text("", encoding="utf-8")
         result = run_gate(gate, wf, allow, 1, 1, 1)
-        gate.assert_exit_code(
-            1, result.rc, "an empty workflow directory must REFUSE, not report clean"
-        )
+        gate.assert_exit(1, result, "an empty workflow directory must REFUSE, not report clean")
         gate.assert_contains(result.combined, "ZERO workflow files", "names what went missing")
         gate.assert_not_contains(
             result.combined, "Linux job(s) profiled", "must not print a success line"
@@ -668,7 +635,7 @@ def test_missing_workflow_dir_refuses(gate):
         allow = d / "allow"
         allow.write_text("", encoding="utf-8")
         result = run_gate(gate, d / "nowhere", allow, 1, 1, 1)
-        gate.assert_exit_code(1, result.rc, "a missing workflow directory must refuse")
+        gate.assert_exit(1, result, "a missing workflow directory must refuse")
         gate.assert_contains(
             result.combined, "workflow directory not found", "names the missing path"
         )
@@ -684,7 +651,7 @@ def test_zero_jobs_refuses(gate):
         allow = d / "allow"
         allow.write_text("", encoding="utf-8")
         result = run_gate(gate, wf, allow, 1, 1, 1)
-        gate.assert_exit_code(1, result.rc, "zero parsed jobs must refuse")
+        gate.assert_exit(1, result, "zero parsed jobs must refuse")
         gate.assert_contains(result.combined, "ZERO jobs", "names what went missing")
         gate.log_pass("zero parsed jobs refuses rather than passing vacuously")
 
@@ -695,19 +662,19 @@ def test_floors_refuse_a_shrunken_sweep(gate):
 
         # Workflow floor: the real tree has 28 files; a scan that finds 1 is wrong.
         result = run_gate(gate, wf, allow, 5, 2, 2)
-        gate.assert_exit_code(1, result.rc, "a workflow count under the floor must refuse")
+        gate.assert_exit(1, result, "a workflow count under the floor must refuse")
         gate.assert_contains(result.combined, "the scan surface is wrong", "says broken, not clean")
 
         # Job floor.
         result = run_gate(gate, wf, allow, 1, 50, 2)
-        gate.assert_exit_code(1, result.rc, "a job count under the floor must refuse")
+        gate.assert_exit(1, result, "a job count under the floor must refuse")
         gate.assert_contains(
             result.combined, "found a layout it does not understand", "blames the parser"
         )
 
         # Linux-job floor: the classifier, not the parser.
         result = run_gate(gate, wf, allow, 1, 2, 50)
-        gate.assert_exit_code(1, result.rc, "a Linux-job count under the floor must refuse")
+        gate.assert_exit(1, result, "a Linux-job count under the floor must refuse")
         gate.assert_contains(
             result.combined, "runner classifier is broken", "blames the classifier"
         )
@@ -727,7 +694,7 @@ def test_missing_action_yml_refuses(gate):
             2,
             PROFILER_COVERAGE_ACTION_DIR=os.fspath(d / "no-such-action"),
         )
-        gate.assert_exit_code(1, result.rc, "a missing action.yml must refuse")
+        gate.assert_exit(1, result, "a missing action.yml must refuse")
         gate.assert_contains(
             result.combined, "profiler action not found", "names the missing contract"
         )
@@ -738,9 +705,7 @@ def test_real_tree_seam_free(gate):
     """THE LOAD-BEARING CASE. No env seams at all: the real workflow dir, the real allowlist, the real action.yml, the real floors. This is what the manifest's BLOCKER claims runs on every CI run."""
     bash = require_gate(gate)
     result = harness.run([bash, os.fspath(GATE)], cwd=paths.repo_root())
-    gate.assert_exit_code(
-        0, result.rc, "the real tree must satisfy the gate (output: %s)" % result.combined
-    )
+    gate.assert_exit(0, result, "the real tree must satisfy the gate")
     gate.assert_contains(result.combined, "Linux job(s) profiled", "prints the real coverage count")
     gate.assert_not_contains(
         result.combined,
@@ -773,11 +738,8 @@ def test_this_module_plants_no_workflow_the_real_sweep_can_see(gate):
         allow = d / "allow"
         allow.write_text("", encoding="utf-8")
         result = run_gate(gate, here, allow, 1, 1, 1)
-        gate.assert_exit_code(
-            1,
-            result.rc,
-            "pointing the subject at the ports' own directory must REFUSE as blind "
-            "(output: %s)" % result.combined,
+        gate.assert_exit(
+            1, result, "pointing the subject at the ports' own directory must REFUSE as blind"
         )
         gate.assert_contains(
             result.combined,

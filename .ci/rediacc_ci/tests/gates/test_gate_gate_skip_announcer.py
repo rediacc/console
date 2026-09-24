@@ -49,10 +49,7 @@ def run_announcer(gate, mode: str | None, expected: int, label: str, *args: str)
         env["GATE_SKIP_MODE"] = mode
     result = harness.run([*ANNOUNCER_ARGV, *args], env=env, env_replace=True)
     if result.rc != expected:
-        gate.log_fail(
-            "%s: expected exit %d, got %d (output: %s)"
-            % (label, expected, result.rc, result.combined)
-        )
+        gate.log_fail("%s: expected exit %d, got %d" % (label, expected, result.rc), result)
     return result.combined
 
 
@@ -128,7 +125,7 @@ def test_skip_writes_step_summary(gate):
                 "PYTHONPATH": CI_PACKAGE_ROOT,
             },
         )
-        gate.assert_exit_code(0, result.rc, "skip with summary should still exit 0")
+        gate.assert_exit(0, result, "skip with summary should still exit 0")
         written = summary.read_text(encoding="utf-8")
         gate.assert_contains(written, "Gates skipped by", "step summary not written")
         gate.assert_contains(written, "gate-alpha", "step summary must name the gate")

@@ -135,7 +135,7 @@ def test_render_pairs_is_a_thin_forwarder(gate):
                 "_tutorial_render_pairs installation en --stale-only --require-provider voxcpm2",
             )
             if result.rc != 0:
-                gate.log_fail("the predicate call failed (output: %s)" % result.combined)
+                gate.log_fail("the predicate call failed", result)
             call = fake.record("node")
             gate.assert_contains(
                 call,
@@ -153,7 +153,7 @@ def test_render_pairs_is_a_thin_forwarder(gate):
         with harness.fake_bin("node +uname") as fake:
             result = run_pool(d, "_tutorial_render_pairs '' ''")
             if result.rc != 0:
-                gate.log_fail("the predicate call failed (output: %s)" % result.combined)
+                gate.log_fail("the predicate call failed", result)
             call = fake.record("node")
             gate.assert_not_contains(
                 call, "--cast", "an empty name must not become an empty --cast"
@@ -214,7 +214,7 @@ def test_the_pool_streams_within_its_bound_and_records_failures(gate):
                 "_tutorial_video_pool 2 '%s/fail'" % d,
             )
             if result.rc != 0:
-                gate.log_fail("the pool failed (output: %s)" % result.combined)
+                gate.log_fail("the pool failed", result)
             starts = trace.read_text(encoding="utf-8").splitlines().count("S")
             gate.assert_eq(starts, 5, "every queued pair must be rendered")
             gate.assert_eq(max_overlap(trace), 2, "at most --jobs renders may be in flight at once")
@@ -226,9 +226,7 @@ def test_the_pool_streams_within_its_bound_and_records_failures(gate):
             script_renderer(fake.dir, trace2, 1)
             trace2.write_text("", encoding="utf-8")
             result = run_pool(d, "printf 'a\\ten\\n' | _tutorial_video_pool 2 '%s/f2'" % d)
-            gate.assert_exit_code(
-                0, result.rc, "with fewer pairs than jobs the pool records and returns 0"
-            )
+            gate.assert_exit(0, result, "with fewer pairs than jobs the pool records and returns 0")
             files = failure_files(d, "f2")
             gate.assert_eq(
                 len(files),
@@ -250,9 +248,9 @@ def test_the_pool_streams_within_its_bound_and_records_failures(gate):
             script_renderer(fake.dir, trace3, 1)
             trace3.write_text("", encoding="utf-8")
             result = run_pool(d, POOL_WITH_CALLER_REPORT.replace("PREFIX", "%s/f3" % d))
-            gate.assert_exit_code(
+            gate.assert_exit(
                 1,
-                result.rc,
+                result,
                 "failures still make the CALLER exit 1 -- via its report block, not via the "
                 "pool aborting",
             )
@@ -306,9 +304,9 @@ def test_the_pool_streams_within_its_bound_and_records_failures(gate):
             result = run_pool(
                 d, POOL_WITH_CALLER_REPORT.replace("PREFIX", "%s/f4" % d), module_dir=mutant
             )
-            gate.assert_exit_code(
+            gate.assert_exit(
                 1,
-                result.rc,
+                result,
                 "the pre-fix pool still ends non-zero, which is why the exit code alone never "
                 "showed the bug",
             )

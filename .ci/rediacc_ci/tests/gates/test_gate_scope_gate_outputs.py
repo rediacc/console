@@ -486,7 +486,7 @@ def test_emitted_names_match_the_workflow_contract(gate, fixture):
 def test_reduced_plan_emits_exactly_the_out_of_scope_keys(gate, fixture):
     """(a) THE POSITIVE CASE THE OTHERS ARE MEASURED AGAINST."""
     run = fixture.run_gate("reduced")
-    gate.assert_exit_code(0, run.rc, "the gate must always exit 0")
+    gate.assert_exit(0, run, "the gate must always exit 0")
 
     # CONTROL, and it runs BEFORE anything reads the lines. An emitter that writes nothing would satisfy every other case in this file, so if a reduced plan produces no false line at all, nothing below is evidence of anything.
     n = run.count_false()
@@ -524,7 +524,7 @@ def test_quiet_wire_values_do_not_trip_the_kill_switch(gate, fixture):
     """THE EXACT STRINGS ci.yml PRODUCES ON AN ORDINARY PR. FORCE_FULL_CI is the EMPTY STRING whenever the FULL_CI Bitwarden secret holds anything but its `full-ci-on` sentinel (ci.yml maps that one value to 'true' and every other to ''), and the label check `contains(...)` renders the literal 'false', never an empty value. Both must read as "not forced". Comparing against 'true' rather than testing for non-emptiness is what makes that work, and this case exists so nobody can
     later relax it to `[[ -n "$FORCE_FULL_CI" ]]` and make every PR full while the engine looks perfectly healthy."""
     run = fixture.run_gate("quietwire", env={"FORCE_FULL_CI": "", "FULL_CI_LABEL": "false"})
-    gate.assert_exit_code(0, run.rc, "the gate must always exit 0")
+    gate.assert_exit(0, run, "the gate must always exit 0")
     gate.assert_contains(
         run.emitted,
         "scope_mode=reduced",
@@ -543,7 +543,7 @@ def test_quiet_wire_values_do_not_trip_the_kill_switch(gate, fixture):
 def test_the_deciding_plan_is_the_baseline_plan(gate, fixture):
     """The reduction above can only come from `--resolve-baseline`: the merge-base classify over B..C2 also touches docs/a.md, and would classify identically here, so the two are told apart by WHICH artifact plan.json was built from. plan.json carries the baseline walk's own fields; a plan.json written from scope-classify.json cannot have them."""
     run = fixture.run_gate("deciding")
-    gate.assert_exit_code(0, run.rc, "the gate must always exit 0")
+    gate.assert_exit(0, run, "the gate must always exit 0")
     plan = run.plan()
     gate.assert_eq(
         str((plan.get("baseline") or {}).get("sha")),
@@ -562,7 +562,7 @@ def test_the_deciding_plan_is_the_baseline_plan(gate, fixture):
 def test_engine_failure_emits_no_false_line(gate, fixture):
     """(b) THE SAFETY PROPERTY. An engine that cannot reach the API must not shrink the run by a single job."""
     run = fixture.run_gate("enginefail", env={"SCOPE_GH_FAIL": "1"})
-    gate.assert_exit_code(0, run.rc, "an engine failure must still exit 0")
+    gate.assert_exit(0, run, "an engine failure must still exit 0")
     gate.assert_eq(
         run.count_false(), 0, "an engine that cannot reach the API must not skip a single job"
     )
@@ -574,7 +574,7 @@ def test_engine_failure_emits_no_false_line(gate, fixture):
 
     # CONTROL: the same fixture, same command, working shim. If this did not produce false lines, the assertion above would be measuring the fixture rather than the failure.
     control = fixture.run_gate("enginefail-control")
-    gate.assert_exit_code(0, control.rc, "the control run must exit 0")
+    gate.assert_exit(0, control, "the control run must exit 0")
     n = control.count_false()
     if n == 0:
         gate.log_fail(
@@ -590,7 +590,7 @@ def test_operator_override_forces_full_without_running_the_engine(gate, fixture)
     """(c) BOTH KILL SWITCHES, and the half that makes them worth having."""
     for switch in ("FORCE_FULL_CI", "FULL_CI_LABEL"):
         run = fixture.run_gate("override-%s" % switch, env={switch: "true"})
-        gate.assert_exit_code(0, run.rc, "%s must still exit 0" % switch)
+        gate.assert_exit(0, run, "%s must still exit 0" % switch)
         gate.assert_eq(run.count_false(), 0, "%s must not skip a single job" % switch)
         gate.assert_contains(run.emitted, "scope_mode=full", "%s must report full" % switch)
 
@@ -618,7 +618,7 @@ def test_plan_write_failure_emits_nothing_and_still_exits_zero(gate, fixture):
     outdir = fixture.out_dir("planfail")
     (outdir / "plan.json").mkdir(parents=True, exist_ok=True)
     run = fixture.run_gate("planfail")
-    gate.assert_exit_code(0, run.rc, "an unwritable plan must not fail the job")
+    gate.assert_exit(0, run, "an unwritable plan must not fail the job")
     gate.assert_eq(
         len(run.emitted.splitlines()),
         0,
@@ -633,7 +633,7 @@ def test_plan_write_failure_emits_nothing_and_still_exits_zero(gate, fixture):
     # CONTROL: the same case name without the planted directory emits lines.
     shutil.rmtree(outdir)
     control = fixture.run_gate("planfail")
-    gate.assert_exit_code(0, control.rc, "the control run must exit 0")
+    gate.assert_exit(0, control, "the control run must exit 0")
     n = control.count_false()
     if n == 0:
         gate.log_fail(
@@ -650,7 +650,7 @@ def test_unset_output_file_decides_nothing(gate, fixture):
     what makes `SCOPE_SHADOW_OUT=... python3 -m rediacc_ci.ci.scope_shadow` a usable way to
     see what a change WOULD scope to."""
     run = fixture.run_gate("nooutput", unset=("OUTPUT_FILE",))
-    gate.assert_exit_code(0, run.rc, "a run with no OUTPUT_FILE must exit 0")
+    gate.assert_exit(0, run, "a run with no OUTPUT_FILE must exit 0")
     gate.assert_eq(len(run.emitted.splitlines()), 0, "and must write nothing anywhere")
     plan_path = run.outdir / "plan.json"
     if not (plan_path.is_file() and plan_path.stat().st_size > 0):

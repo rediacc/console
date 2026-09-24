@@ -32,7 +32,7 @@ def test_mapping_form_is_caught(gate):
             "  url: https://pr-${{ github.event.pull_request.number }}.rediacc.workers.dev",
         )
         result = workflow_rule.run_check(gate, d, ci=True)
-        gate.assert_exit_code(1, result.rc, "the historical ci.yml block is refused")
+        gate.assert_exit(1, result, "the historical ci.yml block is refused")
         gate.assert_contains(result.combined, "bad.yml:", "and the finding cites the file and line")
     gate.log_pass("the mapping form -- the defect verbatim -- is caught")
 
@@ -44,7 +44,7 @@ def test_scalar_form_is_caught(gate):
             d / "bad.yml", "environment: pr-${{ github.event.pull_request.number }}"
         )
         result = workflow_rule.run_check(gate, d, ci=True)
-        gate.assert_exit_code(1, result.rc, "the scalar shorthand is refused too")
+        gate.assert_exit(1, result, "the scalar shorthand is refused too")
     gate.log_pass("the scalar shorthand is caught, so the rule is not a name:-grep")
 
 
@@ -58,7 +58,7 @@ def test_real_environments_pass(gate):
             d / "c.yml", "environment:", "  name: ${{ inputs.target }}-${{ matrix.id }}"
         )
         result = workflow_rule.run_check(gate, d, ci=True)
-        gate.assert_exit_code(0, result.rc, "edge, inputs.target and the regional form all pass")
+        gate.assert_exit(0, result, "edge, inputs.target and the regional form all pass")
     gate.log_pass("CONTROL: the three real production environments are not flagged")
 
 
@@ -68,7 +68,7 @@ def test_a_pr_prefixed_word_is_not_a_pr_environment(gate):
     with harness.temp_dir() as d:
         workflow_rule.write_job(d / "a.yml", "environment:", "  name: preview")
         result = workflow_rule.run_check(gate, d, ci=True)
-        gate.assert_exit_code(0, result.rc, "a name merely starting with pr is not pr-")
+        gate.assert_exit(0, result, "a name merely starting with pr is not pr-")
     gate.log_pass("CONTROL: 'preview' is not mistaken for a pr- environment")
 
 
@@ -94,8 +94,8 @@ def test_the_fixture_directory_is_what_is_judged(gate):
         workflow_rule.write_job(good / "fine.yml", "environment:", "  name: edge")
         bad_result = workflow_rule.run_check(gate, bad, ci=True)
         good_result = workflow_rule.run_check(gate, good, ci=True)
-        gate.assert_exit_code(1, bad_result.rc, "the violating fixture directory reds")
-        gate.assert_exit_code(0, good_result.rc, "the clean fixture directory passes")
+        gate.assert_exit(1, bad_result, "the violating fixture directory reds")
+        gate.assert_exit(0, good_result, "the clean fixture directory passes")
         gate.assert_contains(
             bad_result.combined,
             "offender.yml",

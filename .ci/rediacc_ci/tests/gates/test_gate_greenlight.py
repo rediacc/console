@@ -99,8 +99,9 @@ def ev(gate, payload: str) -> dict:
     result = node_eval(gate, EV_JS, os.fspath(ENGINE), payload)
     if result.rc != 0:
         gate.log_fail(
-            "the engine could not be driven at all (rc=%s): %s\ninput: %s"
-            % (harness.describe_exit(result.rc), result.combined, payload)
+            "the engine could not be driven at all (rc=%s)\ninput: %s"
+            % (harness.describe_exit(result.rc), payload),
+            result,
         )
     try:
         return json.loads(result.out)
@@ -323,8 +324,9 @@ def test_absent_and_throwing_candidates_fail_open(gate):
     result = node_eval(gate, THROWING_JS, os.fspath(ENGINE))
     if result.rc != 0:
         gate.log_fail(
-            "the throwing-fetch probe did not run at all (rc=%s): %s"
-            % (harness.describe_exit(result.rc), result.combined)
+            "the throwing-fetch probe did not run at all (rc=%s)"
+            % harness.describe_exit(result.rc),
+            result,
         )
     thrown = result.out
     gate.assert_contains(
@@ -567,8 +569,8 @@ def test_declared_closure_paths_exist(gate):
     result = node_eval(gate, CLOSURE_PATHS_JS, os.fspath(ENGINE))
     if result.rc != 0:
         gate.log_fail(
-            "the closure table could not be read at all (rc=%s): %s"
-            % (harness.describe_exit(result.rc), result.combined)
+            "the closure table could not be read at all (rc=%s)" % harness.describe_exit(result.rc),
+            result,
         )
 
     count = 0
@@ -650,8 +652,9 @@ def test_matrix_key_needs_every_leg(gate):
     result = node_eval(gate, LEGS_JS, os.fspath(ENGINE))
     if result.rc != 0:
         gate.log_fail(
-            "the matrix leg list could not be read at all (rc=%s): %s"
-            % (harness.describe_exit(result.rc), result.combined)
+            "the matrix leg list could not be read at all (rc=%s)"
+            % harness.describe_exit(result.rc),
+            result,
         )
     # `wc -l` on the twin's `printf '%s\n'` counts the legs, one per line.
     gate.assert_eq(
@@ -730,8 +733,9 @@ def test_empty_submodule_list_is_vacuous_not_broken(gate):
     result = node_eval(gate, PACKAGE_TESTS_PINS_JS, os.fspath(ENGINE))
     if result.rc != 0:
         gate.log_fail(
-            "the package_tests pin count could not be read at all (rc=%s): %s"
-            % (harness.describe_exit(result.rc), result.combined)
+            "the package_tests pin count could not be read at all (rc=%s)"
+            % harness.describe_exit(result.rc),
+            result,
         )
     gate.assert_eq(result.out, "0", "the package_tests key declares no submodules at all")
 
@@ -828,8 +832,8 @@ def test_key_order_is_cost_descending(gate):
     result = node_eval(gate, KEY_ORDER_JS, os.fspath(ENGINE))
     if result.rc != 0:
         gate.log_fail(
-            "the key order could not be read at all (rc=%s): %s"
-            % (harness.describe_exit(result.rc), result.combined)
+            "the key order could not be read at all (rc=%s)" % harness.describe_exit(result.rc),
+            result,
         )
     keys = result.out
     first = keys.split(" ")[0]

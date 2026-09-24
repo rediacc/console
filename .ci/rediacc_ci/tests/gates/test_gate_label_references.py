@@ -147,9 +147,7 @@ def test_all_declared_passes(gate):
     with harness.temp_dir() as d:
         names = scaffold(gate, d)
         result = run_gate(gate, d / "scan", d / "labels.yml", len(names))
-        gate.assert_exit_code(
-            0, result.rc, "every shape declared must pass (output: %s)" % result.combined
-        )
+        gate.assert_exit(0, result, "every shape declared must pass")
         gate.assert_contains(
             result.combined,
             "all %d code-referenced labels" % len(names),
@@ -170,7 +168,7 @@ def test_undeclared_reference_fails(gate):
             "".join("- name: %s\n" % n for n in names if n != dropped), encoding="utf-8"
         )
         result = run_gate(gate, d / "scan", d / "labels2.yml", len(names) - 1)
-        gate.assert_exit_code(1, result.rc, "an undeclared referenced label must fail")
+        gate.assert_exit(1, result, "an undeclared referenced label must fail")
         gate.assert_contains(result.combined, dropped, "names the undeclared label")
         gate.assert_contains(result.combined, "tool.cjs", "names the referencing site")
         gate.log_pass("an undeclared reference fails, naming label and site")
@@ -183,9 +181,7 @@ def test_declared_but_unreferenced_is_fine(gate):
         with open(d / "labels.yml", "a", encoding="utf-8") as handle:
             handle.write("- name: %s\n" % label("unused"))
         result = run_gate(gate, d / "scan", d / "labels.yml", len(names))
-        gate.assert_exit_code(
-            0, result.rc, "a declared-but-unreferenced label is inventory, not an error"
-        )
+        gate.assert_exit(0, result, "a declared-but-unreferenced label is inventory, not an error")
         gate.log_pass("declaration without reference does not fail (one direction only)")
 
 
@@ -197,7 +193,7 @@ def test_floor_catches_a_dead_sweep(gate):
         (scan / "empty.txt").write_text("nothing label-shaped here\n", encoding="utf-8")
         (d / "labels.yml").write_text("- name: whatever\n", encoding="utf-8")
         result = run_gate(gate, scan, d / "labels.yml", 8)
-        gate.assert_exit_code(1, result.rc, "a sweep under the floor must refuse")
+        gate.assert_exit(1, result, "a sweep under the floor must refuse")
         gate.assert_contains(result.combined, "floor", "says the sweep is broken, not clean")
         gate.log_pass("the distinct-labels floor refuses a dead sweep")
 
@@ -212,9 +208,7 @@ def test_real_tree_is_clean_and_excludes_this_file(gate):
     """
     python3 = require_gate(gate)
     result = harness.run([python3, os.fspath(GATE)], cwd=paths.repo_root())
-    gate.assert_exit_code(
-        0, result.rc, "the real tree must be clean (output: %s)" % result.combined
-    )
+    gate.assert_exit(0, result, "the real tree must be clean")
     for suffix in SUFFIXES:
         gate.assert_not_contains(
             result.combined,
@@ -224,8 +218,8 @@ def test_real_tree_is_clean_and_excludes_this_file(gate):
     match = DISTINCT_RE.search(result.combined)
     if not match:
         gate.log_fail(
-            "the real run exited 0 without stating how many references it reconciled, "
-            'so its green says nothing about what it swept. Output: "%s"' % result.combined
+            "the real run exited 0 without stating how many references it reconciled, so its green says nothing about what it swept",
+            result,
         )
     distinct = int(match.group(1))
     if distinct < REAL_FLOOR:
@@ -257,11 +251,8 @@ def test_this_module_plants_no_label_reference_the_real_sweep_can_see(gate):
             "green would mean nothing." % HERE_REL
         )
     result = run_gate(gate, here, paths.from_root(".github", "labels.yml"), 0)
-    gate.assert_exit_code(
-        0,
-        result.rc,
-        "the ported gate tests must contribute no label reference the real sweep can "
-        "see (output: %s)" % result.combined,
+    gate.assert_exit(
+        0, result, "the ported gate tests must contribute no label reference the real sweep can see"
     )
     for suffix in SUFFIXES:
         gate.assert_not_contains(

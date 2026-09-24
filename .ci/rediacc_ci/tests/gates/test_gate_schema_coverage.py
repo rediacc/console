@@ -36,7 +36,7 @@ def test_gate_green_on_real_tree(gate):
             "which is a FAILURE and not a pass. Fix: npm install && npm run install:natives"
         )
     result = harness.run([str(TSX), str(SUT)], cwd=paths.repo_root())
-    gate.assert_exit_code(0, result.rc, "gate must pass on the current schema+registry")
+    gate.assert_exit(0, result, "gate must pass on the current schema+registry")
     gate.assert_contains(
         result.combined,
         "fires as uncovered",
@@ -79,8 +79,8 @@ def test_the_gate_reports_a_non_trivial_leaf_count(gate):
     digits = [int(token) for token in result.combined.replace(",", " ").split() if token.isdigit()]
     if not digits or max(digits) < 1:
         gate.log_fail(
-            "the gate's output carries no positive count, so its green cannot be "
-            "distinguished from a walk over an empty schema. Output:\n%s" % result.combined
+            "the gate's output carries no positive count, so its green cannot be distinguished from a walk over an empty schema",
+            result,
         )
     gate.assertions += 1
     gate.log_pass("the gate reported counts up to %d, so its walk was not empty" % max(digits))

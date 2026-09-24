@@ -40,7 +40,7 @@ def test_selftest_passes_and_plants_both_shapes(gate):
     gate_source(gate)  # refuses loudly if the subject is gone, as the twin's `[ -f ]` does
     result = run(GATE, "--selftest")
     out = result.combined
-    gate.assert_exit_code(0, result.rc, "the gate's own controls must pass (output: %s)" % out)
+    gate.assert_exit(0, result, "the gate's own controls must pass")
     gate.assert_contains(
         out,
         "a `typeof window` branch in a useState initializer is reported",
@@ -73,8 +73,8 @@ def test_the_control_can_actually_fail(gate, tmp_path):
     mutant = tmp_path / "mutant.ts"
     mutant.write_text(source.replace(MUTATION_FROM, MUTATION_TO), encoding="utf-8")
     result = run(mutant, "--selftest")
-    gate.assert_exit_code(
-        1, result.rc, "a gate that stopped following the one hop must FAIL its own controls"
+    gate.assert_exit(
+        1, result, "a gate that stopped following the one hop must FAIL its own controls"
     )
     gate.assert_contains(
         result.combined,
@@ -105,6 +105,6 @@ def test_real_tree_scan_is_not_vacuous(gate):
 def test_empty_tree_is_refused(gate, tmp_path):
     (tmp_path / "packages" / "www" / "src").mkdir(parents=True, exist_ok=True)
     result = run(GATE, "--root", str(tmp_path))
-    gate.assert_exit_code(1, result.rc, "a tree with no components must be REFUSED, never passed")
+    gate.assert_exit(1, result, "a tree with no components must be REFUSED, never passed")
     gate.assert_contains(result.combined, "Refusing to run", "the refusal must say so")
     gate.log_pass("an empty component tree is refused rather than reported clean")

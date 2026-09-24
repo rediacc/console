@@ -112,7 +112,7 @@ def test_a_move_carries_no_new_citation_even_after_a_reflow(gate, tmp_path):
     """REGRESSION. Before the fix this exited 1: the reflow defeated the base-blob match and the whole moved document read as added."""
     root, base_sha = _lived_fixture(tmp_path)
     result = _gate(root, base_sha)
-    gate.assert_exit_code(0, result.rc, "a move plus an earlier reflow carries no new citation")
+    gate.assert_exit(0, result, "a move plus an earlier reflow carries no new citation")
     gate.log_pass("the reflow-then-move sequence no longer manufactures 337 findings from zero")
 
 
@@ -125,7 +125,7 @@ def test_a_citation_written_after_the_move_is_still_judged(gate, tmp_path):
     )
     _commit(root, "a genuinely new stale citation")
     result = _gate(root, base_sha)
-    gate.assert_exit_code(1, result.rc, "a citation written after the move is not excused by it")
+    gate.assert_exit(1, result, "a citation written after the move is not excused by it")
     gate.assert_contains(result.out + result.err, "lib/nonexistent.py", "and it names the new line")
     gate.log_pass("new debt on a moved plan still reds")
 
@@ -142,7 +142,7 @@ def test_a_never_moved_plan_with_a_new_stale_citation_still_reds(gate, tmp_path)
     )
     _commit(root, "a stale citation, never moved")
     result = _gate(root, base_sha)
-    gate.assert_exit_code(1, result.rc, "an ordinary plan's new stale citation still reds")
+    gate.assert_exit(1, result, "an ordinary plan's new stale citation still reds")
     gate.log_pass("the exclusion is not a blanket amnesty")
 
 
@@ -154,8 +154,6 @@ def test_the_exclusion_is_scoped_to_the_moved_plan(gate, tmp_path):
     )
     _commit(root, "a stale citation in a sibling plan")
     result = _gate(root, base_sha)
-    gate.assert_exit_code(
-        1, result.rc, "the sibling plan's new citation is not excused by the move"
-    )
+    gate.assert_exit(1, result, "the sibling plan's new citation is not excused by the move")
     gate.assert_contains(result.out + result.err, "PLAN-other.md", "and it is the one named")
     gate.log_pass("the carried-lines exclusion is per moved plan, not global")

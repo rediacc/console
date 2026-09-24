@@ -28,7 +28,7 @@ def test_flags_runner_temp(gate):
             d / "bad.yml", "SSH_KEY: $RUNNER_TEMP/renet/id_rsa", "ATTEMPTS: 15"
         )
         result = workflow_rule.run_check(gate, d, ci=True)
-        gate.assert_exit_code(1, result.rc, "a literal $RUNNER_TEMP in an env: value must fail")
+        gate.assert_exit(1, result, "a literal $RUNNER_TEMP in an env: value must fail")
         gate.assert_contains(
             result.combined, "shell syntax GitHub will not expand", "explains the mechanism"
         )
@@ -43,7 +43,7 @@ def test_flags_home(gate):
     with harness.temp_dir() as d:
         workflow_rule.write_step_env(d / "bad.yml", "SSH_KEY: $HOME/.ssh/id_ed25519")
         result = workflow_rule.run_check(gate, d, ci=True)
-        gate.assert_exit_code(1, result.rc, "a literal $HOME in an env: value must fail")
+        gate.assert_exit(1, result, "a literal $HOME in an env: value must fail")
     gate.log_pass("flags $HOME too, which has no context equivalent")
 
 
@@ -54,7 +54,7 @@ def test_context_form_passes(gate):
             d / "ok.yml", "SSH_KEY: ${{ runner.temp }}/renet/id_rsa", "ATTEMPTS: 15"
         )
         result = workflow_rule.run_check(gate, d, ci=True)
-        gate.assert_exit_code(0, result.rc, "the ${{ }} context form is the fix and must pass")
+        gate.assert_exit(0, result, "the ${{ }} context form is the fix and must pass")
     gate.log_pass("the ${{ runner.temp }} form passes")
 
 
@@ -67,10 +67,8 @@ def test_longer_name_is_reported_as_itself(gate):
             d / "bad.yml", "BREW: $HOMEBREW_PREFIX/bin", "OTHER: $RUNNER_TEMPLATE_X"
         )
         result = workflow_rule.run_check(gate, d, ci=True)
-        gate.assert_exit_code(
-            1,
-            result.rc,
-            "any unexpanded $IDENT in an env: value is a violation, long names included",
+        gate.assert_exit(
+            1, result, "any unexpanded $IDENT in an env: value is a violation, long names included"
         )
         gate.assert_contains(
             result.combined,
@@ -86,7 +84,7 @@ def test_arbitrary_variable_is_flagged(gate):
     with harness.temp_dir() as d:
         workflow_rule.write_step_env(d / "bad.yml", "SECRET_API_KEY: $ACCOUNT_SERVER_API_KEY")
         result = workflow_rule.run_check(gate, d, ci=True)
-        gate.assert_exit_code(1, result.rc, "SECRET_X: $SOME_VAR in an env: block must be flagged")
+        gate.assert_exit(1, result, "SECRET_X: $SOME_VAR in an env: block must be flagged")
     gate.log_pass("an arbitrary $IDENT (not one of the old six) is flagged")
 
 
@@ -101,7 +99,7 @@ def test_comment_line_in_env_block_is_ignored(gate):
             "REAL: plain",
         )
         result = workflow_rule.run_check(gate, d, ci=True)
-        gate.assert_exit_code(0, result.rc, "a comment line inside env: must not be flagged")
+        gate.assert_exit(0, result, "a comment line inside env: must not be flagged")
     gate.log_pass("a comment line inside an env: block is ignored")
 
 
@@ -122,10 +120,8 @@ def test_run_body_is_not_flagged(gate):
             encoding="utf-8",
         )
         result = workflow_rule.run_check(gate, d, ci=True)
-        gate.assert_exit_code(
-            0,
-            result.rc,
-            "shell vars inside run: are expanded by the shell and must not be flagged",
+        gate.assert_exit(
+            0, result, "shell vars inside run: are expanded by the shell and must not be flagged"
         )
     gate.log_pass("run: bodies are out of scope (the shell expands them there)")
 
@@ -148,7 +144,7 @@ def test_env_block_ends_at_dedent(gate):
             encoding="utf-8",
         )
         result = workflow_rule.run_check(gate, d, ci=True)
-        gate.assert_exit_code(0, result.rc, "the env: block must end at the dedent")
+        gate.assert_exit(0, result, "the env: block must end at the dedent")
     gate.log_pass("scanner leaves the env: block at the dedent")
 
 
@@ -170,8 +166,8 @@ def test_the_fixture_directory_is_what_is_judged(gate):
         workflow_rule.write_step_env(good / "fine.yml", "SSH_KEY: ${{ runner.temp }}/id_rsa")
         bad_result = workflow_rule.run_check(gate, bad, ci=True)
         good_result = workflow_rule.run_check(gate, good, ci=True)
-        gate.assert_exit_code(1, bad_result.rc, "the violating fixture directory reds")
-        gate.assert_exit_code(0, good_result.rc, "the clean fixture directory passes")
+        gate.assert_exit(1, bad_result, "the violating fixture directory reds")
+        gate.assert_exit(0, good_result, "the clean fixture directory passes")
         gate.assert_contains(
             bad_result.combined,
             str(bad),

@@ -81,7 +81,7 @@ def test_selftest_green(gate):
     if not GATE.is_file():
         gate.log_fail("subject under test is missing: %s" % paths.relative_to_root(GATE))
     result = run_tsx(gate, GATE, "--selftest")
-    gate.assert_exit_code(0, result.rc, "the gate's selftest must pass on a clean tree")
+    gate.assert_exit(0, result, "the gate's selftest must pass on a clean tree")
     gate.assert_contains(
         result.combined, "no-space side-effect facade", "and exercise the facade shape"
     )
@@ -106,7 +106,7 @@ def test_mutant_reverts_the_fix(gate, tmp_path):
     mutant = tmp_path / "mutant.ts"
     mutant.write_text(mutated, encoding="utf-8")
     result = run_tsx(gate, mutant, "--selftest")
-    gate.assert_exit_code(1, result.rc, r"reverting \s* to \s+ must make the selftest FAIL")
+    gate.assert_exit(1, result, r"reverting \s* to \s+ must make the selftest FAIL")
     gate.assert_contains(
         result.combined,
         "FAIL  PLANT: a no-space side-effect facade",

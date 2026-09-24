@@ -2,8 +2,8 @@
 
 NEW TEST, NOT A PORT, so there is no `.ci/scripts/test/gates/test-*.sh` named here.
 
-WHY THIS FILE EXISTS BESIDE A 31-CONTROL SELFTEST. Every control in that selftest drives `transition_problems()` with `base_ledger`, `renames_into_archive`, `_touched_plans`, `_added_plans` and `_content_age_days` all stubbed out through `globals()`. That is the right shape for a rule table, and it is structurally incapable of catching the thing that actually decides the verdict
-here: whether the GIT plumbing feeding those five functions produces the inputs the rule table expects.
+WHY THIS FILE EXISTS BESIDE A 31-CONTROL SELFTEST. Every control in that selftest drives `transition_problems()` with `base_ledger`, `renames_into_archive`, `_added_plans` and `_content_age_days` all stubbed out through `globals()`. That is the right shape for a rule table, and it is structurally incapable of catching the thing that actually decides the verdict
+here: whether the GIT plumbing feeding those four functions produces the inputs the rule table expects.
 Age comes out of `git log -1 --format=%cI <base> -- <path>`, the archive exemption
 comes out of `git diff --find-renames -M100%`, and the base ledger comes out of `git show <base>:.ci/config/plan-boxes.json`. A stub agrees with whatever it is told.
 
@@ -87,7 +87,7 @@ def _seed(tmp_path: pathlib.Path, subject: str, age_days: int) -> tuple[pathlib.
     seeded = _gate(root, update=True)
     if seeded.rc != 0:
         raise harness.GateAssertionError(
-            "fixture ledger could not be written: %s" % seeded.combined
+            "fixture ledger could not be written\n%s" % harness.render_output(seeded)
         )
     _git(root, "add", "-A", "--", ".")
     _git(root, "commit", "-qm", "base", when=_iso_days_ago(age_days))
@@ -97,7 +97,9 @@ def _seed(tmp_path: pathlib.Path, subject: str, age_days: int) -> tuple[pathlib.
 def _regenerate_and_commit(root: pathlib.Path, message: str) -> None:
     written = _gate(root, update=True)
     if written.rc != 0:
-        raise harness.GateAssertionError("fixture ledger regen failed: %s" % written.combined)
+        raise harness.GateAssertionError(
+            "fixture ledger regen failed\n%s" % harness.render_output(written)
+        )
     _git(root, "add", "-A", "--", ".")
     _git(root, "commit", "-qm", message)
 
@@ -110,7 +112,7 @@ def test_deleting_a_41_day_old_plan_that_loses_a_box_is_refused(gate, tmp_path):
     _regenerate_and_commit(root, "delete the aged plan wholesale")
 
     result = _gate(root, base)
-    gate.assert_exit_code(1, result.rc, "age must not license losing a box")
+    gate.assert_exit(1, result, "age must not license losing a box")
     gate.log_pass(
         "a 41-day-old plan losing its only open box is REFUSED (it passed until 2026-09-09)"
     )
@@ -174,7 +176,7 @@ def test_an_r100_archive_is_silent_at_both_ages(gate, tmp_path):
         )
         gate.assert_contains(rename, "R100\t", "the fixture must really be a byte-identical rename")
         result = _gate(root, base)
-        gate.assert_exit_code(0, result.rc, "archiving is a legal home at age %d" % age)
+        gate.assert_exit(0, result, "archiving is a legal home at age %d" % age)
         gate.log_pass("an R100 archive is silent at age %d -- one predicate, no age term" % age)
 
 
@@ -192,7 +194,7 @@ def test_an_aged_husk_whose_boxes_moved_is_still_free(gate, tmp_path):
     _regenerate_and_commit(root, "move the box into a live plan, then drop the husk")
 
     result = _gate(root, base)
-    gate.assert_exit_code(0, result.rc, "a husk whose boxes survive elsewhere is free to remove")
+    gate.assert_exit(0, result, "a husk whose boxes survive elsewhere is free to remove")
     gate.log_pass("an aged husk whose box moved to a live plan is silent")
 
 
@@ -213,11 +215,76 @@ def test_a_plan_folder_move_is_not_read_as_a_new_unowned_plan(gate, tmp_path):
     _regenerate_and_commit(root, "move PLAN-old.md into agent/plans/")
 
     result = _gate(root, base)
-    gate.assert_exit_code(0, result.rc, "a move alone is not new unowned debt")
+    gate.assert_exit(0, result, "a move alone is not new unowned debt")
     gate.assert_not_contains(
         result.combined, "is NEW on this branch", "the moved plan is not misread as an add"
     )
     gate.log_pass("a plan-folder move is read as a move, not a new unowned plan")
+
+
+def _store(root: pathlib.Path) -> None:
+    """A committed worklist store: #abcd0001 was asked and then DECIDED, #abcd0002 is still a question."""
+    events = [
+        '{"ev":"add","id":"abcd0001","at":"2026-09-24T01:00:00Z","s":" ","t":"drop it?"}',
+        '{"ev":"state","id":"abcd0001","at":"2026-09-24T01:01:00Z","s":"?"}',
+        '{"ev":"state","id":"abcd0001","at":"2026-09-24T01:02:00Z","s":"x","note":"operator: drop it"}',
+        '{"ev":"add","id":"abcd0002","at":"2026-09-24T01:00:00Z","s":" ","t":"drop it?"}',
+        '{"ev":"state","id":"abcd0002","at":"2026-09-24T01:01:00Z","s":"?"}',
+    ]
+    (root / "agent" / "worklist").mkdir(parents=True, exist_ok=True)
+    (root / "agent" / "worklist" / "abcd0000.jsonl").write_text(
+        "\n".join(events) + "\n", encoding="utf-8"
+    )
+
+
+def _close(root: pathlib.Path, ruling: str | None) -> None:
+    rel = root / "agent" / "PLAN-old.md"
+    text = rel.read_text(encoding="utf-8").replace("Status: executing", "Status: superseded", 1)
+    if ruling is not None:
+        text = text.replace("Status: superseded\n", "Status: superseded\nRuling: %s\n" % ruling, 1)
+    rel.write_text(text, encoding="utf-8")
+
+
+def test_a_finished_plan_keeps_decided_boxes_only_under_a_resolving_ruling(gate, tmp_path):
+    """G-A3 end to end (worklist #87cff418): the Ruling resolves against the COMMITTED store, read by the gate as a process.
+
+    One pass and three refusals from the same fixture, one header line apart, so each refusal is known to be about the ruling and nothing else.
+    """
+    cases = [
+        ("#abcd0001", 0, "G-A3: 1 finished plan(s) over open boxes"),
+        (None, 1, "no `Ruling:` line"),
+        ("#abcd0002", 1, "question, not a decision"),
+        ("#abcd0009", 1, "not an item in the worklist store"),
+    ]
+    for ruling, want_rc, needle in cases:
+        gate.log_test("Status: superseded over an open box, Ruling: %s" % ruling)
+        root, base = _seed(tmp_path / ("r%s" % (ruling or "none")).strip("#"), "PLAN-old.md", 5)
+        _store(root)
+        _close(root, ruling)
+        _regenerate_and_commit(root, "close the plan by decision")
+        result = _gate(root, base)
+        gate.assert_exit(want_rc, result, "Ruling %s" % ruling)
+        gate.assert_contains(result.combined, needle, "the verdict names why")
+        gate.log_pass("Ruling %s -> exit %d, %s" % (ruling, want_rc, needle))
+
+
+def test_a_plan_ruled_at_base_may_lose_its_decided_boxes(gate, tmp_path):
+    """The `_done/` sweeper deletes a closed plan after 40 days. Under a ruling that is the end of decided work, not a lost task, and it must not deadlock G-A5.
+
+    The pair is the 41-day case at the top of this file: the same deletion of an UNRULED plan is refused.
+    """
+    gate.log_test("a plan closed under a resolving Ruling at base, deleted at head")
+    root, _ = _seed(tmp_path, "PLAN-old.md", 5)
+    _store(root)
+    _close(root, "#abcd0001")
+    _regenerate_and_commit(root, "close the plan by decision")
+    base = _git(root, "rev-parse", "HEAD").strip()
+    _git(root, "rm", "-q", "agent/PLAN-old.md")
+    _regenerate_and_commit(root, "sweep the closed plan")
+    result = _gate(root, base)
+    gate.assert_exit(0, result, "decided boxes leaving with their plan is not a loss")
+    gate.assert_not_contains(result.combined, "was DELETED, losing", "G-A5 stays quiet")
+    gate.log_pass("a plan ruled at base is swept without a G-A5 deletion finding")
 
 
 def test_the_selftest_runs_and_records_the_never_delete_controls(gate):
@@ -227,7 +294,7 @@ def test_the_selftest_runs_and_records_the_never_delete_controls(gate):
     """
     gate.log_test("check_plan_boxes.py --selftest on the real tree")
     result = harness.run([sys.executable, str(GATE), "--selftest"], cwd=paths.repo_root())
-    gate.assert_exit_code(0, result.rc, "the rule table's controls must pass")
+    gate.assert_exit(0, result, "the rule table's controls must pass")
     for needle in (
         "G-A5: a 41-day-old plan whose one open box survives NOWHERE is refused",
         "G-A5 PRECONDITION: 41 is past delete_days",
@@ -260,5 +327,5 @@ def test_git_is_available_or_this_file_asserts_nothing(gate):
         )
     gate.log_pass("git is available at %s, so the fixtures are real repositories" % found)
     probe = subprocess.run([found, "--version"], capture_output=True, text=True, check=False)
-    gate.assert_exit_code(0, probe.returncode, "git --version must answer")
+    gate.assert_exit(0, probe, "git --version must answer")
     gate.log_pass("git answers: %s" % probe.stdout.strip())

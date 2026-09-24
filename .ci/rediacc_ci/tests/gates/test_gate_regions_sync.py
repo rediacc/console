@@ -44,8 +44,8 @@ def test_identical_files_pass(gate, tmp_path):
     result = run_gate(gate, a, b)
     if result.rc != 0:
         gate.log_fail(
-            "identical files were rejected; every refusal below would then be "
-            "trivially satisfied: %s" % result.combined
+            "identical files were rejected; every refusal below would then be trivially satisfied",
+            result,
         )
     gate.log_pass("identical lists pass")
 
@@ -58,7 +58,7 @@ def test_formatting_alone_is_not_drift(gate, tmp_path):
     pretty.write_text(json.dumps(GOOD, indent=4, sort_keys=True), encoding="utf-8")
     result = run_gate(gate, a, pretty)
     if result.rc != 0:
-        gate.log_fail("reformatted-but-equal JSON was reported as drift: %s" % result.combined)
+        gate.log_fail("reformatted-but-equal JSON was reported as drift", result)
     gate.log_pass("formatting differences are not drift")
 
 
@@ -114,7 +114,5 @@ def test_the_live_tree_agrees(gate):
         gate.log_fail("subject under test is missing: %s" % SUT)
     result = harness.run(["python3", str(SUT)], cwd=paths.repo_root())
     if result.rc != 0:
-        gate.log_fail(
-            "the live tree's two region lists have diverged; reconcile them: %s" % result.combined
-        )
+        gate.log_fail("the live tree's two region lists have diverged; reconcile them", result)
     gate.log_pass("the live tree's two lists agree")

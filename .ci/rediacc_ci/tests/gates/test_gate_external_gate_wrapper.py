@@ -93,7 +93,7 @@ def test_soft_failure_writes_step_summary(gate, tmp_path):
             "PYTHONPATH": CI_PACKAGE_ROOT,
         },
     )
-    gate.assert_exit_code(0, proc.rc, "soft failure with summary should still exit 0")
+    gate.assert_exit(0, proc, "soft failure with summary should still exit 0")
     gate.assert_contains(
         summary.read_text(encoding="utf-8"), "External gate soft-failed", "step summary not written"
     )

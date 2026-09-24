@@ -68,9 +68,7 @@ def test_a_tidy_module_passes(gate, tmp_path):
     seed_module(tmp_path)
     write_fake_go(bindir, "tidy")
     result = run_gate(tmp_path, bindir)
-    gate.assert_eq(
-        result.rc, 0, "a module already tidy against renet validates: %s" % result.combined
-    )
+    gate.assert_exit(0, result, "a module already tidy against renet validates")
     gate.log_pass("a tidy module passes")
 
 

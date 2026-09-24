@@ -13,6 +13,7 @@ THE FIXTURE IS A GIT REPOSITORY, and that is not scaffolding. The gate's corpus 
 import json
 
 from rediacc_ci import paths
+from rediacc_ci.core.bws_env import JSON_REQUIRED
 from rediacc_ci.tests.gates import harness
 
 GATE = paths.from_root(".ci", "scripts", "quality", "check_bws_map.py")
@@ -63,23 +64,20 @@ REACHABILITY = {
     "repos": {"console": {"ALPHA_TOKEN": {"reachable": True, "via": "org:all"}}},
 }
 
-# ASSERTION 14 READS private/account/.env.example UNCONDITIONALLY (check_bws_map.py:728), and its floor (MIN_EXAMPLE_NAMES = 30, check_bws_map.py:740) counts active-or-commented names together.
-# The 3 names SECRET_MAP/EXEMPTIONS already home (ALPHA_TOKEN, ORPHAN_TOKEN, PREFIX_EU) go in active; 27 padding names go in commented, each a `kind: "opt-in"` entry in ENV_LOCAL_ALLOWLIST below -- opt-in is the one kind that needs no `derive` citation (check_bws_map.py:796), only a reason and being commented out (check_bws_map.py:833-836), which keeps the padding from needing a real map/exemption home each.
-PAD_NAMES = ["BWS_MAP_FIXTURE_PAD_%02d" % i for i in range(1, 28)]
+# ASSERTION 14 READS .ci/config/secret-supply.json UNCONDITIONALLY and refuses when the `account-dev` profile binds no SELLER_* name, so the fixture carries a profile binding exactly the nine fields `bws_env.JSON_REQUIRED["SELLER_PROFILE_JSON"]` declares. Imported, not re-typed, for the same reason the gate imports them: a second copy here would test the fixture against itself.
+SELLER_FIELDS = sorted(JSON_REQUIRED["SELLER_PROFILE_JSON"])
 
-ENV_EXAMPLE = "ALPHA_TOKEN=x\nORPHAN_TOKEN=x\nPREFIX_EU=x\n" + "".join(
-    "# %s=x\n" % n for n in PAD_NAMES
-)
 
-ENV_LOCAL_ALLOWLIST = {
-    "entries": {
-        n: {
-            "kind": "opt-in",
-            "reason": "fixture padding to clear check_bws_map.py's MIN_EXAMPLE_NAMES floor",
+def supply(fields) -> dict:
+    return {
+        "consumers": {
+            "account-dev": {
+                "why": "fixture",
+                "required": ["ACCOUNT_JWT_SECRET_DEV > ACCOUNT_JWT_SECRET"],
+                "optional": list(fields),
+            }
         }
-        for n in PAD_NAMES
     }
-}
 
 
 def write(path, text: str) -> None:
@@ -105,12 +103,11 @@ def fixture(gate, directory) -> None:
     )
     init = harness.run([git, "init", "-q", "."], cwd=directory)
     if init.rc != 0:
-        gate.log_fail("could not git-init the fixture: %s" % init.combined)
+        gate.log_fail("could not git-init the fixture", init)
     write(directory / ".ci/config/bws-secret-map.json", json.dumps(SECRET_MAP))
     write(directory / ".ci/config/bws-unrequested.json", json.dumps(EXEMPTIONS))
     write(directory / ".ci/config/secret-reachability.json", json.dumps(REACHABILITY))
-    write(directory / "private/account/.env.example", ENV_EXAMPLE)
-    write(directory / ".ci/config/env-local-allowlist.json", json.dumps(ENV_LOCAL_ALLOWLIST))
+    write(directory / ".ci/config/secret-supply.json", json.dumps(supply(SELLER_FIELDS)))
     write(directory / "regions.json", '{"regions":[{"secretSuffix":"EU"}]}')
     write(
         directory / ".ci/scripts/deploy/build.sh",
@@ -128,7 +125,7 @@ def fixture(gate, directory) -> None:
         cwd=directory,
     )
     if commit.rc != 0:
-        gate.log_fail("could not commit the fixture: %s" % commit.combined)
+        gate.log_fail("could not commit the fixture", commit)
 
 
 def run_gate(gate, root) -> str:
@@ -183,6 +180,38 @@ def test_twin_appearing_kills_the_exemption(gate, tmp_path):
     gate.log_pass("no-github-twin is RE-DERIVED: creating the org secret ends the exemption")
 
 
+def test_seller_field_dropped_from_profile_reds(gate, tmp_path):
+    fixture(gate, tmp_path)
+    dropped = SELLER_FIELDS[-1]
+    write(
+        tmp_path / ".ci/config/secret-supply.json",
+        json.dumps(supply([f for f in SELLER_FIELDS if f != dropped])),
+    )
+    out = run_gate(gate, tmp_path)
+    gate.assert_contains(out, dropped, "assertion 14 names the SELLER field the profile lost")
+    gate.assert_contains(out, "partial record", "and says why it matters")
+    gate.assert_contains(out, "rc=1", "and fails")
+    gate.log_pass("assertion 14: a profile missing one declared SELLER field fails")
+
+
+def test_seller_fields_agree_on_the_real_tree(gate):
+    """The live `account-dev` profile binds exactly the fields `bws_env` declares. The fixture cases prove the comparison can fail; this proves the committed tree is on the passing side of it."""
+    python3 = harness.require_tool("python3", "install python3; the subject is a python3 program")
+    probe = (
+        "import sys; sys.path.insert(0, %r); import check_bws_map as g; "
+        "p, n = g.seller_field_problems(); print('\\n'.join(p)); print('fields=%%d' %% n); "
+        "sys.exit(1 if p else 0)" % str(GATE.parent)
+    )
+    result = harness.run([python3, "-c", probe])
+    gate.assert_exit(
+        0, result, "the real account-dev profile must bind every declared SELLER field"
+    )
+    gate.assert_contains(
+        result.combined, "fields=%d" % len(SELLER_FIELDS), "and compare a non-empty set"
+    )
+    gate.log_pass("assertion 14: the real tree's SELLER fields agree with bws_env")
+
+
 def test_empty_tree_is_not_a_pass(gate, tmp_path):
     (tmp_path / "empty").mkdir(parents=True, exist_ok=True)
     out = run_gate(gate, tmp_path / "empty")
@@ -204,5 +233,5 @@ def test_the_instrument_runs_before_any_verdict(gate):
             "--selftest",
         ]
     )
-    gate.assert_exit_code(0, result.rc, "the gate's own selftest must pass")
+    gate.assert_exit(0, result, "the gate's own selftest must pass")
     gate.log_pass("the gate's selftest is green, so its verdicts above were instrumented")

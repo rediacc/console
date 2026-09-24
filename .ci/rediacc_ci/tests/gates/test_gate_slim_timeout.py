@@ -52,7 +52,7 @@ def write_job(directory, name: str, job_id: str, runs_on: str, timeout: str | No
 def test_slim_without_timeout_fails(gate, tmp_path):
     write_job(tmp_path, "wf", "slim_job", "ubuntu-slim")
     result = run_check(gate, tmp_path)
-    gate.assert_exit_code(1, result.rc, "no-timeout slim job must fail")
+    gate.assert_exit(1, result, "no-timeout slim job must fail")
     gate.assert_contains(
         result.combined, "without timeout-minutes", "names the missing declaration"
     )
@@ -63,7 +63,7 @@ def test_slim_without_timeout_fails(gate, tmp_path):
 def test_slim_over_ceiling_fails(gate, tmp_path):
     write_job(tmp_path, "wf", "slow_job", "ubuntu-slim", "30")
     result = run_check(gate, tmp_path)
-    gate.assert_exit_code(1, result.rc, "timeout-minutes: 30 on slim must fail")
+    gate.assert_exit(1, result, "timeout-minutes: 30 on slim must fail")
     gate.assert_contains(result.combined, "above the 14-minute ceiling", "explains the ceiling")
     # The fix is a different runner, not a bigger number. If this wording ever drifts to "raise the timeout", the gate is teaching the wrong lesson.
     gate.assert_contains(result.combined, "ubuntu-latest", "points at the real fix")
@@ -73,7 +73,7 @@ def test_slim_over_ceiling_fails(gate, tmp_path):
 def test_slim_at_ceiling_passes(gate, tmp_path):
     write_job(tmp_path, "wf", "ok_job", "ubuntu-slim", "14")
     result = run_check(gate, tmp_path)
-    gate.assert_exit_code(0, result.rc, "timeout-minutes: 14 on slim must pass")
+    gate.assert_exit(0, result, "timeout-minutes: 14 on slim must pass")
     gate.log_pass("slim job exactly at the ceiling passes")
 
 
@@ -82,9 +82,7 @@ def test_non_slim_runner_ignored(gate, tmp_path):
     write_job(tmp_path, "wf1", "fat_job", "ubuntu-latest")
     write_job(tmp_path, "wf2", "thin_job", "ubuntu-slim", "5")
     result = run_check(gate, tmp_path)
-    gate.assert_exit_code(
-        0, result.rc, "ubuntu-latest has no 15-minute cap, so no timeout is required"
-    )
+    gate.assert_exit(0, result, "ubuntu-latest has no 15-minute cap, so no timeout is required")
     gate.assert_not_contains(result.combined, "fat_job", "must not report a non-slim job")
     gate.log_pass("ubuntu-latest without a timeout is NOT reported")
 
@@ -93,7 +91,7 @@ def test_matrix_runner_ignored(gate, tmp_path):
     write_job(tmp_path, "wf1", "matrix_job", "${{ matrix.runner }}")
     write_job(tmp_path, "wf2", "thin_job", "ubuntu-slim", "5")
     result = run_check(gate, tmp_path)
-    gate.assert_exit_code(0, result.rc, "an unresolvable runner label cannot be judged here")
+    gate.assert_exit(0, result, "an unresolvable runner label cannot be judged here")
     gate.assert_not_contains(result.combined, "matrix_job", "must not report an expression runner")
     gate.log_pass("matrix-expression runner is NOT reported")
 
@@ -102,7 +100,7 @@ def test_no_slim_jobs_is_blind(gate, tmp_path):
     write_job(tmp_path, "wf", "fat_job", "ubuntu-latest")
     result = run_check(gate, tmp_path)
     # Nothing to check is a failure, not a pass -- the same anti-vacuity rule the rest of this file follows. A renamed runner label must not silently turn this gate into a no-op that still reports success.
-    gate.assert_exit_code(1, result.rc, "zero slim jobs must not report success")
+    gate.assert_exit(1, result, "zero slim jobs must not report success")
     gate.assert_contains(result.combined, "this check is blind", "says why it refused")
     gate.log_pass("a tree with zero slim jobs fails as blind, not green")
 
@@ -113,5 +111,5 @@ def test_real_workflows_pass(gate):
     A READ of `.github/workflows` and nothing else. It writes nowhere, which is what keeps this module admissible to the parity driver.
     """
     result = harness.run(["bash", str(CHECK)], env={"CI": "true"})
-    gate.assert_exit_code(0, result.rc, "every real ubuntu-slim job declares a compliant timeout")
+    gate.assert_exit(0, result, "every real ubuntu-slim job declares a compliant timeout")
     gate.log_pass("the repo's own .github/workflows satisfies the rule")

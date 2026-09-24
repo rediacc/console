@@ -42,7 +42,7 @@ the same program a minute later; if the bytes differ, the exporter's output diff
 THE BUILD IS PART OF THE SUBJECT, not a precondition to be skipped. The twin's comment says why: "The exporter imports the live CLI, which resolves @rediacc/shared and @rediacc/provisioning through their dist builds." A port that skipped `npm run build:packages` to be fast would compare the committed tree against an exporter reading a stale dist, which is the same fail-open the
 gate exists to close.
 
-BOTH SUBPROCESSES KEEP THE TWIN'S STREAM SPLIT. `npm run build:packages >/dev/null` discards stdout and lets stderr through (which is why a run of this gate shows npm's `minimum-release-age` warnings and nothing else), and the same
+BOTH SUBPROCESSES KEEP THE TWIN'S STREAM SPLIT. `npm run build:packages >/dev/null` discards stdout and lets stderr through (so a run of this gate shows npm's own stderr and nothing else, which on a clean build is empty), and the same
 for `npx tsx ... >/dev/null`. Reproduced exactly: stdout to DEVNULL, stderr
 inherited. Capturing stderr instead would silence the one channel that says why a build failed.
 

@@ -163,7 +163,7 @@ def test_pristine_warns_not_passes_silently(gate):
     with harness.temp_dir() as work:
         root = build_fixture(gate, work)
         result = run_gate(root, "--captures", str(work / "caps"))
-        gate.assert_exit_code(0, result.rc, "pristine (no baseline) exits 0")
+        gate.assert_exit(0, result, "pristine (no baseline) exits 0")
         gate.assert_contains(result.combined, "pristine", "and SAYS it is pristine")
         gate.assert_contains(result.combined, "E6", "and still names the planted finding as report")
         gate.log_pass("pristine warns and names findings without enforcing")
@@ -175,13 +175,13 @@ def test_seeded_then_enforces(gate):
         root = build_fixture(gate, work)
         # Seed from a QUIET corpus so the class becomes admissible with F=0.
         seeded = run_gate(root, "--seed", str(work / "quiet"))
-        gate.assert_exit_code(0, seeded.rc, "seeding from a quiet corpus succeeds")
+        gate.assert_exit(0, seeded, "seeding from a quiet corpus succeeds")
         baseline = root / ".ci" / "config" / "resprofile-baseline.json"
         if not baseline.is_file():
             gate.log_fail("no baseline written: %s" % baseline)
         gate.assertions += 1
         result = run_gate(root, "--captures", str(work / "caps"))
-        gate.assert_exit_code(1, result.rc, "seeded: the planted E6 is ENFORCED")
+        gate.assert_exit(1, result, "seeded: the planted E6 is ENFORCED")
         gate.assert_contains(result.combined, "E6", "and named")
         gate.log_pass("a seeded baseline lets a planted structural defect fire")
 
@@ -192,15 +192,15 @@ def test_seed_refuses_empty_corpus(gate):
         root = build_fixture(gate, work)
         # The twin reaches this case with a baseline already seeded by the case above, so seeding again is ACCUMULATION rather than a first seed. The rebuild would otherwise quietly turn this into a different assertion.
         first = run_gate(root, "--seed", str(work / "quiet"))
-        gate.assert_exit_code(0, first.rc, "the fixture is seeded before accumulation is tested")
+        gate.assert_exit(0, first, "the fixture is seeded before accumulation is tested")
         # F rises, J rises: allowed.
         accumulate = run_gate(root, "--seed", str(work / "caps"))
-        gate.assert_exit_code(0, accumulate.rc, "accumulating is the silent direction")
+        gate.assert_exit(0, accumulate, "accumulating is the silent direction")
         # An EMPTY corpus must be refused: a baseline seeded from nothing enshrines nothing. The twin's first draft asserted a "silent shrink" refusal that could never fire, because seeds accumulate; this case is what exposed it.
         empty = work / "empty"
         empty.mkdir()
         refused = run_gate(root, "--seed", str(empty))
-        gate.assert_exit_code(2, refused.rc, "seeding from zero judgeable captures is refused")
+        gate.assert_exit(2, refused, "seeding from zero judgeable captures is refused")
         gate.assert_contains(refused.combined, "0 judgeable", "and says why")
         gate.log_pass("an empty seed is refused; accumulation is the only silent direction")
 
@@ -219,9 +219,7 @@ def test_mutant_wall_scaling_removed(gate):
             gate.log_fail("mutant text not present after write")
         gate.assertions += 1
         result = run_gate(root, "--captures", str(work / "caps"))
-        gate.assert_exit_code(
-            2, result.rc, "a no-op dilate is refused as an instrument failure (exit 2)"
-        )
+        gate.assert_exit(2, result, "a no-op dilate is refused as an instrument failure (exit 2)")
         gate.assert_contains(
             result.combined,
             "dilate really moves wall",
@@ -236,6 +234,6 @@ def test_the_gate_is_green_on_its_own_selftest(gate):
     this proves it does not fail by default, which is the other direction and the one that would otherwise make `test_mutant_wall_scaling_removed` pass for free."""
     gate.log_test("CONTROL: the unmutated instrument passes its own selftest")
     result = harness.run(["python3", str(GATE), "--selftest"], cwd=paths.repo_root())
-    gate.assert_exit_code(0, result.rc, "the gate's own controls pass on the real tree")
+    gate.assert_exit(0, result, "the gate's own controls pass on the real tree")
     gate.assert_contains(result.combined, "0 failure(s)", "and say so with a count")
     gate.log_pass("the unmutated gate passes its own selftest, so the mutant case means something")

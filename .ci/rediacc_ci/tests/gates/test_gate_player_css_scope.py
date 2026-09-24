@@ -111,8 +111,9 @@ def test_the_gate_runs_all_eight_plants_and_every_one_passes(gate):
     seen = controls(result.combined)
     if not seen:
         gate.log_fail(
-            "the gate printed no control line at all (rc=%s). Its selftest did not run, so nothing below could have been checked; output was: %r"
-            % (harness.describe_exit(result.rc), result.combined[:400])
+            "the gate printed no control line at all (rc=%s). Its selftest did not run, so nothing below could have been checked"
+            % harness.describe_exit(result.rc),
+            result,
         )
     for plant in PLANTS:
         gate.assert_eq(
@@ -130,9 +131,7 @@ def test_mutant_widening_the_marker_list_reds_p4(gate, tmp_path):
     )
     mutant = write_mutant(gate, tmp_path, MARKERS_FIXED, MARKERS_WIDE)
     result = run_tsx(gate, mutant)
-    gate.assert_exit_code(
-        2, result.rc, "a failed instrument control must refuse before any verdict"
-    )
+    gate.assert_exit(2, result, "a failed instrument control must refuse before any verdict")
     seen = controls(result.combined)
     gate.assert_eq(
         verdict_for(gate, seen, "P4 CONTROL"),
@@ -159,9 +158,7 @@ def test_mutant_deleting_f6_reds_p6(gate, tmp_path):
     gate.log_test("CONTROL: killing F6's condition must red the selftest, naming P6")
     mutant = write_mutant(gate, tmp_path, F6_FIXED, F6_DEAD)
     result = run_tsx(gate, mutant)
-    gate.assert_exit_code(
-        2, result.rc, "a failed instrument control must refuse before any verdict"
-    )
+    gate.assert_exit(2, result, "a failed instrument control must refuse before any verdict")
     seen = controls(result.combined)
     gate.assert_eq(
         verdict_for(gate, seen, "P6 PLANT"), "FAIL", "P6 is the plant that catches a dead F6"
@@ -190,9 +187,7 @@ def test_the_real_dist_verdict_is_clean_and_not_vacuous(gate):
         )
         return
     result = run_tsx(gate, GATE)
-    gate.assert_exit_code(
-        0, result.rc, "the tree is fixed, so the gate must be green over the real dist"
-    )
+    gate.assert_exit(0, result, "the tree is fixed, so the gate must be green over the real dist")
     gate.assert_contains(
         result.out, "page(s),", "and it must print the shape it scanned, not merely a verdict"
     )

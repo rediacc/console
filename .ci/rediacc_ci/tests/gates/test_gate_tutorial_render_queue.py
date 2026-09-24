@@ -66,7 +66,7 @@ def test_empty_tree_refuses(gate):
     """
     with harness.temp_dir() as tmp:
         result = run_predicate(gate, "--root", os.fspath(tmp))
-        gate.assert_exit_code(1, result.rc, "empty tree must exit non-zero")
+        gate.assert_exit(1, result, "empty tree must exit non-zero")
         gate.assert_contains(result.combined, "Refusing to run", "refusal must say it is refusing")
         # Pin the DIAGNOSTIC, not just the code: a crash also exits non-zero.
         gate.assert_contains(
@@ -84,16 +84,14 @@ def test_half_populated_tree_refuses(gate):
         tutorials.mkdir(parents=True, exist_ok=True)
         (tutorials / "tutorial-fake.cast").write_text("{}", encoding="utf-8")
         result = run_predicate(gate, "--root", os.fspath(tmp))
-        gate.assert_exit_code(1, result.rc, "casts-without-timelines must exit non-zero")
+        gate.assert_exit(1, result, "casts-without-timelines must exit non-zero")
         gate.assert_contains(result.combined, "Refusing to run", "half-populated tree must refuse")
         gate.log_pass("casts present but no timeline dirs still refuses")
 
 
 def test_selftest_passes(gate):
     result = run_predicate(gate, "--selftest")
-    gate.assert_exit_code(
-        0, result.rc, "--selftest must pass on a clean tree (output: %s)" % result.combined
-    )
+    gate.assert_exit(0, result, "--selftest must pass on a clean tree")
     gate.log_pass("--selftest passes")
 
 

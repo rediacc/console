@@ -108,8 +108,8 @@ def test_a_nonexistent_sha_is_named_as_nonexistent(gate, tmp_path: pathlib.Path)
     gate.log_test("FIRE: the post-rewrite case, a SHA that is not in the repository at all")
     repo = make_repo(gate, tmp_path)
     got = run_resolve(repo, SUT, INPUT_SHA=GHOST_SHA)
-    gate.assert_exit_code(
-        1, got.rc, "a SHA that does not exist must still fail, and fail the same way it always did"
+    gate.assert_exit(
+        1, got, "a SHA that does not exist must still fail, and fail the same way it always did"
     )
     gate.assert_contains(got.out, NOT_A_COMMIT, "it says the SHA does not name a commit here")
     gate.assert_contains(
@@ -136,7 +136,7 @@ def test_a_real_but_detached_sha_still_says_detached(gate, tmp_path: pathlib.Pat
     # If the probe were too broad -- a bare `cat-file -e` on the wrong argument, or the check applied to the tag path -- this would flip to the not-an-object message and the fix would have traded one misdiagnosis for another.
     repo = make_repo(gate, tmp_path)
     got = run_resolve(repo, SUT, INPUT_SHA=detached_sha(gate, repo))
-    gate.assert_exit_code(1, got.rc, "a detached commit still fails, with the same exit code")
+    gate.assert_exit(1, got, "a detached commit still fails, with the same exit code")
     gate.assert_contains(got.out, DETACHED, "and is still diagnosed as a detached tag")
     gate.assert_contains(
         got.out, "not reachable from origin/main", "naming reachability, which IS the real problem"
@@ -156,7 +156,7 @@ def test_the_tag_path_is_untouched_by_the_probe(gate, tmp_path: pathlib.Path):
     gate.log_test("the probe is scoped to the operator-supplied path")
     repo = make_repo(gate, tmp_path)
     got = run_resolve(repo, SUT)
-    gate.assert_exit_code(1, got.rc, "the tag path still rejects a detached tag")
+    gate.assert_exit(1, got, "the tag path still rejects a detached tag")
     gate.assert_contains(got.out, "resolved v9.9.9", "having resolved the tag itself")
     gate.assert_contains(got.out, DETACHED, "with the detached diagnosis")
     gate.assert_not_contains(
@@ -171,7 +171,7 @@ def test_a_non_commit_object_is_rejected(gate, tmp_path: pathlib.Path):
     repo = make_repo(gate, tmp_path)
     tree_sha = _git(gate, repo, "rev-parse", "main^{tree}")
     got = run_resolve(repo, SUT, INPUT_SHA=tree_sha)
-    gate.assert_exit_code(1, got.rc, "a tree SHA is not backfillable and must fail")
+    gate.assert_exit(1, got, "a tree SHA is not backfillable and must fail")
     gate.assert_contains(got.out, NOT_A_COMMIT, "and is diagnosed as not naming a commit")
     gate.assert_contains(
         got.out,
@@ -183,7 +183,7 @@ def test_a_non_commit_object_is_rejected(gate, tmp_path: pathlib.Path):
     (repo / "step-output").unlink(missing_ok=True)
     commit_sha = _git(gate, repo, "rev-list", "-n1", "main")
     ok = run_resolve(repo, SUT, VERSION="v1.0.0", INPUT_SHA=commit_sha)
-    gate.assert_exit_code(0, ok.rc, "CONTROL: the commit holding that tree resolves fine")
+    gate.assert_exit(0, ok, "CONTROL: the commit holding that tree resolves fine")
     gate.log_pass("a tree SHA is rejected as not-a-commit (control: its own commit is accepted)")
 
 
@@ -193,7 +193,7 @@ def test_a_reachable_commit_still_succeeds(gate, tmp_path: pathlib.Path):
     repo = make_repo(gate, tmp_path)
     main_sha = _git(gate, repo, "rev-list", "-n1", "main")
     got = run_resolve(repo, SUT, VERSION="v1.0.0")
-    gate.assert_exit_code(0, got.rc, "a reachable tag exits 0")
+    gate.assert_exit(0, got, "a reachable tag exits 0")
     gate.assert_contains(
         got.step_output, "commit_sha=%s" % main_sha, "and writes the commit to the step output"
     )
@@ -201,8 +201,8 @@ def test_a_reachable_commit_still_succeeds(gate, tmp_path: pathlib.Path):
 
     (repo / "step-output").unlink(missing_ok=True)
     again = run_resolve(repo, SUT, VERSION="v1.0.0", INPUT_SHA=main_sha)
-    gate.assert_exit_code(
-        0, again.rc, "a reachable operator-supplied SHA also exits 0 -- the probe passes it through"
+    gate.assert_exit(
+        0, again, "a reachable operator-supplied SHA also exits 0 -- the probe passes it through"
     )
     gate.assert_contains(again.step_output, "commit_sha=%s" % main_sha, "and it too is written out")
     gate.log_pass("CONTROL: a reachable commit exits 0 and writes commit_sha, from both paths")
@@ -212,7 +212,7 @@ def test_a_missing_tag_is_unchanged(gate, tmp_path: pathlib.Path):
     gate.log_test("the one other failure path in the script must not have moved")
     repo = make_repo(gate, tmp_path)
     got = run_resolve(repo, SUT, VERSION="v4.5.6")
-    gate.assert_exit_code(1, got.rc, "an unknown tag still exits 1")
+    gate.assert_exit(1, got, "an unknown tag still exits 1")
     gate.assert_contains(got.out, "tag v4.5.6 not found in this checkout", "with its own message")
     gate.assert_not_contains(got.out, NOT_A_COMMIT, "and not the new one")
     gate.log_pass("CONTROL: the missing-tag path is untouched")

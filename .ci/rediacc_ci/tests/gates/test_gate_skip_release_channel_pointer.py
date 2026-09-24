@@ -194,15 +194,15 @@ class Sandbox:
             probe = self._env_run(["bash", str(mutant)], {}, unset=("CHANNEL", "SKIP_RELEASE"))
             if "CHANNEL must be set" not in probe.combined:
                 raise Refusal(
-                    "MUTANT IS NOT LIVE: %s did not reach its CHANNEL check (exit %d): %s"
-                    % (mutant, probe.rc, probe.combined.strip())
+                    "MUTANT IS NOT LIVE: %s did not reach its CHANNEL check (exit %d)\n%s"
+                    % (mutant, probe.rc, harness.render_output(probe))
                 )
             return
         probe = self._env_run(["bash", str(mutant), "--help"], {}, unset=("SKIP_RELEASE",))
         if probe.rc != 0 or "Usage:" not in probe.combined:
             raise Refusal(
-                "MUTANT IS NOT LIVE: %s --help exited %d without a usage line: %s"
-                % (mutant, probe.rc, probe.combined.strip())
+                "MUTANT IS NOT LIVE: %s --help exited %d without a usage line\n%s"
+                % (mutant, probe.rc, harness.render_output(probe))
             )
 
     # -- drivers -------------------------------------------------------------

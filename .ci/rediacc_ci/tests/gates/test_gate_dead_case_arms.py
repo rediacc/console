@@ -70,9 +70,7 @@ def test_real_tree_is_clean_and_the_control_fired(gate):
     """
     runner = require_gate(gate)
     result = harness.run([runner, os.fspath(GATE)], cwd=paths.repo_root())
-    gate.assert_exit_code(
-        0, result.rc, "the real tree must have no dead case arms (output: %s)" % result.combined
-    )
+    gate.assert_exit(0, result, "the real tree must have no dead case arms")
     gate.assert_contains(
         result.combined,
         "control fired",
@@ -91,7 +89,7 @@ def test_a_dead_arm_is_caught(gate):
             encoding="utf-8",
         )
         result = run_gate(gate, tests)
-        gate.assert_exit_code(1, result.rc, "a case arm globbing for a nonexistent field must fail")
+        gate.assert_exit(1, result, "a case arm globbing for a nonexistent field must fail")
         gate.assert_contains(result.combined, "zzznosuchfield", "names the dead field")
         gate.assert_contains(result.combined, "DEAD", "says the arm is dead")
         gate.log_pass("a dead case arm is caught and named")
@@ -110,11 +108,7 @@ def test_a_live_arm_passes(gate):
             encoding="utf-8",
         )
         result = run_gate(gate, tests, os.fspath(code))
-        gate.assert_exit_code(
-            0,
-            result.rc,
-            "an arm whose field is emitted by real code must pass (output: %s)" % result.combined,
-        )
+        gate.assert_exit(0, result, "an arm whose field is emitted by real code must pass")
         gate.log_pass("a live arm is not flagged (the scanner is not a blanket refusal)")
 
 
@@ -131,8 +125,8 @@ def test_the_founding_defect_fires(gate):
             encoding="utf-8",
         )
         result = run_gate(gate, tests)
-        gate.assert_exit_code(
-            1, result.rc, "the founding defect (cores= documented only in comments) must FIRE"
+        gate.assert_exit(
+            1, result, "the founding defect (cores= documented only in comments) must FIRE"
         )
         gate.assert_contains(result.combined, "cores", "names the field the dead arm globs for")
         gate.log_pass(
@@ -149,11 +143,7 @@ def test_comments_are_not_assertions(gate):
             '# case "$out" in\n#     *"zzznosuchfield=20"*)\n', encoding="utf-8"
         )
         result = run_gate(gate, tests)
-        gate.assert_exit_code(
-            0,
-            result.rc,
-            "a commented arm must not be reported (output: %s)" % result.combined,
-        )
+        gate.assert_exit(0, result, "a commented arm must not be reported")
         gate.log_pass("commented-out arms are prose, not assertions")
 
 
@@ -177,7 +167,7 @@ def test_the_scanned_media_root_is_not_empty(gate):
                 "DEAD_CASE_MEDIA_DIRS": os.fspath(empty_media),
             },
         )
-        gate.assert_exit_code(1, result.rc, "an empty media scan root must FAIL, not pass")
+        gate.assert_exit(1, result, "an empty media scan root must FAIL, not pass")
         gate.assert_contains(result.combined, "VACUOUS", "says the scan root proves nothing")
         gate.log_pass("an empty media scan root is refused (anti-vacuity), not reported clean")
 

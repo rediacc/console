@@ -260,8 +260,8 @@ def test_missing_input_fails_loudly(gate):
         tag(gate, root)
         (root / ".ci/scripts/build/build-renet.sh").unlink()
         result = invoke(gate, root, "--submodule", "private/renet")
-        gate.assert_exit_code(
-            1, result.rc, "a missing declared input must fail the script, not narrow the hash"
+        gate.assert_exit(
+            1, result, "a missing declared input must fail the script, not narrow the hash"
         )
         gate.assert_contains(
             result.combined,
@@ -283,9 +283,7 @@ def test_missing_input_does_not_emit_a_tag(gate):
         build_fixture_tree(gate, root)
         (root / ".ci/scripts/build/build-renet.sh").unlink()
         result = invoke(gate, root, "--submodule", "private/renet")
-        gate.assert_exit_code(
-            1, result.rc, "the failure must be visible in the exit code the caller sees"
-        )
+        gate.assert_exit(1, result, "the failure must be visible in the exit code the caller sees")
         gate.assert_eq(
             result.out.rstrip("\n"), "", "no tag may be printed when an input is missing"
         )
@@ -300,7 +298,7 @@ def test_every_declared_input_is_individually_load_bearing_for_the_failure(gate)
             build_fixture_tree(gate, root)
             (root / rel).unlink()
             result = invoke(gate, root, "--submodule", "private/renet")
-            gate.assert_exit_code(1, result.rc, "removing %s must fail the script" % rel)
+            gate.assert_exit(1, result, "removing %s must fail the script" % rel)
             gate.assert_contains(result.combined, rel, "the diagnostic must name %s" % rel)
         gate.log_pass("all %d declared inputs are guarded, not just one" % len(DECLARED_INPUTS))
 
@@ -331,7 +329,7 @@ def test_other_modes_are_untouched(gate):
             ]
         )
         self_run = invoke(gate, root, "--self")
-        gate.assert_exit_code(0, self_run.rc, "--self must still succeed")
+        gate.assert_exit(0, self_run, "--self must still succeed")
         self_tag = self_run.out.rstrip("\n")
         gate.assert_eq(len(self_tag), 7, "--self must still be a short commit hash")
 
@@ -348,7 +346,7 @@ def test_real_tree_still_produces_a_tag(gate):
     """The fixture proves the logic; this proves the guard is satisfiable by the ACTUAL repo. If any declared path were wrong TODAY, this fails -- which is the whole point of turning the silent skip into an error."""
     result = invoke(gate, paths.repo_root(), "--submodule", "private/renet")
     out = result.out.rstrip("\n")
-    gate.assert_exit_code(0, result.rc, "the real tree must still generate a renet tag: %s" % out)
+    gate.assert_exit(0, result, "the real tree must still generate a renet tag: %s" % out)
     if not SUBMODULE_TAG_RE.match(out):
         gate.log_fail("the real tag has an unexpected shape: '%s'" % out)
     gate.log_pass("the real private/renet tag still generates (%s)" % out)
@@ -443,7 +441,7 @@ def test_closure_tag_survives_an_unresolvable_version(gate):
         finally:
             restore_resolver(gate, backup, mode, digest(backup))
         out = result.out.rstrip("\n")
-        gate.assert_exit_code(0, result.rc, "an unresolvable version must not fail tag generation")
+        gate.assert_exit(0, result, "an unresolvable version must not fail tag generation")
         if not CLOSURE_TAG_RE.match(out):
             gate.log_fail("an unresolvable version produced a malformed tag: '%s'" % out)
         gate.log_pass("an unresolvable version degrades to a well-formed tag (%s)" % out)

@@ -19,7 +19,7 @@ THE THREE PROPERTIES PINNED HERE, each of them a refusal, and they are the twin'
 Plus the liveness assertion that keeps the name list honest: every name the module knows must resolve to a file that is there TODAY.
 
 WHY THE MODULE'S OWN CLI RATHER THAN AN IMPORT, carried over verbatim from the twin's reasoning. An earlier bash version generated a temp `.ts` that imported the module; that needed four more exports than any TypeScript caller wants, and `lint:unused` was right to refuse them. The workspace `tsx` binary is called directly rather than through `npx`, which also skips npx's
-re-resolution -- and stdout and stderr are kept SEPARATE, because npx prints an unrelated "Unknown project config minimum-release-age" warning on stderr and the first run of the bash file compared a path against that warning.
+re-resolution -- and stdout and stderr are kept SEPARATE, because npm writes its own warnings to stderr. Until `minimum-release-age` left `.npmrc` on 2026-09-24, every npx call printed an unrelated "Unknown project config" warning there, and the first run of the bash file compared a path against that warning.
 
 NO `xdist_group`. Every case here reads the real tree and writes only into its own `mktemp -d`, and the one filesystem mutation (the fixture root) is created and removed inside a single case. Nothing is bound, nothing global is mutated.
 """
@@ -56,7 +56,7 @@ def all_paths(gate) -> list[str]:
     ONE process, not one per name. The obvious loop calling `--path <name>` fifteen times cost fifteen node startups and made the bash twin the third-slowest gate in the quick lane; the answers are identical because `--all-paths` is `policyPath()` mapped over the same name list.
     """
     result = pp(gate, "--all-paths")
-    gate.assert_exit_code(0, result.rc, "--all-paths must succeed (stderr: %s)" % result.err)
+    gate.assert_exit(0, result, "--all-paths must succeed")
     return [line for line in result.out.splitlines() if line.strip()]
 
 
@@ -97,7 +97,7 @@ def test_every_known_name_resolves_to_a_real_file(gate):
 def test_unknown_name_is_refused_loudly(gate):
     gate.log_test("a typo must be refused, not resolved to something plausible")
     result = pp(gate, "--path", ".audit-allowlst")
-    gate.assert_exit_code(2, result.rc, "a typo is refused, not resolved")
+    gate.assert_exit(2, result, "a typo is refused, not resolved")
     gate.assert_eq(result.out, "", "and nothing plausible is printed on stdout")
     gate.assert_contains(result.err, "is not a known policy file", "says what went wrong")
     gate.assert_contains(

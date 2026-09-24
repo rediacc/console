@@ -350,7 +350,7 @@ def test_dispatched_run_is_traced_by_id(gate, tmp_path):
     )
     for run, code, message in expected:
         result = harness.run([str(TRACE), "--run", run], env=with_path(shim))
-        gate.assert_exit_code(code, result.rc, message)
+        gate.assert_exit(code, result, message)
     gate.log_pass("--run: in-flight=2, success=0, failed-job=1, unreadable=2")
 
 
@@ -385,7 +385,5 @@ def test_ci_nonblocking_contexts_selftest(gate):
     require_subjects(gate)
     result = harness.run([sys.executable, str(TRACE), "--selftest"])
     if result.rc != 0:
-        gate.log_fail(
-            "ci-trace.py --selftest failed (rc=%d): %s" % (result.rc, result.combined.strip())
-        )
+        gate.log_fail("ci-trace.py --selftest failed (rc=%d)" % result.rc, result)
     gate.log_pass("ci-trace.py --selftest: every control passed")

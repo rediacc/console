@@ -33,7 +33,7 @@ _TEMPLATE = None
 def _run(*argv, cwd=None, env=None):
     result = harness.run(list(argv), cwd=cwd, env=env)
     if result.rc != 0:
-        raise RuntimeError("fixture command failed: %s\n%s" % (argv, result.combined))
+        raise RuntimeError("fixture command failed: %s\n%s" % (argv, harness.render_output(result)))
     return result
 
 

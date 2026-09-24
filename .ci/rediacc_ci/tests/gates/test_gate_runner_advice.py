@@ -207,7 +207,7 @@ def test_oversized_job_fails(gate):
         baseline(d / "base.json", fresh_stamp())
         (d / "allow").write_text("", encoding="utf-8")
         result = run_gate(gate, d / "base.json", d / "wf", d / "allow")
-        gate.assert_exit_code(1, result.rc, "a job that fits slim on a bigger runner must fail")
+        gate.assert_exit(1, result, "a job that fits slim on a bigger runner must fail")
         gate.assert_contains(
             result.combined, "fixture.yml:waster", "names the workflow file and the job"
         )
@@ -233,9 +233,7 @@ def test_same_job_on_slim_passes(gate):
         baseline(d / "base.json", fresh_stamp())
         (d / "allow").write_text("", encoding="utf-8")
         result = run_gate(gate, d / "base.json", d / "wf", d / "allow")
-        gate.assert_exit_code(
-            0, result.rc, "the same job already on slim must pass (output: %s)" % result.combined
-        )
+        gate.assert_exit(0, result, "the same job already on slim must pass")
         gate.assert_contains(
             result.combined, "5 measured job(s)", "reports what it actually compared"
         )
@@ -248,11 +246,7 @@ def test_allowlisted_with_good_reason_passes(gate):
         baseline(d / "base.json", fresh_stamp())
         (d / "allow").write_text(GOOD_BLOCKER + "fixture.yml:waster\n", encoding="utf-8")
         result = run_gate(gate, d / "base.json", d / "wf", d / "allow")
-        gate.assert_exit_code(
-            0,
-            result.rc,
-            "an allowlisted job with a real reason must pass (output: %s)" % result.combined,
-        )
+        gate.assert_exit(0, result, "an allowlisted job with a real reason must pass")
         gate.assert_contains(
             result.combined, "1 allowlisted", "reports the suppression rather than hiding it"
         )
@@ -265,7 +259,7 @@ def test_entry_without_blocker_fails(gate):
         baseline(d / "base.json", fresh_stamp())
         (d / "allow").write_text("fixture.yml:waster\n", encoding="utf-8")
         result = run_gate(gate, d / "base.json", d / "wf", d / "allow")
-        gate.assert_exit_code(1, result.rc, "an entry with no BLOCKER at all must be rejected")
+        gate.assert_exit(1, result, "an entry with no BLOCKER at all must be rejected")
         gate.assert_contains(
             result.combined, "missing a '# BLOCKER:", "names the missing convention"
         )
@@ -280,7 +274,7 @@ def test_stale_allowlist_entries_fail(gate):
         workflow(d / "wf", "ubuntu-slim")
         (d / "allow").write_text("%s\nfixture.yml:waster\n" % STALE_BLOCKER, encoding="utf-8")
         result = run_gate(gate, d / "base.json", d / "wf", d / "allow")
-        gate.assert_exit_code(1, result.rc, "an entry for a job now on slim must fail as stale")
+        gate.assert_exit(1, result, "an entry for a job now on slim must fail as stale")
         gate.assert_contains(
             result.combined, "ALREADY on ubuntu-slim", "says the exemption exempts nothing"
         )
@@ -289,7 +283,7 @@ def test_stale_allowlist_entries_fail(gate):
         workflow(d / "wf", "ubuntu-latest")
         (d / "allow").write_text("%s\nfixture.yml:no-such-job\n" % STALE_BLOCKER, encoding="utf-8")
         result = run_gate(gate, d / "base.json", d / "wf", d / "allow")
-        gate.assert_exit_code(1, result.rc, "an entry naming no job must fail")
+        gate.assert_exit(1, result, "an entry naming no job must fail")
         gate.assert_contains(
             result.combined, "names no job in any workflow", "says the entry suppresses nothing"
         )
@@ -297,8 +291,8 @@ def test_stale_allowlist_entries_fail(gate):
         # (3) the job exists but the profile no longer advises a move.
         (d / "allow").write_text("%s\nfixture.yml:heavy\n" % STALE_BLOCKER, encoding="utf-8")
         result = run_gate(gate, d / "base.json", d / "wf", d / "allow")
-        gate.assert_exit_code(
-            1, result.rc, "an entry for a job that no longer fits slim must fail as stale"
+        gate.assert_exit(
+            1, result, "an entry for a job that no longer fits slim must fail as stale"
         )
         gate.assert_contains(
             result.combined,
@@ -327,9 +321,7 @@ def test_slim_job_at_its_limit_fails(gate):
             encoding="utf-8",
         )
         result = run_gate(gate, d / "base.json", d / "wf", d / "allow")
-        gate.assert_exit_code(
-            1, result.rc, "a slim job at its time cap must fail even when allowlisted"
-        )
+        gate.assert_exit(1, result, "a slim job at its time cap must fail even when allowlisted")
         gate.assert_contains(
             result.combined, "fixture.yml:slimfit", "names the job about to be cancelled"
         )
@@ -352,7 +344,7 @@ def test_orphan_baseline_record_fails(gate):
         edit_baseline(d / "base.json", rename_away)
         (d / "allow").write_text("", encoding="utf-8")
         result = run_gate(gate, d / "base.json", d / "wf", d / "allow")
-        gate.assert_exit_code(1, result.rc, "a baseline record matching no workflow job must fail")
+        gate.assert_exit(1, result, "a baseline record matching no workflow job must fail")
         gate.assert_contains(
             result.combined, "names no job in any workflow", "says the measurement is unfalsifiable"
         )
@@ -366,9 +358,7 @@ def test_under_observed_move_is_an_advisory(gate):
         baseline(d / "base.json", fresh_stamp(), 1)
         (d / "allow").write_text("", encoding="utf-8")
         result = run_gate(gate, d / "base.json", d / "wf", d / "allow")
-        gate.assert_exit_code(
-            0, result.rc, "a MOVE seen once must not fail the build (output: %s)" % result.combined
-        )
+        gate.assert_exit(0, result, "a MOVE seen once must not fail the build")
         gate.assert_contains(
             result.combined, "ADVISORY (not yet a failure)", "says it is not yet a failure"
         )
@@ -388,8 +378,8 @@ def test_empty_baseline_refuses(gate):
         )
         (d / "allow").write_text("", encoding="utf-8")
         result = run_gate(gate, d / "base.json", d / "wf", d / "allow")
-        gate.assert_exit_code(
-            1, result.rc, "an empty baseline with a refresh stamp must REFUSE, not report clean"
+        gate.assert_exit(
+            1, result, "an empty baseline with a refresh stamp must REFUSE, not report clean"
         )
         gate.assert_contains(result.combined, "VACUOUS INPUT", "names the refusal")
         gate.assert_not_contains(
@@ -417,11 +407,7 @@ def test_pristine_baseline_warns_and_passes(gate):
         )
         (d / "allow").write_text("", encoding="utf-8")
         result = run_gate(gate, d / "base.json", d / "wf", d / "allow")
-        gate.assert_exit_code(
-            0,
-            result.rc,
-            "the pristine as-committed baseline must pass (output: %s)" % result.combined,
-        )
+        gate.assert_exit(0, result, "the pristine as-committed baseline must pass")
         # The warning is the FIRE direction for this arm. A pristine run that exits 0 SILENTLY is the failure this whole gate exists to prevent, so passing without saying so must fail this test.
         gate.assert_contains(
             result.combined,
@@ -452,7 +438,7 @@ def test_pristine_shape_is_exact(gate):
             encoding="utf-8",
         )
         result = run_gate(gate, d / "base.json", d / "wf", d / "allow")
-        gate.assert_exit_code(1, result.rc, "a null stamp with SOME jobs is not pristine")
+        gate.assert_exit(1, result, "a null stamp with SOME jobs is not pristine")
         gate.assert_contains(result.combined, "VACUOUS INPUT", "refuses rather than bootstrapping")
 
         # (2) stamp set, zero jobs -- already covered above, asserted here as part of the shape matrix so the two halves of the predicate are both pinned.
@@ -460,14 +446,12 @@ def test_pristine_shape_is_exact(gate):
             '{"format": 1, "refreshed_at": "%s", "jobs": {}}\n' % fresh_stamp(), encoding="utf-8"
         )
         result = run_gate(gate, d / "base.json", d / "wf", d / "allow")
-        gate.assert_exit_code(1, result.rc, "a stamped baseline with zero jobs is not pristine")
+        gate.assert_exit(1, result, "a stamped baseline with zero jobs is not pristine")
 
         # (3) no refreshed_at key at all: a file somebody has edited, not the committed shape. Caught one layer earlier, by the structural validator, which is why the message is about the missing key rather than pristineness.
         (d / "base.json").write_text('{"format": 1, "jobs": {}}\n', encoding="utf-8")
         result = run_gate(gate, d / "base.json", d / "wf", d / "allow")
-        gate.assert_exit_code(
-            1, result.rc, "a baseline missing refreshed_at entirely is not pristine"
-        )
+        gate.assert_exit(1, result, "a baseline missing refreshed_at entirely is not pristine")
         gate.assert_contains(
             result.combined,
             "missing required top-level key 'refreshed_at'",
@@ -477,7 +461,7 @@ def test_pristine_shape_is_exact(gate):
         # (4) no jobs key at all.
         (d / "base.json").write_text('{"format": 1, "refreshed_at": null}\n', encoding="utf-8")
         result = run_gate(gate, d / "base.json", d / "wf", d / "allow")
-        gate.assert_exit_code(1, result.rc, "a baseline missing jobs entirely is not pristine")
+        gate.assert_exit(1, result, "a baseline missing jobs entirely is not pristine")
         gate.assert_contains(
             result.combined, "missing required top-level key 'jobs'", "names the missing key"
         )
@@ -497,7 +481,7 @@ def test_unknown_format_refuses(gate):
             encoding="utf-8",
         )
         result = run_gate(gate, d / "base.json", d / "wf", d / "allow")
-        gate.assert_exit_code(1, result.rc, "a baseline in an unknown format must refuse")
+        gate.assert_exit(1, result, "a baseline in an unknown format must refuse")
         gate.assert_contains(result.combined, "declares format 2", "names what it found")
         gate.assert_contains(result.combined, "this gate speaks format 1", "names what it speaks")
         gate.assert_not_contains(
@@ -520,7 +504,7 @@ def test_unknown_format_refuses(gate):
             encoding="utf-8",
         )
         result = run_gate(gate, d / "base.json", d / "wf", d / "allow")
-        gate.assert_exit_code(1, result.rc, "a baseline with no format must refuse")
+        gate.assert_exit(1, result, "a baseline with no format must refuse")
         gate.assert_contains(result.combined, 'declares no "format"', "names the missing version")
         gate.assert_not_contains(
             result.combined, "Traceback", "must be a named failure, never a stack trace"
@@ -529,7 +513,7 @@ def test_unknown_format_refuses(gate):
         # (3) not JSON at all -- the other way a hand-edit ends in a traceback.
         (d / "base.json").write_text('{"format": 1, "jobs": {,}\n', encoding="utf-8")
         result = run_gate(gate, d / "base.json", d / "wf", d / "allow")
-        gate.assert_exit_code(1, result.rc, "a corrupt baseline must refuse")
+        gate.assert_exit(1, result, "a corrupt baseline must refuse")
         gate.assert_contains(result.combined, "is not valid JSON", "names the syntax problem")
         gate.assert_not_contains(
             result.combined, "Traceback", "must be a named failure, never a stack trace"
@@ -539,11 +523,7 @@ def test_unknown_format_refuses(gate):
         baseline(d / "base.json", fresh_stamp())
         workflow(d / "wf", "ubuntu-slim")
         result = run_gate(gate, d / "base.json", d / "wf", d / "allow")
-        gate.assert_exit_code(
-            0,
-            result.rc,
-            "a valid format-1 baseline must still be read (output: %s)" % result.combined,
-        )
+        gate.assert_exit(0, result, "a valid format-1 baseline must still be read")
         gate.log_pass(
             "an unknown, missing or corrupt baseline format refuses by NAME, never by traceback"
         )
@@ -562,7 +542,7 @@ def test_bad_record_names_the_job_and_field(gate):
 
         edit_baseline(d / "base.json", bad_number)
         result = run_gate(gate, d / "base.json", d / "wf", d / "allow")
-        gate.assert_exit_code(1, result.rc, "a non-integer numeric must refuse")
+        gate.assert_exit(1, result, "a non-integer numeric must refuse")
         gate.assert_contains(result.combined, "fixture.yml:waster", "names the job")
         gate.assert_contains(result.combined, "'mem_peak_bytes'", "names the field")
         gate.assert_contains(result.combined, "must be a whole number", "says what was expected")
@@ -578,7 +558,7 @@ def test_bad_record_names_the_job_and_field(gate):
 
         edit_baseline(d / "base.json", drop_tier)
         result = run_gate(gate, d / "base.json", d / "wf", d / "allow")
-        gate.assert_exit_code(1, result.rc, "a missing record field must refuse")
+        gate.assert_exit(1, result, "a missing record field must refuse")
         gate.assert_contains(
             result.combined,
             "job 'fixture.yml:heavy' is missing required field 'tier'",
@@ -593,7 +573,7 @@ def test_bad_record_names_the_job_and_field(gate):
 
         edit_baseline(d / "base.json", boolean_count)
         result = run_gate(gate, d / "base.json", d / "wf", d / "allow")
-        gate.assert_exit_code(1, result.rc, "a boolean where a count belongs must refuse")
+        gate.assert_exit(1, result, "a boolean where a count belongs must refuse")
         gate.assert_contains(result.combined, "'observed_runs'", "names the field")
         gate.log_pass("a malformed record is refused by job name and field name, not by traceback")
 
@@ -625,8 +605,8 @@ def test_is_pristine_requires_the_format(gate):
     result = run_inline(gate, IS_PRISTINE_PY)
     if result.rc != 0:
         gate.log_fail(
-            "the is_pristine probe did not run at all (rc=%s): %s"
-            % (harness.describe_exit(result.rc), result.combined)
+            "the is_pristine probe did not run at all (rc=%s)" % harness.describe_exit(result.rc),
+            result,
         )
     lines = result.out.splitlines()
     gate.assert_eq(len(lines), 3, "the probe must print exactly three verdicts: %r" % result.out)
@@ -682,11 +662,7 @@ def test_refresh_refuses_an_unreadable_format(gate):
             gate, REFRESH_UNREADABLE_PY, os.fspath(d / "base.json"), os.fspath(d / "wf")
         )
         after = digest(d / "base.json")
-        gate.assert_exit_code(
-            1,
-            result.rc,
-            "a refresh onto an unreadable format must refuse (output: %s)" % result.combined,
-        )
+        gate.assert_exit(1, result, "a refresh onto an unreadable format must refuse")
         gate.assert_contains(result.combined, "REFUSING TO REFRESH", "says what it declined to do")
         gate.assert_contains(result.combined, "declares format 2", "names the format it found")
         gate.assert_not_contains(
@@ -746,9 +722,7 @@ def test_refresh_refuses_a_partial_harvest(gate):
             gate, REFRESH_PARTIAL_PY, os.fspath(d / "base.json"), os.fspath(d / "wf")
         )
         after = digest(d / "base.json")
-        gate.assert_exit_code(
-            1, result.rc, "a harvest below the floor must refuse (output: %s)" % result.combined
-        )
+        gate.assert_exit(1, result, "a harvest below the floor must refuse")
         gate.assert_contains(
             result.combined, "harvest yielded 2 job(s)", "says exactly what it found"
         )
@@ -765,7 +739,7 @@ def test_stale_baseline_fails(gate):
         baseline(d / "base.json", "2024-01-01T00:00:00Z")
         (d / "allow").write_text("", encoding="utf-8")
         result = run_gate(gate, d / "base.json", d / "wf", d / "allow")
-        gate.assert_exit_code(1, result.rc, "a baseline older than the age limit must fail")
+        gate.assert_exit(1, result, "a baseline older than the age limit must fail")
         gate.assert_contains(result.combined, "the baseline itself is stale", "names the staleness")
 
         # A stamp that is PRESENT but not a date must not read as "fresh". This is the staleness path's own failure; a stamp that is missing entirely is caught one layer earlier by the structural validator, which is asserted separately in test_pristine_shape_is_exact.
@@ -774,7 +748,7 @@ def test_stale_baseline_fails(gate):
 
         edit_baseline(d / "base.json", bad_stamp)
         result = run_gate(gate, d / "base.json", d / "wf", d / "allow")
-        gate.assert_exit_code(1, result.rc, "a baseline whose refreshed_at is not a date must fail")
+        gate.assert_exit(1, result, "a baseline whose refreshed_at is not a date must fail")
         gate.assert_contains(
             result.combined, "missing or unparseable", "says the stamp itself is the problem"
         )
@@ -787,9 +761,7 @@ def test_empty_workflow_dir_refuses(gate):
         baseline(d / "base.json", fresh_stamp())
         (d / "allow").write_text("", encoding="utf-8")
         result = run_gate(gate, d / "base.json", d / "wf", d / "allow")
-        gate.assert_exit_code(
-            1, result.rc, "a workflow directory with no parseable jobs must refuse"
-        )
+        gate.assert_exit(1, result, "a workflow directory with no parseable jobs must refuse")
         gate.assert_contains(
             result.combined, "CANNOT READ THE WORKFLOWS", "refuses a verdict instead of guessing"
         )
@@ -873,11 +845,7 @@ def run_report_awk(gate, d, name, args):
 def assert_parity(gate, d, name, want, *args) -> None:
     """`assert_parity <dir> <name> <expected-verdict> <synth_tsv args...>`."""
     result, machine = run_report_awk(gate, d, name, args)
-    gate.assert_exit_code(
-        0,
-        result.rc,
-        "report.awk must produce a clean profile for '%s' (output: %s)" % (name, result.out),
-    )
+    gate.assert_exit(0, result, "report.awk must produce a clean profile for '%s'" % name)
     if not machine.is_file() or machine.stat().st_size == 0:
         gate.log_fail("report.awk wrote no machine row for '%s'" % name)
 
@@ -887,8 +855,9 @@ def assert_parity(gate, d, name, want, *args) -> None:
     probe = run_inline(gate, CLASSIFY_PY, row)
     if probe.rc != 0:
         gate.log_fail(
-            "classify() could not be driven for '%s' (rc=%s): %s"
-            % (name, harness.describe_exit(probe.rc), probe.combined)
+            "classify() could not be driven for '%s' (rc=%s)"
+            % (name, harness.describe_exit(probe.rc)),
+            probe,
         )
     gate.assert_eq(
         probe.out.strip("\n"),
@@ -956,7 +925,7 @@ def advise_once(gate, d, name, *args):
     The twin sets two globals, `ADVISORY` and `ROW`; a Python function can hand both back, which is the only difference.
     """
     result, machine = run_report_awk(gate, d, name, args)
-    gate.assert_exit_code(0, result.rc, "report.awk must produce a clean profile for '%s'" % name)
+    gate.assert_exit(0, result, "report.awk must produce a clean profile for '%s'" % name)
     advisory = ""
     for line in result.out.splitlines():
         if line.startswith("**Advisory:** "):
@@ -1083,8 +1052,8 @@ def test_harvester_skip_rule(gate):
     result = run_inline(gate, MERGE_ROWS_PY)
     if result.rc != 0:
         gate.log_fail(
-            "the merge_rows probe did not run at all (rc=%s): %s"
-            % (harness.describe_exit(result.rc), result.combined)
+            "the merge_rows probe did not run at all (rc=%s)" % harness.describe_exit(result.rc),
+            result,
         )
     lines = result.out.splitlines()
     gate.assert_eq(len(lines), 3, "the probe must print exactly three lines: %r" % result.out)
@@ -1118,9 +1087,7 @@ def test_hosted_vm_record_fires_the_gate(gate):
         edit_baseline(d / "base.json", unlabelled_hosted)
         (d / "allow").write_text("", encoding="utf-8")
         result = run_gate(gate, d / "base.json", d / "wf", d / "allow")
-        gate.assert_exit_code(
-            1, result.rc, "an unlabelled github-hosted record that fits slim must fail"
-        )
+        gate.assert_exit(1, result, "an unlabelled github-hosted record that fits slim must fail")
         gate.assert_contains(result.combined, "fixture.yml:waster", "names the job")
 
         # CONTROL: same record, evidence removed. The gate must go quiet rather than guess from numbers nobody can attribute.
@@ -1129,12 +1096,7 @@ def test_hosted_vm_record_fires_the_gate(gate):
 
         edit_baseline(d / "base.json", drop_evidence)
         result = run_gate(gate, d / "base.json", d / "wf", d / "allow")
-        gate.assert_exit_code(
-            0,
-            result.rc,
-            "without github-hosted evidence the same record must be silent (output: %s)"
-            % result.combined,
-        )
+        gate.assert_exit(0, result, "without github-hosted evidence the same record must be silent")
         gate.log_pass(
             "an unlabelled github-hosted record fires the gate; the same record without the "
             "evidence does not"
@@ -1167,17 +1129,12 @@ def test_real_allowlist_blockers_are_substantive(gate):
                 "nothing and pass" % REAL_ALLOWLIST_REL
             )
         result = run_validator(gate, REAL_ALLOWLIST)
-        gate.assert_exit_code(
-            0,
-            result.rc,
-            "every BLOCKER in %s must be substantive (output: %s)"
-            % (REAL_ALLOWLIST, result.combined),
-        )
+        gate.assert_exit(0, result, "every BLOCKER in %s must be substantive" % REAL_ALLOWLIST)
 
         # CONTROL: the same machinery on a planted low-effort reason must reject it, so the pass above is the validator working rather than the validator being pointed at nothing.
         (d / "bad").write_text("# BLOCKER: tbd\nfixture.yml:waster\n", encoding="utf-8")
         result = run_validator(gate, d / "bad")
-        gate.assert_exit_code(1, result.rc, "a low-effort BLOCKER must be rejected")
+        gate.assert_exit(1, result, "a low-effort BLOCKER must be rejected")
         gate.assert_contains(
             result.combined, "low-effort placeholder", "uses the shared validator's own wording"
         )
@@ -1193,12 +1150,7 @@ def test_real_tree_seam_free(gate):
     # The seams must be ABSENT, not merely unset in this process: `harness.run` overlays os.environ, so a `RUNNER_ADVICE_*` inherited from an outer shell would silently make this case seam-BEARING and its name a lie.
     seamless = {k: v for k, v in os.environ.items() if not k.startswith("RUNNER_ADVICE_")}
     result = harness.run([python3, os.fspath(GATE)], env=seamless, env_replace=True)
-    gate.assert_exit_code(
-        0,
-        result.rc,
-        "the real tree must not fail: it is either pristine or seeded (output: %s)"
-        % result.combined,
-    )
+    gate.assert_exit(0, result, "the real tree must not fail: it is either pristine or seeded")
     if "Runner sizing (bootstrap)" in result.combined:
         # PRISTINE. Exit 0 is only acceptable WITH the warning: a silent pass over an unseeded baseline is the exact shape this gate exists to prevent, so the annotation is asserted, not tolerated.
         gate.assert_contains(

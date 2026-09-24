@@ -143,7 +143,7 @@ def test_healthy_pair_passes(gate, tmp_path):
     ok_yml, ok_sh = tmp_path / "ok.yml", tmp_path / "ok.sh"
     scaffold(ok_yml, ok_sh)
     result = run_gate(ok_yml, ok_sh)
-    gate.assert_eq(result.rc, 0, "a fully wired workflow must pass: %s" % result.combined)
+    gate.assert_exit(0, result, "a fully wired workflow must pass")
     gate.assert_contains(result.combined, "every non-exempt ci.yml job is aggregated", "and say so")
     gate.log_pass("a fully wired workflow and tier list passes")
 
@@ -255,7 +255,7 @@ def test_low_effort_blocker_is_rejected(gate, tmp_path):
             "PYTHONPATH": str(paths.from_root(".ci")),
         },
     )
-    gate.assert_eq(result.rc, 1, "a low-effort BLOCKER must fail the gate: %s" % result.combined)
+    gate.assert_exit(1, result, "a low-effort BLOCKER must fail the gate")
     gate.assert_contains(
         result.combined, "low-effort placeholder", "with the validator's own diagnostic"
     )
@@ -345,9 +345,7 @@ def test_real_tree_passes(gate):
     # It is now wired in (ci.yml's ci-complete `needs:` and `env:`, plus SOFT_REQUIRED in assert-ci-complete.sh), so the durable assertion is the inverse: the real tree must PASS, and must keep passing. A future job added to ci.yml without being aggregated fails here as well as in CI.
     result = harness.run(["python3", str(GATE)])
     if result.rc != 0:
-        gate.log_fail(
-            "the real ci.yml no longer satisfies the aggregation invariant: %s" % result.combined
-        )
+        gate.log_fail("the real ci.yml no longer satisfies the aggregation invariant", result)
     gate.assert_contains(
         result.combined,
         "every non-exempt ci.yml job is aggregated",

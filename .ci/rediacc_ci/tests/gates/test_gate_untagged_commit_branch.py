@@ -238,10 +238,5 @@ def test_the_guard_is_reachable_through_the_dispatcher(gate):
             check=False,
             timeout=120,
         )
-        gate.assert_exit_code(
-            0,
-            proc.returncode,
-            "dispatch.py %s on an unrelated command must exit 0 (stderr: %s)"
-            % (GUARD, proc.stderr.strip()),
-        )
+        gate.assert_exit(0, proc, "dispatch.py %s on an unrelated command must exit 0" % GUARD)
     gate.log_pass("dispatch.py resolves %r, so the refusals above are the guard's" % GUARD)

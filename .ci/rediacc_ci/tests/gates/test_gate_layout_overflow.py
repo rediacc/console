@@ -49,9 +49,7 @@ def run_gate(gate, script, *args: str) -> harness.RunResult:
 def test_selftest_passes_and_plants_both_shapes(gate):
     gate.log_test("the gate's own controls plant both cause shapes on every invocation")
     result = run_gate(gate, GATE, "--selftest")
-    gate.assert_exit_code(
-        0, result.rc, "the gate's own controls must pass (output: %s)" % result.combined
-    )
+    gate.assert_exit(0, result, "the gate's own controls must pass")
     gate.assert_contains(
         result.combined,
         "PLANT: `left: -9999px` offscreen hiding is reported",
@@ -84,8 +82,8 @@ def test_the_control_can_actually_fail(gate, tmp_path):
     mutant.parent.mkdir(parents=True, exist_ok=True)
     mutant.write_text(mutated, encoding="utf-8")
     result = run_gate(gate, mutant, "--selftest")
-    gate.assert_exit_code(
-        1, result.rc, "a gate that stopped detecting the nowrap shape must FAIL its own controls"
+    gate.assert_exit(
+        1, result, "a gate that stopped detecting the nowrap shape must FAIL its own controls"
     )
     gate.assert_contains(result.combined, "FAIL", "the mutant must name the failing control")
     gate.log_pass(
@@ -130,6 +128,6 @@ def test_empty_tree_is_refused(gate, tmp_path):
     gate.log_test("ANTI-VACUITY: a tree with no stylesheets is refused, not reported clean")
     (tmp_path / "packages" / "www" / "src" / "styles").mkdir(parents=True)
     result = run_gate(gate, GATE, "--root", str(tmp_path))
-    gate.assert_exit_code(1, result.rc, "a tree with no stylesheets must be REFUSED, never passed")
+    gate.assert_exit(1, result, "a tree with no stylesheets must be REFUSED, never passed")
     gate.assert_contains(result.combined, "Refusing to run", "the refusal must say so")
     gate.log_pass("an empty style tree is refused rather than reported clean")

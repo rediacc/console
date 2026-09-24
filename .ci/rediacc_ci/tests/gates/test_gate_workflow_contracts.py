@@ -201,7 +201,7 @@ def test_clean_contract_passes(gate, tmp_path):
     write_callee(tmp_path)
     write_caller(tmp_path, WITH_OK, SECRETS_OK)
     result = run_check(tmp_path)
-    gate.assert_exit_code(0, result.rc, "a complete, matching contract must pass")
+    gate.assert_exit(0, result, "a complete, matching contract must pass")
     gate.log_pass("matching caller/callee contract passes")
 
 
@@ -210,7 +210,7 @@ def test_undeclared_secret_read_in_callee(gate, tmp_path):
     write_callee(tmp_path, " ${{ secrets.NEVER_DECLARED }}")
     write_caller(tmp_path, WITH_OK, SECRETS_OK)
     result = run_check(tmp_path)
-    gate.assert_exit_code(1, result.rc, "reading an undeclared secret must fail")
+    gate.assert_exit(1, result, "reading an undeclared secret must fail")
     gate.assert_contains(
         result.combined, "reads secrets.NEVER_DECLARED", "names the undeclared secret"
     )
@@ -222,7 +222,7 @@ def test_caller_omits_required_secret(gate, tmp_path):
     write_callee(tmp_path)
     write_caller(tmp_path, WITH_OK, "    secrets:\n      OPTIONAL_ONE: ${{ secrets.OPTIONAL_ONE }}")
     result = run_check(tmp_path)
-    gate.assert_exit_code(1, result.rc, "omitting a required secret must fail")
+    gate.assert_exit(1, result, "omitting a required secret must fail")
     gate.assert_contains(
         result.combined, "does not pass required secret DECLARED", "names the omitted secret"
     )
@@ -234,7 +234,7 @@ def test_caller_passes_undeclared_secret(gate, tmp_path):
     write_callee(tmp_path)
     write_caller(tmp_path, WITH_OK, SECRETS_OK + "\n      GHOST: ${{ secrets.GHOST }}")
     result = run_check(tmp_path)
-    gate.assert_exit_code(1, result.rc, "passing a secret the callee never declares must fail")
+    gate.assert_exit(1, result, "passing a secret the callee never declares must fail")
     gate.assert_contains(result.combined, "passes secret GHOST", "names the dead wiring")
     gate.log_pass("caller passing an undeclared secret fails (dead wiring)")
 
@@ -243,7 +243,7 @@ def test_input_contract_both_directions(gate, tmp_path):
     write_callee(tmp_path)
     write_caller(tmp_path, "    with:\n      bogus: x", SECRETS_OK)
     result = run_check(tmp_path)
-    gate.assert_exit_code(1, result.rc, "missing required input + undeclared input must fail")
+    gate.assert_exit(1, result, "missing required input + undeclared input must fail")
     gate.assert_contains(
         result.combined, "does not pass required input target", "names the omitted input"
     )
@@ -256,7 +256,7 @@ def test_optional_secret_may_be_omitted(gate, tmp_path):
     write_callee(tmp_path)
     write_caller(tmp_path, WITH_OK, SECRETS_OK)
     result = run_check(tmp_path)
-    gate.assert_exit_code(0, result.rc, "omitting an optional secret must not be reported")
+    gate.assert_exit(0, result, "omitting an optional secret must not be reported")
     gate.log_pass("optional secrets may be omitted without a finding")
 
 
@@ -265,7 +265,7 @@ def test_secrets_inherit_is_not_flagged(gate, tmp_path):
     write_callee(tmp_path)
     write_caller(tmp_path, WITH_OK, "    secrets: inherit")
     result = run_check(tmp_path)
-    gate.assert_exit_code(0, result.rc, "secrets: inherit must not be treated as a missing secret")
+    gate.assert_exit(0, result, "secrets: inherit must not be treated as a missing secret")
     gate.log_pass("secrets: inherit is accepted")
 
 
@@ -274,7 +274,7 @@ def test_github_token_is_implicit(gate, tmp_path):
     write_callee(tmp_path, " ${{ secrets.GITHUB_TOKEN }}")
     write_caller(tmp_path, WITH_OK, SECRETS_OK)
     result = run_check(tmp_path)
-    gate.assert_exit_code(0, result.rc, "GITHUB_TOKEN must not be reported as undeclared")
+    gate.assert_exit(0, result, "GITHUB_TOKEN must not be reported as undeclared")
     gate.log_pass("GITHUB_TOKEN is treated as implicit")
 
 
@@ -285,16 +285,14 @@ def test_script_filename_is_not_a_secret_reference(gate, tmp_path):
         handle.write("      - run: .ci/scripts/deploy/set-account-worker-secrets.sh\n")
     write_caller(tmp_path, WITH_OK, SECRETS_OK)
     result = run_check(tmp_path)
-    gate.assert_exit_code(
-        0, result.rc, "a filename ending in -secrets.sh must not read as secrets.sh"
-    )
+    gate.assert_exit(0, result, "a filename ending in -secrets.sh must not read as secrets.sh")
     gate.log_pass("script filenames are not mistaken for secret references")
 
 
 def test_missing_callee_is_reported(gate, tmp_path):
     write_caller(tmp_path, WITH_OK, SECRETS_OK)
     result = run_check(tmp_path)
-    gate.assert_exit_code(1, result.rc, "calling a workflow that does not exist must fail")
+    gate.assert_exit(1, result, "calling a workflow that does not exist must fail")
     gate.assert_contains(result.combined, "does not exist", "names the missing callee")
     gate.log_pass("a call to a nonexistent local workflow fails")
 
@@ -318,7 +316,7 @@ def test_declared_unused_secret_is_reported(gate, tmp_path):
         "      OPTIONAL_ONE:\n        required: false\n      UNREAD_ONE:\n        required: false\n",
     )
     result = run_check(tmp_path)
-    gate.assert_exit_code(1, result.rc, "a declaration nothing reads must fail")
+    gate.assert_exit(1, result, "a declaration nothing reads must fail")
     gate.assert_contains(
         result.combined, "declares secret UNREAD_ONE", "names the dead declaration"
     )
@@ -331,7 +329,7 @@ def test_declared_and_read_is_not_reported(gate, tmp_path):
     write_callee(tmp_path)
     write_caller(tmp_path, WITH_OK, SECRETS_OK)
     result = run_check(tmp_path)
-    gate.assert_exit_code(0, result.rc, "a declared secret that IS read must not be reported")
+    gate.assert_exit(0, result, "a declared secret that IS read must not be reported")
     gate.assert_not_contains(result.combined, "never reads it", "no dead-declaration finding")
     gate.log_pass("CONTROL: a declaration the callee reads is left alone")
 
@@ -340,7 +338,7 @@ def test_liveness_reports_a_dangling_exemption(gate, tmp_path):
     write_callee(tmp_path)
     write_caller(tmp_path, WITH_OK, SECRETS_OK)
     result = run_check_live(tmp_path)
-    gate.assert_exit_code(1, result.rc, "an exemption naming a file that is gone must fail")
+    gate.assert_exit(1, result, "an exemption naming a file that is gone must fail")
     gate.assert_contains(result.combined, "which does not exist", "names the dangling exemption")
     gate.log_pass("the exemption liveness sweep reports a dangling entry")
 
@@ -350,8 +348,8 @@ def test_liveness_stands_down_on_fixture_trees(gate, tmp_path):
     write_callee(tmp_path)
     write_caller(tmp_path, WITH_OK, SECRETS_OK)
     result = run_check(tmp_path)
-    gate.assert_exit_code(
-        0, result.rc, "a fixture tree must not be judged against the real tree's exemptions"
+    gate.assert_exit(
+        0, result, "a fixture tree must not be judged against the real tree's exemptions"
     )
     gate.assert_not_contains(result.combined, "which does not exist", "the sweep stayed silent")
     gate.log_pass("CONTROL: the liveness sweep stands down on a fixture tree")
@@ -361,7 +359,7 @@ def test_liveness_honours_a_live_exemption(gate, tmp_path):
     """CONTROL: the exempted file present and still not reading the secret."""
     write_exempt(tmp_path, False)
     result = run_check_live(tmp_path)
-    gate.assert_exit_code(0, result.rc, "a live exemption must suppress the finding")
+    gate.assert_exit(0, result, "a live exemption must suppress the finding")
     gate.assert_not_contains(
         result.combined,
         "ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN",
@@ -374,7 +372,7 @@ def test_liveness_reports_an_exemption_now_read(gate, tmp_path):
     """An exemption that has become unnecessary must be surfaced, not left as coverage."""
     write_exempt(tmp_path, True)
     result = run_check_live(tmp_path)
-    gate.assert_exit_code(1, result.rc, "an exemption whose secret is now read must fail")
+    gate.assert_exit(1, result, "an exemption whose secret is now read must fail")
     gate.assert_contains(result.combined, "now READS", "says the exemption is obsolete")
     gate.log_pass("an exemption whose secret is now read is reported")
 
@@ -385,9 +383,7 @@ def test_liveness_reports_an_exemption_now_read(gate, tmp_path):
 def test_ec_clean_passes(gate, tmp_path):
     root = ec_fixture(tmp_path)
     result = run_ec(root)
-    gate.assert_exit_code(
-        0, result.rc, "a registry matching both the callee and the caller must pass"
-    )
+    gate.assert_exit(0, result, "a registry matching both the callee and the caller must pass")
     gate.assert_contains(
         result.combined, "1 external caller call-site(s) verified", "reports what it verified"
     )
@@ -398,7 +394,7 @@ def test_ec_registry_declares_undeclared_input(gate, tmp_path):
     root = ec_fixture(tmp_path)
     edit(root / "registry.yml", "passes_inputs: [target]", "passes_inputs: [target, ghost]")
     result = run_ec(root)
-    gate.assert_exit_code(1, result.rc, "declaring an input the callee never declares must fail")
+    gate.assert_exit(1, result, "declaring an input the callee never declares must fail")
     gate.assert_contains(result.combined, "passes input ghost", "names the dead wiring")
     gate.log_pass("external caller passing an undeclared input fails")
 
@@ -407,7 +403,7 @@ def test_ec_registry_omits_required_secret(gate, tmp_path):
     root = ec_fixture(tmp_path)
     edit(root / "registry.yml", "passes_secrets: [TOKEN]", "passes_secrets: []")
     result = run_ec(root)
-    gate.assert_exit_code(1, result.rc, "omitting a required secret must fail")
+    gate.assert_exit(1, result, "omitting a required secret must fail")
     gate.assert_contains(
         result.combined, "does not pass required secret TOKEN", "names the omitted secret"
     )
@@ -424,7 +420,7 @@ def test_ec_caller_drifts_from_registry(gate, tmp_path):
         "      target: x\n      opt: y\n",
     )
     result = run_ec(root)
-    gate.assert_exit_code(1, result.rc, "a registry that no longer describes the caller must fail")
+    gate.assert_exit(1, result, "a registry that no longer describes the caller must fail")
     gate.assert_contains(
         result.combined, "registry declares ['target']", "shows both sides of the drift"
     )
@@ -439,7 +435,7 @@ def test_ec_pin_drift_is_reported(gate, tmp_path):
         "callee.yml@v1",
     )
     result = run_ec(root)
-    gate.assert_exit_code(1, result.rc, "a ref the registry does not claim must fail")
+    gate.assert_exit(1, result, "a ref the registry does not claim must fail")
     gate.assert_contains(result.combined, "registry says @main", "names the expected ref")
     gate.log_pass("caller pinned at an unregistered ref fails")
 
@@ -455,7 +451,7 @@ def test_ec_unregistered_caller_is_reported(gate, tmp_path):
         encoding="utf-8",
     )
     result = run_ec(root)
-    gate.assert_exit_code(1, result.rc, "an external caller nobody registered must fail")
+    gate.assert_exit(1, result, "an external caller nobody registered must fail")
     gate.assert_contains(
         result.combined,
         "private/other/.github/workflows/review.yml",
@@ -470,7 +466,7 @@ def test_ec_deleted_callee_is_reported(gate, tmp_path):
     root = ec_fixture(tmp_path)
     (root / ".github" / "workflows" / "callee.yml").unlink()
     result = run_ec(root)
-    gate.assert_exit_code(1, result.rc, "deleting a callee an external caller depends on must fail")
+    gate.assert_exit(1, result, "deleting a callee an external caller depends on must fail")
     gate.assert_contains(
         result.combined, "the callee does not exist in this repo", "names the stranded call"
     )
@@ -487,8 +483,8 @@ def test_ec_missing_file_in_checked_out_tree(gate, tmp_path):
         encoding="utf-8",
     )
     result = run_ec(root)
-    gate.assert_exit_code(
-        1, result.rc, "a registry entry whose file is gone from a checked-out tree must fail"
+    gate.assert_exit(
+        1, result, "a registry entry whose file is gone from a checked-out tree must fail"
     )
     gate.assert_contains(
         result.combined, "absent from a checked-out tree", "says the entry is stale"
@@ -501,7 +497,7 @@ def test_ec_absent_submodule_is_blind_not_pass(gate, tmp_path):
     root = ec_fixture(tmp_path)
     shutil.rmtree(root / "private")
     result = run_ec(root)
-    gate.assert_exit_code(1, result.rc, "no submodule tree means nothing asserted, which must fail")
+    gate.assert_exit(1, result, "no submodule tree means nothing asserted, which must fail")
     gate.assert_contains(
         result.combined, "this check is blind", "says the check has nothing to assert"
     )
@@ -512,7 +508,7 @@ def test_ec_empty_registry_is_blind_not_pass(gate, tmp_path):
     root = ec_fixture(tmp_path)
     (root / "registry.yml").write_text("callers: []\n", encoding="utf-8")
     result = run_ec(root)
-    gate.assert_exit_code(1, result.rc, "an emptied registry must fail rather than assert nothing")
+    gate.assert_exit(1, result, "an emptied registry must fail rather than assert nothing")
     gate.assert_contains(result.combined, "declares no callers", "names the empty registry")
     gate.log_pass("emptying the registry fails (anti-vacuity)")
 
@@ -522,7 +518,7 @@ def test_ec_fixture_tree_skips_cleanly(gate, tmp_path):
     write_callee(tmp_path)
     write_caller(tmp_path, WITH_OK, SECRETS_OK)
     result = run_check(tmp_path)
-    gate.assert_exit_code(0, result.rc, "a CHECK 2 fixture tree must still pass")
+    gate.assert_exit(0, result, "a CHECK 2 fixture tree must still pass")
     gate.assert_contains(
         result.combined, "Skipping external-caller contract check", "says it stood down"
     )
@@ -535,9 +531,7 @@ def test_ec_real_registry_is_wired(gate):
     Without this, every case above could pass against fixtures while the gate checked nothing in CI. READ-ONLY on the real tree: no override, no write.
     """
     result = run_check(None)
-    gate.assert_exit_code(
-        0, result.rc, "the real tree must satisfy its own external-caller registry"
-    )
+    gate.assert_exit(0, result, "the real tree must satisfy its own external-caller registry")
     gate.assert_contains(
         result.combined, "external caller call-site(s) verified", "the real run reached CHECK 4"
     )
@@ -612,7 +606,7 @@ def test_a3_pinned_exemption_passes(gate, tmp_path):
     """CONTROL, and the load-bearing one: quiet, and audible about what it compared."""
     root = a3_fixture(tmp_path)
     result = run_ec_live(root)
-    gate.assert_exit_code(0, result.rc, "an exemption the registry pins alive must pass")
+    gate.assert_exit(0, result, "an exemption the registry pins alive must pass")
     gate.assert_contains(
         result.combined,
         "arm (a3): 1 declared-unused exemption(s) == 1 pinned alive",
@@ -636,7 +630,7 @@ def test_a3_unpinned_exemption_is_reported(gate, tmp_path):
         "",
     )
     result = run_ec_live(root)
-    gate.assert_exit_code(1, result.rc, "an exemption nothing pins alive must fail")
+    gate.assert_exit(1, result, "an exemption nothing pins alive must fail")
     gate.assert_contains(result.combined, "pins it alive", "says the justification is gone")
     gate.assert_contains(
         result.combined,
@@ -683,7 +677,7 @@ def test_a3_pinned_but_unexempted_is_reported(gate, tmp_path):
             "    passes_secrets: [UNUSED_TOKEN]\n"
         )
     result = run_ec_live(root)
-    gate.assert_exit_code(1, result.rc, "a pinned declared-unused secret the list omits must fail")
+    gate.assert_exit(1, result, "a pinned declared-unused secret the list omits must fail")
     gate.assert_contains(
         result.combined, "pins other.yml/UNUSED_TOKEN alive", "names the unreconciled pair"
     )
@@ -695,7 +689,7 @@ def test_a3_empty_registry_is_blind_not_pass(gate, tmp_path):
     root = a3_fixture(tmp_path)
     (root / "registry.yml").write_text("callers: []\n", encoding="utf-8")
     result = run_ec_live(root)
-    gate.assert_exit_code(1, result.rc, "an emptied registry must fail rather than assert nothing")
+    gate.assert_exit(1, result, "an emptied registry must fail rather than assert nothing")
     gate.assert_contains(result.combined, "arm (a3)", "a3 says it is blind, not just CHECK 4")
     gate.assert_contains(result.combined, "this arm is blind", "names the vacuity")
     gate.log_pass("a3 refuses an empty registry (anti-vacuity)")
@@ -714,8 +708,8 @@ def test_a3_stands_down_without_a_registry(gate, tmp_path):
         EXTERNAL_CALLERS_ROOT=str(root),
         WORKFLOW_GATES_EXTRA_EXEMPTIONS=EXTRA_EXEMPTION,
     )
-    gate.assert_exit_code(
-        0, result.rc, "a non-real tree must not be judged against the real exemption list"
+    gate.assert_exit(
+        0, result, "a non-real tree must not be judged against the real exemption list"
     )
     gate.assert_not_contains(result.combined, "arm (a3)", "the arm stayed silent")
     gate.log_pass("CONTROL: a3 stands down when the tree is not the real one")

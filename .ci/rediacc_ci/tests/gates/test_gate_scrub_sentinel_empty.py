@@ -84,7 +84,7 @@ def test_dry_run_completes_with_no_credentials(gate):
     if not tool_gate(gate):
         return
     result = dry_run(gate)
-    gate.assert_exit_code(0, result.rc, "dry-run must succeed even with bad credentials")
+    gate.assert_exit(0, result, "dry-run must succeed even with bad credentials")
     gate.assert_contains(
         result.combined, "s3://rediacc-releases/cli/%s/" % VERSION, "cli plan line printed"
     )

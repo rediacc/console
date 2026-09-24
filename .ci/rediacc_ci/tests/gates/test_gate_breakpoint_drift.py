@@ -67,7 +67,7 @@ def manifest_body(bp) -> str:
 def test_clean_copy_passes(gate):
     with harness.temp_dir() as tmp:
         run = run_gate(make_copy(tmp))
-        gate.assert_exit_code(0, run.rc, "an unmodified copy must verify")
+        gate.assert_exit(0, run, "an unmodified copy must verify")
         gate.assert_contains(run.out, "Verified", "the gate must report what it verified")
         gate.assert_not_contains(run.out, "Verified 0 files", "verifying zero files is vacuous")
     gate.log_pass("clean copy verifies and reports a non-zero file count")
@@ -184,8 +184,8 @@ def test_write_regenerates_in_console(gate):
             bp = make_copy(tmp)
             (bp / "MANIFEST.sha256").unlink()
             run = run_gate(bp, "--write", GITHUB_REPOSITORY="rediacc/console")
-            gate.assert_exit_code(
-                0, run.rc, "--write must succeed in the canonical repo (remote form: %s)" % url
+            gate.assert_exit(
+                0, run, "--write must succeed in the canonical repo (remote form: %s)" % url
             )
             manifest = bp / "MANIFEST.sha256"
             if not manifest.is_file() or manifest.stat().st_size == 0:
@@ -230,7 +230,7 @@ def test_valid_blocker_accept_is_honoured(gate):
             encoding="utf-8",
         )
         run = run_gate(bp)
-        gate.assert_exit_code(0, run.rc, "a divergence with a valid BLOCKER must be accepted")
+        gate.assert_exit(0, run, "a divergence with a valid BLOCKER must be accepted")
         gate.assert_contains(
             run.out, "accepted", "the gate must say the divergence was accepted, not stay silent"
         )

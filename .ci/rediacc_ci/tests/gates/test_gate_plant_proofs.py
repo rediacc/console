@@ -92,7 +92,7 @@ def test_the_gate_is_green_on_the_real_tree(gate):
     if not GATE.is_file():
         gate.log_fail("subject under test is missing: %s" % GATE)
     result = _run(paths.repo_root())
-    gate.assert_exit_code(0, result.rc, "clean tree (stderr: %s)" % result.err[-400:])
+    gate.assert_exit(0, result, "clean tree")
     # The SHAPE, not just the verdict. A corpus that collapsed to nothing would still print a tick; these numbers are what says it did not.
     gate.assert_contains(result.combined, "tracked .sh", "prints the shell corpus size")
     gate.assert_contains(result.combined, "TS control region(s)", "and the TS region count")
@@ -109,10 +109,10 @@ def test_one_of_the_two_proofs_is_enough(gate):
     gate.log_test("NEGATIVE: strip the PRE-check only; the post-check still proves it")
     with harness.temp_dir() as tmp:
         root = _mirror(tmp)
-        gate.assert_exit_code(0, _run(root).rc, "the untouched mirror is green first")
+        gate.assert_exit(0, _run(root), "the untouched mirror is green first")
         _edit(root, BASH_SUBJECT, BASH_PROOF, "")
         result = _run(root)
-        gate.assert_exit_code(0, result.rc, "one proof is still a proof (%s)" % result.err[-300:])
+        gate.assert_exit(0, result, "one proof is still a proof")
     gate.log_pass("a single proof, before or after, clears the plant")
 
 
@@ -120,11 +120,11 @@ def test_a_bash_control_losing_its_proof_reds(gate):
     gate.log_test("PLANT: strip BOTH proofs off a REAL bash control, in a copy")
     with harness.temp_dir() as tmp:
         root = _mirror(tmp)
-        gate.assert_exit_code(0, _run(root).rc, "the untouched mirror is green first")
+        gate.assert_exit(0, _run(root), "the untouched mirror is green first")
         _edit(root, BASH_SUBJECT, BASH_PROOF, "")
         _edit(root, BASH_SUBJECT, BASH_PROOF_AFTER, "")
         result = _run(root)
-        gate.assert_exit_code(1, result.rc, "an unproven plant is a finding")
+        gate.assert_exit(1, result, "an unproven plant is a finding")
         gate.assert_contains(result.combined, "test-run-sh.sh", "names the file")
         gate.assert_contains(result.combined, "never proves the mutation landed", "says what")
         gate.assert_contains(result.combined, "CONTROL PLANT DID NOT LAND", "hands over the fix")
@@ -140,7 +140,7 @@ def test_a_neighbouring_controls_proof_does_not_launder_this_plant(gate):
         _edit(root, BASH_SUBJECT, BASH_PROOF, "")
         _edit(root, BASH_SUBJECT, BASH_PROOF_AFTER, "")
         result = _run(root)
-        gate.assert_exit_code(1, result.rc, "a target-only rule would have stayed green here")
+        gate.assert_exit(1, result, "a target-only rule would have stayed green here")
         gate.assert_contains(result.combined, "clean) clean", "and it is (b) that is named")
     gate.log_pass("a proof proves ONE mutation; the needle is what ties them together")
 
@@ -151,7 +151,7 @@ def test_a_typescript_control_losing_its_occurrence_check_reds(gate):
         root = _mirror(tmp)
         _edit(root, TS_SUBJECT, TS_PROOF, "")
         result = _run(root)
-        gate.assert_exit_code(1, result.rc, "an uncounted .replace() mutant is a finding")
+        gate.assert_exit(1, result, "an uncounted .replace() mutant is a finding")
         gate.assert_contains(result.combined, "check-docs-browse-invariants.ts", "names the file")
         gate.assert_contains(result.combined, "never counts the needle", "says what")
         gate.assert_contains(result.combined, ".split(RAIL_NEEDLE)", "hands over the fix")
@@ -169,7 +169,7 @@ def test_trimming_the_baseline_cannot_buy_a_green(gate):
         dropped = obj[pp.KEY].pop(0)
         path.write_text(json.dumps(obj), encoding="utf-8")
         result = _run(root)
-        gate.assert_exit_code(1, result.rc, "a deleted row re-reports its plant")
+        gate.assert_exit(1, result, "a deleted row re-reports its plant")
         gate.assert_contains(result.combined, dropped["id"], "and names the same id back")
     gate.log_pass("deleting a row cannot buy a green, which is what makes it a baseline")
 
@@ -185,7 +185,7 @@ def test_a_row_nothing_matches_is_a_finding_too(gate):
         )
         path.write_text(json.dumps(obj), encoding="utf-8")
         result = _run(root)
-        gate.assert_exit_code(1, result.rc, "an unmatched row is the OTHER set difference")
+        gate.assert_exit(1, result, "an unmatched row is the OTHER set difference")
         gate.assert_contains(result.combined, "no longer reports as unproven", "says which way")
         gate.assert_contains(result.combined, WRITE_BASELINE, "and how to drain")
     gate.log_pass("the set is equal in both directions, so nothing can be pre-loaded either")
@@ -208,7 +208,7 @@ def test_write_baseline_refuses_a_reseed_that_drains_one_and_adds_one(gate):
         (root / pp.BASELINE_REL).write_text(json.dumps(obj), encoding="utf-8")
 
         result = _run(root, WRITE_BASELINE)
-        gate.assert_exit_code(1, result.rc, "a blanket reseed that ADDS is refused")
+        gate.assert_exit(1, result, "a blanket reseed that ADDS is refused")
         gate.assert_contains(result.combined, "It never grows", "and says why")
         gate.assert_contains(result.combined, "--allow-new", "and names the typed form")
         after = len(json.loads((root / pp.BASELINE_REL).read_text(encoding="utf-8"))[pp.KEY])
@@ -222,7 +222,7 @@ def test_the_python_delegate_going_missing_is_a_refusal(gate):
         root = _mirror(tmp)
         (root / pp.PYTHON_DELEGATE).unlink()
         result = _run(root)
-        gate.assert_exit_code(1, result.rc, "a third of the class unscanned is a refusal")
+        gate.assert_exit(1, result, "a third of the class unscanned is a refusal")
         gate.assert_contains(result.combined, "delegated", "and says the arm is delegated")
         gate.assert_contains(result.combined, "unscanned", "and that Python would go unchecked")
     gate.log_pass("the delegation is asserted, not documented, so it cannot rot quietly")
@@ -231,7 +231,7 @@ def test_the_python_delegate_going_missing_is_a_refusal(gate):
 def test_the_selftest_runs_and_is_not_trivially_small(gate):
     gate.log_test("--selftest, as a process, with a floor under how much it asserts")
     result = _run(paths.repo_root(), "--selftest")
-    gate.assert_exit_code(0, result.rc, "every control passes (stderr: %s)" % result.err[-400:])
+    gate.assert_exit(0, result, "every control passes")
     passes = result.combined.count("  PASS  ")
     if passes < 40:
         gate.log_fail(

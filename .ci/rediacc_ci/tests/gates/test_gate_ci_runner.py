@@ -220,7 +220,7 @@ def test_all_pass_is_quiet(gate):
             ],
         )
         r = run_ci(gate, mf, "--jobs", "2")
-        gate.assert_exit_code(0, r.rc, "an all-pass manifest must exit 0")
+        gate.assert_exit(0, r, "an all-pass manifest must exit 0")
         for gid in ("g1", "g2", "g3"):
             gate.assert_contains(r.out, "  ok    " + gid, "every gate reports a line")
         gate.assert_not_contains(r.out, "one-output", "a passing gate's output stays quiet")
@@ -247,7 +247,7 @@ def test_failure_prints_both_streams(gate):
             ],
         )
         r = run_ci(gate, mf, "--jobs", "2")
-        gate.assert_exit_code(1, r.rc, "one failing gate must make the run exit 1")
+        gate.assert_exit(1, r, "one failing gate must make the run exit 1")
         gate.assert_contains(r.out, "FAIL  boom", "the failing gate is named")
         gate.assert_contains(r.out, "exit 7", "the real exit code is reported")
         gate.assert_contains(r.out, "--- stdout ---", "captured stdout has its own header")
@@ -312,7 +312,7 @@ def test_fail_fast_stops_the_run(gate):
             ],
         )
         r = run_ci(gate, mf, "--jobs", "1", "--fail-fast")
-        gate.assert_exit_code(1, r.rc, "--fail-fast still exits 1")
+        gate.assert_exit(1, r, "--fail-fast still exits 1")
         gate.assert_contains(
             r.out, "not run (--fail-fast)", "the remaining gates say why they did not run"
         )
@@ -338,7 +338,7 @@ def test_mutex_serialises(gate):
             ],
         )
         r = run_ci(gate, mf, "--jobs", "4")
-        gate.assert_exit_code(0, r.rc, "the mutex fixture passes")
+        gate.assert_exit(0, r, "the mutex fixture passes")
         gate.assert_eq(
             max_concurrency(gate, log),
             1,
@@ -388,7 +388,7 @@ def test_reads_shares_and_excludes(gate):
             ],
         )
         r = run_ci(gate, mf, "--jobs", "4")
-        gate.assert_exit_code(0, r.rc, "the reads fixture passes")
+        gate.assert_exit(0, r, "the reads fixture passes")
         gate.assert_eq(
             max_concurrency(gate, work / "case4c.log"),
             2,
@@ -406,7 +406,7 @@ def test_reads_shares_and_excludes(gate):
             ],
         )
         r = run_ci(gate, mf, "--jobs", "4")
-        gate.assert_exit_code(0, r.rc, "the writer/reader fixture passes")
+        gate.assert_exit(0, r, "the writer/reader fixture passes")
         gate.assert_eq(
             max_concurrency(gate, work / "case4d.log"),
             1,
@@ -460,7 +460,7 @@ def test_needs_orders_and_skips(gate):
             ],
         )
         r = run_ci(gate, mf, "--jobs", "4")
-        gate.assert_exit_code(1, r.rc, "a skipped gate makes the run non-zero")
+        gate.assert_exit(1, r, "a skipped gate makes the run non-zero")
         prep_end = first_ts("E", log)
         user_start = first_ts("U", log)
         gate.assertions += 1
@@ -496,7 +496,7 @@ def test_jobs_bounds_concurrency(gate):
         )
         mf = manifest(gate, work, "case6", [spec("j%d" % n, body) for n in range(1, 7)])
         r = run_ci(gate, mf, "--jobs", "2")
-        gate.assert_exit_code(0, r.rc, "the concurrency fixture passes")
+        gate.assert_exit(0, r, "the concurrency fixture passes")
         gate.assert_eq(max_concurrency(gate, log), 2, "--jobs 2 admits exactly two gates at a time")
 
         # CONTROL: the same six gates at --jobs 5 must exceed 2, or the assertion above would also pass on a runner that serialises everything.
@@ -539,7 +539,7 @@ def test_missing_duration_cache(gate):
             [spec("c1", "true"), {**spec("c2", "true"), "weight": 2}],
         )
         r = run_ci(gate, mf, "--jobs", "2", env={"CI_RUNNER_CACHE": os.fspath(cache)})
-        gate.assert_exit_code(0, r.rc, "a missing duration cache must not fail the run")
+        gate.assert_exit(0, r, "a missing duration cache must not fail the run")
         gate.assertions += 1
         if not cache.is_file():
             gate.log_fail("the run did not write the duration cache it was pointed at")
@@ -582,7 +582,7 @@ def test_summary_is_deterministic(gate):
         first_summary = summary(first.out)
         second = run_ci(gate, mf, "--jobs", "4")
         second_summary = summary(second.out)
-        gate.assert_exit_code(first.rc, second.rc, "the exit code is stable across runs")
+        gate.assert_exit(first.rc, second, "the exit code is stable across runs")
         gate.assert_eq(
             second_summary,
             first_summary,
@@ -601,7 +601,7 @@ def test_json_matches_what_was_printed(gate):
         mf = manifest(gate, work, "case10", [spec("jok", "echo fine"), spec("jbad", rerun)])
         # Under --json the machine document owns stdout and the human stream moves to stderr, so an agent can consume one and tail the other.
         r = run_ci(gate, mf, "--jobs", "2", "--json")
-        gate.assert_exit_code(1, r.rc, "--json does not change the exit code")
+        gate.assert_exit(1, r, "--json does not change the exit code")
         try:
             doc = json.loads(r.out)
         except json.JSONDecodeError as exc:
@@ -649,7 +649,7 @@ def test_selftest_is_wired_into_the_npm_key(gate):
     ci_key = json.loads(pkg.read_text(encoding="utf-8")).get("scripts", {}).get("ci", "")
     gate.assert_contains(ci_key, "--selftest", "the ci npm key must invoke the runner's control")
     result = harness.run([tsx, os.fspath(RUNNER), "--selftest"], cwd=paths.repo_root(), timeout=300)
-    gate.assert_exit_code(0, result.rc, "--selftest passes on a healthy runner")
+    gate.assert_exit(0, result, "--selftest passes on a healthy runner")
     gate.assert_contains(result.out, "selftest ok", "--selftest reports its assertion count")
     gate.log_pass("case 11: the anti-vacuity control is wired into the ci npm key and fires")
 
@@ -670,7 +670,7 @@ def test_missing_tool_fails_loudly(gate):
             ],
         )
         r = run_ci(gate, mf, "--jobs", "2")
-        gate.assert_exit_code(1, r.rc, "a gate whose command does not exist must fail the run")
+        gate.assert_exit(1, r, "a gate whose command does not exist must fail the run")
         gate.assert_contains(r.out, "FAIL  missing-tool", "the unresolvable gate is named")
         gate.assert_contains(r.out, "exit 127", "the shell's command-not-found status is reported")
         gate.assert_contains(
@@ -707,7 +707,7 @@ def test_the_manifest_seam_is_honoured(gate):
     with harness.temp_dir() as work:
         mf = manifest(gate, work, "seam", [spec("only-one", "true")])
         r = run_ci(gate, mf, "--jobs", "1")
-        gate.assert_exit_code(0, r.rc, "the one-gate fixture passes")
+        gate.assert_exit(0, r, "the one-gate fixture passes")
         match = SUMMARY_RE.search(r.out)
         if not match:
             gate.log_fail(

@@ -534,7 +534,7 @@ def test_current_head_succeeds(gate):
     with harness.temp_dir() as t:
         setup(gate, t)
         run = run_status(gate, t, EVENT_NAME="pull_request_review", PR_NUMBER="42")
-        gate.assert_exit_code(0, run.rc, "healthy PR must not error")
+        gate.assert_exit(0, run, "healthy PR must not error")
         gate.assert_eq(posted(gate, t, ".conclusion"), "success", "current marker + clean hygiene")
         gate.assert_eq(posted(gate, t, ".head_sha"), NEW_SHA, "check-run anchored to the PR head")
         gate.assert_eq(captured_method(t), "POST", "no existing check-run means create")
@@ -628,7 +628,7 @@ def test_stale_head_fails(gate):
             {"files": [{"filename": "packages/cli/src/commands/repo.ts"}]},
         )
         run = run_status(gate, t, EVENT_NAME="pull_request_review", PR_NUMBER="42")
-        gate.assert_exit_code(0, run.rc, "a failing verdict is still a successful report")
+        gate.assert_exit(0, run, "a failing verdict is still a successful report")
         gate.assert_eq(
             posted(gate, t, ".conclusion"),
             "failure",
@@ -1055,9 +1055,7 @@ def test_workflow_dispatch_resolves_pr_directly(gate):
         # point is EVENT_NAME=workflow_dispatch must never call commits/.../pulls.
         write_json(t / "fixtures" / "commit-pulls.json", [])
         run = run_status(gate, t, EVENT_NAME="workflow_dispatch", PR_NUMBER="42")
-        gate.assert_exit_code(
-            0, run.rc, "workflow_dispatch must resolve without a commit->PR lookup"
-        )
+        gate.assert_exit(0, run, "workflow_dispatch must resolve without a commit->PR lookup")
         gate.assert_eq(
             posted(gate, t, ".conclusion"),
             "success",
@@ -1096,7 +1094,7 @@ def test_workflow_run_without_artifact_is_silent(gate):
             WR_CONCLUSION="success",
             WR_HTML_URL="https://example.invalid/run/9001",
         )
-        gate.assert_exit_code(0, run.rc, "a PR-less triggering run is a no-op, not an error")
+        gate.assert_exit(0, run, "a PR-less triggering run is a no-op, not an error")
         gate.assert_eq(
             captured_method(t), "", "nothing is posted when no review-target artifact exists"
         )
@@ -1120,7 +1118,7 @@ def test_workflow_run_with_artifact_posts_the_check(gate):
             WR_CONCLUSION="success",
             WR_HTML_URL="https://example.invalid/run/9002",
         )
-        gate.assert_exit_code(0, run.rc, "a resolvable PR reports normally")
+        gate.assert_exit(0, run, "a resolvable PR reports normally")
         gate.assert_eq(
             captured_method(t), "POST", "FIRE: the check-run is posted for the handed-over PR"
         )
@@ -1152,8 +1150,8 @@ def test_workflow_run_with_unhonourable_artifact_is_loud(gate):
             WR_CONCLUSION="success",
             WR_HTML_URL="https://example.invalid/run/9003",
         )
-        gate.assert_exit_code(
-            1, run.rc, "an artifact that cannot be honoured is a REPORTER failure, not silence"
+        gate.assert_exit(
+            1, run, "an artifact that cannot be honoured is a REPORTER failure, not silence"
         )
         gate.assert_contains(
             run.out,
@@ -1338,7 +1336,7 @@ def test_unreplied_summary_blocks(gate):
         setup_comments(gate, t)
         comments_fixture(t, summary_comment(900, "2026-08-05T08:06:53Z"))
         run = run_comments_gate(gate, t)
-        gate.assert_exit_code(1, run.rc, "an unanswered top-level review verdict must BLOCK")
+        gate.assert_exit(1, run, "an unanswered top-level review verdict must BLOCK")
         gate.assert_contains(run.out, "UNANSWERED REVIEW SUMMARY", "the block names the class")
         gate.assert_contains(run.out, "issuecomment-900", "and links the exact comment")
         # Autofix guidance is part of the contract, not decoration: a future agent must be able to act from this output with no rediscovery.
@@ -1367,7 +1365,7 @@ def test_answered_summary_passes(gate):
             chatter_comment(903, "2026-08-05T10:29:55Z", "mfbayraktar", human_answer_body()),
         )
         run = run_comments_gate(gate, t)
-        gate.assert_exit_code(0, run.rc, "a per-finding human answer addresses the summary")
+        gate.assert_exit(0, run, "a per-finding human answer addresses the summary")
         gate.assert_contains(
             run.out, "answered by comment 903", "and the pass says which comment answered it"
         )
@@ -1404,7 +1402,7 @@ def test_ordinary_chatter_is_ignored(gate):
             ),
         )
         run = run_comments_gate(gate, t)
-        gate.assert_exit_code(0, run.rc, "ordinary PR chatter is not a review verdict")
+        gate.assert_exit(0, run, "ordinary PR chatter is not a review verdict")
         gate.assert_contains(
             run.out, "No top-level review summary found", "and the gate says it found none"
         )
@@ -1440,8 +1438,8 @@ def test_second_bot_comment_is_not_a_reply(gate):
             ),
         )
         run = run_comments_gate(gate, t)
-        gate.assert_exit_code(
-            1, run.rc, "the reviewer's own follow-up comments are not an answer to its verdict"
+        gate.assert_exit(
+            1, run, "the reviewer's own follow-up comments are not an answer to its verdict"
         )
         gate.assert_contains(run.out, "UNANSWERED REVIEW SUMMARY", "still reported as unanswered")
         gate.assert_contains(
@@ -1465,9 +1463,7 @@ def test_low_effort_answer_does_not_clear_the_summary(gate):
             ),
         )
         run = run_comments_gate(gate, t)
-        gate.assert_exit_code(
-            1, run.rc, "a stock acknowledgement does not address a multi-finding verdict"
-        )
+        gate.assert_exit(1, run, "a stock acknowledgement does not address a multi-finding verdict")
         # NAME THE FINDING. This gate exits 1 for an unreadable API, a missing token and a failed probe as well, so a bare code cannot tell "it blocked on the unanswered summary" from "it could not look".
         gate.assert_contains(
             run.out,
@@ -1486,9 +1482,7 @@ def test_summary_check_survives_an_empty_inline_list(gate):
         write_json(t / "fixtures" / "inline-comments.json", [])
         comments_fixture(t, summary_comment(900, "2026-08-05T08:06:53Z"))
         run = run_comments_gate(gate, t)
-        gate.assert_exit_code(
-            1, run.rc, "an empty inline list must not short-circuit the summary check"
-        )
+        gate.assert_exit(1, run, "an empty inline list must not short-circuit the summary check")
         gate.assert_contains(
             run.out,
             "No inline review comments found",
@@ -1534,7 +1528,7 @@ def test_inline_thread_behaviour_is_unchanged(gate):
             ],
         )
         run = run_comments_gate(gate, t)
-        gate.assert_exit_code(1, run.rc, "an unreplied inline thread still blocks")
+        gate.assert_exit(1, run, "an unreplied inline thread still blocks")
         gate.assert_contains(run.out, "UNREPLIED COMMENTS (1)", "exactly one thread is unreplied")
         gate.assert_contains(run.out, "packages/cli/src/b.ts:9", "and it is the one with no reply")
         gate.assert_not_contains(
@@ -1694,9 +1688,9 @@ def test_per_epic_fanout_gates_every_epic_not_just_the_newest(gate):
             epic_report_comment(803, "bbb222", "2026-08-26T10:10:00Z"),
         )
         run = run_report_gate(gate, t, head_ref="epicfix", publish_root=os.fspath(t))
-        gate.assert_exit_code(
+        gate.assert_exit(
             1,
-            run.rc,
+            run,
             "an unanswered epic report must block even when another epic's report was answered",
         )
         gate.assert_contains(run.out, "bbb222", "the failure names the epic that is unanswered")
@@ -1709,9 +1703,9 @@ def test_report_without_fence_or_heading_blocks(gate):
         setup_comments(gate, t)
         comments_fixture(t, report_comment(901, "2026-08-05T08:07:03Z"))
         run = run_report_gate(gate, t)
-        gate.assert_exit_code(
+        gate.assert_exit(
             1,
-            run.rc,
+            run,
             "a finished report must be gated on its HEADER, not on whether its prose happens to "
             "contain a fence or a '### Review' heading",
         )
@@ -1738,7 +1732,7 @@ def test_report_answered_passes(gate):
             chatter_comment(903, "2026-08-05T10:29:55Z", "mfbayraktar", human_answer_body()),
         )
         run = run_report_gate(gate, t)
-        gate.assert_exit_code(0, run.rc, "a per-finding human answer addresses the report")
+        gate.assert_exit(0, run, "a per-finding human answer addresses the report")
         gate.assert_contains(
             run.out, "answered by comment 903", "and the pass says which comment answered it"
         )
@@ -1755,9 +1749,7 @@ def test_report_bot_self_reply_does_not_count(gate):
             marker_issue_comment(902, "2026-08-05T08:07:07Z"),
         )
         run = run_report_gate(gate, t)
-        gate.assert_exit_code(
-            1, run.rc, "the pipeline's own marker comment is not an answer to its report"
-        )
+        gate.assert_exit(1, run, "the pipeline's own marker comment is not an answer to its report")
         gate.assert_contains(
             run.out,
             "second comment from the pipeline is not an answer",
@@ -1787,7 +1779,7 @@ def test_report_ordinary_chatter_is_ignored(gate):
             ),
         )
         run = run_report_gate(gate, t)
-        gate.assert_exit_code(0, run.rc, "ordinary PR chatter is not a review report")
+        gate.assert_exit(0, run, "ordinary PR chatter is not a review report")
         gate.assert_contains(
             run.out, "No finished review report found", "and the gate says it found none"
         )
@@ -1856,9 +1848,9 @@ def test_report_graphql_fallback_recovers_when_rest_fails(gate):
         comments_fixture(t, *answered)
         graphql_comments_fixture(t, *answered)
         run = run_report_gate(gate, t, GH_FAIL_ISSUE_COMMENTS="1")
-        gate.assert_exit_code(
+        gate.assert_exit(
             0,
-            run.rc,
+            run,
             "with REST down the gate must still RUN via GraphQL, not block a merge it cannot judge",
         )
         gate.assert_contains(
@@ -1875,9 +1867,9 @@ def test_report_graphql_fallback_still_detects_unanswered(gate):
         comments_fixture(t, *unanswered)
         graphql_comments_fixture(t, *unanswered)
         run = run_report_gate(gate, t, GH_FAIL_ISSUE_COMMENTS="1")
-        gate.assert_exit_code(
+        gate.assert_exit(
             1,
-            run.rc,
+            run,
             "the fallback is a different TRANSPORT, not a softer verdict: an unanswered report "
             "must still block",
         )
@@ -1895,9 +1887,9 @@ def test_report_both_instruments_down_fails_closed(gate):
         if graphql.is_file():
             graphql.unlink()
         run = run_report_gate(gate, t, GH_FAIL_ISSUE_COMMENTS="1")
-        gate.assert_exit_code(
+        gate.assert_exit(
             1,
-            run.rc,
+            run,
             "losing BOTH instruments must fail closed; a fallback that swallows its own failure "
             "is worse than no fallback",
         )
@@ -1923,14 +1915,14 @@ def test_one_reply_clears_both_gates(gate):
         comments_fixture(t, *unanswered)
 
         run = run_comments_gate(gate, t)
-        gate.assert_exit_code(1, run.rc, "unanswered: the summary gate must block")
+        gate.assert_exit(1, run, "unanswered: the summary gate must block")
         gate.assert_contains(
             run.out,
             "UNANSWERED REVIEW SUMMARY",
             "and it must name the unanswered summary rather than fail to look",
         )
         run = run_report_gate(gate, t)
-        gate.assert_exit_code(1, run.rc, "unanswered: the report gate must block too")
+        gate.assert_exit(1, run, "unanswered: the report gate must block too")
         gate.assert_contains(
             run.out,
             "Review Report Requires a Reply",
@@ -1945,12 +1937,12 @@ def test_one_reply_clears_both_gates(gate):
         )
 
         run = run_comments_gate(gate, t)
-        gate.assert_exit_code(0, run.rc, "one reply must clear the summary gate")
+        gate.assert_exit(0, run, "one reply must clear the summary gate")
         gate.assert_contains(run.out, "answered by comment 903", "summary gate credits that reply")
         run = run_report_gate(gate, t)
-        gate.assert_exit_code(
+        gate.assert_exit(
             0,
-            run.rc,
+            run,
             "the SAME reply must clear the report gate; a second required reply would be a tax, "
             "not coverage",
         )
@@ -2152,8 +2144,9 @@ def chargeable(gate, table: str) -> str:
     )
     if result.rc != 0:
         gate.log_fail(
-            "review_chargeable_attempts could not be driven (rc=%s): %s"
-            % (harness.describe_exit(result.rc), result.combined)
+            "review_chargeable_attempts could not be driven (rc=%s)"
+            % harness.describe_exit(result.rc),
+            result,
         )
     return result.out.strip()
 
@@ -2264,7 +2257,7 @@ def test_mark_records_the_first_infra_attempt_as_retryable(gate):
         setup(gate, t)
         write_json(t / "fixtures" / "comments.json", [])
         run = run_mark(gate, t, "error_max_turns")
-        gate.assert_eq(run.rc, 0, "--mark must not fail the job (output: %s)" % run.out)
+        gate.assert_exit(0, run, "--mark must not fail the job")
         body = marked_body(t)
         gate.assert_contains(body, "METHOD=POST", "the first attempt on a head CREATES its marker")
         gate.assert_contains(body, "attempts: 1", "the marker carries its own count")
@@ -2376,7 +2369,7 @@ def test_gate_refuses_an_exhausted_head(gate):
             [attempt_marker(301, NEW_SHA, 3, "error_max_turns")],
         )
         run = run_gate_decision(gate, t)
-        gate.assert_eq(run.rc, 0, "the gate exits cleanly when it declines (output: %s)" % run.out)
+        gate.assert_exit(0, run, "the gate exits cleanly when it declines")
         gate.assert_contains(
             (t / "gate-output.txt").read_text(encoding="utf-8"),
             "go=false",

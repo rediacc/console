@@ -72,7 +72,7 @@ def test_passes_when_all_dead_allowlisted(gate, tmp_path):
     allow = tmp_path / "allow-good"
     allow.write_text("# BLOCKER: %s\n%s\n" % (REASON_A, FUNC_A), encoding="utf-8")
     result = source_and_run(gate, "evaluate_deadcode '%s' '%s'" % (dead, allow))
-    gate.assert_exit_code(0, result.rc, "allowlisted dead function should pass")
+    gate.assert_exit(0, result, "allowlisted dead function should pass")
     gate.log_pass("allowlisted dead function passes")
 
 
@@ -81,7 +81,7 @@ def test_fails_on_unlisted_dead_function(gate, tmp_path):
     dead = dead_tsv(tmp_path, FUNC_A, FUNC_B)
     absent = tmp_path / "nonexistent-allowlist"
     result = source_and_run(gate, "evaluate_deadcode '%s' '%s'" % (dead, absent))
-    gate.assert_exit_code(1, result.rc, "unlisted dead functions should fail")
+    gate.assert_exit(1, result, "unlisted dead functions should fail")
     gate.assert_contains(result.combined, "unreachable function", "error names the problem")
     gate.assert_contains(result.combined, FUNC_B, "error lists the offending function")
     gate.log_pass("unlisted dead function is rejected")
@@ -93,7 +93,7 @@ def test_fails_on_missing_blocker(gate, tmp_path):
     allow = tmp_path / "allow-nobloc"
     allow.write_text("%s\n" % FUNC_A, encoding="utf-8")
     result = source_and_run(gate, "evaluate_deadcode '%s' '%s'" % (dead, allow))
-    gate.assert_exit_code(1, result.rc, "entry without BLOCKER should fail")
+    gate.assert_exit(1, result, "entry without BLOCKER should fail")
     gate.assert_contains(result.combined, "BLOCKER", "error mentions the BLOCKER requirement")
     gate.log_pass("missing BLOCKER is rejected")
 
@@ -104,7 +104,7 @@ def test_fails_on_low_effort_blocker(gate, tmp_path):
     allow = tmp_path / "allow-loweffort"
     allow.write_text("# BLOCKER: tbd\n%s\n" % FUNC_A, encoding="utf-8")
     result = source_and_run(gate, "evaluate_deadcode '%s' '%s'" % (dead, allow))
-    gate.assert_exit_code(1, result.rc, "low-effort BLOCKER should fail")
+    gate.assert_exit(1, result, "low-effort BLOCKER should fail")
     gate.assert_contains(result.combined, "too short", "short low-effort reason is called out")
     gate.log_pass("low-effort BLOCKER is rejected")
 
@@ -116,7 +116,7 @@ def test_fails_on_low_effort_phrase_at_length(gate):
     """
     gate.log_test("a banned phrase is refused by the validator itself")
     result = source_and_run(gate, "validate_blocker_reason 'x' 'no fix available'")
-    gate.assert_exit_code(1, result.rc, "banned phrase should fail validation")
+    gate.assert_exit(1, result, "banned phrase should fail validation")
     gate.log_pass("banned phrase is rejected by validator")
 
 
@@ -131,7 +131,7 @@ def test_fails_on_stale_entry(gate, tmp_path):
         encoding="utf-8",
     )
     result = source_and_run(gate, "evaluate_deadcode '%s' '%s'" % (dead, allow))
-    gate.assert_exit_code(1, result.rc, "stale allowlist entry should fail")
+    gate.assert_exit(1, result, "stale allowlist entry should fail")
     gate.assert_contains(
         result.combined, "Stale allowlist entry", "error names the stale entry guard"
     )
@@ -144,5 +144,5 @@ def test_passes_on_empty_dead_list(gate, tmp_path):
     dead = dead_tsv(tmp_path)
     absent = tmp_path / "nonexistent-allowlist"
     result = source_and_run(gate, "evaluate_deadcode '%s' '%s'" % (dead, absent))
-    gate.assert_exit_code(0, result.rc, "empty dead list with no allowlist should pass")
+    gate.assert_exit(0, result, "empty dead list with no allowlist should pass")
     gate.log_pass("empty dead list passes")

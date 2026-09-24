@@ -235,7 +235,7 @@ def test_head_pr_minor_yields_minor(gate, tmp_path):
     world.pulls_for(head, merged_pr(100, "bump-minor"))
 
     world.run_detect()
-    gate.assert_exit_code(0, world.rc, "the script always exits 0")
+    gate.assert_exit(0, world, "the script always exits 0")
     gate.assert_eq(
         world.out, "minor", "FIRE: a bump-minor label on the merged PR must escalate the release"
     )
@@ -408,7 +408,7 @@ def test_api_failure_yields_patch(gate, tmp_path):
     world.pulls_for(head, merged_pr(100, "bump-major"))
 
     world.run_detect(GH_FAIL_ALL="1")
-    gate.assert_exit_code(0, world.rc, "an API failure must not fail the release job")
+    gate.assert_exit(0, world, "an API failure must not fail the release job")
     gate.assert_eq(world.out, "patch", "unresolvable PRs fail OPEN and SMALL")
     world.assert_api_was_reached("API-failure case")
     gate.assert_contains(

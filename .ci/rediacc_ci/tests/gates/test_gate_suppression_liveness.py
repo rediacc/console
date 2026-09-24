@@ -114,7 +114,7 @@ def run_gate(gate, root, *args: str) -> harness.RunResult:
     recorded reason: `make_fixture` plants exactly two `.github` files, while `collectActionRefs` carries a vacuity floor of 10 sized for the real tree -- which threw VACUOUS here on 2026-09-05 and took the whole gate-test battery red. Telling the probe the fixture's TRUE corpus size keeps the floor meaningful (an empty or half-built fixture still refuses) instead of switching the
     guard off, which is what a 0 would do.
 
-    The twin merges `2>&1`, so every caller reads `.combined`. That matters beyond fidelity: npm prints an `Unknown project config "minimum-release-age"` warning to stderr on every `npx` invocation in this repo, so a port reading only `.err` would be matching npm's noise.
+    The twin merges `2>&1`, so every caller reads `.combined`. That matters beyond fidelity: npm writes its own warnings to stderr (until `minimum-release-age` left `.npmrc` on 2026-09-24, every `npx` call here printed an `Unknown project config` warning), so a port reading only `.err` would be matching npm's noise.
     """
     npx = require_subject(gate)
     return harness.run(
@@ -164,11 +164,7 @@ def test_passes_on_real_repo(gate):
     """THE REAL-TREE CASE. Real policy files, real manifests, real `git ls-files`, no seams. A FAIL-tier stale entry anywhere in the tree reds here."""
     npx = require_subject(gate)
     result = harness.run([npx, "tsx", SUBJECT_REL], cwd=paths.repo_root())
-    gate.assert_exit_code(
-        0,
-        result.rc,
-        "live tree should have no FAIL-tier stale entries (output: %s)" % result.combined,
-    )
+    gate.assert_exit(0, result, "live tree should have no FAIL-tier stale entries")
     gate.assert_contains(result.combined, "probes:", "prints a probe summary")
     gate.log_pass("passes clean on the real repository")
 
@@ -177,9 +173,7 @@ def test_the_real_run_reports_a_non_trivial_corpus(gate):
     """ADDED BY THE PORT. The twin's real-repo case is satisfied by a run that checked ZERO entries, because `probes:` is printed either way. This reads the counts out of the summary and refuses a collapse, and PRINTS the shape so a reader can see the green was non-trivial."""
     npx = require_subject(gate)
     result = harness.run([npx, "tsx", SUBJECT_REL], cwd=paths.repo_root())
-    gate.assert_exit_code(
-        0, result.rc, "the real tree must be clean (output: %s)" % result.combined
-    )
+    gate.assert_exit(0, result, "the real tree must be clean")
     run, skipped, entries = summary(gate, result.combined)
     if run < REAL_PROBE_FLOOR:
         gate.log_fail(
@@ -210,7 +204,7 @@ def test_fires_on_dead_deps_entry(gate):
             "totally-not-a-real-package\n",
         )
         result = run_gate(gate, root)
-        gate.assert_exit_code(1, result.rc, "a dead deps entry must fail the gate")
+        gate.assert_exit(1, result, "a dead deps entry must fail the gate")
         gate.assert_contains(result.combined, "totally-not-a-real-package", "names the dead entry")
         gate.assert_contains(result.combined, ".deps-upgrade-blocklist:2", "cites file:line")
         gate.assert_contains(
@@ -230,7 +224,7 @@ def test_no_false_positive_on_live_entry(gate):
             "# BLOCKER: live package pinned deliberately, must not be reported as stale\neslint\n",
         )
         result = run_gate(gate, root)
-        gate.assert_exit_code(0, result.rc, "a declared package must not be condemned")
+        gate.assert_exit(0, result, "a declared package must not be condemned")
         gate.assert_not_contains(result.combined, "FAIL", "no findings for a live entry")
         gate.log_pass("does not condemn a still-declared package")
 
@@ -258,7 +252,7 @@ def test_oracle_floor_skips_instead_of_condemning(gate):
             "actions/create-github-app-token\n",
         )
         result = run_gate(gate, root)
-        gate.assert_exit_code(0, result.rc, "a suspect oracle must not fail the gate")
+        gate.assert_exit(0, result, "a suspect oracle must not fail the gate")
         gate.assert_contains(result.combined, "SKIP", "reports a skip")
         gate.assert_contains(result.combined, "floor is 20", "explains the floor that was not met")
         gate.assert_not_contains(
@@ -281,7 +275,7 @@ def test_vacuous_run_fails(gate):
             "something\n",
         )
         result = run_gate(gate, root)
-        gate.assert_exit_code(1, result.rc, "a vacuous run must fail")
+        gate.assert_exit(1, result, "a vacuous run must fail")
         gate.assert_contains(result.combined, "vacuous", "says the run proved nothing")
         gate.log_pass("vacuous run (all probes skipped, entries present) fails")
 
@@ -297,7 +291,7 @@ def test_composite_action_counts_as_a_reference(gate):
             "actions/create-github-app-token\n",
         )
         result = run_gate(gate, root)
-        gate.assert_exit_code(0, result.rc, "composite-action reference must count as live")
+        gate.assert_exit(0, result, "composite-action reference must count as live")
         gate.assert_not_contains(result.combined, "create-github-app-token", "not reported dead")
         gate.log_pass("composite-action references keep an entry alive")
 
@@ -324,9 +318,7 @@ def test_a_python_port_invocation_keeps_its_exemption_alive(gate):
             "ci-only  .ci/scripts/quality/check_planted_port.py\n",
         )
         result = run_gate(gate, root)
-        gate.assert_exit_code(
-            0, result.rc, "a workflow that runs the .py port keeps the entry live"
-        )
+        gate.assert_exit(0, result, "a workflow that runs the .py port keeps the entry live")
         gate.assert_not_contains(result.combined, "check_planted_port.py", "not reported dead")
         gate.log_pass("a `.py` port invoked from a workflow keeps its parity exemption alive")
 
@@ -342,7 +334,7 @@ def test_an_uninvoked_python_port_exemption_is_still_condemned(gate):
             "ci-only  .ci/scripts/quality/check_planted_port.py\n",
         )
         result = run_gate(gate, root)
-        gate.assert_exit_code(1, result.rc, "an exemption nothing invokes must still fail")
+        gate.assert_exit(1, result, "an exemption nothing invokes must still fail")
         gate.assert_contains(result.combined, "check_planted_port.py", "names the dead entry")
         gate.log_pass("an uninvoked `.py` exemption is still condemned")
 
@@ -356,7 +348,7 @@ def test_overrides_warn_never_fail(gate):
             "BLOCKER: forces a patched transitive that is not currently installed anywhere",
         )
         result = run_gate(gate, root)
-        gate.assert_exit_code(0, result.rc, "a dead override must WARN, never fail")
+        gate.assert_exit(0, result, "a dead override must WARN, never fail")
         gate.assert_contains(result.combined, "WARN", "reported at warn tier")
         gate.assert_contains(result.combined, "npm pkg delete", "offers the removal command")
         gate.log_pass("dead override warns and never fails the gate")
@@ -376,7 +368,7 @@ def test_preventive_annotation_silences_override_warning(gate):
             "BLOCKER: preventive - guards against a vulnerable transitive returning to the tree",
         )
         result = run_gate(gate, root)
-        gate.assert_exit_code(0, result.rc, "preventive override stays silent")
+        gate.assert_exit(0, result, "preventive override stays silent")
         gate.assert_not_contains(result.combined, "ghost-pkg", "annotated override is not reported")
         gate.log_pass("a 'BLOCKER: preventive' reason opts an override out of the warning")
 
@@ -389,7 +381,7 @@ def test_findings_are_capped(gate):
         lines += ["not-a-real-package-%d" % i for i in range(1, 26)]
         write_policy(root, ".deps-upgrade-blocklist", "\n".join(lines) + "\n")
         result = run_gate(gate, root)
-        gate.assert_exit_code(1, result.rc, "bulk dead entries still fail")
+        gate.assert_exit(1, result, "bulk dead entries still fail")
         gate.assert_contains(result.combined, "and 15 more", "rolls up beyond the per-probe cap")
         gate.log_pass("output is capped per probe with a roll-up line")
 
@@ -413,7 +405,7 @@ def test_fires_on_dead_template_skiplist_entry(gate):
             "gone/removed-template\n", encoding="utf-8"
         )
         result = run_gate(gate, root)
-        gate.assert_exit_code(1, result.rc, "a skiplist entry for a deleted template must fail")
+        gate.assert_exit(1, result, "a skiplist entry for a deleted template must fail")
         gate.assert_contains(result.combined, "gone/removed-template", "names the dead template")
         gate.log_pass("fires on a .templates-skiplist entry whose template is gone")
 
@@ -443,7 +435,7 @@ def test_cli_i18n_prefix_matching(gate):
             "nope.not.a.real.prefix.\n",
         )
         result = run_gate(gate, root)
-        gate.assert_exit_code(1, result.rc, "a prefix matching zero leaves must fail")
+        gate.assert_exit(1, result, "a prefix matching zero leaves must fail")
         gate.assert_contains(result.combined, "nope.not.a.real.prefix.", "names the dead prefix")
         gate.assert_not_contains(
             result.combined, "commands.sync.", "live prefix must survive prefix-matching"

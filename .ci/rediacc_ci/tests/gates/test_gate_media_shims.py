@@ -200,9 +200,7 @@ def shim_forwards_everything(gate, repo: pathlib.Path, shim: str) -> None:
     record = repo / "record"
     # cd somewhere with no relationship to the sandbox: a shim that resolved its target relative to the CALLER's directory instead of its own would pass from the repo root and fail everywhere else, which is the failure mode a cross-repo caller hits first.
     result = harness.run([str(repo / shim), *SHIM_ARGV], cwd="/", stdin="")
-    gate.assert_exit_code(
-        43, result.rc, "the shim must forward the target's exit status, not invent one"
-    )
+    gate.assert_exit(43, result, "the shim must forward the target's exit status, not invent one")
     if not record.is_file():
         gate.log_fail("the target was never reached: %s did not forward at all" % shim)
     got = record.read_text(encoding="utf-8")
@@ -222,7 +220,7 @@ def shim_forwards_everything(gate, repo: pathlib.Path, shim: str) -> None:
 
 def shim_forwards_stdin(gate, repo: pathlib.Path, shim: str) -> None:
     result = harness.run([str(repo / shim), "one"], cwd="/", stdin="a line on stdin\n")
-    gate.assert_exit_code(43, result.rc, "exit status must survive a piped stdin too")
+    gate.assert_exit(43, result, "exit status must survive a piped stdin too")
     gate.assert_contains(
         (repo / "record").read_text(encoding="utf-8"),
         "STDIN<a line on stdin>",
@@ -260,9 +258,7 @@ def test_the_forwarding_assertion_can_fail(gate, tmp_path):
     repo = shim_sandbox(tmp_path / "shift", TTS_SHIM, TTS_REAL)
     mutate_exec_line(gate, repo / TTS_SHIM, "shift")
     result = harness.run([str(repo / TTS_SHIM), *SHIM_ARGV], cwd="/", stdin="")
-    gate.assert_exit_code(
-        43, result.rc, "the mutated shim still reaches the target; only its argv changed"
-    )
+    gate.assert_exit(43, result, "the mutated shim still reaches the target; only its argv changed")
     gate.assert_not_contains(
         (repo / "record").read_text(encoding="utf-8"),
         "ARGC=%d" % len(SHIM_ARGV),
@@ -302,7 +298,7 @@ def test_the_real_tts_chain_runs_with_docker_absent(gate):
             cwd="/",
             env={"REDIACC_NO_DOCKER": "1"},
         )
-    gate.assert_exit_code(0, result.rc, "the host path must succeed")
+    gate.assert_exit(0, result, "the host path must succeed")
     gate.assert_contains(
         result.combined,
         "REACHED:a b c",
@@ -317,7 +313,7 @@ def test_the_real_r2_chain_reaches_the_relocated_body(gate):
     # An invalid --kind is refused by the relocated script's own first validation, before any credential is read and long before aws is called. The message is that script's, so seeing it is proof the shim landed in the real body.
     with harness.fake_bin("+bash +dirname +uname"):
         result = harness.run([str(ROOT / R2_SHIM), "--kind", "not-a-kind"], cwd="/")
-    gate.assert_exit_code(1, result.rc, "an invalid --kind must be refused")
+    gate.assert_exit(1, result, "an invalid --kind must be refused")
     gate.assert_contains(
         result.combined,
         "--kind must be 'tutorials' or 'solutions', got 'not-a-kind'",

@@ -133,7 +133,7 @@ def test_differential_against_the_typescript_twin(gate):
             [str(TSX), str(TS_SEAM), "--all-paths", "--root", str(root)],
             cwd=paths.repo_root(),
         )
-        gate.assert_exit_code(0, result.rc, "the TypeScript CLI answers (stderr: %s)" % result.err)
+        gate.assert_exit(0, result, "the TypeScript CLI answers")
         ts_answer = [line for line in result.out.splitlines() if line.strip()]
         py_answer = [str(policy_paths.policy_path(n, root)) for n in policy_paths.POLICY_FILES]
         gate.assert_eq(sorted(ts_answer), sorted(py_answer), "the two seams answer the same set")
@@ -188,7 +188,7 @@ def test_the_gate_reds_through_its_environment_seam(gate):
         drifted = harness.run(
             [str(GATE)], cwd=paths.repo_root(), env={"POLICY_INVENTORY_ROOT": str(root)}
         )
-        gate.assert_exit_code(1, drifted.rc, "a drifted tree exits 1, not 0 and not 2")
+        gate.assert_exit(1, drifted, "a drifted tree exits 1, not 0 and not 2")
         gate.assert_contains(
             drifted.err, ".deps-upgrade-blocklist", "and the finding names the drifted file"
         )
@@ -202,7 +202,7 @@ def test_the_gate_reds_through_its_environment_seam(gate):
         clean = harness.run(
             [str(GATE)], cwd=paths.repo_root(), env={"POLICY_INVENTORY_ROOT": str(root)}
         )
-        gate.assert_exit_code(0, clean.rc, "CONTROL: an agreeing tree exits 0")
+        gate.assert_exit(0, clean, "CONTROL: an agreeing tree exits 0")
         gate.assert_contains(clean.out, "policy inventory:", "and prints the shape it measured")
     gate.log_pass("the gate reds on drift and greens on agreement, through the env seam")
 
@@ -216,7 +216,7 @@ def test_the_recorded_refusal_is_asserted_through_the_env_seam(gate):
         gone = harness.run(
             [str(GATE)], cwd=paths.repo_root(), env={"POLICY_INVENTORY_ROOT": str(root)}
         )
-        gate.assert_exit_code(1, gone.rc, "a refused file that vanished exits 1")
+        gate.assert_exit(1, gone, "a refused file that vanished exits 1")
         gate.assert_contains(gone.err, "is GONE", "and the finding says the file is gone")
     with harness.temp_dir() as root:
         _fixture_tree(root, base, base, base)
@@ -224,7 +224,7 @@ def test_the_recorded_refusal_is_asserted_through_the_env_seam(gate):
         reasoned = harness.run(
             [str(GATE)], cwd=paths.repo_root(), env={"POLICY_INVENTORY_ROOT": str(root)}
         )
-        gate.assert_exit_code(1, reasoned.rc, "a BLOCKER: line in the refused file exits 1")
+        gate.assert_exit(1, reasoned, "a BLOCKER: line in the refused file exits 1")
         gate.assert_contains(
             reasoned.err, "no longer failing", "and it says which predicate clause changed"
         )
@@ -234,7 +234,7 @@ def test_the_recorded_refusal_is_asserted_through_the_env_seam(gate):
         clean = harness.run(
             [str(GATE)], cwd=paths.repo_root(), env={"POLICY_INVENTORY_ROOT": str(root)}
         )
-        gate.assert_exit_code(0, clean.rc, "CONTROL: an intact refusal exits 0")
+        gate.assert_exit(0, clean, "CONTROL: an intact refusal exits 0")
         gate.assert_contains(
             clean.out, "still refused entry with 0 BLOCKER:", "and prints the count it measured"
         )
@@ -248,7 +248,7 @@ def test_the_gate_refuses_a_tree_it_cannot_see(gate):
         result = harness.run(
             [str(GATE)], cwd=paths.repo_root(), env={"POLICY_INVENTORY_ROOT": str(root)}
         )
-        gate.assert_exit_code(1, result.rc, "an unreadable tree exits 1")
+        gate.assert_exit(1, result, "an unreadable tree exits 1")
         gate.assert_contains(
             result.err, "cannot see its subject", "and says so in the words of the refusal"
         )
@@ -287,7 +287,7 @@ def test_the_gate_is_reachable_as_a_program(gate):
         check=False,
         cwd=str(paths.repo_root()),
     )
-    gate.assert_exit_code(0, result.returncode, "--selftest passes (stderr: %s)" % result.stderr)
+    gate.assert_exit(0, result, "--selftest passes")
     gate.assert_contains(result.stdout, "control(s) passed", "and reports how many ran")
     gate.assert_eq(result.stderr, "", "with nothing on stderr when it is green")
     gate.log_pass("the gate is invocable by path and its controls pass")

@@ -48,7 +48,7 @@ def step_block(path: pathlib.Path, name: str = STEP_NAME) -> str:
 def test_the_extractor_matches_the_twins_awk(gate):
     """CONTROL FOR THE PORT ITSELF. The twin extracts with awk; this file extracts with a Python loop. A port that changes the extractor and does not compare it against the original has replaced a tested reader with an untested one, and every assertion below would then be about the new reader's idea of the step."""
     awk = harness.run(["awk", "-v", "name=" + STEP_NAME, AWK, str(WORKFLOW)])
-    gate.assert_exit_code(0, awk.rc, "the twin's awk still runs")
+    gate.assert_exit(0, awk, "the twin's awk still runs")
     gate.assert_eq(step_block(WORKFLOW), awk.out, "the Python extractor agrees with the awk one")
     gate.assert_not_contains(awk.out, "\n\n\n", "and the block is a real block, not empty output")
     gate.log_pass("the ported extractor is byte-identical to the twin's awk on the real workflow")

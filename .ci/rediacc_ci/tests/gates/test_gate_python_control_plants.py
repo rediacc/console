@@ -153,7 +153,7 @@ def _edit(root, rel, old, new):
 def test_the_gate_is_green_on_the_real_tree(gate):
     gate.log_test("the real tree, through the real entry point")
     result = _run(paths.repo_root())
-    gate.assert_exit_code(0, result.rc, "clean tree (stderr: %s)" % result.err[-400:])
+    gate.assert_exit(0, result, "clean tree")
     modules, sites = _counts(result.combined)
     # THE SHAPE, NOT THE VERDICT. A corpus that collapsed to one module would still print a tick, and these two numbers are the only thing that says it did not.
     if modules < MIN_MODULES or sites < MIN_SITES:
@@ -174,7 +174,7 @@ def test_the_unmodified_mirror_is_green_and_reads_the_same_estate(gate):
     real_modules, real_sites = _counts(_run(paths.repo_root()).combined)
     with harness.temp_dir() as tmp:
         result = _run(_mirror(tmp))
-        gate.assert_exit_code(0, result.rc, "the copy is clean (stderr: %s)" % result.err[-300:])
+        gate.assert_exit(0, result, "the copy is clean")
         modules, sites = _counts(result.combined)
         gate.assert_eq(modules, real_modules, "the mirror holds every module the real tree does")
         gate.assert_eq(sites, real_sites, "and every plant site")
@@ -185,10 +185,10 @@ def test_rewriting_a_real_plant_back_to_a_raw_substitution_reds(gate):
     gate.log_test("PLANT: turn a REAL plant() back into a raw substitution, in a copy")
     with harness.temp_dir() as tmp:
         root = _mirror(tmp)
-        gate.assert_exit_code(0, _run(root).rc, "the untouched mirror is green first")
+        gate.assert_exit(0, _run(root), "the untouched mirror is green first")
         _edit(root, SUBJECT, REAL_PLANT, REAL_PLANT_RAW)
         result = _run(root)
-        gate.assert_exit_code(1, result.rc, "a raw substitution in a control region is a finding")
+        gate.assert_exit(1, result, "a raw substitution in a control region is a finding")
         gate.assert_contains(result.combined, "review_turn_capacity.py", "names the file")
         gate.assert_contains(result.combined, "line 406", "and the line")
         gate.assert_contains(result.combined, "raw substitution", "says what is wrong")
@@ -207,10 +207,10 @@ def test_the_historical_max_turns_identity_reds(gate):
     gate.log_test("PLANT: reintroduce the historical max_turns=140 identity, in a copy")
     with harness.temp_dir() as tmp:
         root = _mirror(tmp)
-        gate.assert_exit_code(0, _run(root).rc, "the untouched mirror is green first")
+        gate.assert_exit(0, _run(root), "the untouched mirror is green first")
         _edit(root, SUBJECT, HISTORICAL_PLANT, HISTORICAL_IDENTITY)
         result = _run(root)
-        gate.assert_exit_code(1, result.rc, "the identity mutation is a finding")
+        gate.assert_exit(1, result, "the identity mutation is a finding")
         gate.assert_contains(result.combined, "review_turn_capacity.py", "names the file")
         gate.assert_contains(result.combined, "_FIXTURE_HEALTHY.replace", "and the receiver")
         # ONE finding, from a chain of TWO substitutions. The second one's receiver is the first call's result, not a bare name, and a parsing receiver is deliberately invisible here. Asserting the count is what pins that: a gate that flagged both would be flagging the shape its own exemption exists to allow.
@@ -237,7 +237,7 @@ def test_a_tree_with_no_plant_site_refuses_on_the_site_arm(gate):
         (root / ".ci" / "rediacc_ci" / "quality").mkdir(parents=True)
         (root / ".ci" / "rediacc_ci" / "quality" / "m.py").write_text("x = 1\n", encoding="utf-8")
         result = _run(root)
-        gate.assert_exit_code(1, result.rc, "no plant site anywhere is a refusal")
+        gate.assert_exit(1, result, "no plant site anywhere is a refusal")
         gate.assert_contains(result.combined, "ZERO plant() call sites", "says which arm fired")
         gate.assert_contains(result.combined, "scanned 1 module(s)", "and that it DID see the tree")
         # The arms must stay distinguishable. If this printed the module-arm message the two would be one check, and deleting either would leave the suite green.
@@ -250,7 +250,7 @@ def test_a_tree_with_no_plant_site_refuses_on_the_site_arm(gate):
 def test_the_selftest_runs_as_a_process_and_is_not_trivially_small(gate):
     gate.log_test("--selftest, as a process, with a floor under how much it asserts")
     result = _run(paths.repo_root(), "--selftest", "--verbose")
-    gate.assert_exit_code(0, result.rc, "every control passes (stderr: %s)" % result.err[-400:])
+    gate.assert_exit(0, result, "every control passes")
     passes = len([ln for ln in result.combined.splitlines() if ln.startswith("ok ")])
     if passes < MIN_CONTROLS:
         gate.log_fail(

@@ -198,9 +198,7 @@ def test_run_sh_still_reaches_this_module(gate, tmp_path):
             repo, "run.sh", "www", "tutorials", "record", "--force", "installation"
         )
     if result.rc != 0:
-        gate.log_fail(
-            "./run.sh www tutorials record failed in the sandbox: %s" % result.combined.strip()
-        )
+        gate.log_fail("./run.sh www tutorials record failed in the sandbox", result)
     gate.assert_eq(
         result.combined.strip(),
         "MEDIA_CHAIN_REACHED:www_tutorials_record:--force installation",
@@ -211,7 +209,7 @@ def test_run_sh_still_reaches_this_module(gate, tmp_path):
     with harness.fake_bin("+uname +dirname"):
         result = media_verify_ext.run(repo, "run.sh", "www", "all", "installation")
     if result.rc != 0:
-        gate.log_fail("./run.sh www all failed in the sandbox: %s" % result.combined.strip())
+        gate.log_fail("./run.sh www all failed in the sandbox", result)
     gate.assert_eq(
         result.combined.strip(),
         "MEDIA_CHAIN_REACHED:www_all:installation",
@@ -267,7 +265,7 @@ def test_grand_env_wildcard_detection(gate, tmp_path):
         probe ""''',
         )
     if result.rc != 0:
-        gate.log_fail("the probe failed (output: %s)" % result.combined)
+        gate.log_fail("the probe failed", result)
     observed = result.combined.splitlines()
     for index, (want, why) in enumerate(
         (
@@ -292,7 +290,7 @@ def test_tutorials_all_routes_each_flag_to_the_step_that_understands_it(gate, tm
             "--max-idle-ms 400 installation" % tmp_path,
         )
     if result.rc != 0:
-        gate.log_fail("www_tutorials_all failed (output: %s)" % result.combined)
+        gate.log_fail("www_tutorials_all failed", result)
     out = result.combined
     gate.assert_contains(
         out,
@@ -322,7 +320,7 @@ def test_the_numeric_options_are_validated_before_any_work_starts(gate, tmp_path
 
     with harness.fake_bin("+rm +uname"):
         result = run_tutorials(tmp_path, "www_tutorials_video --jobs abc")
-        gate.assert_exit_code(1, result.rc, "a non-numeric --jobs must be rejected")
+        gate.assert_exit(1, result, "a non-numeric --jobs must be rejected")
         gate.assert_contains(
             result.combined,
             "--jobs must be a positive integer, got: abc",
@@ -330,26 +328,22 @@ def test_the_numeric_options_are_validated_before_any_work_starts(gate, tmp_path
         )
 
         result = run_tutorials(tmp_path, "www_tutorials_video --jobs 0")
-        gate.assert_exit_code(1, result.rc, "--jobs 0 must be rejected")
+        gate.assert_exit(1, result, "--jobs 0 must be rejected")
 
         result = run_tutorials(tmp_path, "www_tutorials_video --jobs=2 --lang=fr --debug")
-        gate.assert_exit_code(
-            0, result.rc, "the =-joined forms must be accepted (output: %s)" % result.combined
-        )
+        gate.assert_exit(0, result, "the =-joined forms must be accepted")
         gate.assert_contains(result.combined, "pool: 2 ", "--jobs=2 reaches the pool")
         gate.assert_contains(result.combined, "--debug", "a passthrough flag reaches the pool")
 
     with harness.fake_bin("+rm +basename +grep +uname"):
         result = run_tutorials(tmp_path, "www_tutorials_media --jobs abc")
-        gate.assert_exit_code(1, result.rc, "a non-numeric --jobs must be rejected")
+        gate.assert_exit(1, result, "a non-numeric --jobs must be rejected")
 
         result = run_tutorials(
             tmp_path,
             "RDC_TUTORIAL_HWENC=1 www_tutorials_media --langs en,de --subtitle --debug",
         )
-        gate.assert_exit_code(
-            0, result.rc, "the happy path must succeed (output: %s)" % result.combined
-        )
+        gate.assert_exit(0, result, "the happy path must succeed")
         gate.assert_contains(
             result.combined,
             "forcing it to 0 so renders stay off the GPU",
@@ -377,17 +371,15 @@ def test_the_numeric_options_are_validated_before_any_work_starts(gate, tmp_path
 
     with harness.fake_bin("+mkdir +date +flock +rm +tee +uname"):
         result = run_tutorials(tmp_path, "www_tutorials_watch --nope")
-        gate.assert_exit_code(
-            1,
-            result.rc,
-            "an unknown watch option must be rejected rather than treated as a name",
+        gate.assert_exit(
+            1, result, "an unknown watch option must be rejected rather than treated as a name"
         )
         gate.assert_contains(
             result.combined, "Unknown watch option: --nope", "names the option it refused"
         )
 
         result = run_tutorials(tmp_path, "www_tutorials_watch --poll abc")
-        gate.assert_exit_code(1, result.rc, "a non-numeric --poll must be rejected")
+        gate.assert_exit(1, result, "a non-numeric --poll must be rejected")
         gate.assert_contains(
             result.combined, "--poll must be a positive integer", "says what --poll must be"
         )
@@ -437,7 +429,7 @@ def test_media_sh_still_reaches_this_module(gate, tmp_path):
     with harness.fake_bin("+uname +dirname"):
         result = media_verify_ext.run(repo, "media.sh", "run", "video_pipeline", "--step", "8000")
     if result.rc != 0:
-        gate.log_fail("./media.sh run failed in the sandbox: %s" % result.combined.strip())
+        gate.log_fail("./media.sh run failed in the sandbox", result)
     gate.assert_eq(
         result.combined.strip(),
         "MEDIA_CHAIN_REACHED:growth_run:video_pipeline --step 8000",
@@ -475,11 +467,11 @@ def test_teaser_dies_before_it_can_half_finish(gate, tmp_path):
     # python3 and ffmpeg are deliberately absent: every case here must be refused BEFORE anything is executed, which is the property that keeps a tree from being left mid-operation with its sentinels already deleted.
     with harness.fake_bin("+cat +uname"):
         result = run_teaser(tmp_path, "growth_run")
-        gate.assert_exit_code(1, result.rc, "growth_run with no pipeline must die")
+        gate.assert_exit(1, result, "growth_run with no pipeline must die")
         gate.assert_contains(result.combined, "usage: ./media.sh run", "prints the usage line")
 
         result = run_teaser(tmp_path, "growth_run nosuchpipeline")
-        gate.assert_exit_code(1, result.rc, "an unknown pipeline must die")
+        gate.assert_exit(1, result, "an unknown pipeline must die")
         gate.assert_contains(
             result.combined,
             "no such pipeline: nosuchpipeline",
@@ -487,7 +479,7 @@ def test_teaser_dies_before_it_can_half_finish(gate, tmp_path):
         )
 
         result = run_teaser(tmp_path, "venv_for video_pipeline")
-        gate.assert_exit_code(1, result.rc, "a pipeline with no venv must die")
+        gate.assert_exit(1, result, "a pipeline with no venv must die")
         gate.assert_contains(
             result.combined,
             "no venv for pipeline 'video_pipeline'",
@@ -495,7 +487,7 @@ def test_teaser_dies_before_it_can_half_finish(gate, tmp_path):
         )
 
         result = run_teaser(tmp_path, "growth_usage")
-        gate.assert_exit_code(0, result.rc, "the usage text must print cleanly")
+        gate.assert_exit(0, result, "the usage text must print cleanly")
         gate.assert_contains(
             result.combined,
             "cwd = private/growth",

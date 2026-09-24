@@ -196,7 +196,7 @@ def test_media_root_is_wired_into_the_real_scan(gate, tmp_path: pathlib.Path):
         'case "$1" in\n    *"zzznosuchmediafield=1"*) exit 1 ;;\nesac\n', encoding="utf-8"
     )
     result = run_gate_media(str(media))
-    gate.assert_exit_code(1, result.rc, "a dead arm in the media root must fail the gate")
+    gate.assert_exit(1, result, "a dead arm in the media root must fail the gate")
     gate.assert_contains(
         result.combined,
         "zzznosuchmediafield",
@@ -208,9 +208,7 @@ def test_media_root_is_wired_into_the_real_scan(gate, tmp_path: pathlib.Path):
 def test_the_real_media_folder_is_clean_and_counted(gate):
     gate.log_test("the real .ci/media folder is scanned, counted and clean")
     result = run_gate_media()
-    gate.assert_exit_code(
-        0, result.rc, "the real tree must have no dead case arms (output: %s)" % result.combined
-    )
+    gate.assert_exit(0, result, "the real tree must have no dead case arms")
     gate.assert_contains(
         result.combined, ".ci/media", "the verdict must name the media root it scanned"
     )
@@ -228,7 +226,7 @@ def test_an_empty_media_root_is_vacuous_not_clean(gate, tmp_path: pathlib.Path):
     empty = tmp_path / "nothing"
     empty.mkdir()
     result = run_gate_media(str(empty))
-    gate.assert_exit_code(1, result.rc, "an empty media root must fail rather than report clean")
+    gate.assert_exit(1, result, "an empty media root must fail rather than report clean")
     gate.assert_contains(result.combined, "VACUOUS", "says the scan root proves nothing")
     gate.log_pass("an empty media root is refused as vacuous")
 

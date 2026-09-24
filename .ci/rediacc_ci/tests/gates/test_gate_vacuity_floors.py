@@ -70,10 +70,7 @@ def test_every_impossible_floor_is_refused_and_says_vacuous(gate):
     elif result.rc == 0:
         gate.log_fail("shfmt: an impossible floor was ACCEPTED (exit 0); the floor refuses nothing")
     elif not _says_vacuous(result.combined):
-        gate.log_fail(
-            "shfmt: refused (exit %d) but never said VACUOUS: %s"
-            % (result.rc, result.combined[:120])
-        )
+        gate.log_fail("shfmt: refused (exit %d) but never said VACUOUS" % result.rc, result)
     else:
         exercised += 1
         gate.assertions += 1
@@ -88,7 +85,7 @@ def test_every_impossible_floor_is_refused_and_says_vacuous(gate):
         if result.rc == 0:
             gate.log_fail("%s: an impossible %s was accepted" % (label, var))
         if not _says_vacuous(result.combined):
-            gate.log_fail("%s: refused but never said VACUOUS: %s" % (label, result.combined[:120]))
+            gate.log_fail("%s: refused but never said VACUOUS" % label, result)
         exercised += 1
         gate.assertions += 1
         gate.log_pass("%s refuses an impossible floor, and says VACUOUS" % label)
@@ -108,7 +105,7 @@ def test_every_impossible_floor_is_refused_and_says_vacuous(gate):
         if result.rc == 0:
             gate.log_fail("action-refs: an EMPTY .github/workflows was accepted")
         if not _says_vacuous(result.combined):
-            gate.log_fail("action-refs: refused but never said VACUOUS: %s" % result.combined[:160])
+            gate.log_fail("action-refs: refused but never said VACUOUS", result)
         exercised += 1
         gate.assertions += 1
         gate.log_pass("action-refs refuses an empty .github tree, and says VACUOUS")
@@ -136,8 +133,7 @@ def test_shfmt_accepts_the_real_corpus(gate):
         return
     if result.rc != 0:
         gate.log_fail(
-            "shfmt: the REAL corpus was refused; the floor is above the true count: %s"
-            % result.combined[:200]
+            "shfmt: the REAL corpus was refused; the floor is above the true count", result
         )
     gate.assertions += 1
     gate.log_pass("CONTROL: shfmt accepts the real corpus")
@@ -156,8 +152,7 @@ def test_action_refs_accepts_the_real_corpus(gate):
     )
     if result.rc != 0:
         gate.log_fail(
-            "action-refs: the REAL corpus was refused; the floor is above the true count: %s"
-            % result.combined[:200]
+            "action-refs: the REAL corpus was refused; the floor is above the true count", result
         )
     gate.assertions += 1
     gate.log_pass("CONTROL: action-refs accepts the real corpus")

@@ -84,9 +84,9 @@ def test_a_planted_mutation_is_visible_to_the_behaviour_cases(gate):
         shutil.copy2(media_verify.MEDIA_DIR / "cuda.sh", mutant / "cuda.sh")
         with harness.fake_bin("+uname"):
             result = run_venv(d / "empty", "ensure_generative_repo", module_dir=mutant)
-            gate.assert_exit_code(
+            gate.assert_exit(
                 1,
-                result.rc,
+                result,
                 "the mutated copy still fails on a missing checkout; only its wording changed",
             )
             media_verify.media_assert_mutation_swapped(
@@ -109,7 +109,7 @@ def test_ensure_generative_repo_diagnoses_all_three_states(gate):
         # NO FAKES AT ALL beyond uname: this function shells out to nothing, and proving that is worth an empty PATH. If it ever grows a dependency, these three cases report it as not-found.
         with harness.fake_bin("+uname"):
             result = run_venv(d / "empty", "ensure_generative_repo")
-            gate.assert_exit_code(1, result.rc, "a missing private/generative must fail")
+            gate.assert_exit(1, result, "a missing private/generative must fail")
             gate.assert_contains(
                 result.combined, "Missing private/generative directory", "names what is missing"
             )
@@ -121,9 +121,7 @@ def test_ensure_generative_repo_diagnoses_all_three_states(gate):
 
         with harness.fake_bin("+uname"):
             result = run_venv(d / "nogit", "ensure_generative_repo")
-            gate.assert_exit_code(
-                1, result.rc, "a private/generative that is not a checkout must fail"
-            )
+            gate.assert_exit(1, result, "a private/generative that is not a checkout must fail")
             gate.assert_contains(
                 result.combined,
                 "is not a git checkout",
@@ -132,9 +130,7 @@ def test_ensure_generative_repo_diagnoses_all_three_states(gate):
 
         with harness.fake_bin("+uname"):
             result = run_venv(d / "good", "ensure_generative_repo")
-            gate.assert_exit_code(
-                0, result.rc, "a real checkout must pass (output: %s)" % result.combined
-            )
+            gate.assert_exit(0, result, "a real checkout must pass")
     gate.log_pass(
         "ensure_generative_repo tells absent, not-a-checkout and present apart, using no "
         "external command"
@@ -146,16 +142,14 @@ def test_ensure_python_installed_keys_on_the_interpreter(gate):
     with harness.temp_dir() as d:
         with harness.fake_bin("+uname"):
             result = run_venv(d, "ensure_python_installed")
-            gate.assert_exit_code(1, result.rc, "python3 absent must fail")
+            gate.assert_exit(1, result, "python3 absent must fail")
             gate.assert_contains(
                 result.combined, "python3 is required", "says which interpreter is missing"
             )
 
         with harness.fake_bin("python3 +uname"):
             result = run_venv(d, "ensure_python_installed")
-            gate.assert_exit_code(
-                0, result.rc, "python3 present must pass (output: %s)" % result.combined
-            )
+            gate.assert_exit(0, result, "python3 present must pass")
     gate.log_pass("ensure_python_installed fails without python3 and passes with it")
 
 
@@ -165,9 +159,7 @@ def test_ensure_audio_system_deps_installs_only_what_is_missing(gate):
         # python3 is faked as a success-with-no-output, which is what makes `import ensurepip` succeed and keeps the versioned python<X.Y>-venv package out of the missing list.
         with harness.fake_bin("python3 ffmpeg ffprobe sox apt-get sudo +uname") as fake:
             result = run_venv(d, "ensure_audio_system_deps")
-            gate.assert_exit_code(
-                0, result.rc, "nothing missing must return 0 (output: %s)" % result.combined
-            )
+            gate.assert_exit(0, result, "nothing missing must return 0")
             gate.assert_eq(
                 fake.record("apt-get"), "", "nothing may be installed when nothing is missing"
             )
@@ -178,7 +170,7 @@ def test_ensure_audio_system_deps_installs_only_what_is_missing(gate):
         # ffmpeg/ffprobe present, sox absent, and no apt-get to fix it with.
         with harness.fake_bin("python3 ffmpeg ffprobe +uname"):
             result = run_venv(d, "ensure_audio_system_deps")
-            gate.assert_exit_code(1, result.rc, "a missing dep on a host with no apt-get must fail")
+            gate.assert_exit(1, result, "a missing dep on a host with no apt-get must fail")
             gate.assert_contains(result.combined, "Missing system deps", "says what is missing")
             gate.assert_contains(result.combined, "sox", "names the missing package")
     gate.log_pass(
@@ -196,11 +188,7 @@ def test_install_generative_python_deps_drives_pip_and_stamps(gate):
             result = run_venv(
                 d, "install_generative_python_deps '%s/gen' '%s/stamp' 'HASH123'" % (d, d)
             )
-            gate.assert_exit_code(
-                0,
-                result.rc,
-                "the install must succeed with pip faked (output: %s)" % result.combined,
-            )
+            gate.assert_exit(0, result, "the install must succeed with pip faked")
             gate.assert_eq(
                 (d / "stamp").read_text(encoding="utf-8").strip(),
                 "HASH123",

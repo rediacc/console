@@ -69,7 +69,7 @@ def mutate(gate, dest: pathlib.Path, *, drop_backstop: bool = False) -> pathlib.
 
 def test_unknown_method_is_fatal(gate):
     result = run_target(target(gate), "--dry-run", "--method", "bogus", "--version", "1.2.17")
-    gate.assert_exit_code(2, result.rc, "an unknown --method must be a hard error")
+    gate.assert_exit(2, result, "an unknown --method must be a hard error")
     gate.assert_contains(
         result.combined, "unknown --method 'bogus'", "the error must name the bad value"
     )
@@ -85,7 +85,7 @@ def test_unknown_method_is_fatal(gate):
 
 def test_unknown_argument_is_fatal(gate):
     result = run_target(target(gate), "--dry-run", "--nope", "--version", "1.2.17")
-    gate.assert_exit_code(2, result.rc, "an unrecognised argument must be a hard error")
+    gate.assert_exit(2, result, "an unrecognised argument must be a hard error")
     gate.assert_contains(
         result.combined, "unknown argument: '--nope'", "the error must name the bad argument"
     )
@@ -95,7 +95,7 @@ def test_unknown_argument_is_fatal(gate):
 def test_a_flag_without_a_value_is_fatal(gate):
     for flag in ("--method", "--version", "--platform", "--arch", "--local-artifacts"):
         result = run_target(target(gate), "--dry-run", flag)
-        gate.assert_exit_code(2, result.rc, "%s with no value must be a hard error" % flag)
+        gate.assert_exit(2, result, "%s with no value must be a hard error" % flag)
         gate.assert_contains(
             result.combined, "%s requires a value" % flag, "the error must name the flag"
         )
@@ -113,7 +113,7 @@ def test_unknown_platform_and_arch_are_fatal(gate):
         "--platform",
         "solaris",
     )
-    gate.assert_exit_code(2, result.rc, "an unknown --platform must be a hard error")
+    gate.assert_exit(2, result, "an unknown --platform must be a hard error")
     gate.assert_contains(
         result.combined, "unknown --platform 'solaris'", "the error must name the bad platform"
     )
@@ -128,7 +128,7 @@ def test_unknown_platform_and_arch_are_fatal(gate):
         "--arch",
         "riscv",
     )
-    gate.assert_exit_code(2, result.rc, "an unknown --arch must be a hard error")
+    gate.assert_exit(2, result, "an unknown --arch must be a hard error")
     gate.assert_contains(
         result.combined, "unknown --arch 'riscv'", "the error must name the bad arch"
     )
@@ -138,7 +138,7 @@ def test_unknown_platform_and_arch_are_fatal(gate):
 def test_a_valid_run_still_works(gate):
     """The other direction: the parser must not have become so strict that a legitimate invocation fails. These are the exact flag shapes ci.yml and ct-install-methods.yml use."""
     result = run_target(target(gate), "--dry-run", "--method", "apt", "--version", "1.2.17")
-    gate.assert_exit_code(0, result.rc, "a valid invocation must still succeed")
+    gate.assert_exit(0, result, "a valid invocation must still succeed")
     gate.assert_contains(result.combined, "total 3", "the three APT distros must be accounted for")
 
     result = run_target(
@@ -153,7 +153,7 @@ def test_a_valid_run_still_works(gate):
         "--arch",
         "arm64",
     )
-    gate.assert_exit_code(0, result.rc, "a valid --platform/--arch invocation must still succeed")
+    gate.assert_exit(0, result, "a valid --platform/--arch invocation must still succeed")
     gate.log_pass("the invocations CI actually uses are still accepted")
 
 
@@ -161,7 +161,7 @@ def test_a_dry_run_is_never_reported_as_a_pass(gate):
     """A dry run installs nothing and compares no version. It used to be counted as a PASS, which made "3 passed, 0 failed" indistinguishable in the summary
     from three real verifications."""
     result = run_target(target(gate), "--dry-run", "--method", "apt", "--version", "1.2.17")
-    gate.assert_exit_code(0, result.rc, "a dry run is not a failure")
+    gate.assert_exit(0, result, "a dry run is not a failure")
     gate.assert_contains(result.combined, "0 passed", "a dry run must claim zero passes")
     gate.assert_contains(result.combined, "3 skipped", "a dry run must be counted as skips")
     gate.assert_contains(
@@ -177,7 +177,7 @@ def test_an_all_skipped_run_is_visible_and_allowed(gate):
         env={"REPO_CHANNEL": ""},
         timeout=120,
     )
-    gate.assert_exit_code(0, result.rc, "an all-skipped run is a success")
+    gate.assert_exit(0, result, "an all-skipped run is a success")
     gate.assert_contains(result.combined, "SKIP: Channel Verify", "the skip must be named")
     gate.assert_contains(result.combined, "no REPO_CHANNEL", "the skip must carry its reason")
     gate.assert_contains(
@@ -197,7 +197,7 @@ def test_the_backstop_fires_on_a_zero_total_run(gate, tmp_path):
     # Mutation 1: only the parser is loosened. The backstop must catch it.
     with_backstop = mutate(gate, tmp_path / "with-backstop.sh")
     result = run_target(with_backstop, "--dry-run", "--method", "bogus", "--version", "1.2.17")
-    gate.assert_exit_code(1, result.rc, "a run that executed zero tests must FAIL")
+    gate.assert_exit(1, result, "a run that executed zero tests must FAIL")
     gate.assert_contains(
         result.combined, "total 0", "the mutation really did produce a zero-total run"
     )
@@ -213,8 +213,8 @@ def test_the_backstop_fires_on_a_zero_total_run(gate, tmp_path):
     # prove that the backstop is what makes the difference.
     without = mutate(gate, tmp_path / "without-backstop.sh", drop_backstop=True)
     result = run_target(without, "--dry-run", "--method", "bogus", "--version", "1.2.17")
-    gate.assert_exit_code(
-        0, result.rc, "the OLD summary must pass a zero-total run, or this test proves nothing"
+    gate.assert_exit(
+        0, result, "the OLD summary must pass a zero-total run, or this test proves nothing"
     )
     gate.assert_contains(
         result.combined, "0 passed, 0 failed, 0 skipped (total 0)", "the reproduced signature"

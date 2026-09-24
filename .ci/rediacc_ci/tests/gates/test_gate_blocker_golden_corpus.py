@@ -402,6 +402,6 @@ def test_breakpoint_original_is_untouched(gate):
     result = harness.run(
         [git, "-C", str(paths.repo_root()), "status", "--porcelain", "--", BP_RELPATH]
     )
-    gate.assert_exit_code(0, result.rc, "git status must be readable for this claim")
+    gate.assert_exit(0, result, "git status must be readable for this claim")
     gate.assert_eq(result.out.strip(), "", "the vendored breakpoint validator is unmodified")
     gate.log_pass("the drift-locked breakpoint copy was not written to")

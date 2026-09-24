@@ -51,7 +51,7 @@ def parse(gate, list_path) -> tuple[dict[str, str], dict[str, str]]:
     ) % shlex.quote(str(list_path))
     result = bash_lib(gate, snippet)
     if result.rc != 0:
-        gate.log_fail("parse_blockered_list exited %d: %s" % (result.rc, result.combined))
+        gate.log_fail("parse_blockered_list exited %d" % result.rc, result)
     allowed: dict[str, str] = {}
     blocker: dict[str, str] = {}
     for line in result.out.splitlines():
@@ -77,7 +77,7 @@ def low_effort_patterns(gate) -> list[str]:
     """`LOW_EFFORT_BLOCKER_PATTERNS`, read out of the library at runtime."""
     result = bash_lib(gate, 'printf "%s\\n" "${LOW_EFFORT_BLOCKER_PATTERNS[@]}"')
     if result.rc != 0:
-        gate.log_fail("could not read LOW_EFFORT_BLOCKER_PATTERNS: %s" % result.combined)
+        gate.log_fail("could not read LOW_EFFORT_BLOCKER_PATTERNS", result)
     return [line for line in result.out.splitlines() if line]
 
 

@@ -39,7 +39,7 @@ def _unmodified(gate, path) -> None:
         capture_output=True,
         check=False,
     )
-    gate.assert_exit_code(0, proc.returncode, "%s is unmodified against the index" % _rel(path))
+    gate.assert_exit(0, proc, "%s is unmodified against the index" % _rel(path))
 
 
 def test_the_real_tree_is_fully_registered(gate):
@@ -48,7 +48,7 @@ def test_the_real_tree_is_fully_registered(gate):
         if not subject.is_file():
             gate.log_fail("subject under test is missing: %s" % paths.relative_to_root(subject))
     result = _run()
-    gate.assert_exit_code(0, result.rc, "clean tree (stderr: %s)" % result.err)
+    gate.assert_exit(0, result, "clean tree")
     gate.assert_contains(result.combined, "all registered and all read", "set equality both ways")
     gate.assert_contains(result.combined, "read site(s)", "prints the site count")
     gate.assert_contains(result.combined, "kinds ", "and the per-kind breakdown")
@@ -63,7 +63,7 @@ def test_the_registry_size_matches_the_shape_line(gate):
     registered = len(json.loads(REGISTRY.read_text(encoding="utf-8"))["names"])
     gate.assert_eq(registered >= 100, True, "%d names registered" % registered)
     result = _run()
-    gate.assert_exit_code(0, result.rc, "clean run")
+    gate.assert_exit(0, result, "clean run")
     gate.assert_contains(
         result.combined, "%d name(s)" % registered, "and the gate reports the same count"
     )
@@ -82,7 +82,7 @@ def test_dropping_a_registered_name_reds(gate):
         del obj["names"]["WORKLIST_FOCUS"]
         mutated.write_text(json.dumps(obj, indent=2) + "\n", encoding="utf-8")
         result = _run(env={"WORKLIST_REGISTRY_OVERRIDE_FILE": str(mutated)})
-    gate.assert_exit_code(1, result.rc, "an unregistered read must red")
+    gate.assert_exit(1, result, "an unregistered read must red")
     gate.assert_contains(result.combined, "UNREGISTERED WORKLIST_FOCUS", "names it")
     gate.assert_contains(result.combined, "reads as UNSET", "and says which way it fails")
     gate.assert_eq(REGISTRY.read_bytes(), original, "never touched on disk, not merely restored")
@@ -98,7 +98,7 @@ def test_a_registered_name_nobody_reads_reds(gate):
         obj["names"]["WORKLIST_ZZZ_PHANTOM"] = {"kind": "tuning", "defaults": ["'1'"]}
         mutated.write_text(json.dumps(obj, indent=2) + "\n", encoding="utf-8")
         result = _run(env={"WORKLIST_REGISTRY_OVERRIDE_FILE": str(mutated)})
-    gate.assert_exit_code(1, result.rc, "a dead entry must red")
+    gate.assert_exit(1, result, "a dead entry must red")
     gate.assert_contains(result.combined, "DEAD WORKLIST_ZZZ_PHANTOM", "names it")
     gate.assert_eq(REGISTRY.read_bytes(), original, "never touched on disk, not merely restored")
     gate.log_pass("the direction that rots is the one this case covers, with no real file at risk")
@@ -121,7 +121,7 @@ def test_a_typo_in_a_real_source_file_reds(gate):
             + b'\n# gate probe\nimport os\n_probe = os.environ.get("WORKLIST_CADENEC", "on")\n'
         )
         result = _run(env={"WORKLIST_SOURCE_OVERRIDE_FILE": "%s:%s" % (SOURCE_PLANT_REL, mutated)})
-    gate.assert_exit_code(1, result.rc, "a typo'd name must red")
+    gate.assert_exit(1, result, "a typo'd name must red")
     gate.assert_contains(result.combined, "WORKLIST_CADENEC", "names the misspelling")
     gate.assert_contains(result.combined, "test-reggate-ledger.py", "and the file it is in")
     gate.assert_eq(
@@ -129,7 +129,7 @@ def test_a_typo_in_a_real_source_file_reds(gate):
     )
     _unmodified(gate, SOURCE_PLANT)
     after = _run()
-    gate.assert_exit_code(0, after.rc, "green with no override set, since nothing was ever mutated")
+    gate.assert_exit(0, after, "green with no override set, since nothing was ever mutated")
     gate.log_pass("the scanner sees a real typo without a real file ever being at risk")
 
 
@@ -137,7 +137,7 @@ def test_prose_under_agent_is_not_a_read(gate):
     gate.log_test("ANTI-SILENCER: a name that exists only in agent/ prose must stay invisible")
     # WORKLIST_EMAIL is the real case: one mention, in a comment, describing a name that no longer exists. If the exclusion or the scanner ever admitted prose, it would appear as an unregistered read.
     result = _run()
-    gate.assert_exit_code(0, result.rc, "clean run")
+    gate.assert_exit(0, result, "clean run")
     gate.assert_not_contains(result.combined, "WORKLIST_EMAIL", "the prose-only name is absent")
     registered = json.loads(REGISTRY.read_text(encoding="utf-8"))["names"]
     gate.assert_eq("WORKLIST_EMAIL" in registered, False, "and it is not registered either")
@@ -149,7 +149,7 @@ def test_prose_under_agent_is_not_a_read(gate):
 def test_the_selftest_covers_both_directions(gate):
     gate.log_test("--selftest runs, with plants, anti-silencers and refusals")
     result = _run("--selftest")
-    gate.assert_exit_code(0, result.rc, "selftest (stderr: %s)" % result.err)
+    gate.assert_exit(0, result, "selftest")
     passes = [ln for ln in result.combined.splitlines() if "PASS " in ln]
     gate.assert_eq(len(passes) >= 18, True, "%d control(s) ran, floor 18" % len(passes))
     plants = [ln for ln in passes if "PLANT:" in ln]

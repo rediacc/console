@@ -122,7 +122,7 @@ def test_clean_tree_passes(gate):
     with harness.temp_dir() as d:
         fixture(d)
         result = run_gate(d)
-        gate.assert_exit_code(0, result.rc, "a tree matching its baseline must pass")
+        gate.assert_exit(0, result, "a tree matching its baseline must pass")
         gate.assert_contains(
             result.combined, "5 bash file(s)", "prints the SHAPE, not just a verdict"
         )
@@ -137,7 +137,7 @@ def test_new_bash_file_fires(gate):
         (d / ".ci/scripts/four.sh").write_text("#!/usr/bin/env bash\necho new\n", encoding="utf-8")
         git("-C", str(d), "add", "-A", "--", ".")
         result = run_gate(d)
-        gate.assert_exit_code(1, result.rc, "a NEW non-exempt bash file must be refused")
+        gate.assert_exit(1, result, "a NEW non-exempt bash file must be refused")
         gate.assert_contains(result.combined, ".ci/scripts/four.sh", "names the offending file")
         gate.assert_contains(
             result.combined, "Write it in Python instead", "says what to do about it"
@@ -152,7 +152,7 @@ def test_new_file_under_exempt_tree_is_silent(gate):
         (d / ".ci/media/four.sh").write_text("#!/usr/bin/env bash\necho new\n", encoding="utf-8")
         git("-C", str(d), "add", "-A", "--", ".")
         result = run_gate(d)
-        gate.assert_exit_code(0, result.rc, "a new file under an EXEMPT tree must be silent")
+        gate.assert_exit(0, result, "a new file under an EXEMPT tree must be silent")
         gate.assert_contains(result.combined, "3 exempt", "counts it as exempt, and says so")
     gate.log_pass("CONTROL: a new file under an exempt tree does not fire")
 
@@ -166,7 +166,7 @@ def test_new_py_file_is_silent(gate):
         )
         git("-C", str(d), "add", "-A", "--", ".")
         result = run_gate(d)
-        gate.assert_exit_code(0, result.rc, "adding a PYTHON file is the goal state, not a finding")
+        gate.assert_exit(0, result, "adding a PYTHON file is the goal state, not a finding")
     gate.log_pass("CONTROL: a new Python file does not fire")
 
 
@@ -177,7 +177,7 @@ def test_shebang_without_extension_is_caught(gate):
         (d / ".ci/scripts/helper").write_text("#!/bin/bash\necho sneaky\n", encoding="utf-8")
         git("-C", str(d), "add", "-A", "--", ".")
         result = run_gate(d)
-        gate.assert_exit_code(1, result.rc, "a shebang'd file with no .sh must still be caught")
+        gate.assert_exit(1, result, "a shebang'd file with no .sh must still be caught")
         gate.assert_contains(result.combined, ".ci/scripts/helper", "names it")
     gate.log_pass("dropping the .sh extension does not evade the rule")
 
@@ -187,7 +187,7 @@ def test_drained_file_demands_a_ratchet(gate):
         fixture(d)
         git("-C", str(d), "rm", "-qf", str(d / ".ci/scripts/two.sh"))
         result = run_gate(d)
-        gate.assert_exit_code(1, result.rc, "a ported file must demand the baseline be ratcheted")
+        gate.assert_exit(1, result, "a ported file must demand the baseline be ratcheted")
         gate.assert_contains(result.combined, ".ci/scripts/two.sh", "names the drained file")
         gate.assert_contains(result.combined, DRAIN_FLAG, "gives the exact drain command")
     gate.log_pass("a ported file demands the baseline be ratcheted down")
@@ -203,9 +203,7 @@ def test_composition_trap_on_the_read_path(gate):
         )
         git("-C", str(d), "add", "-A", "--", ".")
         result = run_gate(d)
-        gate.assert_exit_code(
-            1, result.rc, "one out and one in must be refused, though the count is equal"
-        )
+        gate.assert_exit(1, result, "one out and one in must be refused, though the count is equal")
         gate.assert_contains(
             result.combined, ".ci/scripts/four.sh", "names the file that was ADDED"
         )
@@ -222,7 +220,7 @@ def test_composition_trap_on_the_write_path(gate):
         )
         git("-C", str(d), "add", "-A", "--", ".")
         result = run_gate(d, DRAIN_FLAG)
-        gate.assert_exit_code(1, result.rc, "a reseed that ABSORBS a new file must be refused")
+        gate.assert_exit(1, result, "a reseed that ABSORBS a new file must be refused")
         gate.assert_contains(result.combined, "would GAIN", "says the set would grow")
         gate.assert_contains(
             result.combined, ".ci/scripts/four.sh", "names what it would have absorbed"
@@ -243,7 +241,7 @@ def test_pure_drain_is_allowed(gate):
         fixture(d)
         git("-C", str(d), "rm", "-qf", str(d / ".ci/scripts/two.sh"))
         result = run_gate(d, DRAIN_FLAG)
-        gate.assert_exit_code(0, result.rc, "a pure drain must be allowed")
+        gate.assert_exit(0, result, "a pure drain must be allowed")
         gate.assert_contains(
             result.combined, "1 drained, 0 added", "reports the composition of the write"
         )
@@ -251,7 +249,7 @@ def test_pure_drain_is_allowed(gate):
             (d / "baseline.json").read_text(encoding="utf-8"), "two.sh", "the drained file is gone"
         )
         after = run_gate(d)
-        gate.assert_exit_code(0, after.rc, "and the tree is green afterwards")
+        gate.assert_exit(0, after, "and the tree is green afterwards")
     gate.log_pass("CONTROL: a pure drain is written, and the tree is green after it")
 
 
@@ -260,10 +258,10 @@ def test_missing_baseline_refuses_a_blind_reseed(gate):
         fixture(d)
         (d / "baseline.json").unlink()
         result = run_gate(d, DRAIN_FLAG)
-        gate.assert_exit_code(1, result.rc, "reseeding with no previous set must be refused")
+        gate.assert_exit(1, result, "reseeding with no previous set must be refused")
         gate.assert_contains(result.combined, "--first-seed", "names the flag that would allow it")
         seeded = run_gate(d, DRAIN_FLAG, "--first-seed")
-        gate.assert_exit_code(0, seeded.rc, "CONTROL: --first-seed permits a genuine first seed")
+        gate.assert_exit(0, seeded, "CONTROL: --first-seed permits a genuine first seed")
     gate.log_pass("deleting the baseline is not a way to reseed it blind")
 
 
@@ -272,7 +270,7 @@ def test_missing_baseline_is_strict_not_silent(gate):
         fixture(d)
         (d / "baseline.json").unlink()
         result = run_gate(d)
-        gate.assert_exit_code(1, result.rc, "no baseline means STRICT, never 'no debt recorded'")
+        gate.assert_exit(1, result, "no baseline means STRICT, never 'no debt recorded'")
         gate.assert_contains(result.combined, "STRICT", "says which mode it is in")
         gate.assert_contains(result.combined, "3 bash file(s)", "counts what strict mode refuses")
     gate.log_pass("an absent baseline is the strict flip, not an escape hatch")
@@ -293,9 +291,7 @@ def test_strict_mode_passes_when_only_exempt_bash_remains(gate):
             str(d / ".claude/hooks/three.sh"),
         )
         result = run_gate(d)
-        gate.assert_exit_code(
-            0, result.rc, "strict mode must be reachable, or the flip cannot land"
-        )
+        gate.assert_exit(0, result, "strict mode must be reachable, or the flip cannot land")
         gate.assert_contains(result.combined, "STRICT", "says so")
         gate.assert_contains(result.combined, "goal state", "and names it as the goal state")
     gate.log_pass("CONTROL: strict mode is green once only allowlisted bash remains")
@@ -306,7 +302,7 @@ def test_missing_blocker_is_refused(gate):
         fixture(d)
         allowlist(d, "tree:.ci/media/\n")
         result = run_gate(d)
-        gate.assert_exit_code(1, result.rc, "an exemption with no BLOCKER must be refused")
+        gate.assert_exit(1, result, "an exemption with no BLOCKER must be refused")
         gate.assert_contains(result.combined, "missing a '# BLOCKER:", "says what is missing")
     gate.log_pass("an allowlist entry with no BLOCKER reason is refused")
 
@@ -317,7 +313,7 @@ def test_low_effort_blocker_is_refused(gate):
         fixture(d)
         allowlist(d, "# BLOCKER: tbd\ntree:.ci/media/\n")
         result = run_gate(d)
-        gate.assert_exit_code(1, result.rc, "a placeholder BLOCKER must be refused")
+        gate.assert_exit(1, result, "a placeholder BLOCKER must be refused")
         gate.assert_contains(
             result.combined, "low-effort placeholder", "quotes the canonical validator"
         )
@@ -329,9 +325,7 @@ def test_short_blocker_is_refused(gate):
         fixture(d)
         allowlist(d, "# BLOCKER: it is vendored\ntree:.ci/media/\n")
         result = run_gate(d)
-        gate.assert_exit_code(
-            1, result.rc, "a BLOCKER under the 30-character floor must be refused"
-        )
+        gate.assert_exit(1, result, "a BLOCKER under the 30-character floor must be refused")
         gate.assert_contains(result.combined, "too short", "names the rule it broke")
     gate.log_pass("a BLOCKER under the length floor is refused")
 
@@ -341,7 +335,7 @@ def test_dead_tree_entry_is_refused(gate):
         fixture(d)
         allowlist(d, "# BLOCKER: %s\ntree:.ci/gone/\n" % GOOD_REASON)
         result = run_gate(d)
-        gate.assert_exit_code(1, result.rc, "an exemption that suppresses nothing must be refused")
+        gate.assert_exit(1, result, "an exemption that suppresses nothing must be refused")
         gate.assert_contains(result.combined, "covers no bash file", "says why the entry is dead")
     gate.log_pass("an exemption that covers nothing is reported dead")
 
@@ -365,7 +359,7 @@ def test_shim_entry_that_grew_is_refused(gate):
             encoding="utf-8",
         )
         clean = run_gate(d)
-        gate.assert_exit_code(0, clean.rc, "CONTROL: a genuine one-line shim is exempt")
+        gate.assert_exit(0, clean, "CONTROL: a genuine one-line shim is exempt")
 
         # Now grow it. The justification was "one-line shim" and that stopped being true without the file being deleted, which is the half a does-the-file-exist oracle would miss entirely.
         (d / ".ci/scripts/one.sh").write_text(
@@ -373,7 +367,7 @@ def test_shim_entry_that_grew_is_refused(gate):
         )
         git("-C", str(d), "add", "-A", "--", ".")
         grown = run_gate(d)
-        gate.assert_exit_code(1, grown.rc, "a shim that grew into a program must be refused")
+        gate.assert_exit(1, grown, "a shim that grew into a program must be refused")
         gate.assert_contains(grown.combined, "effective lines", "counts what it actually found")
     gate.log_pass("a shim: entry whose file grew past one line is refused by name")
 
@@ -402,7 +396,7 @@ def test_file_entry_exempts_a_multiline_file(gate):
             encoding="utf-8",
         )
         ok = run_gate(d)
-        gate.assert_exit_code(0, ok.rc, "a file: entry over a multi-line bash file is live")
+        gate.assert_exit(0, ok, "a file: entry over a multi-line bash file is live")
         gate.assert_contains(
             ok.combined, "exempt file:.ci/scripts/two.sh", "and is PRINTED, not silently applied"
         )
@@ -418,7 +412,7 @@ def test_file_entry_exempts_a_multiline_file(gate):
             encoding="utf-8",
         )
         downgrade = run_gate(d)
-        gate.assert_exit_code(1, downgrade.rc, "a file: entry where shim: applies must be refused")
+        gate.assert_exit(1, downgrade, "a file: entry where shim: applies must be refused")
         gate.assert_contains(
             downgrade.combined,
             "must be written `shim:.ci/scripts/one.sh`",
@@ -432,7 +426,7 @@ def test_file_entry_exempts_a_multiline_file(gate):
             % (GOOD_REASON, GOOD_REASON),
         )
         dead = run_gate(d)
-        gate.assert_exit_code(1, dead.rc, "a file: entry suppressing nothing must be refused")
+        gate.assert_exit(1, dead, "a file: entry suppressing nothing must be refused")
         gate.assert_contains(dead.combined, "is not a tracked bash file", "says why it is dead")
     gate.log_pass("a file: entry exempts a multi-line file, and is refused where shim: applies")
 
@@ -442,7 +436,7 @@ def test_malformed_entry_is_named_not_dropped(gate):
         fixture(d)
         allowlist(d, "# BLOCKER: %s\ntree:.ci/media\n" % GOOD_REASON)
         result = run_gate(d)
-        gate.assert_exit_code(1, result.rc, "a tree: entry with no trailing slash must be refused")
+        gate.assert_exit(1, result, "a tree: entry with no trailing slash must be refused")
         gate.assert_contains(
             result.combined, "must end in a slash", "explains the widening it prevents"
         )
@@ -460,7 +454,7 @@ def test_empty_tree_fails(gate):
         )
         (empty / "baseline.json").write_text('{"note":"f","bashFiles":[]}\n', encoding="utf-8")
         result = run_gate(empty)
-        gate.assert_exit_code(1, result.rc, "zero files scanned is a FAILURE, never a pass")
+        gate.assert_exit(1, result, "zero files scanned is a FAILURE, never a pass")
         gate.assert_contains(result.combined, "VACUOUS", "says the corpus was empty")
     gate.log_pass("an empty corpus fails (anti-vacuity), it does not pass silently")
 
@@ -470,7 +464,7 @@ def test_corrupt_baseline_is_not_an_empty_one(gate):
         fixture(d)
         (d / "baseline.json").write_text("not json at all\n", encoding="utf-8")
         result = run_gate(d)
-        gate.assert_exit_code(77, result.rc, "a corrupt baseline is CANNOT RUN, not a verdict")
+        gate.assert_exit(77, result, "a corrupt baseline is CANNOT RUN, not a verdict")
         gate.assert_contains(result.combined, "CANNOT RUN", "says it could not reach a verdict")
     gate.log_pass("a corrupt baseline is refused rather than read as an empty set")
 
@@ -493,9 +487,7 @@ def test_missing_git_is_cannot_run_not_a_verdict(gate):
             },
             timeout=300,
         )
-        gate.assert_exit_code(
-            77, result.rc, "a missing toolchain must be 77, never a pass and never a red"
-        )
+        gate.assert_exit(77, result, "a missing toolchain must be 77, never a pass and never a red")
         gate.assert_contains(result.combined, "CANNOT RUN", "says so in those words")
         gate.assert_contains(result.combined, "git is not on PATH", "names the missing tool")
         gate.assert_not_contains(
@@ -533,7 +525,7 @@ def test_selftest_can_fail(gate):
             "LANGUAGE_POLICY_ROOT": str(d),
         }
         selftest = harness.run([python3(), str(mutant), "--selftest"], env=env, timeout=300)
-        gate.assert_exit_code(1, selftest.rc, "a broken shrink-only guard must fail the selftest")
+        gate.assert_exit(1, selftest, "a broken shrink-only guard must fail the selftest")
         gate.assert_contains(
             selftest.combined, "COMPOSITION TRAP", "and names the control that caught it"
         )
@@ -547,7 +539,7 @@ def test_selftest_can_fail(gate):
             },
             timeout=300,
         )
-        gate.assert_exit_code(2, verdict.rc, "and the gate refuses to give a verdict at all")
+        gate.assert_exit(2, verdict, "and the gate refuses to give a verdict at all")
         gate.assert_contains(
             verdict.combined, "every verdict below would be meaningless", "saying why"
         )
@@ -560,7 +552,7 @@ def test_real_tree_seam_free(gate):
     THE STREAMS ARE READ APART HERE, which is the one place the twin makes that claim: a gate whose progress text lands on stderr is invisible until something parses it, and a merged read cannot see the difference.
     """
     result = harness.run([python3(), str(GATE)], cwd=ROOT, timeout=600)
-    gate.assert_exit_code(0, result.rc, "the real tree must be green: %s" % result.err)
+    gate.assert_exit(0, result, "the real tree must be green")
     gate.assert_contains(result.out, "control(s) passed", "controls ran before the verdict")
     gate.assert_contains(result.out, "language policy:", "and a verdict was printed")
     gate.assert_eq(len(result.err), 0, "a green run writes nothing to stderr")

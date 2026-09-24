@@ -212,13 +212,13 @@ def registry_verdict(script: str, needle: str) -> str | None:
     if result.rc == 0:
         return "%s exited 0 on an EMPTY tree -- it asserts nothing (vacuous gate)\n%s" % (
             script,
-            result.combined,
+            harness.render_output(result),
         )
     # Case-insensitive: the diagnostic must be about the missing input.
     if needle.lower() not in result.combined.lower():
         return (
             "%s failed on an empty tree, but its message never mentions '%s' -- it may be "
-            "crashing for an unrelated reason\n%s" % (script, needle, result.combined)
+            "crashing for an unrelated reason\n%s" % (script, needle, harness.render_output(result))
         )
     return None
 
@@ -263,9 +263,9 @@ def test_fixture_can_import_package(gate):
         probe.unlink(missing_ok=True)
     if result.rc != 0:
         gate.log_fail(
-            "a gate run inside the fixture cannot import rediacc_ci (exit %d) -- add "
-            ".ci/rediacc_ci to the copy list in run_against_empty_tree:\n%s"
-            % (result.rc, result.combined)
+            "a gate run inside the fixture cannot import rediacc_ci (exit %d) -- add .ci/rediacc_ci to the copy list in run_against_empty_tree"
+            % result.rc,
+            result,
         )
     gate.assert_contains(
         result.combined, "imported rediacc_ci from", "the probe must report the package it loaded"
@@ -361,8 +361,9 @@ def test_sharedselftestcases_can_fail(gate):
         probe.unlink(missing_ok=True)
     if result.rc != 0:
         gate.log_fail(
-            "the shared-cases probe did not run (exit %d) -- this meta-control asserts "
-            "nothing:\n%s" % (result.rc, result.combined)
+            "the shared-cases probe did not run (exit %d) -- this meta-control asserts nothing"
+            % result.rc,
+            result,
         )
     gate.assert_not_contains(
         result.combined,
@@ -402,8 +403,9 @@ def test_runcontrols_can_fail(gate):
         fixture.unlink(missing_ok=True)
     if result.rc != 0:
         gate.log_fail(
-            "the controls-harness fixture did not run (exit %d) -- the meta-control asserts "
-            "nothing:\n%s" % (result.rc, result.combined)
+            "the controls-harness fixture did not run (exit %d) -- the meta-control asserts nothing"
+            % result.rc,
+            result,
         )
     gate.assert_contains(
         result.combined, "planted=1", "runControls must COUNT a failing control, not pass it"

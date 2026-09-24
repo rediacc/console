@@ -74,7 +74,7 @@ def test_all_committed_passes(gate):
     result = run_assert(
         gate, versions("v1.0.0", "v1.0.1", "v1.0.2"), versions("v1.0.0", "v1.0.1", "v1.0.2")
     )
-    gate.assert_exit_code(0, result.rc, "bijection should hold")
+    gate.assert_exit(0, result, "bijection should hold")
     gate.assert_contains(result.combined, "OK:", "positive confirmation emitted")
     gate.assert_not_contains(result.combined, "DRIFT", "no drift lines")
     gate.log_pass("all-committed")
@@ -83,7 +83,7 @@ def test_all_committed_passes(gate):
 def test_empty_state_passes(gate):
     gate.log_test("no sentinels + no tags -> OK")
     result = run_assert(gate, "", "")
-    gate.assert_exit_code(0, result.rc, "empty state is a bijection")
+    gate.assert_exit(0, result, "empty state is a bijection")
     gate.assert_contains(result.combined, "OK:", "positive confirmation emitted")
     gate.log_pass("empty-state")
 
@@ -92,14 +92,14 @@ def test_orphan_prefix_not_flagged(gate):
     # The library flags sentinel/tag drift, not the presence of orphan bytes without a sentinel. Orphans are handled upstream by the pre-upload scrub.
     gate.log_test("orphan prefix (no sentinel, no tag) -> OK (not this gate's concern)")
     result = run_assert(gate, versions("v1.0.0"), versions("v1.0.0"))
-    gate.assert_exit_code(0, result.rc, "orphan is not sentinel-vs-tag drift")
+    gate.assert_exit(0, result, "orphan is not sentinel-vs-tag drift")
     gate.log_pass("orphan-prefix")
 
 
 def test_sentinel_without_tag_fails(gate):
     gate.log_test("cli sentinel present, tag missing -> DRIFT (this is the #458 bug)")
     result = run_assert(gate, versions("v1.0.0", "v1.0.5"), versions("v1.0.0"))
-    gate.assert_exit_code(1, result.rc, "sentinel-without-tag must fail")
+    gate.assert_exit(1, result, "sentinel-without-tag must fail")
     gate.assert_contains(result.combined, "DRIFT v1.0.5", "names the drifted version")
     gate.assert_contains(
         result.combined, "cli sentinel present, git tag missing", "identifies direction"
@@ -111,7 +111,7 @@ def test_sentinel_without_tag_fails(gate):
 def test_tag_without_sentinel_fails(gate):
     gate.log_test("git tag present, cli sentinel missing -> DRIFT")
     result = run_assert(gate, versions("v1.0.0"), versions("v1.0.0", "v1.0.5"))
-    gate.assert_exit_code(1, result.rc, "tag-without-sentinel must fail")
+    gate.assert_exit(1, result, "tag-without-sentinel must fail")
     gate.assert_contains(result.combined, "DRIFT v1.0.5", "names the drifted version")
     gate.assert_contains(
         result.combined, "git tag present, cli sentinel missing", "identifies direction"
@@ -123,14 +123,14 @@ def test_tag_without_sentinel_fails(gate):
 def test_in_flight_excluded(gate):
     gate.log_test("in-flight version with no sentinel yet -> excluded, gate passes")
     result = run_assert(gate, versions("v1.0.0"), versions("v1.0.0"), "v1.0.5")
-    gate.assert_exit_code(0, result.rc, "in-flight exclusion prevents self-flag")
+    gate.assert_exit(0, result, "in-flight exclusion prevents self-flag")
     gate.log_pass("in-flight-excluded")
 
 
 def test_in_flight_does_not_mask_other_drift(gate):
     gate.log_test("in-flight exclusion does not hide unrelated drift")
     result = run_assert(gate, versions("v1.0.0", "v1.0.3"), versions("v1.0.0"), "v1.0.5")
-    gate.assert_exit_code(1, result.rc, "v1.0.3 drift must still fire")
+    gate.assert_exit(1, result, "v1.0.3 drift must still fire")
     gate.assert_contains(result.combined, "DRIFT v1.0.3", "unrelated drift still caught")
     gate.assert_not_contains(result.combined, "DRIFT v1.0.5", "in-flight remains excluded")
     gate.log_pass("in-flight-targeted-exclusion")
@@ -141,7 +141,7 @@ def test_prerelease_tags_ignored(gate):
     # rsv_list_git_tags filters these out in live use; assert the assertion
     # function also ignores them when they happen to appear in inputs.
     result = run_assert(gate, versions("v1.0.0"), versions("v1.0.0", "v1.0.1-beta.1"))
-    gate.assert_exit_code(0, result.rc, "pre-release tag must not trigger drift")
+    gate.assert_exit(0, result, "pre-release tag must not trigger drift")
     gate.log_pass("prerelease-filtered")
 
 
@@ -153,7 +153,7 @@ def test_floor_excludes_pre_contract_tags(gate):
         versions("v1.0.5", "v1.0.6"),
         versions("v0.9.5", "v1.0.0", "v1.0.4", "v1.0.5", "v1.0.6"),
     )
-    gate.assert_exit_code(0, result.rc, "pre-contract tags must not trigger drift")
+    gate.assert_exit(0, result, "pre-contract tags must not trigger drift")
     gate.assert_not_contains(result.combined, "DRIFT v0.9.5", "v0.9.5 is below floor")
     gate.assert_not_contains(result.combined, "DRIFT v1.0.0", "v1.0.0 is below floor")
     gate.assert_not_contains(result.combined, "DRIFT v1.0.4", "v1.0.4 is below floor")
@@ -164,7 +164,7 @@ def test_floor_excludes_pre_contract_tags(gate):
 def test_floor_does_not_mask_post_contract_drift(gate):
     gate.log_test("tags at-or-above the derived floor still subject to bijection")
     result = run_assert(gate, versions("v1.0.5", "v1.0.6"), versions("v1.0.5", "v1.0.6", "v1.0.7"))
-    gate.assert_exit_code(1, result.rc, "post-contract drift must still fire")
+    gate.assert_exit(1, result, "post-contract drift must still fire")
     gate.assert_contains(
         result.combined, "DRIFT v1.0.7", "v1.0.7 is at-or-above floor; drift fires"
     )
@@ -178,7 +178,7 @@ def test_no_sentinels_short_circuits(gate):
     gate.log_test("no cli sentinels (and no override) -> bijection short-circuits to OK")
     # Fresh dev bucket / pre-rollout state: contract not in effect for any tag we have. Asserting drift on every tag would be useless noise.
     result = run_assert(gate, "", versions("v0.9.5", "v1.0.0", "v1.0.4"))
-    gate.assert_exit_code(0, result.rc, "no-sentinels state is a no-op")
+    gate.assert_exit(0, result, "no-sentinels state is a no-op")
     gate.assert_contains(result.combined, "contract not in effect", "diagnostic message present")
     gate.log_pass("no-sentinels-short-circuits")
 
@@ -196,7 +196,7 @@ def test_explicit_override_still_works(gate):
         "",
         grandfather="v1.5.0",
     )
-    gate.assert_exit_code(0, result.rc, "override pushes floor up; drift below it suppressed")
+    gate.assert_exit(0, result, "override pushes floor up; drift below it suppressed")
     gate.assert_not_contains(result.combined, "DRIFT v1.0.6", "v1.0.6 < override; not flagged")
     gate.assert_contains(result.combined, "floor: v1.5.0", "OK line reflects overridden floor")
     gate.log_pass("explicit-override")
@@ -217,7 +217,7 @@ def test_ratchet_lifts_floor_above_observed(gate, tmp_path: pathlib.Path):
         "",
         floor_file=str(ratchet),
     )
-    gate.assert_exit_code(0, result.rc, "ratchet < observed: observed v1.0.8 floor used")
+    gate.assert_exit(0, result, "ratchet < observed: observed v1.0.8 floor used")
     gate.assert_contains(result.combined, "floor: v1.0.8", "floor message names v1.0.8")
     gate.assert_not_contains(result.combined, "DRIFT v1.0.6", "v1.0.6 below floor; suppressed")
 
@@ -231,7 +231,7 @@ def test_ratchet_lifts_floor_above_observed(gate, tmp_path: pathlib.Path):
         "",
         floor_file=str(ratchet),
     )
-    gate.assert_exit_code(0, result.rc, "ratchet > observed: ratchet floor used, no drift below")
+    gate.assert_exit(0, result, "ratchet > observed: ratchet floor used, no drift below")
     gate.assert_contains(result.combined, "floor: v1.0.10", "ratchet pulls floor up to v1.0.10")
     gate.assert_not_contains(
         result.combined, "DRIFT v1.0.8", "observed v1.0.8 below ratchet floor; suppressed"
@@ -255,7 +255,7 @@ def test_ratchet_protects_against_all_sentinels_scrubbed(gate, tmp_path: pathlib
         "",
         floor_file=str(ratchet),
     )
-    gate.assert_exit_code(1, result.rc, "tags above ratchet with no cli sentinel must drift")
+    gate.assert_exit(1, result, "tags above ratchet with no cli sentinel must drift")
     gate.assert_contains(
         result.combined,
         "DRIFT v1.0.8",
@@ -282,7 +282,7 @@ def run_pointer(gate, channel: str, latest: str, manifest: str, tags: str, in_fl
 
 def test_pointer_naming_a_tagged_version_passes(gate):
     result = run_pointer(gate, "edge", "v1.3.1", "v1.3.1", POINTER_TAGS)
-    gate.assert_exit_code(0, result.rc, "a tagged pointer must pass")
+    gate.assert_exit(0, result, "a tagged pointer must pass")
     gate.assert_contains(result.combined, "OK:", "positive confirmation emitted")
     gate.log_pass("a pointer naming a tagged version passes")
 
@@ -290,7 +290,7 @@ def test_pointer_naming_a_tagged_version_passes(gate):
 def test_pointer_naming_an_untagged_version_is_caught(gate):
     # THE BUG, reproduced exactly.
     result = run_pointer(gate, "edge", "v9.9.9", "v9.9.9", POINTER_TAGS)
-    gate.assert_exit_code(1, result.rc, "an untagged pointer MUST fail")
+    gate.assert_exit(1, result, "an untagged pointer MUST fail")
     gate.assert_contains(result.combined, "NO git tag", "the finding names the cause")
     gate.log_pass("a pointer naming an untagged version is caught")
 
@@ -298,7 +298,7 @@ def test_pointer_naming_an_untagged_version_is_caught(gate):
 def test_torn_pointer_write_is_caught(gate):
     # latest.json and manifest.json are written seconds apart; disagreement means install.sh and the auto-updater resolve to different versions.
     result = run_pointer(gate, "edge", "v1.3.1", "v1.3.0", POINTER_TAGS)
-    gate.assert_exit_code(1, result.rc, "a torn write MUST fail")
+    gate.assert_exit(1, result, "a torn write MUST fail")
     gate.assert_contains(result.combined, "torn write", "the finding names the cause")
     gate.log_pass("a torn pointer write is caught")
 
@@ -306,7 +306,7 @@ def test_torn_pointer_write_is_caught(gate):
 def test_unreadable_pointer_is_not_a_pass(gate):
     # A pointer nobody could read is never a clean channel.
     result = run_pointer(gate, "edge", "", "v1.3.1", POINTER_TAGS)
-    gate.assert_exit_code(1, result.rc, "an unreadable pointer must NOT pass")
+    gate.assert_exit(1, result, "an unreadable pointer must NOT pass")
     gate.assert_contains(
         result.combined, "never a pass", "refuses to certify a read it could not make"
     )
@@ -316,7 +316,7 @@ def test_unreadable_pointer_is_not_a_pass(gate):
 def test_in_flight_version_is_excluded(gate):
     # The pointer for release X is written BEFORE X's tag is pushed. Without this exclusion the relation would redden every release that uses it.
     result = run_pointer(gate, "edge", "v9.9.9", "v9.9.9", POINTER_TAGS, "v9.9.9")
-    gate.assert_exit_code(0, result.rc, "the in-flight version must be excluded")
+    gate.assert_exit(0, result, "the in-flight version must be excluded")
     gate.assert_contains(result.combined, "in-flight", "says why it was excluded")
     gate.log_pass("the in-flight version is excluded, so the gate is safe on the release path")
 
