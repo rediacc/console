@@ -464,7 +464,7 @@ _devbox_bind_if_present() {
 
 # The tracked scripts bound into every devbox, one "<source under .devcontainer/>:<container path>" pair per line. Data rather than inline `-v` flags so devbox_up and devbox_missing_binds read ONE list: a bind exists only from `docker run` on, so a container created before a line was added lacks it forever, and devbox_missing_binds is how devbox_up notices and recreates.
 #
-# devbox-bws.sh is the login-shell hook that exports BWS_ACCESS_TOKEN from the host's private/account/.env (reached through the repo bind, never copied), so `bws` works inside the devbox without the token entering the image, Config.Env, a label or a log.
+# devbox-bws.sh is the login-shell hook that exports BWS_ACCESS_TOKEN from the host's token-only file ~/.config/rediacc/bws-access-token (the file bound read-only by devbox_home_binds, never copied), so `bws` works inside the devbox without the token entering the image, Config.Env, a label or a log.
 devbox_script_binds() {
     printf '%s\n' \
         "devbox-entrypoint.sh:/usr/local/bin/devbox-entrypoint.sh" \
@@ -475,20 +475,20 @@ devbox_script_binds() {
 
 # Host files bound by NAME into the container user's home, one "<path relative to $HOME>:<mode>" pair per line (mode empty for read-write). Each is bound only when it exists on the host (_devbox_bind_if_present says why).
 #
-# .config/rediacc-console holds the console's own bootstrap credential, the token-only file bws-access-token that devbox-bws.sh reads first. Read-only, and deliberately NOT inside .config/rediacc: that directory is the rdc CLI's read-write state, and a CLI or E2E run must not be able to delete the console's root credential.
+# .config/rediacc/bws-access-token is the console's own bootstrap credential, the token-only file devbox-bws.sh reads. Its directory is the rdc CLI's READ-WRITE state, so the FILE is bound read-only on top of that directory bind (listed after it): a CLI or E2E run in the container can neither delete nor rewrite the root credential.
 DEVBOX_CONTAINER_HOME="/home/vscode"
 devbox_home_binds() {
     printf '%s\n' \
         ".gitconfig:ro" \
         ".git-credentials:ro" \
         ".config/gh:" \
-        ".config/rediacc-console:ro" \
         ".claude:" \
         ".claude.json:" \
-        ".config/rediacc:"
+        ".config/rediacc:" \
+        ".config/rediacc/bws-access-token:ro"
 }
 
-# Print each bind destination the existing container does NOT have mounted, one per line: every devbox_script_binds entry, plus every devbox_home_binds entry whose host source exists now (one created on the host after the container was, such as .config/rediacc-console, is drift too). Empty when there is no container, or when docker cannot inspect it: an unanswerable probe must never be the reason a container is destroyed.
+# Print each bind destination the existing container does NOT have mounted, one per line: every devbox_script_binds entry, plus every devbox_home_binds entry whose host source exists now (one created on the host after the container was, such as .config/rediacc/bws-access-token, is drift too). Empty when there is no container, or when docker cannot inspect it: an unanswerable probe must never be the reason a container is destroyed.
 devbox_missing_binds() {
     local d cid mounts pair dest
     d="$(devbox_docker)"

@@ -1,20 +1,25 @@
 #!/usr/bin/env tsx
 /**
- * check:env-credential-drift -- the production .env must not hold a credential
- * the rotation manifest has never recorded.
+ * check:env-credential-drift -- the credentials local development uses must be
+ * ones the rotation manifest records.
  *
- * DELIBERATELY NOT A check:ci-* KEY. private/account/.env is gitignored, so it is
- * never present in CI; a CI-wired entry would skip on every run, which is a gate
+ * WHERE THE VALUES COME FROM NOW. The account's local env file is retired
+ * (agent/plans/PLAN-account-env-to-bws.md): the values are Bitwarden's, bound
+ * into this process by `bws_env exec --profile credential-drift` (package.json),
+ * and read here from the ENVIRONMENT. The profile is all-optional, so a machine
+ * with no bootstrap token runs this and skips loudly rather than failing.
+ *
+ * DELIBERATELY NOT A check:ci-* KEY. CI jobs hold no rotation manifest context
+ * worth comparing, and a CI-wired entry would skip on every run, which is a gate
  * that is defined, reachable, and structurally incapable of checking anything.
- * The credential lives on developer machines, so this runs where bench's
- * equivalent already does: a blocking preflight in ./run.sh setup, with
- * SKIP_ENV_DRIFT_CHECK=1 as the documented escape.
+ * It runs as an advisory phase of ./run.sh setup, with SKIP_ENV_DRIFT_CHECK=1 as
+ * the documented escape.
  *
  * THE DEFECT THIS CLOSES, found 2026-08-26. The stop hook's operator email had
  * been failing with `SES HTTP 403: The security token included in the request is
  * invalid`. That consumer (`wl_email.py`) has since been REMOVED, but the stale
  * credential it exposed is still live and still shipped: the
- * AWS_SES_ACCESS_KEY_ID in `private/account/.env` appears in no version of any
+ * AWS_SES_ACCESS_KEY_ID in the account's local env file appeared in no version of any
  * `ses-*` slug in `rotation-manifest.json`, while `./run.sh rotation check`
  * passes every `ses-*` slug. Manifest-vs-AWS was healthy; only `.env` was
  * stale, left behind by a rotation.
@@ -62,7 +67,8 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
-export const ENV_FILE = 'private/account/.env';
+/** Where the compared values come from, named in every message. */
+export const SOURCE = 'Bitwarden (bws_env exec --profile credential-drift)';
 export const MANIFEST = 'private/account/rotation-manifest.json';
 
 /** env var -> the manifest slugs whose versions may legitimately supply it. */
@@ -91,23 +97,6 @@ export const TRACKED: ReadonlyArray<{ key: string; slugs: string[] }> = [
   //
   // The real gap this leaves is honest and worth stating: the admin credential is outside the rotation record entirely, so nothing tracks its age. Closing that means adding an `aws-admin` slug to the manifest, which is the operator's call, not this gate's.
 ];
-
-export const parseEnv = (source: string): Record<string, string> => {
-  const out: Record<string, string> = {};
-  for (const raw of source.split('\n')) {
-    const line = raw.trim();
-    if (!line || line.startsWith('#')) continue;
-    const eq = line.indexOf('=');
-    if (eq <= 0) continue;
-    const key = line.slice(0, eq);
-    if (!/^[A-Z0-9_]+$/.test(key)) continue;
-    out[key] = line
-      .slice(eq + 1)
-      .trim()
-      .replace(/^["']|["']$/g, '');
-  }
-  return out;
-};
 
 /** Every version id the manifest knows, per slug, mapped to its state. */
 export const manifestIds = (json: unknown): Map<string, Map<string, string>> => {
@@ -177,12 +166,6 @@ const selftest = (): number => {
     if (!ok) fail += 1;
     console.log(`  ${ok ? 'PASS' : 'FAIL'}  ${name}`);
   };
-
-  const env = parseEnv('A=1\n# c=2\nB="q"\nBAD LINE\nlower=3\n');
-  check('parses plain values', env.A === '1');
-  check('strips quotes', env.B === 'q');
-  check('skips comments', env['# c'] === undefined && env.c === undefined);
-  check('skips non-uppercase keys', env.lower === undefined);
 
   const ids = manifestIds({
     credentials: { 'ses-eu': { versions: [{ id: 'AKIA_GOOD', state: 'active' }] } },
@@ -258,10 +241,9 @@ const selftest = (): number => {
 const main = (): number => {
   if (process.argv.slice(2).includes('--selftest')) return selftest();
 
-  const envPath = path.join(REPO, ENV_FILE);
   const manPath = path.join(REPO, MANIFEST);
-  if (!fs.existsSync(envPath) || !fs.existsSync(manPath)) {
-    console.log(`- skipped: ${ENV_FILE} or ${MANIFEST} absent (private submodule not checked out)`);
+  if (!fs.existsSync(manPath)) {
+    console.log(`- skipped: ${MANIFEST} absent (private submodule not checked out)`);
     return 0;
   }
 
@@ -277,10 +259,16 @@ const main = (): number => {
     return 1;
   }
 
-  const env = parseEnv(fs.readFileSync(envPath, 'utf8'));
+  const env: Record<string, string> = {};
+  for (const { key } of TRACKED) {
+    const value = process.env[key];
+    if (value) env[key] = value;
+  }
   const tracked = TRACKED.filter((t) => env[t.key]);
   if (tracked.length === 0) {
-    console.log(`- skipped: none of the tracked keys are set in ${ENV_FILE}`);
+    console.log(
+      `- skipped: none of the tracked keys came from ${SOURCE} (no bootstrap token on this machine?)`
+    );
     return 0;
   }
 
@@ -288,7 +276,7 @@ const main = (): number => {
   if (drifts.length > 0) {
     const absent = drifts.filter((d) => d.kind === 'absent');
     const retiring = drifts.filter((d) => d.kind === 'retiring');
-    console.error(`✗ ${drifts.length} credential(s) in ${ENV_FILE} disagree with the record:`);
+    console.error(`✗ ${drifts.length} credential(s) from ${SOURCE} disagree with the record:`);
     for (const d of absent) {
       console.error(
         `    ABSENT   ${d.key} = ${d.idPrefix}  (no version of ${d.slugs.join(', ')} records it)`
@@ -302,10 +290,9 @@ const main = (): number => {
     }
     console.error('');
     if (absent.length > 0) {
-      console.error('  ABSENT means the file is stale relative to the record, which is how a');
+      console.error('  ABSENT means the store is stale relative to the record, which is how a');
       console.error('  rotated-out key keeps being used until something unrelated stops');
-      console.error('  working. Re-run the rotation for that slug, or paste the current');
-      console.error('  credential into the file.');
+      console.error('  working. Re-run the rotation for that slug so it writes the store.');
     }
     if (retiring.length > 0) {
       console.error('  RETIRING is the more urgent one, because it has a DATE attached: the');
@@ -317,7 +304,7 @@ const main = (): number => {
   }
 
   console.log(
-    `✓ ${tracked.length} tracked credential(s) in ${ENV_FILE} match the rotation manifest`
+    `✓ ${tracked.length} tracked credential(s) from ${SOURCE} match the rotation manifest`
   );
   return 0;
 };

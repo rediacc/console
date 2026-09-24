@@ -36,6 +36,30 @@
     "entry reds instead of sitting there looking considered."
   ],
   "exemptions": {
+    "ACCOUNT_ED25519_PRIVATE_KEY_DEV": {
+      "kind": "no-github-twin",
+      "reason": "The local DEV keypair and session secrets, seeded 2026-09-24 from the retired account env file with read-back MATCH (agent/plans/PLAN-account-env-to-bws.md T11, Q1). Bound by `bws_env exec --profile account-dev|backup-plane|deploy-bench` (.ci/config/secret-supply.json consumers); no workflow requests it, because CI's drills leg mints throwaway keys instead."
+    },
+    "ACCOUNT_ED25519_PUBLIC_KEY_DEV": {
+      "kind": "no-github-twin",
+      "reason": "The local DEV keypair and session secrets, seeded 2026-09-24 from the retired account env file with read-back MATCH (agent/plans/PLAN-account-env-to-bws.md T11, Q1). Bound by `bws_env exec --profile account-dev|backup-plane|deploy-bench` (.ci/config/secret-supply.json consumers); no workflow requests it, because CI's drills leg mints throwaway keys instead."
+    },
+    "ACCOUNT_JWT_SECRET_DEV": {
+      "kind": "no-github-twin",
+      "reason": "The local DEV keypair and session secrets, seeded 2026-09-24 from the retired account env file with read-back MATCH (agent/plans/PLAN-account-env-to-bws.md T11, Q1). Bound by `bws_env exec --profile account-dev|backup-plane|deploy-bench` (.ci/config/secret-supply.json consumers); no workflow requests it, because CI's drills leg mints throwaway keys instead."
+    },
+    "ACCOUNT_SERVER_API_KEY_DEV": {
+      "kind": "no-github-twin",
+      "reason": "The local DEV keypair and session secrets, seeded 2026-09-24 from the retired account env file with read-back MATCH (agent/plans/PLAN-account-env-to-bws.md T11, Q1). Bound by `bws_env exec --profile account-dev|backup-plane|deploy-bench` (.ci/config/secret-supply.json consumers); no workflow requests it, because CI's drills leg mints throwaway keys instead."
+    },
+    "ACCOUNT_X25519_PRIVATE_KEY_DEV": {
+      "kind": "no-github-twin",
+      "reason": "The local DEV keypair and session secrets, seeded 2026-09-24 from the retired account env file with read-back MATCH (agent/plans/PLAN-account-env-to-bws.md T11, Q1). Bound by `bws_env exec --profile account-dev|backup-plane|deploy-bench` (.ci/config/secret-supply.json consumers); no workflow requests it, because CI's drills leg mints throwaway keys instead."
+    },
+    "ACCOUNT_X25519_PUBLIC_KEY_DEV": {
+      "kind": "no-github-twin",
+      "reason": "The local DEV keypair and session secrets, seeded 2026-09-24 from the retired account env file with read-back MATCH (agent/plans/PLAN-account-env-to-bws.md T11, Q1). Bound by `bws_env exec --profile account-dev|backup-plane|deploy-bench` (.ci/config/secret-supply.json consumers); no workflow requests it, because CI's drills leg mints throwaway keys instead."
+    },
     "AWS_IAM_ADMIN_ACCESS_KEY_ID": {
       "kind": "no-github-twin",
       "reason": "Admin credential seeded 2026-09-24 on the operator's choice to keep it in ci-shared (agent/plans/PLAN-account-env-to-bws.md Q2). Read only by the local secret-rotation tool, never by a workflow."
@@ -43,6 +67,10 @@
     "AWS_IAM_ADMIN_SECRET_ACCESS_KEY": {
       "kind": "no-github-twin",
       "reason": "Admin credential seeded 2026-09-24 on the operator's choice to keep it in ci-shared (agent/plans/PLAN-account-env-to-bws.md Q2). Read only by the local secret-rotation tool, never by a workflow."
+    },
+    "AWS_SES_ACCESS_KEY_ID_BENCH": {
+      "kind": "no-github-twin",
+      "reason": "A bench-only credential, seeded 2026-09-24 from the retired bench env file with read-back MATCH (agent/plans/PLAN-account-env-to-bws.md T13). Bound only by `bws_env exec --profile deploy-bench` for the local scripts/ops/deploy-bench.sh; bench is deliberately not deployed by any workflow."
     },
     "AWS_SES_HOST": {
       "kind": "no-github-twin",
@@ -52,6 +80,10 @@
       "kind": "no-github-twin",
       "reason": "Public data, already committed in the clear at regions.json:17,35,53. No workflow requests the stored copy: cd-deploy-account takes the region from matrix.sesRegion, and cd-deploy-worker and ci.yml's deploy-preview take it from the separate AWS_SES_REGION_EU secret, which replaced the Actions variable of that name on 2026-09-24 (agent/plans/PLAN-github-actions-to-bitwarden.md). The only other holder is private/account/.env, which assigns the same name for the local account server. It sits in the store as an inert leftover -- keeping it costs nothing and deleting it is the operator's call."
     },
+    "AWS_SES_SECRET_ACCESS_KEY_BENCH": {
+      "kind": "no-github-twin",
+      "reason": "A bench-only credential, seeded 2026-09-24 from the retired bench env file with read-back MATCH (agent/plans/PLAN-account-env-to-bws.md T13). Bound only by `bws_env exec --profile deploy-bench` for the local scripts/ops/deploy-bench.sh; bench is deliberately not deployed by any workflow."
+    },
     "CF_EMAIL": {
       "kind": "no-github-twin",
       "reason": "Admin credential seeded 2026-09-24 on the operator's choice to keep it in ci-shared (agent/plans/PLAN-account-env-to-bws.md Q2). Read only by the local secret-rotation tool, never by a workflow."
@@ -60,6 +92,10 @@
       "kind": "no-github-twin",
       "reason": "Admin credential seeded 2026-09-24 on the operator's choice to keep it in ci-shared (agent/plans/PLAN-account-env-to-bws.md Q2). Read only by the local secret-rotation tool, never by a workflow."
     },
+    "CLOUDFLARE_TURNSTILE_SECRET_KEY_BENCH": {
+      "kind": "no-github-twin",
+      "reason": "A bench-only credential, seeded 2026-09-24 from the retired bench env file with read-back MATCH (agent/plans/PLAN-account-env-to-bws.md T13). Bound only by `bws_env exec --profile deploy-bench` for the local scripts/ops/deploy-bench.sh; bench is deliberately not deployed by any workflow."
+    },
     "GITHUB_APP_CLIENT_SECRET": {
       "kind": "no-github-twin",
       "reason": "no OAuth or web flow exists in console, account, renet or elite; CI authenticates as the App with its private key. Stored so the App's credential set lives in one place."
@@ -67,6 +103,10 @@
     "OBS_OTLP_CREDENTIALS": {
       "kind": "no-github-twin",
       "reason": "pre-regional leftover holding ONE region's value; the deploy uses the regional trio below. One stored value cannot be compared against three genuinely different regional secrets."
+    },
+    "OBS_OTLP_CREDENTIALS_BENCH": {
+      "kind": "no-github-twin",
+      "reason": "The bench collector credential, JSON {user,pass}, seeded 2026-09-24 from the retired bench env file (agent/plans/PLAN-account-env-to-bws.md T13). Bound only by `bws_env exec --profile deploy-bench` for the local scripts/ops/deploy-bench.sh, and written by `rotation rotate otlp-bench` through its bitwarden-sm consumer; no workflow deploys bench."
     },
     "OBS_OTLP_PASSWORD": {
       "kind": "no-github-twin",

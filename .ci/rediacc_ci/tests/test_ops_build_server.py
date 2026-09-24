@@ -134,9 +134,12 @@ def fixture(
         (base if present else base.parent).mkdir(parents=True, exist_ok=True)
         if present:
             (base / "index.html").write_text("%s\n" % head, encoding="utf-8")
+    # `dotenv` is the KEY=value file the key is read from. The twin read private/account/.env; the port reads the public-key cache that replaced it, and the goldens (named for the twin's file) are unchanged because the two files share one shape.
     if dotenv is not None:
-        (root / "private" / "account").mkdir(parents=True, exist_ok=True)
-        (root / "private" / "account" / ".env").write_text(dotenv, encoding="utf-8")
+        (root / "private" / "account" / ".cache").mkdir(parents=True, exist_ok=True)
+        (root / "private" / "account" / ".cache" / "public-keys.env").write_text(
+            dotenv, encoding="utf-8"
+        )
     return root
 
 

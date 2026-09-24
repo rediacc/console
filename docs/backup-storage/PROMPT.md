@@ -7,7 +7,7 @@ Validate, do not believe: every file:line in those docs is a hypothesis to re-ve
 Ask the README's operator decision points EARLY, in one round, before wave 1; park deferrals as `- [?]` items with DEFAULTs.
 
 Staffing: Opus is the default for coding sub-agents. Fable for the challenging
-pieces (pkg/chunkstore, grant signing + ledger transactionality) AND for planning agents. Sonnet for all translation/naturalization. At most 2 concurrent writers with disjoint file ownership stated verbatim in every prompt; investigation agents fan out freely; spot-check every report against the artifacts.
+pieces (pkg/chunkstore, grant signing + ledger transactionality) AND for planning agents. Sonnet for all translation/naturalization. At most 4 concurrent writers with disjoint file ownership stated verbatim in every prompt; investigation agents fan out freely; spot-check every report against the artifacts.
 
 Program state (durable, survives compaction and reboots): `~/.claude/projects/-home-muhammed-monorepo-console/programs/backup-storage/` with `MANIFEST.md` (update at every phase boundary), `reports/` (every writing/planning agent names its report `reports/<phase>-<agent>.md`), and `checkpoints/` (periodic uncommitted-tree patches).
 

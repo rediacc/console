@@ -46,7 +46,6 @@ workers/www/staging/
 .vscode/*
 !.vscode/extensions.json
 !.vscode/settings.json
-!.vscode/tasks.json
 *.sw?
 *.swp
 *.swo
@@ -60,16 +59,11 @@ workers/www/staging/
 # real credential. `git check-ignore -v .env.production` printed nothing before
 # this line existed.
 #
-# The negations are load-bearing and both shapes are needed, because three
-# example files are TRACKED and must stay that way:
-#   packages/www/.env.example        ->  !.env.example
-#   packages/e2e-tests/.env.example  ->  !.env.example
-#   packages/cli/.env.test.example   ->  !.env.*.example
-# A single `!.env.example` would have re-ignored the cli one on its next
-# rewrite, and the deletion would have looked like someone removed it on purpose.
+# No example env file is tracked anywhere (operator ruling 2026-09-24): every
+# setting comes from the environment, a Bitwarden profile
+# (.ci/config/secret-supply.json `consumers`) or a documented default, so no
+# negation re-admits one.
 .env.*
-!.env.example
-!.env.*.example
 secrets.env
 .rdc-dev/
 .rdc-bench/

@@ -35,9 +35,8 @@ Consequences by construction:
 
 `--dev` (or `RDC_DEV=1`) does exactly three things:
 
-1. Reads `REDIACC_ACCOUNT_SERVER` and `X25519_PUBLIC_KEY` from `private/account/.env`.
-The gateway self-records its URL there on every start (`updateEnvServerUrl` in `dev-gateway.ts`), so dynamic ports need no manual handling. Only those two lines are read; the file is never `source`d, so server private keys stay out of the CLI process environment.
-2. Probes the gateway and fails fast with a clear message if it is not running.
+1. Reads the gateway port from `.account-state`, which `./run.sh account dev` writes on every start, so dynamic ports need no manual handling.
+2. Probes the gateway, failing fast with a clear message if it is not running, and takes the X25519 public key from the same `/.well-known/server-info` answer. Nothing is `source`d, so server private keys stay out of the CLI process environment.
 3. Seeds or patches `~/.config/rediacc/dev.json` with those two values and runs with
 `REDIACC_CONFIG=dev`.
 

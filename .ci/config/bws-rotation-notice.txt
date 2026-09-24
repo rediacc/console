@@ -16,13 +16,13 @@ BWS ACCESS TOKEN: THE STORE COULD NOT BE READ, AND THE REMEDY IS A ROTATION.
 
 5. WHAT A SESSION MUST NOT DO. Each of these has its own reason and none of
    them is a matter of taste. DO NOT ask for the token in the conversation. A conversation is a log, a transcript on disk, and a context window that later gets summarised into another one. A credential pasted into it is a credential in all three, and no later deletion reaches any of them. DO NOT put it in a tracked file.
-   It belongs in `private/account/.env`, which is untracked; every other file in this tree is public the moment it is pushed, and a credential in git history outlives the commit that removed it. DO NOT offer to run the script.
+   It belongs in `~/.config/rediacc/bws-access-token` (mode 0600, outside the repository); every file in this tree is public the moment it is pushed, and a credential in git history outlives the commit that removed it. DO NOT offer to run the script.
    It reads the value from a TTY with echo off and refuses a non-TTY stdin with exit 2, deliberately, so that a tool call with no terminal physically cannot feed it. Offering implies a capability that does not exist and invites the operator to paste the value somewhere it can be read.
 
 6. WHAT THE SCRIPT DOES, SO THE OPERATOR KNOWS WHAT THEY ARE AGREEING TO.
    It prompts on the terminal with echo off, so the value never reaches argv, a shell history, a log or a process listing.
    Nothing is written until four checks pass: the value has the shape `0.<client-id>.<secret>:<key>`; a live `bws secret list` through it returns at least 40 secrets from the project, because a short listing is how a scoped-down credential looks successful; its client-id fingerprint DIFFERS from the installed one, because a paste of the value already in use is the commonest way a rotation silently does nothing; and no part of the value is printed at any point.
-   Only then does it write `private/account/.env` and refresh the GitHub repository secret of every repo that ALREADY holds one, deriving that list from `.gitmodules` at run time.
+   Only then does it write `~/.config/rediacc/bws-access-token` (mode 0600) and refresh the GitHub repository secret of every repo that ALREADY holds one, deriving that list from `.gitmodules` at run time.
    A repo holding no such secret is named in the report and never given one: a rotation that quietly seeded a live credential into a repository with no consumer would be the opposite of what a rotation is for.
 
 7. WHAT THE SCRIPT CANNOT PROVE, STATED BECAUSE IT WILL NOT BE OBVIOUS.

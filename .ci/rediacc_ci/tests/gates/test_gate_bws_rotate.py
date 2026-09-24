@@ -3,7 +3,7 @@
 Tests for `scripts/dev/bws-rotate.py`, which takes a live credential from a terminal and writes it to five places. Its refusals ARE the feature, and a refusal nobody exercises is indistinguishable from a function that always returns true.
 
 NO REAL CREDENTIAL IS USED, READ OR WRITTEN, ANYWHERE IN THIS FILE. `bws` and `gh` are both faked on PATH; the fixture token is the literal string `0.fixture-client.fixture-secret:fixture-key`, which exists in no store.
-Every case runs inside a fresh tmp_path and the subject is pointed at it with the five seams the module declares (BWS_BIN, GH_BIN, BWS_ROTATE_ENV_FILE, BWS_ROTATE_GITMODULES, BWS_ROTATE_SECRET_MAP).
+Every case runs inside a fresh tmp_path and the subject is pointed at it with the five seams the module declares (BWS_BIN, GH_BIN, BWS_ROTATE_TARGET_FILE, BWS_ROTATE_GITMODULES, BWS_ROTATE_SECRET_MAP).
 
 WHY A PTY, and it is not an affectation. The module's first refusal is `sys.stdin.isatty()`, which exists to make an AI session physically unable to feed it a credential.
 That refusal is tested as a REAL process with stdin from a pipe (`run_lib_process`), and everything downstream of the prompt is tested through a real stdin pty (`run_full`), which `getpass.getpass` needs to turn echo off and actually read the pasted value. Without one, the whole write path would be unreachable and this file would only ever prove that the door is shut.
@@ -22,6 +22,7 @@ import os
 import pty as pty_module
 import re
 import selectors
+import stat
 import subprocess
 import sys
 import time
@@ -134,17 +135,22 @@ def seed(root: Path, rows: int = 44) -> None:
     (root / ".ci" / "config" / "bws-secret-map.json").write_text(
         real_map.read_text(encoding="utf-8"), encoding="utf-8"
     )
-    (root / "private" / "account" / ".env").write_text(
-        "SOME_OTHER=keep-me\nBWS_ACCESS_TOKEN=%s\nTRAILING=also-keep\n" % INSTALLED_TOKEN,
-        encoding="utf-8",
-    )
+    token_dir = root / "xdg" / "rediacc"
+    token_dir.mkdir(parents=True, mode=0o700)
+    (token_dir / "bws-access-token").write_text(INSTALLED_TOKEN + "\n", encoding="utf-8")
+    (token_dir / "bws-access-token").chmod(0o600)
+
+
+def token_path(root: Path) -> Path:
+    """The fixture's token-only file (PLAN-account-env-to-bws T3), never the operator's real one."""
+    return root / "xdg" / "rediacc" / "bws-access-token"
 
 
 def _seams(root: Path) -> dict[str, str]:
     return {
         "BWS_BIN": str(root / "bin" / "bws"),
         "GH_BIN": str(root / "bin" / "gh"),
-        "BWS_ROTATE_ENV_FILE": str(root / "private" / "account" / ".env"),
+        "BWS_ROTATE_TARGET_FILE": str(token_path(root)),
         "BWS_ROTATE_GITMODULES": str(root / ".gitmodules"),
         "BWS_ROTATE_SECRET_MAP": str(root / ".ci" / "config" / "bws-secret-map.json"),
     }
@@ -322,13 +328,13 @@ def test_a_short_listing_is_refused_before_anything_is_written(tmp_path):
     root = tmp_path / "t"
     root.mkdir()
     seed(root, 12)
-    env_before = (root / "private" / "account" / ".env").read_text(encoding="utf-8")
+    env_before = token_path(root).read_text(encoding="utf-8")
     rc, out = run_full(root, FIXTURE_TOKEN)
     assert rc == 1, "a candidate that reads 12 of 40 secrets was installed"
     assert "floor is 40" in out, "the refusal does not name the floor it failed"
     assert "SCOPED-DOWN" in out, "the refusal does not say what a short listing means"
-    assert (root / "private" / "account" / ".env").read_text(encoding="utf-8") == env_before, (
-        "the .env was written despite the refusal"
+    assert token_path(root).read_text(encoding="utf-8") == env_before, (
+        "the token file was written despite the refusal"
     )
     gh_log = root / "gh.log"
     n_set = gh_log.read_text(encoding="utf-8").count("\nSET") if gh_log.exists() else 0
@@ -499,34 +505,33 @@ def test_the_value_reaches_gh_on_stdin_and_never_on_argv(tmp_path):
 # --------------------------------------------------------------------------- B4: the local write, all-or-nothing, and the honest verdict.
 
 
-def test_the_env_file_is_rewritten_in_place_without_losing_its_neighbours(tmp_path):
+def test_the_token_file_is_replaced_whole_at_mode_0600(tmp_path):
     root = tmp_path / "t"
     root.mkdir()
     seed(root)
     rc, out = run_full(root, FIXTURE_TOKEN)
     assert rc == 0, "the rotation failed: %s" % out
-    env_body = (root / "private" / "account" / ".env").read_text(encoding="utf-8")
-    assert "BWS_ACCESS_TOKEN=%s" % FIXTURE_TOKEN in env_body, "the new value did not land in .env"
-    assert "SOME_OTHER=keep-me" in env_body, "a neighbouring key was lost by the rewrite"
-    assert "TRAILING=also-keep" in env_body, "the key after the rotated one was lost"
-    assert INSTALLED_TOKEN not in env_body, "the OLD value is still in .env beside the new one"
-    assert env_body.count("BWS_ACCESS_TOKEN=") == 1, (
-        "the rewrite appended a second definition instead of replacing the first"
+    body = token_path(root).read_text(encoding="utf-8")
+    assert body == FIXTURE_TOKEN + "\n", "the token file does not hold exactly the new value"
+    assert INSTALLED_TOKEN not in body, "the OLD value survived beside the new one"
+    assert stat.S_IMODE(token_path(root).stat().st_mode) == 0o600, "the token file is not 0600"
+    assert stat.S_IMODE(token_path(root).parent.stat().st_mode) == 0o700, (
+        "its directory is not 0700"
     )
+    assert not list(token_path(root).parent.glob("*.rotate.*")), "a temporary was left behind"
 
 
-def test_an_absent_key_is_appended_rather_than_silently_dropped(tmp_path, monkeypatch):
+def test_an_absent_token_file_is_created_0600_in_a_0700_directory(tmp_path, monkeypatch):
     root = tmp_path / "t"
     root.mkdir()
     seed(root)
-    (root / "private" / "account" / ".env").write_text("ONLY_OTHER=x\n", encoding="utf-8")
+    token_path(root).unlink()
+    token_path(root).parent.rmdir()
     mod = module_for(root, monkeypatch)
-    mod.env_file_write("appended-value")
-    body = (root / "private" / "account" / ".env").read_text(encoding="utf-8")
-    assert "BWS_ACCESS_TOKEN=appended-value" in body, (
-        "a .env with no existing definition came back with none"
-    )
-    assert "ONLY_OTHER=x" in body, "the existing line was lost"
+    mod.token_file_write("created-value")
+    assert token_path(root).read_text(encoding="utf-8") == "created-value\n"
+    assert stat.S_IMODE(token_path(root).stat().st_mode) == 0o600
+    assert stat.S_IMODE(token_path(root).parent.stat().st_mode) == 0o700
 
 
 def test_a_failed_repository_write_is_reported_and_exits_non_zero(tmp_path):

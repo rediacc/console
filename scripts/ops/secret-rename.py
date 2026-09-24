@@ -104,8 +104,7 @@ REACH_MAX_AGE_DAYS = 45
 # Measured 2026-09-04: the walk yields thousands of files. The floor catches a bare index or a wrong cwd, not today's count.
 MIN_FILES = int(os.environ.get("SECRET_RENAME_MIN_FILES", "500"))
 
-# Untracked files that are part of the surface.
-EXTRA = ["private/account/.env", "private/account/.env.bench"]
+# NO UNTRACKED FILE IS PART OF THE SURFACE ANY MORE. This used to list private/account/.env and .env.bench; both are retired (agent/plans/PLAN-account-env-to-bws.md), and a store-side rename is `bws secret edit --key`, which this walk never reaches. The backup-before-write step went with them: every target is now tracked, so git is the undo.
 
 # THE WALK CANNOT SEE A GITIGNORED SIBLING REPO, and that cost an outage. files() uses `git ls-files --recurse-submodules`, which reaches submodules but NOT private/growth -- its own git repository, gitignored by console. So the
 # rename left private/growth/video_pipeline/{publish-solutions.sh,publish.py}
@@ -169,7 +168,7 @@ def files() -> list[Path]:
         .stdout.decode()
         .split("\0")
     )
-    rels = [p for p in ls if p] + EXTRA
+    rels = [p for p in ls if p]
     # Sibling repos console's index cannot see: each has its own git, so ask IT.
     for repo in NON_SUBMODULE_REPOS:
         if not (ROOT / repo / ".git").exists():
@@ -398,25 +397,9 @@ def main() -> int:
         "check-autopilot-no-bypass.sh), regenerate the GENERATED files, then delete the old org secrets."
     )
     if args.apply:
-        # EXTRA's files are UNTRACKED and hold live values, so git is not the undo for them: `private/account/.env` rewritten wrongly is gone. Back every untracked target up beside itself before the first write, and refuse the whole run if a backup cannot be made -- a partial rewrite of a credential file is worse than no rewrite.
-        backups: list[str] = []
-        for target in EXTRA:
-            src = ROOT / target
-            if src not in changed or not src.is_file():
-                continue
-            dst = src.with_name(src.name + ".pre-rename.bak")
-            try:
-                dst.write_text(src.read_text(encoding="utf-8"), encoding="utf-8")
-                dst.chmod(0o600)
-            except OSError as exc:
-                print(f"REFUSING: cannot back up {target} ({exc}); nothing was written")
-                return 1
-            backups.append(str(dst.relative_to(ROOT)))
         for p, new in changed.items():
             p.write_text(new, encoding="utf-8")
         print(f"\nwrote {len(changed)} file(s)")
-        for b in backups:
-            print(f"backup: {b} (untracked file, git is not its undo -- delete it once verified)")
     return 0
 
 

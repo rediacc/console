@@ -7,7 +7,7 @@ WHO CALLS IT: nobody. It is an operator entry point, invoked by hand, and the on
 
     PYTHONPATH=.ci python3 -m rediacc_ci.ops.build_server onprem
 
-PREREQUISITES ARE THE TWIN'S, unchanged: npm dependencies installed, both cross-compiled renet binaries present under `private/renet/bin/`, and either `ACCOUNT_ED25519_PUBLIC_KEY` in the environment or an `ACCOUNT_ED25519_PUBLIC_KEY=` line in `private/account/.env`.
+PREREQUISITES ARE THE TWIN'S, unchanged: npm dependencies installed, both cross-compiled renet binaries present under `private/renet/bin/`, and either `ACCOUNT_ED25519_PUBLIC_KEY` in the environment or an `ACCOUNT_ED25519_PUBLIC_KEY=` line in the public-key cache `private/account/.cache/public-keys.env`, which `./run.sh setup` writes from Bitwarden. The twin read `private/account/.env`; that file is retired (agent/plans/PLAN-account-env-to-bws.md T15), and the cache has the same `KEY=value` shape, so the recorded goldens still describe this module byte for byte.
 
 PORT NOTES, each driven before it was written down.
 
@@ -39,7 +39,7 @@ import sys
 # `scripts/ops/build-server.sh` derived the console root from `BASH_SOURCE[0]`; this derives it from `__file__` at the same relative depth, so a copy of this file in a throwaway tree resolves against that tree.
 ROOT_DIR = pathlib.Path(__file__).resolve().parent.parent.parent.parent
 
-ACCOUNT_ENV = "private/account/.env"
+PUBLIC_KEY_CACHE = "private/account/.cache/public-keys.env"
 ACCOUNT_KEY_PREFIX = "ACCOUNT_ED25519_PUBLIC_KEY="
 RENET_ARCHES = ("amd64", "arm64")
 RENET_BIN_DIR = "private/renet/bin"
@@ -80,11 +80,11 @@ def _run(
 
 
 def account_key() -> str:
-    """`ACCOUNT_ED25519_PUBLIC_KEY`, from the environment or from `private/account/.env`."""
+    """`ACCOUNT_ED25519_PUBLIC_KEY`, from the environment or from the public-key cache."""
     from_env = os.environ.get("ACCOUNT_ED25519_PUBLIC_KEY", "")
     if from_env:
         return from_env
-    env_file = ROOT_DIR / ACCOUNT_ENV
+    env_file = ROOT_DIR / PUBLIC_KEY_CACHE
     if not env_file.is_file():
         return ""
     matched = [

@@ -15,7 +15,7 @@ NOTHING IS PRINTED. Not the token, not a prefix of it, not its length. The only 
 THE VALIDATION GATE IS THE ANTI-invalid_signature CLAUSE, INVERTED. The bug this repository shipped once was an unchecked HTTP response becoming a credential.
 The unchecked thing here would be an unverified paste becoming the credential for five repositories at once, and a SHORT LISTING is the exact analogue of that silent 404: a scoped-down token answers `secret list` with exit 0 and a handful of rows, which looks like success in every way except the count. So nothing is written until four things pass.
 
-THE SEAMS, and why they exist. BWS_BIN, GH_BIN, BWS_ROTATE_ENV_FILE, BWS_ROTATE_GITMODULES and BWS_ROTATE_SECRET_MAP let `.ci/rediacc_ci/tests/gates/test_gate_bws_rotate.py` drive every function against fakes.
+THE SEAMS, and why they exist. BWS_BIN, GH_BIN, BWS_ROTATE_TARGET_FILE, BWS_ROTATE_GITMODULES and BWS_ROTATE_SECRET_MAP let `.ci/rediacc_ci/tests/gates/test_gate_bws_rotate.py` drive every function against fakes.
 NONE of them is a door around the TTY refusal: the prompt has no seam at all, and the gate test reaches the functions by IMPORTING this module, which never runs `main()` on import.
 
 PORTED FROM BASH 2026-09-23 (Ruling 7, 2026-09-06: these trees are Python). Ported faithfully from `scripts/dev/bws-rotate.sh`'s last bash revision -- same checks, same messages, same order, same seams. The bash file's own `.ci/scripts/test/gates/test-bws-rotate.sh` was the spec this port is verified against, case for case.
@@ -38,14 +38,22 @@ ROOT = Path(__file__).resolve().parents[2]
 
 BWS_BIN = os.environ.get("BWS_BIN", "bws")
 GH_BIN = os.environ.get("GH_BIN", "gh")
-ENV_FILE = Path(os.environ.get("BWS_ROTATE_ENV_FILE", str(ROOT / "private/account/.env")))
+# THE LOCAL TARGET IS THE TOKEN-ONLY FILE, not private/account/.env (agent/plans/PLAN-account-env-to-bws.md T3). Its default path is `rediacc_ci.core.bws_env.token_path()`'s, spelled here because this script cannot import that package before `require_fingerprint_tool` has proved the checkout is reachable.
+TOKEN_FILE = Path(
+    os.environ.get("BWS_ROTATE_TARGET_FILE")
+    or os.path.join(
+        os.environ.get("XDG_CONFIG_HOME") or os.path.join(os.path.expanduser("~"), ".config"),
+        "rediacc",
+        "bws-access-token",
+    )
+)
 GITMODULES = Path(os.environ.get("BWS_ROTATE_GITMODULES", str(ROOT / ".gitmodules")))
 SECRET_MAP = Path(
     os.environ.get("BWS_ROTATE_SECRET_MAP", str(ROOT / ".ci/config/bws-secret-map.json"))
 )
 NOTICE = ROOT / ".ci/config/bws-rotation-notice.txt"
 
-# The variable name, in one place. It is the one credential that cannot come out of Bitwarden, and it is spelled identically in .env, in every GitHub repo secret, and in `bws`'s own environment lookup.
+# The variable name, in one place. It is the one credential that cannot come out of Bitwarden, and it is spelled identically in every GitHub repo secret and in `bws`'s own environment lookup.
 VAR = "BWS_ACCESS_TOKEN"
 
 # THE FLOOR IS THE SAME 40 `scripts/ops/bws-map-refresh.py` refuses below, and for the identical reason: a scoped-down token or a wrong project returns a SHORT list rather than an error. A rotation that installed such a token would succeed here and fail in CI, one secret at a time, days later.
@@ -104,6 +112,30 @@ def require_fingerprint_tool() -> None:
             "unnoticed. Run this from a checkout of the console repository. "
             "Nothing has been changed" % (ROOT / ".ci")
         )
+
+
+def installed_fingerprint() -> str:
+    """The client-id fingerprint of the credential installed NOW: the environment's, else the token file's.
+
+    Resolved by the fingerprint verb itself (`bws_env.read_token`: env, then BWS_ACCESS_TOKEN_FILE), pointed at THIS script's token file so a seam and the default agree. "" when neither holds one, which check 3 reports as "none".
+    """
+    try:
+        proc = subprocess.run(
+            [sys.executable, "-m", "rediacc_ci.core.bws_env", "fingerprint"],
+            env={
+                **os.environ,
+                "BWS_ACCESS_TOKEN_FILE": str(TOKEN_FILE),
+                "PYTHONPATH": str(ROOT / ".ci"),
+            },
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return ""
+    if proc.returncode != 0:
+        return ""
+    return proc.stdout.strip()
 
 
 def project_uuid() -> str:
@@ -209,37 +241,21 @@ def set_repo_secret(repo: str, candidate: str) -> bool:
     return proc.returncode == 0
 
 
-def env_file_write(candidate: str) -> None:
-    """Replace or append $VAR in the local .env.
+def token_file_write(candidate: str) -> None:
+    """Install the candidate as the whole content of the token-only file, mode 0600, directory 0700.
 
-    WRITTEN THROUGH A TEMPORARY AND MOVED INTO PLACE, with the mode carried over. A partial write to the file that every local command reads would break the working credential as well as the new one, and an in-place edit that dies halfway does exactly that.
+    WRITTEN THROUGH A TEMPORARY AND MOVED INTO PLACE. A partial write to the file every local command reads would break the working credential as well as the new one, and an in-place edit that dies halfway does exactly that. The temporary is created 0600 by `mkstemp`, so the value is never readable by anyone else, not even for the instant before the rename.
+
+    UNLIKE THE OLD .env WRITER, THIS ONE CREATES THE FILE. The token file holds exactly one value, so there are no neighbours to lose and nothing a create could clobber; its directory is made 0700 when absent. `rediacc_ci.core.bws_env.read_token` refuses a wider mode, so a widened file fails loudly at the next read rather than persisting.
     """
-    if not ENV_FILE.is_file():
-        die(
-            "%s does not exist; this script refreshes the local credential, it does not "
-            "create the file that holds it" % ENV_FILE
-        )
-    lines = ENV_FILE.read_text(encoding="utf-8").splitlines()
-    out: list[str] = []
-    seen = False
-    for line in lines:
-        key = line.split("=", 1)[0].strip()
-        if key == VAR and not line.lstrip().startswith("#"):
-            out.append("%s=%s" % (VAR, candidate))
-            seen = True
-        else:
-            out.append(line)
-    if not seen:
-        out.append("%s=%s" % (VAR, candidate))
-    fd, tmp_name = tempfile.mkstemp(prefix=ENV_FILE.name + ".rotate.", dir=str(ENV_FILE.parent))
+    TOKEN_FILE.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    os.chmod(TOKEN_FILE.parent, 0o700)
+    fd, tmp_name = tempfile.mkstemp(prefix=TOKEN_FILE.name + ".rotate.", dir=str(TOKEN_FILE.parent))
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as fh:
-            fh.write("\n".join(out) + "\n")
-        try:
-            os.chmod(tmp_name, ENV_FILE.stat().st_mode)
-        except OSError:
-            os.chmod(tmp_name, 0o600)
-        os.replace(tmp_name, ENV_FILE)
+            fh.write(candidate + "\n")
+        os.chmod(tmp_name, 0o600)
+        os.replace(tmp_name, TOKEN_FILE)
     except BaseException:
         with __import__("contextlib").suppress(OSError):
             os.unlink(tmp_name)
@@ -337,7 +353,7 @@ def main() -> int:
     new_fp = fingerprint_of(candidate)
     if not new_fp:
         die("the candidate has no client id to fingerprint. Nothing has been changed")
-    old_fp = fingerprint_of(os.environ.get(VAR, ""))
+    old_fp = installed_fingerprint()
     if old_fp and new_fp == old_fp:
         die(
             "the candidate is the SAME machine account as the one already installed (%s). "
@@ -382,8 +398,8 @@ def main() -> int:
     print()
 
     # ---- THE WRITES. Local first: it is the one target that can be corrected by hand in a second if anything below fails.
-    env_file_write(candidate)
-    print("✓ wrote %s to %s" % (VAR, ENV_FILE))
+    token_file_write(candidate)
+    print("✓ wrote %s to %s (mode 0600)" % (VAR, TOKEN_FILE))
 
     failed: list[str] = []
     for repo in holders:
@@ -401,12 +417,12 @@ def main() -> int:
             file=sys.stderr,
         )
         print(
-            "  The local .env and the repositories above DID take the new value, so the fleet is now split across two credentials. Re-run this script once gh can reach the failed repositories; writing the same value twice is harmless.",
+            "  The local token file and the repositories above DID take the new value, so the fleet is now split across two credentials. Re-run this script once gh can reach the failed repositories; writing the same value twice is harmless.",
             file=sys.stderr,
         )
         return 1
 
-    print("✓ rotation complete: %s and %d repository secret(s)." % (ENV_FILE, len(holders)))
+    print("✓ rotation complete: %s and %d repository secret(s)." % (TOKEN_FILE, len(holders)))
     print()
     print(
         "WHAT THIS PROVES, AND WHAT IT DOES NOT. A GitHub Actions secret cannot be read back through the API, so what was verified is that each write returned success and moved the secret's updated_at. That is not the same claim as the intended value having landed. The next CI run is the only end-to-end proof there is."

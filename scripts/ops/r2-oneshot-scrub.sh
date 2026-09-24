@@ -30,8 +30,9 @@
 #   scripts/ops/r2-oneshot-scrub.sh --execute          # actually delete
 #   scripts/ops/r2-oneshot-scrub.sh --execute --yes    # skip confirmation prompts
 #
-# Required env: CLOUDFLARE_R2_ACCESS_KEY_ID, CLOUDFLARE_R2_SECRET_ACCESS_KEY, CLOUDFLARE_R2_ENDPOINT
-#   (source from private/account/.env for local runs).
+# Required env: CLOUDFLARE_R2_ACCESS_KEY_ID, CLOUDFLARE_R2_SECRET_ACCESS_KEY, CLOUDFLARE_R2_ENDPOINT.
+#   Locally, bind them from Bitwarden for this one run:
+#     PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile r2-artifacts -- scripts/ops/r2-oneshot-scrub.sh
 
 set -euo pipefail
 

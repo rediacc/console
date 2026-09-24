@@ -18,7 +18,7 @@ ONE FILE AND NOT TWO, on the `rediacc_ci/dev/shadow_driver.py` and `rediacc_ci/s
 -----------------------------------------------------------------------------
 THE SANDBOX, AND WHY EACH SIDE BUILDS ITS OWN
 -----------------------------------------------------------------------------
-`account.sh` reads and WRITES real paths under `$CONSOLE_ROOT_DIR`: `private/account/.env`, `.account-state`, `.devbox-state`, `.account-logs/`. A differential pointing both sides at one directory would have the first side leave the tree in the state that makes the second take a different branch, and the comparison would then be between two different programs.
+`account.sh` reads and WRITES real paths under `$CONSOLE_ROOT_DIR`: `private/account/account.db`, `.account-state`, `.devbox-state`, `.account-logs/`. A differential pointing both sides at one directory would have the first side leave the tree in the state that makes the second take a different branch, and the comparison would then be between two different programs.
 
 So each side builds its OWN temporary `CONSOLE_ROOT_DIR`: a real directory holding the writable state, with `.devcontainer`, `scripts`, `.ci/config`, `.ci/scripts`, `.ci/lib` and `.ci/rediacc_ci` SYMLINKED to the checkout this driver was invoked from.
 Symlinks rather than copies because `constants.sh` derives `CI_LIB_DIR` from `CONSOLE_ROOT_DIR` and `account.sh` reaches back out through `$CI_LIB_DIR/../..` for `scripts/lib/env-file.sh`, so the sandbox has to have the whole shape; and because the code under comparison must be the TRACKED code, which is what the recorded tree id claims.
@@ -39,7 +39,7 @@ WHY THE BANNER ROWS ARE PRINTED WITH DOTS INSTEAD OF SPACES
 So banner observations replace every space with a dot, on both sides, by the same substitution. Nothing else is rewritten.
 
 -----------------------------------------------------------------------------
-THE FIVE SCENARIOS, AND WHAT EACH ONE WOULD CATCH
+THE FOUR SCENARIOS, AND WHAT EACH ONE WOULD CATCH
 -----------------------------------------------------------------------------
   probe       `account_banner_row` over five widths including a multibyte
               string, `account_rustfs_alive` against a dead port AND against a
@@ -48,12 +48,11 @@ THE FIVE SCENARIOS, AND WHAT EACH ONE WOULD CATCH
               on one whose MIDDLE port this driver holds open. The live-server
               and held-port halves are the controls: without them every case in
               the group is a refusal, and two identical refusals prove nothing.
-  env         `account_env_add_if_missing` present and absent, with and without
-              a comment, then `account_ensure_env_keys` filling the non-crypto
-              defaults, then the same call again to pin idempotence, then the
-              GATEWAY_PORT-derived WEBAUTHN_ORIGIN. The whole resulting file is
-              printed line by line, so an ordering or blank-line difference is a
-              mismatch rather than a detail nobody compared.
+  keys        `account_generate_crypto_keys`, reduced to a claim per value: the
+              four key encodings by LENGTH, which is fixed-width and so a real
+              assertion, and the two random secrets by SHAPE (non-empty,
+              alphanumeric, at most 64 characters), because their length is not
+              fixed. No value is ever printed.
   totp        Five state-file shapes, including the one with no `gateway_port=`
               line at all, where the twin dies inside its own assignment and
               prints NOTHING. A port that helpfully explained itself there would
@@ -63,13 +62,10 @@ THE FIVE SCENARIOS, AND WHAT EACH ONE WOULD CATCH
               devbox-derived preferred port without launching a server: the
               driver holds every port in the scanned window open, and the twin
               names the port it wanted in its refusal.
-  fresh-env   `account_generate_fresh_env` with the clock frozen on both sides,
-              with and without ROOT_EMAIL, and `account_ensure_env` reaching it
-              through the missing-file branch. The six generated secrets are
-              masked by LENGTH for the four key encodings, which are fixed-width,
-              and by name for the two random ones, which are not.
 
-WHAT IS NEVER DRIVEN HERE: `account_dev`, `account_stop`, `account_test`, `account_test_e2e`, `account_reset`, `account_seed_demo`, `account_cleanup`, `account_docker_ghost_clean`, `account_stripe_auto`, `account_dev_credentials`, `account_rotation`, and `account_db`'s launch. None of them is ported, and a ledger row is a claim of equivalence.
+THE `env` AND `fresh-env` SCENARIOS ARE GONE, with the four `.env` writers they drove (`account_generate_fresh_env`, `account_env_add_if_missing`, `account_ensure_env_keys`, `account_ensure_env`), which were deleted from BOTH sides when `private/account/.env` was retired. Their rows in `.ci/shadow/w7p5b-account.observations.jsonl` are history, not a claim about any code that still exists.
+
+WHAT IS NEVER DRIVEN HERE: `account_dev`, `account_stop`, `account_test`, `account_test_e2e`, `account_reset`, `account_seed_demo`, `account_cleanup`, `account_docker_ghost_clean`, `account_stripe_auto`, `account_dev_credentials`, `account_rotation`, `account_bws_exec`, `account_load_defaults`, `account_state_gateway_port`, and `account_db`'s launch. `account_stop`, `account_rotation` and `account_bws_exec` are ported but real-run verified (see `rediacc_ci.core.account`); the rest are not ported. A ledger row is a claim of equivalence, and none of these has one.
 """
 
 from __future__ import annotations
@@ -154,73 +150,12 @@ step() {
     rm -f "$o" "$e"
 }
 
-dump() {
-    local name="$1" path="$2" l
-    if [[ ! -f "$path" ]]; then emit "file $name| <absent>"; return 0; fi
-    while IFS= read -r l; do emit "file $name| $l"; done <"$path"
-}
-
-# The same reduction `mask_env_text` applies on the other side: the four key
-# encodings are fixed-width so their LENGTH is a real assertion, and the two
-# `openssl rand | tr -d` secrets are not, so only their names survive.
-dump_masked() {
-    local name="$1" path="$2" l key value
-    if [[ ! -f "$path" ]]; then emit "file $name| <absent>"; return 0; fi
-    while IFS= read -r l; do
-        key="${l%%=*}"
-        value="${l#*=}"
-        case "$key" in
-            ACCOUNT_ED25519_PRIVATE_KEY | ACCOUNT_ED25519_PUBLIC_KEY | ACCOUNT_X25519_PRIVATE_KEY | ACCOUNT_X25519_PUBLIC_KEY)
-                emit "file $name| $key=<b64 len=${#value}>"
-                ;;
-            ACCOUNT_SERVER_API_KEY | ACCOUNT_JWT_SECRET)
-                emit "file $name| $key=<secret>"
-                ;;
-            *)
-                emit "file $name| $l"
-                ;;
-        esac
-    done <"$path"
-}
-
 banner() {
     local row
     row="$(account_banner_row "$1")"
     emit "banner| ${row// /.}"
 }
 """
-
-# The frozen `date`. `account_generate_fresh_env` stamps its header with `date -u +%Y-%m-%dT%H:%M:%SZ`, so two runs a second apart disagree and no comparison is possible.
-# DEFERS rather than refuses for every other form, because `local-common.sh` and `constants.sh` are also on the other side of this PATH and a fake answering everything would change behaviour the differential is trying to measure.
-FAKE_DATE = """#!/bin/bash
-if [[ "${1:-}" == "-u" && "${2:-}" == "+%Y-%m-%dT%H:%M:%SZ" ]]; then
-    echo "$ACCOUNT_STAMP"
-    exit 0
-fi
-exec /usr/bin/date "$@"
-"""
-
-# The stamp both sides write. Any fixed value; this one is synthetic on sight.
-STAMP = "2026-09-23T04:05:06Z"
-
-# A `.env` that already carries all six crypto keys, so `ensure_env_keys` takes its no-mint branch and the comparison is about the non-crypto defaults rather than about two different random numbers.
-ENV_WITH_CRYPTO = (
-    "ACCOUNT_ED25519_PRIVATE_KEY=a\n"
-    "ACCOUNT_ED25519_PUBLIC_KEY=b\n"
-    "ACCOUNT_X25519_PRIVATE_KEY=c\n"
-    "ACCOUNT_X25519_PUBLIC_KEY=d\n"
-    "ACCOUNT_SERVER_API_KEY=e\n"
-    "ACCOUNT_JWT_SECRET=f\n"
-)
-
-MASK_BY_LENGTH = (
-    "ACCOUNT_ED25519_PRIVATE_KEY",
-    "ACCOUNT_ED25519_PUBLIC_KEY",
-    "ACCOUNT_X25519_PRIVATE_KEY",
-    "ACCOUNT_X25519_PUBLIC_KEY",
-)
-
-MASK_BY_NAME = ("ACCOUNT_SERVER_API_KEY", "ACCOUNT_JWT_SECRET")
 
 
 class RefusalError(RuntimeError):
@@ -248,26 +183,15 @@ def build_sandbox(repo: pathlib.Path) -> pathlib.Path:
     return work
 
 
-def fake_bin(work: pathlib.Path) -> pathlib.Path:
-    """A `date` that answers the one form `account_generate_fresh_env` uses."""
-    binroot = work / "fakebin"
-    binroot.mkdir(parents=True, exist_ok=True)
-    script = binroot / "date"
-    script.write_text(FAKE_DATE, encoding="utf-8")
-    script.chmod(0o755)
-    return binroot
-
-
 def sandbox_env(work: pathlib.Path) -> dict[str, str]:
     """The environment both sides run under, built the same way for each."""
     return {
-        "PATH": "%s:%s" % (fake_bin(work), os.environ.get("PATH", "/usr/bin:/bin")),
+        "PATH": os.environ.get("PATH", "/usr/bin:/bin"),
         "HOME": os.environ.get("HOME", "/tmp"),
         "LC_ALL": "C",
         "LANG": "C",
         "CONSOLE_ROOT_DIR": str(work),
         "REDIACC_CI_ROOT": str(work),
-        "ACCOUNT_STAMP": STAMP,
         "PYTHONDONTWRITEBYTECODE": "1",
     }
 
@@ -378,32 +302,8 @@ class Printer:
         for line in text_lines(err):
             self.emit("err %s| %s" % (name, line))
 
-    def dump(self, name: str, path: pathlib.Path, mask: bool = False) -> None:
-        if not path.is_file():
-            self.emit("file %s| <absent>" % name)
-            return
-        text = path.read_text(encoding="utf-8", errors="replace")
-        if mask:
-            text = mask_env_text(text)
-        for line in text_lines(text):
-            self.emit("file %s| %s" % (name, line))
-
     def banner(self, row: str) -> None:
         self.emit("banner| %s" % row.replace(" ", "."))
-
-
-def mask_env_text(text: str) -> str:
-    """The generated `.env`, with the six minted secrets reduced to a claim."""
-    out: list[str] = []
-    for line in text.split("\n"):
-        key, sep, value = line.partition("=")
-        if sep and key in MASK_BY_LENGTH:
-            out.append("%s=<b64 len=%d>" % (key, len(value)))
-        elif sep and key in MASK_BY_NAME:
-            out.append("%s=<secret>" % key)
-        else:
-            out.append(line)
-    return "\n".join(out)
 
 
 # --------------------------------------------------------------------------- the old side ---------------------------------------------------------------------------
@@ -428,25 +328,24 @@ allocate() {
 REDIACC_DEV_PORT_BASE="$FREE_BASE" step allocate-free allocate
 REDIACC_DEV_PORT_BASE="$PINNED_BASE" step allocate-busy allocate
 """,
-    "env": r"""
-printf 'EXISTING=1\n' >"$ACCOUNT_DIR/.env"
-step add-new account_env_add_if_missing NEWKEY newval "a comment"
-step add-again account_env_add_if_missing NEWKEY other
-step add-plain account_env_add_if_missing PLAIN pv
-dump after-adds "$ACCOUNT_DIR/.env"
-
-printf '%s' "$ENV_WITH_CRYPTO" >"$ACCOUNT_DIR/.env"
-step ensure-first account_ensure_env_keys
-dump after-ensure "$ACCOUNT_DIR/.env"
-step ensure-again account_ensure_env_keys
-dump after-ensure-again "$ACCOUNT_DIR/.env"
-
-printf '%s' "$ENV_WITH_CRYPTO" >"$ACCOUNT_DIR/.env"
-GATEWAY_PORT=4913 step ensure-gateway account_ensure_env_keys
-dump after-gateway "$ACCOUNT_DIR/.env"
-
-step ensure-env-existing account_ensure_env
-dump after-ensure-env "$ACCOUNT_DIR/.env"
+    "keys": r"""
+crypto_claims() {
+    account_generate_crypto_keys
+    local name value
+    for name in ED25519_PRIV ED25519_PUB X25519_PRIV X25519_PUB; do
+        value="${!name}"
+        echo "$name len=${#value}"
+    done
+    for name in JWT_SEC API_K; do
+        value="${!name}"
+        if [[ -n "$value" && "$value" != *[!A-Za-z0-9]* && ${#value} -le 64 ]]; then
+            echo "$name shape=ok"
+        else
+            echo "$name shape=bad"
+        fi
+    done
+}
+step keys crypto_claims
 """,
     "totp": r"""
 rm -f "$ACCOUNT_STATE_FILE"
@@ -478,33 +377,14 @@ step no-port-plain account_db
 printf 'base_port=%s\n' "$DEVBOX_BASE" >"$DEVBOX_STATE_FILE"
 step no-port-devbox account_db
 """,
-    "fresh-env": r"""
-rm -f "$ACCOUNT_DIR/.env"
-step fresh-no-root account_generate_fresh_env
-dump_masked fresh-no-root "$ACCOUNT_DIR/.env"
-
-rm -f "$ACCOUNT_DIR/.env"
-ROOT_EMAIL=ops@example.com step fresh-with-root account_generate_fresh_env
-dump_masked fresh-with-root "$ACCOUNT_DIR/.env"
-
-rm -f "$ACCOUNT_DIR/.env"
-step ensure-env-missing account_ensure_env
-dump_masked ensure-env-missing "$ACCOUNT_DIR/.env"
-""",
 }
-
-
-def shell_quote(text: str) -> str:
-    """Single-quote a literal for bash, escaping any embedded quote."""
-    return "'" + text.replace("'", "'\\''") + "'"
 
 
 def run_old(work: pathlib.Path, scenario: str, env: dict[str, str]) -> int:
     """Source the twin through `run-legacy.sh`'s own prelude and call its functions."""
     script = work / "driver.sh"
     script.write_text(
-        'W="%s"\n%s\nENV_WITH_CRYPTO=%s\n%s'
-        % (work, PRELUDE, shell_quote(ENV_WITH_CRYPTO), BASH_SCENARIOS[scenario]),
+        'W="%s"\n%s\n%s' % (work, PRELUDE, BASH_SCENARIOS[scenario]),
         encoding="utf-8",
     )
     proc = subprocess.run(
@@ -549,7 +429,6 @@ def call(printer: Printer, name: str, fn) -> int:
 def run_new(scenario: str, printer: Printer, env: dict[str, str]) -> int:
     """Drive `rediacc_ci.core.account` through the same scenario."""
     account_directory = pathlib.Path(account.account_dir(env))
-    env_file = pathlib.Path(account.env_path(env))
     state = pathlib.Path(account.state_file(env))
     devbox_state = pathlib.Path(account.devbox_state_file(env))
     dead = int(env["DEAD_PORT"])
@@ -572,37 +451,23 @@ def run_new(scenario: str, printer: Printer, env: dict[str, str]) -> int:
         call(printer, "allocate-busy", lambda: allocate(env["PINNED_BASE"]))
         return 0
 
-    if scenario == "env":
-        env_file.write_text("EXISTING=1\n", encoding="utf-8")
-        call(
-            printer,
-            "add-new",
-            lambda: account.env_add_if_missing(str(env_file), "NEWKEY", "newval", "a comment"),
-        )
-        call(
-            printer,
-            "add-again",
-            lambda: account.env_add_if_missing(str(env_file), "NEWKEY", "other"),
-        )
-        call(printer, "add-plain", lambda: account.env_add_if_missing(str(env_file), "PLAIN", "pv"))
-        printer.dump("after-adds", env_file)
+    if scenario == "keys":
 
-        env_file.write_text(ENV_WITH_CRYPTO, encoding="utf-8")
-        call(printer, "ensure-first", lambda: account.ensure_env_keys(env))
-        printer.dump("after-ensure", env_file)
-        call(printer, "ensure-again", lambda: account.ensure_env_keys(env))
-        printer.dump("after-ensure-again", env_file)
+        def crypto_claims() -> int:
+            keys = account.generate_crypto_keys()
+            for name, value in (
+                ("ED25519_PRIV", keys.ed25519_priv),
+                ("ED25519_PUB", keys.ed25519_pub),
+                ("X25519_PRIV", keys.x25519_priv),
+                ("X25519_PUB", keys.x25519_pub),
+            ):
+                print("%s len=%d" % (name, len(value)))
+            for name, value in (("JWT_SEC", keys.jwt), ("API_K", keys.api_key)):
+                ok = bool(value) and value.isascii() and value.isalnum() and len(value) <= 64
+                print("%s shape=%s" % (name, "ok" if ok else "bad"))
+            return 0
 
-        env_file.write_text(ENV_WITH_CRYPTO, encoding="utf-8")
-        call(
-            printer,
-            "ensure-gateway",
-            lambda: account.ensure_env_keys(dict(env, GATEWAY_PORT="4913")),
-        )
-        printer.dump("after-gateway", env_file)
-
-        call(printer, "ensure-env-existing", lambda: account.ensure_env(env))
-        printer.dump("after-ensure-env", env_file)
+        call(printer, "keys", crypto_claims)
         return 0
 
     if scenario == "totp":
@@ -630,25 +495,6 @@ def run_new(scenario: str, printer: Printer, env: dict[str, str]) -> int:
         call(printer, "no-port-plain", lambda: account.db([], env))
         devbox_state.write_text("base_port=%s\n" % env["DEVBOX_BASE"], encoding="utf-8")
         call(printer, "no-port-devbox", lambda: account.db([], env))
-        return 0
-
-    if scenario == "fresh-env":
-        env_file.unlink(missing_ok=True)
-        call(printer, "fresh-no-root", lambda: account.generate_fresh_env(env, STAMP))
-        printer.dump("fresh-no-root", env_file, mask=True)
-
-        env_file.unlink(missing_ok=True)
-        call(
-            printer,
-            "fresh-with-root",
-            lambda: account.generate_fresh_env(dict(env, ROOT_EMAIL="ops@example.com"), STAMP),
-        )
-        printer.dump("fresh-with-root", env_file, mask=True)
-
-        env_file.unlink(missing_ok=True)
-        # STAMP reaches this branch explicitly. The bash side gets the same value through the fake `date` on PATH, so both clock seams are fed from one constant and neither side can drift.
-        call(printer, "ensure-env-missing", lambda: account.ensure_env(env, STAMP))
-        printer.dump("ensure-env-missing", env_file, mask=True)
         return 0
 
     raise RefusalError("unknown scenario %r" % scenario)

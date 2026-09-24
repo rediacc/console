@@ -18,7 +18,9 @@
 # the deploy itself, not credential lifecycle.
 #
 # Other prerequisites:
-#   - private/account/.env populated with signing keys + AWS_SES_*
+#   - the Bitwarden bootstrap token (~/.config/rediacc/bws-access-token);
+#     every credential comes from the `deploy-bench` profile in
+#     .ci/config/secret-supply.json, bound by `bws_env exec` below
 #   - jq, npx
 #
 # Usage:
@@ -43,10 +45,17 @@ require_cmd curl
 require_cmd jq
 require_cmd npx
 
-[[ -f "$ROOT_DIR/private/account/.env" ]] || {
-    log_error "private/account/.env not found. Run \`./run.sh account reset\` to generate one."
-    exit 1
-}
+# Every credential this script pushes comes from Bitwarden, bound into this
+# process's environment by re-running it once under the `deploy-bench` profile
+# (.ci/config/secret-supply.json `consumers`). Nothing is read from a file. The
+# shell wins, so a value already exported is used as-is.
+case ",${REDIACC_BWS_PROFILES:-}," in
+    *,deploy-bench,*) ;;
+    *)
+        PYTHONPATH="$ROOT_DIR/.ci${PYTHONPATH:+:$PYTHONPATH}" exec python3 -m rediacc_ci.core.bws_env \
+            exec --profile deploy-bench -- "$SCRIPT_DIR/$(basename "${BASH_SOURCE[0]}")" "$@"
+        ;;
+esac
 
 ACCOUNT_ID="fa51e4a18d553c30e1633288e9733d04"
 WORKER_DIR="$ROOT_DIR/workers/account"
@@ -56,8 +65,8 @@ DB_NAME="account-db-bench"
 DOMAIN="bench.rediacc.com"
 # Bench has its own Turnstile widget (rediacc-console-bench) so rotations of
 # the production widget don't block bench deploys. The sitekey is public (it
-# ships in HTML). The secret is in .env.bench as CLOUDFLARE_TURNSTILE_SECRET_KEY, managed
-# by `./run.sh rotation rotate turnstile-bench`.
+# ships in HTML). The secret is the store entry CLOUDFLARE_TURNSTILE_SECRET_KEY_BENCH,
+# bound as CLOUDFLARE_TURNSTILE_SECRET_KEY by the deploy-bench profile.
 TURNSTILE_SITEKEY="0x4AAAAAAC46Rczgin0T1o04"
 
 [[ -f "$WORKER_DIR/$CONFIG" ]] || {
@@ -99,6 +108,13 @@ unset CF_GLOBAL_API_KEY CF_API_KEY CF_EMAIL
 # A few seconds is enough; this only runs once per deploy.
 sleep 5
 
+# ─── Step 0: preflight, before the first remote write ─────────────────
+bench_preflight() { PYTHONPATH="$ROOT_DIR/.ci${PYTHONPATH:+:$PYTHONPATH}" python3 -m rediacc_ci.ops.bench_preflight "$@"; }
+log_step "Preflight: installed dependencies match the lockfiles"
+bench_preflight lockfile "$ROOT_DIR" "$ROOT_DIR/private/account" || exit 1
+log_step "Preflight: every R2 bucket bound in $CONFIG exists"
+(cd "$WORKER_DIR" && bench_preflight buckets "$CONFIG") || exit 1
+
 # ─── Step 1: build the account portal SPA ──────────────────────────────
 log_step "Building account portal SPA (Turnstile sitekey: $TURNSTILE_SITEKEY)"
 cd "$ROOT_DIR/private/account/web"
@@ -122,42 +138,17 @@ npx wrangler deploy --config "$CONFIG"
 log_info "Worker deployed"
 
 # ─── Step 4: rotation preflight + push secrets ─────────────────────────
-log_step "Loading private/account/.env (with .env.bench overrides)"
-
-# HOISTED ABOVE THE ROTATION PREFLIGHT on 2026-09-02. It used to sit AFTER it,
-# and `rotation check` needs the AWS_IAM_ADMIN_ACCESS_KEY_ID/AWS_IAM_ADMIN_SECRET_ACCESS_KEY and Cloudflare
-# credentials that live in this very file. So unless the operator happened to
-# have them exported already, the preflight exited 1 with "AWS IAM admin
-# credentials are required" and this script reported "rotation drift detected"
-# -- a verdict about credentials it had never compared.
-
-# env_file_load PARSES these files and exports what the environment does not
-# already carry; it never executes them. private/account/.env holds four private
-# keys and an admin API key, and `source` would run any `$(...)` a hand edit left
-# in one of them.
-#
-# THE LOAD ORDER IS REVERSED FROM THE `source` VERSION, and it has to be. Under
-# `set -a; source` the LAST file read wins, so .env.bench was layered on top of
-# .env. env_file_load gives the FIRST value to reach the environment the win, so
-# the file that must override goes first. Same precedence, opposite order: get
-# this backwards and bench silently ships the production AWS_SES_* credentials.
-set +u
-source "$ROOT_DIR/scripts/lib/env-file.sh"
-# This file is gitignored and managed by the rotation tool. Its bench-specific
-# keys (currently the dedicated AWS_SES_* for rediacc-ses-bench) must beat the
-# prod values, so it is loaded FIRST.
-if [[ -f "$ROOT_DIR/private/account/.env.bench" ]]; then
-    env_file_load "$ROOT_DIR/private/account/.env.bench"
-    log_info "Loaded private/account/.env.bench (bench-specific overrides)"
-fi
-env_file_load "$ROOT_DIR/private/account/.env"
-set -u
-
+# THE CREDENTIALS ARE ALREADY IN THE ENVIRONMENT, bound by the re-exec at the top
+# under the deploy-bench profile, BEFORE the rotation preflight below: `rotation
+# check` needs the AWS IAM admin and Cloudflare credentials that profile carries.
+# The bench-specific AWS_SES_* and Turnstile secrets are the store's *_BENCH
+# entries bound under the unsuffixed names, so bench can never ship the
+# production values by a load-order mistake.
 # Drift preflight: refuse to push stale credentials. The rotation tool
 # compares manifest entries to live AWS/CF state and exits non-zero on
 # any mismatch. Catches the failure mode where bench would ship a dead
 # SES key because a rotation ran on another machine without updating
-# this clone's manifest. Runs AFTER the .env load above, deliberately.
+# this clone's manifest. Runs AFTER the profile binding above, deliberately.
 log_step "Rotation preflight: ./run.sh rotation check --for=bench"
 rotation_rc=0
 "$ROOT_DIR/run.sh" rotation check --for=bench || rotation_rc=$?
@@ -167,8 +158,8 @@ if ((rotation_rc != 0)); then
     # fine, which is the same shape as the assert-edge-tag-exists.sh bug.
     if [[ -z "${AWS_IAM_ADMIN_ACCESS_KEY_ID:-}${AWS_SES_ADMIN_KEY_ID:-}" ]]; then
         log_error "rotation check could NOT RUN: no AWS IAM admin credentials in the"
-        log_error "environment even after loading private/account/.env. This is NOT"
-        log_error "drift -- nothing was compared. Add AWS_IAM_ADMIN_ACCESS_KEY_ID + AWS_IAM_ADMIN_SECRET_ACCESS_KEY there."
+        log_error "environment even after the deploy-bench profile. This is NOT drift --"
+        log_error "nothing was compared. Check AWS_IAM_ADMIN_ACCESS_KEY_ID in Bitwarden (ci-shared)."
     else
         log_error "rotation drift detected — refusing to push stale secrets to bench"
         log_error "fix: run \`./run.sh rotation rotate <slug>\` for the credentials that drifted"
@@ -176,22 +167,22 @@ if ((rotation_rc != 0)); then
     exit 1
 fi
 
-# Required signing keys (fail loud if .env is missing them)
-: "${ACCOUNT_ED25519_PRIVATE_KEY:?missing in .env}"
-: "${ACCOUNT_ED25519_PUBLIC_KEY:?missing in .env}"
-: "${ACCOUNT_X25519_PRIVATE_KEY:?missing in .env}"
-: "${ACCOUNT_X25519_PUBLIC_KEY:?missing in .env}"
-: "${ACCOUNT_SERVER_API_KEY:?missing in .env}"
-: "${ACCOUNT_JWT_SECRET:?missing in .env}"
+# Required signing keys (bench signs with the DEV keypair, ACCOUNT_*_DEV)
+: "${ACCOUNT_ED25519_PRIVATE_KEY:?missing from the deploy-bench profile}"
+: "${ACCOUNT_ED25519_PUBLIC_KEY:?missing from the deploy-bench profile}"
+: "${ACCOUNT_X25519_PRIVATE_KEY:?missing from the deploy-bench profile}"
+: "${ACCOUNT_X25519_PUBLIC_KEY:?missing from the deploy-bench profile}"
+: "${ACCOUNT_SERVER_API_KEY:?missing from the deploy-bench profile}"
+: "${ACCOUNT_JWT_SECRET:?missing from the deploy-bench profile}"
 
-# Bench reuses the prod EU SES creds in .env. Stripe is disabled (empty
-# strings) so the worker boots without billing — same posture as edge.
+# Stripe is disabled (empty strings) so the worker boots without billing —
+# same posture as edge.
 STRIPE_SECRET_KEY_BENCH=""
 STRIPE_WEBHOOK_SECRET_BENCH=""
 
 # The non-empty guard the three CI builders carry, which this one lacked until
 # 2026-09-02. The six ACCOUNT_* keys above fail loud through `:?`, but every key
-# below reached `jq` with a bare `:-` default, so a `.env` that had been renamed
+# below reached `jq` with a bare `:-` default, so a source that had been renamed
 # out from under this script would push an EMPTY value and say nothing: zod
 # normalises '' to undefined and validates happily, Turnstile silently disables
 # itself, the backup plane returns null, and email builds a null transport.
@@ -199,7 +190,7 @@ STRIPE_WEBHOOK_SECRET_BENCH=""
 # CAUGHT, and a silent bench is worse than a red one.
 _require_nonempty() {
     if [[ -z "${2:-}" ]]; then
-        log_error "$1 is EMPTY for bench — check private/account/.env (and .env.bench)"
+        log_error "$1 is EMPTY for bench — check its entry in Bitwarden (deploy-bench profile, .ci/config/secret-supply.json)"
         exit 1
     fi
 }
@@ -210,6 +201,8 @@ _require_nonempty CLOUDFLARE_TURNSTILE_SECRET_KEY "${CLOUDFLARE_TURNSTILE_SECRET
 _require_nonempty ACCOUNT_BACKUP_S3_ENDPOINT "${ACCOUNT_BACKUP_S3_ENDPOINT:-${CLOUDFLARE_R2_ENDPOINT:-}}"
 _require_nonempty ACCOUNT_BACKUP_S3_ACCESS_KEY_ID "${ACCOUNT_BACKUP_S3_ACCESS_KEY_ID:-${CLOUDFLARE_R2_ACCESS_KEY_ID:-}}"
 _require_nonempty ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY "${ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY:-${CLOUDFLARE_R2_SECRET_ACCESS_KEY:-}}"
+# The bench collector credential is the store entry OBS_OTLP_CREDENTIALS_BENCH,
+# bound under this name by the deploy-bench profile.
 _require_nonempty OBS_OTLP_CREDENTIALS "${OBS_OTLP_CREDENTIALS:-}"
 # The one value the Worker JSON.parses (private/account/src/routes/telemetry.ts):
 # anything but {"user": string, "pass": string} serves {otlp: null}, as silently

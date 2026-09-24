@@ -16,14 +16,23 @@ THE TWO HALVES, AND WHY THEY ARE ONE GATE.
   that does not exist.
 
   DOTENV (destinations tracked, the file itself local).  One destination per name
-  `private/account/.env` assigns. The terminal state is `BWS_ACCESS_TOKEN` plus
-  `BWS_ACCESS_TOKEN_ROTATE` and nothing else, per `agent/PLAN-env-to-bitwarden.md`
-  section (c). Every other name has somewhere else to come from, and the
-  destination is a CHECKABLE CLAIM rather than a note.
+  `private/account/.env` assigns. The terminal state is NO FILE: the bootstrap
+  token lives in its own token file (`token-file`), per
+  `agent/plans/PLAN-account-env-to-bws.md` T18. Every other name has somewhere else
+  to come from, and the destination is a CHECKABLE CLAIM rather than a note.
+
+  CONSUMERS (tracked).  The named profiles `rediacc_ci.core.bws_env exec
+  --profile P` binds into a child process. Every spec is parsed by
+  `bws_env.parse_spec`, the fetch's own parser, so the gate and the fetch cannot
+  disagree about what a line means; every store name must be in the vault map,
+  and a wildcard is refused because `start-local-plane.sh` depends on
+  `ACCOUNT_BACKUP_S3_*` being ABSENT from the dev profile.
 
 THE HALVES CHECK EACH OTHER, WHICH IS WHY THEY SHARE A FILE AND A GATE:
 
   * `ci-shared` is false unless the vault map holds the name.
+  * `ci-shared-alias` is false unless `dotenv.aliases` names the store entry and
+    the vault map holds THAT name.
   * `dev-shared` and `admin-bootstrap` are false if it does -- a value seeded
     into `ci-shared` instead is a DEV credential in the PRODUCTION store, which
     is the exact confusion this box's plan line names ("Dev keys come from
@@ -31,7 +40,7 @@ THE HALVES CHECK EACH OTHER, WHICH IS WHY THEY SHARE A FILE AND A GATE:
   * `dev.defaults.env` and `dev.local.env` are refused for any name the manifest
     classifies `secret`. That destination is a COMMITTED file; a credential
     routed there is one commit from being public.
-  * `stays` is refused for anything but the one `bootstrap-irreducible` name.
+  * `token-file` is refused for anything but the one `bootstrap-irreducible` name.
 
 So the dotenv table cannot be filled in with wishes, even though the file it describes is invisible to CI.
 
@@ -137,8 +146,19 @@ IN_VAULT = {
     "admin-bootstrap": False,
     "dev.defaults.env": False,
     "dev.local.env": False,
-    "stays": False,
+    "token-file": False,
+    "derived": False,
+    "dead": False,
 }
+
+# The destination whose store entry has ANOTHER name, recorded in `dotenv.aliases` (PLAN-account-env-to-bws T11, Q4: the `_DEV` keypair and the EU SES alias).
+ALIAS_DEST = "ci-shared-alias"
+
+# The only destination a bootstrap credential may take.
+BOOTSTRAP_DEST = "token-file"
+
+# Characters that would make a profile spec a pattern rather than a name. The fetch looks names up literally, so a `*` would silently resolve nothing; refusing it here says so.
+WILDCARD_CHARS = frozenset("*?[]{}")
 
 # Destinations that are a COMMITTED or on-disk plain file. A name the manifest calls `secret` may never be routed to one.
 PLAINTEXT_DESTS = frozenset({"dev.defaults.env", "dev.local.env"})
@@ -324,6 +344,7 @@ def evaluate_dotenv(spec, vault: set[str], shard: set[str]) -> list[str]:
     """
     names = spec["dotenv"]["names"]
     dests = spec["dotenv"]["destinations"]
+    aliases = spec["dotenv"].get("aliases") or {}
     bootstrap = set(spec.get("bootstrap_names") or ())
     # NOTES ARE OPTIONAL AND SPARSE ON PURPOSE. 49 machine-written sentences about destinations would be filler, and filler is how a required field stops being read; a note exists only where the destination is counter-intuitive. What is NOT optional is that a note names a row that exists -- a note for a drained name is a reason still arguing about something that left.
     notes = spec["dotenv"].get("notes") or {}
@@ -342,6 +363,19 @@ def evaluate_dotenv(spec, vault: set[str], shard: set[str]) -> list[str]:
             )
             continue
         want = IN_VAULT.get(dest)
+        if dest == ALIAS_DEST:
+            target = aliases.get(name)
+            if not target:
+                findings.append(
+                    "ALIAS OF NOTHING %s -> %s: the store entry has another name, and "
+                    "`dotenv.aliases` does not say which." % (name, ALIAS_DEST)
+                )
+            elif target not in vault:
+                findings.append(
+                    "DANGLING ALIAS %s -> %s: %s does not hold %s, so the claim that the "
+                    "value is in the vault under that name is false."
+                    % (name, target, MAP_REL, target)
+                )
         if want is True and name not in vault:
             findings.append(
                 "FALSE DESTINATION %s -> ci-shared: %s does not hold that name, so the "
@@ -366,11 +400,83 @@ def evaluate_dotenv(spec, vault: set[str], shard: set[str]) -> list[str]:
                 "EMPTY NOTE %s: a note that says nothing is worse than no note, because "
                 "it reads as having been thought about." % name
             )
-        if dest == "stays" and name not in bootstrap:
+        if dest == BOOTSTRAP_DEST and name not in bootstrap:
             findings.append(
-                "OVERSTAY %s -> stays: the terminal state of %s is the `bootstrap_names` "
-                "ruling and nothing else (%s). Every other name leaves."
-                % (name, DOTENV_REL, ", ".join(sorted(bootstrap)) or "empty")
+                "OVERSTAY %s -> %s: only the `bootstrap_names` ruling may live in the "
+                "token file (%s). Every other name comes from the store."
+                % (name, BOOTSTRAP_DEST, ", ".join(sorted(bootstrap)) or "empty")
+            )
+    findings.extend(
+        "STRAY ALIAS %s: `dotenv.aliases` names it, and its row is not routed `%s`. "
+        "Delete the alias with the row." % (name, ALIAS_DEST)
+        for name in sorted(aliases)
+        if names.get(name) != ALIAS_DEST
+    )
+    return findings
+
+
+def evaluate_consumers(spec, vault: set[str]) -> list[str]:
+    """The `consumers` profiles `bws_env exec --profile` binds. Tracked, always runs.
+
+    The specs are parsed by `bws_env.parse_spec`, imported rather than re-typed, so a line cannot mean one thing here and another at run time.
+    """
+    from rediacc_ci.core import bws_env  # noqa: PLC0415
+
+    findings = []
+    for profile in sorted(spec["consumers"]):
+        body = spec["consumers"][profile]
+        if not isinstance(body, dict):
+            findings.append("MALFORMED PROFILE %s: not an object." % profile)
+            continue
+        if not str(body.get("why", "")).strip():
+            findings.append(
+                "NO REASON PROFILE %s: every profile states which command runs under it "
+                "and why it needs what it binds." % profile
+            )
+        token = body.get("passes_token", False)
+        if not isinstance(token, bool):
+            findings.append("MALFORMED PROFILE %s: `passes_token` must be true or false." % profile)
+        seen: dict[str, str] = {}
+        total = 0
+        for half in ("required", "optional"):
+            raw = body.get(half, [])
+            if not isinstance(raw, list) or not all(isinstance(x, str) for x in raw):
+                findings.append(
+                    "MALFORMED PROFILE %s: `%s` is not a list of strings." % (profile, half)
+                )
+                continue
+            for line in raw:
+                if any(ch in WILDCARD_CHARS for ch in line):
+                    findings.append(
+                        "WILDCARD IN PROFILE %s: %r. The fetch looks names up literally, "
+                        "and the dev profiles depend on what they do NOT bind." % (profile, line)
+                    )
+                    continue
+                parsed = bws_env.parse_spec(line)
+                if parsed is None:
+                    findings.append("EMPTY SPEC IN PROFILE %s (%s)." % (profile, half))
+                    continue
+                store, local = parsed
+                total += 1
+                if store not in vault:
+                    findings.append(
+                        "UNRESOLVED SPEC %s: %s -- %s does not hold %s, so `exec --profile %s` "
+                        "would refuse or bind nothing." % (profile, line, MAP_REL, store, profile)
+                    )
+                if not bws_env.IDENT_RE.match(local):
+                    findings.append(
+                        "ILLEGAL LOCAL NAME %s: %r is not an environment identifier."
+                        % (profile, local)
+                    )
+                if local in seen:
+                    findings.append(
+                        "DUPLICATE BINDING %s: %s is bound twice (%s and %s)."
+                        % (profile, local, seen[local], half)
+                    )
+                seen[local] = half
+        if total == 0:
+            findings.append(
+                "EMPTY PROFILE %s: it binds nothing, so running under it proves nothing." % profile
             )
     return findings
 
@@ -427,6 +533,11 @@ def read_spec(root: pathlib.Path):
     for key in ("names", "destinations"):
         if not isinstance(spec["dotenv"].get(key), dict):
             raise RefusalError("%s: `dotenv` has no object under %r" % (SPEC_REL, key))
+    if not isinstance(spec.get("consumers"), dict) or not spec["consumers"]:
+        raise RefusalError(
+            "%s has no non-empty `consumers` object. `bws_env exec --profile` reads its "
+            "profiles from there; with it absent every local reader refuses at run time." % SPEC_REL
+        )
     for name, entry in spec["residue"].items():
         if not isinstance(entry, dict):
             raise RefusalError("%s: the entry for %r is not an object" % (SPEC_REL, name))
@@ -489,6 +600,7 @@ def run(root=None):
         spec, tracked, lambda rel: (root / rel).read_text(encoding="utf-8", errors="replace")
     )
     findings += evaluate_dotenv(spec, vault, shard)
+    findings += evaluate_consumers(spec, vault)
 
     stats = {
         "shard": len(shard),
@@ -498,6 +610,7 @@ def run(root=None):
         "kinds_defined": len(spec["kinds"]),
         "routed": len(spec["dotenv"]["names"]),
         "notes": len(spec["dotenv"].get("notes") or {}),
+        "profiles": len(spec["consumers"]),
         "local": None,
         "local_invisible": None,
     }
@@ -546,6 +659,7 @@ def report(spec, stats) -> None:
         "  %d destination(s) carry a note, because the destination is not what the name "
         "suggests" % stats["notes"]
     )
+    log.info("  %d consumer profile(s), every spec resolved in %s" % (stats["profiles"], MAP_REL))
     # `warn`, not `info`. A green tick beside a list of blocked credentials reads as approval, and the whole reason these are printed in full rather than counted is so a reader keeps seeing them as debt.
     for dest, rows in blocked_rows(spec):
         if rows:
@@ -637,11 +751,19 @@ _SPEC = {
             "why": "the fixture's blocked dev credential",
         },
     },
+    "consumers": {
+        "fix-profile": {
+            "why": "the fixture's one consumer",
+            "required": ["FIX_HELD"],
+            "optional": ["FIX_ALIAS_SRC > FIX_LOCAL_ALIAS"],
+        },
+    },
     "dotenv": {
         "path": "private/account/.env",
         "destinations": {
-            "stays": "stays",
+            "token-file": "the bootstrap token's own file",
             "ci-shared": "already in the vault",
+            "ci-shared-alias": "in the vault under another name",
             "dev-shared": "blocked",
             "dev.defaults.env": "a committed plain file",
         },
@@ -849,11 +971,78 @@ def selftest() -> bool:
 
     with tempfile.TemporaryDirectory() as tmp:
         overstay = copy.deepcopy(_SPEC)
-        overstay["dotenv"]["names"]["FIX_HELD"] = "stays"
+        overstay["dotenv"]["names"]["FIX_HELD"] = "token-file"
         root = _fixture(tmp, spec=overstay)
         check(
-            "CONTROL: a second name claiming `stays` reds; the terminal state is one name",
+            "CONTROL: a second name claiming `token-file` reds; only the bootstrap name lives there",
             any(f.startswith("OVERSTAY FIX_HELD") for f in _findings(root)),
+        )
+
+    # ---- aliases and consumer profiles are CHECKED, not believed ------------
+    with tempfile.TemporaryDirectory() as tmp:
+        aliased = copy.deepcopy(_SPEC)
+        aliased["dotenv"]["names"]["FIX_PLAIN"] = "ci-shared-alias"
+        root = _fixture(tmp, spec=aliased)
+        check(
+            "CONTROL: a `ci-shared-alias` row with no alias recorded reds",
+            any(f.startswith("ALIAS OF NOTHING FIX_PLAIN") for f in _findings(root)),
+        )
+        aliased["dotenv"]["aliases"] = {"FIX_PLAIN": "FIX_NOT_IN_VAULT"}
+        root = _fixture(tmp + "/b", spec=aliased)
+        check(
+            "CONTROL: an alias naming a store entry the map lacks reds",
+            any(
+                f.startswith("DANGLING ALIAS FIX_PLAIN -> FIX_NOT_IN_VAULT")
+                for f in _findings(root)
+            ),
+        )
+        aliased["dotenv"]["aliases"] = {"FIX_PLAIN": "FIX_ALIAS_SRC"}
+        root = _fixture(tmp + "/c", spec=aliased)
+        check(
+            "ANTI-SILENCER: an alias whose target the map holds is clean",
+            not any("ALIAS" in f for f in _findings(root)),
+        )
+        stray = copy.deepcopy(_SPEC)
+        stray["dotenv"]["aliases"] = {"FIX_HELD": "FIX_ALIAS_SRC"}
+        root = _fixture(tmp + "/d", spec=stray)
+        check(
+            "CONTROL: an alias for a row not routed `ci-shared-alias` reds",
+            any(f.startswith("STRAY ALIAS FIX_HELD") for f in _findings(root)),
+        )
+
+    with tempfile.TemporaryDirectory() as tmp:
+        bad = copy.deepcopy(_SPEC)
+        bad["consumers"]["fix-profile"]["required"].append("FIX_NOT_IN_VAULT > FIX_X")
+        root = _fixture(tmp, spec=bad)
+        check(
+            "CONTROL: a profile spec naming a store entry the map lacks reds",
+            any(f.startswith("UNRESOLVED SPEC fix-profile") for f in _findings(root)),
+        )
+        bad = copy.deepcopy(_SPEC)
+        bad["consumers"]["fix-profile"]["optional"].append("FIX_*")
+        root = _fixture(tmp + "/b", spec=bad)
+        check(
+            "CONTROL: a wildcard in a profile reds",
+            any(f.startswith("WILDCARD IN PROFILE fix-profile") for f in _findings(root)),
+        )
+        bad = copy.deepcopy(_SPEC)
+        bad["consumers"]["fix-profile"]["why"] = " "
+        root = _fixture(tmp + "/c", spec=bad)
+        check(
+            "CONTROL: a profile with no reason reds",
+            any(f.startswith("NO REASON PROFILE fix-profile") for f in _findings(root)),
+        )
+        bad = copy.deepcopy(_SPEC)
+        bad["consumers"]["fix-profile"]["optional"].append("FIX_HELD")
+        root = _fixture(tmp + "/d", spec=bad)
+        check(
+            "CONTROL: one local name bound twice in a profile reds",
+            any(f.startswith("DUPLICATE BINDING fix-profile") for f in _findings(root)),
+        )
+        bad = copy.deepcopy(_SPEC)
+        bad["consumers"] = {}
+        check(
+            "REFUSAL: an empty `consumers` object refuses", _refuses(_fixture(tmp + "/e", spec=bad))
         )
 
     # ---- the reasons are LIVENESS-CHECKED ----------------------------------
@@ -963,7 +1152,7 @@ def selftest() -> bool:
         )
         check(
             "REFUSAL: deleting the `bootstrap_names` ruling refuses, it does not widen "
-            "`stays` to mean anything",
+            "`token-file` to mean anything",
             _refuses(root),
         )
 

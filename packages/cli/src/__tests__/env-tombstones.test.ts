@@ -54,7 +54,7 @@ const BANNED: Banned[] = [
   // `docs/environment-variables.md:107` retires this in favour of the REDIACC_DEBUG scopes, and until 2026-09-09 nothing enforced it -- the bare name could not be added
   // while the matcher was a substring test, because it swallows every REDIACC_DEBUG.
   // Scoped to the CLI and shared surfaces this file walks: `DEBUG` is ALSO the npm `debug`
-  // package's variable and is legitimately live in `packages/e2e-tests/.env.example`, so a
+  // package's variable and the CI harness's `DEBUG=true` switch (`.ci/rediacc_ci/env/create_e2e_env.py`), so a
   // repo-wide ban would be false.
   { token: 'DEBUG', envOnly: true },
   { token: 'isDevelopmentSubscriptionMode' },

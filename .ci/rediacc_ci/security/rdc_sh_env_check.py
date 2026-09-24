@@ -10,10 +10,13 @@ Leak test for `rdc.sh`'s dev path. Two layers:
     that env file cannot reach the CLI process.
 
   Layer 2 (functional): run the real dev path against a fixture ROOT_DIR whose
-    `private/account/.env` carries the two public values PLUS sentinel secret
-    lines. `node` and `curl` are PATH-shimmed. The dumped CLI environment must
-    carry `REDIACC_CONFIG=dev` and none of the sentinels, and the seeded
-    `dev.json` must have the fixture's accountServer.
+    `.account-state` records `gateway_port=9` and whose `private/account/.env`
+    carries ONLY sentinel secret lines, a temptation the dev path must not
+    read. `node` and `curl` are PATH-shimmed; the curl shim prints a
+    server-info body carrying publicKeySpki `stubpublickey`. The dumped CLI
+    environment must carry `REDIACC_CONFIG=dev` and none of the sentinels, and
+    the seeded `dev.json` must have accountServer `http://localhost:9` and
+    e2ePublicKey `stubpublickey`.
 
 REGISTERED CI GATE: `check:ci-rdc-sh-env`, step "rdc.sh env tests" in `.github/workflows/ci-quality.yml`, job `quality-static`.
 
@@ -23,19 +26,19 @@ PORT NOTES, each one driven before it was written down.
 
 THE OUTPUT IS BYTE-IDENTICAL, ANSI escapes and U+2713/U+2717 glyphs included. This is a registered gate whose stdout a human reads in a CI log, so the `\\033[0;32m` / `\\033[0;31m` pairs are emitted literally rather than through any formatting helper, and every message is copied verbatim from the twin.
 
-THE "node not found" BRANCH OF THE TWIN IS DEAD CODE, and this port reproduces the death rather than the branch. `test-rdc-sh-env.sh:93` reads
+THE "node not found" BRANCH OF THE TWIN IS DEAD CODE, and this port reproduces the death rather than the branch. `test-rdc-sh-env.sh:96` reads
 `REAL_NODE="$(command -v node)"` under `set -euo pipefail`; an assignment whose
-value is a command substitution takes that substitution's exit status, so when `node` is absent bash exits 1 right there and the `if [[ -z "$REAL_NODE" ]]` guard on :94-97 never runs. Driven:
+value is a command substitution takes that substitution's exit status, so when `node` is absent bash exits 1 right there and the `if [[ -z "$REAL_NODE" ]]` guard on :97-100 never runs. Driven:
 `bash -c 'set -euo pipefail; X="$(command -v nope)"; echo REACHED'` prints
 nothing and exits 1. So `_real_node()` below raises `SilentExitError`, which
 `main` turns into a bare rc=1 with NOTHING on either stream -- exactly what the
 twin does, and deliberately NOT the friendlier message the twin's own author intended. (The house rule is that a missing tool should fail loudly with the fix in the message; that fix belongs in the twin, which is not this file's to edit, and forging the message here would make the port disagree with its twin.)
 
 `grep -q ... && pass ...` DOES NOT ABORT WHEN THE GREP FAILS, even under `set -e`, because a command that is not the last in an `&&` list is exempt and the list's own failure does not trip the option. Driven: `bash -c 'set -euo pipefail; if true; then false && echo x; fi; echo AFTER'`
-prints `AFTER`. So :156's second `REDIACC_CONFIG=dev` check simply prints no
+prints `AFTER`. So :201's second `REDIACC_CONFIG=dev` check simply prints no
 PASS line when it fails; it is not a silent early exit. Ported as a plain `if`.
 
-THE 1d PASS LINE IS UNCONDITIONAL, and that is the twin's behaviour, not a bug this port tidied. `test-rdc-sh-env.sh:78-84` runs the dead-surface loop, each iteration able to call `fail`, and then calls `pass` on :84 regardless. A run that finds `RDC_BENCH` still referenced therefore prints BOTH the failure and "no removed token/mode surface". Reproduced.
+THE 1d PASS LINE IS UNCONDITIONAL, and that is the twin's behaviour, not a bug this port tidied. `test-rdc-sh-env.sh:84-89` runs the dead-surface loop, each iteration able to call `fail`, and then calls `pass` on :89 regardless. A run that finds `RDC_BENCH` still referenced therefore prints BOTH the failure and "no removed token/mode surface". Reproduced.
 
 THE EXPORT SET IS SORTED IN BYTE ORDER. The twin pipes through `sort -u`, whose
 collation follows the locale; this repo runs under `LANG=C.UTF-8` where that is
@@ -62,7 +65,7 @@ RED = "\033[0;31m"
 GREEN = "\033[0;32m"
 NC = "\033[0m"
 
-# The three names `rdc.sh` is allowed to export, in the twin's own spelling and order (`test-rdc-sh-env.sh:73`) -- which is `sort -u` order, not the order the comment on :68 lists them in.
+# The three names `rdc.sh` is allowed to export, in the twin's own spelling and order (`test-rdc-sh-env.sh:75`) -- which is `sort -u` order, not the order the comment on :71 lists them in.
 ALLOWLIST = "NODE_COMPILE_CACHE PATH REDIACC_CONFIG"
 
 # The removed token/mode surface. Fixed strings (`grep -qF`), not patterns.
@@ -85,18 +88,20 @@ SECRET_NAMES = (
 # POSIX `[[:space:]]` inside a single line. `\n` is excluded on purpose: these patterns are applied line by line, exactly as `grep -E` applies them.
 _SP = r"[ \t\v\f\r]"
 
-# `^[[:space:]]*set[[:space:]]+-a([[:space:]]|$)` (test-rdc-sh-env.sh:53)
+# `^[[:space:]]*set[[:space:]]+-a([[:space:]]|$)` (test-rdc-sh-env.sh:58)
 SET_A_RE = re.compile(r"^%s*set%s+-a(%s|$)" % (_SP, _SP, _SP))
 
-# `(^[[:space:]]*(source|\.)[[:space:]]).*(account_env|private/account/\.env)` (test-rdc-sh-env.sh:60)
+# `(^[[:space:]]*(source|\.)[[:space:]]).*(account_env|private/account/\.env)` (test-rdc-sh-env.sh:65)
 SOURCE_ENV_RE = re.compile(r"(^%s*(source|\.)%s).*(account_env|private/account/\.env)" % (_SP, _SP))
 
-# `^[[:space:]]*export[[:space:]]+[A-Za-z_][A-Za-z0-9_]*` (test-rdc-sh-env.sh:70)
+# `^[[:space:]]*export[[:space:]]+[A-Za-z_][A-Za-z0-9_]*` (test-rdc-sh-env.sh:73)
 EXPORT_RE = re.compile(r"^%s*export%s+([A-Za-z_][A-Za-z0-9_]*)" % (_SP, _SP))
 
-FIXTURE_ENV = """REDIACC_ACCOUNT_SERVER=http://127.0.0.1:9
-ACCOUNT_X25519_PUBLIC_KEY=stubpublickey
-ACCOUNT_ED25519_PRIVATE_KEY=LEAKSENTINEL_ED25519
+# The running gateway's port, where `./run.sh account dev` records it.
+FIXTURE_ACCOUNT_STATE = "gateway_port=9\n"
+
+# Sentinel SECRET lines only: the dev path must read nothing under private/account.
+FIXTURE_ENV = """ACCOUNT_ED25519_PRIVATE_KEY=LEAKSENTINEL_ED25519
 ACCOUNT_X25519_PRIVATE_KEY=LEAKSENTINEL_X25519
 ACCOUNT_JWT_SECRET=LEAKSENTINEL_JWT
 ACCOUNT_SERVER_API_KEY=LEAKSENTINEL_API
@@ -125,9 +130,15 @@ env >"%(dump)s"
 exit 0
 """
 
+# The twin's heredoc is QUOTED, so `%s` and `\n` reach the shim verbatim.
 CURL_SHIM = """#!/usr/bin/env bash
+printf '%s\\n' '{"e2e":{"keys":[{"keyId":"v1","publicKeySpki":"stubpublickey"}]},"apiVersion":1}'
 exit 0
 """
+
+# What the dev path must seed, from the fixture's `.account-state` and curl shim.
+EXPECTED_SERVER = "http://localhost:9"
+EXPECTED_KEY = "stubpublickey"
 
 
 class SilentExitError(Exception):
@@ -204,7 +215,7 @@ def layer_one(tally: Tally, rdc_sh_text: str) -> None:
     for dead in DEAD_SURFACE:
         if dead in rdc_sh_text:
             tally.fail("rdc.sh still references removed token/mode surface: %s" % dead)
-    # UNCONDITIONAL in the twin (:84), even when the loop above just failed.
+    # UNCONDITIONAL in the twin (:89), even when the loop above just failed.
     tally.ok(
         "no removed token/mode surface (REDIACC_SUBSCRIPTION_TOKEN_FILE / "
         "REDIACC_ENVIRONMENT / RDC_BENCH / .rdc-{dev,bench})"
@@ -223,7 +234,7 @@ def _real_node() -> str:
 
 
 def build_fixture(fix: pathlib.Path, rdc_sh: pathlib.Path, real_node: str) -> pathlib.Path:
-    """Everything between `FIX="$(mktemp -d)"` and the `env -i` run (:99-141)."""
+    """Everything between `FIX="$(mktemp -d)"` and the `env -i` run (:102-176)."""
     fix_root = fix / "root"
     fix_home = fix / "home"
     shim = fix / "shim"
@@ -246,6 +257,7 @@ def build_fixture(fix: pathlib.Path, rdc_sh: pathlib.Path, real_node: str) -> pa
     (fix_root / ".ci" / "lib" / "local-common.sh").write_text(
         FIXTURE_LOCAL_COMMON, encoding="utf-8"
     )
+    (fix_root / ".account-state").write_text(FIXTURE_ACCOUNT_STATE, encoding="utf-8")
     (fix_root / "private" / "account" / ".env").write_text(FIXTURE_ENV, encoding="utf-8")
     (fix_root / "packages" / "cli" / "dist" / "cli-bundle.cjs").write_text(
         "// fixture bundle\n", encoding="utf-8"
@@ -283,7 +295,7 @@ def run_dev_path(fix: pathlib.Path, fix_root: pathlib.Path) -> int:
 def _json_field(config: pathlib.Path, expression: str) -> str:
     """The twin's `python3 -c ... || echo PARSE_ERR`, run in-process.
 
-    The twin redirects the child's stderr to `/dev/null` here (`test-rdc-sh-env.sh:172`), so nothing of CPython's traceback is observable and reading the JSON in-process is exact. Its sibling `test-install-sh-config.sh:98` does NOT redirect, which is why THAT port shells out instead.
+    The twin redirects the child's stderr to `/dev/null` here (`test-rdc-sh-env.sh:210-211`), so nothing of CPython's traceback is observable and reading the JSON in-process is exact. Its sibling `test-install-sh-config.sh:98` does NOT redirect, which is why THAT port shells out instead.
     """
     try:
         with config.open(encoding="utf-8") as handle:
@@ -296,7 +308,7 @@ def _json_field(config: pathlib.Path, expression: str) -> str:
 def expression_value(account: dict[str, object], expression: str) -> str:
     """The two accessor spellings the twin uses, kept apart as the twin does.
 
-    `['accountServer']` RAISES on a config with no such key (PARSE_ERR), while `.get('e2ePublicKey','')` returns the empty string. That asymmetry is the twin's (`test-rdc-sh-env.sh:172-173`) and is preserved.
+    `['accountServer']` RAISES on a config with no such key (PARSE_ERR), while `.get('e2ePublicKey','')` returns the empty string. That asymmetry is the twin's (`test-rdc-sh-env.sh:210-211`) and is preserved.
     """
     if expression == "accountServer":
         return str(account["accountServer"])
@@ -343,12 +355,12 @@ def layer_two(tally: Tally, fix: pathlib.Path, rdc_sh: pathlib.Path) -> None:
     else:
         got_server = _json_field(dev_json, "accountServer")
         got_key = _json_field(dev_json, "e2ePublicKey")
-        if got_server != "http://127.0.0.1:9":
-            tally.fail("dev.json accountServer=%s (expected http://127.0.0.1:9)" % got_server)
-        if got_key != "stubpublickey":
-            tally.fail("dev.json e2ePublicKey=%s (expected stubpublickey)" % got_key)
-        if got_server == "http://127.0.0.1:9" and got_key == "stubpublickey":
-            tally.ok("dev.json seeded with accountServer + e2ePublicKey from the env file")
+        if got_server != EXPECTED_SERVER:
+            tally.fail("dev.json accountServer=%s (expected %s)" % (got_server, EXPECTED_SERVER))
+        if got_key != EXPECTED_KEY:
+            tally.fail("dev.json e2ePublicKey=%s (expected %s)" % (got_key, EXPECTED_KEY))
+        if got_server == EXPECTED_SERVER and got_key == EXPECTED_KEY:
+            tally.ok("dev.json seeded with accountServer + e2ePublicKey from the running gateway")
 
 
 # ---------------------------------------------------------------------------

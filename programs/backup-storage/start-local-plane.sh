@@ -54,22 +54,15 @@ docker run --rm --network host \
 
 echo "==> account dev gateway on :$GATEWAY_PORT (ACCOUNT_BACKUP_S3_* -> $PROBE_BUCKET)"
 cd "$ACCOUNT_DIR"
-# The gateway needs the .env crypto keys. env_file_load PARSES the file and
-# exports what the environment does not already carry; it never executes it,
-# which matters for a file holding four private keys and an admin API key.
-#
-# The comment this replaces reasoned "ACCOUNT_BACKUP_S3_* are absent from .env,
-# so exporting them here reaches the process untouched -- .env can only clobber
-# keys it actually declares", and it was right about the ACCOUNT_BACKUP_S3_*
-# names: those are exported BELOW this load, so they win either way. The names it
-# did not cover are the knobs at the top of this file, which are read AFTER the
-# load and are not re-assigned: GATEWAY_PORT (line 74 exports it bare, whatever
-# value it then holds), RUSTFS_PORT, BRIDGE_HOST, RUSTFS_KEY, RUSTFS_SECRET. Under
-# `set -a; source` one matching line in .env silently redirected the presigned URLs
-# a VM will dial. Under env_file_load the shell wins, so `RUSTFS_PORT=9101
-# ./start-local-plane.sh` means what it says.
+# The gateway needs the DEV crypto keys, which come from Bitwarden through the
+# `backup-plane` profile (.ci/config/secret-supply.json `consumers`), and the
+# committed non-secret constants from private/account/dev.defaults.env. Both
+# follow the shell-wins rule, so the knobs at the top of this file (GATEWAY_PORT,
+# RUSTFS_PORT, BRIDGE_HOST, RUSTFS_KEY, RUSTFS_SECRET) mean what they say. The
+# profile deliberately binds no ACCOUNT_BACKUP_S3_* name: those are exported
+# below and point the gateway at the local RustFS bucket.
 source "$ROOT_DIR/scripts/lib/env-file.sh"
-env_file_load "$ACCOUNT_DIR/.env"
+env_file_load "$ACCOUNT_DIR/dev.defaults.env"
 
 export GATEWAY_PORT
 export ACCOUNT_BACKUP_S3_ENDPOINT="http://${BRIDGE_HOST}:${RUSTFS_PORT}"
@@ -82,4 +75,5 @@ export CONFIG_R2_ACCESS_KEY_ID="$RUSTFS_KEY"
 export CONFIG_R2_SECRET_ACCESS_KEY="$RUSTFS_SECRET"
 export TEST_MODE=true
 
-exec npx tsx src/entry/dev-gateway.ts
+PYTHONPATH="$ROOT_DIR/.ci${PYTHONPATH:+:$PYTHONPATH}" exec python3 -m rediacc_ci.core.bws_env \
+    exec --profile backup-plane -- npx tsx src/entry/dev-gateway.ts

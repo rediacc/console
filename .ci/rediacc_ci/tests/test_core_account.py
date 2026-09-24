@@ -1,22 +1,24 @@
 """`rediacc_ci.core.account` against the live `.ci/lib/account.sh`.
 
-THE TWIN IS STILL HERE AND IS STILL THE ONLY IMPLEMENTATION OF NINE OF ITS TWENTY-TWO FUNCTIONS.
+THE TWIN IS STILL HERE AND IS STILL THE ONLY IMPLEMENTATION OF ELEVEN OF ITS TWENTY-ONE FUNCTIONS.
 `.ci/legacy/run-legacy.sh:405` and `:443` still source it, nothing is cut over, and this file drives the bash for real on every run: `rediacc_ci.core.shadow_driver` sources `account.sh` through the same prelude `run-legacy.sh` uses and calls the twin's own functions, then does the same work through the port, and the two transcripts are compared byte for byte.
 
-WHAT THE SHADOW DIFFERENTIAL COVERS is decided by the driver's five scenarios and stated in its module docstring rather than restated here.
-The short version: everything deterministic, and none of `account_dev`, `account_test`, `account_test_e2e`, `account_reset`, `account_seed_demo`, `account_cleanup`, `account_docker_ghost_clean`, `account_stripe_auto`, `account_dev_credentials`, or `account_db`'s launch, all of which start or stop real infrastructure.
-`account_stop` and `account_rotation` are NOT in the differential either, for the same reason, but they ARE ported: the "stop and rotation: REAL-RUN verification" section below proves them a different way, against a real tracked process and a real Docker daemon, and against the real, credential-free `rotation` subcommands.
+WHAT THE SHADOW DIFFERENTIAL COVERS is decided by the driver's four scenarios and stated in its module docstring rather than restated here.
+The short version: everything deterministic, and none of `account_dev`, `account_test`, `account_test_e2e`, `account_reset`, `account_seed_demo`, `account_cleanup`, `account_docker_ghost_clean`, `account_stripe_auto`, `account_dev_credentials`, or `account_db`'s launch, all of which start or stop real infrastructure, nor `account_load_defaults` and `account_state_gateway_port`, which serve only two of those.
+`account_stop`, `account_rotation` and `account_bws_exec` are NOT in the differential either, for the same reason, but they ARE ported: the "stop and rotation: REAL-RUN verification" section below proves them a different way, against a real tracked process and a real Docker daemon, and against the real, credential-free `rotation` subcommands, which reach `account_bws_exec` first.
+The twin's four `.env` writers are deleted from BOTH sides (`agent/plans/PLAN-account-env-to-bws.md`), so they appear in neither tuple below; the CI-only `mint-dev-keys` verb that replaced one of their uses has no twin and is tested directly at the end of this file.
 
 WHY `XDIST_GROUP` IS DECLARED. The driver pins FIXED port numbers on both sides, because the two sides run as two processes and an ephemeral port would differ between them and land in a message text.
 Two workers running two scenarios at once would contend for those ports, which is the same host-port-space resource `test_core_ports.py` declares, so this joins the same group and is serialised against it.
 
-THE ANTI-VACUITY CLAIMS, because a differential that compared two empty transcripts would pass forever: every scenario must produce a floor of observations, the tools the scenarios really use must be installed, and `test_the_differential_can_fail` mutates one side and demands a mismatch in each of the three places a mutation can hide.
+THE ANTI-VACUITY CLAIMS, because a differential that compared two empty transcripts would pass forever: every scenario must produce a floor of observations, the tools the scenarios really use must be installed, and `test_the_differential_can_fail` mutates one side and demands a mismatch in each of the four places a mutation can hide.
 """
 
 import contextlib
 import json
 import os
 import pathlib
+import re
 import shutil
 import subprocess
 import sys
@@ -42,8 +44,7 @@ SCENARIOS = sorted(shadow_driver.BASH_SCENARIOS)
 # The floor each scenario must clear. Measured against the recorded ledger rows, then rounded DOWN so a real change to a message does not turn into a test edit; the point is to catch a transcript collapsing to nothing, not to pin a count.
 OBSERVATION_FLOOR = {
     "db": 10,
-    "env": 100,
-    "fresh-env": 100,
+    "keys": 7,
     "probe": 12,
     "totp": 8,
 }
@@ -108,7 +109,7 @@ def test_each_scenario_observed_something(scenario: str) -> None:
 
 
 def test_the_corpus_is_not_empty() -> None:
-    assert len(SCENARIOS) >= 5, "the scenario set collapsed to %d" % len(SCENARIOS)
+    assert len(SCENARIOS) >= 4, "the scenario set collapsed to %d" % len(SCENARIOS)
     assert set(SCENARIOS) == set(OBSERVATION_FLOOR), (
         "a scenario was added or removed without a floor: %s"
         % sorted(set(SCENARIOS) ^ set(OBSERVATION_FLOOR))
@@ -116,7 +117,7 @@ def test_the_corpus_is_not_empty() -> None:
 
 
 def test_the_differential_can_fail() -> None:
-    """A CONTROL ON THE COMPARISON, in the three places a mutation can hide.
+    """A CONTROL ON THE COMPARISON, in the four places a mutation can hide.
 
     Each line below is a transcript the port could plausibly produce and the twin does not, so a comparison that still called it equal would be looking at the wrong thing.
     """
@@ -126,9 +127,13 @@ def test_the_differential_can_fail() -> None:
     )
     padded = out.replace("..│..hello", ".│..hello")
     assert out != padded, "the probe transcript carries no banner padding"
-    _, env_out, _ = drive("old", "env")
-    assert env_out != env_out.replace("obs file after-adds| ", "obs file after-adds|"), (
-        "the env transcript carries no file dump, so a rewritten .env would pass"
+    _, keys_out, _ = drive("old", "keys")
+    assert keys_out != keys_out.replace("ED25519_PUB len=60", "ED25519_PUB len=59"), (
+        "the keys transcript carries no key length, so a port minting a different encoding would pass"
+    )
+    _, totp_out, _ = drive("old", "totp")
+    assert totp_out != totp_out.replace("obs err no-state| ", "obs err no-state|"), (
+        "the totp transcript carries no message text, so a reworded refusal would pass"
     )
 
 
@@ -144,16 +149,13 @@ PORTED_FUNCTIONS = (
     "account_wait_port",
     "account_rustfs_alive",
     "account_generate_crypto_keys",
-    "account_generate_fresh_env",
-    "account_env_add_if_missing",
-    "account_ensure_env_keys",
-    "account_ensure_env",
     "account_banner_row",
     "account_totp",
     "account_db",
-    # These two are ported but NOT shadow-differentially proved: see the real-run tests below, and `rediacc_ci.core.account`'s module docstring, "TWO MORE ARE PORTED".
+    # These three are ported but NOT shadow-differentially proved: see the real-run tests below, and `rediacc_ci.core.account`'s module docstring, "THREE MORE ARE PORTED".
     "account_stop",
     "account_rotation",
+    "account_bws_exec",
 )
 
 NOT_PORTED_FUNCTIONS = (
@@ -166,15 +168,48 @@ NOT_PORTED_FUNCTIONS = (
     "account_test_e2e",
     "account_reset",
     "account_seed_demo",
+    "account_load_defaults",
+    "account_state_gateway_port",
+)
+
+# Deleted from BOTH sides with `private/account/.env`. Asserted gone rather than forgotten: a writer reappearing on either side is a file-based secret path coming back.
+DELETED_FUNCTIONS = (
+    "account_generate_fresh_env",
+    "account_env_add_if_missing",
+    "account_ensure_env_keys",
+    "account_ensure_env",
 )
 
 
 def test_the_twin_still_defines_every_function_this_slice_names() -> None:
-    """Twenty-two, split eleven and eleven, measured rather than remembered."""
+    """Twenty-one, split ten and eleven, measured rather than remembered.
+
+    The count is the twin's own definition count, so a function added to `account.sh` without being classified here fails this rather than slipping past both tuples.
+    """
     text = twin_text()
     for name in PORTED_FUNCTIONS + NOT_PORTED_FUNCTIONS:
         assert "\n%s() {" % name in text, "%s is gone from %s" % (name, TWIN)
-    assert len(PORTED_FUNCTIONS) + len(NOT_PORTED_FUNCTIONS) == 22
+    defined = set(re.findall(r"^([A-Za-z_][A-Za-z0-9_]*)\(\) \{", text, flags=re.MULTILINE))
+    assert defined == set(PORTED_FUNCTIONS) | set(NOT_PORTED_FUNCTIONS), (
+        "unclassified: %s; classified but not defined: %s"
+        % (
+            sorted(defined - set(PORTED_FUNCTIONS) - set(NOT_PORTED_FUNCTIONS)),
+            sorted(set(PORTED_FUNCTIONS) | set(NOT_PORTED_FUNCTIONS) - defined),
+        )
+    )
+    assert len(PORTED_FUNCTIONS) + len(NOT_PORTED_FUNCTIONS) == 21
+
+
+def test_the_env_writers_are_gone_from_both_sides() -> None:
+    """`private/account/.env` is retired, and with it every function that wrote it."""
+    text = twin_text()
+    for name in DELETED_FUNCTIONS:
+        assert "\n%s() {" % name not in text, "%s is back in %s" % (name, TWIN)
+        stem = name[len("account_") :]
+        assert not hasattr(account, stem), "%s is back in the port" % stem
+        assert name not in PORTED_FUNCTIONS + NOT_PORTED_FUNCTIONS
+    for helper in ("fresh_env_text", "env_path", "BRE_METACHARACTERS"):
+        assert not hasattr(account, helper), "%s survived its only callers" % helper
 
 
 def test_the_unported_half_has_no_python_counterpart() -> None:
@@ -229,17 +264,17 @@ def test_banner_row_pads_by_bytes_not_characters() -> None:
     assert len(row[len("  │  ") : -1].encode("utf-8")) == 63
 
 
-def test_state_gateway_port_raises_where_the_twin_dies() -> None:
+def test_gateway_port_from_state_raises_where_the_twin_dies() -> None:
     """Defect 1: no match is not an empty answer, it is the end of the function."""
-    assert account.state_gateway_port("gateway_port=4800\n") == "4800"
-    assert account.state_gateway_port("gateway_port=\n") == ""
+    assert account.gateway_port_from_state("gateway_port=4800\n") == "4800"
+    assert account.gateway_port_from_state("gateway_port=\n") == ""
     with pytest.raises(account.StateAbortedError, match="matched nothing"):
-        account.state_gateway_port("started=1\n")
+        account.gateway_port_from_state("started=1\n")
 
 
-def test_state_gateway_port_truncates_a_value_containing_an_equals_sign() -> None:
+def test_gateway_port_from_state_truncates_a_value_containing_an_equals_sign() -> None:
     """Defect 3. `cut -d= -f2` takes the second field only. Preserved, not fixed."""
-    assert account.state_gateway_port("gateway_port=a=b\n") == "a"
+    assert account.gateway_port_from_state("gateway_port=a=b\n") == "a"
 
 
 @pytest.mark.parametrize(
@@ -262,7 +297,7 @@ def test_totp_fields_reproduces_the_twin_two_operators(body: str, expected) -> N
 def test_totp_fields_agrees_with_the_node_the_twin_actually_runs() -> None:
     """The one helper whose twin is a JavaScript one-liner, compared against node.
 
-    `.ci/lib/account.sh:754` parses the response with `node -e`, so the port's Python reimplementation is checked against that exact program rather than against a reading of it.
+    `.ci/lib/account.sh:652` parses the response with `node -e`, so the port's Python reimplementation is checked against that exact program rather than against a reading of it.
     """
     program = (
         'const d=JSON.parse(require("fs").readFileSync(0,"utf8")||"{}");'
@@ -292,18 +327,6 @@ def test_parse_db_args_both_directions() -> None:
     with pytest.raises(account.AccountError) as second:
         account.parse_db_args(["--studio", "--bogus"])
     assert second.value.code == 2
-
-
-def test_env_add_if_missing_refuses_a_key_that_is_not_a_literal(tmp_path) -> None:
-    """The one place the port refuses where the twin would quietly pattern-match."""
-    target = tmp_path / ".env"
-    target.write_text("ABC=1\n", encoding="utf-8")
-    with pytest.raises(ValueError, match="BRE metacharacter"):
-        account.env_add_if_missing(str(target), "A.C", "2")
-    # The control: an ordinary key still works in both directions.
-    assert account.env_add_if_missing(str(target), "NEW", "2") is True
-    assert account.env_add_if_missing(str(target), "NEW", "3") is False
-    assert target.read_text(encoding="utf-8").count("NEW=") == 1
 
 
 def test_a_missing_curl_degrades_on_both_sides_instead_of_raising(tmp_path) -> None:
@@ -424,7 +447,7 @@ def test_devbox_state_get_matches_the_bash_it_duplicates(tmp_path) -> None:
 
 
 def test_db_preferred_port_derives_the_devbox_studio_slot(tmp_path) -> None:
-    """`.ci/lib/account.sh:1074-1097`, the arithmetic the `db` scenario proves end to end."""
+    """`.ci/lib/account.sh:977-1000`, the arithmetic the `db` scenario proves end to end."""
     root = tmp_path / "root"
     root.mkdir()
     env = {"CONSOLE_ROOT_DIR": str(root)}
@@ -443,26 +466,14 @@ def test_db_path_prefers_the_environment(tmp_path) -> None:
     assert account.db_path(dict(env, DATABASE_PATH="/x/y.db")) == "/x/y.db"
 
 
-def test_fresh_env_text_carries_every_key_the_ensure_path_also_writes() -> None:
-    """The template and the incremental path must not drift apart.
-
-    `account_ensure_env_keys` exists to add to an OLD `.env` what a fresh one already has. A key present in one and absent from the other is a machine that works on a fresh checkout and not on an upgraded one.
-    """
-    keys = account.CryptoKeys("p1", "p2", "p3", "p4", "jwt", "api")
-    text = account.fresh_env_text(keys, "2026-01-01T00:00:00Z", "")
-    for name in account.CRYPTO_KEYS:
-        assert "\n%s=" % name in text
-    for name in ("REDIACC_ACCOUNT_SERVER", "DATABASE_PATH", "PORT", "WEBAUTHN_RP_ID"):
-        assert "\n%s=" % name in text
-    # ROOT_EMAIL is quoted in the template and unquoted by the incremental path, because only a fresh generation ever writes it. Pinned, not corrected.
-    assert '\nROOT_EMAIL=""\n' in text
-
-
 # -- the licence, and the tools the scenarios really use ---------------------
 
 
 def test_the_shadow_ledger_holds_five_equivalent_rows_over_five_trees() -> None:
-    """The K=5 licence, read off disk rather than remembered from a session."""
+    """The K=5 licence, read off disk rather than remembered from a session.
+
+    Two of the five rows (`env`, `fresh-env`) are HISTORY about writers deleted from both sides; the `keys` scenario that now proves `account_generate_crypto_keys` has no row of its own yet. The live differential above is what compares today's code.
+    """
     path = paths.repo_root() / LEDGER
     assert path.is_file(), "%s is missing; the port has no recorded licence" % LEDGER
     rows = [
@@ -514,7 +525,6 @@ def test_the_paths_derive_from_console_root_and_nothing_else() -> None:
     """The one seam both implementations read, in both directions."""
     env = {"CONSOLE_ROOT_DIR": "/somewhere"}
     assert account.account_dir(env) == "/somewhere/private/account"
-    assert account.env_path(env) == "/somewhere/private/account/.env"
     assert account.state_file(env) == "/somewhere/.account-state"
     assert account.log_directory(env) == "/somewhere/.account-logs"
     assert account.devbox_state_file(env) == "/somewhere/.devbox-state"
@@ -523,12 +533,13 @@ def test_the_paths_derive_from_console_root_and_nothing_else() -> None:
 
 
 def test_the_ported_module_has_no_launch_on_its_argv_surface() -> None:
-    """`main` offers the twin's two public verbs and refuses anything else."""
+    """`main` offers the twin's two public verbs plus `mint-dev-keys`, and refuses anything else."""
     assert account.main(["nosuch"]) == 2
     assert account.main([]) == 2
     assert account.main(["--help"]) == 0
     assert "totp" in account.USAGE
     assert "db" in account.USAGE
+    assert "mint-dev-keys" in account.USAGE
     for name in ("dev", "stop", "reset", "seed-demo"):
         assert account.main([name]) == 2, "%s must not be reachable from this port" % name
 
@@ -830,3 +841,100 @@ def test_rotation_mutating_subcommands_are_named_but_never_invoked() -> None:
         )
     for subcommand in ROTATION_MUTATING_SUBCOMMANDS:
         assert subcommand not in ROTATION_CREDENTIAL_FREE_SUBCOMMANDS
+
+
+# -- mint-dev-keys: throwaway CI keys, no twin ---------------------------------
+
+
+def _mint(env: dict[str, str]) -> subprocess.CompletedProcess:
+    """`python3 -m rediacc_ci.core.account mint-dev-keys` in a fresh interpreter, so stdout and stderr are the real streams."""
+    return subprocess.run(
+        [sys.executable, "-m", "rediacc_ci.core.account", "mint-dev-keys"],
+        cwd=str(paths.repo_root()),
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=120,
+    )
+
+
+def _mint_env(**extra: str) -> dict[str, str]:
+    env = {k: v for k, v in os.environ.items() if k != "GITHUB_ENV"}
+    env["PYTHONPATH"] = ".ci"
+    env.update(extra)
+    return env
+
+
+def test_mint_dev_keys_appends_exactly_six_named_lines_and_prints_no_value(tmp_path) -> None:
+    """The whole contract: six `NAME=value` lines appended, non-empty values, names only on stderr, nothing on stdout."""
+    target = tmp_path / "github_env"
+    target.write_text("EARLIER=kept\n", encoding="utf-8")
+    proc = _mint(_mint_env(GITHUB_ENV=str(target)))
+    assert proc.returncode == 0, proc.stderr
+    assert proc.stdout == "", "mint-dev-keys wrote to stdout"
+
+    lines = target.read_text(encoding="utf-8").splitlines()
+    assert lines[0] == "EARLIER=kept", "the file was rewritten instead of appended to"
+    minted = lines[1:]
+    assert [line.split("=", 1)[0] for line in minted] == list(account.CRYPTO_KEYS)
+    values = [line.split("=", 1)[1] for line in minted]
+    assert all(values), "an empty value was written"
+    assert len(set(values)) == 6, "two of the six minted values are identical"
+
+    for value in values:
+        assert value not in proc.stderr, "a minted value reached stderr"
+    for name in account.CRYPTO_KEYS:
+        assert name in proc.stderr, "%s is not named on stderr" % name
+    assert "6 throwaway dev key(s)" in proc.stderr
+
+
+def test_mint_dev_keys_refuses_without_github_env(tmp_path) -> None:
+    """No GITHUB_ENV, no write anywhere: exit 2, one reason on stderr, nothing on stdout, and no file appears."""
+    before = sorted(p.name for p in tmp_path.iterdir())
+    for env in (_mint_env(), _mint_env(GITHUB_ENV="")):
+        proc = _mint(env)
+        assert proc.returncode == 2, (proc.returncode, proc.stderr)
+        assert proc.stdout == ""
+        assert "GITHUB_ENV is not set" in proc.stderr
+        assert "ACCOUNT_" not in proc.stderr, "a refusal still minted and named keys"
+    assert sorted(p.name for p in tmp_path.iterdir()) == before
+
+
+def test_mint_dev_keys_writes_nothing_when_a_value_comes_back_empty(tmp_path, monkeypatch) -> None:
+    """A missing `node` or `openssl` is an EMPTY capture, not an error, so the refusal has to be the port's own."""
+    target = tmp_path / "github_env"
+    target.write_text("", encoding="utf-8")
+    monkeypatch.setattr(
+        account,
+        "generate_crypto_keys",
+        lambda: account.CryptoKeys("p", "", "x", "y", "jwt", "api"),
+    )
+    assert account.mint_dev_keys({"GITHUB_ENV": str(target)}) == 1
+    assert target.read_text(encoding="utf-8") == "", "a partial key set was written"
+    monkeypatch.setattr(
+        account,
+        "generate_crypto_keys",
+        lambda: account.CryptoKeys("p", "q\nINJECTED=1", "x", "y", "jwt", "api"),
+    )
+    assert account.mint_dev_keys({"GITHUB_ENV": str(target)}) == 1
+    assert target.read_text(encoding="utf-8") == "", "a multi-line value was written"
+
+
+def test_mint_dev_keys_takes_no_arguments(tmp_path, monkeypatch) -> None:
+    """GITHUB_ENV is SET here, so the 2 is the argument refusal and not the missing-file one, and the file stays empty."""
+    target = tmp_path / "github_env"
+    target.write_text("", encoding="utf-8")
+    monkeypatch.setenv("GITHUB_ENV", str(target))
+    assert account.main(["mint-dev-keys", "extra"]) == 2
+    assert target.read_text(encoding="utf-8") == "", "extra arguments still minted keys"
+
+
+def test_mint_dev_keys_covers_exactly_the_account_dev_required_names() -> None:
+    """The reason the verb works at all: with no token, `bws_env exec` proceeds only when every REQUIRED name of the profile is set, so the minted set must be that set."""
+    supply = json.loads(
+        (paths.repo_root() / ".ci/config/secret-supply.json").read_text(encoding="utf-8")
+    )
+    required = supply["consumers"]["account-dev"]["required"]
+    locals_ = [spec.split(">", 1)[-1].strip() for spec in required]
+    assert sorted(locals_) == sorted(account.CRYPTO_KEYS)

@@ -177,10 +177,10 @@ preflight() {
 # circuits when the output already exists (build-renet.sh:44-46), so it would
 # silently hand back a binary baked with a different key or built with different
 # tags. private/renet/build.sh is worse for this job: _account_key_ldflags
-# (build.sh:409-451) reads a key out of private/account/.env -- ED25519_PUBLIC_KEY
-# first, then ACCOUNT_ED25519_PUBLIC_KEY -- whenever the ACCOUNT_ED25519_PUBLIC_KEY
-# env var is unset, which would bake the PRODUCTION key into a binary this script
-# then treats as a test fixture.
+# (build.sh:407-440) bakes the DEV key from the console's public-key cache
+# (private/account/.cache/public-keys.env) whenever the ACCOUNT_ED25519_PUBLIC_KEY
+# env var is unset, which would bake a key this script did not choose into a
+# binary it then treats as a test fixture.
 build_renet() {
     local out="$1" pubkey="$2"
     shift 2

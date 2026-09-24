@@ -157,9 +157,11 @@ def _mentions(line: str, key: str) -> bool:
         return True
     if re.search(r'\bbridge\.(call|capture)\(\s*f?[\'"]%s\b' % re.escape(key), line):
         return True
-    # The two inline phases. `init-submodules.sh` appears as a path fragment in `ctx.run`, and the drift check is reached through a helper whose name is the phase's own subject, so both are matched by the literal inside a call.
+    # The three inline phases. `init-submodules.sh` appears as a path fragment in `ctx.run`; the drift check and the account bootstrap are reached through a helper whose name is the phase's own subject, so each is matched by that helper's call.
     if key in ("init-submodules.sh", "check:env-credential-drift"):
         return ('"%s"' % key in line) or ("_credential_drift(" in line and key.startswith("check:"))
+    if key == "account-bws-bootstrap":
+        return "_account_bws_bootstrap(" in line
     return False
 
 

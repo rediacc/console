@@ -104,31 +104,43 @@ if [[ "${1:-}" == "--dev" ]]; then
     shift
 fi
 if [[ "${RDC_DEV:-0}" == "1" ]]; then
-    # Read EXACTLY two values from the dev gateway's env file, by grep. NEVER
-    # `source` it (not even with `set -a`): private/account/.env also holds
-    # ACCOUNT_ED25519_PRIVATE_KEY, ACCOUNT_X25519_PRIVATE_KEY, ACCOUNT_JWT_SECRET and ACCOUNT_SERVER_API_KEY, and
-    # sourcing would leak every one of those secrets into the CLI process
-    # environment. grep + cut extracts only the two public values the dev
-    # config needs — the gateway URL and the server's X25519 public key.
-    account_env="$ROOT_DIR/private/account/.env"
-    dev_server=$(grep -E '^REDIACC_ACCOUNT_SERVER=' "$account_env" 2>/dev/null | tail -1 | cut -d= -f2-)
-    dev_e2e_key=$(grep -E '^ACCOUNT_X25519_PUBLIC_KEY=' "$account_env" 2>/dev/null | tail -1 | cut -d= -f2-)
+    # The dev config needs exactly two PUBLIC values: the gateway URL and the
+    # server's X25519 public key. Both come from the RUNNING gateway, never
+    # from a file under private/account: `./run.sh account dev` records its
+    # port as the `gateway_port=` line of this worktree's .account-state
+    # (.ci/lib/account.sh writes it), and the gateway publishes its public key
+    # at /.well-known/server-info. Nothing is ever `source`d here (not even
+    # with `set -a`), so no gateway secret can reach the CLI process
+    # environment.
+    #
+    # `|| true`: under `set -euo pipefail` a grep miss would otherwise kill the
+    # script silently here, before the fail-fast message below can print.
+    dev_port=$(grep -E '^gateway_port=' "$ROOT_DIR/.account-state" 2>/dev/null | tail -1 | cut -d= -f2- || true)
 
-    # Fail fast when the gateway is not configured — a half-configured dev mode
+    # Fail fast when no gateway is recorded; a half-configured dev config
     # would otherwise surface as a confusing CLI error later.
-    if [[ -z "$dev_server" ]]; then
-        log_error "RDC_DEV=1 but no dev gateway configured (private/account/.env missing REDIACC_ACCOUNT_SERVER)."
+    if [[ -z "$dev_port" ]]; then
+        log_error "RDC_DEV=1 but no running dev gateway recorded in .account-state."
         log_error "Start it first: ./run.sh account dev"
         exit 1
     fi
+    dev_server="http://localhost:$dev_port"
 
-    # Probe liveness so a stale/unstarted gateway fails here with a clear
-    # message instead of a confusing CLI error deep in a later request.
-    if ! curl -fsS --max-time 2 "$dev_server/account/api/v1/.well-known/server-info" >/dev/null 2>&1; then
+    # The liveness probe doubles as key discovery: a stale/unstarted gateway
+    # fails here with a clear message, and a live one hands back the public key.
+    if ! server_info=$(curl -fsS --max-time 2 "$dev_server/account/api/v1/.well-known/server-info" 2>/dev/null); then
         log_error "Dev gateway not responding at $dev_server"
         log_error "Start it first: ./run.sh account dev"
         exit 1
     fi
+    # `{"e2e":{"keys":[{"keyId":"v1","publicKeySpki":"..."}]}}`; an empty key
+    # list (the gateway has no X25519 key) yields an empty dev_e2e_key, and the
+    # seeder below then leaves e2ePublicKey untouched.
+    dev_e2e_key=$(node -e '
+      let k = "";
+      try { k = JSON.parse(process.argv[1])?.e2e?.keys?.[0]?.publicKeySpki ?? ""; } catch {}
+      process.stdout.write(String(k));
+    ' "$server_info")
 
     # Seed/patch the "dev" named config. node is guaranteed present (we exec it
     # below); jq is not. The seeder writes a minimal v3 config when the file is

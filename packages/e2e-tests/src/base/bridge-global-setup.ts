@@ -11,25 +11,6 @@ import { getOpsManager } from '../utils/bridge/OpsManager';
 import { InfrastructureManager } from '../utils/infrastructure/InfrastructureManager';
 
 /**
- * Ensure .env file exists by copying from .env.example if not present.
- */
-function ensureEnvFile() {
-  const e2eDir = path.resolve(__dirname, '..', '..');
-  const envPath = path.join(e2eDir, '.env');
-  const envExamplePath = path.join(e2eDir, '.env.example');
-
-  if (fs.existsSync(envPath) || !fs.existsSync(envExamplePath)) {
-    return;
-  }
-
-  // eslint-disable-next-line no-console
-  console.log('Creating .env from .env.example...');
-  fs.copyFileSync(envExamplePath, envPath);
-  // eslint-disable-next-line no-console
-  console.log('Created .env file');
-}
-
-/**
  * Wait for Ceph cluster health check
  */
 async function waitForCephHealth(opsManager: ReturnType<typeof getOpsManager>) {
@@ -274,7 +255,6 @@ function writeSetupErrorLog(error: unknown) {
  * Do NOT call provisionCeph() separately as this causes duplicate provisioning conflicts.
  */
 async function bridgeGlobalSetup(_config: FullConfig) {
-  ensureEnvFile();
   // KEEP_CLUSTER implies skip-reset: iteration mode exists to reuse a standing cluster, and a VM reboot both costs minutes per invocation and races the suite against boot recovery (observed live: a scoped re-run red on half-regenerated containerd config). CI sets neither flag.
   const skipReset = process.env.BRIDGE_TEST_SKIP_RESET === '1' || process.env.KEEP_CLUSTER === '1';
 

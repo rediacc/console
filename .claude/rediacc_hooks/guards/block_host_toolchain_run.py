@@ -94,7 +94,7 @@ NEEDS_SCRIPT = (
 #
 # `main.py --publish-www` copied 52 files locally, uploaded ZERO, exited 0, and printed "R2_MEDIA_* env vars not set". Every one of those words was load-bearing and the run still read as a publish: the site had new files in packages/www, and nothing reached media.rediacc.com.
 #
-# The credentials are not meant to be in the shell. They live in private/account/.env, a SUBMODULE file, alongside 48 other keys. A command that needs them and does not source it does not fail; it half-succeeds, which is worse. So require the sourcing to be VISIBLE in the command.
+# The credentials are not meant to be in the shell. They live in Bitwarden, and `bws_env exec --profile publish-media` binds them into ONE child process (agent/plans/PLAN-account-env-to-bws.md; the account's local env file is retired). A command that needs them and does not run under that profile does not fail; it half-succeeds, which is worse. So require the profile to be VISIBLE in the command.
 #
 # Extend the table when another command grows a credential dependency. Match on something specific to that command, never on a bare tool name.
 NEEDS_ENV = (
@@ -408,44 +408,35 @@ def run(ev):
         )
         return hookio.DENY
 
-    account_env = "%s/private/account/.env" % repo_root
-    if pathlib.Path(account_env).is_file():
+    # Only where the account submodule is checked out: a checkout without it has no store access either, and the publish verbs have nothing to upload with.
+    if pathlib.Path("%s/private/account/package.json" % repo_root).is_file():
         for key, var in NEEDS_ENV:
             if not _is_invoked(key, scan):
                 continue
-            # Already sourcing the file, or setting the credential inline: fine.
-            if hookio.grep_q("private/account/.env", cmd, fixed=True):
+            # Already running under the profile, or setting the credential inline: fine.
+            if hookio.grep_q("--profile publish-media", cmd, fixed=True):
                 continue
             if hookio.grep_q(var, cmd, fixed=True):
-                continue
-            # Only complain if the file actually carries the credential.
-            try:
-                env_text = pathlib.Path(account_env).read_text(encoding="utf-8", errors="replace")
-            except OSError:
-                continue
-            if not hookio.grep_q_line("^%s=" % var, env_text):
                 continue
             ev.warn_raw(
                 "BLOCKED: '%s' uploads to R2, and its credentials are NOT in your shell."
                 " They live\n"
-                "in private/account/.env, which this command does not source.\n"
+                "in Bitwarden, and this command does not run under the profile that binds"
+                " them.\n"
                 "\n"
                 "Without them the run does NOT fail. It copies files locally, uploads nothing,"
                 " exits 0,\n"
                 "and warns about the wrong thing. That happened on 2026-08-28: 52 files copied, 0\n"
                 "uploaded, and the closing line blamed unset env vars that were about to be set.\n"
                 "\n"
-                "Load the file in the same command:\n"
+                "Run it under the publish-media profile, in the same command:\n"
                 "\n"
-                "    source scripts/lib/env-file.sh;"
-                " env_file_load private/account/.env\n"
-                "    <your command>\n"
+                "    PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec"
+                " --profile publish-media -- <your command>\n"
                 "\n"
-                "Not `set -a; . private/account/.env; set +a`: that EXECUTES the file (it"
-                " holds\n"
-                "ACCOUNT_ED25519_PRIVATE_KEY and ACCOUNT_JWT_SECRET, and a $(...) in a value"
-                " would\n"
-                "run) and lets the file overwrite anything you set on the command line.\n"
+                "The values reach that one child process through its environment, never a"
+                " file or a\n"
+                "stream (.ci/config/secret-supply.json `consumers`).\n"
                 "\n"
                 "If you are deliberately doing a local-only copy, say so by setting the variable\n"
                 "yourself (%s=) so the intent is in the command rather than in your memory.\n"

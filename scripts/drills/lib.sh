@@ -26,9 +26,8 @@
 #      account_dev_credentials mints fresh ones with `openssl rand`) and may
 #      land on a DIFFERENT port (account_allocate_ports scans for 3 consecutive
 #      free ports from the preferred base). Nothing here may remember a port or
-#      a credential between runs: drill_gateway_port re-reads .account-state and
-#      drill_account_env re-reads private/account/.env on every call, and the
-#      drills mint their own logins through the dev-only /test routes rather
+#      a credential between runs: drill_gateway_port re-reads .account-state on
+#      every call, and the drills mint their own logins through the dev-only /test routes rather
 #      than scraping the credentials banner.
 #
 # PROVE THE INSTRUMENT. Every drill accepts --selftest, which plants exactly one
@@ -438,16 +437,6 @@ drill_gateway_port() {
     port=$(grep '^gateway_port=' "$state" 2>/dev/null | cut -d= -f2)
     [[ -n "$port" ]] || return 1
     printf '%s' "$port"
-}
-
-# drill_account_env <KEY> — read one value out of private/account/.env by grep.
-# Deliberately never `source`: that file also holds ED25519_PRIVATE_KEY,
-# X25519_PRIVATE_KEY, JWT_SECRET and API_KEY, and sourcing would push all four
-# into the environment of every command the drill runs. Same rule rdc.sh follows.
-drill_account_env() {
-    local key="$1" env_file="$DRILL_ROOT_DIR/private/account/.env"
-    [[ -f "$env_file" ]] || return 1
-    grep -E "^${key}=" "$env_file" 2>/dev/null | tail -1 | cut -d= -f2-
 }
 
 # drill_gateway_alive — true when the recorded port answers /health.

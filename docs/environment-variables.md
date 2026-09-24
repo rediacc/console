@@ -79,6 +79,30 @@ daemon client), `renet` (binary provisioning transfer), `timing` (fork timing ch
 | `RDC_RENET_LICENSE=1` | Builds dev renet WITHOUT the `nolicense` tag (license enforcement on). |
 | `ACCOUNT_ED25519_PUBLIC_KEY` | Ldflags-injected master key for renet license validation. Build-time only; setting it at runtime has no effect. |
 
+## Test and tooling harnesses (not read by the CLI)
+
+No example env file is tracked; each harness reads these from the environment and falls back to the default shown.
+
+`packages/e2e-tests` (bridge E2E). CI writes them into `packages/e2e-tests/.env` with `PYTHONPATH=.ci python3 -m rediacc_ci.env.create_e2e_env`, which the Playwright configs load:
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `RENET_BINARY_PATH` | auto-detected | renet binary the suite drives |
+| `RENET_DATA_DIR` | CI: from `RUNNER_TEMP`; else `/tmp/renet` when `CI=true` | renet data directory holding the staging SSH keys. Set `~/.renet` locally. |
+| `VM_NET_BASE` / `VM_NET_OFFSET` | `192.168.111` / `0` | VM network prefix, and the offset added to a VM id to form its IP |
+| `VM_BRIDGE` | `1` | bridge VM id |
+| `VM_WORKERS` | `11 12` | worker VM ids, space-separated |
+| `VM_CEPH_NODES` | `21 22 23` | Ceph node VM ids, space-separated |
+| `BRIDGE_TIMEOUT` | required; `create_e2e_env` writes `120000`, the CI jobs set `240000` | bridge command timeout, ms; must exceed renet's own retry budgets (the RADOS namespace delete retries for 2 minutes). The k8s configs raise it to 360000. |
+
+`packages/www` tutorial audio (`packages/www/scripts/generate-tutorial-audio.ts`, backend in `private/generative`):
+
+| Variable | Purpose |
+|---|---|
+| `QWEN_TTS_PYTHON_BIN` | Python interpreter for the TTS backend (default `python3`) |
+| `QWEN_TTS_MODEL_ID`, `QWEN_TTS_CUSTOM_SPEAKER`, `QWEN_TTS_TUTORIAL_INSTRUCT_PROMPT`, `QWEN_TTS_INSTRUCT_PRESETS_JSON` | model and voice selection, read by `private/generative` |
+| `QWEN_TTS_DEVICE`, `QWEN_TTS_DTYPE`, `QWEN_TTS_ATTN_IMPL`, `QWEN_TTS_MAX_CONCURRENCY`, `QWEN_TTS_BATCH_SIZE`, `QWEN_TTS_SAMPLE_RATE_HZ`, `QWEN_TTS_AUDIO_FILTER` | runtime tuning, read by `private/generative` |
+
 ## Deleted variables (tombstones)
 
 These names are gone; a CI test (`env-tombstones.test.ts`) fails if they reappear in source. Replacements:

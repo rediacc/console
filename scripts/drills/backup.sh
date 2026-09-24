@@ -102,6 +102,8 @@ DRILL_EMAIL="drill-backup-$(date +%s)@rediacc.io"
 DRILL_PASSWORD="DrillBackup123!"
 CONFIG_NAME="drill-backup"
 RDC="$DRILL_ROOT_DIR/rdc.sh"
+# This drill targets only the disposable local ops VMs, so a renet built from a dirty private/renet tree may be uploaded to them.
+export REDIACC_ALLOW_DIRTY_RENET=1
 RENET_BIN="${DRILL_RENET_BIN:-$DRILL_ROOT_DIR/private/renet/bin/renet}"
 
 # The chunk store: the SAME RustFS `./run.sh account dev` starts for config

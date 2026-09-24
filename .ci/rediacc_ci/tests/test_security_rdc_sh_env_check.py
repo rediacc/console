@@ -22,6 +22,7 @@ K=5 LEDGER: `.ci/shadow/w7p6-rdc-sh-env.observations.jsonl`.
 from __future__ import annotations
 
 import os
+import re
 import shutil
 import subprocess
 import typing
@@ -97,6 +98,14 @@ def assert_same(
     assert new.stderr == old.stderr
 
 
+# `mktemp -d` (`/tmp/tmp.XXXXXXXXXX`) and `tempfile.mkdtemp()` (`/tmp/tmpXXXXXXXX`): the one thing the two sides cannot share, and quoted only on a red path.
+_TMP_RE = re.compile(r"/tmp/tmp\.?[A-Za-z0-9_]+")
+
+
+def mask_tmp(text: str) -> str:
+    return _TMP_RE.sub("<tmp>", text)
+
+
 # --------------------------------------------------------------------------- The green path, on the real tree and on an unmutated fixture ---------------------------------------------------------------------------
 
 
@@ -157,7 +166,7 @@ def test_an_extra_export_breaks_the_allowlist(tmp_path: pathlib.Path) -> None:
 
 
 def test_a_dead_surface_reference_still_prints_its_pass_line(tmp_path: pathlib.Path) -> None:
-    """The twin's 1d PASS is UNCONDITIONAL (`test-rdc-sh-env.sh:84`).
+    """The twin's 1d PASS is UNCONDITIONAL (`test-rdc-sh-env.sh:89`).
 
     A run that finds `RDC_BENCH` still referenced prints BOTH the failure and "no removed token/mode surface". A port that "fixed" that would disagree here, which is the whole reason this case exists.
     """
@@ -210,6 +219,36 @@ def test_a_real_secret_leak_is_caught(tmp_path: pathlib.Path) -> None:
     for name in rdc_sh_env_check.SECRET_NAMES:
         assert BAD_GLYPH + "SECRET LEAK: %s present in CLI environment\n" % name in old.stderr
     assert_same(old, new)
+
+
+def test_a_key_read_from_the_wrong_server_info_field_is_caught(tmp_path: pathlib.Path) -> None:
+    """The dev path takes the public key from the running gateway's server-info body.
+
+    Reading `keyId` instead of `publicKeySpki` still seeds a non-empty value, so only the dev.json comparison against the curl shim's `stubpublickey` notices.
+    """
+    fixture = build_fixture(tmp_path)
+    mutate(fixture, "?.publicKeySpki ??", "?.keyId ??")
+    old, new = run_both(fixture)
+    assert old.returncode == 1
+    assert old.stderr == BAD_GLYPH + "dev.json e2ePublicKey=v1 (expected stubpublickey)\n"
+    assert old.stdout.endswith("\nPassed: 6\nFailed: 1\n")
+    assert_same(old, new)
+
+
+def test_a_missing_gateway_port_fails_fast_on_both_sides(tmp_path: pathlib.Path) -> None:
+    """No `gateway_port=` line in `.account-state`: the dev path must stop before exec, not guess a server."""
+    fixture = build_fixture(tmp_path)
+    mutate(fixture, "'^gateway_port='", "'^no_such_key='")
+    old, new = run_both(fixture)
+    assert old.returncode == 1
+    assert "no running dev gateway recorded in .account-state" in old.stderr
+    assert BAD_GLYPH + "rdc.sh --dev exited non-zero\n" in old.stderr
+    assert (
+        BAD_GLYPH + "CLI env dump not produced (dev path did not reach exec node)\n" in old.stderr
+    )
+    assert new.returncode == old.returncode
+    assert new.stdout == old.stdout
+    assert mask_tmp(new.stderr) == mask_tmp(old.stderr)
 
 
 def test_a_missing_rdc_sh_is_the_same_refusal_on_both_sides(tmp_path: pathlib.Path) -> None:

@@ -35,7 +35,7 @@ and a written found-not-fixed ledger.
 - Coding sub-agents: Opus by default. Fable for the challenging pieces, at minimum:
 renet fork-identity binding + renewal command (touches validation internals), the account renewal endpoint + race hardening (auth-by-blob, concurrency), and the T1 e2e composition job.
 - Sonnet for ALL translation/naturalization deltas (12 locales, ledgers, hashes).
-- At most 2 concurrent writers, disjoint file ownership stated verbatim in each
+- At most 4 concurrent writers, disjoint file ownership stated verbatim in each
 prompt; forbid git checkout/restore/stash/clean and repo-wide regenerate scripts in every writer prompt; sub-agent reports are spot-checked against artifacts before the next phase (full-file reads of the load-bearing files).
 - Investigation and planning fan out freely (read-only agents are cheap).
 

@@ -1,8 +1,8 @@
 """How the devbox gets its Bitwarden Secrets Manager token, driven for real.
 
-Two halves. `.devcontainer/devbox-bws.sh` is the login-shell hook bound to `/etc/profile.d/zz-devbox-bws.sh`: it reads `BWS_ACCESS_TOKEN` out of `$DEVBOX_WORKSPACE/private/account/.env` at shell start. `.ci/lib/devbox.sh` binds it (`devbox_script_binds`) and recreates a container created before the bind existed (`devbox_missing_binds`, read by `devbox_up`), because a bind only ever comes from `docker run`.
+Two halves. `.devcontainer/devbox-bws.sh` is the login-shell hook bound to `/etc/profile.d/zz-devbox-bws.sh`: it reads `BWS_ACCESS_TOKEN` from the token-only file `/home/vscode/.config/rediacc/bws-access-token` at shell start. `private/account/.env`, which it once fell back to, is retired (agent/plans/PLAN-account-env-to-bws.md T18), and a test below plants one to prove it is never read. `.ci/lib/devbox.sh` binds the hook (`devbox_script_binds`) and recreates a container created before the bind existed (`devbox_missing_binds`, read by `devbox_up`), because a bind only ever comes from `docker run`.
 
-The hook is run under BOTH dash and bash: /etc/profile is read by `sh -l` as well, and a bashism would break every such login. The token in every fixture is a fake; the assertions that matter are that the value reaches the environment, that nothing else from the .env does, and that no stream ever carries it, including an xtrace.
+The hook is run under BOTH dash and bash: /etc/profile is read by `sh -l` as well, and a bashism would break every such login. The token in every fixture is a fake; the assertions that matter are that the value reaches the environment and that no stream ever carries it, including an xtrace.
 
 The devbox.sh functions are LIFTED from the live library rather than restated, as `test_gate_devbox_probes.py` does, so this cannot drift into testing a copy.
 """
@@ -24,70 +24,58 @@ FAKE = "not-a-real-token-4f2a9c"
 SHELLS = [s for s in ("dash", "bash") if shutil.which(s)]
 
 
-def write_env(tmp_path, text: str):
-    env_dir = tmp_path / "private" / "account"
-    env_dir.mkdir(parents=True, exist_ok=True)
-    (env_dir / ".env").write_text(text, encoding="utf-8")
-    return tmp_path
+def token(tmp_path, content: str):
+    path = tmp_path / "bws-access-token"
+    path.write_text(content, encoding="utf-8")
+    return path
 
 
-def run_hook(
-    shell: str, workspace, preset: str | None = None, xtrace: bool = False, token_file=None
-):
-    """Source the hook in a fresh shell and report what it exported, by name and by equality only."""
+def run_hook(shell: str, token_file, preset: str | None = None, workspace=None):
+    """Source the hook in a fresh shell and report what it exported, by equality only."""
     body = (
         (". %s\n" % HOOK) + 'if [ "${BWS_ACCESS_TOKEN:-}" = "%s" ]; then echo MATCH; '
-        'elif [ -n "${BWS_ACCESS_TOKEN:-}" ]; then echo OTHER; else echo UNSET; fi\n'
-        % FAKE
-        + 'env | grep -c "^OTHER_SECRET=" || true\n'
+        'elif [ -n "${BWS_ACCESS_TOKEN:-}" ]; then echo OTHER; else echo UNSET; fi\n' % FAKE
     )
-    env = {
-        "PATH": "/usr/bin:/bin",
-        "DEVBOX_WORKSPACE": str(workspace),
-        "DEVBOX_BWS_TOKEN_FILE": str(token_file or workspace / "no-such-token-file"),
-    }
+    env = {"PATH": "/usr/bin:/bin", "DEVBOX_BWS_TOKEN_FILE": str(token_file)}
+    if workspace is not None:
+        env["DEVBOX_WORKSPACE"] = str(workspace)
     if preset is not None:
         env["BWS_ACCESS_TOKEN"] = preset
-    argv = [shell] + (["-x"] if xtrace else []) + ["-c", body]
-    return subprocess.run(argv, env=env, capture_output=True, text=True, timeout=30, check=False)
+    return subprocess.run(
+        [shell, "-c", body], env=env, capture_output=True, text=True, timeout=30, check=False
+    )
 
 
 @pytest.mark.parametrize("shell", SHELLS)
 @pytest.mark.parametrize(
-    "line",
-    [
-        "BWS_ACCESS_TOKEN=%s" % FAKE,
-        'BWS_ACCESS_TOKEN="%s"' % FAKE,
-        "BWS_ACCESS_TOKEN='%s'" % FAKE,
-        "export BWS_ACCESS_TOKEN=%s" % FAKE,
-        "BWS_ACCESS_TOKEN=%s\r" % FAKE,
-    ],
+    "content",
+    [FAKE, FAKE + "\n", "  %s  \n" % FAKE, FAKE + "\r\n", FAKE + "\nignored-second-line\n"],
 )
-def test_the_hook_exports_the_token_and_nothing_else(tmp_path, shell: str, line: str) -> None:
-    ws = write_env(tmp_path, "# comment\nOTHER_SECRET=nope\n%s\nTRAILING=1\n" % line)
-    result = run_hook(shell, ws)
-    assert result.returncode == 0, result.stderr
-    assert result.stdout.split() == ["MATCH", "0"], result.stdout
-    assert FAKE not in result.stderr
+def test_the_token_file_is_read(tmp_path, shell: str, content: str) -> None:
+    result = run_hook(shell, token(tmp_path, content))
+    assert result.stdout.split() == ["MATCH"], result.stdout
+    assert result.stderr == ""
 
 
 @pytest.mark.parametrize("shell", SHELLS)
-def test_a_last_line_without_a_newline_is_still_read(tmp_path, shell: str) -> None:
-    ws = write_env(tmp_path, "OTHER_SECRET=nope\nBWS_ACCESS_TOKEN=%s" % FAKE)
-    assert run_hook(shell, ws).stdout.split()[0] == "MATCH"
+def test_the_retired_env_file_is_never_read(tmp_path, shell: str) -> None:
+    """A planted private/account/.env carrying the token must NOT be picked up: the fallback is gone."""
+    env_dir = tmp_path / "ws" / "private" / "account"
+    env_dir.mkdir(parents=True)
+    (env_dir / ".env").write_text("BWS_ACCESS_TOKEN=%s\n" % FAKE, encoding="utf-8")
+    result = run_hook(shell, tmp_path / "absent", workspace=tmp_path / "ws")
+    assert result.stdout.split() == ["UNSET"]
+    assert result.stderr == ""
+    empty = run_hook(shell, token(tmp_path, ""), workspace=tmp_path / "ws")
+    assert empty.stdout.split() == ["UNSET"], "an EMPTY token file must not fall back either"
 
 
 @pytest.mark.parametrize("shell", SHELLS)
 def test_xtrace_never_carries_the_value(tmp_path, shell: str) -> None:
-    ws = write_env(tmp_path, "BWS_ACCESS_TOKEN=%s\n" % FAKE)
     body = '. %s\nprintf "%%s" "${#BWS_ACCESS_TOKEN}"\n' % HOOK
     result = subprocess.run(
         [shell, "-x", "-c", body],
-        env={
-            "PATH": "/usr/bin:/bin",
-            "DEVBOX_WORKSPACE": str(ws),
-            "DEVBOX_BWS_TOKEN_FILE": str(ws / "absent"),
-        },
+        env={"PATH": "/usr/bin:/bin", "DEVBOX_BWS_TOKEN_FILE": str(token(tmp_path, FAKE + "\n"))},
         capture_output=True,
         text=True,
         timeout=30,
@@ -102,45 +90,21 @@ def test_xtrace_never_carries_the_value(tmp_path, shell: str) -> None:
 
 @pytest.mark.parametrize("shell", SHELLS)
 def test_a_preset_token_wins(tmp_path, shell: str) -> None:
-    ws = write_env(tmp_path, "BWS_ACCESS_TOKEN=%s\n" % FAKE)
-    assert run_hook(shell, ws, preset="caller-chosen").stdout.split()[0] == "OTHER"
+    assert run_hook(shell, token(tmp_path, FAKE), preset="caller-chosen").stdout.split() == [
+        "OTHER"
+    ]
 
 
 @pytest.mark.parametrize("shell", SHELLS)
-def test_no_file_or_no_line_leaves_it_unset_and_prints_nothing(tmp_path, shell: str) -> None:
-    missing = run_hook(shell, tmp_path)
-    assert missing.stdout.split()[0] == "UNSET"
+def test_no_file_leaves_it_unset_and_prints_nothing(tmp_path, shell: str) -> None:
+    missing = run_hook(shell, tmp_path / "absent")
+    assert missing.stdout.split() == ["UNSET"]
     assert missing.stderr == ""
-    ws = write_env(tmp_path / "other", "OTHER_SECRET=nope\nBWS_ACCESS_TOKEN=\n")
-    empty = run_hook(shell, ws)
-    assert empty.stdout.split() == ["UNSET", "0"]
-    assert empty.stderr == ""
-
-
-@pytest.mark.parametrize("shell", SHELLS)
-@pytest.mark.parametrize(
-    "content", [FAKE, FAKE + "\n", "  %s  \n" % FAKE, FAKE + "\nignored-second-line\n"]
-)
-def test_the_token_file_is_read_first(tmp_path, shell: str, content: str) -> None:
-    token = tmp_path / "bws-access-token"
-    token.write_text(content, encoding="utf-8")
-    ws = write_env(tmp_path, "BWS_ACCESS_TOKEN=from-the-env-file\n")
-    result = run_hook(shell, ws, token_file=token)
-    assert result.stdout.split()[0] == "MATCH", result.stdout
-    assert result.stderr == ""
-
-
-@pytest.mark.parametrize("shell", SHELLS)
-def test_an_empty_token_file_falls_back_to_the_env_line(tmp_path, shell: str) -> None:
-    token = tmp_path / "bws-access-token"
-    token.write_text("", encoding="utf-8")
-    ws = write_env(tmp_path, "BWS_ACCESS_TOKEN=%s\n" % FAKE)
-    assert run_hook(shell, ws, token_file=token).stdout.split()[0] == "MATCH"
 
 
 def test_the_default_token_path_is_the_read_only_home_bind() -> None:
     hook = HOOK.read_text(encoding="utf-8")
-    assert "${DEVBOX_BWS_TOKEN_FILE:-/home/vscode/.config/rediacc-console/bws-access-token}" in hook
+    assert "${DEVBOX_BWS_TOKEN_FILE:-/home/vscode/.config/rediacc/bws-access-token}" in hook
     lines = subprocess.run(
         ["bash", "-c", lift("devbox_home_binds") + "\ndevbox_home_binds"],
         capture_output=True,
@@ -148,9 +112,10 @@ def test_the_default_token_path_is_the_read_only_home_bind() -> None:
         timeout=30,
         check=True,
     ).stdout.split()
-    assert ".config/rediacc-console:ro" in lines
-    # Never inside the rdc CLI's own read-write state directory.
-    assert "/.config/rediacc/" not in hook
+    # The FILE is bound read-only, and AFTER the read-write directory bind it sits in, so the
+    # rdc CLI's state stays writable while the root credential does not.
+    assert ".config/rediacc/bws-access-token:ro" in lines
+    assert lines.index(".config/rediacc:") < lines.index(".config/rediacc/bws-access-token:ro")
 
 
 def lift(name: str) -> str:
@@ -244,6 +209,12 @@ def test_a_home_bind_counts_only_once_its_host_source_exists(tmp_path) -> None:
     home = tmp_path / "home"
     home.mkdir()
     assert missing(tmp_path, every, home=home) == []
-    (home / ".config" / "rediacc-console").mkdir(parents=True)
-    assert missing(tmp_path, every, home=home) == ["/home/vscode/.config/rediacc-console"]
-    assert missing(tmp_path, every + "\n/home/vscode/.config/rediacc-console", home=home) == []
+    (home / ".config" / "rediacc").mkdir(parents=True)
+    (home / ".config" / "rediacc" / "bws-access-token").write_text("x\n", encoding="utf-8")
+    assert missing(tmp_path, every, home=home) == [
+        "/home/vscode/.config/rediacc",
+        "/home/vscode/.config/rediacc/bws-access-token",
+    ]
+    bind_dest = "/home/vscode/.config/rediacc/bws-access-token"
+    both = every + "\n/home/vscode/.config/rediacc\n" + bind_dest
+    assert missing(tmp_path, both, home=home) == []

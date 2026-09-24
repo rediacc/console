@@ -570,3 +570,6 @@
 {"at":"2026-09-21T10:32:09Z","subject":"test_gate_breakpoint_portability","twin":".ci/scripts/test/gates/test-breakpoint-portability.sh","twin_sha":"e11ad40a6bed5d8c","port_sha":"70aecdfa26653e34","agreed":true}
 {"at":"2026-09-21T10:56:22Z","subject":"test_gate_blocker_golden_corpus","twin":".ci/scripts/test/gates/test-blocker-golden-corpus.sh","twin_sha":"ae49847596bb3448","port_sha":"8dbc98b176eae9f4","agreed":true}
 {"at":"2026-09-21T10:58:32Z","subject":"test_gate_gate_anti_vacuity","twin":".ci/scripts/test/gates/test-gate-anti-vacuity.sh","twin_sha":"d5771fe0f28039ce","port_sha":"18f6f82650b25e5b","agreed":true}
+{"at":"2026-09-24T07:43:12Z","subject":"test_gate_blocker_golden_corpus","twin":".ci/scripts/test/gates/test-blocker-golden-corpus.sh","twin_sha":"ae49847596bb3448","port_sha":"6752edc2381a0b86","agreed":true}
+{"at":"2026-09-24T07:43:21Z","subject":"test_gate_media_r2","twin":".ci/scripts/test/gates/test-media-r2.sh","twin_sha":"d5eef1323b281f95","port_sha":"40e76c298ed54de3","agreed":true}
+{"at":"2026-09-24T07:43:41Z","subject":"test_gate_runner_advice","twin":".ci/scripts/test/gates/test-runner-advice.sh","twin_sha":"41995b7b8507af3a","port_sha":"8862b40f0cab7dbe","agreed":true}

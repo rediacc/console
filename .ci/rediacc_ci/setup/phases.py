@@ -76,11 +76,18 @@ PHASES: tuple[Phase, ...] = (
     # `ensure_deps` is called bare: its exit code is IGNORED by setup(), which is why `fatal` is False here even though the function itself can fail.
     Phase("ensure_deps", ".ci/lib/local-common.sh:203", False),
     Phase(
+        "account-bws-bootstrap",
+        ".ci/rediacc_ci/setup/machine.py",
+        # BLOCKING (agent/plans/PLAN-account-env-to-bws.md T20): the bootstrap token file must exist at mode 0600 and private/account/.env/.env.bench must be gone, because a leftover file is a second source of truth nothing reconciles. Then the PUBLIC-key cache is refreshed (T15), which is advisory: offline, builds fall back to a keyless renet.
+        True,
+        condition="private/account is checked out",
+    ),
+    Phase(
         "check:env-credential-drift",
         "package.json",
-        # ADVISORY AND NEVER FATAL, and the bash argues the point at length (.ci/legacy/run-legacy.sh:660-670): "blocking a developer's bootstrap on a credential only an ops owner can rotate strands the one person who cannot fix it".
+        # ADVISORY AND NEVER FATAL, and the bash argued the point at length: "blocking a developer's bootstrap on a credential only an ops owner can rotate strands the one person who cannot fix it". It now reads the values from Bitwarden (`--profile credential-drift`), so it no longer depends on a local file existing.
         False,
-        condition="SKIP_ENV_DRIFT_CHECK != 1 and private/account/.env exists",
+        condition="SKIP_ENV_DRIFT_CHECK != 1",
     ),
     Phase("ensure_docker_installed", ".ci/lib/local-common.sh:669", True),
     Phase("devbox_ensure_image", ".ci/lib/devbox.sh", True),
@@ -183,8 +190,8 @@ def plan(
     The three conditionals are the bash's, spelled as the bash spells them:
 
         .gitmodules                 `[[ -f "$ROOT_DIR/.gitmodules" ]]`
-        credential drift            `[[ "${SKIP_ENV_DRIFT_CHECK:-}" != "1" ]] &&
-                                     [[ -f "$ROOT_DIR/private/account/.env" ]]`
+        account bws bootstrap       private/account is checked out (its package.json exists)
+        credential drift            `[[ "${SKIP_ENV_DRIFT_CHECK:-}" != "1" ]]`
         devbox_up                   `[[ "$do_start" != true ]]` returns early
 
     NOTE THE THIRD IS A `return 0`, NOT A SKIP. Under `--no-start` the bash prints "Host prepared." and returns, so `devbox_up` is the only phase after the branch and dropping it is the whole of the difference. Written as a conditional here because there is nothing after it; a phase added below `devbox_up` later would have to become an early exit instead, and this comment is the
@@ -194,10 +201,12 @@ def plan(
     for phase in PHASES:
         if phase.key == "init-submodules.sh" and not (root / ".gitmodules").is_file():
             continue
-        if phase.key == "check:env-credential-drift" and not (
-            env.get("SKIP_ENV_DRIFT_CHECK", "") != "1"
-            and (root / "private" / "account" / ".env").is_file()
+        if (
+            phase.key == "account-bws-bootstrap"
+            and not (root / "private" / "account" / "package.json").is_file()
         ):
+            continue
+        if phase.key == "check:env-credential-drift" and env.get("SKIP_ENV_DRIFT_CHECK", "") == "1":
             continue
         if phase.key == "devbox_up" and not start:
             continue

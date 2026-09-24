@@ -22,8 +22,26 @@ DISPATCH = str(pathlib.Path(__file__).resolve().parents[1] / "dispatch.py")
 GUARD_ARGV = [sys.executable, DISPATCH, "block_host_toolchain_run"]
 REPO = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", ".."))
 
+# ONE PARENT DIRECTORY PER RUN, STAMPED WITH THE PID, and a sweep of every parent whose process is gone. `atexit` does not run when the harness kills a run on its timeout, and each `_path_without` shim was ~6,500 symlinks on a WSL host (its PATH carries every Windows executable under /mnt/c): 81 leaked shims held 538,000 of /tmp's 1,048,576 inodes on 2026-09-24 and Bash could no longer write its own output.
+_TMP_PREFIX = "hostguard-test-"
+
+
+def _sweep_dead_runs():
+    base = tempfile.gettempdir()
+    for name in os.listdir(base):
+        if not name.startswith(_TMP_PREFIX):
+            continue
+        pid = name[len(_TMP_PREFIX) :].split("-", 1)[0]
+        if pid.isdigit() and not os.path.exists("/proc/%s" % pid):
+            shutil.rmtree(os.path.join(base, name), ignore_errors=True)
+
+
+_sweep_dead_runs()
+RUN_TMP = tempfile.mkdtemp(prefix="%s%d-" % (_TMP_PREFIX, os.getpid()))
+atexit.register(shutil.rmtree, RUN_TMP, ignore_errors=True)
+
 # A PATH with the real tools plus a shim dir we control.
-shim = tempfile.mkdtemp()
+shim = tempfile.mkdtemp(dir=RUN_TMP)
 # Every temp directory here is registered for removal the moment it exists, because the explicit rmtree calls further down only run when the suite reaches them, and `_path_without` below is called once per stripped tool with no cleanup at all: ten directories leaked per run before this.
 atexit.register(shutil.rmtree, shim, ignore_errors=True)
 
@@ -78,11 +96,11 @@ def _path_without(tool, base):
 
     First `base` directory to offer a given name wins, matching normal PATH resolution order, so a name shadowed further down `base` stays shadowed here too.
     """
-    shim_dir = tempfile.mkdtemp()
-    atexit.register(shutil.rmtree, shim_dir, ignore_errors=True)
+    shim_dir = tempfile.mkdtemp(dir=RUN_TMP)
     seen = set()
     for directory in base.split(os.pathsep):
-        if not directory or not os.path.isdir(directory):
+        # WSL interop mounts (/mnt/c/Windows, ...) hold thousands of Windows executables and none of the tools this guard routes.
+        if not directory or directory.startswith("/mnt/") or not os.path.isdir(directory):
             continue
         try:
             names = os.listdir(directory)
@@ -255,33 +273,32 @@ if have_box:
             continue
         cases.append((want, run(f"npm run check:ci-python-lint --prefix {path}", REAL), why))
 
-# A command that uploads to R2 without sourcing private/account/.env does not fail, it half-succeeds: 52 files copied locally, 0 uploaded, exit 0, and a closing warning that named the wrong cause. Only assert this when the credential file is present, since the guard is deliberately silent without it.
-if os.path.exists(os.path.join(REPO, "private/account/.env")):
+# A command that uploads to R2 without its credentials does not fail, it half-succeeds: 52 files copied locally, 0 uploaded, exit 0, and a closing warning that named the wrong cause. The credentials come from Bitwarden through `bws_env exec --profile publish-media` (PLAN-account-env-to-bws). Only asserted where the account submodule is checked out, since the guard is deliberately silent without it.
+if os.path.exists(os.path.join(REPO, "private/account/package.json")):
     cases.append(
         (
             2,
             run("./run.sh --publish-www --langs en", REAL),
-            "publish-www without sourcing private/account/.env is refused",
-        )
-    )
-    cases.append(
-        (
-            0,
-            run("set -a; . private/account/.env; set +a; ./run.sh --publish-www --langs en", REAL),
-            "CONTROL: sourcing it in the same command is accepted",
+            "publish-www without the publish-media profile is refused",
         )
     )
     cases.append(
         (
             0,
             run(
-                "source scripts/lib/env-file.sh; env_file_load private/account/.env;"
-                " ./run.sh --publish-www --langs en",
+                "PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile publish-media"
+                " -- ./run.sh --publish-www --langs en",
                 REAL,
             ),
-            # THE FORM THIS GUARD NOW ADVISES. Pinned here because the message and the predicate are in different functions and nothing else holds them together: a guard that recommends a command it then blocks is worse than one that recommends nothing. `set -a; .` stays accepted above -- it is still a real way to get the credentials into the shell, it is just no longer the one to
-            # print, because it EXECUTES a file holding two private keys.
-            "CONTROL: the form the message now advises is accepted",
+            # THE FORM THIS GUARD ADVISES. Pinned here because the message and the predicate are in different functions and nothing else holds them together: a guard that recommends a command it then blocks is worse than one that recommends nothing.
+            "CONTROL: the form the message advises is accepted",
+        )
+    )
+    cases.append(
+        (
+            2,
+            run("set -a; . private/account/.env; set +a; ./run.sh --publish-www --langs en", REAL),
+            "the retired env-file form no longer counts as carrying the credentials",
         )
     )
     cases.append(
@@ -427,7 +444,7 @@ if aws_in_box:
     )
 
     # THE TWO TABLES COMPOSE, IN THIS ORDER. sync-media-to-r2.sh is in NEEDS_ENV as well, so satisfying the credential arm must not satisfy the toolchain one: the credentials being in the shell says nothing about whether aws is on PATH.
-    # The inline form is used rather than the sourcing form because naming private/account/.env puts the command inside a submodule carrying a host-built node_modules, at which point the hostbound arm correctly declines to route and the composition under test never runs.
+    # The inline form is used rather than the profile form because the profile form runs the key under another interpreter, and the composition under test is about the key being invoked directly.
     cases.append(
         (
             2,
@@ -499,8 +516,7 @@ from rediacc_hooks import guards  # noqa: E402 - the path hop above is what make
 
 GUARD = guards.load("block_host_toolchain_run")
 
-fixture_root = tempfile.mkdtemp()
-atexit.register(shutil.rmtree, fixture_root, ignore_errors=True)
+fixture_root = tempfile.mkdtemp(dir=RUN_TMP)
 os.makedirs(os.path.join(fixture_root, ".ci", "policy"))
 fixture_list = os.path.join(fixture_root, ".ci", "policy", ".host-toolchain-exceptions")
 

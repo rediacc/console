@@ -97,6 +97,8 @@ def env_for(root, with_token: bool = True) -> dict:
     overrides = {
         "PATH": "%s:/usr/local/bin:/usr/bin:/bin" % (root / "bin"),
         "BWS_ENV_ROOT": str(root),
+        # The token FILE resolves under the fixture, never the operator's real `~/.config/rediacc/bws-access-token`: without this the no-token cases would find the real credential and pass for the wrong reason.
+        "XDG_CONFIG_HOME": str(root / "xdg"),
     }
     if with_token:
         # The VALUE is irrelevant to every case here -- the fake `bws` never reads it -- so it is a literal rather than a parameter. Only its PRESENCE is under test, which is the twin's first precondition.
@@ -127,9 +129,11 @@ CASES = [
     ("empty-value-is-absent", BETA_EMPTY, [], True, True),
     ("name-missing-from-store", ONLY_ALPHA, [], True, True),
     ("unmapped-name-is-looked-up-anyway", BOTH, ["GAMMA_TOKEN"], True, True),
-    ("no-access-token", BOTH, [], True, False),
     ("no-bws-binary", BOTH, [], False, True),
 ]
+
+# Recorded, but no longer an equivalence: see `test_no_access_token_is_the_third_deliberate_divergence`.
+NO_BOOTSTRAP_CASE = "no-access-token"
 
 
 # The three cases that are not in the parametrized table, each recorded under its own name because each needs a fixture the table cannot express: a removed map, a `bws` that exits 9, and a `bws` that exits 0 with bytes that are not JSON.
@@ -137,7 +141,7 @@ MAP_MISSING = "map-missing"
 BWS_NON_ZERO = "bws-exits-non-zero"
 UNPARSEABLE = "unparseable-listing"
 
-GOLDEN_NAMES = {c[0] for c in CASES} | {MAP_MISSING, BWS_NON_ZERO, UNPARSEABLE}
+GOLDEN_NAMES = {c[0] for c in CASES} | {MAP_MISSING, BWS_NON_ZERO, UNPARSEABLE, NO_BOOTSTRAP_CASE}
 
 
 @pytest.mark.parametrize(
@@ -200,6 +204,208 @@ def test_bws_exits_non_zero_is_the_second_deliberate_divergence(tmp_path) -> Non
         "the notice reached stderr and it names the one command that fixes this"
     )
     assert "DO NOT ask for the token in the conversation" in new[2]
+
+
+def test_no_access_token_is_the_third_deliberate_divergence(tmp_path) -> None:
+    """THE TOKEN MOVED OUT OF `private/account/.env` (agent/plans/PLAN-account-env-to-bws.md T1).
+
+    The twin told a reader to put the token in `private/account/.env`, the file that plan retires. The port names the token FILE instead, which it now reads when the variable is unset. Everything else about the case is the twin's: exit 1, empty stdout, and the first sentence of the reason.
+    """
+    root = fixture(tmp_path / NO_BOOTSTRAP_CASE, BOTH)
+    old = recorded(NO_BOOTSTRAP_CASE)
+    new = run_port([], env_for(root, with_token=False), root)
+    assert old[0] == new[0] == 1
+    assert old[1] == new[1] == ""
+    assert "BWS_ACCESS_TOKEN is not set" in old[2]
+    assert "BWS_ACCESS_TOKEN is not set" in new[2]
+    assert "Put it in private/account/.env." in old[2], (
+        "the recording names the file it named that day"
+    )
+    assert "private/account/.env" not in new[2], (
+        "the port must not send a reader to the retired file"
+    )
+    assert "rediacc/bws-access-token" in new[2]
+    assert new[2].splitlines() == bws_env.NO_TOKEN
+
+
+def test_the_token_file_is_read_when_the_variable_is_unset(tmp_path) -> None:
+    """T1: env, then BWS_ACCESS_TOKEN_FILE, then the XDG default. Both directions, and the mode refusal."""
+    root = fixture(tmp_path / "tokfile", BOTH)
+    env = env_for(root, with_token=False)
+    target = pathlib.Path(bws_env.token_path(env))
+    assert target == root / "xdg" / "rediacc" / "bws-access-token"
+    assert bws_env.read_token(env) == "", "the control: no file, no token"
+    target.parent.mkdir(parents=True, mode=0o700)
+    target.write_text("from-the-file\n", encoding="utf-8")
+    target.chmod(0o600)
+    assert bws_env.read_token(env) == "from-the-file"
+    assert bws_env.read_token(dict(env, **{bws_env.ACCESS_ENV: "from-env"})) == "from-env", (
+        "the environment wins over the file"
+    )
+    pinned = tmp_path / "pinned"
+    pinned.mkdir(mode=0o700)
+    (pinned / "t").write_text("pinned-value", encoding="utf-8")
+    (pinned / "t").chmod(0o600)
+    assert (
+        bws_env.read_token(dict(env, **{bws_env.BOOTSTRAP_FILE_ENV: str(pinned / "t")}))
+        == "pinned-value"
+    )
+    code, out, _err = run_port([], env, root)
+    assert code == 0
+    assert "ALPHA_TOKEN" in out, "names resolves with only the file present"
+    target.chmod(0o644)
+    with pytest.raises(bws_env.RefusalError) as refused:
+        bws_env.read_token(env)
+    assert "mode 0644" in refused.value.lines[0]
+    target.chmod(0o600)
+    target.parent.chmod(0o755)
+    with pytest.raises(bws_env.RefusalError):
+        bws_env.read_token(env)
+    target.parent.chmod(0o700)
+    assert bws_env.read_token(env) == "from-the-file", "the control: modes restored, read again"
+
+
+def test_compare_reports_match_mismatch_absent_and_local_empty(tmp_path) -> None:
+    """T5: the read-back instrument. A planted mismatch, a planted absence, a quoted value, and no value on either stream."""
+    listing = json.dumps(
+        [
+            {"key": "ALPHA_TOKEN", "value": "a-val"},
+            {"key": "BETA_TOKEN", "value": "b-val"},
+            {"key": "QUOTED", "value": "q v"},
+            {"key": "STORE_ONLY_ALIAS", "value": "a-val"},
+        ]
+    )
+    root = fixture(tmp_path / "cmp", listing)
+    local = root / "local.env"
+    local.write_text(
+        'ALPHA_TOKEN=a-val\nBETA_TOKEN=planted-mismatch\nQUOTED="q v"\nGONE=x\nBLANK=\n',
+        encoding="utf-8",
+    )
+    code, out, err = diff.bash_streams(
+        "PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env compare '%s'" % local, env=env_for(root)
+    )
+    assert code == 1
+    assert out.splitlines() == [
+        "ALPHA_TOKEN MATCH",
+        "BETA_TOKEN MISMATCH",
+        "BLANK LOCAL-EMPTY",
+        "GONE ABSENT",
+        "QUOTED MATCH",
+    ]
+    for stream in (out, err):
+        assert "a-val" not in stream
+        assert "b-val" not in stream
+        assert "planted-mismatch" not in stream
+    code, out, _err = diff.bash_streams(
+        "PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env compare '%s' 'STORE_ONLY_ALIAS > ALPHA_TOKEN'"
+        % local,
+        env=env_for(root),
+    )
+    assert (code, out) == (0, "ALPHA_TOKEN MATCH\n"), (
+        "an alias compares the store name against the LOCAL name"
+    )
+
+
+def _supply(root, consumers: dict) -> None:
+    (root / ".ci" / "config" / "secret-supply.json").write_text(
+        json.dumps({"consumers": consumers}), encoding="utf-8"
+    )
+
+
+def _exec(env, profile_args: str, probe: str = "env") -> tuple[int, str, str]:
+    return diff.bash_streams(
+        "PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec %s -- %s" % (profile_args, probe),
+        env=env,
+    )
+
+
+def test_exec_binds_exactly_the_profile_and_prints_no_value(tmp_path) -> None:
+    """T6: the child env carries the requested LOCAL names, an alias binds LOCAL only, and no value reaches stdout or stderr from the verb itself."""
+    listing = json.dumps(
+        [
+            {"key": "ALPHA_TOKEN", "value": "a-val"},
+            {"key": "BETA_TOKEN_DEV", "value": "b-dev-val"},
+            {"key": "UNREQUESTED", "value": "u-val"},
+        ]
+    )
+    root = fixture(tmp_path / "exec", listing)
+    _supply(
+        root,
+        {
+            "p": {
+                "required": ["ALPHA_TOKEN", "BETA_TOKEN_DEV > BETA_TOKEN"],
+                "optional": ["NOT_THERE"],
+            }
+        },
+    )
+    env = env_for(root)
+    probe = 'sh -c \'for n in ALPHA_TOKEN BETA_TOKEN BETA_TOKEN_DEV UNREQUESTED NOT_THERE REDIACC_BWS_PROFILES; do eval "v=\\${$n:-}"; [ -n "$v" ] && echo $n; done; [ "$BETA_TOKEN" = b-dev-val ] && echo BETA_IS_DEV\''
+    code, out, err = _exec(env, "--profile p", probe)
+    assert code == 0, err
+    assert out.splitlines() == ["ALPHA_TOKEN", "BETA_TOKEN", "REDIACC_BWS_PROFILES", "BETA_IS_DEV"]
+    assert "NOT_THERE" in err, "an absent OPTIONAL name is named, and does not fail the exec"
+    for value in ("a-val", "b-dev-val", "u-val"):
+        assert value not in err
+
+
+def test_exec_lets_the_shell_win_and_skips_inherited_profiles(tmp_path) -> None:
+    root = fixture(tmp_path / "shellwins", json.dumps([{"key": "ALPHA_TOKEN", "value": "a-val"}]))
+    _supply(root, {"p": {"required": ["ALPHA_TOKEN"]}})
+    env = {**env_for(root), "ALPHA_TOKEN": "from-shell"}
+    code, out, _err = _exec(env, "--profile p", "printenv ALPHA_TOKEN")
+    assert (code, out) == (0, "from-shell\n")
+    # An inherited profile is not fetched again: a bws that fails proves no call was made.
+    broken = fixture(tmp_path / "inherited", "[]", bws_body="#!/bin/bash\nexit 9\n")
+    _supply(broken, {"p": {"required": ["ALPHA_TOKEN"]}})
+    env = {**env_for(broken), "REDIACC_BWS_PROFILES": "p"}
+    code, _out, _err = _exec(env, "--profile p", "true")
+    assert code == 0
+    code, _out, err = _exec(dict(env_for(broken)), "--profile p", "true")
+    assert code == 1
+    assert "secret list failed" in err, "the control: without the marker it does fetch"
+
+
+def test_exec_refuses_an_unknown_profile_and_a_missing_required_name(tmp_path) -> None:
+    root = fixture(tmp_path / "refuse", json.dumps([{"key": "ALPHA_TOKEN", "value": "a-val"}]))
+    _supply(root, {"p": {"required": ["ALPHA_TOKEN"]}, "q": {"required": ["NOPE"]}})
+    code, _out, err = _exec(env_for(root), "--profile typo", "true")
+    assert code == 1
+    assert "unknown profile(s): typo" in err
+    code, _out, err = _exec(env_for(root), "--profile q", "true")
+    assert code == 1
+    assert "required name(s) absent or empty in the store: NOPE" in err
+    code, _out, err = _exec(env_for(root, with_token=False), "--profile p", "true")
+    assert code == 1
+    assert err.splitlines() == bws_env.NO_TOKEN, "no token and a required name unset: refuse"
+    code, _out, _err = _exec(
+        {**env_for(root, with_token=False), "ALPHA_TOKEN": "x"}, "--profile p", "true"
+    )
+    assert code == 0, "no token, but every required name already set: proceed without a fetch"
+
+
+def test_cache_to_accepts_a_paired_dev_alias_and_refuses_an_unpaired_one(tmp_path) -> None:
+    """T15: the allowlist is on the LOCAL name; the store name must be one the pair table allows."""
+    assert (
+        bws_env.cache_refusal(["ACCOUNT_ED25519_PUBLIC_KEY_DEV > ACCOUNT_ED25519_PUBLIC_KEY"])
+        is None
+    )
+    refused = bws_env.cache_refusal(
+        ["ACCOUNT_ED25519_PRIVATE_KEY_DEV > ACCOUNT_ED25519_PUBLIC_KEY"]
+    )
+    assert refused
+    assert "outside the pair table" in refused[0]
+    root = fixture(
+        tmp_path / "cache",
+        json.dumps([{"key": "ACCOUNT_ED25519_PUBLIC_KEY_DEV", "value": "pub-dev"}]),
+    )
+    target = root / "public-keys.env"
+    code, _out, err = diff.bash_streams(
+        "PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env cache-to '%s' "
+        "'ACCOUNT_ED25519_PUBLIC_KEY_DEV > ACCOUNT_ED25519_PUBLIC_KEY'" % target,
+        env=env_for(root),
+    )
+    assert code == 0, err
+    assert target.read_text(encoding="utf-8") == "ACCOUNT_ED25519_PUBLIC_KEY=pub-dev\n"
 
 
 def test_a_missing_notice_is_reported_and_never_swallowed(tmp_path) -> None:

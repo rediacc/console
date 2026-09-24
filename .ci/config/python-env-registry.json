@@ -155,20 +155,32 @@
       "CONSOLE_ROOT_DIR",
       "DATABASE_PATH",
       "DEVBOX_OFFSET_STUDIO",
-      "GATEWAY_PORT",
+      "GITHUB_ENV",
       "HOME",
+      "PYTHONPATH",
+      "REDIACC_BWS_PROFILES",
+      "REDIACC_CI_ROOT",
       "REDIACC_DEV_PORT_BASE",
-      "REDIACC_STARTUP_TIMEOUT",
-      "ROOT_EMAIL"
+      "REDIACC_STARTUP_TIMEOUT"
     ],
     ".ci/rediacc_ci/core/advisory.py": [
       "CI"
     ],
     ".ci/rediacc_ci/core/bws_env.py": [
+      "*local",
+      "*s[1]",
       "BWS_ACCESS_TOKEN",
+      "BWS_ACCESS_TOKEN_FILE",
       "BWS_BIN",
       "BWS_ENV_ROOT",
-      "PATH"
+      "HOME",
+      "PATH",
+      "REDIACC_BWS_PROFILES",
+      "XDG_CONFIG_HOME"
+    ],
+    ".ci/rediacc_ci/core/common.py": [
+      "AWS_ACCESS_KEY_ID",
+      "CLOUDFLARE_R2_ENDPOINT"
     ],
     ".ci/rediacc_ci/core/devbox_shadow_driver.py": [
       "HOME",
@@ -178,10 +190,23 @@
       "*key"
     ],
     ".ci/rediacc_ci/core/local_common.py": [
+      "ACCOUNT_ED25519_PUBLIC_KEY",
       "CONSOLE_ROOT_DIR",
+      "HOME",
+      "LANG",
+      "LC_ALL",
+      "LC_CTYPE",
       "LOCAL_CI_DIR",
       "LOCAL_LIB_DIR",
-      "LOCAL_ROOT_DIR"
+      "LOCAL_ROOT_DIR",
+      "PATH",
+      "RDC_RENET_LICENSE",
+      "REDIACC_DOCKER_GROUP_REEXEC",
+      "REDIACC_IN_DEVBOX",
+      "REDIACC_LANE",
+      "REDIACC_NPM_RUNTIME",
+      "SCRIPT_ENTRYPOINT",
+      "USER"
     ],
     ".ci/rediacc_ci/core/local_common_shadow_driver.py": [
       "HOME",
@@ -204,8 +229,15 @@
       "*names[0]"
     ],
     ".ci/rediacc_ci/core/service.py": [
+      "ACCOUNT_SERVER_API_KEY",
       "CONSOLE_ROOT_DIR",
-      "SERVICE_STATUS_NOW"
+      "ROOT_EMAIL",
+      "RUSTFS_ACCESS_KEY",
+      "RUSTFS_SECRET_KEY",
+      "SERVICE_HTTP_PORT",
+      "SERVICE_RUSTFS_CONSOLE_PORT",
+      "SERVICE_STATUS_NOW",
+      "SERVICE_TAG"
     ],
     ".ci/rediacc_ci/core/shadow_driver.py": [
       "HOME",
@@ -1135,6 +1167,9 @@
     ".ci/rediacc_ci/tests/test_core_account.py": [
       "HOME"
     ],
+    ".ci/rediacc_ci/tests/test_core_devbox.py": [
+      "PATH"
+    ],
     ".ci/rediacc_ci/tests/test_core_dockerx.py": [
       "DOCKER_HOST"
     ],
@@ -1849,13 +1884,13 @@
       "FLASK_DEBUG"
     ],
     "scripts/dev/bws-rotate.py": [
-      "BWS_ACCESS_TOKEN",
       "BWS_BIN",
-      "BWS_ROTATE_ENV_FILE",
       "BWS_ROTATE_GITMODULES",
       "BWS_ROTATE_MIN_SECRETS",
       "BWS_ROTATE_SECRET_MAP",
-      "GH_BIN"
+      "BWS_ROTATE_TARGET_FILE",
+      "GH_BIN",
+      "XDG_CONFIG_HOME"
     ],
     "scripts/ops/secret-rename.py": [
       "SECRET_RENAME_MIN_FILES"

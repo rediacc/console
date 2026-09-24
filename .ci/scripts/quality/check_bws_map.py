@@ -68,6 +68,14 @@ nothing would have noticed a nineteenth that was a real omission. Three more ass
      every one of them, and nothing said so. secret-rename.py now refuses a
      `secrets.` context the way it already refused a `vars.` one.
 
+ 14. THE SELLER RECORD'S FIELDS. `SELLER_PROFILE_JSON` is one vault entry
+     that the fetch expands into nine SELLER_* variables, so the map and
+     `check:ci-secret-supply` both see one name and neither sees the nine.
+     The fields `rediacc_ci.core.bws_env.JSON_REQUIRED` promises must equal the
+     SELLER_* LOCAL names the `account-dev` profile in
+     .ci/config/secret-supply.json binds, parsed with bws_env's own
+     `parse_spec`. Either side empty refuses rather than passing.
+
 Control-first: the parser is proven on synthetic input in both directions before any verdict, and the failure direction is proven by a planted name.
 
 ---- gate ----
@@ -84,7 +92,6 @@ import datetime as dt
 import json
 import os
 import re
-import shutil
 import subprocess
 import sys
 import tempfile
@@ -93,8 +100,9 @@ from pathlib import Path
 import _cipath  # noqa: F401
 from rediacc_ci import workflows
 
-# IMPORTED, NOT RE-TYPED. Assertion 14d asks whether the fields the FETCH promises to bind are the fields the tree actually has, and a second copy of the nine names here would make that question compare this file against itself. `bws_env` declares; this re-derives.
+# IMPORTED, NOT RE-TYPED. Assertion 14d asks whether the fields the FETCH promises to bind are the fields the `account-dev` profile actually binds, and a second copy of the nine names (or of the `STORE > LOCAL` grammar) here would make that question compare this file against itself. `bws_env` declares; this re-derives.
 from rediacc_ci.core.bws_env import JSON_REQUIRED as BWS_ENV_JSON_REQUIRED
+from rediacc_ci.core.bws_env import parse_spec as bws_parse_spec
 
 # Overridable so a gate-test can drive the REAL scan against a fixture tree instead of only the pure-logic selftest. This is not an escape hatch: every anti-vacuity clause below (MIN_MAP_ENTRIES, MIN_CALLERS, the blind-corpus and blind-suffix refusals) FAILS on a tree that holds nothing, so pointing this at an empty directory reds rather than passes.
 ROOT = Path(os.environ.get("BWS_MAP_ROOT") or Path(__file__).resolve().parents[3])
@@ -723,259 +731,57 @@ def read_order_in(lines: list[str], label: str) -> tuple[list[str], int]:
     return problems, n
 
 
-# --------------------------------------------------------------------------- Assertion 14: the local surrogate. `private/account/.env` is untracked and CI never sees it, so `.env.example` is the only CI-visible record of what a developer machine actually needs. ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Assertion 14: the seller record's fields. `private/account/.env` is retired; every local secret now arrives through a named profile in `.ci/config/secret-supply.json`, and `check:ci-secret-supply` proves each profile's specs resolve in the map. What that gate cannot see is a JSON record whose fields the fetch expands. ---------------------------------------------------------------------------
 
-ENV_EXAMPLE = ROOT / "private" / "account" / ".env.example"
-ENV_LOCAL = ROOT / ".ci" / "config" / "env-local-allowlist.json"
-
-# `NAME=` at the start of a line, and the same thing behind a `#`. Two patterns rather than one optional group, because the ACTIVE/COMMENTED distinction is itself an assertion: the `opt-in` kind means "commented, never active", and a single pattern that erased the difference could not express it.
-ENV_ACTIVE_RE = re.compile(r"^([A-Za-z_][A-Za-z0-9_]*)=", re.MULTILINE)
-ENV_COMMENTED_RE = re.compile(r"^#\s*([A-Za-z_][A-Za-z0-9_]*)=", re.MULTILINE)
-
-# Floors. An empty example file and an empty allowlist BOTH pass a naive 14a, which is the control the plan calls out by name: "Empty the allowlist AND empty .env.example -> must still RED on the floor, not pass silently." Sized under the live numbers (54 example names, 33 entries) with room for the migration to drain entries, and far enough above zero that a half-read file cannot
-# clear them.
-#
-# NOT ENV-OVERRIDABLE, unlike MIN_MAP_ENTRIES and MIN_CALLERS above. Those two exist because the gate test drives the whole `main()` over a fixture tree and has no other way to lower them. Assertion 14's controls call `env_local_problems` with explicit `example=` and `allow=` paths instead, so they can simply supply forty synthetic names and clear the real floor honestly. A knob
-# nothing needs is a knob that is only ever reachable by someone trying to get past the gate.
-MIN_EXAMPLE_NAMES = 30
-MIN_LOCAL_ENTRIES = 10
-
-LOCAL_KINDS = (
-    "machine-local",
-    "bootstrap",
-    "opt-in",
-    "alias",
-    "test-fixture",
-    "unreferenced",
-    "deferred",
-)
+SUPPLY = ROOT / ".ci" / "config" / "secret-supply.json"
+# The profile `./run.sh account dev` runs under, and the only one that binds the invoice seller's identity.
+SELLER_PROFILE = "account-dev"
+SELLER_RECORD = "SELLER_PROFILE_JSON"
 
 
-def example_names(path: Path | None = None) -> tuple[set[str], set[str]]:
-    """(active, commented) names assigned in `.env.example`.
+def seller_field_problems(
+    supply: Path | None = None, declared: set[str] | None = None
+) -> tuple[list[str], int]:
+    """Assertion 14d. (problems, SELLER_* fields compared).
 
-    READ DIRECTLY, NEVER THROUGH A RECURSIVE GREP. `grep -r` here is ugrep, which honours `.gitignore` by default, and `.env*` is ignored -- so a recursive sweep over this exact file reports ZERO matches while a direct read finds them. Measured 2026-09-22: `grep -rn DESIGN_PARTNER private/account/` printed nothing while `grep -n` on the file printed line 116.
+    The nine SELLER_* fields `bws_env.JSON_REQUIRED[SELLER_PROFILE_JSON]` promises to bind must be exactly the SELLER_* LOCAL names the `account-dev` profile binds. A tenth field added to the profile without being added there would bind a partial record and return 0; a field dropped from the profile would leave a promised line blank on an invoice.
 
-    Any sweep of this file class that went through a recursive grep should be treated as unrun.
+    Specs are parsed with `bws_env.parse_spec`, imported rather than re-typed, so the `STORE > LOCAL` grammar this compares is the one the fetch applies. `supply` and `declared` are injectable so selftest() drives the real function against fixtures.
     """
-    src = ENV_EXAMPLE if path is None else path
-    text = src.read_text(encoding="utf-8")
-    return set(ENV_ACTIVE_RE.findall(text)), set(ENV_COMMENTED_RE.findall(text))
-
-
-def load_env_local(path: Path | None = None) -> tuple[dict, list[str]]:
-    """The allowlist's `entries`, or a refusal. Unreadable means REFUSE, never forgive."""
-    src = ENV_LOCAL if path is None else path
+    src = SUPPLY if supply is None else supply
+    want = set(BWS_ENV_JSON_REQUIRED.get(SELLER_RECORD, ())) if declared is None else set(declared)
     try:
         doc = json.loads(src.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as exc:
-        return {}, [f"cannot read {src} ({exc}); assertion 14 is blind, which is not a pass"]
-    entries = doc.get("entries")
-    if not isinstance(entries, dict):
-        return {}, [f"{src} has no `entries` object; assertion 14 has nothing to check"]
-    return entries, []
-
-
-def local_entry_problems(
-    name: str, rec: dict, secrets: dict, commented: set[str], today
-) -> list[str]:
-    """14c. RE-DERIVE one entry against its own `kind`.
-
-    This is the half that stops the file becoming folklore. An exemption that only carries prose is a licence; one that states a checkable claim is a control, and every kind below names a different thing that must still be true in the tree.
-    """
-    out: list[str] = []
-    kind = rec.get("kind")
-    if kind not in LOCAL_KINDS:
+        profile = doc["consumers"][SELLER_PROFILE]
+        specs = list(profile.get("required") or []) + list(profile.get("optional") or [])
+    except (OSError, ValueError, KeyError, TypeError, AttributeError) as exc:
         return [
-            f"env-local-allowlist {name!r} has kind {kind!r}; expected one of {', '.join(LOCAL_KINDS)}"
-        ]
-    if len(str(rec.get("reason", "")).strip()) < 20:
-        out.append(
-            f"env-local-allowlist {name!r} has no usable reason; a bare exemption is a licence"
-        )
-
-    if kind in ("machine-local", "test-fixture"):
-        # The citation must exist AND the cited line must still carry the name. A citation nobody re-derives is how "why" becomes folklore, and a line number drifts the moment a paragraph moves above it.
-        cite = str(rec.get("derive", ""))
-        if ":" not in cite:
-            out.append(
-                f"env-local-allowlist {name!r} is {kind} and needs a `derive` file:line citation"
+            f"cannot read the {SELLER_PROFILE!r} profile from {src} ({exc}); assertion 14 is blind, which is not a pass"
+        ], 0
+    bound = set()
+    for raw in specs:
+        spec = bws_parse_spec(str(raw))
+        if spec and spec[1].startswith("SELLER_"):
+            bound.add(spec[1])
+    # ANTI-VACUITY. Two empty sets are equal, so a profile that lost every SELLER field and a declaration that lost the record would agree perfectly and pass. Either side empty means the comparison has no subject.
+    if not want or not bound:
+        return [
+            (
+                f"bws_env.JSON_REQUIRED[{SELLER_RECORD!r}] declares {len(want)} field(s) and the "
+                f"{SELLER_PROFILE!r} profile binds {len(bound)} SELLER_* name(s) -- an empty side "
+                f"makes the comparison vacuous, so it refuses rather than passes"
             )
-        else:
-            rel, _, lineno = cite.rpartition(":")
-            target = ROOT / rel
-            if not target.is_file():
-                out.append(f"env-local-allowlist {name!r} cites {rel}, which does not exist")
-            elif not lineno.isdigit():
-                out.append(f"env-local-allowlist {name!r} has a malformed citation {cite!r}")
-            else:
-                lines = target.read_text(encoding="utf-8", errors="replace").split("\n")
-                i = int(lineno) - 1
-                if not (0 <= i < len(lines)) or name not in lines[i]:
-                    # NAME THE LINE IT MOVED TO. A bare "stale citation" sends a reader to hunt; the actual line number makes the fix a one-character edit, which is what keeps these citations maintained rather than deleted.
-                    found = [str(n + 1) for n, ln in enumerate(lines) if name in ln]
-                    where = (
-                        " it is now at line " + ", ".join(found[:3])
-                        if found
-                        else " the name is not in that file at all"
-                    )
-                    out.append(
-                        f"env-local-allowlist {name!r} cites {cite} but that line does not contain it;{where}"
-                    )
-
-    if kind in ("bootstrap", "test-fixture") and name in secrets:
-        why = (
-            "a circularity: the bootstrap credential cannot come from the store it unlocks"
-            if kind == "bootstrap"
-            else "the D3 collision: one name meaning a fixture here and a production secret there"
-        )
-        out.append(f"env-local-allowlist {name!r} is {kind} but IS in the map -- {why}")
-
-    if kind == "opt-in" and name not in commented:
-        out.append(
-            f"env-local-allowlist {name!r} is opt-in but is not commented out in .env.example; an active default needs a home"
-        )
-
-    if kind == "alias":
-        store = str(rec.get("store", ""))
-        if not store:
-            out.append(
-                f"env-local-allowlist {name!r} is an alias and must name the `store` entry it resolves to"
+        ], 0
+    if want != bound:
+        return [
+            (
+                f"bws_env.JSON_REQUIRED[{SELLER_RECORD!r}] and the {SELLER_PROFILE!r} profile in "
+                f"{src.name} disagree about the record's fields "
+                f"(profile-only: {sorted(bound - want) or 'none'}; declared-only: "
+                f"{sorted(want - bound) or 'none'}) -- the fetch would bind a partial record and return 0"
             )
-        elif store not in secrets:
-            out.append(
-                f"env-local-allowlist {name!r} aliases {store!r}, which is NOT in the map -- the row forgives a read that resolves to nothing"
-            )
-
-    if kind == "unreferenced":
-        # Re-derived by a real sweep. A name that acquired a reader is no longer dead and needs a proper home, so this reds in the direction that matters.
-        hits = tracked_readers(name)
-        if hits:
-            out.append(
-                f"env-local-allowlist {name!r} is marked unreferenced but {len(hits)} file(s) now read it ({', '.join(hits[:3])}); give it a home"
-            )
-
-    if kind in ("deferred", "unreferenced"):
-        expires = str(rec.get("expires", ""))
-        try:
-            when = dt.datetime.strptime(expires, "%Y-%m-%d").replace(tzinfo=dt.UTC).date()
-        except ValueError:
-            out.append(
-                f"env-local-allowlist {name!r} is {kind} and needs an `expires` UTC date (YYYY-MM-DD)"
-            )
-        else:
-            if when < today:
-                out.append(
-                    f"env-local-allowlist {name!r} expired on {expires}; decide it, do not extend the date by reflex"
-                )
-    # A DEFERRAL WHOSE SEEDING LANDED. Every `deferred` row here waits on the name reaching the store, so a name the map now holds is a deferral that forgives nothing. Without this the row would sit until its `expires` date and then red as EXPIRED, telling its reader to "decide it" about a decision already made; found 2026-09-24 when eleven such rows outlived the seeding recorded in agent/plans/PLAN-github-actions-to-bitwarden.md.
-    if kind == "deferred" and name in secrets:
-        out.append(
-            f"env-local-allowlist {name!r} is deferred until it reaches the store, and the map now holds it -- the seeding landed, so delete the row"
-        )
-    if kind == "deferred" and len(str(rec.get("blocker", "")).strip()) < 20:
-        out.append(
-            f"env-local-allowlist {name!r} is deferred and must name its `blocker` -- who is blocked on what"
-        )
-    return out
-
-
-# What a READER is not. A name is alive when CODE reads it; prose that documents the name as dead is not evidence that it is alive, and counting it makes the `unreferenced` kind self-refuting -- recording the finding in a plan flips its own entry red, which is exactly what happened the first time this ran (2026-09-22).
-#
-# DELIBERATELY NARROW. Only markdown, the two documentation trees, and this gate's own allowlist are excluded; a `.json` or `.ts` under `.ci/config` that names the key still counts, because config a script loads IS a reader. The bias is toward calling a name ALIVE, which reds a stale entry and asks a human, rather than toward calling it dead.
-PROSE_DIRS = ("agent/", "docs/")
-
-
-def is_prose(path: str) -> bool:
-    return (
-        path.endswith(".md")
-        or path.startswith(PROSE_DIRS)
-        or path == ".ci/config/env-local-allowlist.json"
-    )
-
-
-def tracked_readers(name: str) -> list[str]:
-    """Files that mention `name`, minus `.env*` and minus prose. `git grep --recurse-submodules`.
-
-    SUBMODULES ARE THE WHOLE POINT OF THE FLAG. `private/account` is its own repository, so a plain `git grep` from console cannot see the very file this assertion is about. Sibling repositories outside the superproject (`private/growth`) are still invisible, and that is stated rather than assumed.
-    """
-    try:
-        proc = subprocess.run(
-            ["git", "grep", "-l", "--recurse-submodules", "-F", name],
-            cwd=ROOT,
-            capture_output=True,
-            text=True,
-            check=False,
-            timeout=120,
-        )
-    except (OSError, subprocess.TimeoutExpired):
-        # UNKNOWN IS NOT FINE. A sweep that could not run has proved nothing, so it reports a synthetic hit rather than an empty list -- an empty list here would read as "confirmed dead" and quietly bless the entry.
-        return ["<the reader sweep could not run, so this is UNCHECKED>"]
-    out = []
-    for line in proc.stdout.split("\n"):
-        f = line.strip()
-        if f and not Path(f).name.startswith(".env") and not is_prose(f):
-            out.append(f)
-    return sorted(out)
-
-
-def env_local_problems(
-    secrets: dict, example: Path | None = None, allow: Path | None = None
-) -> tuple[list[str], int, int]:
-    """Assertion 14. (problems, example names seen, allowlist entries seen).
-
-    14a  every name assigned in `.env.example`, active or commented, is either in
-         the map or in the allowlist. This is the class that produced D1, D2 and
-         D3: a key nobody moved, a key nobody reads, a name meaning two things.
-    14b  every allowlist entry names a key `.env.example` really has. Delete the
-         key and its exemption reds until it is dropped too -- which is exactly
-         what would have flagged R2_MEDIA_BUCKET.
-    14c  each entry is re-derived against its own kind (above).
-    14d  the nine SELLER_* fields `bws_env.JSON_REQUIRED` promises to bind are
-         the nine the example actually has. A tenth field added to the tree
-         without being added there would bind eight of ten and return 0.
-    """
-    problems: list[str] = []
-    try:
-        active, commented = example_names(example)
-    except OSError as exc:
-        return ([f"cannot read {example or ENV_EXAMPLE} ({exc}); assertion 14 is blind"], 0, 0)
-    names = active | commented
-    entries, load_problems = load_env_local(allow)
-    problems += load_problems
-
-    # ANTI-VACUITY FIRST, because both floors are cleared by a file that failed to parse into anything, and every clause below would then report a clean tree. Zero inputs is a FAILURE, never a pass.
-    if len(names) < MIN_EXAMPLE_NAMES:
-        problems.append(
-            f".env.example yields {len(names)} name(s), floor is {MIN_EXAMPLE_NAMES} -- the gate is not seeing the file, and its green would mean nothing"
-        )
-    if not load_problems and len(entries) < MIN_LOCAL_ENTRIES:
-        problems.append(
-            f"env-local-allowlist holds {len(entries)} entry/entries, floor is {MIN_LOCAL_ENTRIES} -- an emptied allowlist passes 14a vacuously"
-        )
-
-    for n in sorted(n for n in names if n not in secrets and n not in entries):
-        problems.append(
-            f".env.example assigns {n!r}, which is in neither bws-secret-map.json nor env-local-allowlist.json -- give it a home or say why it stays local. Do not add it to the baseline"
-        )
-    for n in sorted(set(entries) - names):
-        problems.append(
-            f"env-local-allowlist exempts {n!r}, which .env.example no longer assigns -- drop the exemption too"
-        )
-    today = dt.datetime.now(dt.UTC).date()
-    for n in sorted(set(entries) & names):
-        problems.extend(local_entry_problems(n, entries[n] or {}, secrets, commented, today))
-
-    seller_declared = set(BWS_ENV_JSON_REQUIRED.get("SELLER_PROFILE_JSON", ()))
-    seller_actual = {n for n in names if n.startswith("SELLER_")}
-    if seller_declared and seller_actual and seller_declared != seller_actual:
-        missing = sorted(seller_actual - seller_declared)
-        extra = sorted(seller_declared - seller_actual)
-        problems.append(
-            f"bws_env.JSON_REQUIRED['SELLER_PROFILE_JSON'] and .env.example disagree about the record's fields "
-            f"(example-only: {missing or 'none'}; declared-only: {extra or 'none'}) -- the fetch would bind a partial record and return 0"
-        )
-    return problems, len(names), len(entries)
+        ], len(want)
+    return [], len(want)
 
 
 def coverage_problems(secrets: dict, exemptions: dict, no_fetch: dict | None = None) -> list[str]:
@@ -1412,129 +1218,48 @@ jobs:
     if not ok4:
         bad += 1
 
-    # ---- assertion 14, the controls the plan names, plus its own converse ----
+    # ---- assertion 14: the seller record's fields, both directions plus vacuity ----
     #
-    # Driven through the REAL function against synthetic file pairs, so each one exercises the code path the live run takes. The plan also asks for a plant against the real tree; that was done by hand once (a homeless key appended to .env.example, gate red naming it, file restored byte-identical) and these are what keep it true on every invocation afterwards.
-    env_dir = Path(tempfile.mkdtemp(prefix="bws-env-local-"))
-    ex_f, al_f = env_dir / "example", env_dir / "allow.json"
-    base_names = "\n".join(f"NAME_{i}=v" for i in range(40))
-    base_reason = "a synthetic fixture name, held local so this fixture is not vacuous"
-    base_entries = {f"NAME_{i}": {"kind": "bootstrap", "reason": base_reason} for i in range(40)}
+    # Driven through the REAL function against a synthetic supply file, so each probe exercises the code path the live run takes.
+    fields = [f"SELLER_F{i}" for i in range(9)]
 
-    def env14(example_text: str, entries: dict, store: dict | None = None) -> list[str]:
-        ex_f.write_text(example_text, encoding="utf-8")
-        al_f.write_text(json.dumps({"entries": entries}), encoding="utf-8")
-        return env_local_problems(store or {}, example=ex_f, allow=al_f)[0]
-
-    def with_entry(name: str, rec: dict, extra: str = "") -> list[str]:
-        return env14(base_names + extra, {**base_entries, name: rec})
+    def seller14(bound: list[str], declared: list[str]) -> list[str]:
+        with tempfile.TemporaryDirectory() as d:
+            sup = Path(d) / "secret-supply.json"
+            specs = ["ACCOUNT_JWT_SECRET_DEV > ACCOUNT_JWT_SECRET", *bound]
+            sup.write_text(
+                json.dumps({"consumers": {SELLER_PROFILE: {"optional": specs}}}),
+                encoding="utf-8",
+            )
+            return seller_field_problems(sup, set(declared))[0]
 
     checks14 = [
         (
-            "CONTROL: every example name mapped or exempt is silent",
-            lambda: env14(base_names, base_entries) == [],
+            "CONTROL: a profile binding exactly the declared fields is silent",
+            lambda: seller14(fields, fields) == [],
         ),
         (
-            "14a: a key in neither the map nor the allowlist is named",
+            "14d: a profile missing one declared SELLER field is named",
+            lambda: any("SELLER_F8" in m for m in seller14(fields[:-1], fields)),
+        ),
+        (
+            "14d: a profile binding an undeclared SELLER field is named",
+            lambda: any("SELLER_EXTRA" in m for m in seller14([*fields, "SELLER_EXTRA"], fields)),
+        ),
+        (
+            "14d: an aliased spec is compared by its LOCAL name",
+            lambda: seller14([*fields[:-1], "SELLER_F8_EU > SELLER_F8"], fields) == [],
+        ),
+        (
+            "14d: both sides empty REFUSES rather than passing",
+            lambda: any("vacuous" in m for m in seller14([], [])),
+        ),
+        (
+            "14d: a missing supply file refuses rather than passing",
             lambda: any(
-                "NEW_THING" in m for m in env14(base_names + "\nNEW_THING=x\n", base_entries)
+                "blind" in m
+                for m in seller_field_problems(Path("/nonexistent/supply.json"), set(fields))[0]
             ),
-        ),
-        (
-            "14b: an exemption for a key the example dropped is named",
-            lambda: any(
-                "ORPHAN" in m
-                for m in with_entry(
-                    "ORPHAN",
-                    {"kind": "bootstrap", "reason": "an exemption whose key the example dropped"},
-                )
-            ),
-        ),
-        (
-            "14c: a derive citation that does not contain its name is named",
-            lambda: any(
-                "does not contain it" in m
-                for m in with_entry(
-                    "WHO",
-                    {
-                        "kind": "machine-local",
-                        "reason": "a synthetic machine-local entry for the citation control",
-                        "derive": "regions.json:1",
-                    },
-                    "\nWHO=1\n",
-                )
-            ),
-        ),
-        (
-            "14c: an opt-in that became an ACTIVE default is named",
-            lambda: any(
-                "opt-in" in m
-                for m in with_entry(
-                    "OPTIN",
-                    {"kind": "opt-in", "reason": "a synthetic opt-in, which must stay commented"},
-                    "\nOPTIN=1\n",
-                )
-            ),
-        ),
-        (
-            "14c: an alias onto a name the map lacks is named",
-            lambda: any(
-                "NOT_IN_MAP" in m
-                for m in with_entry(
-                    "AL",
-                    {
-                        "kind": "alias",
-                        "reason": "a synthetic alias pointing at nothing",
-                        "store": "NOT_IN_MAP",
-                    },
-                    "\nAL=1\n",
-                )
-            ),
-        ),
-        (
-            "14c: a bootstrap name that IS in the map is a circularity",
-            lambda: any(
-                "circularity" in m for m in env14(base_names, base_entries, store={"NAME_0": {}})
-            ),
-        ),
-        (
-            "14c: a deferral past its own expiry is named",
-            lambda: any(
-                "expired" in m
-                for m in with_entry(
-                    "LATE",
-                    {
-                        "kind": "deferred",
-                        "reason": "a synthetic deferral whose window has closed",
-                        "blocker": "a synthetic blocker long enough to pass the floor",
-                        "expires": "2000-01-01",
-                    },
-                    "\nLATE=1\n",
-                )
-            ),
-        ),
-        (
-            "14c: a deferral for a name the map now holds is named as landed",
-            lambda: any(
-                "seeding landed" in m
-                for m in env14(
-                    base_names + "\nSEEDED=1\n",
-                    {
-                        **base_entries,
-                        "SEEDED": {
-                            "kind": "deferred",
-                            "reason": "a synthetic deferral whose seeding has since landed",
-                            "blocker": "a synthetic blocker long enough to pass the floor",
-                            "expires": "2999-01-01",
-                        },
-                    },
-                    store={"SEEDED": {}},
-                )
-            ),
-        ),
-        (
-            "14 floors: an empty example AND an empty allowlist still RED",
-            lambda: len([m for m in env14("", {}) if "floor" in m]) == 2,
         ),
     ]
     for label, probe14 in checks14:
@@ -1542,7 +1267,6 @@ jobs:
         print(f"  {'PASS' if good14 else 'FAIL'}  {label}")
         if not good14:
             bad += 1
-    shutil.rmtree(env_dir, ignore_errors=True)
     return 1 if bad else 0
 
 
@@ -1637,9 +1361,9 @@ def main() -> int:
         exp_problems, n_ledger, n_excusing = expected_mismatch_problems()
         problems += exp_problems
 
-    # 14. The local surrogate stays honest. Deliberately OUTSIDE the block above: that block is skipped when the map itself is unusable, and 14a/14b/14c are properties of `.env.example` and the allowlist which hold either way. A key with no home is a key with no home whether or not the store is readable today.
-    env_problems, n_example, n_local = env_local_problems(secrets)
-    problems += env_problems
+    # 14. The seller record's fields agree. Deliberately OUTSIDE the block above: that block is skipped when the map itself is unusable, and 14d compares `bws_env` against `secret-supply.json`, neither of which depends on the map being readable today.
+    seller_problems, n_seller = seller_field_problems()
+    problems += seller_problems
 
     if problems:
         print(f"✗ bws map check ({len(problems)} problem(s)):", file=sys.stderr)
@@ -1685,10 +1409,9 @@ def main() -> int:
             f"door -- none is a blanket exemption"
         )
     print(
-        f"✓ local surrogate: all {n_example} name(s) assigned in .env.example are mapped or "
-        f"exempt ({n_local} allowlist entry/entries, each kind re-derived), every exemption "
-        f"names a key the example still has, and the 9 SELLER_* fields match what the fetch "
-        f"promises to bind"
+        f"✓ seller record: the {n_seller} SELLER_* field(s) bws_env promises to bind for "
+        f"{SELLER_RECORD} are exactly the ones the {SELLER_PROFILE!r} profile in "
+        f"secret-supply.json binds"
     )
     print("  Blind spot: this proves NAMES resolve. Liveness in Bitwarden is proven at run time,")
     print(

@@ -332,6 +332,9 @@ def run_setup(ctx: Ctx, options: Options, constants: dict[str, str]) -> int:
     # package.json, package-lock.json and .npmrc and skips on a match.
     bridge.call("ensure_deps", ctx.root, ctx.env)
 
+    if "account-bws-bootstrap" in selected and _account_bws_bootstrap(ctx) != 0:
+        return 1
+
     if "check:env-credential-drift" in selected:
         _credential_drift(ctx)
 
@@ -365,6 +368,88 @@ def run_setup(ctx: Ctx, options: Options, constants: dict[str, str]) -> int:
     return 0
 
 
+# The account's retired local env files. `account-bws-bootstrap` refuses to continue while either still carries anything but the bootstrap token (PLAN-account-env-to-bws T20).
+RETIRED_ENV_FILES = ("private/account/.env", "private/account/.env.bench")
+
+# The PUBLIC-key cache the four build-time readers use (T15): the DEV keys, under the local names the readers expect.
+PUBLIC_KEY_CACHE = "private/account/.cache/public-keys.env"
+PUBLIC_KEY_SPECS = (
+    "ACCOUNT_ED25519_PUBLIC_KEY_DEV > ACCOUNT_ED25519_PUBLIC_KEY",
+    "ACCOUNT_X25519_PUBLIC_KEY_DEV > ACCOUNT_X25519_PUBLIC_KEY",
+)
+
+
+def retired_env_findings(root: pathlib.Path) -> list[str]:
+    """One line per retired env file that still holds more than the bootstrap token. Names only, never values."""
+    from rediacc_ci.core import env as envfile  # noqa: PLC0415
+
+    findings = []
+    for rel in RETIRED_ENV_FILES:
+        path = root / rel
+        if not path.is_file():
+            continue
+        extra = sorted(k for k in envfile.keys(path) if k != "BWS_ACCESS_TOKEN")
+        if extra or rel.endswith(".bench"):
+            findings.append(
+                "%s still exists and assigns %d name(s) besides the token" % (rel, len(extra))
+            )
+    return findings
+
+
+def _account_bws_bootstrap(ctx: Ctx) -> int:
+    """T20 then T15: the bootstrap token and the retired files are checked BLOCKING; the public-key cache is refreshed advisory.
+
+    Every secret the account stack reads comes from Bitwarden through `bws_env exec --profile ...`, and the one credential that cannot (the machine-account token) lives in its own 0600 file. A leftover `private/account/.env` would be a second source of truth that nothing reconciles, which is why this stops setup rather than warning.
+    """
+    from rediacc_ci.core import bws_env  # noqa: PLC0415
+
+    ctx.say()
+    ctx.step("Bitwarden bootstrap (account)")
+    try:
+        token = bws_env.read_token(ctx.env)
+    except bws_env.RefusalError as refusal:
+        for line in refusal.lines:
+            ctx.error(line)
+        return 1
+    if not token:
+        for line in bws_env.NO_TOKEN:
+            ctx.error(line)
+        ctx.error(
+            "Create it from your own terminal (never paste it into a session): scripts/dev/bws-rotate.py"
+        )
+        return 1
+    ctx.info("Bootstrap token: %s" % bws_env.token_path(ctx.env))
+    findings = retired_env_findings(ctx.root)
+    if findings:
+        for line in findings:
+            ctx.error(line)
+        ctx.error("Those values live in Bitwarden now (agent/plans/PLAN-account-env-to-bws.md).")
+        ctx.error("Delete the file(s); the token belongs in %s." % bws_env.token_path(ctx.env))
+        return 1
+    (ctx.root / PUBLIC_KEY_CACHE).parent.mkdir(parents=True, exist_ok=True)
+    result = ctx.run(
+        [
+            sys.executable,
+            "-m",
+            "rediacc_ci.core.bws_env",
+            "cache-to",
+            str(ctx.root / PUBLIC_KEY_CACHE),
+            *PUBLIC_KEY_SPECS,
+        ],
+        timeout=120,
+    )
+    if result.rc != 0:
+        ctx.warn(
+            "Could not refresh %s from Bitwarden; a dev renet build will bake no licence key."
+            % PUBLIC_KEY_CACHE
+        )
+        for line in result.err.strip().splitlines()[:4]:
+            ctx.warn("  %s" % line)
+    else:
+        ctx.info("Public-key cache refreshed: %s" % PUBLIC_KEY_CACHE)
+    return 0
+
+
 def _bool_word(value: bool) -> str:
     """`true` / `false`, because `devbox_ensure_image` takes the bash spelling."""
     return "true" if value else "false"
@@ -377,12 +462,12 @@ def _credential_drift(ctx: Ctx) -> None:
     """
     if ctx.env.get("SKIP_ENV_DRIFT_CHECK") == "1":
         return
-    if not (ctx.root / "private" / "account" / ".env").is_file():
-        return
     ctx.say()
     ctx.step("Credential drift check")
     if ctx.run(["npm", "run", "--silent", "check:env-credential-drift"], timeout=600).rc != 0:
-        ctx.warn("A credential in private/account/.env is not in the rotation manifest.")
+        ctx.warn(
+            "A credential local development reads from Bitwarden is not in the rotation manifest."
+        )
         ctx.warn("ROTATION IS AN OPS TASK, NOT A DEVELOPER ONE, so this does not stop setup.")
         ctx.warn("It surfaces later as an unrelated failure (a 403 from an API days on),")
         ctx.warn("and the developer who hits that is not the person who can fix it.")

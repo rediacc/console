@@ -10,10 +10,9 @@ tests/**/*.js
 tests/**/*.d.ts
 tests/**/*.map
 
-# Environment (machine-local VM topology; .env.example is the template)
+# Environment: the .env `rediacc_ci.env.create_e2e_env` generates (machine-local VM topology)
 .env
 .env.*
-!.env.example
 
 # Dependencies
 node_modules/

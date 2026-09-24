@@ -33,8 +33,8 @@ outbound mail), plus exam/study seeding. Headless auth chain precedent: .ci/scri
 
 ## Connecting the CLI
 
-- `./rdc.sh --dev ...` (or RDC_DEV=1): reads REDIACC_ACCOUNT_SERVER + X25519 key from
-private/account/.env, seeds/patches ~/.config/rediacc/dev.json, runs with REDIACC_CONFIG=dev, and FAILS FAST if no dev gateway is running. Bare ./rdc.sh targets PRODUCTION config.
+- `./rdc.sh --dev ...` (or RDC_DEV=1): reads the gateway port from .account-state and the
+X25519 public key from the running gateway's /.well-known/server-info, seeds/patches ~/.config/rediacc/dev.json, runs with REDIACC_CONFIG=dev, and FAILS FAST if no dev gateway is running. Bare ./rdc.sh targets PRODUCTION config.
 - Explicit config against a chosen gateway: `rdc config init <name> --server
 http://127.0.0.1:<port>` now also syncs that server's E2E public key at init (an unreachable server only warns; the first successful request heals). Then `rdc subscription login --token <api-token> --server <url>`.
 - ORDERING TRAP: any CLI invocation auto-creates the config named by an exported
@@ -50,8 +50,7 @@ REDIACC_CONFIG. Run the explicit `config init` BEFORE exporting, or init dies wi
 only server that attaches delegationCert to issued licenses; the dev gateway is the cloud entry. Delegated-flow work needs that entry or the license-mint fixtures.
 - bench (bench.rediacc.com) is a real deploy target via scripts/ops/deploy-bench.sh,
 not a local mode; edge/production deploy from CI only. Deploy order for licensing changes: account servers BEFORE renet BEFORE CLI.
-- `./run.sh account reset` regenerates .env; the gateway must be restarted to pick
-env changes up (same tsx rule).
+- There is no private/account/.env: secrets come from Bitwarden through `bws_env exec --profile account-dev` (.ci/config/secret-supply.json `consumers`), constants from the committed private/account/dev.defaults.env. `./run.sh account reset` pushes a fresh shared DEV keypair to the ACCOUNT_*_DEV store entries; the gateway must be restarted to pick it up (same tsx rule), and other machines re-run `./run.sh setup`.
 
 Database: the dev data lives in `private/account/account.db` (better-sqlite3, opened
 by `src/entry/dev-gateway.ts` with cwd `private/account`), NOT in wrangler/D1 -- `wrangler.toml` declares a D1 binding that the dev path never touches. Browse it with `./run.sh account db`, which runs Drizzle Studio against that file; `drizzle.config.ts` already points at it. **`./run.sh account reset` DELETES account.db** (plus -wal/-shm), so anything you were reading in Studio is

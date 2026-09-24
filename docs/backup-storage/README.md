@@ -32,7 +32,7 @@ repair forward. Testing and concurrency support are first-class deliverables, no
 
 ## Staffing
 
-Opus is the default model for coding sub-agents. Fable for the challenging pieces AND for planning agents. Sonnet for all translation/naturalization work, without exception. At most 2 concurrent writers, each with disjoint file ownership stated verbatim in its prompt; investigation agents fan out freely; every sub-agent report is spot-checked against the artifacts before anything
+Opus is the default model for coding sub-agents. Fable for the challenging pieces AND for planning agents. Sonnet for all translation/naturalization work, without exception. At most 4 concurrent writers, each with disjoint file ownership stated verbatim in its prompt; investigation agents fan out freely; every sub-agent report is spot-checked against the artifacts before anything
 builds on it.
 
 Fable-tier pieces of this program:

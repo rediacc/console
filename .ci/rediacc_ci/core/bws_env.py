@@ -80,7 +80,7 @@ WHAT v2 ADDED, AND WHY `cache-to` IS NOT THE EMITTER THIS MODULE REFUSES
   A name outside it is refused and NO FILE IS WRITTEN, which is the assertion that matters: an exit code alone would still leave a partial cache on disk for the next reader to trust.
 
 THE `STRIPE_WEBHOOK_SECRET` GUARD THAT PART 4 ASKED FOR IS DELIBERATELY ABSENT. Part 4 item 4 wanted "a refusal on `STRIPE_WEBHOOK_SECRET` until D3 lands", D3 being the collision where `.env`'s copy of that name was the committed E2E fixture while the store's was the real signing secret.
-D3 HAS landed: the local key is `STRIPE_E2E_WEBHOOK_SECRET`, and re-measured 2026-09-22 the live `private/account/.env` carries no `STRIPE_*` key at all. A hardcoded refusal for a collision that no longer exists is dead code whose expiry has already passed, and it would refuse a caller that legitimately wants the production secret.
+D3 HAS landed: the local key is `STRIPE_E2E_WEBHOOK_SECRET`, a committed fixture in `private/account/dev.defaults.env`, and no profile in `.ci/config/secret-supply.json` binds a `STRIPE_*` name at all. A hardcoded refusal for a collision that no longer exists is dead code whose expiry has already passed, and it would refuse a caller that legitimately wants the production secret.
 """
 
 import hashlib
@@ -108,10 +108,24 @@ LIST_ARGV = ("secret", "list", "--output", "json", "--color", "no")
 LIST_TIMEOUT_S = 60
 
 NO_TOKEN = [
-    "bws-env: BWS_ACCESS_TOKEN is not set.",
+    "bws-env: BWS_ACCESS_TOKEN is not set and no token file was found.",
     "  It is the one credential that cannot come from Bitwarden -- no bws verb",
-    "  mints or rotates a machine-account token. Put it in private/account/.env.",
+    "  mints or rotates a machine-account token. Put it in",
+    "  ${XDG_CONFIG_HOME:-~/.config}/rediacc/bws-access-token (mode 0600).",
 ]
+
+# --------------------------------------------------------------------------
+# WHERE THE BOOTSTRAP TOKEN LIVES (agent/plans/PLAN-account-env-to-bws.md T1)
+# --------------------------------------------------------------------------
+# Resolution order, held here and nowhere else: the environment wins, then the file named by BWS_ACCESS_TOKEN_FILE, then the default path below. `.devcontainer/devbox-bws.sh` reads the same default path because a profile.d hook cannot import Python.
+#
+# IN `~/.config/rediacc`, beside the rdc CLI's own state, so the path does not depend on this repository's name (operator ruling 2026-09-24). That directory is bound READ-WRITE into the devbox, so `.ci/lib/devbox.sh` binds THIS FILE read-only on top of it: a CLI or E2E run inside the container can neither delete nor rewrite it. The rdc CLI only ever touches `*.json` config files there by name. The only writer is `scripts/dev/bws-rotate.py` on the host.
+BOOTSTRAP_FILE_ENV = "BWS_ACCESS_TOKEN_FILE"
+BOOTSTRAP_DIR_NAME = "rediacc"
+BOOTSTRAP_FILE_NAME = "bws-access-token"
+
+# A world- or group-readable credential file is refused rather than read. Reading it would work, which is exactly the problem: the widened mode would then persist unnoticed until the file was copied somewhere that mattered.
+BOOTSTRAP_MODE_MASK = 0o077
 NO_BINARY = [
     "bws-env: the bws CLI is not on PATH (set BWS_BIN to point at it).",
     "  The devcontainer installs it; see .devcontainer/Dockerfile.",
@@ -173,10 +187,25 @@ CACHEABLE = (
     "UPSTREAM_PUBLIC_KEY",
 )
 
+# The STORE names each cacheable LOCAL name may be read from (PLAN-account-env-to-bws T15). Hardcoded for the same reason as CACHEABLE: the allowlist is on the LOCAL name, and without a fixed pair table an alias would turn `cache-to` into `ANY_SECRET > ACCOUNT_ED25519_PUBLIC_KEY`.
+#
+# The `_DEV` spellings are why this exists. Local development signs licences with the DEV keypair, so a dev renet must bake the DEV public key; caching the unsuffixed store entry would bake the PRODUCTION key and break every dev-signed licence.
+CACHE_STORE_NAMES = {
+    "ACCOUNT_ED25519_PUBLIC_KEY": ("ACCOUNT_ED25519_PUBLIC_KEY", "ACCOUNT_ED25519_PUBLIC_KEY_DEV"),
+    "ACCOUNT_X25519_PUBLIC_KEY": ("ACCOUNT_X25519_PUBLIC_KEY", "ACCOUNT_X25519_PUBLIC_KEY_DEV"),
+    "UPSTREAM_PUBLIC_KEY": ("UPSTREAM_PUBLIC_KEY",),
+}
+
+# Where `exec --profile` finds its profiles: the `consumers` object of the secret-supply spec, which `check:ci-secret-supply` validates against the vault map.
+SUPPLY_REL = os.path.join(".ci", "config", "secret-supply.json")
+
+# The profiles an `exec` has already hydrated, comma-separated. A nested `./run.sh` inherits its parent's environment, so a profile listed here is skipped instead of fetched twice.
+PROFILES_ENV = "REDIACC_BWS_PROFILES"
+
 # Store entries whose value is a JSON OBJECT, with the keys that must ALL be present.
 #
 # DECLARED HERE AND RE-DERIVED ELSEWHERE, which is the split that keeps it honest.
-# This module states the requirement so a fetch cannot silently bind eight of nine fields; `.ci/scripts/quality/check_bws_map.py` assertion 14d re-derives the nine against `private/account/.env.example`, so adding a tenth `SELLER_*` field to the tree without adding it here is a red rather than a blank line on an invoice.
+# This module states the requirement so a fetch cannot silently bind eight of nine fields; `.ci/scripts/quality/check_bws_map.py` assertion 14d re-derives the nine against the `SELLER_*` names the `account-dev` profile in `.ci/config/secret-supply.json` binds, so adding a tenth field to the profile without adding it here is a red rather than a blank line on an invoice.
 # Neither side alone is sufficient: a constant nobody checks rots, and a derivation with no declared subject has nothing to check.
 JSON_REQUIRED = {
     "SELLER_PROFILE_JSON": (
@@ -209,9 +238,10 @@ USAGE = """bws_env -- the `bws-env.sh` fetch, without the shell mutation.
       line. Refuses a non-object, a key that is not a legal identifier, and a
       record missing any key JSON_REQUIRED demands for NAME.
 
-  python3 -m rediacc_ci.core.bws_env cache-to FILE NAME [NAME ...]
-      Write `NAME=value` lines to FILE, mode 0644. Every NAME must be on the
-      three-name CACHEABLE allowlist of PUBLIC keys; anything else is refused
+  python3 -m rediacc_ci.core.bws_env cache-to FILE SPEC [SPEC ...]
+      Write `LOCAL=value` lines to FILE, mode 0644. Every LOCAL must be on the
+      three-name CACHEABLE allowlist of PUBLIC keys, and an aliased store name
+      must be one CACHE_STORE_NAMES pairs with it; anything else is refused
       and no file is written at all.
 
   python3 -m rediacc_ci.core.bws_env rotation-notice RC
@@ -227,6 +257,24 @@ USAGE = """bws_env -- the `bws-env.sh` fetch, without the shell mutation.
       16 hex digits of sha256 over the CLIENT ID half of BWS_ACCESS_TOKEN. The
       secret half never enters the digest, which is what makes the result
       publishable. Exit 1 when the variable is absent or is not a token shape.
+
+  python3 -m rediacc_ci.core.bws_env compare FILE [SPEC ...]
+      For each SPEC (default: every name FILE assigns), compare FILE's value
+      of LOCAL against the store's value of NAME, in process. Prints
+      `LOCAL MATCH|MISMATCH|ABSENT|LOCAL-EMPTY`, never a value or a length.
+      Exit 0 only when every line is MATCH.
+
+  python3 -m rediacc_ci.core.bws_env exec --profile P [--profile Q] -- CMD [ARG ...]
+      Bind the profiles' specs (from the `consumers` object of
+      .ci/config/secret-supply.json) into CMD's environment and exec it. The
+      shell wins; a profile already listed in REDIACC_BWS_PROFILES is skipped.
+      Nothing is written to stdout or to disk. With no token, it proceeds only
+      when every REQUIRED name is already in the environment.
+
+  python3 -m rediacc_ci.core.bws_env store-from-env SPEC [SPEC ...]
+      For each `STORE > LOCAL` spec, write the environment's LOCAL value into
+      the existing store entry STORE, then read it back with the same
+      comparison `compare` makes. Prints names and MATCH/MISMATCH only.
 
 There is deliberately no verb that prints a VALUE; see the module docstring.
 """
@@ -417,8 +465,23 @@ def cache_refusal(names: list[str]) -> list[str] | None:
     """The `cache-to` allowlist check, pure so the control can drive it directly.
 
     Returns the refusal lines, or None when every name is cacheable. Separated from the write so the gate test can assert BOTH halves of B10 -- that it refuses, and that it wrote no file -- without the second depending on the first having been reached.
+
+    Each item is a SPEC. The allowlist is checked on the LOCAL half, and an aliased STORE half must be one `CACHE_STORE_NAMES` pairs with that local name, so `ANY_SECRET > ACCOUNT_ED25519_PUBLIC_KEY` is refused as firmly as `ANY_SECRET`.
     """
-    outside = [n for n in names if n not in CACHEABLE]
+    specs = parse_specs(names)
+    outside = [local for _name, local in specs if local not in CACHEABLE]
+    unpaired = [
+        "%s > %s" % (name, local)
+        for name, local in specs
+        if local in CACHEABLE and name not in CACHE_STORE_NAMES.get(local, ())
+    ]
+    if unpaired and not outside:
+        return [
+            "bws-env: cache-to refuses %d alias(es) outside the pair table: %s"
+            % (len(unpaired), ", ".join(unpaired)),
+            "  A cacheable local name may only be read from the store names paired",
+            "  with it in CACHE_STORE_NAMES. No file was written.",
+        ]
     if not outside:
         return None
     return [
@@ -498,6 +561,71 @@ def client_fingerprint(token: str) -> str:
     return hashlib.sha256(client_id.encode()).hexdigest()[:16]
 
 
+def token_path(env: dict | None = None) -> str:
+    """Where the bootstrap token file is: BWS_ACCESS_TOKEN_FILE, else the XDG default.
+
+    The default is `${XDG_CONFIG_HOME:-$HOME/.config}/rediacc/bws-access-token`, computed from the mapping handed in rather than from `os.path.expanduser`, so a test that builds its own environment gets its own path and never the operator's real file.
+    """
+    environ = os.environ if env is None else env
+    pinned = environ.get(BOOTSTRAP_FILE_ENV, "")
+    if pinned:
+        return pinned
+    base = environ.get("XDG_CONFIG_HOME", "")
+    if not base:
+        home = environ.get("HOME", "") or os.path.expanduser("~")
+        base = os.path.join(home, ".config")
+    return os.path.join(base, BOOTSTRAP_DIR_NAME, BOOTSTRAP_FILE_NAME)
+
+
+def read_token(env: dict | None = None) -> str:
+    """The bootstrap token: the environment first, then the token file. "" when neither has one.
+
+    Raises `RefusalError` for a file (or its directory) that group or other can read. The first line of the file is the token; surrounding whitespace and a CR are dropped, and nothing else in the file is read.
+    """
+    environ = os.environ if env is None else env
+    direct = environ.get(ACCESS_ENV, "")
+    if direct:
+        return direct
+    path = token_path(environ)
+    try:
+        st = os.stat(path)
+    except OSError:
+        return ""
+    wide = []
+    if stat.S_IMODE(st.st_mode) & BOOTSTRAP_MODE_MASK:
+        wide.append("%s is mode %04o" % (path, stat.S_IMODE(st.st_mode)))
+    try:
+        dst = os.stat(os.path.dirname(path) or ".")
+        if stat.S_IMODE(dst.st_mode) & BOOTSTRAP_MODE_MASK:
+            wide.append("%s is mode %04o" % (os.path.dirname(path), stat.S_IMODE(dst.st_mode)))
+    except OSError:
+        pass
+    if wide:
+        raise RefusalError(
+            [
+                "bws-env: refusing to read the bootstrap token: %s." % "; ".join(wide),
+                "  The file must be 0600 and its directory 0700. Fix it with:",
+                "    chmod 700 %s && chmod 600 %s" % (os.path.dirname(path), path),
+            ]
+        )
+    try:
+        with open(path, encoding="utf-8") as handle:
+            first = handle.readline()
+    except OSError:
+        return ""
+    return first.strip()
+
+
+def with_token(env: dict | None = None) -> dict:
+    """A copy of the environment carrying the resolved token, for one `bws` child. Raises NO_TOKEN."""
+    environ = dict(os.environ if env is None else env)
+    token = read_token(environ)
+    if not token:
+        raise RefusalError(NO_TOKEN)
+    environ[ACCESS_ENV] = token
+    return environ
+
+
 def load(
     names: list[str] | None = None,
     *,
@@ -511,10 +639,7 @@ def load(
     `rc` is the twin's return code: 1 if anything was absent or empty, else 0. The four preconditions raise `RefusalError` instead of returning, because they are a different kind of answer -- the twin cannot say "0 exported" for them, it stops before the fetch.
     """
     err = sys.stderr if stderr is None else stderr
-    environ = os.environ if env is None else env
-
-    if not environ.get(ACCESS_ENV, ""):
-        raise RefusalError(NO_TOKEN)
+    environ = with_token(env)
     bws = binary(environ)
     if not bws:
         raise RefusalError(NO_BINARY)
@@ -556,6 +681,9 @@ def load(
 
 
 def main(argv: list[str]) -> int:
+    # `exec` first: its tail is another program's argv, and a `--help` there belongs to that program.
+    if argv and argv[0] == "exec":
+        return _exec_verb(argv[1:])
     if not argv or "--help" in argv or "-h" in argv:
         print(USAGE)
         return 0 if argv else 2
@@ -596,6 +724,18 @@ def main(argv: list[str]) -> int:
         return _rotation_notice_verb(rest[0])
     if verb == "fingerprint":
         return _fingerprint_verb()
+    if verb == "compare":
+        if not rest:
+            print("bws-env: compare takes a FILE and optional SPECs", file=sys.stderr)
+            return 2
+        return _compare_verb(rest[0], rest[1:])
+    if verb == "store-from-env":
+        if not rest:
+            print(
+                "bws-env: store-from-env takes at least one `STORE > LOCAL` SPEC", file=sys.stderr
+            )
+            return 2
+        return _store_verb(rest)
     if verb != "names":
         print(USAGE, file=sys.stderr)
         return 2
@@ -635,7 +775,7 @@ def _cache_verb(target: str, names: list[str]) -> int:
 
     THE ALLOWLIST IS CHECKED BEFORE THE STORE IS TOUCHED, which is not an optimisation. Fetching first would put a refused value in this process's memory, and a refusal that has already read the secret is a refusal in name only. Checking first means a rejected name never leaves Bitwarden.
 
-    AN INCOMPLETE FETCH WRITES NOTHING EITHER. A cache missing one of the three keys is worse than an absent cache: the four build-time readers fall back to `.env`, which is exactly the silent second source of truth this replaces. So the file is written once, whole, or not at all.
+    AN INCOMPLETE FETCH WRITES NOTHING EITHER. A cache missing one of the requested keys is worse than an absent cache: the four build-time readers would bake whatever half survived, silently. So the file is written once, whole, or not at all.
     """
     refusal = cache_refusal(names)
     if refusal:
@@ -655,7 +795,7 @@ def _cache_verb(target: str, names: list[str]) -> int:
             file=sys.stderr,
         )
         return 1
-    body = "".join("%s=%s\n" % (n, resolved[n]) for n in names)
+    body = "".join("%s=%s\n" % (local, resolved[local]) for _n, local in parse_specs(names))
     with open(target, "w", encoding="utf-8") as handle:
         handle.write(body)
     # 0644 BY EXPLICIT chmod, not by umask. These are public keys and four build steps must read them under whatever user the build runs as; inheriting a 0600 umask would make the cache work for its writer and fail for its readers, which is the hardest kind of environment bug to see.
@@ -695,12 +835,18 @@ def _rotation_notice_verb(raw_rc: str) -> int:
 def _fingerprint_verb() -> int:
     """`fingerprint`: the client-id digest of the token in the environment.
 
-    READS THE ENVIRONMENT AND NOT AN ARGUMENT, for the reason above: a token on argv is a token in `ps`. `scripts/dev/bws-rotate.py` fingerprints a CANDIDATE value by setting the variable for this one child process and nothing else.
+    READS THE ENVIRONMENT (then the token file, through `read_token`) AND NOT AN ARGUMENT, for the reason above: a token on argv is a token in `ps`. `scripts/dev/bws-rotate.py` fingerprints a CANDIDATE value by setting the variable for this one child process and nothing else.
     """
-    digest = client_fingerprint(os.environ.get(ACCESS_ENV, ""))
+    try:
+        token = read_token()
+    except RefusalError as refusal:
+        for line in refusal.lines:
+            print(line, file=sys.stderr)
+        return 1
+    digest = client_fingerprint(token)
     if not digest:
         print(
-            "bws-env: %s is absent or is not shaped like `0.<client-id>.<secret>:<key>`,"
+            "bws-env: %s (and the token file) is absent or is not shaped like `0.<client-id>.<secret>:<key>`,"
             % ACCESS_ENV,
             file=sys.stderr,
         )
@@ -708,6 +854,305 @@ def _fingerprint_verb() -> int:
         return 1
     print(digest)
     return 0
+
+
+# --------------------------------------------------------------------------
+# compare, exec, store-from-env (PLAN-account-env-to-bws T5, T6, T16)
+# --------------------------------------------------------------------------
+MATCH = "MATCH"
+MISMATCH = "MISMATCH"
+ABSENT = "ABSENT"
+LOCAL_EMPTY = "LOCAL-EMPTY"
+
+
+def compare_values(
+    local: dict[str, str], rows: list[dict], specs: list[tuple[str, str]]
+) -> list[tuple[str, str]]:
+    """(LOCAL, verdict) per spec. Pure; the values never leave this function.
+
+    The order of the checks is the order a reader acts on: a local blank says nothing about the store, so it is reported before the store is consulted, and a store blank is ABSENT for the same reason `load` treats it as absent.
+    """
+    out = []
+    for name, local_name in specs:
+        mine = local.get(local_name, "")
+        if not mine:
+            out.append((local_name, LOCAL_EMPTY))
+            continue
+        theirs = pick(rows, name)
+        if not theirs:
+            out.append((local_name, ABSENT))
+        elif theirs == mine:
+            out.append((local_name, MATCH))
+        else:
+            out.append((local_name, MISMATCH))
+    return out
+
+
+def _compare_verb(path: str, raw_specs: list[str]) -> int:
+    """`compare FILE [SPEC...]`: the read-back instrument every local-file deletion depends on.
+
+    The file is parsed by `rediacc_ci.core.env.parse`, the same unquoting `env_file_load` applies, so a quoted value compares as the string a consumer received. With no SPEC every name the file assigns is compared under its own name.
+    """
+    from rediacc_ci.core import env as envfile  # noqa: PLC0415
+
+    try:
+        local = envfile.read_pairs(path, missing_ok=False)
+    except envfile.EnvFileError as exc:
+        print("bws-env: %s" % exc, file=sys.stderr)
+        return 1
+    specs = parse_specs(raw_specs) if raw_specs else [(k, k) for k in sorted(local)]
+    try:
+        environ = with_token()
+        bws = binary(environ)
+        if not bws:
+            raise RefusalError(NO_BINARY)
+        rows = listing(bws, environ)
+    except RefusalError as refusal:
+        for line in refusal.lines:
+            print(line, file=sys.stderr)
+        return 1
+    verdicts = compare_values(local, rows, specs)
+    for local_name, verdict in verdicts:
+        print("%s %s" % (local_name, verdict))
+    bad = sum(1 for _n, v in verdicts if v != MATCH)
+    print(
+        "bws-env: compared %d name(s): %d MATCH, %d not"
+        % (len(verdicts), len(verdicts) - bad, bad),
+        file=sys.stderr,
+    )
+    return 1 if bad else 0
+
+
+def supply_path(env: dict | None = None) -> str:
+    return os.path.join(root(env), SUPPLY_REL)
+
+
+def profiles(env: dict | None = None) -> dict[str, dict]:
+    """The `consumers` object of the secret-supply spec. Raises `RefusalError` when it is unusable."""
+    path = supply_path(env)
+    try:
+        with open(path, encoding="utf-8") as handle:
+            doc = json.load(handle)
+    except (OSError, json.JSONDecodeError) as exc:
+        raise RefusalError(["bws-env: cannot read the profiles in %s (%s)." % (path, exc)]) from exc
+    consumers = doc.get("consumers")
+    if not isinstance(consumers, dict) or not consumers:
+        raise RefusalError(["bws-env: %s has no `consumers` profiles." % path])
+    return {k: v for k, v in consumers.items() if isinstance(v, dict)}
+
+
+def profile_specs(
+    table: dict[str, dict], names: list[str]
+) -> tuple[list[tuple[str, str]], list[tuple[str, str]]]:
+    """(required, optional) specs for the named profiles, deduplicated on LOCAL. Unknown names refuse."""
+    unknown = [n for n in names if n not in table]
+    if unknown:
+        raise RefusalError(
+            [
+                "bws-env: unknown profile(s): %s" % " ".join(unknown),
+                "  Known: %s" % " ".join(sorted(table)),
+            ]
+        )
+    required: dict[str, tuple[str, str]] = {}
+    optional: dict[str, tuple[str, str]] = {}
+    for name in names:
+        for spec in parse_specs(list(table[name].get("required") or [])):
+            required[spec[1]] = spec
+        for spec in parse_specs(list(table[name].get("optional") or [])):
+            optional.setdefault(spec[1], spec)
+    for local in required:
+        optional.pop(local, None)
+    return list(required.values()), list(optional.values())
+
+
+def hydrate(
+    names: list[str], env: dict | None = None, stderr=None
+) -> tuple[dict[str, str], list[str]]:
+    """The child environment for `exec`, and the profiles it now carries. Raises `RefusalError`.
+
+    THE SHELL WINS, as with `env_file_load`: a name already non-empty in the environment is neither fetched nor replaced. When every name is already present no store call is made at all, which is how a CI job that hydrated through `.github/actions/bws-secrets` runs without a token of its own.
+
+    WITH NO TOKEN, it proceeds only when every REQUIRED name is present; the absent optional names are listed by name on stderr. A missing required name, or one the store lacks, is a refusal: there is no fallback to a file.
+    """
+    err = sys.stderr if stderr is None else stderr
+    environ = dict(os.environ if env is None else env)
+    done = [p for p in environ.get(PROFILES_ENV, "").split(",") if p]
+    table = profiles(environ)
+    names = list(dict.fromkeys(names))
+    # Validates every requested name, inherited ones included: an unknown profile is a typo whether or not a parent claims to have run it.
+    profile_specs(table, names)
+    wanted = [n for n in names if n not in done]
+    if not wanted:
+        return environ, done
+    required, optional = profile_specs(table, wanted)
+    need_req = [s for s in required if not environ.get(s[1])]
+    need_opt = [s for s in optional if not environ.get(s[1])]
+    resolved: dict[str, str] = {}
+    if need_req or need_opt:
+        token = read_token(environ)
+        if not token:
+            if need_req:
+                raise RefusalError(NO_TOKEN)
+            print(
+                "bws-env: no token; %d optional name(s) left unset: %s"
+                % (len(need_opt), " ".join(s[1] for s in need_opt)),
+                file=err,
+            )
+        else:
+            fetch_env = dict(environ, **{ACCESS_ENV: token})
+            bws = binary(fetch_env)
+            if not bws:
+                raise RefusalError(NO_BINARY)
+            rows = listing(bws, fetch_env)
+            absent_req = [n for n, _l in need_req if not pick(rows, n)]
+            if absent_req:
+                raise RefusalError(
+                    [
+                        "bws-env: %d required name(s) absent or empty in the store: %s"
+                        % (len(absent_req), " ".join(absent_req)),
+                        *MISSING_TAIL,
+                    ]
+                )
+            absent_opt = [n for n, _l in need_opt if not pick(rows, n)]
+            if absent_opt:
+                print(
+                    "bws-env: %d optional name(s) absent in the store, left unset: %s"
+                    % (len(absent_opt), " ".join(absent_opt)),
+                    file=err,
+                )
+            for name, local in need_req + need_opt:
+                value = pick(rows, name)
+                if value:
+                    resolved[local] = value
+    environ.update(resolved)
+    # `passes_token`: the child itself runs `bws` (the rotation tool writes `bitwarden-sm:` consumers), so it gets the bootstrap token too. Every other profile's child never sees it.
+    if any(table[n].get("passes_token") for n in wanted) and not environ.get(ACCESS_ENV):
+        token = read_token(environ)
+        if not token:
+            raise RefusalError(NO_TOKEN)
+        environ[ACCESS_ENV] = token
+    carried = done + wanted
+    environ[PROFILES_ENV] = ",".join(carried)
+    print(
+        "bws-env: profile(s) %s: %d name(s) bound, %d already set"
+        % (
+            ",".join(wanted),
+            len(resolved),
+            len(required) + len(optional) - len(need_req) - len(need_opt),
+        ),
+        file=err,
+    )
+    return environ, carried
+
+
+def _exec_verb(argv: list[str]) -> int:
+    """`exec --profile P [--profile Q] -- CMD ARGS`: route 2 of the module docstring, at process level.
+
+    Values live only in the child's environment. Nothing reaches stdout or disk, so this is not the eval-able emitter the docstring refuses.
+    """
+    names: list[str] = []
+    i = 0
+    while i < len(argv) and argv[i] != "--":
+        if argv[i] == "--profile" and i + 1 < len(argv):
+            names.append(argv[i + 1])
+            i += 2
+            continue
+        if argv[i].startswith("--profile="):
+            names.append(argv[i].split("=", 1)[1])
+            i += 1
+            continue
+        print(
+            "bws-env: exec: unexpected argument %r (want --profile P ... -- CMD)" % argv[i],
+            file=sys.stderr,
+        )
+        return 2
+    cmd = argv[i + 1 :] if i < len(argv) else []
+    if not names or not cmd:
+        print("bws-env: exec takes at least one --profile and a command after --", file=sys.stderr)
+        return 2
+    try:
+        child, _carried = hydrate(names)
+    except RefusalError as refusal:
+        for line in refusal.lines:
+            print(line, file=sys.stderr)
+        return 1
+    sys.stdout.flush()
+    sys.stderr.flush()
+    try:
+        os.execvpe(cmd[0], cmd, child)  # noqa: S606 -- the child IS the product: its env carries the values, no shell ever sees them
+    except OSError as exc:
+        print("bws-env: exec: cannot run %s: %s" % (cmd[0], exc.strerror), file=sys.stderr)
+        return 127
+    return 0  # pragma: no cover -- execvpe does not return
+
+
+def _store_verb(raw_specs: list[str]) -> int:
+    """`store-from-env STORE > LOCAL ...`: overwrite existing store entries from the environment, then read back.
+
+    Only EXISTING entries are edited; a store name that is not there is refused, because creating one is a decision about which project it belongs to. `bws secret edit` takes the value on argv (bws 2.1.0 has no other input), so the child's output is discarded with `--output none` and nothing it prints is relayed.
+    """
+    specs = parse_specs(raw_specs)
+    missing_local = [local for _n, local in specs if not os.environ.get(local)]
+    if missing_local:
+        print(
+            "bws-env: store-from-env: not set in the environment: %s" % " ".join(missing_local),
+            file=sys.stderr,
+        )
+        return 1
+    try:
+        environ = with_token()
+        bws = binary(environ)
+        if not bws:
+            raise RefusalError(NO_BINARY)
+        rows = listing(bws, environ)
+    except RefusalError as refusal:
+        for line in refusal.lines:
+            print(line, file=sys.stderr)
+        return 1
+    ids = {r.get("key"): r.get("id") for r in rows}
+    absent = [n for n, _l in specs if not ids.get(n)]
+    if absent:
+        print(
+            "bws-env: store-from-env: not in the store, refusing to create: %s" % " ".join(absent),
+            file=sys.stderr,
+        )
+        return 1
+    for name, local in specs:
+        proc = subprocess.run(
+            [
+                bws,
+                "secret",
+                "edit",
+                "--value",
+                os.environ[local],
+                "--output",
+                "none",
+                "--color",
+                "no",
+                ids[name],
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+            env=environ,
+            timeout=LIST_TIMEOUT_S,
+        )
+        if proc.returncode != 0:
+            print(
+                "bws-env: store-from-env: editing %s failed (rc=%d)" % (name, proc.returncode),
+                file=sys.stderr,
+            )
+            return 1
+    try:
+        rows = listing(bws, environ)
+    except RefusalError as refusal:
+        for line in refusal.lines:
+            print(line, file=sys.stderr)
+        return 1
+    verdicts = compare_values(dict(os.environ), rows, specs)
+    for local, verdict in verdicts:
+        print("%s %s" % (local, verdict))
+    return 0 if all(v == MATCH for _l, v in verdicts) else 1
 
 
 if __name__ == "__main__":

@@ -1979,9 +1979,11 @@ jobs:
   # backed by it. Without Docker that drill fails fast rather than reporting a
   # green that skipped everything (transfer.sh:26-30).
   #
-  # NO ORG SECRETS. `account_ensure_env` generates private/account/.env with
-  # fresh throwaway ed25519/x25519 keys, API_KEY and JWT_SECRET on first use, so
-  # this leg needs the app token for the submodules and nothing else.
+  # NO ACCOUNT SECRETS. Locally `./run.sh account dev` binds the DEV keys from
+  # Bitwarden (`bws_env exec --profile account-dev`); this leg instead mints a
+  # throwaway ed25519/x25519 pair, API key and JWT secret into the job
+  # environment (`rediacc_ci.core.account mint-dev-keys`), and the shell wins, so
+  # no store fetch happens. It needs the app token for the submodules and nothing else.
   # ============================================================================
   test-drills:
     name: Drills
@@ -2057,6 +2059,12 @@ jobs:
       # drill_teardown rm -rf's the work dir on EXIT and the gateway log is gone
       # before any later step can read it. The runner is ephemeral, so keeping
       # the dir costs nothing.
+      - name: Mint throwaway dev account keys
+        # Into $GITHUB_ENV, so every drill step (and every gateway restart inside
+        # one) signs with the same key and bakes the same public key into renet.
+        # Prints the six NAMES only.
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.core.account mint-dev-keys
+
       - name: drill universe
         run: |
           set -o pipefail
