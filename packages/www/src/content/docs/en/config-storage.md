@@ -42,12 +42,13 @@ The PRF requirement applies only to the passkey slot. The master password and re
 
 1. Navigate to **Config Storage** in the sidebar, then click **Set Up Config Storage**
 2. The requirements checklist verifies your browser, 2FA, and session status
-3. Click **Start Setup**. For a passkey slot you'll touch your security key twice:
-   - First touch: registers the passkey
-   - Second touch: derives encryption keys via PRF
-4. Setup complete, your passkey secret is stored in your OS keyring
+3. Choose the first unlock method, then click **Create config store**:
+   - **Passkey**, when the provider supports PRF: the security key is touched twice, once to register it and once to derive the encryption keys.
+   - **Master password**, which works with any browser, including passkey providers without PRF such as Bitwarden.
+   - Optionally a **recovery code**, shown once, to save before the store is created.
+4. Setup complete. The CLI keeps the unlock secret in the OS keyring.
 
-After setup, add a master password or recovery code slot from the Config Storage page so a lost or unsupported authenticator cannot lock you out.
+A passkey can be added later from the Config Storage page. Keep at least two unlock methods, so a lost or unsupported authenticator cannot lock the store.
 
 ## PRF Provider Compatibility
 
@@ -58,7 +59,7 @@ After setup, add a master password or recovery code slot from the Config Storage
 | Google Password Manager | ✅ | Android |
 | 1Password | ✅ | Android, iOS |
 | Dashlane | ✅ | Cross-platform |
-| Bitwarden extension | ❌ | In development |
+| Bitwarden extension | ❌ | Use a master password instead |
 | Windows Hello | ❌ | Not supported |
 
 ## Headless CLI enrollment

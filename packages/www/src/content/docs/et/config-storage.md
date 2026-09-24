@@ -44,12 +44,13 @@ PRF-nõue kehtib ainult passkey-pesa kohta. Peaparooli ja taastekoodi meetodid t
 
 1. Naviseeri külgribal **Konfiguratsioonisalv** ja klõpsa **Seadista konfiguratsioonisalv**
 2. Nõuete kontrollnimekiri kontrollib brauserit, 2FA-d ja seansi olekut
-3. Klõpsa **Alusta seadistamist**. Passkey-pesa jaoks pead puudutama oma turvavõtit kaks korda:
-   - Esimene puudutus: registreerib passkey'i
-   - Teine puudutus: tuletab krüpteerimisvõtmed PRF kaudu
-4. Seadistamine lõpetatud, sinu passkey saladus salvestatakse sinu OS-i võtmehoidlasse
+3. Vali esimene lukust avamise viis ja klõpsa **Loo konfiguratsioonihoidla**:
+   - **Pääsuvõti**, kui su teenusepakkuja toetab PRF-i: puudutad turvavõtit kaks korda, üks kord registreerimiseks ja teist korda krüpteerimisvõtmete tuletamiseks.
+   - **Ülemparool**, mis töötab igas brauseris, ka PRF-i toeta pääsuvõtme pakkujatega nagu Bitwarden.
+   - Soovi korral **taastekood**, mida näidatakse ainult üks kord ja mis tuleb enne hoidla loomist salvestada.
+4. Seadistus on valmis. CLI hoiab lukust avamise saladust sinu operatsioonisüsteemi võtmehoidlas.
 
-Pärast seadistamist lisa Konfiguratsioonisalve lehelt peaparooli või taastekoodi pesa, et kadunud või PRF-i mittetoetav autentimisseade ei jätaks sind salvest välja.
+Pääsuvõtme saab hiljem lisada Config Storage lehelt. Hoia alles vähemalt kaks lukust avamise viisi, et kaotatud või toeta autentija sind välja ei lukustaks.
 
 ## PRF-pakkuja ühilduvus
 
@@ -60,7 +61,7 @@ Pärast seadistamist lisa Konfiguratsioonisalve lehelt peaparooli või taastekoo
 | Google Password Manager | ✅ | Android |
 | 1Password | ✅ | Android, iOS |
 | Dashlane | ✅ | Platvormideülene |
-| Bitwarden laiendus | ❌ | Arenduses |
+| Bitwarden laiendus | ❌ | Kasuta selle asemel peaparooli |
 | Windows Hello | ❌ | Pole toetatud |
 
 ## Pealdiseta CLI registreerimine

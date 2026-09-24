@@ -44,12 +44,13 @@ O requisito de PRF aplica-se apenas ao slot de passkey. Os métodos de palavra-p
 
 1. Navegue até **Armazenamento de Configuração** na barra lateral e clique em **Configurar Armazenamento de Configuração**
 2. A lista de verificação de requisitos valida o seu browser, 2FA e estado da sessão
-3. Clique em **Iniciar Configuração**. Para um slot de passkey, precisará de tocar na sua chave de segurança duas vezes:
-   - Primeiro toque: regista a passkey
-   - Segundo toque: deriva as chaves de encriptação via PRF
-4. Configuração concluída; o segredo da sua passkey fica armazenado no keyring do seu sistema operativo
+3. Escolha o primeiro método de desbloqueio e clique em **Criar armazenamento de configuração**:
+   - **Passkey**, se o seu provedor suportar PRF: você toca a chave de segurança duas vezes, uma para registrá-la e outra para derivar as chaves de criptografia.
+   - **Senha mestra**, que funciona em qualquer navegador, inclusive com provedores de passkey sem PRF, como o Bitwarden.
+   - Opcionalmente, um **código de recuperação**, exibido uma única vez, para guardar antes de o armazenamento ser criado.
+4. Configuração concluída. A CLI guarda o segredo de desbloqueio no chaveiro do seu sistema operacional.
 
-Após a configuração, adicione um slot de palavra-passe mestra ou de código de recuperação a partir da página Armazenamento de Configuração, para que um autenticador perdido ou não suportado não o deixe bloqueado para sempre.
+Uma passkey pode ser adicionada depois na página Config Storage. Mantenha pelo menos dois métodos de desbloqueio, para que um autenticador perdido ou incompatível não bloqueie seu acesso.
 
 ## Compatibilidade de Fornecedores PRF
 
@@ -60,7 +61,7 @@ Após a configuração, adicione um slot de palavra-passe mestra ou de código d
 | Google Password Manager | ✅ | Android |
 | 1Password | ✅ | Android, iOS |
 | Dashlane | ✅ | Multiplataforma |
-| Extensão Bitwarden | ❌ | Em desenvolvimento |
+| Extensão Bitwarden | ❌ | Use antes uma palavra-passe mestra |
 | Windows Hello | ❌ | Não suportado |
 
 ## Inscrição headless do CLI

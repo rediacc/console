@@ -44,12 +44,13 @@ Il requisito PRF si applica solo allo slot passkey. I metodi password principale
 
 1. Vai ad **Archivio di Configurazione** nella barra laterale, poi fai clic su **Configura Archivio di Configurazione**
 2. La checklist dei requisiti verifica il browser, il 2FA e lo stato della sessione
-3. Fai clic su **Avvia Configurazione**. Per uno slot passkey dovrai toccare la tua chiave di sicurezza due volte:
-   - Primo tocco: registra la passkey
-   - Secondo tocco: deriva le chiavi di cifratura tramite PRF
-4. Configurazione completata; il segreto della passkey è memorizzato nel portachiavi del sistema operativo
+3. Scegli il primo metodo di sblocco, poi fai clic su **Crea archivio di configurazione**:
+   - **Passkey**, se il tuo provider supporta PRF: tocchi la chiave di sicurezza due volte, una per registrarla e una per derivare le chiavi di cifratura.
+   - **Password principale**, che funziona con qualsiasi browser, anche con i provider di passkey senza PRF come Bitwarden.
+   - Facoltativamente un **codice di recupero**, mostrato una sola volta, da salvare prima che l'archivio venga creato.
+4. Configurazione completata. La CLI conserva il segreto di sblocco nel portachiavi del sistema operativo.
 
-Dopo la configurazione, aggiungi uno slot con password principale o codice di recupero dalla pagina Archivio di Configurazione, così un autenticatore perso o non supportato non ti blocca fuori.
+Puoi aggiungere una passkey in seguito dalla pagina Config Storage. Mantieni almeno due metodi di sblocco, così un autenticatore perso o non supportato non ti lascia fuori.
 
 ## Compatibilità dei Provider PRF
 
@@ -60,7 +61,7 @@ Dopo la configurazione, aggiungi uno slot con password principale o codice di re
 | Google Password Manager | ✅ | Android |
 | 1Password | ✅ | Android, iOS |
 | Dashlane | ✅ | Multipiattaforma |
-| Estensione Bitwarden | ❌ | In sviluppo |
+| Estensione Bitwarden | ❌ | Usa invece una password principale |
 | Windows Hello | ❌ | Non supportato |
 
 ## Iscrizione CLI headless

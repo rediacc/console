@@ -46,12 +46,13 @@ L'exigence PRF ne s'applique qu'à l'emplacement passkey. Les méthodes mot de p
 
 1. Accédez à **Stockage de configuration** dans la barre latérale, puis cliquez sur **Configurer le stockage de configuration**
 2. La liste de vérification des prérequis vérifie votre navigateur, la 2FA et l'état de la session
-3. Cliquez sur **Démarrer la configuration**. Pour un emplacement passkey, vous devrez toucher votre clé de sécurité deux fois :
-   - Premier toucher : enregistre le passkey
-   - Second toucher : dérive les clés de chiffrement via PRF
-4. Configuration terminée, votre secret de passkey est stocké dans le trousseau de clés de votre système d'exploitation
+3. Choisissez la première méthode de déverrouillage, puis cliquez sur **Créer l'espace de configuration** :
+   - **Passkey**, si votre fournisseur prend en charge PRF : vous touchez votre clé de sécurité deux fois, une fois pour l'enregistrer et une fois pour dériver les clés de chiffrement.
+   - **Mot de passe maître**, qui fonctionne avec n'importe quel navigateur, y compris les fournisseurs de passkeys sans PRF comme Bitwarden.
+   - En option, un **code de récupération**, affiché une seule fois et à conserver avant la création du stockage.
+4. La configuration est terminée. La CLI conserve le secret de déverrouillage dans le trousseau de votre système.
 
-Une fois la configuration terminée, ajoutez un emplacement mot de passe principal ou code de récupération depuis la page Stockage de configuration, pour qu'un authentificateur perdu ou non pris en charge ne puisse pas vous bloquer l'accès.
+Une passkey peut être ajoutée plus tard depuis la page Config Storage. Gardez au moins deux méthodes de déverrouillage, pour qu'un authentificateur perdu ou non pris en charge ne vous bloque pas.
 
 ## Compatibilité des fournisseurs PRF
 
@@ -62,7 +63,7 @@ Une fois la configuration terminée, ajoutez un emplacement mot de passe princip
 | Google Password Manager | ✅ | Android |
 | 1Password | ✅ | Android, iOS |
 | Dashlane | ✅ | Multiplateforme |
-| Extension Bitwarden | ❌ | En développement |
+| Extension Bitwarden | ❌ | Utilisez plutôt un mot de passe principal |
 | Windows Hello | ❌ | Non supporté |
 
 ## Enrôlement CLI sans interface

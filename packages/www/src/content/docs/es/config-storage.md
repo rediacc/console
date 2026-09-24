@@ -46,12 +46,13 @@ El requisito de PRF se aplica solo a la ranura de passkey. Los métodos de contr
 
 1. Navegue a **Almacenamiento de configuración** en la barra lateral, luego haga clic en **Configurar almacenamiento de configuración**
 2. La lista de verificación de requisitos verifica su navegador, 2FA y el estado de la sesión
-3. Haga clic en **Iniciar configuración**. Para una ranura de passkey tocará su clave de seguridad dos veces:
-   - Primer toque: registra el passkey
-   - Segundo toque: deriva las claves de cifrado vía PRF
-4. Configuración completa, su secreto de passkey se almacena en el llavero de su sistema operativo
+3. Elige el primer método de desbloqueo y haz clic en **Crear almacén de configuración**:
+   - **Passkey**, si tu proveedor admite PRF: tocas tu llave de seguridad dos veces, una para registrarla y otra para derivar las claves de cifrado.
+   - **Contraseña maestra**, que funciona en cualquier navegador, también con proveedores de passkeys sin PRF como Bitwarden.
+   - Opcionalmente, un **código de recuperación**, que se muestra una sola vez y debes guardar antes de crear el almacén.
+4. Configuración completada. La CLI guarda el secreto de desbloqueo en el llavero de tu sistema operativo.
 
-Tras la configuración, añada una ranura de contraseña maestra o de código de recuperación desde la página de Almacenamiento de configuración, para que un autenticador perdido o no compatible no le deje bloqueado.
+Puedes añadir una passkey más adelante desde la página de Config Storage. Mantén al menos dos métodos de desbloqueo para que un autenticador perdido o no compatible no te deje fuera.
 
 ## Compatibilidad de proveedores PRF
 
@@ -62,7 +63,7 @@ Tras la configuración, añada una ranura de contraseña maestra o de código de
 | Google Password Manager | ✅ | Android |
 | 1Password | ✅ | Android, iOS |
 | Dashlane | ✅ | Multiplataforma |
-| Extensión Bitwarden | ❌ | En desarrollo |
+| Extensión Bitwarden | ❌ | Utilice una contraseña maestra en su lugar |
 | Windows Hello | ❌ | No soportado |
 
 ## Inscripción headless del CLI

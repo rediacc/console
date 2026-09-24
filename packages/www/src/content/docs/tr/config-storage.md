@@ -44,12 +44,13 @@ PRF gereksinimi yalnızca passkey yuvası için geçerlidir. Ana parola ve kurta
 
 1. Kenar çubuğunda **Yapılandırma Depolama**'ya gidin, ardından **Yapılandırma Depolamayı Kur**'a tıklayın
 2. Gereksinimler kontrol listesi tarayıcınızı, 2FA'yı ve oturum durumunu doğrular
-3. **Kurulumu Başlat**'a tıklayın. Passkey yuvası için güvenlik anahtarınıza iki kez dokunmanız gerekecek:
-   - İlk dokunuş: passkey'i kaydeder
-   - İkinci dokunuş: PRF aracılığıyla şifreleme anahtarlarını türetir
-4. Kurulum tamamlandı, passkey sırrınız işletim sisteminizin anahtar zincirinde saklanır
+3. İlk kilit açma yöntemini seçin ve **Yapılandırma deposu oluştur**'a tıklayın:
+   - **Passkey**, sağlayıcınız PRF destekliyorsa: güvenlik anahtarınıza iki kez dokunursunuz; biri kaydetmek, diğeri şifreleme anahtarlarını türetmek için.
+   - **Ana parola**, her tarayıcıyla çalışır; Bitwarden gibi PRF desteklemeyen passkey sağlayıcılarıyla da.
+   - İsteğe bağlı olarak bir **kurtarma kodu**: yalnızca bir kez gösterilir ve depo oluşturulmadan önce saklanmalıdır.
+4. Kurulum tamamlandı. CLI kilit açma sırrını işletim sisteminizin anahtar zincirinde tutar.
 
-Kurulumdan sonra, kayıp veya desteklenmeyen bir kimlik doğrulayıcının sizi dışarıda bırakmaması için Yapılandırma Depolama sayfasından bir ana parola veya kurtarma kodu yuvası ekleyin.
+Passkey daha sonra Config Storage sayfasından eklenebilir. Kaybolan ya da desteklenmeyen bir doğrulayıcı sizi dışarıda bırakmasın diye en az iki kilit açma yöntemi tutun.
 
 ## PRF Sağlayıcı Uyumluluğu
 
@@ -60,7 +61,7 @@ Kurulumdan sonra, kayıp veya desteklenmeyen bir kimlik doğrulayıcının sizi 
 | Google Password Manager | ✅ | Android |
 | 1Password | ✅ | Android, iOS |
 | Dashlane | ✅ | Çapraz platform |
-| Bitwarden eklentisi | ❌ | Geliştirme aşamasında |
+| Bitwarden eklentisi | ❌ | Bunun yerine ana parola kullanın |
 | Windows Hello | ❌ | Desteklenmiyor |
 
 ## Başsız (Headless) CLI Kaydı

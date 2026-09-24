@@ -44,12 +44,13 @@ Die PRF-Anforderung gilt nur für den Passkey-Slot. Die Methoden Master-Passwort
 
 1. Navigieren Sie zu **Konfigurationsspeicher** in der Seitenleiste und klicken Sie auf **Konfigurationsspeicher einrichten**
 2. Die Anforderungscheckliste überprüft Ihren Browser, 2FA und den Sitzungsstatus
-3. Klicken Sie auf **Einrichtung starten**. Für einen Passkey-Slot berühren Sie Ihren Sicherheitsschlüssel zweimal:
-   - Erste Berührung: registriert den Passkey
-   - Zweite Berührung: leitet Verschlüsselungsschlüssel über PRF ab
-4. Einrichtung abgeschlossen - Ihr Passkey-Geheimnis wird in Ihrem Betriebssystem-Schlüsselbund gespeichert
+3. Wählen Sie die erste Entsperrmethode und klicken Sie auf **Konfigurationsspeicher erstellen**:
+   - **Passkey**, wenn Ihr Anbieter PRF unterstützt: Sie berühren Ihren Sicherheitsschlüssel zweimal, einmal zur Registrierung und einmal zum Ableiten der Schlüssel.
+   - **Master-Passwort**, das mit jedem Browser funktioniert, auch mit Passkey-Anbietern ohne PRF wie Bitwarden.
+   - Optional ein **Wiederherstellungscode**, der einmal angezeigt wird und vor dem Anlegen des Speichers gesichert werden muss.
+4. Die Einrichtung ist abgeschlossen. Die CLI bewahrt das Entsperrgeheimnis im Schlüsselbund Ihres Betriebssystems auf.
 
-Fügen Sie nach der Einrichtung über die Seite Konfigurationsspeicher einen Master-Passwort- oder Wiederherstellungscode-Slot hinzu, damit Sie ein verlorener oder nicht unterstützter Authentifikator nicht aussperrt.
+Ein Passkey lässt sich später auf der Seite „Config Storage“ hinzufügen. Behalten Sie mindestens zwei Entsperrmethoden, damit ein verlorener oder nicht unterstützter Authenticator Sie nicht aussperrt.
 
 ## PRF-Anbieter-Kompatibilität
 
@@ -60,7 +61,7 @@ Fügen Sie nach der Einrichtung über die Seite Konfigurationsspeicher einen Mas
 | Google Password Manager | ✅ | Android |
 | 1Password | ✅ | Android, iOS |
 | Dashlane | ✅ | Plattformübergreifend |
-| Bitwarden-Erweiterung | ❌ | In Entwicklung |
+| Bitwarden-Erweiterung | ❌ | Stattdessen ein Master-Passwort verwenden |
 | Windows Hello | ❌ | Nicht unterstützt |
 
 ## Headless CLI-Einbindung
