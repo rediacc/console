@@ -397,6 +397,8 @@ ARITY = {
     "R_AUDIT_MALFORMED": ("p", "f"),
     "CLI_DEFER_NO_JUSTIFICATION": None,
     "CLI_DEFER_VAGUE_WHY": ("w",),
+    "CLI_DEFER_ALREADY_SETTLED": ("f", "r"),
+    "CLI_RESERVED_ACTOR": ("m",),
     "DEFER_AUDIT_PROMPT": {"n": 1, "window": 120, "items": "i"},
     "V_LADDER_INVESTIGATE": ("rows", "facts", "m"),
     "V_LADDER_RESOLVE": ("rows", "facts", "m"),

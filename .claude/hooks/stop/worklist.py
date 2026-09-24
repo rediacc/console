@@ -107,6 +107,7 @@ for _name in (
     "wl_checks",
     "wl_hints",
     "wl_roundlog",
+    "wl_defersettle",
     "worklist_messages",
 ):
     try:
@@ -123,6 +124,7 @@ J = _MODS["wl_judge"]
 M = _MODS["worklist_messages"]
 H = _MODS["wl_hints"]
 RL = _MODS["wl_roundlog"]
+DS = _MODS["wl_defersettle"]
 
 # Re-exported for direct importers (the suite drives these two as library functions; keeping them on this module is part of the compatibility surface). Absent when their module is broken, which is correct: a caller gets an AttributeError naming this module instead of a silent stub.
 if "wl_checks" not in _BROKEN:
@@ -882,6 +884,9 @@ def _item_cli(argv, worklist):
     me = argv[1]
     if not C.PREFIX_RE.match(me):
         die("bad prefix %r: pass YOUR session-id prefix first" % me)
+    # The defer-settle actor is reserved like `judge`: a session typing it would be indistinguishable from a machine settle in the append-only log (wl_defersettle hard limit 5). check_me alone cannot refuse it, since a terminal with no session id accepts any shape-valid <me>.
+    if "wl_defersettle" not in _BROKEN and me == DS.ACTOR:
+        die(M.CLI_RESERVED_ACTOR % me)
     _identity_or_die(me, die)
     if mode == "--add":
         text = " ".join(argv[2:]).replace("\n", " ").strip()
@@ -931,6 +936,13 @@ def _item_cli(argv, worklist):
         vague = C.VAGUE_WHY_RE.search(why)
         if vague or len(why) < 12:
             die(M.CLI_DEFER_VAGUE_WHY % (vague.group(0) if vague else why))
+        # IS THE PREMISE ALREADY FALSE (wl_defersettle). One classifier call, made only when Python found a checkable fact; it REFUSES only on a confident `settled` and never writes the store. Every failure falls through to the creation below, because a classifier error must never block a --defer.
+        try:
+            _ds, _ds_err = DS.classify_one(root, rest, just)
+        except Exception:  # noqa: BLE001 -- fail open: create the deferral exactly as before
+            _ds, _ds_err = None, "classifier raised"
+        if _ds and _ds.get("verdict") == "settled" and not _ds_err:
+            die(M.CLI_DEFER_ALREADY_SETTLED % (_ds["fact_cite"], _ds["reason"]))
         S.set_state(worklist, me, item_id, "?", rest, extra={"j": just})
         print(
             "deferred #%s with its justification on record; it is reported "

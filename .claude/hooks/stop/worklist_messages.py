@@ -1289,6 +1289,20 @@ CLI_DEFER_VAGUE_WHY = (
     "this session settling it alone, in at least a sentence."
 )
 
+CLI_DEFER_ALREADY_SETTLED = (
+    "REFUSED: the tree already answers this deferral's question. %s -- %s\n"
+    "A [?] asks the operator for something this session cannot settle; this "
+    "one is settled by a fact checked just now. The item stays open [ ] work: "
+    "act on that fact and tick it with the citation as evidence. If the fact "
+    "does not really answer the question, defer again with a WHY: that says so."
+)
+
+CLI_RESERVED_ACTOR = (
+    "REFUSED: <me>=%s is a reserved actor, written only by the machinery that "
+    "owns it, so a session using it would forge that machinery's record. "
+    "Pass YOUR session-id prefix."
+)
+
 DEFER_AUDIT_PROMPT = """
 
 DEFERRAL AUDIT. ALSO fill the `defer_audit` array: exactly one entry per item

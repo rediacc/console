@@ -16,6 +16,7 @@ import time
 import wl_bravedefault as BD
 import wl_claimcheck as CC
 import wl_classsweep as CS
+import wl_defersettle as DS
 import wl_proc
 import wl_proofcheck as PF
 import worklist_messages as M
@@ -80,6 +81,8 @@ JUDGE_SCHEMA = {
         # v19: whether a completion claim's own evidence DEMONSTRATES it. Same optional-at-the-top-level shape and the same never-fails-closed semantics as class_sweep, and weaker still: this object cannot even turn a stop into a continue, so a missing or malformed one loses an advisory and nothing else. Asked on the claim-check marker, which rides the fix stop's tick. See
         # wl_claimcheck.
         "claim_check": CC.CLAIM_SCHEMA,
+        # v21: whether a [?]'s premise is already false, judged over Python-computed facts. Same optional-at-the-top-level shape and the same never-fails-closed semantics as class_sweep: a missing entry leaves the deferral exactly as it was. Batched and acted on by wl_checks; see wl_defersettle.
+        "defer_settle": DS.DEFER_SETTLE_SCHEMA,
         "regression_gate": {
             "type": "object",
             "properties": {
@@ -694,6 +697,8 @@ def judge_schema_for(extra):
         wanted.append("proof_obligation")
     if CC.CLAIM_MARKER in text:
         wanted.append("claim_check")
+    if DS.DEFER_SETTLE_MARKER in text:
+        wanted.append("defer_settle")
     missing = [k for k in wanted if k not in JUDGE_SCHEMA["required"]]
     if not missing:
         return JUDGE_SCHEMA
@@ -898,6 +903,9 @@ FORBIDDEN_ORDERS = (
     (re.compile(r"\brelease\b[^.]{0,20}\b(?:now|it|the\s+\w+)\b", re.IGNORECASE), "releasing"),
     (re.compile(r"\bgh\s+pr\s+merge\b", re.IGNORECASE), "merging"),
 )
+
+# Hard limit 2 of wl_defersettle: its standing-rule catalog may never carry an operator-reserved order. Checked here because this is where FORBIDDEN_ORDERS exists, and wl_defersettle is imported before it does.
+DS.check_catalog(FORBIDDEN_ORDERS)
 
 
 def sanitize_next_action(out):

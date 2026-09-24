@@ -332,24 +332,6 @@
         "f7d91e90"
       ]
     },
-    "agent/plans/PLAN-defer-settle-classifier.md": {
-      "status": "proposed",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 7,
-      "done": 0,
-      "open_sigs": [
-        "053b4136",
-        "3ac400fc",
-        "452d9340",
-        "58aeb9ee",
-        "5dce0269",
-        "65206617",
-        "6edb0ce2"
-      ],
-      "done_sigs": []
-    },
     "agent/plans/PLAN-devbox-uid-derived-image.md": {
       "status": "compacted",
       "owner": "unowned",
@@ -1782,6 +1764,24 @@
         "9986c208",
         "afb9b239",
         "b30a696d"
+      ]
+    },
+    "agent/plans/_done/PLAN-defer-settle-classifier.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "",
+      "open": 0,
+      "done": 7,
+      "open_sigs": [],
+      "done_sigs": [
+        "053b4136",
+        "3ac400fc",
+        "452d9340",
+        "58aeb9ee",
+        "5dce0269",
+        "65206617",
+        "6edb0ce2"
       ]
     },
     "agent/plans/_done/PLAN-deflected-finding-check.md": {

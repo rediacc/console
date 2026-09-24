@@ -23,6 +23,7 @@ import wl_checklist
 import wl_ci
 import wl_claimcheck
 import wl_core as C
+import wl_defersettle
 import wl_deflect
 import wl_git
 import wl_hints
@@ -382,7 +383,8 @@ CITE_RE = re.compile(
     # a live refusal: `agent/worklist/<prefix>.jsonl` and `agent/ledgers/*.jsonl` are this hook's own store and investigation ledger, cited constantly in evidence lines and tick messages, and every one of those citations was silently unresolvable to citation_state -- `json` matched the shorter prefix nowhere near far enough, since the alternation requires an EXACT trailing match up to `:`.
     r"(?<![\w./-])("
     r"\.?[\w][\w./-]*\.(?:py|ts|tsx|js|cjs|mjs|sh|json|jsonl|md|ya?ml|go|toml|astro|css|mdx|svg|cast|txt)"
-    r"|\.[\w][\w-]*"
+    # NESTED DOTFILES, 2026-09-24: the optional directory prefix below. `private/account/.env:12` and `.ci/policy/.dead-bash-allowlist:19` could not be cited at all, because the lookbehind refuses a dot right after `/` and the branch had no way to consume the directories in front of it. Found while building wl_defersettle, whose settle evidence cites an env key's line.
+    r"|(?:\.?[\w][\w.-]*/)*\.[\w][\w-]*"
     r")"
     r":(\d+)(?:-\d+)?\b"
 )
@@ -2968,6 +2970,9 @@ def run_stop(event, event_ok, worklist, hook_file):
         if C.DEFAULT_TOKEN.search(r["line"])
         and (C.stamp_age_min(r.get("upd", "")) or 0) >= S.DEFER_WINDOW_MIN
     ]
+    # A corroborated `execute_default` from wl_defersettle joins this same demand early: a standing rule already requires the DEFAULT, so the window has nothing left to wait for. Suppressed: an advisory must never wedge a stop.
+    with contextlib.suppress(Exception):
+        expired += wl_defersettle.accelerated(state_doc, deferred_recs, expired)
     if expired:
         shown = expired[: S.DEFER_EXEC_PER_STOP]
         vadd(
@@ -4445,6 +4450,12 @@ def run_stop(event, event_ok, worklist, hook_file):
             audit_batch.append(r)
             if len(audit_batch) >= S.DEFER_AUDIT_BATCH:
                 break
+    # DEFER-SETTLE (wl_defersettle): aged [?] items carrying a Python-checked fact ride the same judge call, asked whether the fact already settles them. Never blocks and never fails closed; see that module's FAIL SEMANTICS.
+    settle_batch = []
+    with contextlib.suppress(Exception):
+        settle_batch = wl_defersettle.build_batch(
+            root, state_doc, deferred_recs, disabled=wl_judge.JUDGE_DISABLED
+        )
     # ADMISSION DETECTOR (wl_admit.py). The prefilter runs on every stop and is measured at under 0.4 ms with zero tokens, firing on ~1% of real turns. It decides only whether to SPEND a model call; it is never the last word on a negative, because the regexes provably miss the euphemistic phrasings.
     #
     # Tier R records the hit HERE, before anything that can fail. A hit banked only after a successful verdict would vanish exactly when the judge times out, which is when the record matters most.
@@ -4553,7 +4564,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                 "items": "\n".join(arows),
             }
         verdict = None
-        if not reg_signals and not audit_batch:
+        if not reg_signals and not audit_batch and not settle_batch:
             verdict = wl_judge.cached_stop_verdict(state_doc, cur_sig, last_msg)
             judge_cached = verdict is not None
         err = None
@@ -4606,6 +4617,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                 cited_excerpts(root, last_msg),
                 extra=reg_extra
                 + audit_extra
+                + wl_defersettle.prompt_section(settle_batch)
                 + queue_extra
                 # Only on a firing stop, so an ordinary judge call is byte-identical to what it was before this existed.
                 + (M.ADMISSION_PROMPT if admit_hits else ""),
@@ -4634,6 +4646,16 @@ def run_stop(event, event_ok, worklist, hook_file):
                     + guide_tail,
                 }
             )
+        # DEFER-SETTLE VERDICT: banks, corroborates, and acts only through wl_defersettle's own evidence-gated tick. It cannot block, so it runs before any path below that can exit.
+        if settle_batch:
+            with contextlib.suppress(Exception):
+                for _ds_note in wl_defersettle.apply_stop(
+                    verdict, settle_batch, state_doc, root, worklist
+                ):
+                    outq_add(
+                        worklist, session_id, state_doc, "defer-settle", _ds_note, 2, sticky=True
+                    )
+            S.save_state(worklist, session_id, state_doc)
         # ADMISSION VERDICT. Processed first and separately, because unlike every other verdict here it CANNOT block: its whole consequence is one tracked item. The Stop battery already refuses to end a turn while an item tagged with this session is open, so detection borrows proven enforcement instead of adding another blocking path.
         if admit_hits:
             wl_admit.process_admission(
