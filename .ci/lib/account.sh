@@ -67,6 +67,34 @@ account_state_gateway_port() {
     grep '^gateway_port=' "$ACCOUNT_STATE_FILE" 2>/dev/null | cut -d= -f2
 }
 
+# account_writer_stamp: who writes .account-state, as <hostname>/<pid namespace>.
+# The host and the devbox share this worktree, so they share the file, and a
+# pid means nothing outside the pid namespace that recorded it: a `pids=` line
+# written in the container names unrelated processes on the host.
+account_writer_stamp() {
+    local host ns
+    if [[ -r /proc/sys/kernel/hostname ]]; then
+        host="$(</proc/sys/kernel/hostname)"
+    else
+        host="$(uname -n)"
+    fi
+    ns="$(readlink /proc/self/ns/pid 2>/dev/null || true)"
+    printf '%s/%s\n' "$host" "${ns:-no-pid-ns}"
+}
+
+# account_state_owned: 0 when .account-state carries THIS writer's stamp, so its
+# pids are processes here. Otherwise it says whose they are and returns 1, and
+# the caller signals none of them. An unstamped file is refused the same way:
+# there is no telling which namespace its pids came from.
+account_state_owned() {
+    local writer self
+    writer="$(grep '^writer=' "$ACCOUNT_STATE_FILE" 2>/dev/null | head -1 | cut -d= -f2- || true)"
+    self="$(account_writer_stamp)"
+    [[ -n "$writer" && "$writer" == "$self" ]] && return 0
+    log_warn "Not signalling the pids in ${ACCOUNT_STATE_FILE}: written by ${writer:-an unstamped writer}, not by this host and pid namespace (${self}). Skipping them."
+    return 1
+}
+
 # account_spawn DIR LOG CMD...: `(cd DIR && CMD...) >LOG 2>&1 &`, remembered in
 # ACCOUNT_PIDS, and started as the LEADER OF ITS OWN PROCESS GROUP (`set -m`), so
 # account_cleanup can end the whole tree rather than just the pid it holds. The
@@ -356,8 +384,8 @@ account_dev() {
         old_pids=$(grep "^pids=" "$ACCOUNT_STATE_FILE" 2>/dev/null | cut -d= -f2)
         log_step "Stopping previous account instance (gateway:${old_gateway:-?})..."
 
-        # Kill tracked child PIDs (vite, astro)
-        if [[ -n "$old_pids" ]]; then
+        # Kill tracked child PIDs (vite, astro), only when this writer recorded them
+        if [[ -n "$old_pids" ]] && account_state_owned; then
             for pid in ${old_pids//,/ }; do
                 kill "$pid" 2>/dev/null || true
             done
@@ -495,6 +523,7 @@ account_dev() {
     {
         echo "gateway_port=$GATEWAY_PORT"
         echo "pids=${ACCOUNT_PIDS[*]// /,}"
+        echo "writer=$(account_writer_stamp)"
         echo "worktree=$CONSOLE_ROOT_DIR"
         echo "started=$(date +%s)"
     } >"$ACCOUNT_STATE_FILE"
@@ -687,7 +716,7 @@ account_stop() {
         local old_gateway old_pids
         old_gateway=$(grep "^gateway_port=" "$ACCOUNT_STATE_FILE" 2>/dev/null | cut -d= -f2)
         old_pids=$(grep "^pids=" "$ACCOUNT_STATE_FILE" 2>/dev/null | cut -d= -f2)
-        if [[ -n "$old_pids" ]]; then
+        if [[ -n "$old_pids" ]] && account_state_owned; then
             for pid in ${old_pids//,/ }; do
                 kill "$pid" 2>/dev/null || true
             done

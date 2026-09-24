@@ -634,9 +634,11 @@ def _stop_previous(state: str) -> None:
     except account.StateAbortedError:
         raise ErrexitError(1, "a bare state-file assignment matched nothing") from None
     log.step("Stopping previous account instance (gateway:%s)..." % (old_gateway or "?"))
-    for pid in old_pids.replace(",", " ").split():
-        with contextlib.suppress(ValueError, OSError):
-            os.kill(int(pid), signal.SIGTERM)
+    # Only pids this writer recorded: see `account.state_owned`.
+    if old_pids and account.state_owned(text, state):
+        for pid in old_pids.replace(",", " ").split():
+            with contextlib.suppress(ValueError, OSError):
+                os.kill(int(pid), signal.SIGTERM)
     if old_gateway:
         base = _arith(old_gateway)
         for offset in (0, 1, 2):
@@ -783,6 +785,7 @@ def _serve(gateway_port: int, vite_port: int, astro_port: int) -> int:
         "gateway_port=%d" % gateway_port,
         # Twin behaviour 7: SPACES, not the commas the substitution was written for.
         "pids=%s" % " ".join(str(p) for p in PIDS),
+        "writer=%s" % account.writer_stamp(),
         "worktree=%s" % root,
         "started=%s" % started,
     ]

@@ -407,6 +407,42 @@ def state_pids(state_text: str) -> str:
     return grep_cut(state_text, "pids")
 
 
+def writer_stamp() -> str:
+    """`account_writer_stamp`: `<hostname>/<pid namespace>`, the identity every `.account-state` carries.
+
+    The host and the devbox share the worktree, so they share the file, and a pid is only meaningful inside the pid namespace that recorded it. The hostname is read from `/proc/sys/kernel/hostname` (the UTS name, which is the container's own inside the devbox), with `uname -n` where there is no /proc.
+    """
+    try:
+        host = pathlib.Path("/proc/sys/kernel/hostname").read_text(encoding="utf-8").rstrip("\n")
+    except OSError:
+        host = os.uname().nodename
+    try:
+        ns = os.readlink("/proc/self/ns/pid")
+    except OSError:
+        ns = ""
+    return "%s/%s" % (host, ns or "no-pid-ns")
+
+
+def state_owned(state_text: str, path: str) -> bool:
+    """`account_state_owned`: True when the state file carries THIS writer's stamp.
+
+    Otherwise warns whose pids they are and returns False, and the caller signals none of them. An unstamped file is refused the same way, because there is no telling which namespace its pids came from.
+    """
+    writer = ""
+    for line in state_text.splitlines():
+        if line.startswith("writer="):
+            writer = line[len("writer=") :]
+            break
+    me = writer_stamp()
+    if writer and writer == me:
+        return True
+    log.warn(
+        "Not signalling the pids in %s: written by %s, not by this host and pid namespace (%s). "
+        "Skipping them." % (path, writer or "an unstamped writer", me)
+    )
+    return False
+
+
 def totp_fields(body: str) -> tuple[str, str]:
     """The twin's `node -e` JSON read at `.ci/lib/account.sh:652`.
 
@@ -517,7 +553,7 @@ def stop(env: dict[str, str] | None = None) -> int:
         except StateAbortedError:
             return 1
 
-        if old_pids:
+        if old_pids and state_owned(text, path):
             # `for pid in ${old_pids//,/ }`: unquoted, so word-splitting drops any empty field the comma substitution leaves behind.
             pids = old_pids.replace(",", " ").split()
             for pid in pids:

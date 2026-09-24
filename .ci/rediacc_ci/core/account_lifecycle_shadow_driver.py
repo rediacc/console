@@ -149,9 +149,10 @@ def keylens(*names: str) -> str:
     return '{ %s; } >>"$STUB_ROOT/side.log"; ' % "; ".join(parts)
 
 
-# The state file the gateway sees, with every pid masked to `N` so the COUNT and the SEPARATOR are compared and the numbers, which differ per run, are not.
+# The state file the gateway sees, with every pid masked to `N` so the COUNT and the SEPARATOR are compared and the numbers, which differ per run, are not. The writer stamp is reduced to whether it is present: its value names this machine, and `account_writer_stamp` agreeing with `account.writer_stamp()` is pinned by its own test.
 STATE_DUMP = (
     'while IFS= read -r l; do case "$l" in pids=*) printf "state pids=%s\\n" "$(printf "%s" "${l#pids=}" | tr -s "0-9" "N")";; '
+    'writer=?*) printf "state writer=<stamp>\\n";; '
     '*) printf "state %s\\n" "$l";; esac; done <"$CONSOLE_ROOT_DIR/.account-state" >>"$STUB_ROOT/side.log"; '
 )
 WAIT_FOR_JOB = (
@@ -699,6 +700,31 @@ SCENARIOS: dict[str, list[Case]] = {
                 *HEX,
             ],
         ),
+        # A state file whose `pids=` names a REAL process the driver owns. Stamped by this writer, `account_dev` ends it (`foreign alive=0 signal=15`); stamped by another host or container, or not stamped, it is refused and the process lives (`foreign alive=1`). The host and the devbox share `.account-state`, which is how a container's pids came to be signalled on the host.
+        Case(
+            "previous-owned",
+            "dev",
+            env=DEV_ENV,
+            background=("stripe", "npx"),
+            pre="state-owned",
+            rows=[ALIVE_RUSTFS, *DEV_PORTS, *DEV_JOB, gateway(), *HEX],
+        ),
+        Case(
+            "previous-foreign",
+            "dev",
+            env=DEV_ENV,
+            background=("stripe", "npx"),
+            pre="state-foreign",
+            rows=[ALIVE_RUSTFS, *DEV_PORTS, *DEV_JOB, gateway(), *HEX],
+        ),
+        Case(
+            "previous-unstamped",
+            "dev",
+            env=DEV_ENV,
+            background=("stripe", "npx"),
+            pre="state-unstamped",
+            rows=[ALIVE_RUSTFS, *DEV_PORTS, *DEV_JOB, gateway(), *HEX],
+        ),
         Case(
             "no-docker-with-stripe",
             "dev",
@@ -1056,6 +1082,14 @@ def child_alive(farm: Farm) -> str | None:
     return "1" if alive else "0"
 
 
+# The `pre` values that plant a state file naming a real driver-owned process, and the stamp each writes (None: no `writer=` line at all).
+STATE_WRITERS = {
+    "state-owned": lifecycle.account.writer_stamp,
+    "state-foreign": lambda: "another-host/pid:[4026532999]",
+    "state-unstamped": None,
+}
+
+
 def observe(side: str, repo: pathlib.Path, case: Case) -> list[str]:
     """Run one case on one side in the fixed sandbox; return its observation lines."""
     root, farm = build_sandbox(repo, case)
@@ -1063,6 +1097,8 @@ def observe(side: str, repo: pathlib.Path, case: Case) -> list[str]:
     def norm(text: str) -> str:
         text = text.replace(str(root), "<root>").replace(str(farm.root), "<farm>")
         text = text.replace(str(repo), "<repo>")
+        # This machine's writer stamp, which both sides print in a refusal and no other machine shares.
+        text = text.replace(lifecycle.account.writer_stamp(), "<self-stamp>")
         for phrase, spelled in GATE_VOCABULARY:
             text = text.replace(phrase, spelled)
         return PID.sub("pid <n>", text)
@@ -1073,6 +1109,14 @@ def observe(side: str, repo: pathlib.Path, case: Case) -> list[str]:
         if case.pre == "foreign":
             foreign = subprocess.Popen([env["SHADOW_REAL_SLEEP"], "30"])
             env["SHADOW_FOREIGN_PID"] = str(foreign.pid)
+        if case.pre in STATE_WRITERS:
+            foreign = subprocess.Popen([env["SHADOW_REAL_SLEEP"], "30"])
+            stamp = STATE_WRITERS[case.pre]
+            _write(
+                root / ".account-state",
+                "gateway_port=4700\npids=%d\n%sstarted=1\n"
+                % (foreign.pid, "writer=%s\n" % stamp() if stamp else ""),
+            )
         proc = run_side(side, root, case, env)
         tag = case.name
         lines = ["obs %s rc=%d" % (tag, proc.returncode)]

@@ -19,6 +19,7 @@ import os
 import pathlib
 import re
 import shutil
+import socket
 import subprocess
 import sys
 import threading
@@ -157,6 +158,9 @@ PORTED_FUNCTIONS = (
     "account_stop",
     "account_rotation",
     "account_bws_exec",
+    # The `.account-state` writer stamp and its check, shared by `account_dev` and `account_stop`. Proved by the real-run stop tests below and the lifecycle `previous-owned` / `previous-foreign` cases.
+    "account_writer_stamp",
+    "account_state_owned",
 )
 
 # The side-effecting half, in `rediacc_ci.core.account_lifecycle`, keyed by the twin's name. Proved by the stub-farm differential at the end of this file.
@@ -185,7 +189,7 @@ DELETED_FUNCTIONS = (
 
 
 def test_the_twin_still_defines_every_function_this_slice_names() -> None:
-    """Twenty-two, split ten and twelve, measured rather than remembered.
+    """Twenty-four, split twelve and twelve, measured rather than remembered.
 
     The count is the twin's own definition count, so a function added to `account.sh` without being classified here fails this rather than slipping past both tables.
     """
@@ -199,7 +203,7 @@ def test_the_twin_still_defines_every_function_this_slice_names() -> None:
         sorted(classified - defined),
     )
     assert not set(PORTED_FUNCTIONS) & set(LIFECYCLE_FUNCTIONS)
-    assert len(PORTED_FUNCTIONS) + len(LIFECYCLE_FUNCTIONS) == 22
+    assert len(PORTED_FUNCTIONS) + len(LIFECYCLE_FUNCTIONS) == 24
 
 
 def test_the_env_writers_are_gone_from_both_sides() -> None:
@@ -691,7 +695,10 @@ def test_stop_real_run_kills_a_real_tracked_pid_and_a_real_port_occupant() -> No
             "control: the port occupant must be alive before stop() runs, or killing it proves nothing"
         )
 
-        state.write_text("gateway_port=%d\npids=%d\n" % (port, tracked.pid), encoding="utf-8")
+        state.write_text(
+            "gateway_port=%d\npids=%d\nwriter=%s\n" % (port, tracked.pid, account.writer_stamp()),
+            encoding="utf-8",
+        )
         rc = account.stop(env)
 
         assert rc == 0
@@ -748,7 +755,7 @@ sleep 0.3
 kill -0 "$TRACKED_PID" || { echo "CONTROL_FAILED_TRACKED_NOT_ALIVE"; exit 90; }
 kill -0 "$LISTENER_PID" || { echo "CONTROL_FAILED_LISTENER_NOT_ALIVE"; exit 91; }
 
-printf 'gateway_port=%%s\npids=%%s\n' "$PORT" "$TRACKED_PID" >"$ACCOUNT_STATE_FILE"
+printf 'gateway_port=%%s\npids=%%s\nwriter=%%s\n' "$PORT" "$TRACKED_PID" "${SHADOW_WRITER:-$(account_writer_stamp)}" >"$ACCOUNT_STATE_FILE"
 
 set +e
 account_stop
@@ -799,6 +806,104 @@ def test_stop_real_run_matches_the_twin_on_the_same_kind_of_real_target() -> Non
         assert "STATE_FILE_STILL_EXISTS" not in proc.stdout, (
             "the twin's account_stop left the state file behind: %r" % proc.stdout
         )
+    finally:
+        shutil.rmtree(work, ignore_errors=True)
+
+
+FOREIGN_WRITER = "some-devbox/pid:[4026532999]"
+
+
+def _fake_docker(directory: pathlib.Path) -> str:
+    """A `docker` that fails every call, so the two tests below need no skip: `account_stop`'s unscoped container teardown and ghost clean reach this instead of the machine's real daemon, and the pid handling under test runs exactly as it would."""
+    directory.mkdir(parents=True, exist_ok=True)
+    fake = directory / "docker"
+    fake.write_text("#!/bin/sh\nexit 1\n", encoding="utf-8")
+    fake.chmod(0o755)
+    return str(directory)
+
+
+@pytest.mark.parametrize("writer_line", ["writer=%s\n" % FOREIGN_WRITER, ""])
+def test_stop_real_run_leaves_pids_from_another_writer_alone(
+    writer_line: str, capfd, monkeypatch, tmp_path
+) -> None:
+    """REAL RUN, THE CONTROL FOR THE SHARED STATE FILE. The host and the devbox share `.account-state`, and a `pids=` line written in the container names unrelated processes on the host. A real process stands in for that unrelated host process: stamped by another writer, or not stamped at all, it must survive `stop()`, and the refusal must be said.
+
+    Red without `account.state_owned`: the tracked pid is killed. `PATH` holds only a failing `docker`, so the teardown touches no real container and `lsof` is absent (the port is closed anyway).
+    """
+    work = shadow_driver.build_sandbox(paths.repo_root())
+    tracked = None
+    try:
+        env = shadow_driver.sandbox_env(work)
+        state = pathlib.Path(account.state_file(env))
+        tracked = _spawn_reaped(["sleep", "20"])
+        assert _alive(tracked.pid), "control: the bystander must be alive before stop() runs"
+        closed = socket.socket()
+        closed.bind(("127.0.0.1", 0))
+        port = closed.getsockname()[1]
+        closed.close()
+        state.write_text(
+            "gateway_port=%d\npids=%d\n%s" % (port, tracked.pid, writer_line), encoding="utf-8"
+        )
+        monkeypatch.setenv("PATH", _fake_docker(tmp_path / "bin"))
+        rc = account.stop(env)
+        err = capfd.readouterr().err
+        assert rc == 0
+        assert _alive(tracked.pid), "stop() signalled a pid another writer recorded"
+        assert "Not signalling the pids in %s" % state in err, err
+        assert ("written by %s" % (FOREIGN_WRITER if writer_line else "an unstamped writer")) in err
+        assert "(%s)" % account.writer_stamp() in err
+    finally:
+        if tracked is not None:
+            with contextlib.suppress(OSError):
+                tracked.kill()
+        shutil.rmtree(work, ignore_errors=True)
+
+
+def test_stop_real_run_the_twin_leaves_pids_from_another_writer_alone(tmp_path) -> None:
+    """REAL RUN, the twin's side of the control above: `account_stop` over a state file stamped by another writer leaves the tracked process alive and says so. The port occupant is still ended, because `lsof` resolves it in THIS namespace at stop time. A failing `docker` shadows the real one, as above."""
+    work = shadow_driver.build_sandbox(paths.repo_root())
+    try:
+        script = work / "stop_real_run.sh"
+        script.write_text(BASH_STOP_REAL_RUN % {"work": work}, encoding="utf-8")
+        proc = subprocess.run(
+            ["bash", str(script)],
+            capture_output=True,
+            text=True,
+            timeout=60,
+            check=False,
+            env={
+                **os.environ,
+                "SHADOW_WRITER": FOREIGN_WRITER,
+                "PATH": _fake_docker(tmp_path / "bin") + ":/usr/local/bin:/usr/bin:/bin",
+            },
+        )
+        assert "CONTROL_FAILED" not in proc.stdout, proc.stdout
+        assert "STOP_RC=0" in proc.stdout, (proc.stdout, proc.stderr)
+        assert "TRACKED_STILL_ALIVE" in proc.stdout, (
+            "the twin's account_stop signalled a pid another writer recorded: %r" % proc.stdout
+        )
+        assert "LISTENER_STILL_ALIVE" not in proc.stdout, proc.stdout
+        assert "Not signalling the pids in" in proc.stderr, proc.stderr
+        assert "written by %s" % FOREIGN_WRITER in proc.stderr, proc.stderr
+    finally:
+        shutil.rmtree(work, ignore_errors=True)
+
+
+def test_the_writer_stamp_agrees_with_the_twin_and_names_this_pid_namespace() -> None:
+    """`account_writer_stamp` and `account.writer_stamp()` print the same identity, and it carries this process's own pid namespace, which is what tells the host from the devbox."""
+    work = shadow_driver.build_sandbox(paths.repo_root())
+    try:
+        script = (
+            'W="%s"; set -euo pipefail; source "$W/.ci/config/constants.sh"; '
+            'source "$W/.ci/scripts/lib/toolchain.sh"; source "$W/.ci/lib/local-common.sh"; '
+            'source "$W/.ci/lib/account.sh"; account_writer_stamp' % work
+        )
+        proc = subprocess.run(
+            ["bash", "-c", script], capture_output=True, text=True, timeout=60, check=False
+        )
+        assert proc.returncode == 0, proc.stderr
+        assert proc.stdout == account.writer_stamp() + "\n"
+        assert account.writer_stamp().endswith("/" + os.readlink("/proc/self/ns/pid"))
     finally:
         shutil.rmtree(work, ignore_errors=True)
 
@@ -1043,6 +1148,23 @@ def test_each_lifecycle_scenario_reached_its_subject(scenario: str) -> None:
     assert "command not found" not in "\n".join(
         line for line in lines if "no-jq" not in line and "no-node" not in line
     ), "a stub or a twin function was missing on PATH"
+
+
+@pytest.mark.parametrize("side", ["old", "new"])
+def test_account_dev_signals_only_the_pids_this_writer_recorded(side: str) -> None:
+    """The live differential compares the sides with each other, so both refusing nothing would still agree. This pins the outcome on each side: a real process named in a state file stamped by this writer is ended, one stamped by another host or container, or not stamped, survives."""
+    _, out, _ = drive_lifecycle(side, "dev")
+    assert "obs previous-owned foreign alive=0 signal=15" in out
+    assert "obs previous-foreign foreign alive=1" in out
+    assert "obs previous-unstamped foreign alive=1" in out
+    assert (
+        "obs previous-foreign err#1| ⚠ Not signalling the pids in <root>/.account-state: written by another-host/pid:[4026532999], not by this host and pid namespace (<self-stamp>). Skipping them."
+        in out
+    )
+    assert (
+        "obs previous-unstamped err#1| ⚠ Not signalling the pids in <root>/.account-state: written by an unstamped writer"
+        in out
+    )
 
 
 def test_the_lifecycle_corpus_covers_every_side_effecting_function() -> None:
