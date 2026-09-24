@@ -24,7 +24,7 @@ allowed-tools: Bash(.claude/hooks/stop/worklist.py --list --open:*), Bash(git br
 in-context tier-3 rule, recorded for **post-hoc veto**. The operator has never seen them; that is the point of asking.
 3. **Choices this session made silently.** A default taken, a scope narrowed, an
 alternative rejected. If answering differently would change what ships, it belongs here even when nothing tracked it.
-4. **"Yours" lines in the session's last `## Remaining` section.** Anything this
+4. **`Yours` lines in the session's last `## Remaining` section.** Anything this
 session told the operator was theirs to do (create a token, run a command in their own terminal, make a fork, approve a spend) is a pending ask even when no `[?]` tracks it. Offer to do it where the session can (with the credentials the operator already authorized), and ask who does it where only the operator can.
 
 If `$ARGUMENTS` is non-empty, keep only items matching it (substring, item id, or topic) and say how many were filtered out.
