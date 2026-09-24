@@ -566,9 +566,11 @@ const main = (): number => {
 
   let raw: string;
   try {
+    // THE RANGE OUTGROWS NODE'S DEFAULT 1 MiB BUFFER. Measured 2026-09-24 on PR #590: 950 commits whose full bodies total 1,034,459 bytes, and execFileSync died with `spawnSync git ENOBUFS` before a single trailer was read. 64 MiB is the size the other range readers here use (check-changed-selection.ts:124).
     raw = execFileSync('git', ['log', `${base}..${tip}`, '--format=%H%x1f%B%x1e', '--no-merges'], {
       encoding: 'utf8',
       cwd: REPO,
+      maxBuffer: 64 * 1024 * 1024,
     });
   } catch (err) {
     console.error(

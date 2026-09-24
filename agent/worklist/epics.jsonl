@@ -2,3 +2,4 @@
 {"at":"2026-09-06T14:00:24Z","by":"8f55d4f0","id":"e87fa3ce","title":"Tooling transformation: registry spine, gate ports, hook ports, region cutover","covers":["00b39c3d","043041d3","043f24e2","06182358","0638d947","0d972047","0ee5912b","10719055","1191a731","13f085a0","15d4845a","1c30cc7d","1d57d620","1e5ce54d","26eb1933","2b036a8b","2e642173","3838ff40","38c7201c","3c6d14de"],"order":null}
 {"at":"2026-09-06T18:42:56Z","by":"8f55d4f0","id":"24c98380","title":"Secret namespace migration and the move to Bitwarden","covers":[],"order":null}
 {"at":"2026-09-23T11:53:10Z","by":"d778be9d","id":"55627c58","title":"Unstick main's Console CI: submodule pointer, dependency freshness, security audit","covers":[],"order":null}
+{"at":"2026-09-24T11:46:19Z","by":"d778be9d","id":"f8ff8ede","title":"rdc read-only verbs never provision a machine (PLAN-rdc-readonly-mode)","covers":["f8ff8ede"],"order":null}
