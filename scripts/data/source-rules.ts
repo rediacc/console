@@ -32,6 +32,7 @@
  * after it.
  */
 
+import { NON_ENGLISH_LOCALES } from '@rediacc/locales';
 import { minimatch } from 'minimatch';
 
 export interface RuleInstance {
@@ -634,7 +635,7 @@ function i18nJsonInstances(cfg: {
   cliFlags?: boolean;
   extraUntranslatedPatterns?: string[];
 }): RuleInstance[] {
-  const languages = ['ar', 'de', 'es', 'et', 'fr', 'it', 'ja', 'ko', 'pt', 'ru', 'tr', 'zh'];
+  const languages = NON_ENGLISH_LOCALES;
   const nonEnglishFiles = languages.map((lang) => `${cfg.localesDir}/${lang}/**/*.json`);
   const localesDirAbs = cfg.localesDir;
   const out: RuleInstance[] = [];

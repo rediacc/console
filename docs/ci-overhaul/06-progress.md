@@ -3962,7 +3962,7 @@ confirmed. The other twelve M-live runs are operator-approved and driven from th
 
 **Roster liveness** (`4ee524a1e`, `61ade0880`). An agent that ended its turn while its own background shell runs is WAITING, and the roster now counts it as live. `worker:queue` is a placeholder and owes no 20-minute status. A running workflow is judged by its agents' transcripts, because its own output file stays empty until it returns.
 
-**Bitwarden is the only secret source.** GitHub holds only `BWS_ACCESS_TOKEN`. `private/account/.env`, `.env.bench` and every example env file are deleted, and the token lives at `~/.config/rediacc/bws-access-token`. The R2 cleanup revoked six unreferenced tokens and narrowed `backup-s3-20260901T103133Z` to the eight `*-backups-*` buckets, verified by a signed list call per bucket.
+**Bitwarden is the only secret source.** GitHub holds only `BWS_ACCESS_TOKEN`. The account's local env file, its bench variant and every example env file are deleted, and the token lives at `~/.config/rediacc/bws-access-token`. The R2 cleanup revoked six unreferenced tokens and narrowed `backup-s3-20260901T103133Z` to the eight `*-backups-*` buckets, verified by a signed list call per bucket.
 
 **In flight at this writing.**
 - The biome-only lint and TypeScript 7 migration: `agent/plans/PLAN-biome-only-lint.md`, Phase 1 running as a workflow.

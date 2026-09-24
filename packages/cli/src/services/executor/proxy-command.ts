@@ -214,7 +214,7 @@ export interface ProxyRunContext {
  * sealed to that executor's session key before it leaves this process. Reads
  * the local config POINTER only: the config itself is never pulled here.
  */
-export async function loadEnrolledCek(): Promise<CryptoKey> {
+async function loadEnrolledCek(): Promise<CryptoKey> {
   const { configFileStorage } = await import('../../adapters/config-file-storage.js');
   const { configService } = await import('../config/config-resources.js');
   const { hasRemoteConfig } = await import('../../types/index.js');

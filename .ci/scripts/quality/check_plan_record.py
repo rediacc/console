@@ -626,8 +626,8 @@ def _commits_touching_blob(root, blob):
                 if len(hits) < 20 and (not hits or hits[-1] != sha):
                     hits.append(sha)
         _BLOB_INDEX[key] = index
-    full = _git(root, "rev-parse", "--verify", "--quiet", blob).strip() or blob
-    return list(_BLOB_INDEX[key].get(full, []))
+    # `Full-Text-Blob:` is written as the full 40-hex id (`git hash-object`), which is the form `--raw --no-abbrev` indexes, so no rev-parse is needed to match it.
+    return list(_BLOB_INDEX[key].get(blob, []))
 
 
 def candidate_findings(root, rel, text):

@@ -18,7 +18,7 @@ import type { SessionPrincipal } from './sessions.js';
 const CACHE_TTL_MS = 60_000;
 
 /** The scope the executor's OWN token needs to record what it ran. */
-export const AUDIT_WRITE_SCOPE = 'audit:write';
+const AUDIT_WRITE_SCOPE = 'audit:write';
 
 /** Whether the executor can record an audit event, and if not, why. */
 export type AuditCapability = { ok: true } | { ok: false; reason: string };

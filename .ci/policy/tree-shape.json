@@ -80,6 +80,7 @@
       ".vscode",
       ".worktrees",
       "agent",
+      "biome-plugins",
       "compose",
       "docs",
       "eslint-rules",

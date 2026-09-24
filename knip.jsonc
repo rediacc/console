@@ -42,7 +42,11 @@
         // npm script names them -- bash, Python and the operator's own hand run those.
         "scripts/lib/shadow-gate.ts",
         "scripts/gen/generate-third-party-licenses.ts",
-        "scripts/gen/fetch-directive-snapshot.ts"
+        "scripts/gen/fetch-directive-snapshot.ts",
+        // Loaded BY PATH, not by import: .ci/scripts/quality/lint-rule-liveness.mjs:449
+        // `import(path.join(ROOT, 'scripts/data/source-rules.ts'))`, which knip cannot
+        // follow. It is the per-rule scope table the liveness gate derives its universe from.
+        "scripts/data/source-rules.ts"
       ],
       // AN EXPORT USED INSIDE ITS OWN FILE IS NOT DEAD, and in this repo it is
       // usually load-bearing. `check-doc-region-parity.ts:297` matches
