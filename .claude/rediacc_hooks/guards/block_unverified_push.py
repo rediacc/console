@@ -96,6 +96,11 @@ def _repo_with_receipt(path, receipt, carried=None):
         env=_env(),
     )
     (path / "seed.txt").write_text("seed\n", encoding="utf-8")
+    # carried-reds.json is COMMITTED, because the guard reads it from HEAD. Committed and on disk are then the same bytes, so the bash oracle (which reads the worktree) and this port still see one file and the differential compares like with like.
+    if carried is not None:
+        config = path / ".ci" / "config"
+        config.mkdir(parents=True, exist_ok=True)
+        (config / "carried-reds.json").write_text(json.dumps(carried), encoding="utf-8")
     subprocess.run(["git", "add", "-A"], cwd=str(path), check=True, capture_output=True, env=_env())
     subprocess.run(
         ["git", "commit", "-q", "-m", "seed"],
@@ -121,10 +126,6 @@ def _repo_with_receipt(path, receipt, carried=None):
         cache = path / ".ci" / "cache"
         cache.mkdir(parents=True)
         (cache / "prepush-receipt.json").write_text(json.dumps(body), encoding="utf-8")
-    if carried is not None:
-        config = path / ".ci" / "config"
-        config.mkdir(parents=True, exist_ok=True)
-        (config / "carried-reds.json").write_text(json.dumps(carried), encoding="utf-8")
     return path
 
 
@@ -227,6 +228,28 @@ def _alt(doc, key, fallback):
 def _refuse(ev, reason):
     ev.warn_raw("BLOCKED: %s\n%s" % (reason, REFUSAL_TAIL))
     return hookio.DENY
+
+
+CARRIED_REL = ".ci/config/carried-reds.json"
+
+
+def _carried_at_head(root):
+    """carried-reds.json as committed at HEAD in `root`, parsed; None when HEAD has no such file or it does not parse."""
+    try:
+        proc = subprocess.run(
+            ["git", "-C", root, "show", "HEAD:%s" % CARRIED_REL],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except OSError:
+        return None
+    if proc.returncode != 0:
+        return None
+    try:
+        return json.loads(proc.stdout)
+    except ValueError:
+        return None
 
 
 def _read_json(path):
@@ -338,11 +361,11 @@ def run(ev):
 
     if r_exit != "0":
         # A RED RECEIPT MAY STILL AUTHORISE A PUSH, but only when every failure is named and justified in .ci/config/carried-reds.json. All-or-nothing is the shape that gets a guard routed around; naming the exception keeps the refusal informative and leaves the excuse in git where it can be reviewed.
-        carried_file = "%s/.ci/config/carried-reds.json" % root
         carried = []
-        if pathlib.Path(carried_file).is_file():
+        # READ FROM THE TREE BEING PUSHED, not the worktree. The receipt is keyed on HEAD^{tree}, so the excuses that clear it must come from the same tree. Reading the worktree let another writer's uncommitted edit to this file change the verdict on a push that does not contain that edit (2026-09-24: a working copy that dropped one entry refused a push whose HEAD still carried it). An absent file at HEAD means nothing is carried.
+        doc = _carried_at_head(root)
+        if doc is not None:
             # Only entries whose reason is SUBSTANTIVE count. The bar is the one .dead-bash-allowlist uses and gate-test:dead-bash pins with a low-effort-BLOCKER case: a bare "known issue" excuses nothing.
-            doc = _read_json(carried_file)
             entries = doc.get("carried") if isinstance(doc, dict) else None
             for entry in entries if isinstance(entries, list) else []:
                 if not isinstance(entry, dict):

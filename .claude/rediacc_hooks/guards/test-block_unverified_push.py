@@ -38,13 +38,15 @@ with open(os.path.join(d, "f.txt"), "w", encoding="utf-8") as fh:
 git("add", "-A")
 git("commit", "-qm", "base")
 TREE = git("rev-parse", "HEAD^{tree}").stdout.strip()
+# The tree the planted receipt names. A dict rather than a rebound global: carrying is a commit, so it moves.
+CURRENT = {"tree": TREE}
 
 RECEIPT = os.path.join(d, ".ci", "cache", "prepush-receipt.json")
 
 
 def put(**over):
     base = {
-        "headTree": TREE,
+        "headTree": CURRENT["tree"],
         "head": "x",
         "branch": "0827-1",
         "dirtyDigest": "",
@@ -71,14 +73,37 @@ GOOD_REASON = (
 )
 
 
-def carry(*entries):
+def _rekey():
+    """Point the planted receipt at the CURRENT HEAD^{tree}. The guard reads carried-reds.json from HEAD, so carrying is a commit, and a commit moves the tree the receipt must name."""
+    CURRENT["tree"] = git("rev-parse", "HEAD^{tree}").stdout.strip()
+    if os.path.exists(RECEIPT):
+        with open(RECEIPT, encoding="utf-8") as fh:
+            body = json.load(fh)
+        body["headTree"] = CURRENT["tree"]
+        with open(RECEIPT, "w", encoding="utf-8") as fh:
+            json.dump(body, fh)
+
+
+def write_carried(*entries):
+    """The WORKTREE copy only, uncommitted: what another writer's in-flight edit looks like."""
     os.makedirs(os.path.dirname(CARRIED), exist_ok=True)
     with open(CARRIED, "w", encoding="utf-8") as fh:
         json.dump({"carried": list(entries)}, fh)
 
 
+def carry(*entries):
+    write_carried(*entries)
+    git("add", "--", CARRIED)
+    git("commit", "-q", "--allow-empty", "-m", "carry")
+    _rekey()
+
+
 def uncarry():
-    if os.path.exists(CARRIED):
+    if git("ls-files", "--", CARRIED).stdout.strip():
+        git("rm", "-q", "-f", "--", CARRIED)
+        git("commit", "-qm", "uncarry")
+        _rekey()
+    elif os.path.exists(CARRIED):
         os.remove(CARRIED)
 
 
@@ -184,6 +209,23 @@ cases.append((2, run(PUSH), "a LOW-EFFORT reason does not carry anything"))
 put(exitCode=1, failed=["check:ci-pr-task-trailers"], whole=False)
 carry({"gate": "check:ci-pr-task-trailers", "reason": GOOD_REASON})
 cases.append((2, run(PUSH), "a NARROWED run is refused even when its red is carried"))
+
+# THE TREE BEING PUSHED DECIDES, not the worktree. The receipt is keyed on HEAD^{tree}, so its excuses must come from the same tree.
+put(exitCode=1, failed=["check:ci-pr-task-trailers"])
+carry({"gate": "check:ci-pr-task-trailers", "reason": GOOD_REASON})
+write_carried()  # another writer's uncommitted copy DROPS the entry
+cases.append(
+    (0, run(PUSH), "an uncommitted worktree edit that DROPS an entry does not change the verdict")
+)
+
+uncarry()
+put(exitCode=1, failed=["check:ci-pr-task-trailers"])
+write_carried({"gate": "check:ci-pr-task-trailers", "reason": GOOD_REASON})  # worktree only
+cases.append(
+    (2, run(PUSH), "an entry present ONLY in the worktree, absent at HEAD, carries nothing")
+)
+if os.path.exists(CARRIED):
+    os.remove(CARRIED)
 
 uncarry()
 
