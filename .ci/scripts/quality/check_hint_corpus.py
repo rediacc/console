@@ -207,7 +207,7 @@ def controls_fired(hints_mod, plan_r):
         ("plan-with-them", "Plan with them on anything non-trivial", "file:CLAUDE.md:1"),
         (
             "writing-agents",
-            "Writing agents: at most 2 at a time, with disjoint file ownership",
+            "Writing agents: at most 4 at a time, with disjoint file ownership",
             "file:CLAUDE.md:1",
         ),
         (

@@ -54,7 +54,7 @@ measurement every W7 box is judged against, written to cite the command rather t
 - **Opus** is the default for coding sub-agents.
 - **Fable for the challenging pieces and for all planning agents.**
 - **Sonnet** for translation and naturalisation work.
-- **At most 2 concurrent writers**, with disjoint file ownership stated verbatim in every
+- **At most 4 concurrent writers**, with disjoint file ownership stated verbatim in every
 prompt. Investigation agents may fan out freely.
 - Every sub-agent report is **spot-checked against the artifact** before anything builds on
 it. In this very session, three of five verification sweeps corrected the orchestrator on load-bearing claims.
