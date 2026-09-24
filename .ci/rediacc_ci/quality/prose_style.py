@@ -692,7 +692,7 @@ class Finding:
 
         NOT the line number. See the module header; this is the half that lets a paragraph move without regenerating the whole baseline.
 
-        NOT THE PATH EITHER, when a plan has moved and left a stub. A plan moves exactly once, into `agent/plans/**`, and leaves a pointer at its old path so the 523 citations of it keep resolving. Keying frozen debt on the new spelling would have re-keyed 152 baselined findings into 122 brand-new ones in a change that did not rewrite a single sentence, which is a shrink-only
+        NOT THE PATH EITHER, when a plan has moved and left a stub. A plan leaves a pointer at every path it moves away from (into `agent/plans/`, then into `_done/` or `_removed/`) so the citations of it keep resolving, and `identity_path` walks those stubs back to the first path. Keying frozen debt on the new spelling would have re-keyed 152 baselined findings into 122 brand-new ones in a change that did not rewrite a single sentence, which is a shrink-only
         baseline reporting a regression it invented.
         """
         digest = hashlib.sha256(
@@ -852,28 +852,51 @@ _STUB_HEAD_RE = re.compile(
     r"\AStatus:[ \t]*moved[ \t]*$.*?^Moved-To:[ \t]*(\S+)[ \t]*$",
     re.MULTILINE | re.DOTALL,
 )
-_PLAN_MOVED_RE = re.compile(r"\Aagent/plans/(?:_done/|_removed/)?(PLAN-[^/]+\.md)\Z")
+_PLAN_MOVED_RE = re.compile(r"\Aagent/plans/(_done/|_removed/)?(PLAN-[^/]+\.md)\Z")
 
 
-def identity_path(root, rel):
-    """The path frozen debt about `rel` is keyed on: its pre-move path, or `rel`.
+def _stub_origins(rel):
+    """Where a stub pointing at `rel` can stand, nearest first.
 
-    A plan moves exactly once, into `agent/plans/**`, and leaves a one-line stub at its old path. Nothing about the DOCUMENT changes, so nothing about its findings should: keying the baseline on the new spelling turns every frozen finding in every moved plan into an orphan and a matching brand-new violation on the same day, in a change that rewrote no prose at all.
-
-    The stub is READ and required to point back at `rel`, so a file that merely shares a basename with something at the legacy path proves nothing.
+    Two moves exist and both leave a stub at the path they left. `check_plan_folders --move` takes `agent/plans/PLAN-x.md` into `_done/` or `_removed/` and stubs `agent/plans/PLAN-x.md`; the earlier migration took `agent/PLAN-x.md` into `agent/plans/**` and stubbed `agent/PLAN-x.md`.
     """
     match = _PLAN_MOVED_RE.match(rel)
     if not match:
-        return rel
-    origin = "agent/%s" % match.group(1)
+        return ()
+    name = match.group(2)
+    if match.group(1):
+        return ("agent/plans/%s" % name, "agent/%s" % name)
+    return ("agent/%s" % name,)
+
+
+def _stub_points_at(root, stub_rel, rel):
     try:
-        with open(pathlib.Path(root) / origin, "rb") as handle:
+        with open(pathlib.Path(root) / stub_rel, "rb") as handle:
             head = handle.read(1024).decode("utf-8", "replace")
     except OSError:
-        return rel
+        return False
     body = head.split("\n", 1)[-1] if head.startswith("#") else head
     found = _STUB_HEAD_RE.search(body)
-    return origin if found and found.group(1) == rel else rel
+    return bool(found) and found.group(1) == rel
+
+
+def identity_path(root, rel):
+    """The path frozen debt about `rel` is keyed on: the path it had before it first moved, or `rel`.
+
+    A plan leaves a stub at every path it moves away from. Nothing about the DOCUMENT changes, so nothing about its findings should: keying the baseline on the new spelling turns every frozen finding in every moved plan into an orphan and a matching brand-new violation on the same day, in a change that rewrote no prose at all.
+
+    The chain is walked back stub by stub (`_done/PLAN-x.md` <- `plans/PLAN-x.md` <- `agent/PLAN-x.md`), so a plan that has moved twice still answers to its first path. Each stub is READ and required to point at the path it is being asked about, so a file that merely shares a basename proves nothing.
+    """
+    seen = {rel}
+    current = rel
+    while True:
+        for origin in _stub_origins(current):
+            if origin not in seen and _stub_points_at(root, origin, current):
+                seen.add(origin)
+                current = origin
+                break
+        else:
+            return current
 
 
 def lint_text(path, text, rules, globals_, scope=None):
@@ -2413,6 +2436,32 @@ def selftest():
             "identity MIRROR: a stub pointing elsewhere re-keys nothing",
             identity_path(_root, "agent/plans/PLAN-a.md"),
             "agent/plans/PLAN-a.md",
+        )
+        # `check_plan_folders --move`: agent/plans/PLAN-b.md -> _done/, stub left at agent/plans/PLAN-b.md.
+        (_root / "agent" / "plans" / "_done").mkdir()
+        (_root / "agent" / "plans" / "_done" / "PLAN-b.md").write_text("# b\n", encoding="utf-8")
+        ctl.check(
+            "identity MIRROR: a _done/ plan with no stub behind it keeps its own path",
+            identity_path(_root, "agent/plans/_done/PLAN-b.md"),
+            "agent/plans/_done/PLAN-b.md",
+        )
+        (_root / "agent" / "plans" / "PLAN-b.md").write_text(
+            "# PLAN: b (moved)\nStatus: moved\nMoved-To: agent/plans/_done/PLAN-b.md\n\nmoved\n",
+            encoding="utf-8",
+        )
+        ctl.check(
+            "identity: a plan moved into _done/ keeps the id its agent/plans/ path had",
+            identity_path(_root, "agent/plans/_done/PLAN-b.md"),
+            "agent/plans/PLAN-b.md",
+        )
+        (_root / "agent" / "PLAN-b.md").write_text(
+            "# PLAN: b (moved)\nStatus: moved\nMoved-To: agent/plans/PLAN-b.md\n\nmoved\n",
+            encoding="utf-8",
+        )
+        ctl.check(
+            "identity: a plan moved twice answers to its FIRST path",
+            identity_path(_root, "agent/plans/_done/PLAN-b.md"),
+            "agent/PLAN-b.md",
         )
 
     # ---- the baseline's composition guard -------------------------------

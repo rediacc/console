@@ -29,6 +29,7 @@ import subprocess
 import pytest
 
 from rediacc_ci import gitx, paths
+from rediacc_ci.quality import plan_lifecycle as pl
 from rediacc_ci.quality import prose_style as ps
 
 ROOT = paths.repo_root()
@@ -1412,3 +1413,34 @@ def test_the_entry_point_is_executable_and_declares_its_gate_header():
     assert "---- gate ----" in text
     assert "---- end gate ----" in text
     assert "lane: quality-content" in text
+
+
+@pytest.mark.parametrize("folder", ["_done", "_removed"])
+def test_a_plan_moved_by_check_plan_folders_keeps_its_baselined_debt(tmp_path, folder):
+    """A plan carrying BASELINED findings is moved the way `check_plan_folders --move` moves it, and the baseline must still hold with nothing new and nothing stale.
+
+    `--move` renames `agent/plans/PLAN-x.md` into `_done/` or `_removed/` and writes `plan_lifecycle.stub_text` at the old path. `identity_path` once looked for that stub only at the older legacy path `agent/PLAN-x.md`, so every plan in `_done/` and `_removed/` was keyed on its new path (measured 2026-09-24: 51 of 51, 44 of them with the stub that should have kept their identity). A frozen finding then came back as NEW and its old id read as stale, in a move that rewrote no prose. Red against that version: rc 1, the plan's findings listed as NEW.
+    """
+    root = tmp_path
+    (root / ".ci" / "config").mkdir(parents=True)
+    old_rel = "agent/plans/PLAN-moved-debt.md"
+    new_rel = "agent/plans/%s/PLAN-moved-debt.md" % folder
+    text = "# PLAN: moved debt\nStatus: done\n\nDid you run it? Then your change is ready.\n"
+    (root / old_rel).parent.mkdir(parents=True)
+    (root / old_rel).write_text(text, encoding="utf-8")
+
+    frozen = ps.run_check(root, GLOBALS, RULES, [old_rel], write_baseline=True, accept_new=True)
+    assert frozen == 0
+    baseline = json.loads((root / ps.BASELINE_FILE).read_text(encoding="utf-8"))
+    assert baseline["count"] >= 1, "the plan carries no baselined debt, so the move proves nothing"
+
+    (root / new_rel).parent.mkdir(parents=True)
+    (root / old_rel).rename(root / new_rel)
+    (root / old_rel).write_text(pl.stub_text(old_rel, new_rel, "moved debt"), encoding="utf-8")
+    rc = ps.run_check(root, GLOBALS, RULES, [new_rel, old_rel], as_json=True)
+    assert rc == 0, "the moved plan's frozen debt came back as NEW"
+    assert ps.identity_path(root, new_rel) == old_rel
+
+    # MIRROR: the same move with no stub left behind is a different document to the baseline.
+    (root / old_rel).unlink()
+    assert ps.run_check(root, GLOBALS, RULES, [new_rel], as_json=True) == 1
