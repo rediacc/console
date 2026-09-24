@@ -242,7 +242,6 @@
 
     // BLOCKER: the @vitest/* family and zod are declared across workspaces (cli, shared, www, json, bridge-tests) purely as version pins so syncpack sameRange + the root zod override keep one physical copy; vitest/consumers resolve them transitively
     "@vitest/coverage-v8",
-    "@vitest/runner",
     "@vitest/ui",
     "@vitest/utils",
     "zod",

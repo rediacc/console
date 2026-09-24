@@ -32,10 +32,6 @@
     {
       "gate": "check:ci-plan-record",
       "reason": "5 remaining, down from 161 (132 a real gate defect fixed in d231c8c30). The rest is hand-edited Record-Sig mismatches and unfilled placeholders needing a human read of the prose, not a mechanical fix."
-    },
-    {
-      "gate": "check:ci-em-dash-surfaces",
-      "reason": "Two em-dash findings in .ci/lib/account.sh (ids 88cec57fe331 and 8e323a4cd06e), a file the W7P5-b account.sh writer is still editing live (lead, 2026-09-24). Fixing them here would race that writer's in-flight edit. The entry comes out in the commit that lands that writer's account.sh."
     }
   ]
 }
