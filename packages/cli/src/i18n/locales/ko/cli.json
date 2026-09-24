@@ -977,7 +977,7 @@
         "connection": "연결",
         "containersAllHealthy": "모든 컨테이너가 정상입니다",
         "containersUnhealthyFound": "비정상 컨테이너 {{count}}개 발견",
-        "description": "전체 머신 상태를 표시합니다 (인프라, 시스템, 이름/guid 포함 저장소, repository/repository_guid/domain/autoRoute 포함 컨테이너, repository/repository_guid 포함 서비스)",
+        "description": "전체 머신 상태를 표시합니다 (인프라, 시스템, 이름/guid 포함 저장소, repository/repository_guid/domain/autoRoute 포함 컨테이너, repository/repository_guid 포함 서비스). 읽기 전용: 머신의 renet을 업데이트하지 않으며, 버전이 다르면 경고를 표시합니다.",
         "descriptionShort": "전체 머신 상태를 표시합니다",
         "examples": {
           "basic": "머신의 전체 상태를 표시합니다.",
@@ -1966,7 +1966,7 @@
         "openingBrowser": "브라우저를 여는 중...",
         "passwordNote": "로그인 비밀번호: {{password}}",
         "persistingKey": "SSH 키 유지 중...",
-        "provisioningRenet": "원격으로 renet 프로비저닝 중...",
+        "provisioningRenet": "원격의 renet 확인 중...",
         "serverReused": "이미 실행 중인 서버를 재사용합니다",
         "settingsWarning": "경고: VS Code 설정을 구성할 수 없습니다: {{error}}",
         "settingUpEnv": "원격 환경 설정 중...",

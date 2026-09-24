@@ -977,7 +977,7 @@
         "connection": "接続",
         "containersAllHealthy": "すべてのコンテナが健全です",
         "containersUnhealthyFound": "{{count}} 個の不健全なコンテナが見つかりました",
-        "description": "マシンの完全なステータスを表示（システム、リポジトリ、コンテナ、サービス）",
+        "description": "マシンの完全なステータスを表示（システム、リポジトリ、コンテナ、サービス）。読み取り専用：マシン上の renet を更新することはなく、バージョンが異なる場合は警告を表示します。",
         "descriptionShort": "マシンの完全なステータスを表示する",
         "examples": {
           "basic": "マシンの完全なステータスを表示する",
@@ -1966,7 +1966,7 @@
         "openingBrowser": "ブラウザを開いています...",
         "passwordNote": "ログインパスワード: {{password}}",
         "persistingKey": "SSH キーを永続化中です...",
-        "provisioningRenet": "リモートサーバーにrenetをプロビジョニング中...",
+        "provisioningRenet": "リモートサーバーの renet を確認中...",
         "serverReused": "起動中のサーバーを再利用します",
         "settingsWarning": "警告: VS Code 設定を設定できませんでした: {{error}}",
         "settingUpEnv": "リモート環境をセットアップ中です...",

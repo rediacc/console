@@ -25,7 +25,7 @@ import { refreshRepoLicensesBatch } from '../account/license.js';
 import { configService } from '../config/config-resources.js';
 import { outputService } from '../core/output.js';
 import { machineConnections } from '../machine/machine-connection.js';
-import { provisionRenetToRemote, readSSHKey } from '../renet/renet-execution.js';
+import { acquireRemoteRenet, readSSHKey } from '../renet/renet-execution.js';
 import { REMOTE_INSTALL_PATH } from '../renet/renet-provisioner.js';
 import { envFilePath, generateEnvFile } from './backup-env-file.js';
 import {
@@ -112,7 +112,8 @@ async function preDeployProvisioning(
     return REMOTE_INSTALL_PATH;
   }
   outputService.info(`Provisioning renet to ${machine.ip}...`);
-  const { remotePath } = await provisionRenetToRemote(
+  const { remotePath } = await acquireRemoteRenet(
+    'provision',
     { renetPath: localConfig.renetPath },
     machine,
     sshPrivateKey,

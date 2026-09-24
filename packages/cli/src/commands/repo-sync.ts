@@ -24,7 +24,11 @@ import { configService } from '../services/config/config-resources.js';
 import { auditService } from '../services/core/audit.js';
 import { withPooledSftp } from '../services/machine/machine-connection.js';
 import { getSSHConnectionDetails } from '../services/machine/ssh-connection.js';
-import { provisionRenetToRemote, readSSHKey } from '../services/renet/renet-execution.js';
+import {
+  acquireRemoteRenet,
+  type RenetAccess,
+  readSSHKey,
+} from '../services/renet/renet-execution.js';
 import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
 import { assertRepoMountedOnMachine } from '../services/repo/repo-mount-check.js';
 import { assertCommandPolicy, CMD, validateRemotePath } from '../utils/command-policy.js';
@@ -43,13 +47,13 @@ import {
   withTrailingSlash,
 } from './repo-sync-helpers.js';
 
-async function ensureRenetProvisioned(machineName: string): Promise<void> {
+async function ensureRenetProvisioned(machineName: string, access: RenetAccess): Promise<void> {
   try {
     const localConfig = await configService.getLocalConfig();
     const machine = localConfig.machines[machineName];
     if (!machine) return;
     const teamKey = localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
-    await provisionRenetToRemote(localConfig, machine, teamKey, {});
+    await acquireRemoteRenet(access, localConfig, machine, teamKey, { machineName });
   } catch {
     // Non-fatal, sync may still work with existing renet on remote
   }
@@ -184,16 +188,16 @@ export interface SyncConnectionContext {
 async function prepareSyncConnection(
   validated: ValidatedSyncOptions,
   remoteSubPath: string | undefined,
-  opts: { isFile?: boolean } = {}
+  opts: { isFile?: boolean; access: RenetAccess }
 ): Promise<SyncConnectionContext> {
-  await ensureRenetProvisioned(validated.machine);
+  await ensureRenetProvisioned(validated.machine, opts.access);
 
   const repoConfig = await configService.getRepository(validated.repository);
 
   // The docker per-repo GUID mount check and the per-repo SSH key deployment are BOTH docker-world concepts: a kubernetes repo has no per-repo dockerd and no GUID mount, its files live in a plain folder on the named datastore. Running them on the kube arm would fail the mount check on a perfectly healthy repo.
   const kubeArm = validated.kubeDatastore !== undefined;
 
-  // Provisioning (above) must precede any renet use, so it stays a barrier. After it, these steps are independent of one another: the mount check is a renet call over SSH, the repo-key deployment is an SFTP write, and the connection-detail lookup is a local config read. Run them concurrently instead of serial round-trips. The machine connection pool is refcounted and shares one
+  // The renet check (above) must precede any renet use, so it stays a barrier. After it, these steps are independent of one another: the mount check is a renet call over SSH, the repo-key deployment is an SFTP write, and the connection-detail lookup is a local config read. Run them concurrently instead of serial round-trips. The machine connection pool is refcounted and shares one
   // SSH session across these leases, and each renet/SFTP exec opens its own ssh2 channel, so concurrent execution is safe. deployRepoKeyIfNeeded
   // swallows its own errors (non-fatal); a failed mount check still aborts the
   // whole setup because Promise.all rejects.
@@ -331,6 +335,7 @@ async function syncUpload(ref: string, options: SyncUploadOptions): Promise<void
   const { isFileMode, sources } = validateUploadOptions(options);
   const ctx = await prepareSyncConnection(validated, options.remoteFile ?? options.remote, {
     isFile: isFileMode,
+    access: 'provision',
   });
 
   // rsync accepts either a single source string (dir with trailing slash or a file) or an array of sources when the user passes multiple --local paths.
@@ -437,8 +442,10 @@ async function syncDownload(
   const startTime = Date.now();
   const validated = await validateSyncOptions(ref, options, CMD.REPO_SYNC_DOWNLOAD, resolveOptions);
   const { localPath, isFileMode } = validateDownloadOptions(options);
+  // Download (and `sync status`, its dry run) only reads: never replace the machine's renet.
   const ctx = await prepareSyncConnection(validated, options.remoteFile ?? options.remote, {
     isFile: isFileMode,
+    access: 'read-only',
   });
   const destination = isFileMode ? withTrailingSlash(localPath) : localPath;
 

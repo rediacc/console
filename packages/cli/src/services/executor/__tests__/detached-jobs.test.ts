@@ -36,7 +36,7 @@ const {
   mockAuthorizeSubscriptionViaDeviceCode,
   mockGetSubscriptionTokenState,
   mockBuildLocalVault,
-  mockProvisionRenetToRemote,
+  mockAcquireRemoteRenet,
   mockReadSSHKey,
   mockReadOptionalSSHKey,
   mockVerifyMachineSetup,
@@ -56,7 +56,7 @@ const {
   mockAuthorizeSubscriptionViaDeviceCode: vi.fn(),
   mockGetSubscriptionTokenState: vi.fn(),
   mockBuildLocalVault: vi.fn(() => '{"vault":"ok"}'),
-  mockProvisionRenetToRemote: vi.fn(() => ({ remotePath: '/usr/bin/renet', uploaded: false })),
+  mockAcquireRemoteRenet: vi.fn(() => ({ remotePath: '/usr/bin/renet', uploaded: false })),
   mockReadSSHKey: vi.fn(() => 'PRIVATE_KEY'),
   mockReadOptionalSSHKey: vi.fn(() => 'PUBLIC_KEY'),
   mockVerifyMachineSetup: vi.fn(),
@@ -110,7 +110,7 @@ vi.mock('../../account/license-refresh-state.js', () => ({
 
 vi.mock('../../renet/renet-execution.js', () => ({
   buildLocalVault: mockBuildLocalVault,
-  provisionRenetToRemote: mockProvisionRenetToRemote,
+  acquireRemoteRenet: mockAcquireRemoteRenet,
   readSSHKey: mockReadSSHKey,
   readOptionalSSHKey: mockReadOptionalSSHKey,
   verifyMachineSetup: mockVerifyMachineSetup,

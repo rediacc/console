@@ -48,7 +48,7 @@ import { writeStderr, writeStdout } from '../core/request-context.js';
 import { machineConnections } from '../machine/machine-connection.js';
 import {
   buildLocalVault,
-  provisionRenetToRemote,
+  acquireRemoteRenet,
   readOptionalSSHKey,
   readSSHKey,
   verifyMachineSetup,
@@ -113,6 +113,7 @@ import {
   versionSkewWarning,
 } from './job-client.js';
 import { followJobLogs, readJobStatus, renderJobEvent } from './job-remote.js';
+import { renetAccessFor } from './renet-function-access.js';
 import type { ExecuteOptions, ExecuteResult, RenetEvent } from './types.js';
 
 // ExecuteResult only. The other seam types are consumed from executor-factory, which is the entry point to this layer; re-exporting them here as well just gave callers two doors to the same room.
@@ -2028,7 +2029,21 @@ class LocalExecutorService {
     quiet: boolean
   ): Promise<{ remoteRenetPath: string; renetUploaded: boolean }> {
     const provStart = Date.now();
-    const provisionFn = () => provisionRenetToRemote(config, machine, sshPrivateKey, options, sftp);
+    // The dispatched function decides whether this run may replace the machine's renet (RENET_FUNCTION_ACCESS).
+    const access = renetAccessFor(options.functionName);
+    const provisionFn = () =>
+      acquireRemoteRenet(
+        access,
+        config,
+        machine,
+        sshPrivateKey,
+        {
+          debug: options.debug,
+          skipRouterRestart: options.skipRouterRestart,
+          machineName: options.machineName,
+        },
+        sftp
+      );
     const { remotePath: remoteRenetPath, uploaded: renetUploaded } = quiet
       ? await provisionFn()
       : await timedStep(t('timing.step.provisioning'), 'timing.step.renetProvisioned', provisionFn);

@@ -34,7 +34,7 @@ import {
   type ConnectionDetails,
   getSSHConnectionDetails,
 } from '../services/machine/ssh-connection.js';
-import { provisionRenetToRemote, readSSHKey } from '../services/renet/renet-execution.js';
+import { acquireRemoteRenet, readSSHKey } from '../services/renet/renet-execution.js';
 import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
 import { assertRepoMountedOnMachine } from '../services/repo/repo-mount-check.js';
 import { assertAgentMachineAccess } from '../utils/agent-guard.js';
@@ -168,7 +168,7 @@ async function configureVSCodeAndSettings(
   });
 }
 
-async function provisionAndPrepare(
+async function prepareRemote(
   machineName: string,
   repositoryName: string | undefined,
   connectionDetails: ConnectionDetails,
@@ -180,7 +180,7 @@ async function provisionAndPrepare(
 
   if (machine) {
     await withSpinner(t('commands.vscode.connect.provisioningRenet'), () =>
-      provisionRenetToRemote(localConfig, machine, teamKey, {})
+      acquireRemoteRenet('read-only', localConfig, machine, teamKey, { machineName })
     );
   }
 
@@ -391,7 +391,7 @@ async function connectVSCode(target: string, options: VSCodeConnectOptions): Pro
     getSSHConnectionDetails(NO_TEAM, machineName, repositoryName)
   );
 
-  // For a cluster target, layer KUBECONFIG onto the control-node connection so the integrated terminal has kubectl ready (design D14). The namespace is pinned on the control node in provisionAndPrepare below.
+  // For a cluster target, layer KUBECONFIG onto the control-node connection so the integrated terminal has kubectl ready (design D14). The namespace is pinned on the control node in prepareRemote below.
   if (kubeCluster) {
     applyClusterConnectionContext(connectionDetails, kubeCluster, kubeNamespace);
   }
@@ -408,7 +408,7 @@ async function connectVSCode(target: string, options: VSCodeConnectOptions): Pro
   }
 
   // Provision renet, prepare the per-repo VS Code server, and (for a cluster target) pin the kubectl namespace on the control node.
-  await provisionAndPrepare(machineName, repositoryName, connectionDetails, kubeNamespace);
+  await prepareRemote(machineName, repositoryName, connectionDetails, kubeNamespace);
 
   const { connectionName, identityFile, knownHostsFile } = await setupSSHConfig(
     machineName,

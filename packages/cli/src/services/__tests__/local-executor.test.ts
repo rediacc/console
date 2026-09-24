@@ -21,7 +21,7 @@ const {
   mockAuthorizeSubscriptionViaDeviceCode,
   mockGetSubscriptionTokenState,
   mockBuildLocalVault,
-  mockProvisionRenetToRemote,
+  mockAcquireRemoteRenet,
   mockReadSSHKey,
   mockReadOptionalSSHKey,
   mockVerifyMachineSetup,
@@ -41,7 +41,7 @@ const {
   mockAuthorizeSubscriptionViaDeviceCode: vi.fn(),
   mockGetSubscriptionTokenState: vi.fn(),
   mockBuildLocalVault: vi.fn((_opts: BuildLocalVaultOptions) => '{"vault":"ok"}'),
-  mockProvisionRenetToRemote: vi.fn(() => ({ remotePath: '/usr/bin/renet', uploaded: false })),
+  mockAcquireRemoteRenet: vi.fn(() => ({ remotePath: '/usr/bin/renet', uploaded: false })),
   mockReadSSHKey: vi.fn(() => 'PRIVATE_KEY'),
   mockReadOptionalSSHKey: vi.fn(() => 'PUBLIC_KEY'),
   mockVerifyMachineSetup: vi.fn(),
@@ -97,7 +97,7 @@ vi.mock('../../utils/agent-guard.js', () => ({
 
 vi.mock('../renet/renet-execution.js', () => ({
   buildLocalVault: mockBuildLocalVault,
-  provisionRenetToRemote: mockProvisionRenetToRemote,
+  acquireRemoteRenet: mockAcquireRemoteRenet,
   readSSHKey: mockReadSSHKey,
   readOptionalSSHKey: mockReadOptionalSSHKey,
   verifyMachineSetup: mockVerifyMachineSetup,
@@ -1113,7 +1113,7 @@ describe('localExecutorService create/fork licensing flow', () => {
       // is right for an execution failure and WRONG for a deliberate refusal: a BUSY provisioning-lock timeout reached the user as an anonymous exit 1, losing its code, its retryable flag and its "here is the pid" next-action.
       const { busy } = await import('../../utils/cli-exit-error.js');
       const { CliExitError } = await import('../../utils/cli-exit-error.js');
-      mockProvisionRenetToRemote.mockImplementationOnce(() => {
+      mockAcquireRemoteRenet.mockImplementationOnce(() => {
         throw busy('Another rdc process is still provisioning renet', {
           details: ['Lock: /tmp/x.lock'],
         });
@@ -1131,7 +1131,7 @@ describe('localExecutorService create/fork licensing flow', () => {
     });
 
     it('still flattens an ordinary execution failure into a result', async () => {
-      mockProvisionRenetToRemote.mockImplementationOnce(() => {
+      mockAcquireRemoteRenet.mockImplementationOnce(() => {
         throw new Error('ssh blew up');
       });
 
@@ -1143,6 +1143,27 @@ describe('localExecutorService create/fork licensing flow', () => {
       expect(result.success).toBe(false);
       expect(result.exitCode).toBe(1);
       expect(result.error).toContain('ssh blew up');
+    });
+  });
+  describe('renet access follows the dispatched function', () => {
+    it('a read-only function never provisions renet', async () => {
+      mockAcquireRemoteRenet.mockClear();
+      await localExecutorService.execute({
+        functionName: 'repository_list',
+        machineName: 'hostinger',
+      });
+      expect(mockAcquireRemoteRenet).toHaveBeenCalled();
+      expect(mockAcquireRemoteRenet.mock.calls[0][0]).toBe('read-only');
+    });
+
+    it('a mutating function provisions renet', async () => {
+      mockAcquireRemoteRenet.mockClear();
+      await localExecutorService.execute({
+        functionName: 'repository_up',
+        machineName: 'hostinger',
+      });
+      expect(mockAcquireRemoteRenet).toHaveBeenCalled();
+      expect(mockAcquireRemoteRenet.mock.calls[0][0]).toBe('provision');
     });
   });
 });

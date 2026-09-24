@@ -13,7 +13,7 @@ import { configService } from '../config/config-resources.js';
 import { outputService } from '../core/output.js';
 import { createQuietStderrPump } from '../executor/output-lines.js';
 import { machineConnections } from '../machine/machine-connection.js';
-import { provisionRenetToRemote, readSSHKey } from './renet-execution.js';
+import { acquireRemoteRenet, readSSHKey } from './renet-execution.js';
 
 // Re-exported so the provisioning call sites (services/tofu/provision.ts, services/cluster/cluster-provision.ts) keep importing it from the bootstrap module they already depend on. The implementation lives in utils/host-keys.ts because the command layer needs it too.
 export { scanHostKeys };
@@ -45,7 +45,8 @@ export async function bootstrapMachine(
   const sshPrivateKey =
     updatedConfig.sshPrivateKey ?? (await readSSHKey(updatedConfig.ssh.privateKeyPath));
 
-  const { remotePath: remoteRenetPath } = await provisionRenetToRemote(
+  const { remotePath: remoteRenetPath } = await acquireRemoteRenet(
+    'provision',
     updatedConfig,
     machine,
     sshPrivateKey,

@@ -11,7 +11,7 @@ import {
   type ConnectionDetails,
   getSSHConnectionDetails,
 } from '../services/machine/ssh-connection.js';
-import { provisionRenetToRemote, readSSHKey } from '../services/renet/renet-execution.js';
+import { acquireRemoteRenet, readSSHKey } from '../services/renet/renet-execution.js';
 import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
 import { assertRepoMountedOnMachine } from '../services/repo/repo-mount-check.js';
 import {
@@ -286,7 +286,7 @@ async function connectTerminal(targetRef: string, options: TermConnectOptions): 
   }
   const sshPrivateKey =
     localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
-  await provisionRenetToRemote(localConfig, machine, sshPrivateKey, {});
+  await acquireRemoteRenet('read-only', localConfig, machine, sshPrivateKey, { machineName });
 
   if (dockerRepo) {
     const repoConfig = await configService.getRepository(dockerRepo);

@@ -977,7 +977,7 @@
         "connection": "Ühendus",
         "containersAllHealthy": "Kõik konteinerid on terved",
         "containersUnhealthyFound": "Leitud {{count}} ebatervet konteinerit",
-        "description": "Näitab masina täisstaatust (infra, süsteem, repositooriumid nime/guid-iga, konteinerid repository/repository_guid/domain/autoRoute-iga, teenused repository/repository_guid-iga)",
+        "description": "Näitab masina täisstaatust (infra, süsteem, repositooriumid nime/guid-iga, konteinerid repository/repository_guid/domain/autoRoute-iga, teenused repository/repository_guid-iga). Ainult lugemiseks: ei uuenda kunagi masina renet binaari; hoiatab, kui selle versioon erineb.",
         "descriptionShort": "Näitab masina täisstaatust",
         "examples": {
           "basic": "Kuva masina täielik olek.",
@@ -1966,7 +1966,7 @@
         "openingBrowser": "Brauseri avamine...",
         "passwordNote": "Sisselogimise parool: {{password}}",
         "persistingKey": "SSH-võtit säilitatakse...",
-        "provisioningRenet": "Renet-i ettevalmistamine kaugmasinasse...",
+        "provisioningRenet": "Kaugmasina renet binaari kontrollimine...",
         "serverReused": "Taaskasutatakse juba töötavat serverit",
         "settingsWarning": "Hoiatus: VS Code seadete konfigureerimine ebaõnnestus: {{error}}",
         "settingUpEnv": "Kaugkeskkonna seadistamine...",

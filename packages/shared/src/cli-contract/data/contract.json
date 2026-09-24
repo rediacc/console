@@ -6356,7 +6356,7 @@
       "group": "INFRASTRUCTURE",
       "plane": "machine",
       "descriptionKey": "commands.machine.status.description",
-      "label": "Show a machine's system, repositories, containers, and services.",
+      "label": "Show a machine's system, repositories, containers, and services. Read-only: never updates renet on the machine; warns when its version differs.",
       "options": [
         {
           "flags": "--debug",

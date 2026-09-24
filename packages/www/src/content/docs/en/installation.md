@@ -213,7 +213,7 @@ No manual configuration needed. The install script detects the deployment contex
 
 ## Remote Binary Updates
 
-When you run commands against a remote machine, the CLI automatically provisions the matching `renet` binary. If the binary is updated, the route server (`rediacc-router`) is restarted automatically so it picks up the new version.
+Commands that change a machine, such as deploys, backups, and `rdc machine setup`, automatically provision the matching `renet` binary. If the binary is updated, the route server (`rediacc-router`) is restarted automatically so it picks up the new version. Read-only commands such as `rdc machine status` and `rdc repo list` never replace the binary: they use the version already on the machine and print a warning when it differs from the CLI's own.
 
 The restart is transparent and causes **no downtime**:
 
@@ -223,4 +223,4 @@ The restart is transparent and causes **no downtime**:
 - **Existing client connections (HTTP, TCP, UDP) are not affected.** The route server is a configuration provider -- it is not in the data path. Traefik handles all traffic directly.
 - Your application containers are not touched -- only the system-level route server process is restarted.
 
-To skip the automatic restart, pass `--skip-router-restart` to any command, or set the `REDIACC_SKIP_ROUTER_RESTART=1` environment variable.
+To skip the automatic restart, pass `--skip-router-restart` to a command that provisions renet, or set the `REDIACC_SKIP_ROUTER_RESTART=1` environment variable.

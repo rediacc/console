@@ -24,7 +24,11 @@ import {
 } from '../services/account/subscription-auth.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
-import { provisionRenetToRemote, readSSHKey } from '../services/renet/renet-execution.js';
+import {
+  acquireRemoteRenet,
+  type RenetAccess,
+  readSSHKey,
+} from '../services/renet/renet-execution.js';
 import { ValidationError } from '../utils/errors.js';
 import { recordedDatastoreMount } from '../utils/repo-executor.js';
 import { resolveRepoRef } from '../utils/repo-target.js';
@@ -71,16 +75,20 @@ async function assertSubscriptionScopeMatchesConfig(tokenState: {
  * on the machine, so it must still render when the account server is
  * unreachable or nobody is signed in.
  */
-async function resolveMachineContext(machineName: string): Promise<SubscriptionCommandContext> {
+async function resolveMachineContext(
+  machineName: string,
+  access: RenetAccess
+): Promise<SubscriptionCommandContext> {
   const localConfig = await configService.getLocalConfig();
   const machine = await configService.getLocalMachine(machineName);
   const sshPrivateKey =
     localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
-  const { remotePath: remoteRenetPath } = await provisionRenetToRemote(
+  const { remotePath: remoteRenetPath } = await acquireRemoteRenet(
+    access,
     localConfig,
     machine,
     sshPrivateKey,
-    { skipRouterRestart: true }
+    { skipRouterRestart: true, machineName }
   );
   return { machine, sshPrivateKey, remoteRenetPath };
 }
@@ -95,7 +103,8 @@ async function resolveSubscriptionCommandContext(
     throw new ValidationError(t('errors.subscription.notLoggedIn'));
   }
   await assertSubscriptionScopeMatchesConfig(tokenState.token);
-  return resolveMachineContext(machineName);
+  // Refresh writes licenses on the machine, so it may bring renet up to date first.
+  return resolveMachineContext(machineName, 'provision');
 }
 
 /** `subscription status` with no `-m`: the account view. */
@@ -325,7 +334,7 @@ async function renderActivationSection(
  * table. One renet provisioning serves both sections.
  */
 export async function executeMachineStatus(machineName: string): Promise<void> {
-  const context = await resolveMachineContext(machineName);
+  const context = await resolveMachineContext(machineName, 'read-only');
   await renderActivationSection(machineName, context);
   await renderRepoLicenseTable(machineName, context);
 }

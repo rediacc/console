@@ -977,7 +977,7 @@
         "connection": "连接",
         "containersAllHealthy": "所有容器都健康",
         "containersUnhealthyFound": "找到 {{count}} 个不健康的容器",
-        "description": "显示完整机器状态（系统、仓库、容器、服务）",
+        "description": "显示完整机器状态（系统、仓库、容器、服务）。只读操作：绝不更新机器上的 renet；版本不一致时会发出警告。",
         "descriptionShort": "显示机器的完整状态",
         "examples": {
           "basic": "显示一台机器的完整状态。",
@@ -1966,7 +1966,7 @@
         "openingBrowser": "正在打开浏览器...",
         "passwordNote": "登录密码：{{password}}",
         "persistingKey": "正在保存 SSH 密钥...",
-        "provisioningRenet": "正在向远程服务器部署 renet...",
+        "provisioningRenet": "正在检查远程服务器上的 renet...",
         "serverReused": "复用已运行的服务器",
         "settingsWarning": "警告：无法配置 VS Code 设置：{{error}}",
         "settingUpEnv": "正在设置远程环境...",

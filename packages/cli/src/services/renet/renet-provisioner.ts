@@ -9,7 +9,6 @@
  */
 
 import * as fs from 'node:fs/promises';
-import * as os from 'node:os';
 import * as path from 'node:path';
 import { DEFAULTS } from '@rediacc/shared/config';
 import type { SFTPClient, SFTPClientConfig } from '../../remote/sftp/index.js';
@@ -20,25 +19,24 @@ import {
   isSEA,
   type RenetArch,
 } from '../core/embedded-assets.js';
-import { busy, type CliExitError } from '../../utils/cli-exit-error.js';
-import { formatDuration } from '../../utils/format.js';
 import {
   dropProvisionEntry,
   getFreshProvisionEntry,
   recordProvisionVerified,
 } from './provision-state.js';
+import { busy } from '../../utils/cli-exit-error.js';
 import { shellQuote } from '../../utils/shell-quote.js';
-import { updateSpinnerText } from '../../utils/spinner.js';
-import {
-  acquireLocalLock,
-  type LockHolder,
-  LockTimeoutError,
-  releaseLocalLock,
-} from '../core/file-lock.js';
 import { outputService } from '../core/output.js';
 import { withSharedOrPooledSftp } from '../machine/machine-connection.js';
 import { compareVersions } from '../update/updater.js';
 import { stageRenetBinary } from './renet-binary-transfer.js';
+import { withLocalProvisionLock } from './renet-provision-lock.js';
+import {
+  classifyInspect,
+  matchedInspect,
+  probeRemoteSlots,
+  type RenetInspectResult,
+} from './renet-inspect.js';
 
 /** Root directory for versioned renet installs on remote machines */
 const REMOTE_INSTALL_ROOT = '/usr/lib/rediacc/renet';
@@ -49,7 +47,7 @@ const REMOTE_CURRENT_PATH = `${REMOTE_CURRENT_DIR}/renet`;
 export const REMOTE_RENET_PATH = REMOTE_CURRENT_PATH;
 
 /**
- * Version-specific install path used by `provisionRenetToRemote` as the
+ * Version-specific install path used by `acquireRemoteRenet` as the
  * committed binary location. Exported so the backup reconciler's dry-run
  * can match the exact ExecStart= path a real deploy would write.
  */
@@ -66,77 +64,6 @@ const REMOTE_FLOCK_TIMEOUT_EXIT = 75;
 
 /** Cache TTL in milliseconds (1 hour) */
 const CACHE_TTL_MS = 60 * 60 * 1000;
-const DEFAULT_LOCAL_LOCK_TIMEOUT_MS = 2 * 60 * 1000;
-const MIN_LOCAL_LOCK_TIMEOUT_MS = 1_000;
-const MAX_LOCAL_LOCK_TIMEOUT_MS = 10 * 60 * 1000;
-const LOCAL_LOCK_POLL_MS = 250;
-
-/**
- * How long to queue behind another local rdc process before refusing.
- *
- * Two minutes is sized for a genuine cold provision (a binary upload plus remote
- * install), not for impatience: a shorter budget would start failing runs that
- * were about to succeed. An env override exists for unusual links; there is no
- * CLI flag, because a knob almost nobody turns is not worth 13 locales and a
- * contract regeneration.
- */
-function localLockTimeoutMs(): number {
-  const raw = Number(process.env.REDIACC_PROVISION_LOCK_TIMEOUT_MS);
-  if (!Number.isFinite(raw) || raw <= 0) return DEFAULT_LOCAL_LOCK_TIMEOUT_MS;
-  return Math.min(Math.max(raw, MIN_LOCAL_LOCK_TIMEOUT_MS), MAX_LOCAL_LOCK_TIMEOUT_MS);
-}
-
-/** Describe a lock holder for a human: "pid 1234, held 2m 4s, running `rdc backup run`". */
-function describeHolder(holder: LockHolder): string {
-  const parts = [holder.pid === null ? 'unknown pid' : `pid ${holder.pid}`];
-  if (holder.heldForMs !== null) parts.push(`held ${formatDuration(holder.heldForMs)}`);
-  if (holder.command) parts.push(`running \`${holder.command}\``);
-  return parts.join(', ');
-}
-
-/**
- * Tell the operator they are queued, the moment we know it.
- *
- * Prefers retitling the live spinner, so the wait replaces the misleading
- * "Provisioning renet" text rather than scrolling past it. With no TTY there is
- * no spinner to retitle, so fall back to a single stderr note (stderr keeps JSON
- * output on stdout clean).
- */
-function announceLockWait(cacheKey: string, holder: LockHolder): void {
-  const message = `Waiting for another rdc process to finish provisioning renet for ${cacheKey} (${describeHolder(holder)})`;
-  if (!updateSpinnerText(`${message}...`)) outputService.info(message);
-}
-
-/** Turn a provisioning-lock timeout into an actionable BUSY refusal. */
-function lockBusyError(cacheKey: string, error: LockTimeoutError): CliExitError {
-  const { holder } = error;
-  const details = [`Lock: ${error.lockPath}`];
-  if (holder.command) details.push(`Holder: ${holder.command}`);
-
-  return busy(
-    `Another rdc process is still provisioning renet for ${cacheKey} (${describeHolder(holder)}).`,
-    {
-      details,
-      next: {
-        summary: 'Wait for the other run to finish, then retry. Clear the lock only if it is dead.',
-        options: [
-          ...(holder.pid === null
-            ? []
-            : [
-                {
-                  description: 'Inspect the process holding the lock',
-                  run: `ps -p ${holder.pid} -o pid,etime,cmd`,
-                },
-              ]),
-          {
-            description: 'Remove the lock if that process is gone',
-            run: `rm -rf ${error.lockPath}`,
-          },
-        ],
-      },
-    }
-  );
-}
 
 /** Systemd service name for the route server */
 const ROUTER_SERVICE = 'rediacc-router';
@@ -174,6 +101,20 @@ interface LocalHashMemo {
 interface InstallResult {
   binaryUpdated: boolean;
   currentUpdated: boolean;
+}
+
+/** Options for {@link RenetProvisionerService.provision}. */
+interface ProvisionOptions {
+  localBinaryPath?: string;
+  /** Restart running services after binary update. Default: false. */
+  restartServices?: boolean;
+  debug?: boolean;
+  /**
+   * Called only when the remote hash differs from the local one, immediately
+   * before the binary is staged. A throw aborts the provision before anything
+   * reaches the machine.
+   */
+  uploadGuard?: () => void | Promise<void>;
 }
 
 interface ProvisionContext {
@@ -218,36 +159,13 @@ class RenetProvisionerService {
    */
   async provision(
     config: SFTPClientConfig,
-    options?: {
-      localBinaryPath?: string;
-      /** Restart running services after binary update. Default: false. */
-      restartServices?: boolean;
-      debug?: boolean;
-    },
+    options?: ProvisionOptions,
     sharedSftp?: SFTPClient
   ): Promise<ProvisionResult> {
     const cacheKey = this.buildCacheKey(config);
-    // Cache-first: a fresh entry means this process already provisioned the host. Return immediately with zero remote execs and zero local file reads.
-    const cached = this.getFreshCacheEntry(cacheKey);
-    if (cached) {
-      return this.buildVerifiedResult(cached.arch, REMOTE_INSTALL_PATH);
-    }
-
-    // Persistent-state second: a recent rdc process may have proven this host current already. Trust envelope (version match, TTL, dev-binary stat
-    // fingerprint) lives in provision-state.ts; a hit skips the SHA-256 over
-    // the ~220MB dev binary and every provision SSH exec.
-    const persisted = await getFreshProvisionEntry(
-      cacheKey,
-      options?.localBinaryPath ?? null
-    ).catch(() => null);
-    if (persisted && (persisted.arch === 'amd64' || persisted.arch === 'arm64')) {
-      this.cache.set(cacheKey, {
-        hash: persisted.hash,
-        arch: persisted.arch,
-        provisionedAt: persisted.verifiedAt,
-      });
-      this.archByHost.set(cacheKey, persisted.arch);
-      return this.buildVerifiedResult(persisted.arch, REMOTE_INSTALL_PATH);
+    const verified = await this.lookupVerified(cacheKey, options?.localBinaryPath);
+    if (verified) {
+      return this.buildVerifiedResult(verified.arch, REMOTE_INSTALL_PATH);
     }
 
     const inflight = this.inflight.get(cacheKey);
@@ -255,7 +173,7 @@ class RenetProvisionerService {
       return inflight;
     }
 
-    const provisioningPromise = this.withLocalProvisionLock(cacheKey, () =>
+    const provisioningPromise = withLocalProvisionLock(cacheKey, () =>
       this.provisionInternal(config, options, sharedSftp)
     );
     this.inflight.set(cacheKey, provisioningPromise);
@@ -269,13 +187,80 @@ class RenetProvisionerService {
     }
   }
 
+  /**
+   * Read-only probe of the remote renet. Never uploads, never repoints a
+   * symlink, never restarts a service and never takes the provision locks: one
+   * exec reads the hash and version of the versioned slot and of `current`
+   * (renet-inspect.ts). A proven match is recorded, a local write only, when
+   * both hold the local bytes, which is exactly what `provision()` leaves.
+   */
+  async inspect(
+    config: SFTPClientConfig,
+    options?: { localBinaryPath?: string },
+    sharedSftp?: SFTPClient
+  ): Promise<RenetInspectResult> {
+    const cacheKey = this.buildCacheKey(config);
+    const verified = await this.lookupVerified(cacheKey, options?.localBinaryPath);
+    if (verified) return matchedInspect(verified.arch, verified.hash, REMOTE_INSTALL_PATH);
+
+    return withSharedOrPooledSftp(sharedSftp, config, async (sftp) => {
+      const arch = await this.resolveArch(sftp, cacheKey);
+      const { binary, sourcePath } = await this.resolveBinary(arch, options?.localBinaryPath);
+      const localHash = await this.computeLocalHash(arch, binary, sourcePath);
+      const paths = { slot: REMOTE_INSTALL_PATH, current: REMOTE_CURRENT_PATH };
+      const { result, bothMatch } = classifyInspect(
+        arch,
+        localHash,
+        await probeRemoteSlots(sftp, paths),
+        paths
+      );
+      if (bothMatch)
+        await this.rememberVerified(cacheKey, localHash, arch, options?.localBinaryPath);
+      return result;
+    });
+  }
+
+  /**
+   * A host this or a recent rdc process already proved current: the in-memory
+   * cache first, then the persisted provision state (trust envelope in
+   * provision-state.ts), which skips the SHA-256 over the ~220MB dev binary and
+   * every SSH exec.
+   */
+  private async lookupVerified(
+    cacheKey: string,
+    localBinaryPath: string | undefined
+  ): Promise<{ arch: RenetArch; hash: string } | null> {
+    const cached = this.getFreshCacheEntry(cacheKey);
+    if (cached) return cached;
+    const persisted = await getFreshProvisionEntry(cacheKey, localBinaryPath ?? null).catch(
+      () => null
+    );
+    if (persisted?.arch !== 'amd64' && persisted?.arch !== 'arm64') return null;
+    this.cache.set(cacheKey, {
+      hash: persisted.hash,
+      arch: persisted.arch,
+      provisionedAt: persisted.verifiedAt,
+    });
+    this.archByHost.set(cacheKey, persisted.arch);
+    return { arch: persisted.arch, hash: persisted.hash };
+  }
+
+  /** Remember a proven-current host in memory and, best-effort, across processes. */
+  private async rememberVerified(
+    cacheKey: string,
+    hash: string,
+    arch: RenetArch,
+    sourcePath: string | undefined
+  ): Promise<void> {
+    this.cache.set(cacheKey, { hash, arch, provisionedAt: Date.now() });
+    await recordProvisionVerified(cacheKey, { hash, arch, sourcePath: sourcePath ?? null }).catch(
+      () => undefined
+    );
+  }
+
   private async provisionInternal(
     config: SFTPClientConfig,
-    options?: {
-      localBinaryPath?: string;
-      restartServices?: boolean;
-      debug?: boolean;
-    },
+    options?: ProvisionOptions,
     sharedSftp?: SFTPClient
   ): Promise<ProvisionResult> {
     try {
@@ -299,7 +284,7 @@ class RenetProvisionerService {
   private async doProvision(
     sftp: SFTPClient,
     config: SFTPClientConfig,
-    options?: { localBinaryPath?: string; restartServices?: boolean; debug?: boolean }
+    options?: ProvisionOptions
   ): Promise<ProvisionResult> {
     const context = await this.buildProvisionContext(sftp, config, options?.localBinaryPath);
     const remote = await this.getRemoteHashAndVersion(sftp, context.remoteInstallPath);
@@ -308,6 +293,8 @@ class RenetProvisionerService {
 
     const stagingPath = this.buildStagingPath();
     if (remote.hash !== context.localHash) {
+      // The only point where a binary is about to leave this workstation: the guard runs here, so a no-op provision (hashes already match) never pays for it.
+      await options?.uploadGuard?.();
       await stageRenetBinary(sftp, config, stagingPath, context.binary, context.localHash, {
         installRoot: REMOTE_INSTALL_ROOT,
         currentPath: REMOTE_CURRENT_PATH,
@@ -330,17 +317,13 @@ class RenetProvisionerService {
       servicesRestarted = await this.restartRunningServices(sftp);
     }
 
-    this.cache.set(context.cacheKey, {
-      hash: context.localHash,
-      arch: context.arch,
-      provisionedAt: Date.now(),
-    });
-    // Best-effort: remember the proven-current state across processes so consecutive rdc commands skip the whole cold path.
-    await recordProvisionVerified(context.cacheKey, {
-      hash: context.localHash,
-      arch: context.arch,
-      sourcePath: options?.localBinaryPath ?? null,
-    }).catch(() => undefined);
+    // Remember the proven-current state so consecutive rdc commands skip the whole cold path.
+    await this.rememberVerified(
+      context.cacheKey,
+      context.localHash,
+      context.arch,
+      options?.localBinaryPath
+    );
     return {
       success: true,
       action: installResult.binaryUpdated ? 'uploaded' : 'verified',
@@ -572,31 +555,6 @@ class RenetProvisionerService {
     this.archByHost.clear();
     this.localHashMemo.clear();
     this.embeddedHashMemo.clear();
-  }
-
-  private async withLocalProvisionLock<T>(cacheKey: string, fn: () => Promise<T>): Promise<T> {
-    const lockPath = path.join(
-      os.tmpdir(),
-      `.rdc-renet-provision-${cacheKey.replaceAll(/[^a-zA-Z0-9_.-]/g, '_')}.lock`
-    );
-
-    try {
-      await acquireLocalLock(lockPath, {
-        deadline: Date.now() + localLockTimeoutMs(),
-        pollMs: LOCAL_LOCK_POLL_MS,
-        // Contention is INVISIBLE without this: the operator sees the "Provisioning renet" spinner sit there and reasonably concludes the CLI has hung, when in fact another local rdc run is ahead of them.
-        onWait: (holder) => announceLockWait(cacheKey, holder),
-      });
-    } catch (error) {
-      if (error instanceof LockTimeoutError) throw lockBusyError(cacheKey, error);
-      throw error;
-    }
-
-    try {
-      return await fn();
-    } finally {
-      await releaseLocalLock(lockPath);
-    }
   }
 
   private buildStagingPath(): string {

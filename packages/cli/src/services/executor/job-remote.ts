@@ -24,7 +24,7 @@ import { outputService } from '../core/output.js';
 import { writeStderr, writeStdout } from '../core/request-context.js';
 import { type MachineConnectionLease, machineConnections } from '../machine/machine-connection.js';
 import { isMachineReadableRelayLine } from './output-lines.js';
-import { provisionRenetToRemote } from '../renet/renet-execution.js';
+import { acquireRemoteRenet, type RenetAccess } from '../renet/renet-execution.js';
 import {
   buildJobCancelCommand,
   buildJobGcCommand,
@@ -90,23 +90,30 @@ export interface JobConnection {
 }
 
 /**
- * Connect to a machine and make sure it has a renet binary to run.
+ * Connect to a machine and resolve the renet binary to run.
  *
- * The caller MUST release the lease when done. Provisioning is the same step
- * every other machine-plane path takes, so a machine that has never been
- * touched still answers `rdc job list`.
+ * The caller MUST release the lease when done. `access` is the caller's
+ * {@link RenetAccess}: reading jobs (`list`, `status`, `logs`) is
+ * `'read-only'` and runs whatever renet the machine has, so a machine that has
+ * never been set up fails `rdc job list` with the `rdc machine setup` hint
+ * instead of being provisioned behind the operator's back. `cancel` and `gc`
+ * change the spool and provision.
  */
-export async function connectForJobs(machineName: string): Promise<JobConnection> {
+export async function connectForJobs(
+  machineName: string,
+  access: RenetAccess
+): Promise<JobConnection> {
   const config = await configService.getLocalConfig();
   const machine = await configService.getLocalMachine(machineName);
 
   const lease = await machineConnections.acquire(machineName);
   try {
-    const { remotePath } = await provisionRenetToRemote(
+    const { remotePath } = await acquireRemoteRenet(
+      access,
       { renetPath: config.renetPath },
       machine,
       lease.sshPrivateKey,
-      {}
+      { machineName }
     );
     return { lease, remoteRenetPath: remotePath };
   } catch (error) {

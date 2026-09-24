@@ -728,6 +728,41 @@
       "open_sigs": [],
       "done_sigs": []
     },
+    "agent/plans/PLAN-rdc-readonly-mode.md": {
+      "status": "executing",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 1,
+      "done": 22,
+      "open_sigs": [
+        "03938685"
+      ],
+      "done_sigs": [
+        "003b2b57",
+        "0124b4f1",
+        "04f04754",
+        "0514dd6c",
+        "0b161f6d",
+        "0e1fa03c",
+        "4099c8ef",
+        "4593234f",
+        "5fd59dd5",
+        "840471e7",
+        "9efc0cfa",
+        "a20702c9",
+        "a8f0a4b6",
+        "c310726b",
+        "c764effe",
+        "dfb11c54",
+        "e1352cfb",
+        "e81d7cd8",
+        "eb12994a",
+        "f48c9f93",
+        "f8126cb5",
+        "f951d924"
+      ]
+    },
     "agent/plans/PLAN-reggate-effort-cap.md": {
       "status": "compacted",
       "owner": "unowned",

@@ -7,7 +7,7 @@ import { createQuietStderrPump } from '../../services/executor/output-lines.js';
 import { machineConnections } from '../../services/machine/machine-connection.js';
 import { guardMachineRemoval } from '../../services/machine/machine-remove-guard.js';
 import { pushInfraConfig } from '../../services/provision/infra-provision.js';
-import { provisionRenetToRemote, readSSHKey } from '../../services/renet/renet-execution.js';
+import { acquireRemoteRenet, readSSHKey } from '../../services/renet/renet-execution.js';
 import { deployAllRepoKeys } from '../../services/repo/repo-key-deployment.js';
 import type { MachineConfig, OutputFormat } from '../../types/index.js';
 import { assertResourceName, MachineConfigSchema, parseConfig } from '../../utils/config-schema.js';
@@ -277,7 +277,8 @@ function registerSetup(machine: Command): void {
 
         outputService.info(t('commands.machine.setup.starting', { machine: name }));
 
-        const { remotePath: remoteRenetPath } = await provisionRenetToRemote(
+        const { remotePath: remoteRenetPath } = await acquireRemoteRenet(
+          'provision',
           localConfig,
           machineObj,
           sshPrivateKey,

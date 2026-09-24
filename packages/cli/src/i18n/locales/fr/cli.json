@@ -977,7 +977,7 @@
         "connection": "Connexion",
         "containersAllHealthy": "Tous les conteneurs sont sains",
         "containersUnhealthyFound": "{{count}} conteneur(s) non sain(s) trouvé(s)",
-        "description": "Afficher l'état complet de la machine (système, dépôts, conteneurs, services)",
+        "description": "Afficher l'état complet de la machine (système, dépôts, conteneurs, services). En lecture seule : ne met jamais à jour renet sur la machine et avertit si sa version diffère.",
         "descriptionShort": "Afficher l'état complet de la machine",
         "examples": {
           "basic": "Afficher le statut complet d'une machine.",
@@ -1966,7 +1966,7 @@
         "openingBrowser": "Ouverture du navigateur...",
         "passwordNote": "Mot de passe de connexion : {{password}}",
         "persistingKey": "Persistance de la clé SSH...",
-        "provisioningRenet": "Provisionnement de renet sur le serveur distant...",
+        "provisioningRenet": "Vérification de renet sur le serveur distant...",
         "serverReused": "Réutilisation du serveur déjà en cours d'exécution",
         "settingsWarning": "Avertissement : Impossible de configurer les paramètres VS Code : {{error}}",
         "settingUpEnv": "Configuration de l'environnement distant...",

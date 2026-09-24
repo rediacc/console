@@ -5,7 +5,7 @@ import type { SFTPClient } from '../remote/sftp/index.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
 import { machineConnections } from '../services/machine/machine-connection.js';
-import { provisionRenetToRemote, readSSHKey } from '../services/renet/renet-execution.js';
+import { acquireRemoteRenet, readSSHKey } from '../services/renet/renet-execution.js';
 import { handleError } from '../utils/errors.js';
 
 /** Resolve which strategy names to trigger. */
@@ -143,7 +143,8 @@ async function runBackupNow(
     localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
 
   // Provision renet to get the remote path
-  const { remotePath: remoteRenetPath } = await provisionRenetToRemote(
+  const { remotePath: remoteRenetPath } = await acquireRemoteRenet(
+    'provision',
     { renetPath: localConfig.renetPath },
     machine,
     sshPrivateKey,
@@ -297,11 +298,7 @@ async function buildStatusRow(sftp: SFTPClient, name: string): Promise<Record<st
   };
 }
 
-async function showBackupStatus(
-  machineName: string,
-  strategyFilter?: string,
-  debug?: boolean
-): Promise<void> {
+async function showBackupStatus(machineName: string, strategyFilter?: string): Promise<void> {
   const localConfig = await configService.getLocalConfig();
   const machine = localConfig.machines[machineName];
   if (!machine) {
@@ -311,12 +308,8 @@ async function showBackupStatus(
   const sshPrivateKey =
     localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
 
-  // Provision renet (needed for SSH connection)
+  // Read-only: only `systemctl is-active` runs, so no renet binary is resolved here.
   outputService.info(`Connecting to ${machine.ip}...`);
-  await provisionRenetToRemote({ renetPath: localConfig.renetPath }, machine, sshPrivateKey, {
-    debug,
-  });
-
   const lease = await machineConnections.acquireFor(machine, sshPrivateKey);
   const sftp = lease.sftp;
 
@@ -402,7 +395,7 @@ export function registerBackupOpsCommands(backup: Command): void {
     .option('--debug', t('options.debug'))
     .action(async (strategy: string | undefined, options) => {
       try {
-        await showBackupStatus(options.machine, strategy, options.debug);
+        await showBackupStatus(options.machine, strategy);
       } catch (error) {
         handleError(error);
       }

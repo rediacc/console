@@ -1,5 +1,5 @@
 ---
-sourceHash: "4ab3480402e5985a"
+sourceHash: "f80f4bf22d4accf1"
 sourceCommit: "018665c7c35e0bea3349818b12a5906828240a29"
 title: "Installimine"
 description: "Installige Rediacci CLI Linuxi, macOS-i või Windowsi."
@@ -215,7 +215,7 @@ Käsitsi konfiguratsiooni pole vaja. Installiskript tuvastab juurutamise konteks
 
 ## Kaugbinaari uuendused
 
-Kui käivitate käske kaugmasina vastu, valmistab CLI automaatselt ette sobiva `renet` binaarid. Kui binaari uuendatakse, taaskäivitub marsruudi server (`rediacc-router`) automaatselt, et saada uus versioon.
+Masinat muutvad käsud, näiteks juurutused, varundused ja `rdc machine setup`, paigaldavad automaatselt sobiva `renet` binaari. Kui binaari uuendatakse, taaskäivitub marsruudi server (`rediacc-router`) automaatselt, et uus versioon kasutusele võtta. Ainult lugevad käsud, nagu `rdc machine status` ja `rdc repo list`, ei asenda binaari kunagi: need kasutavad masinas juba olevat versiooni ja kuvavad hoiatuse, kui see erineb CLI enda versioonist.
 
 Taaskäivitamine on läbipaistev ja ei põhjusta **seisakut**:
 
@@ -225,4 +225,4 @@ Taaskäivitamine on läbipaistev ja ei põhjusta **seisakut**:
 - **Olemasolevaid klientühendusi (HTTP, TCP, UDP) ei mõjutata.** Marsruudi server on konfiguratsiooni pakkuja -- see ei ole andmeteel. Traefik haldab kogu liiklust otse.
 - Teie rakenduse konteinereid ei puututa -- taaskäivitatakse ainult süsteemitaseme marsruudi serveri protsess.
 
-Automaatse taaskäivitamise vahelejätmiseks edastage mis tahes käsule `--skip-router-restart` või seadistage keskkonna muutuja `REDIACC_SKIP_ROUTER_RESTART=1`.
+Automaatse taaskäivitamise vahelejätmiseks lisage `--skip-router-restart` käsule, mis paigaldab renet binaari, või seadistage keskkonnamuutuja `REDIACC_SKIP_ROUTER_RESTART=1`.

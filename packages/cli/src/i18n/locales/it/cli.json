@@ -977,7 +977,7 @@
         "connection": "Connessione",
         "containersAllHealthy": "Tutti i container sono sani",
         "containersUnhealthyFound": "{{count}} container non sano/i trovato/i",
-        "description": "Mostra lo stato completo della macchina (infrastruttura, sistema, repository con nome/guid, container con repository/repository_guid/dominio/autoRoute, servizi con repository/repository_guid)",
+        "description": "Mostra lo stato completo della macchina (infrastruttura, sistema, repository con nome/guid, container con repository/repository_guid/dominio/autoRoute, servizi con repository/repository_guid). Sola lettura: non aggiorna mai renet sulla macchina; avvisa se la sua versione è diversa.",
         "descriptionShort": "Mostra lo stato completo della macchina",
         "examples": {
           "basic": "Mostra lo stato completo di una macchina.",
@@ -1966,7 +1966,7 @@
         "openingBrowser": "Apertura del browser in corso...",
         "passwordNote": "Password di accesso: {{password}}",
         "persistingKey": "Persistenza chiave SSH in corso...",
-        "provisioningRenet": "Provisioning renet sul remoto in corso...",
+        "provisioningRenet": "Verifica di renet sul remoto in corso...",
         "serverReused": "Riutilizzo del server già in esecuzione",
         "settingsWarning": "Avviso: impossibile configurare le impostazioni VS Code: {{error}}",
         "settingUpEnv": "Configurazione ambiente remoto in corso...",

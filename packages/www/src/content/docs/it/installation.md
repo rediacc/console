@@ -1,5 +1,5 @@
 ---
-sourceHash: "4ab3480402e5985a"
+sourceHash: "f80f4bf22d4accf1"
 sourceCommit: "018665c7c35e0bea3349818b12a5906828240a29"
 title: "Installazione"
 description: "Installa la CLI Rediacc su Linux, macOS o Windows. È sufficiente un singolo comando e l'installazione è completata in pochi secondi."
@@ -215,7 +215,7 @@ Nessuna configurazione manuale necessaria. Lo script di installazione rileva il 
 
 ## Aggiornamenti Binari Remoti
 
-Quando esegui comandi su una macchina remota, la CLI provisiona automaticamente il binario `renet` corrispondente. Se il binario viene aggiornato, il server di routing (`rediacc-router`) viene riavviato automaticamente in modo che recepisca la nuova versione.
+I comandi che modificano una macchina, come deploy, backup o `rdc machine setup`, provisionano automaticamente il binario `renet` corrispondente. Se il binario viene aggiornato, il server di routing (`rediacc-router`) viene riavviato automaticamente per adottare la nuova versione. I comandi di sola lettura, come `rdc machine status` e `rdc repo list`, non sostituiscono mai il binario: usano la versione già presente sulla macchina e mostrano un avviso se è diversa da quella della CLI.
 
 Il riavvio è trasparente e non causa **alcun downtime**:
 
@@ -225,4 +225,4 @@ Il riavvio è trasparente e non causa **alcun downtime**:
 - **Le connessioni client esistenti (HTTP, TCP, UDP) non sono interessate.** Il server di routing è un provider di configurazione -- non si trova nel percorso dei dati. Traefik gestisce tutto il traffico direttamente.
 - I tuoi container applicativi non vengono toccati -- viene riavviato solo il processo del server di routing a livello di sistema.
 
-Per saltare il riavvio automatico, passa `--skip-router-restart` a qualsiasi comando, o imposta la variabile d'ambiente `REDIACC_SKIP_ROUTER_RESTART=1`.
+Per saltare il riavvio automatico, passa `--skip-router-restart` a un comando che provisiona renet, oppure imposta la variabile d'ambiente `REDIACC_SKIP_ROUTER_RESTART=1`.

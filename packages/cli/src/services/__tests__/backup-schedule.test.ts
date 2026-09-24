@@ -15,7 +15,7 @@ const mockBuildRcloneArgs = vi.fn(() => {
   throw new Error('buildRcloneArgs must not be reachable from the backup scheduling path');
 });
 
-const mockProvisionRenetToRemote = vi
+const mockAcquireRemoteRenet = vi
   .fn()
   .mockResolvedValue({ remotePath: '/usr/bin/renet', uploaded: false });
 const mockReadSSHKey = vi.fn().mockResolvedValue('PRIVATE_KEY');
@@ -45,7 +45,7 @@ vi.mock('@rediacc/shared/storage-browser', () => ({
 }));
 
 vi.mock('../renet/renet-execution.js', () => ({
-  provisionRenetToRemote: mockProvisionRenetToRemote,
+  acquireRemoteRenet: mockAcquireRemoteRenet,
   readSSHKey: mockReadSSHKey,
 }));
 
@@ -1106,7 +1106,7 @@ describe('pushBackupSchedule (reconcile)', () => {
     expect(cmds.some((c) => c.startsWith('sudo mv '))).toBe(false);
     expect(cmds.some((c) => c === 'sudo systemctl daemon-reload')).toBe(false);
     expect(cmds.some((c) => c.includes('enable --now'))).toBe(false);
-    expect(mockProvisionRenetToRemote).not.toHaveBeenCalled();
+    expect(mockAcquireRemoteRenet).not.toHaveBeenCalled();
     expect(mockRefreshRepoLicensesBatch).not.toHaveBeenCalled();
   });
 

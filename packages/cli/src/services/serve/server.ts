@@ -307,7 +307,7 @@ export function createServeApp(deps: ServeDeps): Hono {
       const started = Date.now();
       const cursor = new JobLogCursor(sinceLine);
       try {
-        const conn = await connectForJobs(machine);
+        const conn = await connectForJobs(machine, 'read-only');
         try {
           const interrupted = await followJobLogs(
             conn.lease,

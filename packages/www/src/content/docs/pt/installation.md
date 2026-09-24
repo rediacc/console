@@ -1,5 +1,5 @@
 ---
-sourceHash: "4ab3480402e5985a"
+sourceHash: "f80f4bf22d4accf1"
 sourceCommit: "018665c7c35e0bea3349818b12a5906828240a29"
 title: "Instalação"
 description: "Instale a CLI Rediacc em Linux, macOS ou Windows."
@@ -215,7 +215,7 @@ Não é necessária configuração manual. O script de instalação deteta o con
 
 ## Atualizações de Binário Remoto
 
-Quando executa comandos contra uma máquina remota, a CLI provisiona automaticamente o binário `renet` correspondente. Se o binário for atualizado, o servidor de rotas (`rediacc-router`) é reiniciado automaticamente para que utilize a nova versão.
+Os comandos que alteram uma máquina, como implantações, backups ou `rdc machine setup`, provisionam automaticamente o binário `renet` correspondente. Se o binário for atualizado, o servidor de rotas (`rediacc-router`) é reiniciado automaticamente para passar a usar a nova versão. Os comandos só de leitura, como `rdc machine status` e `rdc repo list`, nunca substituem o binário: usam a versão que já está na máquina e mostram um aviso quando ela difere da versão da CLI.
 
 O reinício é transparente e não causa **nenhuma indisponibilidade**:
 
@@ -225,4 +225,4 @@ O reinício é transparente e não causa **nenhuma indisponibilidade**:
 - **As ligações de cliente existentes (HTTP, TCP, UDP) não são afetadas.** O servidor de rotas é um fornecedor de configuração -- não está no caminho de dados. O Traefik trata de todo o tráfego diretamente.
 - Os seus contentores de aplicação não são tocados -- apenas o processo do servidor de rotas ao nível do sistema é reiniciado.
 
-Para ignorar o reinício automático, passe `--skip-router-restart` a qualquer comando ou defina a variável de ambiente `REDIACC_SKIP_ROUTER_RESTART=1`.
+Para ignorar o reinício automático, passe `--skip-router-restart` a um comando que provisione o renet ou defina a variável de ambiente `REDIACC_SKIP_ROUTER_RESTART=1`.

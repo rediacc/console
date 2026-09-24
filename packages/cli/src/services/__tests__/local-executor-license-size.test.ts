@@ -93,7 +93,7 @@ vi.mock('../../utils/agent-guard.js', () => ({
 
 vi.mock('../renet/renet-execution.js', () => ({
   buildLocalVault: vi.fn(() => '{"vault":"ok"}'),
-  provisionRenetToRemote: vi.fn(() => ({ remotePath: '/usr/bin/renet', uploaded: false })),
+  acquireRemoteRenet: vi.fn(() => ({ remotePath: '/usr/bin/renet', uploaded: false })),
   readSSHKey: vi.fn(() => 'PRIVATE_KEY'),
   readOptionalSSHKey: vi.fn(() => 'PUBLIC_KEY'),
   verifyMachineSetup: vi.fn(),

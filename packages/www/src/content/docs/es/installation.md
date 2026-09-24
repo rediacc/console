@@ -8,7 +8,7 @@ tags:
 subcategory: setup
 order: 1
 language: es
-sourceHash: "4ab3480402e5985a"
+sourceHash: "f80f4bf22d4accf1"
 sourceCommit: "018665c7c35e0bea3349818b12a5906828240a29"
 ---
 
@@ -215,7 +215,7 @@ No se necesita configuración manual. El script de instalación detecta el conte
 
 ## Actualizaciones de binarios remotos
 
-Cuando ejecuta comandos contra una máquina remota, la CLI aprovisiona automáticamente el binario `renet` correspondiente. Si el binario se actualiza, el servidor de rutas (`rediacc-router`) se reinicia automáticamente para que adopte la nueva versión.
+Los comandos que modifican una máquina, como los despliegues, las copias de seguridad o `rdc machine setup`, aprovisionan automáticamente el binario `renet` correspondiente. Si el binario se actualiza, el servidor de rutas (`rediacc-router`) se reinicia automáticamente para adoptar la nueva versión. Los comandos de solo lectura, como `rdc machine status` y `rdc repo list`, nunca reemplazan el binario: usan la versión que ya está en la máquina y muestran una advertencia si no coincide con la de la CLI.
 
 El reinicio es transparente y no causa **ningún tiempo de inactividad**:
 
@@ -225,4 +225,4 @@ El reinicio es transparente y no causa **ningún tiempo de inactividad**:
 - **Las conexiones de cliente existentes (HTTP, TCP, UDP) no se ven afectadas.** El servidor de rutas es un proveedor de configuración -- no está en la ruta de datos. Traefik gestiona todo el tráfico directamente.
 - Sus contenedores de aplicación no se tocan -- solo se reinicia el proceso del servidor de rutas a nivel de sistema.
 
-Para omitir el reinicio automático, pase `--skip-router-restart` a cualquier comando, o establezca la variable de entorno `REDIACC_SKIP_ROUTER_RESTART=1`.
+Para omitir el reinicio automático, pase `--skip-router-restart` a un comando que aprovisione renet, o establezca la variable de entorno `REDIACC_SKIP_ROUTER_RESTART=1`.

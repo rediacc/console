@@ -14,7 +14,7 @@ import type { InfraConfig } from '../../types/index.js';
 import { configService } from '../config/config-resources.js';
 import { outputService } from '../core/output.js';
 import { machineConnections } from '../machine/machine-connection.js';
-import { provisionRenetToRemote, readSSHKey } from '../renet/renet-execution.js';
+import { acquireRemoteRenet, readSSHKey } from '../renet/renet-execution.js';
 import { CloudflareDnsClient, type DnsAction } from './cloudflare-dns.js';
 
 interface PushInfraOptions {
@@ -365,7 +365,8 @@ export async function pushInfraConfig(
   const sshPrivateKey =
     localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
 
-  const { remotePath: remoteRenetPath } = await provisionRenetToRemote(
+  const { remotePath: remoteRenetPath } = await acquireRemoteRenet(
+    'provision',
     { renetPath: localConfig.renetPath },
     machine,
     sshPrivateKey,

@@ -1,5 +1,5 @@
 ---
-sourceHash: "4ab3480402e5985a"
+sourceHash: "f80f4bf22d4accf1"
 sourceCommit: "018665c7c35e0bea3349818b12a5906828240a29"
 title: "설치"
 description: "Linux, macOS, 또는 Windows에 Rediacc CLI를 설치합니다."
@@ -215,7 +215,7 @@ PR 프리뷰 배포(예: `pr-420.rediacc.workers.dev`)에서 설치하면 채널
 
 ## 원격 바이너리 업데이트
 
-원격 머신에 대해 명령을 실행하면 CLI가 자동으로 일치하는 `renet` 바이너리를 프로비저닝합니다. 바이너리가 업데이트되면 라우트 서버(`rediacc-router`)가 자동으로 재시작되어 새 버전을 인식합니다.
+배포, 백업, `rdc machine setup`처럼 머신을 변경하는 명령은 일치하는 `renet` 바이너리를 자동으로 프로비저닝합니다. 바이너리가 업데이트되면 라우트 서버(`rediacc-router`)가 자동으로 재시작되어 새 버전을 적용합니다. `rdc machine status`, `rdc repo list` 같은 읽기 전용 명령은 바이너리를 절대 교체하지 않습니다. 머신에 이미 있는 버전을 그대로 사용하며, CLI 버전과 다르면 경고를 표시합니다.
 
 재시작은 투명하게 이루어지며 **다운타임이 없습니다**.
 
@@ -225,4 +225,4 @@ PR 프리뷰 배포(예: `pr-420.rediacc.workers.dev`)에서 설치하면 채널
 - **기존 클라이언트 연결(HTTP, TCP, UDP)은 영향을 받지 않습니다.** 라우트 서버는 설정 공급자로, 데이터 경로에 있지 않습니다. Traefik이 모든 트래픽을 직접 처리합니다.
 - 애플리케이션 컨테이너는 건드리지 않습니다. 시스템 수준의 라우트 서버 프로세스만 재시작됩니다.
 
-자동 재시작을 건너뛰려면 모든 명령에 `--skip-router-restart`를 전달하거나 `REDIACC_SKIP_ROUTER_RESTART=1` 환경 변수를 설정하십시오.
+자동 재시작을 건너뛰려면 renet을 프로비저닝하는 명령에 `--skip-router-restart`를 전달하거나 `REDIACC_SKIP_ROUTER_RESTART=1` 환경 변수를 설정하십시오.

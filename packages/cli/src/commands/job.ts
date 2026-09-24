@@ -21,6 +21,7 @@ import {
   JobLogCursor,
   type JobStatus,
 } from '../services/executor/job-client.js';
+import type { RenetAccess } from '../services/renet/renet-execution.js';
 import {
   cancelJob,
   connectForJobs,
@@ -54,9 +55,10 @@ interface JobCommandOptions {
 /** Run a job command against a machine, always releasing the connection. */
 async function withJobConnection<T>(
   machineName: string,
+  access: RenetAccess,
   fn: (conn: JobConnection) => Promise<T>
 ): Promise<T> {
-  const conn = await connectForJobs(machineName);
+  const conn = await connectForJobs(machineName, access);
   try {
     return await fn(conn);
   } finally {
@@ -116,7 +118,7 @@ export function registerJobCommands(program: Command): void {
     .requiredOption('-m, --machine <name>', t('commands.job.machineOption'))
     .action(async (options: JobCommandOptions) => {
       try {
-        const jobs = await withJobConnection(options.machine, listJobs);
+        const jobs = await withJobConnection(options.machine, 'read-only', listJobs);
         const format = getOutputFormat();
 
         if (jobs.length === 0 && format === 'table') {
@@ -137,7 +139,7 @@ export function registerJobCommands(program: Command): void {
     .requiredOption('-m, --machine <name>', t('commands.job.machineOption'))
     .action(async (jobId: string, options: JobCommandOptions) => {
       try {
-        const status = await withJobConnection(options.machine, (conn) =>
+        const status = await withJobConnection(options.machine, 'read-only', (conn) =>
           readJobStatus(conn.lease.sftp, conn.remoteRenetPath, jobId)
         );
 
@@ -202,7 +204,7 @@ export function registerJobCommands(program: Command): void {
 async function runJobLogs(jobId: string, options: JobCommandOptions): Promise<void> {
   const cursor = new JobLogCursor(parseSinceLine(options.sinceLine));
 
-  await withJobConnection(options.machine, async (conn) => {
+  await withJobConnection(options.machine, 'read-only', async (conn) => {
     const followOptions = { onEvent: renderJobEvent, debug: options.debug };
 
     if (!options.follow) {
@@ -251,7 +253,7 @@ function reportTerminalState(status: JobStatus): void {
 async function runJobCancel(options: JobCommandOptions, format: OutputFormat): Promise<void> {
   const jobId = options.id as string;
 
-  await withJobConnection(options.machine, async (conn) => {
+  await withJobConnection(options.machine, 'provision', async (conn) => {
     const current = await readJobStatus(conn.lease.sftp, conn.remoteRenetPath, jobId);
 
     // Cancelling a finished job is a no-op machine-side, so do not make the operator confirm something that will not happen.
@@ -285,7 +287,7 @@ async function runJobCancel(options: JobCommandOptions, format: OutputFormat): P
 async function runJobGc(options: JobCommandOptions, format: OutputFormat): Promise<void> {
   const hours = parseOlderThanHours(options.olderThan);
 
-  await withJobConnection(options.machine, async (conn) => {
+  await withJobConnection(options.machine, 'provision', async (conn) => {
     if (!options.yes) {
       const { askConfirm } = await import('../utils/prompt.js');
       const confirmed = await askConfirm(

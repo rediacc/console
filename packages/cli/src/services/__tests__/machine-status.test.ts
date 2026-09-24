@@ -1,7 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { buildListCommand, fetchMachineStatus } from '../machine/machine-status.js';
+import {
+  buildListCommand,
+  fetchMachineStatus,
+  fetchRepoLicenseDetail,
+} from '../machine/machine-status.js';
 
-const { mockExecStreaming, mockRelease, mockAcquire, mockConfigService, mockProvision } =
+const { mockExecStreaming, mockRelease, mockAcquire, mockConfigService, mockAcquireRenet } =
   vi.hoisted(() => {
     const mockExecStreaming = vi.fn();
     const sftp = { execStreaming: mockExecStreaming };
@@ -18,7 +22,7 @@ const { mockExecStreaming, mockRelease, mockAcquire, mockConfigService, mockProv
       mockRelease,
       mockAcquire,
       mockConfigService: { getLocalConfig: vi.fn() },
-      mockProvision: vi
+      mockAcquireRenet: vi
         .fn()
         .mockResolvedValue({ remotePath: '/usr/lib/rediacc/renet/current/renet' }),
     };
@@ -33,7 +37,7 @@ vi.mock('../config/config-resources.js', () => ({
 }));
 
 vi.mock('../renet/renet-execution.js', () => ({
-  provisionRenetToRemote: mockProvision,
+  acquireRemoteRenet: mockAcquireRenet,
 }));
 
 vi.mock('../executor/local-executor.js', () => ({
@@ -95,13 +99,21 @@ describe('fetchMachineStatus', () => {
     expect(result).toEqual({ containers: [] });
     expect(mockAcquire).toHaveBeenCalledExactlyOnceWith('m1');
     expect(mockRelease).toHaveBeenCalledTimes(1);
-    // Provisioning reuses the lease's team key instead of re-reading it.
-    expect(mockProvision).toHaveBeenCalledWith(
+    // The renet check reuses the lease's team key instead of re-reading it.
+    expect(mockAcquireRenet).toHaveBeenCalledWith(
+      'read-only',
       expect.anything(),
       expect.anything(),
       'dummy-key',
       expect.anything()
     );
+  });
+
+  it('never provisions renet: machine status is read-only', async () => {
+    await fetchMachineStatus('m1');
+
+    expect(mockAcquireRenet).toHaveBeenCalledTimes(1);
+    expect(mockAcquireRenet.mock.calls[0][0]).toBe('read-only');
   });
 
   it('passes the sections filter through to the renet invocation', async () => {
@@ -123,5 +135,21 @@ describe('fetchMachineStatus', () => {
   it('rejects unknown machines before acquiring a connection', async () => {
     await expect(fetchMachineStatus('nope')).rejects.toThrow('Machine "nope" not found');
     expect(mockAcquire).not.toHaveBeenCalled();
+  });
+});
+
+describe('fetchRepoLicenseDetail', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockConfigService.getLocalConfig.mockResolvedValue({
+      machines: { m1: { ip: '127.0.0.1', user: 'root', port: 22 } },
+    });
+  });
+
+  it('resolves renet read-only, never provisioning it', async () => {
+    await fetchRepoLicenseDetail('m1');
+
+    expect(mockAcquireRenet).toHaveBeenCalledTimes(1);
+    expect(mockAcquireRenet.mock.calls[0][0]).toBe('read-only');
   });
 });

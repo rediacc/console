@@ -977,7 +977,7 @@
         "connection": "اتصال",
         "containersAllHealthy": "جميع الحاويات سليمة",
         "containersUnhealthyFound": "تم العثور على {{count}} حاوية غير سليمة",
-        "description": "عرض حالة الجهاز الكاملة (النظام، المستودعات، الحاويات، الخدمات)",
+        "description": "عرض حالة الجهاز الكاملة (النظام، المستودعات، الحاويات، الخدمات). للقراءة فقط: لا يحدّث renet على الجهاز أبدًا، ويعرض تحذيرًا إذا اختلف إصداره.",
         "descriptionShort": "عرض حالة الجهاز الكاملة",
         "examples": {
           "basic": "عرض الحالة الكاملة لجهاز.",
@@ -1966,7 +1966,7 @@
         "openingBrowser": "جارٍ فتح المتصفح...",
         "passwordNote": "كلمة مرور الدخول: {{password}}",
         "persistingKey": "جاري حفظ مفتاح SSH...",
-        "provisioningRenet": "جارٍ تزويد renet إلى الخادم البعيد...",
+        "provisioningRenet": "جارٍ التحقق من renet على الخادم البعيد...",
         "serverReused": "إعادة استخدام الخادم الذي يعمل بالفعل",
         "settingsWarning": "تحذير: لم يتمكن من إعدادات VS Code: {{error}}",
         "settingUpEnv": "جاري إعداد البيئة البعيدة...",

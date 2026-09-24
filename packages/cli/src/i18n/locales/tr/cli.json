@@ -977,7 +977,7 @@
         "connection": "Bağlantı",
         "containersAllHealthy": "Tüm konteynerler sağlıklı",
         "containersUnhealthyFound": "{{count}} sağlıksız konteyner bulundu",
-        "description": "Tam makine durumunu göster (sistem, depolar, konteynerler, servisler)",
+        "description": "Tam makine durumunu göster (sistem, depolar, konteynerler, servisler). Salt okunur: makinedeki renet'i hiçbir zaman güncellemez; sürümü farklıysa uyarı verir.",
         "descriptionShort": "Makinenin tam durumunu göster",
         "examples": {
           "basic": "Bir makinenin tam durumunu göster.",
@@ -1966,7 +1966,7 @@
         "openingBrowser": "Tarayıcınız açılıyor...",
         "passwordNote": "Giriş parolası: {{password}}",
         "persistingKey": "SSH anahtarı kalıcı kılınıyor...",
-        "provisioningRenet": "Uzak sunucuya renet sağlanıyor...",
+        "provisioningRenet": "Uzak sunucudaki renet denetleniyor...",
         "serverReused": "Hâlihazırda çalışan sunucu yeniden kullanılıyor",
         "settingsWarning": "Uyarı: VS Code ayarları yapılandırılamadı: {{error}}",
         "settingUpEnv": "Uzak ortam ayarlanıyor...",

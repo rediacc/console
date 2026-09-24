@@ -15,7 +15,7 @@ const {
   mockGetTeam,
   mockGetCurrent,
   mockReadSSHKey,
-  mockProvisionRenetToRemote,
+  mockAcquireRemoteRenet,
   mockGetSubscriptionServerUrl,
   mockGetSubscriptionScopeMismatch,
   mockSaveStoredSubscriptionToken,
@@ -42,7 +42,7 @@ const {
   mockGetTeam: vi.fn(),
   mockGetCurrent: vi.fn(),
   mockReadSSHKey: vi.fn(),
-  mockProvisionRenetToRemote: vi.fn(),
+  mockAcquireRemoteRenet: vi.fn(),
   mockGetSubscriptionServerUrl: vi.fn(() => 'http://localhost:4800'),
   mockGetSubscriptionScopeMismatch: vi.fn((token, configTeamName) => {
     if (configTeamName && token.teamName && configTeamName !== token.teamName) {
@@ -114,7 +114,7 @@ vi.mock('../../services/config/config-resources.js', () => ({
 
 vi.mock('../../services/renet/renet-execution.js', () => ({
   readSSHKey: mockReadSSHKey,
-  provisionRenetToRemote: mockProvisionRenetToRemote,
+  acquireRemoteRenet: mockAcquireRemoteRenet,
 }));
 
 vi.mock('../../services/core/output.js', () => ({
@@ -161,7 +161,7 @@ describe('subscription command helpers', () => {
     });
     mockGetTeam.mockResolvedValue('Platform');
     mockReadSSHKey.mockResolvedValue('PRIVATE_KEY');
-    mockProvisionRenetToRemote.mockResolvedValue({ remotePath: '/usr/bin/renet', uploaded: false });
+    mockAcquireRemoteRenet.mockResolvedValue({ remotePath: '/usr/bin/renet', uploaded: false });
     mockGetSubscriptionTokenState.mockReturnValue({
       kind: 'ready',
       serverUrl: 'http://localhost:4800',
@@ -290,7 +290,7 @@ describe('subscription command helpers', () => {
     expect(mockFetchLicenseReportOrThrow).not.toHaveBeenCalled();
   });
 
-  it('status -m renders activation and the repo license table from one renet provisioning', async () => {
+  it('status -m renders activation and the repo license table from one read-only renet check', async () => {
     mockReadMachineActivationStatus.mockResolvedValue({
       machineId: 'machine-activation-id',
       active: true,
@@ -322,8 +322,9 @@ describe('subscription command helpers', () => {
 
     await executeMachineStatus('hostinger');
 
-    // Both sections share one renet provisioning.
-    expect(mockProvisionRenetToRemote).toHaveBeenCalledTimes(1);
+    // Both sections share one renet resolution, and a status read never provisions.
+    expect(mockAcquireRemoteRenet).toHaveBeenCalledTimes(1);
+    expect(mockAcquireRemoteRenet.mock.calls[0][0]).toBe('read-only');
     expect(mockReadMachineActivationStatus).toHaveBeenCalledTimes(1);
     expect(mockOutputInfo).toHaveBeenCalledWith(
       'commands.subscription.activation.status.header:hostinger'
@@ -481,7 +482,7 @@ describe('subscription command helpers', () => {
 
     expect(mockFetchLicenseReportOrThrow).toHaveBeenCalledTimes(1);
     expect(mockOutputInfo).toHaveBeenCalledWith('commands.subscription.status.remote');
-    expect(mockProvisionRenetToRemote).not.toHaveBeenCalled();
+    expect(mockAcquireRemoteRenet).not.toHaveBeenCalled();
     expect(mockRefreshRepoLicensesBatch).not.toHaveBeenCalled();
   });
 
@@ -496,6 +497,8 @@ describe('subscription command helpers', () => {
   it('refresh -m runs repo batch refresh and prints the summary', async () => {
     await executeMachineRefresh('hostinger');
 
+    // Refresh writes licenses on the machine, so it may bring renet up to date.
+    expect(mockAcquireRemoteRenet.mock.calls[0][0]).toBe('provision');
     expect(mockRefreshRepoLicensesBatch).toHaveBeenCalledTimes(1);
     expect(mockOutputSuccess).toHaveBeenCalledWith('commands.subscription.refresh.success');
     expect(mockOutputWarn).toHaveBeenCalledWith('repo-bad: quota reached');
