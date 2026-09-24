@@ -211,6 +211,16 @@ _require_nonempty ACCOUNT_BACKUP_S3_ENDPOINT "${ACCOUNT_BACKUP_S3_ENDPOINT:-${CL
 _require_nonempty ACCOUNT_BACKUP_S3_ACCESS_KEY_ID "${ACCOUNT_BACKUP_S3_ACCESS_KEY_ID:-${CLOUDFLARE_R2_ACCESS_KEY_ID:-}}"
 _require_nonempty ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY "${ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY:-${CLOUDFLARE_R2_SECRET_ACCESS_KEY:-}}"
 _require_nonempty OBS_OTLP_CREDENTIALS "${OBS_OTLP_CREDENTIALS:-}"
+# The one value the Worker JSON.parses (private/account/src/routes/telemetry.ts):
+# anything but {"user": string, "pass": string} serves {otlp: null}, as silently
+# as an empty value. Same probe as .ci/scripts/deploy/set-account-worker-secrets.sh;
+# stderr is discarded because jq's parse error quotes the (secret) input.
+if ! jq -e -n --arg v "${OBS_OTLP_CREDENTIALS}" \
+    '$v | fromjson | type == "object" and (.user | type) == "string" and (.pass | type) == "string"' \
+    >/dev/null 2>&1; then
+    log_error "OBS_OTLP_CREDENTIALS is not a JSON {\"user\",\"pass\"} object for bench — re-mint it with ./run.sh rotation rotate otlp-bench"
+    exit 1
+fi
 
 jq -n \
     --arg ed25519_priv "$ACCOUNT_ED25519_PRIVATE_KEY" \

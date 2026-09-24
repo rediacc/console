@@ -224,6 +224,17 @@ REQUIRED_NONEMPTY_STABLE: tuple[str, ...] = (
     "STRIPE_WEBHOOK_SECRET",
 )
 
+# THE ONE VALUE THE WORKER JSON.PARSES rather than reads (the twin's shape guard, after the `_require_nonempty` block). private/account/src/routes/telemetry.ts parses OBS_OTLP_CREDENTIALS and answers {otlp: null} for anything but {"user": string, "pass": string}, so a non-empty value of the wrong shape passes every guard above and turns telemetry off as silently as an empty
+# one. The store held base64 `user:pass` for all three regions until 2026-09-24, and every region served {otlp: null}. jq decides, as for the document, so the two sides cannot disagree about what counts as JSON.
+JSON_SHAPE_KEY = "OBS_OTLP_CREDENTIALS"
+JSON_SHAPE_FILTER = (
+    '$v | fromjson | type == "object" and (.user | type) == "string" and (.pass | type) == "string"'
+)
+JSON_SHAPE_EXPLANATION: tuple[str, ...] = (
+    "  The Worker JSON.parses it and serves {otlp: null} for any other shape, so telemetry",
+    "  goes dark silently. Re-mint it with ./run.sh rotation rotate otlp-<region>.",
+)
+
 # THE HAPPY PATH SAYS NOTHING OF ITS OWN: the twin ends on the pipe into wrangler (:278), with no closing `log_info`. Named as a constant because it is the reason the differential compares the document rather than the streams, and because it is why the preview sibling's hard-coded "15" has no third occurrence to check.
 SUCCESS_IS_SILENT = True
 
@@ -403,6 +414,39 @@ def check_nonempty(values: dict[str, str], env: dict[str, str]) -> None:
             raise GuardError(name, env.get("WORKER_NAME", ""), target, env.get("SUFFIX", ""))
 
 
+def json_shape_argv(value: str) -> list[str]:
+    """`jq -e -n --arg v ... '<filter>'`, the twin's shape probe, as an argv a test can pin."""
+    return ["jq", "-e", "-n", "--arg", "v", value, JSON_SHAPE_FILTER]
+
+
+def _json_shape_ok(value: str) -> bool:
+    """Both streams DISCARDED, as in the twin: jq's parse error quotes its input, and the input is a secret."""
+    proc = subprocess.run(
+        json_shape_argv(value),
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        check=False,
+    )
+    return proc.returncode == 0
+
+
+def check_json_shape(values: dict[str, str], env: dict[str, str]) -> None:
+    """Refuse an OBS_OTLP_CREDENTIALS the Worker cannot parse. Runs after `check_nonempty`, so the value is never empty here. The message names the shape expected and never the value seen."""
+    by_key = {key: values[var] for key, var, _source in KEYS}
+    if not _json_shape_ok(by_key[JSON_SHAPE_KEY]):
+        raise ScriptRefusalError(
+            '%s: %s is not a JSON {"user","pass"} object for WORKER_NAME=%s TARGET=%s SUFFIX=%s.'
+            % (
+                SELF,
+                JSON_SHAPE_KEY,
+                env.get("WORKER_NAME", ""),
+                env.get("TARGET", ""),
+                env.get("SUFFIX", ""),
+            ),
+            *JSON_SHAPE_EXPLANATION,
+        )
+
+
 def jq_filter() -> str:
     """The object constructor (:248-277), rebuilt from `KEYS`.
 
@@ -463,6 +507,7 @@ def main(argv: list[str]) -> int:
     try:
         values = resolve(env)
         check_nonempty(values, env)
+        check_json_shape(values, env)
     except ScriptRefusalError as exc:
         for line in exc.lines:
             print(line, file=sys.stderr)

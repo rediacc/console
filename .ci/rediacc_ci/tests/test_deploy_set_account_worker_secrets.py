@@ -52,7 +52,7 @@ FIXTURE_ENV = {
     "AWS_SES_SECRET_ACCESS_KEY_EU": "ss-eu",
     "AWS_SES_REGION": "eu-central-1",
     "CLOUDFLARE_TURNSTILE_SECRET_KEY": "ts",
-    "OBS_OTLP_CREDENTIALS_EU": "otlp-eu",
+    "OBS_OTLP_CREDENTIALS_EU": '{"user":"u-eu","pass":"p-eu"}',
     "ACCOUNT_BACKUP_S3_ENDPOINT": "https://acct.r2.cloudflarestorage.com",
     "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID": "bk",
     "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY": "bs",
@@ -221,7 +221,7 @@ def test_the_bulk_call_and_its_document_are_pinned_in_full(tmp_path: pathlib.Pat
         '  "AWS_SES_FROM": "",\n'
         '  "AWS_SES_CONFIGURATION_SET": "",\n'
         '  "CLOUDFLARE_TURNSTILE_SECRET_KEY": "ts",\n'
-        '  "OBS_OTLP_CREDENTIALS": "otlp-eu",\n'
+        '  "OBS_OTLP_CREDENTIALS": "{\\"user\\":\\"u-eu\\",\\"pass\\":\\"p-eu\\"}",\n'
         '  "ACCOUNT_BACKUP_S3_ENDPOINT": "https://acct.eu.r2.cloudflarestorage.com",\n'
         '  "ACCOUNT_BACKUP_S3_BUCKET": "rediacc-backups-eu",\n'
         '  "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID": "bk",\n'
@@ -278,7 +278,7 @@ def test_asia_borrows_the_eu_ses_credential(tmp_path: pathlib.Path) -> None:
         "SUFFIX": "ASIA",
         "AWS_SES_ACCESS_KEY_ID_ASIA": "sk-asia",
         "AWS_SES_SECRET_ACCESS_KEY_ASIA": "ss-asia",
-        "OBS_OTLP_CREDENTIALS_ASIA": "otlp-asia",
+        "OBS_OTLP_CREDENTIALS_ASIA": '{"user":"u-asia","pass":"p-asia"}',
         "STRIPE_WEBHOOK_SECRET_ASIA": "whsec_asia",
         "BACKUP_BUCKET_STABLE": "rediacc-backups-asia",
         "R2_JURISDICTION": "",
@@ -289,7 +289,7 @@ def test_asia_borrows_the_eu_ses_credential(tmp_path: pathlib.Path) -> None:
     assert '"AWS_SES_SECRET_ACCESS_KEY": "ss-eu"' in doc
     assert "sk-asia" not in doc, "the asia SES key reached the Worker"
     # Only SES is borrowed: OTLP and the webhook secret stay regional.
-    assert '"OBS_OTLP_CREDENTIALS": "otlp-asia"' in doc
+    assert '"OBS_OTLP_CREDENTIALS": "{\\"user\\":\\"u-asia\\"' in doc
     assert '"STRIPE_WEBHOOK_SECRET": "whsec_asia"' in doc
     _assert_agree(old, new, "asia-borrow", old_calls, new_calls)
 
@@ -302,7 +302,7 @@ def test_a_region_without_a_jurisdiction_keeps_the_default_host(tmp_path: pathli
         "R2_JURISDICTION": "",
         "AWS_SES_ACCESS_KEY_ID_US": "sk-us",
         "AWS_SES_SECRET_ACCESS_KEY_US": "ss-us",
-        "OBS_OTLP_CREDENTIALS_US": "otlp-us",
+        "OBS_OTLP_CREDENTIALS_US": '{"user":"u-us","pass":"p-us"}',
         "STRIPE_WEBHOOK_SECRET_US": "whsec_us",
     }
     old, new, old_calls, new_calls = run_both(tmp_path, **us)
@@ -709,6 +709,78 @@ def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
 
     _good, good_calls = _run(PORT, tmp_path)
     assert good_calls == old_calls, "restored port no longer agrees with the twin"
+    assert PORT.read_text(encoding="utf-8") == original, (
+        "port source must be restored byte-identical"
+    )
+
+
+# Shapes the Worker's JSON.parse at private/account/src/routes/telemetry.ts would turn into {otlp: null}. The first is the one that shipped: base64 `user:pass`, which the store held for all three regions until 2026-09-24.
+BAD_OTLP_SHAPES = {
+    "base64-user-pass": "dS1ldTpwLWV1",
+    "plain-user-pass": "u-eu:p-eu",
+    "json-missing-pass": '{"user":"u-eu"}',
+    "json-number-user": '{"user":1,"pass":"p-eu"}',
+    "json-array": '["u-eu","p-eu"]',
+    "json-string": '"u-eu:p-eu"',
+    "two-documents": '{"user":"u","pass":"p"} {"user":"u","pass":"p"}',
+}
+
+
+@pytest.mark.parametrize("label", sorted(BAD_OTLP_SHAPES))
+def test_an_otlp_value_the_worker_cannot_parse_is_refused(
+    tmp_path: pathlib.Path, label: str
+) -> None:
+    """NON-EMPTY AND WRONG is the case the seventeen guards cannot see. Refused on both sides with the same three lines, no wrangler call, and the value itself appears in neither stream: jq's parse error quotes its input, which is why both sides discard jq's stderr."""
+    bad = BAD_OTLP_SHAPES[label]
+    old, new, old_calls, new_calls = run_both(tmp_path, OBS_OTLP_CREDENTIALS_EU=bad)
+    assert old.returncode == 1, f"{label}: the twin accepted a value the Worker cannot parse"
+    assert old.stdout == ""
+    assert old.stderr == (
+        'set-account-worker-secrets.sh: OBS_OTLP_CREDENTIALS is not a JSON {"user","pass"} '
+        "object for WORKER_NAME=rediacc-account-eu TARGET=stable SUFFIX=EU.\n"
+        "  The Worker JSON.parses it and serves {otlp: null} for any other shape, so telemetry\n"
+        "  goes dark silently. Re-mint it with ./run.sh rotation rotate otlp-<region>.\n"
+    )
+    assert bad not in old.stderr, f"{label}: the twin echoed the value"
+    assert bad not in new.stderr, f"{label}: the port echoed the value"
+    assert old_calls == "", f"{label}: a refused run still called wrangler"
+    _assert_agree(old, new, f"otlp-shape-{label}", old_calls, new_calls)
+
+
+def test_the_otlp_shape_guard_runs_after_the_empty_guards(tmp_path: pathlib.Path) -> None:
+    """An EMPTY value still reports as EMPTY, not as the wrong shape: the shape guard is the last refusal before the document is built."""
+    old, new, old_calls, new_calls = run_both(tmp_path, OBS_OTLP_CREDENTIALS_EU="")
+    assert "OBS_OTLP_CREDENTIALS is EMPTY" in old.stderr
+    assert "not a JSON" not in old.stderr
+    _assert_agree(old, new, "otlp-empty-before-shape", old_calls, new_calls)
+
+
+def test_the_otlp_shape_filter_is_the_twins_filter() -> None:
+    """STALENESS ALARM: the port's jq program must be the twin's, byte for byte, or the two can disagree about what counts as JSON."""
+    assert port.JSON_SHAPE_FILTER in _twin_source()
+    assert port.json_shape_argv("v")[-1] == port.JSON_SHAPE_FILTER
+    for line in port.JSON_SHAPE_EXPLANATION:
+        assert line in _twin_source()
+
+
+def test_planted_otlp_shape_defect_is_caught(tmp_path: pathlib.Path) -> None:
+    """ANTI-VACUITY for the shape guard: a mutant port with the `check_json_shape` call removed ships the base64 value that disabled telemetry in every region, exits 0 and calls wrangler with it, while the twin refuses. The source is then confirmed byte-identical and the restored port agrees with the twin again."""
+    bad = BAD_OTLP_SHAPES["base64-user-pass"]
+    original = PORT.read_text(encoding="utf-8")
+    mutated = original.replace("        check_json_shape(values, env)\n", "", 1)
+    assert mutated != original, "the line this plant targets is no longer present verbatim"
+    mutant = tmp_path / "mutant.py"
+    mutant.write_text(mutated, encoding="utf-8")
+
+    old, old_calls = _run(TWIN, tmp_path, OBS_OTLP_CREDENTIALS_EU=bad)
+    bad_run, bad_calls = _run(mutant, tmp_path, OBS_OTLP_CREDENTIALS_EU=bad)
+    assert old.returncode == 1
+    assert old_calls == ""
+    assert bad_run.returncode == 0, "the mutant should have shipped the unparseable value"
+    assert f'"OBS_OTLP_CREDENTIALS": "{bad}"' in document(bad_calls)
+
+    good, good_calls = _run(PORT, tmp_path, OBS_OTLP_CREDENTIALS_EU=bad)
+    _assert_agree(old, good, "otlp-shape-restored", old_calls, good_calls)
     assert PORT.read_text(encoding="utf-8") == original, (
         "port source must be restored byte-identical"
     )
