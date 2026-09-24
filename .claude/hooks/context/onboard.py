@@ -347,7 +347,7 @@ def stop_modules():
 def store_first_writes(core, store):
     """({sid8: first `at` that identity WROTE}, the log floor, the event count)."""
     root = core.project_root(core.project_start())
-    events = store._read_events(core.worklist_for(root), root)
+    events = store._read_events(core.worklist_for(core.project_start()), root)
     first: dict[Any, Any] = {}
     floor = ""
     for ev in events:

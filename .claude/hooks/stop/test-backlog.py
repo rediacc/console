@@ -384,6 +384,18 @@ control(
 )
 
 
+def plant_historical_peer_event(store, peer):
+    """One raw, dated `add` event in a SCRATCH store, so session_liveness reads the peer as IDLE.
+
+    A fixture, not a rebuild: no fold becomes events here, and the 2020 stamp is the point (add_item would stamp now and make the peer live).
+    """
+    (store / (peer + ".jsonl")).write_text(
+        '{"ev":"add","id":"aaaaaaaa","at":"2020-01-01T00:00:00Z","by":"%s","why":"fixture","h":"deadbeef","br":"fixture"}\n'
+        % peer,
+        encoding="utf-8",
+    )
+
+
 # --------------------------------------------------------------------------- 6. PEER. A plan owned by an idle peer is counted (dead_peer) and never nominated; the same plan with the owner line removed IS nominated (unowned counts as this session's own). ---------------------------------------------------------------------------
 td, root, recs = make_tree(
     ("PLAN-owned.md", plan_body(owner=OWNER, open_tasks=["implement the owned task"])),
@@ -394,11 +406,7 @@ try:
     # store_dir() ignores `root` entirely and re-derives the REAL project root unless $WORKLIST_STORE_DIR overrides it -- exactly the seam wl_store.py:646 documents existing for this reason.
     store = root / "agent" / "worklist"
     store.mkdir(parents=True, exist_ok=True)
-    (store / (PEER + ".jsonl")).write_text(
-        '{"ev":"add","id":"aaaaaaaa","at":"2020-01-01T00:00:00Z","by":"%s","why":"fixture","h":"deadbeef","br":"fixture"}\n'
-        % PEER,
-        encoding="utf-8",
-    )
+    plant_historical_peer_event(store, PEER)
     _prev_store_dir = os.environ.get("WORKLIST_STORE_DIR")
     os.environ["WORKLIST_STORE_DIR"] = str(store)
     try:

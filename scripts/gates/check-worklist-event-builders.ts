@@ -55,6 +55,8 @@ const ALLOWED: Record<string, string> = {
   lease_item: 'the --lease verb: a real, newly created lease, not a re-emitted one',
   migrate_items:
     'the --migrate verb: its `add` is a NEW item and its `state` closes the original; both are real changes, not a reconstruction',
+  plant_historical_peer_event:
+    'test-backlog.py fixture: one raw 2020-dated `add` in a scratch store so a peer reads IDLE; no fold is rebuilt, and add_item would stamp now',
 };
 
 /** Floor for the corpus: see the VACUOUS refusal in main(). */

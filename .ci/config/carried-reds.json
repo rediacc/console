@@ -32,14 +32,6 @@
     {
       "gate": "check:ci-plan-record",
       "reason": "5 remaining, down from 161 (132 a real gate defect fixed in d231c8c30). The rest is hand-edited Record-Sig mismatches and unfilled placeholders needing a human read of the prose, not a mechanical fix."
-    },
-    {
-      "gate": "check:ci-worklist-path-resolution",
-      "reason": "Finding in onboard.py, same worklist-hook v10 family under active concurrent peer rewrite all session, same broadcast (df74b3fa) as check:ci-tracked-credentials. Not this session's file."
-    },
-    {
-      "gate": "check:ci-worklist-event-builders",
-      "reason": "Finding in test-backlog.py, same worklist-hook v10 family under active concurrent peer rewrite all session, same broadcast (df74b3fa) as check:ci-tracked-credentials. Not this session's file."
     }
   ]
 }
