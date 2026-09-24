@@ -119,6 +119,7 @@ PY_HEREDOC = r"write_text|open\(|<<[" + _S + r"]*.?(PY|EOPY|PYTHON)"
 # or it is a syntax error). Requiring a preceding space keeps every documented
 # true positive (all authored `NAME = value` in this repo) while dropping the
 # embedded-bash-as-data shape. `open(`/`Path(` are untouched -- neither of those idioms exists as bash syntax, so they carry no equivalent ambiguity.
+# NO WHITESPACE INSIDE THE QUOTED TARGET (2026-09-24, #a655c5f5): `grep -n "source\\|PATS=" a.sh; ls lib/b.sh` read the CLOSING quote after `PATS=` as an opening one, and `[^"']+` then ran across `; ls` to the next `.sh`, refusing a command that only listed a running script. A real target literal holds no whitespace.
 # `p = "x.txt"` AND `p="x.txt"`: the spaced form alone missed the compact assignment every short heredoc uses, so its target read as unidentifiable and the broad scan blocked a payload that only MENTIONED a running script (./rdc.sh, 2026-09-24). The leading `[^=!<>]` keeps `==`, `!=`, `<=`, `>=` out, and it stays plain ERE so the bash oracle can carry the identical pattern.
 ASSIGN_TARGET = (
     r"([^=!<>"
@@ -129,7 +130,9 @@ ASSIGN_TARGET = (
     + _S
     + r"]*|open\(|Path\()["
     + _S
-    + r"]*[\"'][^\"']+\.[A-Za-z0-9]+"
+    + r"]*[\"'][^\"'"
+    + _S
+    + r"]+\.[A-Za-z0-9]+"
 )
 
 # Targets come from TWO places, and looking in only one of them was the bug.
@@ -321,6 +324,12 @@ EDGE_CASES = [
     ),
     # A variable expansion is recognised and then skipped.
     ("a variable in the target", "echo x > $SP/mp-$ver.sh"),
+    # 2026-09-24, #a655c5f5: a closing quote after `PATS=` read as an opening one ran across `; ls` to a running script.
+    (
+        "a closing quote does not open a target that spans a listing",
+        _PY % "p = 'other.sh'\nopen(p, 'w').write('x')"
+        + '\ngrep -n "source\\|PATS=" other.sh; ls %s' % LIVE_SCRIPT,
+    ),
 ]
 
 

@@ -21,7 +21,7 @@ is stated rather than asserted: the differential is what pins it, and it compare
 
 import re
 
-from rediacc_hooks import hookio
+from rediacc_hooks import hookio, shellscan
 
 CHAIN = "pre-bash"
 TWIN = "pre-bash/block-self-matching-pgrep.sh"
@@ -46,6 +46,11 @@ PATTERN_ARG = (
     + r"]+('[^']*'|\"[^\"]*\"|[^"
     + hookio.SPACE
     + r";|&)]+)"
+)
+
+# ONLY A PATTERN IN A LOOP CONDITION IS JUDGED: the loop's span through its pgrep's pattern argument. Every `pgrep -f` in the command used to be, so a one-shot bracketed diagnostic after a correct wait loop was refused whenever its literal text appeared elsewhere in the command (2026-09-24, #165e1017).
+LOOP_PATTERN_SPAN = hookio.rx(
+    r"(^|[;&|(]|&&|\|\|)[{S}]*(until|while)[^;]*pgrep[{S}]+-[a-zA-Z]*f[{S}]+('[^']*'|\"[^\"]*\"|[^{S};|&)]+)"
 )
 
 STRIP_VERB = hookio.rx(r"^pgrep[{S}]+-[a-zA-Z]*f[{S}]+")
@@ -101,6 +106,22 @@ EDGE_CASES = [
     ("an unparseable pattern", "until pgrep -f '[' ; do sleep 5; done"),
     ("a flag cluster with f in it", "until pgrep -af wl_wait.py; do sleep 5; done"),
     ("a loop with no pgrep at all", "until [ -s out.txt ]; do sleep 5; done"),
+    # 2026-09-24, #165e1017: a one-shot bracketed pgrep after a correct loop, its literal text elsewhere in the command.
+    (
+        "a one-shot pgrep after a correct loop is not judged",
+        (
+            "until ! pgrep -f '[r]x -n auto' >/dev/null; do sleep 10; done; "
+            "setsid --wait uv-tools/bin/pytest -q t.py; pgrep -af '[u]v-tools/bin/pytest'"
+        ),
+    ),
+    (
+        "a loop in a heredoc body is text",
+        "cat <<'EOF' > w.sh\nuntil pgrep -f wl_wait.py; do sleep 5; done\nEOF",
+    ),
+    (
+        "a self-matching loop after a heredoc still fires",
+        "cat <<EOF\nx\nEOF\nuntil pgrep -f wl_wait.py; do sleep 5; done",
+    ),
 ]
 
 
@@ -120,12 +141,15 @@ def run(ev):
     if cmd == "":
         return hookio.ALLOW
 
-    if not hookio.grep_q(LOOP_WITH_PGREP, cmd):
+    # A HEREDOC BODY IS TEXT, NOT A LOOP THIS SHELL RUNS, and a script written through one runs under its own command line, which does not carry the body.
+    nohd = hookio._command_substitution(shellscan._strip_heredocs(cmd))
+    if not hookio.grep_q(LOOP_WITH_PGREP, nohd):
         return hookio.ALLOW
 
     # `grep -oE ... | sed -E "...; ...; ..."`: three expressions, each applied ONCE per record (no `g` flag), in order.
     pats = []
-    for match in hookio.grep_o(PATTERN_ARG, cmd):
+    spans = hookio._grep_out(hookio.grep_o(LOOP_PATTERN_SPAN, nohd))
+    for match in hookio.grep_o(PATTERN_ARG, spans):
         text = re.sub(STRIP_VERB, "", match, count=1)
         text = re.sub(r"^'(.*)'$", r"\1", text, count=1)
         text = re.sub(r'^"(.*)"$', r"\1", text, count=1)

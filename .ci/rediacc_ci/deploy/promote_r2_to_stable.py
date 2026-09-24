@@ -92,6 +92,7 @@ import subprocess
 import sys
 
 from rediacc_ci.core import common
+from rediacc_ci.deploy import transfer_retry
 
 # The twin's own name, carried in its four guard messages. A literal, because the bytes must survive the port.
 SELF = "promote-r2-to-stable.sh"
@@ -240,7 +241,8 @@ REQUIRED_ENV: tuple[tuple[str, str], ...] = (
 # The four facts in the module docstring, as constants so a test can assert each by name instead of restating the sentence.
 PHASE_FILTERED_FILES_ARE_PURGED_BUT_NEVER_UPLOADED = True
 PURGE_LIST_IS_BUILT_FROM_THE_DOWNLOAD = True
-VACUITY_FLOOR_RUNS_AFTER_THE_UPLOAD = True
+# RULE T DELTA (2026-09-24): the twin counts AFTER uploading, so an empty download reached a sync that failed with aws's own "does not exist" and the floor's sentence never printed. The port counts first and uploads nothing from an empty stage.
+VACUITY_FLOOR_RUNS_AFTER_THE_UPLOAD = False
 STALE_TMP_IS_PROMOTED = True
 
 
@@ -289,6 +291,8 @@ def environment() -> dict[str, str]:
         "EDGE_VERSION": os.environ.get("EDGE_VERSION", ""),
         # `${CLOUDFLARE_ZONE_ID:-}` (twin :180): unset and empty are one argument.
         "CLOUDFLARE_ZONE_ID": os.environ.get("CLOUDFLARE_ZONE_ID", ""),
+        # Seconds between transfer retries; tests set 0. Not in the twin (Rule T retry, #4175e786).
+        "PROMOTE_RETRY_DELAY_S": os.environ.get("PROMOTE_RETRY_DELAY_S", "10"),
     }
 
 
@@ -313,7 +317,7 @@ def endpoint_args(endpoint: str) -> list[str]:
 
 
 def download_argv(dir_name: str, tmp: str, endpoint: str) -> list[str]:
-    """`aws s3 cp s3://<bucket>/<dir>/edge/ <tmp>/ $EP --recursive --quiet` (twin :72)."""
+    """`aws s3 cp s3://<bucket>/<dir>/edge/ <tmp>/ $EP --recursive --only-show-errors` (twin :72)."""
     return [
         "aws",
         "s3",
@@ -322,7 +326,7 @@ def download_argv(dir_name: str, tmp: str, endpoint: str) -> list[str]:
         tmp + "/",
         *endpoint_args(endpoint),
         "--recursive",
-        "--quiet",
+        "--only-show-errors",
     ]
 
 
@@ -338,7 +342,7 @@ def sync_argv(dir_name: str, tmp: str, endpoint: str, filters: tuple[str, ...]) 
         tmp + "/",
         "s3://%s/%s/stable/" % (BUCKET, dir_name),
         *endpoint_args(endpoint),
-        "--quiet",
+        "--only-show-errors",
         "--cache-control",
         CC_MUTABLE,
         *filters,
@@ -397,6 +401,13 @@ def _run(argv: list[str], **kwargs) -> int:
     return subprocess.run(argv, check=False, **kwargs).returncode
 
 
+def _run_retried(argv: list[str], what: str) -> int:
+    """`_run` with the shared bounded retry (transfer_retry.py, Rule T #4175e786)."""
+    return transfer_retry.retried(
+        lambda: _run(argv), what, SELF, float(environment()["PROMOTE_RETRY_DELAY_S"] or "0")
+    )
+
+
 def _find_files(directory: str) -> tuple[str, int]:
     """`find <dir> -type f`, and `... | wc -l` over the same output.
 
@@ -446,22 +457,13 @@ def _promote_dirs(endpoint: str) -> list[str]:
         print("Promoting %s/edge/ -> %s/stable/ (2-phase)" % (dir_name, dir_name))
         tmp = TMP_PREFIX + dir_name
 
-        status = _run(download_argv(dir_name, tmp, endpoint))
+        status = _run_retried(
+            download_argv(dir_name, tmp, endpoint), "download of %s/edge" % dir_name
+        )
         if status:
             raise BashExitError(status)
 
         _rewrite(dir_name, tmp)
-
-        # Phase 1: binaries and packages, no metadata.
-        status = _run(sync_argv(dir_name, tmp, endpoint, META_EXCLUDES))
-        if status:
-            raise BashExitError(status)
-
-        # Phase 2: the metadata that flips a client's view to the new version.
-        for filters in PHASE_TWO.get(dir_name, ()):
-            status = _run(sync_argv(dir_name, tmp, endpoint, filters))
-            if status:
-                raise BashExitError(status)
 
         listing, count = _find_files(tmp)
         if count == 0:
@@ -471,6 +473,21 @@ def _promote_dirs(endpoint: str) -> list[str]:
                 file=sys.stderr,
             )
             raise BashExitError(1)
+
+        # Phase 1: binaries and packages, no metadata.
+        status = _run_retried(
+            sync_argv(dir_name, tmp, endpoint, META_EXCLUDES), "sync of %s/stable" % dir_name
+        )
+        if status:
+            raise BashExitError(status)
+
+        # Phase 2: the metadata that flips a client's view to the new version.
+        for filters in PHASE_TWO.get(dir_name, ()):
+            status = _run_retried(
+                sync_argv(dir_name, tmp, endpoint, filters), "metadata sync of %s/stable" % dir_name
+            )
+            if status:
+                raise BashExitError(status)
 
         # FACT 2: this is the DOWNLOAD listing, not the upload's.
         urls += [channel_url(dir_name, strip_prefix(f, tmp + "/")) for f in read_lines(listing)]

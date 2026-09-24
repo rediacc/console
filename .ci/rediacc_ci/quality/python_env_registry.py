@@ -66,9 +66,12 @@ WHAT THIS DOES NOT CLAIM, so nobody reads more into a green than is there:
   * it does not check DEFAULTS. `check:ci-worklist-env-registry` does, for its
     prefix, and that check is the reason it must not be folded into this one.
   * it does not scan bash, TypeScript or Go. The name says Python.
-  * a read behind `getattr(os, "environ")`, an `os.environ.copy()` handed
-    around, or a name built by concatenation is invisible to it. The first two
-    do not appear in this tree; the third lands as an opaque entry.
+  * a read behind `getattr(os, "environ")`, an `os.environ` or its copy handed
+    WHOLE to another function that reads it there, or a name built by
+    concatenation is invisible to it. The first does not appear in this tree;
+    the second did once (turnstile_drift.py, 2026-09-24) and is fixed by reading
+    each name by its literal where the alias is bound; the third lands as an
+    opaque entry.
 
 THE GATE HEADER LIVES IN THE ENTRY POINT, not here, for the reason `check_worklist_env_registry.py` records: `gate-bind` reads the file the registry INVOKES BY PATH, and a header on the module derives this module's own path, which the package.json binding then disagrees with.
 

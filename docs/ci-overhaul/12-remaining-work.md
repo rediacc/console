@@ -31,6 +31,12 @@ The one red pair is `w7p2-stagingtag` and it is expected: see Known open defects
 
 **The 51 percent is by BOX COUNT and it flatters us.** The single largest body, 148 gate tests, is one box and is untouched. Bash is still present ON PURPOSE: invariant 5 forbids deleting a twin in the change that ports it, so deletion is W7 P5, the last phase.
 
+**Status addendum, 2026-09-24.** The table above is from 2026-09-07; it is kept as a record.
+- W7P5-b: `account.sh` is fully ported, 22 of 22 functions. `check:ci-bash-lib-ported` now holds every `.ci/lib` and `.ci/scripts/lib` library to its twin, with 59 gaps baselined.
+- W7P5-a: 26 real-run legs are confirmed, and 15 paths remain blocked. Twelve of those are operator-approved M-live runs, driven from the lead session.
+- W7P5-c, which deletes the bash twins, waits on those runs.
+- Details are in `06-progress.md`, section "W7P5-b closes".
+
 ## Constraints every prompt below must carry
 
 Copy these into any agent brief. They are not ceremony; each was paid for.

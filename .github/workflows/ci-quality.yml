@@ -311,6 +311,9 @@ jobs:
       - name: CI job timeout headroom
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_job_timeout_headroom.py
+      - name: CLI proxy-safe output
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_cli_proxy_safe_output.py
       - name: Compose env
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_compose_env.py
@@ -454,6 +457,9 @@ jobs:
       - name: Tree shape
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_tree_shape.py
+      - name: Turnstile widget drift
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_turnstile_drift.py --selftest
       - name: Vendored blocker derivation
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_vendored_blocker_derivation.py
@@ -2066,9 +2072,9 @@ jobs:
       # here and not with the other unit tests: the account submodule (imports
       # above) and packages/www/dist/route-manifest.json, which
       # redirect-aliases.test.ts imports directly.
-      - name: Worker unit tests (workers/www)
+      - name: Worker unit tests (workers/www, workers/proxy)
         if: ${{ !cancelled() && steps.build-www.outcome == 'success' }}
-        run: npm ci --prefix workers/www && npm run check:test-workers
+        run: npm ci --prefix workers/www && npm ci --prefix workers/proxy && npm run check:test-workers
 
   # ============================================================================
   # L9 SECURITY -- alone. 291s of meta-gate unit tests makes this the phase's

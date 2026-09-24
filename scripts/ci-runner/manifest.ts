@@ -787,7 +787,7 @@ export const GATES: readonly GateSpec[] = [
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
       job: 'quality-www-build',
-      step: 'Worker unit tests (workers/www)',
+      step: 'Worker unit tests (workers/www, workers/proxy)',
     },
   },
   {
@@ -5191,6 +5191,34 @@ export const GATES: readonly GateSpec[] = [
       step: 'Container build context',
     },
   },
+  // <<< gen-manifest: region 43
+  // The executor image, built and booted: B1 (no token at boot) and B2 (no renet) shipped because nothing ever ran it. A full docker build of the CLI workspace, hence slow and local-only until a CI job that already builds images carries it.
+  {
+    id: 'check:ci-proxy-image-smoke',
+    run: 'npm run check:ci-proxy-image-smoke',
+    slow: true,
+    gate: true,
+    heavy: true,
+    leaves: ['.ci/scripts/quality/check_proxy_image_smoke.py'],
+    ci: {
+      kind: 'local-only',
+      blocker:
+        'BLOCKER: a full docker build of the executor image (npm ci of the workspace plus the CLI bundle) that also needs a renet-linux-amd64 to stage; no CI job builds renet before the quality lanes, and wiring it into ci-build-docker is a workflow change outside the proxy writer file set (PLAN-cloudflare-proxy.md Writer A)',
+    },
+  },
+  // >>> gen-manifest: region 44
+  {
+    id: 'check:ci-cli-proxy-safe-output',
+    run: 'npm run check:ci-cli-proxy-safe-output',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_cli_proxy_safe_output.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-static',
+      step: 'CLI proxy-safe output',
+    },
+  },
   {
     id: 'check:ci-portal-sitekey-guard',
     run: 'npm run check:ci-portal-sitekey-guard',
@@ -5203,7 +5231,19 @@ export const GATES: readonly GateSpec[] = [
       step: 'Portal site-key guard',
     },
   },
-  // <<< gen-manifest: region 43
+  {
+    id: 'check:ci-turnstile-drift',
+    run: 'npm run check:ci-turnstile-drift',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_turnstile_drift.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-static',
+      step: 'Turnstile widget drift',
+    },
+  },
+  // <<< gen-manifest: region 44
 ];
 
 /** The root workflow every CI run enters through. */

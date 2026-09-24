@@ -137,6 +137,31 @@ export const judge = (commits: { sha: string; message: string }[], known: string
   return out;
 };
 
+// THE RANGE OUTGROWS NODE'S DEFAULT 1 MiB BUFFER. Measured 2026-09-24 on PR #590: 950 commits whose full bodies total 1,034,459 bytes, and execFileSync died with `spawnSync git ENOBUFS` before a single trailer was read. 64 MiB is the size the other range readers here use (check-changed-selection.ts:124). The selftest drives this against a throwaway repository whose range is larger than 1 MiB.
+export const readRange = (repo: string, base: string, tip: string): string =>
+  execFileSync('git', ['log', `${base}..${tip}`, '--format=%H%x1f%B%x1e', '--no-merges'], {
+    encoding: 'utf8',
+    cwd: repo,
+    maxBuffer: 64 * 1024 * 1024,
+  });
+
+// A repository whose base..tip range prints more than Node's default 1 MiB, for the ENOBUFS control.
+const oversizedRange = (): { dir: string; base: string; tip: string } => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pr-task-trailers-'));
+  const git = (...args: string[]): string =>
+    execFileSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@t', ...args], {
+      cwd: dir,
+      encoding: 'utf8',
+    }).trim();
+  git('init', '-q');
+  git('commit', '-q', '--allow-empty', '-m', 'base');
+  const base = git('rev-parse', 'HEAD');
+  const body = path.join(dir, 'msg');
+  fs.writeFileSync(body, `feat: big\n\n${'x'.repeat(1536 * 1024)}\n\nPR-TASK: abc123\n`);
+  git('commit', '-q', '--allow-empty', '-F', body);
+  return { dir, base, tip: git('rev-parse', 'HEAD') };
+};
+
 const selftest = (): number => {
   let fail = 0;
   const check = (name: string, ok: boolean): void => {
@@ -175,6 +200,33 @@ const selftest = (): number => {
     judge([{ sha: 's1', message: 'x\n\nPR-TASK: abc123\nPR-TASK: bbb111' }], known).length === 1
   );
   check('no commits yields no verdicts', judge([], known).length === 0);
+
+  // THE ENOBUFS REGRESSION, 2026-09-24. The CONTROL proves the fixture really exceeds the default buffer; without it, a fixture that shrank would let the second check pass against a reader that still had the bug.
+  const big = oversizedRange();
+  try {
+    let defaultBufferFails = false;
+    try {
+      execFileSync('git', ['log', `${big.base}..${big.tip}`, '--format=%H%x1f%B%x1e'], {
+        encoding: 'utf8',
+        cwd: big.dir,
+      });
+    } catch (err) {
+      defaultBufferFails = /ENOBUFS|maxBuffer/.test(String((err as Error).message));
+    }
+    check('CONTROL: the fixture range overflows the default 1 MiB buffer', defaultBufferFails);
+    let read = '';
+    try {
+      read = readRange(big.dir, big.base, big.tip);
+    } catch {
+      read = '';
+    }
+    check(
+      'a range larger than 1 MiB is read whole, trailer included',
+      /PR-TASK: abc123/.test(read)
+    );
+  } finally {
+    fs.rmSync(big.dir, { recursive: true, force: true });
+  }
 
   // W12 P3.1b. THE LEDGER READER. These prove the helper; the plant that proves the FEATURE is driven through the real invocation with WORKLIST_EPICS_LEDGER and PR_HEAD_REF, and is recorded in the box. A selftest control alone would only show that a function nothing calls still works.
   const oneEpic = '{"at":"t","by":"s","id":"aaa111","title":"x","covers":[]}';
@@ -566,12 +618,7 @@ const main = (): number => {
 
   let raw: string;
   try {
-    // THE RANGE OUTGROWS NODE'S DEFAULT 1 MiB BUFFER. Measured 2026-09-24 on PR #590: 950 commits whose full bodies total 1,034,459 bytes, and execFileSync died with `spawnSync git ENOBUFS` before a single trailer was read. 64 MiB is the size the other range readers here use (check-changed-selection.ts:124).
-    raw = execFileSync('git', ['log', `${base}..${tip}`, '--format=%H%x1f%B%x1e', '--no-merges'], {
-      encoding: 'utf8',
-      cwd: REPO,
-      maxBuffer: 64 * 1024 * 1024,
-    });
+    raw = readRange(REPO, base, tip);
   } catch (err) {
     console.error(
       `✗ could not read the commit range ${base}..${tip}: ${(err as Error).message.split('\n')[0]}`

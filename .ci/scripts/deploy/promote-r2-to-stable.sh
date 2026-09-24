@@ -69,7 +69,7 @@ PURGE_URLS=()
 for dir in cli apt rpm apk archlinux; do
     echo "Promoting ${dir}/edge/ -> ${dir}/stable/ (2-phase)"
     TMP="/tmp/promote-${dir}"
-    aws s3 cp "s3://${BUCKET}/${dir}/edge/" "$TMP/" $EP --recursive --quiet
+    aws s3 cp "s3://${BUCKET}/${dir}/edge/" "$TMP/" $EP --recursive --only-show-errors
 
     # Per-dir channel rewrites -- apply to local copy, uploaded in phase 2.
     case "$dir" in
@@ -104,42 +104,42 @@ for dir in cli apt rpm apk archlinux; do
     )
 
     # ----- Phase 1: binaries / packages (slow, no metadata) -----
-    aws s3 sync "$TMP/" "s3://${BUCKET}/${dir}/stable/" $EP --quiet \
+    aws s3 sync "$TMP/" "s3://${BUCKET}/${dir}/stable/" $EP --only-show-errors \
         --cache-control "$CC_MUTABLE" "${META_EXCLUDES[@]}"
 
     # ----- Phase 2: metadata (fast, flips client view to new version) -----
     case "$dir" in
         apt)
             # 2a: Packages / Packages.gz (hashes of .deb files in phase 1).
-            aws s3 sync "$TMP/" "s3://${BUCKET}/${dir}/stable/" $EP --quiet \
+            aws s3 sync "$TMP/" "s3://${BUCKET}/${dir}/stable/" $EP --only-show-errors \
                 --cache-control "$CC_MUTABLE" \
                 --exclude '*' --include 'Packages*'
             # 2b: Release / InRelease / Release.gpg (hash of phase 2a).
-            aws s3 sync "$TMP/" "s3://${BUCKET}/${dir}/stable/" $EP --quiet \
+            aws s3 sync "$TMP/" "s3://${BUCKET}/${dir}/stable/" $EP --only-show-errors \
                 --cache-control "$CC_MUTABLE" \
                 --exclude '*' --include 'Release*' --include 'InRelease'
             ;;
         rpm)
             # 2a: primary / filelists / other (hashed in 2b repomd).
-            aws s3 sync "$TMP/" "s3://${BUCKET}/${dir}/stable/" $EP --quiet \
+            aws s3 sync "$TMP/" "s3://${BUCKET}/${dir}/stable/" $EP --only-show-errors \
                 --cache-control "$CC_MUTABLE" \
                 --exclude '*' --include 'repodata/primary*' \
                 --include 'repodata/filelists*' --include 'repodata/other*'
             # 2b: repomd.xml + signatures + rediacc.repo (config).
-            aws s3 sync "$TMP/" "s3://${BUCKET}/${dir}/stable/" $EP --quiet \
+            aws s3 sync "$TMP/" "s3://${BUCKET}/${dir}/stable/" $EP --only-show-errors \
                 --cache-control "$CC_MUTABLE" \
                 --exclude '*' --include 'repodata/repomd.xml*' \
                 --include '*.repo'
             ;;
         apk)
             # APKINDEX references .apk files in same dir (phase 1).
-            aws s3 sync "$TMP/" "s3://${BUCKET}/${dir}/stable/" $EP --quiet \
+            aws s3 sync "$TMP/" "s3://${BUCKET}/${dir}/stable/" $EP --only-show-errors \
                 --cache-control "$CC_MUTABLE" \
                 --exclude '*' --include 'APKINDEX.tar.gz'
             ;;
         archlinux)
             # .db/.files reference .pkg.tar.zst in same dir (phase 1).
-            aws s3 sync "$TMP/" "s3://${BUCKET}/${dir}/stable/" $EP --quiet \
+            aws s3 sync "$TMP/" "s3://${BUCKET}/${dir}/stable/" $EP --only-show-errors \
                 --cache-control "$CC_MUTABLE" \
                 --exclude '*' --include '*.db.tar.gz' --include '*.files.tar.gz' \
                 --include 'rediacc.db' --include 'rediacc.files' \
@@ -147,7 +147,7 @@ for dir in cli apt rpm apk archlinux; do
             ;;
         cli)
             # manifest + latest.json + rebaked install scripts.
-            aws s3 sync "$TMP/" "s3://${BUCKET}/${dir}/stable/" $EP --quiet \
+            aws s3 sync "$TMP/" "s3://${BUCKET}/${dir}/stable/" $EP --only-show-errors \
                 --cache-control "$CC_MUTABLE" \
                 --exclude '*' --include 'manifest.json' --include 'latest.json' \
                 --include 'install.sh' --include 'install.ps1' \

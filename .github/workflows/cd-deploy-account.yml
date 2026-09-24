@@ -221,6 +221,7 @@ jobs:
             SELLER_POSTAL_CODE > BWS_SELLER_POSTAL_CODE
             SELLER_REGISTRATION_NUMBER > BWS_SELLER_REGISTRATION_NUMBER
             SELLER_VAT_NUMBER > BWS_SELLER_VAT_NUMBER
+            TURNSTILE_SITE_KEY > BWS_TURNSTILE_SITE_KEY
 
       - uses: ./.github/actions/app-token
         id: app-token
@@ -271,6 +272,19 @@ jobs:
           MATRIX_EDGE_WORKER_NAME: ${{ matrix.edgeWorkerName }}
           MATRIX_EDGE_DOMAIN: ${{ matrix.edgeDomain }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.resolve_account_deploy_config
+
+      # Preflight: the secret this job is about to push must be the one the live
+      # `rediacc-console` Turnstile widget holds. On 2026-09-24 Bitwarden's copy had
+      # silently drifted, a routine secret push deployed it to every account Worker,
+      # and every login failed with "Captcha verification failed". Exit 1 is drift,
+      # exit 2 is no verdict (API or credential failure); both block the deploy.
+      - name: Turnstile widget matches Bitwarden (${{ matrix.id }})
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
+          TURNSTILE_SITE_KEY: ${{ env.BWS_TURNSTILE_SITE_KEY }}
+          CLOUDFLARE_TURNSTILE_SECRET_KEY: ${{ env.BWS_CLOUDFLARE_TURNSTILE_SECRET_KEY }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.turnstile_drift
 
       # Preflight: the production price catalog is only updated by a manual
       # stripe-sync run per regional Stripe account. Fail the deploy if the

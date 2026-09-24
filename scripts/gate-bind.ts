@@ -976,6 +976,26 @@ export function registered(manifest: string, id: string): Registered | { error: 
   return out;
 }
 
+/**
+ * Where the manifest entry disagrees with the header on `ci.step` or `ci.job`, one line per field. The header is the source of truth, and until 2026-09-24 the verifier only asked whether an entry with the id EXISTED: a manifest whose `ci.step` named a step nothing emits stayed green here, and only check:ci-parity, one gate later, noticed.
+ * A stepless kind passes `step` undefined and is compared on its job alone.
+ */
+export function manifestDisagrees(
+  manifest: string,
+  id: string,
+  step: string | undefined,
+  job: string
+): string[] {
+  const reg = registered(manifest, id);
+  if ('error' in reg) return [];
+  const out: string[] = [];
+  if (step !== undefined && reg.step !== step) {
+    out.push(`manifest ci.step is "${reg.step}", but the header says "${step}"`);
+  }
+  if (reg.job !== job) out.push(`manifest ci.job is '${reg.job}', but the gate runs in '${job}'`);
+  return out;
+}
+
 /** The header body, unprefixed. The caller decides how each language carries a comment. */
 export function headerLines(
   r: Registered,
@@ -1203,6 +1223,23 @@ function selftest(): number {
     'CONTROL: an id the manifest does not carry is an error, not an empty entry',
     'error' in registered(MANIFEST_FIXTURE, 'check:ci-nope')
   );
+  {
+    const ok = registered(MANIFEST_FIXTURE, 'check:ci-a-b');
+    const step = 'error' in ok ? '' : ok.step;
+    const job = 'error' in ok ? '' : ok.job;
+    ck(
+      'CONTROL: a manifest entry that agrees with the header on step and job is silent',
+      manifestDisagrees(MANIFEST_FIXTURE, 'check:ci-a-b', step, job).length === 0
+    );
+    ck(
+      'a manifest ci.step the header does not name is reported (the 2026-09-24 overclaim)',
+      manifestDisagrees(MANIFEST_FIXTURE, 'check:ci-a-b', `${step}X`, job).length === 1
+    );
+    ck(
+      'a manifest ci.job other than the lane the gate runs in is reported',
+      manifestDisagrees(MANIFEST_FIXTURE, 'check:ci-a-b', step, `${job}X`).length === 1
+    );
+  }
   ck(
     'an extracted header round-trips: what it derives is what was registered',
     (() => {
@@ -2479,6 +2516,11 @@ function main(argv: string[]): void {
     if (lane === undefined) {
       problems.push(`${b.file}: pinned lane '${job}' is not a job of ${WORKFLOW}`);
       continue;
+    }
+    if (entry) {
+      for (const d of manifestDisagrees(manifest, b.id, b.step, job)) {
+        problems.push(`${b.file}: ${d}`);
+      }
     }
     if (!satisfies(lane, b.needs)) {
       problems.push(`${b.file}: lane '${job}' does not provide all of ${JSON.stringify(b.needs)}`);

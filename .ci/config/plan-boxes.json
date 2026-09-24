@@ -981,6 +981,42 @@
       "open_sigs": [],
       "done_sigs": []
     },
+    "agent/plans/PLAN-retire-bash-oracles.A0.md": {
+      "status": "UNKNOWN",
+      "owner": "unowned",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 0,
+      "done": 0,
+      "open_sigs": [],
+      "done_sigs": []
+    },
+    "agent/plans/PLAN-retire-bash-oracles.md": {
+      "status": "approved",
+      "owner": "unowned",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 15,
+      "done": 0,
+      "open_sigs": [
+        "11d978d4",
+        "149372c9",
+        "169ff148",
+        "3d6bae40",
+        "4711b23b",
+        "c14e269f",
+        "c49d4542",
+        "ca00e010",
+        "d1884e0d",
+        "d6905e03",
+        "da8d5503",
+        "deedaf92",
+        "e8e6ee5e",
+        "f16cdba4",
+        "f2c1e8d4"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-review-red-stop-hook-check.md": {
       "status": "compacted",
       "owner": "unowned",

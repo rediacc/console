@@ -103,6 +103,7 @@ import subprocess
 import sys
 
 from rediacc_ci.core import common
+from rediacc_ci.deploy import transfer_retry
 
 # The twin's own name, carried in its three guard messages. A literal, because the bytes must survive the port.
 SELF = "promote-r2-to-stable-hotfix.sh"
@@ -155,7 +156,8 @@ REQUIRED_ENV: tuple[tuple[str, str], ...] = (
 
 # The three facts in the module docstring, as constants so a test can assert each by name instead of restating the sentence.
 PURGE_LIST_CONTAINS_DUPLICATES = True
-VACUITY_FLOOR_RUNS_AFTER_THE_UPLOAD = True
+# RULE T DELTA (2026-09-24): the twin counts AFTER uploading, so an empty download reached an upload that failed with aws's own "does not exist". The port counts first and uploads nothing from an empty stage.
+VACUITY_FLOOR_RUNS_AFTER_THE_UPLOAD = False
 STALE_TMP_IS_PROMOTED = True
 
 
@@ -204,6 +206,8 @@ def environment() -> dict[str, str]:
         "CLOUDFLARE_R2_ENDPOINT": os.environ.get("CLOUDFLARE_R2_ENDPOINT", ""),
         # `${CLOUDFLARE_ZONE_ID:-}` (twin :117): unset and empty are one argument.
         "CLOUDFLARE_ZONE_ID": os.environ.get("CLOUDFLARE_ZONE_ID", ""),
+        # Seconds between transfer retries; tests set 0. Not in the twin (Rule T retry, #4175e786).
+        "PROMOTE_RETRY_DELAY_S": os.environ.get("PROMOTE_RETRY_DELAY_S", "10"),
     }
 
 
@@ -231,7 +235,7 @@ def endpoint_args(endpoint: str) -> list[str]:
 
 
 def download_argv(dir_name: str, tmp: str, endpoint: str) -> list[str]:
-    """`aws s3 cp s3://<bucket>/<dir>/edge/ <tmp>/ $EP --recursive --quiet` (twin :68)."""
+    """`aws s3 cp s3://<bucket>/<dir>/edge/ <tmp>/ $EP --recursive --only-show-errors` (twin :68)."""
     return [
         "aws",
         "s3",
@@ -240,12 +244,12 @@ def download_argv(dir_name: str, tmp: str, endpoint: str) -> list[str]:
         tmp + "/",
         *endpoint_args(endpoint),
         "--recursive",
-        "--quiet",
+        "--only-show-errors",
     ]
 
 
 def upload_argv(dir_name: str, tmp: str, endpoint: str) -> list[str]:
-    """`aws s3 cp <tmp>/ s3://<bucket>/<dir>/stable/ $EP --recursive --quiet \
+    """`aws s3 cp <tmp>/ s3://<bucket>/<dir>/stable/ $EP --recursive --only-show-errors \
 --cache-control no-cache` (twin :69-70)."""
     return [
         "aws",
@@ -255,14 +259,14 @@ def upload_argv(dir_name: str, tmp: str, endpoint: str) -> list[str]:
         "s3://%s/%s/stable/" % (BUCKET, dir_name),
         *endpoint_args(endpoint),
         "--recursive",
-        "--quiet",
+        "--only-show-errors",
         "--cache-control",
         CC_MUTABLE,
     ]
 
 
 def fetch_argv(key: str, target: str, endpoint: str) -> list[str]:
-    """`aws s3 cp s3://<bucket>/<key> <target> $EP --quiet` (twin :90, :105)."""
+    """`aws s3 cp s3://<bucket>/<key> <target> $EP --only-show-errors` (twin :90, :105)."""
     return [
         "aws",
         "s3",
@@ -270,12 +274,12 @@ def fetch_argv(key: str, target: str, endpoint: str) -> list[str]:
         "s3://%s/%s" % (BUCKET, key),
         target,
         *endpoint_args(endpoint),
-        "--quiet",
+        "--only-show-errors",
     ]
 
 
 def put_argv(source: str, key: str, endpoint: str) -> list[str]:
-    """`aws s3 cp <source> s3://<bucket>/<key> $EP --quiet --cache-control no-cache` (twin :92-93, :110-111)."""
+    """`aws s3 cp <source> s3://<bucket>/<key> $EP --only-show-errors --cache-control no-cache` (twin :92-93, :110-111)."""
     return [
         "aws",
         "s3",
@@ -283,7 +287,7 @@ def put_argv(source: str, key: str, endpoint: str) -> list[str]:
         source,
         "s3://%s/%s" % (BUCKET, key),
         *endpoint_args(endpoint),
-        "--quiet",
+        "--only-show-errors",
         "--cache-control",
         CC_MUTABLE,
     ]
@@ -342,6 +346,13 @@ def _flush() -> None:
     sys.stderr.flush()
 
 
+def _run_retried(argv: list[str], what: str) -> int:
+    """`_run` with the shared bounded retry (transfer_retry.py, Rule T #4175e786)."""
+    return transfer_retry.retried(
+        lambda: _run(argv), what, SELF, float(environment()["PROMOTE_RETRY_DELAY_S"] or "0")
+    )
+
+
 def _run(argv: list[str], **kwargs) -> int:
     """One unguarded command with BOTH streams inherited, as the twin leaves them."""
     _flush()
@@ -373,13 +384,11 @@ def _promote_dirs(endpoint: str) -> list[str]:
         print("Promoting %s/edge/ -> %s/stable/" % (dir_name, dir_name))
         tmp = TMP_PREFIX + dir_name
 
-        status = _run(download_argv(dir_name, tmp, endpoint))
+        status = _run_retried(
+            download_argv(dir_name, tmp, endpoint), "download of %s/edge" % dir_name
+        )
         if status:
             raise BashExitError(status)
-        status = _run(upload_argv(dir_name, tmp, endpoint))
-        if status:
-            raise BashExitError(status)
-
         listing, count = _find_files(tmp)
         if count == 0:
             print(
@@ -388,6 +397,11 @@ def _promote_dirs(endpoint: str) -> list[str]:
                 file=sys.stderr,
             )
             raise BashExitError(1)
+        status = _run_retried(
+            upload_argv(dir_name, tmp, endpoint), "upload of %s/stable" % dir_name
+        )
+        if status:
+            raise BashExitError(status)
 
         urls += [channel_url(dir_name, strip_prefix(f, tmp + "/")) for f in read_lines(listing)]
 
@@ -403,14 +417,14 @@ def _rewrite_configs(endpoint: str) -> list[str]:
     """
     urls: list[str] = []
     for key in CONFIG_FILES:
-        status = _run(fetch_argv(key, CONFIG_SCRATCH, endpoint))
+        status = _run_retried(fetch_argv(key, CONFIG_SCRATCH, endpoint), "fetch of %s" % key)
         if status:
             raise BashExitError(status)
         _flush()
         status = common.sed_in_place([CONFIG_SED, CONFIG_SCRATCH])
         if status:
             raise BashExitError(status)
-        status = _run(put_argv(CONFIG_SCRATCH, key, endpoint))
+        status = _run_retried(put_argv(CONFIG_SCRATCH, key, endpoint), "put of %s" % key)
         if status:
             raise BashExitError(status)
         urls.append(key_url(key))
@@ -426,14 +440,14 @@ def _rebake_install_scripts(endpoint: str) -> list[str]:
     """
     urls: list[str] = []
     for key in INSTALL_FILES:
-        status = _run(fetch_argv(key, SCRIPT_SCRATCH, endpoint))
+        status = _run_retried(fetch_argv(key, SCRIPT_SCRATCH, endpoint), "fetch of %s" % key)
         if status:
             raise BashExitError(status)
         _flush()
         status = common.sed_in_place(["-e", INSTALL_SED[0], "-e", INSTALL_SED[1], SCRIPT_SCRATCH])
         if status:
             raise BashExitError(status)
-        status = _run(put_argv(SCRIPT_SCRATCH, key, endpoint))
+        status = _run_retried(put_argv(SCRIPT_SCRATCH, key, endpoint), "put of %s" % key)
         if status:
             raise BashExitError(status)
         urls.append(key_url(key))

@@ -3944,3 +3944,26 @@ and annotates a fired finding UNVERIFIED when its scope does not match that list
 
 Still open: `agent/plans/PLAN-staged-duplication-probe.md` (a pre-bash staged-files duplication probe). A quick Python port of `check-shape-duplication.ts` was rejected because `isSharedHelperCall` derives its helper names from the whole corpus, so a port would be a second implementation of one decision; a Plan agent is designing a mechanism that keeps the normalization in one
 place. An audit of the other stop-hook prompts for job-specific wording is in flight.
+
+## W7P5-b closes, real runs graduate, and the roster learns what a waiting agent looks like (2026-09-24)
+
+**W7P5-b is done for `account.sh`.** All 22 functions have a Python twin: 11 in `core/account.py` and 11 in the new `core/account_lifecycle.py` (`d099c620e`), proved by the stub-farm pair `w7p5b-account-lifecycle` (8 scenarios, 80 cases). The dev servers now start in their own process group (`account_spawn`, `.ci/lib/account.sh:74`) and `account_cleanup` kills the group, so a stop no longer orphans
+vite and astro. The state file stamps its writer (hostname plus pid namespace), and a stop refuses pids another writer recorded, because the host and the devbox share `.account-state`.
+
+**`check:ci-bash-lib-ported` holds the port** (`03e7bc862`). Every function in the nine bash libraries that have a Python twin (four under `.ci/lib`, five under `.ci/scripts/lib`) must map to a `def` in its modules, or sit in the shrink-only baseline `.ci/config/bash-lib-port-baseline.json` (59 gaps: devbox 39, common 11, toolchain 6, blocker-validator 2, service 1). A `.sh` added to either
+directory without an entry in `LIBS` is a finding. On the pre-port tree it reports the 11 then-missing account functions.
+
+**W7P5-a real runs.** The contained and Q tiers ran against throwaway substitutes: scratch buckets, scratch D1 databases, and tokens scoped to them and revoked on exit. Five M-live runs graduated after a pre-state check proved them no-ops: advance-contract-floor, mark-production, cleanup-channel-docker-tags, promote-docker-to-stable-hotfix, purge-media-cache. The gate reads 15 blocked, 33 ledgered, 26
+confirmed. The other twelve M-live runs are operator-approved and driven from the lead session, because the harness does not let a sub-agent take a relayed authorization as consent. Their run sheets are in `agent/plans/PLAN-w7p5a-real-run-dispatch.md:584`. The real `simulate-promotion` run found that an empty channel exited 1 silently under pipefail; both twins now reach the refusal (`98bf128e1`).
+
+**Temp directories.** `/tmp`, a tmpfs capped at 1,048,576 inodes, filled on 2026-09-24 and every Bash call failed. `.ci/rediacc_ci/runtmp.py` gives each suite one pid-stamped run directory, removed at exit and swept by the next run when the process was killed. `86848a2` moved 21 suites onto it. The remaining class (bash `mktemp` plus EXIT trap, `try/finally`-only modules) is worklist `#c0b06e4e`.
+
+**Push receipts judge the pushed tree.** `ci:quick --receipt-out` runs in a clean snapshot clone. The receipt records the tree at start and refuses if HEAD moved, and `block_unverified_push` reads carried reds from the pushed tree, not the working tree. With writers editing the shared tree, a working-tree receipt had both blocked clean pushes and hidden red ones.
+
+**Roster liveness** (`4ee524a1e`, `61ade0880`). An agent that ended its turn while its own background shell runs is WAITING, and the roster now counts it as live. `worker:queue` is a placeholder and owes no 20-minute status. A running workflow is judged by its agents' transcripts, because its own output file stays empty until it returns.
+
+**Bitwarden is the only secret source.** GitHub holds only `BWS_ACCESS_TOKEN`. `private/account/.env`, `.env.bench` and every example env file are deleted, and the token lives at `~/.config/rediacc/bws-access-token`. The R2 cleanup revoked six unreferenced tokens and narrowed `backup-s3-20260901T103133Z` to the eight `*-backups-*` buckets, verified by a signed list call per bucket.
+
+**In flight at this writing.**
+- The biome-only lint and TypeScript 7 migration: `agent/plans/PLAN-biome-only-lint.md`, Phase 1 running as a workflow.
+- The removal of cross-session messaging from the Stop hook: `agent/plans/PLAN-remove-cross-session-messaging.md`, Writer A running.

@@ -1,0 +1,114 @@
+path	lines	category	reason with file:line	twin	tests naming it
+.ci/scripts/lib/emit-advisory.sh	219	GOLDEN-THEN-DELETE	test_core_advisory.py tests TWIN; test_gate_emit_advisory.py tests bash; .ci/rediacc_ci/tests/test_core_advisory.py:TWIN declaration	-	advisory.py; test_core_advisory.py; test_gate_emit_advisory.py
+.ci/scripts/quality/check-profiler-coverage.sh	701	GOLDEN-THEN-DELETE	test_quality_profiler_coverage.py reads twin at test time; test_gate_profiler_coverage.py gates it	-	profiler_coverage.py; test_quality_profiler_coverage.py; test_gate_profiler_coverage.py
+.ci/scripts/quality/check-trap-registry.sh	780	GOLDEN-THEN-DELETE	test_quality_trap_registry.py TWIN constant; test_gate_trap_registry.py gates it	-	trap_registry.py; test_quality_trap_registry.py; test_gate_trap_registry.py
+.ci/scripts/test/lib/test-helpers.sh	302	GOLDEN-THEN-DELETE	Ported to harness.py; test_runtmp.py names it; test_gate_media_helpers.py runs bash -c source; workflow_rule.py ported from it	-	harness.py; test_runtmp.py; test_gate_media_helpers.py; workflow_rule.py
+.ci/scripts/test/lib/workflow-rule.sh	27	GOLDEN-THEN-DELETE	Ported to workflow_rule.py; test_gate_workflow_inline.py tests both	-	workflow_rule.py; test_gate_workflow_inline.py
+.ci/scripts/test/manual/probe-receipt-stability.sh	42	GOLDEN-THEN-DELETE	allowlist entry dead-bash-allowlist.golden; test_gate_ci_trace_branch.py	-	dead-bash-allowlist.golden
+.ci/scripts/test/profiler-control.sh	280	GOLDEN-THEN-DELETE	test_ci_profiler_sampler_linux.py notes 14 invocation sites, twin still exists	-	test_ci_profiler_sampler_linux.py
+.ci/scripts/test/test-install-sh-config.sh	180	GOLDEN-THEN-DELETE	test_release_install_sh_config_check.py differential with TWIN	-	install_sh_config_check.py; test_release_install_sh_config_check.py
+.ci/scripts/test/test-rdc-sh-env.sh	222	GOLDEN-THEN-DELETE	test_security_rdc_sh_env_check.py differential with TWIN	-	rdc_sh_env_check.py; test_security_rdc_sh_env_check.py
+.ci/media/bridge.sh	180	PORT	has twin .ci/rediacc_ci/setup/bridge.py; sources local-common.sh	.ci/rediacc_ci/setup/bridge.py	
+.ci/media/coverage.sh	315	PORT	library functions; sourced by ci jobs; can be ported	-	
+.ci/media/cuda.sh	43	PORT	library; sourced by media jobs	-	
+.ci/media/media-entry.sh	194	PORT	router sourcing local-common.sh; dispatches to library functions	-	
+.ci/media/pool.sh	149	PORT	library functions; sourced	-	
+.ci/media/portable.sh	168	PORT	library for media setup	-	
+.ci/media/r2.sh	44	PORT	heavily referenced (154 refs); library functions	-	
+.ci/media/teaser.sh	181	PORT	dispatches to media functions; can be ported	-	
+.ci/media/tools/run-in-tts.sh	118	PORT	runs in TTS container; ported to Python; no Python fork needed	-	
+.ci/media/tools/upload-r2.sh	187	PORT	standalone tool; can be ported	-	
+.ci/media/tutorials.sh	845	PORT	dispatches tutorials; can be ported	-	
+.ci/media/venv.sh	152	PORT	library for venv setup	-	
+.ci/media/verify.sh	596	PORT	library; heavily tested	-	
+.ci/breakpoint/lib/breakpoint-blocker.sh	105	PORT	library; sourced by breakpoint scripts	-	
+.ci/breakpoint/lib/breakpoint-common.sh	436	PORT	library functions; sourced by breakpoint scripts	-	
+.ci/breakpoint/scripts/check-breakpoint-drift.sh	514	PORT	runs in breakpoint workflow; sources libraries	-	
+.ci/breakpoint/scripts/derive-descriptor.sh	107	PORT	runs in breakpoint workflow	-	
+.ci/breakpoint/scripts/desktop-ctl.sh	316	PORT	runs in breakpoint workflow	-	
+.ci/breakpoint/scripts/hold-breakpoint.sh	87	PORT	runs in breakpoint workflow	-	
+.ci/breakpoint/scripts/install-cloudflared.sh	90	PORT	runs in breakpoint workflow	-	
+.ci/breakpoint/scripts/install-extra-packages.sh	76	PORT	runs in breakpoint workflow	-	
+.ci/breakpoint/scripts/install-tmate.sh	88	PORT	runs in breakpoint workflow	-	
+.ci/breakpoint/scripts/install-vnc-desktop.sh	96	PORT	runs in breakpoint workflow	-	
+.ci/breakpoint/scripts/preflight-breakpoint.sh	159	PORT	runs in breakpoint workflow	-	
+.ci/breakpoint/scripts/publish-endpoints.sh	216	PORT	runs in breakpoint workflow	-	
+.ci/breakpoint/scripts/pull-service-images.sh	64	PORT	runs in breakpoint workflow	-	
+.ci/breakpoint/scripts/reap-breakpoint-orphans.sh	605	PORT	runs in breakpoint workflow	-	
+.ci/breakpoint/scripts/resolve-recipient.sh	56	PORT	runs in breakpoint workflow	-	
+.ci/breakpoint/scripts/select-mode.sh	119	PORT	runs in breakpoint workflow	-	
+.ci/breakpoint/scripts/start-origin.sh	255	PORT	runs in breakpoint workflow	-	
+.ci/breakpoint/scripts/start-shell.sh	108	PORT	runs in breakpoint workflow	-	
+.ci/breakpoint/scripts/start-tunnel.sh	369	PORT	runs in breakpoint workflow	-	
+.ci/breakpoint/scripts/stop-breakpoint.sh	276	PORT	runs in breakpoint workflow	-	
+.ci/breakpoint/scripts/sync-breakpoint.sh	313	PORT	runs in breakpoint workflow	-	
+.ci/breakpoint/scripts/test-breakpoint-lifecycle.sh	150	PORT	runs in breakpoint workflow	-	
+.ci/breakpoint/versions.sh	66	PORT	library sourced by breakpoint	-	
+.ci/tutorials/lib/stage-branching.sh	101	KEEP-BASH	tutorial library; bash semantics for stage recording	-	
+.ci/tutorials/lib/stage-demo-pgadmin.sh	55	KEEP-BASH	tutorial library; bash semantics for stage recording	-	
+.ci/tutorials/lib/stage-my-app.sh	28	KEEP-BASH	tutorial library; bash semantics for stage recording	-	
+.ci/tutorials/lib/tutorial-helpers.sh	380	KEEP-BASH	tutorial helper library; bash used for terminal recording (.ci/tutorials/record.sh:9-51)	-	
+.ci/tutorials/record.sh	130	KEEP-BASH	asciinema recorder; bash IS the user-visible content being recorded (.ci/media/tutorials.sh and profiler-probe.yml invoke it)	-	
+.ci/tutorials/run-sequence.sh	137	KEEP-BASH	tutorial runner; globbing and sourcing tutorial files	-	
+.ci/tutorials/tutorial-add-server.sh	51	KEEP-BASH	tutorial script; user-visible recorded content	-	
+.ci/tutorials/tutorial-backup-restore.sh	159	KEEP-BASH	tutorial script; user-visible recorded content	-	
+.ci/tutorials/tutorial-branching.sh	133	KEEP-BASH	tutorial script; user-visible recorded content	-	
+.ci/tutorials/tutorial-create-repo.sh	58	KEEP-BASH	tutorial script; user-visible recorded content	-	
+.ci/tutorials/tutorial-delta-transfer.sh	90	KEEP-BASH	tutorial script; user-visible recorded content	-	
+.ci/tutorials/tutorial-deploy-app.sh	74	KEEP-BASH	tutorial script; user-visible recorded content	-	
+.ci/tutorials/tutorial-fork-isolation.sh	74	KEEP-BASH	tutorial script; user-visible recorded content	-	
+.ci/tutorials/tutorial-forking.sh	79	KEEP-BASH	tutorial script; user-visible recorded content	-	
+.ci/tutorials/tutorial-installation.sh	31	KEEP-BASH	tutorial script; user-visible recorded content	-	
+.ci/tutorials/tutorial-live-migration.sh	98	KEEP-BASH	tutorial script; user-visible recorded content	-	
+.ci/tutorials/tutorial-managing-secrets.sh	110	KEEP-BASH	tutorial script; user-visible recorded content	-	
+.ci/tutorials/tutorial-monitoring.sh	71	KEEP-BASH	tutorial script; user-visible recorded content	-	
+.ci/tutorials/tutorial-networking.sh	80	KEEP-BASH	tutorial script; user-visible recorded content	-	
+.ci/tutorials/tutorial-production-mode.sh	67	KEEP-BASH	tutorial script; user-visible recorded content	-	
+.ci/tutorials/tutorial-ssh-keys.sh	55	KEEP-BASH	tutorial script; user-visible recorded content	-	
+.ci/tutorials/tutorial-storage-management.sh	90	KEEP-BASH	tutorial script; user-visible recorded content	-	
+.ci/tutorials/tutorial-vscode-browser.sh	90	KEEP-BASH	tutorial script; user-visible recorded content	-	
+.ci/tutorials/tutorial-work-with-repo.sh	76	KEEP-BASH	tutorial script; user-visible recorded content	-	
+scripts/drills/backup.sh	1505	PORT	Out-of-policy script; plan B5 ports drills to test battery on ops VMs	-	
+scripts/drills/lib.sh	842	PORT	Shared drills library; plan B5 ports	-	
+scripts/drills/license.sh	1071	PORT	Out-of-policy script; plan B5 ports	-	
+scripts/drills/transfer.sh	402	PORT	Out-of-policy script; plan B5 ports	-	
+scripts/drills/universe.sh	307	PORT	Out-of-policy script; plan B5 ports	-	
+scripts/ops/apply-cf-redirect-rules.sh	149	PORT	Out-of-policy script; plan B5 ports	-	
+scripts/ops/backup-cutover-preflight.sh	204	PORT	Out-of-policy script; plan B5 ports	-	
+scripts/ops/backup-d1.sh	148	PORT	Out-of-policy script; plan B5 ports	-	
+scripts/ops/deploy-bench.sh	293	PORT	Out-of-policy script; plan B5 ports	-	
+scripts/ops/lib/cf-auth.sh	229	PORT	Out-of-policy script; plan B5 ports	-	
+scripts/ops/linode-cluster-validation.sh	248	PORT	Out-of-policy script; plan B5 ports	-	
+scripts/ops/r2-oneshot-scrub.sh	502	PORT	Out-of-policy script; plan B5 ports	-	
+scripts/ops/reset-bench.sh	198	PORT	Out-of-policy script; plan B5 ports	-	
+scripts/ops/scrub-sentinel.sh	133	PORT	Out-of-policy script; plan B5 ports	-	
+.ci/legacy/run-legacy.sh	647	PORT	carried	-	
+.ci/scripts/ci/profiler/sampler-linux.sh	685	PORT	carried	-	
+.ci/scripts/quality/check-submodule-branches.sh	597	PORT	carried	-	
+.ci/scripts/security/check-workflow-gates.sh	1189	PORT	carried	-	
+.ci/scripts/test/gates/test-blocker-golden-corpus.sh	436	PORT	carried	-	
+.ci/scripts/test/gates/test-media-r2.sh	162	PORT	carried	-	
+.ci/scripts/test/gates/test-run-sh.sh	591	PORT	carried	-	
+.ci/scripts/test/gates/test-runner-advice.sh	970	PORT	carried	-	
+.ci/scripts/test/proxies/proxy-ensure-nfpm.sh	170	PORT	carried	-	
+.ci/scripts/test/proxies/proxy-go-unit.sh	178	PORT	carried	-	
+.ci/scripts/test/proxies/proxy-license-e2e.sh	115	PORT	carried	-	
+.ci/scripts/test/proxies/proxy-linux-packages.sh	140	PORT	carried	-	
+.ci/scripts/test/proxies/proxy-ops-host-check.sh	221	PORT	carried	-	
+.ci/scripts/test/proxies/proxy-rdc-update.sh	126	PORT	carried	-	
+.ci/scripts/test/proxies/proxy-unit-tests.sh	143	PORT	carried	-	
+.ci/scripts/test/run-account-e2e.sh	246	PORT	carried	-	
+.ci/scripts/test/run-e2e.sh	187	PORT	carried	-	
+.ci/scripts/test/run-unit.sh	58	PORT	carried	-	
+.ci/scripts/test/seed-smoke-test.sh	106	PORT	carried	-	
+.ci/scripts/test/start-account-for-e2e.sh	238	PORT	carried	-	
+.ci/scripts/test/test-install-methods.sh	1374	PORT	carried	-	
+.ci/scripts/test/test-linux-packages.sh	762	PORT	carried	-	
+.ci/scripts/test/test-rdc-update.sh	489	PORT	carried	-	
+scripts/dev/worktree.sh	807	PORT	carried	-	
+
+TOTALS BY CATEGORY:
+GOLDEN-THEN-DELETE	2753	9 files
+KEEP-BASH	2317	24 files
+PORT	24711	74 files
+TOTAL	29781	107 files

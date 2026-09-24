@@ -32,6 +32,7 @@
 # counts the caller, so it reads one too high) but it costs a wrong number
 # rather than an unbounded wait, and blocking every diagnostic pgrep would be
 # the over-matching this repo has paid for repeatedly. The message says so.
+source "$(dirname "${BASH_SOURCE[0]}")/lib/command-scan.sh"
 CMD=$(jq -r '.tool_input.command' 2>/dev/null)
 [ -z "$CMD" ] && exit 0
 
@@ -53,11 +54,18 @@ CMD=$(jq -r '.tool_input.command' 2>/dev/null)
 # "TRAPS.md explains why until pgrep -xf never exits" refused as if it were the
 # loop itself. This narrows PROSE only -- the real loop, at line start or after
 # a separator, is still caught by the control below.
-printf '%s' "$CMD" | grep -qE '(^|[;&|(]|&&|\|\|)[[:space:]]*(until|while)[^;]*pgrep[[:space:]]+-[a-zA-Z]*f' || exit 0
+# A HEREDOC BODY IS TEXT, NOT A LOOP THIS SHELL RUNS, and a script written through one runs
+# under its own command line, which does not carry the body.
+NOHD=$(printf '%s' "$CMD" | _hook_strip_heredocs)
+printf '%s' "$NOHD" | grep -qE '(^|[;&|(]|&&|\|\|)[[:space:]]*(until|while)[^;]*pgrep[[:space:]]+-[a-zA-Z]*f' || exit 0
 
 # The pattern is the first argument after the flag cluster: quoted either way,
 # or bare up to the next whitespace.
-PATS=$(printf '%s' "$CMD" |
+# ONLY A PATTERN IN A LOOP CONDITION IS JUDGED. Every `pgrep -f` in the command used to be,
+# so a one-shot bracketed diagnostic after a correct wait loop was refused whenever its
+# literal text appeared elsewhere in the command (2026-09-24, #165e1017).
+PATS=$(printf '%s' "$NOHD" |
+    grep -oE "(^|[;&|(]|&&|\|\|)[[:space:]]*(until|while)[^;]*pgrep[[:space:]]+-[a-zA-Z]*f[[:space:]]+('[^']*'|\"[^\"]*\"|[^[:space:];|&)]+)" |
     grep -oE "pgrep[[:space:]]+-[a-zA-Z]*f[[:space:]]+('[^']*'|\"[^\"]*\"|[^[:space:];|&)]+)" |
     sed -E "s/^pgrep[[:space:]]+-[a-zA-Z]*f[[:space:]]+//; s/^'(.*)'$/\1/; s/^\"(.*)\"$/\1/")
 

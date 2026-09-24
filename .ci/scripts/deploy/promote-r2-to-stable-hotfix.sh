@@ -59,8 +59,8 @@ PURGE_URLS=()
 for dir in cli apt rpm apk archlinux; do
     echo "Promoting ${dir}/edge/ -> ${dir}/stable/"
     TMP="/tmp/promote-${dir}"
-    aws s3 cp "s3://${BUCKET}/${dir}/edge/" "$TMP/" $EP --recursive --quiet
-    aws s3 cp "$TMP/" "s3://${BUCKET}/${dir}/stable/" $EP --recursive --quiet \
+    aws s3 cp "s3://${BUCKET}/${dir}/edge/" "$TMP/" $EP --recursive --only-show-errors
+    aws s3 cp "$TMP/" "s3://${BUCKET}/${dir}/stable/" $EP --recursive --only-show-errors \
         --cache-control "$CC_MUTABLE"
     # Purge every uploaded URL to flush any previously-cached body
     # under the same filename; channel paths reuse filenames across
@@ -84,9 +84,9 @@ done
 
 # Fix channel references in config files (mutable channel pointers).
 for file in rpm/stable/rediacc.repo archlinux/stable/rediacc.conf; do
-    aws s3 cp "s3://${BUCKET}/${file}" /tmp/config $EP --quiet
+    aws s3 cp "s3://${BUCKET}/${file}" /tmp/config $EP --only-show-errors
     sed_in_place 's|/edge/|/stable/|g' /tmp/config
-    aws s3 cp /tmp/config "s3://${BUCKET}/${file}" $EP --quiet \
+    aws s3 cp /tmp/config "s3://${BUCKET}/${file}" $EP --only-show-errors \
         --cache-control "$CC_MUTABLE"
     PURGE_URLS+=("https://releases.rediacc.com/${file}")
 done
@@ -96,12 +96,12 @@ done
 # cli/stable/. Rewrite back to stable. Channel-pointer scripts
 # are mutable.
 for file in cli/stable/install.sh cli/stable/install.ps1; do
-    aws s3 cp "s3://${BUCKET}/${file}" /tmp/script $EP --quiet
+    aws s3 cp "s3://${BUCKET}/${file}" /tmp/script $EP --only-show-errors
     sed_in_place \
         -e 's|REDIACC_CHANNEL:-edge|REDIACC_CHANNEL:-stable|g' \
         -e 's|} else { "edge" }|} else { "stable" }|g' \
         /tmp/script
-    aws s3 cp /tmp/script "s3://${BUCKET}/${file}" $EP --quiet \
+    aws s3 cp /tmp/script "s3://${BUCKET}/${file}" $EP --only-show-errors \
         --cache-control "$CC_MUTABLE"
     PURGE_URLS+=("https://releases.rediacc.com/${file}")
 done

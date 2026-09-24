@@ -207,7 +207,7 @@ def sync_argv(fmt: str, channel: str, endpoint: str) -> list[str]:
         CC_MUTABLE,
         "--endpoint-url",
         endpoint,
-        "--quiet",
+        "--only-show-errors",
     ]
 
 
@@ -223,7 +223,7 @@ def cp_argv(source: str, channel: str, name: str, endpoint: str) -> list[str]:
         CC_MUTABLE,
         "--endpoint-url",
         endpoint,
-        "--quiet",
+        "--only-show-errors",
     ]
 
 

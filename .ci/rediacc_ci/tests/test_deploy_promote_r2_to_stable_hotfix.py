@@ -444,23 +444,31 @@ def test_defect_the_vacuity_floor_runs_after_the_upload(tmp_path) -> None:
 
     Order is download, upload, then count. With `cli/edge/` empty the download creates nothing, so it is the UPLOAD that fails first and the floor's own sentence never prints. The floor fires only when `$TMP` exists and is empty, which the previous test shows is a real state. Both halves are driven and both agree.
     """
-    assert port.VACUITY_FLOOR_RUNS_AFTER_THE_UPLOAD is True
+    assert port.VACUITY_FLOOR_RUNS_AFTER_THE_UPLOAD is False  # Rule T delta: the port counts first
 
     empty = {k: v for k, v in DEFAULT_BUCKET.items() if not k.startswith("cli/edge/")}
 
-    # (a) no leftover: aws refuses the upload, the floor never speaks.
-    _root, old, new, old_calls, new_calls = run_both(tmp_path / "a", empty)
-    _agree(old, new, "empty-no-leftover", old_calls, new_calls)
-    assert old.returncode == 1
+    # (a) no leftover: aws refuses the TWIN's upload and its floor never speaks; the port refuses by name before uploading.
+    _root, old, new, old_calls, new_calls = run_both(
+        tmp_path / "a", empty, PROMOTE_RETRY_DELAY_S="0"
+    )
+    assert old.returncode == new.returncode == 1
     assert "VACUOUS" not in old.stderr, old.stderr
     assert "does not exist" in old.stderr, old.stderr
+    assert "VACUOUS: cli staged 0 file(s)" in new.stderr, new.stderr
+    assert "cli/stable/" not in new_calls, new_calls
 
     # (b) an empty leftover: the upload succeeds having moved nothing, and the floor is what stops the run.
     def plant() -> None:
         os.makedirs(port.TMP_PREFIX + "cli", exist_ok=True)
 
     _root, old, new, old_calls, new_calls = run_both(tmp_path / "b", empty, pre=plant)
-    _agree(old, new, "empty-with-leftover", old_calls, new_calls)
+    # Same verdict and words; only the port skips the twin's empty upload.
+    assert new.returncode == old.returncode
+    assert new.stderr == old.stderr
+    assert new.stdout == old.stdout
+    assert "cli/stable/" in old_calls, old_calls
+    assert "cli/stable/" not in new_calls, new_calls
     assert old.returncode == 1
     assert old.stderr == (
         "VACUOUS: cli staged 0 file(s) for promotion; refusing to report a "
@@ -527,16 +535,30 @@ def test_a_missing_aws_refuses_before_the_variable_guards(tmp_path) -> None:
     assert old.stderr == "✗ Required command 'aws' is not available\n", repr(old.stderr)
 
 
-def test_an_aws_failure_mid_run_stops_with_awss_status(tmp_path) -> None:
-    """UNGUARDED UNDER `set -e`: the failing call's own stderr is the whole explanation, and the promotion is left half-done."""
-    _root, old, new, old_calls, new_calls = run_both(tmp_path, FAKE_AWS_FAIL_ON_CALL="4")
-    _agree(old, new, "aws-fails", old_calls, new_calls)
+def test_one_transient_aws_failure_stops_the_twin_but_the_port_retries_through_it(tmp_path) -> None:
+    """RULE T DELTA (#4175e786). Call 4 fails once. The twin, unguarded under `set -e`, stops half-done; the port repeats the idempotent transfer, says so on stderr, and completes."""
+    _root, old, new, old_calls, _new_calls = run_both(
+        tmp_path, FAKE_AWS_FAIL_ON_CALL="4", PROMOTE_RETRY_DELAY_S="0"
+    )
     assert old.returncode == 1
     assert old.stderr == "fatal error: An error occurred (AccessDenied)\n"
     assert old.stdout == (
         "Promoting cli/edge/ -> cli/stable/\nPromoting apt/edge/ -> apt/stable/\n"
     ), old.stdout
     assert "curl" not in old_calls, "a failed promotion still purged"
+    assert new.returncode == 0, new.stderr
+    assert "failed (exit 1), retrying (2/3)" in new.stderr, new.stderr
+
+
+def test_a_persistent_aws_failure_stops_both_sides(tmp_path) -> None:
+    """A failure the retry cannot outlast still stops the port, after three tries, with aws's status and nothing purged."""
+    _root, old, new, old_calls, new_calls = run_both(
+        tmp_path, FAKE_AWS_RC="1", PROMOTE_RETRY_DELAY_S="0"
+    )
+    assert old.returncode == new.returncode == 1
+    assert new.stderr.count("retrying (") == 2, new.stderr
+    assert "curl" not in old_calls
+    assert "curl" not in new_calls
 
 
 def test_an_unset_zone_becomes_an_empty_argument_and_the_purge_refuses(tmp_path) -> None:
@@ -572,9 +594,9 @@ def test_planted_defect_is_caught_only_by_the_call_log(tmp_path) -> None:
     target = root / ".ci" / "rediacc_ci" / "deploy" / PORT_FILE.name
     source = target.read_text(encoding="utf-8")
     plant = source.replace(
-        '        "--recursive",\n        "--quiet",\n        "--cache-control",\n'
+        '        "--recursive",\n        "--only-show-errors",\n        "--cache-control",\n'
         "        CC_MUTABLE,\n",
-        '        "--recursive",\n        "--quiet",\n',
+        '        "--recursive",\n        "--only-show-errors",\n',
     )
     assert plant != source, "the plant did not apply; the control is broken, not the gate"
     target.write_text(plant, encoding="utf-8")
@@ -619,7 +641,7 @@ def test_the_argv_builders_carry_the_twins_flags_in_the_twins_order() -> None:
         "--endpoint-url",
         ep,
         "--recursive",
-        "--quiet",
+        "--only-show-errors",
     ]
     assert port.upload_argv("cli", "/tmp/promote-cli", ep)[-2:] == ["--cache-control", "no-cache"]
     assert port.fetch_argv("rpm/stable/rediacc.repo", "/tmp/config", ep)[3] == (
@@ -658,6 +680,7 @@ def test_every_variable_is_read_with_a_literal_os_environ_get() -> None:
         "CLOUDFLARE_R2_SECRET_ACCESS_KEY",
         "CLOUDFLARE_R2_ENDPOINT",
         "CLOUDFLARE_ZONE_ID",
+        "PROMOTE_RETRY_DELAY_S",
     }
     for name in names:
         assert 'os.environ.get("%s"' % name in source, name

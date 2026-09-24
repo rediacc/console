@@ -273,6 +273,7 @@
       "CLOUDFLARE_API_TOKEN"
     ],
     ".ci/rediacc_ci/deploy/deploy_proxy.py": [
+      "ACCOUNT_ED25519_PUBLIC_KEY",
       "CLOUDFLARE_API_TOKEN"
     ],
     ".ci/rediacc_ci/deploy/deploy_www.py": [
@@ -284,13 +285,15 @@
       "AWS_SECRET_ACCESS_KEY",
       "CLOUDFLARE_R2_ENDPOINT",
       "CLOUDFLARE_ZONE_ID",
-      "EDGE_VERSION"
+      "EDGE_VERSION",
+      "PROMOTE_RETRY_DELAY_S"
     ],
     ".ci/rediacc_ci/deploy/promote_r2_to_stable_hotfix.py": [
       "CLOUDFLARE_R2_ACCESS_KEY_ID",
       "CLOUDFLARE_R2_ENDPOINT",
       "CLOUDFLARE_R2_SECRET_ACCESS_KEY",
-      "CLOUDFLARE_ZONE_ID"
+      "CLOUDFLARE_ZONE_ID",
+      "PROMOTE_RETRY_DELAY_S"
     ],
     ".ci/rediacc_ci/deploy/resolve_account_deploy_config.py": [
       "*name",
@@ -360,6 +363,12 @@
       "GITHUB_RUN_ATTEMPT",
       "GITHUB_RUN_ID",
       "GITHUB_WORKSPACE"
+    ],
+    ".ci/rediacc_ci/deploy/turnstile_drift.py": [
+      "CLOUDFLARE_ACCOUNT_ID",
+      "CLOUDFLARE_API_TOKEN",
+      "CLOUDFLARE_TURNSTILE_SECRET_KEY",
+      "TURNSTILE_SITE_KEY"
     ],
     ".ci/rediacc_ci/deploy/upload_to_r2.py": [
       "CLOUDFLARE_R2_ACCESS_KEY_ID",

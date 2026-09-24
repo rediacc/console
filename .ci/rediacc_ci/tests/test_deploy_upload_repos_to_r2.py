@@ -265,14 +265,14 @@ def test_a_full_upload_is_pinned_call_by_call(tmp_path: pathlib.Path) -> None:
     head, _sep, purge = old_calls.partition("curl\t")
     assert head == (
         "aws\ts3\tsync\tdist/repos/apt\ts3://rediacc-releases/apt/edge/\t"
-        "--cache-control\tno-cache\t--endpoint-url\thttps://r2.example.invalid\t--quiet\n"
+        "--cache-control\tno-cache\t--endpoint-url\thttps://r2.example.invalid\t--only-show-errors\n"
         "aws\ts3\tsync\tdist/repos/apk\ts3://rediacc-releases/apk/edge/\t"
-        "--cache-control\tno-cache\t--endpoint-url\thttps://r2.example.invalid\t--quiet\n"
+        "--cache-control\tno-cache\t--endpoint-url\thttps://r2.example.invalid\t--only-show-errors\n"
         "aws\ts3\tcp\t<tmp>\ts3://rediacc-releases/cli/edge/install.sh\t"
-        "--cache-control\tno-cache\t--endpoint-url\thttps://r2.example.invalid\t--quiet\n"
+        "--cache-control\tno-cache\t--endpoint-url\thttps://r2.example.invalid\t--only-show-errors\n"
         'CONTENT<<<#!/bin/sh\n: "${REDIACC_CHANNEL:-edge}"\n>>>\n'
         "aws\ts3\tcp\t<tmp>\ts3://rediacc-releases/cli/edge/install.ps1\t"
-        "--cache-control\tno-cache\t--endpoint-url\thttps://r2.example.invalid\t--quiet\n"
+        "--cache-control\tno-cache\t--endpoint-url\thttps://r2.example.invalid\t--only-show-errors\n"
         'CONTENT<<<$c = if ($e) { "edge" } else { "edge" }\n>>>\n'
     )
     argv = purge.rstrip("\n").split("\t")
@@ -535,7 +535,7 @@ def test_pure_helpers() -> None:
         "no-cache",
         "--endpoint-url",
         "https://e",
-        "--quiet",
+        "--only-show-errors",
     ]
     assert port.cp_argv("/tmp/x", "edge", "install.sh", "https://e")[4] == (
         "s3://rediacc-releases/cli/edge/install.sh"
