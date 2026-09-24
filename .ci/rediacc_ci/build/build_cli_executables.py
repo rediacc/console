@@ -348,7 +348,7 @@ def require_file(path: str) -> None:
 def _exec_failure(command: str, line: int) -> tuple[str, int]:
     """bash's OWN diagnostic when it cannot execute something, and its status.
 
-    Two distinct shapes, and which one you get depends on the command WORD, not on the reason:
+    Two distinct shapes, and which one bash prints depends on the command WORD, not on the reason:
 
         strip                 -> `<$0>: line N: strip: command not found`, 127
         /path/that/is/absent  -> `<$0>: line N: /path: No such file or directory`, 127
@@ -371,6 +371,9 @@ def _status(argv: list[str], line: int, **kw) -> int:
     """
     sys.stdout.flush()
     sys.stderr.flush()
+    # WINDOWS CANNOT EXEC A `.sh`. CreateProcess has no shebang, so on the win-x64/win-arm64 legs `prepare-cli-assets.sh` raised OSError and this function reported bash's rc 127 "command not found" for a script that exists (run 35993423259, 2026-09-24). The twin ran under Git Bash, which reads the shebang itself; handing the script to `bash` explicitly is the same execution. POSIX keeps the direct exec, so the differential's argv is unchanged. `bash` is resolved through PATH with `shutil.which`, never passed bare: CreateProcess searches System32 BEFORE PATH, so a bare `bash` can start the WSL launcher instead of the Git Bash this step runs under.
+    if os.name == "nt" and argv and argv[0].endswith(".sh"):
+        argv = [shutil.which("bash") or "bash", *argv]
     try:
         return subprocess.run(argv, check=False, **kw).returncode
     except OSError:
