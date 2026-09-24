@@ -1,7 +1,6 @@
 """Where a plan LIVES, and when it goes. The library half of `check:ci-plan-folders`.
 
-WHY A FOLDER AT ALL. `agent/` held 103 `PLAN-*.md` at its root with no rule about where a plan sits or when it leaves, so the only lifecycle any plan had was the 33-day housekeeping clock and the compaction door. That clock answers "is this record stale"; it never answered "is this directory still a place a reader can find anything". The operator's ruling of 2026-09-21 is that the
-answer must be structural and enforced for the CLASS rather than tidied for today's instances.
+WHY A FOLDER AT ALL. `agent/` held 103 `PLAN-*.md` at its root with no rule about where a plan sits or when it leaves, so the only lifecycle any plan had was the 33-day housekeeping clock and the compaction door. That clock answers "is this record stale"; it never answered "is this directory still a place a reader can find anything". The operator's ruling of 2026-09-21 is that the answer must be structural and enforced for the CLASS rather than tidied for today's instances.
 
 THE SHAPE, and every rule below is a consequence of it:
 
@@ -27,11 +26,9 @@ TWO CLOCKS, AND NEITHER OF THEM IS `git log` ALONE.
     PRE-move committer date, and taking the older of the two means neither a
     move nor a re-write of the header can make a plan younger.
 
-EXPIRY DELETES THE FILE AND KEEPS A TOMBSTONE. The row carries the title, both dates and the git blob id of the full text, and lives in `agent/INDEX.md` under its own section, which is the file `check_plan_record.py` already renders and compares for byte equality. A tombstone is revivable from the blob, so expiry loses no text; it loses a
-directory entry nobody was reading.
+EXPIRY DELETES THE FILE AND KEEPS A TOMBSTONE. The row carries the title, both dates and the git blob id of the full text, and lives in `agent/INDEX.md` under its own section, which is the file `check_plan_record.py` already renders and compares for byte equality. A tombstone is revivable from the blob, so expiry loses no text; it loses a directory entry nobody was reading.
 
-THE PURE CORE IS PURE ON PURPOSE. `parse_plan`, `classify`, `folder_for`, `retention_days` and every `findings_*` function take data and return data: no git, no filesystem, no clock. That is what lets the gate's controls PLANT a defect into fixture TEXT and assert the finding appears, rather than staging a git repository per control. The impure half is three
-functions at the bottom, each of which does one thing and is named for it.
+THE PURE CORE IS PURE ON PURPOSE. `parse_plan`, `classify`, `folder_for`, `retention_days` and every `findings_*` function take data and return data: no git, no filesystem, no clock. That is what lets the gate's controls PLANT a defect into fixture TEXT and assert the finding appears, rather than staging a git repository per control. The impure half is three functions at the bottom, each of which does one thing and is named for it.
 """
 
 import dataclasses
@@ -282,9 +279,7 @@ def looks_like_stub(probe: str) -> bool:
 def moved_from(root, rel: str) -> str:
     """The path `rel` was moved FROM, proved by the stub left behind, or "".
 
-    Shared by every consumer that must not double-count a move as new content: `check_plan_citations.py`'s `carried_lines` and `check_plan_boxes.py`'s `_added_plans` both need this, because a moved plan is NEVER a git
-    rename. `--move` leaves a stub at the old path rather than deleting it, so git sees a MODIFY at the old path and an ADD at the new one, at any similarity threshold -- there is no delete for rename detection to
-    pair against. The stub is read rather than inferred from the basename, so a plan that merely shares a name with something at the legacy path proves nothing here.
+    Shared by every consumer that must not double-count a move as new content: `check_plan_citations.py`'s `carried_lines` and `check_plan_boxes.py`'s `_added_plans` both need this, because a moved plan is NEVER a git rename. `--move` leaves a stub at the old path rather than deleting it, so git sees a MODIFY at the old path and an ADD at the new one, at any similarity threshold -- there is no delete for rename detection to pair against. The stub is read rather than inferred from the basename, so a plan that merely shares a name with something at the legacy path proves nothing here.
     """
     name = rel.rsplit("/", 1)[-1]
     if not is_plan_path(rel) or folder_of(rel) == AGENT_DIR:
@@ -770,8 +765,7 @@ def ledger_rows(root: pathlib.Path) -> dict:
 def needs_git_dates(plan: Plan) -> bool:
     """Whether a plan's verdict depends on git at all.
 
-    ONE `git log` PER PLAN IS THE COST, and it is the whole runtime of this gate: 103 subprocesses is five seconds where the verdict needs twelve of them. A backlog plan needs the last-commit half of its 90-day clock, a plan in a terminal folder needs the first-commit half of F6, and nothing else in the file reads either date. Asking here rather than fetching unconditionally is
-    not a micro-optimisation: a gate slow enough to be moved into a nightly lane is a gate that stops being read on the change that breaks it.
+    ONE `git log` PER PLAN IS THE COST, and it is the whole runtime of this gate: 103 subprocesses is five seconds where the verdict needs twelve of them. A backlog plan needs the last-commit half of its 90-day clock, a plan in a terminal folder needs the first-commit half of F6, and nothing else in the file reads either date. Asking here rather than fetching unconditionally is not a micro-optimisation: a gate slow enough to be moved into a nightly lane is a gate that stops being read on the change that breaks it.
     """
     return classify(plan) == STATE_BACKLOG or folder_of(plan.rel) in TERMINAL_DIRS
 

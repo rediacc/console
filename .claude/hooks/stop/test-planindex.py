@@ -361,7 +361,7 @@ t.close()
 
 # == 8. BIG PIECES: derive the mark, do not hand-maintain it ==
 
-# Six plans, ranked by open count: 20, 15, 15, 12, 3, 1 (a sixth carries no boxes at all). BIG_TOP_N=5 finds the 5th-largest as 3 (a's, b's, c's, d's own counts, then e at 3), so the floor is 3: a, b, c, d and g (12, over BIG_OPEN_FLOOR anyway) all qualify, e (1) does not, and the boxless plan can never qualify regardless of rank.
+# Six plans, ranked by open count: 20, 15, 15, 12, 3, 1 (a sixth carries no boxes at all). BIG_TOP_N=5 finds the 5th-largest as 3 (a's, b's, c's, d's own counts, then e at 3), so the floor is 3: a, b, c, d and g (12, over BIG_OPEN_FLOOR anyway) all qualify, e (1) does not, and the boxless plan never qualifies regardless of rank.
 big = Tree(
     [
         ("PLAN-a.md", plan_text("a", "draft", open_n=20, done_n=0)),

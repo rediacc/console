@@ -2769,7 +2769,7 @@ rather than as nothing to do was the bug. It now checks `rev-parse --verify --qu
 
 ### Two plans filed, and what they found
 
-`agent/plans/PLAN-ci-watch-enforcement.md`: this session pushed four times and watched CI zero times on its own initiative. The machinery to catch that already exists and **could never fire**. `ci_watch_armed` has ONE call site (`wl_ci.py:769`), reached only after a job has already failed, so it can only EXCUSE a block. And `ci_trouble` returns at its first two statements —
+`agent/plans/PLAN-ci-watch-enforcement.md`: this session pushed four times and watched CI zero times on its own initiative. The machinery to catch that already exists and **had no way to fire**. `ci_watch_armed` has ONE call site (`wl_ci.py:769`), reached only after a job has already failed, so it can only EXCUSE a block. And `ci_trouble` returns at its first two statements —
 `:737-739` on an unset `WORKLIST_PUBLISH_REF`, `:740-743` on multi-session. Zero `cistate` sidecars after a full night proves it never executed past line 743.
 
 `agent/plans/PLAN-stop-always-tier.md`: the three checks where ANOTHER session is blocked — `no-waiter`, `no-waiter-asked`, `requests` — are all `always=False`. `carry_through_pause` at `wl_checks.py:2971` already names exactly those three on exactly the right reasoning, and that mechanism survives a cadence pause but NOT rotation. Rotation breaks ties by **line order**, so 23 keys

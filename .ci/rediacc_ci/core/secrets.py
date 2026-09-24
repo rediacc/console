@@ -67,7 +67,7 @@ from collections.abc import Iterable, Mapping
 MASK = "***"
 
 # How many hex digits of the sha256 a fingerprint carries. Not chosen here: `rediacc_ci.core.bws_env.client_fingerprint` already fingerprints a token's client id as `hashlib.sha256(client_id.encode()).hexdigest()[:16]`, and `scripts/dev/bws-rotate.py` compares two of its results to refuse a rotation that installs the credential already in place.
-# A second width would mean the two could never be compared. That computation used to live at `scripts/ops/bws-map-refresh.py:67` beside a hand-written expiry file that stored the digests; both were deleted on 2026-09-23 with the reader that read them, and the computation survived because it was the one part of that reader bound to the LIVE token rather than to a date.
+# A second width would leave the two incomparable. That computation used to live at `scripts/ops/bws-map-refresh.py:67` beside a hand-written expiry file that stored the digests; both were deleted on 2026-09-23 with the reader that read them, and the computation survived because it was the one part of that reader bound to the LIVE token rather than to a date.
 FINGERPRINT_HEX_DIGITS = 16
 
 PRESENT = "present"

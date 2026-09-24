@@ -9,8 +9,7 @@ WHY A DIFFERENTIAL, restated for this phase because the argument is not the same
                              code alone cannot tell 'blocked, here is the
                              correct command' from 'blocked, good luck'")
 
-So three fields are compared, byte for byte, and the richness that the other differential gets from field count this one gets from INPUT count: every guard is run against the events its own suite cases pair with it, against a deterministic sample of every OTHER guard's events, against 25 degenerate event shapes the suite never produces, and against every edge case the port module
-declares from its twin's comments. Cross-feeding is not padding: over-blocking only ever shows up on somebody else's input.
+So three fields are compared, byte for byte, and the richness that the other differential gets from field count this one gets from INPUT count: every guard is run against the events its own suite cases pair with it, against a deterministic sample of every OTHER guard's events, against 25 degenerate event shapes the suite never produces, and against every edge case the port module declares from its twin's comments. Cross-feeding is not padding: over-blocking only ever shows up on somebody else's input.
 
 WHAT MAKES THE COMPARISON FAIR, and each of these was a way to get a green that means nothing:
 
@@ -64,8 +63,7 @@ US = "\x1f"
 RS = "\x1e"
 
 ROOT = guardcorpus.repo_root()
-# THE ORACLE ROOT. The bash originals moved out of `.claude/hooks/` at the P7 cutover: nothing registers them any more, and `.ci/scripts/quality/check_hooks_resolvable.py` is right to refuse an unregistered guard sitting in a chain directory ("a guard nobody calls is worse than no guard: it reads as coverage"). They are kept, byte for byte, because this file is what they are FOR --
-# see oracles/README.md. `TWIN` is unchanged and still chain-qualified, so it is a key into this root rather than a path into the live tree.
+# THE ORACLE ROOT. The bash originals moved out of `.claude/hooks/` at the P7 cutover: nothing registers them any more, and `.ci/scripts/quality/check_hooks_resolvable.py` is right to refuse an unregistered guard sitting in a chain directory ("a guard nobody calls is worse than no guard: it reads as coverage"). They are kept, byte for byte, because this file is what they are FOR -- see oracles/README.md. `TWIN` is unchanged and still chain-qualified, so it is a key into this root rather than a path into the live tree.
 ORACLES = ROOT / ".claude" / "oracles"
 ARTIFACT_DIR = pathlib.Path(__file__).resolve().parent / ".artifacts"
 
@@ -88,8 +86,7 @@ ARCHAEOLOGY = (
 
 # `gh`, stubbed to the shape every guard here already treats as its fail-open path: nothing on stdout, a non-zero exit. Guards that need it to SUCCEED declare their own stub through `ENVS` on the port module, exactly as the suite's own `stub_gh` and `_gc_shim` helpers do for the same guards.
 #
-# WHY STUB AT ALL, since both sides would call the same real `gh`. Because they would not call it at the same MOMENT. The bash side runs the whole corpus first and the Python side follows; a PR that changes state in between turns into a field that differs, reported as a port defect. Measured cost of the real thing on one case: a network round trip per invocation, times several
-# hundred cases, times two sides.
+# WHY STUB AT ALL, since both sides would call the same real `gh`. Because they would not call it at the same MOMENT. The bash side runs the whole corpus first and the Python side follows; a PR that changes state in between turns into a field that differs, reported as a port defect. Measured cost of the real thing on one case: a network round trip per invocation, times several hundred cases, times two sides.
 DEFAULT_STUBS = {
     "gh": "#!/bin/sh\nexit 1\n",
 }
@@ -107,8 +104,7 @@ def _stub_dir(tmp_path, stubs):
 
 # --------------------------------------------------------------------------- Named git fixtures ---------------------------------------------------------------------------
 #
-# WHY THEY EXIST, and the control that demanded them. Roughly half these guards read local git state -- a branch name, whether the branch is ahead of its remote, whether a worktree is dirty. Run against THIS checkout they all take one branch of their logic, whichever branch this worktree happens to be in, and `test_every_guard_discriminates` then reports the guard as answering
-# identically on every case. That is not a nuisance: it is the control saying the comparison could not have failed. `block_merge_with_unpushed` was the first port to trip it, on the first run, because no `origin/<branch>` ref exists in a feature worktree and the guard fails open on every input.
+# WHY THEY EXIST, and the control that demanded them. Roughly half these guards read local git state -- a branch name, whether the branch is ahead of its remote, whether a worktree is dirty. Run against THIS checkout they all take one branch of their logic, whichever branch this worktree happens to be in, and `test_every_guard_discriminates` then reports the guard as answering identically on every case. That is not a nuisance: it is the control saying the comparison could not have failed. `block_merge_with_unpushed` was the first port to trip it, on the first run, because no `origin/<branch>` ref exists in a feature worktree and the guard fails open on every input.
 #
 # So a module names the git worlds its twin distinguishes, the harness builds each one ONCE per session, and both sides are pointed at it through CLAUDE_PROJECT_DIR. The repositories are built with `git init`, never cloned and never fetched: no network, and nothing outside the temporary directory is read or written.
 FIXTURE_TOKEN = "{FIXTURE:%s}"  # noqa: S105
@@ -175,17 +171,13 @@ def _build_repo(path, branch, ahead):
 def _snapshot_this_worktree(path):
     """A FROZEN clone of the checkout this suite is running in.
 
-    WHY A CLONE AND NOT THE CHECKOUT ITSELF, which is what four guards' `this-worktree` variant pointed `CLAUDE_PROJECT_DIR` at until 2026-09-22.
-    That variant exists because a synthetic `git init` fixture is not a real repository shape: it has one commit, no history, no epic snapshot, no receipt, and a guard judged only against it is judged against something trivially small.
-    Reading the LIVE checkout bought that realism at the price of determinism, and the price was paid repeatedly: this tree is shared, and a concurrent session's commit lands between the bash pass (one process, the whole corpus, at fixture setup) and the per-case Python side that follows it minutes later.
+    WHY A CLONE AND NOT THE CHECKOUT ITSELF, which is what four guards' `this-worktree` variant pointed `CLAUDE_PROJECT_DIR` at until 2026-09-22. That variant exists because a synthetic `git init` fixture is not a real repository shape: it has one commit, no history, no epic snapshot, no receipt, and a guard judged only against it is judged against something trivially small. Reading the LIVE checkout bought that realism at the price of determinism, and the price was paid repeatedly: this tree is shared, and a concurrent session's commit lands between the bash pass (one process, the whole corpus, at fixture setup) and the per-case Python side that follows it minutes later.
     Both sides then read a DIFFERENT repository and the disagreement is reported as a port defect.
 
     MEASURED, rather than argued. With a commit interleaved between the two sides, `block_merge_with_unpushed` reported "66 commit(s) ... are not pushed" from bash and "67" from the port, and `block_unverified_push` named two different `HEAD^{tree}` hashes in its refusal.
     `block_unverified_push`'s own `FIXTURES` comment had already written the same race down for the receipt file; the `this-worktree` variant simply left the rest of the repository state exposed to it.
 
-    WHAT THE SNAPSHOT KEEPS. Real history, the real branch name, the real tracked tree (7,100-odd files, so `agent/pr/<branch>.md` and `.ci/config/*` are the repository's own rather than a stub's), and the real relationship between the branch and its remote.
-    `refs/remotes/origin/<branch>` is reset to whatever the live checkout's own remote-tracking ref says, because a plain clone would make every branch look fully pushed and quietly retire the ahead-of-remote arm the `this-worktree` case is there to exercise.
-    An absent remote-tracking ref is reproduced as an absent one for the same reason.
+    WHAT THE SNAPSHOT KEEPS. Real history, the real branch name, the real tracked tree (7,100-odd files, so `agent/pr/<branch>.md` and `.ci/config/*` are the repository's own rather than a stub's), and the real relationship between the branch and its remote. `refs/remotes/origin/<branch>` is reset to whatever the live checkout's own remote-tracking ref says, because a plain clone would make every branch look fully pushed and quietly retire the ahead-of-remote arm the `this-worktree` case is there to exercise. An absent remote-tracking ref is reproduced as an absent one for the same reason.
 
     WHAT IT DELIBERATELY DOES NOT KEEP: uncommitted work, ignored files (`.ci/cache/prepush-receipt.json` among them) and initialised submodules. Those are the state a clone does not carry, and carrying them by hand would be re-creating the live tree rather than snapshotting it.
 
@@ -296,8 +288,7 @@ def environments(module):
 # The event a chain's guards are handed, when a port's EDGE_CASES entry is a bare string. A module whose twin reads `file_path` or `tool_name` declares its
 # case as a dict instead and gets exactly that document.
 #
-# THE FIRST CUT PUT THE BARE COMMAND ON STDIN, and the anti-vacuity control is what found it: every edge case became an unparseable payload, `jq` returned "" for all of them, and each one exercised only the guard's empty-command branch. It passed the differential (both sides agree on nonsense) while testing none of the shapes it named, which is the exact failure this file's
-# controls exist for.
+# THE FIRST CUT PUT THE BARE COMMAND ON STDIN, and the anti-vacuity control is what found it: every edge case became an unparseable payload, `jq` returned "" for all of them, and each one exercised only the guard's empty-command branch. It passed the differential (both sides agree on nonsense) while testing none of the shapes it named, which is the exact failure this file's controls exist for.
 CHAIN_BUILDER = {
     "pre-bash": "bash_json",
     "post-bash": "bash_json",
@@ -321,8 +312,7 @@ def divergence_cases():
         .claude/hooks/pre-bash/block-long-sleep.sh: line 45: [[: 08: value too
         great for base (error token is "08")
 
-    to stderr and then PERMITS the command. The port cannot reproduce that line: it names the twin's own path and line number, which are facts about a file the port is replacing, so emitting them would be a lie rather than a transliteration. No suite case carries a leading-zero sleep, so the differential simply never saw it -- a divergence that exists and that nothing reported,
-    which is the failure this whole file is built against.
+    to stderr and then PERMITS the command. The port cannot reproduce that line: it names the twin's own path and line number, which are facts about a file the port is replacing, so emitting them would be a lie rather than a transliteration. No suite case carries a leading-zero sleep, so the differential simply never saw it -- a divergence that exists and that nothing reported, which is the failure this whole file is built against.
 
     So the port declares it. The harness then runs the case and asserts the SHAPE of the disagreement: the exit code and stdout must still match, and stderr must still DIFFER. That last assertion is what stops the entry rotting: if a later change makes the two agree, the declaration is stale and this says so instead of quietly excusing a match.
     """
@@ -443,8 +433,7 @@ def parse_stream(text):
     return records
 
 
-# EVERY XDIST WORKER REBUILDS A SESSION FIXTURE, because "session" is scoped to a PROCESS and xdist workers ARE processes. The `bash_results` fixture below forks env -i bash once per case across 6017 cases, about 18,000 processes, and this module's tests are otherwise pure in-process comparison -- so without this declaration its cases scatter across every worker and each one pays
-# the full driver again.
+# EVERY XDIST WORKER REBUILDS A SESSION FIXTURE, because "session" is scoped to a PROCESS and xdist workers ARE processes. The `bash_results` fixture below forks env -i bash once per case across 6017 cases, about 18,000 processes, and this module's tests are otherwise pure in-process comparison -- so without this declaration its cases scatter across every worker and each one pays the full driver again.
 #
 # Measured 2026-09-07: this file and test_shellscan_differential.py together serve 6446 of 8968 tests (72 percent of the corpus). At `-n 8` that is roughly 240,000 forks of duplicated setup before a single one of those tests does useful work, which is why the suite is 1.64x SLOWER under 8 workers than serial (619.17s vs 1013.59s on a quiesced box).
 #
@@ -500,8 +489,7 @@ def python_fields(stem, payload, extra, stubs, work):
 
     `os.environ` is swapped for the case environment rather than passed down, because a ported guard that shells out to `git` or `gh` inherits the process environment exactly as its bash twin inherits the shell's. Passing an `env` only to `dispatch` would leave those children reading the test runner's environment while the bash side read the case's.
 
-    `time.tzset()` IS NOT DECORATION, and it is the one piece of libc state that an in-process side does not get from swapping a dict. `TZ` is read by libc once and cached, so `datetime.now()` here would keep answering in the test runner's own zone however the case set the variable, while the bash side -- a fresh process per case -- read the case's zone. Measured 2026-09-07:
-    without this call, `block_stale_pr_branch_date` reported the port as
+    `time.tzset()` IS NOT DECORATION, and it is the one piece of libc state that an in-process side does not get from swapping a dict. `TZ` is read by libc once and cached, so `datetime.now()` here would keep answering in the test runner's own zone however the case set the variable, while the bash side -- a fresh process per case -- read the case's zone. Measured 2026-09-07: without this call, `block_stale_pr_branch_date` reported the port as
     diverging under a pinned `TZ=UTC` when the port was right and the HARNESS was
     the thing ignoring the variable. Restoring the runner's own zone afterwards matters for the same reason.
     """
@@ -597,8 +585,7 @@ def test_every_port_has_a_present_twin():
     """A twinned guard's oracle must exist. An UNTWINNED one must have a suite.
 
     THE SECOND HALF IS THE POINT, and it is what stops `TWIN = None` becoming the
-    cheap way out of this whole file. A guard with no oracle is not judged against less evidence, it is judged against DIFFERENT evidence: a dedicated `test-<stem>.py` beside it, which `check-hook-integrity.sh` already treats as covering both directions. Without this arm, deleting a twin declaration would silently remove a guard from the differential AND from every other control,
-    and the suite would go green faster than before.
+    cheap way out of this whole file. A guard with no oracle is not judged against less evidence, it is judged against DIFFERENT evidence: a dedicated `test-<stem>.py` beside it, which `check-hook-integrity.sh` already treats as covering both directions. Without this arm, deleting a twin declaration would silently remove a guard from the differential AND from every other control, and the suite would go green faster than before.
     """
     for stem in guards.stems():
         module = guards.load(stem)

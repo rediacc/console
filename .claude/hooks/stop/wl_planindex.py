@@ -264,7 +264,7 @@ def big_pieces(live):
     TIES AT THE Nth PLACE ALL COUNT. A strict top-N slice would arbitrarily keep one of several plans tied for 5th and drop the rest, which is exactly the kind of instability a derived-not-remembered mark is supposed to avoid: the same census would answer differently depending on sort stability alone. Instead this finds the Nth-LARGEST open count as a floor and returns every
     plan at or above it, so a five-way tie for 5th yields nine "big" plans, not five.
 
-    A plan with `open == 0` can never be big, so `boxed` filters those out before ranking: an all-ticked plan sitting at the top of an mtime-sorted listing must not be marked as the thing to finish next.
+    A plan with `open == 0` is never big, so `boxed` filters those out before ranking: an all-ticked plan sitting at the top of an mtime-sorted listing must not be marked as the thing to finish next.
     """
     boxed = sorted((r for r in live if r[3]), key=lambda r: -r[3])
     if not boxed:

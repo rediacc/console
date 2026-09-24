@@ -2374,7 +2374,7 @@ def plan_tick(root, rel, selector, evidence, me, now=None):
 # work is already committed, and stamping the live HEAD would assert an ordering that never happened. So `head` here is `done_commit^`, the immediate parent of the commit that ticked the box. That is a real commit, it is unconditionally an ancestor of `done_commit`, and it is the LAST tree in which the question "is this box's work already present?" was still open. Nothing is
 # invented and no ordering is claimed that the history does not already carry.
 #
-# WHAT IS DELIBERATELY NOT AVAILABLE HERE. There is no verdict argument: `present` is the only honest answer a backfill can give, because the box is closed and the work is in the tree by construction. There is no box-mark write: the mark is already `x` and this verb never touches it. And there is no way in: an open box is refused, so this can never become a shortcut past a live
+# WHAT IS DELIBERATELY NOT AVAILABLE HERE. There is no verdict argument: `present` is the only honest answer a backfill can give, because the box is closed and the work is in the tree by construction. There is no box-mark write: the mark is already `x` and this verb never touches it. And there is no way in: an open box is refused, so this never becomes a shortcut past a live
 # investigation.
 
 #: The single verdict a backfill may record. See the block above: a retroactive row about an already-closed box cannot honestly say `absent`, and `partial` would contradict the `[x]` it is describing.

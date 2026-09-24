@@ -1831,7 +1831,7 @@ WHAT IS NOT KNOWN, STATED RATHER THAN GUESSED AT. The exact shell construct that
 in this tree. This entry records the SHAPE of the failure, not its exact mechanism, because asserting the mechanism without the script would be exactly the kind of unverified claim CLAUDE.md and this file both warn against elsewhere.
 
 THE GENERAL SHAPE. A guard that refuses a genuinely safe operation does not make the tree safer; it removes the one checkpoint that operation would have passed through and replaces it with whatever path the next attempt finds, which here had NONE of the same checkpoint's safety, plus a compounding failure (`cd` not gating the rest of its own chain) that an ordinary
-`git commit` could never have been exposed to in the first place, because `git commit` always operates on the process's actual resolved cwd rather than trusting a PRIOR command in the same line to have landed somewhere.
+`git commit` was never exposed to in the first place, because `git commit` always operates on the process's actual resolved cwd rather than trusting a PRIOR command in the same line to have landed somewhere.
 
 The check: before running `update-ref` or `symbolic-ref` against a ref that could resolve to `main` or bare `HEAD`, assert `git rev-parse --show-toplevel` (in the same shell, after any `cd`) equals the INTENDED disposable repository, not the assumption that a prior command in the same chain succeeded. And when a guard's own false positive is what forced a workaround, say
 so in the same report that discloses the workaround, because the workaround's own safety is now the reader's problem, not the guard's.

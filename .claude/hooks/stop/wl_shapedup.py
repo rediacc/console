@@ -531,7 +531,7 @@ def wide_ledger_path(branch, root=None):
 
 
 def wide_spent(branch, root=None):
-    """Model calls this branch has already spent on the wide tier. An unreadable line is not a refund: only well-formed `ask` records count, and a ledger that cannot be read at all counts as spent in full, so a broken ledger can never read as a fresh budget."""
+    """Model calls this branch has already spent on the wide tier. An unreadable line is not a refund: only well-formed `ask` records count, and a ledger that cannot be read at all counts as spent in full, so a broken ledger never reads as a fresh budget."""
     path = wide_ledger_path(branch, root)
     try:
         text = path.read_text(encoding="utf-8")

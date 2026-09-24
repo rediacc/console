@@ -34,9 +34,14 @@ Two of the named files are owned by other live sessions in this shared checkout,
 
 ## Boxes
 
-- [ ] Derive and group all 171 findings by file and rule, working around the 40-line print cap at `.ci/rediacc_ci/quality/prose_style.py:1422`.
-- [ ] Confirm which of the affected files are owned by a live peer session right now, and exclude those from this pass rather than racing them.
-- [ ] Repair the width class (`R18`, `R19`) with `check_prose_style.py reflow --write`, asserting per file that the word sequence is unchanged across the rewrite.
-- [ ] Repair the wording class (`R1`, `R2`, `R7`, `R11`) by hand, keeping each sentence's meaning intact.
-- [ ] Drain the 144 no-longer-firing baseline entries in their own commit, and confirm the baseline only shrank.
+- [x] Derive and group all 171 findings by file and rule, working around the 40-line print cap at `.ci/rediacc_ci/quality/prose_style.py:1422`.
+    (ticked) 2026-09-24T07:23:32Z by d778be9d: check_prose_style.py check --json exit 1: 162 new (76 error: 70 in agent/plans/**, 1 reference.md R1, 1 reference.md R18, 2 license-tiers.generated.ts R19, 2 R19 in owned .py) + 2293 stale; grouped per file/rule
+- [x] Confirm which of the affected files are owned by a live peer session right now, and exclude those from this pass rather than racing them.
+    (ticked) 2026-09-24T07:24:19Z by d778be9d: excluded per coordinator, gate run exit 1 leaves 72 errors there: agent/plans/** 70 (incl _done), license-tiers.generated.ts 2 (generator literals, private/renet excluded); also skipped peer-modified bws_env.py, wl_checks.py, worklist_messages.py, check-shape-duplication.ts
+- [x] Repair the width class (`R18`, `R19`) with `check_prose_style.py reflow --write`, asserting per file that the word sequence is unchanged across the rewrite.
+    (ticked) 2026-09-24T07:24:19Z by d778be9d: owned files only: reflow --write on plan_lifecycle.py and test_guards_differential.py, word-token compare exit 0 (4334/4334, 6439/6439 ignoring comment leaders); reference.md R18 cleared via wrapAtSentences in generate-skill-reference.ts, tokens equal; per-file check --json new=[] exit 0
+- [x] Repair the wording class (`R1`, `R2`, `R7`, `R11`) by hand, keeping each sentence's meaning intact.
+    (ticked) 2026-09-24T07:24:19Z by d778be9d: owned files only: R7 rewrites in wl_hints.py, wl_planindex.py, wl_planrec.py, wl_shapedup.py, wl_agents.py, test-judge-schema.py, test-planindex.py, check_agent_hint_liveness.py, core/secrets.py, TRAPS.md, 06-progress.md, manifest.ts; per-file check --json new=[] exit 0; reference.md R1 left (hash-locked CLI source)
+- [x] Drain the 144 no-longer-firing baseline entries in their own commit, and confirm the baseline only shrank.
+    (ticked) 2026-09-24T07:24:19Z by d778be9d: drained .ci/config/prose-style-baseline.json by id removal only: 5570 -> 3277 ids, 1169 -> 811 files, added 0, removed 2293; full check now reports 0 no-longer-firing (exit 1 only on excluded new findings)
 - [ ] `npm run check:ci-prose-style` exits 0.

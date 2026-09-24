@@ -1946,7 +1946,7 @@ try:
         True,
     )
 
-    # 6p. THE ARGV. The default call is byte-identical to the pre-profile one, and a profiled call drops SHAPE_PROBE_CACHE so the wide scan can never overwrite the commit-path guard's index (risk 6). The planted half is the inherited variable itself, which must be present for the drop to mean anything.
+    # 6p. THE ARGV. The default call is byte-identical to the pre-profile one, and a profiled call drops SHAPE_PROBE_CACHE so the wide scan never overwrites the commit-path guard's index (risk 6). The planted half is the inherited variable itself, which must be present for the drop to mean anything.
     _argv_seen = []
     _run_saved = wl_shapedup.wl_proc.run
     _spc_saved = os.environ.get("SHAPE_PROBE_CACHE")

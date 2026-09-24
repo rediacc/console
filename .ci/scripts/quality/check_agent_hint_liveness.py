@@ -488,7 +488,7 @@ def main() -> int:
     #
     # PLAN-stop-hook-overhaul.md section 1.1 (2026-09-23) split DETECTION from ROUTING and this sentence is where that split shows: it scores exactly 1.0 on the single term `ceph`, the same score "verifi" and "yet" scored when they misrouted to the wrong specialist on ordinary English. Nothing distinguishes a thin true positive from a thin false positive by SCORE alone -- that is
     # this check's own prior finding, cited at the top of this file's neighbouring comment as "not fixable by tuning" -- so routing now requires the HINT's OWN floor (MIN_SCORE/MIN_MARGIN) and this sentence no longer clears it. What survives, and what this asserts, is the CHALLENGE: `claims` still fires unconditionally on the give-up language, which is the half CLAUDE.md rule 3
-    # actually requires (probe before concluding impossible) and the half a specific wrong agent name would not have improved anyway.
+    # actually requires (probe before concluding a thing cannot be done) and the half a specific wrong agent name would not have improved anyway.
     _motivating = (
         "It doesn't reproduce: neither local worker has /etc/ceph or rbd. "
         "ops up fleet, ceph never provisioned."

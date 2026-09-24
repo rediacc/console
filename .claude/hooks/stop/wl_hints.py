@@ -108,7 +108,7 @@ def hint_pick(entries, ledger, rng=None):
     """(entry, index, total) for the ONE hint to show this stop, or None when there is nothing active.
 
     `ledger` is the `{"shown": {id: stamp}, "last": id}` sub-doc the caller persists in the state document. Round-robin with randomized order inside each pass: exclude ids already in `shown`, pick uniformly from what remains.
-    When nothing remains the cycle has completed -- clear `shown` and pick again from the FULL active set MINUS `last`, so a cycle boundary can never repeat the hint that just closed the previous one. `rng` is the whole determinism seam:
+    When nothing remains the cycle has completed -- clear `shown` and pick again from the FULL active set MINUS `last`, so a cycle boundary never repeats the hint that just closed the previous one. `rng` is the whole determinism seam:
     `None` resolves to the module-level `random`, matching the seam `outq_drain` already uses, so a test drives the identical code path with `random.Random(seed)` rather than reaching for a subprocess's random state."""
     active = [e for e in entries if e.get("status") == "active"]
     if not active:

@@ -457,7 +457,7 @@ def giveup_claims(text):
 def pushback_for(haystack, agents_dir_path=None):
     """((claims, agent_or_None), [error]) -- the CHALLENGE and the ROUTING, decoupled.
 
-    `claims` is [] or the give-up labels found (the CHALLENGE: something was declared impossible, and CLAUDE.md rule 3 says that needs probing regardless of whether a specialist can be named for it). `agent_or_None` is `(name, hits)` when a specialist can be named ABOVE THE ORDINARY HINT'S OWN FLOOR (`MIN_SCORE`/`MIN_MARGIN`, the same numbers `best_hint` uses everywhere
+    `claims` is [] or the give-up labels found (the CHALLENGE: something was declared out of reach, and CLAUDE.md rule 3 says that needs probing regardless of whether a specialist can be named for it). `agent_or_None` is `(name, hits)` when a specialist can be named ABOVE THE ORDINARY HINT'S OWN FLOOR (`MIN_SCORE`/`MIN_MARGIN`, the same numbers `best_hint` uses everywhere
     else in this module) and `None` otherwise -- there is no second, lower floor here any more. There used to be: a claim conjoined with the hint's own confidence still under-detects (`PUSHBACK_MIN_SCORE`/`PUSHBACK_MIN_MARGIN` were 1/0.5 against the hint's 2/1), and that gap between floors is exactly what let one ordinary English word ("verifi", "yet") route a stop to the wrong
     specialist at a perfect but meaningless 1.0 score. Reusing the hint's own floor removes the second threshold instead of tuning it, which `.ci/scripts/quality/check_agent_hint_liveness.py:544` already found unfixable by tuning.
 
