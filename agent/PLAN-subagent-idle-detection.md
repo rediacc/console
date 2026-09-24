@@ -1,5 +1,0 @@
-# PLAN: Subagent idle/liveness detection (moved)
-Status: moved
-Moved-To: agent/plans/PLAN-subagent-idle-detection.md
-
-This plan moved to `agent/plans/PLAN-subagent-idle-detection.md`. The stub keeps every citation of the old path resolving; a plan moves exactly once, at close. See agent/README.md for the layout.

@@ -491,7 +491,13 @@ def move(root: pathlib.Path, rel: str, config: dict) -> int:
         )
         return 1
     (root / target_dir).mkdir(parents=True, exist_ok=True)
-    result = gitx.git(["mv", "--", rel, new_rel], root=root)
+    # A PLAN WRITTEN AND FINISHED INSIDE ONE SESSION IS UNTRACKED, and `git mv` refuses an untracked source with "not under version control" -- found 2026-09-24 moving a plan that was drafted, implemented and closed before its first commit. A plain rename is the whole of what `git mv` would have done for it; the stub and the `git add` below then run exactly as for a tracked plan.
+    tracked = gitx.git(["ls-files", "--error-unmatch", "--", rel], root=root).ok
+    if tracked:
+        result = gitx.git(["mv", "--", rel, new_rel], root=root)
+    else:
+        (root / rel).rename(root / new_rel)
+        result = gitx.git(["status", "--porcelain", "--", new_rel], root=root)
     if not result.ok:
         print(
             "✗ git mv %s -> %s failed: %s" % (rel, new_rel, result.stderr.strip()), file=sys.stderr

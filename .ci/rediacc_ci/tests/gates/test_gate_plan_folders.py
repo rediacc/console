@@ -328,6 +328,34 @@ def test_move_leaves_a_stub_and_stamps_both_clocks(gate, tmp_path):
     gate.log_pass("--move renames, stubs, stamps First-Seen and re-keys the ledger row")
 
 
+def test_move_takes_an_untracked_plan_that_carries_its_own_clock(gate, tmp_path):
+    """A plan drafted, implemented and closed before its first commit is untracked, and `git mv` refuses it with "not under version control". Found 2026-09-24; the tool now renames it plainly and runs the same stub and ledger steps."""
+    root = _seed(tmp_path)
+    _write(
+        root,
+        "agent/plans/PLAN-sameday.md",
+        "# PLAN: sameday\nStatus: done\nFirst-Seen: 2026-09-24\n\n- [x] a box\n",
+    )
+    _ledger(root, {"agent/plans/PLAN-sameday.md": {"status": "done", "open": 0, "done": 1}})
+    result = _gate(root, "--move", "agent/plans/PLAN-sameday.md")
+    gate.assert_exit_code(
+        0, result.rc, "an untracked plan with First-Seen must move (output: %s)" % result.combined
+    )
+    moved = root / "agent/plans/_done/PLAN-sameday.md"
+    gate.assert_eq(moved.is_file(), True, "the plan is at its new path")
+    gate.assert_contains(
+        moved.read_text(encoding="utf-8"),
+        "First-Seen: 2026-09-24",
+        "its own clock is kept, not restamped",
+    )
+    gate.assert_contains(
+        (root / "agent/plans/PLAN-sameday.md").read_text(encoding="utf-8"),
+        "Status: moved",
+        "a stub is left at the old path",
+    )
+    gate.log_pass("--move takes an untracked plan that already carries First-Seen")
+
+
 def test_move_refuses_a_stub(gate, tmp_path):
     root = _seed(
         tmp_path,

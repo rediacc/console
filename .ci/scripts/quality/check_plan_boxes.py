@@ -94,7 +94,7 @@ try:
     import wl_checks as CK
     import wl_planfid as PFID
     import wl_planfile as PF
-except ImportError as _exc:  # pragma: no cover -- exercised by test-gate-anti-vacuity.sh
+except ImportError as _exc:  # pragma: no cover -- exercised by `.ci/rediacc_ci/tests/gates/test_gate_gate_anti_vacuity.py`
     # NOT a traceback. Importing the Stop hook's parser is this gate's ONLY way of reading a checkbox (see the docstring), so a tree without .claude/hooks/stop is a tree this gate cannot judge -- and a crash there reads to a reader, and to the anti-vacuity harness, as an unrelated bug rather than as blindness. A check that cannot see must SAY it cannot see.
     print(
         f"VACUOUS INPUT: cannot import the Stop hook's plan parser from "
@@ -400,16 +400,36 @@ def _touched_plans(base: str) -> set[str]:
     return {p for st, p in _name_status(base) if st != "D" and PL.is_plan_path(p)}
 
 
+def _known_at_base(base: str, rel: str) -> str:
+    """The plan folder that already held a file of this BASENAME at `base`, or "".
+
+    THE SECOND ORACLE FOR "THIS IS A MOVE", AND IT READS GIT RATHER THAN THE WORKING TREE. `PL.moved_from` proves a move from the stub `check_plan_folders.py --move` leaves behind -- a file on disk. The 2026-09-22 cleanup DELETED every flat-layout stub, so that proof evaporated for all 103 moved plans at once while git's own `A` at the new path stayed exactly as it was. Measured
+    here the day it happened: `agent/plans/PLAN-secret-namespace-migration.md` (content from 2026-08, moved in `fce51e202`) was reported "NEW on this branch ... with no resolvable `Owner:`", which is false in its first three words. `check_plan_citations.py`'s selftest took the same fall on the same day and was repaired there; this is the same class in the sibling gate.
+
+    Git is the durable oracle because a stub can be deleted and history cannot. Rename detection alone does NOT cover it -- `_name_status` runs at `-M100%` and a plan edited after its move never pairs -- so the question asked here is the weaker, sufficient one: did a plan of this name already exist ANYWHERE in the corpus at the merge-base? If it did, its boxes are not debt this
+    branch created, which is the only thing G-A4 is about.
+    """
+    name = rel.rsplit("/", 1)[-1]
+    for folder in PL.PLAN_DIRS:
+        if _git("cat-file", "-e", f"{base}:{folder}/{name}") is not None:
+            return folder
+    return ""
+
+
 def _added_plans(base: str) -> set[str]:
     """Plans this branch genuinely adds, MOVES EXCLUDED.
 
     `_name_status` reports an "A" for the new path of a moved plan too, because `check_plan_folders.py --move` leaves a stub at the old path rather than deleting it -- there is no delete for git's rename detection to pair against, at any `-M` threshold. `PL.moved_from` reads the stub the same way `check_plan_citations.py` does, so a move is never mistaken for new, unowned content.
+
+    TWO ORACLES, because the first one is destructible: see `_known_at_base`.
     """
     out = set()
     for st, p in _name_status(base):
         if st != "A" or not PL.is_plan_path(p):
             continue
         if PL.moved_from(ROOT, p):
+            continue
+        if _known_at_base(base, p):
             continue
         out.add(p)
     return out

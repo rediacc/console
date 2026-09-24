@@ -86,7 +86,7 @@ ROOT = pathlib.Path(
 # The hop onto the Stop hook's directory, through the package's own resolver. `paths.on_sys_path` is idempotent where a bare `sys.path.insert(0, d)` is not, and `paths.hooks_stop_dir` is the ONE place the `.claude/hooks/stop` literal lives, so the move planned for that program is a one-line change there rather than a sweep of nine call sites. ROOT is passed explicitly: this gate
 # honours its own PLAN_CITATIONS_ROOT override, which the resolver's default root does not read.
 #
-# THIS IS THE GATE THAT GAINED A PACKAGE DEPENDENCY TO LOSE ITS HOP, and it is the only one of the five: the other four already imported `rediacc_ci`. Said out loud because it is a real trade, not a free tidy -- `.ci/rediacc_ci` must now be present for this gate to start. Every harness that runs it already copies that directory (`test-gate-anti-vacuity.sh` names it explicitly), and
+# THIS IS THE GATE THAT GAINED A PACKAGE DEPENDENCY TO LOSE ITS HOP, and it is the only one of the five: the other four already imported `rediacc_ci`. Said out loud because it is a real trade, not a free tidy -- `.ci/rediacc_ci` must now be present for this gate to start. Every harness that runs it already copies that directory (`.ci/rediacc_ci/tests/gates/test_gate_gate_anti_vacuity.py` names it explicitly), and
 # a missing package fails loudly at the import rather than skipping a check.
 paths.on_sys_path(paths.hooks_stop_dir(ROOT))
 
@@ -94,7 +94,7 @@ try:
     import wl_checks as CK
     import wl_planfid as PFID
     import wl_planrec as R
-except ImportError as _exc:  # pragma: no cover -- exercised by test-gate-anti-vacuity.sh
+except ImportError as _exc:  # pragma: no cover -- exercised by `.ci/rediacc_ci/tests/gates/test_gate_gate_anti_vacuity.py`
     # A check that cannot see must SAY it cannot see. Every resolver this gate uses lives in those modules on purpose; without them there is nothing to compare and no verdict to give.
     print(
         f"VACUOUS INPUT: cannot import the citation resolvers from "

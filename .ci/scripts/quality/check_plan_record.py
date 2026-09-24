@@ -145,7 +145,7 @@ try:
     import wl_planrec as R
     from check_plan_citations import citations as _citations
     from check_plan_citations import unresolved as _unresolved
-except ImportError as _exc:  # pragma: no cover -- exercised by test-gate-anti-vacuity.sh
+except ImportError as _exc:  # pragma: no cover -- exercised by `.ci/rediacc_ci/tests/gates/test_gate_gate_anti_vacuity.py`
     # A check that cannot see must SAY it cannot see. The record grammar lives in wl_planrec and there is deliberately no second copy of it here: a gate that re-implemented the parser would drift from the writer, and the first symptom would be a green run over records it was reading wrong.
     print(
         f"VACUOUS INPUT: cannot import the record parser from "

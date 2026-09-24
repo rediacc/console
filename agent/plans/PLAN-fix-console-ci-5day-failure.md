@@ -1,6 +1,6 @@
 # PLAN: fix main's 5-day Console CI red streak
 
-Status: draft
+Status: draft -- SUPERSEDED BY OPERATOR RULING 2026-09-24, operator ruling: "Drop 0923-2 ... broken main is not our priority right now". The branch this plan drove was ported into 0923-1 commit by commit (worklist #d9785655) and deleted; its boxes are marked [?] as abandoned by decision, not ticked. The one live remainder, dependency freshness, is tracked as worklist #e3db9ce2.
 Owner: d778be9d
 Updated: 2026-09-23
 
@@ -29,22 +29,22 @@ This plan cuts a fresh branch from `origin/main` (e.g. `fix/console-ci-main-red-
 
 ## Steps
 
-- [ ] Cut a fresh branch from `origin/main`.
-- [ ] Bump `private/account` from `65820fd7` to its current green tip (at least `3e796472`, covering commit `dd232718`). Run the account submodule's own vitest suite first and confirm `rotation-bitwarden-names.test.ts` passes before pinning.
-- [ ] Dependency freshness: run the upgrade for the 13 "must upgrade" packages only (patch/minor); leave the documented "Blocked packages" list untouched. Files: `package.json`, `package-lock.json`. Verify `check:deps` green, then run the quality-branch lane to catch lint/type fallout from the react/react-dom/typescript-eslint bumps.
-- [ ] Security audit: for each of the 3 advisories, check whether a patched version is available via a non-major fix or a root `overrides` entry; if genuinely unfixed upstream, record a scoped, dated waiver following this repo's existing allowlist/BLOCKER pattern rather than force a breaking bump or leave it silently red.
-- [ ] Plan housekeeping: work main's own flat `agent/PLAN-*.md` layout (not this branch's `agent/plans/` reorg) -- for each of the 32 stale (and soon 15 more) plans, either continue the work, `git rm` if genuinely done/abandoned (checking for dangling citations first), or add a dated, reasoned entry to `.ci/policy/.plan-housekeeping-allowlist`.
-- [ ] Re-run the Account E2E job after the submodule bump; if the 5 Stripe tests still fail, treat that as a separate, still-undiagnosed issue and investigate with fresh logs rather than guessing.
-- [ ] Full `npm run ci` locally, then push and confirm CI green before requesting merge authorization.
+- [?] Cut a fresh branch from `origin/main`.
+- [?] Bump `private/account` from `65820fd7` to its current green tip (at least `3e796472`, covering commit `dd232718`). Run the account submodule's own vitest suite first and confirm `rotation-bitwarden-names.test.ts` passes before pinning.
+- [?] Dependency freshness: run the upgrade for the 13 "must upgrade" packages only (patch/minor); leave the documented "Blocked packages" list untouched. Files: `package.json`, `package-lock.json`. Verify `check:deps` green, then run the quality-branch lane to catch lint/type fallout from the react/react-dom/typescript-eslint bumps.
+- [?] Security audit: for each of the 3 advisories, check whether a patched version is available via a non-major fix or a root `overrides` entry; if genuinely unfixed upstream, record a scoped, dated waiver following this repo's existing allowlist/BLOCKER pattern rather than force a breaking bump or leave it silently red.
+- [?] Plan housekeeping: work main's own flat `agent/PLAN-*.md` layout (not this branch's `agent/plans/` reorg) -- for each of the 32 stale (and soon 15 more) plans, either continue the work, `git rm` if genuinely done/abandoned (checking for dangling citations first), or add a dated, reasoned entry to `.ci/policy/.plan-housekeeping-allowlist`.
+- [?] Re-run the Account E2E job after the submodule bump; if the 5 Stripe tests still fail, treat that as a separate, still-undiagnosed issue and investigate with fresh logs rather than guessing.
+- [?] Full `npm run ci` locally, then push and confirm CI green before requesting merge authorization.
 
 ## Verification
 
-- [ ] `rotation-bitwarden-names.test.ts` passes after the submodule bump.
-- [ ] `check:deps` green.
-- [ ] `.ci/rediacc_ci/security/audit.py` clean.
-- [ ] Plan housekeeping gate green on main's own layout.
-- [ ] Account E2E's 5 Stripe tests pass, or a fresh, separate investigation is opened if not.
-- [ ] Full `npm run ci` green before push.
+- [?] `rotation-bitwarden-names.test.ts` passes after the submodule bump.
+- [?] `check:deps` green.
+- [?] `.ci/rediacc_ci/security/audit.py` clean.
+- [?] Plan housekeeping gate green on main's own layout.
+- [?] Account E2E's 5 Stripe tests pass, or a fresh, separate investigation is opened if not.
+- [?] Full `npm run ci` green before push.
 
 ## Critical files
 

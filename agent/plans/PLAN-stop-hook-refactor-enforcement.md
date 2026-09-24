@@ -1,7 +1,7 @@
 # PLAN: stop-hook code-maintenance pressure -- a second, wider duplication corpus that only the Stop hook reads
-Status: executing -- Commits 1-2 done (commits e31838a0f, 3128f9a2f), Commits 3-4 open.
+Status: executing -- Commits 1-2 done (commits e31838a0f, 3128f9a2f). Commit 3: done -- advisory profile populated and unseeded (62a6df4c4), wide tier implemented, wired, controlled and measured (uncommitted, see the implementation notes above Commit 4). Commit 4: the anchor span and its siblings are triaged and settled (two shapes accepted site by site in `scripts/data/shape-duplication-seed-advisory.json`, backlog 96 to 94, and `6ae372a04efb` routed to a gate-test harness fix); only the graduation box remains, gated on the backlog dropping under 10.
 Owner: d778be9d
-Updated: 2026-09-23
+Updated: 2026-09-24
 
 ## Part 0 -- What was verified (and what the operator's memory got wrong)
 
@@ -242,7 +242,8 @@ Naming the advisory status in the message is deliberate. An advisory that reads 
 
 ### Commit 3 -- The advisory profile and its Stop-hook wiring
 
-- [ ] Populate the `advisory` profile:
+- [x] Populate the `advisory` profile:
+    (ticked) 2026-09-24T03:56:53Z by d778be9d: landed in 62a6df4c4; scripts/gates/check-shape-duplication.ts:156 (ADVISORY_FAMILIES) and :171 (unseeded rationale in the profile table); --profile advisory reports 96 findings at exit 0 with no seed file
   ```
   '.ci/scripts/quality/check_*.py'              floor 120   (139 measured)
   '.ci/rediacc_ci/tests/gates/test_gate_*.py'   floor  --   (count at implementation time)
@@ -250,26 +251,42 @@ Naming the advisory status in the message is deliberate. An advisory that reads 
   '.claude/hooks/stop/wl_*.py'                  floor  25   (31 measured)
   ```
   seed `scripts/data/shape-duplication-seed-advisory.json`, cache `.ci/cache/shape-index-advisory/`, `refuses: false`. Floors are mandatory -- the gate's own comment at `:101-112` records a family that shrank to one file while the gate printed a confident tick.
-- [ ] Do not seed the advisory profile at install. Record the reason in the profile table: the gate's seeded discipline exists because the gate refuses, and seeding 90 hashes at once is the suppression its `--seed` refusal (`:1865`) warns about.
+- [x] Do not seed the advisory profile at install. Record the reason in the profile table: the gate's seeded discipline exists because the gate refuses, and seeding 90 hashes at once is the suppression its `--seed` refusal (`:1865`) warns about.
+    (ticked) 2026-09-24T03:56:53Z by d778be9d: landed in 62a6df4c4; scripts/gates/check-shape-duplication.ts:156 (ADVISORY_FAMILIES) and :171 (unseeded rationale in the profile table); --profile advisory reports 96 findings at exit 0 with no seed file
   An advisory tier can carry its backlog openly and drip it. This is the deliberate divergence from the gate's discipline and it must be written down where the next reader finds it, not in a commit message.
-- [ ] Extend `wl_shapedup.py` with the wide tier, reusing `counter_findings`, `ask`, `read_verdict`, `demand_for` and `SHAPE_PROMPT` unchanged:
+- [x] Extend `wl_shapedup.py` with the wide tier, reusing `counter_findings`, `ask`, `read_verdict`, `demand_for` and `SHAPE_PROMPT` unchanged:
+    (ticked) 2026-09-24T04:22:41Z by d778be9d: landed uncommitted 2026-09-24 and re-verified independently: .claude/hooks/stop/test-judge-schema.py 541 controls passed, wide tier at .claude/hooks/stop/wl_shapedup.py:480
   - `CORPUS_GLOBS_WIDE` + a second `state["shapedup_wide_sig"]`.
   - `counter_findings(root, profile="advisory")` -> append `--profile advisory` to the argv at `:345`.
   - A branch-scoped JSONL cap (`wl_reggate.debt_path`-shaped) at `WORKLIST_SHAPEDUP_WIDE_CAP = 5`. Under the cap: one `ask()` on the single largest unshown finding. At the cap: mechanical text only.
   - `V_REASON_WIDE` / `V_ACTION_WIDE` (Part 1.6). `apply_order` is never called on this tier.
-- [ ] Wire it in `.claude/hooks/stop/wl_checks.py` after `:4640`, outside `if judged_ok:`:
+- [x] Wire it in `.claude/hooks/stop/wl_checks.py` after `:4640`, outside `if judged_ok:`:
+    (ticked) 2026-09-24T04:22:30Z by d778be9d: landed uncommitted 2026-09-24 and re-verified independently: .claude/hooks/stop/test-judge-schema.py 541 controls passed, test_shapedup_corpus_sig plus test_shape_probe_agreement 10 passed, check_judged_rule_wiring 6 rules, rubric_calibration.py unchanged, wide counter median 3.05s so the reg_signals fallback applies (.claude/hooks/stop/wl_checks.py:4908)
   ```
   wide_moment = sig_moved or (reg_signals and any(
       fnmatch(f, g) for f in reg_fixset_files for g in wl_shapedup.CORPUS_GLOBS_WIDE))
   ```
   `reg_fixset_files` is already computed unconditionally at `:4278-4280`; `reg_signals` at `:2385`. Result goes to `outq_add(worklist, session_id, state_doc, "shapedup-wide", text, 2)`. Any exception is swallowed and reported as a note, matching the `try/except` at `:4622`.
-- [ ] `.claude/hooks/stop/test-judge-schema.py` (Part 6, from `:1116`) gains wide-tier controls, mirroring the existing five: the cap suppresses the model call but not the finding; the `Demand` is keyed per shape so two shapes do not share a latch; a counter error never fires; a fire never calls `apply_order`; `outq_add` absorbs an identical second call inside `REPORT_REFRESH_MIN`.
-- [ ] Confirm `.ci/scripts/quality/check_judged_rule_wiring.py` still passes -- no new module, so `MIN_RULES` is untouched -- and that `.ci/rediacc_ci/quality/rubric_calibration.py`'s four-entry `SOURCES` map is unchanged, because `SHAPE_PROMPT` is reused verbatim.
-- [ ] Measure and record the real stop-hook wall time for the widened counter. Predicted 1.6-2.0s from the 0.28s->0.83s hashing measurement. If it exceeds 3s, gate the wide run behind `reg_signals` only (drop condition 1) rather than raising the timeout.
+- [x] `.claude/hooks/stop/test-judge-schema.py` (Part 6, from `:1116`) gains wide-tier controls, mirroring the existing five: the cap suppresses the model call but not the finding; the `Demand` is keyed per shape so two shapes do not share a latch; a counter error never fires; a fire never calls `apply_order`; `outq_add` absorbs an identical second call inside `REPORT_REFRESH_MIN`.
+    (ticked) 2026-09-24T04:22:30Z by d778be9d: landed uncommitted 2026-09-24 and re-verified independently: .claude/hooks/stop/test-judge-schema.py 541 controls passed, test_shapedup_corpus_sig plus test_shape_probe_agreement 10 passed, check_judged_rule_wiring 6 rules, rubric_calibration.py unchanged, wide counter median 3.05s so the reg_signals fallback applies (.claude/hooks/stop/wl_checks.py:4908)
+- [x] Confirm `.ci/scripts/quality/check_judged_rule_wiring.py` still passes -- no new module, so `MIN_RULES` is untouched -- and that `.ci/rediacc_ci/quality/rubric_calibration.py`'s four-entry `SOURCES` map is unchanged, because `SHAPE_PROMPT` is reused verbatim.
+    (ticked) 2026-09-24T04:22:30Z by d778be9d: landed uncommitted 2026-09-24 and re-verified independently: .claude/hooks/stop/test-judge-schema.py 541 controls passed, test_shapedup_corpus_sig plus test_shape_probe_agreement 10 passed, check_judged_rule_wiring 6 rules, rubric_calibration.py unchanged, wide counter median 3.05s so the reg_signals fallback applies (.claude/hooks/stop/wl_checks.py:4908)
+- [x] Measure and record the real stop-hook wall time for the widened counter. Predicted 1.6-2.0s from the 0.28s->0.83s hashing measurement. If it exceeds 3s, gate the wide run behind `reg_signals` only (drop condition 1) rather than raising the timeout.
+    (ticked) 2026-09-24T04:22:30Z by d778be9d: landed uncommitted 2026-09-24 and re-verified independently: .claude/hooks/stop/test-judge-schema.py 541 controls passed, test_shapedup_corpus_sig plus test_shape_probe_agreement 10 passed, check_judged_rule_wiring 6 rules, rubric_calibration.py unchanged, wide counter median 3.05s so the reg_signals fallback applies (.claude/hooks/stop/wl_checks.py:4908)
+
+IMPLEMENTATION NOTES, 2026-09-24, where the landed Commit 3 departs from the text above.
+
+- Wall time, measured through `counter_findings(root, profile="advisory")` on this tree: 3.11, 3.22, 3.02, 3.00 and 3.05s cold (median 3.05s, 386 files, 96 findings), against 1.93s for the gate profile on the same machine and about 4ms for a warm unchanged check. That is over the 3s ceiling, so the stated fallback applies: the wide run fires only when `reg_signals` is set and a fix-set file matches a wide pathspec, and `wide_sig_moved` survives as a filter so a repeat fix signal over an unchanged corpus does not pay for a second scan (`.claude/hooks/stop/wl_checks.py`, the wide-tier block after the narrow tier).
+- The spend ledger is `agent/reggate/<branch-slug>.shapedup-wide.jsonl`, not a new `agent/shapedup-wide/` directory: every unreserved directory under `agent/` reads as a peer session and `check:ci-tree-shape` refuses one, while `agent/reggate/` is already reserved and its lock sidecars already ignored.
+- An `accepted` entry fully silences only a finding whose span is the 5-line window. The counter merges overlapping windows into one finding and reports the first window's hash, so accepting that hash leaves the rest of a longer run reporting under another hash. Tracked as its own worklist item; the fix belongs in `scripts/gates/check-shape-duplication.ts`.
+- `refresh_index` is not reached on a stop the judge answers `continue`, because the hook returns before that block. Tracked as its own worklist item, since it narrows what Commit 1 set out to guarantee.
 
 ### Commit 4 -- The drain (open-ended, tracked, not part of the mechanism)
 
-- [ ] Triage the 19-copy span at `.ci/rediacc_ci/tests/gates/test_gate_ci_parity.py:157` and its siblings -- the gate's own note predicts these are one shared scaffold to extract, not 90 defects. Extracting it is what takes the widening from 90 to roughly a dozen and is the precondition `PLAN-extension-shaped-matchers.md` commit 3 has been waiting on.
+TRIAGE RESULT, 2026-09-24, which corrects this section's prediction. The anchor span at `.ci/rediacc_ci/tests/gates/test_gate_ci_parity.py:157` is shape `b9a361994cf8`, 20 copies at a 5-line window, not 19. Five of its sites were read (ci_parity:157, media_r2:174, unverified_downloads:53, workflow_inline:159, scrub_sentinel_empty:90), and every one is the gate harness's own assertion vocabulary: `gate.assert_exit_code`/`gate.assert_contains(result.combined, <literal>, <literal>)` followed by `gate.log_pass`, with literals unrelated from site to site. That is not a shared scaffold waiting to be extracted; folding two assertion calls into a helper would hide which one failed. The same idiom recurs at `6ae372a04efb` (dead_case_arms:113) and `984aea773b55` (media_args:325). So the widening does not collapse from 96 to about a dozen by extraction, and the graduation criterion in Part 1.4 is reached through reasoned `accepted` entries in `scripts/data/shape-duplication-seed-advisory.json`, each verified site by site, rather than through one refactor. The measured backlog on 2026-09-24 is 96 findings: 46 at 3 copies, 17 at 4, 12 at 5, and a tail up to the single 20-copy shape.
+
+- [x] Triage the 19-copy span at `.ci/rediacc_ci/tests/gates/test_gate_ci_parity.py:157` and its siblings -- the gate's own note predicts these are one shared scaffold to extract, not 90 defects. Extracting it is what takes the widening from 90 to roughly a dozen and is the precondition `PLAN-extension-shaped-matchers.md` commit 3 has been waiting on.
+    (ticked) 2026-09-24T04:27:35Z by d778be9d: triaged 2026-09-24: b9a361994cf8 (20 sites) and 984aea773b55 (10 sites) accepted as harness assertion vocabulary in scripts/data/shape-duplication-seed-advisory.json:2, 6ae372a04efb routed to worklist #d4c5a7d8 as a harness fix; advisory backlog 96 to 94
 - [ ] When the backlog is under 10, execute the graduation from Part 1.4.
 
 ## Part 3 -- Risks

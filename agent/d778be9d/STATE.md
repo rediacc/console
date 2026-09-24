@@ -1,10 +1,19 @@
-## SESSION d778be9d 2026-09-22T16:57:05Z
+## SESSION d778be9d 2026-09-24T06:49:41Z
 
-Working tree has the uncommitted-but-fully-tested PLAN-stop-hook-behavioral-hints.md implementation (docs/agent-reference/HINTS.md, wl_hints.py, wiring, --hint-propose verb, test_wl_hints.py, registries) -- full suite ran twice, all failures traced to test_guards_differential.py (unrelated to this diff).
+Branch 0923-1, PR #590. MAIN IS BROKEN (all GitHub Actions vars deleted on operator order; main's workflows still read vars.*) -- pr-babysitter a149262d8b6a1601f is landing PR #590 (item #f2dd1732; briefings reports/pr-babysit-0923-1-briefing.md + -v2.md). Operator runs /pr-merge.
 
-Operator directive: the this-worktree test-collision class (seen repeatedly this session) is not to be waved away as environmental anymore. Dispatched Opus agent a7b117e80c08416bd (worklist #6f17577f) to actually fix it: four guards' "this-worktree" ENVS variant reads CLAUDE_PROJECT_DIR=ROOT (the live, actively-committing checkout) instead of a frozen snapshot, which is why it only fails when the suite runs while this session is also committing. Separately investigating (not fixing yet) the private/renet submodule git-identity failure, a different unrelated mechanism.
+## In flight
+- OBS/rdc writer ae404e341fcdf699b (#f962bb8e): move /tmp/rediacc_20260426124447.json into ~/.config/rediacc/, fix ./rdc.sh, list repos, settle OBS_OTLP_CREDENTIALS JSON vs base64 (possible live prod telemetry defect) read-only.
 
-This turn also landed: 25e837af8 (OUTQ_PER_STOP), d1fdfd6d4 (PLAN-sweep-obligation-carry-forward.md, confirmed live 3x this session via real stop-gate re-fires on already-committed work -- should be the next plan implemented after the current two finish).
+## Uncommitted, NOT yet verified (resume here)
+- .claude/rediacc_hooks/guards/block_nonstandard_branch_name.py: added a foreign-repo exemption (target_root outside this checkout -> ALLOW; submodules keep the rule). NEEDS cases in .claude/rediacc_hooks/tests/hookcases.py (git -C /home/developer/rovaip branch chore/x <sha> allowed; git -C private/account branch chore/x still blocked; plain git branch chore/x blocked) and a planted-defect proof, then tell the babysitter to absorb it.
+
+## Operator rulings this stretch
+- rovaip: another project. Local rovaip branches may be deleted (they were); NEVER touch rovaip remote branches.
+- Drop gitlab e2e-test-separate-v2 (not yet done: delete it on the gitlab remote with `git push gitlab --delete e2e-test-separate-v2`, log its tip cc1870147 to .ci/cache/deleted-branches-all.txt first).
+- Admin creds in ci-shared (done, gates green); dev keys _DEV in ci-shared; dev SES aliases EU (recorded in agent/plans/PLAN-account-env-to-bws.md).
 
 ## Next action
-On a7b117e80c08416bd returning: verify its fix against the tree (not just its report), tick #6f17577f. Then commit the behavioral-hints work (split: HINTS.md+wl_hints.py+wiring, then test file), tick plan boxes, flip Status to done, tick #cc3f0c91. Then implement PLAN-sweep-obligation-carry-forward.md.
+1. Finish the branch-name guard cases above and verify.
+2. Delete gitlab e2e-test-separate-v2 per the ruling.
+3. When a writer slot frees (babysitter + OBS hold both): run the stale-.sh plan update (#8ea2de80, survey done: 10 plans, 66 refs, all UPDATE), then the queue: stop-hook-overhaul 1.3, check:deps, harness output, report scaffold, shape counter, minimum-release-age, decided-not-done plan state, PLAN-account-env-to-bws boxes.

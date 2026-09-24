@@ -93,3 +93,10 @@
 {"kind":"debt","sig":"3807fa1b20c6","blind_spot":"Citation path resolution with stub entries and indirection was not observable by existing checks because citation excerpt verification did not exist before this system was built.","surface":"gates","artifact":".claude/hooks/stop/test-completion-evidence.py","charged":67,"at":"2026-09-22T15:06:12Z","br":"0914-1"}
 {"kind":"charge","sig":"3807fa1b20c6","why":"capped","at":"2026-09-22T15:06:12Z","br":"0914-1"}
 {"kind":"charge","sig":"fe0655f2220e","why":"proven","at":"2026-09-22T15:51:23Z","br":"0914-1"}
+{"kind":"debt","sig":"c444dcbff9f4","blind_spot":"The hints corpus, wl_hints.py implementation, and stop-hook wiring did not exist before this session, so no existing gate could detect their absence or validate their correctness.","surface":"hooks","artifact":".claude/rediacc_hooks/tests/test_wl_hints.py","charged":69,"at":"2026-09-22T18:29:58Z","br":"0914-1"}
+{"kind":"charge","sig":"c444dcbff9f4","why":"capped","at":"2026-09-22T18:29:58Z","br":"0914-1"}
+{"kind":"debt","sig":"4644d46510ca","blind_spot":"Existing hook execution gates verified scripts ran and produced output, but no gate validated the STRUCTURE or FORMAT of claim-check message output\u2014specifically, the ordering of labels relative to tips/hints and the absence of wrapping parenthetical characters.","surface":"hooks","artifact":".claude/hooks/test-wl_claimcheck.sh","charged":70,"at":"2026-09-22T18:32:43Z","br":"0914-1"}
+{"kind":"charge","sig":"4644d46510ca","why":"capped","at":"2026-09-22T18:32:43Z","br":"0914-1"}
+{"kind":"debt","sig":"80a914d46500","blind_spot":"This session's fix-set touched only worklist ledgers, not test_canonical_sys_path_hop.py or its code dependencies, so no new gate specific to this session's changes can detect this defect.","surface":"none","artifact":"","charged":71,"at":"2026-09-22T18:39:58Z","br":"0914-1"}
+{"kind":"charge","sig":"80a914d46500","why":"capped","at":"2026-09-22T18:39:58Z","br":"0914-1"}
+{"kind":"charge","sig":"73e189b04b28","why":"proven","at":"2026-09-22T20:56:53Z","br":"0914-1"}

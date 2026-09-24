@@ -24,7 +24,8 @@ written to Bitwarden, AWS, Cloudflare or GitHub. No value of any secret was read
       (writer `.ci/lib/account.sh:238,296`; reader `.ci/lib/account.sh:825-827`). It is a
       committed test constant that collides by NAME with the real production secret in the
       store. Part 3, D3 — the one collision that would break something on cutover.
-- [ ] Seed the 6 shareable store entries that cover 14 `.env` keys: `ROOT_EMAIL`,
+- [x] Seed the 6 shareable store entries that cover 14 `.env` keys: `ROOT_EMAIL`,
+    (ticked) 2026-09-24T06:20:58Z by d778be9d: 2026-09-24: ROOT_EMAIL, AWS_SES_FROM and the nine SELLER_* seeded into ci-shared by the Actions-vars migration (as nine secrets, not SELLER_PROFILE_JSON, per PLAN-github-actions-to-bitwarden Decision 1), OTEL_ENDPOINT seeded with read-back MATCH; UPSTREAM_URL and UPSTREAM_PUBLIC_KEY are empty in private/account/.env so nothing to seed; check:ci-bws-map and check:ci-secret-supply exit 0 (.ci/config/secret-supply.json:268)
       `AWS_SES_FROM`, `OTEL_ENDPOINT`, `UPSTREAM_URL`, `UPSTREAM_PUBLIC_KEY`, and the nine
       `SELLER_*` as one `SELLER_PROFILE_JSON` (Part 1 §c, §e). Operator-only.
       A seventh, `UPSTREAM_API_KEY`, waits on `## Remaining` Q1.
