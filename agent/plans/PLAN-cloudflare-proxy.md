@@ -272,3 +272,22 @@ Do this when development, testing and improvement are finished, or right away if
 2. Phase 1 as soon as convenient.
 3. Redeploy after A2, A3, B1, B2 and B3, then Phase 2.
 4. **Teardown item:** a worklist entry, "Tear down rediacc-proxy-eu per PLAN-cloudflare-proxy.md section 5", due when the trial and improvement wave closes. Run it immediately if the proxy is shelved.
+
+## Phase 1 results (2026-09-24, lead session d778be9d)
+
+Run on the dev box with an operator-created portal token (scope `proxy:exec`; kept in a mode-600 scratch file, never in the repo).
+
+- **Daemon up.** `REDIACC_ACCOUNT_SERVER=https://eu.rediacc.com REDIACC_TOKEN=<token> ./rdc.sh serve --mode daemon --host 127.0.0.1 --port 18080` printed `Executor listening on http://127.0.0.1:18080 (mode: daemon)`, and `/v1/health` returned `{"ok":true}`.
+- **`machine status hostinger` through the proxy: rc 0**, with live data (31.3G memory, datastore 85% used, scrub last run 2026-09-20). This covers the whole daemon path: CLI, daemon, token introspection, policy, dispatch, and a real SSH to hostinger.
+- **`repo status demo-stackoverflow@hostinger` through the proxy: rc 0.** It returned the repo's real record (guid `db315abd-...`, created 2026-03-17T08:41:15Z). This was read-only on a grand repo, which S1 allows.
+- **The first attempt failed with 401.** The active config's account pointer is `https://edge-eu.rediacc.com`. The edge account server has its own database, so a production token is unknown there (`Invalid or expired API token`, 401), while the same token introspects `active: true` on `eu.rediacc.com`. The daemon takes the introspection URL from the CLI config, so a trial must pin `REDIACC_ACCOUNT_SERVER` to the server that issued the token.
+- **Found, F1: proxied commands are not audited.** The daemon logged `Ran "repo status" for muhammed@rediacc.com but could not record it: The account server rejected the audit event (403)`. The executor posts the audit event with a token that lacks `audit:write` (its scopes: license:activate, license:read, subscription:read, proxy:exec, backup:read, config:enroll, proxy:admin). The command still runs, so an audit gap is silent apart from a log line.
+- **Not run: the fork steps (Phase 1 steps 4-5).** `rdc repo fork demo-stackoverflow@hostinger --tag proxytrial` failed before creating anything with `Token is bound to a different IP address`: the CLI's stored subscription token (used to license the fork) was minted from another IP. The CLI rolled its config back. The steps need an operator re-login of the CLI on this machine.
+- **Fork steps PASSED after the operator's CLI re-login.** The re-login went against edge-eu.rediacc.com, the active config's account pointer. Its subscription token licenses the fork, while the proxy token came from eu.rediacc.com.
+  - `rdc repo fork demo-stackoverflow@hostinger --tag proxytrial` created the fork, with a local CLI licence activation and repo key deploy.
+  - Through `rdc --proxy http://127.0.0.1:18080`, each rc 0:
+    - `repo status demo-stackoverflow:proxytrial@hostinger`
+    - `repo up ...`: 56.5 s, 2 containers, exposed at `https://pgadmin-fork-proxytrial.demo-stackoverflow.hostinger.rediacc.io`, which answered 302 (pgAdmin's login redirect)
+    - `repo down ...`: 0 containers afterwards
+  - Cleanup: `rdc repo delete demo-stackoverflow:proxytrial@hostinger -y` (LUKS unmounted, repository deleted); `repo list` no longer shows the fork, and the daemon is stopped.
+  - **Phase 1 is complete:** the executor protocol drives a real machine end to end, including a detached `repo up` stream. Phase 2, the Cloudflare container, still needs B1-B4.
