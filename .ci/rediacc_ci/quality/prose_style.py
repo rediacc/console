@@ -877,7 +877,7 @@ def _stub_points_at(root, stub_rel, rel):
         return False
     body = head.split("\n", 1)[-1] if head.startswith("#") else head
     found = _STUB_HEAD_RE.search(body)
-    return bool(found) and found.group(1) == rel
+    return found is not None and found.group(1) == rel
 
 
 def identity_path(root, rel):

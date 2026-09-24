@@ -403,17 +403,17 @@ def test_r9_a_running_workflow_is_judged_by_its_agents_transcripts(wl):  # noqa:
     """2026-09-24: a workflow's own .output stays empty until it returns, so every live workflow read POSSIBLY STUCK. Its agents' transcripts are the stream."""
     tid, _desc, age, size, stale = workflow_facts(wl, 1)
     assert tid == "wtest0001", tid
-    assert age is not None, "no stream found for the workflow"
-    assert age <= 2, age
-    assert size > 0, size
-    assert stale is False, (age, stale)
+    assert age is not None, (age, size, stale)
+    assert age <= 2, (age, size, stale)
+    assert size > 0, (age, size, stale)
+    assert stale is False, (age, size, stale)
 
 
 def test_r9b_a_workflow_whose_agents_went_quiet_is_stale(wl):  # noqa: F811
     """The control: the same run with its only transcript 30 minutes old must still read stale, so r9 cannot pass vacuously."""
     _tid, _desc, age, _size, stale = workflow_facts(wl, 30)
     assert stale is True, (age, stale)
-    assert age >= 29, age
+    assert age >= 29, (age, stale)
 
 
 def test_r4_five_leased_writers_exceed_the_cap_and_the_newest_is_the_excess(wl):  # noqa: F811
@@ -566,9 +566,9 @@ def test_r6b_the_sealed_modules_read_no_environment_and_the_limits_are_literals(
         attrs = {n.attr for n in ast.walk(tree) if isinstance(n, ast.Attribute)}
         assert not ({"environ", "getenv"} & (names | attrs)), "%s reads the environment" % path
     consts = {}
-    for node in ast.parse(ROSTER_PY.read_text(encoding="utf-8")).body:
-        if isinstance(node, ast.Assign) and isinstance(node.targets[0], ast.Name):
-            consts[node.targets[0].id] = node.value
+    for stmt in ast.parse(ROSTER_PY.read_text(encoding="utf-8")).body:
+        if isinstance(stmt, ast.Assign) and isinstance(stmt.targets[0], ast.Name):
+            consts[stmt.targets[0].id] = stmt.value
     for name, want in (("WRITER_CAP", 4), ("STATUS_PING_MIN", 20)):
         node = consts.get(name)
         shown = ast.unparse(node) if node is not None else "absent"
