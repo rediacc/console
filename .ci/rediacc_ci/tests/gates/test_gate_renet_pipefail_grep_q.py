@@ -1,7 +1,7 @@
 """`private/renet/.ci/scripts/quality/pipefail-grep-q.sh`, driven from console.
 
 renet carries its own BASH copy of the pipefail/`grep -q` detector, and that copy is correct as bash: renet is required to work standalone, so a `sys.path` reach into console's `.ci` would make the gate silently skip in exactly the case the rest of that directory is built for. A third implementation of a detector this repo already keeps as a bash/Python twin pair drifts unless
-something holds it, and THIS FILE IS THAT SOMETHING. It pins two things:
+something holds it, and THIS FILE IS THAT SOMETHING. It pins three things:
 
   1. the detector's CONTRACT, driven against the renet script's own `offenders()`
      (reachable because the script guards its main block with
@@ -9,7 +9,10 @@ something holds it, and THIS FILE IS THAT SOMETHING. It pins two things:
      in-script controls assert are asserted from console too and a renet-side
      regression reds console CI rather than only renet's own stage;
 
-  2. PRODUCER-LIST PARITY, one-directional on purpose: renet's
+  2. the Go-embedded-bash half's contract, `go_offenders()`, in both directions,
+     plus the real coupling its scope rests on (section 3 below);
+
+  3. PRODUCER-LIST PARITY, one-directional on purpose: renet's
      `SCALING_PRODUCERS` must be a SUPERSET of console's. Superset, not equality,
      because renet may legitimately be AHEAD -- it was, by `tee` and `docker`,
      between the commit that added it and the console widening that followed. The
@@ -323,3 +326,168 @@ def test_every_declared_extra_is_really_in_the_list(gate):
     gate.log_pass(
         "every name in RENET_EXTRA_PRODUCERS (%s) is really in the list" % " ".join(extras)
     )
+
+
+# ---- 3. the Go-embedded-bash half --------------------------------------------
+#
+# renet builds bash as Go strings, and exactly one path runs such a string under pipefail: `buildScript()` in `pkg/ssh/streaming.go`, behind `SendShellCommands`. The renet gate's `go_offenders()` polices string literals in files that name that entry point or set pipefail in a literal. These cases pin both directions from console, and the last one asserts the coupling the scope rests on against the REAL renet tree, so a refactor that moves pipefail elsewhere reds here instead of leaving the Go half watching nothing.
+
+BT = "`"
+CALL = '\t_, _ = m.SendShellCommands(ctx, h, p, u, []string{s}, "")'
+
+
+def go_offenders_of(gate, tmp_path, name: str, *lines: str) -> str:
+    """Write a fixture Go file, then print what renet's `go_offenders()` makes of it."""
+    fixture = tmp_path / ("%s.go" % name)
+    fixture.write_text("".join("%s\n" % line for line in lines), encoding="utf-8")
+    result = source_and_run(gate, "go_offenders '%s' || true" % fixture)
+    gate.assert_exit_code(0, result.rc, "driving go_offenders over %s should not crash" % name)
+    if "command not found" in result.combined:
+        gate.log_fail("renet's gate has no go_offenders(): %s" % result.combined.strip())
+    return result.out
+
+
+def assert_go(gate, tmp_path, name: str, flagged: bool, message: str, *lines: str) -> None:
+    hits = go_offenders_of(gate, tmp_path, name, *lines).strip()
+    if flagged and not hits:
+        gate.log_fail(
+            "%s -- go_offenders() returned NOTHING for:\n    %s" % (message, "\n    ".join(lines))
+        )
+    if not flagged and hits:
+        gate.log_fail("%s -- go_offenders() flagged it: %s" % (message, hits))
+    gate.log_pass(message)
+
+
+def test_go_raw_string_sent_through_the_entry_point_is_flagged(gate, tmp_path):
+    gate.log_test("a raw Go string piping into grep -q, in a file that calls SendShellCommands")
+    assert_go(
+        gate,
+        tmp_path,
+        "go-raw",
+        True,
+        "the raw-string pipeline is detected",
+        "package x",
+        "func f() {",
+        "\ts := %scat /etc/hosts | %s localhost%s" % (BT, GQ, BT),
+        CALL,
+        "}",
+    )
+
+
+def test_go_interpreted_string_that_sets_pipefail_is_flagged(gate, tmp_path):
+    gate.log_test("an interpreted Go string whose own script sets pipefail")
+    assert_go(
+        gate,
+        tmp_path,
+        "go-interp",
+        True,
+        "the interpreted-string pipeline is detected",
+        "package x",
+        "var s = \"set -euo pipefail\\ndocker ps --format x | %sE '^reg$'\"" % GQ,
+    )
+
+
+def test_go_pipeline_spanning_lines_is_flagged(gate, tmp_path):
+    gate.log_test("a raw-string pipeline whose grep -q sits on the next line")
+    assert_go(
+        gate,
+        tmp_path,
+        "go-multi",
+        True,
+        "the multi-line raw-string pipeline is detected",
+        "package x",
+        "func f() {",
+        "\ts := %s" % BT,
+        "ls /var/lib/ceph |",
+        "    %s osd%s" % (GQ, BT),
+        CALL,
+        "}",
+    )
+
+
+def test_go_comment_is_not_flagged(gate, tmp_path):
+    gate.log_test("the shape inside a Go // comment")
+    assert_go(
+        gate,
+        tmp_path,
+        "go-comment",
+        False,
+        "a // comment naming the shape is not code",
+        "package x",
+        "func f() {",
+        "\t// s := %scat /etc/hosts | %s localhost%s" % (BT, GQ, BT),
+        CALL,
+        "}",
+    )
+
+
+def test_go_file_without_pipefail_coupling_is_not_flagged(gate, tmp_path):
+    """The scope boundary. pkg/functions and pkg/infra run their strings via session.Start or sh -c, where nothing sets pipefail."""
+    gate.log_test("the shape in a Go file that neither calls the entry point nor sets pipefail")
+    assert_go(
+        gate,
+        tmp_path,
+        "go-nopf",
+        False,
+        "an uncoupled file is not flagged",
+        "package x",
+        "func f() {",
+        "\ts := %scat /etc/hosts | %s localhost%s" % (BT, GQ, BT),
+        "\t_ = s",
+        "}",
+    )
+
+
+def test_go_or_list_bash_comment_and_block_comment_are_not_flagged(gate, tmp_path):
+    gate.log_test("||, a bash # comment inside the literal, and a /* */ block")
+    assert_go(
+        gate,
+        tmp_path,
+        "go-silent",
+        False,
+        "||, a bash # comment and a Go block comment are not flagged",
+        "package x",
+        "func f() {",
+        "\ts := %stest -f a || %s k a" % (BT, GQ),
+        "# never: cat a | %s k%s" % (GQ, BT),
+        "\t/* t := %scat a | %s k%s */" % (BT, GQ, BT),
+        CALL,
+        "}",
+    )
+
+
+def test_the_real_pipefail_coupling_still_exists(gate):
+    """The Go half is scoped by one real coupling; assert it on the REAL tree.
+
+    `pkg/ssh/streaming.go` must still be pipefail-bearing by the gate's own test, and every name in `PIPEFAIL_GO_ENTRYPOINTS` must still appear there. If either stops holding, the Go half is watching a scope that no longer runs under pipefail, and its green would mean nothing.
+    """
+    gate.log_test("buildScript's file still sets pipefail and still names every entry point")
+    streaming = paths.from_root("private", "renet", "pkg", "ssh", "streaming.go")
+    if not streaming.is_file():
+        gate.log_fail(
+            "%s is gone; re-derive PIPEFAIL_GO_ENTRYPOINTS in the renet gate"
+            % paths.relative_to_root(streaming)
+        )
+    result = source_and_run(
+        gate,
+        "go_is_pipefail_bearing '%s' && echo BEARING; printf '%%s\\n' $PIPEFAIL_GO_ENTRYPOINTS"
+        % streaming,
+    )
+    words = result.out.split()
+    if "BEARING" not in words:
+        gate.log_fail(
+            "renet's gate does not see pipefail in %s: %s"
+            % (streaming.name, result.combined.strip())
+        )
+    entrypoints = [w for w in words if w != "BEARING"]
+    if not entrypoints:
+        gate.log_fail(
+            "renet's $PIPEFAIL_GO_ENTRYPOINTS is EMPTY, so the Go half is scoped to nothing"
+        )
+    text = streaming.read_text(encoding="utf-8")
+    missing = [ep for ep in entrypoints if ("%s(" % ep) not in text]
+    if missing:
+        gate.log_fail(
+            "entry point(s) %s no longer appear in %s" % (" ".join(missing), streaming.name)
+        )
+    gate.log_pass("streaming.go is pipefail-bearing and names %s" % " ".join(entrypoints))

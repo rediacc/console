@@ -64,6 +64,8 @@ stdout and stderr are captured separately and never merged, because merging hide
 
 **`--changed` is a convenience, never a verdict.** It selects gates whose declared `paths` intersect the diff against the merge base. A gate with no declared `paths` is always selected, which is the safe direction. Any selection flag marks the run `PARTIAL` in the header, in the footer, and as `partial: true` in `--json`. A partial run that reports green has not validated the tree.
 
+**`--receipt-out <absolute path>` judges the pushed tree when the worktree is shared.** `ci:quick` judges the worktree it runs in, while the push carries `HEAD^{tree}`, so other writers' uncommitted edits can turn the receipt red for a tree that does not contain them. Run `npm run ci:quick -- --receipt-out <checkout>/.ci/cache/prepush-receipt.json` in a clean clone checked out at the same HEAD, and the receipt lands where the pushing checkout's guard reads it. The guard still refuses unless the receipt's recorded tree equals the pushing `HEAD^{tree}`.
+
 **Ordering and isolation.** Gates declare `needs` (ordering) and `mutex` (shared mutable resources: the per-package dist trees, `private/renet/bin`, the account vitest state, `packages/www/dist`). A gate whose dependency failed is reported `SKIP`, never as passed, and a skip still makes the run exit 1. If a gate passes at `--jobs 1` and fails under load, the fix is a new `mutex`
 group naming the resource, never a retry.
 

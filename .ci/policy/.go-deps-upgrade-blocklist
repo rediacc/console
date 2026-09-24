@@ -24,3 +24,11 @@ github.com/landlock-lsm/go-landlock  # BLOCKER: v0.9.0 is a 0.x minor that can c
 # kubelet release requires the tagged version.
 k8s.io/kubelet
 
+
+# BLOCKER: GO-2026-6443 (CVE-2026-84445, GHSA-2v4p-qf9q-27wj), a reachable server panic
+# via a missing :authority/Host header. grpc v1.84.0 is inside the affected range, and no
+# fixed 1.84.x is tagged; the fixed releases are v1.83.2 and a 1.85.0-dev pseudo-version.
+# renet pins v1.83.2, which renet main already runs. Measured 2026-09-24: check:ci-renet's
+# govulncheck refused v1.84.0 after check:ci-go-deps had demanded it. Lift when grpc tags a
+# release outside the advisory's affected ranges.
+google.golang.org/grpc
