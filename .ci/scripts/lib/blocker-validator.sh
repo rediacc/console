@@ -149,8 +149,8 @@ readonly LOW_EFFORT_BLOCKER_PATTERNS=(
 # installable bump for convenience rather than a genuine technical hold. The
 # upgrade blocklist is only for bumps that genuinely cannot be taken now
 # (breaking major, pin conflict, native rebuild, known regression). check-deps
-# already auto-defers versions too fresh to install under .npmrc
-# minimum-release-age, so "routine bump deferred to a dedicated dependency-bump
+# already auto-defers versions too fresh under the .ci/config/release-age.json
+# window, so "routine bump deferred to a dedicated dependency-bump
 # PR" / "not needed by this change" is deferral-for-convenience, so take the bump.
 # Legitimate major-migration holds read differently (e.g. "dedicated lint-tooling
 # PR", "dedicated PR that exercises the email flows") and are NOT matched here.

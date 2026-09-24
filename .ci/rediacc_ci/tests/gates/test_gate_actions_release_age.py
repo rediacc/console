@@ -33,7 +33,7 @@ from rediacc_ci.tests.gates import harness
 
 GATE = paths.from_root("scripts/gates", "check-actions.ts")
 LIB = paths.from_root("scripts", "lib", "release-age.ts")
-NPMRC = paths.from_root(".npmrc")
+RELEASE_AGE_CONFIG = paths.from_root(".ci", "config", "release-age.json")
 
 DAY_MS = 86400000
 
@@ -189,20 +189,22 @@ def test_partial_failure_is_deliberately_not_fatal(gate):
     gate.log_pass("a partial lookup failure stays non-fatal, by design")
 
 
-def test_window_source_is_the_shared_npmrc_setting(gate):
+def test_window_source_is_the_shared_release_age_config(gate):
     """The number is a repo-wide policy, not a local preference."""
     if not LIB.is_file():
         gate.log_fail("shared lib under test is missing: %s" % paths.relative_to_root(LIB))
-    if not NPMRC.is_file():
-        gate.log_fail("%s is missing, so the policy this case pins has no source" % NPMRC)
+    if not RELEASE_AGE_CONFIG.is_file():
+        gate.log_fail(
+            "%s is missing, so the policy this case pins has no source" % RELEASE_AGE_CONFIG
+        )
     gate.assert_contains(
         LIB.read_text(encoding="utf-8"),
-        "minimum-release-age",
-        "the shared lib reads the window from .npmrc",
+        "minimum_release_age_minutes",
+        "the shared lib reads the window from .ci/config/release-age.json",
     )
     gate.assert_contains(
-        NPMRC.read_text(encoding="utf-8"),
-        "minimum-release-age=1440",
-        "and .npmrc still sets it",
+        RELEASE_AGE_CONFIG.read_text(encoding="utf-8"),
+        '"minimum_release_age_minutes": 1440',
+        "and .ci/config/release-age.json still sets it",
     )
     gate.log_pass("the window comes from the repo-wide supply-chain setting")

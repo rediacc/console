@@ -16,7 +16,7 @@
  *    the same one the credits gate uses — one definition of "what is pinned".
  *  - FRESHNESS WINDOW: a brand-new upstream release (younger than the window) is
  *    NOT flagged yet. This is self-healing against churn — we don't redden the
- *    build the instant upstream tags something, matching the minimum-release-age
+ *    build the instant upstream tags something, matching the release-age window
  *    posture used for npm deps.
  *  - BLOCKER-GATED HOLDS: .embed-assets-upgrade-blocklist deliberately pins a
  *    component back, each entry carrying a substantive BLOCKER reason (validated

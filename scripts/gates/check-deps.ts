@@ -465,7 +465,7 @@ async function fetchVersionPublishTime(
 /**
  * Split must-upgrade packages into those eligible to bump now vs those still
  * within the freshness window. A version becomes eligible only at the next UTC
- * midnight after it has aged the base window (minimum-release-age), so all of a
+ * midnight after it has aged the base window (.ci/config/release-age.json), so all of a
  * day's freshly-aged versions surface together the next day rather than hourly.
  * Deferring a still-fresh `latest` avoids churning the tree (and re-failing the
  * gate an hour later) for a version that is only a few hours past the window.

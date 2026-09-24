@@ -1089,7 +1089,7 @@ class Audit:
                     return 1
                 advisory.ci_warn(
                     "Deferred %d production advisory(ies): fix not yet installable "
-                    "(minimum-release-age) or held in %s" % (len(prod_unallowed), DEPS_BLOCKLIST)
+                    "(release-age window) or held in %s" % (len(prod_unallowed), DEPS_BLOCKLIST)
                 )
             advisory.ci_warn(
                 "Allowed production vulnerabilities: %s (see %s)" % (prod_total, PROD_ALLOWLIST)
@@ -1131,7 +1131,7 @@ class Audit:
                     self._emit_failure(advisory_id, ALL_REPORT, DEV_ALLOWLIST)
                 return 1
             advisory.ci_warn(
-                "Deferred %d dev advisory(ies): fix not yet installable (minimum-release-age) "
+                "Deferred %d dev advisory(ies): fix not yet installable (release-age window) "
                 "or held in %s" % (len(unallowed), DEPS_BLOCKLIST)
             )
 

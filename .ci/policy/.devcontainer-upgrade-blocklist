@@ -7,8 +7,8 @@
 #   bw
 #
 # NOTE: do NOT add an entry for a release that is merely too fresh.
-# scripts/gates/check-devcontainer-pin-freshness.ts reads `minimum-release-age` from
-# .npmrc and automatically defers anything published inside that window — the
+# scripts/gates/check-devcontainer-pin-freshness.ts reads the freshness window from
+# .ci/config/release-age.json and automatically defers anything published inside that window — the
 # hold clears itself once the version ages out. Only blocklist a pin held back
 # for a real reason (a breaking change, a broken asset, an upstream regression).
 #

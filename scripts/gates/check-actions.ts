@@ -106,7 +106,7 @@ interface ActionResult extends ActionInfo {
  *
  * Delegates to the SHARED window in ./lib/release-age.js rather than carrying
  * its own copy, so this gate, check-deps and check-embed-asset-freshness all
- * read `minimum-release-age` from .npmrc and all inherit the same round-up to
+ * read the window from .ci/config/release-age.json and all inherit the same round-up to
  * the next UTC day, which batches a day's upgrades into one surfacing instead of
  * trickling them in one at a time. An action pin is the same kind of dependency
  * as an npm one and gets the same treatment.
@@ -455,7 +455,7 @@ async function checkActions(): Promise<void> {
         latest: latestVersion,
         releaseUrl: release.url,
         reason: release.publishedAt
-          ? `published ${release.publishedAt}, inside the shared minimum-release-age window`
+          ? `published ${release.publishedAt}, inside the shared release-age window`
           : 'no publish date returned by the API (deferring fail-closed)',
       });
       continue;
@@ -534,7 +534,7 @@ async function checkActions(): Promise<void> {
     console.log(
       `\n  ${DIM}These are real upgrades held back by the release-age window, the same one`
     );
-    console.log(`  .npmrc enforces with minimum-release-age and the Go/npm gates apply via`);
+    console.log(`  .ci/config/release-age.json sets and the Go/npm gates apply via`);
     console.log(
       `  is_release_deferred. They become normal findings once the window passes.${NC}\n`
     );

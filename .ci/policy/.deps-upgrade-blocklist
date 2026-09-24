@@ -1,7 +1,7 @@
 # Packages blocked from auto-upgrade (require manual migration).
 #
 # NOTE: do NOT add entries for versions that are merely too fresh. check-deps.ts
-# reads .npmrc `minimum-release-age` and automatically defers (does not fail on)
+# reads the .ci/config/release-age.json window and automatically defers (does not fail on)
 # any `latest` published inside that window — npm cannot install it yet anyway,
 # and it clears itself once the version ages out. Only blocklist packages held
 # back for a real reason (breaking major, native rebuild, pin conflict, etc.).

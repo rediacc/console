@@ -63,7 +63,7 @@ CASES = [
 def build_fixture(root: pathlib.Path, mode: str) -> pathlib.Path:
     """The minimal tree the PORT reads: no bash libraries to mirror any more.
 
-    `scripts/lib/release-age.ts` and `.npmrc` DO still have to be copied in, though: `ReleaseAge` resolves the delegate under `REDIACC_CI_ROOT`, and a fixture without it falls through to the fail-closed branch, which turns the 2020-dated "outdated" fixture into a DEFERRED one and the whole case into a false pass. Same trap `go_deps.selftest`'s own `build()` documents.
+    `scripts/lib/release-age.ts` and `.ci/config/release-age.json` DO still have to be copied in, though: `ReleaseAge` resolves the delegate under `REDIACC_CI_ROOT`, and a fixture without it falls through to the fail-closed branch, which turns the 2020-dated "outdated" fixture into a DEFERRED one and the whole case into a false pass. Same trap `go_deps.selftest`'s own `build()` documents.
     """
     (root / "private" / "fakemod").mkdir(parents=True)
     (root / "private" / "fakemod" / "go.mod").write_text(
@@ -73,7 +73,8 @@ def build_fixture(root: pathlib.Path, mode: str) -> pathlib.Path:
     (root / ".ci" / "policy" / ".go-deps-upgrade-blocklist").write_text("", encoding="utf-8")
     (root / "scripts" / "lib").mkdir(parents=True)
     shutil.copy2(paths.from_root("scripts", "lib", "release-age.ts"), root / "scripts" / "lib")
-    shutil.copy2(paths.from_root(".npmrc"), root / ".npmrc")
+    (root / ".ci" / "config").mkdir(parents=True)
+    shutil.copy2(paths.from_root(".ci", "config", "release-age.json"), root / ".ci" / "config")
     shim = root / "shim"
     shim.mkdir()
     target = shim / "go"

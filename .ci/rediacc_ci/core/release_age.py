@@ -23,7 +23,7 @@ swap under a ledger is a separate change. The differences between the two are re
     passes a window, so no verdict differs today.
   * that copy's runner probe runs with `cwd=<root>`; the twin's probe runs in the
     CALLER's directory and only the real queries `cd` (`release-age.sh:118`
-    versus `:137`). Immaterial, because `release-age.ts` resolves `.npmrc`
+    versus `:137`). Immaterial, because `release-age.ts` resolves `.ci/config/release-age.json`
     against its own `__dirname`, but it is a difference and this module keeps the
     twin's.
 
@@ -80,14 +80,15 @@ WHAT IS FAITHFULLY REPRODUCED
     and a freshness gate stuck on "deferred" is a gate that has gone quiet.
     Measured warm on 2026-09-06: 0.11s / 0.55s / 0.98s, which is the order.
   * THE 86400-SECOND FALLBACK IS THE CALLER'S POLICY AND STAYS ON THIS SIDE.
-    `getMinReleaseAgeMs()` returns 0 (deferral disabled) when `.npmrc` carries no
-    key; this side has always used 24h. The divergence between the two
+    `getMinReleaseAgeMs()` returns 0 (deferral disabled) when
+    `.ci/config/release-age.json` carries no window; this side has always used 24h. The divergence between the two
     implementations is preserved rather than resolved in either direction, and it
-    is unreachable today because `check-npmrc.sh` gates the key's presence.
-    NOTE FOR ANYONE WRITING A TEST: this repo's `.npmrc` says
-    `minimum-release-age=1440` MINUTES, which is 86400 seconds, so the live value
+    is unreachable today because `check:ci-npmrc` gates the setting's presence.
+    NOTE FOR ANYONE WRITING A TEST: this repo's `.ci/config/release-age.json` says
+    `minimum_release_age_minutes: 1440`, which is 86400 seconds, so the live value
     and the fallback are the same number and no test can tell them apart from the
-    real tree. Point `--npmrc` somewhere else to distinguish them.
+    real tree. Point `REDIACC_CI_ROOT` at a fixture tree with its own
+    `.ci/config/release-age.json` to distinguish them.
   * THE LOUD REFUSAL. An unreachable delegate prints
     `release-age: could not reach scripts/lib/release-age.ts (tsx missing or
     failing); treating '<epoch>' as DEFERRED` on stderr, byte for byte, rather
@@ -215,7 +216,7 @@ class ReleaseAge:
         """`release_age_window_seconds` (release-age.sh:199-202). ALWAYS succeeds.
 
         An unreachable delegate, a non-numeric answer or a NON-POSITIVE one all fall back to 24h, and the third of those is the live path: the TypeScript
-        prints `0` when `.npmrc` carries no key, and `((answer <= 0))` at `:160`
+        prints `0` when `.ci/config/release-age.json` carries no window, and `((answer <= 0))` at `:160`
         turns that 0 into 86400. That is the caller policy, not a guard.
         """
         if self._window is not None:

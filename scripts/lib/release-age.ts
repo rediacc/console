@@ -10,9 +10,9 @@
  *     eligibleAt = startOfNextUtcDay(publishedAt + window)
  *     deferred   = now < eligibleAt                       // effective age 24-48h
  *
- * The base window is `minimum-release-age` (MINUTES) in .npmrc. That key is this
- * repo's CI-gate knob; it is NOT npm's native install guard (npm's real key is
- * `min-release-age`, in DAYS, and npm ignores ours). See the .npmrc comment.
+ * The base window is `minimum_release_age_minutes` in .ci/config/release-age.json.
+ * It is this repo's CI-gate knob, NOT an npm install guard: npm never enforced it,
+ * and it moved out of .npmrc once npm 11 began warning about the unknown key.
  *
  * WHY THIS FILE IS THE ONE THAT SURVIVED. Until 2026-09-06 the same rule existed
  * twice: here, and as `is_release_deferred` in .ci/scripts/lib/release-age.sh,
@@ -35,30 +35,34 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DEFAULT_NPMRC = path.resolve(__dirname, '..', '..', '.npmrc');
+const DEFAULT_CONFIG = path.resolve(__dirname, '..', '..', '.ci', 'config', 'release-age.json');
 
 /**
- * Read `minimum-release-age` (minutes) from .npmrc and return it in milliseconds.
- * NOTE: this is our CI-gate knob, NOT npm's native install guard (npm's real key
- * is `min-release-age`, in days); see the .npmrc comment. Returns 0 when the
- * setting is absent — the feature is then disabled (no deferral).
+ * Read `minimum_release_age_minutes` from .ci/config/release-age.json and return
+ * it in milliseconds. Returns 0 when the file or the key is absent, or the value
+ * is not a non-negative integer -- the feature is then disabled (no deferral).
  *
  * FALLBACK, and the one place the two implementations had genuinely drifted: the
- * bash twin fell back to a hard-coded 86400-second window when .npmrc carried no
- * setting, while this one returns 0 and disables deferral outright. Neither is
- * reachable today (check-npmrc.sh gates the key's presence), and the divergence
- * is preserved rather than papered over: the shim applies ITS OWN 86400 default
- * before asking for a verdict, exactly the way null-handling is already the
+ * bash twin fell back to a hard-coded 86400-second window when no setting was
+ * configured, while this one returns 0 and disables deferral outright. Neither is
+ * reachable today (check:ci-npmrc gates the setting's presence and value), and the
+ * divergence is preserved rather than papered over: the shim applies ITS OWN 86400
+ * default before asking for a verdict, exactly the way null-handling is already the
  * caller's policy in isWithinFreshnessWindow below. The RULE lives here once; the
  * missing-config policy stays with each caller, where it always was.
  */
-export function getMinReleaseAgeMs(npmrcFile: string = DEFAULT_NPMRC): number {
+export function getMinReleaseAgeMs(configFile: string = DEFAULT_CONFIG): number {
   try {
-    const content = fs.readFileSync(npmrcFile, 'utf-8');
-    const m = content.match(/^\s*minimum-release-age\s*=\s*(\d+)/m);
-    if (m) return Number(m[1]) * 60 * 1000;
+    const parsed: unknown = JSON.parse(fs.readFileSync(configFile, 'utf-8'));
+    const minutes =
+      parsed !== null && typeof parsed === 'object'
+        ? (parsed as Record<string, unknown>).minimum_release_age_minutes
+        : undefined;
+    if (typeof minutes === 'number' && Number.isInteger(minutes) && minutes >= 0) {
+      return minutes * 60 * 1000;
+    }
   } catch {
-    // No .npmrc — feature disabled.
+    // No config file, or not JSON -- feature disabled.
   }
   return 0;
 }

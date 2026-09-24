@@ -210,7 +210,7 @@ Bare `./rdc.sh` targets PRODUCTION. Local development is an explicit opt-in, `./
 
 **This monorepo uses npm, not pnpm.**
 
-`.npmrc` enforces supply-chain hardening: `ignore-scripts=true`, `allow-git=none`, `minimum-release-age=1440`. The `ignore-scripts` flag blocks all dependency lifecycle scripts; after every `npm install` or `npm ci`, run `npm run install:natives` to compile the three packages that genuinely need scripts (ssh2, cpu-features, esbuild). The script passes `--ignore-scripts=false`
+`.npmrc` enforces supply-chain hardening: `ignore-scripts=true`, `allow-git=none`. The 24h dependency freshness window is NOT npm hardening: npm never enforces it, and it lives in `.ci/config/release-age.json` (`minimum_release_age_minutes`), where the repo's dependency gates read it. The `ignore-scripts` flag blocks all dependency lifecycle scripts; after every `npm install` or `npm ci`, run `npm run install:natives` to compile the three packages that genuinely need scripts (ssh2, cpu-features, esbuild). The script passes `--ignore-scripts=false`
 explicitly because `npm rebuild` otherwise silently respects the global flag and does nothing. Source of truth: `.ci/scripts/quality/check_npmrc.py`.
 
 ### npm 11 is the only npm

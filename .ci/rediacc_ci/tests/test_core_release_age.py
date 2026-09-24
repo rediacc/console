@@ -9,13 +9,13 @@ BOTH SIDES DELEGATE TO THE SAME `scripts/lib/release-age.ts`, which is the point
 
 FOUR FIXTURE TREES, because three of the interesting behaviours are unreachable against the real repository:
 
-  `ft_ok`        `release-age.ts` present, `.npmrc` says 60 minutes  -> window 3600
-  `ft_no_npmrc`  `release-age.ts` present, NO `.npmrc`               -> window 86400
+  `ft_ok`         `release-age.ts` present, `release-age.json` says 60 minutes -> window 3600
+  `ft_no_config`  `release-age.ts` present, NO `release-age.json`             -> window 86400
   `ft_broken`    NO `release-age.ts`, a `tsx` stub that exits 1      -> loud refusal
   the real repo  window 86400
 
 THE REAL REPO CANNOT DISTINGUISH THE FALLBACK FROM THE ANSWER, and that is why
-`ft_no_npmrc` exists: this repo's `.npmrc` carries `minimum-release-age=1440`
+`ft_no_config` exists: this repo's `.ci/config/release-age.json` carries `minimum_release_age_minutes: 1440`
 MINUTES, which is 86400 seconds, exactly the number `RELEASE_AGE_DEFAULT_WINDOW_SECONDS` falls back to. A test written against the real tree would pass whether the delegate answered or not, which is the shape of a control that cannot fail.
 
 TWO DEFECTS OF THE TWIN WERE PINNED HERE AS FACTS ABOUT THE BASH, while it lived, by driving the twin directly (`test_the_twins_runner_memo_never_persists`, `test_the_twin_lets_bash_arithmetic_decide_an_unvalidated_now`). Both cases are retired along with the twin they drove: there is nothing left on disk for them to run against, and the divergences they proved are archaeology now,
@@ -53,14 +53,15 @@ def _run_port(argv: list[str], *, root: pathlib.Path | None = None):
 # --------------------------------------------------------------------------- The fixture trees ---------------------------------------------------------------------------
 
 
-def _seed(root: pathlib.Path, *, with_ts: bool, npmrc: str | None, tsx_stub: bool) -> pathlib.Path:
+def _seed(root: pathlib.Path, *, with_ts: bool, config: str | None, tsx_stub: bool) -> pathlib.Path:
     """No `release-age.sh` copy here, deliberately: the port never reads it, only `scripts/lib/release-age.ts`. The twin used to be copied in so the bash side of `_both` had something to source; that side is gone."""
     (root / ".ci" / "scripts" / "lib").mkdir(parents=True)
     (root / "scripts" / "lib").mkdir(parents=True)
     if with_ts:
         shutil.copy(paths.from_root(TS_REL), root / TS_REL)
-    if npmrc is not None:
-        (root / ".npmrc").write_text(npmrc, encoding="utf-8")
+    if config is not None:
+        (root / ".ci" / "config").mkdir(parents=True)
+        (root / ".ci" / "config" / "release-age.json").write_text(config, encoding="utf-8")
     if tsx_stub:
         binroot = root / "node_modules" / ".bin"
         binroot.mkdir(parents=True)
@@ -76,19 +77,19 @@ def ft_ok(tmp_path_factory):
     return _seed(
         tmp_path_factory.mktemp("ft_ok"),
         with_ts=True,
-        npmrc="minimum-release-age=60\n",
+        config='{"minimum_release_age_minutes": 60}\n',
         tsx_stub=False,
     )
 
 
 @pytest.fixture(scope="module")
-def ft_no_npmrc(tmp_path_factory):
-    return _seed(tmp_path_factory.mktemp("ft_no"), with_ts=True, npmrc=None, tsx_stub=False)
+def ft_no_config(tmp_path_factory):
+    return _seed(tmp_path_factory.mktemp("ft_no"), with_ts=True, config=None, tsx_stub=False)
 
 
 @pytest.fixture(scope="module")
 def ft_broken(tmp_path_factory):
-    return _seed(tmp_path_factory.mktemp("ft_bad"), with_ts=False, npmrc=None, tsx_stub=True)
+    return _seed(tmp_path_factory.mktemp("ft_bad"), with_ts=False, config=None, tsx_stub=True)
 
 
 # --------------------------------------------------------------------------- 1. The verbs, byte for byte, frozen from the twin's last run ---------------------------------------------------------------------------
@@ -150,7 +151,7 @@ FROZEN = {
     "deferred-explicit-window": (1, "eligible\n", ""),
 }
 
-# Frozen against `ft_ok` (window 3600 -- the `.npmrc` says 60 minutes), so every default-window answer MOVES relative to FROZEN above.
+# Frozen against `ft_ok` (window 3600 -- the `release-age.json` says 60 minutes), so every default-window answer MOVES relative to FROZEN above.
 FROZEN_FT_OK = {
     "window-seconds": (0, "3600\n", ""),
     "eligible-default-window": (0, "1756080000\n", ""),
@@ -192,7 +193,7 @@ def test_the_verbs_match_the_frozen_twin(case, argv):
 
 
 @pytest.mark.parametrize(("case", "argv"), CASES, ids=[c[0] for c in CASES])
-def test_the_verbs_match_the_frozen_twin_on_a_tree_whose_npmrc_says_sixty_minutes(
+def test_the_verbs_match_the_frozen_twin_on_a_tree_whose_config_says_sixty_minutes(
     ft_ok, case, argv
 ):
     """The window is 3600 here, so every default-window answer MOVES.
@@ -203,16 +204,16 @@ def test_the_verbs_match_the_frozen_twin_on_a_tree_whose_npmrc_says_sixty_minute
     assert got == FROZEN_FT_OK[case], "case %s: %r != %r" % (case, got, FROZEN_FT_OK[case])
 
 
-def test_the_window_fixture_is_not_vacuous(ft_ok, ft_no_npmrc):
+def test_the_window_fixture_is_not_vacuous(ft_ok, ft_no_config):
     """The three trees must give three DIFFERENT windows, or nothing above holds."""
     live = _run_port(["window-seconds"])
     sixty = _run_port(["window-seconds"], root=ft_ok)
-    absent = _run_port(["window-seconds"], root=ft_no_npmrc)
+    absent = _run_port(["window-seconds"], root=ft_no_config)
     assert live[1].strip() == "86400"
     assert sixty[1].strip() == "3600"
     assert absent[1].strip() == "86400"
     assert sixty[1] != absent[1], (
-        "the .npmrc fixture changed nothing, so these tests cannot tell the delegate's "
+        "the release-age.json fixture changed nothing, so these tests cannot tell the delegate's "
         "answer from the 86400 fallback"
     )
 
@@ -435,7 +436,7 @@ def test_a_planted_defect_in_the_port_is_caught(tmp_path, ft_ok, ft_broken):
         "the mutation did not change the verdict, so this control proves nothing"
     )
 
-    # PLANT 2: the window fallback made unconditional, which silently disables deferral tuning on every tree whose .npmrc says something else.
+    # PLANT 2: the window fallback made unconditional, which silently disables deferral tuning on every tree whose release-age.json says something else.
     m2 = _load_mutated(
         tmp_path,
         "        if answer is None or not _UNSIGNED.fullmatch(answer) or int(answer) <= 0:",

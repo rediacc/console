@@ -107,7 +107,7 @@ loudly when its oracle returns less than that — the generalization of the `tot
 - **Overrides warn, never fail, and are never auto-removed.** An npm override is
 prophylactic as much as reactive — it constrains what npm may resolve *tomorrow*. "Absent from the lockfile today" is not proof it is dead. Start its reason with `BLOCKER: preventive —` to opt out of the warning permanently.
 - **Offline by construction.** Every oracle is a fact about the current
-checkout, so a verdict can only change in the same commit that changes the repo. No probe may consult a registry, publish date, or version comparison — that is what `minimum-release-age` deferral exists to prevent elsewhere.
+checkout, so a verdict can only change in the same commit that changes the repo. No probe may consult a registry, publish date, or version comparison — that is what the `.ci/config/release-age.json` deferral exists to prevent elsewhere.
 
 ### Adding / extending
 

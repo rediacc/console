@@ -7,16 +7,21 @@ WHAT THE TWIN ENFORCES, carried over from its own header verbatim because the li
   Forbidden  -- settings that hide dependency problems
       legacy-peer-deps : silently ignores peer dependency conflicts
       force            : forces installation despite errors
-  Required   -- supply-chain defenses (see /workspace/console/.npmrc for rationale)
+  Required   -- supply-chain defenses (see the repo-root .npmrc for rationale)
       ignore-scripts=true           : blocks dependency lifecycle scripts
       allow-git=none                : rejects git+/github:/tarball deps (PackageGate)
-      minimum-release-age=1440      : 24h cooldown (Axios-style smash-and-grab)
+  Relocated  -- a repo-gate setting that npm never read
+      minimum-release-age           : must NOT be in .npmrc; the 24h freshness window
+                                      lives in .ci/config/release-age.json as
+                                      minimum_release_age_minutes=1440
 
 The live `.npmrc` header expands each of those: `ignore-scripts` blocks every lifecycle script at install time and the natives are rebuilt by an explicit
 `npm rebuild` afterwards; `allow-git=none` defends against PackageGate-style
 git-dep RCE (Koi Security, Jan 2026) where a hijacked `.npmrc` inside a git
-dependency redirects the git binary; `minimum-release-age=1440` is a 24h
-freshness window motivated by smash-and-grab supply-chain attacks (the Axios 1.14.1 RAT, live roughly 4h, March 2026), read by this repo's own dependency gates and NOT by npm, whose real key is `min-release-age` in DAYS.
+dependency redirects the git binary.
+
+THE FRESHNESS WINDOW MOVED OUT OF `.npmrc` ON 2026-09-24. `minimum-release-age=1440` sat in `.npmrc` as a 24h freshness window motivated by smash-and-grab supply-chain attacks (the Axios 1.14.1 RAT, live roughly 4h, March 2026), read by this repo's own dependency gates and NEVER by npm. npm 11 printed "Unknown project config minimum-release-age ... will stop working in the next major" on
+every command because of it. The window now lives in `.ci/config/release-age.json` as `minimum_release_age_minutes`, the one place `scripts/lib/release-age.ts` reads it from, and this gate keeps the hardening assertion in its new shape: that file must carry exactly 1440, and `.npmrc` must not carry the old key, so neither a deleted window nor the warning's return passes.
 
 THE GATE HEADER CARRIES A BLOCKER, and it is about WIRING rather than about .npmrc, so it stays with the bash file rather than moving here: the step "runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails." That reason is still true, and
 it is the reason `emit: false` sits in the twin's gate block. A port does not inherit a registration, so nothing here re-states it as a live suppression.
@@ -27,7 +32,7 @@ PORT NOTES.
 
 THE REQUIRED-KEY ORDER IS BASH'S HASH ORDER, MEASURED, NOT INVENTED. The twin
 iterates `"${!required[@]}"` over an associative array, and bash returns those
-keys in the order its hash table happens to hold them, which on GNU bash 5.3.9 is `allow-git`, `minimum-release-age`, `ignore-scripts` -- NOT the order they are written in the literal. `REQUIRED` below is a tuple in that measured order.
+keys in the order its hash table happens to hold them, which on GNU bash 5.3.9 was `allow-git`, `minimum-release-age`, `ignore-scripts` -- NOT the order they are written in the literal. `REQUIRED` below is a tuple in that measured order, with `minimum-release-age` removed when it moved to `.ci/config/release-age.json`.
 
 Why bother, when `scripts/lib/shadow-gate.ts` compares findings as an unordered multiset and would score either order EQUIVALENT: because a human diffing the two implementations' stderr side by side is the cheapest review this port will ever get, and an ordering difference is the kind of noise that makes a reviewer stop reading. It costs one tuple and a comment.
 
@@ -59,6 +64,7 @@ npm's own config keys are case sensitive, so the required half is right and the 
 WHAT THIS GATE STILL CANNOT SEE, unchanged by the port: it reads the repo-root `.npmrc` only. A per-workspace `.npmrc`, a `~/.npmrc`, or an `NPM_CONFIG_*` environment variable overrides these settings at install time and this gate never looks. That is a real blind spot in the twin and it is preserved rather than quietly widened, because widening it would change the verdict.
 """
 
+import json
 import os
 import pathlib
 import re
@@ -80,12 +86,29 @@ FORBIDDEN_RE = re.compile(r"^%s*(legacy-peer-deps|force)%s*=" % (SPACE, SPACE), 
 # The required settings and their exact expected values. A TUPLE in bash's measured hash order, not a dict in source order; see the port notes.
 REQUIRED: tuple[tuple[str, str], ...] = (
     ("allow-git", "none"),
-    ("minimum-release-age", "1440"),
     ("ignore-scripts", "true"),
 )
 
-# The rationale pointer the twin prints on the missing-settings path. It names an absolute path from a DIFFERENT checkout (`/workspace/console`), which does not exist on this machine or in CI. Carried byte for byte because the port's job is to keep the verdict, and reported as a finding instead of quietly repaired.
-RATIONALE_LINE = "See /workspace/console/.npmrc header for the rationale behind each setting."
+# Keys that must NOT appear in `.npmrc` at all, with the reason printed on a hit. `minimum-release-age` is this repo's gate knob, never an npm setting, and npm 11 warns about it on every command; it lives in RELEASE_AGE_CONFIG now. Matched case sensitively and with any value, empty included, because npm warns about the key whatever it holds.
+RELOCATED_KEYS: tuple[tuple[str, str], ...] = (
+    (
+        "minimum-release-age",
+        (
+            "npm never read it (npm 11 warns: Unknown project config); the window lives in "
+            ".ci/config/release-age.json as minimum_release_age_minutes"
+        ),
+    ),
+)
+
+# The repo config that carries the dependency freshness window, relative to the root, and the value it must hold. `scripts/lib/release-age.ts` reads the same file and key.
+RELEASE_AGE_CONFIG = ".ci/config/release-age.json"
+RELEASE_AGE_KEY = "minimum_release_age_minutes"
+RELEASE_AGE_MINUTES = 1440
+
+# The rationale pointer printed on the findings path. The twin named an absolute path from a DIFFERENT checkout (`/workspace/console/.npmrc`), carried byte for byte while the shadow ledger compared the two; the twin is retired, so it now names the two repo-relative files that actually carry the rationale.
+RATIONALE_LINE = (
+    "See the .npmrc header and .ci/config/release-age.json for the rationale behind each setting."
+)
 
 
 def forbidden_matches(text: str) -> list[tuple[int, str]]:
@@ -120,6 +143,45 @@ def setting_value(text: str, key: str) -> str:
     stripped = re.sub(r"%s*#.*" % SPACE, "", stripped)
     # tr -d: delete EVERY remaining space character, inner ones included, so `true false` becomes `truefalse` and is reported as a wrong value.
     return re.sub(SPACE, "", stripped)
+
+
+def relocated_matches(text: str) -> list[str]:
+    """A finding per RELOCATED_KEYS key that `.npmrc` still sets, with any value."""
+    findings: list[str] = []
+    for key, why in RELOCATED_KEYS:
+        pattern = re.compile(r"^%s*%s%s*=" % (SPACE, re.escape(key), SPACE))
+        if any(pattern.match(line) for line in text.split("\n")):
+            findings.append(".npmrc must not set %s: %s" % (key, why))
+    return findings
+
+
+def release_age_findings(root: pathlib.Path) -> list[str]:
+    """The findings for the freshness-window config. Empty means it holds exactly RELEASE_AGE_MINUTES.
+
+    Absent, unparseable, missing the key, a non-integer (a JSON `true` included, since Python counts bool as int) or a different number is each a refusal: `getMinReleaseAgeMs()` answers 0 for most of those and silently disables every deferral, so the gate must not.
+    """
+    target = root / RELEASE_AGE_CONFIG
+    if not target.is_file():
+        return [
+            "%s is missing (it must set %s=%d)"
+            % (RELEASE_AGE_CONFIG, RELEASE_AGE_KEY, RELEASE_AGE_MINUTES)
+        ]
+    try:
+        data = json.loads(target.read_text(encoding="utf-8", errors="replace"))
+    except ValueError as exc:
+        return ["%s is not valid JSON: %s" % (RELEASE_AGE_CONFIG, exc)]
+    value = data.get(RELEASE_AGE_KEY) if isinstance(data, dict) else None
+    if value is None:
+        return [
+            "%s is missing required setting: %s=%d"
+            % (RELEASE_AGE_CONFIG, RELEASE_AGE_KEY, RELEASE_AGE_MINUTES)
+        ]
+    if isinstance(value, bool) or not isinstance(value, int) or value != RELEASE_AGE_MINUTES:
+        return [
+            "%s has %s=%r, expected %s=%d"
+            % (RELEASE_AGE_CONFIG, RELEASE_AGE_KEY, value, RELEASE_AGE_KEY, RELEASE_AGE_MINUTES)
+        ]
+    return []
 
 
 def audit(text: str) -> list[str]:
@@ -157,7 +219,6 @@ def main(argv: list[str] | None = None) -> int:
         log.error("Supply-chain hardening requires .npmrc at the repo root with:")
         log.error("  ignore-scripts=true")
         log.error("  allow-git=none")
-        log.error("  minimum-release-age=1440")
         return 1
 
     text = npmrc.read_text(encoding="utf-8", errors="replace")
@@ -173,7 +234,7 @@ def main(argv: list[str] | None = None) -> int:
             print("%d:%s" % (number, line))
         return 1
 
-    findings = audit(text)
+    findings = audit(text) + relocated_matches(text) + release_age_findings(root)
     if findings:
         for finding in findings:
             log.error(finding)
@@ -181,12 +242,18 @@ def main(argv: list[str] | None = None) -> int:
         print(RATIONALE_LINE)
         return 1
 
-    log.info(".npmrc is clean and hardened")
+    log.info(
+        ".npmrc is clean and hardened; %s sets %s=%d"
+        % (RELEASE_AGE_CONFIG, RELEASE_AGE_KEY, RELEASE_AGE_MINUTES)
+    )
     return 0
 
 
 # A `.npmrc` that satisfies every rule. The base every plant below mutates, and asserted to be CLEAN first: without that, each plant would "fire" against a fixture that was already failing and the suite would be green while testing nothing.
-_CLEAN = "ignore-scripts=true\nallow-git=none\nminimum-release-age=1440\n"
+_CLEAN = "ignore-scripts=true\nallow-git=none\n"
+
+# The freshness-window config that satisfies the rule, seeded beside every fixture `.npmrc` unless a control replaces it.
+_CLEAN_RELEASE_AGE = '{"%s": %d}\n' % (RELEASE_AGE_KEY, RELEASE_AGE_MINUTES)
 
 
 def selftest() -> int:
@@ -194,19 +261,21 @@ def selftest() -> int:
 
     BOTH DIRECTIONS FOR EVERY CONTROL. A gate with only positive plants will happily flag a correct file, and the mirrors below (a trailing comment, a later line overriding an earlier one, exactly the three required keys) are the half that proves it does not.
     """
-    ctl = Controls("npmrc", floor=18, verbose=True)
+    ctl = Controls("npmrc", floor=26, verbose=True)
 
     with tempfile.TemporaryDirectory() as tmp:
         root = pathlib.Path(tmp)
 
-        def run(content: str | None) -> int:
-            """Point the gate at a fixture root holding `content`, or nothing."""
-            target = root / NPMRC
-            if content is None:
-                if target.exists():
-                    target.unlink()
-            else:
-                target.write_text(content, encoding="utf-8")
+        def run(content: str | None, release_age: str | None = _CLEAN_RELEASE_AGE) -> int:
+            """Point the gate at a fixture root holding `content` and `release_age`, or nothing for either."""
+            for rel, body in ((NPMRC, content), (RELEASE_AGE_CONFIG, release_age)):
+                target = root / rel
+                if body is None:
+                    if target.exists():
+                        target.unlink()
+                else:
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    target.write_text(body, encoding="utf-8")
             # REDIACC_CI_ROOT is the package-wide override named once in rediacc_ci.paths. Set through the mapping the module reads rather than through a private seam invented for the test.
             saved = os.environ.get(paths.ROOT_ENV)
             os.environ[paths.ROOT_ENV] = str(root)
@@ -252,9 +321,42 @@ def selftest() -> int:
         # value instead of grepping for the literal `ignore-scripts=true`.
         ctl.check(
             "PLANT: a wrong value is caught",
-            run(plant(_CLEAN, "minimum-release-age=1440", "minimum-release-age=60")),
+            run(plant(_CLEAN, "allow-git=none", "allow-git=all")),
             1,
         )
+
+        # PLANT 3b: the relocated key back in `.npmrc`, with its old value and with none. Either brings npm 11's warning back.
+        ctl.check(
+            "PLANT: minimum-release-age returned to .npmrc is caught",
+            run(_CLEAN + "minimum-release-age=1440\n"),
+            1,
+        )
+        ctl.check(
+            "PLANT: an EMPTY minimum-release-age in .npmrc is caught",
+            run(_CLEAN + "  minimum-release-age =\n"),
+            1,
+        )
+        # ITS MIRROR: the key commented out is not a setting, and npm does not warn about it.
+        ctl.check(
+            "MIRROR: a commented minimum-release-age is not a setting",
+            run(_CLEAN + "# minimum-release-age=1440\n"),
+            0,
+        )
+
+        # PLANT 3c: the freshness window weakened or removed from its new home. Each is a shape `getMinReleaseAgeMs()` reads as 0 or as another window.
+        ctl.check("PLANT: an absent release-age config is caught", run(_CLEAN, None), 1)
+        ctl.check("PLANT: a release-age config without the key is caught", run(_CLEAN, "{}\n"), 1)
+        ctl.check(
+            "PLANT: a shorter window is caught",
+            run(_CLEAN, plant(_CLEAN_RELEASE_AGE, "1440", "60")),
+            1,
+        )
+        ctl.check(
+            "PLANT: a string window is caught",
+            run(_CLEAN, plant(_CLEAN_RELEASE_AGE, "1440", '"1440"')),
+            1,
+        )
+        ctl.check("PLANT: an unparseable release-age config is caught", run(_CLEAN, "{\n"), 1)
         # PLANT 4: present, empty. Reported as MISSING; see the port notes.
         ctl.check(
             "PLANT: an empty value is caught",
@@ -286,12 +388,12 @@ def selftest() -> int:
         # would not.
         ctl.check(
             "MIRROR: a trailing comment still parses",
-            run("ignore-scripts=true # hardening\nallow-git=none\nminimum-release-age=1440\n"),
+            run("ignore-scripts=true # hardening\nallow-git=none\n"),
             0,
         )
         ctl.check(
             "MIRROR: spaces around the = still parse",
-            run("  ignore-scripts = true \nallow-git=none\nminimum-release-age=1440\n"),
+            run("  ignore-scripts = true \nallow-git=none\n"),
             0,
         )
 

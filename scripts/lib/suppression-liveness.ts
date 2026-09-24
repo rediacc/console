@@ -19,7 +19,7 @@
  *
  * That is deliberate. This repo already engineered away upstream-cadence
  * flakiness (scripts/lib/release-age.ts defers releases younger than
- * .npmrc's minimum-release-age so a fresh publish cannot redden CI). A gate
+ * the window in .ci/config/release-age.json so a fresh publish cannot redden CI). A gate
  * whose verdict can flip overnight without a commit re-creates exactly that
  * problem, so no probe may consult a registry, a publish date, or a version
  * comparison. A verdict changes only when the repo changes, in the same commit

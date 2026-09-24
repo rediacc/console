@@ -63,7 +63,7 @@ THE FRESHNESS RULE IS STILL `scripts/lib/release-age.ts`. The bash `release-age.
 with an integer, so a future Node that renames or drops the flag falls through to
 tsx instead of poisoning every verdict. That matters because the fail-closed policy turns an unreachable delegate into "deferred", and a freshness gate stuck on "deferred" is a gate that has gone quiet.
 
-THE 86400-SECOND FALLBACK IS THE CALLER'S POLICY AND STAYS ON THIS SIDE. The TypeScript `getMinReleaseAgeMs()` returns 0 (deferral disabled) when `.npmrc` carries no key; the bash shim has always fallen back to 24h. The divergence is preserved here rather than silently resolved in either direction. Unreachable today in any case: `check-npmrc.sh` gates the key's presence.
+THE 86400-SECOND FALLBACK IS THE CALLER'S POLICY AND STAYS ON THIS SIDE. The TypeScript `getMinReleaseAgeMs()` returns 0 (deferral disabled) when `.ci/config/release-age.json` carries no window; the bash shim has always fallen back to 24h. The divergence is preserved here rather than silently resolved in either direction. Unreachable today in any case: `check:ci-npmrc` gates the setting's presence.
 
 THE MEMO CACHES SURVIVE, and the reason the twin spells them as globals written
 by `__..._ensure_*` helpers does not: a bash caller writing `x=$(f)` runs `f` in
@@ -116,6 +116,8 @@ AGE_FAIL_DAYS_DEFAULT = 365
 # for a missing key and this side has always used 24h.
 RELEASE_AGE_DEFAULT_WINDOW_SECONDS = 86400
 RELEASE_AGE_TS = "scripts/lib/release-age.ts"
+# The config `release-age.ts` reads the window from; the selftest copies it into each fixture tree beside the delegate.
+RELEASE_AGE_CONFIG = ".ci/config/release-age.json"
 
 # The wire format between the probe and the aggregation loop.
 PROBE_SENTINEL = "__PROBE_FAILED__"
@@ -713,8 +715,9 @@ def selftest() -> int:
                 (tree / RELEASE_AGE_TS).write_text(
                     (real_root / RELEASE_AGE_TS).read_text(encoding="utf-8"), encoding="utf-8"
                 )
-                (tree / ".npmrc").write_text(
-                    (real_root / ".npmrc").read_text(encoding="utf-8"), encoding="utf-8"
+                (tree / ".ci" / "config").mkdir(parents=True, exist_ok=True)
+                (tree / RELEASE_AGE_CONFIG).write_text(
+                    (real_root / RELEASE_AGE_CONFIG).read_text(encoding="utf-8"), encoding="utf-8"
                 )
             return tree
 

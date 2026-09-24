@@ -38,9 +38,10 @@ blocker: BLOCKER: runs before this lane's `- id: setup` step, so its hand-writte
 needs: none
 selftest: true
 lane: quality-code
-why: `.npmrc` must keep ignore-scripts, allow-git=none and minimum-release-age,
-     enforced in BOTH directions so neither a missing file nor a weakened value
-     passes. First port cut over from bash to Python under W7 P4, on the
+why: `.npmrc` must keep ignore-scripts and allow-git=none and must not carry
+     minimum-release-age, whose 1440-minute window lives in
+     .ci/config/release-age.json; enforced in BOTH directions so neither a
+     missing file nor a weakened value passes. First port cut over from bash to Python under W7 P4, on the
      ledger condition its own sibling entry points name.
 ---- end gate ----
 """

@@ -21,7 +21,7 @@
  *
  * POLICY, inherited deliberately from that gate because it is what makes a
  * freshness gate liveable rather than a thing people disable:
- *  - FRESHNESS WINDOW: a release younger than `minimum-release-age` in .npmrc
+ *  - FRESHNESS WINDOW: a release younger than the window in .ci/config/release-age.json
  *    (1440 min) is NOT flagged yet, and eligibility is rounded to the next UTC
  *    day so a day's upgrades surface together. Not a new knob: it is the same
  *    number check-deps.ts, audit.sh and check-go-deps.sh already read.

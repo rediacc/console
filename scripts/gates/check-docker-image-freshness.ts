@@ -365,7 +365,7 @@ function selftest(): number {
   check('the same version is not newer', !isNewer('24.04', '24.04'));
   // The window is the SHARED one; a release published now must be deferred.
   const win = getMinReleaseAgeMs();
-  check('the shared freshness window is configured (.npmrc)', win > 0);
+  check('the shared freshness window is configured (.ci/config/release-age.json)', win > 0);
   check(
     'CONTROL: a release published right now is deferred',
     isWithinFreshnessWindow(Date.now(), Date.now(), win)
@@ -521,7 +521,7 @@ async function main(): Promise<void> {
     );
     for (const s of fresh) console.error(`    ${s}`);
     console.error(
-      `\nThe window is the SHARED one from .npmrc minimum-release-age (${win / 60000} min,`
+      `\nThe window is the SHARED one from .ci/config/release-age.json (${win / 60000} min,`
     );
     console.error('rounded up to the next UTC day) so a day of upgrades surfaces together.');
     console.error('Bump the pin. Do not add it to the baseline.');

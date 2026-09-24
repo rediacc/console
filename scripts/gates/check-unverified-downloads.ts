@@ -22,7 +22,8 @@
  *
  * DELIBERATELY OUT OF SCOPE, so a green here is not read as more than it is:
  *   - `npm install -g` / `pip install`: the registry's own integrity metadata is a
- *     different trust model, governed by .npmrc (ignore-scripts, minimum-release-age).
+ *     different trust model, governed by .npmrc (ignore-scripts, allow-git) and the
+ *     .ci/config/release-age.json freshness window.
  *   - `apt-get install` from a repo added with a `signed-by` keyring: apt verifies
  *     every package against that keyring, so the packages are covered even though the
  *     keyring fetch itself is not.
