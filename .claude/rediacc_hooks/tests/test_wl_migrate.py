@@ -17,7 +17,7 @@ import sys
 import time
 from typing import TYPE_CHECKING
 
-from rediacc_hooks.tests.wlfix import wl  # noqa: F401
+from rediacc_hooks.tests.wlfix import import_wl, wl  # noqa: F401
 
 if TYPE_CHECKING:
     import pathlib
@@ -541,3 +541,271 @@ def test_204_compaction_is_lossless(wl):  # noqa: F811
     assert before != lossy, (
         "CONTROL: dropping the owner changed nothing, so this case proves nothing"
     )
+
+
+# ---- plan-document discovery -----------------------------------------------
+#
+# THE DEFECT THESE GUARD, measured live on 2026-09-17: `migrate_candidates` built its candidate set from the worklist store alone, so a committed `agent/plans/PLAN-*.md` carrying open boxes whose declared owner had stopped was named by NOTHING.
+# 96 plans on disk, 15 carrying open boxes, 151 open boxes, and 99 of those belonged to a plan whose owner the same listing printed as `idle`. `--candidates` returned four bare prefixes and not one plan path.
+#
+# The two per-stop plan mechanisms cannot cover this and must not: `wl_checks.plan_drift_rows` and `wl_planfile.plan_rows` are both gated on `C.owned_by_me`, so they answer "does THIS session's own plan need attention", never "what undone design is nobody driving". Discovery is the only layer that may read both stores, which is why the cases live in the migrate suite.
+
+PLAN_HEADER = (
+    "# %s\n"
+    "\n"
+    "Status: %s\n"
+    "First-Seen: 2026-09-01\n"
+    "Owner: %s\n"
+    "Updated: 2026-09-01\n"
+    "\n"
+    "One body line, so the file is more than a header.\n"
+    "\n"
+    "## Tasks\n"
+    "\n"
+)
+
+
+def plant_plan(fix, slug, owner, status="ready", open_boxes=2, ticked=1):
+    """One committed-looking plan under `agent/plans/`, returned as its path.
+
+    The box bodies carry the slug because `wl_planfid.plan_tasks` de-duplicates on the first 120 normalised characters: two plans with identically-worded boxes would fold into one task and the census would then under-count the second.
+    """
+    directory = fix.proj / "agent" / "plans"
+    directory.mkdir(parents=True, exist_ok=True)
+    body = "".join("- [ ] open box %d of the %s design\n" % (i, slug) for i in range(open_boxes))
+    body += "".join("- [x] ticked box %d of the %s design\n" % (i, slug) for i in range(ticked))
+    path = directory / ("PLAN-%s.md" % slug)
+    path.write_text(PLAN_HEADER % (slug, status, owner) + body, encoding="utf-8")
+    return path
+
+
+def spent_peer(fix, prefix, minutes=180):
+    """A peer that TICKED everything and stopped: real aged events, zero open items.
+
+    This is the shape the plan pass exists for and the shape every other helper here misses. `mig_peer` leaves an open item, which puts the prefix in `by_owner` and makes it a candidate for a reason that has nothing to do with plans -- a plan assertion built on it would pass with the plan pass deleted.
+    """
+    text = "an item this peer finished before it stopped"
+    fix.cli("--add", prefix, text, env=as_session(fix, prefix))
+    fix.cli("--tick", prefix, item_id(fix, text), "suite green, exit 0", env=as_session(fix, prefix))
+    age_store(fix, prefix, minutes)
+
+
+def candidates_json(fix):
+    """`--candidates --json` parsed, LOUDLY on anything that is not a list."""
+    raw = fix.cli(
+        "--migrate", "deadbeef", "--candidates", "--json", env=as_session(fix, "deadbeef")
+    )
+    try:
+        return json.loads(raw.out)
+    except ValueError as exc:
+        raise AssertionError(
+            "--candidates --json printed no parseable JSON (%s)\n  out: %s\n  err: %s"
+            % (exc, raw.out[:400], raw.err[:400])
+        ) from exc
+
+
+def plans_of(cands, prefix):
+    """The plan rows one candidate carries, asserting the prefix appears EXACTLY once.
+
+    Once is the assertion, not at-least-once: the third pass enriches an owner already in the list, and an owner appended twice would still satisfy every "the plan is named" check while giving the operator two rows for one session.
+    """
+    rows = [c for c in cands if c["prefix"] == prefix]
+    assert len(rows) == 1, "%s appears %d time(s) in the listing, want exactly 1: %s" % (
+        prefix,
+        len(rows),
+        [c["prefix"] for c in cands],
+    )
+    return rows[0].get("plans") or []
+
+
+def test_205_a_plan_with_open_boxes_and_a_stopped_owner_is_a_candidate(wl):  # noqa: F811
+    """And a finished or box-free plan is not.
+
+    All three states of one plan, in one case, because the interesting failure is not "no plan is ever listed" -- it is a filter that lists EVERY plan. A `Status: done` plan and a plan whose last box is ticked are the two ways a plan clears itself, and a discovery surface that keeps naming them teaches the operator to ignore it.
+    """
+    mig_peer(wl, "cafe1234", "a peer item so the listing is never empty")
+    plant_plan(wl, "open-design", "cafe1234", status="ready", open_boxes=2)
+    named = [p["rel"] for p in plans_of(candidates_json(wl), "cafe1234")]
+    assert named == ["agent/plans/PLAN-open-design.md"], (
+        "the open plan was not named under its stopped owner: %s" % named
+    )
+
+    # A FINISHED plan is not work. `FINISHED_STATES`, never `in_scope_status`: the latter also drops `draft`, which is this repo's default header on a plan under active execution, and would hide most of what this exists to surface.
+    plant_plan(wl, "open-design", "cafe1234", status="done", open_boxes=2)
+    assert plans_of(candidates_json(wl), "cafe1234") == [], (
+        "a Status: done plan is still being offered for adoption"
+    )
+
+    # And a plan whose boxes are all ticked has nothing left to hand over.
+    plant_plan(wl, "open-design", "cafe1234", status="ready", open_boxes=0, ticked=3)
+    assert plans_of(candidates_json(wl), "cafe1234") == [], (
+        "a plan with zero open boxes is still being offered for adoption"
+    )
+
+
+def test_206_a_live_sessions_plan_is_never_offered(wl):  # noqa: F811
+    """Listing is not adopting, but a live peer's plan is still not on the menu.
+
+    The rule is the same one the item path already obeys and for the same reason: `--plan` rewrites a committed document, and offering a running session's design is how two sessions end up executing one plan. The idle peer beside it is the anti-vacuity half -- without it an empty listing would satisfy this assertion for the wrong reason.
+    """
+    mig_peer(wl, "cafe1234", "an idle peer item")
+    plant_plan(wl, "idle-owned", "cafe1234")
+    plant_plan(wl, "live-owned", "beef0001")
+    wl.brief_other("beef0001")
+
+    cands = candidates_json(wl)
+    every = [p["rel"] for c in cands for p in (c.get("plans") or [])]
+    assert "agent/plans/PLAN-idle-owned.md" in every, (
+        "the idle owner's plan is missing, so the absence below proves nothing: %s" % every
+    )
+    assert "agent/plans/PLAN-live-owned.md" not in every, (
+        "a LIVE session's plan was offered for adoption: %s" % every
+    )
+    assert [c["prefix"] for c in cands].count("beef0001") == 0, (
+        "a live session was listed as a handoff candidate: %s" % [c["prefix"] for c in cands]
+    )
+
+
+def test_207_an_owner_with_items_is_enriched_not_duplicated(wl):  # noqa: F811
+    """One row per prefix, carrying both its items and its plans.
+
+    The third pass runs after two that may already have added the owner, so "append a candidate" is the wrong default: it would print one session twice, once with its items and once with its plans, and the operator would have to know they were the same session.
+    """
+    mig_peer(wl, "cafe1234", "a real worklist item")
+    plant_plan(wl, "same-owner", "cafe1234")
+    cands = candidates_json(wl)
+    row = [c for c in cands if c["prefix"] == "cafe1234"]
+    assert len(row) == 1, "cafe1234 appears %d time(s): %s" % (
+        len(row),
+        [c["prefix"] for c in cands],
+    )
+    assert row[0]["counts"]["open"] == 1, "the item half of the enriched row was lost: %s" % row[0]
+    assert [p["rel"] for p in row[0]["plans"]] == ["agent/plans/PLAN-same-owner.md"], (
+        "the plan half of the enriched row was lost: %s" % row[0]
+    )
+
+    # AND THE HUMAN-READABLE RENDERER SAYS BOTH. The JSON above is what /migrate reads; this is what the operator reads, and it had its own item_desc branch to get wrong.
+    out = mig(wl, "--candidates")
+    assert out.count("  cafe1234  ") == 1, "the prefix is printed twice:\n%s" % out
+    assert "PLAN agent/plans/PLAN-same-owner.md  [ready]  2 open / 1 ticked" in out, (
+        "the renderer named no plan line:\n%s" % out
+    )
+
+
+def test_208_control_a_peer_with_nothing_but_a_plan_is_still_a_candidate(wl):  # noqa: F811
+    """Zero items, no STATE.md Next action, one `Status: ready` plan. Nothing else.
+
+    THE CASE THE WHOLE CHANGE EXISTS FOR, and the only one that fails if the third pass is deleted: every other case here has an item or a handoff note propping the prefix up. Live on 2026-09-17 this was `8f55d4f0` and `PLAN-tooling-transformation.md`, 13 open boxes and 141 ticked, named by no surface in the repo.
+    """
+    spent_peer(wl, "cafe1234")
+    assert not (wl.proj / "agent" / "cafe1234").exists(), (
+        "the fixture wrote a STATE.md for the peer, so the STATE.md pass could carry this case"
+    )
+    plant_plan(wl, "nothing-but-a-plan", "cafe1234", status="ready", open_boxes=3, ticked=7)
+
+    cands = candidates_json(wl)
+    row = [c for c in cands if c["prefix"] == "cafe1234"]
+    assert len(row) == 1, "the plan-only peer is not a candidate at all: %s" % [
+        c["prefix"] for c in cands
+    ]
+    assert row[0]["counts"] == {"open": 0, "inflight": 0, "deferred": 0}, (
+        "a plan-only candidate must carry zeroed counts: %s" % row[0]["counts"]
+    )
+    assert row[0]["plans"] == [
+        {
+            "rel": "agent/plans/PLAN-nothing-but-a-plan.md",
+            "status": "ready",
+            "open": 3,
+            "ticked": 7,
+        }
+    ], "the plan row is wrong: %s" % row[0]["plans"]
+
+    out = mig(wl, "--candidates")
+    assert "0 worklist item(s), but 1 committed plan(s) with 3 open box(es)" in out, (
+        "the zero-item line still reads as a STATE.md candidate:\n%s" % out
+    )
+
+    # THE NEGATIVE CONTROL, and without it the assertions above would pass just as well against a listing that names every plan in the tree. A plan this session already owns is not a handoff candidate, and neither is one that declares itself unowned -- `owned_by_me(None)` is True, so the per-stop advisory already shows it to everybody.
+    plant_plan(wl, "already-mine", "deadbeef")
+    plant_plan(wl, "no-owner-at-all", "unowned")
+    every = [p["rel"] for c in candidates_json(wl) for p in (c.get("plans") or [])]
+    assert "agent/plans/PLAN-already-mine.md" not in every, (
+        "this session's own plan was offered back to it: %s" % every
+    )
+    assert "agent/plans/PLAN-no-owner-at-all.md" not in every, (
+        "an unowned plan was duplicated into the handoff listing: %s" % every
+    )
+
+
+def test_209_migrate_prints_the_plan_command_and_plan_adopts(wl):  # noqa: F811
+    """A store migration never rewrites a committed document; `--plan` does, when named.
+
+    The split is the point. Moving items is a store operation and takes no argument beyond a prefix, so folding plan adoption into it would rewrite a peer's committed file as a side effect of a verb whose whole contract is the worklist. The move prints the command instead, and the command names every path it will touch.
+    """
+    mig_peer(wl, "cafe1234", "an item to migrate")
+    plan = plant_plan(wl, "handed-over", "cafe1234", status="ready", open_boxes=2, ticked=1)
+    before = plan.read_text(encoding="utf-8")
+
+    moved = mig(wl, "cafe1234")
+    assert "cafe1234 also owns 1 open plan(s), not moved by this command" in moved, (
+        "the move said nothing about the peer's plan:\n%s" % moved
+    )
+    assert (
+        "adopt one:  worklist.py --migrate deadbeef --plan agent/plans/PLAN-handed-over.md" in moved
+    ), "the move printed no runnable adopt command:\n%s" % moved
+    assert plan.read_text(encoding="utf-8") == before, (
+        "the store migration rewrote a committed plan file"
+    )
+
+    adopted = mig(wl, "--plan", "agent/plans/PLAN-handed-over.md")
+    assert "adopted agent/plans/PLAN-handed-over.md (was cafe1234, 2 open box(es))" in adopted, (
+        "the adoption did not report itself:\n%s" % adopted
+    )
+    # THE CENSUS IS KEYED ON BYTE SIZE, so an adoption that does not say this leaves a loud staleness banner on the next SessionStart with no command attached to it.
+    assert "npm run check:ci-plan-record -- --update" in adopted, (
+        "the adoption printed no census-regeneration command:\n%s" % adopted
+    )
+
+    after = plan.read_text(encoding="utf-8")
+    head = after.splitlines()[:10]
+    assert any(line.startswith("Owner: deadbeef (adopted from cafe1234 ") for line in head), (
+        "the Owner: line was not re-stamped inside the header: %s" % head
+    )
+    # SESSION-SHAPED TOKEN FIRST: `PLAN_OWNER_ID_RE` takes the first 8-hex word on the line, so writing the predecessor first would hand the plan straight back.
+    owner = import_wl("wl_checks").plan_owner(str(wl.proj), "agent/plans/PLAN-handed-over.md")
+    assert owner == "deadbeef", "the header still resolves to %r after adoption" % owner
+    assert len(after.splitlines()) == len(before.splitlines()), (
+        "adoption changed the line count, so the header may have been pushed past line 10"
+    )
+    assert [ln for ln in after.splitlines() if ln.startswith(("- [ ]", "- [x]"))] == [
+        ln for ln in before.splitlines() if ln.startswith(("- [ ]", "- [x]"))
+    ], "adoption touched a box line, which would re-sign it for check:ci-plan-boxes A0"
+
+    # Twice is a no-op, not a second re-stamp naming this session as its own predecessor.
+    again = mig(wl, "--plan", "agent/plans/PLAN-handed-over.md")
+    assert "already belongs to deadbeef; nothing changed" in again, (
+        "a second adoption did not recognise itself:\n%s" % again
+    )
+    assert plan.read_text(encoding="utf-8") == after, "a second adoption rewrote the file"
+
+
+def test_210_plan_adoption_refuses_a_finished_or_box_free_plan(wl):  # noqa: F811
+    """The two refusals, byte-checked, because a refusal that still writes is worse than no refusal."""
+    done = plant_plan(wl, "finished-design", "cafe1234", status="done", open_boxes=2)
+    empty = plant_plan(wl, "drained-design", "cafe1234", status="ready", open_boxes=0, ticked=2)
+    before = {p: p.read_text(encoding="utf-8") for p in (done, empty)}
+
+    out = mig(wl, "--plan", "agent/plans/PLAN-finished-design.md", "agent/plans/PLAN-drained-design.md")
+    assert "refused: agent/plans/PLAN-finished-design.md is Status: done (finished)" in out, (
+        "a finished plan was not refused:\n%s" % out
+    )
+    assert "refused: agent/plans/PLAN-drained-design.md has no open boxes" in out, (
+        "a plan with nothing left open was not refused:\n%s" % out
+    )
+    assert "npm run check:ci-plan-record" not in out, (
+        "a run that wrote nothing still asked for a census regeneration:\n%s" % out
+    )
+    for path, text in before.items():
+        assert path.read_text(encoding="utf-8") == text, "%s was rewritten despite the refusal" % (
+            path.name
+        )

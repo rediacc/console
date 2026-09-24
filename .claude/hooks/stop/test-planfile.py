@@ -13,6 +13,7 @@ tightening and would wedge the repo, so it is pinned in source.
 
 import ast
 import pathlib
+import random
 import sys
 import tempfile
 
@@ -93,14 +94,13 @@ opens, dones = F.plan_boxes(body)
 control("an unticked box is OPEN", opens, [TASK_A])
 control("PAIR: a ticked box is DONE, not open", dones, [TASK_B])
 
-# The states wl_planfid deliberately does not count. They are bullets, so under an action heading BULLET_RE would otherwise pull them in; the set-difference split excludes them for free because they survive both deletions.
+# `?` and `>` are first-class marks (deferred, leased), not third-bucket invisible: a box marked `- [?]` per check_plan_boxes.py's own advertised remedy must stay OPEN, not vanish from both open and done. Found live 2026-09-22 (PLAN-plan-file-lifecycle.md): the old CHECKBOX_RE fell through to BULLET_RE for these marks, corrupting the task text with a literal "[?] " prefix and
+# silently cancelling the box out of both buckets via the drop-and-diff trick.
 q = "# P\n\n## Tasks\n\n- [?] %s\n- [>] %s\n- [ ] %s\n" % (TASK_A, TASK_B, TASK_C)
 qo, qd = F.plan_boxes(q)
-control("CONTROL: `- [?]` is not an open task", TASK_A in qo, False)
-control(
-    "CONTROL: `- [>]` is not a task in either set", (TASK_B in qo, TASK_B in qd), (False, False)
-)
-control("PAIR: the real `- [ ]` beside them still counts", qo, [TASK_C])
+control("a `- [?]` box is OPEN, not vanished", TASK_A in qo, True)
+control("a `- [>]` box is OPEN, not vanished", (TASK_B in qo, TASK_B in qd), (True, False))
+control("PAIR: the real `- [ ]` beside them still counts", set(qo), {TASK_A, TASK_B, TASK_C})
 
 # A plain bullet under an action heading IS a wl_planfid task, but it is not a checkbox, and the contract this check enforces is about checkbox lines.
 pb = "# P\n\n## Tasks\n\n- %s\n- [ ] %s\n" % (TASK_A, TASK_C)
@@ -118,7 +118,7 @@ control(
 
 # 1b. THE ANTI-VACUITY COUNTER, which is what makes 'no findings' mean anything.
 control("raw_box_counts sees the raw lines", F.raw_box_counts(body), (1, 1))
-control("CONTROL: raw_box_counts ignores [?] and [>]", F.raw_box_counts(q), (1, 0))
+control("raw_box_counts counts [?] and [>] as open, like [ ]", F.raw_box_counts(q), (3, 0))
 
 # --------------------------------------------------------------------------- 2. MATCHING. Generous on purpose (a false "untracked" makes someone add a duplicate item), so the pair here is the one that keeps it honest. ---------------------------------------------------------------------------
 rows = F.prepare([("aa11", " ", TASK_A + " (a276391d)")])
@@ -147,6 +147,19 @@ control("PAIR: fully tracked reports nothing", (un, stale, reop), ([], [], 0))
 
 un, stale, reop = F.reconcile([TASK_A], [], [("a", "x", TASK_A)])
 control("an open box whose item is TICKED is stale", (un, stale, reop), ([], [(TASK_A, "a")], 0))
+# A box re-added under near-identical wording after its original item was ticked must not report stale forever: a live replacement item ties the old one's score and must win regardless of fold order. Found 2026-09-23 against PLAN-tooling-transformation.md's W7P5-a/W1P6 boxes.
+un, stale, reop = F.reconcile([TASK_A], [], [("old", "x", TASK_A), ("new", "?", TASK_A)])
+control(
+    "PAIR: a tied replacement item beats a ticked original regardless of order",
+    (un, stale, reop),
+    ([], [], 0),
+)
+un, stale, reop = F.reconcile([TASK_A], [], [("new", "?", TASK_A), ("old", "x", TASK_A)])
+control(
+    "CONTROL: the same tie, fold order reversed, same verdict",
+    (un, stale, reop),
+    ([], [], 0),
+)
 un, stale, reop = F.reconcile([TASK_A], [], [("a", "?", TASK_A)])
 control("PAIR: a DEFERRED item leaves the box legitimately open", (un, stale, reop), ([], [], 0))
 un, stale, reop = F.reconcile([TASK_A], [], [("a", ">", TASK_A)])
@@ -428,11 +441,12 @@ try:
             sticky=True,
         )
     K.outq_add("wl", "sess", _qdoc, "plan-tasks", "PLAN boxes", 2)
-    _first, _left = K.outq_drain("wl", "sess", _qdoc, 1)
+    # SEEDED, not the module-level `random`: budget=1 against 7 same-tier entries samples one at random (wl_checks.py:1429's own determinism seam), so an unseeded call here picks `plan-tasks` about 1 run in 7 and turns this control flaky. Seed 1 draws a `reg-settled` entry first, which is what this section exists to prove drains as one merged digest.
+    _first, _left = K.outq_drain("wl", "sess", _qdoc, 1, rng=random.Random(1))
     control("six settled outcomes leave as ONE section", len(_first), 1)
     control("and that section carries all six", _first[0].count("settled"), 6)
     control("so the actionable section is next, not seven stops away", _left, 1)
-    _second, _left2 = K.outq_drain("wl", "sess", _qdoc, 1)
+    _second, _left2 = K.outq_drain("wl", "sess", _qdoc, 1, rng=random.Random(1))
     control("CONTROL: the plan section then surfaces", _second, ["PLAN boxes"])
 finally:
     K.S.save_state = _saved_save

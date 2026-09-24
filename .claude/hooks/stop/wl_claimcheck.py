@@ -282,17 +282,81 @@ def _render(prof):
     return "\n".join(rows)
 
 
-def prompt_section(prof):
+# -- The investigation, when the claim is about a plan box --------------------
+#
+# ADDITIVE, AND ADVISORY LIKE EVERYTHING ELSE HERE. `worklist.py --plan-investigate` records, before a box is implemented, what the tree already held about it; `--plan-tick` then refuses the box without that row and re-derives two clauses over it. Those are MECHANICAL refusals and they are not this module's business. What IS this module's business is that the judge was being
+# asked "does the evidence demonstrate the claim" while a written statement of what the session found BEFORE it started sat unread in a committed ledger. Handing it over costs prompt tokens on a call already being made and no new call, and it changes nothing about the verdict's advisory character or the graduation criterion in the module docstring.
+
+#: An 8-hex box signature, the token the ledger, the record and the investigation row all speak. Matched as a WHOLE token so a longer sha cannot be read as one.
+_SIG_RE = re.compile(r"(?<![0-9a-zA-Z])([0-9a-f]{8})(?![0-9a-zA-Z])")
+
+
+def investigation_for_claim(root, text):
+    """The investigation row this claim is about, or None.
+
+    MATCHED ON THE PLAN PATH OR THE BOX SIGNATURE, both of which are exact tokens, and NEVER on word similarity. This module's own measurements are the reason: the one similarity score available here does not discriminate, and a fuzzy match would attach a stranger's investigation to a claim and then quote it to the judge as though it were the session's own.
+
+    NEWEST FIRST, so a box investigated twice is represented by the row that actually licensed the tick -- the same rule `wl_planrec.investigation_for` applies for the same reason.
+    """
+    claim = str(text or "")
+    if not claim:
+        return None
+    try:
+        import wl_planrec as R  # noqa: PLC0415 -- deferred; wl_planrec is not on the stop hook's hot path
+    except ImportError:
+        return None
+    sigs = set(_SIG_RE.findall(claim))
+    rows = R.read_investigations(root)
+    for row in reversed(rows):
+        if not isinstance(row, dict):
+            continue
+        plan = str(row.get("plan") or "")
+        if (plan and plan in claim) or (row.get("sig") in sigs):
+            return row
+    return None
+
+
+CLAIM_INVESTIGATION = """
+
+WHAT THE SESSION FOUND BEFORE IT STARTED, read out of
+agent/ledgers/plan-investigation.jsonl rather than inferred. This row was
+written BEFORE the work and its pointers were re-resolved by this process, so
+it is evidence about the ORDER of events and not only about the result:
+
+  plan:     %(plan)s
+  box:      %(sig)s
+  verdict:  %(verdict)s
+  note:     %(note)s
+
+  `present` means the work was ALREADY THERE and only the record was stale,
+  which is a complete and honourable close -- do not read it as a session
+  claiming credit for work it did not do. `absent` means the work was not in
+  the tree at that point, so the claim should name what was then built.
+  `partial` means the note says which half existed.
+"""
+
+
+def prompt_section(prof, investigation=None):
     """The prompt text to append, or "" when this stop asks nothing.
 
     Empty for a fix-set with no tick behind it: a commit-only fix-set carries no completion claim, and asking the judge to rule on a claim nobody made is how a rule starts firing on everything and stops being read.
+
+    `investigation` is OPTIONAL and its absence is the ordinary case: most ticks are worklist ticks and carry no plan box. A missing row adds nothing to the prompt and is never reported as a gap here -- whether a plan box may be closed without one is `--plan-tick`'s mechanical refusal, not a judgement.
     """
     if not prof or not prof.get("claim"):
         return ""
-    return CLAIM_PROMPT % {
+    out = CLAIM_PROMPT % {
         "claim": "\n".join("    " + ln for ln in prof["claim"].splitlines()) or "    (empty)",
         "profile": _render(prof),
     }
+    if isinstance(investigation, dict) and investigation.get("verdict"):
+        out += CLAIM_INVESTIGATION % {
+            "plan": investigation.get("plan") or "(unnamed)",
+            "sig": investigation.get("sig") or "(none)",
+            "verdict": investigation.get("verdict"),
+            "note": (investigation.get("note") or "(none)")[:400],
+        }
+    return out
 
 
 # -- The verdict ------------------------------------------------------------

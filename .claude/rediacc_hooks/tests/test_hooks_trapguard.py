@@ -281,6 +281,69 @@ CASES = [
         inject_json("git filter-repo --analyze", "Processed 6177 commits"),
         "trapguard CONTROL: --analyze is a READ of history and is never warned about",
     ),
+    # bws-auth-failure. ONE CASE PER MEASURED STRING, because the strings are the whole evidence base: they were taken 2026-09-06 against bws 2.1.0 with deliberately bogus tokens, and the string a genuinely EXPIRED token prints has never been seen here. The default-on arm is what covers that unseen one, so it gets a case of its own with a string nobody has ever measured.
+    inject(
+        ("check_inject fires", "bws-auth-failure"),
+        inject_json("bws secret list", 'Error: [400 Bad Request] {"error":"invalid_client"}'),
+        "trapguard: a bws invalid_client failure points at the rotation procedure",
+    ),
+    inject(
+        ("check_inject fires", "bws-auth-failure"),
+        inject_json("bws secret list --output json", "Error: Doesn't contain a decryption key"),
+        "trapguard: a garbled token's decryption-key error fires too",
+    ),
+    inject(
+        ("check_inject fires", "scripts/dev/bws-rotate.py"),
+        inject_json("bws secret get abc", "error: the access token could not be validated"),
+        "trapguard: an UNMEASURED auth error still fires, because the default is on",
+    ),
+    # THE ONE BRANCH THAT MUST STAY SILENT, and the reason it is not a taste question: `Missing access token` means the variable is unset. Nothing expired, and a rotation fixes nothing. A rule written as "fire on any bws error" gets exactly this case wrong.
+    inject(
+        ("check_inject silent", ""),
+        inject_json("bws secret list", "Error: Missing access token"),
+        "trapguard CONTROL: an UNSET variable is wiring, not a rotation, and says nothing",
+    ),
+    inject(
+        ("check_inject silent", ""),
+        inject_json("bws secret list --color no", '[{"key":"ALPHA","value":"x"}]'),
+        "trapguard CONTROL: a bws listing that WORKED is never warned about",
+    ),
+    inject(
+        ("check_inject silent", ""),
+        inject_json('echo "run bws secret list later"', "Error: Missing token, invalid_client"),
+        "trapguard CONTROL: bws named inside a string is not a bws run",
+    ),
+    # The two scripts whose names START with `bws` print the notice from their own failure paths. Firing here would double every message they already emit, which is the precision decay this tier's other rules were retuned for.
+    inject(
+        ("check_inject silent", ""),
+        inject_json(
+            "scripts/ops/bws-map-refresh.py --dry-run",
+            'bws secret list exited 1: [400 Bad Request] {"error":"invalid_client"}',
+        ),
+        "trapguard CONTROL: a script whose NAME begins with bws is not the bws binary",
+    ),
+    # 2026-09-24, both live false positives. A usage error never reached Bitwarden; `bws` inside a quoted grep pattern after a `|` is not a pipe into bws.
+    inject(
+        ("check_inject silent", ""),
+        inject_json('bws secret create FULL_CI "" proj', "error: value must not be empty\n\nFor more information, try '--help'."),
+        "trapguard CONTROL: a bws usage error is not an auth failure",
+    ),
+    inject(
+        ("check_inject silent", ""),
+        inject_json('gh run view 1 --log-failed | grep -iE "error|bws|token"', "error: the access token could not be validated"),
+        "trapguard CONTROL: bws after a | INSIDE a quoted pattern is not a bws run",
+    ),
+    # The pair that proves neither fix went too far: a real auth string still fires beside usage-shaped noise, and a real pipe into bws still counts.
+    inject(
+        ("check_inject fires", "bws-auth-failure"),
+        inject_json("bws secret list", 'Error: [400 Bad Request] {"error":"invalid_client"}\nFor more information, try \'--help\'.'),
+        "trapguard: a rotation marker still fires even beside usage-shaped text",
+    ),
+    inject(
+        ("check_inject fires", "bws-auth-failure"),
+        inject_json('echo x | bws secret list', "error: the access token could not be validated"),
+        "trapguard: a real pipe into bws still counts as a bws run",
+    ),
 ]
 
 

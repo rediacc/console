@@ -265,6 +265,30 @@ def test_29k_control_a_fresh_peer_is_listed_without_the_marker(wl):  # noqa: F81
     )
 
 
+def test_29k_a_peer_directory_carrying_two_sections_for_one_owner_is_reported_once(wl):  # noqa: F811
+    """A duplicate found in production, not a hypothetical: two `## SESSION <owner>` headings for the SAME owner inside one peer directory -- a relic from before the write path guaranteed replace-in-place -- doubled that peer's row in the stop-hook note, the same session reported as two different peers under two different ages.
+
+    `agent_peer_sections` keeps only the newest section per owner now.
+    """
+    wl.brief_now()
+    wl.hand_now()
+    wl.brief_other("cafe1234")
+    wl.state_as("cafe1234", PEER_29K)
+    state_path = wl.owner_state_file("cafe1234")
+    older_stamp = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(time.time() - 3600))
+    text = state_path.read_text(encoding="utf-8")
+    text += "\n\n## SESSION cafe1234 %s\n\nstale duplicate section, same owner\n" % older_stamp
+    state_path.write_text(text, encoding="utf-8")
+    wl.say("answer\n\n## Remaining\n- #7 thing (pending)")
+    wl.task(7, "pending", "thing")
+    out = wl.run().out
+    rows = re.findall(r"cafe1234 +[0-9]+ min old", out)
+    assert len(rows) == 1, (
+        "29k: a peer with two sections for one owner was reported as %d rows instead of one: %s"
+        % (len(rows), out[:400])
+    )
+
+
 def test_29g_state_refuses_a_body_carrying_a_session_heading(wl):  # noqa: F811
     """The old habit is pasting the WHOLE document, and that habit is what destroyed a peer's document. The tool now writes the heading itself, so a body with one in it is a whole-document paste; refusing teaches the contract at zero cost, because the previous document is untouched."""
     wl.brief_now()

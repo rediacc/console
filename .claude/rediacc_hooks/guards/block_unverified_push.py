@@ -27,6 +27,7 @@ import hashlib
 import json
 import os
 import pathlib
+import re
 import subprocess
 
 from rediacc_hooks import hookio, shellscan
@@ -236,6 +237,27 @@ def _read_json(path):
         return None
 
 
+def every_push_deletes_only(scan):
+    """True when every `git ... push` segment in the command only deletes remote refs.
+
+    A segment deletes only when it carries `--delete`/`-d`, or when every refspec after the remote is `:<ref>`. Anything else in any segment -- a plain branch, `HEAD`, `--tags`, `--all`, `--mirror` -- makes the whole command a publishing push.
+    """
+    pushes = [seg for seg in re.split(r"[;&|\n]+", scan) if hookio.grep_q(PUSH_AT_COMMAND_POS, seg)]
+    if not pushes:
+        return False
+    for seg in pushes:
+        words = seg.split()
+        tail = words[words.index("push") + 1 :] if "push" in words else []
+        if any(w in ("--all", "--mirror", "--tags") for w in tail):
+            return False
+        if "--delete" in tail or "-d" in tail:
+            continue
+        refspecs = [w for w in tail if not w.startswith("-")][1:]
+        if not refspecs or not all(r.startswith(":") and len(r) > 1 for r in refspecs):
+            return False
+    return True
+
+
 def run(ev):
     state = shellscan.hook_init(ev.payload)
     if state is None:
@@ -248,6 +270,10 @@ def run(ev):
 
     # A dry run publishes nothing and buys no CI round.
     if hookio.grep_q(DRY_RUN, cmd):
+        return hookio.ALLOW
+
+    # A DELETE-ONLY PUSH publishes no tree either, so there is nothing for a gate run to have judged. Found 2026-09-24 refusing `git push origin --delete <merged-branch>` during a branch cleanup, which pointed the session at `npm run ci:quick` for a push that removes a ref and carries no commits. Judged PER PUSH SEGMENT, so `git push origin --delete x && git push origin y` is still refused on the second segment.
+    if every_push_deletes_only(scan):
         return hookio.ALLOW
 
     root = ev.env("CLAUDE_PROJECT_DIR") or hookio.git_out(["rev-parse", "--show-toplevel"])

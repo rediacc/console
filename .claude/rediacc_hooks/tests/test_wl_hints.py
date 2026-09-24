@@ -22,16 +22,25 @@ def _hints():
 # ---- load_corpus ------------------------------------------------------------
 
 
-def test_load_corpus_reads_the_real_twelve_entries_clean():
+def test_load_corpus_reads_the_real_thirteen_entries_clean():
+    """13 total since D-M1 retired `haiku-for-derived-work` and added `haiku-read-only-only`
+    in its place (agent/DECISIONS.md D-M1); 12 of the 13 are `active`, the retired one kept
+    with its history intact per HINTS.md's own precedent."""
     h = _hints()
     entries, errors = h.load_corpus(REAL_HINTS)
     assert errors == [], errors
-    assert len(entries) == 12, [e["id"] for e in entries]
+    assert len(entries) == 13, [e["id"] for e in entries]
     ids = [e["id"] for e in entries]
-    assert len(set(ids)) == 12, "duplicate Hint-Id in the real corpus"
+    assert len(set(ids)) == 13, "duplicate Hint-Id in the real corpus"
+    statuses = {e["id"]: e["status"] for e in entries}
+    assert statuses["haiku-for-derived-work"] == "retired", statuses
+    active = [e for e in entries if e["id"] != "haiku-for-derived-work"]
+    assert len(active) == 12, [e["id"] for e in active]
     for e in entries:
         assert e["heading"], e
         assert e["source"], e["id"]
+        assert e["status"] in ("active", "retired"), e["id"]
+    for e in active:
         assert e["status"] == "active", e["id"]
 
 

@@ -314,11 +314,52 @@ def load_state(session_id):
         return {"epoch": 0, "band": -1}
 
 
+_last_cleanup_time = [0]  # a one-element cell, not a bare module global -- see save_state()
+
+
+def cleanup_stale_state_files(grace_hours=24, now=None):
+    """Delete `*.json`/`*-onboard.json` in `state_dir()` older than `grace_hours`.
+
+    Pure with respect to time: `now` is injectable so a test can pin it.
+    Exceptions are caught and logged rather than propagated, the same contract `log_error` documents for the rest of this file, since a cleanup failure must stay a non-event for the caller.
+    Safe because the only readers of a state file (`band-notice.py`, `epoch-reset.py`, `onboard.py`) load it for the currently running session only, and a live session's own file is refreshed on every save, so it stays out of the grace window while that session runs.
+    """
+    cutoff = (now if now is not None else time.time()) - grace_hours * 3600
+    deleted = []
+    total = 0
+    try:
+        for f in state_dir().iterdir():
+            if not f.name.endswith(".json"):
+                continue
+            total += 1
+            try:
+                if f.stat().st_mtime < cutoff:
+                    f.unlink()
+                    deleted.append(f.name)
+            except OSError:
+                continue
+    except Exception as exc:  # noqa: BLE001 -- a sweep failure must never break save_state
+        log_error("cleanup_stale_state_files", exc)
+    return len(deleted), total, deleted
+
+
 def save_state(session_id, data):
     f = state_file(session_id)
     tmp = f.with_suffix(".tmp")
     tmp.write_text(json.dumps(data, indent=2, sort_keys=True), encoding="utf-8")
     os.replace(tmp, f)
+    now = time.time()
+    if now - _last_cleanup_time[0] > 60:
+        _last_cleanup_time[0] = now
+        try:
+            deleted, total, names = cleanup_stale_state_files()
+            if deleted:
+                log_error(
+                    "cleanup_stale_state_files",
+                    Exception("swept %d of %d stale state file(s): %s" % (deleted, total, names)),
+                )
+        except Exception as exc:  # noqa: BLE001 -- fire-and-forget, save_state must still succeed
+            log_error("cleanup_stale_state_files", exc)
 
 
 def log_error(where, exc):

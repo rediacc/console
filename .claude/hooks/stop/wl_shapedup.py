@@ -11,16 +11,22 @@ characters of rubric (JUDGE 5,762 + REGGATE 2,646 + SWEEP 5,683 + BRAVE 3,644), 
 THE COUNTER IS MECHANICAL AND COMES FIRST. `scripts/gates/check-shape-duplication.ts` hashes sliding 5-line windows over the gate families, seeded so the 219-span standing backlog is silent, and fires only when a shape that was NOT already present reaches its third copy. A model asked "is there duplication?" answers yes far too often; a counter answers only when a real Nth instance
 lands. The model is never asked to FIND anything -- `instances` comes
 from the counter and is not read back off the model, so it cannot be fabricated.
+
+THE WIDE TIER at the foot of this file is the same question over the counter's `advisory` profile, and it is ADVISORY ONLY: it queues one allow-report section and never blocks. It reports duplication in the Stop hook's own `wl_*.py` files, some of which is deliberate parallel rule structure; its section comment says why that is expected and how a `no` verdict settles.
 """
 
+import fnmatch
 import glob
 import hashlib
 import json
 import os
 
+import wl_core as C
 import wl_judge
 import wl_proc
+import wl_reggate
 import wl_rules
+import wl_store as S
 
 SHAPE_MARKER = "IS THIS THE NTH COPY"
 
@@ -307,9 +313,9 @@ CORPUS_GLOBS = (
 )
 
 
-def corpus_sig(root):
+def corpus_sig(root, globs=CORPUS_GLOBS):
     h = hashlib.sha1()
-    for pat in CORPUS_GLOBS:
+    for pat in globs:
         for p in sorted(glob.glob(os.path.join(root, pat))):
             try:
                 st = os.stat(p)
@@ -328,7 +334,13 @@ def index_present(root):
     THE SIGNATURE ALONE IS NOT ENOUGH ANY MORE, and the gap is one-sided in the direction that matters. `corpus_sig` answers "has the corpus changed since the last run", which is the right question for the duplication VERDICT and the wrong one for the cache the verdict now also writes: a fresh checkout, a cleared `.ci/cache`, or the first run after the probe landed all leave an
     unchanged corpus and no index at all, and the early return below would then keep the commit path advisory-less for as long as nobody edited a gate. The cache is gitignored, so that state is the ordinary one rather than an edge case.
     """
-    cache = os.environ.get("SHAPE_PROBE_CACHE") or os.path.join(root, SHAPE_INDEX_REL)
+    return _cache_complete(
+        os.environ.get("SHAPE_PROBE_CACHE") or os.path.join(root, SHAPE_INDEX_REL)
+    )
+
+
+def _cache_complete(cache):
+    """Both halves of one cache directory on disk: the index and the probe bundle built beside it."""
     return os.path.exists(os.path.join(cache, "index.json")) and os.path.exists(
         os.path.join(cache, "probe.mjs")
     )
@@ -342,7 +354,13 @@ def index_inputs_moved(root):
 
     Fails toward re-running rather than toward trusting a doubtful cache: a missing index, an unreadable one, a missing input file, or an unreadable one are all read as "moved", never as "unchanged".
     """
-    cache = os.environ.get("SHAPE_PROBE_CACHE") or os.path.join(root, SHAPE_INDEX_REL)
+    return _cache_inputs_moved(
+        root, os.environ.get("SHAPE_PROBE_CACHE") or os.path.join(root, SHAPE_INDEX_REL)
+    )
+
+
+def _cache_inputs_moved(root, cache):
+    """`index_inputs_moved`'s body for an explicit cache directory, so the wide tier asks the SAME question of its own cache rather than a second spelling of it."""
     try:
         with open(os.path.join(cache, "index.json"), encoding="utf-8") as fh:
             index = json.load(fh)
@@ -362,18 +380,22 @@ def index_inputs_moved(root):
     return False
 
 
-def counter_findings(root):
-    """(findings, error). Each finding is {shape, files, span}. Never raises."""
+def counter_findings(root, profile=None):
+    """(findings, error). Each finding is {shape, files, span}. Never raises.
+
+    `profile` names one of the counter's `PROFILES`; None runs the default (`gate`) with an argv byte-identical to the one this function has always built. A named profile also runs WITHOUT `SHAPE_PROBE_CACHE` in its environment: the counter's `cacheDir()` honours that variable for whichever profile is running, so an inherited value would make the wide scan overwrite the commit-path guard's own index with a corpus of different pathspecs (risk 6 of agent/plans/PLAN-stop-hook-refactor-enforcement.md, a one-line mistake with a silent, total failure mode).
+    """
     script = os.path.join(root, COUNTER)
     if not os.path.exists(script):
         return [], "counter not present at %s" % COUNTER
-    proc = wl_proc.run(
-        # `--emit-index` RIDES THE RUN THAT WAS HAPPENING ANYWAY, which is the whole reason the commit-path probe can afford a fresh cache. The scan is the expensive part (about 1.1s over the corpus); writing the index it just computed is a bundle and two file writes, and it happens exactly when the corpus has changed, because that is when this rule re-runs at all. A refresh on its
-        # own timer would be a second schedule for one fact.
-        ["npx", "tsx", COUNTER, "--json", "--emit-index"],
-        timeout=COUNTER_TIMEOUT_S,
-        cwd=root,
-    )
+    # `--emit-index` RIDES THE RUN THAT WAS HAPPENING ANYWAY, which is the whole reason the commit-path probe can afford a fresh cache. The scan is the expensive part (about 1.1s over the corpus); writing the index it just computed is a bundle and two file writes, and it happens exactly when the corpus has changed, because that is when this rule re-runs at all. A refresh on its
+    # own timer would be a second schedule for one fact.
+    argv = ["npx", "tsx", COUNTER, "--json", "--emit-index"]
+    kwargs = {"timeout": COUNTER_TIMEOUT_S, "cwd": root}
+    if profile:
+        argv += ["--profile", profile]
+        kwargs["env"] = {k: v for k, v in os.environ.items() if k != "SHAPE_PROBE_CACHE"}
+    proc = wl_proc.run(argv, **kwargs)
     if proc.timed_out:
         return [], "counter timed out after %ds" % COUNTER_TIMEOUT_S
     if proc.returncode == wl_proc.SPAWN_FAILED_RC and not proc.stdout:
@@ -444,3 +466,183 @@ def run(root, state):
     if findings is None and not err:
         return False, "", "", ""
     return judge(root, findings, err)
+
+
+# -- THE WIDE TIER: an advisory drip over the corpus CI does not refuse on -------
+#
+# WHAT IT IS (agent/plans/PLAN-stop-hook-refactor-enforcement.md, Commit 3). The counter's `advisory` profile scans four families the `gate` profile never reaches -- `.ci/scripts/quality/check_*.py`, `.ci/rediacc_ci/tests/gates/test_gate_*.py`, `.claude/rediacc_hooks/guards/block_*.py` and `.claude/hooks/stop/wl_*.py` -- and about 90 standing findings sit in them that no session here created. So this tier NEVER BLOCKS: it never calls `wl_rules.apply_order`, it never places a `decision: block`, and its whole output is one allow-report section queued at priority 2 through `outq_add`, one shape per logical moment. A blocking tier over a standing backlog is a nagging machine by construction.
+#
+# IT REPORTS DUPLICATION IN THE STOP HOOK'S OWN FILES (risk 2 of the plan), and that will read as a defect the first time it happens: a session editing `.claude/hooks/stop/wl_*.py` gets duplication findings about the stop hook, from the stop hook, while editing it. It is not a defect. It is also the family most likely to produce false positives, because those files carry DELIBERATE parallel rule structure -- `wl_classsweep`, `wl_bravedefault` and this module share a shape on purpose (`wl_rules.py`'s header says exactly that). Expect `no` verdicts there, and settle each one the way the message says: an `accepted` entry with a BLOCKER reason in `scripts/data/shape-duplication-seed-advisory.json`, which silences that shape on the very next counter run, forever and visibly. A `no` verdict's text carries the ready-to-paste entry so the settle path costs one edit.
+#
+# REUSED UNCHANGED: `counter_findings` (with `profile`), `ask`, `read_verdict`, `demand_for` and `SHAPE_PROMPT`, so the calibration hash in `.ci/config/rubric-calibration.json` does not move and no new judged-rule module exists for `check_judged_rule_wiring.py` to count. Four brakes, all pre-existing: `outq_add`'s shown ledger (same text is not said twice inside `REPORT_REFRESH_MIN`), `outq_drain`'s per-stop budget, a per-shape `Demand` latch (SHAPE_TTL_MIN / SHAPE_MAX_FIRES), and the branch-scoped spend cap below. Above the cap the finding still lands, mechanically, with no model call: a rule that goes silent when its budget runs out is a rule that quietly stops.
+
+# THE SAME FOUR PATHSPECS AS `ADVISORY_FAMILIES` in `scripts/gates/check-shape-duplication.ts`, pinned equal in both directions by `.ci/rediacc_ci/tests/test_shapedup_corpus_sig.py`: a narrower signature would serve a stale verdict, exactly as for the narrow tuple above.
+CORPUS_GLOBS_WIDE = (
+    ".ci/scripts/quality/check_*.py",
+    ".ci/rediacc_ci/tests/gates/test_gate_*.py",
+    ".claude/rediacc_hooks/guards/block_*.py",
+    ".claude/hooks/stop/wl_*.py",
+)
+WIDE_PROFILE = "advisory"
+# The advisory profile's OWN cache, never `SHAPE_PROBE_CACHE`: that variable belongs to the commit-path guard, which compares a commit's staged files against the pathspecs recorded in the index it reads (risk 6).
+SHAPE_INDEX_WIDE_REL = ".ci/cache/shape-index-advisory"
+# Model calls per BRANCH, not per session: a branch is one PR and one CI queue, which is where the cost lands, and a per-session budget would reset at every compaction (the same argument wl_reggate's REGGATE_CAP makes).
+WIDE_CAP = max(0, int(os.environ.get("WORKLIST_SHAPEDUP_WIDE_CAP", "5")))
+
+V_REASON_WIDE = (
+    "IS THIS THE NTH COPY. A counter found this shape at %d places across "
+    "the %s family, outside the corpus CI refuses on: %s"
+)
+V_ACTION_WIDE = (
+    "Extract the shared piece%s, or record the DIVERGENCE with a BLOCKER "
+    "reason in scripts/data/shape-duplication-seed-advisory.json under "
+    '"accepted". ADVISORY: nothing is blocked on this. '
+    "Triage it: .claude/hooks/stop/worklist.py --triage <you> '<the finding>'"
+)
+# A `no` verdict is the settle path half-written: the model has named the divergence, so the entry that silences the shape is handed over whole rather than described.
+V_SETTLE_WIDE = (
+    'Judged NOT one thing: %s. To settle it for good, add this under "accepted" in '
+    'scripts/data/shape-duplication-seed-advisory.json: "%s": "BLOCKER: <that divergence, '
+    'citing file:line>". ADVISORY: nothing is blocked on this.'
+)
+
+
+def touches_wide(files):
+    """Does any path match a wide pathspec? The plan's `any(fnmatch(f, g) ...)` test, kept here so `wl_checks.py` needs no import of its own for it."""
+    return any(fnmatch.fnmatch(f, g) for f in files or () for g in CORPUS_GLOBS_WIDE)
+
+
+def wide_sig_moved(root, state):
+    """True when the wide corpus changed since the last wide run, or its cache is absent or stale. A stat sweep plus one small JSON read (about 4ms measured); never runs the counter. A FILTER on the fix-landed moment, not a trigger of its own: the widened counter measured a 3.05s median, over the plan's 3s ceiling, so an edit alone does not buy a scan."""
+    cache = os.path.join(root, SHAPE_INDEX_WIDE_REL)
+    return (
+        corpus_sig(root, CORPUS_GLOBS_WIDE) != state.get("shapedup_wide_sig")
+        or not _cache_complete(cache)
+        or _cache_inputs_moved(root, cache)
+    )
+
+
+def wide_ledger_path(branch, root=None):
+    """`agent/reggate/<branch-slug>.shapedup-wide.jsonl`, beside wl_reggate's own per-branch ledger and through its `debt_dir`, so `$WORKLIST_STORE_DIR` redirects both at once.
+
+    NOT a new `agent/shapedup-wide/` directory: `wl_store.agent_session_dirs` reports every non-reserved directory under `agent/` as a peer session, and `check:ci-tree-shape` refuses one, so a new directory would need a reservation in three places. `agent/reggate/` is already reserved and its `*.lock` sidecars are already gitignored; the `.shapedup-wide` infix keeps this file apart from the branch's reggate ledger and its lock.
+    """
+    return wl_reggate.debt_dir(root) / (wl_reggate._branch_slug(branch) + ".shapedup-wide.jsonl")
+
+
+def wide_spent(branch, root=None):
+    """Model calls this branch has already spent on the wide tier. An unreadable line is not a refund: only well-formed `ask` records count, and a ledger that cannot be read at all counts as spent in full, so a broken ledger can never read as a fresh budget."""
+    path = wide_ledger_path(branch, root)
+    try:
+        text = path.read_text(encoding="utf-8")
+    except FileNotFoundError:
+        return 0
+    except OSError:
+        return WIDE_CAP
+    n = 0
+    for raw in text.splitlines():
+        try:
+            rec = json.loads(raw)
+        except ValueError:
+            continue
+        if isinstance(rec, dict) and rec.get("kind") == "ask":
+            n += 1
+    return n
+
+
+def wide_charge(branch, shape_hash, root=None):
+    """Append one spend record under the store's blocking flock. This tree is shared by concurrent sessions, so the ledger is never written unlocked."""
+    path = wide_ledger_path(branch, root)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    rec = {"kind": "ask", "shape": shape_hash, "at": C.stamp_now(), "br": branch or ""}
+    S._append_lines(path, path.with_suffix(".lock"), [rec])
+
+
+def _wide_family(instances):
+    fams = [
+        g
+        for g in CORPUS_GLOBS_WIDE
+        if any(fnmatch.fnmatch(i.rsplit(":", 1)[0], g) for i in instances)
+    ]
+    return " + ".join(fams) or "advisory"
+
+
+def _wide_pick(findings):
+    """The largest finding (copies x span) whose per-shape latch is not yet capped, or None. The latch is `demand_for` keyed on `wide-<hash>`, so the wide tier and the narrow one never share a record and two shapes never share one either."""
+    ranked = sorted(
+        (f for f in findings or [] if isinstance(f, dict)),
+        key=lambda f: len(f.get("files") or []) * int(f.get("span") or 0),
+        reverse=True,
+    )
+    for f in ranked:
+        instances = [str(x) for x in f.get("files") or []]
+        shape_hash = str(f.get("shape", ""))
+        if len(instances) < 2 or not shape_hash:
+            continue
+        demand = demand_for("wide-" + shape_hash)
+        prior = demand.peek()
+        if prior and prior["fires"] >= SHAPE_MAX_FIRES:
+            continue
+        return f, instances, shape_hash, demand, prior
+    return None
+
+
+def wide_report(root, findings, err, branch):
+    """(text, note) for ONE wide finding. `text` is the allow-report section to queue, "" when there is nothing to say; `note` is a diagnostic. Never raises on a counter error and never calls `wl_rules.apply_order`."""
+    if err:
+        # NEVER FIRES on a counter that could not answer: the error is surfaced as a note and nothing is claimed about the tree.
+        return "", "wide shape counter unavailable: %s" % err
+    pick = _wide_pick(findings)
+    if pick is None:
+        return "", ""
+    f, instances, shape_hash, demand, prior = pick
+    note, desc, action = "", "", ""
+    spent = wide_spent(branch, root)
+    if spent < WIDE_CAP:
+        # CHARGED BEFORE THE CALL: a call that times out or errors was still paid for.
+        wide_charge(branch, shape_hash, root)
+        out, err2 = ask(instances)
+        if out is None:
+            note = "wide shape_dup not judged: %s" % err2
+        else:
+            kind, payload = read_verdict(out, root)
+            if kind == "fire":
+                desc = payload["shape"]
+                action = V_ACTION_WIDE % (
+                    " into %s" % payload["harness"] if payload["harness"] else ""
+                )
+            elif kind == "silent":
+                desc = "shape %s" % shape_hash
+                action = V_SETTLE_WIDE % (payload, shape_hash)
+            else:
+                note = "wide shape_dup degraded: %s" % payload
+        judged = "%s by %s, model call %d of %d on this branch" % (
+            "judged" if action else "no verdict",
+            wl_judge.JUDGE_MODEL,
+            spent + 1,
+            WIDE_CAP,
+        )
+    else:
+        judged = (
+            "not judged: this branch's %d wide-tier model calls are spent, counter output only"
+            % WIDE_CAP
+        )
+    if not action:
+        # Mechanical: the counter's own measurement, which is true whether or not a model looked at it.
+        desc = desc or "shape %s, ~%d lines" % (shape_hash, int(f.get("span") or 0))
+        action = V_ACTION_WIDE % ""
+    lines = [V_REASON_WIDE % (len(instances), _wide_family(instances), desc)]
+    lines += ["    %s" % i for i in instances[:12]]
+    if len(instances) > 12:
+        lines.append("    ... and %d more" % (len(instances) - 12))
+    lines.append("  accepted key: %s (%s)" % (shape_hash, judged))
+    lines.append(action)
+    demand.bank({"shape": shape_hash}, prior)
+    return "\n".join(lines), note
+
+
+def wide_run(root, state, branch):
+    """Run the advisory counter and report one finding. The CALLER decides the moment (`wl_checks.py`: a fix landing in a wide family, filtered by `wide_sig_moved`, the plan's fallback after the widened counter measured over its 3s ceiling); this records the new signature so an unchanged tree is not re-scanned. `state` is the caller's persisted dict; only `shapedup_wide_sig` is written."""
+    state["shapedup_wide_sig"] = corpus_sig(root, CORPUS_GLOBS_WIDE)
+    findings, err = counter_findings(root, profile=WIDE_PROFILE)
+    return wide_report(root, findings, err, branch)

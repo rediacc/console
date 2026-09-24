@@ -24,6 +24,7 @@ WHY A REGEX PLUS A HAND-WRITTEN BALANCED-PAREN SCAN, NOT A FULL SHELL AST. `bloc
 quoted string.
 """
 
+import os
 import re
 
 from rediacc_hooks import hookio
@@ -39,8 +40,17 @@ DEFECT = ("if _is_provably_always_alive(fallback):", "if False:")
 LOOP_HEAD = hookio.rx(r"(^|[;&|(]|&&|\|\|)[{S}]*(until|while)\b")
 DO_CLOSE = hookio.rx(r";[{S}]*do\b")
 
-# -e or -d immediately (optionally through one straight quote) in front of /proc/$( -- NOT a bare "-e $(...)" (the ordinary default-value idiom, explicitly out of scope per the module docstring), and NOT a mention of /proc/$( outside a -e/-d test.
-PROC_TEST_OPEN = hookio.rx(r"-[ed][{S}]+\"?/proc/\$\(")
+# THE PROCFS SEAM. This guard never READS procfs; it RECOGNISES the procfs liveness idiom inside somebody else's command text. That still makes the path a platform-sensitive constant, and in the direction that is hardest to notice: on a machine whose procfs is not at `/proc` (macOS has none at all, and a container can bind one under a different root), the wait loops people
+# actually write are spelled against THAT root, the prefilter below misses every one of them, and this guard degrades to an unconditional ALLOW that still reads green in every test that runs on a default Linux box. A guard that silently finds nothing is the failure mode `proc.py`'s own backend seam was written for; the difference here is only that the divergence lands in a
+# pattern rather than in a read. So the root is named once, read from the environment, and both the prefilter and the anchor below are BUILT from it rather than each carrying their own copy. Exercise the non-default path with REDIACC_PID_WAIT_PROCFS and the anchor follows; a second hard-coded spelling would not.
+#
+# EDGE_CASES and the test suite beside this file are written against the DEFAULT spelling on purpose: they are the evidence about the shape this guard ships with, and re-deriving their fixtures from the override would make them agree with any value of it, including a wrong one.
+PROCFS_ENV = "REDIACC_PID_WAIT_PROCFS"
+PROCFS_ROOT = (os.environ.get(PROCFS_ENV) or "/proc").rstrip("/") or "/proc"
+PROCFS_PREFIX = PROCFS_ROOT + "/"
+
+# -e or -d immediately (optionally through one straight quote) in front of <procfs>/$( -- NOT a bare "-e $(...)" (the ordinary default-value idiom, explicitly out of scope per the module docstring), and NOT a mention of <procfs>/$( outside a -e/-d test.
+PROC_TEST_OPEN = hookio.rx(r"-[ed][{S}]+\"?" + re.escape(PROCFS_PREFIX) + r"\$\(")
 
 # The LEFT half of a top-level `||` inside the substitution must be EXACTLY a `cat` of one path token (no pipe, no further command), with an optional `2>/dev/null`. A pipeline, a `;`, or an `&&` join is a DIFFERENT idiom -- see EDGE_CASES.
 LEFT_IS_BARE_CAT = hookio.rx(r"^[{S}]*cat[{S}]+[^|;&{S}]+([{S}]*2>[{S}]*/dev/null)?[{S}]*$")
@@ -225,7 +235,7 @@ def _split_top_level_or(body):
 
 def run(ev):
     cmd = ev.raw("tool_input", "command")
-    if cmd == "" or "/proc/" not in cmd or "$(" not in cmd:
+    if cmd == "" or PROCFS_PREFIX not in cmd or "$(" not in cmd:
         return hookio.ALLOW
 
     for head in re.finditer(LOOP_HEAD, cmd):

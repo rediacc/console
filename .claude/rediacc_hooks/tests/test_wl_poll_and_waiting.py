@@ -514,7 +514,7 @@ ARITY = {
         "traps": "t",
     },
     "REGGATE_PROMPT": {"fixset": "f", "keys": "k"},
-    "FIXSET_GROUND_TRUTH": {"count": 1, "files": "f", "more": ""},
+    "FIXSET_GROUND_TRUTH": {"count": 1, "files": "f", "more": "", "how": "diff-tree"},
     "V_PLAN_ADOPTED": {"rel": "p", "n_open": 2, "n_gap": 1, "recipes": "r", "me": "m"},
     # ONE HOLE, and deliberately one: every number in the plan-implementation block -- the ceiling, the day, the three ownership buckets, the named box -- is computed by `wl_planenforce.render`, so the catalogue string wraps a body rather than formatting fourteen fields a call site would have to keep in step.
     "V_PLAN_UNIMPLEMENTED": {"body": "b"},

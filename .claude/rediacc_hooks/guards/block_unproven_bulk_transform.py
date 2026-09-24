@@ -128,7 +128,10 @@ def _pathspecs_resolve(cwd, paths):
     `ls-files --error-unmatch` is the tracked answer and an on-disk probe is the untracked one, which together are exactly the paths a commit can name. A token neither knows -- a bogus path, a stray `--` -- still returns False here, so the fallback that stops a real bulk commit walking past is untouched.
     """
     for path in paths:
-        if hookio.git_out(["ls-files", "--error-unmatch", "--", path], cwd=cwd, want_rc=True) is not None:
+        if (
+            hookio.git_out(["ls-files", "--error-unmatch", "--", path], cwd=cwd, want_rc=True)
+            is not None
+        ):
             continue
         try:
             if (pathlib.Path(cwd) / path).exists():
@@ -275,7 +278,8 @@ def run(ev):
             return hookio.DENY
         return hookio.ALLOW
 
-    if hookio.grep_q(PUSH.PUSH_AT_COMMAND_POS, scan):
+    # A DELETE-ONLY PUSH carries no commits, so there is no range to prove; block_unverified_push.every_push_deletes_only is the one definition both push guards read.
+    if hookio.grep_q(PUSH.PUSH_AT_COMMAND_POS, scan) and not PUSH.every_push_deletes_only(scan):
         target = _push_target(scan, cwd)
         if target is None:
             return hookio.ALLOW

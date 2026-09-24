@@ -10,6 +10,7 @@ with both directions under section B.
 IT DRIVES THE LIVE GUARD THROUGH THE DISPATCHER, for the reason the P7 cutover exists: a suite driving anything else keeps passing while the thing that runs goes unchecked.
 """
 
+import atexit
 import json
 import pathlib
 import subprocess
@@ -29,9 +30,14 @@ COMMIT = "git " + "commit"
 with tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False) as _body_file:
     _body_file.write("Did %s run the tests?" % Y)
 BODY_FILE_PATH = _body_file.name
+# `delete=False` is what lets the guard reopen the file by name, so removing it is this suite's job, done at exit rather than never.
+atexit.register(pathlib.Path(BODY_FILE_PATH).unlink, missing_ok=True)
 
-# R18 is a FLOOR since the 2026-09-22 rewrite (prose_style.py:_sentence_break_offset): a line past 384 chars is only a finding when a genuine sentence-ending period sat at or before that floor. A run of one repeated character has no such break and is legal at any length, so a case meant to exercise R18 needs an early period followed by a long tail.
-R18_VIOLATION = "This starts with one short sentence. " + ("word " * 100)
+# R18 is a FLOOR since the 2026-09-22 rewrite (prose_style.py:_sentence_break_offset): a line past the floor is only a finding when a genuine sentence-ending period sat at or before that floor. A run of one repeated character has no such break and is legal at any length, so a case meant to exercise R18 needs an early period followed by a long tail.
+#
+# THE FLOOR DOUBLED FROM 384 TO 768 the same day (commit 5c879581e, prose-style-rules.json's `max_line_length`), and that commit's own fixture sweep touched three cases in .ci/rediacc_ci/tests/test_quality_prose_style.py but not this file's -- this fixture sat at 537 characters, comfortably past the old floor and comfortably under the new one, so R18 silently stopped firing on
+# it. 150 repeats clears 768 with margin rather than sitting flush against it, so a future floor nudge in either direction has room before this needs touching again.
+R18_VIOLATION = "This starts with one short sentence. " + ("word " * 150)
 
 # R19 fires on a paragraph of 3+ lines hard-wrapped at a uniform width well under the limit -- the shape a heredoc body typed with manual line breaks produces. Since 2026-09-22 this also covers "commit" scope, matching R18: the same duplicated hardcoded scope check (prose_style.py's `underwrap_findings`) that would have left R18's fix vacuous for commit bodies if left
 # unfixed applies here too, so this case is the class-sweep proof that R19 was fixed alongside it, not left as the other half of the same gap.
@@ -156,7 +162,7 @@ CASES = [
     ),
     ("an empty command", "", False),
     (
-        "CONTROL: a commit body with no sentence break stays allowed past 384 chars, same as a PR body",
+        "CONTROL: a commit body with no sentence break stays allowed past the floor, same as a PR body",
         '%s -m "fix: x" -m "%s" && gh pr create --title "fix: x" --body "short body"'
         % (COMMIT, "z" * 400),
         False,

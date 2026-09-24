@@ -382,12 +382,80 @@ def rule_rebase_unverified(cmd, out, _root, _resp):
     )
 
 
+# A `bws` IN COMMAND POSITION, and not the two scripts whose names begin with those three letters. `bws(?![\w.-])` is what stops `bws-map-refresh.py` and `bws-rotate.py` from matching: both already print the notice themselves, so firing on them would double every message they emit. The leading alternation is the same anchoring every other matcher in this file uses, so `echo "run
+# bws later"` is prose rather than a run.
+BWS_CMD = re.compile(r"(?:^|[;&|(]|\$\(|`)\s*(?:\S*/)?bws(?![\w.\-/])", re.MULTILINE)
+
+# THE MARKERS, AND WHY THEY ARE COPIED HERE RATHER THAN IMPORTED. The ONE classifier is `rediacc_ci.core.bws_env.classify_failure`, and a hook cannot reach it: `.claude/hooks/trapguard/` has no route onto `sys.path` for `.ci/`, and a hook that imported a CI package would break a turn the first time that package moved. So these two tuples are a COPY, and
+# `check:ci-bws-rotation-notice` asserts character-for-character that they still equal `bws_env.WIRING_MARKERS` and `bws_env.ROTATION_MARKERS`. A copy nobody compares is a second implementation; a copy a gate compares is a cache.
+BWS_WIRING_MARKERS = ("Missing access token",)
+BWS_ROTATION_MARKERS = (
+    '[400 Bad Request] {"error":"invalid_client"}',
+    "Doesn't contain a decryption key",
+)
+
+# A USAGE ERROR IS NOT AN AUTH FAILURE. clap rejects a malformed invocation before any request leaves the machine, and its message carries one of these shapes. Found 2026-09-24: `bws secret create FULL_CI "" <project>` printed `error: value must not be empty` and the generic `error:` arm below ordered a token rotation for a call that never reached Bitwarden.
+BWS_USAGE_MARKERS = (
+    "must not be empty",
+    "Usage: bws",
+    "unexpected argument",
+    "invalid value",
+    "the following required arguments were not provided",
+    "For more information, try '--help'",
+)
+
+# Quoted spans, removed before BWS_CMD looks for a command position. Found 2026-09-24: `grep -iE "error|bws|token"` matched, because the `|` INSIDE the quoted pattern reads as a pipe to the raw-text regex.
+_QUOTED = re.compile(r"'[^']*'|\"(?:[^\"\\]|\\.)*\"")
+
+
+def rule_bws_auth_failure(cmd, out, _root, _resp):
+    """A `bws` that could not authenticate is a ROTATION, and only a person can do it.
+
+    Corpus entry: docs/agent-reference/TRAPS.md, "A dead machine-account token looks like four different faults and reads as none of them". By heading rather than by line, for the reason `rule_cancelled_run_not_passed` gives above.
+
+    THIS IS THE RING FOR A SESSION THAT TYPED `bws` DIRECTLY. `rediacc_ci.core.bws_env` and `scripts/ops/bws-map-refresh.py` both print the notice from their own failure paths, and `.github/actions/bws-secrets` prints it in CI. A session running the binary by hand bypasses all three and sees only Bitwarden's own message, which names no procedure and no file.
+
+    THE WIRING STRING IS SILENT, DELIBERATELY. `Missing access token` means the variable is not set; nothing has expired and a rotation would fix nothing. That is the one branch where this rule must say nothing at all, and it is the branch a rule written to "fire on any bws error" would get wrong.
+
+    THE DEFAULT IS ON, matching the classifier: any other non-empty error text from a `bws` invocation fires, because expired, revoked, deleted and network-fault are indistinguishable from here and the string a genuinely expired token prints has never been seen in this repository.
+    """
+    if not BWS_CMD.search(_QUOTED.sub("''", cmd or "")):
+        return None
+    text = out or ""
+    if any(marker in text for marker in BWS_WIRING_MARKERS):
+        return None
+    if any(marker in text for marker in BWS_USAGE_MARKERS) and not any(
+        marker in text for marker in BWS_ROTATION_MARKERS
+    ):
+        return None
+    # THE OUTPUT MUST LOOK LIKE A FAILURE. PostToolUse carries no exit code, so a successful `bws secret list` and a failed one are separated only by what they printed. An error shape is required rather than assumed, or every successful listing in a session would carry this warning.
+    failed = any(marker in text for marker in BWS_ROTATION_MARKERS) or re.search(
+        r"^\s*(?:Error|error):|\berror\b.*\b(?:token|client|decryption|auth)", text, re.MULTILINE
+    )
+    if not failed:
+        return None
+    return (
+        "trapguard[bws-auth-failure]: this `bws` call failed to authenticate. Expired, "
+        "revoked, deleted and a network fault all exit 1 here and none of them can be "
+        "told apart from this output, so the remedy is the same for all four: the "
+        "machine-account token is ROTATED, by a person, in the Bitwarden web vault. "
+        "bws 2.1.0 has no verb that mints or rotates one, so no session can do this.\n"
+        "    the procedure, in full:  .ci/config/bws-rotation-notice.txt\n"
+        "    the operator runs:       scripts/dev/bws-rotate.py\n"
+        "  A session's whole part is to report this and stop. DO NOT ask for the token in "
+        "the conversation, DO NOT put it in a tracked file, and DO NOT offer to run the "
+        "script: it reads the value from a TTY with echo off and refuses a non-TTY stdin "
+        "with exit 2, so a tool call physically cannot feed it."
+    )
+
+
 RULES = (
     rule_cancelled_run_not_passed,
     rule_phantom_deletion_diff,
     rule_interrupted_cleanup_skipped,
     rule_history_rewrite_controls,
     rule_rebase_unverified,
+    rule_bws_auth_failure,
 )
 
 

@@ -7,9 +7,11 @@ against a real HEAD before the commit runs, and the range cases build real commi
 TWIN = None ON THE GUARD ITSELF, so this file is the whole differential, exactly as `test-block_prose_style_commit.py` is for its sibling. `check-hook-integrity.sh` reads this file's existence as crediting both directions.
 """
 
+import atexit
 import json
 import os
 import pathlib
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -40,8 +42,15 @@ def git(cwd, *args, check=True):
     return subprocess.run(["git", "-C", cwd, *args], capture_output=True, text=True, check=check)
 
 
-def scratch_repo():
+def scratch_dir():
+    """A temp directory removed at interpreter exit. Every repo and bare remote this suite makes goes through here: it builds a dozen git fixtures at module scope, and before this helper not one of them was deleted, which is the `.git base.txt r0.py` shape that filled the /tmp inode cap on 2026-09-24."""
     d = tempfile.mkdtemp()
+    atexit.register(shutil.rmtree, d, ignore_errors=True)
+    return d
+
+
+def scratch_repo():
+    d = scratch_dir()
     git(d, "init", "-q", "-b", "main")
     git(d, "config", "user.email", "p@example.invalid")
     git(d, "config", "user.name", "p")
@@ -64,10 +73,12 @@ class Tally:
 
     fails = 0
     blocked = 0
+    total = 0
 
 
 def case(name, command, cwd, want_blocked):
     got, err = run(command, cwd)
+    Tally.total += 1
     Tally.blocked += got
     ok = got == want_blocked
     Tally.fails += not ok
@@ -223,7 +234,7 @@ case(
 # ---- PUSH, range check over real commit history ----------------------------
 
 push_repo = scratch_repo()
-remote = tempfile.mkdtemp()
+remote = scratch_dir()
 git(remote, "init", "-q", "--bare")
 git(push_repo, "remote", "add", "origin", remote)
 git(push_repo, "push", "-q", "-u", "origin", "main")
@@ -236,10 +247,23 @@ case(
     push_repo,
     True,
 )
+# The same branch, still carrying that unproven commit: a DELETE-ONLY push carries none of it, so there is no range to prove. Paired with the block above on the SAME repo, so the allow is the exemption and not an empty range.
+case(
+    "a delete-only push carries no commits and is allowed",
+    "git push origin --delete stale-branch",
+    push_repo,
+    False,
+)
+case(
+    "a delete chained with a real push is still blocked",
+    "git push origin --delete stale-branch && git push",
+    push_repo,
+    True,
+)
 
 # A follow-up commit naming the unproven SHA and quoting proof clears it -- the module docstring's own promised remedy ("attach the proof in a follow-up commit naming the one being proven").
 followup_repo = scratch_repo()
-remote_f = tempfile.mkdtemp()
+remote_f = scratch_dir()
 git(remote_f, "init", "-q", "--bare")
 git(followup_repo, "remote", "add", "origin", remote_f)
 git(followup_repo, "push", "-q", "-u", "origin", "main")
@@ -264,7 +288,7 @@ case(
 
 # The same shape, but the follow-up NEVER NAMES the SHA -- proof text alone must not clear an unrelated commit, or this guard would accept any later commit that merely mentions the phrase.
 unnamed_repo = scratch_repo()
-remote_u = tempfile.mkdtemp()
+remote_u = scratch_dir()
 git(remote_u, "init", "-q", "--bare")
 git(unnamed_repo, "remote", "add", "origin", remote_u)
 git(unnamed_repo, "push", "-q", "-u", "origin", "main")
@@ -283,7 +307,7 @@ case(
 
 # A SHA listed in the repo's own bulk-transform-proof-baseline.json is grandfathered -- pre-existing debt at the moment the baseline landed, the same shrink-only shape every other baseline in this repo uses.
 baseline_repo = scratch_repo()
-remote_b = tempfile.mkdtemp()
+remote_b = scratch_dir()
 git(remote_b, "init", "-q", "--bare")
 git(baseline_repo, "remote", "add", "origin", remote_b)
 git(baseline_repo, "push", "-q", "-u", "origin", "main")
@@ -315,7 +339,7 @@ case(
 
 # A second scratch repo for the ALLOWED push, so the first repo's now-diverged history (it was blocked, never actually pushed) does not contaminate this case.
 push_repo2 = scratch_repo()
-remote2 = tempfile.mkdtemp()
+remote2 = scratch_dir()
 git(remote2, "init", "-q", "--bare")
 git(push_repo2, "remote", "add", "origin", remote2)
 git(push_repo2, "push", "-q", "-u", "origin", "main")
@@ -351,7 +375,8 @@ case(
 )
 
 print()
-TOTAL_CASES = 16
+# COUNTED, NOT TYPED. This used to be the literal 16 while 26 cases ran, so the summary misreported the suite and the constant-answer check below compared against a number the suite had outgrown.
+TOTAL_CASES = Tally.total
 if Tally.blocked in (0, TOTAL_CASES):
     print(
         "*** FAIL *** %d of %d cases blocked: the guard answered the same way on every "

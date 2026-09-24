@@ -156,6 +156,60 @@ def plant_investigate_target(fix) -> tuple[str, str]:
     return rel, wlfix.import_wl("wl_planrec").box_sig(body)
 
 
+def plant_backfill_target(fix) -> tuple[str, str]:
+    """(rel, sig) for a real, ALREADY-DONE box `--plan-backfill`'s table row can cite.
+
+    Unlike `plant_investigate_target`, `plan_backfill_investigation` has no `history=` override at the CLI layer -- it always walks `wl_planrec.ledger_history`, `git log --reverse -- .ci/config/plan-boxes.json`, to find the first commit that attests the box's signature. There is no git-free path through it, so this fixture turns `fix.proj/.git` -- a plain directory by
+    design elsewhere in this file, see `wlfix.Fixture.setup`'s own comment -- into a real two-commit repo, mirroring the exact recipe `.claude/hooks/stop/test-planrec.py`'s own module-level `build()` uses for the same verb: one commit with the box open and the ledger's `open_sigs` naming it, a second with the box ticked and the ledger's `done_sigs` naming it. `commit^`
+    then resolves to the first commit, which is the `head` the row wants.
+    """
+    R = wlfix.import_wl("wl_planrec")
+    rel = "agent/plans/PLAN-l1-backfill-target.md"
+    body = "the one already-done box this row backfills"
+    sig = R.box_sig(body)
+    (fix.proj / "agent" / "plans").mkdir(parents=True, exist_ok=True)
+
+    def write_ledger(done: bool) -> None:
+        (fix.proj / R.LEDGER_REL).parent.mkdir(parents=True, exist_ok=True)
+        (fix.proj / R.LEDGER_REL).write_text(
+            json.dumps(
+                {
+                    "plans": {
+                        rel: {
+                            "status": "executing",
+                            "owner": fix.sid,
+                            "open": 0 if done else 1,
+                            "done": 1 if done else 0,
+                            "open_sigs": [] if done else [sig],
+                            "done_sigs": [sig] if done else [],
+                        }
+                    }
+                }
+            ),
+            encoding="utf-8",
+        )
+
+    def write_plan(mark: str) -> None:
+        (fix.proj / rel).write_text(
+            "# PLAN: l1 backfill target\nStatus: executing\nOwner: %s\nUpdated: 2026-09-01\n\n"
+            "## Tasks\n\n- %s %s\n" % (fix.sid, mark, body),
+            encoding="utf-8",
+        )
+
+    fix.git("init", "-q")
+    fix.git("config", "user.email", "t@t")
+    fix.git("config", "user.name", "t")
+    write_plan("[ ]")
+    write_ledger(done=False)
+    fix.git("add", "-A")
+    fix.git("commit", "-qm", "fixture: the l1 backfill box is open")
+    write_plan("[x]")
+    write_ledger(done=True)
+    fix.git("add", "-A")
+    fix.git("commit", "-qm", "fixture: the l1 backfill box is ticked")
+    return rel, sig
+
+
 def probe_phantom(fix) -> str:
     """`wl_checks.phantom_identities` as a library call: "BLIND: <reason>" or "FLAGGED: <prefixes>".
 
@@ -400,6 +454,7 @@ def drive_l1(fix) -> L1Drive:
     ):
         assert value, "FIXTURE BROKEN: %s was never created, so its row proves nothing" % name
     inv_rel, inv_selector = plant_investigate_target(fix)
+    bf_rel, bf_sig = plant_backfill_target(fix)
 
     # A phantom for the --reassign row: three aged events under an identity that has never stopped, owning open items. This case runs no Stop hook, so no .lastevent- file exists for anybody here, which is exactly the phantom shape.
     fix.phantom_store("phantom1", 90)
@@ -453,6 +508,14 @@ def drive_l1(fix) -> L1Drive:
             "[verdict: present]",
         ),
         ("--hint-propose", "--hint-propose @WHO@ l1-table-hint", "proposed:"),
+        # RETROACTIVE ONLY, so CONTROL A is driven for real against plant_backfill_target's fixture -- a genuine two-commit repo, the one row in this table where `fix.proj/.git` stops being a plain directory. Dry (no `--write`): the identity rule is the whole surface this table is about, and a dry run proves the CLI reached the SAME resolve-and-render path a --write run
+        # would, without appending to the fixture's ledger.
+        (
+            "--plan-backfill",
+            "--plan-backfill @WHO@ %s %s fileline:%s:1 plan:%s -- l1 fixture note for --plan-backfill citing %s:1, which resolves and clears the checkable-evidence floor"
+            % (bf_rel, bf_sig, bf_rel, bf_rel, bf_rel),
+            "would backfill one investigation of",
+        ),
     ]
 
     for verb, template, needle in table:

@@ -16,6 +16,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -894,6 +895,60 @@ def test_compact_boundary(hooks_dir):
     )
 
 
+def test_cleanup_stale_state_files():
+    print("\n[cleanup_stale_state_files]")
+    sb = Sandbox(HERE)
+    try:
+        os.environ["CTX_BAND_STATE_DIR"] = str(sb.state)
+        try:
+            old = sb.state / "dead0001.json"
+            old.write_text("{}", encoding="utf-8")
+            fresh = sb.state / "live0001.json"
+            fresh.write_text("{}", encoding="utf-8")
+            now = time.time()
+            os.utime(old, (now - 25 * 3600, now - 25 * 3600))
+            os.utime(fresh, (now - 1 * 3600, now - 1 * 3600))
+
+            deleted, total, names = B.cleanup_stale_state_files(grace_hours=24, now=now)
+            check(
+                "a file older than the grace window is deleted",
+                deleted == 1 and names == ["dead0001.json"],
+                "got %r" % (names,),
+            )
+            check(
+                "a file younger than the grace window is kept",
+                fresh.exists(),
+                "fresh file was deleted",
+            )
+            check("the old file is actually gone", not old.exists())
+            check("total counts every .json file scanned", total == 2, "got %d" % total)
+
+            # CONTROL: the exact boundary. A file one second inside the window survives.
+            boundary = sb.state / "boundary.json"
+            boundary.write_text("{}", encoding="utf-8")
+            os.utime(boundary, (now - 24 * 3600 + 1, now - 24 * 3600 + 1))
+            deleted2, _total2, _names2 = B.cleanup_stale_state_files(grace_hours=24, now=now)
+            check(
+                "CONTROL: a file one second inside the grace window is not deleted",
+                deleted2 == 0 and boundary.exists(),
+            )
+
+            # A live session's own file is refreshed by save_state on every call, so it never ages into the window while the session keeps running -- exercised via the real save_state path rather than by hand-setting mtimes.
+            live_ancient = sb.state / "aabbccdd.json"
+            live_ancient.write_text(json.dumps({"epoch": 0, "band": -1}), encoding="utf-8")
+            os.utime(live_ancient, (now - 999 * 3600, now - 999 * 3600))
+            B.save_state("aabbccdd", {"epoch": 1, "band": 0})
+            check(
+                "save_state refreshes mtime, keeping a running session out of the window",
+                live_ancient.exists() and live_ancient.stat().st_mtime > now - 60,
+            )
+        finally:
+            os.environ.pop("CTX_BAND_STATE_DIR", None)
+            B._last_cleanup_time[0] = 0
+    finally:
+        sb.cleanup()
+
+
 def main():
     test_arithmetic()
     test_arithmetic_in(HERE)
@@ -901,6 +956,7 @@ def main():
     test_precompact(HERE)
     test_compact_boundary(HERE)
     test_mutations()
+    test_cleanup_stale_state_files()
     print("\n%d checks, %d failures" % (CHECKS[0], len(FAILURES)))
     if FAILURES:
         for f in FAILURES:

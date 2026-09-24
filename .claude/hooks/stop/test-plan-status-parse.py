@@ -157,6 +157,36 @@ control("a peer's plan is not mine", C.C.owned_by_me("9d92d9b6", MINE), False)
 control("my own plan is mine", C.C.owned_by_me("e580532b", MINE), True)
 control("an unowned plan stays in scope", C.C.owned_by_me(None, MINE), True)
 
+
+# --------------------------------------------------------------------------- 6. PER-PLAN WORK. Every owned item used to count against every owned executing plan, so a session driving several plans saw each flagged by work on the others (found 2026-09-24). Driven through plan_drift_rows itself on a real temp tree: moves naming ONE plan flag that plan and leave its sibling silent.
+class _Fold:
+    def __init__(self, items):
+        self.items = items
+
+
+def drift_for(items):
+    with tempfile.TemporaryDirectory() as td:
+        root = pathlib.Path(td)
+        (root / "agent" / "plans").mkdir(parents=True)
+        for name in ("PLAN-alpha.md", "PLAN-beta.md"):
+            (root / "agent" / "plans" / name).write_text(
+                "# P\nStatus: executing\nOwner: e580532b\n\n- [ ] a box\n", encoding="utf-8"
+            )
+        return sorted(rel for rel, _n in C.plan_drift_rows(root, _Fold(items), MINE))
+
+
+_LATER = "2999-01-01T00:00:00Z"
+_alpha_moves = [
+    {"owner": "e580532b", "upd": _LATER, "text": "PLAN-alpha.md [aa%02d]: box" % i}
+    for i in range(C.PLAN_DRIFT_MIN_MOVES)
+]
+control("moves naming PLAN-alpha flag PLAN-alpha only", drift_for(_alpha_moves), ["agent/plans/PLAN-alpha.md"])
+_unrelated = [
+    {"owner": "e580532b", "upd": _LATER, "text": "npm 11 migration step %d" % i}
+    for i in range(C.PLAN_DRIFT_MIN_MOVES + 3)
+]
+control("CONTROL: moves naming no plan flag neither plan", drift_for(_unrelated), [])
+
 if Tally.fails:
     print(f"FAIL: {Tally.fails} of {Tally.count} control(s) failed", file=sys.stderr)
     sys.exit(1)

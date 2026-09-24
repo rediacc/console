@@ -135,6 +135,29 @@ cases.append(
 
 drop()
 cases.append((0, run("git status"), "CONTROL: no receipt is still fine for a non-push"))
+# DELETE-ONLY PUSHES, driven with NO receipt so the exemption is the only thing that can let them through; under the green receipt above every push is allowed and these would prove nothing.
+cases.append(
+    (0, run("git push origin --delete 0914-1"), "CONTROL: a --delete push publishes no tree")
+)
+cases.append((0, run("git push origin -d 0914-1 tooling-w0"), "CONTROL: the -d spelling, two refs"))
+cases.append((0, run("git push origin :0914-1"), "CONTROL: a colon refspec is a delete too"))
+cases.append(
+    (
+        2,
+        run("git push origin --delete 0914-1 && git push origin 0827-1"),
+        "a delete chained with a real push is still a push",
+    )
+)
+cases.append(
+    (2, run("git push origin :old 0827-1"), "one publishing refspec beside a delete publishes")
+)
+cases.append(
+    (
+        2,
+        run("git push --tags origin --delete old"),
+        "--tags publishes whatever else the segment says",
+    )
+)
 
 # --- carried reds: a RED receipt may authorise a push only when NAMED --------- All-or-nothing is the shape that gets a guard bypassed, so a red may be carried -- but only with every failure named, no stale entry, and a substantive reason.
 uncarry()

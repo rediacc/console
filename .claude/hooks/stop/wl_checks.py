@@ -472,7 +472,7 @@ SHA_RE = re.compile(r"\b[0-9a-f]{7,40}\b")
 def completion_evidence(root, text):
     """Does `text` carry something evidence-shaped for a completion claim?
 
-    Shapes, cheapest first: a run-id-sized number, an exit code, a URL, a file:line that RESOLVES (citation_state, so a fabricated path or line fails), or a hex string naming a REAL git object (verified, so a decorative 'deadbee' cannot pass; at most five candidates checked to bound the git calls). Deliberately shape-based: whether the evidence SUPPORTS the claim is the reggate
+    Shapes, cheapest first: a run-id-sized number, an exit code, a URL, a file:line that RESOLVES (citation_state, so a fabricated path or line fails), or a hex string naming a REAL git object (verified, so a decorative 'deadbee' cannot pass; at most five git subprocess calls total across every candidate and every submodule root, to bound the cost). Deliberately shape-based: whether the evidence SUPPORTS the claim is the reggate
     judge's question, since every new tick already flows into it. This check only guarantees a completion leaves a RECORD, which is exactly what S-2 lacked.
 
     THE FIVE ARE THE LONGEST CANDIDATES, NOT THE FIRST FIVE, and that is not a tidy-up: taking them in text order blocked five consecutive stops on 2026-08-23, because the mandatory session tag plus three cited worklist ids ate the budget before the real SHA at position 6. Do not "simplify" the ordering back out -- pinned by case 96b in test-worklist-v5.sh."""
@@ -493,11 +493,19 @@ def completion_evidence(root, text):
         if tok not in seen:
             seen.add(tok)
             cands.append((-len(tok), i, tok))
-    # SUBMODULE SHAS ARE REAL OBJECTS TOO, just not in `root`'s own database. A commit in private/renet or private/account never resolves via `git -C root rev-parse`, since each submodule keeps its own separate object store -- found live 2026-09-23 ticking real, verified work whose only cited sha lived in private/renet. Checked only after `root` itself misses, and only for candidates that survived the same length-ranked cap above, so a tree with no submodules pays nothing extra and a real console sha never falls through to a slower path for no reason.
+    # SUBMODULE SHAS ARE REAL OBJECTS TOO, just not in `root`'s own database. A commit in private/renet or private/account never resolves via `git -C root rev-parse`, since each submodule keeps its own separate object store -- found live 2026-09-23 ticking real, verified work whose only cited sha lived in private/renet. Checked only after `root` itself misses, in the SAME PRIORITY ORDER `roots` lists them, so a real console sha never falls through to a slower path for no reason.
+    #
+    # THE BUDGET IS SHARED ACROSS CANDIDATES AND ROOTS, not five calls PER candidate: a repo with several submodules multiplies "at most five candidates" into five times (1 + submodule count) calls the moment none of them resolve, which is exactly the unbounded shape this whole cap exists to prevent (case 96b, planted with 4 real submodules and a fabricated 40-hex sha, measured 25
+    # calls before this counter existed). One counter spent depth-first -- root then each submodule for the CURRENT candidate before moving to the next -- keeps a single real submodule sha found on the first candidate cheap (root miss, submodule hit, done in 2 calls) while still hard-capping the worst case at five subprocess calls regardless of how many candidates or submodules exist.
     roots = [root] + [os.path.join(root, p) for p, _branch in wl_git.submodules(root)]
+    spent = 0
     for _, _, tok in sorted(cands)[:5]:
-        if any(C._git(r, "rev-parse", "--verify", "--quiet", tok + "^{object}") for r in roots):
-            return True
+        for r in roots:
+            if spent >= 5:
+                return False
+            spent += 1
+            if C._git(r, "rev-parse", "--verify", "--quiet", tok + "^{object}"):
+                return True
     return False
 
 
@@ -904,10 +912,14 @@ def plan_drift_rows(root, fold, session_id, plan_max_read=12):
         # refreshing it.
         #
         # The threshold is what makes the exit real: update the plan and it stays quiet for the next few ticks, which is exactly how long a plan actually stays accurate.
+        #
+        # AND ONLY THIS PLAN'S WORK. Every item the session owned used to count against every executing plan it owned, so a session driving several plans at once saw each of them flagged by work on the others -- found 2026-09-24 when PLAN-stop-hook-refactor-enforcement.md, freshly updated, was re-flagged by ticks on an npm migration and a temp-dir leak fix. The only exit left was to touch an accurate plan, which is the fake freshness the message above forbids. An item belongs to a plan when its text names the plan's file, the shape every `--plan` tracker and hand-added plan item already carries.
+        base = rel.rsplit("/", 1)[-1]
         moved = sum(
             1
             for r in mine
-            if (C.parse_stamp(str(r.get("upd") or "")) or _EPOCH_MIN).timestamp() > mtime
+            if base in str(r.get("text") or r.get("basetext") or "")
+            and (C.parse_stamp(str(r.get("upd") or "")) or _EPOCH_MIN).timestamp() > mtime
         )
         if moved >= PLAN_DRIFT_MIN_MOVES:
             note = "%s, %d item(s) moved since" % (status, moved)
@@ -4440,6 +4452,12 @@ def run_stop(event, event_ok, worklist, hook_file):
                     S.add_item,
                 )
             admit_hits = []
+    # THE INDEX REFRESH RUNS ON EVERY STOP THAT GETS THIS FAR (agent/plans/PLAN-stop-hook-refactor-enforcement.md, Commit 1): a mechanical counter run with no model call, and the ONLY thing that re-emits the commit-path guard's cache (`.ci/cache/shape-index/`). It first sat behind `judged_ok`, which left the guard disarmed for 36+ minutes of `continue` verdicts. Its second home was still inside the judge section, after `C.emit` on the `continue` verdict and on the deferral-audit blocks -- and `C.emit` calls `sys.exit` -- so a `continue` still exited before it ran, and a stop with nothing remaining and no fix signal never entered the section at all (found 2026-09-24 by the wide-tier writer, verified against wl_core.emit). Here it precedes every judge exit.
+    try:
+        sd_findings, sd_cerr = wl_shapedup.refresh_index(str(root), state_doc)
+    except Exception as exc:  # noqa: BLE001 -- an advisory rule must never wedge a stop
+        sd_findings, sd_cerr = [], "shape index refresh errored: %s" % exc
+    S.save_state(worklist, session_id, state_doc)
     audit_note = ""
     judge_cached = False
     if (something_remains or reg_signals) and not wl_judge.JUDGE_DISABLED:
@@ -4851,13 +4869,6 @@ def run_stop(event, event_ok, worklist, hook_file):
                     + guide_tail,
                 }
             )
-        # THE INDEX REFRESH RUNS UNCONDITIONALLY (agent/plans/PLAN-stop-hook-refactor-enforcement.md, Commit 1), independent of `judged_ok`: it is a mechanical counter run with no model call, and it is also the ONLY thing that re-emits the commit-path guard's cache (`.ci/cache/shape-index/`). Gating it behind `judged_ok` meant a session the judge kept telling to `continue` never
-        # rearmed that guard even after the corpus it hashes had moved -- verified live, a one-comment edit disarmed the commit-path advisory for 36+ minutes with no path to recovery until a stop finally reached `stop`.
-        try:
-            sd_findings, sd_cerr = wl_shapedup.refresh_index(str(root), state_doc)
-        except Exception as exc:  # noqa: BLE001 -- an advisory rule must never wedge a stop
-            sd_findings, sd_cerr = [], "shape index refresh errored: %s" % exc
-        S.save_state(worklist, session_id, state_doc)
         # IS THIS THE NTH COPY. The third judged rule, and the only one that does NOT ride the judge's call: the trim that was supposed to pay for a fourth object in that prompt freed 62 characters, not the ~2,300 the plan estimated, and a fix stop already carries ~17,700 characters of rubric across three calibrated sections. So it makes its own `claude -p`, and earns it by being
         # rare -- a MECHANICAL counter gates the call, and only a shape that was not in the seed and has just reached its third copy opens it.
         #
@@ -4897,6 +4908,25 @@ def run_stop(event, event_ok, worklist, hook_file):
                         + guide_tail,
                     }
                 )
+        # THE WIDE TIER (agent/plans/PLAN-stop-hook-refactor-enforcement.md, Commit 3): the same question over the counter's `advisory` profile, which CI never runs. OUTSIDE `if judged_ok:` on purpose -- the narrow tier's reason for sitting inside it ("a second order in the same block is how a block stops being read") applies only to a rule that blocks, and this one never does: it never reaches `wl_rules.apply_order` and its whole output is one priority-2 section through `outq_add`, which survives a blocked stop.
+        #
+        # THE MOMENT IS THE PLAN'S STATED FALLBACK, not its first design. The plan triggered on `sig_moved or (reg_signals and <a fix-set file matches a wide pathspec>)`, with a 3s ceiling on the widened counter and "gate the wide run behind reg_signals only" as the answer if the ceiling was breached. Measured 2026-09-24 through `counter_findings(root, profile="advisory")` on this tree: 3.11 / 3.22 / 3.02 / 3.00 / 3.05s cold (median 3.05s, 386 files, 96 findings; the gate profile is 1.93s on the same machine), so the fallback applies and an edit alone no longer buys a 3s scan. A fix landing in a wide family is the moment -- the one the operator named -- and `wide_sig_moved` survives only as a filter, so a second fix signal over an unchanged wide corpus (a tick, then the commit of the same files) does not pay 3s for the findings it already has.
+        try:
+            wide_moment = (
+                reg_signals
+                and wl_shapedup.touches_wide(reg_fixset_files)
+                and wl_shapedup.wide_sig_moved(str(root), state_doc)
+            )
+            sw_text, sw_note = "", ""
+            if wide_moment:
+                sw_text, sw_note = wl_shapedup.wide_run(str(root), state_doc, C.git_branch(root))
+        except Exception as exc:  # noqa: BLE001 -- an advisory rule must never wedge a stop
+            sw_text, sw_note = "", "wide shape tier errored: %s" % exc
+        S.save_state(worklist, session_id, state_doc)
+        if sw_text:
+            outq_add(worklist, session_id, state_doc, "shapedup-wide", sw_text, 2)
+        if sw_note:
+            outq_add(worklist, session_id, state_doc, "shapedup-wide-note", sw_note[:300], 2)
         if judged_ok and not judge_cached and not reg_signals:
             wl_judge.bank_stop_verdict(state_doc, cur_sig, last_msg, verdict.get("reason", ""))
             S.save_state(worklist, session_id, state_doc)

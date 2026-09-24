@@ -147,7 +147,7 @@ def test_173_control_the_leftover_releases_on_the_very_next_stop(wl):  # noqa: F
     assert "more report section(s) queued" not in got.out, got.out[:400]
 
 
-def test_174_changed_content_re_enqueues_at_a_new_seq_rather_than_keeping_its_place(wl):  # noqa: F811
+def test_174_changed_content_re_enqueues_at_a_new_seq_rather_than_keeping_its_place(wl):  # noqa: F811, ARG001
     """UNIT-LEVEL: the operator's "changed content re-enqueues at its priority" is a property of `outq_add`'s bookkeeping, not of drain order (drain order is now randomized within a class, so a position-based assertion would prove nothing). Touching an already-queued key's body must bump its `seq`, which is
     what sends it to the back of its own class."""
     checks = wlfix.import_wl("wl_checks")

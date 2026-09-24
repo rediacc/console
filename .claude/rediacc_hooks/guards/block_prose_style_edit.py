@@ -73,8 +73,8 @@ or use the shared "we". Never "you", never "I".
 
 FOOTER = """
 R18 (too long) and R19 (hard-wrapped narrow) are WIDTH findings, and the tool
-fixes them. Do not hand-wrap and re-submit: 384 is a ceiling, not a target,
-and guessing at it costs a round trip per attempt.
+fixes them. Do not hand-wrap and re-submit: %(floor)d is a ceiling, not a
+target, and guessing at it costs a round trip per attempt.
 
     .ci/scripts/quality/check_prose_style.py reflow --write <path>
 
@@ -381,6 +381,6 @@ def run(ev):
             "\n%d further finding(s) in this write are already baselined and were NOT the "
             "reason for the refusal.\n" % carried
         )
-    lines.append(FOOTER)
+    lines.append(FOOTER % {"floor": globals_.get("max_line_length", 384)})
     ev.warn_raw("".join(lines))
     return hookio.DENY
