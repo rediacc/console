@@ -190,6 +190,7 @@ function main(): void {
   delete (outputSchema as Record<string, unknown>).generatedAt;
 
   const json = JSON.stringify(outputSchema, null, 2);
+  // tree-write: safe outputPath is $SUBSCRIPTION_SCHEMA_OUT when set; subscription_schema.py always sets it to a TemporaryDirectory
   fs.writeFileSync(outputPath, json + '\n');
 
   console.log(`✓ Generated subscription schema: ${outputPath}`);

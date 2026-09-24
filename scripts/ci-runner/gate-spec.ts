@@ -58,6 +58,12 @@ export interface GateSpec {
    * implemented by two readers with no data to read is not a contract.
    */
   reads?: string[];
+  /**
+   * WHY this gate writes the real tree, in one sentence naming what it writes. Required beside an exclusive `tree:` claim in `mutex`, and refused without one: `check:ci-gate-tree-writes` enforces both directions on every lock entry, and requires the pair on any scheduled gate whose leaves (followed through imports and spawns) reach a proven tree write.
+   *
+   * THE PAIR IS THE WEAK FIX. The claim serialises this gate only against the other declared `tree:` claimants; the hundreds of scanners that read the tree declare nothing and still overlap it, and no claim helps with what a hard kill leaves behind. Writing to a temp copy is the real fix; this field is for the writers that cannot. Hand-only (`gen-manifest.ts` HAND_ONLY), because the claim it justifies lives here.
+   */
+  writesTree?: string;
   /** Scheduler slots. Default 1. */
   weight?: number;
   /** Memory-hungry (>=4 GB heap). Bounded by --heavy-limit. */

@@ -50,7 +50,10 @@
  *
  * The resource names are PATH-SCOPED (`tree:<dir>`), so the declaration says
  * what a gate touches rather than which bucket someone put it in, and a new
- * gate declares itself instead of being added to a list in a runner.
+ * gate declares itself instead of being added to a list in a runner. Two gates
+ * hold the declarations to the code: check:ci-pool-writer-safety for gate
+ * tests, and check:ci-gate-tree-writes for gates, where an exclusive `tree:`
+ * claim must come with a `writesTree` reason (gate-spec.ts).
  * ---------------------------------------------------------------------------
  *
  * See agent/plans/PLAN-npm-ci-parallel-parity.md sections 3 and 4.2.

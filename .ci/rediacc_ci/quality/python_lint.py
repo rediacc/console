@@ -159,8 +159,10 @@ containing whitespace is truncated identically on both sides. Carried.
 import os
 import pathlib
 import re
+import shutil
 import subprocess
 import sys
+import tempfile
 import time
 
 from rediacc_ci import paths
@@ -229,6 +231,22 @@ def enumerate_py(root: str) -> list[str]:
     return [
         name for name in proc.stdout.split("\n") if name and (pathlib.Path(root) / name).exists()
     ]
+
+
+def enumeration_reaches_untracked(root: str, enumerate_fn) -> tuple[bool, str]:
+    """CONTROL 3's body: does `enumerate_fn` list a planted UNTRACKED `.py`?
+
+    ON A TEMP WORK TREE, NEVER THE REAL ONE. The first form planted `enum_probe_<pid>_<ts>.py` at the repository root and deleted it in a `finally`, so for the length of every run the shared tree held an untracked file that `check:format`, the pool's other readers and a hard kill could all see (check:ci-gate-tree-writes V1). What the control proves -- that the enumerator includes untracked files -- needs A work tree, not THE work tree: a `git init` in a TemporaryDirectory carrying a copy of the real `.gitignore`, so `--exclude-standard` judges the probe by the same rules it judges the real files. The name stays runtime-keyed so a probe that an earlier crash left behind cannot satisfy it.
+    """
+    enum_probe = "enum_probe_%d_%d.py" % (os.getpid(), int(time.time()))
+    with tempfile.TemporaryDirectory(prefix="python-lint-enum-") as tmp:
+        if _run(["git", "-C", tmp, "init", "-q"]).returncode != 0:
+            return False, enum_probe
+        ignore = pathlib.Path(root) / ".gitignore"
+        if ignore.is_file():
+            shutil.copyfile(ignore, pathlib.Path(tmp) / ".gitignore")
+        (pathlib.Path(tmp) / enum_probe).write_text("x = 1\n", encoding="utf-8")
+        return enum_probe in enumerate_fn(tmp), enum_probe
 
 
 def resolve_ruff() -> list[str] | None:
@@ -355,14 +373,8 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 1
 
-    # ---- CONTROL 3: the ENUMERATION must reach an UNTRACKED file ---------- "Runs before the real list is built, because a list that omits files silently is not worth counting." The name is runtime-keyed so a crashed earlier run cannot make this pass by leaving its specimen behind.
-    enum_probe = "enum_probe_%d_%d.py" % (os.getpid(), int(time.time()))
-    probe_path = pathlib.Path(root) / enum_probe
-    probe_path.write_text("x = 1\n", encoding="utf-8")
-    try:
-        seen = enum_probe in enumerate_py(root)
-    finally:
-        probe_path.unlink(missing_ok=True)
+    # ---- CONTROL 3: the ENUMERATION must reach an UNTRACKED file ---------- "Runs before the real list is built, because a list that omits files silently is not worth counting."
+    seen, enum_probe = enumeration_reaches_untracked(root, enumerate_py)
     if not seen:
         print(
             "%s✗ CONTROL FAILED%s: the file enumeration did not return a planted" % (red, nc),
@@ -598,13 +610,34 @@ def selftest() -> int:
         ("output with no --> line yields nothing", "All checks passed!\n", ""),
     ]
 
-    floor = len(verdict_cases) + len(format_cases) + 5
+    floor = len(verdict_cases) + len(format_cases) + 7
     ctl = Controls("python-lint", floor=floor)
 
     for label, output, want in verdict_cases:
         ctl.check("control: %s" % label, control_verdict(output), want)
     for label, output, want in format_cases:
         ctl.check("format: %s" % label, unformatted_paths(output), want)
+
+    # CONTROL 3, BOTH DIRECTIONS, on its temp work tree: the real enumerator reaches the planted untracked file, and an enumerator that drops untracked files (`--cached` only, the shape that shipped on 2026-08-09) is caught.
+    root = str(paths.repo_root())
+    ctl.check(
+        "control 3: the real enumerator reaches an untracked file",
+        enumeration_reaches_untracked(root, enumerate_py)[0],
+        True,
+    )
+
+    def tracked_only(r: str) -> list[str]:
+        return [
+            n
+            for n in _run(["git", "-C", r, "ls-files", "--cached", "--", "*.py"]).stdout.split("\n")
+            if n
+        ]
+
+    ctl.check(
+        "control 3: a tracked-only enumerator is caught",
+        enumeration_reaches_untracked(root, tracked_only)[0],
+        False,
+    )
 
     # THE FLOOR AND THE STATUSES ARE THE TWIN'S.
     ctl.check("the file floor is 10, not 1", MIN_PY_FILES, 10)

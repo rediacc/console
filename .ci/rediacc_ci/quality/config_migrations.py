@@ -57,9 +57,8 @@ does not compile. Named as a divergence rather than hidden.
 the source line, so `CURRENT_SCHEMA_VERSION = 4;` yields `4` and not `4;`. The
 two-stage pipeline is reproduced as two stages for that reason: a single regex over the file would have to re-derive the anchoring by hand.
 
-THE TEMPORARY TSX SCRIPT IS WRITTEN INTO THE REPOSITORY, NOT INTO A TEMPDIR.
-`$REPO_ROOT/packages/cli/.config-migrations-check.tmp.ts` exists for the duration of the run, which makes the working tree DIRTY while the gate is executing. A `trap ... EXIT` removes it, so the window is short, but any concurrent clean-tree check sees it and the file survives a `kill -9`. Carried unchanged -- the path is what the generated script's relative
-`src/__tests__/fixtures/config` is resolved against -- and reported.
+THE TSX PROGRAM GOES IN ON STDIN, NOT THROUGH A FILE. The twin, and this port until 2026-09-24, wrote it to `packages/cli/.config-migrations-check.tmp.ts` for the length of the run and removed it in a trap, so the working tree was DIRTY while the gate ran: `check:format` enumerated the file mid-run and failed twice on bbe52969a, and a `kill -9` left it behind. `check:ci-gate-tree-writes`
+found it as V2. What the file was for is only a WORKING DIRECTORY: the program resolves `src/__tests__/fixtures/config` and `@rediacc/shared/config-schema` against `packages/cli`. `npx tsx -` with `cwd=packages/cli` gives it the same directory and the same module resolution with nothing written (measured: byte-identical PASS lines on the live fixtures).
 
 `2>&1` MERGES THE ROUND-TRIP'S STREAMS. `result=$(cd ... && npx ... 2>&1)` is the
 merge this repo warns about everywhere else, and here it is load-bearing: the tsx script prints its PASS lines on stdout and its FAIL lines on stderr, and the twin re-emits every captured line through ONE logger chosen by the exit code. So a PASS line from a partially failing run is re-printed as a `log_error`. Preserved, because splitting the streams would change which lines carry
@@ -74,7 +73,6 @@ for a missing `tsx` and fails loudly instead, which is what turns "the toolchain
 is not installed" into a red rather than into a silent download in CI.
 """
 
-import contextlib
 import os
 import pathlib
 import re
@@ -98,8 +96,8 @@ TRAILING_DIGITS_RE = re.compile(r"[0-9]+$")
 # `find "$FIXTURES_DIR" -maxdepth 1 -name 'v*-sample.json'`, as a glob. maxdepth 1 means the directory itself and its immediate children, and a directory cannot match the name pattern, so this is exactly the non-recursive glob.
 FIXTURE_GLOB = "v*-sample.json"
 
-# The scratch file the round-trip runs from. INSIDE packages/cli, because the generated script resolves `src/__tests__/fixtures/config` relative to its own working directory. See the port notes for the dirty-tree consequence.
-TMP_SCRIPT_NAME = ".config-migrations-check.tmp.ts"
+# The round-trip runs from packages/cli, because the program resolves `src/__tests__/fixtures/config` and `@rediacc/shared` relative to its working directory. It is fed on stdin (`tsx -`), so nothing is written there; see the port notes.
+TSX_STDIN = "-"
 
 # The generated tsx program, byte for byte from the twin's quoted heredoc. It is a QUOTED heredoc (`<<'TSX'`), so nothing in it is expanded by the shell and nothing here is interpolated either.
 TSX_SOURCE = """import { readFileSync, readdirSync } from 'node:fs';
@@ -248,32 +246,26 @@ def main(argv: list[str] | None = None) -> int:
         else:
             # Use a tsx script to run the actual TypeScript runner -- keeps the check from re-implementing migration logic.
             cli_dir = repo_root / "packages" / "cli"
-            tmp_script = cli_dir / TMP_SCRIPT_NAME
-            try:
-                tmp_script.write_text(TSX_SOURCE, encoding="utf-8")
-                proc = subprocess.run(
-                    ["npx", "--no-install", "tsx", tmp_script.name],
-                    cwd=str(cli_dir),
-                    stdout=subprocess.PIPE,
-                    # `2>&1`, inside the child. See the port notes: the merge is load-bearing here rather than accidental.
-                    stderr=subprocess.STDOUT,
-                    text=True,
-                    check=False,
-                )
-                # `result=$(...)` strips trailing newlines and nothing else.
-                result = (proc.stdout or "").rstrip("\n")
-                if proc.returncode != 0:
-                    log.error("Fixture round-trip failed:")
-                    for line in result.split("\n"):
-                        log.error("  %s" % line)
-                    errors += 1
-                else:
-                    for line in result.split("\n"):
-                        log.info("  %s" % line)
-            finally:
-                # `trap 'rm -f "$tmpscript"' EXIT`. A `finally` rather than an atexit hook, so the file is gone before the caller sees the verdict and a crash in the reporting below cannot leave it.
-                with contextlib.suppress(OSError):
-                    tmp_script.unlink()
+            proc = subprocess.run(
+                ["npx", "--no-install", "tsx", TSX_STDIN],
+                cwd=str(cli_dir),
+                input=TSX_SOURCE,
+                stdout=subprocess.PIPE,
+                # `2>&1`, inside the child. See the port notes: the merge is load-bearing here rather than accidental.
+                stderr=subprocess.STDOUT,
+                text=True,
+                check=False,
+            )
+            # `result=$(...)` strips trailing newlines and nothing else.
+            result = (proc.stdout or "").rstrip("\n")
+            if proc.returncode != 0:
+                log.error("Fixture round-trip failed:")
+                for line in result.split("\n"):
+                    log.error("  %s" % line)
+                errors += 1
+            else:
+                for line in result.split("\n"):
+                    log.info("  %s" % line)
 
     if errors > 0:
         log.error("")

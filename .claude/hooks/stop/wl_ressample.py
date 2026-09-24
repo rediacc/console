@@ -267,6 +267,7 @@ def watch(
     root = repo_root()
     t0 = time.monotonic()
     psi0 = {n: _psi(n) for n in ("cpu", "io")}
+    # tree-write: safe out_path is --out, which scripts/ci-runner/exec.ts passes only outside the repo
     fd = os.open(str(out_path), os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o644)
     n = 0
     try:

@@ -120,7 +120,7 @@ function scoped(tok: string, scope: string): string {
   return scope ? path.posix.join(scope, t) : t;
 }
 
-interface ScriptUniverse {
+export interface ScriptUniverse {
   /** repo-relative dir ('' = root) -> that manifest's scripts */
   byDir: Map<string, Record<string, string>>;
   /** package name -> repo-relative dir */
@@ -142,8 +142,14 @@ function isExternalGateWrapper(prog: string): boolean {
   return prog.endsWith('.run_external_gate');
 }
 
+/** One executed leaf and the arguments it receives (quoted arguments are neutralised to `""`/`''`). */
+export interface Invocation {
+  leaf: string;
+  argv: string[];
+}
+
 /**
- * The leaf commands a shell command ultimately executes, with `npm run`
+ * The leaf commands a shell command ultimately executes, each with its argv, with `npm run`
  * expanded transitively through root and workspace manifests.
  *
  * COMPARE LEAVES, NOT KEYS. CI runs `npm run typecheck` while the gate set
@@ -151,13 +157,14 @@ function isExternalGateWrapper(prog: string): boolean {
  * names `check:version` -- identical bodies, different keys. A key-level
  * comparison reports those as breaks; a leaf-level one does not.
  */
-function resolveLeaves(
+export function resolveInvocations(
   cmd: string,
   u: ScriptUniverse,
   scope = '',
   seen = new Set<string>()
-): string[] {
-  const out: string[] = [];
+): Invocation[] {
+  const out: Invocation[] = [];
+  const leaf = (l: string, argv: string[] = []): Invocation => ({ leaf: l, argv });
   let curScope = scope;
   for (const rawSeg of splitSegments(stripQuoted(cmd))) {
     let toks = rawSeg.split(/\s+/).filter(Boolean);
@@ -205,8 +212,17 @@ function resolveLeaves(
       if (seen.has(sig)) continue;
       seen.add(sig);
       const body = (u.byDir.get(nextScope) ?? {})[key];
-      if (body === undefined) out.push(`missing-script:${ws ?? (nextScope || 'root')}:${key}`);
-      else out.push(...resolveLeaves(body, u, nextScope, seen));
+      // Arguments after `--` reach the invoked script, so they reach every leaf its body runs.
+      const dd = rest.indexOf('--');
+      const extra = dd >= 0 ? rest.slice(dd + 1) : [];
+      if (body === undefined)
+        out.push(leaf(`missing-script:${ws ?? (nextScope || 'root')}:${key}`));
+      else
+        out.push(
+          ...resolveInvocations(body, u, nextScope, seen).map((i) =>
+            leaf(i.leaf, [...i.argv, ...extra])
+          )
+        );
       continue;
     }
 
@@ -237,48 +253,65 @@ function resolveLeaves(
         // else" the moment the step moved from the bash spelling to this one,
         // which is exactly what it did (six R3 findings, W7P4-W).
         if (isExternalGateWrapper(mod)) {
-          out.push(...resolveLeaves(rest.slice(mIdx + 2).join(' '), u, curScope, seen));
+          out.push(...resolveInvocations(rest.slice(mIdx + 2).join(' '), u, curScope, seen));
           continue;
         }
         const rel = mod.replace(/\./g, '/');
         const cands = [`.ci/${rel}.py`, `.ci/${rel}/__main__.py`, `${rel}.py`];
         const hit = cands.find((c) => u.tracked.has(c));
-        out.push(hit ?? `missing-module:${mod}`);
+        out.push(leaf(hit ?? `missing-module:${mod}`, rest.slice(mIdx + 2)));
         continue;
       }
       // No `-m`: the first non-flag argument is a script path, same as `node`.
-      const script = rest.find((a) => !a.startsWith('-'));
-      out.push(script ?? prog);
+      const sIdx = rest.findIndex((a) => !a.startsWith('-'));
+      const script = sIdx >= 0 ? rest[sIdx] : undefined;
+      out.push(leaf(script ?? prog, sIdx >= 0 ? rest.slice(sIdx + 1) : []));
       continue;
     }
 
     if (prog === 'npx' || prog === 'tsx' || prog === 'node') {
       let target: string | undefined;
-      for (const a of rest) {
+      let tIdx = -1;
+      for (const [ai, a] of rest.entries()) {
         if (a === '-e' || a === '--eval' || a === '-p') {
           target = prog;
           break;
         }
         if (a.startsWith('-')) continue;
         target = a;
+        tIdx = ai;
         break;
       }
-      if (target === undefined) out.push(prog);
+      const targs = tIdx >= 0 ? rest.slice(tIdx + 1) : [];
+      if (target === undefined) out.push(leaf(prog));
       else if (prog === 'npx' && !target.includes('/') && !/\.[cm]?[jt]sx?$/.test(target)) {
-        out.push(target); // a bare tool run through npx
-      } else out.push(scoped(target, curScope));
+        out.push(leaf(target, targs)); // a bare tool run through npx
+      } else out.push(leaf(scoped(target, curScope), targs));
       continue;
     }
 
     // Transparent wrapper: `rediacc_ci.quality.run_external_gate` executes its arguments and only changes what a FAILURE means (soft on schedule vs hard on a PR), never what runs. The leaf is the wrapped command; reporting the wrapper itself would make every external gate's CI pointer "run something else" the moment it adopted the wrapper.
     if (isExternalGateWrapper(prog)) {
-      out.push(...resolveLeaves(rest.join(' '), u, curScope, seen));
+      out.push(...resolveInvocations(rest.join(' '), u, curScope, seen));
       continue;
     }
 
-    out.push(scoped(prog, curScope));
+    out.push(leaf(scoped(prog, curScope), rest));
   }
-  return [...new Set(out)];
+  // One entry per distinct (leaf, argv): the same leaf run twice with different arguments is two invocations, which is what mode gating needs (check:ci-lint-rule-units runs its leaf with `--selftest` and bare).
+  const byKey = new Map<string, Invocation>();
+  for (const i of out) {
+    const k = `${i.leaf}\0${i.argv.join('\0')}`;
+    if (!byKey.has(k)) byKey.set(k, i);
+  }
+  return [...byKey.values()];
+}
+
+/**
+ * The leaf set, a projection of `resolveInvocations`. Kept as the name every rule below calls, so the refactor that added argv changed no verdict: the leaves, and their first-occurrence order, are what they were.
+ */
+function resolveLeaves(cmd: string, u: ScriptUniverse): string[] {
+  return [...new Set(resolveInvocations(cmd, u).map((i) => i.leaf))];
 }
 
 // ---------------------------------------------------------------------------
@@ -947,14 +980,15 @@ function control(): void {
 
 // --------------------------------------------------------------------------- Disk inputs ---------------------------------------------------------------------------
 
-function loadScripts(): ScriptUniverse {
+/** The script universe of the tree at `root` (default: this gate's root), exported so `scripts/lib/tree-write-sites.ts` resolves invocations with the same resolver. */
+export function loadScripts(root: string = ROOT): ScriptUniverse {
   const byDir = new Map<string, Record<string, string>>();
   const nameToDir = new Map<string, string>();
   const tracked = new Set(
-    execFileSync('git', ['-C', ROOT, 'ls-files'], { encoding: 'utf-8' }).split('\n').filter(Boolean)
+    execFileSync('git', ['-C', root, 'ls-files'], { encoding: 'utf-8' }).split('\n').filter(Boolean)
   );
   const add = (rel: string): void => {
-    const p = path.join(ROOT, rel, 'package.json');
+    const p = path.join(root, rel, 'package.json');
     if (!existsSync(p)) return;
     try {
       const pkg = JSON.parse(readFileSync(p, 'utf-8')) as {
@@ -969,7 +1003,7 @@ function loadScripts(): ScriptUniverse {
   };
   add('');
   for (const dir of ['packages', 'private', 'workers']) {
-    const base = path.join(ROOT, dir);
+    const base = path.join(root, dir);
     if (!existsSync(base)) continue;
     for (const e of readdirSync(base)) add(path.posix.join(dir, e));
   }
@@ -1114,4 +1148,5 @@ function main(): void {
   process.exit(1);
 }
 
-main();
+// Imported by `scripts/lib/tree-write-sites.ts` for `resolveInvocations`, so the gate runs only when it is the entry point.
+if (path.resolve(process.argv[1] ?? '') === path.resolve(fileURLToPath(import.meta.url))) main();

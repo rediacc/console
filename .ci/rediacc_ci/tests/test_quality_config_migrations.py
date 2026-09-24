@@ -10,6 +10,7 @@ THE FRAGMENTS BELOW WERE LIFTED FROM
 """
 
 import pathlib
+import subprocess
 
 import pytest
 
@@ -164,13 +165,27 @@ def test_an_empty_and_an_absent_fixtures_dir_are_both_empty(tmp_path: pathlib.Pa
 # --------------------------------------------------------------------------- The generated tsx program ---------------------------------------------------------------------------
 
 
-def test_the_scratch_file_lands_in_the_repository() -> None:
-    """`.config-migrations-check.tmp.ts` sits in packages/cli, not in a tempdir.
+def test_the_round_trip_writes_nothing_into_the_repository(monkeypatch) -> None:
+    """The tsx program goes in on STDIN with `cwd=packages/cli`; no scratch file is written.
 
-    Asserted rather than commented because it is a real property with a real cost: the working tree is DIRTY for the duration of the run, and a `kill -9` between the write and the trap leaves the file behind. The path is load-bearing -- the generated program resolves `src/__tests__/fixtures/config` against its own working directory -- so this is carried, not repaired.
+    It used to be `packages/cli/.config-migrations-check.tmp.ts`, which made the tree DIRTY for the length of the run (check:format failed on it twice) and survived a `kill -9`. The run is intercepted here, so the assertion is on the call itself: `tsx -`, the program as `input`, the directory the program resolves its fixtures and `@rediacc/shared` against, and no file anywhere under packages/cli.
     """
-    assert cm.TMP_SCRIPT_NAME == ".config-migrations-check.tmp.ts"
-    assert not pathlib.Path(cm.TMP_SCRIPT_NAME).is_absolute()
+    seen: list[dict] = []
+
+    def fake_run(argv, **kwargs):
+        seen.append({"argv": argv, **kwargs})
+        return subprocess.CompletedProcess(argv, 0, stdout="PASS v1-sample.json\n")
+
+    monkeypatch.setattr(cm.subprocess, "run", fake_run)
+    before = set(pathlib.Path(cm.paths.repo_root(), "packages", "cli").iterdir())
+    cm.main([])
+    after = set(pathlib.Path(cm.paths.repo_root(), "packages", "cli").iterdir())
+    assert len(seen) == 1
+    assert seen[0]["argv"][-2:] == ["tsx", "-"]
+    assert seen[0]["input"] == cm.TSX_SOURCE
+    assert pathlib.Path(seen[0]["cwd"]).name == "cli"
+    assert after == before
+    assert not hasattr(cm, "TMP_SCRIPT_NAME")
 
 
 def test_selftest_is_green() -> None:

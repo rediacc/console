@@ -155,6 +155,7 @@ export function writeBacklog(baselinePath, errors, fileOf = (e) => e.file) {
     process.exit(1);
   }
 
+  // tree-write: mode --write-baseline every caller reaches writeBacklog only under --write-baseline (the three validate-*.js scripts and check-cli-docs.ts)
   fs.writeFileSync(baselinePath, `${JSON.stringify(sorted, null, 2)}\n`);
   return { files: Object.keys(sorted).length, violations: errors.length };
 }

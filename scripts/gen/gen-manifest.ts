@@ -68,6 +68,7 @@ const HAND_ONLY = [
   'reads',
   'heavy',
   'mutex',
+  'writesTree',
   'weight',
   'noProfile',
 ] as const;

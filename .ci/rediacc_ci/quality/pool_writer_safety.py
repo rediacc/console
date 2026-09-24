@@ -45,6 +45,8 @@ The surviving signal alone flags all three registered writers and nothing else a
 
 THE RULE IS ONE-DIRECTIONAL, deliberately. A file that writes must be declared; a file declared W that no longer writes is NOT reported. Over-declaring costs a little wall time, under-declaring manufactures a flake, and the gate should not push anybody toward the expensive side of that asymmetry.
 
+THE GATES THEMSELVES ARE A SIBLING GATE'S SUBJECT, not this one's. This gate's corpus is gate TESTS; `check:ci-gate-tree-writes` (`rediacc_ci.quality.gate_tree_writes`) holds the leaves `gates.lock.json` schedules to the same rule, through every module they import or spawn, and reuses `scan_text` below for their bash leaves. It was kept separate because this gate's output is pinned by its shadow history and it needs no node.
+
 Exit codes:
   0 - every real-tree writer declares a `mutex` `tree:` resource in the lock
   1 - an unregistered writer, or the gate could not prove itself (see CONTROL)

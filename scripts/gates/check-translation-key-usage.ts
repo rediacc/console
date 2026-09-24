@@ -35,7 +35,8 @@ import { fileURLToPath } from 'node:url';
 import { globSync } from 'glob';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const WWW_SRC = path.join(__dirname, '../../packages/www/src');
+// THE SEAM, for the control only: KEY_USAGE_WWW_SRC points the scan at a mirror of the www source (an `i18n/translations/en.json` plus the probe), so the control never plants a file in the real tree. check-docs-render-parity.ts's DOCS_RENDER_PARITY_ROOT is the same shape.
+const WWW_SRC = process.env.KEY_USAGE_WWW_SRC ?? path.join(__dirname, '../../packages/www/src');
 const EN_JSON = path.join(WWW_SRC, 'i18n/translations/en.json');
 
 type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
@@ -292,15 +293,13 @@ function main(): void {
   const files = globSync('**/*.{astro,tsx}', { cwd: WWW_SRC, absolute: true });
 
   // A leftover control fixture is NOT a missing key, and saying so is the whole point.
-  // scripts/__tests__/check-translation-key-usage.control.ts writes __control_probe__.tsx
-  // into real source and unlinks it in a `finally`, so an ordinary failure cleans up but a
-  // SIGKILL mid-run does not. That control already refuses to run against a leftover; this
-  // scan did not, and reported the probe's deliberately-nonexistent key as a genuine
-  // defect. It cost a session real time chasing it, and it will happen again to whoever's
-  // run dies next, so the diagnosis belongs here rather than in anyone's memory.
-  // The control itself sets REDIACC_KEY_USAGE_PROBE while its fixture is legitimately on
-  // disk, so a live probe scans normally and only an ORPHAN is diagnosed. Without that
-  // opt-in this check refuses the control's own nine cases.
+  // scripts/__tests__/check-translation-key-usage.control.ts used to write
+  // __control_probe__.tsx into real source and unlink it in a `finally`, so a SIGKILL
+  // mid-run left it behind and this scan reported the probe's deliberately-nonexistent key
+  // as a genuine defect. Since 2026-09-24 the control plants into a temp mirror through the
+  // KEY_USAGE_WWW_SRC seam and never touches the real tree; this diagnosis stays for a probe
+  // an older run left behind. The control sets REDIACC_KEY_USAGE_PROBE, so its live probe in
+  // the mirror scans normally and only an ORPHAN is diagnosed.
   const probing = process.env.REDIACC_KEY_USAGE_PROBE === '1';
   const leftover = probing
     ? undefined

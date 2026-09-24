@@ -95,6 +95,8 @@ REGISTRY: tuple[tuple[str, str], ...] = (
     (".ci/scripts/quality/check_agent_hint_liveness.py", "VACUOUS INPUT"),
     # An empty tree tracks no js/ts at all, so "every file reaches a linter" is trivially true over zero files -- indistinguishable from full coverage.
     (".ci/scripts/quality/check_lint_scope_coverage.py", "VACUOUS INPUT"),
+    # Against an empty tree there is no gates.lock.json, no package.json and no mutator table, so no gate can be scheduled and every write verdict would be over an empty set -- which reads exactly like "no gate writes the tree". The input check runs BEFORE the controls, which need the mutator table themselves.
+    (".ci/scripts/quality/check_gate_tree_writes.py", "VACUOUS INPUT"),
     # NOT registered here: .ci/breakpoint/scripts/check-breakpoint-drift.sh. This harness's fixture copies scripts/ and .ci/scripts/ but not .ci/breakpoint/, so the drift gate would fail with "No such file or directory" -- non-zero for a reason that has nothing to do with vacuity, which is precisely the false signal the REGISTRY POLICY above warns about. Its missing-manifest
     # behaviour is proven in test_gate_breakpoint_portability.py instead, where an isolated copy of the folder genuinely exists. The former autopilot-no-bypass / autopilot-workflow-invariants pair that used to be discussed here is gone along with the whole Autopilot subsystem (agent/plans/PLAN-remove-autopilot.md).
     ("check-dead-bash.ts", "dead shell symbol"),
