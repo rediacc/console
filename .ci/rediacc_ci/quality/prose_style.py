@@ -195,7 +195,7 @@ LANGUAGE_NEUTRAL_DETECTIONS = ("measured", "underwrap")
 def rules_for_path(path, rules, globals_):
     """The rules that apply to `path`. A LOCALE COPY gets only the width rules.
 
-    Measured 2026-09-24: R2 fired on `packages/www/src/content/docs/it/installation.md:218`, where "I comandi" is the Italian plural article, not the English pronoun. Every rule but R18/R19 matches English words, so on a translated copy they report the language rather than the prose; the English source under `/en/` keeps every rule, and so does everything outside `packages/www/src/content`.
+    Measured 2026-09-24: R2 fired on `packages/www/src/content/docs/it/installation.md:218`, where `I comandi` opens with the Italian plural article, not the English pronoun. Every rule but R18/R19 matches English words, so on a translated copy they report the language rather than the prose; the English source under `/en/` keeps every rule, and so does everything outside `packages/www/src/content`.
     """
     pattern = globals_.get("locale_copy_pattern")
     if pattern and re.search(pattern, str(path).replace(os.sep, "/")):
