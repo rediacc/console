@@ -5179,6 +5179,18 @@ export const GATES: readonly GateSpec[] = [
       step: 'Bash-lib port completeness',
     },
   },
+  {
+    id: 'check:ci-container-build-context',
+    run: 'npm run check:ci-container-build-context',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_container_build_context.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-static',
+      step: 'Container build context',
+    },
+  },
   // <<< gen-manifest: region 43
 ];
 

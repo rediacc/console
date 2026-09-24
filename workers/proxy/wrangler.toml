@@ -19,6 +19,9 @@ ACCOUNT_URL = "https://eu.rediacc.com"
 [[containers]]
 class_name = "ExecutorContainer"
 image = "./Dockerfile"
+# The Dockerfile COPYs packages/* from the repo root; wrangler defaults the build context to the
+# Dockerfile's own directory, so without this the image cannot build.
+image_build_context = "../.."
 # `basic` is 1/4 vCPU and 1 GiB. The executor is a Node process holding an SSH
 # pool and a decrypted config, so `lite` (256 MiB) is too small for the runtime,
 # while anything larger pays for memory this workload does not use.

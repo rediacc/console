@@ -314,6 +314,9 @@ jobs:
       - name: Compose env
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_compose_env.py
+      - name: Container build context
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_container_build_context.py
       - name: Control plant proofs
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_plant_proofs.py
