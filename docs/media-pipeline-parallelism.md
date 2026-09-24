@@ -56,7 +56,7 @@ Uses `fcntl.flock`, matching `private/growth/i18n_pipeline/ledger.py`, **not** t
     describe_holder(fh)       # who is holding it, for the wait message
     wait_for_free_vram(...)   # closes the released-lock-but-context-still-resident race
 
-No disable flag. `RDC_GPU_LOCK_FILE` is the only knob, for tests.
+No disable flag. `MEDIA_GPU_LOCK_FILE` is the only knob, for tests.
 
 Callers: `tutorial_tts/cli.py::main` (process-lifetime lease, one invocation per language)
 and `video_pipeline/tts_bridge.py::main` (already per-slug-per-lang).

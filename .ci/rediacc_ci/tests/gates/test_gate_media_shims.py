@@ -21,7 +21,7 @@ Nothing here needs docker, node, npm, nvcc, aws, ssh, a GPU or a network.
 WHY THIS PORT DOES NOT CALL `media_verify.media_chain_mutate`. That helper does not exist on the Python side yet, and the twin uses it here only as "apply this sed to one file in my own sandbox". The two mutations are written out below as explicit line edits instead, each with a REFUSAL when its anchor is missing, which is the same discipline the twin gets from the follow-up greps
 around its sed calls. They agree with the sed forms because both target the single line that begins `exec "$ROOT`: the first prefixes a `shift` line before it, the second turns it into a non-exec call with `|| true` appended.
 
-WHERE THIS REIMPLEMENTS grep AND sort, AND WHY THE ANSWERS AGREE. `upload_flags` is `grep -oE '^ +--[a-z-]+\\)' | tr -d ' )' | sort -u`, and `tts_env_names` is `grep -vE '^\\s*#' | grep -oE '\\b(REDIACC|RDC)_[A-Z0-9_]+' | sort -u`. Both are line-oriented regex scans over ASCII identifiers, and Python's `sorted()` on a set of ASCII strings is `sort -u` under any collation that
+WHERE THIS REIMPLEMENTS grep AND sort, AND WHY THE ANSWERS AGREE. `upload_flags` is `grep -oE '^ +--[a-z-]+\\)' | tr -d ' )' | sort -u`, and `tts_env_names` is `grep -vE '^\\s*#' | grep -oE '\\b(REDIACC|RDC|MEDIA)_[A-Z0-9_]+' | sort -u`. Both are line-oriented regex scans over ASCII identifiers, and Python's `sorted()` on a set of ASCII strings is `sort -u` under any collation that
 cannot reorder them: every flag shares the `--` prefix and every variable shares an uppercase alphabet, so the two orders coincide. The frozen lists below are the twin's, unchanged, which is what makes that claim checkable rather than asserted.
 
 ONE DELIBERATE DIFFERENCE, stated because it is a difference: the twin measures a shim's code size with `printf '%s\\n' "$code" | wc -l`, which reports 1 for an EMPTY code set. This module counts the lines it actually has, so an empty shim reports 0. Both are under the ceiling of 4 and both then fail the `exec` check on the next line, so no verdict moves; the Python number is
@@ -50,7 +50,8 @@ TTS_CONTEXT = ".ci/media/tts"
 # THE FROZEN SURFACES. These two lists ARE the cross-repo contract. Adding an entry is a widening and is fine. REMOVING or RENAMING one is a breaking change that has to land in private/generative or private/growth in the same wave.
 UPLOAD_FLAGS_FROZEN = "--defer-manifest --engine --field --file --key --kind --lang"
 TTS_ENV_FROZEN = (
-    "RDC_GPU_LOCK_DIR RDC_GPU_LOCK_FILE RDC_HF_CACHE RDC_MODELS_VOLUME REDIACC_NO_DOCKER"
+    "MEDIA_GPU_LOCK_DIR MEDIA_GPU_LOCK_FILE MEDIA_HF_CACHE MEDIA_MODELS_VOLUME MEDIA_TTS_ "
+    "REDIACC_NO_DOCKER"
 )
 
 # ARGV WITH TEETH. An empty string and an argument holding spaces are the two shapes a careless forward destroys, and both are shapes a real caller passes.
@@ -69,7 +70,7 @@ exit 43
 """
 
 FLAG_RE = re.compile(r"^ +(--[a-z-]+)\)", re.MULTILINE)
-ENV_RE = re.compile(r"\b(?:REDIACC|RDC)_[A-Z0-9_]+")
+ENV_RE = re.compile(r"\b(?:REDIACC|RDC|MEDIA)_[A-Z0-9_]+")
 CODE_SKIP_RE = re.compile(r"^\s*(#|$)")
 ARG_LOGIC_RE = re.compile(r"\b(shift|case|while|if)\b")
 
@@ -115,7 +116,7 @@ def upload_flags(path: pathlib.Path) -> str:
 
 
 def tts_env_names(path: pathlib.Path) -> str:
-    """Every REDIACC_/RDC_ variable the CODE reads, sorted and unique.
+    """Every REDIACC_/RDC_/MEDIA_ variable (and forwarded MEDIA_TTS_ prefix) the CODE reads, sorted and unique.
 
     Comment lines are stripped first: the header discusses these names at length, and a freeze that counted prose would be pinned to the documentation rather than the interface.
     """
@@ -342,8 +343,7 @@ def test_the_cross_repo_surfaces_are_frozen(gate):
         "sets these by name",
     )
     gate.log_pass(
-        "the seven upload flags and the five narration environment variables match their "
-        "frozen sets"
+        "the seven upload flags and the six narration environment names match their frozen sets"
     )
 
 
@@ -371,15 +371,17 @@ def test_the_surface_freeze_can_fail(gate, tmp_path):
 
     env_mutant = mutants / "run-in-tts.sh"
     wrapper = (ROOT / TTS_REAL).read_text(encoding="utf-8")
-    if "RDC_HF_CACHE" not in wrapper:
+    if "MEDIA_HF_CACHE" not in wrapper:
         gate.log_fail(
             "the variable mutation anchor is missing, so this control would pass for the "
             "wrong reason"
         )
-    env_mutant.write_text(wrapper.replace("RDC_HF_CACHE", "RDC_HF_CACHE_RENAMED"), encoding="utf-8")
+    env_mutant.write_text(
+        wrapper.replace("MEDIA_HF_CACHE", "MEDIA_HF_CACHE_RENAMED"), encoding="utf-8"
+    )
     if tts_env_names(env_mutant) == TTS_ENV_FROZEN:
         gate.log_fail(
-            "renaming RDC_HF_CACHE did not change the extracted variable set, so the "
+            "renaming MEDIA_HF_CACHE did not change the extracted variable set, so the "
             "freeze is measuring nothing"
         )
 

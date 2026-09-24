@@ -424,30 +424,6 @@
       "open_sigs": [],
       "done_sigs": []
     },
-    "agent/plans/PLAN-fix-console-ci-5day-failure.md": {
-      "status": "draft",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 13,
-      "done": 0,
-      "open_sigs": [
-        "1dcddd87",
-        "61fc13bb",
-        "6fe61842",
-        "7f611233",
-        "904ffbc2",
-        "962d5f35",
-        "b6fb6c28",
-        "b8e80be1",
-        "b9743d81",
-        "be8d374f",
-        "d06ce358",
-        "edf13c0b",
-        "f65f8bee"
-      ],
-      "done_sigs": []
-    },
     "agent/plans/PLAN-fix-german-translation-artifacts.md": {
       "status": "compacted",
       "owner": "unowned",
@@ -467,22 +443,6 @@
       "done": 0,
       "open_sigs": [],
       "done_sigs": []
-    },
-    "agent/plans/PLAN-fix-is-invoked-sh-alternation.md": {
-      "status": "draft",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 3,
-      "done": 1,
-      "open_sigs": [
-        "009ad262",
-        "2c4d110a",
-        "f7cb4cdd"
-      ],
-      "done_sigs": [
-        "023406b0"
-      ]
     },
     "agent/plans/PLAN-fix-tutorial-player-debug-hook-attachment.md": {
       "status": "compacted",
@@ -847,6 +807,40 @@
       "open_sigs": [],
       "done_sigs": []
     },
+    "agent/plans/PLAN-rdc-readonly-mode.md": {
+      "status": "executing",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 23,
+      "done": 0,
+      "open_sigs": [
+        "003b2b57",
+        "0124b4f1",
+        "03938685",
+        "04f04754",
+        "0514dd6c",
+        "0b161f6d",
+        "0e1fa03c",
+        "4099c8ef",
+        "4593234f",
+        "5fd59dd5",
+        "840471e7",
+        "9efc0cfa",
+        "a20702c9",
+        "a8f0a4b6",
+        "c310726b",
+        "c764effe",
+        "dfb11c54",
+        "e1352cfb",
+        "e81d7cd8",
+        "eb12994a",
+        "f48c9f93",
+        "f8126cb5",
+        "f951d924"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-reggate-effort-cap.md": {
       "status": "compacted",
       "owner": "unowned",
@@ -1019,19 +1013,16 @@
       "owner": "unowned",
       "folder": "agent/plans",
       "moved_at": "2026-09-21",
-      "open": 6,
-      "done": 28,
+      "open": 2,
+      "done": 32,
       "open_sigs": [
-        "0a36f1a1",
-        "3dc0a0b5",
         "5922423d",
-        "648bfaed",
-        "a5c06efb",
-        "be5ce8f9"
+        "648bfaed"
       ],
       "done_sigs": [
         "02015bc4",
         "04b509d8",
+        "0a36f1a1",
         "16f8e04e",
         "1bc12aa2",
         "2a6460e3",
@@ -1040,6 +1031,7 @@
         "2ec6fc05",
         "3799ac3c",
         "3a34cc77",
+        "3dc0a0b5",
         "54be95b6",
         "567b8d06",
         "59cb6f43",
@@ -1049,7 +1041,9 @@
         "7423368e",
         "74468edf",
         "8e4ffef4",
+        "a5c06efb",
         "af1e2217",
+        "be5ce8f9",
         "c1771330",
         "c2623422",
         "ca9878e4",
@@ -1211,7 +1205,7 @@
     },
     "agent/plans/PLAN-stop-hook-rulings-campaign.md": {
       "status": "draft",
-      "owner": "unowned",
+      "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
       "open": 21,
@@ -1958,6 +1952,31 @@
         "f281ea08"
       ]
     },
+    "agent/plans/_done/PLAN-fix-console-ci-5day-failure.md": {
+      "status": "superseded",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-09-24",
+      "open": 13,
+      "done": 0,
+      "open_sigs": [
+        "1dcddd87",
+        "61fc13bb",
+        "6fe61842",
+        "7f611233",
+        "904ffbc2",
+        "962d5f35",
+        "b6fb6c28",
+        "b8e80be1",
+        "b9743d81",
+        "be8d374f",
+        "d06ce358",
+        "edf13c0b",
+        "f65f8bee"
+      ],
+      "done_sigs": [],
+      "ruling": "#d9785655"
+    },
     "agent/plans/_done/PLAN-fix-guard-repo-context.md": {
       "status": "done",
       "owner": "d778be9d",
@@ -1977,6 +1996,21 @@
         "cfa17a03",
         "d09068dc",
         "ef421565"
+      ]
+    },
+    "agent/plans/_done/PLAN-fix-is-invoked-sh-alternation.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-09-24",
+      "open": 0,
+      "done": 4,
+      "open_sigs": [],
+      "done_sigs": [
+        "009ad262",
+        "023406b0",
+        "2c4d110a",
+        "f7cb4cdd"
       ]
     },
     "agent/plans/_done/PLAN-fix-plan-citation-drift.md": {

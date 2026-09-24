@@ -159,7 +159,7 @@ Both private repos are gitignored, so **`git diff` in the parent will not show t
 - `audio.py` - `TTSEngine` ABC + `get_engine()`. Engines answer `provider_id`, `model_id`,
 `audio_filter`, `mp3_sample_rate_hz`, `voice_fingerprint(lang)` **without loading a model** (dry-run and cache keys depend on it).
 - `engine_voxcpm.py` (default, clones from the locale reference) · `engine_qwen.py` (legacy,
-selectable via `TTS_ENGINE`) · `voice_refs/` - **one approved WAV per locale** + catalog; this *is* the narrator identity, no seed reproduces it · `segments.py` (act grouping, boundaries) · `analysis.py` (SNR/F0/RMS) · `voice_cast.py` (cast/approve/verify).
+selectable via `MEDIA_TTS_ENGINE`) · `voice_refs/` - **one approved WAV per locale** + catalog; this *is* the narrator identity, no seed reproduces it · `segments.py` (act grouping, boundaries) · `analysis.py` (SNR/F0/RMS) · `voice_cast.py` (cast/approve/verify).
 
 ### VoxCPM2 traps, each paid for once already
 

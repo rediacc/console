@@ -219,7 +219,7 @@ A clean dry-run (no pending uploads) confirms R2 has every current local byte.
 
 ## 9. Tutorial-audio cache (`tutorials/audio/`) — not CDN-served
 
-`packages/www/public/assets/tutorials/audio/` holds per-narration-step `.mp3` files synthesized by `private/generative/src/tutorial_tts/cli.py`. The engine behind it is **VoxCPM2**, which clones the narrator from the approved per-locale reference WAV; Qwen3-TTS is the LEGACY engine, still selectable via `TTS_ENGINE` and still installed in the image, but it is not what a plain run
+`packages/www/public/assets/tutorials/audio/` holds per-narration-step `.mp3` files synthesized by `private/generative/src/tutorial_tts/cli.py`. The engine behind it is **VoxCPM2**, which clones the narrator from the approved per-locale reference WAV; Qwen3-TTS is the LEGACY engine, still selectable via `MEDIA_TTS_ENGINE` and still installed in the image, but it is not what a plain run
 uses. This document said "Qwen3-TTS" flatly until 2026-09-06, which mattered more than a name: the two engines have different voice identity, so a reader budgeting a regeneration against the wrong one budgets the wrong thing. `.ci/media/tts/generative-pyproject.toml` records which is which, and `.ci/media/tts/Dockerfile` installs both.
 
 Unlike `tutorials/video/` and `videos/solutions/`, this is **not** a runtime-served asset — nothing in the browser player ever fetches a `.mp3`. `generate-tutorial-video.ts` / `scripts/lib/ffmpeg-video.ts` mux these files into the final tutorial `.mp4` at build time, then they're done; the mp4 already has audio embedded.

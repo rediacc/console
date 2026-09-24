@@ -6,7 +6,7 @@
 # containerised narration job and a host one each hold their own lease, both load VoxCPM,
 # and the card OOMs. Two VoxCPM jobs do not degrade, they fail.
 #
-# RDC_GPU_LOCK_FILE is documented in gpu_lock.py:20 as existing "for tests". Using it in
+# MEDIA_GPU_LOCK_FILE is documented in gpu_lock.py:20 as existing "for tests". Using it in
 # production is a DELIBERATE widening of that contract, made here because the alternative
 # is a lease that silently does not hold.
 #
@@ -19,7 +19,7 @@
 # is absolute).
 #
 # ENV IS FORWARDED SELECTIVELY: `docker run` starts from an empty environment, so the
-# PYTHONPATH that step4000 sets for the bridge, and any TTS_/QWEN_/VOXCPM_ knob the
+# PYTHONPATH that step4000 sets for the bridge, and any MEDIA_TTS_/QWEN_/VOXCPM_ knob the
 # operator exported, silently vanish unless passed with -e. PYTHONPATH's host value is
 # valid inside precisely because of the identical-path mount.
 #
@@ -52,9 +52,9 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 IMAGE="rediacc/tts:local"
-LOCK_DIR="${RDC_GPU_LOCK_DIR:-/var/tmp/rediacc-gpu}"
-MODELS_VOL="${RDC_MODELS_VOLUME:-rediacc-hf-models}"
-HF_CACHE="${RDC_HF_CACHE:-$HOME/.cache/huggingface}"
+LOCK_DIR="${MEDIA_GPU_LOCK_DIR:-/var/tmp/rediacc-gpu}"
+MODELS_VOL="${MEDIA_MODELS_VOLUME:-rediacc-hf-models}"
+HF_CACHE="${MEDIA_HF_CACHE:-$HOME/.cache/huggingface}"
 
 if [ "${REDIACC_NO_DOCKER:-0}" = "1" ] || ! command -v docker >/dev/null 2>&1; then
     [ "${REDIACC_NO_DOCKER:-0}" = "1" ] || echo "note: docker not found, running on the host" >&2
@@ -95,7 +95,7 @@ docker image inspect "$IMAGE" >/dev/null 2>&1 || {
 ENV_FWD=()
 while IFS= read -r name; do
     ENV_FWD+=(-e "$name")
-done < <(compgen -e | grep -E '^(PYTHONPATH$|TTS_|QWEN_|VOXCPM_)' || true)
+done < <(compgen -e | grep -E '^(PYTHONPATH$|MEDIA_TTS_|QWEN_|VOXCPM_)' || true)
 
 # cwd inside the container mirrors the caller's cwd when it lives under the mounted
 # tree; anything else falls back to the repo root.
@@ -109,7 +109,7 @@ exec docker run --rm --gpus all --ipc=host \
     -e HOME=/tmp \
     -e HF_HOME=/models \
     "${ENV_FWD[@]}" \
-    -e RDC_GPU_LOCK_FILE=/gpulock/rediacc-gpu.lock \
+    -e MEDIA_GPU_LOCK_FILE=/gpulock/rediacc-gpu.lock \
     -v "$LOCK_DIR":/gpulock \
     "${MODELS_MOUNT[@]}" \
     -v "$ROOT":"$ROOT" \
