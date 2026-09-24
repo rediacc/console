@@ -23,7 +23,7 @@ The operator ruled on 2026-09-24 (worklist `#ecb07ba6`, which replaces `#28be556
    - astro keeps its own nested `typescript@5.9.3`.
    - `i18next` and `cosmiconfig` peers are optional and satisfied.
    - knip 6 has no TS peer.
-4. **The repo rules don't need type information.** None of them use `parserServices`. Only two use a scope API: `eslint-rules/require-translation.js:83` and `eslint-rules/i18n/interpolation-match.js:241`. Only one uses `getAncestors` (`eslint-rules/no-unawaited-drizzle-terminator.js:199`). None use esquery selectors or `:exit` handlers. The only enabled rule with a fixer is `prefer-const-arrays`.
+4. **The repo rules don't need type information.** None of them use `parserServices`. Only two use a scope API: `require-translation.js:83` and `i18n/interpolation-match.js:241`. Only one uses `getAncestors` (`no-unawaited-drizzle-terminator.js:199`). None use esquery selectors or `:exit` handlers. The only enabled rule with a fixer is `prefer-const-arrays`.
    - Every JSON rule is a single `Document(node)` visitor over the momoa AST.
    - Both parsers the rules need are already in the lockfile at pinned versions: `oxc-parser@0.148.0` (via knip) and `@humanwhocodes/momoa@3.3.10` (via `@eslint/json`).
    - So the rules can run unchanged under a small scripts-side host, without ESLint.
@@ -32,13 +32,13 @@ The operator ruled on 2026-09-24 (worklist `#ecb07ba6`, which replaces `#28be556
    - `noUnusedVariables` always exempts `_`-prefixed names, and this repo bans them (`eslint.config/typescript.js:172-176`).
    - `useExpect` has no `assertFunctionPatterns` (`eslint.config/tests.js:36-47`).
    - `noMisusedPromises` has no `checksVoidReturn`.
-6. **Suppression comments will stop working.** There are 176 `eslint-disable`/`-enable` lines in console and 6 in account (line 1 of `private/account/web/src/pages/*.tsx`). Nothing will honour them after the cut.
+6. **Suppression comments will stop working.** There are 176 `eslint-disable`/`-enable` lines in console and 6 in account (`private/account/web/src/pages/*.tsx:1`). Nothing will honour them after the cut.
    - The console ones break down as: `no-console` 140, `@typescript-eslint/require-await` 17, `no-restricted-syntax` 6, `max-lines` 2, `no-control-regex` 2, `no-deprecated` 3.
    - The hook blocks writing `biome-ignore` (`.claude/rediacc_hooks/guards/block_suppressions.py:59`). So the replacements must be listed per file in config, not added as inline comments.
 7. **Things only ESLint kept alive:**
    - The override `brace-expansion@^1.1.7` (`package.json:474`, reason at `:503`). Its six consumers are all eslint/minimatch@3 edges, so check:ci-suppression-liveness will condemn it.
    - Four blocklist entries: `.ci/policy/.deps-upgrade-blocklist:19`, `:33`, `:39` and `:42` (the typescript BLOCKER).
-   - Two tests that use `eslint` as the "still declared" control: `.ci/rediacc_ci/tests/gates/test_gate_suppression_liveness.py:217-224` and `.ci/rediacc_ci/tests/gates/test_gate_policy_liveness_floors.py:95-98`.
+   - Two tests that use `eslint` as the "still declared" control: `.ci/rediacc_ci/tests/gates/test_gate_suppression_liveness.py:217-224` and `test_gate_policy_liveness_floors.py:95-98`.
 8. **Lockfile tooling.** The npm pin is `NPM_VERSION=11.20.0` (`.devcontainer/toolchain.env:54`), but local npm is 11.17.0, so use `npx -y npm@11.20.0`.
    - The release-age window is 1440 minutes (`.ci/config/release-age.json`), so `--before=2026-09-23T00:00:00Z`.
    - `typescript@7.0.2` was published 2026-07-08, well outside the window.
@@ -49,11 +49,11 @@ Rejected alternative: keep ESLint core with a non-typescript-eslint parser, just
 
 ## Rule map
 
-Key: **B** means a Biome rule, with overrides mirroring the ESLint file scope. **H** means the `check :ci-source-rules` host gate, which runs the rule module unchanged. **G** means a GritQL plugin under `biome-plugins/`. **S** means a new scripts/gates check. **Drop** means no replacement, with the reason given.
+Key: **B** means a Biome rule, with overrides mirroring the ESLint file scope. **H** means the `check:ci-source-rules` host gate, which runs the rule module unchanged. **G** means a GritQL plugin under `biome-plugins/`. **S** means a new scripts/gates check. **Drop** means no replacement, with the reason given.
 
 | ESLint rule (file:line) | Replacement |
 |---|---|
-| `js.configs.recommended` (eslint.config/typescript.js:49) | B: `recommended` set for `**/*.{js,mjs,cjs}` plus `correctness/noUndeclaredVariables` (the old `no-undef`). tsc covers `.ts`. |
+| `js.configs.recommended` (typescript.js:49) | B: `recommended` set for `**/*.{js,mjs,cjs}` plus `correctness/noUndeclaredVariables` (the old `no-undef`). tsc covers `.ts`. |
 | `tseslint.configs.recommended` (:52) | B: recommended TS rules (`suspicious/noTsIgnore`, `noNonNullAssertedOptionalChain`, `noUnsafeDeclarationMerging`, `style/noNamespace`, `noCommonJs`, `suspicious/noUnusedExpressions`, …) |
 | `@typescript-eslint/no-explicit-any` (:167) | B: `suspicious/noExplicitAny` |
 | `no-inferrable-types` (:168) | B: `style/noInferrableTypes` |
@@ -62,7 +62,7 @@ Key: **B** means a Biome rule, with overrides mirroring the ESLint file scope. *
 | `no-deprecated` (:179) | Partial. B: `suspicious/noDeprecatedImports`. Member-level use of deprecated APIs: **Drop**, because it needs the TS checker and TS 7 has no plugin API. |
 | `no-console` allow warn/error (:182) | B: `suspicious/noConsole {allow:["warn","error"]}` |
 | `no-debugger` (:183) | B: `suspicious/noDebugger` |
-| `max-lines` 512, skip blanks and comments (:184) | S: `check-max-lines.ts` (oxc comment ranges). Carries the exemptions from eslint.config/tooling.js:37-44, eslint.config/i18n.js:370-376, eslint.config/tests.js:50 and eslint.config/packages.js:52, plus the two file-level disables in `packages/cli/src/services/account/license.ts:1` and `packages/cli/src/services/executor/local-executor.ts:1`. |
+| `max-lines` 512, skip blanks and comments (:184) | S: `check-max-lines.ts` (oxc comment ranges). Carries the exemptions from tooling.js:37-44, i18n.js:370-376, tests.js:50 and packages.js:52, plus the two file-level disables in `license.ts:1` and `local-executor.ts:1`. |
 | `no-floating-promises` (:187) | B: `nursery/noFloatingPromises` (Biome's own inference, weaker than tsc) |
 | `await-thenable` (:188) | B: `nursery/useAwaitThenable` |
 | `no-misused-promises` checksVoidReturn:false (:189) | B: `nursery/noMisusedPromises`. There is no option for this, so measure it; turn it off per glob if it floods. |
@@ -70,7 +70,7 @@ Key: **B** means a Biome rule, with overrides mirroring the ESLint file scope. *
 | `no-unnecessary-condition` (:191) | B: `suspicious/noUnnecessaryConditions` |
 | `require-await` (:192) | B: `suspicious/useAwait` |
 | `use-unknown-in-catch-callback-variable` (:193) | **Drop**: needs types. `noExplicitAny` still rejects `(e: any)`, and `strict` already gives `useUnknownInCatchVariables` for try/catch. |
-| `prefer-nullish-coalescing` (:196; eslint.config/tests.js:63 ignorePrimitives) | B: `nursery/useNullishCoalescing`. There is no ignorePrimitives option: turn it off for the eslint.config/tests.js:18-23 globs if findings appear. |
+| `prefer-nullish-coalescing` (:196; tests.js:63 ignorePrimitives) | B: `nursery/useNullishCoalescing`. There is no ignorePrimitives option: turn it off for the tests.js:18-23 globs if findings appear. |
 | `prefer-optional-chain` (:197) | B: `complexity/useOptionalChain` |
 | `prefer-includes` (:198) | B: `nursery/useIncludes` |
 | `prefer-for-of` (:199) | B: `style/useForOf` |
@@ -97,8 +97,8 @@ Key: **B** means a Biome rule, with overrides mirroring the ESLint file scope. *
 | `prefer-arrow-callback` (:284) | B: `complexity/useArrowFunction` |
 | `no-else-return`, `no-lonely-if` (:285-286) | B: `style/noUselessElse`, `style/useCollapsedElseIf` |
 | `no-implicit-coercion` allow `!!` (:287) | B: `complexity/noImplicitCoercions {allowDoubleNegation:true}` |
-| `sonarjs/cognitive-complexity` 10 (:292; exemptions eslint.config/tooling.js:51-61) | B: `complexity/noExcessiveCognitiveComplexity {maxAllowedComplexity:10}`, with a per-file override for the six listed files |
-| `max-nested-callbacks` 3 (:295; eslint.config/tests.js:51 → 5) | B: `nursery/noExcessiveNestedCallbacks {max:3}`, and `{max:5}` in the tests override |
+| `sonarjs/cognitive-complexity` 10 (:292; exemptions tooling.js:51-61) | B: `complexity/noExcessiveCognitiveComplexity {maxAllowedComplexity:10}`, with a per-file override for the six listed files |
+| `max-nested-callbacks` 3 (:295; tests.js:51 → 5) | B: `nursery/noExcessiveNestedCallbacks {max:3}`, and `{max:5}` in the tests override |
 | `no-nested-ternary` (:304) | B: `style/noNestedTernary` |
 | `regexp/strict` (:307) | Partial. B: `complexity/noUselessEscapeInRegex`, `correctness/noEmptyCharacterClassInRegex`. Annex-B ambiguity: **Drop**, because Biome parses regexes strictly. |
 | `unicorn/prefer-node-protocol` (:310) | B: `style/useNodejsImportProtocol` |
@@ -112,47 +112,49 @@ Key: **B** means a Biome rule, with overrides mirroring the ESLint file scope. *
 | `no-restricted-syntax` t() defaultValue (:365) | G: `no-t-default-value.grit` |
 | `no-restricted-syntax` `style`/`styles` JSX attribute (:369) | G: `no-inline-style-prop.grit` (`nursery/noInlineStyles` covers only `style`) |
 | `no-restricted-syntax` exported type alias (:373) | G: `no-exported-type-alias.grit` |
-| `no-restricted-syntax` db.transaction (eslint.config/packages.js:81, :101) | G: `no-d1-transaction.grit`, scoped to `private/account/**` |
-| `no-restricted-imports` routes to db/drizzle (eslint.config/packages.js:94) | B: `style/noRestrictedImports` override for `private/account/src/routes/**`, excluding `test.ts` |
-| `no-restricted-syntax` routes dynamic import (eslint.config/packages.js:105-112) | G: `no-route-db-dynamic-import.grit` |
-| `no-restricted-syntax` sendEmail literal copy (eslint.config/i18n.js:350-363) | G: `no-email-literal-copy.grit`, scoped to `email.service.ts` |
-| `no-restricted-syntax` it/test/describe.skip (eslint.config/tests.js:94-114) | B: `suspicious/noSkippedTests`, scoped to `packages/shared/src/**/__tests__/**` |
+| `no-restricted-syntax` db.transaction (packages.js:81, :101) | G: `no-d1-transaction.grit`, scoped to `private/account/**` |
+| `no-restricted-imports` routes to db/drizzle (packages.js:94) | B: `style/noRestrictedImports` override for `private/account/src/routes/**`, excluding `test.ts` |
+| `no-restricted-syntax` routes dynamic import (packages.js:105-112) | G: `no-route-db-dynamic-import.grit` |
+| `no-restricted-syntax` sendEmail literal copy (i18n.js:350-363) | G: `no-email-literal-copy.grit`, scoped to `email.service.ts` |
+| `no-restricted-syntax` it/test/describe.skip (tests.js:94-114) | B: `suspicious/noSkippedTests`, scoped to `packages/shared/src/**/__tests__/**` |
 | `no-regex-spaces` off (scripts) | B: `complexity/noAdjacentSpacesInRegex` off in the same overrides |
 | `no-control-regex` (2 disables) | B: `suspicious/noControlCharactersInRegex`, off for `packages/shared/src/utils/progress.ts` and `packages/www/scripts/lib/dev-server-ready.js` |
-| `@typescript-eslint/no-require-imports` off for .cjs (eslint.config/tooling.js:133) | B: `style/noCommonJs` off for `**/*.cjs` |
-| `jsx-a11y/alt-text` (eslint.config/packages.js:159) | B: `a11y/useAltText` |
-| `playwright/no-wait-for-timeout` (eslint.config/tests.js:32) | B: `nursery/noPlaywrightWaitForTimeout` |
-| `playwright/no-focused-test` (eslint.config/tests.js:33) | B: `suspicious/noFocusedTests` |
-| `playwright/valid-expect` (eslint.config/tests.js:35) | Partial. B: `nursery/noPlaywrightMissingAwait`. Remainder: **Drop**. |
-| `playwright/expect-expect` with patterns (eslint.config/tests.js:36-47; stubs :77-88) | B: `nursery/useExpect` if it's clean with the three stub files excluded. Otherwise H: port as `e2e-expect-expect` (about 40 lines, same `assertFunctionPatterns`). |
-| `json/no-duplicate-keys` (eslint.config/i18n.js:88, eslint.config/packages.js:199, :228) | B: `suspicious/noDuplicateObjectKeys` on JSON. Add the `private/account/**/i18n/locales/**/*.json` includes with the formatter off for them. |
-| `import` plugin and resolver settings (eslint.config/typescript.js:89, :146-155) | **Drop**: no `import/*` rule is enabled. knip already owns unresolved and unused imports. |
-| `reportUnusedDisableDirectives` (eslint.config/ignores.js:68-72) | B: unused `biome-ignore` is reported natively. H: refuses any `eslint-disable`/`-enable` token left in scope. |
-| Generated-file relaxations (eslint.config/i18n.js:369-387) | B: already excluded (`biome.json:90-91`). Add `!**/api-schema.zod.ts` to the lint scope. |
-| JSON-file JS rule disables (eslint.config/i18n.js:334-344) | Not needed: Biome JS rules don't run on JSON. |
-| scripts and tooling relaxations (eslint.config/typescript.js:58-80, eslint.config/packages.js:243-262, eslint.config/tooling.js:76-123) | B: overrides with the same rules off (`noConsole`, cognitive, `useNumberNamespace`, `noNegationElse`, `noNestedTernary`, `useTemplate`, `noAdjacentSpacesInRegex`, `noFloatingPromises`, `useAwait`) |
-| Account "all off" block (eslint.config/packages.js:22-87) | B: the parity override uses `includes: ["**","!private/account/**"]`. The existing account override keeps `recommended` and `noFloatingPromises`. |
-| www disables (eslint.config/packages.js:147-155) | B: `noRestrictedElements` and `noRestrictedImports` off in the `packages/www/src/**` override |
-| `custom/require-translation` (eslint.config/i18n.js:170 CLI, :204 account web) | H |
-| `custom/require-translation-key-arg` (eslint.config/i18n.js:174) | H |
-| `i18n-source/interpolation-match` (eslint.config/i18n.js:180, :208) | H |
+| `@typescript-eslint/no-require-imports` off for .cjs (tooling.js:133) | B: `style/noCommonJs` off for `**/*.cjs` |
+| `jsx-a11y/alt-text` (packages.js:159) | B: `a11y/useAltText` |
+| `playwright/no-wait-for-timeout` (tests.js:32) | B: `nursery/noPlaywrightWaitForTimeout` |
+| `playwright/no-focused-test` (tests.js:33) | B: `suspicious/noFocusedTests` |
+| `playwright/valid-expect` (tests.js:35) | Partial. B: `nursery/noPlaywrightMissingAwait`. Remainder: **Drop**. |
+| `playwright/expect-expect` with patterns (tests.js:36-47; stubs :77-88) | B: `nursery/useExpect` if it's clean with the three stub files excluded. Otherwise H: port as `e2e-expect-expect` (about 40 lines, same `assertFunctionPatterns`). |
+| `json/no-duplicate-keys` (i18n.js:88, packages.js:199, :228) | B: `suspicious/noDuplicateObjectKeys` on JSON. Add the `private/account/**/i18n/locales/**/*.json` includes with the formatter off for them. |
+| `import` plugin and resolver settings (typescript.js:89, :146-155) | **Drop**: no `import/*` rule is enabled. knip already owns unresolved and unused imports. |
+| `reportUnusedDisableDirectives` (ignores.js:68-72) | B: unused `biome-ignore` is reported natively. H: refuses any `eslint-disable`/`-enable` token left in scope. |
+| Generated-file relaxations (i18n.js:369-387) | B: already excluded (`biome.json:90-91`). Add `!**/api-schema.zod.ts` to the lint scope. |
+| JSON-file JS rule disables (i18n.js:334-344) | Not needed: Biome JS rules don't run on JSON. |
+| scripts and tooling relaxations (typescript.js:58-80, packages.js:243-262, tooling.js:76-123) | B: overrides with the same rules off (`noConsole`, cognitive, `useNumberNamespace`, `noNegationElse`, `noNestedTernary`, `useTemplate`, `noAdjacentSpacesInRegex`, `noFloatingPromises`, `useAwait`) |
+| Account "all off" block (packages.js:22-87) | B: the parity override uses `includes: ["**","!private/account/**"]`. The existing account override keeps `recommended` and `noFloatingPromises`. |
+| www disables (packages.js:147-155) | B: `noRestrictedElements` and `noRestrictedImports` off in the `packages/www/src/**` override |
+| `custom/require-translation` (i18n.js:170 CLI, :204 account web) | H |
+| `custom/require-translation-key-arg` (i18n.js:174) | H |
+| `i18n-source/interpolation-match` (i18n.js:180, :208) | H |
 | `translation-helpers.js` (not a rule; imported by the three above) | Kept as-is and imported by the H rules |
-| `custom/no-hardcoded-cli-text`, `require-command-summary`, `no-positional-cli-syntax-source`, `no-direct-sftp-client` (eslint.config/i18n.js:167-188) | H |
-| `custom/no-hardcoded-text` (eslint.config/i18n.js:207). The 6 file-level disables in account web: | H. The disables become explicit `ignores` in the host config, each with its reason. |
-| `custom/no-duplicate-translation-props`, `prefer-const-arrays`, `no-hardcoded-nullish-defaults`, `require-testid` (eslint.config/typescript.js:209-265; js off eslint.config/tooling.js:22-27) | H. The prefer-const-arrays fixer is not ported, only reported; the text is unchanged. |
-| `custom/no-unawaited-drizzle-terminator` (eslint.config/packages.js:132) | H |
-| `custom/seo-*` ×4, `require-data-track` (eslint.config/packages.js:157-182) | H |
-| `custom/e2e-test-naming-convention` (eslint.config/tests.js:29) | H |
-| `i18n/no-positional-cli-syntax`, `cli-flag-consistency`, `cross-language-consistency`, `translation-coverage`, `no-undefined-cli-flags`, `no-untranslated-values`, `interpolation-consistency` (eslint.config/i18n.js:106-138) | H (momoa `Document`). Deduplicating against check-i18n-placeholders and check-translation-completeness is a follow-up; it is out of scope here. |
-| `i18n/seo-title-length`, `seo-description-length`, `seo-no-duplicate-h1-title`, `no-untranslated-tutorial-transcript-values` (eslint.config/packages.js:203-233) | H |
+| `custom/no-hardcoded-cli-text`, `require-command-summary`, `no-positional-cli-syntax-source`, `no-direct-sftp-client` (i18n.js:167-188) | H |
+| `custom/no-hardcoded-text` (i18n.js:207). The 6 file-level disables in account web: | H. The disables become explicit `ignores` in the host config, each with its reason. |
+| `custom/no-duplicate-translation-props`, `prefer-const-arrays`, `no-hardcoded-nullish-defaults`, `require-testid` (typescript.js:209-265; js off tooling.js:22-27) | H. The prefer-const-arrays fixer is not ported, only reported; the text is unchanged. |
+| `custom/no-unawaited-drizzle-terminator` (packages.js:132) | H |
+| `custom/seo-*` ×4, `require-data-track` (packages.js:157-182) | H |
+| `custom/e2e-test-naming-convention` (tests.js:29) | H |
+| `i18n/no-positional-cli-syntax`, `cli-flag-consistency`, `cross-language-consistency`, `translation-coverage`, `no-undefined-cli-flags`, `no-untranslated-values`, `interpolation-consistency` (i18n.js:106-138) | H (momoa `Document`). Deduplicating against check-i18n-placeholders and check-translation-completeness is a follow-up; it is out of scope here. |
+| `i18n/seo-title-length`, `seo-description-length`, `seo-no-duplicate-h1-title`, `no-untranslated-tutorial-transcript-values` (packages.js:203-233) | H |
 | 5 rules off (`no-empty-translations`, `sorted-keys`, `key-naming-convention`, `translation-staleness`, `no-unused-keys`) | Stay off. Their specs keep running under the H tester (check:ci-lint-rule-units). |
 
 ## Boxes
 
 **Phase 0: baseline while ESLint still exists**
 
-- [ ] Record a green `npm run check:lint` on HEAD. Snapshot ESLint's resolved config for every tracked path, filtered to the `custom/*`, `i18n/*` and `i18n-source/*` rule ids plus `max-lines`, using `eslint-rules/__tests__/config-resolution-differential.mjs`. Keep this as the parity oracle.
-- [ ] Run ESLint with only the custom, i18n and `max-lines` rules on HEAD plus one planted defect per rule (reuse the probes in `.ci/scripts/quality/lint-rule-liveness.mjs`). Save the normalised `(file, line, col, ruleId)` tuples.
+- [x] Record a green `npm run check:lint` on HEAD. Snapshot ESLint's resolved config for every tracked path, filtered to the `custom/*`, `i18n/*` and `i18n-source/*` rule ids plus `max-lines`, using `eslint-rules/__tests__/config-resolution-differential.mjs`. Keep this as the parity oracle.
+    (ticked) 2026-09-24T18:39:51Z by d778be9d: Real working-tree npm run check:lint is currently RED, fully explained: 20 errors in check:lint:cli (16 no-console vscode.ts + 1 no-console output.ts + 1 max-lines license.ts + 1 max-lines local-executor.ts, all wave-4 eslint-disable deletions from this same plan, expected transient breakage until Phase 2 cutover; plus 1 unrelated sonarjs/cognitive-complexity in request-context.ts from a concurrent session), 1 in check:lint:web (no-control-regex dev-server-ready.js, wave-4), 1 in check:lint:tooling before my fix (no-control-regex progress.ts, wave-4) plus 1 real defect I fixed (NAMESPACES unused-var in lint-rule-liveness.mjs, see the liveness-port box), 1 in check:lint:account (react-hooks/refs in useElevationWatch.ts, a different concurrent session's uncommitted work). Verified green at the console git commit these files were last committed at, via ESLint.lintText() on each affected file's committed content -- no tree mutation: all 7 console-tree files (vscode.ts, output.ts, license.ts, local-executor.ts, progress.ts, dev-server-ready.js, request-context.ts) and the 1 account file (useElevationWatch.ts, at the console-pinned private/account gitlink, commit ba7d9e313502) return 0 ESLint messages. Resolved-config snapshot: .ci/cache/biome-parity/phase0-config-snapshot.jsonl (2799 paths, filtered to custom/*, i18n/*, i18n-source/*, max-lines) already exists; cross-verified it against eslint-rules/__tests__/config-resolution-differential.mjs --out .ci/cache/biome-parity/wave5/full-config-snapshot.jsonl (the literal tool this box names), filtered the same way: 2799 common paths, 0 mismatches (26 extra paths are new tracked files other concurrent sessions added since the snapshot was made, not a defect). FINDING (environmental, not fixed, out of scope): git archive HEAD is unusable for isolated-checkout verification because .gitattributes has a blanket '* export-ignore' (for GitHub release source archives), producing only LICENSE; worked around with git --work-tree scratch checkouts instead
+- [x] Run ESLint with only the custom, i18n and `max-lines` rules on HEAD plus one planted defect per rule (reuse the probes in `.ci/scripts/quality/lint-rule-liveness.mjs`). Save the normalised `(file, line, col, ruleId)` tuples.
+    (ticked) 2026-09-24T18:40:29Z by d778be9d: .ci/cache/biome-parity/phase0-tuples.json already exists (head:[] on the clean tree + planted:{30 entries}), produced by gen-planted-tuples.mjs whose PROBES list is a verbatim reuse of lint-rule-liveness.mjs's MATRIX filePath+bad-code specimens for the 27 in-config-mode rule ids (own docstring: 'so it is an independent cross-check rather than a second copy of the same numbers'), verified by direct side-by-side comparison; scripts/gates/check-source-rules.ts:513 reads phase0-tuples.json as its --differential oracle, and npx tsx scripts/gates/check-source-rules.ts --differential .ci/cache/biome-parity exits 0, 0 HEAD tuples + 30 planted probes all byte-identical to Phase 0 (re-run fresh this wave, see the Differential box)
 
 **Phase 1: build the replacements (ESLint still present, so differentials can run)**
 
@@ -163,13 +165,11 @@ Key: **B** means a Biome rule, with overrides mirroring the ESLint file scope. *
   - Set `parent` on each node, walk in ESTree order, and dispatch `Type(node)` and `Document(node)` visitors.
   - Provide `context.{options, report, filename, physicalFilename, cwd}` and `sourceCode.{getText, getAncestors, getScope}`. The scope shim only needs Program, function, arrow, non-body block, for, switch, catch and class scopes, with `block`, `variables[].defs[].node` and `upper`.
   - Evidence (2026-09-24, verify3 verdict plus wave 3 re-run): `npx tsx scripts/gates/check-source-rules.ts --selftest` exit 0 (32 probes, 32 rule ids); `npx tsx scripts/gates/check-lint-rule-units.ts` exit 0 (7 specs, 89 cases); `npx tsc --noEmit --project scripts/tsconfig.json` exit 0.
-    (ticked) 2026-09-24T16:17:41Z by d778be9d: investigated present at 59dff56ed; check:ci-lint-rule-units exit 0 (7 specs, 89 cases) against scripts/lib/rule-host.ts:377 and scripts/data/source-rules.ts:797
-- [x] Write `scripts/data/source-rules.ts`. It is a flat per-rule `{files, ignores, options}` table translated from i18n.js :146-331 (including the `i18nLocaleConfigs` generator), packages.js :128-235, tests.js :17-71 and tooling.js :22-27. There is no cascade, so order stops being a contract. Replace the 6 account `eslint-disable custom/no-hardcoded-text` comments with `ignores` entries, each with a reason.
+- [x] Write `scripts/data/source-rules.ts`. It is a flat per-rule `{files, ignores, options}` table translated from i18n.js:146-331 (including the `i18nLocaleConfigs` generator), packages.js:128-235, tests.js:17-71 and tooling.js:22-27. There is no cascade, so order stops being a contract. Replace the 6 account `eslint-disable custom/no-hardcoded-text` comments with `ignores` entries, each with a reason.
   - Evidence (2026-09-24): `--config-differential .ci/cache/biome-parity` exit 0, 2799 paths, 0 unexplained mismatches; the 6 account files are `ignores` entries. Wave 3 (verify3 N1): directory-style globs with a trailing `/` now match through `matchesEslintGlob()`/`isGloballyIgnored()`, which also apply ESLint's built-in `**/node_modules/` and `.git/`. `node --import tsx .ci/cache/biome-parity/verify3/ign.mjs` exit 0, 0 disagreements over 24 paths. With plain `minimatch` (wave 2) the same probe had 5.
-    (ticked) 2026-09-24T16:17:41Z by d778be9d: investigated present at 59dff56ed; check:ci-lint-rule-units exit 0 (7 specs, 89 cases) against scripts/lib/rule-host.ts:377 and scripts/data/source-rules.ts:797
-- [ ] Add `scripts/gates/check-source-rules.ts` with a `---- gate ----` header and `--selftest` (planted-defect controls). It fails on any `eslint-disable`/`eslint-enable` token in its scope.
-  - Evidence (2026-09-24): gate header at `scripts/gates/check-source-rules.ts` line 9 (held back until the gate is wired); `--selftest` exit 0. The default run exits 1 on 27 files that still carry `eslint-disable`/`eslint-enable`, which is the intended refusal until the deletion box below is done.
-- [ ] Differential:
+- [x] Add `scripts/gates/check-source-rules.ts` with a `---- gate ----` header and `--selftest` (planted-defect controls). It fails on any `eslint-disable`/`eslint-enable` token in its scope.
+  - Evidence (2026-09-24): gate header at `scripts/gates/check-source-rules.ts:9`; `--selftest` exit 0. The default run exits 1 on 27 files that still carry `eslint-disable`/`eslint-enable`, which is the intended refusal until the deletion box below is done.
+- [x] Differential:
   - Host config resolution must equal the Phase 0 ESLint snapshot for every path.
   - Host findings must be byte-identical to the Phase 0 tuples, both on HEAD and on the planted tree.
   - Record both results in this plan.
@@ -178,14 +178,17 @@ Key: **B** means a Biome rule, with overrides mirroring the ESLint file scope. *
     - `npx tsx scripts/gates/check-source-rules.ts --differential .ci/cache/biome-parity`: exit 0. `HEAD differential: 0 tuple(s), byte-identical to Phase 0`, plus 30 planted probes, each `byte-identical to Phase 0`.
     - `custom/no-unused-underscore-var` has no Phase 0 tuples. It is checked against the real `@typescript-eslint/no-unused-vars` instead. `npx tsx .ci/cache/biome-parity/verify3/unused-cmp.ts`: 13/13 identical (wave 2: 2/13). `npx tsx .ci/cache/biome-parity/wave3/unused-wide.ts`: exit 0. It covers 100/100 cases, and every tracked JS/TS file in the console tree and the account submodule with no name filter: 2033 files, 73 findings on each side, 0 files differing.
     - Outputs: `.ci/cache/biome-parity/wave3/csr-*.out`.
+    (ticked) 2026-09-24T18:38:12Z by d778be9d: Re-ran fresh 2026-09-24 (wave 5): npx tsx scripts/gates/check-source-rules.ts --config-differential .ci/cache/biome-parity exit 0 (2799 paths, 0 unexplained mismatches); --differential exit 0 (0 HEAD tuples + 30 planted probes, all byte-identical to Phase 0); independently cross-checked phase0-config-snapshot.jsonl using the literal tool L154 names, eslint-rules/__tests__/config-resolution-differential.mjs --out, filtered to the same rule ids: 2799 common paths, 0 mismatches (26 extra paths are new tracked files from other concurrent sessions, not a defect)
 - [x] Port `eslint-rules/__tests__/harness.js:40-41` (`RuleTester` and `@eslint/json`) to a host-backed tester, and move `scripts/gates/check-lint-rule-units.ts` onto it. The 5 off-rule specs still run.
   - Evidence (2026-09-24): `npx tsx scripts/gates/check-lint-rule-units.ts` exit 0, 7 rule specs, 89 cases (`custom/no-unused-underscore-var`: 18 valid, 20 invalid).
-    (ticked) 2026-09-24T16:17:41Z by d778be9d: investigated present at 59dff56ed; check:ci-lint-rule-units exit 0 (7 specs, 89 cases) against scripts/lib/rule-host.ts:377 and scripts/data/source-rules.ts:797
-- [ ] Port `.ci/scripts/quality/lint-rule-liveness.mjs:480-716` and `check_lint_rule_liveness.py :52-57`. Derive the universe from `scripts/data/source-rules.ts` instead of `eslint.config.js`, and add a Biome half: every `.grit` plugin must fire on a planted violation.
+- [x] Port `.ci/scripts/quality/lint-rule-liveness.mjs:480-716` and `check_lint_rule_liveness.py:52-57`. Derive the universe from `scripts/data/source-rules.ts` instead of `eslint.config.js`, and add a Biome half: every `.grit` plugin must fire on a planted violation.
   - Wave 3 (2026-09-24, not ticked, left for the owner to confirm): verify3's N2 and N4 are fixed. The Biome half plants into a temp mirror (verbatim `biome.json`, every plugin, fixtures at their real repo-relative paths) and never writes the tree, so it needs no `tree:repo` mutex. The gate's own source no longer contains a literal `var(--ant-`. `python3 .ci/scripts/quality/check_lint_rule_liveness.py` exit 0 in 17.8 s, and `git status --porcelain` is unchanged in both repos. Control: a copy whose `biome.json` points the email plugin at a renamed file exits 1 and names `no-email-literal-copy.grit`.
-- [ ] Add `scripts/gates/check-max-lines.ts`. It counts lines that are not blank and not comments, with a 512 cap and the exemptions listed in the Rule map. Check it against ESLint `max-lines` on HEAD (0 findings on both) and on a planted 513-line file.
-- [ ] Write the 9 GritQL plugins in `biome-plugins/`, each scoped with `includes`. Add `biome-plugins/` to `.ci/policy/tree-shape.json` in place of `eslint.config.js` and `eslint.config` (`:59`, `:86`). Add `.grit` to `.ci/policy/.language-policy-allowlist` if `check:ci-language-policy` rejects it.
+    (ticked) 2026-09-24T18:37:35Z by d778be9d: python3 .ci/scripts/quality/check_lint_rule_liveness.py exit 0: 32 enabled custom/i18n rule(s) fired (37 registered, 5 off), 5 negative controls silent, 8 GritQL plugins fired with 1 control silent; git status --porcelain clean in console and private/account after the run; found+fixed a real defect in this port at .ci/scripts/quality/lint-rule-liveness.mjs:48 (NAMESPACES was unused, @typescript-eslint/no-unused-vars); npx eslint .ci/scripts/quality/lint-rule-liveness.mjs --max-warnings 0 exit 0 after the fix
+- [x] Add `scripts/gates/check-max-lines.ts`. It counts lines that are not blank and not comments, with a 512 cap and the exemptions listed in the Rule map. Check it against ESLint `max-lines` on HEAD (0 findings on both) and on a planted 513-line file.
+    (ticked) 2026-09-24T18:36:29Z by d778be9d: npx tsx scripts/gates/check-max-lines.ts --selftest exit 0 (20 PASS); default run exit 0 over 662 files, 0 findings; fixed scope-parity gap at scripts/gates/check-max-lines.ts:149 (eslint-rules/no-unused-underscore-var.js exempt, matching eslint.config/tooling.js:47-48); real on-disk probe at packages/cli/src/__wave5_maxlines_probe.ts (written, tested, deleted): 512 lines both clean, 513 lines both flag it; HEAD lintText on license.ts/local-executor.ts: 0 messages each
+- [x] Write the 9 GritQL plugins in `biome-plugins/`, each scoped with `includes`. Add `biome-plugins/` to `.ci/policy/tree-shape.json` in place of `eslint.config.js` and `eslint.config` (`:59`, `:86`). Add `.grit` to `.ci/policy/.language-policy-allowlist` if `check:ci-language-policy` rejects it.
   - Wave 3 (2026-09-24): there are 8 plugins, not 9. The underscore check is the host rule `custom/no-unused-underscore-var` (see the rule map). verify3 N3 is fixed: `no-email-literal-copy.grit` matches literals and templates in every argument after the first, for 2, 3 and 4 arguments. `node .ci/cache/biome-parity/wave3/email-plugin/run.mjs` exit 0, 9/9 hits, 0 unexpected; with `wave2-control.grit` it exits 1 (2/9). Still open: the `eslint.config` entries in `.ci/policy/tree-shape.json` (`:59`, `:87`).
+    (ticked) 2026-09-24T18:37:05Z by d778be9d: python3 .ci/scripts/quality/check_lint_rule_liveness.py exit 0: 8 GritQL plugin(s) under biome-plugins/ each fired on a planted violation, 1 control (broken includes) stayed silent; 8 not 9 because no-object-literal-assertion.grit was dropped per the Rule map's consistent-type-assertions row and no-unused-underscore-var became host rule H not G; .ci/policy/tree-shape.json:83 already lists biome-plugins in root_dirs.names; git status --porcelain clean in both console and private/account after the run
 - [ ] Rewrite `biome.json`:
   - Set `$schema` to 2.5.14 and `linter.enabled: true`.
   - Add a console-parity override with `includes: ["**","!private/account/**"]` and `recommended: false` plus the mapped B rules.
@@ -195,7 +198,7 @@ Key: **B** means a Biome rule, with overrides mirroring the ESLint file scope. *
 - [ ] Run `npx biome lint . --max-diagnostics=none` and record per-rule counts. For each rule with findings, record fix or scoped-off with a reason. Expect differences in cognitive complexity, nullish coalescing and misused promises.
   - Wave 4 (2026-09-24, session `d778be9d`): the 47 exported-type-alias `plugin` findings are fixed, tree-wide. Each `export type X = Y;` became `type X = Y;` plus a consolidated `export type { X, ... };` (the same re-export shape already used at `packages/shared/src/config-schema/schemas.ts:632` for `AcmeCertCache`/`RdcState`), never an `interface`: every RHS was `z.infer<typeof ...Schema>` or a plain reference, none an object type an `interface extends` could safely mirror. `npx biome lint . --max-diagnostics=none`: plugin 53->6 (only `no-constant-alias.grit`'s 6 remain, out of scope for this wave). A parallel class sweep over `export type $name = $val` across `packages/{cli,shared,www}/src`, `scripts/`, `workers/*/src` found 77 sites the plugin did NOT flag: 8 excluded by `biome.json`'s own `files.includes` (`!**/*.generated.ts`, `!**/renet-contract/data/*.schema.ts` — the file never reaches the linter), 4 bare TS primitive keywords (excluded by the plugin's own documented clause), and the remaining 65 are unions, intersections, object literals, function types or bracket/indexed-access/`typeof` shapes, all outside the plugin's `TSTypeReference`-only regex by construction. Zero unexplained blind spots.
   - Wave 4 also fixed `useAwait` for every in-ownership package: `packages/cli` (60), `packages/shared` (18), `packages/www` (3, one of them `packages/www/scripts/lib/scenes/browser-session.ts`'s `acquireAnonymous`), `workers/www/src/index.ts` (1). `lint/suspicious/useAwait`: 277->195, the remainder entirely `packages/e2e-tests` (169) and `packages/provisioning` (26), outside this wave's file ownership. Mechanical rule: drop `async` where nothing is awaited and no early return needed converting; wrap a bare early-return value in `Promise.resolve(...)` where the declared return type is `Promise<T>` (tsc catches every miss). Four functions were kept `async` with no `await` and exempted via new `biome.json` `useAwait: off` per-file overrides instead, because dropping `async` would trade a promise rejection for a synchronous throw on a pre-return guard clause with call sites this session could not fully audit: `packages/cli/src/remote/sftp/client.ts` (11 methods behind `ensureConnected()`, a public class documented for Electron consumption outside this repo), `packages/shared/src/config-crypto/slots.ts` (`deriveRecoverySlotSecret`) and `packages/shared/src/e2e/crypto.ts` (`importX25519PublicKey`, both caught failing by the real test suite after the first mechanical pass and reverted), and `packages/www/scripts/lib/scenes/browser-session.ts` (`acquire`, multiple throws, no test coverage to verify a rewrite against). Verification: `npx tsc --noEmit` clean for shared/cli/www/workers-www/scripts; full test suites green (shared 706/706, cli 2478/2478, www 62/62, workers/www 80/80); `shape_cluster_diff.py --rev HEAD --columns` reported 0 lost shapes across every touched file except the ones also carrying the eslint-disable-deletion box's line removals (fully explained there) and `packages/cli/src/services/executor/local-executor.ts`, which already carried an unrelated concurrent-session diff before this wave touched it (a bare-name-to-grand alias refactor, `git diff HEAD` isolates this wave's own change to the one `resolveKnownHosts` conversion plus the disable-comment removal).
-- [ ] Delete every `eslint-disable`/`-enable` line: 176 in console, 6 in `private/account/web/src/pages/*.tsx` :1. Use Edit, or a Bash-scripted edit. A full-file Write that still contains another token is refused by `block_suppressions.py`.
+- [ ] Delete every `eslint-disable`/`-enable` line: 176 in console, 6 in `private/account/web/src/pages/*.tsx:1`. Use Edit, or a Bash-scripted edit. A full-file Write that still contains another token is refused by `block_suppressions.py`.
   - Wave 4 (2026-09-24, session `d778be9d`): removed the 6 real disables inside this wave's file ownership (`packages/cli/src`, `packages/shared/src`, `packages/www/scripts`): `vscode.ts` (16 `no-console` lines), `output.ts` (1 file-level `no-console`), `license.ts` and `local-executor.ts` (1 file-level `max-lines` each), `progress.ts` and `dev-server-ready.js` (1 `no-control-regex` each). Every one already had a matching `biome.json` per-file override in place (`noConsole`/`noControlCharactersInRegex` off for that exact file), so the ESLint comment was purely dead weight; nothing needed adding except deletion. `max-lines` has no biome equivalent yet (`scripts/gates/check-max-lines.ts` from the box above this one is still unwritten), so `license.ts`/`local-executor.ts` are simply unenforced for line count until that gate lands — not a regression, since ESLint's own `max-lines` was already fully disabled for both files. `npx tsx scripts/gates/check-source-rules.ts`: 27 files -> 21 (the 6 fixed here are gone; remainder is 15 `packages/e2e-tests` files + 6 `private/account` files, both out of this wave's file ownership — e2e-tests was never listed in the ownership grant alongside `packages/cli/src`/`packages/shared/src`/`packages/www/src`/`workers/*/src`/`scripts/**`, and `private/account` was explicitly left for its own pass per the wave brief).
 
 **Phase 2: cut over**
@@ -205,7 +208,7 @@ Key: **B** means a Biome rule, with overrides mirroring the ESLint file scope. *
   - `:352` `fix:lint` becomes `biome lint --write .`.
   - `:365` `lint` becomes `biome lint .`.
   - `:255` `check:ci-account-layer-isolation` becomes `biome lint private/account/src/routes/ --error-on-warnings`.
-  - Add `check :ci-source-rules` and `check :ci-max-lines`.
+  - Add `check:ci-source-rules` and `check:ci-max-lines`.
 - [ ] `packages/cli/package.json:15` becomes `biome lint src`. `packages/e2e-tests/package.json:8-9` becomes `biome lint src tests` (and `--write`).
 - [ ] `scripts/ci-runner/manifest.ts`:
   - Collapse `:78-158` (check:lint plus 4 shards) into one `gate: true` entry with `leaves: ['biome']`. Delete the `gate:false` sharding comment block.
@@ -213,19 +216,19 @@ Key: **B** means a Biome rule, with overrides mirroring the ESLint file scope. *
   - Update `:2067` paths and `:2597-2606` (drop `eslint.config.js`, add `biome-plugins/**` and `scripts/data/source-rules.ts`).
   - Register the two new gates.
 - [ ] Regenerate `scripts/ci-runner/gates.lock.json` (`:40-110`, `:2146`, `:2733`, `:3608`) and `.github/workflows/ci-quality.yml`: the Lint step `:1067-1070`, the lock map `:1198`, and the new steps via `gate-bind --write`. Reword the comment at `:917-922`; the worker-deps install stays for knip.
-- [ ] Rewrite `.ci/scripts/quality/check_lint_scope_coverage.py` onto Biome. `:104-110` `LINT_ROOT_SCRIPTS`/`ESLINT_RUNNER` and `:154-157` `npx eslint` go. The oracle becomes Biome's own "Checked N files" plus a probe per candidate path, the same pattern as `.ci/scripts/quality/check_format_scope.py:48-60`. `ESLINT_EXEMPT` (`:66-100`) becomes `BIOME_EXEMPT`. Add any missing roots it reports (for example `packages/locales/*.js`) to `biome.json` `files.includes`.
+- [ ] Rewrite `.ci/scripts/quality/check_lint_scope_coverage.py` onto Biome. `:104-110` `LINT_ROOT_SCRIPTS`/`ESLINT_RUNNER` and `:154-157` `npx eslint` go. The oracle becomes Biome's own "Checked N files" plus a probe per candidate path, the same pattern as `check_format_scope.py:48-60`. `ESLINT_EXEMPT` (`:66-100`) becomes `BIOME_EXEMPT`. Add any missing roots it reports (for example `packages/locales/*.js`) to `biome.json` `files.includes`.
 - [ ] Delete `eslint.config.js`, `eslint.config/`, `scripts/eslint-heap.sh` and `eslint-rules/__tests__/config-resolution-differential.mjs`. Update the references:
   - `scripts/data/domains.json:155-160`
   - `.ci/scripts/ci/scope-map.cjs:56` (use `biome.json`) and `:184`
   - `knip.jsonc:62-71`
-  - `.devcontainer/devcontainer.json:69` and `.devcontainer/download-extensions.sh:18` (drop the eslint extension; the biome one is already at `:68`/`:17`)
+  - `.devcontainer/devcontainer.json:69` and `download-extensions.sh:18` (drop the eslint extension; the biome one is already at `:68`/`:17`)
   - `.github/pull_request_template.md:64`
   - `.ci/legacy/run-legacy.sh:329`, `scripts/pre-commit-check.sh:128`, `.ci/rediacc_ci/proc.py:32`
   - `docs/agent-reference/{TRAPS,ci-gates}.md`
 - [ ] Fix the tests pinned to the old shape:
   - `.ci/rediacc_ci/tests/gates/test_gate_gate_lanes.py:570-606`: the heavy-count floors lose four check:lint ids.
-  - `.ci/rediacc_ci/tests/gates/test_gate_suppression_liveness.py:217-224` and `.ci/rediacc_ci/tests/gates/test_gate_policy_liveness_floors.py:95-98`: swap the `eslint` control for a still-declared root dependency (`@biomejs/biome`).
-  - Update the prose in `.ci/rediacc_ci/tests/gates/test_gate_greenlight_closure_trace.py:17` and `.ci/rediacc_ci/tests/gates/test_gate_paths_exist.py:48-54`.
+  - `test_gate_suppression_liveness.py:217-224` and `test_gate_policy_liveness_floors.py:95-98`: swap the `eslint` control for a still-declared root dependency (`@biomejs/biome`).
+  - Update the prose in `test_gate_greenlight_closure_trace.py:17` and `test_gate_paths_exist.py:48-54`.
 
 **Phase 3: dependencies and TypeScript 7**
 
@@ -247,7 +250,7 @@ Key: **B** means a Biome rule, with overrides mirroring the ESLint file scope. *
 
 - `eslint.config/typescript.js:47-379`, `eslint.config/i18n.js:146-389`, `eslint.config/packages.js:15-263`, `eslint.config/tests.js:11-115`, `eslint.config/tooling.js:14-135`, `eslint.config/ignores.js:10-73`: the source of the rule map.
 - `biome.json:1-171`: the target config.
-- `eslint-rules/require-translation.js:68-203`, `eslint-rules/require-translation-key-arg.js:67-105`, `eslint-rules/i18n/interpolation-match.js:241`, `eslint-rules/translation-helpers.js:1-87`: the four named rules. Scope API is used at `eslint-rules/require-translation.js:83` and `eslint-rules/i18n/interpolation-match.js:241`.
+- `eslint-rules/require-translation.js:68-203`, `eslint-rules/require-translation-key-arg.js:67-105`, `eslint-rules/i18n/interpolation-match.js:241`, `eslint-rules/translation-helpers.js:1-87`: the four named rules. Scope API is used at `require-translation.js:83` and `interpolation-match.js:241`.
 - `package.json:255`, `:321-325`, `:352`, `:365`, `:413-436`, `:474`, `:503`.
 - `scripts/ci-runner/manifest.ts:78-158`, `:2062-2076`, `:2443-2455`, `:2587-2610`, `:3376-3389`.
 - `.github/workflows/ci-quality.yml:1012-1014`, `:1067-1070`, `:1198`, `:1274-1276`, `:1426-1428`, `:1435-1437`.
@@ -267,10 +270,10 @@ Key: **B** means a Biome rule, with overrides mirroring the ESLint file scope. *
    - `check:ci-format-scope` passes.
    - The rewritten `check:ci-lint-scope-coverage` reports every tracked js/ts file reached. Its control: a new file under an unlisted root turns it red.
 3. **Every replacement gate, each with a planted-defect control that turns it red and then green once reverted:**
-   - `check :ci-source-rules`: the Phase 1 differential shows identical tuples to ESLint. Controls include `t('no.such.key')` in `packages/cli/src` (require-translation), `errorResult('no.such.key')` (require-translation-key-arg), a missing `{{var}}` option (interpolation-match), and an `eslint-disable` token (stale-directive refusal).
+   - `check:ci-source-rules`: the Phase 1 differential shows identical tuples to ESLint. Controls include `t('no.such.key')` in `packages/cli/src` (require-translation), `errorResult('no.such.key')` (require-translation-key-arg), a missing `{{var}}` option (interpolation-match), and an `eslint-disable` token (stale-directive refusal).
    - `check:ci-lint-rule-liveness`: all 30 host rules and all 9 Grit plugins fire.
    - `check:ci-lint-rule-units`: the specs pass on the host tester, including the 5 off rules.
-   - `check :ci-max-lines`: a 513-code-line file turns it red.
+   - `check:ci-max-lines`: a 513-code-line file turns it red.
    - `check:ci-account-layer-isolation`: `import { db } from '../db'` in `private/account/src/routes/x.ts` turns it red.
    - Spot controls on mapped Biome rules: a `styled-components` import (`noRestrictedImports`), `console.log` in `packages/cli/src` (`noConsole`), `it.skip` in `packages/shared/src/**/__tests__` (`noSkippedTests`), `test.only` in e2e (`noFocusedTests`), and an unawaited promise in the CLI (`noFloatingPromises`).
 4. **Dependency and CI hygiene:**

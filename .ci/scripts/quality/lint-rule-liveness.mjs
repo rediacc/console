@@ -45,7 +45,7 @@ const ROOT = path.resolve(HERE, '../../..');
 // Several rules resolve paths against process.cwd() rather than against the linted file: require-path-option.js:24 (every i18n localesDir) and require-command-summary.js:59 (en/cli.json). A wrong cwd makes some of them throw and others silently no-op, i.e. look dead. Pin it.
 process.chdir(ROOT);
 
-export const NAMESPACES = new Set(['custom', 'i18n', 'i18n-source']);
+// The plugin namespaces this gate ever covers: `custom`, `i18n`, `i18n-source`. No longer held in a variable -- the universe comes from `scripts/data/source-rules.ts`'s `RULE_IDS` now (see `sourceRulesUniverse()` below), and a `Set` that nothing read was itself an unreachable-code finding waiting to happen (`@typescript-eslint/no-unused-vars`, caught 2026-09-24).
 
 // Floors. Today the config resolves 35 registered / 30 enabled. These leave room for a deliberate removal and none at all for the config resolving to nothing, which is the failure that would otherwise exit 0 while proving nothing -- indistinguishable from a healthy repo.
 const MIN_REGISTERED = 30;
@@ -436,8 +436,7 @@ const severityOf = (value) => {
  * blocks (last-match-wins across 6 modules). It now comes from
  * `scripts/data/source-rules.ts`'s flat `RULE_IDS` -- the same table
  * `check-source-rules.ts` (the host gate) runs against the real tree -- via
- * `sourceRulesUniverse()` below. `NAMESPACES` stays as documentation of which
- * plugin prefixes this gate ever covers.
+ * `sourceRulesUniverse()` below.
  *
  * Pulling the registered rule OBJECT for isolated mode used to mean digging
  * `block.plugins[ns].rules[name]` out of an eslint.config.js block. It is now
