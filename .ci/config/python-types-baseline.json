@@ -3803,13 +3803,6 @@
       "message": "Item \"None\" of \"IO[Any] | None\" has no attribute \"write\""
     },
     {
-      "id": "42e2dd7840ed3c76",
-      "file": ".claude/rediacc_hooks/tests/test_wl_report_queue.py",
-      "code": "union-attr",
-      "count": 5,
-      "message": "Item \"None\" of \"Any | None\" has no attribute \"out\""
-    },
-    {
       "id": "d7e2e3be2beba728",
       "file": ".claude/rediacc_hooks/tests/test_wl_state_document.py",
       "code": "assignment",
