@@ -549,7 +549,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-state-md-session-isolation.md` | compacted | 40 | 0 | 0 | 2556 |
 | `agent/plans/PLAN-stop-always-tier.md` | compacted | 39 | 0 | 0 | 3145 |
 | `agent/plans/PLAN-stop-hook-cadence.md` | compacted | 38 | 0 | 0 | 2622 |
-| `agent/plans/PLAN-stop-hook-cap-saturated-wait.md` | approved | 227 | 1 | 0 | 21408 |
+| `agent/plans/PLAN-stop-hook-cap-saturated-wait.md` | approved | 227 | 1 | 0 | 22389 |
 | `agent/plans/PLAN-stop-hook-continuity.md` | executing | 426 | 0 | 21 | 47741 |
 | `agent/plans/PLAN-stop-hook-overhaul.md` | ready | 112 | 0 | 9 | 11800 |
 | `agent/plans/PLAN-stop-hook-refactor-enforcement.md` | executing | 330 | 1 | 16 | 39507 |
