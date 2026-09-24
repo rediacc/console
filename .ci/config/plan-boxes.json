@@ -252,9 +252,16 @@
       "owner": "unowned",
       "folder": "agent/plans",
       "moved_at": "2026-09-21",
-      "open": 0,
+      "open": 6,
       "done": 0,
-      "open_sigs": [],
+      "open_sigs": [
+        "10b968a9",
+        "54eb6912",
+        "59850222",
+        "d8a313a7",
+        "f67db57d",
+        "fa72523d"
+      ],
       "done_sigs": []
     },
     "agent/plans/PLAN-citation-fragility.md": {
@@ -1394,9 +1401,17 @@
       "owner": "99ccf057",
       "folder": "agent/plans",
       "moved_at": "2026-09-21",
-      "open": 0,
+      "open": 7,
       "done": 0,
-      "open_sigs": [],
+      "open_sigs": [
+        "33c18d35",
+        "4da18b17",
+        "7717a198",
+        "a59805d9",
+        "d8dae661",
+        "dd8a45ec",
+        "ef0d8159"
+      ],
       "done_sigs": []
     },
     "agent/plans/PLAN-typecheck-orphan-packages.md": {
@@ -2459,6 +2474,23 @@
         "f9d0ddf8",
         "fcb9be74"
       ]
+    },
+    "agent/plans/_done/PLAN-stop-hook-plan-agent-check-declined.md": {
+      "status": "superseded",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "",
+      "open": 5,
+      "done": 0,
+      "open_sigs": [
+        "06fcc45a",
+        "12482630",
+        "71c567df",
+        "bf550485",
+        "edc40d5b"
+      ],
+      "done_sigs": [],
+      "ruling": "#373907ed"
     },
     "agent/plans/_done/PLAN-stop-hook-plan-backlog-nudge.md": {
       "status": "done",

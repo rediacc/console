@@ -187,3 +187,24 @@ and falls back to the local ref comparison, but capture the stderr once.
 a legitimate opt-out, so this plan does not set it — but it means `ci_trouble`, `ci_queue_state` and `pr_body_freshness` have ALL been dead in this checkout. That is a separate ruling for the operator, and possibly a bigger one than this plan.
 5. Does the harness drop background tasks across compaction? If so this gate
 fires after every compaction — correct behaviour, but worth knowing first.
+
+## Coverage as of 2026-09-24
+
+- §6 first half (post-bash chain audited): DONE, `.ci/rediacc_ci/quality/hook_integrity.py:51-56`.
+- §7 banned-form refusal: covered by `.claude/rediacc_hooks/guards/block_ci_polling.py` (pre-bash), by the Stop hook's `adhoc-watch` (`.claude/hooks/stop/wl_checks.py:3346-3357`), and by the `hand-rolled-ci-poll` row in `.claude/hooks/lib/sanctioned.py:43-53`.
+- §8 SKILL.md: `.claude/skills/ci-watch/SKILL.md:14-22` already names ci-trace and says ad-hoc watches block. `.claude/agents/pr-babysitter.md:62` names ci-trace. `:105` and `:187` do not.
+
+## Boxes
+
+- [ ] Receipts: `.ci/scripts/ci/ci-trace.py` appends `{at, sha, exit, reason, jobs, runs, session, tool}` to `<worklist>.ciread` (path from `wl_core.worklist_for`, JSONL, cap 200) on every terminal exit path.
+      CONTROL: extend `ci-trace.py --selftest`. A green shim writes an `exit 0` row. A red shim's `jobs` names every failing job. Mutation: delete the write, and the selftest must go red.
+- [ ] Push ledger: new `.claude/hooks/post-bash/record_push.py`, registered in `.claude/rediacc_hooks/lifecycle.py` "post-bash" before `trapguard`. It records `{at, sha, branch, session}` to `<worklist>.cipush-<sid8>` (cap 20), and only when `origin/<dest>` equals HEAD afterwards. It excludes submodule pushes and matches only at a command position (`shellscan`). Add it to `scripts/data/hook-inventory-baseline.json`.
+      CONTROL: new `.claude/rediacc_hooks/tests/test_hooks_record_push.py`. It fires on a successful push and on a push with `-c k=v` flags. It stays silent on a rejected push, a submodule push, and prose. It writes only to its own session's file. `check:ci-hook-integrity` reds when the file is deleted.
+- [ ] Probe §14 items 2, 3 and 5 (teammate `session_id`, failed-push `tool_response`, background tasks across compaction). Record the answers in this plan before the next box.
+      CONTROL: the answers cite probe rows, not docstrings.
+- [ ] Join: `wl_ci.unwatched_push(...)` per §3, with a ceiling of 3 blocks then a downgrade note. Call it from `wl_checks.py` after the adhoc-watch block and before `ci_trouble` (`:3361`). A hook error raises `vadd(..., always=True)` and never passes silently.
+      CONTROL in `.claude/rediacc_hooks/tests/test_wl_ci_status.py`: the §9 cases, renumbered after the last `test_1xx`. Required: a peer-session ledger entry is SILENT, and with no ledger a `gh` shim printing `GH-WAS-CALLED` is never called.
+- [ ] Widen `hands_out_loop` (`.ci/rediacc_ci/quality/ci_watch_recipe.py:154`) to accept `status = completed` with or without the dot and the quotes. In the same commit, replace `.claude/agents/pr-babysitter.md:105` with `ci-trace.py --wait --until-final` and fix `:187`, and add the push-then-watch line to `.claude/commands/pr-babysit.md`.
+      CONTROL: the gate's own selftest plants the old `:105` line and requires a red. The tree is green after the doc edits.
+- [ ] Add the §7 variable-assigned-loop row to `.claude/hooks/lib/sanctioned.py`, with `example` and `counter`, and write the stated residual into this plan.
+      CONTROL: `check_sanctioned_registry.py` re-runs the new example and counter.
