@@ -332,6 +332,16 @@
       "open_sigs": [],
       "done_sigs": []
     },
+    "agent/plans/PLAN-cloudflare-proxy.md": {
+      "status": "proposed",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 0,
+      "done": 0,
+      "open_sigs": [],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-cold-path.md": {
       "status": "compacted",
       "owner": "unowned",
@@ -1143,6 +1153,38 @@
       "open": 0,
       "done": 0,
       "open_sigs": [],
+      "done_sigs": []
+    },
+    "agent/plans/PLAN-stop-hook-continuity.md": {
+      "status": "draft",
+      "owner": "unowned",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 21,
+      "done": 0,
+      "open_sigs": [
+        "01767e01",
+        "02fb0d3e",
+        "06c523a4",
+        "0cadae94",
+        "2f786002",
+        "3805f479",
+        "40612819",
+        "4b9acaad",
+        "5df69695",
+        "637e15e6",
+        "713c4774",
+        "77b43ac2",
+        "7fab5d30",
+        "921ba40d",
+        "99c04585",
+        "a05ce080",
+        "bbdd6819",
+        "e65befae",
+        "ebf667ac",
+        "f2999444",
+        "ffe447ad"
+      ],
       "done_sigs": []
     },
     "agent/plans/PLAN-stop-hook-overhaul.md": {

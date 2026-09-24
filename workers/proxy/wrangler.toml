@@ -26,7 +26,11 @@ image_build_context = "../.."
 # pool and a decrypted config, so `lite` (256 MiB) is too small for the runtime,
 # while anything larger pays for memory this workload does not use.
 instance_type = "basic"
-max_instances = 20
+# The only real cost risk is instances pinned awake: 20 basic instances 24/7 is
+# about $150/month, 2 is about $15. One instance serves one team of one org, so 2
+# covers the trial; raise it deliberately when more teams use the proxy
+# (agent/plans/PLAN-cloudflare-proxy.md section 4).
+max_instances = 2
 
 [[durable_objects.bindings]]
 name = "EXECUTOR"

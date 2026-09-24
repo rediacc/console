@@ -1,5 +1,5 @@
 ---
-description: Surface every decision currently waiting on the operator and put them as structured multiple-choice questions, so the operator never has to write a long prompt to be asked. Collects the three places a pending decision hides - `[?]` worklist deferrals with their DEFAULT/WHY/HOW, DECISIONS logged in the active round log for post-hoc veto, and gate/finding choices this session parked - then asks in batches with a recommended option first. Free text after the command narrows the scope to matching items.
+description: Surface every decision currently waiting on the operator and put them as structured multiple-choice questions, so the operator never has to write a long prompt to be asked. Collects the four places a pending decision hides - `[?]` worklist deferrals with their DEFAULT/WHY/HOW, DECISIONS logged in the active round log for post-hoc veto, gate/finding choices this session parked, and the operator-owned "Yours" lines of the last Remaining section - then asks in batches with a recommended option first. Free text after the command narrows the scope to matching items.
 argument-hint: "[filter: a substring, an item id, or a topic; omit to ask about everything pending]"
 allowed-tools: Bash(.claude/hooks/stop/worklist.py --list --open:*), Bash(git branch:*), Bash(ls:*), Bash(grep:*), Bash(date:*)
 ---
@@ -9,14 +9,14 @@ allowed-tools: Bash(.claude/hooks/stop/worklist.py --list --open:*), Bash(git br
 - Branch: !`git branch --show-current`
 - UTC now: !`date -u +%Y-%m-%dT%H:%MZ`
 - Open worklist items (`[?]` = already parked for you, `[ ]` = open work): !`.claude/hooks/stop/worklist.py --list --open 2>/dev/null | head -40 || echo '(worklist unavailable)'`
-- Round log with DECISIONS awaiting veto: !`ls -t ~/.claude/projects/-home-muhammed-console/reports/pr-babysit-*.md 2>/dev/null | head -1 || echo '(no active round log)'`
-- DECISIONS recorded in it: !`f=$(ls -t ~/.claude/projects/-home-muhammed-console/reports/pr-babysit-*.md 2>/dev/null | head -1); [ -n "$f" ] && grep -c '^- \*\*' "$f" 2>/dev/null || echo 0`
+- Round log with DECISIONS awaiting veto: !`ls -t ~/.claude/projects/$(pwd | sed 's/[^A-Za-z0-9]/-/g')/reports/pr-babysit-*.md 2>/dev/null | head -1 || echo '(no active round log)'`
+- DECISIONS recorded in it: !`f=$(ls -t ~/.claude/projects/$(pwd | sed 's/[^A-Za-z0-9]/-/g')/reports/pr-babysit-*.md 2>/dev/null | head -1); [ -n "$f" ] && grep -cE '^- (DECISION|[0-9]{4}-[0-9]{2}-[0-9]{2} OPERATOR RULING)' "$f" 2>/dev/null || echo 0`
 
 ## What to do
 
 **Ask. Do not implement, do not re-litigate, do not report status.** This command exists because the operator should not have to compose a prompt to be consulted. Its entire output is questions, then whatever the answers set in motion.
 
-### 1. Collect, from all three places a decision hides
+### 1. Collect, from all four places a decision hides
 
 1. **`[?]` worklist deferrals.** Already parked for the operator, each carrying
 `DEFAULT:`/`WHY:`/`HOW:`. Their DEFAULT executes on a timer, so an unanswered one is a decision made by the clock. Those are the highest-value asks.
@@ -24,6 +24,8 @@ allowed-tools: Bash(.claude/hooks/stop/worklist.py --list --open:*), Bash(git br
 in-context tier-3 rule, recorded for **post-hoc veto**. The operator has never seen them; that is the point of asking.
 3. **Choices this session made silently.** A default taken, a scope narrowed, an
 alternative rejected. If answering differently would change what ships, it belongs here even when nothing tracked it.
+4. **"Yours" lines in the session's last `## Remaining` section.** Anything this
+session told the operator was theirs to do (create a token, run a command in their own terminal, make a fork, approve a spend) is a pending ask even when no `[?]` tracks it. Offer to do it where the session can (with the credentials the operator already authorized), and ask who does it where only the operator can.
 
 If `$ARGUMENTS` is non-empty, keep only items matching it (substring, item id, or topic) and say how many were filtered out.
 
