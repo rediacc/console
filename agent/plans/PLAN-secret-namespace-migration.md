@@ -510,6 +510,26 @@ decision 3 pay off: the old names are retired by deletion, never by a rename fla
 3. **Revoke the predecessor backup R2 credential** (identify it via the Cloudflare audit
 log) and **narrow `backup-s3-20260901T103133Z`** from account-wide R2 write to the backup buckets only.
 
+   **RUN SHEET, 2026-09-24 (operator ruling: write the sheet first, no live change).** Read by listing `/accounts/fa51e4a18d553c30e1633288e9733d04/tokens` and `/user/tokens` with the Global API Key (metadata only), then matching each token id against every Bitwarden `ci-shared` value and `private/account/.env` in-process, because an R2 S3 access-key id IS its token id. Only R2 S3 use can be proven this way; an API token is referenced by its secret, so "unreferenced" says nothing about the management tokens.
+
+   | Token (id prefix) | Kind | Issued | Referenced by | Action |
+   |---|---|---|---|---|
+   | `backup-s3-20260901T103133Z` (605e3918) | account, Workers R2 Storage Write | 2026-09-01 | `ACCOUNT_BACKUP_S3_ACCESS_KEY_ID` | KEEP, narrow to the six backup buckets |
+   | `rediacc-r2-20260902T102203Z` (65f4bfb8) | account, R2 Storage Write | 2026-09-02 | `CLOUDFLARE_R2_ACCESS_KEY_ID` | keep (cf-r2 active) |
+   | `ci-www-media-rw` (be887f19) | user, bucket-item RW | 2026-07-01 | `CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID` | keep |
+   | `cf-r2-backup` (deb56d2e) | user, bucket-item RW | 2026-08-18 | nothing | **REVOKE: the predecessor backup credential** |
+   | `Github-R2` (73c67964) | account, R2 Storage Write | 2026-04-04 | nothing | revoke (cf-r2 grace since 2026-04-18) |
+   | `rediacc-r2-20260411T154652Z` (5afdeb13) | account, R2 Storage Write | 2026-04-11 | nothing | revoke (superseded by the 0902 version) |
+   | `Local-R2-Dev` (f30764f8) | account, R2 Storage Write | 2026-04-01 | nothing | revoke |
+   | `rdc-storage` (ce7a9d1f) | user, R2 Storage Write + Data Catalog | 2026-03-11 | nothing | revoke after confirming no rdc datastore config names it |
+
+   Commands, once the operator says revoke (Global API Key headers `X-Auth-Key`/`X-Auth-Email`):
+   - account token: `DELETE /accounts/fa51e4a18d553c30e1633288e9733d04/tokens/<id>`; user token: `DELETE /user/tokens/<id>`.
+   - narrow: `PUT /accounts/fa51e4a18d553c30e1633288e9733d04/tokens/605e3918...` with one policy per bucket, resource `com.cloudflare.edge.r2.bucket.fa51e4a18d553c30e1633288e9733d04_<jurisdiction>_<bucket>` (jurisdiction `eu` for `rediacc-backups-eu` and `edge-rediacc-backups-eu`, `default` for the other four), permission group `Workers R2 Storage Bucket Item Write`. The rotation tool's policy builder already derives the jurisdiction (defect 2 above), so `./run.sh rotation rotate` with a bucket-scoped declaration is the preferred path over a hand PUT.
+   - verify: an `aws s3 ls` with the backup credential on each of the six buckets succeeds, and a list on `rediacc-configs-bench` is refused.
+
+   Also seen and NOT R2: five management-shaped tokens (`rotation-management` x2, `Rotation-Management`, `auto-rotation-management` x2) plus `temp-ses-sync` and `Edit zone DNS`. The `auto-rotation-management` pair (c79a22f0, 932b137c) were minted 2026-04-08 by `scripts/ops/lib/cf-auth.sh` (name at `:135`) and never self-destructed; `deploy-bench.sh:83` now traps `self_destruct_credentials` on EXIT, and five bench runs on 2026-09-24 (two of them failing) left no new one, so these are April leaks: add both to the revoke list.
+
 4. **Decide the 3 SMTP orphans** — `SMTP_HOST`, `SMTP_PASS`, `SMTP_USER` are org secrets no
 workflow references, mirroring `SMTP_*` fields in the personal vault. Delete them, or document what outside CI uses them.
 

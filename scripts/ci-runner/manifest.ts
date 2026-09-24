@@ -20,9 +20,9 @@
  * `qualityGateTest` set against the on-disk glob the battery itself uses.
  */
 
+export type { CiCoverage, GateSpec } from './gate-spec.js';
 // RE-EXPORTED, not redefined: every existing importer of GateSpec/CiCoverage/ paritySurface keeps working unchanged, which is what makes this split non-behavioural and safe to land on its own.
 export { paritySurface } from './surface.js';
-export type { CiCoverage, GateSpec } from './gate-spec.js';
 
 import type { GateSpec } from './gate-spec.js';
 
@@ -1606,6 +1606,19 @@ export const GATES: readonly GateSpec[] = [
       step: 'GitHub Actions variables',
     },
   },
+  {
+    // agent/plans/PLAN-account-env-to-bws.md T19: private/account/.env and .env.bench stay retired. Shrink-only baseline of the mentions that predate it, plus the dotenv-table ceiling and the token-path rule.
+    id: 'check:ci-account-env-retired',
+    run: 'npm run check:ci-account-env-retired',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_account_env_retired.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-security',
+      step: 'Account env files retired',
+    },
+  },
   // <<< gen-manifest: region 14
   {
     // The other half of `agent/plans/PLAN-bws-rotation-on-failure.md`. That plan deleted `.ci/config/bws-token-expiry.json` and its one reader, on the ruling that a hand-written date is a second source of truth nothing can check, and that a non-zero `bws` is the only signal there is. What remains is a PROCEDURE, and this asserts the three claims that procedure rests on: one
@@ -2033,7 +2046,7 @@ export const GATES: readonly GateSpec[] = [
   {
     // The same question as its neighbour above, asked of the OTHER tree under agent/: a plan has had a folder, two clocks and a stub since the migration, while `agent/<session>/` had nothing at all. The Stop hook already computes which session directories are ABANDONED on every stop and deliberately moves none of them -- a hook that moved a peer's document as a side effect would
     // destroy the one guarantee the per-session split exists for -- so the label accumulated until 18 of 19 directories were unarchived, the oldest 43.9 days idle. This gate is the half that can be responsible: read-only, and its remedy is one `git mv` a human runs by name.
-    // NO `paths:` DELIBERATELY. Whether a directory is overdue is a property of the CALENDAR, not of any diff, so an entry without paths is always selected; a path table here would make `--changed` drop the gate on every PR that does not happen to touch agent/, which is the one condition under which it would never fire. Lane quality-branch for its neighbours' reason: that job
+    // NO `paths:` DELIBERATELY. Whether a directory is overdue is a property of the CALENDAR, not of any diff, so an entry without paths is always selected; a path table here would make `--changed` drop the gate on every PR that does not happen to touch agent/, which is the one condition under which it does not fire. Lane quality-branch for its neighbours' reason: that job
     // has no `- id: setup`, so per invariant 11 the step is hand-written rather than emitted into a gate-bind region.
     id: 'check:ci-agent-session-archival',
     run: 'npm run check:ci-agent-session-archival',
