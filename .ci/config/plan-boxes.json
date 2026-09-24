@@ -424,30 +424,6 @@
       "open_sigs": [],
       "done_sigs": []
     },
-    "agent/plans/PLAN-fix-console-ci-5day-failure.md": {
-      "status": "draft",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 13,
-      "done": 0,
-      "open_sigs": [
-        "1dcddd87",
-        "61fc13bb",
-        "6fe61842",
-        "7f611233",
-        "904ffbc2",
-        "962d5f35",
-        "b6fb6c28",
-        "b8e80be1",
-        "b9743d81",
-        "be8d374f",
-        "d06ce358",
-        "edf13c0b",
-        "f65f8bee"
-      ],
-      "done_sigs": []
-    },
     "agent/plans/PLAN-fix-german-translation-artifacts.md": {
       "status": "compacted",
       "owner": "unowned",
@@ -897,17 +873,18 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 6,
-      "done": 0,
+      "open": 1,
+      "done": 5,
       "open_sigs": [
+        "d2157a79"
+      ],
+      "done_sigs": [
         "01a4718b",
         "3c926cc8",
         "734eba3a",
         "7cc30b07",
-        "9b97d598",
-        "d2157a79"
-      ],
-      "done_sigs": []
+        "9b97d598"
+      ]
     },
     "agent/plans/PLAN-require-testid-sweep.md": {
       "status": "compacted",
@@ -1148,14 +1125,13 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "2026-09-21",
-      "open": 2,
-      "done": 7,
-      "open_sigs": [
-        "071fec08",
-        "18dd4873"
-      ],
+      "open": 0,
+      "done": 9,
+      "open_sigs": [],
       "done_sigs": [
+        "071fec08",
         "0a3321f6",
+        "18dd4873",
         "6e5642b2",
         "823d5963",
         "909cdb2d",
@@ -1195,33 +1171,28 @@
     },
     "agent/plans/PLAN-stop-hook-rulings-campaign.md": {
       "status": "draft",
-      "owner": "unowned",
+      "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 21,
+      "open": 16,
       "done": 1,
       "open_sigs": [
-        "06fcc45a",
         "0f583c13",
-        "12482630",
+        "15eb2fa3",
         "1e2bab22",
-        "24a0b107",
+        "2423a3bb",
         "27b7c508",
-        "321c902b",
-        "338e072b",
         "4b9439b7",
         "4cfdbab9",
         "5fb3419d",
-        "64c0be87",
-        "71c567df",
+        "60978fd3",
+        "82a0f082",
         "9e32e800",
         "ab3e3872",
-        "bf550485",
         "d2374200",
         "dbdc8bbc",
         "e97f9440",
-        "eb55a6bd",
-        "edc40d5b"
+        "eb55a6bd"
       ],
       "done_sigs": [
         "c63cd990"
@@ -1941,6 +1912,31 @@
         "e136a3fe",
         "f281ea08"
       ]
+    },
+    "agent/plans/_done/PLAN-fix-console-ci-5day-failure.md": {
+      "status": "superseded",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "",
+      "open": 13,
+      "done": 0,
+      "open_sigs": [
+        "1dcddd87",
+        "61fc13bb",
+        "6fe61842",
+        "7f611233",
+        "904ffbc2",
+        "962d5f35",
+        "b6fb6c28",
+        "b8e80be1",
+        "b9743d81",
+        "be8d374f",
+        "d06ce358",
+        "edf13c0b",
+        "f65f8bee"
+      ],
+      "done_sigs": [],
+      "ruling": "#d9785655"
     },
     "agent/plans/_done/PLAN-fix-guard-repo-context.md": {
       "status": "done",

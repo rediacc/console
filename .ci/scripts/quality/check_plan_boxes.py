@@ -35,10 +35,16 @@ cited "A5 in 04-decisions.md", where `grep -cE 'A5'` on that file returns 0 -- i
   G-A2  the archive is APPEND-ONLY and takes only byte-identical renames. `git diff
       -M100% BASE...HEAD` compares TREES, so editing a plan and archiving it in a
       separate commit is still R09x -- there is no commit-ordering dodge.
-  G-A3  a FINISHED `Status:` may not sit over open boxes. This INVERTS the Stop hook's
-      own frozenset: there the status means "stop nagging", here it means "that
-      header switches the advisory off over live boxes". Same constant, imported,
-      so the two halves cannot drift.
+  G-A3  a FINISHED `Status:` may sit over open boxes ONLY under a `Ruling:` header line
+      that re-resolves: a CLOSED worklist item (`#<id>`) or an operator quote found in
+      a committed non-plan file. This INVERTS the Stop hook's own frozenset: there the
+      status means "stop nagging", here it means "that header switches the advisory
+      off over live boxes", so it must name the decision that closed them. Same
+      constant and the same resolver (`wl_planfile.resolve_ruling`), imported, so the
+      two halves cannot drift. Runs on EVERY plan, every run, with or without a base,
+      because a citation can dangle later (worklist #87cff418, 2026-09-24). A plan the
+      BASE ledger records as ruled may later lose those boxes (the `_done/` sweeper)
+      without G-A1 or G-A5 calling it a deletion.
   G-A4  a plan this branch ADDS with open boxes must resolve an `Owner:`, because the
       advisory only chases plans a session owns.
   G-A5  a plan may NEVER be deleted wholesale while deleting it loses a box. Age
@@ -189,6 +195,9 @@ def scan(root: Path, prior: dict | None = None) -> dict:
             "open_sigs": sorted({sig(t) for t in open_t}),
             "done_sigs": sorted({sig(t) for t in done_t}),
         }
+        # EMITTED ONLY WHEN PRESENT, so the ledger rows of the ~150 plans without one stay byte-identical. It is COMPARED by G-A0 and read back from the BASE ledger by G-A1/G-A5, which is what lets a ruled plan's boxes leave the tree later (the `_done/` sweeper) without reading as a deletion.
+        if ruling := PF.ruling_line(text):
+            out[rel]["ruling"] = ruling
     return out
 
 
@@ -251,7 +260,7 @@ def diff_problems(scanned: dict, ledger: dict) -> list[str]:
         out.extend(
             f"{rel}: {field} is {got.get(field)!r}, ledger says {want.get(field)!r}"
             # `.get` on BOTH sides: the selftest builds rows by hand and a KeyError there would be a crash rather than a finding. `scan()` always sets every one of these, which the control "scan emits the lifecycle keys" proves against the real tree.
-            for field in ("status", "owner", "folder", "open", "done")
+            for field in ("status", "owner", "folder", "open", "done", "ruling")
             if got.get(field) != want.get(field)
         )
         for field in ("open_sigs", "done_sigs"):
@@ -394,12 +403,6 @@ def _name_status(base: str) -> list[tuple[str, str]]:
     return rows
 
 
-# THE PREDICATE IS `plan_lifecycle.is_plan_path`, NOT A PREFIX. `startswith("agent/PLAN-")` was the whole corpus while plans lived at the agent root; it misses every plan under `agent/plans/**` and it also matched `agent/PLAN-x.md/whatever`, which nothing writes but which a prefix cannot refuse. One predicate, shared with the folder gate, so the two cannot disagree about what a
-# plan is.
-def _touched_plans(base: str) -> set[str]:
-    return {p for st, p in _name_status(base) if st != "D" and PL.is_plan_path(p)}
-
-
 def _known_at_base(base: str, rel: str) -> str:
     """The plan folder that already held a file of this BASENAME at `base`, or "".
 
@@ -450,6 +453,47 @@ def _content_age_days(rel: str, base: str) -> int | None:
     if then.tzinfo is None:
         then = then.replace(tzinfo=dt.UTC)
     return (dt.datetime.now(dt.UTC) - then).days
+
+
+def ruled_at_base(row: dict) -> bool:
+    """True when a BASE ledger row records a finished plan closed under a `Ruling:`."""
+    return str(row.get("status") or "") in FINISHED and bool(row.get("ruling"))
+
+
+def ruling_problems(scanned: dict, root: Path, states: dict | None) -> tuple[list[str], int]:
+    """G-A3, on every plan and every run: (problems, finished plans over open boxes judged).
+
+    A FINISHED `Status:` switches every counting reader off (the Stop hook's advisory, wl_planenforce's clock, check:ci-plan-implementation), so over open boxes it is either an honest close of DECIDED work or a hidden task. The difference is a `Ruling:` line that re-resolves -- `wl_planfile.resolve_ruling`, imported, so the hook and this gate give one answer. Checked without a base and on
+    plans this branch never touched, because "re-resolves" is a claim about now: a ruling whose worklist item was tombstoned since, or whose quote was edited out of its file, is a dangling citation today whoever caused it.
+
+    `states` is `wl_planfile.store_item_states(root)` in production; None defers the read until a plan needs it, so a tree with no ruled plan never opens the store.
+    """
+    problems: list[str] = []
+    judged = 0
+    for rel in sorted(scanned):
+        rec = scanned[rel]
+        if rec.get("status") not in FINISHED or not rec.get("open"):
+            continue
+        judged += 1
+        if states is None:
+            states = PF.store_item_states(root)
+        try:
+            text = (root / rel).read_text(encoding="utf-8", errors="replace")
+        except OSError as exc:
+            problems.append(f"{rel}: cannot read it to check its `Ruling:` ({exc})")
+            continue
+        ok, why = PF.resolve_ruling(root, rel, text, states)
+        if ok:
+            continue
+        problems.append(
+            f"{rel} says Status: {rec['status']} over {rec['open']} open box(es), and {why}. "
+            f"A finished header switches every plan check off for this file, so over open "
+            f"boxes it must name the decision that closed them. If the operator decided these "
+            f"boxes will not be done, add `Ruling: #<closed worklist id>` (or "
+            f'`Ruling: "<operator quote>" in <path>`) to the header. Otherwise tick the boxes '
+            f"or reopen the Status"
+        )
+    return problems, judged
 
 
 def transition_problems(scanned: dict, base: str) -> tuple[list[str], int]:
@@ -508,8 +552,7 @@ def transition_problems(scanned: dict, base: str) -> tuple[list[str], int]:
     # `.ci/scripts/quality/check-plan-housekeeping.sh:51` now says "THE REMEDY IS NO LONGER 'DELETE IT', AND THAT WORD IS GONE ON PURPOSE", and .ci/config/plan-lifecycle.json calls compaction THE THIRD DOOR.
     #
     # The doors that remain all PRESERVE the box, so no deadlock survives the change: - `worklist.py --plan-compact --park` keeps the plan at its own path and copies every box line BYTE-IDENTICALLY (wl_planrec.py's property 2 exists precisely so a compaction cannot look like a disappearance). `--park` rather than plain `--plan-compact` because `compacted` is in FINISHED_STATES and
-    # G-A3 refuses a
-    #     finished status over open boxes; `parked` is not, deliberately.
+    # G-A3 refuses a finished status over open boxes unless a `Ruling:` licenses them; `parked` is not finished, deliberately.
     # - `git mv` untouched into the archive, which G-A2 accepts at R100. - tick the box, or move it to a live plan.
     #
     # WHAT THE AMNESTY WAS COSTING, measured on a real scratch tree before it was removed: a 41-day-old plan deleted wholesale, carrying one open box that survived nowhere, exited 0 -- and the success line ASSERTED "21 box(es) open at <base> all survive at HEAD" when 22 were open and one had just been destroyed. An instrument that reports work it did not do is the failure this file
@@ -531,6 +574,9 @@ def transition_problems(scanned: dict, base: str) -> tuple[list[str], int]:
             # Counted as compared and as SURVIVING: an R100 rename means the box line is byte-identical in agent/archive/plans/, and G-A2 keeps that directory append-only, so it is findable rather than gone.
             if archived_here:
                 continue
+            # DECIDED, NOT DONE, AT BASE: the committed base ledger says this plan was finished under a `Ruling:` that G-A3 checked when it landed. Its open boxes were closed by that decision, so a later tick, rewrite or sweep of the file is not a lost task. Read from the BASE ledger, which no working tree can rewrite, so adding a ruling on this branch buys nothing here.
+            if ruled_at_base(rec):
+                continue
             if bsig in head_open or bsig in head_done:
                 continue
             if _moved_not_deleted(rel, bsig):
@@ -547,7 +593,7 @@ def transition_problems(scanned: dict, base: str) -> tuple[list[str], int]:
 
     # G-A5: a plan may NEVER be deleted wholesale while deleting it loses a box. Age is reported for context and grants nothing. If every box it held survives in another plan, the file is a husk and removing it costs nothing; firing there would punish exactly the tidying this whole check wants.
     for rel in sorted(set(base_plans) - set(scanned)):
-        if _archived(rel):
+        if _archived(rel) or ruled_at_base(base_plans[rel]):
             continue
         lost = [
             g
@@ -576,18 +622,7 @@ def transition_problems(scanned: dict, base: str) -> tuple[list[str], int]:
             f"{ARCHIVE_DIR}/, or compact it. Deleting it does not finish the work, it hides it"
         )
 
-    # G-A3/A4 are properties of HEAD alone, but only for plans this branch touched -- judging a plan the branch never opened would be a demand about somebody
-    # else's file.
-    touched = _touched_plans(base)
-    for rel in sorted(touched & set(scanned)):
-        rec = scanned[rel]
-        if rec["status"] in FINISHED and rec["open"]:
-            problems.append(
-                f"{rel} says Status: {rec['status']} but has {rec['open']} open box(es). "
-                f"The Stop hook exempts finished plans from its advisory, so that header "
-                f"switches the check off for this file -- which is why CI treats it as a "
-                f"red rather than as an exemption"
-            )
+    # G-A3 left this function on 2026-09-24 (worklist #87cff418): it is a property of HEAD alone and now runs on EVERY plan, base or not, in `ruling_problems`. G-A4 stays here because "new on this branch" needs a base.
     for rel in sorted(_added_plans(base) & set(scanned)):
         if scanned[rel]["open"] and scanned[rel]["owner"] == "unowned":
             problems.append(
@@ -596,6 +631,148 @@ def transition_problems(scanned: dict, base: str) -> tuple[list[str], int]:
                 f"blocks on plans a session owns, so unowned debt is debt nothing chases"
             )
     return problems, compared
+
+
+def _selftest_rulings(open_row: dict, tp) -> int:
+    """G-A3 and the ruled-at-base exemption, in both directions, against real files.
+
+    The plans and the quoted file are written to a scratch directory and read back through `ruling_problems`, so the header parser, the quote reader and the worklist fold are the production code rather than stubs. The store case writes REAL jsonl events and lets `wl_planfile.store_item_states` fold them, because a resolver fed only a hand-built dict proves nothing about the reader CI uses.
+    """
+    import tempfile  # noqa: PLC0415 -- selftest only
+
+    bad = 0
+    fin = "superseded"
+    states = {"aaaa1111": "x", "bbbb2222": "?", "cccc3333": " ", "aaaabbbbcccc": "x"}
+    body = "\n\n## Tasks\n\n- [ ] a decided task that is long enough to parse as one\n"
+
+    def plan(status: str, ruling: str | None) -> str:
+        head = f"# PLAN: fixture\nStatus: {status}\nOwner: abcd1234\n"
+        return head + (f"Ruling: {ruling}\n" if ruling is not None else "") + body
+
+    quote = "Drop that branch, it is not our priority right now"
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        (root / "agent" / "plans").mkdir(parents=True)
+        (root / "docs").mkdir()
+        (root / "docs" / "decisions.md").write_text(
+            "The operator said: Drop that branch,\n  it is not our priority right now.\n",
+            encoding="utf-8",
+        )
+        (root / "agent" / "plans" / "PLAN-other.md").write_text(quote, encoding="utf-8")
+
+        def judge(status: str, ruling: str | None, n_open: int = 1, st=states):
+            rel = "agent/plans/PLAN-x.md"
+            (root / rel).write_text(plan(status, ruling), encoding="utf-8")
+            row = dict(open_row, status=status, open=n_open)
+            return ruling_problems({rel: row}, root, st)
+
+        refused = [
+            ("a finished Status with NO Ruling line", None, "no `Ruling:` line"),
+            ("a Ruling citing an item that does not exist", "#deadbeef", "not an item"),
+            ("a Ruling citing a [?] item", "#bbbb2222", "question, not a decision"),
+            ("a Ruling citing a still-open item", "#cccc3333", "question, not a decision"),
+            ("one dangling id beside a good one", "#aaaa1111 and #deadbeef", "not an item"),
+            ("a Ruling with no reference at all", "the operator said so", "cites neither"),
+            (
+                "a quote that does not occur in its file",
+                f'"{quote} at all" in docs/decisions.md',
+                "does not occur",
+            ),
+            (
+                "a quote whose source is a plan",
+                f'"{quote}" in agent/plans/PLAN-other.md',
+                "is a plan",
+            ),
+            ("a quote whose file is missing", f'"{quote}" in docs/nope.md', "not a readable"),
+            ("a quote path escaping the root", f'"{quote}" in ../etc/passwd', "not a readable"),
+        ]
+        for label, ruling, needle in refused:
+            got, judged = judge(fin, ruling)
+            ok = judged == 1 and any(needle in g for g in got)
+            print(f"  {'PASS' if ok else 'FAIL'}  G-A3: {label} is refused")
+            if not ok:
+                bad += 1
+                print(f"        got {got}")
+
+        accepted = [
+            ("a Ruling citing a CLOSED worklist item", "#aaaa1111"),
+            ("a Ruling citing a 12-character migrated id", "#aaaabbbbcccc"),
+            ("a quote that occurs, reflowed, in its file", f'"{quote}" in docs/decisions.md'),
+            ("an id and a quote that both resolve", f'#aaaa1111; "{quote}" in `docs/decisions.md`'),
+        ]
+        for label, ruling in accepted:
+            got, judged = judge(fin, ruling)
+            ok = judged == 1 and got == []
+            print(f"  {'PASS' if ok else 'FAIL'}  G-A3 CONTROL: {label} is accepted")
+            if not ok:
+                bad += 1
+                print(f"        got {got}")
+
+        silent = [
+            ("an in-scope status over open boxes is not judged", "executing", None, 1),
+            ("a parked plan is not judged: it stays on every clock", "parked", None, 1),
+            ("a finished plan with nothing open is not judged", fin, None, 0),
+        ]
+        for label, status, ruling, n_open in silent:
+            got, judged = judge(status, ruling, n_open)
+            ok = judged == 0 and got == []
+            print(f"  {'PASS' if ok else 'FAIL'}  G-A3 CONTROL: {label}")
+            if not ok:
+                bad += 1
+                print(f"        got {got} judged={judged}")
+
+        # THE READER CI USES. Real events in a real store file, folded by wl_store's own fold: an item added, deferred, then ticked resolves; one tombstoned afterwards does not.
+        store = root / "agent" / "worklist"
+        store.mkdir(parents=True)
+        events = [
+            {"ev": "add", "id": "eeee0001", "at": "2026-09-24T01:00:00Z", "s": " ", "t": "q"},
+            {"ev": "state", "id": "eeee0001", "at": "2026-09-24T01:01:00Z", "s": "?"},
+            {"ev": "state", "id": "eeee0001", "at": "2026-09-24T01:02:00Z", "s": "x"},
+            {"ev": "add", "id": "eeee0002", "at": "2026-09-24T01:00:00Z", "s": " ", "t": "q"},
+            {"ev": "state", "id": "eeee0002", "at": "2026-09-24T01:02:00Z", "s": "x"},
+            {"ev": "tomb", "id": "eeee0002", "at": "2026-09-24T01:03:00Z"},
+        ]
+        (store / "w.jsonl").write_text(
+            "".join(json.dumps(e) + "\n" for e in events), encoding="utf-8"
+        )
+        got, _ = judge(fin, "#eeee0001", st=None)
+        ok = got == []
+        print(
+            f"  {'PASS' if ok else 'FAIL'}  G-A3 CONTROL: the committed store folds a ticked item as closed"
+        )
+        if not ok:
+            bad += 1
+            print(f"        got {got}")
+        got, _ = judge(fin, "#eeee0002", st=None)
+        ok = any("not an item" in g for g in got)
+        print(f"  {'PASS' if ok else 'FAIL'}  G-A3: a ruling whose item was TOMBSTONED is dangling")
+        if not ok:
+            bad += 1
+            print(f"        got {got}")
+
+    # THE RULED-AT-BASE EXEMPTION. Decided boxes may leave the tree later (the `_done/` sweeper deletes the file), but only when the BASE ledger records both a finished Status and a Ruling. Each half is a control: without the ruling it is a plain loss, and a ruling under a live status decides nothing.
+    ruled_row = dict(open_row, status=fin, ruling="#aaaa1111")
+    got = tp({"agent/PLAN-a.md": ruled_row}, {}, age=999)
+    ok = got == []
+    print(
+        f"  {'PASS' if ok else 'FAIL'}  G-A1/G-A5 CONTROL: a plan ruled at BASE may lose its decided boxes"
+    )
+    if not ok:
+        bad += 1
+        print(f"        got {got}")
+    for label, row in (
+        ("a finished plan with no ruling at base", dict(open_row, status=fin)),
+        ("a ruling under a live status at base", dict(open_row, ruling="#aaaa1111")),
+    ):
+        got = tp({"agent/PLAN-a.md": row}, {}, age=999)
+        ok = any("was DELETED, losing" in g for g in got) and any(
+            "is GONE at HEAD" in g for g in got
+        )
+        print(f"  {'PASS' if ok else 'FAIL'}  G-A1/G-A5: {label} still loses its boxes loudly")
+        if not ok:
+            bad += 1
+            print(f"        got {got}")
+    return bad
 
 
 def selftest() -> int:
@@ -721,14 +898,12 @@ def selftest() -> int:
             for k in (
                 "base_ledger",
                 "renames_into_archive",
-                "_touched_plans",
                 "_added_plans",
                 "_content_age_days",
             )
         }
         globals()["base_ledger"] = lambda _b: ({"plans": base_plans}, None)
         globals()["renames_into_archive"] = lambda _b: (set(kw.get("archived", [])), [])
-        globals()["_touched_plans"] = lambda _b: set(kw.get("touched", head))
         globals()["_added_plans"] = lambda _b: set(kw.get("added", []))
         globals()["_content_age_days"] = lambda _r, _b: kw.get("age", 1)
         try:
@@ -880,24 +1055,7 @@ def selftest() -> int:
             bad += 1
             print(f"        got {got}")
 
-    # G-A3: a finished status over open boxes. The pair matters -- a status the advisory still admits must NOT be reported, or every live plan reds.
-    fin = next(iter(FINISHED))
-    got = tp({}, {"agent/PLAN-a.md": dict(open_row, status=fin)})
-    ok = any("switches the check off" in g for g in got)
-    print(f"  {'PASS' if ok else 'FAIL'}  G-A3: Status: {fin} over open boxes is refused")
-    if not ok:
-        bad += 1
-    got = tp({}, {"agent/PLAN-a.md": open_row})
-    print(
-        f"  {'PASS' if got == [] else 'FAIL'}  G-A3 CONTROL: an in-scope status over open boxes is silent"
-    )
-    if got:
-        bad += 1
-    # And the plan this branch never TOUCHED is not judged -- demanding a header change in somebody else's file is how a gate gets routed around.
-    got = tp({}, {"agent/PLAN-a.md": dict(open_row, status=fin)}, touched=set())
-    print(f"  {'PASS' if got == [] else 'FAIL'}  G-A3 CONTROL: an untouched plan is not judged")
-    if got:
-        bad += 1
+    bad += _selftest_rulings(open_row, tp)
 
     # G-A4: new debt must name an owner.
     got = tp({}, {"agent/PLAN-a.md": dict(open_row, owner="unowned")}, added={"agent/PLAN-a.md"})
@@ -1036,9 +1194,12 @@ def main(argv: list[str]) -> int:
         return 1
 
     problems = diff_problems(scanned, ledger)
-    # G-A1..G-A5. Only once G-A0 agrees: comparing a base ledger against a head tree the head ledger does not describe would report the ledger's own staleness as a vanished box, which blames the wrong thing.
+    # G-A3 needs no base and no agreeing ledger: it reads each plan's header and the worklist store as they are NOW.
+    ruled_problems, ruled = ruling_problems(scanned, ROOT, None)
+    problems += ruled_problems
+    # G-A1, G-A2, G-A4, G-A5. Only once G-A0 agrees: comparing a base ledger against a head tree the head ledger does not describe would report the ledger's own staleness as a vanished box, which blames the wrong thing.
     compared = 0
-    base = None if problems else base_ref()
+    base = None if len(problems) > len(ruled_problems) else base_ref()
     if base:
         tprob, compared = transition_problems(scanned, base)
         problems += tprob
@@ -1049,14 +1210,16 @@ def main(argv: list[str]) -> int:
         )
         for p in problems:
             print(f"    {p}", file=sys.stderr)
-        print(
-            "\n  A box is the only durable record of a task once a context ends, so the\n"
-            "  ledger exists to make one disappearing visible in a diff.\n"
-            "  If you ticked, added or moved a box on purpose, regenerate and commit:\n"
-            "    npm run check:ci-plan-boxes -- --update\n"
-            f"    git add {LEDGER.relative_to(ROOT)}",
-            file=sys.stderr,
-        )
+        # The regenerate hint is only true of ledger findings. A G-A3 finding survives `--update` by design (measured: regenerating over a plan whose Ruling line was removed left exactly that one finding), so printing it alone would send the reader to a command that cannot help.
+        if len(problems) > len(ruled_problems):
+            print(
+                "\n  A box is the only durable record of a task once a context ends, so the\n"
+                "  ledger exists to make one disappearing visible in a diff.\n"
+                "  If you ticked, added or moved a box on purpose, regenerate and commit:\n"
+                "    npm run check:ci-plan-boxes -- --update\n"
+                f"    git add {LEDGER.relative_to(ROOT)}",
+                file=sys.stderr,
+            )
         return 1
 
     print(
@@ -1065,9 +1228,13 @@ def main(argv: list[str]) -> int:
         f"{sum(p['done'] for p in scanned.values())} ticked, "
         f"{raw} raw checkbox line(s) seen"
     )
+    print(
+        f"✓ G-A3: {ruled} finished plan(s) over open boxes, each with a `Ruling:` that "
+        f"re-resolves against the worklist store or its quoted file"
+    )
     if base and compared < 0:
         print(
-            f"  G-A1..G-A5 DID NOT RUN: {base[:9]} carries no {LEDGER.name}, so there is no "
+            f"  G-A1, G-A2, G-A4, G-A5 DID NOT RUN: {base[:9]} carries no {LEDGER.name}, so there is no "
             f"base to compare against. Expected exactly once -- on the branch that "
             f"introduces the ledger. This is a SKIP, not a clean result."
         )
@@ -1075,11 +1242,12 @@ def main(argv: list[str]) -> int:
         print(
             f"✓ transitions: {compared} box(es) open at {base[:9]} all survive at HEAD "
             f"(ticked, moved, or still open); the archive took only byte-identical "
-            f"renames; no finished-status plan hides open boxes; no new plan carries "
-            f"unowned debt"
+            f"renames; no new plan carries unowned debt"
         )
     else:
-        print("  NO BASE REF: G-A1..G-A5 did not run. G-A0 and G-A6 above still did.")
+        print(
+            "  NO BASE REF: G-A1, G-A2, G-A4 and G-A5 did not run. G-A0, G-A3 and G-A6 above still did."
+        )
     return 0
 
 

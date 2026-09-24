@@ -1,7 +1,8 @@
 # PLAN: stop-hook rulings campaign (sections 2-6 split from PLAN-stop-hook-overhaul.md)
-Status: draft -- PARKED by the 2026-09-23 decision on worklist #373907ed: sections 2 to 6 are six new subsystems (a rulings ledger, `--rule`, `wl_ruling.settled()`, `vadd` idempotence, a plan-agent Stop check, the big-pieces census) and wait for the operator to ask for the rulings ledger. Not adopted by any session.
+Status: draft -- sections 2+3 and 5 APPROVED by operator ruling on #373907ed (2026-09-23T14:31Z); section 4 declined and moved to PLAN-stop-hook-plan-agent-check-declined.md; section 6 not named in that ruling and stays a proposal. Not adopted by any session, so its boxes are advisory until one adopts it.
+Correction, 2026-09-24: this header used to say #373907ed PARKED sections 2 to 6. That was the question's DEFAULT, not the answer. Not adopted by any session, so its boxes are an advisory, never a block.
 First-Seen: 2026-09-17
-Owner: unowned, parked until the operator asks
+Owner: d778be9d (the session holding the #373907ed answer)
 Date: 2026-09-24
 
 Split out byte-identical on 2026-09-24 from `agent/plans/PLAN-stop-hook-overhaul.md`, which keeps section 1 (the noise fixes the decision said to execute) and its sections 7 to 9. The split exists because an adopted plan makes every open box a blocking mission, so these parked boxes demanded fresh trackers on every stop; five add-and-tick rounds had not ended that.
@@ -26,8 +27,8 @@ The freshness asymmetry is half the answer (`.claude/hooks/stop/wl_store.py:116`
       `.claude/hooks/stop/wl_planindex.py:25` already states. Wire a new gate registered as `ci-operator-rulings`.
 - [ ] Add `.claude/hooks/stop/wl_ruling.py` exposing `settled(root, check_key, subject_sig)`,
       globbing ALL sessions' ledgers. Any error returns `None`, restoring today's behaviour.
-- [ ] CONTROL, new `.claude/hooks/stop/worklist-cases/27-rulings.sh` added to `CASE_FILES` in
-      `.claude/hooks/stop/test-worklist-v5.sh`: moved pointer blocks; a ruling silences the
+- [ ] CONTROL, new `.claude/rediacc_hooks/tests/test_wl_rulings.py` (a new pytest module, collected automatically; was
+      the retired `test-worklist-v5.sh` CASE_FILES list): moved pointer blocks; a ruling silences the
       next stop; a DIFFERENT sha blocks again (keyed on subject, not a global mute); a
       wholesale `--state` rewrite leaves it silent; a FRESH session id leaves it silent
       (the cross-session property today's mechanism lacks); `--revoke` blocks again.
@@ -52,29 +53,14 @@ That is the three-identical-stops mechanism exactly.
       `SUBMODULE_LATCH_MIN` (`.claude/hooks/stop/wl_checks.py:1717`) survives as `latch_min`.
 - [ ] Report `state_doc["vsuppressed"]` in `worklist.py --doctor`, one line per key. Silence
       needs a denominator or a ruling can quietly mute a real signal.
-- [ ] CONTROL in `.claude/hooks/stop/worklist-cases/03-drift-loops-freshness.sh`: three stops
+- [ ] CONTROL in `.claude/rediacc_hooks/tests/test_wl_drift_loops_freshness.py`: three stops
       with the same moved pointer and a higher-priority violation winning rotation every time
       must yield exactly ONE block -- **write it to fail against current HEAD**; changing the
       sha between stops must block; `--doctor` must report a non-zero suppression count.
 
-## 4. The planning agent per context: a Stop check
+## 4. Moved
 
-**Verdict: a Stop check, armed by the existing PostCompact epoch. Not PostCompact alone. Not
-a cron.** PostCompact cannot refuse anything -- `.claude/hooks/context/epoch-reset.py:14`: "PostCompact has no decision control ... Exit 0, always." A printed requirement is a document, and `.claude/hooks/stop/wl_checks.py:4488` already says a document an agent can skip is not a control. A cron cannot express "per context" at all.
-
-- [ ] Arm: add `planagent_due` and `planagent_armed_at` to the existing `save_state` at
-      `.claude/hooks/context/epoch-reset.py:26`.
-- [ ] Enforce: a new `plan-agent` Stop check, `always=True`.
-- [ ] Disarm on UNFAKEABLE evidence: an index row written by
-      `wl_report.handle_subagent_stop` (`.claude/hooks/stop/wl_report.py:646`, type recorded
-      at `.claude/hooks/stop/wl_report.py:585`, index at `.claude/hooks/stop/wl_report.py:154`)
-      with `session == me8`, `at >= planagent_armed_at`, and a planning `type`. The session
-      does not write that row; the harness does.
-- [ ] Two anti-nag rules, both required: never fire on the FIRST stop of an epoch, and never
-      fire when the session has done no write work in the epoch.
-- [ ] CONTROL in `.claude/hooks/stop/worklist-cases/25-first-touch.sh`: armed + write work +
-      two stops blocks; a planning index row after the arm silences it; the SAME row stamped
-      BEFORE the arm still blocks; armed with no write work is silent.
+Declined by the operator's ruling on #373907ed; its five boxes live unchanged in `agent/plans/PLAN-stop-hook-plan-agent-check-declined.md`.
 
 ## 5. Big pieces: derive the mark, gate the section
 
@@ -93,7 +79,7 @@ a cron.** PostCompact cannot refuse anything -- `.claude/hooks/context/epoch-res
 - [ ] Add a rotating `bigpieces` drift check comparing the section against the census. This is
       what survives a wholesale rewrite: the rewrite is FORCED to re-derive, and a drift check
       on a derived field cannot be satisfied by remembering.
-- [ ] CONTROL across `.claude/hooks/stop/worklist-cases/02-state-document.sh` and
+- [ ] CONTROL across `.claude/rediacc_hooks/tests/test_wl_state_document.py` and
       `.claude/hooks/stop/worklist-cases/16-triage-and-plans.sh`: a body without the section is
       refused by BOTH write paths; with it, accepted; a section naming a finished plan fires
       the drift check; a section agreeing with the census is silent.
@@ -107,6 +93,6 @@ pure-age rule "outpaced by the 5-minute poll cron". **(3)** A clock cannot expre
       when the STATE.md `## Big pieces` section disagrees with the census. A poll printing
       nothing ends the turn silently (`.claude/hooks/stop/worklist_messages.py:378`), so this
       costs no new schedule and no turn on an empty result.
-- [ ] CONTROL in `.claude/hooks/stop/worklist-cases/08-poll-and-waiting.sh`: an agreeing
+- [ ] CONTROL in `.claude/rediacc_hooks/tests/test_wl_poll_and_waiting.py`: an agreeing
       section prints NOTHING (assert empty stdout); a disagreeing one prints exactly the line.
 

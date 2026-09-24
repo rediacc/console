@@ -352,6 +352,119 @@ def in_scope_status(status):
     return s not in FINISHED_STATES and s not in NOT_STARTED_STATES
 
 
+# --------------------------------------------------------------------------- DECIDED, NOT DONE: a FINISHED status over open boxes, licensed by a `Ruling:` line.
+#
+# THE GAP THIS CLOSES (worklist #87cff418, 2026-09-24). Two plans held boxes the operator had DECIDED would not be done, and no state said so honestly. A FINISHED status switches every "stop counting" reader off (plan_rows below, wl_planenforce's clock, check_plan_implementation, the wl_store census), which is right for such boxes, but check_plan_boxes.py's G-A3 refused
+# it over open boxes, because an unexplained finished header is also exactly how a session hides live work. `parked` is not the answer and was never meant to be: it is a NOT_STARTED word, deliberately kept on every clock ("a parked record buys a smaller file, never an exemption"). So the plans stayed `draft` with prose saying "superseded", and one was carried as a red.
+#
+# THE ONE STATE: any FINISHED status may sit over open boxes when the header carries `Ruling:` and EVERY reference on that line RE-RESOLVES. The difference between an honest close and a hidden box is then a citation a machine can check, not a word a session chose. Two reference shapes:
+#
+#   Ruling: #d9785655                       a worklist item, which must exist, not be tombstoned, and be CLOSED (`x`): a `[?]` is a question still being asked, and an open item is not a decision.
+#   Ruling: "<operator quote>" in <path>    the quote, whitespace-normalised, must occur in that committed file. The file may not be a plan: a plan quoting itself would resolve by construction.
+#
+# RE-RESOLVES means every run, not once. A ruling whose item is later tombstoned, or whose quote is edited out of its file, makes the plan an unexplained finished header again, and check_plan_boxes.py says so on the next run of any branch.
+#
+# WHAT THIS CANNOT CHECK: that the cited decision is ABOUT these boxes. It proves a closed decision exists, not that it says what the header claims. The first live application of this state found exactly that gap (PLAN-stop-hook-rulings-campaign.md cited #373907ed as parking sections 2 to 6 when the recorded answer was "build 2+3 and 5"), which is why the census names the
+# citation it accepted rather than staying silent about it.
+RULING_HEADER_LINES = ADOPTED_HEADER_LINES
+RULING_LINE_RE = re.compile(r"^\*{0,2}Ruling\*{0,2}:[ \t]*(\S.*?)[ \t]*$", re.MULTILINE)
+# Ids are hex and NOT fixed width (8 for new items, 12 for migrated ones), so the width is a set, never a single length.
+RULING_ID_RE = re.compile(r"#([0-9a-f]{12}|[0-9a-f]{8})\b")
+RULING_QUOTE_RE = re.compile(r'"([^"]{12,})"[ \t]+in[ \t]+`?([^\s`]+)`?')
+RULING_CLOSED = CLOSED_STATES
+
+
+def ruling_line(text):
+    """The `Ruling:` value in the plan's header block, or "" when there is none."""
+    head = "\n".join((text or "").splitlines()[:RULING_HEADER_LINES])
+    m = RULING_LINE_RE.search(head)
+    return m.group(1).strip() if m else ""
+
+
+def ruling_refs(line):
+    """([item ids], [(quote, path)]) cited on one `Ruling:` value."""
+    return RULING_ID_RE.findall(line or ""), RULING_QUOTE_RE.findall(line or "")
+
+
+def _squash(s):
+    return " ".join(str(s or "").split())
+
+
+def resolve_ruling(root, rel, text, item_states):
+    """(ok, why) for a plan's `Ruling:` line. PURE apart from reading cited quote files.
+
+    `item_states` is {item_id: state} over EVERY session's items with tombstoned ones absent: the Stop hook passes its own fold, the CI gate passes `store_item_states(root)`. Every reference must resolve; one dangling citation beside a good one is still a false statement in the header, so it refuses.
+    """
+    line = ruling_line(text)
+    if not line:
+        return False, "no `Ruling:` line in the first %d header lines" % RULING_HEADER_LINES
+    ids, quotes = ruling_refs(line)
+    if not ids and not quotes:
+        return False, (
+            "`Ruling: %s` cites neither a worklist item (`#<id>`) nor a quote "
+            '(`"<operator quote>" in <path>`)' % line
+        )
+    ok_parts = []
+    for iid in ids:
+        state = item_states.get(iid)
+        if state is None:
+            return False, "`Ruling:` cites #%s, which is not an item in the worklist store" % iid
+        if state not in RULING_CLOSED:
+            return False, (
+                "`Ruling:` cites #%s, which is still [%s]: an open or deferred item is a "
+                "question, not a decision" % (iid, state)
+            )
+        ok_parts.append("#%s" % iid)
+    for quote, path in quotes:
+        name = path.rsplit("/", 1)[-1]
+        if path == rel or (name.startswith("PLAN-") and name.endswith(".md")):
+            return False, (
+                "`Ruling:` quotes %s, which is a plan; a plan's own words cannot be the "
+                "evidence for closing it" % path
+            )
+        target = pathlib.Path(root) / path
+        try:
+            if ".." in pathlib.PurePosixPath(path).parts:
+                raise ValueError(path)
+            body = target.read_text(encoding="utf-8", errors="replace")
+        except (OSError, ValueError):
+            return False, "`Ruling:` quotes %s, which is not a readable file" % path
+        if _squash(quote) not in _squash(body):
+            return False, '`Ruling:` quotes "%s", which does not occur in %s' % (
+                _quote(quote),
+                path,
+            )
+        ok_parts.append("a quote in %s" % path)
+    return True, ", ".join(ok_parts)
+
+
+def fold_item_states(fold):
+    """{id: state} from the Stop hook's own fold. Tombstoned items are already absent from `fold.items`."""
+    out = {}
+    for r in list(getattr(fold, "items", None) or []):
+        if isinstance(r, dict) and r.get("id"):
+            out[str(r["id"])] = str(r.get("state") or " ")
+    return out
+
+
+def store_item_states(root):
+    """{id: state} folded from the COMMITTED store under `<root>/agent/worklist/`, tombstones dropped.
+
+    The CI half of `fold_item_states`. It reads the tracked files directly rather than through `wl_store.store_dir`, whose TMPDIR legacy log and `WORKLIST_STORE_DIR` override describe one machine, not the commit being judged; the fold itself is `wl_store._fold_events`, so the two halves cannot disagree about what a sequence of events means. Imported lazily because wl_store imports this module.
+    """
+    import wl_store as S  # noqa: PLC0415
+
+    events = []
+    for f in sorted((pathlib.Path(root) / "agent" / S.STORE_DIR_NAME).glob("*.jsonl")):
+        try:
+            events.extend(S._parse_events(f.read_text(encoding="utf-8", errors="replace")))
+        except OSError:
+            continue
+    events.sort(key=lambda e: (str(e.get("at") or ""), int(e.get("ns") or 0)))
+    records = S._fold_events(events)[0]
+    return {rid: str(r.get("state") or " ") for rid, r in records.items() if r.get("state") != "~"}
+
+
 def plan_rows(root, recs, fold, session_id, plan_owner):
     """[dict] of findings, newest plan first. `recs` and `plan_owner` are passed in rather than imported so this module never depends on wl_checks, which imports it (and so the selftest can drive it with fixtures).
 
@@ -372,6 +485,13 @@ def plan_rows(root, recs, fold, session_id, plan_owner):
     ]
     scoped = [rec for rec in owned if in_scope_status(rec[1])]
     census_only = [rec for rec in owned if not in_scope_status(rec[1])]
+    # FINISHED plans are skipped above, and that skip is only honest when nothing is open under them or a `Ruling:` licenses what is (see resolve_ruling). Without this pass an unexplained finished header over live boxes would be the one shape every "stop counting" reader in the hook agrees to ignore -- the same shape check_plan_boxes.py's G-A3 refuses in CI.
+    finished = [
+        rec
+        for rec in list(recs)
+        if str(rec[1] or "").strip().lower() in FINISHED_STATES
+        and C.owned_by_me(_owner(plan_owner, root, rec[0]), session_id)
+    ]
     unread = max(0, len(scoped) - PLAN_MAX_READ)
     out = []
     for rec in scoped[:PLAN_MAX_READ]:
@@ -445,6 +565,42 @@ def plan_rows(root, recs, fold, session_id, plan_owner):
                 "census": True,
             }
         )
+    states = None
+    for rec in finished[:PLAN_MAX_READ]:
+        rel, status = rec[0], rec[1]
+        text = _read(pathlib.Path(root) / rel)
+        if text is None or len(text) < P.MIN_PLAN_CHARS:
+            continue
+        if not raw_box_counts(text)[0]:
+            continue
+        try:
+            open_tasks, done_tasks = plan_boxes(text)
+        except Exception:  # noqa: BLE001 -- same contract as the loops above
+            open_tasks, done_tasks = [], []
+        if not open_tasks:
+            continue
+        if states is None:
+            states = fold_item_states(fold)
+        try:
+            ok, why = resolve_ruling(root, rel, text, states)
+        except Exception as exc:  # noqa: BLE001 -- a header read must never wedge a stop
+            ok, why = False, "the `Ruling:` line could not be checked (%s)" % exc
+        if ok:
+            continue
+        out.append(
+            {
+                "rel": rel,
+                "status": status,
+                "n_open": len(open_tasks),
+                "n_done": len(done_tasks),
+                "untracked": [],
+                "stale_open": [],
+                "reopened": 0,
+                "blind": None,
+                "census": True,
+                "unruled": why,
+            }
+        )
     return out, unread
 
 
@@ -463,6 +619,17 @@ def render(row, n_more_plans=0, unread=0, budget=None):
     """
     if not row:
         return ""
+    if row.get("unruled"):
+        # A census-shaped row (no quotes, no budget) because the remedy is one header line, not a set of --add recipes. It is still a finding, and check:ci-plan-boxes reds on the same plan.
+        return (
+            "PLAN FILE (finished over open boxes) -- %s [Status: %s], %d open box(es), %d ticked.\n"
+            "  A finished Status switches every plan check off for this file, and it may\n"
+            "  only do that over open boxes when a `Ruling:` header line re-resolves: %s.\n"
+            "  Cite the decision (`Ruling: #<closed worklist id>` or\n"
+            '  `Ruling: "<operator quote>" in <path>`), tick the boxes, or reopen the Status.\n'
+            "  check:ci-plan-boxes (G-A3) refuses this plan until then."
+            % (row["rel"], row["status"], row["n_open"], row["n_done"], row["unruled"])
+        )
     if row.get("census"):
         # S3's third tier: one line, no quotes, no recipes. It exists to make a not-started plan's boxes VISIBLE, not to demand anything about them.
         return (

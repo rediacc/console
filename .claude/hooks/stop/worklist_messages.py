@@ -1105,8 +1105,12 @@ V_PLAN_ADOPTED = (
     "A box that genuinely cannot be worked now goes to the operator instead of staying invisible:\n"
     "    .claude/hooks/stop/worklist.py --defer %(me)s <id> '<question> DEFAULT: <action> WHY: <why it "
     "cannot be settled> HOW: <what resolves it>'\n"
-    "If the plan stopped being this session's, hand it back by editing its Owner line, or set its "
-    "Status to done, parked or superseded."
+    "If the plan stopped being this session's, hand it back by editing its Owner line. If the "
+    "operator DECIDED its open boxes will not be done, close it honestly: a finished Status "
+    "(superseded, abandoned) plus a header line `Ruling: #<closed worklist id>` (or "
+    '`Ruling: "<operator quote>" in <path>`) naming that decision. check:ci-plan-boxes (G-A3) '
+    "refuses a finished Status over open boxes without a Ruling that re-resolves, and `parked` "
+    "does not close anything: its boxes stay on every clock."
 )
 
 # THE BODY IS BUILT BY `wl_planenforce.render`, NOT BY THIS STRING, and the split is deliberate rather than untidy. Every number in that body -- the ceiling, the day, the three ownership buckets, the one named box and its signature -- is arithmetic the module computed, and a format string with fourteen `%(...)s` holes is a place where the caller and the message drift out of step

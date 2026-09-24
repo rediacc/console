@@ -20,6 +20,17 @@ The second command names the commit the blob arrived in, which is the part a pla
 
 `compacted` is a finished plan: every box is attested. `parked` is a plan whose TEXT is compacted but whose work is not done, so it stays on the housekeeping clock on purpose. A parked record is not a quieter way of finishing something.
 
+## Decided, not done: a finished Status with a `Ruling:`
+
+A plan whose open boxes the operator DECIDED will not be done closes like any other plan (`Status: superseded` or `abandoned`, then `check:ci-plan-folders --move` into `_done/`), with one extra header line naming the decision:
+
+    Ruling: #d9785655
+    Ruling: "<the operator's words>" in docs/ci-overhaul/04-decisions.md
+
+Every reference on the line must re-resolve on every run: a `#<id>` must be a CLOSED item in the committed worklist store (not `[?]`, not open, not tombstoned), and a quote must occur, whitespace-normalised, in the named non-plan file. `check:ci-plan-boxes` G-A3 refuses a finished Status over open boxes without such a line, and the Stop hook reports the same plan until it has one. Under a resolving ruling the boxes leave every count, and the `_done/` sweeper may later delete the file without G-A1 or G-A5 reading it as a lost box.
+
+The gate proves that a closed decision exists, not that it says what the header claims, so the header should quote the decision. `parked` is not this state: its boxes stay on every clock.
+
 ## The grammar
 
 The table below is GENERATED from `.claude/hooks/stop/wl_planrec.py` by `npx tsx scripts/gen/gen-docs.ts --write`, and `check:ci-doc-region-parity` fails when the committed bytes and the code disagree. Do not hand-edit between the markers.

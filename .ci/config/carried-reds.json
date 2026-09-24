@@ -40,10 +40,6 @@
     {
       "gate": "check:ci-worklist-event-builders",
       "reason": "Finding in test-backlog.py, same worklist-hook v10 family under active concurrent peer rewrite all session, same broadcast (df74b3fa) as check:ci-tracked-credentials. Not this session's file."
-    },
-    {
-      "gate": "check:ci-plan-boxes",
-      "reason": "agent/plans/PLAN-stop-hook-rulings-campaign.md is new on this branch with 21 open boxes and `Owner: unowned, parked`, and G-A4 refuses a new unowned plan with open boxes. The plan is parked by the 2026-09-23 ruling on worklist #373907ed (sections 2-6 wait for the operator to ask for the rulings ledger), and it was split out of PLAN-stop-hook-overhaul.md precisely so its parked boxes stop demanding trackers on every stop; giving it an Owner would undo that. There is no honest gate state for a plan whose decided boxes are not done, and the root fix for that is tracked as worklist #87cff418. Carried only because that fix is tracked; remove this entry when #87cff418 lands or the plan is adopted."
     }
   ]
 }
