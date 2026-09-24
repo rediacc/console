@@ -1028,6 +1028,17 @@ def _item_cli(argv, worklist):
                 "an in-flight claim with no worker to trace is the gap this "
                 "program exists to catch"
             )
+        if wm == "worker:queue":
+            # QUEUED BEHIND THE CAP, accepted only when the cap really is full: otherwise the queue would be an escape hatch for work that could start now.
+            import wl_roster  # noqa: PLC0415
+
+            busy = wl_roster.live_writers_estimate(os.getcwd(), me)
+            if busy is None or len(busy) < wl_roster.WRITER_CAP:
+                die(
+                    "worker:queue is only for writer work the cap forbids starting, and %s of %d "
+                    "writer slots are busy: start the work instead"
+                    % ("an unknown number" if busy is None else len(busy), wl_roster.WRITER_CAP)
+                )
         note = " ".join(a for a in argv[4:] if not a.startswith("worker:")).strip()
         if C.lease_state("until:%s" % until) != "fresh":
             die(

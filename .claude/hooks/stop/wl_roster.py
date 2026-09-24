@@ -35,6 +35,8 @@ import wl_core as C
 WRITER_CAP = 4
 # The operator's number. A leased worker whose newest status is this old owes one (`roster-status`); a transcript this quiet with no tool call in flight is `roster-silent`.
 STATUS_PING_MIN = 20
+# A lease on `worker:queue` holds writer work the cap forbids starting. It is covered ONLY while every writer slot is taken; the moment one frees it is a defect naming the item to start, so it can never park work behind a cap that is not full.
+QUEUE_WORKER = "queue"
 # The tool calls that prove an agent writes, whatever its declared type says.
 EDIT_TOOLS = frozenset({"Edit", "Write", "MultiEdit", "NotebookEdit"})
 # The harness types that never write (plan F6: 0 edit calls in 66 Plan and 65 Explore transcripts). Custom read-only types are ADDED from `.claude/agents/*.md` by `read_only_types`, never subtracted.
@@ -426,6 +428,13 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
 
     covered, leased_dead, unknown = [], [], []
     for w, recs in leases.items():
+        if w == QUEUE_WORKER:
+            full = len(writers) >= WRITER_CAP
+            for r in recs:
+                (covered if full else leased_dead).append(
+                    (r["id"], w, QUEUE_WORKER if full else "")
+                )
+            continue
         if w and (w in metas or w in live):
             coverer = covered_by(w)
             for r in recs:
@@ -800,7 +809,12 @@ def defect_rows(verdict):
             % (w, _mins(age), src, "" if coverer == w else "; its live descendant is %s" % coverer)
         )
     dead = [
-        "    #%s leased to worker:%s, which is not live and has no live descendant" % (i, w)
+        (
+            "    #%s is queued behind the writer cap, and a slot is free now: start it" % i
+            if w == QUEUE_WORKER
+            else "    #%s leased to worker:%s, which is not live and has no live descendant"
+            % (i, w)
+        )
         for i, w, _c in verdict.get("leased_dead") or []
     ]
     return {

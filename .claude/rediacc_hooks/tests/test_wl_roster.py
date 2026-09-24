@@ -323,6 +323,27 @@ def test_r4b_four_writers_and_two_plan_agents_are_within_the_cap(wl):  # noqa: F
     assert sorted(v["readers"]) == [P1, P2]
 
 
+def test_r4q_a_queued_item_is_covered_only_while_the_cap_is_full(wl):  # noqa: F811
+    """`worker:queue` holds writer work the cap forbids starting; it must never park work behind a cap that is not full."""
+    for i, aid in enumerate((W1, W2, W3, W4)):
+        mk_sub(wl, aid, "general-purpose", 10 - i)
+        plant_lease(wl, "cap%d" % i, aid)
+    plant_lease(wl, "queued1", "queue")
+    v = verdict(wl)
+    assert ("queued1", "queue", "queue") in [tuple(c) for c in v["covered"]], v["covered"]
+    assert v["leased_dead"] == [], v["leased_dead"]
+
+
+def test_r4q2_a_queued_item_with_a_free_slot_is_a_defect(wl):  # noqa: F811
+    for i, aid in enumerate((W1, W2, W3)):
+        mk_sub(wl, aid, "general-purpose", 10 - i)
+        plant_lease(wl, "cap%d" % i, aid)
+    plant_lease(wl, "queued1", "queue")
+    v = verdict(wl)
+    assert [tuple(d)[:2] for d in v["leased_dead"]] == [("queued1", "queue")], v["leased_dead"]
+    assert v["state"] == "DISHONEST"
+
+
 def test_r4c_a_depth_two_writer_child_counts_toward_the_cap(wl):  # noqa: F811
     for i, aid in enumerate((W1, W2, W3, W4)):
         mk_sub(wl, aid, "general-purpose", 10 - i)
