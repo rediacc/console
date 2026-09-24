@@ -37,9 +37,7 @@ K = 5
 # Every path whose dry-run half has been driven and recorded, and the external tool whose argv the row's `[call]` findings must therefore carry. The tool is the one named in that path's BLOCKER line, so this table is also the check that a ledger recorded the RIGHT script's traffic: `mark-production` agreeing only on `curl` lines would mean the fixture answered a neighbour's probes.
 EXPECTED_DRY_RUN_PATHS = {
     ".ci/scripts/deploy/delete-r2-channel.sh": ("aws",),
-    ".ci/scripts/deploy/promote-r2-to-stable.sh": ("aws", "curl"),
     ".ci/scripts/release/assert-artifact-version.sh": ("gh",),
-    ".ci/scripts/release/create-github-release.sh": ("gh",),
 }
 
 

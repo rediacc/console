@@ -94,7 +94,7 @@ Scans: every tracked file in the policy directory, against `POLICY_FILES` in bot
 | `.profiler-coverage-allowlist` | name per line | 65 | 4 | both |
 | `.runner-advice-allowlist` | name per line | 0 | 1 | both |
 | `.unverified-download-allowlist` | name per line | 4 | 4 | both |
-| `.w7p5a-real-run-blocklist` | name per line | 7 | 6 | both |
+| `.w7p5a-real-run-blocklist` | name per line | 6 | 6 | both |
 | `.w7p5a-real-run-leg-blocklist` | name per line | 7 | 7 | both |
 | `hook-exec-baseline.json` | JSON table | - | 1 | both |
 | `tree-shape.json` | JSON table | - | 0 | both |
