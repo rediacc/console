@@ -256,12 +256,19 @@ def test_the_full_invocation_is_byte_identical(tmp_path: pathlib.Path) -> None:
     assert old[3] == [
         (
             "call: gh release create v1.2.3 --title v1.2.3 --target "
-            "0123456789abcdef0123456789abcdef01234567 --generate-notes --repo "
+            "0123456789abcdef0123456789abcdef01234567 --generate-notes --latest=false --repo "
             "acme/widget dist/cli/rdc-linux-x64 dist/packages/rdc.deb"
         )
     ]
     assert old[1] == "https://github.com/acme/widget/releases/tag/v1.2.3\n"
     assert_agree(old, new, "full-invocation")
+
+
+def test_a_new_release_never_takes_latest(tmp_path: pathlib.Path) -> None:
+    """Latest means production, moved only by mark-production after the stable soak. On 2026-09-24 a release created without the flag took Latest from v1.3.12."""
+    old, new = run_both(tmp_path, assets=("dist/cli/rdc-linux-x64",))
+    assert "--latest=false" in old[3][0].split()
+    assert_agree(old, new, "latest-false")
 
 
 def test_the_asset_paths_are_relative_to_the_repo_root(tmp_path: pathlib.Path) -> None:

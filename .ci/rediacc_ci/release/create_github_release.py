@@ -100,6 +100,8 @@ def main(argv: list[str]) -> int:
             "--target",
             github_sha,
             "--generate-notes",
+            # Latest means production; only mark_production moves it (see the bash twin).
+            "--latest=false",
             "--repo",
             github_repository,
             *files,

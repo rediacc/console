@@ -46,9 +46,14 @@ if [[ ${#files[@]} -eq 0 ]]; then
     echo "::error::No release assets matched dist/{cli,packages}/**/*"
     exit 1
 fi
+# --latest=false: an edge release must not become GitHub's Latest. Latest
+# means production, and only mark-production.sh moves it, after the stable
+# soak (promote-stable.yml). Without the flag gh marks every new release
+# Latest (2026-09-24: a throwaway v0.0.0 release took Latest from v1.3.12).
 gh release create "v${VERSION}" \
     --title "v${VERSION}" \
     --target "${GITHUB_SHA}" \
     --generate-notes \
+    --latest=false \
     --repo "${GITHUB_REPOSITORY}" \
     "${files[@]}"
