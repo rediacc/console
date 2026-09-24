@@ -5,6 +5,7 @@ The logic lives in `rediacc_ci.quality.account_env_retired`; this file exists so
 
 ---- gate ----
 step: Account env files retired
+lane: quality-security
 needs: submodules
 selftest: true
 why: private/account/.env is retired in favour of Bitwarden profiles, so no tracked file

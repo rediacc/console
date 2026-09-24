@@ -1098,6 +1098,9 @@
     ".ci/rediacc_ci/tests/pathmask.py": [
       "PATH"
     ],
+    ".ci/rediacc_ci/tests/test_bench_preflight.py": [
+      "PATH"
+    ],
     ".ci/rediacc_ci/tests/test_build_build_json.py": [
       "HOME"
     ],

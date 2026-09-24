@@ -135,6 +135,11 @@ GLOB_ROOTS = {
 # THE NEW ROUTE IS WEAKER THAN THE ONE IT REPLACED, and a future reader should know it: the exemption was unconditional, while the registry lists this module only for as long as it reads an environment variable. If that stops being true the file goes DEAD again with no exemption standing, and the answer then is to re-add an entry here with a fresh reason, not to assume the old one
 # still applies.
 MANUAL_ENTRY_POINTS: dict[str, str] = {
+    ".ci/rediacc_ci/ops/bench_preflight.py": (
+        "run by the operator-only scripts/ops/deploy-bench.sh as `python3 -m "
+        "rediacc_ci.ops.bench_preflight` before the bench deploy's first remote write; "
+        "bench deploys are never wired into CI, so no CI route reaches it"
+    ),
     # Quoted from its own docstring: "NOT A GATE. This file carries no `---- gate ----` block and is not registered: it is a one-off recovery tool kept beside the gate it repairs, so a future session that hits the same class has the instrument rather than the archaeology." Run by hand as `python3 .ci/scripts/quality/backfill_plan_implementation.py --me <prefix> [--write]`.
     ".ci/scripts/quality/backfill_plan_implementation.py": (
         "a one-off recovery tool kept beside check_plan_implementation.py, run by hand "

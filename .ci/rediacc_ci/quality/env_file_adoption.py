@@ -62,9 +62,9 @@ from rediacc_ci.controls import Controls, controls_first
 SHIM_REL = "scripts/lib/env-file.sh"
 
 # The sites that adopted the shim. Each must still call it; see CHECK B.
+# scripts/ops/deploy-bench.sh LEFT this list on 2026-09-24: it reads no env file at all now, re-executing itself under the `deploy-bench` Bitwarden profile (PLAN-account-env-to-bws T17/T18). CHECK A's `set -a` sweep still covers it.
 ADOPTED = (
     ".ci/lib/account.sh",
-    "scripts/ops/deploy-bench.sh",
     "programs/backup-storage/start-local-plane.sh",
 )
 
@@ -375,7 +375,7 @@ def selftest():
         (planted / "programs/backup-storage/start-local-plane.sh").write_text(
             reverted, encoding="utf-8"
         )
-        for rel in (".ci/lib/account.sh", "scripts/ops/deploy-bench.sh", SHIM_REL):
+        for rel in (".ci/lib/account.sh", SHIM_REL):
             dst = planted / rel
             dst.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(root / rel, dst)
