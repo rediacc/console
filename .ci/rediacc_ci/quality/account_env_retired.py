@@ -63,6 +63,7 @@ EXCLUDED = {
     ".ci/rediacc_ci/tests/test_quality_account_env_retired.py": "this gate's test",
     BASELINE_REL: "the baseline names the files it forgives",
     ".ci/rediacc_ci/tests/test_devbox_bws.py": "plants the retired file to prove the devbox hook never reads it",
+    ".ci/rediacc_ci/tests/test_setup_account_bws.py": "plants the retired files to prove setup refuses to continue while either exists",
 }
 
 
