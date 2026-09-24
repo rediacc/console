@@ -646,7 +646,7 @@
   "commands.machine.prune.datastoreCompleted": "Datastore prune completed",
   "commands.machine.prune.datastoreFailed": "Datastore prune failed",
   "commands.machine.prune.datastorePrunedSummary": "Pruned {{count}} orphaned datastore resource(s)",
-  "commands.machine.prune.description": "Remove orphaned datastore resources and stale snapshots from a machine. The base run cleans renet-internal datastore artifacts (BTRFS subvolumes, lock files, tmpfiles). The optional flags below enable progressively narrower repo cleanups: --orphaned-repos uses the local CLI config as the only signal, while --prune-unknown additionally consults the renet .interim/state mirror so legitimate forks created by other tools survive even when missing from your local config. Both deletion paths run a mount-safety preflight; pass --force-delete-mounted to override.",
+  "commands.machine.prune.description": "Remove orphaned datastore resources and stale snapshots from a machine. The base run cleans renet-internal datastore artifacts (BTRFS subvolumes, lock files, tmpfiles). The optional flags below enable progressively narrower repo cleanups: --orphaned-repos uses the local CLI config as the only signal, while --prune-unknown additionally consults the renet .interim/state mirror so legitimate forks created by other tools survive even when missing from the local config. Both deletion paths run a mount-safety preflight; pass --force-delete-mounted to override.",
   "commands.machine.prune.descriptionShort": "Prune orphaned resources and stale snapshots",
   "commands.machine.prune.dryRunHint": "{{count}} resource(s) would be removed. Rerun without --dry-run to remove them.",
   "commands.machine.prune.dryRunOption": "Show what would be removed without making changes",
