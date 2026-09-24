@@ -9,6 +9,7 @@ case is paired with a SILENT control differing by one planted fact.
 from __future__ import annotations
 
 import json
+import os
 import re
 import shutil
 import stat
@@ -332,7 +333,9 @@ def test_171_post_compact_hands_back_the_executing_plans_status_cursor(wl):  # n
 def test_172_allow_report_diet_the_guide_is_the_single_source_and_advisories_latch(wl):  # noqa: F811
     """Operator, 2026-07-31, on an allow report that had grown large although round robin was already in place.
 
-    The allow report's in-flight section duplicated the guide's own in-flight rows, and week-stable advisories (other sessions' briefs) repeated on every full stop. Now the guide says it once, and slow-moving sections re-show only on content change or after the refresh window.
+    The allow report's in-flight section duplicated the guide's own in-flight rows, and week-stable advisories repeated on every full stop. Now the guide says it once, and slow-moving sections re-show only on content change or after the refresh window.
+
+    The latched advisory is the ORPHANED-items note since 2026-09-24; the other-sessions brief listing that filled the role was deleted with the peer listing (agent/plans/PLAN-stop-hook-continuity.md P0.3).
     """
     # The default two-cron shape also produces a poll-backoff tip, which is another class-2 section; the fixed 3-per-stop budget already covers both, and the per-stop rationing has its own cases in the report-queue module.
     wl.brief_now()
@@ -342,39 +345,35 @@ def test_172_allow_report_diet_the_guide_is_the_single_source_and_advisories_lat
     wl.bg = json.dumps(
         [{"id": "bw7", "type": "shell", "status": "running", "description": "the watch"}]
     )
-    with wl.sessions.open("a", encoding="utf-8") as handle:
-        handle.write(
-            "cafebabe %s building the fixture\n"
-            % time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-        )
+    peer = wl.base / "cafebabe.jsonl"
+    peer.write_text("", encoding="utf-8")
+    aged = time.time() - 48 * 3600
+    os.utime(peer, (aged, aged))
+    wl.add_item("- [ ] (cafebabe) building the fixture")
     said = "watching.\n\n## Remaining\n- #%s carry the CI watch to green (in flight)" % iid
     wl.say(said)
     got = wl.run()
     label = "172: the guide carries the lease once; the duplicate section is gone"
     assert "- [>] #%s" % iid in got.out, "%s: %s" % (label, got.out[:400])
     wl.check_quiet("in flight on background work", label, result=got)
-    assert "Other sessions in this worktree" in got.out, (
-        "172: first sight of the other session was hidden: %s" % got.out[:400]
+    assert "ORPHANED item(s)" in got.out, (
+        "172: first sight of the orphaned item was hidden: %s" % got.out[:400]
     )
 
     wl.newturn()
     wl.cli("--update", "deadbeef", iid, "still watching, run pending")
     wl.say(said)
     wl.check_quiet(
-        "Other sessions in this worktree",
+        "ORPHANED item(s)",
         "172: the advisory repeated with unchanged content",
     )
 
     # CONTROL: changed content re-shows immediately, so the latch is a dedupe rather than a mute.
-    with wl.sessions.open("a", encoding="utf-8") as handle:
-        handle.write(
-            "cafebabe %s pivoted to the deploy fix\n"
-            % time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-        )
+    wl.add_item("- [ ] (cafebabe) pivoted to the deploy fix")
     wl.newturn()
     wl.cli("--update", "deadbeef", iid, "watch still healthy")
     wl.say(said)
     changed = wl.run()
     label = "172 CONTROL: the latch muted a real change"
-    assert "Other sessions in this worktree" in changed.out, "%s: %s" % (label, changed.out[:400])
+    assert "ORPHANED item(s)" in changed.out, "%s: %s" % (label, changed.out[:400])
     assert "pivoted to the deploy fix" in changed.out, "%s: %s" % (label, changed.out[:400])

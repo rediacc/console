@@ -18,6 +18,7 @@ import pathlib
 import re
 import subprocess
 
+import wl_common
 import wl_core as C
 import wl_proc
 import wl_store as S
@@ -629,18 +630,8 @@ def _new_since_head(rel, root, head):
     """
     if not head:
         return False
-    try:
-        pr = subprocess.run(
-            ["git", "cat-file", "-e", "%s:%s" % (head, rel)],
-            cwd=str(root),
-            capture_output=True,
-            text=True,
-            timeout=10,
-            check=False,
-        )
-    except (OSError, subprocess.SubprocessError):
-        return True
-    return pr.returncode != 0
+    pr = wl_common.run_quiet(["git", "cat-file", "-e", "%s:%s" % (head, rel)], cwd=str(root))
+    return pr is None or pr.returncode != 0
 
 
 def _is_dirty(rel, root):

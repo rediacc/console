@@ -43,17 +43,41 @@ def test_03_a_deferral_with_a_default_does_not_block(wl):  # noqa: F811
     wl.check("allow", "operator may answer", "a deferral WITH DEFAULT: does not block")
 
 
-def test_04_a_missing_session_brief_blocks(wl):  # noqa: F811
+def briefs_of(fix, who: str = wlfix.ME) -> list[str]:
+    path = fix.sessions
+    lines = path.read_text(encoding="utf-8").splitlines() if path.is_file() else []
+    return [ln for ln in lines if ln.startswith(who + " ")]
+
+
+def test_04_a_missing_session_brief_is_stamped_by_the_hook_not_demanded(wl):  # noqa: F811
+    """Since 2026-09-24 (agent/plans/PLAN-stop-hook-continuity.md P1.1) the hook writes the brief itself, from the first line of `## Next action`. CONTROL: before, this fixture blocked with "session brief is missing"."""
+    wl.hand_now()
     wl.say("answer\n\n## Remaining\n- stuff")
     wl.add_item("- [?] (deadbeef) q DEFAULT: d")
-    wl.check("block", "session brief is missing", "a missing brief blocks")
+    got = wl.run()
+    assert "session brief" not in got.out, got.out[:600]
+    mine = briefs_of(wl)
+    assert mine, "no brief was stamped"
+    assert mine[-1].endswith(
+        "Push and watch the run, then bump the submodule pointers to the squash commits before the merge chain."
+    ), mine[-1]
 
 
-def test_05_a_stale_session_brief_blocks(wl):  # noqa: F811
+def test_05_a_stale_session_brief_is_restamped_and_a_fresh_manual_one_is_kept(wl):  # noqa: F811
+    wl.hand_now()
     wl.say("answer\n\n## Remaining\n- stuff")
     wl.add_item("- [?] (deadbeef) q DEFAULT: d")
     wl.brief_at(wlfix.ME, 200)
-    wl.check("block", "session brief is stale", "a stale brief blocks")
+    got = wl.run()
+    assert "session brief" not in got.out, got.out[:600]
+    assert len(briefs_of(wl)) == 2, briefs_of(wl)
+    # INVERSE: a manual brief younger than the restamp window is left alone.
+    wl.setup()
+    wl.hand_now()
+    wl.say("answer\n\n## Remaining\n- stuff")
+    wl.cli("--brief", wlfix.ME, "hand-written: reviewing the roster change")
+    wl.run()
+    assert briefs_of(wl)[-1].endswith("hand-written: reviewing the roster change"), briefs_of(wl)
 
 
 def test_06_a_pending_task_with_no_remaining_section_blocks(wl):  # noqa: F811

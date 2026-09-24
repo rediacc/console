@@ -496,3 +496,56 @@ def test_96_a_ticks_evidence_is_its_closing_note_not_the_whole_accumulated_histo
     assert checks.completion_evidence(str(wl.proj), evidence_text) is True, (
         "the real sha in the closing note was not recognised once scoped to it alone"
     )
+
+
+def test_p27_every_obligation_the_verdict_fired_rides_the_gate_block(wl):  # noqa: F811
+    """agent/plans/PLAN-stop-hook-continuity.md P2.7. A verdict whose regression gate blocks AND whose class sweep fired (written into reason/next_action by `wl_rules.apply_order`) used to emit the gate payload alone, so the sweep came back one judged stop later. CONTROL: before the fix the sweep's search is absent from the block."""
+    wl.say("done for now")
+    wl.brief_now()
+    wl.reg_repo()
+    (wl.proj / "package.json").write_text(PKG_REAL_GATE, encoding="utf-8")
+    wl.run()
+    wl.fixcommit("src.ts", "fix: a real defect")
+    wl.shim_judge(
+        judge_verdict(
+            blind_spot="uncovered path",
+            existing_gate="check:ci-i-dreamed-this",
+            recurring=True,
+            instruction="write a gate",
+        )
+    )
+    shim = wl.base / "binonly" / "claude"
+    payload = json.loads(json.loads(shim.read_text(encoding="utf-8").split("echo ", 1)[1]))
+    payload["structured_output"].update(
+        {
+            "verdict": "continue",
+            "reason": "CLASS SWEEP: the fix touched one call site of a repeated shape",
+            "next_action": "git grep -n 'sibling_call(' src/",
+        }
+    )
+    shim.write_text("#!/bin/bash\necho %s\n" % json.dumps(json.dumps(payload)), encoding="utf-8")
+    out = wl.runj().out
+    assert '"decision": "block"' in out, out[:300]
+    assert "HALLUCINATED" in out, out[:600]
+    assert "ALSO OWED ON THIS FIX-SET" in out, out[-900:]
+    assert "sibling_call(" in out, out[-900:]
+
+
+def test_p27_inverse_a_stop_verdict_adds_nothing(wl):  # noqa: F811
+    wl.say("done for now")
+    wl.brief_now()
+    wl.reg_repo()
+    (wl.proj / "package.json").write_text(PKG_REAL_GATE, encoding="utf-8")
+    wl.run()
+    wl.fixcommit("src.ts", "fix: a real defect")
+    wl.shim_judge(
+        judge_verdict(
+            blind_spot="uncovered path",
+            existing_gate="check:ci-i-dreamed-this",
+            recurring=True,
+            instruction="write a gate",
+        )
+    )
+    out = wl.runj().out
+    assert "HALLUCINATED" in out, out[:600]
+    assert "ALSO OWED ON THIS FIX-SET" not in out, out[-900:]

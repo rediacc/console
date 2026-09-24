@@ -334,20 +334,9 @@ def selftest() -> int:
     import subprocess  # noqa: PLC0415
     import tempfile  # noqa: PLC0415
 
-    bad = 0
+    import wl_common  # noqa: PLC0415 -- the shared selftest checker, loaded only for a selftest
 
-    def check(name: str, ok: bool, detail: str = "") -> None:
-        nonlocal bad
-        print(
-            "  %s  %s%s"
-            % (
-                "PASS" if ok else "FAIL",
-                name,
-                ("\n        " + detail) if (detail and not ok) else "",
-            )
-        )
-        if not ok:
-            bad += 1
+    check = wl_common.Checker("indent")
 
     d = Path(tempfile.mkdtemp(prefix="ressample-"))
     out = d / "run.jsonl"
@@ -425,7 +414,7 @@ def selftest() -> int:
         with contextlib.suppress(Exception):
             child.kill()
         shutil.rmtree(d, ignore_errors=True)
-    return bad
+    return check.failures
 
 
 def main(argv: list[str]) -> int:

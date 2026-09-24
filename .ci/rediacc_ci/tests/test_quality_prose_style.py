@@ -470,6 +470,85 @@ def test_a_fixed_baselined_finding_must_be_drained(tmp_path, capsys):
     assert "no longer fire" in capsys.readouterr().err
 
 
+def test_drain_removes_a_stale_row_and_the_gate_then_greens(tmp_path, capsys):
+    """CONTROL 1: a planted stale row is drained, and the next check exits 0.
+
+    The tree also carries an unbaselined WARNING, which is what made `--write-baseline` unusable as a drain on the real tree (it refuses any addition). `--drain` must succeed past it and must not freeze it.
+    """
+    root = _tree(tmp_path, {"a.md": "Did you run the tests?\n", "b.md": "Did you check it?\n"})
+    ps.run_check(root, GLOBALS, RULES, ["a.md", "b.md"], write_baseline=True)
+    before = ps.load_baseline(root)
+    assert len(before) == 2
+
+    (root / "a.md").write_text("Have the tests been run?\n", encoding="utf-8")
+    (root / "c.md").write_text("It will never fail.\n", encoding="utf-8")
+    got = ps.lint_text("c.md", "It will never fail.\n", RULES, GLOBALS)[0]
+    warned = [f.fid for f in got]
+    assert warned, "the fixture needs an unbaselined WARNING to prove drain does not freeze it"
+    assert all(f.severity == "warning" for f in got)
+    files = ["a.md", "b.md", "c.md"]
+    assert ps.run_check(root, GLOBALS, RULES, files) == 1, "the stale row must red first"
+    assert ps.run_check(root, GLOBALS, RULES, files, write_baseline=True) == 1, (
+        "--write-baseline refuses because of the warning; this is the defect --drain exists for"
+    )
+    capsys.readouterr()
+
+    assert ps.run_check(root, GLOBALS, RULES, files, drain=True) == 0
+    assert "1 drained, 0 added" in capsys.readouterr().err
+    after = ps.load_baseline(root)
+    assert set(after) < set(before), "a drain only removes"
+    assert len(after) == 1
+    assert not set(warned) & set(after), "the unbaselined warning was frozen by a drain"
+    assert ps.run_check(root, GLOBALS, RULES, files) == 0
+
+
+def test_drain_never_accepts_a_new_finding(tmp_path, capsys):
+    """CONTROL 2: a stale row AND a genuinely new error. The drain removes the row, adds nothing, and the same run still fails on the new error."""
+    root = _tree(tmp_path, {"a.md": "Did you run the tests?\n"})
+    ps.run_check(root, GLOBALS, RULES, ["a.md"], write_baseline=True)
+    before = ps.load_baseline(root)
+
+    (root / "a.md").write_text("Have the tests been run?\n", encoding="utf-8")
+    (root / "b.md").write_text("Did you check it?\n", encoding="utf-8")
+    new = {f.fid for f in ps.lint_text("b.md", "Did you check it?\n", RULES, GLOBALS)[0]}
+    assert new
+    capsys.readouterr()
+
+    assert ps.run_check(root, GLOBALS, RULES, ["a.md", "b.md"], drain=True) == 1
+    err = capsys.readouterr().err
+    assert "1 drained, 0 added" in err
+    assert "Do not add them to the baseline" in err
+    after = ps.load_baseline(root)
+    assert after == {}, "a drain accepted a new finding"
+    assert not new & set(after)
+    assert set(after) <= set(before)
+    # And it stays refused: a second drain has nothing to remove and still reds.
+    assert ps.run_check(root, GLOBALS, RULES, ["a.md", "b.md"], drain=True) == 1
+    assert ps.load_baseline(root) == {}
+
+
+def test_a_named_file_drain_leaves_other_files_rows_alone(tmp_path):
+    """Scope: rows of a file the drain did not scan are not evidence of anything, so they stay."""
+    root = _tree(tmp_path, {"a.md": "Did you run the tests?\n", "b.md": "Did you check it?\n"})
+    ps.run_check(root, GLOBALS, RULES, ["a.md", "b.md"], write_baseline=True)
+    before = ps.load_baseline(root)
+    (root / "a.md").write_text("Have the tests been run?\n", encoding="utf-8")
+    assert ps.run_check(root, GLOBALS, RULES, ["a.md"], drain=True) == 0
+    after = ps.load_baseline(root)
+    assert len(after) == 1
+    assert set(after) < set(before)
+    assert next(iter(after.values()))[0] == "b.md"
+
+
+def test_drain_refuses_without_a_baseline_and_with_write_flags(tmp_path):
+    root = _tree(tmp_path, {"a.md": "Did you run the tests?\n"})
+    assert ps.run_check(root, GLOBALS, RULES, ["a.md"], drain=True) == 1
+    assert ps.load_baseline(root) is None, "a drain must never CREATE a baseline"
+    ps.run_check(root, GLOBALS, RULES, ["a.md"], write_baseline=True)
+    assert ps.run_check(root, GLOBALS, RULES, ["a.md"], drain=True, accept_new=True) == 1
+    assert ps.run_check(root, GLOBALS, RULES, ["a.md"], drain=True, write_baseline=True) == 1
+
+
 def test_an_unreadable_file_is_unchecked_not_clean(tmp_path, capsys):
     root = _tree(tmp_path, {"a.md": "clean prose here.\n", "b.py": "def f(:\n"})
     rc = ps.run_check(root, GLOBALS, RULES, ["a.md", "b.py"])

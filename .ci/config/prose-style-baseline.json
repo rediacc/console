@@ -1,31 +1,30 @@
 {
  "why": [
   "Frozen prose-style debt. SHRINK-ONLY: a new finding fails the gate and does NOT",
-  "belong here. Drain with `check_prose_style.py check --write-baseline` after",
-  "fixing something, never to make a red go away.",
+  "belong here. Drain with `check_prose_style.py check --drain` after fixing",
+  "something, never to make a red go away. `--drain` only removes rows.",
   "",
   "Ids are a hash of (path, rule, finding text). NOT the line number: a line number",
   "churns when a paragraph moves above it, and a baseline that churns gets",
   "regenerated wholesale, which re-absorbs every fresh finding made that hour. The",
   "price is that a REWRITE re-keys an entry, and that is the right price: a rewrite",
   "is exactly when a human should look at the line again. When a re-key happens,",
-  "hand-edit the one line rather than regenerating, which would rewrite every entry",
-  "and absorb any other writer's fresh findings.",
+  "`--drain` drops the old id and the new one fails as NEW, which is the look.",
   "",
   "`--write-baseline` REFUSES a drain whose ADDED side is non-empty, because a total",
   "that shrank by 29 can still hide one brand-new violation. Comparing sizes is not",
   "the same claim as diffing the sets."
  ],
- "count": 2956,
- "files": 731,
+ "count": 2954,
+ "files": 730,
  "by_rule": {
   "R1": 1611,
   "R11": 150,
   "R14": 1,
   "R18": 14,
   "R19": 62,
-  "R2": 634,
-  "R7": 484
+  "R2": 633,
+  "R7": 483
  },
  "findings": {
   ".ci/breakpoint/README.md": {
@@ -2183,11 +2182,6 @@
   ".claude/rediacc_hooks/tests/test_wl_first_touch.py": {
    "R7": [
     "0da3e1565afcfe0c"
-   ]
-  },
-  ".claude/rediacc_hooks/tests/test_wl_plan_fidelity.py": {
-   "R7": [
-    "7e5a96f82be8a845"
    ]
   },
   ".claude/rediacc_hooks/tests/test_wl_report_inbox.py": {
@@ -4533,8 +4527,7 @@
     "c34140d39932bab7"
    ],
    "R2": [
-    "c1c79ecf40261934",
-    "f844d21d694b640d"
+    "c1c79ecf40261934"
    ],
    "R7": [
     "03c66343696e4d9e",

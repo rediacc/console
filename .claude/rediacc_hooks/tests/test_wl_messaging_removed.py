@@ -236,8 +236,8 @@ def test_a_leftover_poll_marker_buys_no_silent_stop(wl):  # noqa: F811
 def test_no_hook_still_wires_the_waiter():
     commands = [m["command"] for m in lifecycle.flat_commands("post-tool")]
     assert not [c for c in commands if "wl_wait" in c], commands
-    # 15 (band-notice) + 60 (onboard), the members that remain.
-    assert lifecycle.entry_timeout("post-tool") == 75, lifecycle.entry_timeout("post-tool")
+    # 15 (band-notice) + 60 (onboard) + 20 (stop-hook-edit-check, PLAN-stop-hook-continuity P2.6), the members that remain.
+    assert lifecycle.entry_timeout("post-tool") == 95, lifecycle.entry_timeout("post-tool")
     # CONTROL: the reader sees the chain at all.
     assert any("band-notice.py" in c for c in commands), commands
     assert any("onboard.py" in c for c in commands), commands

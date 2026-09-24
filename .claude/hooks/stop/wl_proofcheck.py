@@ -19,6 +19,7 @@ NOT DUPLICATED, REUSED. `validate_search`, `names_destructive` and the Demand cl
 import os
 
 import wl_classsweep as CS
+import wl_common
 import wl_rules
 
 PROOF_MARKER = "PROOF OBLIGATION: DID THE BULK TRANSFORM PROVE ITSELF"
@@ -140,9 +141,7 @@ def prompt_section(fix_signal, outstanding=None):
     return ""
 
 
-def _clean(obj, key, limit):
-    v = obj.get(key)
-    return v.strip()[:limit] if isinstance(v, str) else ""
+_clean = wl_common.clean
 
 
 def read_verdict(out):

@@ -313,6 +313,7 @@ def test_154_next_wakeups_is_gone_from_both_emit_paths(wl):  # noqa: F811
 
     wl.age_state("deadbeef", 20)
     wl.task(8, "pending", "moved")
+    wl.add_item("- [x] (deadbeef) a finished piece of work")
     wl.newturn()
     wl.say("answer\n\n## Remaining\n- #7 thing (pending)\n- #8 moved (pending)")
     blocked = wl.run({"WORKLIST_FOCUS": "off"})
@@ -483,20 +484,21 @@ def test_156_focus_surfaces_one_rotating_check_per_stop_in_lru_order(wl):  # noq
     wl.hand_now()
     wl.env["WORKLIST_STUCK_ROUNDS"] = "99"
     wl.add_item("- [ ] (deadbeef) open thing")
-    # No brief_now: the session-brief check is the second rotating violation. The message carries a '## Remaining' section so exactly TWO rotating checks are outstanding and the cycle length is 2, not 3.
-    wl.say("answer\n\n## Remaining\n- the open thing (pending, mine)")
+    # The message carries NO '## Remaining' section, which is the second rotating violation (the session-brief check that used to fill this role was deleted 2026-09-24), so exactly TWO rotating checks are outstanding and the cycle length is 2.
+    wl.say("answer")
     first = wl.run().out
     wl.newturn()
-    wl.say("answer\n\n## Remaining\n- the open thing (pending, mine)")
-    second = wl.run().out
+    wl.say("answer")
+    second = wlfix.quoted(wl.run().out)
     wl.newturn()
-    wl.say("answer\n\n## Remaining\n- the open thing (pending, mine)")
-    third = wl.run().out
+    wl.say("answer")
+    third = wlfix.quoted(wl.run().out)
 
-    one_open = "OPEN worklist item" in first
-    one_brief = "session brief" in first
+    # QUOTED, not named: since 2026-09-24 the check this stop did not quote is NAMED below the quote, so both texts appear and only the quoted region tells which one rotated in.
+    one_open = "OPEN worklist item" in wlfix.quoted(first)
+    one_brief = "no '## Remaining' section" in wlfix.quoted(first)
     two_open = "OPEN worklist item" in second
-    two_brief = "session brief" in second
+    two_brief = "no '## Remaining' section" in second
     assert one_open != one_brief, "156: stop 1 surfaced %d rotating checks" % (one_open + one_brief)
     assert two_open != two_brief, "156: stop 2 surfaced %d rotating checks" % (two_open + two_brief)
     assert one_open != two_open, "156: the two stops surfaced the same check"
@@ -512,7 +514,7 @@ def test_156c_control_focus_off_restores_the_dump_all_block(wl):  # noqa: F811
     wl.say("answer")
     got = wl.run({"WORKLIST_FOCUS": "off"})
     assert "OPEN worklist item" in got.out, got.out[:300]
-    assert "session brief" in got.out, got.out[:300]
+    assert "no '## Remaining' section" in got.out, got.out[:300]
     assert "check(s) failed" in got.out, got.out[:300]
 
 

@@ -67,6 +67,7 @@ import select
 import sys
 import tempfile
 import time
+from typing import Any
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -103,6 +104,7 @@ for _name in (
     "wl_hints",
     "wl_roundlog",
     "wl_defersettle",
+    "wl_leasehelp",
     "worklist_messages",
 ):
     try:
@@ -110,6 +112,15 @@ for _name in (
     except Exception as _exc:  # noqa: BLE001 -- a broken sibling must not crash the probe
         _BROKEN[_name] = "%s: %s" % (type(_exc).__name__, _exc)
         _MODS[_name] = _BrokenModule(_name)
+
+# THE LAST-KNOWN-GOOD HOOK (agent/plans/PLAN-stop-hook-continuity.md P2.5), imported on its own: it is stdlib-only precisely so it still loads when every sibling above is broken, which is the one case it exists for.
+LKG: Any
+try:
+    import wl_lkg as LKG
+except Exception:  # noqa: BLE001 -- without it the crash block below fires exactly as before
+    LKG = None
+# The Stop payload exactly as read, so a crashed stop can be replayed against the snapshot; and whether this process is running the Stop path at all.
+_RUN = {"raw": "", "stop": False}
 
 C = _MODS["wl_core"]
 S = _MODS["wl_store"]
@@ -119,6 +130,7 @@ M = _MODS["worklist_messages"]
 H = _MODS["wl_hints"]
 RL = _MODS["wl_roundlog"]
 DS = _MODS["wl_defersettle"]
+LH = _MODS["wl_leasehelp"]
 
 # Re-exported for direct importers (the suite drives these two as library functions; keeping them on this module is part of the compatibility surface). Absent when their module is broken, which is correct: a caller gets an AttributeError naming this module instead of a silent stub.
 if "wl_checks" not in _BROKEN:
@@ -287,6 +299,7 @@ def _read_event():
                 break  # EOF: the writer closed, so we have everything
             raw += chunk.decode("utf-8", "replace")
 
+    _RUN["raw"] = raw
     try:
         ev = json.loads(raw) if raw.strip() else None
         return (ev, True) if isinstance(ev, dict) else ({}, False)
@@ -886,6 +899,12 @@ def _item_cli(argv, worklist):
         text = " ".join(argv[2:]).replace("\n", " ").strip()
         if not text:
             die("an empty item tracks nothing")
+        # BLOCKED_BY (agent/plans/PLAN-stop-hook-continuity.md P2.4) is refused on an unknown or closed blocker: a wait on nothing would hide the item forever.
+        if LH.blocked_by(text):
+            _berr = LH.blocker_error("", text, S.load(worklist, sync=True).by_id)
+            if _berr:
+                print("REFUSED: %s" % _berr, file=sys.stderr)
+                sys.exit(2)
         rid = S.add_item(worklist, me, text)
         print("added #%s: %s" % (rid, text))
         return
@@ -902,6 +921,14 @@ def _item_cli(argv, worklist):
         )
         print(text, file=sys.stdout if rc == 0 else sys.stderr)
         sys.exit(rc)
+    if mode == "--relay":
+        _relay_cli(argv, worklist, me, die)
+        return
+    if mode == "--lease" and "," in argv[2]:
+        # ONE CALL, SEVERAL ITEMS (P2.3): the same lease applied to each id in turn, each through the full single-item path below, so every check still runs per item.
+        for one in [x.strip() for x in argv[2].split(",") if x.strip()]:
+            _item_cli([mode, me, one, *argv[3:]], worklist)
+        return
     item_id = argv[2].lstrip("#")
     fold = S.load(worklist, sync=True)
     rec = fold.by_id.get(item_id)
@@ -976,6 +1003,11 @@ def _item_cli(argv, worklist):
                     "the change it was written under still EXECUTES." % (item_id, _carried),
                     file=sys.stderr,
                 )
+        if LH.blocked_by(rest):
+            _berr = LH.blocker_error(item_id, rest, fold.by_id)
+            if _berr:
+                print("REFUSED: %s" % _berr, file=sys.stderr)
+                sys.exit(2)
         S.update_item(worklist, me, item_id, rest)
         print("updated #%s" % item_id)
         return
@@ -1028,10 +1060,30 @@ def _item_cli(argv, worklist):
 
             busy = wl_roster.live_writers_estimate(os.getcwd(), me)
             if busy is None or len(busy) < wl_roster.WRITER_CAP:
+                # NO RESERVATION KNOB, deliberately (2026-09-24): a slot held for a writer about to be spawned is taken by SPAWNING that writer, after which this same call succeeds. A reservation would be a second, unverifiable claim on the cap, which is the escape hatch the roster exists to refuse.
                 die(
                     "worker:queue is only for writer work the cap forbids starting, and %s of %d "
-                    "writer slots are busy: start the work instead"
+                    "writer slots are busy: start the work instead. If the free slot is meant for "
+                    "a writer about to be spawned, spawn that writer first; the cap is then full "
+                    "and this lease is accepted"
                     % ("an unknown number" if busy is None else len(busy), wl_roster.WRITER_CAP)
+                )
+        if wm == "worker:" + LH.LEAD_WORKER:
+            # worker:lead (P2.1): the lead drives the item inline. Covered at stop time only while a background task of this session is live, and capped, so it cannot become a way to park work.
+            _held = [
+                r
+                for r in fold.items
+                if r["id"] != item_id
+                and r["state"] == ">"
+                and r.get("worker") == LH.LEAD_WORKER
+                and C.owned_by_me(r.get("owner"), C.resolve_session_id() or me)
+                and C.lease_state(r.get("line") or "") in ("fresh", "expired")
+            ]
+            if len(_held) >= LH.LEAD_MAX:
+                die(
+                    "worker:lead already holds %d item(s) (%s); the cap is %d. Finish or release "
+                    "one first: an inline claim on more than that is a parking bay"
+                    % (len(_held), ", ".join("#" + r["id"] for r in _held), LH.LEAD_MAX)
                 )
         note = " ".join(a for a in argv[4:] if not a.startswith("worker:")).strip()
         if C.lease_state("until:%s" % until) != "fresh":
@@ -1055,6 +1107,8 @@ def _item_cli(argv, worklist):
         except (OSError, ValueError):
             _running = None
         was_verified = False
+        if wid == LH.LEAD_WORKER:
+            _running = None  # not a background task id; the stop verifies what covers it
         if _running is not None:
             if wid in _running:
                 was_verified = True
@@ -1078,6 +1132,52 @@ def _item_cli(argv, worklist):
         print("leased #%s until %s on %s%s" % (item_id, until, wm, verified))
         return
     die("unknown item mode %s" % mode)
+
+
+def _relay_cli(argv, worklist, me, die):
+    """`--relay <me> <old-worker> <new-worker>`: move every lease this session holds on one worker to another, in one call (agent/plans/PLAN-stop-hook-continuity.md P2.3).
+
+    The case it exists for: a background shell was replaced by a new one carrying the same work, and every item it held needed its own `--lease` again. Each relayed item keeps its expiry when that is still fresh and gets AUTO_LEASE_MIN otherwise."""
+    if len(argv) != 4:
+        die(M.CLI_RELAY_USAGE)
+    old = argv[2].split("worker:", 1)[-1]
+    new = argv[3].split("worker:", 1)[-1]
+    if not old or not new or old == new:
+        die(M.CLI_RELAY_USAGE)
+    fold = S.load(worklist, sync=True)
+    who = C.resolve_session_id() or me
+    moved = [
+        r
+        for r in fold.items
+        if r["state"] == ">" and r.get("worker") == old and C.owned_by_me(r.get("owner"), who)
+    ]
+    if not moved:
+        die("no [>] item of yours is leased to worker:%s; nothing relayed" % old)
+    if new == LH.LEAD_WORKER:
+        held = [
+            r
+            for r in fold.items
+            if r["state"] == ">"
+            and r.get("worker") == LH.LEAD_WORKER
+            and C.owned_by_me(r.get("owner"), who)
+        ]
+        if len(held) + len(moved) > LH.LEAD_MAX:
+            die(
+                "worker:lead would hold %d item(s); the cap is %d"
+                % (len(held) + len(moved), LH.LEAD_MAX)
+            )
+    for r in moved:
+        until = (
+            r.get("until")
+            if C.lease_state(r.get("line") or "") == "fresh"
+            else C.stamp_ahead(LH.AUTO_LEASE_MIN)[:16] + "Z"
+        )
+        # The note must not carry a `worker:` token: the rendered line only appends the live worker when the text has none, so a note naming the OLD worker would shadow the new one for every reader of the line.
+        S.lease_item(worklist, me, r["id"], until, new, "relayed from task %s" % old)
+    print(
+        "relayed %d lease(s) from worker:%s to worker:%s: %s"
+        % (len(moved), old, new, ", ".join("#" + r["id"] for r in moved))
+    )
 
 
 def _annotated_running(ids, me):
@@ -1695,7 +1795,7 @@ def main():
         try:
             S.load(wl, sync=True)  # sync first, so the signature covers the synced world
             doc = S.load_state(wl, prefix)
-            doc["state_sig"] = S.state_world_sig(root, wl, prefix)
+            doc["state_sig"] = S.state_items_sig(S.load(wl, sync=False), prefix)
             S.save_state(wl, prefix, doc)
         except Exception:  # noqa: BLE001 -- the sig is an optimisation, never a gate on writing
             pass
@@ -1968,17 +2068,6 @@ def main():
         stamp = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
         with open(wl.with_suffix(".sessions"), "a", encoding="utf-8") as fh:
             fh.write("%s %s %s\n" % (prefix, stamp, text))
-        # Stamp the WORLD alongside the brief, so the staleness check can ask whether reality moved rather than only whether the clock did. A brief describing an unchanged world is still accurate at 91 minutes, and nagging for a rewrite of an accurate sentence is the pure-wall-clock failure this closes. The check falls back to wall-clock when the key is absent, so an older brief --
-        # or one written while wl_store was broken -- behaves exactly as before.
-        #
-        # Best-effort and last, deliberately: this branch is self-contained so a broken sibling cannot take the brief channel down, and that guarantee outranks the optimisation. The brief is already on disk by this point.
-        try:
-            _root = C.project_start()
-            _doc = S.load_state(wl, prefix)
-            _doc["brief_sig"] = S.state_world_sig(_root, wl, prefix)
-            S.save_state(wl, prefix, _doc)
-        except Exception:  # noqa: BLE001 -- never let the sig block the brief
-            pass
         print("brief recorded for %s (%d chars)" % (prefix, len(text)))
         return
     # ONE CLI DOOR. Everything a session is told to run goes through this file, so the report inbox is reachable here too rather than by remembering another script name. It delegates; it does not reimplement.
@@ -2101,6 +2190,7 @@ def main():
         "--tick",
         "--defer",
         "--lease",
+        "--relay",
         "--update",
         "--status",
         "--list",
@@ -2119,10 +2209,19 @@ def main():
     if os.environ.get("GITHUB_ACTIONS") == "true":
         sys.exit(0)
 
+    _RUN["stop"] = True
     event, event_ok = _read_event()
     # _local_project_start, NOT C.project_start: this line runs BEFORE the _BROKEN fail-closed emit below, so touching a sibling here would raise out of _BrokenModule and crash the hook with nothing on stdout -- which the harness reads as ALLOW. Same reason _local_worklist_path exists.
     worklist = _local_worklist_path(_local_project_start(event))
     if _BROKEN:
+        # THE SNAPSHOT FIRST: the same stop, judged by the last module set that ran clean. Only when it cannot answer does the crash block below fire.
+        _lkg = (
+            LKG.fallback(_RUN["raw"], "sibling import failed: %s" % ", ".join(sorted(_BROKEN)))
+            if LKG is not None and not os.environ.get("WORKLIST_LKG_CHILD")
+            else None
+        )
+        if _lkg:
+            _emit(_lkg)
         # Fail CLOSED with the full list: a hook that cannot run its checks must not wave the stop through, and the session that hits this is the one positioned to fix it.
         _emit(
             {
@@ -2150,11 +2249,35 @@ if __name__ == "__main__":
     # A crash is now a BLOCK carrying the traceback, because a hook that cannot decide must not be the way out, and the session that hits it is the one positioned to fix it. Deliberately outside main() so it covers every mode.
     try:
         main()
-    except SystemExit:
+    except SystemExit as _exit:
+        # A STOP THAT DID NOT CRASH banks its module set as last-known-good (P2.5): one hash per stop, one copy per change. Never from the snapshot's own child, never with a broken sibling.
+        if (
+            _RUN["stop"]
+            and _exit.code in (0, None)
+            and not _BROKEN
+            and LKG is not None
+            and not os.environ.get("WORKLIST_LKG_CHILD")
+        ):
+            LKG.snapshot()
         raise
-    except BaseException:  # noqa: BLE001 - a bare crash must not become an allow
+    except BaseException as _crash:  # noqa: BLE001 - a bare crash must not become an allow
         import traceback
 
+        if _RUN["stop"] and LKG is not None and not os.environ.get("WORKLIST_LKG_CHILD"):
+            _frames = traceback.extract_tb(_crash.__traceback__)
+            _where = (
+                "%s at %s:%d"
+                % (
+                    type(_crash).__name__,
+                    os.path.basename(_frames[-1].filename),
+                    _frames[-1].lineno or 0,
+                )
+                if _frames
+                else type(_crash).__name__
+            )
+            _lkg = LKG.fallback(_RUN["raw"], _where)
+            if _lkg:
+                _emit(_lkg)
         _emit(
             {
                 "systemMessage": "Stop hook CRASHED; blocking rather than waving the stop "

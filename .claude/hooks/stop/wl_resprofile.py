@@ -351,20 +351,9 @@ def selftest() -> int:
     """Control-first, on a scratch store. Returns the failure count."""
     import shutil  # noqa: PLC0415
 
-    bad = 0
+    import wl_common  # noqa: PLC0415 -- the shared selftest checker, loaded only for a selftest
 
-    def check(name: str, ok: bool, detail: str = "") -> None:
-        nonlocal bad
-        print(
-            "  %s  %s%s"
-            % (
-                "PASS" if ok else "FAIL",
-                name,
-                ("\n        " + detail) if (detail and not ok) else "",
-            )
-        )
-        if not ok:
-            bad += 1
+    check = wl_common.Checker("indent")
 
     d = Path(tempfile.mkdtemp(prefix="resprofile-"))
     paths = (d / "wl.resprofile.jsonl", d / "wl.resprofile.json")
@@ -454,7 +443,7 @@ def selftest() -> int:
         check("CONTROL: an unknown rollup format is refused by name", fold(paths) is None)
     finally:
         shutil.rmtree(d, ignore_errors=True)
-    return bad
+    return check.failures
 
 
 if __name__ == "__main__":

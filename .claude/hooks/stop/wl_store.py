@@ -42,6 +42,7 @@ import time
 from typing import Any
 
 import wl_core as C
+import wl_leasehelp as LH
 
 # Kept as module constants so the lock sites read the same with or without the module present. The values are POSIX's and are only ever passed to _flock.
 LOCK_EX = getattr(fcntl, "LOCK_EX", 2)
@@ -1272,12 +1273,17 @@ def classify_items(fold, session_id, live_worker_ids=None):
     v14 gap 4: an EXPIRED (never invalid) lease whose worker id appears in `live_worker_ids` (the OS-verified running background tasks) is tolerated as in-flight instead of failing closed, with `lease_tolerated` stamped on the rec so displays can say so. A long job outliving the lease cap while its watcher is demonstrably alive is supervision, not abandonment; the moment the
     worker disappears the item fails closed exactly as before."""
     open_items, others, deferred, in_flight = [], {}, [], []
+    by_id = {r["id"]: r for r in fold.items}
     for rec in fold.items:
         state, owner, line = rec["state"], rec["owner"], rec["line"]
         # v14: DISPLAY strings are brief (basetext + latest note); every decision below still reads the full line (lease_state, ownership).
         disp = brief_line(rec)
         mine = C.owned_by_me(owner, session_id)
         if state == " ":
+            # BLOCKED_BY (agent/plans/PLAN-stop-hook-continuity.md P2.4): an open item waiting on items that are still open is `waiting`, not open work in hand. The chain's root is an ordinary item, so it still blocks; nothing is hidden, only counted once.
+            rec["waiting_on"] = LH.waiting_on(rec, by_id) if mine else []
+            if mine and rec["waiting_on"]:
+                continue
             if mine:
                 open_items.append(disp)
             else:
@@ -1289,6 +1295,17 @@ def classify_items(fold, session_id, live_worker_ids=None):
                 others.setdefault(owner, []).append(disp)
                 continue
             ls = C.lease_state(line)
+            if rec.get("worker") == LH.LEAD_WORKER:
+                # worker:lead (P2.1): in flight exactly while something of this session is live to wake the lead; the caller adds LEAD_WORKER to `live_worker_ids` when it is. Otherwise it fails closed like any dead lease, whatever its expiry says.
+                if ls in ("fresh", "expired") and LH.LEAD_WORKER in (live_worker_ids or ()):
+                    rec["lease_tolerated"] = ls == "expired"
+                    in_flight.append(rec)
+                else:
+                    open_items.append(
+                        "%s   <- [>] worker:lead with nothing of this session running to wake it; "
+                        "do it now, or start the background task it waits on" % disp
+                    )
+                continue
             if ls == "fresh":
                 in_flight.append(rec)
             elif ls == "expired" and rec.get("worker") and rec["worker"] in (live_worker_ids or ()):
@@ -2127,28 +2144,48 @@ def read_briefs(worklist):
     return out
 
 
-def brief_state(worklist, session_id, briefs=None):
-    """('ok'|'missing'|'stale', minutes_old_or_None, others_text)."""
-    briefs = read_briefs(worklist) if briefs is None else briefs
-    mine = None
-    for prefix, val in briefs.items():
-        if session_id and session_id.startswith(prefix):
-            mine = val
+# How often the hook re-stamps a brief it writes itself. Well inside SESSION_BRIEF_STALE_MIN, so a live session never reads as absent to `sole_live_session` or peer listing.
+AUTO_BRIEF_RESTAMP_MIN = 30
+
+
+def auto_brief(worklist, root, session_id, fold):
+    """Stamp this session's brief from facts the hook holds, and return the text written ("" when the current one is fresh).
+
+    Since 2026-09-24 (agent/plans/PLAN-stop-hook-continuity.md P1.1) the hook writes the brief rather than demanding one every 90 minutes: its V_BRIEF justification, "other sessions share this worktree", is gone with the single-terminal ruling and the messaging removal, and a hook that is running is stronger liveness evidence than a hand-typed sentence. The text is the first line of `## Next
+    action` in this session's STATE.md, else the newest in-flight item. A manual `--brief` younger than AUTO_BRIEF_RESTAMP_MIN is left alone."""
+    me8 = (session_id or "")[:8]
+    if not me8:
+        return ""
+    for prefix, (when, _t) in read_briefs(worklist).items():
+        if (
+            session_id.startswith(prefix)
+            and when is not None
+            and (C.utcnow() - when).total_seconds() / 60.0 < AUTO_BRIEF_RESTAMP_MIN
+        ):
+            return ""
+    text = ""
+    for raw in agent_next_action(root, me8).splitlines():
+        step = re.sub(r"^\s*(?:[-*]|\d+[.)])\s*", "", raw).strip()
+        if step:
+            text = step
             break
-    others = "\n".join(
-        "  %s  %s" % (k, v[1])
-        for k, v in sorted(briefs.items())
-        if not (session_id and session_id.startswith(k))
-    )
-    if mine is None:
-        return "missing", None, others
-    when = mine[0]
-    if when is None:
-        return "stale", None, others
-    age = (C.utcnow() - when).total_seconds() / 60.0
-    if age > SESSION_BRIEF_STALE_MIN:
-        return "stale", int(age), others
-    return "ok", int(age), others
+    if not text:
+        flying = sorted(
+            (
+                r
+                for r in getattr(fold, "items", []) or []
+                if r.get("state") == ">" and C.owned_by_me(r.get("owner"), session_id)
+            ),
+            key=lambda r: str(r.get("upd") or ""),
+        )
+        text = brief_text(flying[-1]) if flying else "(no ## Next action and nothing in flight)"
+    text = " ".join(str(text).split())[:SESSION_BRIEF_MAX]
+    try:
+        with open(briefs_path(worklist), "a", encoding="utf-8") as fh:
+            fh.write("%s %s %s\n" % (me8, C.stamp_now(), text))
+    except OSError:
+        return ""
+    return text
 
 
 def sole_live_session(worklist, session_id):
@@ -2360,7 +2397,30 @@ def agent_state_dead(sections, session_id, projects_dir, now=None):
     return kept, reaped
 
 
-def agent_state_state(root, session_id="", cur_sig=None, saved_sig=None):
+_NEXT_ACTION_ID = re.compile(r"#([0-9a-f]{8,12})\b")
+
+
+def next_action_ids(body):
+    """The `#<id>` item ids named under `## Next action` in one section body, in order."""
+    i = str(body or "").find("## Next action")
+    if i < 0:
+        return []
+    rest = body[i + len("## Next action") :]
+    j = rest.find("\n## ")
+    return _NEXT_ACTION_ID.findall(rest[:j] if j >= 0 else rest)
+
+
+def state_items_sig(fold, session_id):
+    """The owned item SET, id and state only: the judgment-facts key for STATE.md staleness (agent/plans/PLAN-stop-hook-continuity.md P1.2). HEAD and harness task statuses are deliberately absent -- every commit and every new background task staled the document under `state_world_sig`, and neither changes what a recovery document must say."""
+    mine = sorted(
+        "%s:%s" % (r["id"], r["state"])
+        for r in getattr(fold, "items", []) or []
+        if C.owned_by_me(r.get("owner"), session_id)
+    )
+    return hashlib.sha1("|".join(mine).encode("utf-8", "replace")).hexdigest()[:16]
+
+
+def agent_state_state(root, session_id="", cur_sig=None, saved_sig=None, fold=None):
     """('no-dir'|'missing'|'thin'|'bloated'|'aimless'|'stale'|'ok', age_min, my_body).
 
     WHY THIS EXISTS. Compaction silently drops context, and a session lost a real operator decision that way: the rediacc-autopilot App had already been created, the operator had said so, and after a compact it was reported as blocked-on-operator. The transcript is not the recovery mechanism, because the thing that failed IS the transcript being summarised.
@@ -2409,6 +2469,17 @@ def agent_state_state(root, session_id="", cur_sig=None, saved_sig=None):
         return verdict, int(age), body
     if age <= AGENT_STATE_STALE_MIN:
         return "ok", int(age), body
+    # JUDGMENT-KEYED (2026-09-24, agent/plans/PLAN-stop-hook-continuity.md P1.2). When `## Next action` names items, the document is stale exactly when every one of them has left the open states: the action it hands a compacted session is then done. When it names none, the owned item set (`state_items_sig`, the caller's `cur_sig`) moving is the trigger.
+    if fold is not None:
+        named = next_action_ids(body)
+        if named:
+            live = [
+                r
+                for r in getattr(fold, "items", []) or []
+                if r.get("state") in (" ", ">", "?")
+                and any(str(r["id"]).startswith(n) or n.startswith(str(r["id"])) for n in named)
+            ]
+            return ("ok" if live else "stale"), int(age), body
     if saved_sig is None:
         if age <= AGENT_STATE_ADOPT_MAX_MIN:
             return "ok", int(age), body

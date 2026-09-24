@@ -146,6 +146,8 @@ PATTERNS = {
         "members": _members(
             {"command": "python3 " + _P % "hooks/context/band-notice.py", "timeout": 15},
             "python3 " + _P % "hooks/context/onboard.py",
+            # PLAN-stop-hook-continuity P2.6: an edit to a Stop-hook module is linted and import-smoked in the writer's own turn. It warns and never exits 2, so nothing behind it is stopped. Two 8-second steps plus interpreter start fit in 20.
+            {"command": "python3 " + _P % "hooks/context/stop-hook-edit-check.py", "timeout": 20},
         ),
     },
     "pre-compact": {

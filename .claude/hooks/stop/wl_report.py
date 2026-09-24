@@ -291,6 +291,98 @@ def unread(store, branch=None, reader=None):
     return out
 
 
+# ---- delivery the lead already received (agent/plans/PLAN-stop-hook-continuity.md P1.5) --------
+
+_NOTE_TASK = re.compile(rb"<task-id>([A-Za-z0-9_-]+)</task-id>")
+_NOTE_RESULT = re.compile(rb"<result>((?:\s|\\n)*)(</result>)?")
+# Clock skew allowed between a report's capture stamp and the notification that delivered the same stop: the SubagentStop capture and the harness notification are written within a second or two of each other, in either order.
+DELIVERY_SLACK_S = 120
+
+
+def _iso_epoch(stamp):
+    """Epoch seconds from an ISO8601 stamp with or without fractional seconds, or None."""
+    try:
+        return datetime.datetime.fromisoformat(str(stamp or "")).timestamp()
+    except ValueError:
+        return None
+
+
+def _record_epoch(raw):
+    try:
+        rec = json.loads(raw)
+    except ValueError:
+        return None
+    return _iso_epoch(rec.get("timestamp")) if isinstance(rec, dict) else None
+
+
+def delivered_ids(transcript_path, cursor=None):
+    """(({short id: newest delivery epoch}, cursor)): the sub-agents whose COMPLETED task notification, with a non-empty `<result>`, reached the lead's own transcript.
+
+    The lead's transcript already holds `<task-notification>` records carrying `<task-id><agent id></task-id>`, `<status>completed</status>` and the agent's final text in `<result>` (measured 2026-09-24: 3,457 of them in one lead transcript), while the report store kept demanding `--read` for the same text. An EMPTY `<result>` is not a delivery: that is the [SILENT] case, which stays a real signal.
+
+    Incremental: `cursor` is {"ino", "off", "ids"} from the previous call; only complete lines past `off` are read, and a replaced file restarts at 0."""
+    cur = dict(cursor or {})
+    ids = dict(cur.get("ids") or {})
+    try:
+        path = pathlib.Path(transcript_path or "")
+        st = path.stat()
+    except (OSError, TypeError, ValueError):
+        return ids, cur
+    off = int(cur.get("off") or 0)
+    if cur.get("ino") != st.st_ino or off > st.st_size:
+        off, ids = 0, {}
+    try:
+        with path.open("rb") as fh:
+            fh.seek(off)
+            blob = fh.read()
+    except OSError:
+        return ids, cur
+    cut = blob.rfind(b"\n")
+    if cut >= 0:
+        for raw in blob[: cut + 1].splitlines():
+            if b"<status>completed</status>" not in raw or b"<result>" not in raw:
+                continue
+            marks = list(_NOTE_TASK.finditer(raw))
+            for i, m in enumerate(marks):
+                seg = raw[m.end() : marks[i + 1].start() if i + 1 < len(marks) else len(raw)]
+                if b"<status>completed</status>" not in seg:
+                    continue
+                res = _NOTE_RESULT.search(seg)
+                if res is None or res.group(2) is not None:
+                    continue  # no result, or an empty one: the [SILENT] shape
+                at = _record_epoch(raw)
+                if at is None:
+                    continue
+                sid = short_id(m.group(1).decode())
+                ids[sid] = max(at, ids.get(sid, 0.0))
+        off += cut + 1
+    return ids, {"ino": st.st_ino, "off": off, "ids": ids}
+
+
+def mark_delivered(store, reader, entries, delivered):
+    """Append a `read` event (`via: task-notification`) for every non-silent entry whose agent's completed notification reached the lead at or after its capture; returns the entries still unread."""
+    left = []
+    for e in entries:
+        base = str(e.get("id") or "").split("-", 1)[0]
+        cap = _iso_epoch(e.get("at"))
+        got = delivered.get(base)
+        if e.get("silent") or got is None or cap is None or got < cap - DELIVERY_SLACK_S:
+            left.append(e)
+            continue
+        _append_line(
+            read_path(store),
+            {
+                "ev": "read",
+                "id": e["id"],
+                "by": str(reader or "")[:32],
+                "at": C.stamp_now(),
+                "branch": e.get("branch", ""),
+                "via": "task-notification",
+            },
+        )
+    return left
+
+
 def resolve(store, ident):
     """An index entry by exact id, else by unique prefix. An AMBIGUOUS prefix returns nothing rather than an arbitrary winner: showing the wrong report is worse than saying the id was not specific enough."""
     entries = read_index(store)

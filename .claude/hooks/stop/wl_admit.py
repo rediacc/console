@@ -49,6 +49,7 @@ import sys
 import tempfile
 import time
 
+import wl_common
 import wl_core as C
 import wl_judge
 
@@ -85,27 +86,11 @@ def turn_text(path):
 
     So this resets only on a REAL operator turn, meaning a `user` record with no tool_result block in it.
     """
-    if not path or not os.path.exists(path):
+    recs = wl_common.tail_records(path, TAIL_BYTES)
+    if recs is None:
         return ""
-    try:
-        with open(path, "rb") as f:
-            f.seek(0, 2)
-            size = f.tell()
-            f.seek(max(0, size - TAIL_BYTES))
-            chunk = f.read()
-    except OSError:
-        return ""
-    lines = chunk.split(b"\n")
-    if size > TAIL_BYTES:
-        lines = lines[1:]  # first line is probably partial
     texts = []
-    for raw in lines:
-        if not raw.strip():
-            continue
-        try:
-            rec = json.loads(raw)
-        except ValueError:
-            continue
+    for rec in recs:
         rtype = rec.get("type")
         if rtype == "user":
             content = rec.get("message", {}).get("content")
@@ -691,16 +676,9 @@ def _selftest():
 
     These are the DETERMINISTIC half. They prove the plumbing: that a verdict is checked against the message, that a hallucinated quote cannot manufacture work, and that the prefilter has the recall the design claims. The other half, whether the model can separate the twelve corpus cases, cannot be stubbed and is a separate gate: a stub answering "yes" proves nothing.
     """
-    ok = True
+    import wl_common  # noqa: PLC0415 -- the shared selftest checker, loaded only for a selftest
 
-    def check(label, cond, detail=""):
-        nonlocal ok
-        if not cond:
-            ok = False
-        print(
-            "  %s  %s%s"
-            % ("PASS" if cond else "FAIL", label, "" if cond else "  <- %s" % (detail,))
-        )
+    check = wl_common.Checker()
 
     real = (
         "One thing I did wrong, and cannot undo. Refreshing that block, I wrote "
@@ -778,8 +756,7 @@ def _selftest():
         )
         check("Tier R banks the turn signature too", turn_sig(real)[:8] in line, line[:120])
 
-    print("  %s" % ("all admit controls passed" if ok else "*** FAILURES ***"))
-    return 0 if ok else 1
+    return check.verdict("admit")
 
 
 if __name__ == "__main__":

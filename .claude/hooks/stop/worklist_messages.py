@@ -170,13 +170,6 @@ V_IDLE = (
     "'You (User Thinks So)'."
 )
 
-V_BRIEF = (
-    "session brief is %s%s. Other sessions share this worktree and cannot see "
-    "what you are doing. Run:\n"
-    "    .claude/hooks/stop/worklist.py --brief %s '<=200 chars: what you are "
-    "changing right now>'"
-)
-
 V_STALE_LOCAL = (
     "a LOCAL branch %s is %d commits behind the ref you publish to, and nothing in "
     "your workflow touches it. It is a trap for whoever checks it out next: they "
@@ -376,16 +369,6 @@ V_AGENT_BOOTSTRAP = (
 V_AGENT_STILL_ABSENT = (
     "agent/%s/ is still absent; the bootstrap commands were shown on an "
     "earlier stop. Create it, then write STATE.md via worklist.py --state."
-)
-
-N_AGENT_PEERS = (
-    "NOTE: other sessions own directories beside yours under agent/, each "
-    "with its own STATE.md. They are theirs; read them for cross-session "
-    "context and NEVER write in one. Since the split you cannot lose a peer's "
-    "document by accident at all -- not even with a raw `cat >`, because you "
-    "would have to name their path to do it. One marked ABANDONED has an owner "
-    "the liveness horizon calls gone; nothing deletes it, so treat it as a "
-    "record to read rather than a slot to reclaim:\n%s"
 )
 
 CLI_LOOP_USAGE = (
@@ -819,13 +802,6 @@ V_BROKEN_SCHEDULE = (
     "or delete it if it is no longer wanted."
 )
 
-V_DOCS_DRIFT = (
-    "the design docs have DRIFTED: %d commits have touched %s since %s was last "
-    "updated. Those documents are how a new or compacted session understands this "
-    "work, so code moving without them deletes the next session's starting "
-    "context. Update the ones your changes invalidated, in this turn."
-)
-
 # ---- the /handoff checklist gate (agent/programs/<slug>/CHECKLIST.md, wl_checklist) ---
 
 V_CL_SHAPE = (
@@ -1213,17 +1189,15 @@ N_OUTQ_MORE = (
     "surface on later stops, no knob to widen the drain.)"
 )
 
-# THE QUEUE DRAINS ON THE ALLOW PATH ONLY, so a session blocked at every stop never sees a word of it. That starves the advisories in exactly the sessions doing the most work, and the plan-task census is the one it hurts most, because a plan's open boxes are invisible for as long as the session stays productive. Measured 2026-09-17: ten parsed boxes in a freshly written plan stayed
-# unseen across roughly twenty consecutive blocked stops, which the operator noticed and the hook never said. Only the COUNT rides along on a blocked stop, never the bodies, because a body here would displace the focused violation the block exists to deliver -- the same trade `ci_report` and `queue_note` already make.
-N_OUTQ_BLOCKED = (
-    "%d advisory section(s) are queued and CANNOT be shown while stops keep blocking -- the "
-    "queue drains only on a clean stop. A plan's open task boxes are surfaced this way, so a "
-    "plan can look untracked purely because this session has been busy. A clean stop releases "
-    "up to %d of them, oldest priority first; there is no knob to widen the drain -- fix the "
-    "block and they surface over the following stops."
-)
+# THE QUEUE USED TO DRAIN ON THE ALLOW PATH ONLY, so a session blocked at every stop never saw a word of it: measured 2026-09-17, ten plan boxes stayed unseen across roughly twenty consecutive blocked stops. Since 2026-09-24 (operator ruling "One quoted + others named", agent/plans/PLAN-stop-hook-continuity.md P0.2) a blocked stop carries a DIGEST: one line per queued section, highest priority first, at
+# most OUTQ_DIGEST_MAX of them. A section whose whole text is one line is DELIVERED by the digest and leaves the queue; a longer body is only named here and still releases in full on a clean stop.
+N_OUTQ_DIGEST = "QUEUED ADVISORIES (%d queued; one-line ones are delivered here, longer ones are named and release in full on a clean stop):\n%s"
+N_OUTQ_DIGEST_MORE = "    (+%d more queued)"
 
 # PURELY OBSERVATIONAL, changes no verdict: names whether the first-touch onboarding notice (onboard.py) was already delivered this session, so a reader of a refusal does not have to separately wonder whether the session ever saw it.
+# P2.4: an item whose every BLOCKED_BY blocker has closed is open work again.
+N_UNBLOCKED = "UNBLOCKED #%s: every item it was waiting on has closed, so it is open work again: %s"
+
 N_ONBOARD_DELIVERED = "(Onboarding notice: delivered this session, epoch %s.)"
 
 # ---- the specialist-agent hint (wl_agents) ---------------------------------- NAMING THE MATCHED TERMS is what makes a wrong hint self-refuting: a reader who sees "Matched on: fork, cap" dismisses it in one second instead of opening a 9 KB agent file to find out why it was suggested. It is also what makes the matcher debuggable in the field without a debug flag.
@@ -1296,15 +1270,21 @@ R_BLOCK = (
 # the others are a bare count. ALWAYS-tier texts (latched one-shots and hook integrity) still ride in full when present, because hiding a latched message
 # swallows it forever. R_BLOCK stays verbatim for WORKLIST_FOCUS=off.
 
+# THE SELF-REPAIR ORDER HAS AN OUTLET since 2026-09-24 (agent/plans/PLAN-stop-hook-continuity.md P0.5). "Fix it" alone left two options, a full fix turn or ignoring it; `--hint-propose` records the lesson in agent/ledgers/hint-proposals.jsonl for a human to promote, which is the channel's first advertisement outside the hint corpus itself.
 R_BLOCK_FOCUS = (
     "Do not stop yet.\n\n%s\n\n"
     "(%s. Fix THIS, then stop. A check that fires wrongly is a bug in %s; "
-    "you are the session that fixes it.)"
+    "you are the session that fixes it, or, if it cannot be fixed this turn, records the lesson: "
+    "worklist.py --hint-propose %s '<lesson>' SOURCE: <check-key>.)"
 )
 
 R_FOCUS_MORE = (
-    "%d more check(s) outstanding; the next stop surfaces the next one, rotation forgets nothing"
+    "%d more check(s) outstanding, each named above; the next stop quotes the next one in full, "
+    "rotation forgets nothing"
 )
+
+# The rotating tail, NAMED rather than counted (operator ruling 2026-09-24, /ask: "One quoted + others named"). One line per outstanding rotating check, in the order later stops will quote them. Supersedes the 2026-07-31 bare count for blocked stops only; the allow path is unchanged.
+R_ROTATING_COLLAPSED = "ALSO OUTSTANDING, NAMED (each is quoted in full on a later stop):\n%s"
 
 R_FOCUS_ONLY = "no other checks are outstanding"
 
@@ -1420,6 +1400,13 @@ R_REGGATE_BLOCK = (
     "access)."
 )
 
+# The rest of the same verdict, riding the regression-gate block (P2.7): the class sweep and proof orders `wl_rules.apply_order` wrote into it, numbered after the gate so one turn can discharge all of them.
+R_REGGATE_ALSO = (
+    "\n\nALSO OWED ON THIS FIX-SET, from the same verdict (discharge these in the same turn):\n"
+    "  2. %s\n"
+    "     NEXT: %s"
+)
+
 R_REGGATE_HALLUCINATED = (
     "  you cited %r as existing coverage but no such check:* key "
     "exists, so that coverage is HALLUCINATED and counts as none.\n"
@@ -1434,10 +1421,16 @@ CLI_ITEM_USAGE = (
     "                                an issue reference alone is refused unless it names a door:)\n"
     "       --defer <my-prefix> <id> <question... DEFAULT: <action> WHY: <why you cannot settle it> HOW: <what resolves it>>\n"
     "                                (optional: TRIED:, NEEDS:, BLOCKED_ON: <person|system|run-id>)\n"
-    "       --lease <my-prefix> <id> <+minutes|until-ISO8601Z> worker:<bg-task-id> [note...]\n"
+    "       --lease <my-prefix> <id>[,<id>...] <+minutes|until-ISO8601Z> worker:<bg-task-id|lead> [note...]\n"
+    "       --relay <my-prefix> <old-worker> <new-worker>   move every lease on one worker to another\n"
     "       --update <my-prefix> <id> <what moved...>\n"
     "       --status <my-prefix> [<agent-id>|all]   read a worker's transcript; answers the roster's 20-minute ping\n"
     "       --list"
+)
+
+CLI_RELAY_USAGE = (
+    "usage: --relay <my-prefix> <old-worker> <new-worker>\n"
+    "Moves every [>] lease this session holds on <old-worker> to <new-worker> in one call."
 )
 
 CLI_TICK_NO_EVIDENCE = (
@@ -1626,6 +1619,11 @@ CTX_POSTCOMPACT_PEERS = (
     "work: read them so you do not sweep their uncommitted files or re-decide "
     "what they decided, and never write in one. `--state` only ever touches "
     "your own directory.\n\n%s"
+)
+
+# The hook's own read, rendered at PostCompact beside the STATE.md body (agent/plans/PLAN-stop-hook-continuity.md P1.2): branch, short HEAD, and this session's guide slice.
+CTX_POSTCOMPACT_FACTS = (
+    "=== computed facts (read by the hook now, not written by anyone) ===\nbranch %s at %s\n%s"
 )
 
 CTX_POSTCOMPACT_BRIEFING = (
@@ -1918,8 +1916,15 @@ inbox and is synced in, but the verbs are the first-class interface):
                                 validated now and audited later, and the
                                 DEFAULT executes after the window
                                 (optional: TRIED:, NEEDS:, BLOCKED_ON:)
-  --lease <me> <id> <+min|ISO8601Z> worker:<bg-id> [note]   mark in-flight
-                                on a NAMED background worker
+  --lease <me> <id>[,<id>...] <+min|ISO8601Z> worker:<bg-id> [note]
+                                mark in-flight on a NAMED background worker;
+                                worker:lead = driven inline, covered while a
+                                background task of yours runs (at most 3)
+  --relay <me> <old-worker> <new-worker>
+                                move every lease on one worker to another
+  (item text) BLOCKED_BY:#id[,#id]
+                                waiting on those items: reported `waiting`,
+                                not open, until every blocker closes
   --update <me> <id> <text...>  record progress (resets the liveness ladder)
   --list                        render every item with ids and ages
   --list --open [<me>]          only the ACTIONABLE slice, with the exact
@@ -2403,19 +2408,10 @@ V_ROSTER_CAP = (
     "  Read-only work belongs to Plan or Explore agents, which the cap does not count."
 )
 
-V_ROSTER_STATUS = (
-    "WORKER STATUS DUE: %d leased worker(s) have gone %d minutes or more without a status "
-    "(a lease, a --status read that saw growth, the worker's own SendMessage, or its "
-    "SubagentStop report):\n"
-    "%s\n"
-    "  Read them all in one command. It records a status only when the transcript grew or a "
-    "tool call is in flight, so a stalled worker cannot be answered for:\n"
-    "    .claude/hooks/stop/worklist.py --status %s all"
-)
-
 V_ROSTER_SILENT = (
-    "SILENT WORKER: %d supervised agent(s) have written nothing for %d minutes or more with no "
-    "tool call in flight, or their last --status found no growth:\n"
+    "SILENT WORKER: %d supervised agent(s) have shown no evidence for %d minutes or more: no "
+    "transcript write, no tool call in flight, no status, SendMessage or SubagentStop report, or "
+    "their last --status found no growth:\n"
     "%s\n"
     "  Ask each one directly (SendMessage to its id) or stop it (TaskStop <id>), then release "
     "or re-lease its items:\n"

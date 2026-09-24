@@ -11,7 +11,6 @@ import pathlib
 import random
 import re
 import sys as _sys
-import time
 import types as _types
 from typing import Any
 
@@ -29,6 +28,7 @@ import wl_git
 import wl_hints
 import wl_histfirst
 import wl_judge
+import wl_leasehelp
 import wl_liveness
 import wl_planenforce
 import wl_planfid
@@ -1142,6 +1142,47 @@ def outq_drain(worklist, session_id, state_doc, n, rng=None):
     return [e.get("text", "") for e in take], len(q["items"])
 
 
+OUTQ_DIGEST_MAX = 6
+# A blocked stop carries the rotating behavioral hint at most this often (agent/plans/PLAN-stop-hook-continuity.md P0.5). A sealed literal: a hint on every block would be the always-fires prompt that gets skimmed.
+BLOCK_HINT_MIN = 30
+
+
+def _outq_display_key(e):
+    """The section name a reader recognises: a sticky entry's key carries `:<sig>` for identity, which is noise on a digest line."""
+    key = str(e.get("key") or "")
+    sig = str(e.get("sig") or "")
+    return key[: -len(sig) - 1] if e.get("sticky") and sig and key.endswith(":" + sig) else key
+
+
+def outq_digest(worklist, session_id, state_doc, n=OUTQ_DIGEST_MAX, skip=()):
+    """The blocked stop's view of the advisory queue: (digest text or "", delivered count).
+
+    One line per entry, `key: first line`, highest priority (lowest number) first then oldest, at most `n` lines. An entry whose WHOLE text is one line has been fully shown by that line, so it is DELIVERED: removed by identity and, for a volatile entry, recorded in `shown` exactly as `outq_drain` records it. A multi-line body stays queued for a clean stop, where it is released in full. Keys in `skip` are neither named nor delivered: the caller already shows them in full. Persists before returning, because the caller emits and emit() exits."""
+    q = _outq(state_doc)
+    items = sorted(
+        (e for e in q["items"] if _outq_display_key(e) not in skip),
+        key=lambda e: (int(e.get("prio") or 0), int(e.get("seq") or 0)),
+    )
+    if not items:
+        return "", 0
+    head, rest = items[: max(0, n)], len(items) - max(0, n)
+    lines, delivered = [], set()
+    for e in head:
+        body = str(e.get("text") or "").strip("\n")
+        first = (body.splitlines() or [""])[0]
+        lines.append("    %s: %s" % (_outq_display_key(e), first[:150]))
+        if "\n" not in body and len(first) <= 150:
+            delivered.add(id(e))
+            if not e.get("sticky"):
+                q["shown"][e["key"]] = {"sig": e.get("sig", ""), "at": C.stamp_now()}
+    if rest > 0:
+        lines.append(M.N_OUTQ_DIGEST_MORE % rest)
+    if delivered:
+        q["items"] = [e for e in q["items"] if id(e) not in delivered]
+        S.save_state(worklist, session_id, state_doc)
+    return M.N_OUTQ_DIGEST % (len(items), "\n".join(lines)), len(delivered)
+
+
 def agent_hint_queue(worklist, session_id, state_doc, haystack):
     """Queue the specialist-agent hint for this stop, if one is earned.
 
@@ -1208,6 +1249,7 @@ def guided_slice(fold, session_id, verdicts=None, me=None, root=None, full=False
     me_arg = (me or "<me>")[:8] if me else "<me>"
     verdicts = verdicts or {}
     rows = []  # (priority, line)
+    by_id = {r["id"]: r for r in fold.items}
     for rec in fold.items:
         if session_id and not C.owned_by_me(rec["owner"], session_id):
             continue
@@ -1236,7 +1278,16 @@ def guided_slice(fold, session_id, verdicts=None, me=None, root=None, full=False
         else:
             plan = ""
         before = len(rows)
-        if st == " ":
+        waiting = wl_leasehelp.waiting_on(rec, by_id) if st == " " else []
+        if waiting:
+            rows.append(
+                (
+                    3,
+                    "  - [ ] #%s waiting (%s) %s\n        NEXT: nothing until they close; it reopens by itself"
+                    % (rid, ", ".join("#" + w for w in waiting), txt),
+                )
+            )
+        elif st == " ":
             rows.append(
                 (
                     0,
@@ -1423,6 +1474,15 @@ def handle_post_compact(event):
             rules,
             S.agent_traps_path(root),
             traps_block,
+        )
+    # THE COMPUTED FACTS, beside the body (P1.2): what the hook itself reads right now -- branch, HEAD and this session's own guide slice -- so STATE.md only has to carry judgment. Facts a document restates go stale; facts rendered at read time cannot.
+    with contextlib.suppress(Exception):
+        _fold = S.load(C.worklist_for(C.project_start(event)), sync=False)
+        msg += "\n\n" + M.CTX_POSTCOMPACT_FACTS % (
+            C.git_branch(root) or "(detached)",
+            C._git(root, "rev-parse", "--short", "HEAD") or "?",
+            guided_slice(_fold, sid, None, (sid or "")[:8], root)
+            or "  (nothing open, in flight or deferred)",
         )
     # AFTER the briefing, on BOTH arms. Own section first is the point: a compacted session reads top-down, and the block it must act on is its own. On the missing arm this is the whole state content there is -- before sections, that arm returned none at all, so a compacted session sharing a checkout was told to reconstruct from nothing while a peer's section sat in the file
     # unread.
@@ -1698,7 +1758,6 @@ PRIORITY_LADDER = (
                 "unconfirmed",
                 # The parallel-writer roster (wl_roster), placed here by the operator's own order: a writer over the cap, a worker owing its 20-minute status, and a worker gone silent are supervision owed while other agents edit the tree.
                 "roster-cap",
-                "roster-status",
                 "roster-silent",
             }
         ),
@@ -1936,10 +1995,75 @@ def run_stop(event, event_ok, worklist, hook_file):
         live_bg, _bg_dropped, _bg_unknown = wl_liveness.prune_background(
             live_bg, worklist, session_id, event.get("cwd")
         )
-    _live_worker_ids = {str(b.get("id") or "") for b in live_bg}
-    open_items, others, deferred_recs, in_flight_recs = S.classify_items(
+    _live_worker_ids = wl_liveness.live_worker_ids(event, live_bg, event.get("cwd"), session_id)
+    # worker:lead (agent/plans/PLAN-stop-hook-continuity.md P2.1) is live exactly while something of this session is running to wake the lead.
+    with contextlib.suppress(Exception):
+        if wl_leasehelp.lead_covered(live_bg, wl_liveness.verify_background(live_bg)):
+            _live_worker_ids.add(wl_leasehelp.LEAD_WORKER)
+    # AUTO-LEASE FROM A LIVE TASK'S OWN WORDS (P2.2): an open item this session owns, named `#<id>` in a live agent's first prompt or a live shell's description, is leased to that task here, at stop time, against the live event. It replaces the hand `--lease` every spawn used to need, and it also closes the lease-time blindness to a just-spawned worker (PLAN-parallel-writer-roster F3).
+    with contextlib.suppress(Exception):
+        _metas = wl_roster.load_metas(wl_roster.session_subagents_dir(event.get("cwd"), session_id))
+        _prompt_texts = {}
+        for _b in live_bg:
+            _tid = str(_b.get("id") or "")
+            if _b.get("type") == "subagent" and _tid in _metas:
+                _prompt_texts[_tid] = wl_leasehelp.first_prompt(_metas[_tid]["jsonl"])
+            elif _b.get("type") == "shell" and _tid:
+                _prompt_texts[_tid] = str(_b.get("description") or "")
+        _auto = wl_leasehelp.auto_lease_candidates(
+            fold.items,
+            lambda r: C.owned_by_me(r.get("owner"), session_id),
+            _prompt_texts,
+            _live_worker_ids,
+        )
+        if _auto:
+            _until = C.stamp_ahead(wl_leasehelp.AUTO_LEASE_MIN)[:16] + "Z"
+            for _rid, _tid in _auto:
+                S.lease_item(
+                    worklist,
+                    me8,
+                    _rid,
+                    _until,
+                    _tid,
+                    "auto-lease: named by live task %s" % _tid,
+                    worker_verified=True,
+                )
+            fold = S.load(worklist, sync=False)
+    open_items, _others, deferred_recs, in_flight_recs = S.classify_items(
         fold, session_id, live_worker_ids=_live_worker_ids
     )
+    # THE HOOK RENEWS A COVERED LEAD LEASE (P2.1), so an item the lead drives inline across several background tasks needs no manual renewal; with nothing live it has already failed closed above.
+    with contextlib.suppress(Exception):
+        for _r in in_flight_recs:
+            if _r.get("worker") != wl_leasehelp.LEAD_WORKER:
+                continue
+            _left = C.stamp_age_min(_r.get("until") or "")
+            if _left is None or -_left < wl_leasehelp.LEAD_RENEW_BELOW_MIN:
+                S.lease_item(
+                    worklist,
+                    me8,
+                    _r["id"],
+                    C.stamp_ahead(C.MAX_LEASE_MIN)[:16] + "Z",
+                    wl_leasehelp.LEAD_WORKER,
+                    "",
+                    worker_verified=True,
+                )
+    # UNBLOCKED (P2.4): an item that was `waiting` on the last stop and is open now has had every blocker close. One sticky line says so, because the item re-enters `open-items` without any other sign of why.
+    with contextlib.suppress(Exception):
+        _waiting_now = sorted(r["id"] for r in fold.items if r.get("waiting_on"))
+        for _rid in sorted(set(state_doc.get("waiting") or []) - set(_waiting_now)):
+            _rec = fold.by_id.get(_rid)
+            if _rec is not None and _rec.get("state") == " ":
+                outq_add(
+                    worklist,
+                    session_id,
+                    state_doc,
+                    "unblocked",
+                    M.N_UNBLOCKED % (_rid, S.brief_text(_rec, GUIDE_TEXT_CHARS)),
+                    1,
+                    sticky=True,
+                )
+        state_doc["waiting"] = _waiting_now
     # THE PARALLEL-WRITER ROSTER (wl_roster), computed ONCE here from the RAW event rather than the pruned `live_bg`: a reaped id whose transcript is not proven finished is still a live writer, and the cap must see it. Read by the bg-report predicate below; its defects are added after the ladder, and its HONEST verdict is applied just before the cadence gate. None means it could not be
     # computed, and then nothing roster-shaped happens: no suppression, no roster key, the battery exactly as before.
     _roster = None
@@ -1957,17 +2081,10 @@ def run_stop(event, event_ok, worklist, hook_file):
     deferred = [S.brief_line(r) for r in deferred_recs]
     in_flight = [S.brief_line(r) for r in in_flight_recs]
 
-    def other_sessions_note():
-        if not others:
-            return ""
-        return "\n".join(
-            "  %d open item(s) owned by session %s" % (len(v), k) for k, v in sorted(others.items())
-        )
-
     def handoff_note():
         """Work owned by a session that is NOT running here.
 
-        WHY THIS IS SEPARATE FROM other_sessions_note. That one reports a live colleague and is correct to stay quiet about: their items are theirs, and blocking on them would deadlock two sessions in one tree. This one reports the opposite case -- a session that has STOPPED (a restart, a machine switch, a crash) whose remaining work is now owned by nobody present. It is the case a
+        A live colleague's items are theirs and are not reported (the peer listing was deleted 2026-09-24, P0.3). This one reports the opposite case -- a session that has STOPPED (a restart, a machine switch, a crash) whose remaining work is now owned by nobody present. It is the case a
         compaction loses: the items are in the store, they block nobody, and the summary that would have mentioned them is the thing being summarised.
 
         Still never a block. It names /migrate, which asks before it moves.
@@ -2142,8 +2259,10 @@ def run_stop(event, event_ok, worklist, hook_file):
             json.dumps({k: v for k, v in event.items() if k != "transcript"}, indent=2),
             encoding="utf-8",
         )
-    briefs = S.read_briefs(worklist)
-    bstate, bage, others_briefs = S.brief_state(worklist, session_id, briefs)
+    # THE HOOK STAMPS THE BRIEF ITSELF (agent/plans/PLAN-stop-hook-continuity.md P1.1); there is no `brief` check any more.
+    with contextlib.suppress(Exception):
+        S.auto_brief(worklist, root, session_id, fold)
+
     lstate, lnext, llabel, _others_loops, lcrons = S.loop_state(worklist, session_id)
     # The world signature is computed ONCE, after every shared-state write of this stop (sync, cleanup, escalation), and reused by the STATE.md check and the judge cache, so both describe one world.
     cur_sig = S.world_sig(
@@ -2153,18 +2272,21 @@ def run_stop(event, event_ok, worklist, hook_file):
     st_sig = S.state_world_sig(
         root, worklist, session_id, fold=fold, transcript_path=event.get("transcript_path")
     )
+    # JUDGMENT FACTS ONLY for the STATE.md verdict (P1.2): the owned item set, and the items `## Next action` names. `st_sig` above still keys the report banking below, which is a different question.
+    items_sig = S.state_items_sig(fold, session_id)
     # session_id, not blank: the verdict is about THIS session's own section. Without it the check judged whichever document happened to be on disk, so a peer's write reset everyone's clock and -- worse than a skipped stop -- the adopt below banked the PEER'S world signature as this session's own, making a document describing someone else's world read as this one's recovery
     # artifact.
     astate, aage, _atext = S.agent_state_state(
         root,
         session_id=session_id,
-        cur_sig=st_sig,
+        cur_sig=items_sig,
         saved_sig=state_doc.get("state_sig"),
+        fold=fold,
     )
     if astate == "ok":
         # ADOPT: an "ok" verdict banks the signature so a second session arriving in the checkout inherits the document instead of being ordered to rewrite it. The adopt fires ONLY on "ok" -- banking on a "stale" verdict would let the next stop compare cur_sig against a signature recorded DURING the block, find them equal, and allow: a gate that clears itself without a rewrite
         # (control T7b pins this by asserting it blocks TWICE on an unchanged world). Must sit above S.save_state below; emit() exits, so anything written after a later emit path never lands.
-        state_doc["state_sig"] = st_sig
+        state_doc["state_sig"] = items_sig
 
     remaining_lines = (
         ["[ ] " + i for i in open_items]
@@ -2258,7 +2380,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     _supervised = False
     if live_bg:
         try:
-            _live_ids = {str(b.get("id") or "") for b in live_bg}
+            _live_ids = _live_worker_ids
             _correlated = []
             for r in in_flight_recs:
                 wm = C.WORKER.search(r["line"])
@@ -2386,19 +2508,14 @@ def run_stop(event, event_ok, worklist, hook_file):
                     me8,
                 ),
             )
-        if _roster["status_due"]:
-            vadd(
-                "roster-status",
-                True,
-                M.V_ROSTER_STATUS
-                % (len(_roster["status_due"]), wl_roster.STATUS_PING_MIN, _rrows["status"], me8),
-            )
-        if _roster["silent"]:
+        # ONE KEY FOR "NO EVIDENCE" (operator ruling 2026-09-24, "Evidence counts as status"): the roster reads transcript growth and in-flight tool calls as status itself, so a worker still owing one after that is exactly a silent worker. `roster-status` is gone.
+        _no_evidence = set(_roster["silent"]) | set(_roster["status_due"])
+        if _no_evidence:
             vadd(
                 "roster-silent",
                 True,
                 M.V_ROSTER_SILENT
-                % (len(_roster["silent"]), wl_roster.STATUS_PING_MIN, _rrows["silent"], me8),
+                % (len(_no_evidence), wl_roster.STATUS_PING_MIN, _rrows["silent"], me8),
             )
         if _roster["unleased"]:
             vadd(
@@ -2705,25 +2822,6 @@ def run_stop(event, event_ok, worklist, hook_file):
             ),
         )
 
-    brief_world_moved = state_doc.get("brief_sig") != st_sig
-    if bstate == "stale" and not brief_world_moved:
-        bstate = "ok"
-    # A LIVE INTENT answers this check's whole question. Only the STALE verdict: `missing` still fires, because a session that never briefed is invisible to its peers no matter what it has told the hook.
-    if bstate == "stale" and _intent:
-        bstate = "ok"
-    if bstate != "ok":
-        vadd(
-            "brief",
-            False,
-            M.V_BRIEF
-            % (
-                bstate,
-                ""
-                if bage is None
-                else " (%d min old, limit %d)" % (bage, S.SESSION_BRIEF_STALE_MIN),
-                me8,
-            ),
-        )
     # ---- PLAN DRIFT. Binds the session to its own committed design record. Costs one glob plus the first 10 lines of each non-done plan, and only on a branch that HAS a plan directory: a project not using the convention pays the glob and nothing else. Rotating tier, not always: a stale plan is a real debt but never an integrity failure, and it must not outrank the checks that
     # stop work being abandoned. NOT gated on something_remains, and that was a real bug in the first cut. `something_remains` means open ITEMS, not an unfinished message, so gating on it meant a session that had ticked everything was never told its plan was stale -- which is precisely the moment it matters most: the work is finished and the committed record still says `executing`.
     # The exit is satisfiable either way (edit the plan, or set its Status), so this cannot become a nag with no way out.
@@ -3206,36 +3304,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                 False,
                 M.V_AGENT_STILL_ABSENT % S.agent_session_slug(session_id),
             )
-    # REPORT-ONLY, and it must stay that way: a session that cannot see its peers cannot be expected to respect them, but a peer's document is never this session's obligation. Class 2 volatile, recomputed every stop, exactly like the blind note above.
-    #
-    # PEERS ARE SIBLING DIRECTORIES NOW (2026-08-14), not sections of one shared file. The split is precisely what stops a peer's write destroying this session's document -- but the visibility it replaced must survive it, or the migration trades one silent failure (a clobber) for another (a session that no longer knows anyone else is here). So this reads every sibling
-    # agent/<peer>/STATE.md instead of one file, and keeps the row shape byte-identical. It still touches NOTHING: an every-turn hook that writes inside a peer's directory is the fastest route back to the clobber this layout exists to prevent, so it only NAMES what it sees.
-    try:
-        _all = S.agent_peer_sections(root, session_id)
-        _, _reapable = S.agent_state_dead(_all, session_id, projects_dir)
-        _reap_ids = {id(s) for s in _reapable}
-        _now = time.time()
-        _rows = [
-            "    %-14s %4d min old%s"
-            % (
-                s["owner"],
-                int(max(0.0, (_now - s["ts"]) / 60.0)),
-                # NOT "reap-eligible" any more: nothing prunes another session's directory, so a label promising that would be a check that cannot fire. What the horizon still tells the reader honestly is that this peer looks gone.
-                "   ABANDONED" if id(s) in _reap_ids else "",
-            )
-            for s in _all
-        ]
-        if _rows:
-            outq_add(
-                worklist,
-                session_id,
-                state_doc,
-                "agent-peers",
-                M.N_AGENT_PEERS % "\n".join(_rows),
-                2,
-            )
-    except OSError:
-        pass  # no document, or an unreadable one: the astate branches above own that
+    # NO PEER LISTING since 2026-09-24 (agent/plans/PLAN-stop-hook-continuity.md P0.3): the `agent-peers`, `others` and `others-items` advisories had no reader under the single-terminal ruling. Orphaned items and handoff candidates -- work nobody present owns -- are still reported below.
     # v18: unread sub-agent reports, on ORDINARY stops as well as at the two boundaries wl_report already covers by hook. SessionStart and PostCompact catch a fresh or compacted session; this catches the far commoner case of a long-running session whose teammate finished twenty minutes ago and whose SendMessage has since scrolled out of reach.
     #
     # IT GRADUATES, since 2026-08-28. The old rule here was "REPORT-ONLY, never a violation", on the stated grounds that "there is no honest evidence a stop could demand for 'I read it'". That grounds is simply untrue: `wl_report.py --read <me> <id>` is exactly such evidence, and the advisory ALREADY PRINTS THAT COMMAND two lines below its own excuse.
@@ -3254,6 +3323,12 @@ def run_stop(event, event_ok, worklist, hook_file):
         _unread = wl_report.unread(
             wl_report.store_root(root), agent_branch or wl_report.NO_BRANCH, session_id
         )
+        # AUTO-READ WHAT THE LEAD ALREADY RECEIVED (agent/plans/PLAN-stop-hook-continuity.md P1.5): a completed task notification with a non-empty result in this session's own transcript is the report delivered, so demanding `--read` for it was restating a fact the hook holds. [SILENT] reports are never auto-read.
+        if _unread:
+            _dids, state_doc["report_delivery"] = wl_report.delivered_ids(
+                event.get("transcript_path"), state_doc.get("report_delivery")
+            )
+            _unread = wl_report.mark_delivered(wl_report.store_root(root), me8, _unread, _dids)
         if _unread:
             _rp = str(pathlib.Path(__file__).resolve().parent / "wl_report.py")
             _rows = "\n".join(
@@ -3330,9 +3405,7 @@ def run_stop(event, event_ok, worklist, hook_file):
             )
     except Exception:  # noqa: BLE001 -- a backstop must never wedge a stop
         pass
-    dstate, ddrift, ddir = docs_drift(root)
-    if dstate == "drifted":
-        vadd("docs-drift", False, M.V_DOCS_DRIFT % (ddrift, " ".join(PROGRAM_SURFACE), ddir))
+    # NO STOP-TIME DOCS-DRIFT CHECK since 2026-09-24 (agent/plans/PLAN-stop-hook-continuity.md P1.3). It counted any commit under `.claude`, so hook work -- which the CI-overhaul design docs do not describe -- ordered edits to unrelated documents. The SessionStart block still reports DRIFTED or pending, which is where a fresh session reads the docs.
     # ---- v20: the /handoff checklist gate (agent/programs/<slug>/CHECKLIST.md) -------- WHY: /handoff wrote a design suite and INSTRUCTED, in prose, that the next session seed the worklist. Prose gates nothing, so a handoff whose PROMPT.md was ignored or compacted away dropped program work silently and nobody found out. CHECKLIST.md is the machine-readable half of the same
     # handoff: deliverables are FILE-VERIFIED (the tick is bookkeeping, the file is the truth) and waves are store-linked through the `cl:<slug>/<wN>` token, so both ends of the handoff are checkable rather than promised. See wl_checklist for the adjudication.
     try:
@@ -3588,6 +3661,16 @@ def run_stop(event, event_ok, worklist, hook_file):
             M.V_NO_REMAINING % "\n".join("    " + r for r in remaining_lines[:12]),
         )
 
+    # ---- ADMISSION PREFILTER, ABOVE THE BLOCK EXIT (agent/plans/PLAN-stop-hook-continuity.md P0.4). wl_admit's docstring promises Tier R is appended "always, BEFORE any model call", and until 2026-09-24 that was false on every blocked stop: the prefilter sat after the block exit, so a busy session that admitted a mistake left no record at all. The regex pass is under 0.4 ms
+    # with zero tokens; the model call stays on the judge path below. Recorded once per turn signature, so a turn that stays blocked across several stops is one row, not one per stop.
+    admit_text = wl_admit.turn_text(event.get("transcript_path", "")) or last_msg
+    admit_sig = wl_admit.turn_sig(admit_text)
+    admit_settled, _admit_corrupt = wl_admit.load_settled(worklist, session_id)
+    admit_hits = [] if admit_sig in admit_settled else wl_admit.prefilter(admit_text)
+    if admit_hits and state_doc.get("admit_tier_r") != admit_sig:
+        wl_admit.record_hits(worklist, session_id, admit_hits, admit_sig)
+        state_doc["admit_tier_r"] = admit_sig
+
     # Saved EAGERLY. The state doc is bookkeeping that must survive every exit
     # below, and one of them (the WORKLIST_FOCUS=off block) emits without
     # saving at all -- exactly the shape that made the output queue lose latched sections before it was moved to compute-time persistence.
@@ -3731,11 +3814,11 @@ def run_stop(event, event_ok, worklist, hook_file):
         extras = ("\n\n" + ci_report if ci_report else "") + (
             "\n\n" + queue_note if queue_note else ""
         )
-        # THE ADVISORY QUEUE IS STARVED BY A PRODUCTIVE SESSION, which is the opposite of what it was built for. `outq_drain` runs on the allow path only, so a session that blocks at every stop never releases a single section, and the plan-task census rides that queue: a plan's open boxes stay invisible for exactly as long as the session keeps finding real work. Measured
-        # 2026-09-17, ten parsed boxes in a freshly written plan went unseen across roughly twenty consecutive blocked stops, and the operator noticed before the hook said anything. Only the COUNT rides along here, never a body, on the same reasoning `ci_report` and `queue_note` above already use: a body would displace the focused violation this block exists to deliver.
-        pending_outq = len(_outq(state_doc).get("items") or [])
-        if pending_outq:
-            extras += "\n\n" + M.N_OUTQ_BLOCKED % (pending_outq, OUTQ_PER_STOP)
+        # THE ADVISORY QUEUE WAS STARVED BY A PRODUCTIVE SESSION: `outq_drain` runs on the allow path only, and measured 2026-09-17, ten parsed plan boxes went unseen across roughly twenty consecutive blocked stops. The digest (operator ruling 2026-09-24, "One quoted + others named") names up to OUTQ_DIGEST_MAX sections on every block and delivers the one-line ones outright; a
+        # multi-line body stays queued for a clean stop, so the focused violation above is never displaced by a wall. The two CI notes are skipped because they already ride `extras` in full.
+        _digest, _ = outq_digest(worklist, session_id, state_doc, skip=("ci-queue", "ci-report"))
+        if _digest:
+            extras += "\n\n" + _digest
         onboard_marker = onboard.load_marker(session_id) if onboard else {}
         if onboard_marker.get("state") == "delivered":
             extras += "\n\n" + M.N_ONBOARD_DELIVERED % onboard_marker.get("epoch")
@@ -3799,6 +3882,16 @@ def run_stop(event, event_ok, worklist, hook_file):
         spend_display_latches(
             [k for k, a, _t in violations if a] + ([pick[0]] if pick is not None else [])
         )
+        # THE ROTATING HINT RIDES A BLOCK TOO, at most once per BLOCK_HINT_MIN (agent/plans/PLAN-stop-hook-continuity.md P0.5). wl_hints says a hint "rides an output the stop was already going to produce", and a block is such an output; allow-only placement meant a busy session saw none of the corpus. Same ledger as the allow path, so the round-robin is shared.
+        _block_hint = ""
+        with contextlib.suppress(Exception):  # an advisory must never wedge a stop
+            _hl = state_doc.setdefault("hints", {})
+            _hage = C.stamp_age_min(_hl.get("block_at") or "")
+            if _hage is None or _hage >= BLOCK_HINT_MIN:
+                _hpick = wl_hints.hint_pick(wl_hints.load_corpus(wl_hints.hints_path(root))[0], _hl)
+                if _hpick:
+                    _block_hint = "\n\n" + wl_hints.render(*_hpick)
+                    _hl["block_at"] = C.stamp_now()
         S.save_state(worklist, session_id, state_doc)
         # ---- THE COLLAPSE. Invariants are ORDERED by the ladder (not by where their vadd sits in this file), at most ALWAYS_FULL_MAX are QUOTED in full, and every remaining one is NAMED on one line with its opening sentence.
         #
@@ -3820,6 +3913,19 @@ def run_stop(event, event_ok, worklist, hook_file):
             )
         if pick is not None:
             shown.append(pick[2])
+        # ---- THE ROTATING TAIL IS NAMED, NOT COUNTED (operator ruling 2026-09-24, /ask: "One quoted + others named", agent/plans/PLAN-stop-hook-continuity.md P0.1). A bare "N more" cost N full turns to learn what N was; one line each costs a few hundred characters and lets the session work the whole set in one turn. Only the pick is QUOTED, so only the pick spends a display latch
+        # (above), and the LRU order is untouched: the next stop still quotes the next-most-stale check in full.
+        _rot_named = sorted(
+            (v for v in rot if pick is None or v[0] != pick[0]),
+            key=lambda v: (served.get(v[0], -1), check_tier(v[0])),
+        )
+        if _rot_named:
+            shown.append(
+                M.R_ROTATING_COLLAPSED
+                % "\n".join(
+                    "    %s: %s" % (k, (t.splitlines() or [""])[0][:150]) for k, _a, t in _rot_named
+                )
+            )
         # COUNTED AGAINST THE VIOLATIONS, not against `shown`. `shown` may now carry one synthetic entry (the collapse block) and fewer entries than invariants, so `len(violations) - len(shown)` would report a number that is not the number of anything. What the reader needs is how many outstanding checks got neither a quote nor a name, which is exactly the rotating ones this stop
         # did not pick.
         n_more = len(rot) - (1 if pick is not None else 0)
@@ -3834,8 +3940,10 @@ def run_stop(event, event_ok, worklist, hook_file):
                     "\n\n".join(shown),
                     M.R_FOCUS_MORE % n_more if n_more else M.R_FOCUS_ONLY,
                     hook_file,
+                    me8,
                 )
-                + extras,
+                + extras
+                + _block_hint,
             }
         )
 
@@ -3874,40 +3982,34 @@ def run_stop(event, event_ok, worklist, hook_file):
         settle_batch = wl_defersettle.build_batch(
             root, state_doc, deferred_recs, disabled=wl_judge.JUDGE_DISABLED
         )
-    # ADMISSION DETECTOR (wl_admit.py). The prefilter runs on every stop and is measured at under 0.4 ms with zero tokens, firing on ~1% of real turns. It decides only whether to SPEND a model call; it is never the last word on a negative, because the regexes provably miss the euphemistic phrasings.
+    # ADMISSION DETECTOR (wl_admit.py). The prefilter runs on every stop, above the block exit, and is measured at under 0.4 ms with zero tokens, firing on ~1% of real turns. It decides only whether to SPEND a model call; it is never the last word on a negative, because the regexes provably miss the euphemistic phrasings.
     #
-    # Tier R records the hit HERE, before anything that can fail. A hit banked only after a successful verdict would vanish exactly when the judge times out, which is when the record matters most.
-    admit_text = wl_admit.turn_text(event.get("transcript_path", "")) or last_msg
-    admit_sig = wl_admit.turn_sig(admit_text)
-    admit_settled, _admit_corrupt = wl_admit.load_settled(worklist, session_id)
-    admit_hits = [] if admit_sig in admit_settled else wl_admit.prefilter(admit_text)
-    if admit_hits:
-        wl_admit.record_hits(worklist, session_id, admit_hits, admit_sig)
-        # THE JUDGE-SKIPPED PATH. The main judge runs only when something remains or a fix signal fired. A stop with a clean board and an admission in its final message would otherwise be seen by nobody, and that is a likely shape: the session finished its work, and says on the way out that it broke something along the way.
-        if not ((something_remains or reg_signals) and not wl_judge.JUDGE_DISABLED):
-            _ad, _aerr = wl_judge.run_admission(admit_text)
-            if _aerr:
-                # Recorded, never raised. Tier R already holds the hit, so the admission survives an unavailable judge; this only adds why.
-                wl_admit.record_hits(
-                    worklist,
-                    session_id,
-                    admit_hits,
-                    admit_sig,
-                    extra={"verdict": "error", "detail": _aerr[:200]},
-                )
-            else:
-                wl_admit.process_admission(
-                    _ad,
-                    admit_text,
-                    worklist,
-                    session_id,
-                    me8,
-                    admit_hits,
-                    admit_sig,
-                    admit_settled,
-                    S.add_item,
-                )
-            admit_hits = []
+    # Tier R recorded the hit up there, before anything that can fail. A hit banked only after a successful verdict would vanish exactly when the judge times out, which is when the record matters most.
+    # THE JUDGE-SKIPPED PATH. The main judge runs only when something remains or a fix signal fired. A stop with a clean board and an admission in its final message would otherwise be seen by nobody, and that is a likely shape: the session finished its work, and says on the way out that it broke something along the way.
+    if admit_hits and not ((something_remains or reg_signals) and not wl_judge.JUDGE_DISABLED):
+        _ad, _aerr = wl_judge.run_admission(admit_text)
+        if _aerr:
+            # Recorded, never raised. Tier R already holds the hit, so the admission survives an unavailable judge; this only adds why.
+            wl_admit.record_hits(
+                worklist,
+                session_id,
+                admit_hits,
+                admit_sig,
+                extra={"verdict": "error", "detail": _aerr[:200]},
+            )
+        else:
+            wl_admit.process_admission(
+                _ad,
+                admit_text,
+                worklist,
+                session_id,
+                me8,
+                admit_hits,
+                admit_sig,
+                admit_settled,
+                S.add_item,
+            )
+        admit_hits = []
     # THE INDEX REFRESH RUNS ON EVERY STOP THAT GETS THIS FAR (agent/plans/PLAN-stop-hook-refactor-enforcement.md, Commit 1): a mechanical counter run with no model call, and the ONLY thing that re-emits the commit-path guard's cache (`.ci/cache/shape-index/`). It first sat behind `judged_ok`, which left the guard disarmed for 36+ minutes of `continue` verdicts. Its second home was still inside the judge section, after `C.emit` on the `continue` verdict and on the deferral-audit blocks -- and `C.emit` calls `sys.exit` -- so a `continue` still exited before it ran, and a stop with nothing remaining and no fix signal never entered the section at all (found 2026-09-24 by the wide-tier writer, verified against wl_core.emit). Here it precedes every judge exit.
     try:
         sd_findings, sd_cerr = wl_shapedup.refresh_index(str(root), state_doc)
@@ -4251,12 +4353,21 @@ def run_stop(event, event_ok, worklist, hook_file):
                         capped = True
                 if not capped:
                     counter.write_text(str(streak + 1))
+                    # EVERY OBLIGATION THIS VERDICT FIRED, IN ONE BLOCK (agent/plans/PLAN-stop-hook-continuity.md P2.7). The class sweep and the proof order were already written into the verdict's reason and next_action by `wl_rules.apply_order`, and emitting the gate payload alone dropped them until a later judged stop re-asked, one obligation per turn. Rendering only: the judge call and the demand markers are unchanged.
+                    _also = ""
+                    if verdict.get("verdict") == "continue" and (
+                        verdict.get("reason") or verdict.get("next_action")
+                    ):
+                        _also = M.R_REGGATE_ALSO % (
+                            str(verdict.get("reason") or "")[:700],
+                            str(verdict.get("next_action") or "")[:200],
+                        )
                     C.emit(
                         {
                             "systemMessage": "Stop hook: a fix landed with no "
                             "regression gate (fix-set %s). Blocking." % reg_sig[:8],
                             "decision": "block",
-                            "reason": payload + guide_tail,
+                            "reason": payload + _also + guide_tail,
                         }
                     )
         # v12: the audit verdicts are processed BEFORE stop/continue, same precedence argument as the regression gate: a banked "valid" must persist, and a do_now must fire, whatever the judge said about the stop itself.
@@ -4418,15 +4529,6 @@ def run_stop(event, event_ok, worklist, hook_file):
             parts.append(M.N_JUDGE_STAMP % (wl_judge.JUDGE_MODEL, stamp))
     # Every section with an earlier producer was queued at that producer's call site, so it survives a stop that blocks. The four below have no earlier producer: the allow path is the only place they exist, and they are enqueued here in the order the report used to carry them.
     #
-    if others_briefs:
-        outq_add(
-            worklist,
-            session_id,
-            state_doc,
-            "others",
-            "Other sessions in this worktree:\n" + others_briefs,
-            2,
-        )
     if orphaned:
         outq_add(
             worklist,
@@ -4446,16 +4548,6 @@ def run_stop(event, event_ok, worklist, hook_file):
     _handoff = handoff_note()
     if _handoff:
         outq_add(worklist, session_id, state_doc, "handoff", _handoff, 1, refresh_min=60)
-    if others:
-        # Reported, never blocked on. Blocking one session on another's items deadlocks it: it cannot do them without racing live work in the same tree, and it must not tick or delete someone else's tracking. Surfacing beats blocking.
-        outq_add(
-            worklist,
-            session_id,
-            state_doc,
-            "others-items",
-            "Worklist: nothing open for this session.\n" + other_sessions_note(),
-            2,
-        )
     # The specialist-agent hint, LAST of the producers and lowest priority of them, on the ALLOW PATH ONLY and deliberately: a blocked session already has something more urgent being said to it every stop. The trade is that a session which never reaches a clean stop is never hinted, which is acceptable for exactly the same reason.
     with contextlib.suppress(Exception):  # an advisory must never wedge a stop
         agent_hint_queue(

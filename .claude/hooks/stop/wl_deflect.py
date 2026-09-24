@@ -23,11 +23,12 @@ FAIL-SAFE AND COST, matching every sibling detector: `always=False` (HYGIENE tie
 import contextlib
 import hashlib
 import json
-import os
 import pathlib
 import re
 import time
 from typing import Any
+
+import wl_common
 
 TAIL_BYTES = 2 * 1024 * 1024
 
@@ -71,28 +72,12 @@ def _turn_text_and_commands(path):
 
     LOCAL DUPLICATE OF wl_admit.turn_text, extended to also capture Bash `command` argument strings -- deliberately, per this module's own design note above, rather than editing the shared walker under time pressure. A future session folding this into wl_core.py should delete this function and both callers' local copies together.
     """
-    if not path or not os.path.exists(path):
+    recs = wl_common.tail_records(path, TAIL_BYTES)
+    if recs is None:
         return "", []
-    try:
-        with open(path, "rb") as f:
-            f.seek(0, 2)
-            size = f.tell()
-            f.seek(max(0, size - TAIL_BYTES))
-            chunk = f.read()
-    except OSError:
-        return "", []
-    lines = chunk.split(b"\n")
-    if size > TAIL_BYTES:
-        lines = lines[1:]  # first line is probably partial
     texts: list[Any] = []
     commands: list[Any] = []
-    for raw in lines:
-        if not raw.strip():
-            continue
-        try:
-            rec = json.loads(raw)
-        except ValueError:
-            continue
+    for rec in recs:
         if _is_operator_turn(rec):
             texts, commands = [], []  # a genuine operator turn starts the window over
             continue

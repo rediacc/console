@@ -1,6 +1,6 @@
 # PLAN: Stop-hook continuity. Make it surface what it computes, and stop generating turns
 
-Status: draft. This plan came from read-only research and no code has changed. It is not adopted by any session, so its boxes are advisory until the lead adopts it.
+Status: executing. 20 of the 21 boxes in PART 3 landed on 2026-09-24, uncommitted, each with a control test that fails on the code before it. P2.6 (the post-edit check) is open: its files, `.claude/hooks/context/`, `lifecycle.py` and `settings.json`, were outside the implementing writer's file ownership.
 Owner: d778be9d
 First-Seen: 2026-09-24
 Updated: 2026-09-24
@@ -246,109 +246,130 @@ Each change lists the files it touches and a **control test** (the test that mus
 
 **P0: make the hook deliver what it already computes**
 
-- [ ] **P0.1 Name the rotating tail instead of counting it.** Replace the `R_FOCUS_MORE` count with an `R_ROTATING_COLLAPSED` list, one line per outstanding rotating check (`key: first line[:150]`, ladder order). Keep exactly one check quoted in full. Named checks do not spend display latches: only full quotes spend them, and `spend_display_latches` stays unchanged.
+- [x] **P0.1 Name the rotating tail instead of counting it.** Replace the `R_FOCUS_MORE` count with an `R_ROTATING_COLLAPSED` list, one line per outstanding rotating check (`key: first line[:150]`, ladder order). Keep exactly one check quoted in full. Named checks do not spend display latches: only full quotes spend them, and `spend_display_latches` stays unchanged.
   - Files: `wl_checks.py` (block render, `:3821-3840`), `worklist_messages.py`.
   - Control, in `test_wl_continuity_surface.py`: 3 rotating violations (`brief`, `docs-drift`, `pr-stale`). The **first** block contains the first line of all three. Today it contains one plus "2 more check(s)".
   - Inverse: the invariant collapse is unchanged (`test_232` still passes).
-- [ ] **P0.2 Advisory digest on blocked stops.** Replace the bare `N_OUTQ_BLOCKED` count with at most 6 lines of `key: first line`, highest priority first.
+    (ticked) 2026-09-24T14:44:41Z by d778be9d: implemented at .claude/hooks/stop/worklist_messages.py:1287; the rotating tail is named, one line each; controls in test_wl_continuity_surface.py test_p01
+- [x] **P0.2 Advisory digest on blocked stops.** Replace the bare `N_OUTQ_BLOCKED` count with at most 6 lines of `key: first line`, highest priority first.
   - An entry whose whole text is one line (every sticky `reg-settled`, `claim-check`, `audit`, `archived` or `defer-settle` fact, and the `ladder` ping) is **delivered and removed** by the digest.
   - Multi-line bodies stay queued until a clean stop.
   - Files: `wl_checks.py` (`:3734-3738`, a helper beside `outq_drain`), `worklist_messages.py`.
   - Control: a blocked stop with a queued sticky `ladder` ping and a `plan-tasks` body. The block reason contains the ping text and `plan-tasks:`. Today it contains only "N advisory section(s) are queued".
   - Second control: the next blocked stop no longer shows the ping (it was delivered).
-- [ ] **P0.3 Delete the peer-only producers.** Remove `agent-peers` (`:3213-3238`), `others` (`:4417-4424`) and `others-items` (`:4449-4458`). Under the single-terminal ruling they have no reader. Keep `orphans` and `handoff`, and let them ride the digest.
+    (ticked) 2026-09-24T14:44:41Z by d778be9d: implemented at .claude/hooks/stop/wl_checks.py:1157; outq_digest names up to 6 queued advisories on a blocked stop and delivers one-line ones; controls test_p02
+- [x] **P0.3 Delete the peer-only producers.** Remove `agent-peers` (`:3213-3238`), `others` (`:4417-4424`) and `others-items` (`:4449-4458`). Under the single-terminal ruling they have no reader. Keep `orphans` and `handoff`, and let them ride the digest.
   - Files: `wl_checks.py`, `worklist_messages.py` (`N_AGENT_PEERS` and others), `test_wl_state_document.py` (the 29k cases are deleted or rewritten).
   - Control: a peer STATE directory exists and the outq holds no `agent-peers` key. Today it does (`test_29k` asserts that it does).
-- [ ] **P0.4 Move the admission Tier R prefilter and record above the block exit,** so the docstring's "always" is true. The model call stays on the judge path.
+    (ticked) 2026-09-24T14:44:42Z by d778be9d: implemented at .claude/hooks/stop/wl_checks.py:3307; agent-peers, others and others-items deleted; test_29k rewritten as the control
+- [x] **P0.4 Move the admission Tier R prefilter and record above the block exit,** so the docstring's "always" is true. The model call stays on the judge path.
   - Files: `wl_checks.py` (move `:3880-3885` above the cadence and block section).
   - Control: a blocked stop whose last message says `I clobbered the file` produces a Tier R row. Today no row is written.
-- [ ] **P0.5 Give the self-repair order an outlet, and let the hint line ride blocks.**
+    (ticked) 2026-09-24T14:44:43Z by d778be9d: implemented at .claude/hooks/stop/wl_checks.py:3664; Tier R prefilter and record moved above the block exit; control test_p04
+- [x] **P0.5 Give the self-repair order an outlet, and let the hint line ride blocks.**
   - Change the `R_BLOCK_FOCUS` footer to: `...you are the session that fixes it, or, if it cannot be fixed this turn, worklist.py --hint-propose <me> '<lesson>' SOURCE: <check-key>`.
   - Allow the rotating hint line on a block at most once per 30 min (a ledger stamp in `state_doc["hints"]`).
   - Files: `wl_checks.py`, `worklist_messages.py`.
   - Control: the first block of a session contains `--hint-propose`. Today it does not.
   - Inverse: a second block inside 30 min carries no hint line.
+    (ticked) 2026-09-24T14:44:43Z by d778be9d: implemented at .claude/hooks/stop/wl_checks.py:1147; footer names --hint-propose, hint rides a block once per 30 min; controls test_p05 and test_hint_rides_a_blocked_stop
 
 **P1: delete or automate the churn checks**
 
-- [ ] **P1.1 Delete the `brief` vadd and let the hook stamp the brief.** The hook stamps it on each stop from the `## Next action` lead line, else from the newest `[>]` item. `missing` is filled the same way.
+- [x] **P1.1 Delete the `brief` vadd and let the hook stamp the brief.** The hook stamps it on each stop from the `## Next action` lead line, else from the newest `[>]` item. `missing` is filled the same way.
   - Files: `wl_checks.py` (`:2708-2726`), `wl_store.py` (an `auto_brief` writer beside `read_briefs`), `worklist_messages.py` (`V_BRIEF` goes), `test_wl_core_blocking.py` (edit tests 04 and 05).
   - Control: a fresh session with no brief. After one stop there is no `brief` violation, and `.sessions` holds its entry. Today it blocks with "session brief is missing".
-- [ ] **P1.2 Key STATE.md staleness on judgment facts only.**
+    (ticked) 2026-09-24T14:44:44Z by d778be9d: implemented at .claude/hooks/stop/wl_store.py:2151; brief vadd deleted, auto_brief stamps it; controls test_04 and test_05 in test_wl_core_blocking.py
+- [x] **P1.2 Key STATE.md staleness on judgment facts only.**
   - Drop `HEAD` and task statuses from the staleness trigger.
   - Stale means: the 15-min age has passed **and** every `#id` named under `## Next action` has left the open state, or the section names no `#id` and the owned item set changed.
   - `handle_post_compact` renders a computed facts block beside the body (guide slice, roster summary, HEAD and branch).
   - Files: `wl_store.py` (`state_world_sig`, `agent_state_state`), `wl_checks.py` (`handle_post_compact`).
   - Control: a document 16 min old, then a commit that moves HEAD. No `agent-state` violation. Today: `stale`.
   - Inverse: tick the item named in `## Next action`. `agent-state` fires.
-- [ ] **P1.3 Delete the Stop `docs-drift` vadd.** The SessionStart note stays.
+    (ticked) 2026-09-24T14:44:44Z by d778be9d: implemented at .claude/hooks/stop/wl_store.py:2413; staleness keyed on the owned item set and the Next action ids, facts block at PostCompact; controls test_p12
+- [x] **P1.3 Delete the Stop `docs-drift` vadd.** The SessionStart note stays.
   - Files: `wl_checks.py` (`:3333-3335`), `worklist_messages.py` (`V_DOCS_DRIFT`), `test_wl_drift_loops_freshness.py`.
   - Control: 11 commits touching `.claude` with docs untouched. No `docs-drift`. Today: blocked.
   - Inverse: SessionStart still says "DRIFTED by 11 commits".
-- [ ] **P1.4 Let evidence answer the status ping** (operator ruling needed; the default is to implement).
+    (ticked) 2026-09-24T14:44:45Z by d778be9d: implemented at .claude/hooks/stop/wl_checks.py:3408; Stop docs-drift vadd deleted, SessionStart note kept; control test_31 in test_wl_drift_loops_freshness.py
+- [x] **P1.4 Let evidence answer the status ping** (operator ruling needed; the default is to implement).
   - Each stop, append an automatic `status` event (`by: hook`) for every supervised live agent whose transcript grew since the last stop or has a tool call in flight.
   - `roster-status` then fires only when no evidence arrived within 20 min, which is the same condition as `roster-silent`. Merge the two keys.
   - Files: `wl_roster.py`, `wl_checks.py` (`:2389-2402`), `worklist_messages.py`, `test-always-tier.py`, `test_wl_roster.py`.
   - Control: a leased agent whose transcript grows every stop, and whose last `--status` is 25 min old. No `roster-status`. Today: `test_r5` shape, due.
   - Inverse: no growth for 21 min gives `roster-silent`.
-- [ ] **P1.5 Auto-read reports the lead already received.**
+    (ticked) 2026-09-24T14:44:45Z by d778be9d: implemented at .claude/hooks/stop/wl_checks.py:2511; transcript growth and in-flight tool calls count as status, roster-status merged into roster-silent; controls test_r5e, test_r5f, test_s3, test_s3c
+- [x] **P1.5 Auto-read reports the lead already received.**
   - Add `wl_report.delivered_ids(transcript_path, since_offset)`, an incremental scan for `<task-id>X</task-id>...<status>completed</status>` with a non-empty `<result>`.
   - `unread()` excludes those agents' reports and appends a `read` event with `by: <me>` and `via: task-notification`.
   - Files: `wl_report.py`, `wl_checks.py` (`:3253-3256`), `test_wl_report_inbox.py`.
   - Control: a report captured for agent X, plus a planted notification for X in the lead transcript. No `unread-reports`. Today it fires.
   - Inverse: without the notification it still fires. A `[SILENT]` report still fires.
+    (ticked) 2026-09-24T14:44:46Z by d778be9d: implemented at .claude/hooks/stop/wl_report.py:318; delivered_ids plus mark_delivered auto-read reports whose completed notification reached the lead; controls test_p15
 
 **P1: liveness siblings (all fail today)**
 
-- [ ] **P1.6 `all_waits_live` accepts a workflow whose `facts` stream is fresh.**
+- [x] **P1.6 `all_waits_live` accepts a workflow whose `facts` stream is fresh.**
   - Files: `.claude/hooks/stop/wl_liveness.py:300-314`, `test_wl_background_waits.py`.
   - Control: a pure wait on one live workflow with fresh agent transcripts, with `bgwait` due. No `bg-report`.
   - Inverse: stale agent transcripts do give `bg-report`.
-- [ ] **P1.7 A shell waiter is not silent.** In `roster()`, exclude `waiters` from `silent` and satisfy `status_due` for a waiter whose shell is running. `status_verb` labels it `WAITING on shell <id>` rather than SILENT.
+    (ticked) 2026-09-24T14:44:46Z by d778be9d: implemented at .claude/hooks/stop/wl_liveness.py:326; all_waits_live answers a workflow by its fresh stream; controls test_q4 and test_q4b in test_wl_roster.py
+- [x] **P1.7 A shell waiter is not silent.** In `roster()`, exclude `waiters` from `silent` and satisfy `status_due` for a waiter whose shell is running. `status_verb` labels it `WAITING on shell <id>` rather than SILENT.
   - Files: `.claude/hooks/stop/wl_roster.py:527-537,768`, `test_wl_roster.py`.
   - Control: extend `test_r3d` with `assert W4 not in v["silent"]` (fails today; W4's transcript is 30 min quiet).
   - Inverse: `test_r3e`'s gone shell still reads as dead.
-- [ ] **P1.8 Waiters count as live worker ids.** Add `wl_liveness.live_worker_ids(event, live_bg, cwd, sid)`, the union of `live_bg` ids and `wl_roster.shell_waiters`. Use it at `.claude/hooks/stop/wl_checks.py:1939` and `:2261`.
+    (ticked) 2026-09-24T14:44:47Z by d778be9d: implemented at .claude/hooks/stop/wl_roster.py:621; a shell waiter is neither silent nor status-due, and --status labels it WAITING; control test_r3d
+- [x] **P1.8 Waiters count as live worker ids.** Add `wl_liveness.live_worker_ids(event, live_bg, cwd, sid)`, the union of `live_bg` ids and `wl_roster.shell_waiters`. Use it at `.claude/hooks/stop/wl_checks.py:1939` and `:2261`.
   - Files: `wl_liveness.py`, `wl_checks.py`.
   - Control: an **expired** lease on waiter W4 whose shell is running. The item stays in-flight and does not enter `open-items`.
-- [ ] **P1.9 Roster covers leases on workflow ids through `workflow_stream`,** and `load_metas` also reads `subagents/workflows/*/agent-*.meta.json` so workflow writers count toward the cap.
+    (ticked) 2026-09-24T14:44:47Z by d778be9d: implemented at .claude/hooks/stop/wl_liveness.py:285; live_worker_ids adds shell waiters; controls test_q2 and test_q2b
+- [x] **P1.9 Roster covers leases on workflow ids through `workflow_stream`,** and `load_metas` also reads `subagents/workflows/*/agent-*.meta.json` so workflow writers count toward the cap.
   - Files: `.claude/hooks/stop/wl_roster.py:89-120,470-482`, `test_wl_roster.py`.
   - Control: `worker:wf_x` on a live, fresh workflow is `covered`, not `unknown`.
+    (ticked) 2026-09-24T14:44:48Z by d778be9d: implemented at .claude/hooks/stop/wl_roster.py:538; workflow leases covered by the agents' stream and load_metas reads workflow metas; controls test_q3, test_q3b, test_q3c
 
 **P2: lease continuity**
 
-- [ ] **P2.1 `worker:lead`.** Covered while any session background task is live, auto-renewed by the hook while covered, capped at 3, fails closed.
+- [x] **P2.1 `worker:lead`.** Covered while any session background task is live, auto-renewed by the hook while covered, capped at 3, fails closed.
   - Files: `worklist.py` (`--lease`, `:1025-1042`), `wl_store.py` (`classify_items`), `wl_roster.py` (skip from writer accounting), new `wl_leasehelp.py`, `test_wl_leases.py`.
   - Control: an item on `worker:lead` with one live shell stays in-flight across a shell replacement **without a new `--lease`**. Today the lease is refused ("must name its worker (worker:<background-task-id>)").
   - Inverse: with no live task the item is open.
-- [ ] **P2.2 Auto-lease from `#id` in a live agent's prompt or a shell's description,** at stop time.
+    (ticked) 2026-09-24T14:44:48Z by d778be9d: implemented at .claude/hooks/stop/wl_leasehelp.py:98; worker:lead covered while a task is live, hook-renewed, capped at 3; controls test_l1 to test_l1d in test_wl_leases.py
+- [x] **P2.2 Auto-lease from `#id` in a live agent's prompt or a shell's description,** at stop time.
   - Files: `wl_leasehelp.py`, `wl_checks.py` (one call after the roster), `test_wl_leases.py`.
   - Control: a new agent whose prompt names `#abcd1234` (open) holds the lease after one stop.
   - Inverse: an id owned by a peer is not leased.
-- [ ] **P2.3 `--lease` with an id list, and `--relay <me> <old> <new>`.**
+    (ticked) 2026-09-24T14:44:49Z by d778be9d: implemented at .claude/hooks/stop/wl_leasehelp.py:137; auto-lease from a live agent's first prompt or a shell's description at stop time; controls test_l2 and test_l2b
+- [x] **P2.3 `--lease` with an id list, and `--relay <me> <old> <new>`.**
   - Files: `worklist.py`, `worklist_messages.py` (`USAGE`), `test_wl_identity.py` (the 185 verb set).
   - Control: `--relay` moves 3 leases in one call.
-- [ ] **P2.4 `BLOCKED_BY:#id`.**
+    (ticked) 2026-09-24T14:44:50Z by d778be9d: implemented at .claude/hooks/stop/worklist.py:1137; --lease takes an id list and --relay moves every lease on one worker; controls test_l3 and test_l3b
+- [x] **P2.4 `BLOCKED_BY:#id`.**
   - Files: `wl_core.py` (the token), `wl_store.py` (fold and classify), `worklist.py` (validation on `--add` and `--update`), `test_wl_leases.py`.
   - Control: an open item blocked by an open item of the same session does not appear in `open-items` or `idle-stall`, while its blocker does. Ticking the blocker queues "unblocked #y" and the item becomes open.
   - Inverse: a cycle and an unknown blocker are refused with rc 2.
+    (ticked) 2026-09-24T14:44:50Z by d778be9d: implemented at .claude/hooks/stop/wl_leasehelp.py:72; BLOCKED_BY waits, reopens with an UNBLOCKED note, refuses unknown blockers and cycles; controls test_l4 and test_l4b
 
 **P2: fragility**
 
-- [ ] **P2.5 LKG snapshot and fallback.**
+- [x] **P2.5 LKG snapshot and fallback.**
   - Files: new `wl_lkg.py`, `worklist.py` (buffer the raw stdin in `_read_event`; the `_BROKEN` block at `:2125`; `__main__` at `:2147`), new `test_wl_lkg.py`. The test copies `STOP_DIR` to a temp directory, runs a clean stop there to seed the LKG, plants `undefined_name()` in `run_stop`, and stops again.
   - Control: the verdict names the snapshot and the battery's checks. Today: "Stop hook CRASHED".
   - Inverses: with no LKG and no git, the crash block is unchanged. With the snapshot also broken, the crash block is unchanged.
-- [ ] **P2.6 Post-edit check for the stop modules.**
+    (ticked) 2026-09-24T14:44:51Z by d778be9d: implemented at .claude/hooks/stop/wl_lkg.py:155; last-known-good snapshot per clean stop and a snapshot replay on a live crash; controls in test_wl_lkg.py
+- [x] **P2.6 Post-edit check for the stop modules.**
   - Files: new `.claude/hooks/context/stop-hook-edit-check.py`, `lifecycle.py` (the post-tool member), `settings.json` (the post-tool timeout sum), a `test_settings_collapse.py` update, and `scripts/data/hook-inventory-baseline.json` if the counter requires it.
   - Control: an Edit payload on a copy containing an F821 undefined name. The warning text names the line.
   - Inverse: a clean file produces no output.
+    (ticked) 2026-09-24T15:25:21Z by d778be9d: implemented at .claude/hooks/context/stop-hook-edit-check.py:1 and wired at .claude/rediacc_hooks/lifecycle.py:150 (post-tool, 20s; settings.json post-tool timeout 95 = lifecycle.hooks_block()); controls in .claude/rediacc_hooks/tests/test_stop_hook_edit_check.py (F821 named with line, import-time failure via _BROKEN, clean file silent)
 
 **P2: judge rendering**
 
-- [ ] **P2.7 One block for every fired fix obligation.**
+- [x] **P2.7 One block for every fired fix obligation.**
   - Files: `wl_checks.py` (`:4252-4261`), `worklist_messages.py`, `test_wl_regression_gate.py` (edited).
   - Control: a stubbed verdict with `regression_gate` blocking **and** `class_sweep` fired. The block text contains both the gate instruction and the sweep's `search`. Today it contains only the gate payload.
+    (ticked) 2026-09-24T14:44:51Z by d778be9d: implemented at .claude/hooks/stop/worklist_messages.py:1405; a regression-gate block carries every obligation the verdict fired; controls test_p27 in test_wl_regression_gate.py
 
 ### Writer split (2 disjoint sets)
 

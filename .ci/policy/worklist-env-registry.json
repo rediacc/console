@@ -423,6 +423,13 @@
         "'30'"
       ]
     },
+    "WORKLIST_LKG_CHILD": {
+      "kind": "handle",
+      "defaults": [
+        "NONE"
+      ],
+      "why": "The last-known-good recursion guard (wl_lkg.py, agent/plans/PLAN-stop-hook-continuity.md P2.5), set only by worklist.py on the snapshot child it spawns after a live-tree crash. Unset is the normal state. A misspelled read would read as unset inside the child, so a crashing snapshot would try to fall back again; the child's own crash then emits the ordinary crash block, which is the fail-closed direction."
+    },
     "WORKLIST_MIGRATE_PLANS_SHOW": {
       "kind": "tuning",
       "defaults": [

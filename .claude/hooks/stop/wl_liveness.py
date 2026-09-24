@@ -36,11 +36,11 @@ THE LADDER, and why it cannot deadlock (the lesson fixed by operator decision in
 import json
 import os
 import re
-import subprocess
 import tempfile
 import time
 from typing import Any
 
+import wl_common
 import wl_core as C
 
 LADDER_PING_MIN = int(os.environ.get("WORKLIST_LADDER_PING_MIN", "45"))
@@ -77,17 +77,8 @@ def _proc_table_linux():
 
 def _proc_table_ps():
     """The no-/proc fallback (macOS). One bounded subprocess; None on failure."""
-    try:
-        r = subprocess.run(
-            ["ps", "-axo", "pid=,ppid=,args="],
-            capture_output=True,
-            text=True,
-            timeout=10,
-            check=False,
-        )
-    except (OSError, subprocess.SubprocessError):
-        return None
-    if r.returncode != 0:
+    r = wl_common.run_quiet(["ps", "-axo", "pid=,ppid=,args="])
+    if r is None or r.returncode != 0:
         return None
     out = []
     for line in r.stdout.splitlines():
@@ -282,6 +273,26 @@ def live_teammate_transcripts(cwd, fresh_min=None, session_id=""):
     return fresh
 
 
+def live_worker_ids(event, live_bg, cwd, session_id):
+    """Every worker id that is live this stop: the running background tasks, PLUS each agent waiting on a shell it armed (`wl_roster.shell_waiters`).
+
+    A waiter ended its turn, so the event lists only its shell and calls the agent completed; the harness resumes it when that shell exits. Before 2026-09-24 (agent/plans/PLAN-stop-hook-continuity.md P1.8) an expired lease on a waiter therefore failed closed into an open item, and the stuck detector did not count the lease as supervision, while the roster called the same agent live."""
+    import wl_roster as R  # noqa: PLC0415 -- lazy: wl_roster imports this module
+
+    ids = {str(b.get("id") or "") for b in live_bg or [] if isinstance(b, dict)}
+    try:
+        running = [
+            b
+            for b in (event.get("background_tasks") or [])
+            if isinstance(b, dict) and b.get("status") == "running"
+        ]
+        ids |= set(R.shell_waiters(running, R.load_metas(R.session_subagents_dir(cwd, session_id))))
+    except Exception:  # noqa: BLE001 -- liveness evidence is additive; a failure adds nothing
+        pass
+    ids.discard("")
+    return ids
+
+
 def all_waits_live(live_bg, verdicts, fresh_mates, facts=None):
     """True only when EVERY running background task carries a POSITIVE automatic liveness answer.
 
@@ -289,6 +300,7 @@ def all_waits_live(live_bg, verdicts, fresh_mates, facts=None):
 
     - `shell`: `verify_background` CONFIRMED the OS process (its exit is the harness notification). `suspect` and `unverifiable` answer nothing.
     - `subagent`: the harness's `tasks/<id>.output` is a symlink to `subagents/agent-<id>.jsonl`, so the task id JOINS to its own transcript and `bg_output_facts` (`facts`) already carries its age. Answered when that stream exists and is not stale (BG_STALE_MIN). These metas carry no `taskKind`, so `live_teammate_transcripts` never counts them; measured 2026-09-24, 0 of 306 metas in a live session did.
+    - `workflow`: the same answer through `workflow_stream`, which `bg_output_facts` already folded into `facts`.
     - `teammate`: counted, because a teammate has no such join (see `live_teammate_transcripts`). Covered only when the fresh-transcript count reaches the claimed count; `None` (store unreadable) is "cannot tell".
 
     Any other task type has no automatic answer. An empty roster is not a live wait.
@@ -302,7 +314,8 @@ def all_waits_live(live_bg, verdicts, fresh_mates, facts=None):
         kind, tid = b.get("type"), str(b.get("id") or "")
         if kind == "teammate":
             mates += 1
-        elif kind == "subagent":
+        elif kind in ("subagent", "workflow"):
+            # A WORKFLOW is answered the same way since 2026-09-24 (agent/plans/PLAN-stop-hook-continuity.md P1.6): `bg_output_facts` has already read its agents' transcripts through `workflow_stream`, so a fresh stream is the same positive answer a subagent's is. Before, any workflow made the wait "unanswered" and the 15-minute check-in fired on a healthy, streaming one.
             age, stale = streams.get(tid, (None, True))
             if age is None or stale:
                 return False
@@ -622,7 +635,7 @@ def worker_facts(event, session_id):
         )
         # Actionable = the OS is unsure, or the worker has gone quiet. Those are
         # the rows a reader can act on; the rest are noise at scale.
-        actionable = v == "suspect" or (quiet is not None and quiet >= 15)
+        actionable = v == "suspect" or (quiet is not None and quiet >= BG_STALE_MIN)
         (hot if actionable else cold).append(line)
 
     rows = hot + cold[: max(0, ROSTER_MAX - len(hot))]

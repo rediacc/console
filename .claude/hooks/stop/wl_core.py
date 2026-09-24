@@ -14,6 +14,8 @@ import sys
 import tempfile
 import time
 
+import wl_common
+
 # `- [ ] (5546d4bb) do the thing` -> state " ", owner "5546d4bb" Owner accepts any word-ish label, not just hex: a named agent tagged items "(perf6-daemon)", the old hex-only charset failed to parse it, the item read as UNTAGGED, and untagged defaults to mine -- so every OTHER session was blocked on that agent's work. Non-prefix labels now parse as owners and are
 # reported-never-blocking for everyone (including the labeler: only a tag that is a PREFIX of your session id binds you).
 ITEM = re.compile(
@@ -696,28 +698,12 @@ def transcript_tail(path, want=None, tries=6, delay=0.25):
 
     Tail-read, because the transcript is tens of MB and the hook runs on every stop. Measured: 2 MB tail + parse is 0.08s / 15 MB RSS on a 36 MB file, so this is not the expensive part of anything.
     """
-    if not path or not os.path.exists(path):
+    # The first (probably partial) line is dropped unless the read started at byte 0.
+    recs = wl_common.tail_records(path, TRANSCRIPT_TAIL_BYTES)
+    if recs is None:
         return "", [], False
-    try:
-        with open(path, "rb") as f:
-            f.seek(0, 2)
-            size = f.tell()
-            f.seek(max(0, size - TRANSCRIPT_TAIL_BYTES))
-            chunk = f.read()
-    except OSError:
-        return "", [], False
-    # Drop the first (probably partial) line unless we read from byte 0.
-    lines = chunk.split(b"\n")
-    if size > TRANSCRIPT_TAIL_BYTES:
-        lines = lines[1:]
     turn_texts, since_user = [], []
-    for raw in lines:
-        if not raw.strip():
-            continue
-        try:
-            rec = json.loads(raw)
-        except ValueError:
-            continue
+    for rec in recs:
         rtype = rec.get("type")
         if rtype == "user":
             # A new operator turn resets what "this turn" means.

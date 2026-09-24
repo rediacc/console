@@ -226,7 +226,9 @@ def test_hint_fires_on_a_loud_allow_stop(wl):  # noqa: F811
     wl.env["WORKLIST_HINTS_FILE"] = REAL_HINTS
     wl.brief_now()
     wl.hand_now()
-    wl.brief_other("cafe1234")
+    # A deferred item of this session's own makes the allow LOUD (its guide leads the report); a peer's brief did until the peer listing was deleted 2026-09-24.
+    wl.add_item("- [?] (deadbeef) keep the flag? DEFAULT: keep it")
+    wl.say("answer\n\n## Remaining\n- the flag decision, deferred with a default")
     got = wl.run()
     assert "TIP (hint" in got.out, got.out[-600:]
 
@@ -242,11 +244,18 @@ def test_hint_absent_on_a_genuinely_silent_clean_stop(wl):  # noqa: F811
     assert got2.out == "", repr(got2.out)
 
 
-def test_hint_absent_on_a_blocked_stop(wl):  # noqa: F811
+def test_hint_rides_a_blocked_stop_at_most_once_per_30_min(wl):  # noqa: F811
+    """Since 2026-09-24 (agent/plans/PLAN-stop-hook-continuity.md P0.5) a block is an output the hint may ride, because a busy session otherwise never sees the corpus. INVERSE in the same case: a second block inside BLOCK_HINT_MIN carries none, so the tip cannot become an every-stop line."""
     wl.env["WORKLIST_HINTS_FILE"] = REAL_HINTS
+    wl.add_item("- [ ] (deadbeef) open thing")
     got = wl.run()
     assert '"decision": "block"' in got.out, got.out[:400]
-    assert "TIP (hint" not in got.out, got.out
+    assert "TIP (hint" in got.out, got.out[-600:]
+    wl.newturn()
+    wl.say("still working")
+    again = wl.run()
+    assert '"decision": "block"' in again.out, again.out[:400]
+    assert "TIP (hint" not in again.out, again.out[-600:]
 
 
 def test_hint_absent_with_an_empty_corpus_proves_the_corpus_drives_the_line(wl):  # noqa: F811
@@ -256,10 +265,11 @@ def test_hint_absent_with_an_empty_corpus_proves_the_corpus_drives_the_line(wl):
     wl.env["WORKLIST_HINTS_FILE"] = str(empty)
     wl.brief_now()
     wl.hand_now()
-    wl.brief_other("cafe1234")
+    wl.add_item("- [?] (deadbeef) keep the flag? DEFAULT: keep it")
+    wl.say("answer\n\n## Remaining\n- the flag decision, deferred with a default")
     got = wl.run()
     assert "TIP (hint" not in got.out, got.out[-600:]
-    assert "Other sessions in this worktree" in got.out, "the rest of the stop still ran"
+    assert "WORKLIST GUIDE" in got.out, "the rest of the stop still ran"
 
 
 def test_hint_missing_corpus_never_blocks_and_reports_nothing(wl):  # noqa: F811
@@ -267,7 +277,8 @@ def test_hint_missing_corpus_never_blocks_and_reports_nothing(wl):  # noqa: F811
     wl.env["WORKLIST_HINTS_FILE"] = missing
     wl.brief_now()
     wl.hand_now()
-    wl.brief_other("cafe1234")
+    wl.add_item("- [?] (deadbeef) keep the flag? DEFAULT: keep it")
+    wl.say("answer\n\n## Remaining\n- the flag decision, deferred with a default")
     got = wl.run()
     assert got.rc == 0, got.out
     assert '"decision": "block"' not in got.out, got.out
@@ -281,7 +292,8 @@ def test_hint_corpus_error_is_reported_and_never_blocks(wl):  # noqa: F811
     wl.env["WORKLIST_HINTS_FILE"] = str(broken)
     wl.brief_now()
     wl.hand_now()
-    wl.brief_other("cafe1234")
+    wl.add_item("- [?] (deadbeef) keep the flag? DEFAULT: keep it")
+    wl.say("answer\n\n## Remaining\n- the flag decision, deferred with a default")
     got = wl.run()
     assert got.rc == 0, got.out
     assert '"decision": "block"' not in got.out, got.out

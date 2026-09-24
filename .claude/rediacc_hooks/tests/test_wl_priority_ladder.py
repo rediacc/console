@@ -14,6 +14,7 @@ import json
 import re
 import shutil
 
+from rediacc_hooks.tests import wlfix
 from rediacc_hooks.tests.test_wl_checklists import cldeliver, clfile
 from rediacc_hooks.tests.test_wl_ci_status import ci_job, ci_rollup, ci_setup
 from rediacc_hooks.tests.wlfix import wl  # noqa: F401
@@ -87,16 +88,16 @@ def test_231_the_ladder_decides_the_first_pick_where_line_order_used_to(wl):  # 
     """
     wl.hand_now()  # so `agent-state` is not a third check
     wl.add_item("- [ ] (deadbeef) the mission item")
-    # no brief_now, which is the T_HYGIENE member
-    wl.say("status update\n\n## Remaining\n- the mission item (mine)")
+    # No '## Remaining' section, which is the T_HYGIENE member (`no-remaining`; the missing session brief filled this role until that check was deleted 2026-09-24).
+    wl.say("status update")
     first = wl.run()
     wl.newturn()
-    wl.say("status update again\n\n## Remaining\n- the mission item (mine)")
+    wl.say("status update again")
     second = wl.run()
     assert "OPEN worklist item" in first.out, (
         "231: the first pick was not the mission item: %s" % first.out[:300]
     )
-    assert "OPEN worklist item" not in second.out, (
+    assert "OPEN worklist item" not in wlfix.quoted(second.out), (
         "231 CONTROL: the mission tier starved the hygiene tier: %s" % second.out[:300]
     )
 
@@ -112,7 +113,7 @@ def test_231b_a_mission_check_defined_later_in_the_battery_still_wins(wl):  # no
     got = wl.run()
     lineorder = "231b: line order is still deciding the first pick: %s" % got.out[:300]
     assert "w1" in got.out, lineorder
-    assert "session brief is missing" not in got.out, lineorder
+    assert "session brief is missing" not in wlfix.quoted(got.out), lineorder
 
 
 def plant_unread_report(fix) -> None:

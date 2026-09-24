@@ -13,7 +13,10 @@ from __future__ import annotations
 
 import re
 import shutil
+import subprocess
+import sys
 
+from rediacc_hooks.tests import wlfix
 from rediacc_hooks.tests.wlfix import wl  # noqa: F401
 
 ARCHIVED = """Session cafe1234 finished the chunk-store cold-path cutover weeks ago and has not been seen since. Its directory is the kind this gate archives: abandoned by the hook's own oracle, well past the grace period, and holding nothing anybody is still editing.
@@ -25,6 +28,32 @@ Nothing. The work landed; this document is a record."""
 REJECTED_STUB = "Status: moved\nMoved-To: agent/archive/2026-09-22-backfill/cafe1234/STATE.md\n"
 
 PEER_ROW = r"cafe1234 +[0-9]+ min old"
+
+# THE ROSTER, READ WHERE IT LIVES. Until 2026-09-24 every Stop printed it as the `agent-peers` advisory, and these cases read it off the hook's output; that advisory was deleted with the peer listing (agent/plans/PLAN-stop-hook-continuity.md P0.3). The roster itself -- `agent_peer_sections` filtered by `agent_state_dead`, the same pair `check_agent_session_archival.py` reads -- is unchanged, so it is rendered here in the row shape the advisory used.
+ROSTER_SNIPPET = r"""
+import sys, time
+sys.path.insert(0, sys.argv[1])
+import wl_core as C, wl_store as S
+root = C.project_root(C.project_start({"cwd": sys.argv[2]}))
+secs = S.agent_peer_sections(root, sys.argv[3])
+_live, dead = S.agent_state_dead(secs, sys.argv[3], C.projects_dir(root))
+gone = {id(x) for x in dead}
+now = time.time()
+for x in secs:
+    print("    %-14s %4d min old%s" % (x["owner"], int(max(0.0, (now - x["ts"]) / 60.0)), "   ABANDONED" if id(x) in gone else ""))
+"""
+
+
+def roster(fix) -> str:
+    proc = subprocess.run(
+        [sys.executable, "-c", ROSTER_SNIPPET, str(wlfix.STOP_DIR), str(fix.proj), fix.sid],
+        capture_output=True,
+        text=True,
+        env=fix.stop_env(),
+        check=False,
+    )
+    assert proc.returncode == 0, proc.stderr[-600:]
+    return proc.stdout
 
 
 def _abandoned_peer(wl) -> None:  # noqa: F811
@@ -46,7 +75,7 @@ def _abandoned_peer(wl) -> None:  # noqa: F811
 def test_the_fixture_really_produces_an_abandoned_peer(wl):  # noqa: F811
     """THE CONTROL FOR THE TWO CASES BELOW. An absence proves nothing until the presence is established: without this, a fixture that quietly stopped writing a peer directory would satisfy the archival case for a reason that has nothing to do with archiving."""
     _abandoned_peer(wl)
-    out = wl.run().out
+    out = roster(wl)
     assert re.search(PEER_ROW, out), (
         "CONTROL: the fixture produced no peer row at all, so the archival case below "
         "would assert an absence it got for free: %s" % out[:400]
@@ -67,19 +96,12 @@ def test_an_archived_session_leaves_the_peer_roster_entirely(wl):  # noqa: F811
     assert state.is_file(), "FIXTURE BROKEN: the peer wrote no STATE.md to archive"
     shutil.rmtree(state.parent)
 
-    got = wl.run()
-    assert got.out.strip(), (
-        "the hook produced NO output at all, so an absence below is absence from nothing: "
-        "%s" % got.err[:300]
-    )
-    assert not re.search(PEER_ROW, got.out), (
-        "the archived session still carries a peer row under agent/: %s" % got.out[:400]
-    )
-    # THE ASSERTION ABOVE IS NARROW ON PURPOSE, and this is what pins it there. `cafe1234` is still named by the BRIEF roster, which reads the event store rather than the notes tree, and a bare "the name is gone" check would be asserting that a second, unrelated channel had also collapsed: passing for a reason that has nothing to do with archiving, and failing the day either
-    # channel is renamed.
-    assert "cafe1234" in got.out, (
-        "the brief roster lost the session too, so the case above proved nothing about "
-        "the agent/ roster specifically: %s" % got.out[:400]
+    # A SECOND, LIVE peer, so an absence below is not absence from an empty roster.
+    wl.state_as("cafe5678", ARCHIVED)
+    out = roster(wl)
+    assert "cafe5678" in out, "the roster read nothing at all: %r" % out
+    assert not re.search(PEER_ROW, out), (
+        "the archived session still carries a peer row under agent/: %s" % out[:400]
     )
 
 
@@ -94,7 +116,7 @@ def test_a_same_named_stub_resurrects_the_archived_session(wl):  # noqa: F811
     state.parent.mkdir(parents=True, exist_ok=True)
     state.write_text(REJECTED_STUB, encoding="utf-8")
 
-    out = wl.run().out
+    out = roster(wl)
     assert re.search(PEER_ROW, out), (
         "the stub did not resurrect the peer, so this control asserts nothing and the "
         "no-stub decision has lost its evidence: %s" % out[:400]

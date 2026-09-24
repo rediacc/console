@@ -20,12 +20,12 @@ from rediacc_hooks.tests.test_wl_ci_status import ci_job, ci_rollup, ci_run, ci_
 from rediacc_hooks.tests.test_wl_guide_and_deferrals import shim_judge_out
 from rediacc_hooks.tests.wlfix import wl  # noqa: F401
 
-# The four class-2 sections the outq fixture fires on one stop. FOUR, not three: an orphaned item is by construction another session's OPEN item, so it always drags the other-session count along with it. The fourth was the poll-backoff advisory until 2026-09-24; a peer's agent/<peer>/STATE.md (the `agent-peers` note) replaced it.
+# The four class-2 sections the outq fixture holds on one stop. PLANTED in the queue since 2026-09-24: three of the four producers that used to fire here (`agent-peers`, `others`, `others-items`) were deleted with the peer listing (agent/plans/PLAN-stop-hook-continuity.md P0.3), and what these cases measure is the drain -- its budget, its tail, its priority order -- not any one producer.
 OUTQ_SECTIONS = (
-    "other sessions own directories beside yours",
-    "Other sessions in this worktree",
-    "ORPHANED item(s)",
-    "nothing open for this session",
+    "FIXTURE SECTION ONE",
+    "FIXTURE SECTION TWO",
+    "FIXTURE SECTION THREE",
+    "FIXTURE SECTION FOUR",
 )
 
 
@@ -38,14 +38,32 @@ def stale_peer_transcript(fix) -> None:
 
 
 def outq_fixture(fix) -> None:
-    """Four class-2 sections firing on one stop."""
+    """Four class-2 sections queued for one clean stop."""
     fix.say("done for now")
     fix.brief_now()
     fix.hand_now()
-    fix.brief_other("cafe1234")
-    stale_peer_transcript(fix)
-    fix.add_item("- [ ] (cafe1234) their abandoned item")
-    fix.state_as("cafe1234", wlfix.STATE_BODY)
+    fix.run()  # builds the state document the queue lives in
+    path = fix.stem(".state-deadbeef.json")
+    doc = json.loads(path.read_text(encoding="utf-8"))
+    doc["outq"] = {
+        "seq": 4,
+        "shown": {},
+        "items": [
+            {
+                "key": "fixture-%d" % i,
+                "prio": 2,
+                "sticky": False,
+                "sig": "%012x" % i,
+                "text": "%s\n  body line" % label,
+                "at": "2026-09-24T00:00:00Z",
+                "seq": i,
+            }
+            for i, label in enumerate(OUTQ_SECTIONS, 1)
+        ],
+    }
+    path.write_text(json.dumps(doc), encoding="utf-8")
+    fix.newturn()
+    fix.say("done for now")
 
 
 def outq_seen(out: str) -> int:
@@ -149,6 +167,9 @@ def test_175_the_class_0_ci_note_is_released_ahead_of_the_older_class_2_advisory
     # The older advisory is another session's item count, NOT its brief: ci_trouble returns "multi-session" the moment a second brief is live, and a fixture that quietly switches off the check it is racing proves nothing. Both are computed on the SAME first stop, so neither one has an
     # earlier chance to drain and get latched -- the only thing deciding which renders first is priority, which is exactly what this case measures.
     wl.add_item("- [ ] (cafe1234) their abandoned item")
+    # An ORPHANED item (a dead owner's open item) is the older class-2 advisory: `ci_run` carries no transcript path to derive the projects directory from, so it is pinned to where the stale transcript lives.
+    stale_peer_transcript(wl)
+    wl.env["WORKLIST_PROJECTS_DIR"] = str(wl.base)
     ci_rollup(
         wl,
         "PENDING",
@@ -156,10 +177,10 @@ def test_175_the_class_0_ci_note_is_released_ahead_of_the_older_class_2_advisory
     )
     got = ci_run(wl)
     assert "retry allowlist" in got.out, "the CI note did not render: %s" % got.out[:400]
-    assert "nothing open for this session" in got.out, (
+    assert "ORPHANED item(s)" in got.out, (
         "the older advisory did not render alongside it: %s" % got.out[:400]
     )
-    assert got.out.index("retry allowlist") < got.out.index("nothing open for this session"), (
+    assert got.out.index("retry allowlist") < got.out.index("ORPHANED item(s)"), (
         "priority did not beat the older advisory's position: %s" % got.out[:400]
     )
 

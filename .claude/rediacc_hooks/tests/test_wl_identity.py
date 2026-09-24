@@ -428,6 +428,8 @@ def drive_l1(fix) -> L1Drive:
     i_defer = mkitem("l1-defer-item")
     i_update = mkitem("l1-update-item")
     i_lease = mkitem("l1-lease-item")
+    i_relay = mkitem("l1-relay-item")
+    both(l1run(fix, "--lease", wlfix.ME, i_relay, "+30", "worker:l1old"))
     mkitem("l1-list-item")  # the --list row asserts on the TEXT, not the id
     for name, value in (
         ("i_tick", i_tick),
@@ -476,6 +478,7 @@ def drive_l1(fix) -> L1Drive:
         ),
         ("--update", "--update @WHO@ %s moved-a-bit" % i_update, "updated #"),
         ("--lease", "--lease @WHO@ %s +30 worker:l1bg" % i_lease, "leased #"),
+        ("--relay", "--relay @WHO@ l1old l1new", "relayed 1 lease(s)"),
         ("--status", "--status @WHO@ all", "a9000000000000001 (general-purpose)"),
         ("--list", "--list --open @WHO@", "l1-list-item"),
         ("--state", "--state @WHO@", "STATE.md section written"),

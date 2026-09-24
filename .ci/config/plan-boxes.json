@@ -278,6 +278,36 @@
       "open_sigs": [],
       "done_sigs": []
     },
+    "agent/plans/PLAN-ci-gate-write-taint-scanners.md": {
+      "status": "active",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 19,
+      "done": 0,
+      "open_sigs": [
+        "18b13e64",
+        "1c25eaa3",
+        "2253739c",
+        "34d6cfda",
+        "389f9f5e",
+        "3e197056",
+        "54c044e5",
+        "5e723e11",
+        "5ea691d6",
+        "630e9afc",
+        "787910e8",
+        "82248a22",
+        "bb8f82e2",
+        "bd9985aa",
+        "c3a69a36",
+        "cb1088d8",
+        "d54d28ed",
+        "e0c269f4",
+        "ec86975c"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-ci-trace-no-pr-branch.md": {
       "status": "compacted",
       "owner": "854ac1c6",
@@ -723,6 +753,28 @@
         "fe9599e6"
       ]
     },
+    "agent/plans/PLAN-plan-dependencies.md": {
+      "status": "draft",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 11,
+      "done": 0,
+      "open_sigs": [
+        "18cf4e21",
+        "1deb6b06",
+        "3ebe1a27",
+        "66945bc7",
+        "6af8e266",
+        "8aaedd93",
+        "9308736d",
+        "95bfe222",
+        "98e8fe4f",
+        "99fbddd7",
+        "cd2f60ac"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-printf-echo-pipefail-sweep.md": {
       "status": "compacted",
       "owner": "d778be9d",
@@ -993,7 +1045,7 @@
     },
     "agent/plans/PLAN-retire-bash-oracles.md": {
       "status": "approved",
-      "owner": "unowned",
+      "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
       "open": 15,
@@ -1203,13 +1255,14 @@
       "done_sigs": []
     },
     "agent/plans/PLAN-stop-hook-continuity.md": {
-      "status": "draft",
+      "status": "executing",
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 21,
-      "done": 0,
-      "open_sigs": [
+      "open": 0,
+      "done": 21,
+      "open_sigs": [],
+      "done_sigs": [
         "01767e01",
         "02fb0d3e",
         "06c523a4",
@@ -1231,8 +1284,7 @@
         "ebf667ac",
         "f2999444",
         "ffe447ad"
-      ],
-      "done_sigs": []
+      ]
     },
     "agent/plans/PLAN-stop-hook-overhaul.md": {
       "status": "ready",

@@ -28,13 +28,15 @@ import re
 import time
 from typing import Any
 
+import wl_common
 import wl_core as C
+import wl_leasehelp as LH
 
 # ---- the sealed constants ---------------------------------------------------
 
 # The operator's number. A writer beyond it is refused at spawn (guards/block_agent_cap.py) and blocked at Stop (`roster-cap`).
 WRITER_CAP = 4
-# The operator's number. A leased worker whose newest status is this old owes one (`roster-status`); a transcript this quiet with no tool call in flight is `roster-silent`.
+# The operator's number. A leased worker whose newest evidence (a transcript write, a tool call in flight, a lease, a --status, its own SendMessage or SubagentStop) is this old is `roster-silent`. Evidence counts as status since 2026-09-24 (operator ruling "Evidence counts as status"), so the separate `roster-status` ping is merged into it.
 STATUS_PING_MIN = 20
 # A lease on `worker:queue` holds writer work the cap forbids starting. It is covered ONLY while every writer slot is taken; the moment one frees it is a defect naming the item to start, so it can never park work behind a cap that is not full.
 QUEUE_WORKER = "queue"
@@ -45,8 +47,10 @@ READ_ONLY_AGENT_TYPES = frozenset({"Plan", "Explore"})
 # The pushes an HONEST roster answers. The ladder keys are deliberately ABSENT, and that is a narrowing of the plan's list rather than an omission: `wl_liveness.ladder` skips every subject whose worker is a known subagent, so a ladder key that reaches the filter is BY CONSTRUCTION about a shell lease, a teammate or a harness task, which the plan says must keep firing. `agent-state`
 # is dropped only for its `stale` verdict; the caller enforces that.
 ROSTER_SUPPRESSES = frozenset({"bg-report", "stuck", "idle-stall", "solo-grind", "agent-state"})
-# The five defect keys, in the order the plan names them.
-ROSTER_KEYS = ("roster-cap", "roster-status", "roster-silent", "roster-unleased", "roster-dead")
+# The four defect keys. `roster-status` was merged into `roster-silent` on 2026-09-24 ("Evidence counts as status").
+ROSTER_KEYS = ("roster-cap", "roster-silent", "roster-unleased", "roster-dead")
+# How long an agent that ended its turn with a background shell still armed counts as WAITING rather than finished, when no fresh Stop event can confirm the shell. The lease cap: a wait longer than any lease is not supervision the estimate should vouch for.
+WAIT_HORIZON_MIN = 120
 
 # A transcript whose last record ended the turn must also have been quiet this long to count as finished; the harness appends the final record and then stops.
 FINISHED_QUIET_S = 2
@@ -97,7 +101,10 @@ def load_metas(sub_dir):
     if sub_dir is None:
         return out
     try:
-        paths = list(sub_dir.glob("agent-*.meta.json"))
+        # WORKFLOW AGENTS TOO (agent/plans/PLAN-stop-hook-continuity.md P1.9): a workflow's agents write under `subagents/workflows/<runId>/`, and a workflow agent that edits is a writer the cap must count.
+        paths = list(sub_dir.glob("agent-*.meta.json")) + list(
+            sub_dir.glob("workflows/*/agent-*.meta.json")
+        )
     except OSError:
         return out
     for meta in paths:
@@ -276,14 +283,8 @@ def scan_transcript(jsonl, ent):
         return ent
     edits = int(ent.get("edits") or 0)
     send = str(ent.get("send") or "")
-    for raw in blob[: cut + 1].splitlines():
-        if b'"tool_use"' not in raw:
-            continue
-        try:
-            rec = json.loads(raw)
-        except ValueError:
-            continue
-        if not isinstance(rec, dict) or rec.get("type") != "assistant":
+    for rec in wl_common.records(blob[: cut + 1].splitlines(), need=b'"tool_use"'):
+        if rec.get("type") != "assistant":
             continue
         content = (rec.get("message") or {}).get("content")
         if not isinstance(content, list):
@@ -364,6 +365,42 @@ def shell_waiters(running, metas):
     return out
 
 
+_ARMED = re.compile(rb'"backgroundTaskId":"([A-Za-z0-9_-]+)"')
+
+
+def armed_shells(jsonl):
+    """Background shells this transcript launched that no later task notification IN IT has reported back, in launch order.
+
+    The harness resumes a waiting agent by appending `<task-notification>` carrying `<task-id>X</task-id>` to that agent's own transcript (measured 2026-09-24 on real subagent transcripts: both the queued_command attachment and the SYSTEM NOTIFICATION user record carry it). A launch with no such record after it is a shell the agent is still waiting on."""
+    try:
+        data = jsonl.read_bytes()
+    except (OSError, AttributeError):
+        return []
+    out: list[bytes] = []
+    for m in _ARMED.finditer(data):
+        sid = m.group(1)
+        if sid in out:
+            out.remove(sid)
+        if b"<task-id>%s</task-id>" % sid not in data[m.end() :]:
+            out.append(sid)
+    return [x.decode() for x in out]
+
+
+def transcript_waiting(jsonl, now):
+    """The shell id an agent is WAITING on, read from its transcript alone, or "".
+
+    For the callers with no fresh Stop event (the spawn guard, `--lease worker:queue`, `--status`): an agent whose last record ended the turn, written inside WAIT_HORIZON_MIN, with a background shell still armed. 2026-09-24: without this the estimate counted such an agent as finished until the next stop refreshed the event, so `--lease worker:queue` refused ("3 of 4 busy") in the same minute the spawn guard blocked at 4 of 4."""
+    import wl_liveness as L  # noqa: PLC0415
+
+    mt = _mtime(jsonl)
+    if mt is None or now - mt > WAIT_HORIZON_MIN * 60:
+        return ""
+    if not L._record_is_idle(last_record(jsonl)):
+        return ""
+    armed = armed_shells(jsonl)
+    return armed[-1] if armed else ""
+
+
 def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now=None):
     """The roster verdict for one stop. Never raises for a missing input; it degrades to UNKNOWN."""
     now = time.time() if now is None else now
@@ -377,6 +414,7 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
     ro_types = read_only_types(root)
     running = _running(event)
     shells = {str(b.get("id") or ""): b for b in running if b.get("type") == "shell"}
+    workflows = {str(b.get("id") or ""): b for b in running if b.get("type") == "workflow"}
     waiters = shell_waiters(running, metas)
     running = running + [{"id": aid, "type": "subagent", "status": "running"} for aid in waiters]
 
@@ -440,13 +478,26 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
         r for r in getattr(fold, "items", []) or [] if C.owned_by_me(r.get("owner"), session_id)
     ]
     live_ids = {str(b.get("id") or "") for b in running}
-    open_ids = [r["id"] for r in mine if r.get("state") == " "]
+    by_id = {r["id"]: r for r in getattr(fold, "items", []) or []}
+    # A `waiting` item (BLOCKED_BY, P2.4) is not open work in hand; its chain's root is, and it is counted.
+    open_ids = [r["id"] for r in mine if r.get("state") == " " and not LH.waiting_on(r, by_id)]
     leases: dict[Any, Any] = {}
     for r in mine:
         if r.get("state") != ">":
             continue
         ls = C.lease_state(r.get("line") or "")
         w = _worker_of(r)
+        if w == LH.LEAD_WORKER:
+            # worker:lead (P2.1) is no agent and fills no writer slot; it is covered exactly while a task of this session is live, the same fact classify_items reads.
+            if verdicts is None:
+                import wl_liveness as L  # noqa: PLC0415
+
+                verdicts = L.verify_background(list(shells.values()))
+            if ls in ("fresh", "expired") and LH.lead_covered(running, verdicts):
+                leases.setdefault(w, []).append(r)
+            else:
+                open_ids.append(r["id"])
+            continue
         if ls != "fresh" and not (ls == "expired" and w and w in live_ids):
             open_ids.append(r["id"])  # fails closed into an open item, exactly as classify_items
             continue
@@ -464,6 +515,9 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
     leased_dead: list[Any] = []
     unknown: list[Any] = []
     for w, recs in leases.items():
+        if w == LH.LEAD_WORKER:
+            covered.extend((r["id"], w, w) for r in recs)
+            continue
         if w == QUEUE_WORKER:
             full = len(writers) >= WRITER_CAP
             for r in recs:
@@ -475,6 +529,15 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
             coverer = covered_by(w)
             for r in recs:
                 (covered if coverer else leased_dead).append((r["id"], w, coverer))
+        elif w and w in workflows:
+            # A WORKFLOW LEASE is covered by its agents' stream (agent/plans/PLAN-stop-hook-continuity.md P1.9). It is in the event, so "no meta and not in the event" was simply false and dropped the roster to UNKNOWN.
+            import wl_liveness as L  # noqa: PLC0415
+
+            wf = L.workflow_stream(cwd, session_id, workflows[w].get("name"))
+            if wf is not None and wf[0] < STATUS_PING_MIN:
+                covered.extend((r["id"], w, w) for r in recs)
+            else:
+                unknown.extend((r["id"], w, "workflow with no fresh agent stream") for r in recs)
         elif w and w in shells:
             if verdicts is None:
                 import wl_liveness as L  # noqa: PLC0415
@@ -516,11 +579,28 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
             at = stop_cache[f]
             if at is not None and (best is None or at > best):
                 best, src = at, "SubagentStop of %s" % f
+            # EVIDENCE COUNTS AS STATUS (operator ruling 2026-09-24). A transcript write is the growth a `--status` would have recorded, and a tool call in flight is the other half of the same test; asking the lead to restate either was churn the hook could answer itself. A shell waiter is live by its running shell.
+            row_f = live.get(f)
+            if row_f is not None:
+                if row_f.get("inflight") or f in waiters:
+                    best, src = (
+                        now,
+                        (
+                            "tool call in flight in %s" % f
+                            if row_f.get("inflight")
+                            else "%s waiting on shell %s" % (f, waiters[f])
+                        ),
+                    )
+                elif row_f.get("quiet_min") is not None:
+                    at = now - row_f["quiet_min"] * 60
+                    if best is None or at > best:
+                        best, src = at, "transcript growth of %s" % f
         return best, src
 
     status_due, status_rows = [], {}
     # `worker:queue` is a placeholder, not an agent: nothing can report for it, and it is covered only while the cap is full, so its own lease expiry bounds it.
-    for w in sorted({w for _i, w, _c in covered} - {QUEUE_WORKER}):
+    # A workflow lease is covered only while its agents' stream is fresh, which is its evidence already.
+    for w in sorted({w for _i, w, _c in covered} - {QUEUE_WORKER, LH.LEAD_WORKER} - set(workflows)):
         at, src = status_at(w)
         age = None if at is None else max(0.0, (now - at) / 60.0)
         status_rows[w] = (age, src)
@@ -532,7 +612,8 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
     silent = []
     for aid in sorted(supervised):
         row = live.get(aid)
-        if row is None:
+        if row is None or aid in waiters:
+            # A SHELL WAITER is not silent (agent/plans/PLAN-stop-hook-continuity.md P1.7): it ended its turn by definition, so its transcript cannot grow, and the harness resumes it when the shell it is waiting on exits.
             continue
         quiet = row["quiet_min"]
         last = (statuses.get(aid) or {}).get("last") or {}
@@ -654,6 +735,12 @@ def live_estimate(cwd, session_id, now=None):
             fresh = mt is not None and now - mt <= STATUS_PING_MIN * 60
         if fresh and aid not in types:
             types[aid] = m["type"]
+        elif aid not in types and aid not in waiters:
+            # WAITING SINCE THE EVENT: the last Stop event may already call it completed while the shell it armed after that event still runs. Its own transcript says so.
+            wshell = transcript_waiting(m["jsonl"], now)
+            if wshell:
+                waiters[aid] = wshell
+                types[aid] = m["type"]
     rows = []
     for aid, typ in sorted(types.items()):
         m = metas.get(aid) or {}
@@ -663,13 +750,18 @@ def live_estimate(cwd, session_id, now=None):
             and aid not in waiters
             and proven_finished(m["jsonl"], now, m.get("name", ""), cwd, session_id)
         ):
-            continue
+            # ONE NUMBER FOR BOTH CALLERS: an agent listed as running by the last event that has since ended its turn to wait on a shell is a live writer, not a finished one. The spawn guard and `--lease worker:queue` both read this function, so they now agree.
+            wshell = transcript_waiting(m["jsonl"], now)
+            if not wshell:
+                continue
+            waiters[aid] = wshell
         rows.append(
             {
                 "id": aid,
                 "type": kind,
                 "desc": (m.get("desc") or "")[:60],
                 "writer": kind not in ro_types,
+                "waiting": waiters.get(aid, ""),
             }
         )
     return rows, metas
@@ -770,7 +862,9 @@ def status_verb(worklist, me, target, session_id=None, cwd=None, now=None):
         else:
             grew = now - st.st_mtime < STATUS_PING_MIN * 60
         inflight = inflight_tool(last_record(jsonl))
-        silent = not grew and not inflight
+        waiting = next((r.get("waiting") for r in rows if r["id"] == aid), "") or ""
+        # A SHELL WAITER is not silent (P1.7): its turn ended by definition and the harness resumes it when the shell exits.
+        silent = not grew and not inflight and not waiting
         S.status_event(worklist, me, aid, st.st_size, st.st_mtime, inflight, silent)
         text, tool = _tail_facts(jsonl)
         lineage = "depth %s" % m.get("depth", 1)
@@ -794,6 +888,9 @@ def status_verb(worklist, me, target, session_id=None, cwd=None, now=None):
                     "SILENT: the transcript has not grown and nothing is in flight; the clock was "
                     "NOT reset and the next stop raises roster-silent"
                     if silent
+                    else "WAITING on shell %s: the harness resumes it when that shell exits"
+                    % waiting
+                    if waiting and not grew and not inflight
                     else "status recorded; the 20-minute clock restarts"
                 ),
             }
@@ -829,7 +926,7 @@ def row_line(row):
 
 
 def defect_rows(verdict):
-    """{"cap", "status", "silent", "unleased", "dead"}: the rendered rows each roster block quotes. Never truncated: a defect list is short by nature, and a capped one would hide the id the remedy needs."""
+    """{"cap", "silent", "unleased", "dead"}: the rendered rows each roster block quotes. Never truncated: a defect list is short by nature, and a capped one would hide the id the remedy needs."""
     rows = verdict.get("rows") or {}
 
     def lines(ids):
@@ -852,10 +949,16 @@ def defect_rows(verdict):
         )
         for i, w, _c in verdict.get("leased_dead") or []
     ]
+    # MERGED (operator ruling 2026-09-24, "Evidence counts as status"): a worker whose newest evidence is STATUS_PING_MIN old is the same fact as a silent one, so its status row rides the silent block rather than a second key.
+    silent_ids = list(verdict.get("silent") or [])
+    silent_rows = ["    " + row_line(rows[a]) for a in silent_ids if a in rows] + [
+        ln
+        for ln, w in zip(status, verdict.get("status_due") or [], strict=True)
+        if w not in silent_ids
+    ]
     return {
         "cap": lines(verdict.get("writers") or []),
-        "status": "\n".join(status) or "    (none)",
-        "silent": lines(verdict.get("silent") or []),
+        "silent": "\n".join(silent_rows) or "    (none)",
         "unleased": lines(verdict.get("unleased") or []),
         "dead": "\n".join(dead) or "    (none)",
     }
@@ -916,8 +1019,7 @@ def explain_lastevent(prefix):
     for label, items in (
         ("over cap", v["over_cap"]),
         ("unleased writers", v["unleased"]),
-        ("status due", v["status_due"]),
-        ("silent", v["silent"]),
+        ("silent or no evidence", sorted(set(v["silent"]) | set(v["status_due"]))),
     ):
         if items:
             lines.append("  %s: %s" % (label, ", ".join(items)))

@@ -113,13 +113,9 @@ def _selftest():
 
     Every one of these is a property the 2026-08-19 truncation violated, or a way a naive fix for it would break something else.
     """
-    ok = True
+    import wl_common  # noqa: PLC0415 -- the shared selftest checker, loaded only for a selftest
 
-    def check(label, cond, detail=""):
-        nonlocal ok
-        if not cond:
-            ok = False
-        print("  %s  %s%s" % ("PASS" if cond else "FAIL", label, "" if cond else "  <- " + detail))
+    check = wl_common.Checker()
 
     doc = (
         "# t\n\n## Wave header (immutable)\n\n### Intent\nwhy.\n\n"
@@ -181,8 +177,7 @@ def _selftest():
         h, s, t = split(d)
         check("split round-trips (%s)" % name, h + s + t == d)
 
-    print("  %s" % ("all roundlog controls passed" if ok else "*** FAILURES ***"))
-    return 0 if ok else 1
+    return check.verdict("roundlog")
 
 
 if __name__ == "__main__":

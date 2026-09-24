@@ -290,25 +290,15 @@ def test_217e_an_expired_intent_covering_only_closed_work_stays_quiet(wl):  # no
     )
 
 
-def test_210_the_brief_work_gate_an_old_brief_on_an_unchanged_world(wl):  # noqa: F811
-    """A brief goes stale when the WORLD moves, not when the clock does. A sentence that still describes what this session is doing is still true at 200 minutes, and nagging for a rewrite of an accurate sentence trains the reader to dismiss the check.
-
-    Uses the REAL `--brief` CLI, because only that path stamps the world signature the gate compares. The direct `.sessions` writes elsewhere in this suite deliberately carry no signature and must keep falling back to wall-clock.
-
-    `hand_now` is required, not decoration: the hook surfaces ONE outstanding check, so without a STATE.md this case would pass or fail on whichever complaint happened to win the rotation rather than on the brief.
-
-    210b CONTROL: without it the gate above could be a check that can never fire. Same fixture and the same 200-minute-old brief; the only difference is that the world moved, which is exactly when peers can no longer see what this session is doing. A DONE item, deliberately: it moves the item structure the signature covers without leaving anything open.
-    """
+def test_210_an_old_brief_never_blocks_whether_or_not_the_world_moved(wl):  # noqa: F811
+    """Rewritten 2026-09-24 when the `brief` check was deleted (agent/plans/PLAN-stop-hook-continuity.md P1.1): the hook stamps the brief itself, so neither an unchanged world nor a moved one can block on it. Before, 210b blocked with "session brief is stale" once the world moved."""
     wl.say("answer\n\n## Remaining\n- nothing open")
     wl.hand_now()
     wl.cli("--brief", wlfix.ME, "doing the thing")
-    # Backdate it. The last line for a prefix wins, so this is an append like any other.
     wl.brief_at(wlfix.ME, 200, "doing the thing")
-    wl.check_absent(
-        "allow", "session brief is stale", "an old brief on an unchanged world does NOT nag"
-    )
+    wl.check_absent("allow", "session brief", "an old brief on an unchanged world")
     wl.add_item("- [x] (deadbeef) a finished piece of work")
-    wl.check("block", "session brief is stale", "an old brief blocks once the world has moved")
+    wl.check_absent("allow", "session brief", "an old brief once the world has moved")
 
 
 def test_218_update_on_a_deferral_carries_its_default_forward(wl):  # noqa: F811

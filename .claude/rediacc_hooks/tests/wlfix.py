@@ -586,6 +586,13 @@ class Fixture:
         )
 
 
+def quoted(out: str) -> str:
+    """The part of a blocked stop's output that QUOTES checks in full, i.e. everything before the named rotating tail.
+
+    Since 2026-09-24 ("One quoted + others named") every outstanding rotating check is NAMED on one line under `ALSO OUTSTANDING, NAMED`, so a case asserting which check a stop QUOTED must look above that heading, not at the whole output."""
+    return out.split("ALSO OUTSTANDING, NAMED", 1)[0]
+
+
 @pytest.fixture
 def wl(tmp_path):
     """One sandbox per test, torn down with `tmp_path`."""

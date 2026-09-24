@@ -39,6 +39,7 @@ import os
 import re
 import shlex
 
+import wl_common
 import wl_rules
 
 # The substring the prompt section carries, used by wl_judge.judge_schema_for to decide whether `class_sweep` is REQUIRED. Same contract as _REGGATE_MARKER: when the prompt asks for the object, the schema requires it, so the model cannot satisfy the schema by omitting the answer.
@@ -230,9 +231,7 @@ def prompt_section(fix_signal, outstanding=None):
 # -- The verdict ------------------------------------------------------------
 
 
-def _clean(obj, key, limit):
-    v = obj.get(key)
-    return v.strip()[:limit] if isinstance(v, str) else ""
+_clean = wl_common.clean
 
 
 def read_verdict(out):

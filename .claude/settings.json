@@ -59,7 +59,7 @@
           {
             "type": "command",
             "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/rediacc_hooks/lifecycle.py\" post-tool",
-            "timeout": 75
+            "timeout": 95
           }
         ]
       }

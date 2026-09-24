@@ -16,9 +16,9 @@ NOTIFICATION, NOT ACTION. No code here calls `os.kill`/`terminate()` against a d
 
 import os
 import re
-import subprocess
 from typing import Any
 
+import wl_common
 import wl_liveness
 
 #: Raw wall age since process start, independent of BG_STALE_MIN's output-quiescence question -- see this module's own docstring for why the two are not merged.
@@ -75,17 +75,8 @@ def _proc_table_with_age_ps():
 
     A row whose `etimes` field fails to parse degrades to age=None ("OS-visible, age unknown"), never a crash and never a guessed zero -- older BSD `ps` builds report `etime=` as a `[[dd-]hh:]mm:ss` string instead, which this deliberately does not attempt to parse.
     """
-    try:
-        r = subprocess.run(
-            ["ps", "-axo", "pid=,ppid=,etimes=,args="],
-            capture_output=True,
-            text=True,
-            timeout=10,
-            check=False,
-        )
-    except (OSError, subprocess.SubprocessError):
-        return []
-    if r.returncode != 0:
+    r = wl_common.run_quiet(["ps", "-axo", "pid=,ppid=,etimes=,args="])
+    if r is None or r.returncode != 0:
         return []
     out = []
     for line in r.stdout.splitlines():

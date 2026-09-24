@@ -877,15 +877,9 @@ def _selftest():
 
     Narrow on purpose: ci_classify is pure (info dict in, (live, hard, soft) out), so this proves the CI_NONBLOCKING_CONTEXTS filter on synthetic fixtures shaped like the real GraphQL contexts, not a live API read.
     """
-    ok = True
+    import wl_common  # noqa: PLC0415 -- the shared selftest checker, loaded only for a selftest
 
-    def check(label, cond, detail=""):
-        nonlocal ok
-        if not cond:
-            ok = False
-        print(
-            "  %s  %s%s" % ("PASS" if cond else "FAIL", label, "" if cond else "  <- %s" % detail)
-        )
+    check = wl_common.Checker()
 
     review_complete_only = {
         "rollup": "SUCCESS",
@@ -1112,8 +1106,7 @@ def _selftest():
         finally:
             globals()["review_gate_detail"] = _orig_detail
 
-    print("  %s" % ("all ci controls passed" if ok else "*** FAILURES ***"))
-    return 0 if ok else 1
+    return check.verdict("ci")
 
 
 if __name__ == "__main__":

@@ -683,15 +683,9 @@ def _selftest():
     The DETERMINISTIC half: plan discovery from a transcript, task counting, both prefilter signals in BOTH directions on the REAL before/after item sets, and the verification that stands between a model claim and a block. The other half -- whether haiku can separate the incident from its own correction -- cannot be stubbed and lives behind --corpus, because a stub that answers
     "unfaithful" proves nothing.
     """
-    ok = True
+    import wl_common  # noqa: PLC0415 -- the shared selftest checker, loaded only for a selftest
 
-    def check(label, cond, detail=""):
-        nonlocal ok
-        if not cond:
-            ok = False
-        print(
-            "  %s  %s%s" % ("PASS" if cond else "FAIL", label, "" if cond else "  <- %s" % detail)
-        )
+    check = wl_common.Checker()
 
     # ---- plan task extraction, on the real plan ----
     tasks = plan_tasks(REAL_PLAN)
@@ -1143,8 +1137,7 @@ def _selftest():
         "an empty item list still renders something readable", "tracks no items" in render_items([])
     )
 
-    print("  %s" % ("all planfid controls passed" if ok else "*** FAILURES ***"))
-    return 0 if ok else 1
+    return check.verdict("planfid")
 
 
 if __name__ == "__main__":

@@ -687,7 +687,15 @@ def test_144_state_document_staleness_is_world_keyed(wl):  # noqa: F811
     wl.age_state("deadbeef", 25)
     wl.check("allow", "", "an OLD STATE.md with an UNCHANGED world is NOT stale")
 
+    # A NEW HARNESS TASK no longer stales it (P1.2, agent/plans/PLAN-stop-hook-continuity.md): task statuses and HEAD are not judgment facts. CONTROL: before 2026-09-24 this stop blocked.
     wl.task(8, "pending", "the new thing")
+    wl.newturn()
+    wl.say(
+        "answer\n\n## Remaining\n| #7 | thing | pending, me |\n| #8 | the new thing | pending, me |"
+    )
+    wl.check("allow", "", "a new harness task alone does not stale an old STATE.md")
+    # The owned item SET moving does.
+    wl.add_item("- [x] (deadbeef) a finished piece of work")
     wl.newturn()
     wl.say(
         "answer\n\n## Remaining\n| #7 | thing | pending, me |\n| #8 | the new thing | pending, me |"

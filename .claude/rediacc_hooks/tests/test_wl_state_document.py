@@ -8,6 +8,7 @@ SEVERAL ASSERTIONS HERE ARE BYTE COMPARISONS RATHER THAN HOOK VERDICTS, and that
 
 from __future__ import annotations
 
+import json
 import os
 import pathlib
 import re
@@ -16,6 +17,7 @@ import sys
 import time
 
 from rediacc_hooks.tests import wlfix
+from rediacc_hooks.tests.test_wl_agent_session_archival import roster
 from rediacc_hooks.tests.wlfix import wl  # noqa: F401
 
 B_BODY_29F = """This is session B, running the licensing drill on a fork of the bench universe, with the mint tool staged and the activation cap already lifted to five. Nothing here overlaps session A, and losing it would cost the drill.
@@ -194,12 +196,8 @@ def test_29f_two_sessions_share_one_branch_and_both_sections_survive(wl):  # noq
     assert "round two" in text_of(b_file), "29f CONTROL: the second body never landed"
 
 
-def test_29k_a_peer_directory_is_named_on_an_ordinary_stop(wl):  # noqa: F811
-    """THE HALF OF THE SPLIT THAT COULD HAVE BEEN LOST SILENTLY. Peers used to be `## SESSION` headings inside one shared file, and this note read them from there. Once each session owns a directory, code that keeps reading only its OWN file goes quiet, while every assertion about the caller's own document keeps passing, because that one is the file it still reads. Nothing in this
-    suite covered this note before the move, which is exactly the shape of gap a migration slips through.
-
-    Peers stopped being writable on purpose; they must not stop being VISIBLE. A session that cannot see its peers sweeps their uncommitted files.
-    """
+def test_29k_a_peer_directory_is_no_longer_named_on_an_ordinary_stop(wl):  # noqa: F811
+    """REWRITTEN 2026-09-24 (agent/plans/PLAN-stop-hook-continuity.md P0.3): the `agent-peers` advisory had no reader under the single-terminal ruling and was deleted, so a peer directory beside this session's produces no queue entry. CONTROL: before the deletion this stop queued `agent-peers` and printed the row. The roster itself stays readable at PostCompact and through `agent_peer_sections`, which the cases below drive."""
     wl.brief_now()
     wl.hand_now()
     wl.brief_other("cafe1234")
@@ -207,10 +205,10 @@ def test_29k_a_peer_directory_is_named_on_an_ordinary_stop(wl):  # noqa: F811
     wl.say("answer\n\n## Remaining\n- #7 thing (pending)")
     wl.task(7, "pending", "thing")
     out = wl.run().out
-    assert "under agent/" in out, "29k: the peer went invisible after the split: %s" % out[:400]
-    assert re.search(r"cafe1234 +[0-9]+ min old", out), (
-        "29k: the peer is named without its age: %s" % out[:400]
-    )
+    assert not re.search(r"cafe1234 +[0-9]+ min old", out), out[:400]
+    doc = json.loads(wl.stem(".state-deadbeef.json").read_text(encoding="utf-8"))
+    keys = [e.get("key") for e in (doc.get("outq") or {}).get("items") or []]
+    assert "agent-peers" not in keys, keys
 
 
 def test_29k_control_a_session_alone_on_its_branch_is_told_about_no_peers(wl):  # noqa: F811
@@ -236,7 +234,7 @@ def test_29k_a_peer_past_the_dead_horizon_is_marked_abandoned(wl):  # noqa: F811
     wl.env["WORKLIST_PROJECTS_DIR"] = str(wl.base / "projects")
     wl.say("answer\n\n## Remaining\n- #7 thing (pending)")
     wl.task(7, "pending", "thing")
-    out = wl.run().out
+    out = roster(wl)
     assert re.search(r"cafe1234 +[0-9]+ min old +ABANDONED", out), (
         "29k: the dead peer read as a live one: %s" % out[:400]
     )
@@ -256,7 +254,7 @@ def test_29k_control_a_fresh_peer_is_listed_without_the_marker(wl):  # noqa: F81
     wl.env["WORKLIST_PROJECTS_DIR"] = str(wl.base / "projects")
     wl.say("answer\n\n## Remaining\n- #7 thing (pending)")
     wl.task(7, "pending", "thing")
-    out = wl.run().out
+    out = roster(wl)
     assert re.search(r"cafe1234 +[0-9]+ min old", out), (
         "29k CONTROL: the fresh peer is not listed at all: %s" % out[:400]
     )
@@ -281,7 +279,7 @@ def test_29k_a_peer_directory_carrying_two_sections_for_one_owner_is_reported_on
     state_path.write_text(text, encoding="utf-8")
     wl.say("answer\n\n## Remaining\n- #7 thing (pending)")
     wl.task(7, "pending", "thing")
-    out = wl.run().out
+    out = roster(wl)
     rows = re.findall(r"cafe1234 +[0-9]+ min old", out)
     assert len(rows) == 1, (
         "29k: a peer with two sections for one owner was reported as %d rows instead of one: %s"

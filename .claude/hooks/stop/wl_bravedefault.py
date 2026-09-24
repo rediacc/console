@@ -44,6 +44,7 @@ the event that means the session responded.
 import hashlib
 import os
 
+import wl_common
 import wl_core as C
 import wl_rules
 
@@ -189,9 +190,7 @@ def prompt_section(remaining_lines):
     return BRAVE_PROMPT if has_deferral_with_default(remaining_lines) else ""
 
 
-def _clean(obj, key, limit):
-    v = obj.get(key)
-    return v.strip()[:limit] if isinstance(v, str) else ""
+_clean = wl_common.clean
 
 
 def read_verdict(out):

@@ -286,6 +286,8 @@ def test_199_control_a_live_peer_is_never_offered_for_handoff(wl):  # noqa: F811
     wl.brief_now()
     mig_peer(wl, "handoff2", "(handoff2) work of a running session")
     wl.stem(".lastevent-handoff2.json").write_text("", encoding="utf-8")
+    # This session's own deferred item, so the allow is loud (its guide) and the absence below is absence from a real report.
+    wl.add_item("- [?] (deadbeef) keep the flag? DEFAULT: keep it")
     got = wl.run()
     assert got.out.strip(), "the hook produced no output, so the absence below means nothing"
     assert "HANDOFF CANDIDATES" not in got.out, "offered a live session's work for adoption"

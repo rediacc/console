@@ -543,22 +543,10 @@ def selftest() -> int:
     import time  # noqa: PLC0415
 
     sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import wl_common  # noqa: PLC0415 -- the shared selftest checker, loaded only for a selftest
     import wl_ressample as R  # noqa: PLC0415
 
-    bad = 0
-
-    def check(name: str, ok: bool, detail: str = "") -> None:
-        nonlocal bad
-        print(
-            "  %s  %s%s"
-            % (
-                "PASS" if ok else "FAIL",
-                name,
-                ("\n        " + detail) if (detail and not ok) else "",
-            )
-        )
-        if not ok:
-            bad += 1
+    check = wl_common.Checker("indent")
 
     # ---- E1, fire and the four things that must each kill it ----
     fire = _synthetic(10, sequential=True, r_frac=1.0, wfd_disjoint=True)
@@ -920,7 +908,7 @@ def selftest() -> int:
         "admission: 5%% point rate over 40 is NOT admissible (upper bound > 0.05)",
         not admissible(2, 40)[0],
     )
-    return bad
+    return check.failures
 
 
 def rank(root: Path, days: int = 30) -> tuple[list[dict], list[dict]]:

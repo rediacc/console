@@ -7,9 +7,8 @@ Ported from `.claude/hooks/stop/worklist-cases/20-advisories-rotation.sh`, one p
 
 from __future__ import annotations
 
-import os
+import json
 import re
-import time
 
 from rediacc_hooks.tests import wlfix
 from rediacc_hooks.tests.test_wl_checklists import additem, cldeliver, clfile, pyprobe
@@ -159,8 +158,9 @@ def test_204_two_handoffs_two_keys_the_rotation_serves_both_one_per_stop(wl):  #
     assert "handoff 'alpha' (agent/programs/alpha/CHECKLIST.md)" in both, starved
     assert "handoff 'beta' (agent/programs/beta/CHECKLIST.md)" in both, starved
     widened = "204: the focused block stopped rotating: 1=%s 2=%s" % (out1[:300], out2[:300])
-    assert "handoff 'beta'" not in out1, widened
-    assert "handoff 'alpha'" not in out2, widened
+    # QUOTED region only: the check a stop did not quote is NAMED below it since 2026-09-24.
+    assert "handoff 'beta'" not in wlfix.quoted(out1), widened
+    assert "handoff 'alpha'" not in wlfix.quoted(out2), widened
 
     wl.cli_as("cafe0000", "--add", "cafe0000", "cl:alpha/w1 Wave A: wire the alpha thing")
     wl.cli_as("cafe0000", "--add", "cafe0000", "cl:beta/w1 Wave A: wire the beta thing")
@@ -323,14 +323,16 @@ def test_209a_a_matching_last_message_produces_the_hint_on_an_allow_stop(wl):  #
 def test_209a_control_neutral_text_earns_no_hint(wl):  # noqa: F811
     """CONTROL, and it leads with a POSITIVE PRESENCE check rather than the absence alone. This suite documents the trap at case 208: a mutation that suppressed a whole block made an absence-only assertion PASS, because with no feature there is nothing to find. So the stop must be shown to have spoken at all first."""
     wl.mk_agent("fixtureagent", HINT_DESC)
-    wl.say("done for now, the meeting notes are filed")
+    wl.say(
+        "done for now, the meeting notes are filed\n\n## Remaining\n- the flag decision, deferred with a default"
+    )
     wl.brief_now()
     wl.hand_now()
-    # The positive-presence section: a live peer brief. It was the poll-backoff advisory until that went on 2026-09-24.
-    wl.brief_other("cafe1234")
+    # The positive-presence section: this session's own deferred item, whose guide leads the allow report. A peer's brief filled this role until the peer listing was deleted on 2026-09-24.
+    wl.add_item("- [?] (deadbeef) keep the flag? DEFAULT: keep it")
     got = wl.run()
     neutral = "209A CONTROL: neutral text hinted, or the stop said nothing: %s" % got.out[:400]
-    assert "Other sessions in this worktree" in got.out, neutral
+    assert "WORKLIST GUIDE" in got.out, neutral
     assert hint_n(got.out) == 0, neutral
 
 
@@ -450,10 +452,11 @@ def test_209i_the_kill_switch_silences_the_hint_and_nothing_else(wl):  # noqa: F
     wl.mk_agent("fixtureagent", HINT_DESC)
     hint_fixture(wl)
     # The positive-presence section, as in 209A's control.
-    wl.brief_other("cafe1234")
+    wl.add_item("- [?] (deadbeef) keep the flag? DEFAULT: keep it")
+    wl.say("## Remaining\n- the flag decision, deferred with a default")
     got = wl.run()
     killed = "209I the kill switch did not kill, or it killed the whole report: %s" % got.out[:400]
-    assert "Other sessions in this worktree" in got.out, killed
+    assert "WORKLIST GUIDE" in got.out, killed
     assert hint_n(got.out) == 0, killed
 
 
@@ -494,17 +497,33 @@ def test_209k_priority_3_never_displaces_a_real_section(wl):  # noqa: F811
     """
     wl.mk_agent("fixtureagent", HINT_DESC)
     hint_fixture(wl)
-    wl.brief_other("cafe1234")
-    peer = wl.base / "cafe1234.jsonl"
-    peer.write_text("", encoding="utf-8")
-    aged = time.time() - 48 * 3600
-    os.utime(peer, (aged, aged))
-    wl.add_item("- [ ] (cafe1234) their abandoned item")
-    # The fixture queues 3 priority-2 sections plus this priority-3 hint; the fixed 3-per-stop budget fills entirely from the priority-2 tier, so the hint stays queued -- outranked, not lost.
+    # THREE priority-2 sections, PLANTED in the queue: two of the three producers that used to fire here were deleted with the peer listing on 2026-09-24, and what this case measures is the drain's tier order, not a producer. Plus the priority-3 hint this stop queues; the fixed 3-per-stop budget fills entirely from the priority-2 tier, so the hint stays queued -- outranked, not lost.
+    wl.run()
+    path = wl.stem(".state-deadbeef.json")
+    doc = json.loads(path.read_text(encoding="utf-8"))
+    doc["outq"] = {
+        "seq": 3,
+        "shown": {},
+        "items": [
+            {
+                "key": "real-%d" % i,
+                "prio": 2,
+                "sticky": False,
+                "sig": "%012x" % i,
+                "text": "REAL SECTION %d\n  body" % i,
+                "at": "2026-09-24T00:00:00Z",
+                "seq": i,
+            }
+            for i in (1, 2, 3)
+        ],
+    }
+    path.write_text(json.dumps(doc), encoding="utf-8")
+    wl.newturn()
+    wl.say(HINT_SAY)
     got = wl.run()
     displaced = "209K the hint displaced a real section, or nothing was queued: %s" % got.out[:400]
     assert hint_n(got.out) == 0, displaced
-    assert re.search(r"ORPHANED item\(s\)|Other sessions in this worktree", got.out), displaced
+    assert "REAL SECTION" in got.out, displaced
     assert "more report section(s) queued" in got.out, displaced
 
     wl.newturn()

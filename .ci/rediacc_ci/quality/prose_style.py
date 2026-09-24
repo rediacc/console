@@ -34,12 +34,15 @@ Two halves, and the second is what keeps the set shrinking:
 
   * a NEW finding fails, and the message says "do not add it to the baseline"
   * a BASELINED finding that no longer fires ALSO fails, telling the author to
-    drain with `--write-baseline`
+    drain with `--drain`
 
 AN ID IS A HASH OF THE FINDING'S TEXT, NEVER OF ITS LINE NUMBER. A line number churns the moment a paragraph is inserted above it, and a baseline that churns gets regenerated wholesale, which silently re-absorbs every fresh finding made in the same hour. The price of hashing text is that a REWRITE re-keys the entry, and that is the right price: a rewrite is exactly when a human
 should look at the line again.
 
 `--write-baseline` DIFFS THE OLD AND NEW SETS AND REFUSES A NON-EMPTY ADDED SIDE. Comparing SIZES is a different and weaker claim: a drain that removes thirty and adds one prints a smaller number and goes green while enshrining a brand-new violation. The ADDED side has to be empty, so the only way a new finding enters the baseline is to say so on the command line.
+
+`--drain` IS THE VERB FOR A FIXED FINDING, AND IT CAN ONLY REMOVE. `--write-baseline` freezes the WHOLE current set, so it refuses whenever any unbaselined finding exists anywhere in the tree, warnings included. On 2026-09-24 that meant 96 unrelated advisory warnings blocked the removal of two rows that had stopped firing, and the gate stayed red on a tree with no new error. `--drain` keeps
+the previous baseline's rows that still fire and writes nothing else: the kept set is computed as a subset of the old file, never from the current findings, so there is no code path by which a new finding can enter. It then reports "N drained, 0 added" and runs the ordinary verdict, so a new finding still fails the same run.
 """
 
 import collections
@@ -1260,35 +1263,52 @@ def write_baseline(root, findings, previous):
     THE COMPOSITION TRAP, which a size comparison does not catch. A drain here can print `2,189 -> 2,160` and go green while the two sets differ by thirty removed and ONE added -- a fresh violation, made in the same hour, silently enshrined. So the ADDED side is diffed and must be empty. Baselining a new finding is still possible; it takes `--accept-new`, at the command line, where
     it is a decision somebody typed.
     """
-    path = pathlib.Path(root) / BASELINE_FILE
     entries = {f.fid: f for f in findings}
     added = sorted(set(entries) - set(previous or {}))
+    _write_rows(root, {fid: (f.path, f.rule) for fid, f in entries.items()})
+    return added
+
+
+def drain_baseline(root, previous, still_firing):
+    """Remove the rows of `previous` that no longer fire, and add NOTHING. Returns the drained ids.
+
+    THE KEPT SET IS A SUBSET OF THE OLD FILE BY CONSTRUCTION: it is `previous` filtered, and the current findings are consulted only as a membership test. That is the whole guarantee, and it is structural rather than checked after the fact, because a drain that could add is the composition trap `write_baseline` exists to refuse.
+    A kept row is written back with the path and rule it was stored under, so a drain never re-keys or relocates the rows it keeps.
+    """
+    drained = sorted(fid for fid in previous if fid not in still_firing)
+    kept = {fid: row for fid, row in previous.items() if fid in still_firing}
+    _write_rows(root, kept)
+    return drained
+
+
+def _write_rows(root, rows):
+    """Serialize `{fid: (path, rule)}` as the grouped baseline file."""
+    path = pathlib.Path(root) / BASELINE_FILE
     grouped = {}
     # DEDUPED BY fid, THE SAME WAY `entries`/`count` ARE. `fid` hashes (path, rule, text) and not the line number, so the identical template string flagged on two physical lines of one file collapses to one entry in `findings` -- and `by_rule` must collapse it the same way, or its sum drifts from `count` by exactly the number of such repeats. Measured live: 8 repeated (path, rule,
     # text) triples inflated the sum by 11 before this fix.
     by_rule = {}
-    for finding in entries.values():
-        grouped.setdefault(finding.path, {}).setdefault(finding.rule, set()).add(finding.fid)
-        by_rule[finding.rule] = by_rule.get(finding.rule, 0) + 1
+    for fid, (rel, rule) in rows.items():
+        grouped.setdefault(rel, {}).setdefault(rule, set()).add(fid)
+        by_rule[rule] = by_rule.get(rule, 0) + 1
     doc = {
         "why": [
             "Frozen prose-style debt. SHRINK-ONLY: a new finding fails the gate and does NOT",
-            "belong here. Drain with `check_prose_style.py check --write-baseline` after",
-            "fixing something, never to make a red go away.",
+            "belong here. Drain with `check_prose_style.py check --drain` after fixing",
+            "something, never to make a red go away. `--drain` only removes rows.",
             "",
             "Ids are a hash of (path, rule, finding text). NOT the line number: a line number",
             "churns when a paragraph moves above it, and a baseline that churns gets",
             "regenerated wholesale, which re-absorbs every fresh finding made that hour. The",
             "price is that a REWRITE re-keys an entry, and that is the right price: a rewrite",
             "is exactly when a human should look at the line again. When a re-key happens,",
-            "hand-edit the one line rather than regenerating, which would rewrite every entry",
-            "and absorb any other writer's fresh findings.",
+            "`--drain` drops the old id and the new one fails as NEW, which is the look.",
             "",
             "`--write-baseline` REFUSES a drain whose ADDED side is non-empty, because a total",
             "that shrank by 29 can still hide one brand-new violation. Comparing sizes is not",
             "the same claim as diffing the sets.",
         ],
-        "count": len(entries),
+        "count": len(rows),
         "files": len(grouped),
         "by_rule": dict(sorted(by_rule.items())),
         "findings": {
@@ -1297,7 +1317,6 @@ def write_baseline(root, findings, previous):
         },
     }
     path.write_text(json.dumps(doc, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
-    return added
 
 
 # --------------------------------------------------------------------------- The gate ---------------------------------------------------------------------------
@@ -1322,7 +1341,15 @@ def _shape(globals_, rules, files, prose_lines):
 
 
 def run_check(
-    root, globals_, rules, targets, *, write_baseline=False, accept_new=False, as_json=False
+    root,
+    globals_,
+    rules,
+    targets,
+    *,
+    write_baseline=False,
+    accept_new=False,
+    as_json=False,
+    drain=False,
 ):
     """The `check` subcommand. Returns an exit code.
 
@@ -1411,6 +1438,30 @@ def run_check(
 
     previous = load_baseline(root)
 
+    if drain:
+        if write_baseline or accept_new:
+            log.error(
+                "--drain only removes rows; it does not combine with --write-baseline or --accept-new."
+            )
+            return 1
+        if previous is None:
+            log.error("--drain needs an existing baseline; there is none at %s." % BASELINE_FILE)
+            return 1
+        # THE SAME SCOPE RULE AS THE STALE REPORT BELOW. A named-file drain may only drop rows of the named files; the rest of the tree was not scanned, so its rows' absence from `findings` says nothing about them.
+        scope = set(files) if targets else None
+        still_firing = {f.fid for f in findings} | {
+            fid for fid, row in previous.items() if scope is not None and row[0] not in scope
+        }
+        before = len(previous)
+        drained = drain_baseline(root, previous, still_firing)
+        previous = load_baseline(root)
+        log.success(
+            "baseline drained: %d entries (%d before, %d drained, 0 added)"
+            % (len(previous), before, len(drained))
+        )
+        for fid in drained[:20]:
+            print("  - %s" % fid, file=sys.stderr)
+
     if write_baseline:
         added = write_baseline_guarded(root, findings, previous, accept_new)
         if added is not None:
@@ -1496,11 +1547,10 @@ def run_check(
     if fixed:
         log.error(
             "%d baselined finding(s) no longer fire. The baseline is SHRINK-ONLY, and an "
-            "entry left in it after the fix hides the next regression. Drain it:" % len(fixed)
+            "entry left in it after the fix hides the next regression. Drain it (removes only):"
+            % len(fixed)
         )
-        print(
-            "    .ci/scripts/quality/check_prose_style.py check --write-baseline", file=sys.stderr
-        )
+        print("    .ci/scripts/quality/check_prose_style.py check --drain", file=sys.stderr)
         rc = 1
 
     if rc == 0:
@@ -1982,7 +2032,9 @@ USAGE = """usage: check_prose_style.py [check|reflow|sync] [options] [files...]
 
   check                 lint the tree (default). Fails on a NEW finding and on a
                         baselined finding that was fixed but not drained.
-    --write-baseline    freeze today's findings. Refuses a drain that ADDED any.
+    --drain             remove baselined rows that no longer fire. Adds NOTHING,
+                        then runs the ordinary check, so a new finding still fails.
+    --write-baseline    freeze today's findings. Refuses a write that ADDED any.
     --accept-new        allow --write-baseline to add. A typed decision.
     --scope <name>      force the scope instead of deriving it from the suffix
     --json              machine-readable summary on stdout
@@ -2061,6 +2113,7 @@ def main(argv=None):
         write_baseline="--write-baseline" in flags,
         accept_new="--accept-new" in flags,
         as_json="--json" in flags,
+        drain="--drain" in flags,
     )
 
 

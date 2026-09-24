@@ -43,7 +43,6 @@ ARITY = {
     "V_COMPLETION_TICKS": ("x",),
     "V_COMPLETION_TASKS": ("x",),
     "V_IDLE": ("#1",),
-    "V_BRIEF": ("s", "", "m"),
     "V_STALE_LOCAL": ("r", 2),
     "V_DIVERGED": ("r", 2, "r"),
     "V_PR_STALE": ("d",),
@@ -86,7 +85,6 @@ ARITY = {
     "V_AGENT_BOOTSTRAP": ("me", "me"),
     "V_AGENT_STILL_ABSENT": ("me",),
     "CLI_STATE_REFUSED": ("v", "d", 250, 4000),
-    "N_AGENT_PEERS": ("rows",),
     "CLI_STATE_WHOLE_DOC": ("m",),
     # One substitution: the offending first step, quoted back so the refusal names what it saw rather than restating the rule in the abstract.
     "CLI_STATE_WAIT_LED": ("lead",),
@@ -97,7 +95,6 @@ ARITY = {
     "N_ROSTER_STALE": (20, 1, 19, "p", "m"),
     # The parallel-writer roster (wl_checks.run_stop, wl_roster.status_verb).
     "V_ROSTER_CAP": (5, 4, "rows", "a1 a2", "m"),
-    "V_ROSTER_STATUS": (1, 20, "rows", "m"),
     "V_ROSTER_SILENT": (1, 20, "rows", "m"),
     "V_ROSTER_UNLEASED": (1, "rows", "m"),
     "V_ROSTER_DEAD": (1, "rows", "m", "m"),
@@ -126,7 +123,6 @@ ARITY = {
     "CLI_STATE_NO_DIR": ("me", "me"),
     "CLI_STATE_USAGE": (),
     "CLI_STATE_NO_BODY": ("x", "p"),
-    "V_DOCS_DRIFT": (3, "s", "d"),
     "V_UNCONFIRMED": ("#1",),
     "V_BROKEN_SCHEDULE": (2, "rows"),
     "GUIDE_HEADER": None,
@@ -149,7 +145,10 @@ ARITY = {
     "N_JUDGE_STAMP": ("m", "approved"),
     "N_JUDGE_STAMP_FULL": ("m", "approved", "why"),
     "N_OUTQ_MORE": (3,),
-    "N_OUTQ_BLOCKED": (3, 3),
+    "N_OUTQ_DIGEST": (3, "rows"),
+    "N_UNBLOCKED": ("i", "t"),
+    "CLI_RELAY_USAGE": None,
+    "N_OUTQ_DIGEST_MORE": (3,),
     "N_ONBOARD_DELIVERED": (17,),
     "N_AGENT_HINT": ("a", "a", "t, t"),
     "N_AGENT_CORPUS_ERR": ("rows",),
@@ -210,7 +209,7 @@ ARITY = {
     "V_HOOK_BLIND": ("p", "e", "f"),
     "V_NO_REMAINING": ("x",),
     "R_BLOCK": (1, "v", "f"),
-    "R_BLOCK_FOCUS": ("v", "m", "f"),
+    "R_BLOCK_FOCUS": ("v", "m", "f", "me"),
     "R_FOCUS_MORE": (2,),
     "R_FOCUS_ONLY": None,
     "N_CI_QUEUE": ("r", 2, 30, ""),
@@ -230,6 +229,7 @@ ARITY = {
     "R_JUDGE_CONTINUE": ("r", "n", "t"),
     "R_REGGATE_BLOCK": ("b", "i", "", "", "m", "t"),
     "R_REGGATE_HALLUCINATED": ("g",),
+    "R_REGGATE_ALSO": ("r", "n"),
     # Round-log splice verb (wl_roundlog.py) and the admission detector (wl_admit.py). USAGE and PROMPT carry no placeholders; REFUSED takes (reason, detail) and NO_LOG takes the target path.
     "CLI_ROUNDLOG_USAGE": None,
     "ADMISSION_PROMPT": None,
@@ -240,6 +240,7 @@ ARITY = {
     "CTX_POSTCOMPACT_MISSING": ("p", "m"),
     "CTX_POSTCOMPACT_BRIEFING": ("d", "s", "r", "p", "t"),
     "CTX_POSTCOMPACT_PEERS": ("b",),
+    "CTX_POSTCOMPACT_FACTS": ("b", "h", "g"),
     "JUDGE_PROMPT": {
         "streak": 1,
         "remaining": "r",
@@ -271,6 +272,7 @@ ARITY = {
     # the rendered one-line-per-invariant block.
     "V_PR_FINISH": ("b", 543, "rows", "h", "me", 543, "h", "me"),
     "R_ALWAYS_COLLAPSED": ("rows",),
+    "R_ROTATING_COLLAPSED": ("rows",),
     # v23 lineage. CLI_ADOPT_USAGE takes nothing (it is a static usage block). CLI_ADOPT_REFUSED takes the session prefix, the predecessor prefix and the reason the evidence failed; CLI_ADOPT_SELF takes the prefix that turned out to be the caller; and CLI_ADOPT_DONE takes the session prefix, the predecessor prefix, the rung that fired, the evidence basis, the boundary uuid, how
     # many items just changed owner, and the session prefix again for the follow-up command.
     "CLI_ADOPT_USAGE": None,

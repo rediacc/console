@@ -59,10 +59,10 @@ def pr_event(fix) -> str:
     )
 
 
-def test_31_design_doc_drift_blocks_then_clears_and_session_start_lists_the_docs(wl):  # noqa: F811
-    """Cases 31, 32 and 33 as one chain: 32 and 33 have no fixture of their own and read the repository 31 builds.
+def test_31_design_doc_drift_never_blocks_a_stop_and_session_start_still_reports_it(wl):  # noqa: F811
+    """Cases 31, 32 and 33 as one chain, rewritten 2026-09-24 when the Stop-time drift check was deleted (agent/plans/PLAN-stop-hook-continuity.md P1.3).
 
-    31 is the FIRE (twelve code commits with untouched docs), 32 is the control that the same repository stops blocking once the docs move with the code, and 33 is the SessionStart handback that names those docs to a session that has not read them.
+    31 is the CONTROL that twelve code commits with untouched docs no longer block a stop (before the deletion they did), 31b is the INVERSE that SessionStart still says DRIFTED, 32 moves the docs with the code, and 33 is the SessionStart handback that names those docs to a session that has not read them.
     """
     wl.brief_now()
     wl.hand_now()
@@ -81,7 +81,10 @@ def test_31_design_doc_drift_blocks_then_clears_and_session_start_lists_the_docs
         (wl.proj / ".ci" / ("f%d.sh" % index)).write_text("%d\n" % index, encoding="utf-8")
         wl.git("add", "-A")
         wl.git("commit", "-qm", "code %d" % index)
-    wl.check("block", "design docs have DRIFTED", "12 code commits with untouched docs block")
+    wl.check("allow", "", "12 code commits with untouched docs no longer block a stop")
+    payload = json.dumps({"session_id": wl.sid, "cwd": str(wl.proj)})
+    drifted = wl.python(["--session-start"], stdin=payload).out
+    assert "DRIFTED" in drifted, "31b: SessionStart stopped reporting the drift: %s" % drifted[:400]
 
     # 32: the docs move with the code, and the same repository clears.
     with (docs / "README.md").open("a", encoding="utf-8") as handle:
@@ -91,7 +94,6 @@ def test_31_design_doc_drift_blocks_then_clears_and_session_start_lists_the_docs
     wl.check("allow", "", "docs updated after the code clears the drift")
 
     # 33: SessionStart hands the design docs to a new session.
-    payload = json.dumps({"session_id": wl.sid, "cwd": str(wl.proj)})
     out = wl.python(["--session-start"], stdin=payload).out
     assert "READ ALL OF THEM" in out, "SessionStart did not demand the docs be read: %s" % out[:200]
     assert "docs/ci-overhaul/README.md" in out, (
@@ -308,6 +310,8 @@ def test_44_the_staleness_limit_is_load_bearing_and_bracketed(wl):  # noqa: F811
     wl.hand_now()
     wl.say("answer\n\n## Remaining\n| #7 | thing | pending, me |")
     wl.task(7, "pending", "thing")
+    # The owned item set moves after the handover (a task no longer does since 2026-09-24, P1.2), so the world-keyed staleness is armed.
+    wl.add_item("- [x] (deadbeef) a finished piece of work")
     wl.age_state("deadbeef", 16)
     wl.check("block", "STATE.md is stale", "a 16-minute-old STATE.md blocks at the 15-minute limit")
     # 45: and one just inside it does not.
@@ -368,6 +372,7 @@ def test_44c_a_future_heading_stamp_cannot_buy_permanent_freshness(wl):  # noqa:
     wl.hand_now()
     wl.say("answer\n\n## Remaining\n| #7 | thing | pending, me |")
     wl.task(7, "pending", "thing")
+    wl.add_item("- [x] (deadbeef) a finished piece of work")
     wl.age_state("deadbeef", -60)  # stamped an hour AHEAD
     honest = time.time() - 40 * 60  # the honest age
     os.utime(wl.state_file(), (honest, honest))
