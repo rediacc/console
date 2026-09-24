@@ -33,19 +33,14 @@ BLOCKLIST = pathlib.Path(ROOT) / ".ci" / "policy" / ".w7p5a-real-run-blocklist"
 # The shadow-gate rule these ledgers were recorded to satisfy.
 K = 5
 
+# A path LEAVES this table in the same change that graduates its row to `status: "ledger"` (the real run happened, so the `dry_run_*` fields go with the BLOCKER); `verify-edge-endpoints`, `verify-stable-endpoints` and `assert-edge-tag-exists` graduated on 2026-09-23 without that edit and left this module red.
 # Every path whose dry-run half has been driven and recorded, and the external tool whose argv the row's `[call]` findings must therefore carry. The tool is the one named in that path's BLOCKER line, so this table is also the check that a ledger recorded the RIGHT script's traffic: `mark-production` agreeing only on `curl` lines would mean the fixture answered a neighbour's probes.
 EXPECTED_DRY_RUN_PATHS = {
-    ".ci/scripts/deploy/cf-purge-urls.sh": ("curl",),
     ".ci/scripts/deploy/delete-r2-channel.sh": ("aws",),
     ".ci/scripts/deploy/promote-docker-to-stable-hotfix.sh": ("docker",),
     ".ci/scripts/deploy/promote-r2-to-stable.sh": ("aws", "curl"),
     ".ci/scripts/deploy/purge-media-cache.sh": ("curl",),
-    ".ci/scripts/deploy/upload-repos-to-r2.sh": ("aws", "curl"),
-    ".ci/scripts/deploy/verify-edge-endpoints.sh": ("curl",),
-    ".ci/scripts/deploy/verify-stable-endpoints.sh": ("curl",),
-    ".ci/scripts/deploy/write-release-sentinel.sh": ("aws",),
     ".ci/scripts/release/assert-artifact-version.sh": ("gh",),
-    ".ci/scripts/release/assert-edge-tag-exists.sh": ("aws", "gh"),
     ".ci/scripts/release/create-github-release.sh": ("gh",),
     ".ci/scripts/release/mark-production.sh": ("gh",),
 }

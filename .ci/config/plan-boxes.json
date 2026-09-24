@@ -156,6 +156,46 @@
       "open_sigs": [],
       "done_sigs": []
     },
+    "agent/plans/PLAN-biome-only-lint.md": {
+      "status": "draft",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 29,
+      "done": 0,
+      "open_sigs": [
+        "0246d230",
+        "031d4b3d",
+        "05d94f07",
+        "0ed323d9",
+        "2616c389",
+        "2c61ce10",
+        "4b5f738a",
+        "57dfc419",
+        "5b1bb5da",
+        "6b7864bb",
+        "6d253913",
+        "80521723",
+        "8b32fe16",
+        "b3a64bda",
+        "be28a628",
+        "c1fcfef2",
+        "c252b0e4",
+        "c9d3538b",
+        "caf9f4b7",
+        "ce9b9049",
+        "cf3eb8e8",
+        "d8978b81",
+        "e01d11c9",
+        "e471495f",
+        "e98b7a2e",
+        "f4dd96de",
+        "f684f77e",
+        "f6cbcd94",
+        "f8911c29"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-breakpoint-secret-shape.md": {
       "status": "design",
       "owner": "unowned",
@@ -1518,22 +1558,23 @@
       ]
     },
     "agent/plans/PLAN-w7p5a-real-run-dispatch.md": {
-      "status": "ready",
+      "status": "in-progress",
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 5,
-      "done": 3,
+      "open": 2,
+      "done": 7,
       "open_sigs": [
-        "4cb49d45",
-        "86e7ccdc",
-        "8b4161ce",
-        "ce14776f",
-        "d073162f"
+        "a65f7c80",
+        "ba2c9c8c"
       ],
       "done_sigs": [
         "3cee36fd",
+        "4cb49d45",
+        "8b4161ce",
         "cbf8530c",
+        "ce14776f",
+        "d073162f",
         "ff0cda58"
       ]
     },
