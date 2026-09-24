@@ -178,7 +178,29 @@ def load_rules(text):
                 "nowhere and would never fire" % (rule.id, unknown)
             )
             raise RuleError(msg)
+    pattern = globals_.get("locale_copy_pattern")
+    if pattern is not None:
+        try:
+            re.compile(pattern)
+        except re.error as exc:
+            msg = "locale_copy_pattern does not compile: %s" % exc
+            raise RuleError(msg) from exc
     return globals_, rules
+
+
+# Rules that measure SHAPE rather than read English words: the only ones a translated copy is held to.
+LANGUAGE_NEUTRAL_DETECTIONS = ("measured", "underwrap")
+
+
+def rules_for_path(path, rules, globals_):
+    """The rules that apply to `path`. A LOCALE COPY gets only the width rules.
+
+    Measured 2026-09-24: R2 fired on `packages/www/src/content/docs/it/installation.md:218`, where "I comandi" is the Italian plural article, not the English pronoun. Every rule but R18/R19 matches English words, so on a translated copy they report the language rather than the prose; the English source under `/en/` keeps every rule, and so does everything outside `packages/www/src/content`.
+    """
+    pattern = globals_.get("locale_copy_pattern")
+    if pattern and re.search(pattern, str(path).replace(os.sep, "/")):
+        return [r for r in rules if r.detection in LANGUAGE_NEUTRAL_DETECTIONS]
+    return rules
 
 
 def load_rules_file(root):
@@ -863,6 +885,7 @@ def lint_text(path, text, rules, globals_, scope=None):
     max_len = globals_.get("max_line_length")
     if scope is None:
         scope = SCOPE_BY_SUFFIX.get(pathlib.Path(path).suffix, "markdown")
+    rules = rules_for_path(path, rules, globals_)
     lines, note = extract(path, text, markers)
     findings = []
     for line in lines:
@@ -2240,6 +2263,27 @@ def selftest():
     )
     ctl.check("MIRROR: I/O is not the pronoun", rd("The I/O layer buffers writes."), [])
     ctl.check("PLANT: `my branch` is not the exception", rd("My branch is ready."), ["R2"])
+
+    # ---- locale copies: only the width rules read a translation ----------
+    # THE SHIPPED RULES FILE, not the inline one-rule set above: the pattern under test is the one in `.ci/config/prose-style-rules.json`.
+    ship_globals, ship_rules = load_rules_file(pathlib.Path(__file__).resolve().parents[3])
+    it_doc = "packages/www/src/content/docs/it/installation.md"
+    en_doc = "packages/www/src/content/docs/en/installation.md"
+    it_line = "I comandi seguenti installano il pacchetto.\n"
+    ctl.check(
+        "LOCALE: the Italian article `I` is not the English pronoun",
+        _ids(lint_text(it_doc, it_line, ship_rules, ship_globals)[0]),
+        [],
+    )
+    ctl.check(
+        "LOCALE MIRROR: the same line in the English source still fires R2",
+        _ids(lint_text(en_doc, it_line, ship_rules, ship_globals)[0]),
+        ["R2"],
+    )
+    ctl.truthy(
+        "LOCALE MIRROR: a locale copy keeps the width rules",
+        {r.id for r in rules_for_path(it_doc, ship_rules, ship_globals)} >= {"R18", "R19"},
+    )
 
     # ---- python and c-style extraction ----------------------------------
     py = "x = 1  # Did you run it?\ny = 'you are a string'\n"

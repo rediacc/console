@@ -191,6 +191,13 @@
       "and needs no entry here. `.claude/hooks/context/state` was one such entry, added after",
       "944aa6210 froze six of its ignored files into this gate's committed baseline; it is gone",
       "because the corpus itself is now git's answer rather than the walking machine's."
+    ],
+    "locale_copy_pattern": "^packages/www/src/content/[^/]+/(?!en/)[a-z]{2}(?:-[a-z]+)?/",
+    "locale_copy_why": [
+      "A TRANSLATED COPY IS HELD TO THE WIDTH RULES ONLY. Every other rule matches English words, so on a",
+      "locale copy it reports the language, not the prose: R2 fired on the Italian article 'I' in",
+      "packages/www/src/content/docs/it/installation.md:218 (2026-09-24). The English source under /en/ keeps",
+      "every rule, and the wording of a translation is owned by the naturalization pipeline (docs/i18n/CONVENTIONS.md)."
     ]
   },
   "rules": [

@@ -643,85 +643,6 @@
       "open_sigs": [],
       "done_sigs": []
     },
-    "agent/plans/PLAN-pipefail-grep-q-renet-gate.md": {
-      "status": "in-progress",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "2026-09-21",
-      "open": 2,
-      "done": 14,
-      "open_sigs": [
-        "5f53f957",
-        "da94040f"
-      ],
-      "done_sigs": [
-        "695bedf8",
-        "7644c1ee",
-        "8f7e9c01",
-        "95e70680",
-        "9da858e5",
-        "ac4c55db",
-        "af6a7ff7",
-        "b139bdbf",
-        "b61a0445",
-        "d8e5079e",
-        "e2366f73",
-        "eb7aa103",
-        "f052b4a9",
-        "f1533f2e"
-      ]
-    },
-    "agent/plans/PLAN-plan-file-lifecycle.md": {
-      "status": "ready",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "2026-09-21",
-      "open": 0,
-      "done": 13,
-      "open_sigs": [],
-      "done_sigs": [
-        "24fbc5fc",
-        "35f8115e",
-        "54cca06b",
-        "6be59355",
-        "7a89c5be",
-        "7adc2d9f",
-        "86185c7e",
-        "9d65a096",
-        "a69a55a5",
-        "daffe83e",
-        "e77bfe5f",
-        "f27685d2",
-        "ff0c1fc4"
-      ]
-    },
-    "agent/plans/PLAN-plan-implementation-enforcement.md": {
-      "status": "draft",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 0,
-      "done": 16,
-      "open_sigs": [],
-      "done_sigs": [
-        "0a921c43",
-        "1e78ffe8",
-        "2ac6bfea",
-        "3000c34a",
-        "3668e9ca",
-        "445887e0",
-        "4764d799",
-        "4985c2b6",
-        "8afc3ce3",
-        "a1101d27",
-        "a29ea255",
-        "bbbbb3cf",
-        "bd4e5e87",
-        "d28bed5d",
-        "e60ff3c6",
-        "fac236ea"
-      ]
-    },
     "agent/plans/PLAN-printf-echo-pipefail-sweep.md": {
       "status": "compacted",
       "owner": "d778be9d",
@@ -1543,27 +1464,6 @@
         "ff0cda58"
       ]
     },
-    "agent/plans/PLAN-w9p2-script-relocation.md": {
-      "status": "draft",
-      "owner": "f4da5c2e",
-      "folder": "agent/plans",
-      "moved_at": "2026-09-21",
-      "open": 0,
-      "done": 10,
-      "open_sigs": [],
-      "done_sigs": [
-        "39b0cd69",
-        "4c8449fd",
-        "52ccb61e",
-        "799fc249",
-        "8626e1f7",
-        "87925b31",
-        "a5a452ac",
-        "a8bb75db",
-        "d7595f6f",
-        "e833223e"
-      ]
-    },
     "agent/plans/PLAN-wire-account-vitest-ci.md": {
       "status": "compacted",
       "owner": "97604f47",
@@ -2286,6 +2186,84 @@
         "d581ca0d"
       ]
     },
+    "agent/plans/_done/PLAN-pipefail-grep-q-renet-gate.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "",
+      "open": 0,
+      "done": 16,
+      "open_sigs": [],
+      "done_sigs": [
+        "5f53f957",
+        "695bedf8",
+        "7644c1ee",
+        "8f7e9c01",
+        "95e70680",
+        "9da858e5",
+        "ac4c55db",
+        "af6a7ff7",
+        "b139bdbf",
+        "b61a0445",
+        "d8e5079e",
+        "da94040f",
+        "e2366f73",
+        "eb7aa103",
+        "f052b4a9",
+        "f1533f2e"
+      ]
+    },
+    "agent/plans/_done/PLAN-plan-file-lifecycle.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "",
+      "open": 0,
+      "done": 13,
+      "open_sigs": [],
+      "done_sigs": [
+        "24fbc5fc",
+        "35f8115e",
+        "54cca06b",
+        "6be59355",
+        "7a89c5be",
+        "7adc2d9f",
+        "86185c7e",
+        "9d65a096",
+        "a69a55a5",
+        "daffe83e",
+        "e77bfe5f",
+        "f27685d2",
+        "ff0c1fc4"
+      ]
+    },
+    "agent/plans/_done/PLAN-plan-implementation-enforcement.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "",
+      "open": 0,
+      "done": 16,
+      "open_sigs": [],
+      "done_sigs": [
+        "0a921c43",
+        "1e78ffe8",
+        "2ac6bfea",
+        "3000c34a",
+        "3668e9ca",
+        "445887e0",
+        "4764d799",
+        "4985c2b6",
+        "8afc3ce3",
+        "a1101d27",
+        "a29ea255",
+        "bbbbb3cf",
+        "bd4e5e87",
+        "d28bed5d",
+        "e60ff3c6",
+        "fac236ea"
+      ]
+    },
     "agent/plans/_done/PLAN-plan-path-migration.md": {
       "status": "done",
       "owner": "d778be9d",
@@ -2569,6 +2547,27 @@
         "cb6f6b5d",
         "d3777ae7",
         "fc0d9cd3"
+      ]
+    },
+    "agent/plans/_done/PLAN-w9p2-script-relocation.md": {
+      "status": "done",
+      "owner": "f4da5c2e",
+      "folder": "agent/plans/_done",
+      "moved_at": "",
+      "open": 0,
+      "done": 10,
+      "open_sigs": [],
+      "done_sigs": [
+        "39b0cd69",
+        "4c8449fd",
+        "52ccb61e",
+        "799fc249",
+        "8626e1f7",
+        "87925b31",
+        "a5a452ac",
+        "a8bb75db",
+        "d7595f6f",
+        "e833223e"
       ]
     },
     "agent/plans/_done/PLAN-wl-wait-duplicate-listener.md": {

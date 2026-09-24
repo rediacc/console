@@ -94,6 +94,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import urllib.request
 
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Controls
@@ -124,6 +125,28 @@ PROBE_SENTINEL = "__PROBE_FAILED__"
 
 # `head -c 300` on the probe's stderr. A TRUNCATION, not a summary: a 4 KB Go error shows its first 300 bytes, and dropping the truncation would make the port noisier than the twin on exactly the tree where the gate fires.
 PROBE_STDERR_BYTES = 300
+
+# A CANDIDATE IS SCREENED BEFORE IT IS DEMANDED. On 2026-09-24 this gate demanded google.golang.org/grpc v1.84.0 (renet 4620d5d took the bump) while check:ci-renet's govulncheck refused that very version (GO-2026-6443, fixed only in v1.83.2 and v1.85.0-dev). Two gates contradicted each other and the renet lanes went red whichever way the module moved. A version OSV lists as affected is reported and not demanded; an OSV that cannot be asked leaves the old behaviour in place and says so, because a freshness gate that goes red on a network blip trains people to ignore it.
+OSV_QUERY_URL = "https://api.osv.dev/v1/query"
+OSV_TIMEOUT_S = 10
+
+
+def osv_affected(path: str, version: str) -> list[str] | None:
+    """The OSV advisory ids that affect `path@version`, or None when OSV could not be asked."""
+    body = json.dumps({"package": {"name": path, "ecosystem": "Go"}, "version": version})
+    request = urllib.request.Request(
+        OSV_QUERY_URL, data=body.encode(), headers={"Content-Type": "application/json"}
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=OSV_TIMEOUT_S) as response:  # noqa: S310 -- constant https URL
+            data = json.load(response)
+    except (OSError, ValueError):
+        return None
+    return sorted({v["id"] for v in data.get("vulns", []) if v.get("id")})
+
+
+# The seam the selftest swaps for a table, so its controls never touch the network.
+VULN_SEAM = {"lookup": osv_affected}
 
 # U+2014 appears in three of the twin's messages. Written as an escape rather than as the character so this file stays ASCII: the repo's prose rules forbid the literal, and the byte still has to reach the output because the message text is what the differential compares.
 _EM_DASH = "\u2014"
@@ -387,7 +410,7 @@ def check_go_dir(
 ) -> list[str]:
     """One Go module directory. Returns `MODULE CURRENT LATEST TYPE` lines.
 
-    TYPE is `major`, `minor`, `blocked` or `toofresh`, or the whole line is a `__PROBE_FAILED__` sentinel. Warnings go to stderr, which does not disturb the machine-readable records this function returns.
+    TYPE is `major`, `minor`, `blocked`, `toofresh` or `vulnerable:<ids>`, or the whole line is a `__PROBE_FAILED__` sentinel. Warnings go to stderr, which does not disturb the machine-readable records this function returns.
     """
     try:
         proc = subprocess.run(
@@ -450,7 +473,18 @@ def check_go_dir(
         elif get_major(latest) > get_major(current):
             records.append("%s %s %s major" % (path, current, latest))
         else:
-            records.append("%s %s %s minor" % (path, current, latest))
+            advisories = VULN_SEAM["lookup"](path, latest)
+            if advisories is None:
+                log.warn(
+                    "could not ask OSV whether %s %s is affected; demanding it unscreened"
+                    % (path, latest)
+                )
+            if advisories:
+                records.append(
+                    "%s %s %s vulnerable:%s" % (path, current, latest, ",".join(advisories))
+                )
+            else:
+                records.append("%s %s %s minor" % (path, current, latest))
     return records
 
 
@@ -527,6 +561,7 @@ def main(argv: list[str] | None = None) -> int:
     all_major: list[str] = []
     all_blocked: list[str] = []
     all_toofresh: list[str] = []
+    all_vulnerable: list[str] = []
     dirs_with_minor: list[str] = []
     probe_failures: list[str] = []
 
@@ -554,6 +589,11 @@ def main(argv: list[str] | None = None) -> int:
                 all_blocked.append("    Reason: %s" % blocked.get(path, ""))
             elif kind == "toofresh":
                 all_toofresh.append("  %s: %s %s -> %s (too new)" % (name, path, current, latest))
+            elif kind.startswith("vulnerable:"):
+                all_vulnerable.append(
+                    "  %s: %s %s -> %s (affected by %s)"
+                    % (name, path, current, latest, kind.split(":", 1)[1])
+                )
         if has_minor:
             dirs_with_minor.append(directory)
 
@@ -576,6 +616,12 @@ def main(argv: list[str] | None = None) -> int:
         print()
         log.info("Too new %s within freshness window, deferred until next UTC day:" % _EM_DASH)
         for line in all_toofresh:
+            print(line)
+
+    if all_vulnerable:
+        print()
+        log.info("Not demanded %s the newer version carries a known advisory:" % _EM_DASH)
+        for line in all_vulnerable:
             print(line)
 
     # A PROBE THAT COULD NOT RUN IS A HARD FAILURE, checked BEFORE the all-good path. Reporting "up-to-date" on the strength of a command that errored is the exact defect this guard replaces.
@@ -636,7 +682,7 @@ def _module_json(path: str, current: str, latest: str, when: str = "") -> str:
 
 def selftest() -> int:
     """Both directions on the arithmetic, the parsers and the gate itself."""
-    ctl = Controls("go-deps", floor=28, verbose=True)
+    ctl = Controls("go-deps", floor=31, verbose=True)
 
     # -- THE MAJOR/MINOR ARITHMETIC, both directions -----------------------------
     ctl.check("MAJOR: a plain semver reads its major", get_major("v1.2.3"), 1)
@@ -753,6 +799,30 @@ def selftest() -> int:
             main_module + _module_json("github.com/sirupsen/logrus", "v1.10.0", "v1.10.1"),
         )
         ctl.check("PLANT: an outdated minor dep reds the gate", run(outdated), 1)
+
+        # THE ADVISORY SCREEN, with the lookup swapped for a table so no control touches the network.
+        real_lookup = VULN_SEAM["lookup"]
+        affected = {("github.com/sirupsen/logrus", "v1.10.1"): ["GO-0000-0001"]}
+
+        def table_lookup(path: str, version: str) -> list[str]:
+            return affected.get((path, version), [])
+
+        def unreachable(_path: str, _version: str) -> None:
+            return None
+
+        try:
+            VULN_SEAM["lookup"] = table_lookup
+            ctl.check(
+                "SCREEN: an affected newer version is reported, not demanded", run(outdated), 0
+            )
+            affected.clear()
+            ctl.check("SCREEN MIRROR: a clean newer version is still demanded", run(outdated), 1)
+            VULN_SEAM["lookup"] = unreachable
+            ctl.check(
+                "SCREEN MIRROR: an OSV that cannot be asked keeps the demand", run(outdated), 1
+            )
+        finally:
+            VULN_SEAM["lookup"] = real_lookup
 
         major = build(
             "major",

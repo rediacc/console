@@ -50,9 +50,9 @@ R12's bad example `The project failed.` and R3's good example `The build failed 
 
 Both halves are enforced: a new finding fails, and a baselined finding that no longer fires ALSO fails, with instructions to drain it. A new finding does not belong in the baseline.
 
-**Two surfaces are out of scope, and one file kind is not read at all.** `private/` holds four git submodules, which are other repositories. `packages/www` holds 217 translated, hash-pinned marketing files whose English is the source of twelve derived locales.
+**One surface is out of scope, one is read only for width, and one file kind is not read at all.** `private/` holds four git submodules, which are other repositories. `packages/www` IS in the corpus (since 9616fa247), but a translated copy under `packages/www/src/content/<collection>/<locale>/` is held to R18 and R19 only: every other rule matches English words, so on a translation it reports the language rather than the prose (`locale_copy_pattern` in the rules file). The English source under `/en/` keeps every rule; reflowing it re-keys each locale's `sourceHash`, so its debt is baselined, not rewrapped.
 
-`.sh` is absent from the include list because this repository's shell surface is shrinking under a bash-to-Python migration. Each of the three is recorded in the rules file with its reason.
+`.sh` is absent from the include list because this repository's shell surface is shrinking under a bash-to-Python migration. Each is recorded in the rules file with its reason.
 
 Beyond those, exemptions are by NAME with a `BLOCKER:` reason, and every run PRINTS how many findings each one suppressed. A quiet exemption is how a gate stops meaning what its name says.
 
