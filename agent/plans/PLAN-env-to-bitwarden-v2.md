@@ -154,7 +154,7 @@ for one string.
 **Why the nine `SELLER_*` become one entry.** They are one object: a company's registration identity, read together at `private/account/src/app.ts:308-310` and pushed together as nine `--arg`s at `.ci/scripts/deploy/set-account-worker-secrets.sh:239-269` and `.ci/scripts/deploy/set-www-worker-secrets.sh:107-132`. Nine store entries make nine independent things that can disagree; one JSON blob cannot
 half-update. It also keeps the store's entry count honest — adding nine rows for one fact inflates `MIN_MAP_ENTRIES`-style floors with no coverage gain. The fetch helper expands it: `bws_export --json SELLER_PROFILE_JSON` binds the nine `SELLER_*` names from the object's keys, and refuses if any of the nine is missing.
 
-**Counter-argument, recorded rather than hidden:** nine flat entries mirror CI's nine `vars.SELLER_*` (`.github/workflows/cd-deploy-account.yml line 401-405 (blob c83efbe56a06),…`) one-to-one, and a flat name is greppable. If the operator prefers that symmetry, it is nine `create`s and one line of helper code less; the cost is nine ways to have a stale address. Recommendation stands at one blob.
+**Counter-argument, recorded rather than hidden:** nine flat entries mirror CI's nine `vars.SELLER_*` (`.github/workflows/cd-deploy-account.yml line 401-405 (blob c83efbe56a0677833cb6be51442781dc19e4e92f),…`) one-to-one, and a flat name is greppable. If the operator prefers that symmetry, it is nine `create`s and one line of helper code less; the cost is nine ways to have a stale address. Recommendation stands at one blob.
 
 ### (d) MOVE, admin-tier — 4 names, destination is `## Remaining` Q2
 

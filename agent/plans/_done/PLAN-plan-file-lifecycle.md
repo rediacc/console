@@ -56,7 +56,7 @@ PLAN-secret-namespace-migration.md   open=14  status=executing  inscope=True
 PLAN-stop-plan-box-enforcement.md    open= 6  status=draft      inscope=False
 ```
 
-1. `_pf_rows[0]` at `.claude/hooks/stop/wl_checks.py line 3758 (blob c067e42bb2af)` renders exactly one row. This is the cause
+1. `_pf_rows[0]` at `.claude/hooks/stop/wl_checks.py line 3758 (blob c067e42bb2afb7e63bfeb6976076c60e5a2a5804)` renders exactly one row. This is the cause
 `agent/archive/plans/PLAN-stop-plan-box-enforcement.md` named, and it is at least REPORTED.
 2. **`NOT_STARTED_STATES` exempts 6 of 8 files -- 72 of the 88 boxes -- before
 `plan_rows` ever opens them.** `wl_planfile` can see 16 boxes in 2 files, total, and then shows one of those two.
@@ -198,7 +198,7 @@ Bash, because the BLOCKER validator (`.ci/scripts/lib/blocker-validator.sh`) is 
 - Glob: `git ls-files 'agent/PLAN-*.md'`, non-recursive, tracked-only. Same glob as the
 Stop hook (asserted as a subset control), so the two cannot enforce rules about different sets. Excludes `docs/PLAN-*.md` -- those are published docs with a different lifecycle, and they are the only two files that WOULD fail at 33 days (140 and 150).
 - **The shallow-clone refusal, which nothing else in this repo has.**
-`.ci/scripts/lib/age-check.sh line 41-44 (blob 9784326b7a36)` is the anti-pattern: it `echo 0` (silently "fresh") when the log answer is empty, using the exact command that lies on a shallow clone. Instead: in CI a shallow checkout is a HARD failure naming the required `fetch-depth: 0` / `filter: blob:none`; locally it is a LOUD skip of the age verdict only, so the floor, the allowlist liveness and the
+`.ci/scripts/lib/age-check.sh line 41-44 (blob 9784326b7a362b6e1d3ef77efaf7c932bef0c218)` is the anti-pattern: it `echo 0` (silently "fresh") when the log answer is empty, using the exact command that lies on a shallow clone. Instead: in CI a shallow checkout is a HARD failure naming the required `fetch-depth: 0` / `filter: blob:none`; locally it is a LOUD skip of the age verdict only, so the floor, the allowlist liveness and the
 whole control battery still run.
 - Floor: `>= 30` plan files (61 today), env-overridable like `BWS_MIN_MAP_ENTRIES`.
 - Placement: **`quality-i18n`, last step.** It already pays the `fetch-depth: 0
@@ -210,7 +210,7 @@ re-derived liveness rules: the path must exist in the glob; the plan must actual
 costing one word: no reason, no expiry, no reviewer. It converts the gate into "type `executing` to opt out". And the corpus will not support a whitelist -- measured statuses include `W1 LANDED 2026-08-27; W2 to W4 still draft`. The question dissolves anyway: an edit is a commit and a commit resets the clock. An "executing" plan nobody has committed to in 33 days is abandoned with
 an optimistic header, which is exactly the file this gate exists to find. The status IS printed in the failure line, because `Status: done` beside `41 days` tells the reader the answer is `git rm`.
 - **WARN band at 26 days**, naming the exact date each plan goes red. This is the only
-thing that makes 2026-09-23 visible a week early, and it is the repo's existing idiom (`.ci/scripts/lib/age-check.sh line 22-23 (blob 9784326b7a36)`).
+thing that makes 2026-09-23 visible a week early, and it is the repo's existing idiom (`.ci/scripts/lib/age-check.sh line 22-23 (blob 9784326b7a362b6e1d3ef77efaf7c932bef0c218)`).
 
 ### The seam that stops the two gates deadlocking
 
@@ -256,7 +256,7 @@ include the plan path.
 `.ci/scripts/test/gates/test-plan-boxes.sh`, 18 cases modelled on `test-bws-map.sh`, ten planted defects and four proving the gate stays QUIET on legitimate work: `clean_fixture_passes`, `deleted_box_reds`, `debulleted_box_reds`, `fenced_box_reds`, `retexted_box_reds`, **`ticked_box_passes`** (or the gate teaches agents not to tick), `rewrapped_box_passes`, `archive_r100_passes`,
 `archive_edited_reds`, **`archive_edited_two_commits_reds`** (the load-bearing case), `archive_modified_reds`, `status_done_over_open_reds`, `status_draft_over_open_passes`, `new_plan_no_owner_reds`, `stale_ledger_reds`, `young_delete_reds`, **`aged_delete_passes`** (the seam, proven not to deadlock), `empty_tree_reds`.
 
-`.ci/scripts/test/gates/test-plan-housekeeping.sh`, 10 cases, backdating with `GIT_AUTHOR_DATE`/`GIT_COMMITTER_DATE` as `.ci/scripts/test/gates/test-age-check.sh line 26-30 (blob 2e0ca1ba912c)` already does. The two no existing gate has: `git clone --depth 1` with `CI=true` must red with "cannot answer", and the same with `CI` unset must print SKIPPED and exit 0. Plus `case 2`: a plan committed 40 days ago but AMENDED 5 days ago
+`.ci/scripts/test/gates/test-plan-housekeeping.sh`, 10 cases, backdating with `GIT_AUTHOR_DATE`/`GIT_COMMITTER_DATE` as `.ci/scripts/test/gates/test-age-check.sh line 26-30 (blob 2e0ca1ba912c667611b6ed1375e80d919088f187)` already does. The two no existing gate has: `git clone --depth 1` with `CI=true` must red with "cannot answer", and the same with `CI` unset must print SKIPPED and exit 0. Plus `case 2`: a plan committed 40 days ago but AMENDED 5 days ago
 must pass -- the case that makes the last-commit-vs-added-date decision testable rather than asserted.
 
 ### Wiring

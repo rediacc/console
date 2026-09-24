@@ -54,7 +54,7 @@ The cost is about $0 marginal while it stays like this. Without EXECUTOR_TOKEN n
 | `EXECUTOR_TOKEN` secret: a portal API token, scope exactly `proxy:exec`, in the org that owns hostinger's config | `workers/proxy/wrangler.toml:16-17`, `workers/proxy/src/index.ts:32,76` | **missing** |
 | Container receives its token | `packages/cli/src/commands/serve.ts:61-67` reads `REDIACC_TOKEN` | **never passed (B1)** |
 | Org has a remote config store holding hostinger | `packages/cli/src/services/serve/container-config.ts:115-118`, `private/account/src/routes/configs.ts:552-561` | operator must confirm (`rdc config remote status`) |
-| Caller token carries `proxy:exec` | `workers/proxy/src/index.ts:89`, `packages/cli/src/services/serve/auth.ts line 121 (blob 4afac347d8e0)` | CLI login token does not (B5) |
+| Caller token carries `proxy:exec` | `workers/proxy/src/index.ts:89`, `packages/cli/src/services/serve/auth.ts line 121 (blob 4afac347d8e08f5e671237241cf5f8bf6729b1ae)` | CLI login token does not (B5) |
 
 The design is single-org. Introspection answers `active:false` for a token from another org (`private/account/src/routes/proxy.ts:66-67`), so one `EXECUTOR_TOKEN` means one org.
 

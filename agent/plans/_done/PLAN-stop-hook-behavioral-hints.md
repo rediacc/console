@@ -8,7 +8,7 @@ Updated: 2026-09-22
 
 Three mechanisms in this tree are close enough that the boundary has to be drawn before anything is built, or the fourth one becomes a second copy of one of them.
 
-`wl_agents.py` is the closest relative and the structural template: a deterministic, non-judged matcher over a corpus on disk, delivered through the advisory queue (`.claude/hooks/stop/wl_checks.py:1441 agent_hint_queue`, queued at priority 3, called on the allow path only at `.claude/hooks/stop/wl_checks.py line 4837 (blob 5a8904da5ad6)`), with a liveness gate (`.ci/scripts/quality/check_agent_hint_liveness.py`) rather than tests over its
+`wl_agents.py` is the closest relative and the structural template: a deterministic, non-judged matcher over a corpus on disk, delivered through the advisory queue (`.claude/hooks/stop/wl_checks.py:1441 agent_hint_queue`, queued at priority 3, called on the allow path only at `.claude/hooks/stop/wl_checks.py line 4837 (blob 5a8904da5ad64d44df6a7e6095da16a81a681eff)`), with a liveness gate (`.ci/scripts/quality/check_agent_hint_liveness.py`) rather than tests over its
 internals. It answers "which specialist covers the topic in hand", which is a RELEVANCE question about this particular stop. The mechanism proposed here answers no question at all: it surfaces a standing rule that was already true before the session started, chosen at random. Relevance is what separates them, and it is why one needs a matcher and the other must not have one.
 
 `docs/agent-reference/TRAPS.md` is the corpus whose shape is being copied. Its charter, stated in its own opening lines, is "ways a session gets *fooled* -- as opposed to ways it gets *blocked*", and "Mechanics of a specific subsystem do not belong here. ... This file is about judgement." The operator's two worked examples -- record an order with the worklist verbs, dispatch a
@@ -59,16 +59,16 @@ A `Hint-Id` is never renumbered and never reused after retirement, matching `Tra
 
 ## 2. The delivery path: a bottom line, not a queue entry
 
-The hint is appended to `parts` in `run_stop`'s allow block, AFTER the `outq_drain` call at `.claude/hooks/stop/wl_checks.py line 4844 (blob 5a8904da5ad6)` and after the `N_OUTQ_MORE` tail, as the last element before the final `S.save_state`. It is one line. It never becomes a queue entry.
+The hint is appended to `parts` in `run_stop`'s allow block, AFTER the `outq_drain` call at `.claude/hooks/stop/wl_checks.py line 4844 (blob 5a8904da5ad64d44df6a7e6095da16a81a681eff)` and after the `N_OUTQ_MORE` tail, as the last element before the final `S.save_state`. It is one line. It never becomes a queue entry.
 
 WHY NOT THE QUEUE, since the queue is where every other advisory goes. The queue exists to make a section DURABLE: `.claude/hooks/stop/wl_checks.py:1309-1315`'s header records that its whole reason for being is that one-shot producers spend a budget before an emit path that exits the process, so "an entry that lands in the state doc the moment its producer spends that budget survives a block, a judge
 block, a crash and a restart." A rotating reminder has the exact opposite property. It is idempotent, it loses nothing by being skipped, and it can be shown again tomorrow at zero cost. Putting it in the queue would buy durability nothing needs and pay for it twice: once by occupying one of the three per-stop slots that a real report section could have used, and once by inheriting
 the shown-ledger, whose semantics are "suppress permanently" -- which is precisely wrong for a line that must rotate forever.
 
-WHY IT NEVER CREATES OUTPUT. `.claude/hooks/stop/wl_checks.py line 4852 (blob 5a8904da5ad6)` exits with zero bytes when `parts` is empty, and the comment on it records that this silence was won on purpose: "v18: nothing actionable, nothing queued, no judge line to show. This used to be impossible (the guide was unconditional) and is now the common shape of a clean stop." A tip that turned every silent stop into a line of
+WHY IT NEVER CREATES OUTPUT. `.claude/hooks/stop/wl_checks.py line 4852 (blob 5a8904da5ad64d44df6a7e6095da16a81a681eff)` exits with zero bytes when `parts` is empty, and the comment on it records that this silence was won on purpose: "v18: nothing actionable, nothing queued, no judge line to show. This used to be impossible (the guide was unconditional) and is now the common shape of a clean stop." A tip that turned every silent stop into a line of
 output would undo that deliberately, and would be the single most irritating possible shape for this feature. So the rule is absolute and belongs in the module header: the hint RIDES an output that was going to happen anyway, and the emptiness check at `:4851` runs before it, not after.
 
-The accepted cost, stated rather than discovered later: a session whose every stop is clean and silent is never hinted. That is the same trade `agent_hint_queue`'s call site already takes and names at `.claude/hooks/stop/wl_checks.py line 4836 (blob 5a8904da5ad6)` -- "the trade is that a session which never reaches a clean stop is never hinted, which is acceptable for exactly the same reason" -- inverted, and acceptable for
+The accepted cost, stated rather than discovered later: a session whose every stop is clean and silent is never hinted. That is the same trade `agent_hint_queue`'s call site already takes and names at `.claude/hooks/stop/wl_checks.py line 4836 (blob 5a8904da5ad64d44df6a7e6095da16a81a681eff)` -- "the trade is that a session which never reaches a clean stop is never hinted, which is acceptable for exactly the same reason" -- inverted, and acceptable for
 the mirror reason. A session with nothing to be told is a session that needs no reminders.
 
 ALLOW PATH ONLY. A blocked stop already carries a demand, and adding a behavioral aside underneath a block is how the block gets skimmed.
@@ -147,7 +147,7 @@ IT IS NOT A DECISION THE SESSION IS BLOCKED ON. The same paragraph continues: "R
 
 THE JUSTIFICATION GATE WOULD REJECT IT ANYWAY. `.claude/hooks/stop/worklist.py:678` shows `--defer` validating `WHY:`/`HOW:` at creation (v12, from the operator's "Too many '[?]'. This is an escape hatch."), and the judge audits whether the WHY is true, reopening the item as `- [ ]` when it is not. A hint proposal has no honest WHY -- nothing is blocked.
 
-`--ask operator` was the second candidate and is closer, but `.claude/hooks/stop/wl_requests.py line 112 (blob 326bae9f3857)` records that an escalated ask "appends an `escalate` event plus a `- [?]` item ... carrying the ask's own DEFAULT:", so it lands in the same place by a longer road.
+`--ask operator` was the second candidate and is closer, but `.claude/hooks/stop/wl_requests.py line 112 (blob 326bae9f3857eefca445a9231d4a779a267a60a9)` records that an escalated ask "appends an `escalate` event plus a `- [?]` item ... carrying the ask's own DEFAULT:", so it lands in the same place by a longer road.
 
 ### 4.2 Why proposals never live in the corpus file
 
@@ -176,7 +176,7 @@ NOT A TRAP CORPUS. TRAPS.md keeps its charter and its `check:ci-trap-registry` g
 NOT A MODEL CALL. See section 6.2.
 
 NOT A BLOCKER ON ITS OWN FAILURE. An unreadable, missing, or malformed corpus degrades to silence plus one queued note, never an exception and never a block, matching `wl_agents.py`'s returned-errors contract and `agent_hint_queue`'s `agent-corpus-err` section at `.claude/hooks/stop/wl_checks.py:1453`. The call site is wrapped in the same `contextlib.suppress(Exception)` the agent hint already uses
-at `.claude/hooks/stop/wl_checks.py line 4836 (blob 5a8904da5ad6)`.
+at `.claude/hooks/stop/wl_checks.py line 4836 (blob 5a8904da5ad64d44df6a7e6095da16a81a681eff)`.
 
 ## 6. The module
 
@@ -254,7 +254,7 @@ Two more are grounded and held back only to keep the first cut at twelve: `one-o
 - A twelve-entry corpus cycles quickly in a long session. The `N of M` counter makes that visible rather than confusing, and the cycle reset at section 3 is the documented lever if it reads as repetitive.
 - `Source:` pointers using `fileline` decay whenever CLAUDE.md is edited above the cited line. H3 turns that into a red rather than into silent folklore, but it also means editing CLAUDE.md can red this gate for an unrelated reason. That is the same cost `check:ci-plan-citations` already carries in this tree and the same remedy applies: repoint the citation.
   Prefer a section-anchor-free `file:CLAUDE.md` pointer where the rule is unlikely to move, and a `:line` only where the exact site is the grounding.
-- The hint line lands beneath the `N_OUTQ_MORE` tail, so a reader skimming for "what is left" sees the tip after the count. Verified against the current emit order at `.claude/hooks/stop/wl_checks.py line 4844-4847 (blob 5a8904da5ad6)`; if that reads badly in practice, the fix is ordering inside `parts`, not a new channel.
+- The hint line lands beneath the `N_OUTQ_MORE` tail, so a reader skimming for "what is left" sees the tip after the count. Verified against the current emit order at `.claude/hooks/stop/wl_checks.py line 4844-4847 (blob 5a8904da5ad64d44df6a7e6095da16a81a681eff)`; if that reads badly in practice, the fix is ordering inside `parts`, not a new channel.
 - `pick_random` is extracted from work that has not landed yet. Section 3.1 names the fallback so this plan cannot be blocked by that one.
 
 ## Tasks
@@ -288,7 +288,7 @@ Two more are grounded and held back only to keep the first cut at twelve: `one-o
     (ticked) 2026-09-23T11:19:18Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] Add in-process unit tests in `.claude/rediacc_hooks/tests/test_wl_hints.py` driving `hint_pick` with `random.Random(seed)`: full-cycle coverage, no repeat inside a cycle, no back-to-back repeat across a cycle boundary, and at least two distinct first-picks across 50 seeds (the entropy control, mirroring `test_181_control`).
     (ticked) 2026-09-23T11:19:18Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
-- [x] Add a subprocess test proving the line appears on a loud allow stop AND is absent from a silent clean stop (the zero-byte case at `.claude/hooks/stop/wl_checks.py line 4852 (blob 5a8904da5ad6)`), and absent from a blocked stop.
+- [x] Add a subprocess test proving the line appears on a loud allow stop AND is absent from a silent clean stop (the zero-byte case at `.claude/hooks/stop/wl_checks.py line 4852 (blob 5a8904da5ad64d44df6a7e6095da16a81a681eff)`), and absent from a blocked stop.
     (ticked) 2026-09-23T11:19:18Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] Add the negative control: point `WORKLIST_HINTS_FILE` at an empty corpus and assert the stop output is byte-identical to the run without the feature, proving the corpus drives the line.
     (ticked) 2026-09-23T11:19:18Z by d778be9d: retroactive record: closed by f5007b649 (2026-09-23) fix(ci): 6 independent ci:quick reds surfaced this session -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites

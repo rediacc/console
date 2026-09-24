@@ -13,10 +13,10 @@ Thirteen simultaneous `wl_wait.py d778be9d --timeout 60` processes accumulated o
 
 The units claim in this session's memory note is correct, and it is the whole magnitude of the incident.
 
-- `.claude/hooks/stop/wl_wait.py line 38 (blob 20dff1b28045)` -- `DEFAULT_TIMEOUT_MIN = float(os.environ.get("WORKLIST_WAIT_TIMEOUT_MIN", "60"))`, with the comment on line 37 naming "60 minutes, matching the hourly work-loop cadence".
-- `.claude/hooks/stop/wl_wait.py line 204 (blob 20dff1b28045)` -- `deadline = time.monotonic() + timeout_min * 60.0`. The `* 60.0` is the conversion; the flag value is minutes.
-- `.claude/hooks/stop/wl_wait.py line 491-501 (blob 20dff1b28045)` -- `main()` parses `--timeout` as a bare float into `timeout_min` with no unit anywhere in the token.
-- `.claude/hooks/stop/wl_wait.py line 314 (blob 20dff1b28045)` -- the only user-visible statement of the unit is one line inside `HELP`: `--timeout <minutes>   default %d`.
+- `.claude/hooks/stop/wl_wait.py line 38 (blob 20dff1b2804531862015c2cd71bfe5cad3be4151)` -- `DEFAULT_TIMEOUT_MIN = float(os.environ.get("WORKLIST_WAIT_TIMEOUT_MIN", "60"))`, with the comment on line 37 naming "60 minutes, matching the hourly work-loop cadence".
+- `.claude/hooks/stop/wl_wait.py line 204 (blob 20dff1b2804531862015c2cd71bfe5cad3be4151)` -- `deadline = time.monotonic() + timeout_min * 60.0`. The `* 60.0` is the conversion; the flag value is minutes.
+- `.claude/hooks/stop/wl_wait.py line 491-501 (blob 20dff1b2804531862015c2cd71bfe5cad3be4151)` -- `main()` parses `--timeout` as a bare float into `timeout_min` with no unit anywhere in the token.
+- `.claude/hooks/stop/wl_wait.py line 314 (blob 20dff1b2804531862015c2cd71bfe5cad3be4151)` -- the only user-visible statement of the unit is one line inside `HELP`: `--timeout <minutes>   default %d`.
 
 So `--timeout 60` blocks for 3600 seconds. Relaunching on a several-minute cadence for 55 minutes produces exactly the observed 13 overlapping instances, and none of them was ever late: each was 5 to 55 minutes into a 60-minute deadline.
 
@@ -28,10 +28,10 @@ A session that has internalised `--timeout` from `ci-trace` reads `--timeout 60`
 
 ### 2. What a running instance actually does: a lock-free poll of two file stats, fully independent of every other instance
 
-- `.claude/hooks/stop/wl_wait.py line 207-220 (blob 20dff1b28045)` -- the wait loop. Each pass touches a heartbeat, checks the deadline, then `time.sleep(min(TICK_S, remaining))` with `TICK_S = 2` seconds (`:36`).
-- `.claude/hooks/stop/wl_wait.py line 43-49 (blob 20dff1b28045)` -- `_stat()` returns `(size, mtime_ns)`. The two watched paths are the requests log (`S.requests_path`, `:197`) and the report index (`RPT.index_path`, `:198`). A change in either triggers a fold; `_new_requests` (`:73-82`) and `RPT.unread` (`:240`) diff against the launch-time baseline from `arm()` (`:52-70`).
+- `.claude/hooks/stop/wl_wait.py line 207-220 (blob 20dff1b2804531862015c2cd71bfe5cad3be4151)` -- the wait loop. Each pass touches a heartbeat, checks the deadline, then `time.sleep(min(TICK_S, remaining))` with `TICK_S = 2` seconds (`:36`).
+- `.claude/hooks/stop/wl_wait.py line 43-49 (blob 20dff1b2804531862015c2cd71bfe5cad3be4151)` -- `_stat()` returns `(size, mtime_ns)`. The two watched paths are the requests log (`S.requests_path`, `:197`) and the report index (`RPT.index_path`, `:198`). A change in either triggers a fold; `_new_requests` (`:73-82`) and `RPT.unread` (`:240`) diff against the launch-time baseline from `arm()` (`:52-70`).
 - It is NOT blocking on a subprocess and NOT watching for a worklist event through any queue. It is a two-stat poller, by declared necessity (module docstring `:21`: no inotify, no epoll portability, `pip install` refused under PEP 668).
-- **It holds no lock, and that is deliberate and load-bearing.** Module docstring `:15-17`: "IT NEVER TAKES A LOCK, AND THAT IS THE SHARPEST HAZARD IN THE WHOLE DESIGN", because `_append_lines` takes a blocking `LOCK_EX` and the two `LOCK_EX|LOCK_NB` paths (`.claude/hooks/stop/wl_requests.py line 165 (blob 326bae9f3857)`, `.claude/hooks/stop/wl_store.py:1981`) give up SILENTLY on contention, so an hour-long holder would turn them into invisible no-ops. Any fix must not violate this.
+- **It holds no lock, and that is deliberate and load-bearing.** Module docstring `:15-17`: "IT NEVER TAKES A LOCK, AND THAT IS THE SHARPEST HAZARD IN THE WHOLE DESIGN", because `_append_lines` takes a blocking `LOCK_EX` and the two `LOCK_EX|LOCK_NB` paths (`.claude/hooks/stop/wl_requests.py line 165 (blob 326bae9f3857eefca445a9231d4a779a267a60a9)`, `.claude/hooks/stop/wl_store.py:1981`) give up SILENTLY on contention, so an hour-long holder would turn them into invisible no-ops. Any fix must not violate this.
 
 **Consequence: every instance is fully duplicative.** All 13 armed their own baseline, stat'ed the same two files every 2 seconds, and each ran `RPT.scan(store, start)` every 300 seconds (`:40`, `:222-224`, `_safe_scan` at `:85-92`) against the same shared report store.
 
@@ -39,9 +39,9 @@ A session that has internalised `--timeout` from `ci-trace` reads `--timeout 60`
 
 This is the harm beyond wasted processes, and it is structural.
 
-- `.claude/hooks/stop/wl_wait.py line 103 (blob 20dff1b28045)` -- `heartbeat_path()` returns ONE path per session: `worklist.with_suffix(".waiter-<me8>")`. It carries a timestamp and no pid.
-- `.claude/hooks/stop/wl_wait.py line 208 (blob 20dff1b28045)` -- every instance `_touch(hb)` on that same path every 2 seconds.
-- `.claude/hooks/stop/wl_wait.py line 218 (blob 20dff1b28045)` and `:268` -- on exit an instance writes a TOMBSTONE to that same path instead of unlinking it (`tombstone()`, `:150-161`).
+- `.claude/hooks/stop/wl_wait.py line 103 (blob 20dff1b2804531862015c2cd71bfe5cad3be4151)` -- `heartbeat_path()` returns ONE path per session: `worklist.with_suffix(".waiter-<me8>")`. It carries a timestamp and no pid.
+- `.claude/hooks/stop/wl_wait.py line 208 (blob 20dff1b2804531862015c2cd71bfe5cad3be4151)` -- every instance `_touch(hb)` on that same path every 2 seconds.
+- `.claude/hooks/stop/wl_wait.py line 218 (blob 20dff1b2804531862015c2cd71bfe5cad3be4151)` and `:268` -- on exit an instance writes a TOMBSTONE to that same path instead of unlinking it (`tombstone()`, `:150-161`).
 
 With 13 writers, a tombstone written by an exiting instance is overwritten by a survivor's `_touch` within 2 seconds. So:
 
@@ -77,17 +77,17 @@ The precedent for the check that is missing is two dozen lines further down the 
 
 Both gate correctly, which narrows the cause to the session's own relaunch behaviour and confirms that no amount of message-tuning closes this.
 
-- `.claude/hooks/stop/wl_wait.py line 418-425 (blob 20dff1b28045)` -- `nudge()` returns silently when the heartbeat is fresh and not a tombstone. With 13 instances refreshing it every 2 seconds it was permanently fresh, so the nudge said nothing.
+- `.claude/hooks/stop/wl_wait.py line 418-425 (blob 20dff1b2804531862015c2cd71bfe5cad3be4151)` -- `nudge()` returns silently when the heartbeat is fresh and not a tombstone. With 13 instances refreshing it every 2 seconds it was permanently fresh, so the nudge said nothing.
 - Every Stop-side relaunch demand (`no-waiter` `:3735`, `waiter-lapsed` `:3755`, `no-waiter-asked` `:3783`) is gated on `not _waiters_confirmed`, which was false.
 
-So the relaunches came from the session acting on the standing instruction that the waiter "FIRES ONCE" and must be relaunched (`.claude/hooks/stop/wl_wait.py line 262-267 (blob 20dff1b28045)`, `HELP` `:299-301`, `V_NO_WAITER` `.claude/hooks/stop/worklist_messages.py:627-642`), combined with the belief that a 60-second process had already finished. **Prose cannot fix that.** The script must refuse.
+So the relaunches came from the session acting on the standing instruction that the waiter "FIRES ONCE" and must be relaunched (`.claude/hooks/stop/wl_wait.py line 262-267 (blob 20dff1b2804531862015c2cd71bfe5cad3be4151)`, `HELP` `:299-301`, `V_NO_WAITER` `.claude/hooks/stop/worklist_messages.py:627-642`), combined with the belief that a 60-second process had already finished. **Prose cannot fix that.** The script must refuse.
 
 ### 6. Existing mechanism a fix can reuse
 
 Three, and no new convention is needed:
 
 - **A per-session marker file already exists.** `heartbeat_path()` (`:103`) resolves to `/tmp/claude-worklist/home_developer_console.waiter-<me8>` in this checkout, is refreshed every 2 seconds by a live instance, goes stale in `HEARTBEAT_STALE_S = 60` (`:322`), and already has a reader predicate: `_fresh(hb, HEARTBEAT_STALE_S) and not _is_tombstone(hb)` (`:421`).
-- **A non-blocking flock idiom on a dedicated sidecar.** `.claude/hooks/stop/wl_requests.py line 162-166 (blob 326bae9f3857)` opens `str(S.requests_path(worklist)) + ".lock"` and takes `S._flock(lock, S.LOCK_EX | S.LOCK_NB)`, returning on `OSError` ("another stop is escalating; it wins, next stop retries").
+- **A non-blocking flock idiom on a dedicated sidecar.** `.claude/hooks/stop/wl_requests.py line 162-166 (blob 326bae9f3857eefca445a9231d4a779a267a60a9)` opens `str(S.requests_path(worklist)) + ".lock"` and takes `S._flock(lock, S.LOCK_EX | S.LOCK_NB)`, returning on `OSError` ("another stop is escalating; it wins, next stop retries").
 `S._flock` (`.claude/hooks/stop/wl_store.py:50-66`) is the portability shim that raises a NAMED refusal rather than an `ImportError` where `fcntl` is absent.
 This is a lock on a PRIVATE file, not on the worklist store, so it does not violate the module docstring's prohibition (`:15-17`).
 
@@ -110,7 +110,7 @@ The script refusing is what closes the failure, because the failure arrives thro
 
 ### Why not "one long-lived listener instead of relaunch-per-stop"
 
-Refuted by the mechanism, not by preference. `.claude/hooks/stop/wl_wait.py line 6 (blob 20dff1b28045)` and `:8-9`: "Launched as a BACKGROUND SHELL TASK. Its exit is the ping. [...] the one push channel that exists is the harness notifying the session when a background task finishes".
+Refuted by the mechanism, not by preference. `.claude/hooks/stop/wl_wait.py line 6 (blob 20dff1b2804531862015c2cd71bfe5cad3be4151)` and `:8-9`: "Launched as a BACKGROUND SHELL TASK. Its exit is the ping. [...] the one push channel that exists is the harness notifying the session when a background task finishes".
 `:262`: "THE WAITER FIRES ONCE AND IS THEN GONE." A listener that stays alive across Stop cycles delivers nothing, because staying alive IS silence. The exit is the entire product.
 
 The distinction that matters is which exit was relaunched over. A waiter that FIRED is already gone, so a relaunch after a fire can never duplicate. Duplicates can only be created by relaunching over the TIMEOUT branch (`:210-219`), which is a process still counting down 60 minutes.
@@ -123,7 +123,7 @@ So no `RELAUNCH THE WAITER NOW` text needs to stop instructing a relaunch. Under
 Rejected as the start-time action, on three concrete grounds:
 
 1. **It kills the wrong process.** An incumbent 55 minutes into its deadline may be seconds from firing with a peer's answer in hand. The duplicate has nothing to lose; the incumbent has the whole baseline. Fail-fast kills the one with no value.
-2. **The heartbeat is process-anonymous** (`:103`, `:140-143` write a timestamp and no pid), so a killer must scan argv instead -- and this repo's own guards document why that is a trap: `.claude/rediacc_hooks/guards/block_shell_background_waiter.py line 44 (blob c046b47d33cb)` ("a bare `pgrep -f` self-matches the Bash tool wrapper containing the caller's own pattern text") and `.claude/rediacc_hooks/guards/block_self_matching_pgrep.py:84`.
+2. **The heartbeat is process-anonymous** (`:103`, `:140-143` write a timestamp and no pid), so a killer must scan argv instead -- and this repo's own guards document why that is a trap: `.claude/rediacc_hooks/guards/block_shell_background_waiter.py line 44 (blob c046b47d33cb112f552490112eec489e8707414f)` ("a bare `pgrep -f` self-matches the Bash tool wrapper containing the caller's own pattern text") and `.claude/rediacc_hooks/guards/block_self_matching_pgrep.py:84`.
 3. **It leaves a phantom in the harness task table, which is worse than the duplicate.** Killing the OS process does not retire the harness task; `TaskStop` is the only clean teardown, which is why `N_WAITER_DRAINED` (`.claude/hooks/stop/worklist_messages.py:550-560`) teaches `TaskStop <id>` as the verb.
 A killed-but-still-declared task then rates `suspect` under `verify_background` (`.claude/hooks/stop/wl_liveness.py:224-226`), `suspect` does not satisfy `confirmed_waiters` (`:244-257`), and the session gets nagged by `no-waiter` into launching yet another one.
 Self-cleanup would convert a wasteful state into a self-amplifying one.
@@ -133,7 +133,7 @@ Teardown of a genuine surplus stays a `TaskStop`, surfaced by the new `many-wait
 
 ### Shape of the guard
 
-Placed in `wait()` immediately after the path computations (`.claude/hooks/stop/wl_wait.py line 188-191 (blob 20dff1b28045)`) and BEFORE `_safe_scan`/`arm` (`:194-195`), so a duplicate pays for nothing:
+Placed in `wait()` immediately after the path computations (`.claude/hooks/stop/wl_wait.py line 188-191 (blob 20dff1b2804531862015c2cd71bfe5cad3be4151)`) and BEFORE `_safe_scan`/`arm` (`:194-195`), so a duplicate pays for nothing:
 
 - Open `str(worklist) + ".waiterlock-<me8>"` and take `S._flock(fh, S.LOCK_EX | S.LOCK_NB)`, holding the handle for the process lifetime. The fd closes on return, releasing it. Dedicated file, never the worklist store, so the `:15-17` prohibition holds.
 - On `OSError` (contention): print a refusal naming the incumbent's heartbeat age from `_fresh`/`stat`, and return a NEW exit code **3**.

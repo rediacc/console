@@ -42,7 +42,7 @@ and 317-322: four npm scripts that do not exist were read as passing gates in on
 
 The class recurred on 2026-08-04, on 2026-08-07, and again on 2026-08-09. Rewriting the entry more sharply has been tried and is what produced the 2026-08-04 instance.
 
-**The second failure mode, which prose cannot reach at all.** A subagent is spawned with a task prompt, not with the corpus. Hooks fire on a subagent's tool calls (the PostToolUse payload carries `agent_id` and `agent_type`, documented at `.claude/hooks/stop/wl_wait.py line 141-142 (blob 20dff1b28045)`), so an instrument applies uniformly to the main loop and to every agent it spawns, including agents
+**The second failure mode, which prose cannot reach at all.** A subagent is spawned with a task prompt, not with the corpus. Hooks fire on a subagent's tool calls (the PostToolUse payload carries `agent_id` and `agent_type`, documented at `.claude/hooks/stop/wl_wait.py line 141-142 (blob 20dff1b2804531862015c2cd71bfe5cad3be4151)`), so an instrument applies uniformly to the main loop and to every agent it spawns, including agents
 spawned by agents. A document applies only to whoever was handed it. That asymmetry, not the recurrence count, is the strongest argument for the shift.
 
 ---
@@ -64,7 +64,7 @@ rules out, as *primary* mechanisms: session-start briefings, sharper wording, lo
 | **Unproven claim** | A gate, probe, or suite reports clean without having run | CI gate with a planted defect (control-first) | The artifact is static and inspectable outside the session |
 
 The fourth shape is already mechanized four times over (`.ci/scripts/quality/check_lint_rule_liveness.py`, `.ci/scripts/quality/check_gate_reachability_coverage.py`, `.ci/scripts/quality/check_dead_case_arms.py` (the retired `check-dead-case-arms.sh`'s Python port), `scripts/gates/check-suppression-liveness.ts`).
-The third shape is entirely unexploited: **no hook in this repository reads `tool_response`** (single repo-wide occurrence is a docstring at `.claude/hooks/stop/wl_wait.py line 141 (blob 20dff1b28045)`). That is the largest unclaimed surface and it maps onto the two most expensive misread-outcome traps.
+The third shape is entirely unexploited: **no hook in this repository reads `tool_response`** (single repo-wide occurrence is a docstring at `.claude/hooks/stop/wl_wait.py line 141 (blob 20dff1b2804531862015c2cd71bfe5cad3be4151)`). That is the largest unclaimed surface and it maps onto the two most expensive misread-outcome traps.
 
 **2.3 Precision, not coverage, is the budget.** An instrument that fires too often trains the reader to skim it, which reproduces the corpus's failure at higher frequency and inside the tool loop, where it is more annoying and therefore learned faster. This is why the misread-outcome tier is keyed on the response rather than the command: firing on "the session ran `gh api
 .../jobs`" would fire on every CI round, while firing on "the response says `cancelled` and the session filtered for `failure`" fires only in the trap's own footprint. Each injecting rule additionally fires at most **once per session per trap**.
@@ -224,7 +224,7 @@ exception is appended to `~/.claude/trapguard/errors.jsonl` and the next rule ru
 5. **Block resolution.** First `tier == "block"` verdict wins: message to stderr,
 `exit 2`. That matches every existing hook's contract (`.claude/oracles/pre-bash/block-worktree-add.sh:36-37`).
 6. **Inject resolution.** All `tier == "inject"` verdicts are concatenated into one
-`hookSpecificOutput.additionalContext` and printed as JSON with `exit 0`. Live precedent for the exact envelope: `.claude/hooks/stop/wl_wait.py line 386-396 (blob 20dff1b28045)`.
+`hookSpecificOutput.additionalContext` and printed as JSON with `exit 0`. Live precedent for the exact envelope: `.claude/hooks/stop/wl_wait.py line 386-396 (blob 20dff1b2804531862015c2cd71bfe5cad3be4151)`.
 7. **One shot per session per trap.** Inject verdicts are suppressed if
 `(session_id, trap_id)` is already recorded in `~/.claude/trapguard/shown-<session>.json`. Per §2.3, repetition is how an instrument teaches skimming.
 
@@ -365,7 +365,7 @@ House style throughout: plant the defect, assert the FIRE, re-run clean, assert 
 
 ### 7.1 The first `tool_response` reader's control (blocking prerequisite for Tier 3)
 
-No hook in this repo has ever read `tool_response`. The only evidence it arrives is a docstring (`.claude/hooks/stop/wl_wait.py line 139-143 (blob 20dff1b28045)`) recording a payload someone captured. That is a ruling from an artifact, which is itself a trap in the corpus, so it gets probed before anything depends on it.
+No hook in this repo has ever read `tool_response`. The only evidence it arrives is a docstring (`.claude/hooks/stop/wl_wait.py line 139-143 (blob 20dff1b2804531862015c2cd71bfe5cad3be4151)`) recording a payload someone captured. That is a ruling from an artifact, which is itself a trap in the corpus, so it gets probed before anything depends on it.
 
 **The probe.** `trapguard/dispatch.py --probe-payload`, registered for one wave as a matcher-less PostToolUse entry. Per invocation it appends one line to `~/.claude/trapguard/probe.jsonl`:
 
@@ -509,7 +509,7 @@ reader is `trap_headings` at `.claude/hooks/stop/wl_store.py:265-284`. Everythin
 `.claude/hooks/pre-bash/` (since relocated to `.claude/rediacc_hooks/guards/`) was a fixture line inside `test-block-git-amend.py` (now `.claude/rediacc_hooks/guards/test-block_git_amend.py:24`), a file that was then referenced by nothing in the repo and is now the live guard's own wired harness.
 `.claude/rediacc_hooks/guards/block_blanket_git_add.py` has since closed the gap this correction names.
 4. **`tool_response` is genuinely unread, confirmed.** One repo-wide occurrence, a
-docstring at `.claude/hooks/stop/wl_wait.py line 141 (blob 20dff1b28045)`. `duration_ms` and `effort` are documented in the same line and are also used by nothing.
+docstring at `.claude/hooks/stop/wl_wait.py line 141 (blob 20dff1b2804531862015c2cd71bfe5cad3be4151)`. `duration_ms` and `effort` are documented in the same line and are also used by nothing.
 5. **New: the corpus parser has no fenced-code-block handling** (`.claude/hooks/stop/wl_store.py:278-283`).
 Latent today (verified: zero fenced `## ` lines in either corpus), activated by the registry. Covered in §3.1. Found by grepping `^## ` over this plan file and getting a hit from inside its own example block.
 6. **New, and relevant to the plan's premise:** three registered hooks

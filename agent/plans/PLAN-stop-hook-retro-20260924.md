@@ -64,7 +64,7 @@ Only the friction that survives the current code is below.
 
 **Root cause.**
 - The bank key is `st_sig` (`.claude/hooks/stop/wl_checks.py:2304-2305`, compared at `:3652-3662`).
-- `st_sig` comes from `wl_store.state_world_sig` (`.claude/hooks/stop/wl_store.py line 2563-2602 (blob 63cdd1d7cd2a)`), which hashes the harness task statuses and `rev-parse HEAD` (`:2595-2600`).
+- `st_sig` comes from `wl_store.state_world_sig` (`.claude/hooks/stop/wl_store.py line 2563-2602 (blob 63cdd1d7cd2a17655a07c02b9797248cc0c2e33b)`), which hashes the harness task statuses and `rev-parse HEAD` (`:2595-2600`).
 - In a session with a babysitter committing and shells flipping, it moves nearly every turn.
 - P1.2 introduced `items_sig` (`wl_store.state_items_sig`, `:2413`; used at `.claude/hooks/stop/wl_checks.py:2275`), but only for STATE.md. The comment at `:2274` keeps `st_sig` for report banking on purpose.
 

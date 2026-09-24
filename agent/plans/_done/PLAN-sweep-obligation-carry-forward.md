@@ -74,7 +74,7 @@ Counted from the judge log against the settled-fix-set timestamps:
 - 2026-09-22: 41 judged stops, 22 settled fix-sets, 20 sweep fires. For 11 of those 20 fires (55 per cent) the NEXT judged stop was a fix stop, so the demand was discarded before any follow-up could be asked.
 - Whole log window (2026-09-15 to 2026-09-22): 297 judged stops, 106 sweep fires, 55 discarded on the next stop by the same test.
 
-Both figures are LOWER bounds, and the reason is structural. A fix stop whose regression gate blocks exits at `.claude/hooks/stop/wl_checks.py line 4621-4630 (blob 5a8904da5ad6)` through `C.emit`, which calls `sys.exit(0)` (`.claude/hooks/stop/wl_core.py:386-388`), and that is BEFORE `log_verdict` at `.claude/hooks/stop/wl_checks.py line 4691 (blob 5a8904da5ad6)`. Blocked fix stops therefore never appear in the log at all, while
+Both figures are LOWER bounds, and the reason is structural. A fix stop whose regression gate blocks exits at `.claude/hooks/stop/wl_checks.py line 4621-4630 (blob 5a8904da5ad64d44df6a7e6095da16a81a681eff)` through `C.emit`, which calls `sys.exit(0)` (`.claude/hooks/stop/wl_core.py:386-388`), and that is BEFORE `log_verdict` at `.claude/hooks/stop/wl_checks.py line 4691 (blob 5a8904da5ad64d44df6a7e6095da16a81a681eff)`. Blocked fix stops therefore never appear in the log at all, while
 `CS.apply_verdict` has already run inside `run_judge` and already banked or wiped the marker.
 
 Proof obligations fire far less often over the same window: 12 fires against 106 sweep fires. The rule is identical, the exposure is not.
