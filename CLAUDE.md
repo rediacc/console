@@ -211,12 +211,11 @@ Bare `./rdc.sh` targets PRODUCTION. Local development is an explicit opt-in, `./
 **This monorepo uses npm, not pnpm.**
 
 `.npmrc` enforces supply-chain hardening: `ignore-scripts=true`, `allow-git=none`, `minimum-release-age=1440`. The `ignore-scripts` flag blocks all dependency lifecycle scripts; after every `npm install` or `npm ci`, run `npm run install:natives` to compile the three packages that genuinely need scripts (ssh2, cpu-features, esbuild). The script passes `--ignore-scripts=false`
-explicitly because `npm rebuild` otherwise silently respects the global flag and does nothing. Source of truth: `.ci/scripts/quality/check-npmrc.sh`.
+explicitly because `npm rebuild` otherwise silently respects the global flag and does nothing. Source of truth: `.ci/scripts/quality/check_npmrc.py`.
 
-### The 27-line `package-lock.json` flip is npm 11 vs npm 10, and it is cosmetic
+### npm 11 is the only npm
 
-A tree can sprout a `package-lock.json` diff of exactly 27 lines, all `"dev": true`, that nobody remembers making. It is npm 10 writing what npm 11 omits, the impact is nil (all 27 sit under `node_modules/tsx/**`, pruned either way), and the fix is `npx -y npm@11 install --package-lock-only --ignore-scripts`. **Do not go hunting for the script that "corrupted" it, and do not commit
-it.** npm 11 is canonical; CI installing under npm 10 is not a contradiction, and `check:ci-lockfile` resolves every lockfile under both. The reasoning, the clean-room recipe and the retired npm@10 pin live in [.ci/scripts/quality/check-lockfile.sh](.ci/scripts/quality/check-lockfile.sh), where the enforcement is.
+npm 11, at the exact `NPM_VERSION` in `.devcontainer/toolchain.env`, is the only supported npm, locally and in CI. `.github/actions/setup-node-npm` installs it in every workflow and is the only permitted `actions/setup-node` site; the devcontainer and every Dockerfile stage that runs `npm ci` install it too. `check:ci-lockfile` resolves each lockfile under that npm and refuses one the pinned npm would rewrite, so after any lockfile change `npx -y npm@<NPM_VERSION> install --package-lock-only --ignore-scripts` in the lockfile's directory writes the form to commit.
 
 ```bash
 # Install dependencies
@@ -289,7 +288,7 @@ Scans: scripts/ci-runner/gates.lock.json, folded to one row per CI lane.
 
 | Where it runs | Registered | `gate: true` | Slow | Is a gate test |
 |---|---|---|---|---|
-| (all lanes) | 348 | 338 | 62 | 5 |
+| (all lanes) | 349 | 339 | 62 | 5 |
 | local-only (CI never runs it) | 12 | 9 | 3 | 0 |
 | step / build-renet | 1 | 1 | 1 | 0 |
 | step / quality-branch | 8 | 8 | 0 | 0 |
@@ -298,7 +297,7 @@ Scans: scripts/ci-runner/gates.lock.json, folded to one row per CI lane.
 | step / quality-go | 16 | 16 | 3 | 0 |
 | step / quality-i18n | 40 | 38 | 3 | 0 |
 | step / quality-packages | 13 | 13 | 6 | 0 |
-| step / quality-security | 23 | 22 | 3 | 5 |
+| step / quality-security | 24 | 23 | 3 | 5 |
 | step / quality-static | 60 | 60 | 4 | 0 |
 | step / quality-wiring | 1 | 1 | 0 | 0 |
 | step / quality-www-build | 16 | 13 | 15 | 0 |

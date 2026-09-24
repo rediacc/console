@@ -1,0 +1,40 @@
+name: Setup Node and npm
+description: >
+  Node at the requested major, then npm replaced by the exact NPM_VERSION pinned in
+  .devcontainer/toolchain.env. Node 22 bundles npm 10, and npm 11 is the only npm
+  this repository supports: it writes every committed lockfile, and check:ci-lockfile
+  refuses a lockfile any other npm would write. This is the ONLY place a workflow may
+  use actions/setup-node; check:ci-lockfile fails on a setup-node step anywhere else,
+  because such a step installs with npm 10.
+
+inputs:
+  node-version:
+    description: Node major to install.
+    required: false
+    default: '22'
+  cache:
+    description: Passed to actions/setup-node's `cache` input ('' or 'npm').
+    required: false
+    default: ''
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: ${{ inputs.cache }}
+
+    # The pin is read through toolchain.sh, the same reader the devbox and the gates
+    # use, and the result is verified: a global install that silently kept npm 10
+    # would otherwise reach every later `npm ci` unnoticed.
+    - name: Install the pinned npm
+      shell: bash
+      run: |
+        . .ci/scripts/lib/toolchain.sh
+        pin="$(toolchain_pin_for npm)"
+        [[ -n "$pin" ]] || { echo "::error::NPM_VERSION is not pinned in .devcontainer/toolchain.env"; exit 1; }
+        npm install -g "npm@${pin}" --no-audit --no-fund
+        actual="$(npm --version)"
+        [[ "$actual" == "$pin" ]] || { echo "::error::npm is ${actual} after installing npm@${pin}"; exit 1; }
+        echo "npm ${actual} (pinned NPM_VERSION)"

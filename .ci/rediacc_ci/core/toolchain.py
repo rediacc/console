@@ -140,6 +140,7 @@ TOOL_KEYS = {
     "actionlint": "ACTIONLINT_VERSION",
     "go": "GO_VERSION",
     "node": "NODE_VERSION",
+    "npm": "NPM_VERSION",
     "uv": "UV_VERSION",
     "pytest": "PYTEST_VERSION",
 }

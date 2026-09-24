@@ -33,6 +33,10 @@
 
 ARG NODE_IMAGE=node:22-alpine
 ARG ACCOUNT_ENTRY=on-premise          # the self-hosted account server entry
+# The one npm (.devcontainer/toolchain.env NPM_VERSION, which this build context
+# cannot reach; check:ci-lockfile asserts the two agree). The image's bundled npm 10
+# cannot resolve the npm-11 lockfiles this repo commits.
+ARG NPM_VERSION=11.20.0
 
 # =============================================================================
 # Stage 1: account-builder
@@ -44,6 +48,8 @@ ARG ACCOUNT_ENTRY=on-premise          # the self-hosted account server entry
 # =============================================================================
 FROM ${NODE_IMAGE} AS account-builder
 ARG ACCOUNT_ENTRY
+ARG NPM_VERSION
+RUN npm install -g "npm@${NPM_VERSION}" --no-audit --no-fund
 WORKDIR /app
 COPY package*.json ./
 # Root tsconfig.json is needed because packages/shared/tsconfig.json extends

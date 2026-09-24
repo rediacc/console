@@ -5,6 +5,8 @@ Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can s
 
 CUT OVER FROM BASH 2026-09-08 (W7 P4 batch 7). See DRIVEN, below.
 
+SINCE 2026-09-24 (issue #587) THE GATE IS npm-11-ONLY: one resolve probe under the `NPM_VERSION` pin, a canonical-form rewrite of a scratch mirror, and a check that CI and every image install that pin. The DRIVEN record below, including both `npm@10 cannot resolve` verdicts, describes the dual-npm gate it replaced and is kept as the cutover's evidence.
+
 WHY AN ENTRY POINT AT ALL: `check_npmrc.py` states both measured reasons. A port cannot be run by path (nothing puts `.ci` on `sys.path`, hence the insert below), and `python3 -m rediacc_ci.quality.lockfile` works but is the wrong registration because `check:ci-parity`'s tokenizer cannot read `-m` and resolves the leaves to `[python3]`.
 
 THE HEADER BELOW IS THE TWIN'S, FIELD FOR FIELD, extracted from `.ci/scripts/quality/check-lockfile.sh` by an awk range over its `---- gate ----` block, de-commented, and diffed as an ordered list of whole lines against the block in this docstring. The twin carried exactly THREE fields in this order: `step`, `needs`, `selftest`. No `lane:`, no `emit:`, no `blocker:`, no `id:`, no

@@ -62,6 +62,7 @@ toolchain_keys() {
 #   - actionlint  1.7.12
 #   - go          go version go1.26.4 linux/arm64
 #   - node        v22.23.2
+#   - npm         11.20.0
 #   - uv          uv 0.12.10
 #   - pytest      pytest 9.1.1
 #
@@ -77,6 +78,7 @@ toolchain_probe_version() {
         actionlint) out="$("$bin" --version 2>/dev/null | head -1)" ;;
         go) out="$("$bin" version 2>/dev/null | awk '{print $3}')" ;;
         node) out="$("$bin" --version 2>/dev/null)" ;;
+        npm) out="$("$bin" --version 2>/dev/null)" ;;
         # The Python pair. Same "name version" shape as ruff, and probed the
         # same way -- $bin unquoted so a resolver may hand back a multi-word
         # runner (`uv tool run pytest`) rather than a single path, which is how
@@ -111,6 +113,7 @@ toolchain_pin_for() {
         actionlint) key=ACTIONLINT_VERSION ;;
         go) key=GO_VERSION ;;
         node) key=NODE_VERSION ;;
+        npm) key=NPM_VERSION ;;
         uv) key=UV_VERSION ;;
         pytest) key=PYTEST_VERSION ;;
         *) return 2 ;;

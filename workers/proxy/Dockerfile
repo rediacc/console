@@ -9,7 +9,14 @@
 # workspace:
 #   docker build -f workers/proxy/Dockerfile .
 
+# The one npm (.devcontainer/toolchain.env NPM_VERSION, outside this build context;
+# check:ci-lockfile asserts the two agree). node:22-slim bundles npm 10, which cannot
+# resolve the npm-11 lockfile `npm ci` installs below.
+ARG NPM_VERSION=11.20.0
+
 FROM node:22-slim AS build
+ARG NPM_VERSION
+RUN npm install -g "npm@${NPM_VERSION}" --no-audit --no-fund
 
 WORKDIR /build
 

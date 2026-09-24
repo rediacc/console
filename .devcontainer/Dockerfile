@@ -207,17 +207,9 @@ RUN install -m 0755 -d /etc/apt/keyrings \
 ENV NVM_DIR=/usr/local/share/nvm
 ENV NVM_SYMLINK_CURRENT=true
 
-# npm is pinned one major AHEAD of what Node 22 bundles, deliberately. This image
-# is where lockfiles get WRITTEN, and since issue #587 (operator ruling 2026-09-06,
-# migrate rather than revert) npm 11's output form is the canonical one: see
-# CANONICAL_NPM in .ci/scripts/quality/check-lockfile.sh and CLAUDE.md's "27-line
-# package-lock.json flip" section. Leaving this at npm@10 is what kept the flip
-# oscillating -- the devcontainer rewrote every lockfile back into the npm 10 form
-# that the repo had already stopped treating as canonical.
-#
-# CI still INSTALLS with npm 10 (setup-node/Node 22 bundles it, and no workflow
-# overrides it), which is why check-lockfile.sh checks BOTH majors rather than
-# following this pin blindly.
+# npm is replaced further down, after `COPY toolchain.env`, with the exact
+# NPM_VERSION pin: this image is where lockfiles get written, and npm 11 at that pin
+# is the only npm the repo supports (check:ci-lockfile refuses any other writer's form).
 RUN mkdir -p "$NVM_DIR" \
     && curl -fsSL $CURL_RETRY https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash \
     && . "$NVM_DIR/nvm.sh" \
@@ -225,7 +217,6 @@ RUN mkdir -p "$NVM_DIR" \
     && nvm alias default ${NODE_VERSION} \
     && nvm use default \
     && ln -sf "$(nvm which default | xargs dirname | xargs dirname)" "$NVM_DIR/current" \
-    && npm install -g npm@11 \
     && npm cache clean --force
 
 # Make node/npm available for subsequent RUN commands
@@ -305,6 +296,16 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 COPY toolchain.env /etc/rediacc/toolchain.env
+
+# THE ONE npm, at the exact pin. Node 22 bundles npm 10, whose lockfile form
+# check:ci-lockfile refuses; installing the pin here keeps every lockfile written in
+# the devbox byte-identical to what CI's npm would write. Still root, so the nvm
+# prefix is writable.
+RUN . /etc/rediacc/toolchain.env \
+    && : "${NPM_VERSION:?toolchain.env did not define NPM_VERSION}" \
+    && npm install -g "npm@${NPM_VERSION}" --no-audit --no-fund \
+    && [ "$(npm --version)" = "${NPM_VERSION}" ] \
+    && npm cache clean --force
 
 USER vscode
 # EVERY Go tool in this image is PINNED. That is a change of position, and the
@@ -530,9 +531,9 @@ RUN ARCH=$(dpkg --print-architecture) \
 # scripts/gates/check-devcontainer-pin-freshness.ts watches this pin and rewrites all
 # three ARGs together; the CLI lives in a MONOREPO, so that gate filters tags by
 # the `cli-v` prefix rather than trusting /releases/latest.
-ARG BW_VERSION=2026.8.0
-ARG BW_SHA256_AMD64=367f618e9fcccaac4980ec12c7bafd01df739b5f3cb1af31bc9045cf75eea1d6
-ARG BW_SHA256_ARM64=74d822a5dceda5896ed8fc07bc61925b29afd98d96a6a3e9e525ae556c3083a8
+ARG BW_VERSION=2026.9.0
+ARG BW_SHA256_AMD64=580c1deec8345b19dbac7f8b02babb6cc4fe250c69c567e29061f727f1e40768
+ARG BW_SHA256_ARM64=3f474cc34b701a1cebdd486009870038b034343afb83095607422cdad4c3653a
 RUN ARCH=$(dpkg --print-architecture) \
     && case "$ARCH" in \
     amd64) BW_ASSET="bw-linux-${BW_VERSION}.zip";       BW_SHA="${BW_SHA256_AMD64}" ;; \

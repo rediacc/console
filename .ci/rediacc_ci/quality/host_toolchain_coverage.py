@@ -4,7 +4,8 @@ Ported from `.ci/scripts/quality/check-host-toolchain-coverage.sh`, retired in W
 
 WHY THE TWIN EXISTS, carried over from its header because the archaeology is the half of a gate that cannot be recovered from the code:
 
-  check-toolchain-pins.sh's A6 rule guarantees a GATE that invokes a pinned tool
+  toolchain_pins.py's A6 rule (check-toolchain-pins.sh's, before the port)
+  guarantees a GATE that invokes a pinned tool
   acquires it at the pin rather than trusting PATH -- but that is definition-time
   coverage of the tools GATED_TOOLS already names. It says nothing about whether
   the SEPARATE runtime guard that routes a session away from a host lacking one
@@ -65,7 +66,7 @@ TWO STREAM DIVERGENCES, both deliberate, neither changing a verdict:
 THE INDENTED ADVICE LINES ARE PRINTED RAW, not through the logger, because they are the twin's continuation lines under a finding header and `scripts/lib/shadow-gate.ts` folds an indented unmarked line into the finding above it. Sending them through `log.error` would give each its own `✗`, which is the same finding text after normalization but a noisier thing for a human to read
 next to the twin's output.
 
-WHAT THIS GATE STILL CANNOT SEE, unchanged by the port: it compares two literal lists. A guard that names a tool in its arrays but never reaches the branch that uses them still passes, because presence in an array is all that is checked. That is the same class of blindness `check-toolchain-pins.sh` has at definition time, one layer further out.
+WHAT THIS GATE STILL CANNOT SEE, unchanged by the port: it compares two literal lists. A guard that names a tool in its arrays but never reaches the branch that uses them still passes, because presence in an array is all that is checked. That is the same class of blindness `rediacc_ci.quality.toolchain_pins` has at definition time, one layer further out.
 """
 
 import os
@@ -78,18 +79,33 @@ from rediacc_ci import log, paths
 from rediacc_ci.controls import Controls
 
 # The two files whose literal lists must agree. Absolute paths in the twin's messages, so they are joined to the root rather than kept relative.
-PINS_REL = ".ci/scripts/quality/check-toolchain-pins.sh"
+#
+# THE PINS SIDE IS THE MODULE, NOT THE ENTRY POINT. `check-toolchain-pins.sh` was
+# retired in 4ee160b3b and the `GATED_TOOLS` literal moved into the Python module;
+# `.ci/scripts/quality/check_toolchain_pins.py` is only a thin entry point and does
+# NOT carry the literal, so pointing at it would read an empty list and fail.
+PINS_REL = ".ci/rediacc_ci/quality/toolchain_pins.py"
 GUARD_REL = ".claude/rediacc_hooks/guards/block_host_toolchain_run.py"
 
-# `grep -oE "^GATED_TOOLS='[^']*'"`. Anchored, single-line; see the port notes.
-_GATED_RE = re.compile(r"^GATED_TOOLS='([^']*)'")
+# `grep -oE "^GATED_TOOLS='[^']*'"`, widened to the Python spelling for the same
+# reason `extract_array` carries both: the pins source is a Python module now, and
+# a path constant updated without its READER is precisely the drift documented one
+# function below. The quote is captured and back-referenced so the closing quote
+# must match the opening one. Anchored, single-line; see the port notes.
+_GATED_RE = re.compile(r"^GATED_TOOLS ?= ?(['\"])([^'\"]*)\1")
 
 # The two arrays inside the runtime guard, in the order the twin reads them.
 ARRAYS = ("NPX_TOOLS", "BARE_TOOLS")
 
 
 def extract_gated_tools(text: str) -> list[str]:
-    """`GATED_TOOLS='a|b|c'` -> ["a", "b", "c"], sorted and de-duplicated.
+    """`GATED_TOOLS='a|b|c'` or `GATED_TOOLS = "a|b|c"` -> ["a", "b", "c"], sorted and de-duplicated.
+
+    BOTH SPELLINGS, for the same reason `extract_array` reads both: the pins source
+    is `.ci/rediacc_ci/quality/toolchain_pins.py` now, which declares the literal as
+    `GATED_TOOLS = "shfmt|shellcheck|ruff|actionlint"`. The bash form stays because
+    this gate's own control fixtures write it, and because it is the form the twin's
+    pipeline below describes.
 
     THE TWIN'S PIPELINE, STAGE BY STAGE, because each stage has an edge a "sensible" rewrite loses:
 
@@ -109,7 +125,8 @@ def extract_gated_tools(text: str) -> list[str]:
         # `grep -o` PRINTS THE MATCH, NOT THE LINE, and that is why the `$`
         # anchor in the twin's sed always fires: sed is fed `GATED_TOOLS='a|b'`
         # and nothing else, so trailing text on the source line (` # note`) has already been discarded upstream. A port that ran the sed against the whole line would find the anchor failing and would split the comment too. Verified against the real pipeline in the pytest twin.
-        tools.update(part for part in match.group(1).split("|") if part)
+        # group(2), not group(1): group(1) is the captured quote character.
+        tools.update(part for part in match.group(2).split("|") if part)
     return sorted(tools)
 
 
@@ -278,7 +295,7 @@ def selftest() -> int:
 
     BOTH DIRECTIONS FOR EVERY CONTROL. A gate with only positive plants will happily flag a correct pair of files, and the mirrors below are the half that proves it does not.
     """
-    ctl = Controls("host-toolchain-coverage", floor=26, verbose=True)
+    ctl = Controls("host-toolchain-coverage", floor=29, verbose=True)
 
     pins_ok = "GATED_TOOLS='shfmt|shellcheck|ruff|actionlint'\n"
     guard_ok = "NPX_TOOLS=(ruff go shfmt shellcheck actionlint)\nBARE_TOOLS=(ruff go shfmt shellcheck actionlint)\n"
@@ -296,6 +313,23 @@ def selftest() -> int:
     )
     ctl.check(
         "gated: duplicates collapse", extract_gated_tools("GATED_TOOLS='a|a|b'\n"), ["a", "b"]
+    )
+    # THE PYTHON SPELLING, which is what the real pins source declares since the port.
+    # Without these the reader can go bash-only again while the path constant still resolves, and the gate then fails with "could not be read" rather than reporting coverage. The middle one reads the REAL file, so a rename or a re-spelling of the literal upstream reds here with a diff instead of an empty list.
+    ctl.check(
+        "gated: the PYTHON spelling is read (double quotes, spaces around =)",
+        extract_gated_tools('GATED_TOOLS = "shfmt|shellcheck|ruff|actionlint"\n'),
+        ["actionlint", "ruff", "shellcheck", "shfmt"],
+    )
+    ctl.check(
+        "gated: the REAL pins source parses to a non-empty list",
+        extract_gated_tools(_read(paths.repo_root() / PINS_REL)),
+        ["actionlint", "ruff", "shellcheck", "shfmt"],
+    )
+    ctl.check(
+        "gated: MIRROR mismatched quotes are not a declaration",
+        extract_gated_tools("GATED_TOOLS = \"a|b'\n"),
+        [],
     )
     # MIRRORS: the anchor and the single-line confinement, both blind spots the port notes name. Pinned so a later reader sees they are DECISIONS.
     ctl.check(

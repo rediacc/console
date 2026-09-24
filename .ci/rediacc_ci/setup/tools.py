@@ -329,6 +329,26 @@ TOOLS: tuple[Tool, ...] = (
         ),
     ),
     Tool(
+        name="npm",
+        purpose="the one npm every lockfile is written and installed with (Node 22 bundles npm 10)",
+        pin_key="NPM_VERSION",
+        install={
+            "apt": '. .devcontainer/toolchain.env && npm install -g "npm@$NPM_VERSION"',
+            "dnf": '. .devcontainer/toolchain.env && npm install -g "npm@$NPM_VERSION"',
+            "pacman": '. .devcontainer/toolchain.env && npm install -g "npm@$NPM_VERSION"',
+            "apk": '. .devcontainer/toolchain.env && npm install -g "npm@$NPM_VERSION"',
+            "brew": '. .devcontainer/toolchain.env && npm install -g "npm@$NPM_VERSION"',
+            "repo": '. .devcontainer/toolchain.env && npm install -g "npm@$NPM_VERSION"',
+        },
+        provenance=".github/actions/setup-node-npm/action.yml",
+        probe=("npm", "--version"),
+        note=(
+            "Installed THROUGH node, so it follows the node row. check:ci-lockfile "
+            "refuses a lockfile this exact version would rewrite, so a host on any "
+            "other npm writes lockfiles the gate sends back."
+        ),
+    ),
+    Tool(
         name="go",
         purpose="renet is Go, and shfmt is acquired through `go install` when Go is present",
         pin_key="GO_VERSION",

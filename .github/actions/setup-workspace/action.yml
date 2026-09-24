@@ -1,6 +1,6 @@
 name: Setup Workspace
 description: >
-  Node 22 plus a restored node_modules tree, replacing the
+  Node 22 with the pinned npm 11, plus a restored node_modules tree, replacing the
   setup-node(cache:npm) + `npm ci` pair that every CI job used to repeat.
 
   WHY. On run 30064285223 the 33 quality jobs burned 4307s of runner time, 73%
@@ -71,7 +71,8 @@ runs:
     # enforced quota already substitutes for the label.
     - uses: ./.github/actions/profiler
 
-    - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+    # Node plus the pinned npm 11. Node 22 alone would install with its bundled npm 10.
+    - uses: ./.github/actions/setup-node-npm
       with:
         node-version: ${{ inputs.node-version }}
 

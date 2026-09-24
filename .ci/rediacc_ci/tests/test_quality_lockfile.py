@@ -1,7 +1,7 @@
 """`rediacc_ci.quality.lockfile` against the shell it replaces.
 
-NOTHING IN THIS FILE RUNS npm, AND THAT IS A RULE RATHER THAN A CONVENIENCE. `npx -y npm@11 ci --dry-run` needs the network, downloads a whole npm major, and sits next to eleven committed lockfiles whose byte form this repository has an entire CLAUDE.md section about (the 27-line `"dev": true` flip, issue #587). The gate's own logic is "which lockfiles did I find, which commands
-did I build, and what did their exit codes say" -- so `npx` is stubbed by a two-line script and the exit code is the only thing npm contributes. Every probe in this file runs
+NOTHING IN THIS FILE RUNS npm, AND THAT IS A RULE RATHER THAN A CONVENIENCE. `npx -y npm@<pin> ci --dry-run` needs the network, downloads a whole npm, and sits next to eleven committed lockfiles whose byte form this repository has an entire CLAUDE.md section about (the 27-line `"dev": true` flip, issue #587). The gate's own logic is which lockfiles were found, which commands
+were built, and what their exit codes said -- so `npx` is stubbed by a short script, and its exit code (plus, for the rewrite probe, whether it changes the mirrored lockfile) is the only thing npm contributes. Every probe in this file runs
 with that stub first on PATH.
 
 WHY A DIFFERENTIAL FOR THE DISCOVERY. `find . -name package-lock.json -not -path '*/node_modules/*' | sed 's|^\\./||' | sort` has three edges a rewrite loses: the exclusion is a PATH glob rather than a directory name, the `sed` strips a prefix that only the root-level entry has, and the sort is byte order. Running the real pipeline and comparing is the only form of this test that
@@ -68,23 +68,44 @@ def test_discovery_finds_a_lockfile_beside_a_pruned_node_modules(tmp_path: pathl
     assert lf.discover(tmp_path) == _bash_discover(tmp_path)
 
 
-def test_the_two_pins_are_different_majors_and_named_in_the_message() -> None:
-    """A GATE THAT SILENTLY DROPPED ONE PIN WOULD STILL PRINT A TICK.
+def test_the_pin_is_the_toolchain_pin_and_is_npm_11() -> None:
+    """ONE npm, read from `.devcontainer/toolchain.env` rather than written into the gate, and it is an exact 11.x."""
+    pin = lf.npm_pin(paths.repo_root())
+    assert lf.EXACT_VERSION_RE.match(pin), pin
+    assert pin.split(".")[0] == lf.NPM_MAJOR == "11"
 
-    The twin's header spends a paragraph on why both exist: the canonical WRITER and CI's INSTALLER answer different questions. Collapsing them to one is the change this asserts against.
-    """
-    assert lf.CANONICAL_NPM != lf.CI_NPM
-    assert lf.CANONICAL_NPM.startswith("npm@")
-    assert lf.CI_NPM.startswith("npm@")
-    assert lf.resolve_argv(lf.CANONICAL_NPM) != lf.resolve_argv(lf.CI_NPM)
+
+def test_the_real_tree_installs_the_pin_everywhere() -> None:
+    """PROPERTY D ON THE REAL TREE, with no npm run: every setup-node site is the composite, and every Dockerfile that installs a project tree installs the pin first."""
+    root = paths.repo_root()
+    assert lf.ci_npm_findings(root, lf.npm_pin(root)) == []
+
+
+def test_a_bare_setup_node_step_is_a_finding(tmp_path: pathlib.Path) -> None:
+    """The planted defect property D exists for: a workflow step that would install with Node's bundled npm 10."""
+    lf.scaffold(tmp_path)
+    assert lf.ci_npm_findings(tmp_path, lf.FIXTURE_PIN) == []
+    wf = tmp_path / ".github" / "workflows" / "ci.yml"
+    wf.write_text(
+        wf.read_text(encoding="utf-8") + "      - uses: actions/setup-node@abc\n", encoding="utf-8"
+    )
+    findings = lf.ci_npm_findings(tmp_path, lf.FIXTURE_PIN)
+    assert len(findings) == 1, findings
+    assert "ci.yml:5" in findings[0], findings
+
+
+def test_a_venv_lockfile_is_not_discovered(tmp_path: pathlib.Path) -> None:
+    """A virtualenv vendors other projects' JavaScript; `private/generative/.venv` carries gradio's lockfile beside a package.json."""
+    _make(tmp_path, ["package-lock.json", "tool/.venv/lib/gradio/package-lock.json"])
+    assert lf.discover(tmp_path) == ["package-lock.json"]
 
 
 def test_the_probe_argv_is_the_twins_argv() -> None:
     """The check IS the command, so the command is the thing to pin."""
-    assert lf.resolve_argv("npm@11") == [
+    assert lf.resolve_argv("npm@11.20.0") == [
         "npx",
         "-y",
-        "npm@11",
+        "npm@11.20.0",
         "ci",
         "--dry-run",
         "--ignore-scripts",
@@ -115,14 +136,15 @@ def stub_npx(tmp_path: pathlib.Path):
     binpath.mkdir()
     stub = binpath / "npx"
 
-    def setter(lint: int = 0, npm11: int = 0, npm10: int = 0) -> None:
+    def setter(lint: int = 0, resolve: int = 0, rewrite: int = 0, rewrites: bool = False) -> None:
         stub.write_text(
             "#!/bin/bash\n"
             'case "$*" in\n'
             "  *lockfile-lint*) echo lint-transcript; exit %d ;;\n"
-            "  *npm@11*) echo npm11-transcript; exit %d ;;\n"
-            "  *npm@10*) echo npm10-transcript; exit %d ;;\n"
-            "esac\nexit 0\n" % (lint, npm11, npm10),
+            "  *' ci '*) echo resolve-transcript; exit %d ;;\n"
+            "  *--package-lock-only*) %s echo rewrite-transcript; exit %d ;;\n"
+            "esac\nexit 0\n"
+            % (lint, resolve, "echo drift >> package-lock.json;" if rewrites else "", rewrite),
             encoding="utf-8",
         )
         stub.chmod(0o755)
@@ -138,9 +160,10 @@ def stub_npx(tmp_path: pathlib.Path):
 
 def test_the_stub_is_really_what_runs(tmp_path: pathlib.Path, stub_npx) -> None:
     """A CONTROL ON THE CONTROL. Without it every case below could be green because `npx` was never invoked at all, which is the vacuity this whole exercise refuses."""
-    stub_npx(lint=0, npm11=0, npm10=3)
-    assert lf.run_resolve(tmp_path, lf.CANONICAL_NPM) == 0
-    assert lf.run_resolve(tmp_path, lf.CI_NPM) == 3
+    stub_npx(resolve=3)
+    assert lf.run_resolve(tmp_path, "npm@%s" % lf.FIXTURE_PIN) == 3
+    stub_npx(resolve=0)
+    assert lf.run_resolve(tmp_path, "npm@%s" % lf.FIXTURE_PIN) == 0
 
 
 def test_the_failure_transcript_is_indented_and_truncated(tmp_path: pathlib.Path, stub_npx) -> None:
@@ -148,9 +171,10 @@ def test_the_failure_transcript_is_indented_and_truncated(tmp_path: pathlib.Path
 
     Merging is correct HERE and only here: this is a transcript shown to a human, not a comparison, and the twin's `|| true` says its exit code is not part of the verdict.
     """
-    stub_npx(npm10=1)
-    assert lf.resolve_failure_detail(tmp_path, lf.CI_NPM) == ["    npm10-transcript"]
-    assert lf.resolve_failure_detail(tmp_path, lf.CI_NPM, limit=0) == []
+    stub_npx(resolve=1)
+    spec = "npm@%s" % lf.FIXTURE_PIN
+    assert lf.resolve_failure_detail(tmp_path, spec) == ["    resolve-transcript"]
+    assert lf.resolve_failure_detail(tmp_path, spec, limit=0) == []
 
 
 def _run_gate(root: pathlib.Path) -> int:
@@ -190,6 +214,7 @@ def test_a_lockfile_with_no_sibling_manifest_is_skipped_loudly(
     """
     root = tmp_path / "tree"
     _make(root, ["package-lock.json"])
+    lf.scaffold(root)
     assert _run_gate(root) == 0
     err = capsys.readouterr().err
     assert "SKIP package-lock.json" in err
@@ -197,42 +222,62 @@ def test_a_lockfile_with_no_sibling_manifest_is_skipped_loudly(
 
 
 @pytest.mark.parametrize(
-    ("lint", "npm11", "npm10", "want"),
+    ("lint", "resolve", "rewrite", "rewrites", "want"),
     [
-        (0, 0, 0, 0),  # everything resolves
-        (1, 0, 0, 1),  # property A fails
-        (0, 1, 0, 1),  # the canonical writer cannot resolve
-        (0, 0, 1, 1),  # CI's installer cannot resolve
-        (1, 1, 1, 1),  # all three
+        (0, 0, 0, False, 0),  # everything holds
+        (1, 0, 0, False, 1),  # property A fails
+        (0, 1, 0, False, 1),  # the pinned npm cannot resolve
+        (0, 0, 0, True, 1),  # the pinned npm would rewrite it
+        (0, 0, 2, False, 1),  # the rewrite itself fails
+        (1, 1, 1, True, 1),  # all of them
     ],
 )
-def test_each_probes_exit_code_decides_the_verdict(
-    tmp_path: pathlib.Path, stub_npx, lint: int, npm11: int, npm10: int, want: int
+def test_each_probes_outcome_decides_the_verdict(
+    tmp_path: pathlib.Path,
+    stub_npx,
+    lint: int,
+    resolve: int,
+    rewrite: int,
+    rewrites: bool,
+    want: int,
 ) -> None:
     """BOTH DIRECTIONS. The first row is the mirror that stops a port which simply reds on everything from passing this table."""
     root = tmp_path / "tree"
     _make(root, ["package-lock.json", "package.json"])
-    stub_npx(lint=lint, npm11=npm11, npm10=npm10)
+    lf.scaffold(root)
+    stub_npx(lint=lint, resolve=resolve, rewrite=rewrite, rewrites=rewrites)
     assert _run_gate(root) == want
 
 
-def test_the_break_means_only_the_first_resolve_failure_is_reported(
-    tmp_path: pathlib.Path, stub_npx, capsys
-) -> None:
-    """THE `break` IS LOAD-BEARING: the two failures have DIFFERENT fixes, and telling someone to reconcile with the wrong npm is how the 27-line flip oscillated in the first place."""
+def test_the_rewrite_never_touches_the_committed_lockfile(tmp_path: pathlib.Path, stub_npx) -> None:
+    """The rewrite runs on a scratch mirror; the committed bytes are what the verdict is about, not something the gate may change."""
     root = tmp_path / "tree"
     _make(root, ["package-lock.json", "package.json"])
-    stub_npx(npm11=1, npm10=1)
+    lf.scaffold(root)
+    stub_npx(rewrites=True)
+    assert _run_gate(root) == 1
+    assert (root / "package-lock.json").read_text(encoding="utf-8") == "{}\n"
+
+
+def test_a_resolve_failure_ends_that_lockfiles_checks(
+    tmp_path: pathlib.Path, stub_npx, capsys
+) -> None:
+    """ONE LOCKFILE, ONE FIRST FAILURE: a lockfile npm cannot resolve has no meaningful rewrite, so the rewrite is not reported under it."""
+    root = tmp_path / "tree"
+    _make(root, ["package-lock.json", "package.json"])
+    lf.scaffold(root)
+    stub_npx(resolve=1, rewrites=True)
     assert _run_gate(root) == 1
     captured = capsys.readouterr()
-    assert "npm@11 CANNOT RESOLVE" in captured.err
-    assert "npm@10 CANNOT RESOLVE" not in captured.err
+    assert "CANNOT RESOLVE" in captured.err
+    assert "would rewrite" not in captured.err
 
 
 def test_a_skipped_lockfile_does_not_stop_the_others(tmp_path: pathlib.Path, stub_npx) -> None:
     """A skip that suppressed the rest of the run would look identical to a clean tree, which is how a gate goes green while checking nothing."""
     root = tmp_path / "tree"
     _make(root, ["package-lock.json", "package.json", "sub/package-lock.json"])
+    lf.scaffold(root)
     stub_npx()
     assert _run_gate(root) == 0
     stub_npx(lint=1)
@@ -259,13 +304,13 @@ def test_selftest_is_green() -> None:
 def test_no_test_in_this_file_can_reach_the_real_npx() -> None:
     """THE PROHIBITION, ASSERTED RATHER THAN REMEMBERED.
 
-    Outside the `stub_npx` fixture this module must never invoke `npx`. If a future edit adds a probe without the fixture it would silently start downloading npm majors beside this repository's committed lockfiles. There is no way to assert "was not called", so the next best thing is asserted: the module never spawns anything except through the three helpers named here, and all
-    three take an explicit argv built by `lint_argv` / `resolve_argv`.
+    Outside the `stub_npx` fixture this module must never invoke `npx`. If a future edit adds a probe without the fixture it would silently start downloading npm beside this repository's committed lockfiles. There is no way to assert "was not called", so the next best thing is asserted: the module never spawns anything except through the four helpers named here, and all
+    four take an explicit argv built by `lint_argv` / `resolve_argv` / `rewrite_argv`.
     """
     source = pathlib.Path(lf.__file__).read_text(encoding="utf-8")
     spawn_sites = [line for line in source.split("\n") if "subprocess.run(" in line]
-    # Three, and only three: run_lint, run_resolve, resolve_failure_detail. A fourth would be a spawn nobody reviewed.
-    assert len(spawn_sites) == 3, spawn_sites
-    # And the literal `npx` is built in exactly two places, both of them argv helpers this file pins byte for byte above. A third would be an argv the differential never compared.
+    # Four, and only four: run_lint, run_resolve, resolve_failure_detail, run_rewrite. A fifth would be a spawn nobody reviewed.
+    assert len(spawn_sites) == 4, spawn_sites
+    # And the literal `npx` is built in exactly three places, all of them argv helpers this file pins. A fourth would be an argv nobody compared.
     builders = [line for line in source.split("\n") if line.strip().startswith('return ["npx"')]
-    assert len(builders) == 2, builders
+    assert len(builders) == 3, builders

@@ -35,9 +35,9 @@ from rediacc_ci.tests.gates import harness
 VALIDATOR = paths.from_root("scripts", "gates", "check-devcontainer-pin-freshness.ts")
 REAL_DOCKERFILE = paths.from_root(".devcontainer", "Dockerfile")
 
-# The real digests of bw-linux-2026.8.0.zip / bw-linux-arm64-2026.8.0.zip, so a passing `--upgrade` case also re-proves the pins in the tree.
-BW_SHA_AMD64 = "367f618e9fcccaac4980ec12c7bafd01df739b5f3cb1af31bc9045cf75eea1d6"
-BW_SHA_ARM64 = "74d822a5dceda5896ed8fc07bc61925b29afd98d96a6a3e9e525ae556c3083a8"
+# The real digests of bw-linux-2026.9.0.zip / bw-linux-arm64-2026.9.0.zip, so a passing `--upgrade` case also re-proves the pins in the tree.
+BW_SHA_AMD64 = "580c1deec8345b19dbac7f8b02babb6cc4fe250c69c567e29061f727f1e40768"
+BW_SHA_ARM64 = "3f474cc34b701a1cebdd486009870038b034343afb83095607422cdad4c3653a"
 
 
 def build_fixtures(gate, directory):
