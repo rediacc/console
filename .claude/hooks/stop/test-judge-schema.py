@@ -1855,7 +1855,9 @@ try:
     )
 
     def _wide_counter_ok(_root, profile=None):
-        del profile  # the wide tier passes profile= by keyword; this stub answers the same either way
+        del (
+            profile
+        )  # the wide tier passes profile= by keyword; this stub answers the same either way
         return [_wide_f("okay6k", 3)], ""
 
     wl_shapedup.counter_findings = _wide_counter_ok

@@ -1579,7 +1579,8 @@
     "gate": true,
     "paths": [
       "**/*.sh",
-      ".devcontainer/toolchain.env"
+      ".devcontainer/toolchain.env",
+      ".ci/rediacc_ci/security/shellcheck.py"
     ],
     "pathsOrigin": "declared",
     "leaves": [
