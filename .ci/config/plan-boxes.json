@@ -6,9 +6,12 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 20,
-      "done": 0,
+      "open": 1,
+      "done": 19,
       "open_sigs": [
+        "9f0d6fbd"
+      ],
+      "done_sigs": [
         "078f11bf",
         "5c2210f0",
         "5f73eba3",
@@ -19,7 +22,6 @@
         "890aa2a1",
         "9a4ac9a0",
         "9dc484d4",
-        "9f0d6fbd",
         "b397a979",
         "b3b9ef75",
         "b6efac36",
@@ -29,8 +31,7 @@
         "e69bf057",
         "ea043761",
         "fbda21cd"
-      ],
-      "done_sigs": []
+      ]
     },
     "agent/plans/PLAN-add-chunkstore-backup-verb.md": {
       "status": "compacted",
@@ -377,15 +378,16 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "2026-09-21",
-      "open": 2,
-      "done": 7,
+      "open": 1,
+      "done": 9,
       "open_sigs": [
-        "40c785a1",
-        "7f9b838f"
+        "a52f6647"
       ],
       "done_sigs": [
         "0f9caa1d",
         "325f06ee",
+        "40c785a1",
+        "7f9b838f",
         "81feaa21",
         "a1196500",
         "c464bc97",
@@ -631,6 +633,45 @@
       "done": 0,
       "open_sigs": [],
       "done_sigs": []
+    },
+    "agent/plans/PLAN-parallel-writer-roster.md": {
+      "status": "ready",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 0,
+      "done": 28,
+      "open_sigs": [],
+      "done_sigs": [
+        "098e1f06",
+        "0f563652",
+        "1abdbc1e",
+        "1eba97fd",
+        "2d0a5faf",
+        "2dba3d29",
+        "36042f18",
+        "37c3a51d",
+        "57436fda",
+        "6594b374",
+        "68be51db",
+        "69fbc830",
+        "6a5511bb",
+        "71fb7723",
+        "85489441",
+        "86ed52a8",
+        "893aaa35",
+        "96204989",
+        "9d4a6a18",
+        "9da6913e",
+        "a17a8400",
+        "d0c74ee1",
+        "d7e248eb",
+        "df1a5955",
+        "eea83d0e",
+        "f818ed1e",
+        "fe1334a2",
+        "fe9599e6"
+      ]
     },
     "agent/plans/PLAN-printf-echo-pipefail-sweep.md": {
       "status": "compacted",
