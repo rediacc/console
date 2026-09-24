@@ -95,6 +95,7 @@ import sys
 import tempfile
 import time
 import urllib.request
+from collections.abc import Callable
 
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Controls
@@ -146,7 +147,7 @@ def osv_affected(path: str, version: str) -> list[str] | None:
 
 
 # The seam the selftest swaps for a table, so its controls never touch the network.
-VULN_SEAM = {"lookup": osv_affected}
+VULN_SEAM: dict[str, Callable[[str, str], list[str] | None]] = {"lookup": osv_affected}
 
 # U+2014 appears in three of the twin's messages. Written as an escape rather than as the character so this file stays ASCII: the repo's prose rules forbid the literal, and the byte still has to reach the output because the message text is what the differential compares.
 _EM_DASH = "\u2014"

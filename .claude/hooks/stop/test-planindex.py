@@ -410,7 +410,9 @@ ck(
     bl,
 )
 plan_lines = [ln for ln in bl.splitlines() if "PLAN-" in ln]
-first_five_rels = [re.search(r"agent/PLAN-\S+\.md", ln).group(0) for ln in plan_lines[:5]]
+first_five_rels = [
+    m.group(0) for ln in plan_lines[:5] if (m := re.search(r"agent/PLAN-\S+\.md", ln))
+]
 ck(
     "big pieces sort AHEAD of the mtime order in the printed listing",
     all(rel in pieces for rel in first_five_rels),

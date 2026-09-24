@@ -25,6 +25,8 @@ import tempfile
 import types
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+from typing import Any
+
 import wl_bravedefault
 import wl_classsweep
 import wl_core
@@ -1551,20 +1553,20 @@ wl_shapedup.demand_for("sh2").clear(SMARK2)
 # 6f. The driver never fails closed. A counter that cannot answer loses a demand; it can never grant an exit that was otherwise refused, and it can never wedge a stop.
 _orig_counter = wl_shapedup.counter_findings
 try:
-    wl_shapedup.counter_findings = lambda _root: ([], "counter exploded")
+    wl_shapedup.counter_findings = lambda _root, _profile=None: ([], "counter exploded")
     _st = {}
     _fired, _r, _a, _n = wl_shapedup.run(REPO, _st)
     control("a broken counter does not fire", _fired, False)
     control("...but it is not silent about it", "counter exploded" in _n, True)
 
-    wl_shapedup.counter_findings = lambda _root: ([], "")
+    wl_shapedup.counter_findings = lambda _root, _profile=None: ([], "")
     _st2 = {}
     control("CONTROL: no findings, no model call, no fire", wl_shapedup.run(REPO, _st2)[0], False)
 
     # THE SKIP IS A CACHE, NOT A SWITCH: an unchanged corpus costs a stat sweep, and any edit moves an mtime. Proven by running twice against a counter that would fire.
     _calls = []
 
-    def _boom(_root):
+    def _boom(_root, _profile=None):
         _calls.append(1)
         return [{"shape": "h", "files": ["a.ts:1", "b.ts:1", "c.ts:1"], "span": 5}], ""
 
@@ -1590,9 +1592,9 @@ finally:
 # 6g. THE REFRESH/JUDGE SPLIT (agent/plans/PLAN-stop-hook-refactor-enforcement.md, Commit 1): refresh_index runs the counter and rearms the commit-path index on its own, with NO model call and independent of whatever a judge later decides -- the fix for the live incident where a session the judge kept telling to `continue` never rearmed the disarmed commit-path guard.
 _orig_counter2 = wl_shapedup.counter_findings
 try:
-    _refresh_calls = []
+    _refresh_calls: list[Any] = []
 
-    def _boom2(_root):
+    def _boom2(_root, _profile=None):
         _refresh_calls.append(1)
         return [{"shape": "hh", "files": ["p.ts:1", "q.ts:1", "r.ts:1"], "span": 5}], ""
 
@@ -1601,7 +1603,7 @@ try:
     _index_inputs_moved2 = wl_shapedup.index_inputs_moved
     wl_shapedup.index_present = lambda _root: False
     wl_shapedup.index_inputs_moved = lambda _root: False
-    _st4 = {}
+    _st4: dict[Any, Any] = {}
     _findings, _err = wl_shapedup.refresh_index(REPO, _st4)
     control("refresh_index runs the counter with NO model call involved", len(_refresh_calls), 1)
     control("refresh_index returns the counter's real findings", bool(_findings), True)
@@ -1633,7 +1635,7 @@ try:
 
     # THE REGRESSION THIS SPLIT FIXES, replayed directly: refresh_index alone -- exactly what a stop with judged_ok=False now calls -- still rearms the index, with no `ask`/judge call anywhere in the path.
     wl_shapedup.index_present = lambda _root: False
-    _st5 = {}
+    _st5: dict[Any, Any] = {}
     wl_shapedup.refresh_index(REPO, _st5)
     control(
         "THE FIX: refresh_index alone (judged_ok=False's whole call) still reaches the counter and rearms the index",
@@ -1704,7 +1706,7 @@ def _wide_clear(*hashes):
         wl_shapedup.demand_for("wide-" + h).clear()
 
 
-_wide_asks = []
+_wide_asks: list[Any] = []
 
 
 class _FakeRunProc:
@@ -1830,14 +1832,14 @@ try:
     _wide_clear("aaaa6j", "bbbb6j")
 
     # 6k. A COUNTER ERROR NEVER FIRES. The planted half is the same call with findings and no error, which must report.
-    _wide_calls = []
+    _wide_calls: list[Any] = []
 
     def _wide_counter_err(_root, profile=None):
         _wide_calls.append(profile)
         return [], "counter exploded"
 
     wl_shapedup.counter_findings = _wide_counter_err
-    _st6k = {}
+    _st6k: dict[Any, Any] = {}
     _tk, _nk = wl_shapedup.wide_run(REPO, _st6k, "br-6k")
     control("a broken wide counter queues no section", _tk, "")
     control("...but it is not silent about it", "counter exploded" in _nk, True)
@@ -1852,7 +1854,8 @@ try:
         (True, False),
     )
 
-    def _wide_counter_ok(_root, **_kw):
+    def _wide_counter_ok(_root, profile=None):
+        del profile  # the wide tier passes profile= by keyword; this stub answers the same either way
         return [_wide_f("okay6k", 3)], ""
 
     wl_shapedup.counter_findings = _wide_counter_ok
@@ -1865,7 +1868,7 @@ try:
     _wide_clear("okay6k")
 
     # 6l. A FIRE NEVER CALLS apply_order. The planted half runs the NARROW tier's apply_verdict under the same interceptor, which must be seen, or the interceptor proves nothing.
-    _orders = []
+    _orders: list[Any] = []
     wl_rules.apply_order = lambda *a: _orders.append(a)
     wl_shapedup.WIDE_CAP = 5
     _tl, _ = wl_shapedup.wide_report(REPO, [_wide_f("fire6l", 3)], "", "br-6l")
@@ -1947,14 +1950,16 @@ try:
     )
 
     # 6p. THE ARGV. The default call is byte-identical to the pre-profile one, and a profiled call drops SHAPE_PROBE_CACHE so the wide scan never overwrites the commit-path guard's index (risk 6). The planted half is the inherited variable itself, which must be present for the drop to mean anything.
-    _argv_seen = []
+    _argv_seen: list[Any] = []
     _run_saved = wl_shapedup.wl_proc.run
     _spc_saved = os.environ.get("SHAPE_PROBE_CACHE")
     os.environ["SHAPE_PROBE_CACHE"] = str(_WIDE_TMP / "gate-cache")
-    wl_shapedup.wl_proc.run = lambda argv, **kw: (
-        _argv_seen.append((argv, kw, (kw.get("env") or os.environ).get("SHAPE_PROBE_CACHE"))),
-        _FakeRunProc(),
-    )[1]
+
+    def _capture_run(argv, **kw):
+        _argv_seen.append((argv, kw, (kw.get("env") or os.environ).get("SHAPE_PROBE_CACHE")))
+        return _FakeRunProc()
+
+    wl_shapedup.wl_proc.run = _capture_run
     try:
         wl_shapedup.counter_findings(REPO)
         wl_shapedup.counter_findings(REPO, profile="advisory")
@@ -2123,12 +2128,12 @@ class _FakeProc:
         self.timed_out = False
 
 
-def _envelope(subtype, cost, **extra):
+def _exhaustion_envelope(subtype, cost, **extra):
     return json.dumps({"subtype": subtype, "total_cost_usd": cost, **extra})
 
 
-_EXHAUSTED = _FakeProc(1, _envelope(wl_judge.SCHEMA_EXHAUSTION, 0.0112))
-_GOOD = _FakeProc(0, _envelope("success", 0.05))
+_EXHAUSTED = _FakeProc(1, _exhaustion_envelope(wl_judge.SCHEMA_EXHAUSTION, 0.0112))
+_GOOD = _FakeProc(0, _exhaustion_envelope("success", 0.05))
 
 # 1. The incident's exact envelope: retried, and the retry's result is carried on.
 _proc, _why = wl_judge.retry_schema_exhaustion("judge", _EXHAUSTED, lambda: _GOOD)
@@ -2144,14 +2149,14 @@ def _counting():
     return _GOOD
 
 
-_other = _FakeProc(1, _envelope("error_during_execution", 0.01))
+_other = _FakeProc(1, _exhaustion_envelope("error_during_execution", 0.01))
 _proc, _why = wl_judge.retry_schema_exhaustion("judge", _other, _counting)
 control("CONTROL: another failure subtype is not retried", (_proc, len(_calls)), (None, 0))
 control("CONTROL: and it is reported with its subtype", "error_during_execution" in _why, True)
 
 # 3. CONTROL: the same subtype, but the budget was spent. A call that hit its cap hits it again, so retrying doubles the bill for the same silence.
 _calls.clear()
-_broke = _FakeProc(1, _envelope(wl_judge.SCHEMA_EXHAUSTION, 0.24))
+_broke = _FakeProc(1, _exhaustion_envelope(wl_judge.SCHEMA_EXHAUSTION, 0.24))
 _proc, _why = wl_judge.retry_schema_exhaustion("judge", _broke, _counting)
 control("CONTROL: a budget-exhausted call is not retried", (_proc, len(_calls)), (None, 0))
 control("CONTROL: and the refusal says the budget was why", "budget" in _why, True)
@@ -2162,7 +2167,7 @@ _calls.clear()
 
 def _always_exhausted():
     _calls.append(1)
-    return _FakeProc(1, _envelope(wl_judge.SCHEMA_EXHAUSTION, 0.0112))
+    return _FakeProc(1, _exhaustion_envelope(wl_judge.SCHEMA_EXHAUSTION, 0.0112))
 
 
 _proc, _why = wl_judge.retry_schema_exhaustion("judge", _EXHAUSTED, _always_exhausted)
@@ -2211,7 +2216,7 @@ def _script(*procs):
     return run, calls
 
 
-_EXHAUST_ENV = _envelope(wl_judge.SCHEMA_EXHAUSTION, 0.0112)
+_EXHAUST_ENV = _exhaustion_envelope(wl_judge.SCHEMA_EXHAUSTION, 0.0112)
 _GOOD_ENV = json.dumps(
     {"subtype": "success", "total_cost_usd": 0.05, "structured_output": {"shape_dup": {}}}
 )
@@ -2232,7 +2237,7 @@ try:
     control("and it called the model exactly twice", len(_calls), 2)
 
     # 2. CONTROL: a different non-zero exit stays final and is NOT retried. Without this, a helper that retried everything would pass control 1.
-    _run, _calls = _script(_FakeProc(1, _envelope("error_during_execution", 0.01)))
+    _run, _calls = _script(_FakeProc(1, _exhaustion_envelope("error_during_execution", 0.01)))
     _shapedup.wl_proc.run = _run
     _out, _why = _shapedup.ask(_INST)
     control("CONTROL: another failure subtype is not retried", (_out, len(_calls)), (None, 1))

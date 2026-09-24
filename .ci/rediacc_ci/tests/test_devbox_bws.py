@@ -160,7 +160,7 @@ def lift(name: str) -> str:
     return match.group(0)
 
 
-def script_binds() -> list[tuple[str, str]]:
+def script_binds() -> list[tuple[str, ...]]:
     result = subprocess.run(
         ["bash", "-c", lift("devbox_script_binds") + "\ndevbox_script_binds"],
         capture_output=True,

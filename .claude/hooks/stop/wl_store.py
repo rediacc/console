@@ -39,6 +39,7 @@ import re
 import socket
 import tempfile
 import time
+from typing import Any
 
 import wl_core as C
 
@@ -331,7 +332,7 @@ def agent_peer_sections(root, session_id):
     DEDUPED BY OWNER. The normal `--state` write path always replaces its caller's own section in place, so a directory should carry exactly one; a directory found carrying more (a legacy-remap sitting beside a real one, or a historical document from before that replace-in-place guarantee) is not a second peer, it is the same peer's older self. Reporting both doubled the peer's row
     in the stop-hook note and in `--migrate --candidates`' context, so this keeps the newest by `ts` and drops the rest -- read-only, nothing on disk changes.
     """
-    newest = {}
+    newest: dict[Any, Any] = {}
     for d in agent_session_dirs(root):
         if C.same_session(d.name, session_id):
             continue

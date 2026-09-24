@@ -27,6 +27,7 @@ import os
 import pathlib
 import re
 import time
+from typing import Any
 
 TAIL_BYTES = 2 * 1024 * 1024
 
@@ -83,7 +84,8 @@ def _turn_text_and_commands(path):
     lines = chunk.split(b"\n")
     if size > TAIL_BYTES:
         lines = lines[1:]  # first line is probably partial
-    texts, commands = [], []
+    texts: list[Any] = []
+    commands: list[Any] = []
     for raw in lines:
         if not raw.strip():
             continue

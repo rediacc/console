@@ -31,6 +31,7 @@ import os
 import pathlib
 import sys
 import time
+from typing import Any
 
 import wl_core as C
 
@@ -261,7 +262,7 @@ def _touch(path):
 TOMBSTONE = "EXPIRED"
 
 # Open handles whose flock must survive for the process lifetime. See the comment at the claim site in wait().
-HELD_LOCKS = []
+HELD_LOCKS: list[Any] = []
 
 
 def tombstone(path, why):

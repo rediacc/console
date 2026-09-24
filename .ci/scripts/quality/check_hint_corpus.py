@@ -26,6 +26,7 @@ import os
 import re
 import sys
 import tempfile
+from typing import Any
 
 import _cipath  # noqa: F401
 from rediacc_ci import paths
@@ -151,8 +152,8 @@ def cycle_findings(pick_fn, entries):
     active = [e for e in entries if e.get("status") == "active"]
     if not active:
         return []  # H1 already reports an empty/under-floor corpus; this function does not pile on
-    ledger = {}
-    picks = []
+    ledger: dict[Any, Any] = {}
+    picks: list[Any] = []
     for _ in range(len(active)):
         got = pick_fn(entries, ledger)
         if got is None:

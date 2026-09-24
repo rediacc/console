@@ -19,6 +19,7 @@ import os
 import pathlib
 import random
 import re
+from typing import Any
 
 import wl_core as C
 import wl_store as S
@@ -47,7 +48,8 @@ def load_corpus(path):
     """([entry, ...], [error, ...]) for one HINTS.md-shaped file. Never raises.
 
     An entry with no `Hint-Id:` or no `Source:` is an ERROR, not a silent skip -- the same reasoning `wl_agents.load_corpus` gives for a frontmatter-less agent file: a silent skip is how an entry stops being reachable while the file still looks healthy. `Status:` defaults to `active` when absent, since the schema names it optional-with-a-default, not optional-with-no-meaning."""
-    entries, errors = [], []
+    entries: list[Any] = []
+    errors: list[Any] = []
     p = pathlib.Path(path)
     if not p.is_file():
         # NOT AN ERROR, matching wl_agents.load_corpus's directory-glob precedent: a missing corpus reads as "not configured here" (every fixture that has not pointed WORKLIST_HINTS_FILE at one, and this feature's own repo before it existed), not as "was here and broke". A file that exists but cannot be READ (permissions, a bad encoding) is still a real, loud error below.

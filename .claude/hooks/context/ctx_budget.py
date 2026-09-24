@@ -314,7 +314,9 @@ def load_state(session_id):
         return {"epoch": 0, "band": -1}
 
 
-_last_cleanup_time = [0]  # a one-element cell, not a bare module global -- see save_state()
+_last_cleanup_time: list[float] = [
+    0
+]  # a one-element cell, not a bare module global -- see save_state()
 
 
 def cleanup_stale_state_files(grace_hours=24, now=None):

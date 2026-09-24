@@ -13,6 +13,7 @@ import re
 import sys as _sys
 import time
 import types as _types
+from typing import Any
 
 import wl_admit
 import wl_agents as A
@@ -1465,7 +1466,7 @@ def outq_drain(worklist, session_id, state_doc, n, rng=None):
     Removes exactly those entries BY IDENTITY (never by slicing or clearing -- a clear silently eats every one-shot that had not reached its turn), records shown[] for the volatile ones, and persists before returning, because the caller emits and emit() exits the process."""
     q = _outq(state_doc)
     r = rng if rng is not None else random
-    tiers = {}
+    tiers: dict[Any, Any] = {}
     for e in q["items"]:
         tiers.setdefault(int(e.get("prio") or 0), []).append(e)
     take = []
@@ -2802,7 +2803,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     if bgwait_due:
         # A silent stream alone cannot distinguish "stuck" from "a poll loop that prints only at the end", so OS-verify before accusing: a worker whose process is confirmed alive is reported in those words. Fired live 2026-07-31 on a healthy `until ... completed` CI watch, 29 minutes silent by design.
         _bg_verd = bg_verdicts
-        _rows = []
+        _rows: Any = []
         _mate_ids = {str(b.get("id") or "") for b in live_bg if b.get("type") == "teammate"}
         _subagent_ids = {str(b.get("id") or "") for b in live_bg if b.get("type") == "subagent"}
         # Plan 1.3: a stream-less teammate row is accused only when the fresh-transcript count cannot cover the claimed roster (or cannot be read). No join names WHICH teammate is dead, so every teammate row carries the count.

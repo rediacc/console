@@ -35,6 +35,7 @@ import json
 import os
 import re
 import sys
+from typing import Any
 
 import _cipath  # noqa: F401
 from rediacc_ci import paths
@@ -97,6 +98,8 @@ def load_modules():
     spec = importlib.util.spec_from_file_location(
         "_cpb", os.path.join(os.path.dirname(os.path.abspath(__file__)), "check_plan_boxes.py")
     )
+    if spec is None or spec.loader is None:
+        raise ImportError("cannot load module spec")
     boxes_gate = importlib.util.module_from_spec(spec)
     try:
         spec.loader.exec_module(boxes_gate)
@@ -182,7 +185,7 @@ def moved_to_done(base_plans, head_plans):
 
     It is NOT a false-positive surface, because the date cut still applies downstream: a plan imported with boxes already ticked has `done_commit` dates at or before `baseline_at` and is exempt for the same reason every other pre-landing tick is. What is caught is the case that matters -- a box ticked on this branch AFTER the rule arrived.
     """
-    out = []
+    out: list[Any] = []
     for rel, head_row in sorted((head_plans or {}).items()):
         if not isinstance(head_row, dict):
             continue

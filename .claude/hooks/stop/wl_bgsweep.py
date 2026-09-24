@@ -16,6 +16,7 @@ NOTIFICATION, NOT ACTION. No code here calls `os.kill`/`terminate()` against a d
 
 import os
 import subprocess
+from typing import Any
 
 import wl_liveness
 
@@ -45,7 +46,7 @@ def _proc_table_with_age_linux(uptime_s):
     `st_mtime` is never used for age: it is not process start time. `uptime_s` is a parameter, not read internally, so the real end-to-end smoke test can inject an artificially large value and prove the age arithmetic on a REAL short-lived child without an actual 20-minute wait.
     """
     clk = _clk_tck()
-    out = []
+    out: list[Any] = []
     try:
         entries = os.listdir("/proc")
     except OSError:
@@ -125,7 +126,7 @@ def resolve_anchor(table=None):
     claude_pid_env = os.environ.get("CLAUDE_PID", "")
     env_pid = int(claude_pid_env) if claude_pid_env.isdigit() else None
     walk_pid = None
-    cur = os.getpid()
+    cur: int | None = os.getpid()
     for _ in range(8):
         cur = parents.get(cur)
         if not cur or cur <= 1:
@@ -140,7 +141,7 @@ def resolve_anchor(table=None):
 
 def descendants(anchor_pid, table_with_age):
     """[(pid, ppid, cmdline, age)] for every transitive descendant of `anchor_pid`, BFS over the ppid->children map. `anchor_pid` itself is never included."""
-    children = {}
+    children: dict[Any, Any] = {}
     for pid, ppid, cmdline, age in table_with_age:
         children.setdefault(ppid, []).append((pid, ppid, cmdline, age))
     out, seen, queue = [], {anchor_pid}, [anchor_pid]

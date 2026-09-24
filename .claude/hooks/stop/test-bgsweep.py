@@ -13,6 +13,8 @@ import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
+from typing import Any
+
 import wl_bgsweep as B
 
 
@@ -108,7 +110,8 @@ class _FakeCompleted:
     )
 
 
-subprocess.run = lambda *_a, **_k: _FakeCompleted()
+_sp: Any = subprocess
+_sp.run = lambda *_a, **_k: _FakeCompleted()
 rows = B._proc_table_with_age_ps()
 subprocess.run = _orig_run
 by_pid = {r[0]: r for r in rows}

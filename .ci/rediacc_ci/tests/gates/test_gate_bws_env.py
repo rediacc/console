@@ -39,6 +39,8 @@ def load_gate_module(name: str):
     paths.on_sys_path(paths.quality_dir())
     src = paths.from_root(".ci", "scripts", "quality", "%s.py" % name)
     spec = importlib.util.spec_from_file_location(name, src)
+    assert spec is not None
+    assert spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
@@ -112,8 +114,6 @@ def run_load(gate, directory, *names: str, no_token: bool = False) -> str:
         merged = dict(os.environ)
         merged.pop(BOOTSTRAP_CREDENTIAL_ENV, None)
         merged.update(env)
-        # And the token FILE is pointed at a path that does not exist, for the same reason: the operator's real `~/.config/rediacc-console/bws-access-token` is the second place the port looks (PLAN-account-env-to-bws T1).
-        merged[bws_env.BOOTSTRAP_FILE_ENV] = str(directory / "no-such-token-file")
         return harness.run(argv, env=merged, env_replace=True).combined
     env[BOOTSTRAP_CREDENTIAL_ENV] = FIXTURE_CREDENTIAL
     return harness.run(argv, env=env).combined

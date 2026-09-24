@@ -59,6 +59,7 @@ import json
 import pathlib
 import sys
 import typing
+from typing import Any
 
 from rediacc_ci import log, paths, workflows
 from rediacc_ci.controls import Checker, controls_first, plant
@@ -144,7 +145,7 @@ def scan(root: pathlib.Path):
             ".ci/breakpoint/workflow/*.yml). That is the instrument having lost the tree, not a "
             "repository with no workflows." % root
         )
-    reads = {"vars": [], "secrets": []}
+    reads: dict[str, list[typing.Any]] = {"vars": [], "secrets": []}
     commented = {"vars": 0, "secrets": 0}
     jobs = {}
     for path in files:
@@ -173,7 +174,7 @@ def evaluate_vars(spec, vars_reads, jobs, vault: set[str]) -> list[str]:
     by_name = collections.defaultdict(list)
     for read in vars_reads:
         by_name[read.name].append(read)
-    findings = []
+    findings: list[typing.Any] = []
 
     # 1. FORWARD
     findings.extend(
@@ -426,7 +427,7 @@ jobs:
         run: echo shell
 """
 
-_SPEC = {
+_SPEC: dict[str, Any] = {
     "kinds": dict.fromkeys(KINDS, "fixture"),
     "vars": {
         "FIX_PENDING": {"kind": "migrated", "bws": "FIX_TWIN", "why": "the edit still to land"},

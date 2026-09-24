@@ -23,6 +23,7 @@ from __future__ import annotations
 import os
 import pathlib
 import re
+from typing import Any
 
 import wl_core as C
 import wl_planfile as F
@@ -226,7 +227,7 @@ def next_plan(
     if isinstance(cap, dict) and len(cap) >= WORKLIST_BACKLOG_MAX_PER_SESSION:
         return None, "capped", {"scanned": scanned, "eligible": len(eligible)}
 
-    unresolved = []
+    unresolved: list[Any] = []
     passed_over = []
     dead_peer = _dead_peer(
         root, recs, boxes, plan_owner, session_id, worklist, projects_dir, events

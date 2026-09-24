@@ -1537,10 +1537,10 @@ jobs:
             lambda: len([m for m in env14("", {}) if "floor" in m]) == 2,
         ),
     ]
-    for label, probe in checks14:
-        good = probe()
-        print(f"  {'PASS' if good else 'FAIL'}  {label}")
-        if not good:
+    for label, probe14 in checks14:
+        good14 = probe14()
+        print(f"  {'PASS' if good14 else 'FAIL'}  {label}")
+        if not good14:
             bad += 1
     shutil.rmtree(env_dir, ignore_errors=True)
     return 1 if bad else 0

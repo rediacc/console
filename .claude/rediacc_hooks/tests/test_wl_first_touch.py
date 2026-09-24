@@ -17,6 +17,7 @@ import json
 import re
 import subprocess
 import sys
+from typing import Any
 
 import pytest
 
@@ -480,7 +481,9 @@ def test_25_audit_refuses_to_run_when_the_notice_wording_outruns_its_marks():
     That failure is green, so the live text is checked against the marks before any transcript is opened.
     """
     spec = importlib.util.spec_from_file_location("onboard_under_test", ONBOARD)
-    mod = importlib.util.module_from_spec(spec)
+    assert spec is not None
+    assert spec.loader is not None
+    mod: Any = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     assert mod.notice_marks_hold(), "the live notice text carries none of its own marks"
     mod.text_owns = lambda *_unused: "a rewording that mentions nothing recognisable"

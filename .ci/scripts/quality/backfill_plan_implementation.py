@@ -26,6 +26,7 @@ import json
 import os
 import re
 import sys
+from typing import Any
 
 import _cipath  # noqa: F401
 from rediacc_ci import paths
@@ -54,6 +55,8 @@ def load_gate():
     """
     paths.on_sys_path(HOOK_DIR)
     spec = importlib.util.spec_from_file_location("_cpi", GATE)
+    if spec is None or spec.loader is None:
+        raise ImportError("cannot load module spec")
     mod = importlib.util.module_from_spec(spec)
     try:
         spec.loader.exec_module(mod)
@@ -139,7 +142,7 @@ def reuse_pointers(planrec, checks, evidence, commit):
     REUSED RATHER THAN INVENTED, and only when it still resolves. A line written contemporaneously by a session that did the work usually names the artifact better than anything a batch tool can compose, so lifting its tokens makes the row point at the real thing. A token that no longer resolves is DROPPED rather than recorded: `plan_backfill_investigation` refuses the whole
     row on a dead pointer, and a reconstruction is not worth failing a repair over.
     """
-    out = []
+    out: list[Any] = []
     if not evidence:
         return out
     for m in checks.CITE_RE.finditer(evidence):

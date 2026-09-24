@@ -107,6 +107,7 @@ import pathlib
 import re
 import subprocess
 import tempfile
+from typing import Any
 
 import wl_core as C
 import wl_planfid as PFID
@@ -1981,7 +1982,7 @@ def read_investigations(root):
     NEVER RAISES on a malformed line: the ledger is append-only and two writers under one flock cannot tear a line, but a hand-edit could, and one bad line must not make every row after it invisible. A skipped line is a row that cannot testify, which fails CLOSED here -- the tick it would have licensed is refused for want of a row rather than allowed for want of a reader.
     """
     path = investigation_path(root)
-    out = []
+    out: list[Any] = []
     try:
         raw = path.read_text(encoding="utf-8", errors="replace")
     except OSError:

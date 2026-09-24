@@ -24,6 +24,7 @@ import signal
 import stat
 import subprocess
 import tempfile
+from typing import Any
 
 LEDGER_ENV = "GATE_HARNESS_LEDGER"
 
@@ -87,7 +88,7 @@ class RunResult:
 OUTPUT_TAIL = 4000
 
 
-def _rc_of(result: object) -> int:
+def _rc_of(result: Any) -> int:
     rc = getattr(result, "rc", None)
     if rc is None:
         rc = result.returncode

@@ -35,6 +35,7 @@ tracked file, a worklist tick or a plan box, and nothing else -- by construction
 import hashlib
 import os
 import re
+from typing import Any
 
 import wl_core as C
 import wl_reggate as RG
@@ -123,7 +124,7 @@ def profile(root, evidence_text, fixset_files=None):
     A citation that does NOT resolve is skipped rather than reported. I7 owns the question "is there a citation at all" and keeps owning it; this layer only ever runs on ticks that already passed it, and re-litigating a dead citation here would duplicate a check that already blocks.
     """
     text = (evidence_text or "").strip()
-    prof = {
+    prof: dict[str, Any] = {
         "claim": text[:CLAIM_MAX],
         "citations": [],
         "commits": [],

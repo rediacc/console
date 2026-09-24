@@ -2186,13 +2186,6 @@
       "message": "Need type annotation for \"out\" (hint: \"out: dict[<type>, <type>] = ...\")"
     },
     {
-      "id": "7b6618fe8627a643",
-      "file": ".ci/rediacc_ci/workflows.py",
-      "code": "var-annotated",
-      "count": 1,
-      "message": "Need type annotation for \"out\" (hint: \"out: list[<type>] = ...\")"
-    },
-    {
       "id": "562c1203f53f5929",
       "file": ".ci/scripts/ci/ci-trace.py",
       "code": "var-annotated",
@@ -2809,13 +2802,6 @@
       "message": "Value of type \"object\" is not indexable"
     },
     {
-      "id": "65cdd10732677b34",
-      "file": ".claude/hooks/stop/test-judge-schema.py",
-      "code": "no-redef",
-      "count": 1,
-      "message": "Name \"_envelope\" already defined on line 479"
-    },
-    {
       "id": "769378b7512f40d2",
       "file": ".claude/hooks/stop/test-judge-schema.py",
       "code": "operator",
@@ -3017,13 +3003,6 @@
       "code": "assignment",
       "count": 1,
       "message": "Incompatible types in assignment (expression has type \"Callable[[], Any]\", target has type \"Callable[[Any], Any]\")"
-    },
-    {
-      "id": "5815692284d36da4",
-      "file": ".claude/hooks/stop/wl_checks.py",
-      "code": "assignment",
-      "count": 4,
-      "message": "Incompatible types in assignment (expression has type \"str\", variable has type \"list[str]\")"
     },
     {
       "id": "ebd564763a84fc10",

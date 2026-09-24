@@ -41,6 +41,7 @@ VALUES ARE STILL RESOLVED THE YAML 1.1 WAY, including `yes`/`no`/`on`/`off` as b
 
 import pathlib
 import re
+from typing import Any
 
 # YAML 1.1 boolean words, which is what PyYAML's safe_load resolves and therefore what every existing consumer in this tree already sees. YAML 1.2 dropped yes/no/on/off; matching 1.1 is a compatibility decision, not an oversight.
 _TRUE = frozenset(["true", "True", "TRUE", "yes", "Yes", "YES", "on", "On", "ON"])
@@ -198,7 +199,7 @@ def _flow_node(text: str, index: int, line_no: int):
 
 
 def _flow_sequence(text: str, index: int, line_no: int):
-    out = []
+    out: list[Any] = []
     while True:
         while index < len(text) and text[index] in " \t":
             index += 1
@@ -812,7 +813,7 @@ def context_reads(lines: list[str], ctx: str) -> tuple[list[tuple[int, str]], in
     `commented` counts the mentions that sat inside a comment and were NOT returned, so a caller can print the blind spot as a number rather than leave it silent. One honest limit, stated here because it is not enforced: GitHub expands a `${{ }}` inside a bash comment in a `run:` block before bash ever sees it, so such an expression is technically a read that this function reports as a comment. The corpus holds none.
     """
     pattern = CONTEXT_READ_RE[ctx]
-    out = []
+    out: list[Any] = []
     commented = 0
     for i, line in enumerate(lines):
         code = code_part(line)

@@ -35,6 +35,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+from typing import Any
+
 import ctx_budget as B
 
 # One compaction fires SessionStart AND PostCompact. Re-arming twice would reset the machine and emit twice, so an arm inside this window is a no-op.
@@ -346,7 +348,8 @@ def store_first_writes(core, store):
     """({sid8: first `at` that identity WROTE}, the log floor, the event count)."""
     root = core.project_root(core.project_start())
     events = store._read_events(core.worklist_for(root), root)
-    first, floor = {}, ""
+    first: dict[Any, Any] = {}
+    floor = ""
     for ev in events:
         at = str(ev.get("at") or "")
         if not at:

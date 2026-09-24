@@ -13,6 +13,7 @@ import random
 import re
 import subprocess
 import time
+from typing import Any
 
 from rediacc_hooks.tests import wlfix
 from rediacc_hooks.tests.test_wl_ci_status import ci_job, ci_rollup, ci_run, ci_running, ci_setup
@@ -154,7 +155,7 @@ def test_174_changed_content_re_enqueues_at_a_new_seq_rather_than_keeping_its_pl
     saved_save = checks.S.save_state
     checks.S.save_state = lambda *_a, **_kw: None
     try:
-        qdoc = {"outq": {"items": [], "shown": {}, "seq": 0}}
+        qdoc: dict[str, Any] = {"outq": {"items": [], "shown": {}, "seq": 0}}
         checks.outq_add("wl", "sess", qdoc, "k1", "first body", 2)
         first_seq = qdoc["outq"]["items"][0]["seq"]
         checks.outq_add("wl", "sess", qdoc, "k1", "second body", 2)

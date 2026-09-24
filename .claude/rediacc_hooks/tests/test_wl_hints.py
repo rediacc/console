@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import pathlib
 import random
+from typing import Any
 
 from rediacc_hooks.tests import wlfix
 from rediacc_hooks.tests.wlfix import wl  # noqa: F401
@@ -113,7 +114,7 @@ def test_load_corpus_a_retired_entry_still_parses_but_is_excluded_from_pick(tmp_
     entries, errors = h.load_corpus(str(path))
     assert errors == []
     assert {e["id"] for e in entries} == {"live", "dead"}
-    ledger = {}
+    ledger: dict[Any, Any] = {}
     for _ in range(10):
         picked = h.hint_pick(entries, ledger, rng=random.Random(1))
         assert picked[0]["id"] == "live", "a retired entry was ever picked"
@@ -150,7 +151,7 @@ def test_hint_pick_full_cycle_coverage_across_fifty_seeds():
     h = _hints()
     entries, _errors = h.load_corpus(REAL_HINTS)
     for seed in range(50):
-        ledger = {}
+        ledger: dict[Any, Any] = {}
         seen = set()
         for _ in range(12):
             picked = h.hint_pick(entries, ledger, rng=random.Random(seed))
@@ -161,7 +162,7 @@ def test_hint_pick_full_cycle_coverage_across_fifty_seeds():
 def test_hint_pick_never_repeats_inside_a_single_cycle():
     h = _hints()
     entries, _errors = h.load_corpus(REAL_HINTS)
-    ledger = {}
+    ledger: dict[Any, Any] = {}
     seen = []
     for i in range(12):
         picked = h.hint_pick(entries, ledger, rng=random.Random(7 + i))
@@ -172,7 +173,7 @@ def test_hint_pick_never_repeats_inside_a_single_cycle():
 def test_hint_pick_never_repeats_across_a_cycle_boundary():
     h = _hints()
     entries, _errors = h.load_corpus(REAL_HINTS)
-    ledger = {}
+    ledger: dict[Any, Any] = {}
     last_of_cycle_one = None
     for i in range(12):
         picked = h.hint_pick(entries, ledger, rng=random.Random(100 + i))
