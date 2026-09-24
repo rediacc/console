@@ -292,6 +292,16 @@ def test_177_the_judge_line_is_a_stamp_unless_the_context_is_fresh_or_the_reason
     )
 
     # PostCompact is the case the marker is load-bearing for: the state doc SURVIVES a compaction, so the reason signature still matches and only the marker can bring the full statement back.
+    # This session's one post-compact stop-hook retro is recorded as already done: a first compaction orders it, and its tracking item would lead the next stop with open-items (agent/plans/PLAN-stop-hook-retro-20260924.md R20260924.12), which is not what this case measures.
+    retro_ledger = wl.proj / "agent" / "ledgers" / "stop-hook-retros.jsonl"
+    retro_ledger.parent.mkdir(parents=True, exist_ok=True)
+    done_retro = {"session": "deadbeef", "band": "post-compact", "item": "0000d0ne"}
+    retro_ledger.write_text(
+        "".join(
+            json.dumps(dict(done_retro, ev=ev)) + "\n" for ev in ("ordered", "tracked", "saved")
+        ),
+        encoding="utf-8",
+    )
     ctx_event(wl, "--post-compact")
     judge_turn(wl)
     got = wl.runj()

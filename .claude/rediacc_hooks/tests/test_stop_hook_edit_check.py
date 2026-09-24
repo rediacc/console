@@ -5,6 +5,7 @@ Every case drives the member THROUGH THE WIRING: it is looked up in `lifecycle.P
 
 from __future__ import annotations
 
+import importlib.util
 import json
 import os
 import shutil
@@ -108,3 +109,117 @@ def test_settings_json_is_the_derived_hooks_block():
     assert doc.get("hooks") == lifecycle.hooks_block(), (
         "settings.json's hooks differ from `python3 .claude/rediacc_hooks/lifecycle.py --hooks`"
     )
+
+
+# ---- every hook directory the lifecycle table runs (worklist #95918e15) ----------------------
+#
+# Until this, the check covered `.claude/hooks/stop/*.py` only, while lifecycle also ran hook code from `hooks/context`, `hooks/post-bash`, `hooks/trapguard`, `hooks/` itself and the `rediacc_hooks` package. The directory set is DERIVED from `lifecycle.PATTERNS` by the hook itself, and these cases derive it the same way, so a new hook directory gets a case with no edit here.
+
+CLAUDE = ROOT / ".claude"
+KNOWN_DIRS = {
+    "hooks",
+    "hooks/context",
+    "hooks/post-bash",
+    "hooks/trapguard",
+    "hooks/stop",
+    "rediacc_hooks",
+    "rediacc_hooks/guards",
+}
+COPY_IGNORE = shutil.ignore_patterns("__pycache__", "state", "tests", "test-*.py", "*.pyc")
+
+
+def edit_check_module():
+    spec = importlib.util.spec_from_file_location("_edit_check_under_test", CLAUDE / SCRIPT)
+    assert spec is not None
+    assert spec.loader is not None
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def hook_dirs() -> list[str]:
+    """Every directory the check covers, from the live lifecycle table: each script's own directory, and every non-test package directory under a script's package."""
+    ec = edit_check_module()
+    out = set()
+    for script in ec.lifecycle_scripts(CLAUDE):
+        top = ec.package_top(CLAUDE, script.parent)
+        if top is None:
+            out.add(script.parent.as_posix())
+            continue
+        for init in (CLAUDE / top).rglob("__init__.py"):
+            rel = init.parent.relative_to(CLAUDE)
+            if "tests" not in rel.parts:
+                out.add(rel.as_posix())
+    return sorted(out)
+
+
+def plant_file(root, rel_dir):
+    """The first non-dunder, non-test `.py` directly in the directory."""
+    return next(
+        p
+        for p in sorted((root / rel_dir).glob("*.py"))
+        if not p.name.startswith(("__", "test")) and p.is_file()
+    )
+
+
+@pytest.fixture
+def claude_copy(tmp_path):
+    root = tmp_path / ".claude"
+    # `hookio.repo_root` finds the tree by `.claude` beside `.ci`, as every real checkout has it.
+    (tmp_path / ".ci").mkdir()
+    for sub in ("hooks", "rediacc_hooks"):
+        shutil.copytree(CLAUDE / sub, root / sub, ignore=COPY_IGNORE)
+    return root
+
+
+def test_the_derived_directory_set_covers_every_known_hook_directory():
+    """ANTI-VACUITY: a derivation that found nothing would parametrize zero cases and pass."""
+    assert set(hook_dirs()) >= KNOWN_DIRS, hook_dirs()
+
+
+@pytest.mark.parametrize("rel_dir", hook_dirs())
+def test_an_import_time_failure_is_reported_in_every_hook_directory(claude_copy, rel_dir):
+    """CONTROL: before #95918e15 every directory but hooks/stop was silent here."""
+    target = plant_file(claude_copy, rel_dir)
+    target.write_text(
+        target.read_text(encoding="utf-8")
+        + "\nraise RuntimeError('edit-check plant %s')\n" % rel_dir,
+        encoding="utf-8",
+    )
+    rc, out, _err = drive(edit(target))
+    assert rc == 0, "a warning hook must never block"
+    text = context_of(out)
+    assert "edit-check plant %s" % rel_dir in text, text
+    assert str(target) in text, text
+
+
+@pytest.mark.parametrize("rel_dir", hook_dirs())
+def test_a_clean_edit_is_silent_in_every_hook_directory(claude_copy, rel_dir):
+    """INVERSE: every covered directory imports cleanly from a copy, or the check would be noise on every edit there."""
+    assert drive(edit(plant_file(claude_copy, rel_dir))) == (0, "", "")
+
+
+def test_a_directory_newly_wired_into_lifecycle_is_covered_with_no_edit_to_the_check(claude_copy):
+    """The set is derived: wiring a new directory into the copy's own lifecycle table is all it takes."""
+    fresh = claude_copy / "hooks" / "fresh" / "fresh_hook.py"
+    fresh.parent.mkdir()
+    fresh.write_text(
+        "def main():\n    return undefined_fresh_name()\n\n\nif __name__ == '__main__':\n    main()\n",
+        encoding="utf-8",
+    )
+    assert drive(edit(fresh)) == (0, "", ""), "an unwired directory is not hook code"
+    table = claude_copy / "rediacc_hooks" / "lifecycle.py"
+    src = table.read_text(encoding="utf-8")
+    anchor = '            "python3 " + _P % "hooks/context/onboard.py",\n'
+    assert anchor in src
+    table.write_text(
+        src.replace(
+            anchor, anchor + '            "python3 " + _P % "hooks/fresh/fresh_hook.py",\n', 1
+        ),
+        encoding="utf-8",
+    )
+    rc, out, _err = drive(edit(fresh))
+    assert rc == 0
+    text = context_of(out)
+    assert "undefined_fresh_name" in text, text
+    assert "F821" in text, text

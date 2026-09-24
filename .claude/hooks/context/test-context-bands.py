@@ -499,6 +499,113 @@ def test_bands(hooks_dir):
         sb.cleanup()
 
 
+# -------------------------------------------------------------------------- the retro order (R20260924.11) --------------------------------------------------------------------------
+
+
+def retro_rows(sb):
+    f = sb.project / "agent" / "ledgers" / "stop-hook-retros.jsonl"
+    if not f.is_file():
+        return []
+    return [json.loads(ln) for ln in f.read_text(encoding="utf-8").splitlines() if ln.strip()]
+
+
+def touch_state_md(sb, ahead):
+    """Rewrite STATE.md with an mtime `ahead` seconds from now, so "written after the crossing" never rests on filesystem timestamp resolution."""
+    sb.write_state_md("# STATE\n\nrewritten %d\n" % ahead)
+    f = sb.project / "agent" / SLUG / "STATE.md"
+    t = time.time() + ahead
+    os.utime(f, (t, t))
+
+
+def test_retro(hooks_dir):
+    """agent/plans/PLAN-stop-hook-retro-20260924.md section 8: the order waits for a STATE.md write after the crossing, fires once per session per band, survives an epoch reset as a dedupe, and never reaches a subagent."""
+    print("\n[retro order] %s" % hooks_dir)
+    sb = Sandbox(hooks_dir)
+    try:
+        sb.write_state_md()
+        sb.write_transcript(400_000)
+        sb.post_tool()
+        sb.write_transcript(670_000)
+        ctx = fired(sb.post_tool()) or ""
+        check(
+            "retro: the crossing itself orders nothing",
+            "--retro-brief" not in ctx and "(band: early)" in ctx,
+            repr(ctx)[:200],
+        )
+        ctx = fired(sb.post_tool()) or ""
+        check(
+            "retro: a crossing with no STATE.md write orders nothing",
+            "--retro-brief" not in ctx and retro_rows(sb) == [],
+            "%r rows=%s" % (ctx[:200], retro_rows(sb)),
+        )
+
+        touch_state_md(sb, 5)
+        ctx = fired(sb.post_tool()) or ""
+        rows = retro_rows(sb)
+        check(
+            "retro: a STATE.md write after the crossing orders the early retro",
+            "--retro-brief %s early" % SLUG in ctx and "Stop-hook retro due" in ctx,
+            repr(ctx)[:300],
+        )
+        check(
+            "retro: the order writes exactly one ordered row",
+            len(rows) == 1
+            and rows[0].get("ev") == "ordered"
+            and rows[0].get("session") == SLUG
+            and rows[0].get("band") == "early"
+            and rows[0].get("from_off") == 0
+            and rows[0].get("to_off") == sb.transcript.stat().st_size,
+            str(rows),
+        )
+        check("retro: the next tool call is silent", fired(sb.post_tool()) is None)
+
+        # A compaction epoch resets the band state file but not the ledger, so the band that was already ordered stays ordered.
+        sb.post_compact()
+        sb.write_transcript(300_000)
+        sb.post_tool()
+        sb.write_transcript(670_000)
+        sb.post_tool()
+        touch_state_md(sb, 10)
+        ctx = fired(sb.post_tool()) or ""
+        check(
+            "retro: an epoch reset does not re-order a band already ordered",
+            "--retro-brief" not in ctx and len(retro_rows(sb)) == 1,
+            "%r rows=%d" % (ctx[:200], len(retro_rows(sb))),
+        )
+
+        sb.write_transcript(852_000)
+        sb.post_tool()
+        touch_state_md(sb, 15)
+        ctx = fired(sb.post_tool()) or ""
+        rows = retro_rows(sb)
+        check(
+            "retro: the late band orders its own retro",
+            "--retro-brief %s late" % SLUG in ctx
+            and len(rows) == 2
+            and rows[1].get("band") == "late",
+            "%r rows=%s" % (ctx[:200], rows),
+        )
+        check(
+            "retro: the late range starts where the early one ended",
+            len(rows) == 2 and rows[1].get("from_off") == rows[0].get("to_off"),
+            str(rows),
+        )
+    finally:
+        sb.cleanup()
+
+    sub = Sandbox(hooks_dir)
+    try:
+        sub.write_state_md()
+        sub.write_transcript(670_000)
+        sub.post_tool()
+        touch_state_md(sub, 5)
+        p = sub.post_tool(agent_id="agent_01xyz", agent_type="Explore")
+        check("retro: a subagent event orders nothing", fired(p) is None, repr(p.stdout[:200]))
+        check("retro: a subagent event writes no row", retro_rows(sub) == [], str(retro_rows(sub)))
+    finally:
+        sub.cleanup()
+
+
 # -------------------------------------------------------------------------- precompact floor --------------------------------------------------------------------------
 
 
@@ -702,6 +809,34 @@ MUTANTS = [
         ("ctx_budget.py", "COMPACT_MARGIN = 33_000", "COMPACT_MARGIN = 15_000"),
         ["a pin overrules a model cap that was only ASSUMED"],
     ),
+    # The three retro mutants R20260924.11 names. Each must turn a retro check red, or the retro checks cannot tell the feature from its absence.
+    (
+        "retro reaches a subagent",
+        "band-notice.py",
+        ('        if event.get("agent_id"):\n            return\n', "        pass\n"),
+        None,
+        ["retro: a subagent event orders nothing", "retro: a subagent event writes no row"],
+    ),
+    (
+        "retro dedupe removed",
+        "band-notice.py",
+        (
+            '            if not B.retro_ordered(B.retro_rows(project), me8, due.get("band")):',
+            "            if True:",
+        ),
+        None,
+        ["retro: an epoch reset does not re-order a band already ordered"],
+    ),
+    (
+        "retro ordered at the crossing",
+        "band-notice.py",
+        (
+            '        if due and mtime is not None and mtime > float(due.get("at") or 0):',
+            "        if due:",
+        ),
+        None,
+        ["retro: a crossing with no STATE.md write orders nothing"],
+    ),
 ]
 
 PRECOMPACT_MUTANTS = [
@@ -768,6 +903,8 @@ def test_mutations():
                 failed = run_isolated(test_arithmetic_in, d)
             elif "that window reports the boundary's own postTokens" in must_fail:
                 failed = run_isolated(test_compact_boundary, d)
+            elif any(m.startswith("retro: ") for m in must_fail):
+                failed = run_isolated(test_retro, d)
             else:
                 failed = run_isolated(test_bands, d)
             missing = [m for m in must_fail if m not in failed]
@@ -967,6 +1104,7 @@ def main():
     test_arithmetic()
     test_arithmetic_in(HERE)
     test_bands(HERE)
+    test_retro(HERE)
     test_precompact(HERE)
     test_compact_boundary(HERE)
     test_mutations()

@@ -412,3 +412,102 @@ def state_md_path(project, session_id):
 
 def fmt(n):
     return f"{int(n):,}"
+
+
+# --- the stop-hook retro before compaction ---------------------------------
+# agent/plans/PLAN-stop-hook-retro-20260924.md section 8, box R20260924.11. The ledger is the ONE record of which retros were ordered, and it lives in the repo rather than in state_dir(): the band state file is reset on every compaction epoch, and the dedupe key `(session, band)` has to survive that. `.claude/hooks/stop/wl_retro.py` loads these helpers from this file
+# rather than keeping a second reader of the same rows.
+RETRO_LEDGER_REL = ("agent", "ledgers", "stop-hook-retros.jsonl")
+RETRO_BANDS = ("early", "late", "post-compact")
+
+# The order, emitted once per session per band on the first PostToolUse after STATE.md was rewritten past the crossing. Framed as a repo procedure with its source named, not as a system command: see band-notice.py's docstring for the one exception this text is to its "does not instruct" rule.
+RETRO_ORDER = (
+    "Stop-hook retro due (standing procedure PLAN-stop-hook-continuity.md P3.1, operator order 2026-09-24; band %(band)s, session %(me8)s). STATE.md was rewritten at %(state_at)s, after this band was crossed, so the recovery document is safe; this session's stop-hook experience is still in context and on disk.\n"
+    "  1. Print the brief:  python3 .claude/hooks/stop/worklist.py --retro-brief %(me8)s %(band)s\n"
+    "  2. Dispatch ONE Agent with subagent_type Plan and run_in_background true, with that brief as its prompt. Plan agents are read-only and do not count toward the writer cap.\n"
+    "  3. Save what it returns verbatim to agent/plans/PLAN-stop-hook-retro-%(date)s.md (update the file if it exists).\n"
+    "The tracking item is created at your next stop and auto-leased to the agent from the #id in its brief. Ledger: agent/ledgers/stop-hook-retros.jsonl. Emitted once per session per band."
+)
+
+
+def utc_stamp(epoch_seconds=None):
+    """The ISO8601Z stamp the worklist store writes (wl_core.stamp_now), so ledger rows sort against its logs."""
+    return time.strftime(
+        "%Y-%m-%dT%H:%M:%SZ", time.gmtime(time.time() if epoch_seconds is None else epoch_seconds)
+    )
+
+
+def retro_ledger_path(project):
+    return Path(project).joinpath(*RETRO_LEDGER_REL)
+
+
+def retro_rows(project):
+    """Every parseable ledger row, oldest first. A torn or foreign line is skipped, never fatal."""
+    try:
+        text = retro_ledger_path(project).read_text(encoding="utf-8")
+    except OSError:
+        return []
+    out = []
+    for line in text.splitlines():
+        try:
+            row = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(row, dict):
+            out.append(row)
+    return out
+
+
+def retro_append(project, row):
+    """One O_APPEND line, so two writers can never interleave inside a row; rows stay far under the 4 KB PIPE_BUF bound."""
+    path = retro_ledger_path(project)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd = os.open(str(path), os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o644)
+    try:
+        os.write(fd, (json.dumps(row, sort_keys=True) + "\n").encode("utf-8"))
+    finally:
+        os.close(fd)
+
+
+def retro_ordered(rows, me8, band):
+    """The `ordered` row for (session, band), or None. THE DEDUPE KEY is exactly this pair (the plan's Decision): a later epoch does not earn a second retro for a band already covered."""
+    for row in rows:
+        if row.get("ev") == "ordered" and row.get("session") == me8 and row.get("band") == band:
+            return row
+    return None
+
+
+def retro_from_off(rows, me8):
+    """Where the next retro's transcript range starts: the previous `ordered` row's `to_off` for this session, so no two retros read the same bytes."""
+    offs = [
+        int(r.get("to_off") or 0)
+        for r in rows
+        if r.get("ev") == "ordered" and r.get("session") == me8
+    ]
+    return max(offs) if offs else 0
+
+
+def retro_order_row(
+    project, me8, band, transcript, usage=None, threshold=None, epoch=None, state_md_at=""
+):
+    """Append the `ordered` row for (me8, band) and return it. The byte range runs from the previous retro's end to the transcript's current size."""
+    rows = retro_rows(project)
+    try:
+        to_off = os.path.getsize(transcript) if transcript else 0
+    except OSError:
+        to_off = 0
+    row = {
+        "ev": "ordered",
+        "at": utc_stamp(),
+        "session": me8,
+        "band": band,
+        "epoch": epoch,
+        "usage": usage,
+        "threshold": threshold,
+        "transcript": str(transcript or ""),
+        "from_off": min(retro_from_off(rows, me8), to_off),
+        "to_off": to_off,
+        "state_md_at": state_md_at,
+    }
+    retro_append(project, row)
+    return row

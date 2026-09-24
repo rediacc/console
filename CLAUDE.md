@@ -99,7 +99,7 @@ Two mechanisms make this easy to fall into, so name them:
   2. **A push-back is not a work order for one item.** The hook naming the next
      item does not mean "do that one and stop". It means the queue is not
      empty. Drain it: keep going until every remaining item is genuinely (a)-(d)
-     above.
+     above. The one exception is a full writer cap: with every writer slot verified live and every remaining item leased or queued (`worker:queue`), the hook stands down (`CAP-SATURATED WAIT`) and stopping is correct. It still blocks on a free slot, a dead writer, an expired `DEFAULT`, or a stale STATE.md in the last context band before compaction (agent/plans/PLAN-stop-hook-cap-saturated-wait.md).
 
 The operator's asks decide PACKAGING, never WHETHER (rule 2). "Waiting for the operator to pick a branch" does not block the code that would go on either branch — write it under the default and let the answer choose where it lands. And a turn that ends is a turn that costs a round trip: the bar for stopping is "there is genuinely nothing left to advance", not "a defensible report
 has been produced".
@@ -292,13 +292,13 @@ Scans: scripts/ci-runner/gates.lock.json, folded to one row per CI lane.
 | local-only (CI never runs it) | 13 | 10 | 4 | 0 |
 | step / build-renet | 1 | 1 | 1 | 0 |
 | step / quality-branch | 8 | 8 | 0 | 0 |
-| step / quality-code | 102 | 101 | 19 | 0 |
+| step / quality-code | 103 | 102 | 19 | 0 |
 | step / quality-content | 45 | 45 | 5 | 0 |
 | step / quality-go | 16 | 16 | 3 | 0 |
 | step / quality-i18n | 40 | 38 | 3 | 0 |
 | step / quality-packages | 13 | 13 | 6 | 0 |
 | step / quality-security | 25 | 24 | 3 | 5 |
-| step / quality-static | 65 | 65 | 4 | 0 |
+| step / quality-static | 64 | 64 | 4 | 0 |
 | step / quality-wiring | 1 | 1 | 0 | 0 |
 | step / quality-www-build | 16 | 13 | 15 | 0 |
 | test (a gate test drives it) | 11 | 11 | 0 | 0 |

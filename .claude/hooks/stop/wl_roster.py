@@ -49,6 +49,68 @@ READ_ONLY_AGENT_TYPES = frozenset({"Plan", "Explore"})
 ROSTER_SUPPRESSES = frozenset({"bg-report", "stuck", "idle-stall", "solo-grind", "agent-state"})
 # The four defect keys. `roster-status` was merged into `roster-silent` on 2026-09-24 ("Evidence counts as status").
 ROSTER_KEYS = ("roster-cap", "roster-silent", "roster-unleased", "roster-dead", "queue-slot")
+
+# THE CAP-SATURATED WAIT (operator 2026-09-24: "the stop hook should not be invoked (or should skip the order) when writer slots are full! There could be exceptions like 2% compaction etc."; agent/plans/PLAN-stop-hook-cap-saturated-wait.md). With every writer slot verified live and nothing open, the lead cannot start anything, so a work order is busywork. A KEEP-list rather than a drop-list,
+# deliberately: a check added later stands down by default, which is what "should not be invoked" means. What stays is what the lead CAN and MUST act on even then: a slot that is really free (a dead writer, a finished worker still holding a lease), an expired DEFAULT, a broken hook, an unread report, a tick without evidence, and STATE.md when compaction is imminent (`agent-state` / `agent-absent`, only with `compaction_due`).
+CAP_WAIT_KEEPS = frozenset(
+    {
+        # The roster itself: each of these means a slot is free or a lease is on nobody.
+        "roster-cap",
+        "roster-silent",
+        "roster-unleased",
+        "roster-dead",
+        "queue-slot",
+        "ladder-gone",
+        "ladder-idle",
+        # Deferrals whose window closed must execute; a [?] without DEFAULT is malformed.
+        "defer-expired",
+        "undefaulted",
+        # Hook integrity: the hook cannot see, or said it has a bug.
+        "event-unparseable",
+        "hook-blind",
+        "cl-shape",
+        # One-shot latches spent when computed (I1): hiding them would burn them unseen.
+        "agent-bootstrap",
+        # Owed and ledger honesty.
+        "unread-reports",
+        "completion",
+        "adhoc-watch",
+        "adhoc-watch-broken",
+        "found-not-fixed",
+        "deferred-finding",
+        "deflected-finding",
+    }
+)
+# Kept whatever their suffix: `agent-pushback:<id>`, `giveup-claim:<id>` (one-shot latches, as above).
+CAP_WAIT_KEEP_PREFIXES = ("agent-pushback:", "giveup-claim:")
+# Kept only when compaction is imminent: the recovery document must be current before the context is summarised.
+CAP_WAIT_COMPACTION_KEYS = frozenset({"agent-state", "agent-absent"})
+
+
+def cap_saturated_wait(verdict, open_items, actionable_tasks):
+    """True when every writer slot is verified live and this session has nothing it could start.
+
+    `verdict` is this stop's `roster()` result; `open_items` is `classify_items`' open list (a plain `[ ]`, an expired lease, a `worker:lead` lease with nothing live); `actionable_tasks` is the harness tasks the session could do now. Every other disallowed item state surfaces as a KEPT key instead (see CAP_WAIT_KEEPS), so an exception arrives as one focused block rather than the whole battery.
+    """
+    return (
+        bool(verdict)
+        and not verdict.get("blind")
+        and len(verdict.get("writers") or ()) >= WRITER_CAP
+        and not open_items
+        and not actionable_tasks
+    )
+
+
+def cap_wait_keeps(key, always, compaction_due):
+    """True when violation `key` still blocks in a cap-saturated wait."""
+    del (
+        always
+    )  # the always-tier is about cadence, not about whether the lead can act; see CAP_WAIT_KEEPS
+    if key in CAP_WAIT_KEEPS or str(key).startswith(CAP_WAIT_KEEP_PREFIXES):
+        return True
+    return bool(compaction_due) and key in CAP_WAIT_COMPACTION_KEYS
+
+
 # How long an agent that ended its turn with a background shell still armed counts as WAITING rather than finished, when no fresh Stop event can confirm the shell. The lease cap: a wait longer than any lease is not supervision the estimate should vouch for.
 WAIT_HORIZON_MIN = 120
 

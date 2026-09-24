@@ -510,6 +510,8 @@ def drive_l1(fix) -> L1Drive:
             "[verdict: present]",
         ),
         ("--hint-propose", "--hint-propose @WHO@ l1-table-hint", "proposed:"),
+        # The stop-hook retro brief (agent/plans/PLAN-stop-hook-retro-20260924.md R20260924.13). It WRITES: the first accepted run orders the band and adds the tracking item, so a foreign `<me>` must be refused before either.
+        ("--retro-brief", "--retro-brief @WHO@ early", "STOP-HOOK RETRO for session"),
         # RETROACTIVE ONLY, so CONTROL A is driven for real against plant_backfill_target's fixture -- a genuine two-commit repo, the one row in this table where `fix.proj/.git` stops being a plain directory. Dry (no `--write`): the identity rule is the whole surface this table is about, and a dry run proves the CLI reached the SAME resolve-and-render path a --write run
         # would, without appending to the fixture's ledger.
         (

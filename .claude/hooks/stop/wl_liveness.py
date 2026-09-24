@@ -683,8 +683,10 @@ def ladder(fold, session_id, event, state_doc):
         import wl_roster  # noqa: PLC0415 -- wl_roster imports this module lazily too
 
         roster_ids = wl_roster.known_subagent_ids(event.get("cwd") or "", session_id)
+        queue_w = wl_roster.QUEUE_WORKER
     except Exception:  # noqa: BLE001 -- a missing roster must leave the ladder exactly as it was
         roster_ids = set()
+        queue_w = "queue"
 
     subjects = []  # (key, label, age_min, stampkey, gone_worker)
     for rec in fold.items:
@@ -694,7 +696,8 @@ def ladder(fold, session_id, event, state_doc):
             continue  # expired leases are open items already
         wm = C.WORKER.search(rec["line"])
         wid = rec.get("worker") or (wm.group(1) if wm else "")
-        if wid and wid in roster_ids:
+        # A QUEUE LEASE IS NOT A WORKER THAT CAN GO QUIET (agent/plans/PLAN-stop-hook-cap-saturated-wait.md step 1). Nothing runs it: it waits behind the writer cap, which wl_roster reports (`queue-slot` names it when a slot frees), and its own lease expiry fails it closed into an open item. On the age ladder it read as "unverifiable" and was ordered to be investigated every 90 minutes while the cap was full.
+        if wid and (wid in roster_ids or wid == queue_w):
             continue
         # GONE means DROPPED, not merely unconfirmable. A worker only counts as gone if the harness could see it when the lease was taken and cannot see it now. An Agent leased by NAME never appears in a background-task list at all, and reporting that as "finished or stopped" sent this session chasing a worker that was actively writing files. Unverifiable workers fall through to
         # the age ladder, which catches a real stall without inventing a death.
@@ -702,7 +705,8 @@ def ladder(fold, session_id, event, state_doc):
         subjects.append(
             (
                 "item:" + rec["id"],
-                rec["line"][:110],
+                # THE ID LEADS: the ping's own remedy is `--update <me> <id>`, and a rendered line carries no id (agent/plans/PLAN-stop-hook-retro-20260924.md R.9, whose digest line names the quiet subjects by it).
+                "#%s %s" % (rec["id"], rec["line"][:110]),
                 _age_min(rec.get("upd", "")),
                 rec.get("upd", ""),
                 gone,

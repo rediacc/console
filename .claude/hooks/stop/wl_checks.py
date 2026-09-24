@@ -1641,6 +1641,33 @@ def handle_post_compact(event):
     cl_listing, _cl_n = wl_checklist.checklists_block(root)
     if cl_listing:
         msg += "\n\n" + M.CTX_CHECKLISTS % cl_listing
+    # THE STOP-HOOK RETRO (agent/plans/PLAN-stop-hook-retro-20260924.md R20260924.12), after the briefing, the facts and the plans, once per session: the `ordered` row in agent/ledgers/stop-hook-retros.jsonl is the dedupe record. A subagent's event never orders one, the same guard band-notice.py applies; the briefing itself is left exactly as it was for that event. Suppressed like
+    # the hint below, because a compaction that cannot hand back the briefing is far worse than a missing retro order.
+    with contextlib.suppress(Exception):
+        if sid and not event.get("agent_id"):
+            import wl_retro as _RT  # noqa: PLC0415 -- optional; the briefing must not need it
+
+            _ctxb = _RT.ctx()
+            _me8 = _ctxb.session_slug(sid)
+            if _ctxb.retro_ordered(_ctxb.retro_rows(root), _me8, "post-compact") is None:
+                _sp = S.agent_state_path(root, sid)
+                _row = _ctxb.retro_order_row(
+                    root,
+                    _me8,
+                    "post-compact",
+                    event.get("transcript_path"),
+                    state_md_at=_ctxb.utc_stamp(_sp.stat().st_mtime) if _sp.is_file() else "",
+                )
+                msg += "\n\n" + M.CTX_POSTCOMPACT_RETRO % {
+                    "transcript": _row["transcript"] or "(no transcript_path in the event)",
+                    "when": M.CTX_POSTCOMPACT_RETRO_WHEN_MISSING
+                    if state in ("missing", "no-dir")
+                    else M.CTX_POSTCOMPACT_RETRO_WHEN_BRIEFED,
+                    "me8": _me8,
+                    "date": _RT.today(),
+                    "from": _row["from_off"],
+                    "to": _row["to_off"],
+                }
     # v21: the specialist-agent hint, and this is the highest-value delivery it has. Post-compaction is precisely when a session has forgotten that a specialist exists, and additionalContext is read rather than skimmed. ONCE PER COMPACTION BY CONSTRUCTION, so it needs no rate limiting and no ledger; the haystack is the document the session just got back plus its own open items.
     # Suppressed rather than guarded, because a compaction that cannot hand back the briefing is a far worse outcome than a missing hint.
     with contextlib.suppress(Exception):
@@ -2086,6 +2113,22 @@ def _resprofile_report(worklist, session_id, state_doc):
         )
 
 
+def _ctx_late_band(session_id):
+    """True when this session's context sits in the LATE band (~2% before auto-compact, ctx_budget.BANDS).
+
+    The cap-saturated wait keeps the STATE.md demand only then: the recovery document must be current before the context is summarised. Unknown (no context module, as in an LKG snapshot, or no band state yet) is False; the PreCompact snapshot covers that case.
+    """
+    try:
+        import wl_retro  # noqa: PLC0415 -- the context module is loaded by path, lazily
+
+        cb = wl_retro.ctx()
+        band = int(cb.load_state(session_id).get("band", -1))
+        names = [b[0] for b in cb.BANDS]
+        return band >= names.index("late")
+    except Exception:  # noqa: BLE001 -- a fact-gatherer must never wedge a stop
+        return False
+
+
 def run_stop(event, event_ok, worklist, hook_file):
     """The full stop battery. Gathers EVERY static violation, then emits ONE block (five independent blocking checks would cost five turns to clear, which is the "stuck in a loop" the old MAX_BLOCKS existed to paper over), then consults the judge on stops where work remains, then allows with a report."""
     session_id = event.get("session_id", "")
@@ -2212,6 +2255,40 @@ def run_stop(event, event_ok, worklist, hook_file):
         _roster = wl_roster.roster(
             event, fold, session_id, state_doc=state_doc, cwd=event.get("cwd")
         )
+    # QUEUE LEASES RENEW WHILE THE CAP IS FULL (agent/plans/PLAN-stop-hook-cap-saturated-wait.md step 2). A queue lease is bounded by its own expiry, and an expired one fails closed into an OPEN item; with every writer slot live, that turned a queue the lead could not start into a stream of "open items" every two hours. Renewed only while saturated, only when under
+    # LEAD_RENEW_BELOW_MIN is left (or already expired), and never a HOLD_FOR reservation, whose expiry bounds the slot it reserves (R.5). A roster that could not be computed renews nothing.
+    with contextlib.suppress(Exception):
+        if (
+            _roster
+            and not _roster.get("blind")
+            and len(_roster.get("writers") or ()) >= wl_roster.WRITER_CAP
+        ):
+            _renewed = 0
+            for _r in fold.items:
+                if _r.get("state") != ">" or not C.owned_by_me(_r.get("owner"), session_id):
+                    continue
+                if _r.get("worker") != wl_roster.QUEUE_WORKER or wl_roster.hold_target(_r):
+                    continue
+                _age = C.stamp_age_min(_r.get("until") or "")
+                if _age is None or -_age < wl_leasehelp.LEAD_RENEW_BELOW_MIN:
+                    S.lease_item(
+                        worklist,
+                        me8,
+                        _r["id"],
+                        C.stamp_ahead(C.MAX_LEASE_MIN)[:16] + "Z",
+                        wl_roster.QUEUE_WORKER,
+                        "auto-renew: writer cap full",
+                        worker_verified=False,
+                    )
+                    _renewed += 1
+            if _renewed:
+                fold = S.load(worklist, sync=False)
+                open_items, _others, deferred_recs, in_flight_recs = S.classify_items(
+                    fold, session_id, live_worker_ids=_live_worker_ids
+                )
+                _roster = wl_roster.roster(
+                    event, fold, session_id, state_doc=state_doc, cwd=event.get("cwd")
+                )
     # brief_line, NOT r["line"] -- and this was a live regression worth naming.
     #
     # v14 introduced brief_text precisely because rec["text"] accumulates every update forever and "every block that mentioned it printed them all" (wl_store.brief_text docstring). classify_items duly renders OPEN items through brief_line... and then hands deferred and in-flight back as raw records, so these two call sites reached past the fix to the full text.
@@ -2510,6 +2587,17 @@ def run_stop(event, event_ok, worklist, hook_file):
         # stop back and fired the check-in immediately -- precisely the "you started waiting, report" behaviour the seed above exists to prevent, and the reason a session that flickers in and out of waiting saw the roster demand over and over. Dropping the key re-seeds it silently.
         state_doc.pop("bgwait", None)
 
+    # THE CAP-SATURATED WAIT (agent/plans/PLAN-stop-hook-cap-saturated-wait.md). A sibling of the pure wait, not a widening of it: pure wait owns the shell/teammate check-in clock and never reads the roster, while this state needs the verified roster and stands down far more (the judge, report shape, hygiene). Every writer slot live and nothing this session could start:
+    # the work orders stand down, and only the keys in wl_roster.CAP_WAIT_KEEPS still block.
+    _in_cap_wait = False
+    with contextlib.suppress(Exception):
+        _cap_tasks = (
+            _bg_actionable
+            if _in_pure_wait
+            else C.actionable_tasks(session_id, event.get("transcript_path"))
+        )
+        _in_cap_wait = wl_roster.cap_saturated_wait(_roster, open_items, _cap_tasks)
+
     # STUCK DETECTION. Runs before the others so the count advances on every stop, including the ones where something else already fired: a session blocked three times running on the same check has also moved nothing.
     # SUPERVISED = a live background task AND an in-flight item the session is still
     # refreshing. Only that pair distinguishes "watching a long job" from "left a watch running and wandered off"; a forgotten watch cannot refresh the item, because refreshing it is precisely what nobody is doing. CORRELATED, not just "some [>] item is fresh": a session can hold two concurrent leases, one genuinely tracking the live background task and one unrelated and still
@@ -2543,7 +2631,8 @@ def run_stop(event, event_ok, worklist, hook_file):
         tasks,
         C._git(root, "rev-parse", "HEAD"),
         bool(live_bg),
-        supervised=_supervised,
+        # A cap-saturated wait is supervision by construction (every slot is a verified-live writer); counting it as unsupervised made the 3x overrun fire on the first stop after the wait ended.
+        supervised=_supervised or _in_cap_wait,
         own_stamp=_own_stamp,
     )
 
@@ -3780,7 +3869,8 @@ def run_stop(event, event_ok, worklist, hook_file):
         vadd("mislabelled", False, M.V_MISLABELLED % "; ".join(mislabelled))
     # ---- v20 PLAN FIDELITY. Cheap when there is no approved plan (one bounded transcript scan, incremental after the first stop), and it spends a model call only when a plan EXISTS and the tracked items look coarse against it. A degraded run is QUEUED rather than blocked or dropped: the queue survives the block stops this session is likely to be having, so the note lands on the
     # first clean one instead of vanishing. The trade is that a session which never reaches a clean stop is told late, the same trade the agent hint already makes and for the same reason.
-    if not wl_judge.JUDGE_DISABLED:
+    # Paid (a model call); its verdict would be stood down in a cap-saturated wait anyway, so it is not bought.
+    if not wl_judge.JUDGE_DISABLED and not _in_cap_wait:
         _pf_note = ""
         try:
             _pf_note = planfid_check(worklist, session_id, event, fold, lines, me8, last_msg, vadd)
@@ -3837,6 +3927,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     S.save_state(worklist, session_id, state_doc)
     # ---- THE ROSTER'S HONEST SUPPRESSION (wl_roster.ROSTER_SUPPRESSES), in ONE place, just ahead of the cadence gate so every check has had its say. An HONEST roster means every item in flight is leased to a live worker the hook verified itself, so the pushes that exist to ask "is the waiting real" have their answer. Only those keys drop: CI red, pr-finish, the
     # judge tier and every integrity check still block, and the roster's own cap and ping keys were added above in every state. `agent-state` drops only for `stale`; `bg-report` only when no task outside the roster (a shell the OS did not confirm, a teammate) is running and no harness task is actionable, because those keep their 15-minute check-in.
+    _guide_pre_roster, _guide_empty_pre_roster = guide, guide_empty
     if _roster is not None and _roster["state"] == "HONEST":
         _outside = [
             b
@@ -3873,6 +3964,53 @@ def run_stop(event, event_ok, worklist, hook_file):
             )
             guide = _honest + ("\n\n" + guide if guide else "")
             guide_empty = False
+    # ---- THE CAP-SATURATED WAIT'S STAND-DOWN (agent/plans/PLAN-stop-hook-cap-saturated-wait.md step 6), a stricter second pass after the HONEST one. Only wl_roster.CAP_WAIT_KEEPS survive; the STATE.md demand survives only when compaction is imminent (the late band, ~2% before auto-compact) and the document is not current.
+    if _in_cap_wait:
+        _compaction_due = astate in (
+            "missing",
+            "thin",
+            "bloated",
+            "aimless",
+            "stale",
+            "waitled",
+            "no-dir",
+        ) and _ctx_late_band(session_id)
+        _dropped = sorted(
+            {v[0] for v in violations if not wl_roster.cap_wait_keeps(v[0], v[1], _compaction_due)}
+        )
+        violations = [
+            v for v in violations if wl_roster.cap_wait_keeps(v[0], v[1], _compaction_due)
+        ]
+        if _compaction_due:
+            violations = [
+                (k, a, t + "\n" + M.N_CAP_WAIT_COMPACTION)
+                if k in wl_roster.CAP_WAIT_COMPACTION_KEYS
+                else (k, a, t)
+                for k, a, t in violations
+            ]
+        if bgwait_due and not any(k == "bg-report" for k, _a, _t in violations):
+            bgwait_due = False  # stood down, not delivered
+        state_doc["capwait"] = {
+            "at": C.stamp_now(),
+            "dropped": _dropped,
+            "astate": astate,
+            "compaction_due": _compaction_due,
+        }
+        if not violations:
+            _rv = _roster or {}  # never empty here: cap_saturated_wait is False without a roster
+            _note = M.N_CAP_WAIT % (
+                len(_rv.get("writers") or ()),
+                wl_roster.WRITER_CAP,
+                ", ".join(str(w)[:8] for w in _rv.get("writers") or ()),
+                int(_rv.get("queued") or 0),
+                len(_dropped),
+                wl_roster.next_status_due(_rv),
+            )
+            _base = "" if _guide_empty_pre_roster else _guide_pre_roster
+            guide = _note + ("\n\n" + _base if _base else "")
+            guide_empty = False
+    else:
+        state_doc.pop("capwait", None)
     if bgwait_due:
         # Delivered for real (this stop emits it either way below), so the stamp the next check-in prints is banked here and saved eagerly:
         # the WORKLIST_FOCUS=off block path emits without saving.
@@ -4119,7 +4257,8 @@ def run_stop(event, event_ok, worklist, hook_file):
     for k in [k for k in audit_cache if k not in fold.by_id]:
         del audit_cache[k]  # its item is gone; a banked verdict for it is litter
     audit_batch = []
-    if not wl_judge.JUDGE_DISABLED:
+    # The deferral audit rides the judge call, which a cap-saturated wait skips.
+    if not wl_judge.JUDGE_DISABLED and not _in_cap_wait:
         for r in sorted(
             deferred_recs,
             key=lambda r: (-(C.stamp_age_min(r.get("upd", "")) or 0), r.get("id", "")),
@@ -4149,7 +4288,10 @@ def run_stop(event, event_ok, worklist, hook_file):
     #
     # Tier R recorded the hit up there, before anything that can fail. A hit banked only after a successful verdict would vanish exactly when the judge times out, which is when the record matters most.
     # THE JUDGE-SKIPPED PATH. The main judge runs only when something remains or a fix signal fired. A stop with a clean board and an admission in its final message would otherwise be seen by nobody, and that is a likely shape: the session finished its work, and says on the way out that it broke something along the way.
-    if admit_hits and not ((something_remains or reg_signals) and not wl_judge.JUDGE_DISABLED):
+    # A cap-saturated wait skips the main judge (below), so an admission then takes this path: an admission of breakage must never go unseen.
+    if admit_hits and not (
+        (something_remains or reg_signals) and not wl_judge.JUDGE_DISABLED and not _in_cap_wait
+    ):
         _ad, _aerr = wl_judge.run_admission(admit_text)
         if _aerr:
             # Recorded, never raised. Tier R already holds the hit, so the admission survives an unavailable judge; this only adds why.
@@ -4181,7 +4323,9 @@ def run_stop(event, event_ok, worklist, hook_file):
     S.save_state(worklist, session_id, state_doc)
     audit_note = ""
     judge_cached = False
-    if (something_remains or reg_signals) and not wl_judge.JUDGE_DISABLED:
+    # THE JUDGE STANDS DOWN IN A CAP-SATURATED WAIT (agent/plans/PLAN-stop-hook-cap-saturated-wait.md step 7). Its orders ("Do the next action", SWEEP THE CLASS, PROOF OBLIGATION) cannot be acted on with every writer slot full; on 2026-09-24 it blocked twice with a reason that itself called the wait legitimate. Unsettled regression fix-sets are not lost: the marker advances
+    # only when a fix-set settles, so the next unsaturated stop asks again.
+    if (something_remains or reg_signals) and not wl_judge.JUDGE_DISABLED and not _in_cap_wait:
         streak = int(counter.read_text()) if counter.exists() else 0
         # THE JUDGE IS ASKED ABOUT ITS OWN HISTORY, not the battery's. `counter` counts every stop block from every check; the prompt calls the number "times this gate has already said continue" and tells the judge to distrust itself above 3. On 2026-09-04 it read 69 while the judge had spoken a handful of times. See wl_judge.continue_streak.
         judge_log = wl_judge.judge_log_path(worklist, me8)

@@ -1628,6 +1628,53 @@ CTX_POSTCOMPACT_FACTS = (
     "=== computed facts (read by the hook now, not written by anyone) ===\nbranch %s at %s\n%s"
 )
 
+# The stop-hook retro at PostCompact (agent/plans/PLAN-stop-hook-retro-20260924.md R20260924.12), appended after the briefing, the facts and the plans on BOTH arms, once per session. `when` differs by arm: on the missing-STATE arm the retro waits for STATE.md to be written first. Framed as a repo procedure naming its source, never as a system command.
+CTX_POSTCOMPACT_RETRO = "STOP-HOOK RETRO (standing procedure PLAN-stop-hook-continuity.md P3.1): compaction replaced this session's context, but its transcript is intact at %(transcript)s. %(when)s, run `python3 .claude/hooks/stop/worklist.py --retro-brief %(me8)s post-compact` and dispatch it as ONE background Agent with subagent_type Plan; save what it returns to agent/plans/PLAN-stop-hook-retro-%(date)s.md. It covers transcript bytes %(from)d-%(to)d, everything since the last retro. Emitted once per session."
+CTX_POSTCOMPACT_RETRO_WHEN_BRIEFED = "After reading the briefing above"
+CTX_POSTCOMPACT_RETRO_WHEN_MISSING = "After you write STATE.md"
+
+# The item wl_retro.sync (or --retro-brief) adds for an `ordered` ledger row. The ordinary open-items check enforces it; `#<id>` in the brief is what the auto-lease links to the Plan agent; the plan path is the tick evidence that closes it.
+RETRO_ITEM = (
+    "(%(me8)s) stop-hook retro %(band)s %(date)s: dispatch the Plan agent "
+    "(--retro-brief %(me8)s %(band)s) and save agent/plans/PLAN-stop-hook-retro-%(date)s.md"
+)
+
+CLI_RETRO_BRIEF_USAGE = (
+    "usage: worklist.py --retro-brief <my-prefix> <band>\n"
+    "  band is one of: early, late, post-compact.\n"
+    "Prints the brief for the read-only Plan agent that writes the stop-hook retro,\n"
+    "and creates its tracking item on first use.\n"
+)
+
+# The brief --retro-brief prints: the Plan agent's whole prompt. Every input is named with its path so the agent reads files, not this session's memory.
+RETRO_BRIEF = """STOP-HOOK RETRO for session %(me8)s, band %(band)s, %(date)s. Tracking item #%(item)s.
+
+You are a read-only Plan agent. Write the retro of the friction the Stop hook caused this session, and RETURN it as your final message; the lead saves it verbatim to %(plan)s (it updates that file when it already exists, so continue its task numbering rather than restarting it).
+
+INPUTS
+- The lead transcript: %(transcript)s, bytes %(from_off)d-%(to_off)d (everything since the previous retro). Read that range only.
+- Blocked stops since the previous retro, from %(blocklog)s (one row per blocked stop; `key` leads, `named` are the other outstanding keys, `judge` the judge's flags):
+%(blocks)s
+- Hint proposals since the previous retro (agent/ledgers/hint-proposals.jsonl):
+%(hints)s
+- Judge verdicts since the previous retro (%(judgelog)s):
+%(judge)s
+- Admissions since the previous retro (%(admitlog)s):
+%(admit)s
+- Refused --tick calls since the previous retro (%(ticklog)s):
+%(ticks)s
+
+DO NOT RE-PROPOSE any of these boxes; cite one by id when a friction is already covered or when its fix did not hold:
+%(boxes)s
+
+OUTPUT FORMAT (the format of agent/plans/PLAN-stop-hook-retro-20260924.md):
+- Header lines: `Status: ready`, `First-Seen: <date>`, `Owner: %(me8)s (adopted from retro <your agent id> %(date)s)`, `Updated: <date>`.
+- A **Scope** paragraph with the window and the counts above, then `## Ranking by cost to the session` as a table (rank, point, count in this window, turns lost, already fixed by?).
+- One `## <n>. <friction>` section per friction: what happened (with transcript byte offsets or ledger rows as evidence), the root cause with file:line, and the fix.
+- `## Decisions` with DEFAULT, WHY and HOW for each, `## Sequencing`, then `## Tasks` as `- [ ] **R%(date)s.<n>** <task>. Test: <test file>.` boxes, then `### Critical Files for Implementation`.
+- Only friction that survives the current code. Measure, do not estimate: every number cites the row or offset it was counted from.
+"""
+
 CTX_POSTCOMPACT_BRIEFING = (
     "You are picking up an in-progress session and your context was just "
     "compacted, so treat the briefing below as the truth and your own "
@@ -2450,6 +2497,16 @@ V_QUEUE_SLOT = (
     "held by leasing ONE queued item with HOLD_FOR:#<id> in its note."
 )
 
+# The allow line of a cap-saturated wait (agent/plans/PLAN-stop-hook-cap-saturated-wait.md): live writers / cap, their short ids, the queued count, how many work-order checks stood down, and when the next status is owed.
+N_CAP_WAIT = (
+    "CAP-SATURATED WAIT: %d/%d writer slots live (%s); %d item(s) queued behind the cap; "
+    "%d work-order check(s) stood down until a slot frees. Next status due %s."
+)
+# Appended to a STATE.md demand the cap-saturated wait KEPT because compaction is imminent.
+N_CAP_WAIT_COMPACTION = (
+    "(Kept although every writer slot is full: the context is in its last band before auto-compact, "
+    "and the recovery document must be current before it is summarised.)"
+)
 N_ROSTER_HONEST = (
     "ROSTER HONEST: %d writer(s)/%d, %d reader(s), next status due %s. Every item in flight is "
     "leased to a live worker, so the pushes a supervised wait would draw stand down; the cap "

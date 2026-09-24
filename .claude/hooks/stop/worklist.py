@@ -105,6 +105,7 @@ for _name in (
     "wl_roundlog",
     "wl_defersettle",
     "wl_leasehelp",
+    "wl_retro",
     "worklist_messages",
 ):
     try:
@@ -131,6 +132,7 @@ H = _MODS["wl_hints"]
 RL = _MODS["wl_roundlog"]
 DS = _MODS["wl_defersettle"]
 LH = _MODS["wl_leasehelp"]
+RT = _MODS["wl_retro"]
 
 # Re-exported for direct importers (the suite drives these two as library functions; keeping them on this module is part of the compatibility surface). Absent when their module is broken, which is correct: a caller gets an AttributeError naming this module instead of a silent stub.
 if "wl_checks" not in _BROKEN:
@@ -579,6 +581,35 @@ def _hint_propose_cli(argv):
     root = C.project_root(C.project_start())
     H.propose(root, me, text, source)
     print("proposed: %s" % text[:80])
+
+
+def _retro_brief_cli(argv):
+    """--retro-brief <me> <band>: print the stop-hook retro brief for the read-only Plan agent (agent/plans/PLAN-stop-hook-retro-20260924.md R20260924.13).
+
+    Creates the tracking item on first use, so the brief can carry its `#<id>` and the P2.2 auto-lease links the item to the agent it is dispatched to. A band with no `ordered` row yet (a retro run by hand) is ordered here first, which spends that band's one retro exactly as the automatic order would.
+    """
+
+    def die(msg):
+        print(msg, file=sys.stderr)
+        sys.exit(2)
+
+    rest = argv[1:]
+    if len(rest) != 2:
+        die(M.CLI_RETRO_BRIEF_USAGE)
+    me, band = rest
+    if not C.PREFIX_RE.match(me):
+        die("bad prefix %r: pass YOUR session-id prefix first" % me)
+    _identity_or_die(me, die)
+    cb = RT.ctx()
+    if band not in cb.RETRO_BANDS:
+        die(M.CLI_RETRO_BRIEF_USAGE)
+    me8 = cb.session_slug(me)
+    root = C.project_root(C.project_start())
+    worklist = C.worklist_for(C.project_start())
+    if cb.retro_ordered(cb.retro_rows(root), me8, band) is None:
+        cb.retro_order_row(root, me8, band, _lead_transcript(me))
+    item = RT.ensure_tracked(worklist, root, me8, band, S)
+    print(RT.brief(worklist, root, me8, band, item))
 
 
 def _plantick_cli(argv):
@@ -2228,6 +2259,9 @@ def main():
     if sys.argv[1:2] == ["--hint-propose"]:
         _hint_propose_cli(sys.argv[1:])
         return
+    if sys.argv[1:2] == ["--retro-brief"]:
+        _retro_brief_cli(sys.argv[1:])
+        return
     if sys.argv[1:2] and sys.argv[1] in (
         "--add",
         "--triage",
@@ -2282,6 +2316,10 @@ def main():
                 ),
             }
         )
+    # THE RETRO ROWS MOVE BEFORE THE BATTERY (agent/plans/PLAN-stop-hook-retro-20260924.md R20260924.13), so an item added for a new `ordered` row is enforced by this very stop's open-items check. A ledger that cannot be read or written never changes the stop.
+    with contextlib.suppress(Exception):
+        if event_ok and event.get("session_id") and not event.get("agent_id"):
+            RT.sync(worklist, C.project_root(_local_project_start(event)), event["session_id"], S)
     CK.run_stop(event, event_ok, worklist, __file__)
 
 
