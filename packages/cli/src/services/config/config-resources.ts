@@ -642,7 +642,7 @@ class ConfigService extends ConfigServiceBase {
   // Network ID Allocation (per config file)
   // ============================================================================
 
-  async allocateNetworkId(): Promise<number> {
+  allocateNetworkId(): Promise<number> {
     return allocateNetworkIdInStore(this.getEffectiveConfigName());
   }
 

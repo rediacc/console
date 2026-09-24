@@ -38,7 +38,8 @@ export const LANGUAGES = [
  * A locale this site ships. Sourced from `@rediacc/locales` so there is ONE definition of
  * the set; this file only decides the order they are displayed in.
  */
-export type Language = SiteLocale;
+type Language = SiteLocale;
+export type { Language };
 
 // (No LOCALE_DISPLAY_ORDER alias: knip correctly flags an unused duplicate export, and the name `LANGUAGES` is load-bearing across 37 call sites. The comment above carries the meaning instead.)
 
@@ -47,4 +48,5 @@ type _MutuallyAssignable<A, B> = [A] extends [B] ? ([B] extends [A] ? true : nev
 const _displayOrderIsComplete: _MutuallyAssignable<(typeof LANGUAGES)[number], SiteLocale> = true;
 void _displayOrderIsComplete;
 
-export type InterpolationParams = Record<string, string | number>;
+type InterpolationParams = Record<string, string | number>;
+export type { InterpolationParams };

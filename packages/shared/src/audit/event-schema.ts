@@ -136,7 +136,8 @@ export const ALL_EVENT_TYPES = [
 ] as const;
 
 export const auditEventTypeEnum = z.enum(ALL_EVENT_TYPES);
-export type AuditEventType = z.infer<typeof auditEventTypeEnum>;
+type AuditEventType = z.infer<typeof auditEventTypeEnum>;
+export type { AuditEventType };
 
 const baseData = z.object({
   functionName: z.string().min(1).max(100),
@@ -198,17 +199,20 @@ export const AuditEventSchema = z.discriminatedUnion('type', [
   syncEvent,
   termEvent,
 ]);
-export type AuditEvent = z.infer<typeof AuditEventSchema>;
+type AuditEvent = z.infer<typeof AuditEventSchema>;
+export type { AuditEvent };
 
 export const AuditEventsRequestSchema = z.object({
   events: z.array(AuditEventSchema).min(1).max(50),
 });
-export type AuditEventsRequest = z.infer<typeof AuditEventsRequestSchema>;
+type AuditEventsRequest = z.infer<typeof AuditEventsRequestSchema>;
+export type { AuditEventsRequest };
 
 export const AuditEventsResponseSchema = z.object({
   accepted: z.number().int().min(0),
 });
-export type AuditEventsResponse = z.infer<typeof AuditEventsResponseSchema>;
+type AuditEventsResponse = z.infer<typeof AuditEventsResponseSchema>;
+export type { AuditEventsResponse };
 
 /**
  * Map a renet function name to its canonical event type.

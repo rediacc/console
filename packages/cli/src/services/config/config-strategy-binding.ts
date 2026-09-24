@@ -90,9 +90,6 @@ export async function bindBackupStrategy(
 }
 
 /** Unbind a strategy from a machine. False when it was not bound. */
-export async function unbindBackupStrategy(
-  machineName: string,
-  strategyName: string
-): Promise<boolean> {
+export function unbindBackupStrategy(machineName: string, strategyName: string): Promise<boolean> {
   return persistBinding(machineName, strategyName, removeStrategyBinding);
 }

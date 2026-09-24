@@ -21,7 +21,8 @@ interface ActionRef {
 }
 
 /** owner/repo -> every place it is pinned. */
-export type ActionRefMap = Map<string, ActionRef[]>;
+type ActionRefMap = Map<string, ActionRef[]>;
+export type { ActionRefMap };
 
 const USES_RE = /uses:\s*([\w.-]+\/[\w.-]+)@(\S+)(?:\s+#\s*(.+))?/;
 

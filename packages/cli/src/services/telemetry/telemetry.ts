@@ -418,9 +418,9 @@ class CliTelemetryService {
     return 'ERROR';
   }
 
-  async shutdown(): Promise<void> {
+  shutdown(): Promise<void> {
     if (!this.isEnabled || !this.sdk) {
-      return;
+      return Promise.resolve();
     }
 
     // Prevent multiple shutdown calls

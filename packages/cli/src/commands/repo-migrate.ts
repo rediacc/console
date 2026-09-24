@@ -247,7 +247,7 @@ async function executePhase2(
   if (checkpoint) {
     cutoverStats = await withSpinner(
       t('commands.repo.migrate.checkpointing'),
-      async () => {
+      () => {
         const deltaParams = buildPushParams(name, repoConfig.repositoryGuid, 'machine', to, {
           force: true,
           checkpoint: true,
@@ -266,7 +266,7 @@ async function executePhase2(
 
     cutoverStats = await withSpinner(
       t('commands.repo.migrate.deltaSync'),
-      async () => {
+      () => {
         const deltaParams = buildPushParams(name, repoConfig.repositoryGuid, 'machine', to, {
           force: true,
         });

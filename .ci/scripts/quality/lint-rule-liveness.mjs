@@ -45,7 +45,7 @@ const ROOT = path.resolve(HERE, '../../..');
 // Several rules resolve paths against process.cwd() rather than against the linted file: require-path-option.js:24 (every i18n localesDir) and require-command-summary.js:59 (en/cli.json). A wrong cwd makes some of them throw and others silently no-op, i.e. look dead. Pin it.
 process.chdir(ROOT);
 
-const NAMESPACES = new Set(['custom', 'i18n', 'i18n-source']);
+export const NAMESPACES = new Set(['custom', 'i18n', 'i18n-source']);
 
 // Floors. Today the config resolves 35 registered / 30 enabled. These leave room for a deliberate removal and none at all for the config resolving to nothing, which is the failure that would otherwise exit 0 while proving nothing -- indistinguishable from a healthy repo.
 const MIN_REGISTERED = 30;

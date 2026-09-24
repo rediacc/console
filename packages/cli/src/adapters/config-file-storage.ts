@@ -319,14 +319,14 @@ export class ConfigFileStorage {
     });
   }
 
-  private async mutate(
+  private mutate(
     name: string,
     updater: (config: RdcConfig) => RdcConfig,
     bumpVersion: boolean,
     opts: { createIfMissing?: boolean } = {}
   ): Promise<RdcConfig> {
     const scoped = currentRequestConfig();
-    if (scoped) return writeScoped(scoped, updater, bumpVersion);
+    if (scoped) return Promise.resolve(writeScoped(scoped, updater, bumpVersion));
     return this.withLock(
       name,
       async () => {
@@ -346,7 +346,7 @@ export class ConfigFileStorage {
    * counter. Reads the latest from disk, decrypts, applies the updater, and
    * re-encrypts per field on save.
    */
-  async update(name: string, updater: (config: RdcConfig) => RdcConfig): Promise<RdcConfig> {
+  update(name: string, updater: (config: RdcConfig) => RdcConfig): Promise<RdcConfig> {
     return this.mutate(name, updater, true);
   }
 
@@ -531,10 +531,10 @@ export class ConfigFileStorage {
    * Execute an operation with exclusive file lock, clearing cache first.
    * Use for operations that read-modify-write and need a fresh read.
    */
-  async withApiLock<T>(name: string, operation: () => Promise<T>): Promise<T> {
+  withApiLock<T>(name: string, operation: () => Promise<T>): Promise<T> {
     // No file, so nothing to lock: a request-scoped config is private to its request.
     if (currentRequestConfig()) return operation();
-    return this.withLock(name, async () => {
+    return this.withLock(name, () => {
       this.cache.delete(name);
       return operation();
     });

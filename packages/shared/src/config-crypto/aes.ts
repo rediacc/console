@@ -17,7 +17,7 @@ function buf(data: Uint8Array): ArrayBuffer {
 }
 
 /** Generate a random AES-256 key. */
-export async function generateAesKey(): Promise<CryptoKey> {
+export function generateAesKey(): Promise<CryptoKey> {
   return crypto.subtle.generateKey(
     { name: 'AES-GCM', length: ENCRYPTION_CONFIG.KEY_LENGTH_BITS },
     true,
@@ -26,7 +26,7 @@ export async function generateAesKey(): Promise<CryptoKey> {
 }
 
 /** Import raw key bytes as an AES-256-GCM CryptoKey. */
-export async function importAesKey(
+export function importAesKey(
   rawBytes: Uint8Array,
   usages: ('encrypt' | 'decrypt')[] = ['encrypt', 'decrypt']
 ): Promise<CryptoKey> {
@@ -84,7 +84,7 @@ export async function aesEncryptToString(key: CryptoKey, plaintext: Uint8Array):
 }
 
 /** Decrypt from base64 string: base64(iv + ct) → plaintext. */
-export async function aesDecryptFromString(key: CryptoKey, encrypted: string): Promise<Uint8Array> {
+export function aesDecryptFromString(key: CryptoKey, encrypted: string): Promise<Uint8Array> {
   const combined = fromBase64(encrypted);
   const iv = combined.slice(0, ENCRYPTION_CONFIG.IV_LENGTH);
   const ct = combined.slice(ENCRYPTION_CONFIG.IV_LENGTH);

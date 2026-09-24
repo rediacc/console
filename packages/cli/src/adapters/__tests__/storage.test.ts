@@ -22,7 +22,7 @@ afterEach(async () => {
 });
 
 // Helper to check if file exists
-async function fileExists(path: string): Promise<boolean> {
+function fileExists(path: string): Promise<boolean> {
   return fs
     .access(path)
     .then(() => true)
@@ -120,7 +120,7 @@ async function runConcurrentWrites(
 }
 
 // Helper for interleaved read-modify-write operations test
-async function runInterleavedOperations(
+function runInterleavedOperations(
   storageInstance: ConfigFileStorage,
   name: string
 ): Promise<number[]> {

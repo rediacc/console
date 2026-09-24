@@ -245,7 +245,7 @@ export class BatchProcessor<T> {
  * Utility function to process items in batches
  * Convenience wrapper around BatchProcessor
  */
-export async function processBatch<T, TResult>(
+export function processBatch<T, TResult>(
   items: T[],
   processor: (batch: T[]) => Promise<TResult[]>,
   options?: {

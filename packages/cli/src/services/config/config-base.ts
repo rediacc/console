@@ -127,7 +127,7 @@ export class ConfigServiceBase {
   /**
    * List all available config files.
    */
-  async list(): Promise<string[]> {
+  list(): Promise<string[]> {
     return configFileStorage.list();
   }
 
@@ -268,7 +268,7 @@ export class ConfigServiceBase {
   /**
    * Initialize a new config file.
    */
-  async init(name: string): Promise<RdcConfig> {
+  init(name: string): Promise<RdcConfig> {
     return configFileStorage.init(name);
   }
 

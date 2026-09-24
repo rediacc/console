@@ -241,7 +241,7 @@ export function createSessionManager(opts: {
       return create(name, spec, sceneId, last);
     },
 
-    async acquireAnonymous(spec, need, sceneId) {
+    acquireAnonymous(spec, need, sceneId) {
       const name = `__anon:${sceneId}:${live.size + closed.size}`;
       console.log(`[video] creating anonymous session for scene ${sceneId}...`);
       // Anonymous sessions live exactly as long as their own scene: the loop's closeFinished(currentSceneIndex) call closes them.

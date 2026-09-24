@@ -58,7 +58,7 @@ export function decodeSSHKey(sshKey: string): string {
  * @param sshKey - SSH private key content (plain text)
  * @returns Path to the temporary key file
  */
-export async function createTempSSHKeyFile(sshKey: string): Promise<string> {
+export function createTempSSHKeyFile(sshKey: string): Promise<string> {
   const normalizedKey = decodeSSHKey(sshKey);
   return createSecureTempFile(normalizedKey, {
     prefix: 'ssh-key',

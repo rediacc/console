@@ -129,13 +129,13 @@ export async function computeCommitments(
  * Server-side verification is a hex-string comparison, not an HMAC recompute,
  * because the server does not hold FCK.
  */
-export async function verifyCommitment(
+export function verifyCommitment(
   fck: CryptoKey,
   pointer: string,
   value: unknown,
   expected: FieldCommitment
 ): Promise<boolean> {
-  if (valueKind(value) !== expected.kind) return false;
+  if (valueKind(value) !== expected.kind) return Promise.resolve(false);
   const canon = canonicalize(value);
   const payload = concat([new TextEncoder().encode(`${pointer}\0`), canon]);
   const expectedBytes = fromBase64(expected.hmac);

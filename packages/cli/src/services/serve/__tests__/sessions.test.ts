@@ -62,7 +62,7 @@ async function sealCekTo(publicKeyB64: string): Promise<{
   return { blob: await cekHandoffEncrypt(rawCek, publicKey), rawCek };
 }
 
-async function openFor(store: SessionStore, principal: SessionPrincipal) {
+function openFor(store: SessionStore, principal: SessionPrincipal) {
   return store.open(principal, serveCrypto.generateEphemeralKeyPair, serveCrypto.exportPublicKey);
 }
 

@@ -124,17 +124,17 @@ async function guardNamedRepo(
  * Block destructive ops on non-fork repos unless --allow-grand or env override.
  * Also blocks fork-incompatible commands on fork repos.
  */
-async function applyGrandRepoGuard(
+function applyGrandRepoGuard(
   tool: ToolDef,
   args: Record<string, unknown>,
   options: McpServerOptions
 ): Promise<ToolResult | null> {
-  if (!tool.repoArgField) return null;
+  if (!tool.repoArgField) return Promise.resolve(null);
 
   const repoName = args[tool.repoArgField] as string | undefined;
   if (repoName) return guardNamedRepo(tool, repoName, options);
 
-  return null;
+  return Promise.resolve(null);
 }
 
 /** Execute a tool call via the rdc child process and format the MCP response. */

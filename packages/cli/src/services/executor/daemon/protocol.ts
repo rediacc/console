@@ -27,7 +27,8 @@ import type { ExecuteOptions, ExecuteResult, RenetEvent } from '../types.js';
  * callback fields never travel: `onEvent` is realized as `event` frames the
  * client re-emits, and `onJobStarted` as a `jobStarted` frame.
  */
-export type WireExecuteOptions = Omit<ExecuteOptions, 'onEvent' | 'onJobStarted'>;
+type WireExecuteOptions = Omit<ExecuteOptions, 'onEvent' | 'onJobStarted'>;
+export type { WireExecuteOptions };
 
 /** The callback fields that are transported as frames rather than serialized. */
 const TRANSPORTED_CALLBACK_KEYS = ['onEvent', 'onJobStarted'] as const;

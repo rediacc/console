@@ -12,13 +12,13 @@ export interface VaultEncryptor {
 }
 
 export function createVaultEncryptor(provider: ICryptoProvider): VaultEncryptor {
-  const encrypt = async <T>(value: T, password: string): Promise<T> => {
-    if (!password || value == null) return value;
+  const encrypt = <T>(value: T, password: string): Promise<T> => {
+    if (!password || value == null) return Promise.resolve(value);
     return transformVaultFields(value, (input) => provider.encrypt(input, password));
   };
 
-  const decrypt = async <T>(value: T, password: string): Promise<T> => {
-    if (!password || value == null) return value;
+  const decrypt = <T>(value: T, password: string): Promise<T> => {
+    if (!password || value == null) return Promise.resolve(value);
     return transformVaultFields(value, async (input) => {
       if (!BASE64_REGEX.test(input)) {
         return input;

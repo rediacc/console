@@ -343,17 +343,17 @@ async function serveWithSmartRedirect(
 }
 
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+  fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     const isPreview = url.hostname !== 'www.rediacc.com';
     const channel = getChannel(url.hostname);
 
     if (url.pathname === '/robots.txt' && isPreview) {
-      return buildDisallowRobots();
+      return Promise.resolve(buildDisallowRobots());
     }
 
     if (isAccountApiPath(url.pathname)) {
-      return handleAccountApi(request, env, url);
+      return Promise.resolve(handleAccountApi(request, env, url));
     }
 
     if (url.pathname === '/account' || url.pathname.startsWith('/account/')) {
@@ -366,7 +366,7 @@ export default {
 
     // ----------------------------------------------------------------------- 404 recovery: normalize path, then consult the curated redirect table. -----------------------------------------------------------------------
     const curated = resolveCuratedRedirect(url);
-    if (curated) return curated;
+    if (curated) return Promise.resolve(curated);
 
     return serveWithSmartRedirect(request, env, url, isPreview, channel);
   },

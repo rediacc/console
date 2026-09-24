@@ -480,7 +480,7 @@ function targetFrom(
   return typeof fromPositional === 'string' ? fromPositional : undefined;
 }
 
-async function authenticate(header: string | undefined, deps: ServeDeps) {
+function authenticate(header: string | undefined, deps: ServeDeps) {
   const token = header?.replace(/^Bearer\s+/i, '').trim();
   if (!token) {
     throw new AuthError(

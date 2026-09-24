@@ -119,7 +119,7 @@ export function resolveEditor(explicit?: string): ResolvedEditor {
  * Spawn the editor on the given file path, inherit stdio, and resolve when
  * the user exits the editor. Rejects with EditorError on non-zero exit.
  */
-export async function openEditor(filePath: string, explicit?: string): Promise<void> {
+export function openEditor(filePath: string, explicit?: string): Promise<void> {
   const { command, args } = resolveEditor(explicit);
   return new Promise((resolve, reject) => {
     const child = spawn(command, [...args, filePath], {

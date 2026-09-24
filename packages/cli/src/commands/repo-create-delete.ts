@@ -293,7 +293,7 @@ async function handleRepoCreateOnDatastore(
  * Exactly one of `--machine` (docker, implicit default datastore) or
  * `--datastore` (named datastore, docker tiering, or the only kubernetes form).
  */
-export async function handleRepoCreate(
+export function handleRepoCreate(
   name: string,
   options: {
     machine?: string;
@@ -309,7 +309,7 @@ export async function handleRepoCreate(
   if (hasMachine === hasDatastore) {
     // Both, or neither, the same teaching error either way (spec 02 §7).
     handleError(new ValidationError(t('commands.repo.create.placementRequired')));
-    return;
+    return Promise.resolve();
   }
   if (options.machine) {
     return handleRepoCreateOnMachine(name, {

@@ -135,7 +135,7 @@ export function toFullConfig(
  * Compose the encrypted payload for a config push: commitments from the schema
  * walker, envelope from the document, ciphertext from the crypto layer.
  */
-export async function buildConfigPushPayload(
+export function buildConfigPushPayload(
   config: RdcConfig,
   params: {
     /** Version being written (the pulled version plus one). */
@@ -171,7 +171,7 @@ export async function buildConfigPushPayload(
  * client. Verifies the HMAC and rejects non-v2 envelopes, both inside
  * `selectiveDecrypt`.
  */
-export async function decryptConfigPullPayload(
+export function decryptConfigPullPayload(
   payload: EncryptedConfigPayload,
   keys: { cek: CryptoKey; sdkDerived: CryptoKey }
 ): Promise<FullConfig> {

@@ -17,7 +17,7 @@ import { recordTimelineStep, type TimelineStep } from '../utils/timeline.js';
 import { parseRepositoryListOutput } from './repo-list-parser.js';
 
 /** Prompt the user for batch confirmation. Returns true if confirmed. */
-async function confirmBatch(action: string, count: number, machine: string): Promise<boolean> {
+function confirmBatch(action: string, count: number, machine: string): Promise<boolean> {
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
   return new Promise((resolve) => {
     rl.question(`${t('commands.repo.batchConfirm', { action, count, machine })} `, (answer) => {

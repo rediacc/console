@@ -142,9 +142,9 @@ interface RepoLicenseContext {
   datastoreMount: string;
 }
 
-async function resolveKnownHosts(machineKnownHosts: string | undefined): Promise<string> {
+function resolveKnownHosts(machineKnownHosts: string | undefined): Promise<string> {
   const hosts = machineKnownHosts ?? '';
-  if (hosts) return hosts;
+  if (hosts) return Promise.resolve(hosts);
   const knownHostsPath = path.join(os.homedir(), '.ssh', 'known_hosts');
   return fs.readFile(knownHostsPath, 'utf-8').catch(() => '');
 }

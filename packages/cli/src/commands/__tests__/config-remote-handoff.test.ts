@@ -19,7 +19,7 @@ import {
 } from '../config-remote-handoff.js';
 
 /** Seal a payload exactly as the portal pages do (JSON → bytes → X25519 blob). */
-async function seal(payload: HandoffPayload, publicKey: CryptoKey) {
+function seal(payload: HandoffPayload, publicKey: CryptoKey) {
   const bytes = new TextEncoder().encode(JSON.stringify(payload));
   return cekHandoffEncrypt(bytes, publicKey);
 }

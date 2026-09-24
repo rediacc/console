@@ -107,7 +107,7 @@ function shellSingleQuote(s: string): string {
  * @param options - Additional options
  * @returns Promise resolving to success status and output
  */
-async function executeRemoteCommand(
+function executeRemoteCommand(
   destination: string,
   sshOptions: string[],
   command: string,

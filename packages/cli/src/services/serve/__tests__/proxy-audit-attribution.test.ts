@@ -177,7 +177,7 @@ describe('proxy audit attribution', () => {
     server.close();
   });
 
-  async function runCommand(token = SESSION_TOKEN): Promise<Response> {
+  function runCommand(token = SESSION_TOKEN): Promise<Response> {
     return fetch(`${baseUrl}${PROXY_ROUTES.command}`, {
       method: 'POST',
       headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },

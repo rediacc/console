@@ -38,7 +38,8 @@ export { createEmptyRdcConfig, hasRemoteConfig } from '@rediacc/shared/config-sc
  * schema changes propagate automatically. The name `SSHContent` is retained
  * for grep-continuity with existing call sites.
  */
-export type SSHContent = NonNullable<NonNullable<RdcConfig['credentials']>['ssh']>;
+type SSHContent = NonNullable<NonNullable<RdcConfig['credentials']>['ssh']>;
+export type { SSHContent };
 
 // ============================================================================
 // Output / UI types

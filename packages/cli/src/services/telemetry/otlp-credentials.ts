@@ -62,8 +62,8 @@ let inflight: Promise<OtlpCredentials | null> | undefined;
  * actual command, the CLI must always degrade to "telemetry disabled"
  * rather than surfacing an error.
  */
-export async function fetchOtlpCredentials(): Promise<OtlpCredentials | null> {
-  if (cached !== undefined) return cached;
+export function fetchOtlpCredentials(): Promise<OtlpCredentials | null> {
+  if (cached !== undefined) return Promise.resolve(cached);
   inflight ??= (async () => {
     try {
       const resp = await accountServerFetch<TelemetryConfigResponse>(

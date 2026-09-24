@@ -314,7 +314,7 @@ export async function withPooledSftp<T>(
  * connection held only for the duration of the call. Callers that already hold a
  * lease pass `lease.sftp` and keep owning its lifetime.
  */
-export async function withSharedOrPooledSftp<T>(
+export function withSharedOrPooledSftp<T>(
   sharedSftp: SFTPClient | undefined,
   config: SFTPClientConfig,
   fn: (sftp: SFTPClient) => Promise<T>

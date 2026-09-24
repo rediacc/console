@@ -308,7 +308,7 @@ export function generateRemoteUri(sshHost: string, remotePath: string): string {
  * @param options - Launch options
  * @returns Promise that resolves when launched (or process exits if waitForClose)
  */
-export async function launchVSCode(
+export function launchVSCode(
   vscodeInfo: VSCodeInfo,
   uri: string,
   options?: VSCodeLaunchOptions

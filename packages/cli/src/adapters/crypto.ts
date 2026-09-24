@@ -63,7 +63,7 @@ class NodeCryptoProvider implements ICryptoProvider {
     return key.toString('base64');
   }
 
-  private async deriveKeyBuffer(password: string, salt: Buffer): Promise<Buffer> {
+  private deriveKeyBuffer(password: string, salt: Buffer): Promise<Buffer> {
     return pbkdf2Async(
       password,
       salt,

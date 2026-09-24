@@ -339,9 +339,7 @@ export async function executeMachineStatus(machineName: string): Promise<void> {
   await renderRepoLicenseTable(machineName, context);
 }
 
-async function runRepoBatchRefresh(
-  context: SubscriptionCommandContext
-): Promise<RepoBatchRefreshResult> {
+function runRepoBatchRefresh(context: SubscriptionCommandContext): Promise<RepoBatchRefreshResult> {
   return withSpinner(
     t('commands.subscription.refresh.repos.refreshing'),
     () => refreshRepoLicensesBatch(context.machine, context.sshPrivateKey, context.remoteRenetPath),

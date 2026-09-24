@@ -610,26 +610,46 @@ export const RdcConfigSchema = z
 // Types
 // =============================================================================
 
-export type RdcConfig = z.infer<typeof RdcConfigSchema>;
-export type MachineConfig = z.infer<typeof MachineConfigSchema>;
-export type StorageConfig = z.infer<typeof StorageConfigSchema>;
-export type Placement = z.infer<typeof PlacementSchema>;
-export type RepoRecord = z.infer<typeof RepoRecordSchema>;
-export type RepoFamily = z.infer<typeof RepoFamilySchema>;
-export type SecretEntry = z.infer<typeof SecretEntrySchema>;
+type RdcConfig = z.infer<typeof RdcConfigSchema>;
+type MachineConfig = z.infer<typeof MachineConfigSchema>;
+type StorageConfig = z.infer<typeof StorageConfigSchema>;
+type Placement = z.infer<typeof PlacementSchema>;
+type RepoRecord = z.infer<typeof RepoRecordSchema>;
+type RepoFamily = z.infer<typeof RepoFamilySchema>;
+type SecretEntry = z.infer<typeof SecretEntrySchema>;
 export type SecretMode = SecretEntry['mode'];
-export type InfraConfig = z.infer<typeof InfraConfigSchema>;
-export type BackupDestination = z.infer<typeof BackupDestinationSchema>;
-export type BackupStrategyConfig = z.infer<typeof BackupStrategyConfigSchema>;
-export type CloudProviderConfig = z.infer<typeof CloudProviderConfigSchema>;
-export type ClusterConfig = z.infer<typeof ClusterConfigSchema>;
-export type ClusterPool = z.infer<typeof ClusterPoolSchema>;
-export type ClusterKvm = z.infer<typeof ClusterKvmSchema>;
+type InfraConfig = z.infer<typeof InfraConfigSchema>;
+type BackupDestination = z.infer<typeof BackupDestinationSchema>;
+type BackupStrategyConfig = z.infer<typeof BackupStrategyConfigSchema>;
+type CloudProviderConfig = z.infer<typeof CloudProviderConfigSchema>;
+type ClusterConfig = z.infer<typeof ClusterConfigSchema>;
+type ClusterPool = z.infer<typeof ClusterPoolSchema>;
+type ClusterKvm = z.infer<typeof ClusterKvmSchema>;
 export type ClusterPoolRole = ClusterPool['role'];
-export type RemoteConfig = z.infer<typeof RemoteConfigSchema>;
-export type EncryptedBlob = z.infer<typeof EncryptedBlobSchema>;
-export type EncryptionState = z.infer<typeof EncryptionSchema>;
-export type { AcmeCertCache, RdcState };
+type RemoteConfig = z.infer<typeof RemoteConfigSchema>;
+type EncryptedBlob = z.infer<typeof EncryptedBlobSchema>;
+type EncryptionState = z.infer<typeof EncryptionSchema>;
+export type {
+  RdcConfig,
+  MachineConfig,
+  StorageConfig,
+  Placement,
+  RepoRecord,
+  RepoFamily,
+  SecretEntry,
+  InfraConfig,
+  BackupDestination,
+  BackupStrategyConfig,
+  CloudProviderConfig,
+  ClusterConfig,
+  ClusterPool,
+  ClusterKvm,
+  RemoteConfig,
+  EncryptedBlob,
+  EncryptionState,
+  AcmeCertCache,
+  RdcState,
+};
 
 /**
  * Flattened in-memory repository view. `ResourceState` presents repositories to
@@ -653,7 +673,8 @@ export type RepositoryConfig = RepoRecord & {
   reflog?: ReflogEntry[];
 };
 
-export type ArchivedRepository = z.infer<typeof ArchivedRepositorySchema>;
+type ArchivedRepository = z.infer<typeof ArchivedRepositorySchema>;
+export type { ArchivedRepository };
 
 // =============================================================================
 // Create an empty v3 config

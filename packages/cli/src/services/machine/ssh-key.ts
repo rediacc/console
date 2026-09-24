@@ -29,7 +29,7 @@ export async function readSSHKey(keyPath: string): Promise<string> {
 /**
  * Read an SSH key, returning an empty string when the path is unset or unreadable.
  */
-export async function readOptionalSSHKey(keyPath: string | undefined): Promise<string> {
-  if (!keyPath) return '';
+export function readOptionalSSHKey(keyPath: string | undefined): Promise<string> {
+  if (!keyPath) return Promise.resolve('');
   return readSSHKey(keyPath).catch(() => '');
 }

@@ -63,12 +63,12 @@ export async function importX25519PublicKey(base64Spki: string): Promise<CryptoK
 }
 
 /** Import an X25519 public key from raw 32 bytes. */
-export async function importX25519PublicKeyRaw(raw: Uint8Array): Promise<CryptoKey> {
+export function importX25519PublicKeyRaw(raw: Uint8Array): Promise<CryptoKey> {
   return crypto.subtle.importKey('raw', buf(raw), { name: 'X25519' }, false, []);
 }
 
 /** Import an X25519 private key from base64-encoded PKCS8 format. */
-export async function importX25519PrivateKey(base64Pkcs8: string): Promise<CryptoKey> {
+export function importX25519PrivateKey(base64Pkcs8: string): Promise<CryptoKey> {
   return crypto.subtle.importKey('pkcs8', buf(fromBase64(base64Pkcs8)), { name: 'X25519' }, false, [
     'deriveBits',
   ]);
@@ -77,7 +77,7 @@ export async function importX25519PrivateKey(base64Pkcs8: string): Promise<Crypt
 // ─── Key Derivation ──────────────────────────────────────────────────────────
 
 /** Derive shared secret via X25519 ECDH. Returns raw 32-byte shared secret. */
-export async function deriveSharedSecret(
+export function deriveSharedSecret(
   privateKey: CryptoKey,
   publicKey: CryptoKey
 ): Promise<ArrayBuffer> {

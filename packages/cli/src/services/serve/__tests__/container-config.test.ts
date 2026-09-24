@@ -345,7 +345,7 @@ describe('container-tier config loading', () => {
     return sessionId;
   }
 
-  async function runCommand(
+  function runCommand(
     token = OWNER_TOKEN,
     extraHeaders: Record<string, string> = {}
   ): Promise<Response> {

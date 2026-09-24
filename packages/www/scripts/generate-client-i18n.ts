@@ -312,7 +312,8 @@ export const CLIENT_DIRS: Record<BundleName, string> = {
   'client-route': BUNDLES['client-route'].dir,
 };
 
-export type ClientBundleName = BundleName;
+type ClientBundleName = BundleName;
+export type { ClientBundleName };
 
 // ─── The control: the allowlist must cover the islands ────────────────────────
 

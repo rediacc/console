@@ -37,7 +37,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import ts from 'typescript';
+import { parseSync, Visitor } from 'oxc-parser';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const SCAN_DIR = 'scripts';
@@ -55,33 +55,61 @@ export interface Finding {
 }
 
 /**
+ * Line numbers for an oxc AST span: oxc hands back byte offsets, not
+ * (line, character) pairs, so the offsets of every newline are indexed once
+ * per file and a span's line is found by binary search over that index.
+ */
+function computeLineStarts(source: string): number[] {
+  const starts = [0];
+  for (let i = 0; i < source.length; i++) {
+    if (source[i] === '\n') starts.push(i + 1);
+  }
+  return starts;
+}
+
+function lineAtOffset(lineStarts: number[], offset: number): number {
+  let lo = 0;
+  let hi = lineStarts.length - 1;
+  while (lo < hi) {
+    const mid = (lo + hi + 1) >> 1;
+    if (lineStarts[mid] <= offset) lo = mid;
+    else hi = mid - 1;
+  }
+  return lo + 1;
+}
+
+/**
  * The text of a template literal is NOT parsed into a syntax tree, so a
  * `check(...)` sitting in it is never a CallExpression at all. Detection is
- * therefore textual WITHIN the literal's text spans, which the compiler hands
+ * therefore textual WITHIN the literal's text spans, which the parser hands
  * over exactly -- no hand-rolled nesting.
+ *
+ * oxc/ESTree has no separate TemplateHead/Middle/Tail node types: every quasi
+ * of a template literal (including a no-substitution one, which is just a
+ * TemplateLiteral with a single tail-only quasi) is a `TemplateElement`, whose
+ * span covers its surrounding delimiter (the opening backtick or a `}`) through
+ * its closing delimiter (`${` or the closing backtick). `value.raw` is the
+ * exact source slice between those delimiters, so `node.start + 1` lines up
+ * with its first character without any cooked/raw offset drift.
  */
 export function controlTextInTemplates(source: string, fileName = 'x.ts'): Finding[] {
-  const sf = ts.createSourceFile(fileName, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+  const { program } = parseSync(fileName, source, { sourceType: 'module' });
   const found: Finding[] = [];
   const re = new RegExp(`\\b(${CONTROL_ALTERNATION})\\s*\\(\\s*['"]`, 'g');
-  const scanText = (text: string, start: number) => {
-    for (const m of text.matchAll(re)) {
-      found.push({
-        file: fileName,
-        line: sf.getLineAndCharacterOfPosition(start + (m.index ?? 0)).line + 1,
-        name: m[1],
-      });
-    }
-  };
-  const visit = (node: ts.Node): void => {
-    if (ts.isNoSubstitutionTemplateLiteral(node)) {
-      scanText(node.text, node.getStart(sf) + 1);
-    } else if (ts.isTemplateHead(node) || ts.isTemplateMiddle(node) || ts.isTemplateTail(node)) {
-      scanText(node.text, node.getStart(sf) + 1);
-    }
-    ts.forEachChild(node, visit);
-  };
-  ts.forEachChild(sf, visit);
+  const lineStarts = computeLineStarts(source);
+  const visitor = new Visitor({
+    TemplateElement(node) {
+      const start = node.start + 1;
+      for (const m of node.value.raw.matchAll(re)) {
+        found.push({
+          file: fileName,
+          line: lineAtOffset(lineStarts, start + (m.index ?? 0)),
+          name: m[1] as string,
+        });
+      }
+    },
+  });
+  visitor.visit(program);
   return found;
 }
 

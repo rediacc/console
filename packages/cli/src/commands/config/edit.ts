@@ -95,7 +95,7 @@ function renderJsonc(config: RdcConfig, options: RenderOptions): string {
  * Prompt the user to confirm a list of sensitive-field rotations.
  * Returns true only when the user types 'rotate' (case-insensitive).
  */
-async function promptRotationConfirmation(paths: string[]): Promise<boolean> {
+function promptRotationConfirmation(paths: string[]): Promise<boolean> {
   const lines = [
     '',
     t('commands.config.edit.rotatePromptHeader', { count: paths.length }),

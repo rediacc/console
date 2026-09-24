@@ -273,7 +273,7 @@ export async function dispatch(
  * is still allocated (it names the systemd unit and the node interface), and the
  * allocator's forward counter is persistent, so no id is ever handed out twice.
  */
-export async function allocateAgentNetworkId(): Promise<number> {
+export function allocateAgentNetworkId(): Promise<number> {
   return configService.allocateNetworkId();
 }
 

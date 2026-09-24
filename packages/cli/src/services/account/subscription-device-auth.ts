@@ -126,10 +126,7 @@ async function pollForDeviceCodeToken(
   throw new ValidationError(t('commands.subscription.login.expired'));
 }
 
-async function fetchLicenseStatus(
-  serverUrl: string,
-  token: string
-): Promise<LicenseStatusResponse> {
+function fetchLicenseStatus(serverUrl: string, token: string): Promise<LicenseStatusResponse> {
   return accountServerFetch<LicenseStatusResponse>('/account/api/v1/licenses/status', {
     token,
     serverUrl,

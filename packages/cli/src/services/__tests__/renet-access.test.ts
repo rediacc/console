@@ -54,7 +54,7 @@ function inspectResult(overrides: Record<string, unknown> = {}) {
   };
 }
 
-async function load() {
+function load() {
   return import('../renet/renet-execution.js');
 }
 

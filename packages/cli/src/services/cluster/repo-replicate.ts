@@ -99,7 +99,7 @@ export function replicaSetNameFor(repoKey: string): string {
 }
 
 /** The repo's managed replica set, or undefined when it has none. */
-export async function getReplicaSetForRepo(repoKey: string): Promise<ReplicaSet | undefined> {
+export function getReplicaSetForRepo(repoKey: string): Promise<ReplicaSet | undefined> {
   return getReplicaSet(replicaSetNameFor(repoKey));
 }
 

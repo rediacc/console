@@ -284,9 +284,10 @@ export const StateSchema = z.object({
     .optional(),
 });
 
-export type RdcState = z.infer<typeof StateSchema>;
-export type AcmeCertCache = z.infer<typeof AcmeCertCacheSchema>;
-export type ReplicaSet = z.infer<typeof ReplicaSetSchema>;
-export type CanarySet = z.infer<typeof CanarySetSchema>;
-export type ReflogEntry = z.infer<typeof ReflogEntrySchema>;
+type RdcState = z.infer<typeof StateSchema>;
+type AcmeCertCache = z.infer<typeof AcmeCertCacheSchema>;
+type ReplicaSet = z.infer<typeof ReplicaSetSchema>;
+type CanarySet = z.infer<typeof CanarySetSchema>;
+type ReflogEntry = z.infer<typeof ReflogEntrySchema>;
+export type { RdcState, AcmeCertCache, ReplicaSet, CanarySet, ReflogEntry };
 export type RepoRuntimeState = NonNullable<RdcState['repos']>[string][string];

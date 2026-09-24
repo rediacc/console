@@ -376,4 +376,5 @@ export interface CliContract {
 }
 
 /** A flattened i18n bundle: key -> translated string. */
-export type ContractStrings = Record<string, string>;
+type ContractStrings = Record<string, string>;
+export type { ContractStrings };

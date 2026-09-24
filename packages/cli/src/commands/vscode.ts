@@ -75,7 +75,7 @@ interface VSCodeCleanupOptions {
   connection?: string;
 }
 
-async function detectVSCode() {
+function detectVSCode() {
   return withSpinner(t('commands.vscode.connect.detecting'), async () => {
     const info = await findVSCode();
     if (!info) {

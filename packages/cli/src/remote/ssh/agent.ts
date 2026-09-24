@@ -224,6 +224,6 @@ export async function stopSSHAgent(agentPid: string, gracePeriodMs = 1000): Prom
  *
  * @returns True if ssh-agent is available
  */
-export async function isSSHAgentAvailable(): Promise<boolean> {
+export function isSSHAgentAvailable(): Promise<boolean> {
   return commandExists('ssh-agent');
 }

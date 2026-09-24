@@ -63,9 +63,9 @@ function describeEnrollForbidden(error: unknown): string {
  * prompt. There is nothing to verify it against locally, a wrong password fails
  * the probe pull below with a clear message.
  */
-async function resolveConfigPassword(): Promise<string> {
+function resolveConfigPassword(): Promise<string> {
   const envPassword = process.env.REDIACC_CONFIG_PASSWORD;
-  if (envPassword) return envPassword;
+  if (envPassword) return Promise.resolve(envPassword);
 
   if (process.stdin.isTTY !== true) {
     throw new ValidationError(t('commands.config.remote.enable.passwordNonInteractive'));

@@ -95,7 +95,7 @@ export function canarySetNameFor(repoKey: string): string {
 }
 
 /** The repo's managed canary set, or undefined when it has none. */
-export async function getCanaryForRepo(repoKey: string): Promise<CanarySet | undefined> {
+export function getCanaryForRepo(repoKey: string): Promise<CanarySet | undefined> {
   return getCanary(canarySetNameFor(repoKey));
 }
 

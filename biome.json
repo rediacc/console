@@ -600,7 +600,11 @@
         "packages/e2e-tests/tests/16-setup-installation-params.test.ts",
         "packages/e2e-tests/tests/20-image-build.test.ts",
         "packages/e2e-tests/tests/21-local-executor.test.ts",
-        "packages/e2e-tests/tests/22-setup-command.test.ts"
+        "packages/e2e-tests/tests/22-setup-command.test.ts",
+        "packages/shared/src/config-crypto/slots.ts",
+        "packages/shared/src/e2e/crypto.ts",
+        "packages/cli/src/remote/sftp/client.ts",
+        "packages/www/scripts/lib/scenes/browser-session.ts"
       ],
       "linter": {
         "rules": {
@@ -622,6 +626,10 @@
           }
         }
       }
+    },
+    {
+      "includes": ["private/account/**/*.css"],
+      "linter": { "enabled": false }
     },
     {
       "includes": ["private/account/**/i18n/locales/**/*.json"],

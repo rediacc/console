@@ -326,7 +326,7 @@ async function measureRepoSizeGb(
   return MIN_REQUESTED_SIZE_GB;
 }
 
-export async function readMachineActivationStatus(
+export function readMachineActivationStatus(
   machine: MachineConfig,
   sshPrivateKey: string,
   remoteRenetPath?: string,
@@ -334,7 +334,7 @@ export async function readMachineActivationStatus(
 ): Promise<MachineActivationStatus | null> {
   const tokenState = getSubscriptionTokenState();
   if (tokenState.kind !== 'ready') {
-    return null;
+    return Promise.resolve(null);
   }
 
   return withSharedOrPooledSftp(
@@ -389,7 +389,7 @@ async function scanRemoteLicenseStatuses(
   return Array.isArray(parsed) ? (parsed as RuntimeRepoLicenseStatus[]) : [];
 }
 
-export async function readRuntimeRepoLicenseStatuses(
+export function readRuntimeRepoLicenseStatuses(
   machine: MachineConfig,
   sshPrivateKey: string,
   remoteRenetPath?: string,
@@ -420,7 +420,7 @@ function clusterIdFor(machine: MachineConfig): string | undefined {
   return machine.cluster?.cluster;
 }
 
-export async function issueRepoLicense(
+export function issueRepoLicense(
   machine: MachineConfig,
   sshPrivateKey: string,
   params: {
@@ -436,7 +436,7 @@ export async function issueRepoLicense(
   sharedSftp?: SFTPClient
 ): Promise<boolean> {
   const tokenState = getSubscriptionTokenState();
-  if (tokenState.kind !== 'ready') return false;
+  if (tokenState.kind !== 'ready') return Promise.resolve(false);
 
   return withSharedOrPooledSftp(
     sharedSftp,
@@ -526,7 +526,7 @@ async function readRepoLicenseInputs(
   return {};
 }
 
-export async function refreshRepoLicenseIdentity(
+export function refreshRepoLicenseIdentity(
   machine: MachineConfig,
   sshPrivateKey: string,
   params: {
@@ -561,7 +561,7 @@ export async function refreshRepoLicenseIdentity(
   sharedSftp?: SFTPClient
 ): Promise<boolean> {
   const tokenState = getSubscriptionTokenState();
-  if (tokenState.kind !== 'ready') return false;
+  if (tokenState.kind !== 'ready') return Promise.resolve(false);
 
   return withSharedOrPooledSftp(
     sharedSftp,
@@ -789,7 +789,7 @@ function pickServerErrorSample(
   return failures[idx].error.slice(0, 200);
 }
 
-export async function refreshRepoLicensesBatch(
+export function refreshRepoLicensesBatch(
   machine: MachineConfig,
   sshPrivateKey: string,
   remoteRenetPath?: string,
@@ -797,7 +797,7 @@ export async function refreshRepoLicensesBatch(
 ): Promise<RepoBatchRefreshResult> {
   const tokenState = getSubscriptionTokenState();
   if (tokenState.kind !== 'ready') {
-    return {
+    return Promise.resolve({
       scanned: 0,
       issued: 0,
       refreshed: 0,
@@ -808,7 +808,7 @@ export async function refreshRepoLicensesBatch(
       failures: [{ repositoryGuid: '*', error: 'Subscription token is not ready' }],
       recoveryFailureMode: 'token_not_ready',
       serverErrorSample: undefined,
-    };
+    });
   }
 
   return withSharedOrPooledSftp(sharedSftp, sftpConfigForMachine(machine, sshPrivateKey), (sftp) =>

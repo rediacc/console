@@ -21,7 +21,7 @@ import routeManifestIntegration from './src/integrations/route-manifest-generato
 const searchIndexIntegration = {
   name: 'search-index-generator',
   hooks: {
-    'astro:build:start': async () => {
+    'astro:build:start': () => {
       execSync('node scripts/generate-search-index.js', { stdio: 'inherit' });
     },
   },
