@@ -13,6 +13,21 @@
  * the `env:` block of the workflow step whose `run:` invokes the builder. The
  * two sides are joined by NOTHING but a matching string.
  *
+ * THE PYTHON PORTS. Each of those three builders now has a twin under
+ * `.ci/rediacc_ci/deploy/`, and the workflow steps invoke the PORT:
+ *
+ *      run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.set_account_worker_secrets
+ *
+ * so a step is found by EITHER spelling: the `.sh` path, or `-m` followed by the
+ * module the path maps to (`.ci/scripts/<pkg>/<a-b-c>.sh` ->
+ * `rediacc_ci.<pkg>.<a_b_c>`, one rule rather than three special cases). The
+ * READ side is still parsed out of the `.sh` twin, and that is sound rather
+ * than stale: the differentials in .ci/rediacc_ci/tests/test_deploy_set_*.py
+ * re-derive each port's key list and guard list FROM the twin's source and fail
+ * on drift, so the twin remains an exact description of what the port reads. If
+ * a twin is ever deleted, this gate refuses (missing builder) rather than
+ * passing on nothing, which is the behaviour to keep.
+ *
  * On 2026-09-02 the `SECRET_*` / `VAR_*` translation shim was deleted from all
  * three builders, so each now reads the full Worker name directly
  * (`ACCOUNT_JWT_SECRET`, `CLOUDFLARE_TURNSTILE_SECRET_KEY`, ...). The workflows
@@ -54,10 +69,11 @@
  * spellings must be exported.
  *
  * NOT CHECKED, and said out loud rather than left to be discovered:
- *   - scripts/ops/deploy-bench.sh and run.sh also build a secret payload, but
- *     they read a local `.env` file rather than a workflow `env:` block. That
- *     is a different contract with a different oracle; this gate does not look
- *     at them, and their names are covered by check:ci-worker-secret-names.
+ *   - scripts/ops/deploy-bench.sh also builds a secret payload, but it reads a
+ *     local `.env` file rather than a workflow `env:` block. That is a different
+ *     contract with a different oracle; this gate does not look at it, and its
+ *     names are covered by check:ci-worker-secret-names. (run.sh was named here
+ *     too until commit dd5dfba3c deleted its `pr` verb and the payload with it.)
  *   - VALUES. A name exported as `${{ secrets.TYPO }}` is present and empty.
  *     That is the builders' `_require_nonempty` guards and check_bws_map.py.
  *   - names read by a sourced library (.ci/scripts/lib/common.sh) rather than
@@ -291,6 +307,37 @@ export interface StepEnv {
   stepName: string;
   stepLine: number;
   names: Map<string, number>;
+  /** Which spelling of the builder the step's `run:` actually used. */
+  invokedAs: 'sh-path' | 'python-module';
+}
+
+/**
+ * The python module a `.ci/scripts/<pkg>/<name>.sh` builder was ported to, by
+ * the one rule the ports follow: the directory becomes the package and the
+ * basename's dashes become underscores. `null` for any path that does not have
+ * that shape, so a builder living somewhere else is matched by path only.
+ */
+export function pythonPortModule(builder: string): string | null {
+  const m = /^\.ci\/scripts\/([a-z][a-z0-9_]*)\/([a-z0-9][a-z0-9-]*)\.sh$/.exec(builder);
+  if (!m) return null;
+  return `rediacc_ci.${m[1]}.${m[2].replace(/-/g, '_')}`;
+}
+
+/**
+ * Does this `run:` scalar invoke `builder`, by either spelling?
+ *
+ * The module form demands a real `-m <module>` invocation and a boundary after
+ * it, so neither a prose mention nor a LONGER module name
+ * (`...set_account_worker_secrets_v2`) can claim the step. The step this gate
+ * finds decides which env block it reads; a loose match would read a
+ * neighbour's.
+ */
+export function runInvokesBuilder(runScalar: string, builder: string): StepEnv['invokedAs'] | null {
+  if (runScalar.includes(builder)) return 'sh-path';
+  const mod = pythonPortModule(builder);
+  if (mod === null) return null;
+  const re = new RegExp(`(?:^|\\s)-m\\s+${mod.replace(/\./g, '\\.')}(?![\\w.])`);
+  return re.test(runScalar) ? 'python-module' : null;
 }
 
 /**
@@ -329,7 +376,8 @@ export function stepEnvNames(yamlText: string, builder: string): StepEnv | null 
         block[runEnd].length - block[runEnd].trimStart().length > keyIndent)
     )
       runEnd += 1;
-    if (!block.slice(runIdx, runEnd).join('\n').includes(builder)) continue;
+    const invokedAs = runInvokesBuilder(block.slice(runIdx, runEnd).join('\n'), builder);
+    if (invokedAs === null) continue;
     const atKey = (re: RegExp) =>
       block.filter((l) => new RegExp(`^\\s{${keyIndent}}${re.source}`).test(l)).length;
     if (atKey(/run:/) !== 1 || atKey(/env:/) !== 1) return null;
@@ -354,6 +402,7 @@ export function stepEnvNames(yamlText: string, builder: string): StepEnv | null 
         nameIdx >= 0 ? block[nameIdx].replace(/^\s*-?\s*name:\s*/, '').trim() : '(unnamed step)',
       stepLine: from + 1,
       names,
+      invokedAs,
     };
   }
   return null;
@@ -453,9 +502,81 @@ export function stepEnvNames(yamlText: string, builder: string): StepEnv | null 
     );
     process.exit(1);
   }
+  if (step.invokedAs !== 'sh-path') {
+    console.error(
+      `x instrument control: stepEnvNames() reported the fixture's literal .sh run: line as "${step.invokedAs}". The two spellings must stay distinguishable in the output.`
+    );
+    process.exit(1);
+  }
   if (stepEnvNames(wfFixture, '.ci/scripts/deploy/absent-builder.sh') !== null) {
     console.error(
       'x instrument control: stepEnvNames() invented a step for a builder no step invokes. It must return null so the caller can refuse.'
+    );
+    process.exit(1);
+  }
+
+  // The PORTED spelling: the same builder, invoked as its python module.
+  if (
+    pythonPortModule('.ci/scripts/deploy/set-fixture-secrets.sh') !==
+    'rediacc_ci.deploy.set_fixture_secrets'
+  ) {
+    console.error(
+      `x instrument control: pythonPortModule() mapped the fixture builder to ${JSON.stringify(pythonPortModule('.ci/scripts/deploy/set-fixture-secrets.sh'))}; the rule is <pkg>/<a-b-c>.sh -> rediacc_ci.<pkg>.<a_b_c>.`
+    );
+    process.exit(1);
+  }
+  if (pythonPortModule('scripts/ops/deploy-bench.sh') !== null) {
+    console.error(
+      'x instrument control: pythonPortModule() invented a module for a path outside .ci/scripts/. A builder with no port must be matched by path only.'
+    );
+    process.exit(1);
+  }
+  const portedFixture = wfFixture.replace(
+    '        run: .ci/scripts/deploy/set-fixture-secrets.sh',
+    '        run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.set_fixture_secrets'
+  );
+  if (portedFixture === wfFixture) {
+    console.error(
+      'x instrument control: the ported-invocation fixture is identical to the .sh one, so the next two assertions would prove nothing about the module form.'
+    );
+    process.exit(1);
+  }
+  const portedStep = stepEnvNames(portedFixture, '.ci/scripts/deploy/set-fixture-secrets.sh');
+  if (
+    !portedStep ||
+    portedStep.invokedAs !== 'python-module' ||
+    portedStep.stepName !== 'Set Worker secrets' ||
+    portedStep.names.size !== 3 ||
+    !portedStep.names.has('ACCOUNT_JWT_SECRET')
+  ) {
+    console.error(
+      `x instrument control: stepEnvNames() did not find the step whose run: invokes the builder's python port. Read ${JSON.stringify(portedStep && { n: portedStep.stepName, as: portedStep.invokedAs, k: [...portedStep.names.keys()] })}. A ported builder would read as VACUOUS INPUT and the contract would go unchecked.`
+    );
+    process.exit(1);
+  }
+  // ... and the module match must be exact: a LONGER module name is a different
+  // script, and claiming its step would read a neighbour's env block.
+  const nearMiss = wfFixture.replace(
+    '        run: .ci/scripts/deploy/set-fixture-secrets.sh',
+    '        run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.set_fixture_secrets_v2'
+  );
+  if (stepEnvNames(nearMiss, '.ci/scripts/deploy/set-fixture-secrets.sh') !== null) {
+    console.error(
+      'x instrument control: stepEnvNames() matched rediacc_ci.deploy.set_fixture_secrets_v2 for set-fixture-secrets.sh. A prefix match claims the wrong step and checks the wrong env block.'
+    );
+    process.exit(1);
+  }
+  if (
+    stepEnvNames(
+      wfFixture.replace(
+        '        run: .ci/scripts/deploy/set-fixture-secrets.sh',
+        '        run: echo "see rediacc_ci.deploy.set_fixture_secrets for the payload"'
+      ),
+      '.ci/scripts/deploy/set-fixture-secrets.sh'
+    ) !== null
+  ) {
+    console.error(
+      'x instrument control: a step merely NAMING the module in prose was matched as invoking it. Only a real `-m <module>` invocation may claim a step.'
     );
     process.exit(1);
   }
@@ -600,7 +721,7 @@ for (const pair of PAIRS) {
   }
 
   shape.push(
-    `    ${pair.workflow}:${step.stepLine} "${step.stepName}" exports ${step.names.size} -> ${pair.builder} reads ${reads.size} + ${fan.names.size} fan-in name(s) from ${fan.templates.length} template(s)`
+    `    ${pair.workflow}:${step.stepLine} "${step.stepName}" (runs the ${step.invokedAs === 'python-module' ? `python port ${pythonPortModule(pair.builder)}` : '.sh directly'}) exports ${step.names.size} -> ${pair.builder} reads ${reads.size} + ${fan.names.size} fan-in name(s) from ${fan.templates.length} template(s)`
   );
 }
 
@@ -656,7 +777,7 @@ console.log(
     '\n' +
     '  Blind spots, stated rather than left to be found: this proves the NAMES agree, not\n' +
     "  that a value is non-empty (that is the builders' _require_nonempty guards). It does\n" +
-    '  NOT cover scripts/ops/deploy-bench.sh or run.sh, which build the same payload from a\n' +
+    '  NOT cover scripts/ops/deploy-bench.sh, which builds the same payload from a\n' +
     '  local .env file rather than a workflow env: block -- a different contract with a\n' +
     '  different oracle. Names read by a sourced library are invisible here too.'
 );

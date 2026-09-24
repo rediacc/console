@@ -868,6 +868,11 @@ def local_entry_problems(
                 out.append(
                     f"env-local-allowlist {name!r} expired on {expires}; decide it, do not extend the date by reflex"
                 )
+    # A DEFERRAL WHOSE SEEDING LANDED. Every `deferred` row here waits on the name reaching the store, so a name the map now holds is a deferral that forgives nothing. Without this the row would sit until its `expires` date and then red as EXPIRED, telling its reader to "decide it" about a decision already made; found 2026-09-24 when eleven such rows outlived the seeding recorded in agent/plans/PLAN-github-actions-to-bitwarden.md.
+    if kind == "deferred" and name in secrets:
+        out.append(
+            f"env-local-allowlist {name!r} is deferred until it reaches the store, and the map now holds it -- the seeding landed, so delete the row"
+        )
     if kind == "deferred" and len(str(rec.get("blocker", "")).strip()) < 20:
         out.append(
             f"env-local-allowlist {name!r} is deferred and must name its `blocker` -- who is blocked on what"
@@ -1509,6 +1514,25 @@ jobs:
             ),
         ),
         (
+            "14c: a deferral for a name the map now holds is named as landed",
+            lambda: any(
+                "seeding landed" in m
+                for m in env14(
+                    base_names + "\nSEEDED=1\n",
+                    {
+                        **base_entries,
+                        "SEEDED": {
+                            "kind": "deferred",
+                            "reason": "a synthetic deferral whose seeding has since landed",
+                            "blocker": "a synthetic blocker long enough to pass the floor",
+                            "expires": "2999-01-01",
+                        },
+                    },
+                    store={"SEEDED": {}},
+                )
+            ),
+        ),
+        (
             "14 floors: an empty example AND an empty allowlist still RED",
             lambda: len([m for m in env14("", {}) if "floor" in m]) == 2,
         ),
@@ -1564,7 +1588,7 @@ def main() -> int:
     callers = 0
     workflows = sorted((ROOT / ".github" / "workflows").glob("*.yml"))
     if not workflows:
-        # ZERO FILES is not "zero callers". Zero callers among real workflows is the pre-cutover state and passes with a note below; zero workflow files means the scan lost its subject entirely, and a gate that passes over an empty set is the failure mode this repo names most often. test-gate-anti-vacuity.sh caught exactly this on the first run: the map is copied into its empty
+        # ZERO FILES is not "zero callers". Zero callers among real workflows is the pre-cutover state and passes with a note below; zero workflow files means the scan lost its subject entirely, and a gate that passes over an empty set is the failure mode this repo names most often. `.ci/rediacc_ci/tests/gates/test_gate_gate_anti_vacuity.py` caught exactly this on the first run: the map is copied into its empty
         # tree, so without this clause the gate exited 0 there asserting nothing.
         print(
             "✗ no workflow files under .github/workflows; refusing to pass vacuously",

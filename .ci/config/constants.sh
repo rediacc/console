@@ -161,7 +161,7 @@ readonly DEVBOX_DOMAIN="localhost"
 # =============================================================================
 PUBLISH_DOCKER_REGISTRY="${PUBLISH_DOCKER_REGISTRY:-ghcr.io/rediacc}"
 
-# Bot identity for CI commits: set GIT_BOT_NAME / GIT_BOT_EMAIL org variables.
+# Bot identity for CI commits: the GIT_BOT_NAME / GIT_BOT_EMAIL Bitwarden secrets (ci-shared).
 # Used by: update-homebrew-tap.sh, cd-v2.yml (git tag creation).
 # NOT declared here to avoid breaking local scripts that source constants.sh.
 

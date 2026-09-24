@@ -1,0 +1,32 @@
+{
+  "_comment": [
+    "Every GitHub Actions variable (`vars.NAME`) a workflow still reads, and why it has not",
+    "moved to Bitwarden. `.ci/rediacc_ci/quality/actions_vars.py` (check:ci-actions-vars)",
+    "holds this file set-equal with the reads it derives from the tree, in BOTH directions,",
+    "and re-derives every entry's `kind` rather than believing it.",
+    "",
+    "THE RULING. The operator, 2026-09-24: no dependency on GitHub variables or secrets at",
+    "all. The one exception is BWS_ACCESS_TOKEN, because a credential cannot live inside the",
+    "store it unlocks; that ruling is `bootstrap_names` in .ci/config/secret-supply.json and",
+    "the gate reads it from there rather than restating it here. GITHUB_TOKEN is minted per",
+    "job by the runner, stored nowhere, and is the other name the secrets arm allows.",
+    "",
+    "THE TERMINAL STATE IS AN EMPTY `vars` OBJECT, and it is the state this file is in. All",
+    "twenty variable names moved to the ci-shared project on 2026-09-24",
+    "(agent/plans/PLAN-github-actions-to-bitwarden.md). An entry here is a debt with a",
+    "reason, not a record of history: an entry whose reads have all gone reds as RESOLVED.",
+    "",
+    "HOW TO ADD ONE, if a workflow genuinely needs a GitHub variable again. Add",
+    "`\"NAME\": {\"kind\": ..., \"why\": ...}` under `vars`. `migrated` also carries `bws`, the",
+    "ci-shared spelling when it differs from NAME. `no-fetch-job` also needs a",
+    "`\"<path>#<job>\": {\"names\": [...], \"reason\": \"BLOCKER: ...\"}` row under",
+    "`no_fetch_jobs`, the same two-key shape as .ci/config/bws-unrequested.json."
+  ],
+  "kinds": {
+    "migrated": "The value is already in ci-shared (under `bws`, or under NAME when `bws` is absent) and the remaining reads are the edit still to land. Re-derived: the twin must be in .ci/config/bws-secret-map.json.",
+    "no-fetch-job": "Read ONLY in jobs that must not fetch from Bitwarden, each named under `no_fetch_jobs` with a BLOCKER reason. Re-derived: every read of the name sits in such a job, and every such job still contains the read.",
+    "dead": "Nothing reads it. Unreachable by construction and refused on sight: a dead variable is deleted from GitHub, not recorded here."
+  },
+  "vars": {},
+  "no_fetch_jobs": {}
+}

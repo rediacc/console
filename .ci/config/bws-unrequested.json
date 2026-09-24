@@ -36,13 +36,29 @@
     "entry reds instead of sitting there looking considered."
   ],
   "exemptions": {
+    "AWS_IAM_ADMIN_ACCESS_KEY_ID": {
+      "kind": "no-github-twin",
+      "reason": "Admin credential seeded 2026-09-24 on the operator's choice to keep it in ci-shared (agent/plans/PLAN-account-env-to-bws.md Q2). Read only by the local secret-rotation tool, never by a workflow."
+    },
+    "AWS_IAM_ADMIN_SECRET_ACCESS_KEY": {
+      "kind": "no-github-twin",
+      "reason": "Admin credential seeded 2026-09-24 on the operator's choice to keep it in ci-shared (agent/plans/PLAN-account-env-to-bws.md Q2). Read only by the local secret-rotation tool, never by a workflow."
+    },
     "AWS_SES_HOST": {
       "kind": "no-github-twin",
       "reason": "SMTP endpoint hostname; the account server talks to SES over the API. git log -S finds one commit, the one that added the map entry."
     },
     "AWS_SES_REGION": {
       "kind": "no-github-twin",
-      "reason": "Public data, already committed in the clear at regions.json:17,35,53. No workflow requests it and no deploy path reads the stored copy: cd-deploy-account takes it from matrix.sesRegion, cd-deploy-worker from vars.AWS_SES_REGION_EU, and only run.sh:1533 reads private/account/.env. It sits in the store as an inert leftover -- keeping it costs nothing and deleting it is the operator's call. (This reason used to argue it 'should never enter a secret store' while sitting in one, which is an argument for a deletion nobody had made.)"
+      "reason": "Public data, already committed in the clear at regions.json:17,35,53. No workflow requests the stored copy: cd-deploy-account takes the region from matrix.sesRegion, and cd-deploy-worker and ci.yml's deploy-preview take it from the separate AWS_SES_REGION_EU secret, which replaced the Actions variable of that name on 2026-09-24 (agent/plans/PLAN-github-actions-to-bitwarden.md). The only other holder is private/account/.env, which assigns the same name for the local account server. It sits in the store as an inert leftover -- keeping it costs nothing and deleting it is the operator's call."
+    },
+    "CF_EMAIL": {
+      "kind": "no-github-twin",
+      "reason": "Admin credential seeded 2026-09-24 on the operator's choice to keep it in ci-shared (agent/plans/PLAN-account-env-to-bws.md Q2). Read only by the local secret-rotation tool, never by a workflow."
+    },
+    "CF_GLOBAL_API_KEY": {
+      "kind": "no-github-twin",
+      "reason": "Admin credential seeded 2026-09-24 on the operator's choice to keep it in ci-shared (agent/plans/PLAN-account-env-to-bws.md Q2). Read only by the local secret-rotation tool, never by a workflow."
     },
     "GITHUB_APP_CLIENT_SECRET": {
       "kind": "no-github-twin",
@@ -60,9 +76,17 @@
       "kind": "no-github-twin",
       "reason": "human-readable half of the collector login; everything consumes the joined OBS_OTLP_CREDENTIALS."
     },
+    "OTEL_ENDPOINT": {
+      "kind": "no-github-twin",
+      "reason": "A constant endpoint (the OTLP collector URL), seeded 2026-09-24 from private/account/.env for PLAN-env-to-bitwarden-v2 box 27 so local .env hydration reads the vault; no workflow sends telemetry through it, so no call site requests it."
+    },
     "R2_TOKEN_AUTH_API": {
       "kind": "no-github-twin",
       "reason": "the raw bearer VALUE of a Cloudflare R2 API token, the third artifact beside id and sha256(value). Unattributed; identify it in the Cloudflare dashboard before revoking."
+    },
+    "RELEASE_GPG_REVOCATION_CERT": {
+      "kind": "no-github-twin",
+      "reason": "The release key's revocation certificate, generated and stored 2026-09-24 (docs/code-signing-guide.md:559). It is kept, never used by CI: importing it revokes the signing key, so no workflow may request it."
     },
     "SMTP_FROM": {
       "kind": "no-github-twin",

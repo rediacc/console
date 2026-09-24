@@ -181,7 +181,7 @@ def test_looks_secret_splits_the_bitwarden_corpus_in_both_directions() -> None:
         # The rows a SUBSTRING matcher gets wrong and a segment matcher does not. These two are the whole reason `looks_secret` splits on "_": "SIG" sits inside DESIGN and "KEY" inside KEYBOARD, and without them a planted substring-matching defect passed this entire suite.
         ("DESIGN_DOC_URL", False),
         ("KEYBOARD_LAYOUT", False),
-        # WEBAUTHN_RP_ID is here for a different rule: it ends in `_ID`, the identifier half that .ci/config/bws-token-expiry.json rules public.
+        # WEBAUTHN_RP_ID is here for a different rule: it ends in `_ID`, the identifier half that `rediacc_ci.core.bws_env.client_fingerprint` rules public.
         ("WEBAUTHN_RP_ID", False),
         ("ACCOUNT_ED25519_PUBLIC_KEY", False),  # contains "KEY"
         ("CLOUDFLARE_R2_ACCESS_KEY_ID", False),  # the identifier half of a pair
@@ -266,7 +266,7 @@ def test_fingerprint_of_nothing_is_empty_not_a_conspicuous_constant() -> None:
 def test_fingerprint_matches_the_shell_sha256_it_has_to_interoperate_with() -> None:
     """A differential, because the corpus this must match was computed in bash.
 
-    `scripts/ops/bws-map-refresh.py:67` and `.ci/config/bws-token-expiry.json` already carry digests of this exact shape. Recomputing the digest in Python here would only prove the function calls hashlib; `sha256sum` is an independent implementation.
+    `rediacc_ci.core.bws_env.client_fingerprint` already produces digests of this exact shape. Recomputing the digest in Python here would only prove the function calls hashlib; `sha256sum` is an independent implementation.
     """
     value = "0.deadbeef-1111-2222-3333-444455556666"
     rc, out, err = diff.bash_streams(

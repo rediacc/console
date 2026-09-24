@@ -100,12 +100,13 @@ jobs:
             CLOUDFLARE_R2_ENDPOINT > BWS_CLOUDFLARE_R2_ENDPOINT
             CLOUDFLARE_R2_SECRET_ACCESS_KEY > BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY
             GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
+            GITHUB_APP_ID > BWS_APP_ID
 
       - name: Generate app token
         id: app-token
         uses: ./.github/actions/app-token
         with:
-          client-id: ${{ vars.APP_ID }}
+          client-id: ${{ env.BWS_APP_ID }}
           # FLIPPED: the Bitwarden value, fetched above, not the GitHub org secret.
           # This is the first live consumer of the shadow anywhere in the tree.
           private-key: ${{ env.BWS_APP_PRIVATE_KEY }}

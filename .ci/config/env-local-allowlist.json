@@ -73,24 +73,6 @@
       "found": "2026-09-22 by git grep --recurse-submodules; a plain recursive grep reports zero here because ugrep honours .gitignore and .env* is ignored",
       "expires": "2026-12-31"
     },
-    "ROOT_EMAIL": {
-      "kind": "deferred",
-      "reason": "operator identity, identical on every machine; seeds as its own store entry",
-      "blocker": "agent/plans/PLAN-env-to-bitwarden-v2.md task 'Seed the 6 shareable store entries' -- Operator-only",
-      "expires": "2026-12-31"
-    },
-    "AWS_SES_FROM": {
-      "kind": "deferred",
-      "reason": "already an org variable; consumed by all three set-*-worker-secrets.sh",
-      "blocker": "agent/plans/PLAN-env-to-bitwarden-v2.md task 'Seed the 6 shareable store entries' -- Operator-only",
-      "expires": "2026-12-31"
-    },
-    "OTEL_ENDPOINT": {
-      "kind": "deferred",
-      "reason": "https://otlp.rediacc.io, a constant",
-      "blocker": "agent/plans/PLAN-env-to-bitwarden-v2.md task 'Seed the 6 shareable store entries' -- Operator-only",
-      "expires": "2026-12-31"
-    },
     "UPSTREAM_URL": {
       "kind": "deferred",
       "reason": "https://www.rediacc.com, a constant read by the on-premise entry point",
@@ -109,30 +91,6 @@
       "blocker": "agent/plans/PLAN-env-to-bitwarden-v2.md '## Remaining' Q1 -- operator decision",
       "expires": "2026-12-31"
     },
-    "AWS_IAM_ADMIN_ACCESS_KEY_ID": {
-      "kind": "deferred",
-      "reason": "admin-tier; in no store at all today. Destination is open question Q2",
-      "blocker": "agent/plans/PLAN-env-to-bitwarden-v2.md task 'Seed the 4 admin credentials' -- Operator-only",
-      "expires": "2026-12-31"
-    },
-    "AWS_IAM_ADMIN_SECRET_ACCESS_KEY": {
-      "kind": "deferred",
-      "reason": "admin-tier; in no store at all today. Destination is open question Q2",
-      "blocker": "agent/plans/PLAN-env-to-bitwarden-v2.md task 'Seed the 4 admin credentials' -- Operator-only",
-      "expires": "2026-12-31"
-    },
-    "CF_GLOBAL_API_KEY": {
-      "kind": "deferred",
-      "reason": "full-account Cloudflare key; Q2's DEFAULT replaces its local uses with the scoped CLOUDFLARE_API_TOKEN, already in the store",
-      "blocker": "agent/plans/PLAN-env-to-bitwarden-v2.md task 'Seed the 4 admin credentials' -- Operator-only",
-      "expires": "2026-12-31"
-    },
-    "CF_EMAIL": {
-      "kind": "deferred",
-      "reason": "pairs with CF_GLOBAL_API_KEY; keeps the CF_ prefix the rename table never applied to these two",
-      "blocker": "agent/plans/PLAN-env-to-bitwarden-v2.md task 'Seed the 4 admin credentials' -- Operator-only",
-      "expires": "2026-12-31"
-    },
     "GITHUB_AUTOPILOT_APP_ID": {
       "kind": "deferred",
       "reason": "Part 1 (b) lists this among 19 names already in the store with nothing to seed. Re-measured 2026-09-22 it is NOT in bws-secret-map.json, so (b) is 17 names and this one needs seeding like the rest",
@@ -143,60 +101,6 @@
       "kind": "deferred",
       "reason": "same correction as GITHUB_AUTOPILOT_APP_ID: absent from the map, and distinct from the mapped GITHUB_APP_PRIVATE_KEY, which is the CD app",
       "blocker": "agent/plans/PLAN-env-to-bitwarden-v2.md Part 1 (b) is wrong on this name -- Operator-only seed",
-      "expires": "2026-12-31"
-    },
-    "SELLER_NAME": {
-      "kind": "deferred",
-      "reason": "one of nine SELLER_* fields seeding as a single SELLER_PROFILE_JSON object entry, expanded by bws_env.JSON_REQUIRED",
-      "blocker": "agent/plans/PLAN-env-to-bitwarden-v2.md task 'Seed the 6 shareable store entries' -- Operator-only",
-      "expires": "2026-12-31"
-    },
-    "SELLER_VAT_NUMBER": {
-      "kind": "deferred",
-      "reason": "one of nine SELLER_* fields seeding as a single SELLER_PROFILE_JSON object entry, expanded by bws_env.JSON_REQUIRED",
-      "blocker": "agent/plans/PLAN-env-to-bitwarden-v2.md task 'Seed the 6 shareable store entries' -- Operator-only",
-      "expires": "2026-12-31"
-    },
-    "SELLER_REGISTRATION_NUMBER": {
-      "kind": "deferred",
-      "reason": "one of nine SELLER_* fields seeding as a single SELLER_PROFILE_JSON object entry, expanded by bws_env.JSON_REQUIRED",
-      "blocker": "agent/plans/PLAN-env-to-bitwarden-v2.md task 'Seed the 6 shareable store entries' -- Operator-only",
-      "expires": "2026-12-31"
-    },
-    "SELLER_ADDRESS_LINE1": {
-      "kind": "deferred",
-      "reason": "one of nine SELLER_* fields seeding as a single SELLER_PROFILE_JSON object entry, expanded by bws_env.JSON_REQUIRED",
-      "blocker": "agent/plans/PLAN-env-to-bitwarden-v2.md task 'Seed the 6 shareable store entries' -- Operator-only",
-      "expires": "2026-12-31"
-    },
-    "SELLER_CITY": {
-      "kind": "deferred",
-      "reason": "one of nine SELLER_* fields seeding as a single SELLER_PROFILE_JSON object entry, expanded by bws_env.JSON_REQUIRED",
-      "blocker": "agent/plans/PLAN-env-to-bitwarden-v2.md task 'Seed the 6 shareable store entries' -- Operator-only",
-      "expires": "2026-12-31"
-    },
-    "SELLER_POSTAL_CODE": {
-      "kind": "deferred",
-      "reason": "one of nine SELLER_* fields seeding as a single SELLER_PROFILE_JSON object entry, expanded by bws_env.JSON_REQUIRED",
-      "blocker": "agent/plans/PLAN-env-to-bitwarden-v2.md task 'Seed the 6 shareable store entries' -- Operator-only",
-      "expires": "2026-12-31"
-    },
-    "SELLER_COUNTRY": {
-      "kind": "deferred",
-      "reason": "one of nine SELLER_* fields seeding as a single SELLER_PROFILE_JSON object entry, expanded by bws_env.JSON_REQUIRED",
-      "blocker": "agent/plans/PLAN-env-to-bitwarden-v2.md task 'Seed the 6 shareable store entries' -- Operator-only",
-      "expires": "2026-12-31"
-    },
-    "SELLER_EMAIL": {
-      "kind": "deferred",
-      "reason": "one of nine SELLER_* fields seeding as a single SELLER_PROFILE_JSON object entry, expanded by bws_env.JSON_REQUIRED",
-      "blocker": "agent/plans/PLAN-env-to-bitwarden-v2.md task 'Seed the 6 shareable store entries' -- Operator-only",
-      "expires": "2026-12-31"
-    },
-    "SELLER_ADDRESS_LINE2": {
-      "kind": "deferred",
-      "reason": "one of nine SELLER_* fields seeding as a single SELLER_PROFILE_JSON object entry, expanded by bws_env.JSON_REQUIRED; legitimately blank for a one-line address, which is why expand_json refuses a MISSING key rather than an empty one",
-      "blocker": "agent/plans/PLAN-env-to-bitwarden-v2.md task 'Seed the 6 shareable store entries' -- Operator-only",
       "expires": "2026-12-31"
     }
   }

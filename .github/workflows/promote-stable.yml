@@ -49,6 +49,7 @@ jobs:
             CLOUDFLARE_R2_ENDPOINT > BWS_CLOUDFLARE_R2_ENDPOINT
             CLOUDFLARE_R2_SECRET_ACCESS_KEY > BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY
             CLOUDFLARE_API_TOKEN > BWS_CLOUDFLARE_API_TOKEN
+            CLOUDFLARE_ZONE_ID > BWS_CLOUDFLARE_ZONE_ID
       - name: Check edge manifest
         id: edge
         run: PYTHONPATH=.ci python3 -m rediacc_ci.release.check_edge_manifest
@@ -115,7 +116,7 @@ jobs:
           AWS_DEFAULT_REGION: auto
           CLOUDFLARE_R2_ENDPOINT: ${{ env.BWS_CLOUDFLARE_R2_ENDPOINT }}
           CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ZONE_ID: ${{ vars.CLOUDFLARE_ZONE_ID }}
+          CLOUDFLARE_ZONE_ID: ${{ env.BWS_CLOUDFLARE_ZONE_ID }}
           EDGE_VERSION: ${{ steps.edge.outputs.version }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.promote_r2_to_stable
 

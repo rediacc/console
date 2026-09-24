@@ -780,7 +780,50 @@ def job_at(index: list[tuple[int, str]], i: int) -> str | None:
     return cur
 
 
+# THE `vars.*` AND `secrets.*` REFERENCE READERS, for `check_actions_vars.py` (agent/plans/PLAN-github-actions-to-bitwarden.md Decision 4, clauses 1, 4 and 5). Line-scan for the same reason as `job_at` above: a finding must name a line, and the structural parse keeps none.
+#
+# THE NAME MUST BE UPPER CASE AND MUST NOT CONTINUE AS A PATH. `set-account-worker-secrets.sh` in a comment is `secrets.sh` to a naive pattern, and four such mentions sat in the corpus on 2026-09-24; the lookbehind refuses a name glued to a `-`, `/`, `.` or word character, and the lookahead refuses one that runs on into `.ext`, `/` or `-`. Both halves are proven by `check_actions_vars.py`'s selftest.
+CONTEXT_READ_RE = {
+    ctx: re.compile(r"(?<![\w./-])%s\.([A-Z][A-Z0-9_]*)(?![\w/-]|\.\w)" % ctx)
+    for ctx in ("vars", "secrets")
+}
+
+
+def code_part(line: str) -> str:
+    """`line` with any YAML or shell comment removed, or "" for a comment line.
+
+    A `#` starts a comment when it opens the line or follows whitespace, OUTSIDE quotes. The quote tracking is what keeps `echo "#${{ vars.X }}"` a read: cutting at the first ` #` regardless would hide a live reference behind a quote, which is the direction a gate must never err in.
+    """
+    quote = ""
+    for i, ch in enumerate(line):
+        if quote:
+            if ch == quote:
+                quote = ""
+        elif ch in "\"'":
+            quote = ch
+        elif ch == "#" and (i == 0 or line[i - 1] in " \t"):
+            return line[:i]
+    return line
+
+
+def context_reads(lines: list[str], ctx: str) -> tuple[list[tuple[int, str]], int]:
+    """([(line_index, NAME), ...], commented) for every `<ctx>.NAME` reference in `lines`.
+
+    `commented` counts the mentions that sat inside a comment and were NOT returned, so a caller can print the blind spot as a number rather than leave it silent. One honest limit, stated here because it is not enforced: GitHub expands a `${{ }}` inside a bash comment in a `run:` block before bash ever sees it, so such an expression is technically a read that this function reports as a comment. The corpus holds none.
+    """
+    pattern = CONTEXT_READ_RE[ctx]
+    out = []
+    commented = 0
+    for i, line in enumerate(lines):
+        code = code_part(line)
+        found = [m.group(1) for m in pattern.finditer(code)]
+        out.extend((i, name) for name in found)
+        commented += len(pattern.findall(line)) - len(found)
+    return out, commented
+
+
 __all__ = [
+    "CONTEXT_READ_RE",
     "JOB_RE",
     "SETUP_GO",
     "SETUP_WORKSPACE",
@@ -791,6 +834,8 @@ __all__ = [
     "Workflow",
     "WorkflowParseError",
     "call_sites",
+    "code_part",
+    "context_reads",
     "job_at",
     "job_index",
     "lane_capabilities",

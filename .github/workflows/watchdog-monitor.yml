@@ -110,6 +110,7 @@ jobs:
           secrets: |
             CLOUDFLARE_API_TOKEN > BWS_CLOUDFLARE_API_TOKEN
             ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN > BWS_ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN
+            CLOUDFLARE_ACCOUNT_ID > BWS_CLOUDFLARE_ACCOUNT_ID
 
       # Deterministic attempt-cap backstop, deliberately OUTSIDE the AI-driven
       # monitor process it guards: a misclassification loop cannot talk its way
@@ -174,7 +175,7 @@ jobs:
           WATCHDOG_LOG_CAPTURE_DIR: ${{ runner.temp }}/watchdog-logs
           # Classifier tier 1: Cloudflare / DeepSeek V4 Pro, from Bitwarden.
           CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
           # Classifier tier 2: Anthropic, on the org's OAuth token. Tier 1 has
           # been returning HTTP 402 (billing) continuously, which is an
           # UNAVAILABLE tier rather than a blip, so without a second provider

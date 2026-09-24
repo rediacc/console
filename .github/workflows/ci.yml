@@ -233,11 +233,13 @@ jobs:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
             GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
+            GITHUB_APP_ID > BWS_APP_ID
+            FULL_CI > BWS_FULL_CI
 
       - uses: ./.github/actions/app-token
         id: app-token
         with:
-          client-id: ${{ vars.APP_ID }}
+          client-id: ${{ env.BWS_APP_ID }}
           private-key: ${{ env.BWS_APP_PRIVATE_KEY }}
           preset: readonly
           repositories: console,renet,account,elite,homebrew-tap
@@ -324,15 +326,22 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           # Two independent full-CI overrides, both fail-open in the same
           # direction: FORCE_FULL_CI is the repo-wide kill switch (set the
-          # `FULL_CI` repository variable to disable scoping for everyone
-          # without a code change), FULL_CI_LABEL is the per-PR escape hatch
-          # (label a PR `full-ci` when you want the whole fleet on one commit).
+          # `FULL_CI` Bitwarden secret in ci-shared to `full-ci-on` to disable
+          # scoping for everyone without a code change), FULL_CI_LABEL is the
+          # per-PR escape hatch (label a PR `full-ci` when you want the whole
+          # fleet on one commit).
           #
-          # The repository variable must be the exact string `true`. The script
-          # compares literally, so `FULL_CI=1` or `FULL_CI=yes` reads as OFF
-          # and the kill switch does nothing. FULL_CI_LABEL needs no such care:
+          # THE STORED VALUE IS A SENTINEL, NOT A BOOLEAN, and the expression
+          # below maps it to the literal `true` the script compares against.
+          # bitwarden/sm-action masks every value it fetches, so a stored `true`
+          # or `false` would mask that word across this whole job, and a job
+          # output containing a masked value is dropped by the runner: this
+          # job's thirty-odd `run_*` outputs would vanish. Bitwarden also
+          # refuses an empty value, so the switch cannot be "unset" either;
+          # `full-ci-off` is its resting state. Any value other than
+          # `full-ci-on` reads as OFF. FULL_CI_LABEL needs no such care:
           # contains() already yields true or false.
-          FORCE_FULL_CI: ${{ vars.FULL_CI }}
+          FORCE_FULL_CI: ${{ env.BWS_FULL_CI == 'full-ci-on' && 'true' || '' }}
           FULL_CI_LABEL: ${{ contains(github.event.pull_request.labels.*.name, 'full-ci') }}
           # The PRE-EXISTING (non-scope) skip conditions, recorded into the plan
           # so the reconciler can tell "skipped because scope said so" from
@@ -611,11 +620,12 @@ jobs:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
             GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
+            GITHUB_APP_ID > BWS_APP_ID
 
       - uses: ./.github/actions/app-token
         id: app-token
         with:
-          client-id: ${{ vars.APP_ID }}
+          client-id: ${{ env.BWS_APP_ID }}
           private-key: ${{ env.BWS_APP_PRIVATE_KEY }}
           # pr-read, not cd: the three scripts below only READ review state.
           # check-resolved-threads.sh / check-review-comments.sh /
@@ -702,10 +712,11 @@ jobs:
             ACCOUNT_SERVER_API_KEY > BWS_ACCOUNT_SERVER_API_KEY
             GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
             STRIPE_SANDBOX_SECRET_KEY > BWS_STRIPE_SANDBOX_SECRET_KEY
+            GITHUB_APP_ID > BWS_APP_ID
       - uses: ./.github/actions/app-token
         id: app-token
         with:
-          client-id: ${{ vars.APP_ID }}
+          client-id: ${{ env.BWS_APP_ID }}
           private-key: ${{ env.BWS_APP_PRIVATE_KEY }}
           preset: readonly
           repositories: console,account
@@ -717,9 +728,8 @@ jobs:
       - name: Initialize account submodule
         run: git submodule update --init --depth 1 private/account
 
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+      - uses: ./.github/actions/setup-node-npm
         with:
-          node-version: '22'
           cache: 'npm'
 
       - name: Install dependencies
@@ -1084,11 +1094,12 @@ jobs:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
             GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
+            GITHUB_APP_ID > BWS_APP_ID
 
       - uses: ./.github/actions/app-token
         id: app-token
         with:
-          client-id: ${{ vars.APP_ID }}
+          client-id: ${{ env.BWS_APP_ID }}
           private-key: ${{ env.BWS_APP_PRIVATE_KEY }}
           preset: readonly
           repositories: console,renet,account,elite,homebrew-tap
@@ -1292,10 +1303,16 @@ jobs:
             AWS_SES_ACCESS_KEY_ID_EU > BWS_AWS_SES_ACCESS_KEY_ID_EU
             AWS_SES_SECRET_ACCESS_KEY_EU > BWS_AWS_SES_SECRET_ACCESS_KEY_EU
             CLOUDFLARE_API_TOKEN > BWS_CLOUDFLARE_API_TOKEN
+            GITHUB_APP_ID > BWS_APP_ID
+            CLOUDFLARE_ACCOUNT_ID > BWS_CLOUDFLARE_ACCOUNT_ID
+            ROOT_EMAIL > BWS_ROOT_EMAIL
+            AWS_SES_REGION_EU > BWS_AWS_SES_REGION_EU
+            AWS_SES_FROM > BWS_AWS_SES_FROM
+            AWS_SES_CONFIGURATION_SET > BWS_AWS_SES_CONFIGURATION_SET
       - uses: ./.github/actions/app-token
         id: app-token
         with:
-          client-id: ${{ vars.APP_ID }}
+          client-id: ${{ env.BWS_APP_ID }}
           private-key: ${{ env.BWS_APP_PRIVATE_KEY }}
           preset: readonly
           repositories: console,account
@@ -1308,9 +1325,8 @@ jobs:
       - name: Initialize account submodule
         run: git submodule update --init --depth 1 private/account
 
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+      - uses: ./.github/actions/setup-node-npm
         with:
-          node-version: '22'
           cache: 'npm'
 
       - name: Install dependencies
@@ -1345,13 +1361,14 @@ jobs:
         run: npx tsx scripts/preview-turnstile.ts create "${PR_NUMBER}"
         env:
           CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
 
       - name: Build account portal
         run: npm install && npx vite build --outDir ../../../workers/www/dist/account
         working-directory: private/account/web
         env:
-          # PR previews use the per-PR widget minted above, NOT vars.TURNSTILE_SITE_KEY.
+          # PR previews use the per-PR widget minted above, NOT the production
+          # TURNSTILE_SITE_KEY (once vars.TURNSTILE_SITE_KEY, now a Bitwarden secret).
           # The prod sitekey's widget is hostname-locked to apex/regional domains
           # and cannot include workers.dev subdomains without burning hostname slots.
           VITE_TURNSTILE_SITE_KEY: ${{ steps.create-widget.outputs.sitekey }}
@@ -1387,12 +1404,12 @@ jobs:
         run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_www --name "pr-${PR_NUMBER}"
         env:
           CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
 
       - name: Set preview worker secrets
         env:
           CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
           # ONE NAME EVERYWHERE: the left side is the name the builder READS
           # and the key it WRITES into the Worker (private/account/src/types/
           # env.ts). The right side keeps the GitHub secret's current name.
@@ -1404,15 +1421,15 @@ jobs:
           ACCOUNT_JWT_SECRET: ${{ env.BWS_ACCOUNT_JWT_SECRET }}
           STRIPE_SECRET_KEY: ${{ env.BWS_STRIPE_SANDBOX_SECRET_KEY }}
           STRIPE_WEBHOOK_SECRET: ${{ steps.stripe-webhook.outputs.stripe_webhook_secret }}
-          ROOT_EMAIL: ${{ vars.ROOT_EMAIL }}
+          ROOT_EMAIL: ${{ env.BWS_ROOT_EMAIL }}
           AWS_SES_ACCESS_KEY_ID: ${{ env.BWS_AWS_SES_ACCESS_KEY_ID_EU }}
           AWS_SES_SECRET_ACCESS_KEY: ${{ env.BWS_AWS_SES_SECRET_ACCESS_KEY_EU }}
-          AWS_SES_REGION: ${{ vars.AWS_SES_REGION_EU }}
+          AWS_SES_REGION: ${{ env.BWS_AWS_SES_REGION_EU }}
           # Per-PR Turnstile secret comes from the create-widget step above,
           # paired with the per-PR sitekey baked into the Vite build.
           CLOUDFLARE_TURNSTILE_SECRET_KEY: ${{ steps.create-widget.outputs.secret }}
-          AWS_SES_FROM: ${{ vars.AWS_SES_FROM }}
-          AWS_SES_CONFIGURATION_SET: ${{ vars.AWS_SES_CONFIGURATION_SET }}
+          AWS_SES_FROM: ${{ env.BWS_AWS_SES_FROM }}
+          AWS_SES_CONFIGURATION_SET: ${{ env.BWS_AWS_SES_CONFIGURATION_SET }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.set_preview_worker_secrets
 
       - name: Deployment summary
@@ -1475,13 +1492,13 @@ jobs:
             ACCOUNT_ED25519_PUBLIC_KEY > BWS_ACCOUNT_ED25519_PUBLIC_KEY
             ACCOUNT_JWT_SECRET > BWS_ACCOUNT_JWT_SECRET
             CLOUDFLARE_API_TOKEN > BWS_CLOUDFLARE_API_TOKEN
+            CLOUDFLARE_ACCOUNT_ID > BWS_CLOUDFLARE_ACCOUNT_ID
 
       # No app-token step here on purpose: this job checks out no submodules
       # and `.npmrc` sets allow-git=none, so nothing needs authenticated git.
       # It previously minted a write-scoped token that no step ever consumed.
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+      - uses: ./.github/actions/setup-node-npm
         with:
-          node-version: '22'
           cache: 'npm'
 
       - name: Install dependencies
@@ -1495,7 +1512,7 @@ jobs:
         run: .ci/scripts/test/seed-smoke-test.sh
         env:
           CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
           ACCOUNT_JWT_SECRET: ${{ env.BWS_ACCOUNT_JWT_SECRET }}
 
       - name: Wait for preview worker
@@ -1648,6 +1665,7 @@ jobs:
             CLOUDFLARE_R2_ENDPOINT > BWS_CLOUDFLARE_R2_ENDPOINT
             CLOUDFLARE_R2_SECRET_ACCESS_KEY > BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY
             CLOUDFLARE_API_TOKEN > BWS_CLOUDFLARE_API_TOKEN
+            CLOUDFLARE_ZONE_ID > BWS_CLOUDFLARE_ZONE_ID
       - name: Simulate promotion (copy + sed-fix)
         run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.simulate_promotion
         env:
@@ -1658,7 +1676,7 @@ jobs:
           AWS_MAX_ATTEMPTS: 10
           AWS_RETRY_MODE: adaptive
           CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ZONE_ID: ${{ vars.CLOUDFLARE_ZONE_ID }}
+          CLOUDFLARE_ZONE_ID: ${{ env.BWS_CLOUDFLARE_ZONE_ID }}
 
       - name: Test APT install from promoted channel
         run: |

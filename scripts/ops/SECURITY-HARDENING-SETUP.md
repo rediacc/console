@@ -102,43 +102,9 @@ Stripe credentials are rotated manually via the Stripe dashboard, so the one-sho
 > to migrate into environments. Only the webhook secrets differ per region, and they stay
 > org secrets. See `agent/plans/PLAN-secret-namespace-migration.md` Part 10, Stripe.
 
-### 3b. SES (US/Asia) — rotation tool handles env-scope automatically
+### 3b. SES (US/Asia) and 3c. OTLP — superseded, no GitHub step
 
-The rotation tool now reads `ROTATION_CONFIG.awsSes[<region>].githubSecretEnvScope` (see `private/account/scripts/rotation/lib/config.ts`) and pushes the IAM access key pair to the configured GitHub env (`stable-us` for `ses-us`, `stable-asia` for `ses-asia`) instead of org-level. ses-eu stays org-level (used by `ci.yml` preview deploy).
-
-Trigger one rotation per region to push the existing keys to env scope:
-
-```bash
-./run.sh rotation rotate ses-us
-./run.sh rotation rotate ses-asia
-```
-
-Then delete the now-orphaned org-level secrets:
-
-```bash
-gh secret delete AWS_SES_ACCESS_KEY_ID_US --org rediacc
-gh secret delete AWS_SES_SECRET_ACCESS_KEY_US --org rediacc
-gh secret delete AWS_SES_ACCESS_KEY_ID_ASIA --org rediacc
-gh secret delete AWS_SES_SECRET_ACCESS_KEY_ASIA --org rediacc
-```
-
-### 3c. OTLP — rotation tool handles env-scope automatically
-
-The OTLP consumer refs in `lib/config.ts` are now `github-secret-env:<env>:NAME` for all three regions (each pushed to BOTH `edge-<region>` and `stable-<region>` since both target=edge and target=stable matrix runs consume the secret).
-
-```bash
-./run.sh rotation rotate otlp-eu
-./run.sh rotation rotate otlp-us
-./run.sh rotation rotate otlp-asia
-```
-
-Then delete org-level:
-
-```bash
-gh secret delete OBS_OTLP_CREDENTIALS_EU --org rediacc
-gh secret delete OBS_OTLP_CREDENTIALS_US --org rediacc
-gh secret delete OBS_OTLP_CREDENTIALS_ASIA --org rediacc
-```
+These two sub-flows described a rotation tool that pushed SES and OTLP credentials into GitHub environments (`githubSecretEnvScope`, `github-secret-env:` refs). Neither exists. Since 2026-09-24 the rotation tool (`private/account/scripts/rotation/`) writes CI credentials to Bitwarden Secrets Manager project `ci-shared` only, has no GitHub consumer at all, and the org holds no SES or OTLP secrets to delete. A rotation is `./run.sh rotation rotate <slug>`; see `private/account/docs/secrets/rotation.md`.
 
 ### Verify after all three sub-flows:
 

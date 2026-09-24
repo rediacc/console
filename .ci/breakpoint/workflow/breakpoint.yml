@@ -213,18 +213,29 @@ jobs:
       # escalation: the token's blast radius is one Cloudflare tunnel, which is
       # this job's entire purpose, unlike a credential that mints access to other
       # repositories or services.
+      #
+      # THREE CONFIGURATION VALUES RIDE THE SAME FETCH since 2026-09-24, when the
+      # GitHub Actions variables namespace moved to Bitwarden
+      # (agent/plans/PLAN-github-actions-to-bitwarden.md). The Cloudflare account
+      # id, the SES EU region and the SES sender address are not credentials: each
+      # was already printed in the clear in this job's step env blocks as a
+      # repository variable, so a human reading them out of the shell learns
+      # nothing new. The credential count reaching GITHUB_ENV is still one.
       - name: Fetch tunnel token from Bitwarden
         uses: ./.github/actions/bws-secrets
         with:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
             CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN > BWS_CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN
+            CLOUDFLARE_ACCOUNT_ID > BWS_CLOUDFLARE_ACCOUNT_ID
+            AWS_SES_REGION_EU > BWS_AWS_SES_REGION_EU
+            AWS_SES_FROM > BWS_AWS_SES_FROM
 
       - name: Resolve tunnel mode
         id: mode
         env:
           CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN: ${{ env.BWS_CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
           BREAKPOINT_DEBUG_SHELL: ${{ inputs.debug-shell }}
           BREAKPOINT_DESKTOP: ${{ inputs.desktop }}
           BP_TUNNEL_MODE: ${{ inputs.tunnel-mode }}
@@ -313,7 +324,7 @@ jobs:
         id: tunnel
         env:
           CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN: ${{ env.BWS_CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
           GITHUB_RUN_ID: ${{ github.run_id }}
           GITHUB_ACTOR: ${{ github.actor }}
           BP_MODE: ${{ steps.mode.outputs.mode }}
@@ -341,8 +352,8 @@ jobs:
           # NOT the fix: a later step in this job hands a human a shell, and
           # GITHUB_ENV/GITHUB_OUTPUT are files any step can read. See
           # agent/plans/PLAN-breakpoint-secret-shape.md.
-          AWS_DEFAULT_REGION: ${{ vars.AWS_SES_REGION_EU }}
-          AWS_SES_FROM: ${{ vars.AWS_SES_FROM }}
+          AWS_DEFAULT_REGION: ${{ env.BWS_AWS_SES_REGION_EU }}
+          AWS_SES_FROM: ${{ env.BWS_AWS_SES_FROM }}
           GITHUB_ACTOR: ${{ github.actor }}
           # The URL and the tmate strings are DELIBERATELY ABSENT from this
           # env: block, and must never be added back. The runner prints every
@@ -373,7 +384,7 @@ jobs:
         if: always()
         env:
           CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN: ${{ env.BWS_CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
           BP_LABEL: ${{ inputs.tunnel-label }}
           GITHUB_RUN_ID: ${{ github.run_id }}
         run: |

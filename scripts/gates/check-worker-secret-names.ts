@@ -2,13 +2,21 @@
  * check:ci-worker-secret-names — every name a deploy script pushes to a Worker
  * must be a name the Worker's env schema actually reads.
  *
- * THE DEFECT CLASS. Five scripts build a `wrangler secret bulk` payload by hand:
+ * THE DEFECT CLASS. Four scripts build a `wrangler secret bulk` payload by hand:
  *
  *   .ci/scripts/deploy/set-account-worker-secrets.sh
  *   .ci/scripts/deploy/set-www-worker-secrets.sh
  *   .ci/scripts/deploy/set-preview-worker-secrets.sh
  *   scripts/ops/deploy-bench.sh
- *   run.sh                                (the local PR-preview builder)
+ *
+ * It was five until 2026-09-22; see the note on BUILDERS for where the fifth went.
+ *
+ * The three `.ci/scripts/deploy/*.sh` ones are no longer what CI INVOKES -- the
+ * workflows run their Python ports (`rediacc_ci.deploy.set_*_worker_secrets`) --
+ * but reading the bash side is still a faithful proxy, because each port's `KEYS`
+ * tuple is pinned to its twin's `--arg` list by a staleness alarm in
+ * `.ci/rediacc_ci/tests/test_deploy_set_*_worker_secrets.py`. If those alarms are
+ * ever dropped, this gate stops seeing the deploy path and must read the ports.
  *
  * and one file says what the Worker will look at:
  *
@@ -46,6 +54,7 @@
  * ---- end gate ----
  */
 
+import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -55,18 +64,25 @@ const ROOT = join(fileURLToPath(new URL('.', import.meta.url)), '..', '..');
 const SCHEMA = 'private/account/src/types/env.ts';
 
 /**
- * The five builders and the fewest keys each is known to push (measured
- * 2026-09-02: 29/24/15/29/15). A count below the floor means the extractor
+ * The four builders and the fewest keys each is known to push (measured
+ * 2026-09-02: 29/24/15/29). A count below the floor means the extractor
  * lost the payload, not that the payload shrank — refuse rather than pass.
+ *
+ * THE FIFTH IS GONE ON PURPOSE. `run.sh`'s local PR-preview builder moved into
+ * `.ci/legacy/run-legacy.sh` with the 2026-09-06 router split, and then commit
+ * dd5dfba3c (2026-09-22) deleted the whole `pr` verb -- `pr_publish()`, its case
+ * arm and its help text, 396 lines -- as one of four verbs with zero callers in
+ * the tree. Its 15-key payload was byte-identical in NAMES to
+ * set-preview-worker-secrets.sh's, which is still checked below, so removing the
+ * entry costs this gate no coverage of any name. Verified before removal: the
+ * PUSHED_KEY regex reads 15 keys at dd5dfba3c^ and 0 at HEAD, so the floor caught
+ * a deliberate deletion rather than a broken extractor.
  */
 const BUILDERS: { file: string; floor: number }[] = [
   { file: '.ci/scripts/deploy/set-account-worker-secrets.sh', floor: 20 },
   { file: '.ci/scripts/deploy/set-www-worker-secrets.sh', floor: 15 },
   { file: '.ci/scripts/deploy/set-preview-worker-secrets.sh', floor: 10 },
   { file: 'scripts/ops/deploy-bench.sh', floor: 20 },
-  // The payload moved with the 2026-09-06 router split; run.sh is now a dispatcher
-  // that builds no secret object. The floor caught it, which is what the floor is for.
-  { file: '.ci/legacy/run-legacy.sh', floor: 10 },
 ];
 
 /** `        KEY: $var,` inside a `jq -n '{ ... }'` object — the payload shape. */
@@ -105,6 +121,24 @@ export function pushedKeys(text: string): string[] {
 
 export function schemaKeys(text: string): Set<string> {
   return new Set([...text.matchAll(SCHEMA_KEY)].map((m) => m[1]));
+}
+
+/**
+ * Does this shell source build a `wrangler secret bulk` payload?
+ *
+ * BUILDERS above is hand-maintained, and the floor only catches the direction
+ * where a LISTED file stops being a builder. Nothing caught the other direction:
+ * a file that starts building a payload, or an existing builder that moves, is
+ * simply never read and the gate still prints a confident green. That is the
+ * vacuity this answers -- the list is re-derived from the tree every run and a
+ * builder missing from it is a failure, not a silent gap.
+ *
+ * Both conditions matter. `wrangler secret bulk` alone matches docs and comments
+ * that merely mention it; a `KEY: $var` line alone matches any jq object. A file
+ * doing both is piping a hand-built payload at a Worker, which is the class.
+ */
+export function looksLikeBuilder(text: string): boolean {
+  return text.includes('wrangler secret bulk') && pushedKeys(text).length > 0;
 }
 
 // ── Control: both extractors, before either is trusted ─────────────────────
@@ -159,6 +193,23 @@ export function schemaKeys(text: string): Set<string> {
     );
     process.exit(1);
   }
+  // The discovery predicate, in BOTH directions. A predicate that never says yes makes the sweep below unable to find an unlisted builder; one that never says no reports every doc that merely mentions wrangler as one.
+  const builder = 'jq -n --arg a "$A" \'{\n  API_KEY: $a,\n}\' | npx wrangler secret bulk --name x';
+  if (!looksLikeBuilder(builder)) {
+    console.error(
+      '✗ instrument control: the discovery predicate did not recognise a file that pipes a hand-built payload into `wrangler secret bulk`. The sweep below could not find an unlisted builder.'
+    );
+    process.exit(1);
+  }
+  if (
+    looksLikeBuilder('# see `npx wrangler secret bulk` for how deploys push secrets\n') ||
+    looksLikeBuilder("jq -n '{\n  API_KEY: $a,\n}' > payload.json\n")
+  ) {
+    console.error(
+      '✗ instrument control: the discovery predicate said yes to a file that only MENTIONS wrangler, or to a jq object that is not piped at a Worker. It would report prose as an unlisted builder.'
+    );
+    process.exit(1);
+  }
 }
 
 const schemaText = readFileSync(join(ROOT, SCHEMA), 'utf8');
@@ -187,6 +238,60 @@ if (lost.length > 0) {
       `  a builder pushes one of these names, this gate calls a correct push line\n` +
       `  undeclared. Check whether a long zod chain wrapped onto a second line, which is\n` +
       `  exactly how it lost MIN_CLI_VERSION -- SCHEMA_KEY must tolerate the new shape.`
+  );
+  process.exit(1);
+}
+
+// ── Discovery: BUILDERS, re-derived from the tree ──────────────────────────
+// A hand-maintained list of files to read is a gate that checks whatever it was told about in 2026 and calls the rest green. The floor below catches a LISTED file that stops being a builder; this catches the opposite, which nothing did: a builder that is added, renamed or moved is read by nobody and the gate still prints its confident green. Every tracked shell script is
+// classified, and one that builds a payload without being listed is a failure.
+let tracked: string[];
+try {
+  tracked = execFileSync('git', ['ls-files', '-z', '*.sh'], {
+    cwd: ROOT,
+    encoding: 'utf8',
+    maxBuffer: 64 * 1024 * 1024,
+  })
+    .split('\0')
+    .filter(Boolean);
+} catch (err) {
+  console.error(
+    `✗ could not list tracked shell scripts: \`git ls-files\` failed (${err instanceof Error ? err.message : String(err)}).\n` +
+      '  The builder list cannot be re-derived from the tree, so this gate cannot tell a\n' +
+      '  complete check from a partial one. Run it inside the repository with git on PATH.'
+  );
+  process.exit(1);
+}
+if (tracked.length === 0) {
+  console.error(
+    '✗ `git ls-files *.sh` returned nothing. The gate is not seeing the tree, so its green would mean nothing.'
+  );
+  process.exit(1);
+}
+const listed = new Set(BUILDERS.map((b) => b.file));
+const discovered = tracked.filter((f) => {
+  try {
+    return looksLikeBuilder(readFileSync(join(ROOT, f), 'utf8'));
+  } catch {
+    return false;
+  }
+});
+if (discovered.length === 0) {
+  console.error(
+    `✗ swept ${tracked.length} tracked shell script(s) and found ZERO that build a \`wrangler secret bulk\` payload.\n` +
+      '  Four are known to exist, so the discovery predicate has stopped recognising the\n' +
+      '  shape it is looking for. Refusing a verdict rather than reporting a clean sweep.'
+  );
+  process.exit(1);
+}
+const unlisted = discovered.filter((f) => !listed.has(f));
+if (unlisted.length > 0) {
+  console.error(
+    `✗ ${unlisted.length} shell script(s) build a \`wrangler secret bulk\` payload and are not in BUILDERS:\n` +
+      unlisted.map((f) => `    ${f}`).join('\n') +
+      '\n\n  Nothing checks their key names against the Worker schema, so a rename in one is\n' +
+      '  silent exactly the way this gate exists to prevent. Add each to BUILDERS with a\n' +
+      '  floor a little under its current key count. Do not narrow the sweep to get past this.'
   );
   process.exit(1);
 }
@@ -235,6 +340,7 @@ if (problems.length > 0) {
 console.log(
   `✓ worker secret names: ${checked} pushed key(s) across ${BUILDERS.length} builder(s) are all\n` +
     `  declared in ${SCHEMA} (${schema.size} schema keys; extractor controls fired both ways).\n` +
+    `  Swept ${tracked.length} tracked shell script(s) for payload builders: found ${discovered.length}, all listed.\n` +
     '  Blind spot: this proves the NAMES agree. It cannot see an empty VALUE, which zod\n' +
     "  normalises to undefined and validates — that is the deploy scripts' non-empty\n" +
     '  guards, not this gate.'

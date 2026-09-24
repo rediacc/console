@@ -54,7 +54,8 @@ on:
       #
       # CD pushes bot commits straight to main: cd-v2.yml's contract-floor
       # ratchet and .ci/scripts/release/update-homebrew-tap.sh both
-      # `git push origin HEAD:main` with user.name = vars.GIT_BOT_NAME, which
+      # `git push origin HEAD:main` with user.name = GIT_BOT_NAME (a Bitwarden
+      # secret since it left the vars.GIT_BOT_NAME Actions variable), which
       # is literally "github-actions[bot]" — the exact string
       # .ci/scripts/ci/initialize.sh matches to set is_bot.
       #
@@ -218,12 +219,13 @@ jobs:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
             GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
+            GITHUB_APP_ID > BWS_APP_ID
 
       - uses: ./.github/actions/app-token
         id: app-token
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && github.event_name == 'pull_request' }}
         with:
-          client-id: ${{ vars.APP_ID }}
+          client-id: ${{ env.BWS_APP_ID }}
           private-key: ${{ env.BWS_APP_PRIVATE_KEY }}
           preset: pr-read   # gh api reads in the pr-description gate
           repositories: console
@@ -681,11 +683,12 @@ jobs:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
             GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
+            GITHUB_APP_ID > BWS_APP_ID
 
       - uses: ./.github/actions/app-token
         id: app-token
         with:
-          client-id: ${{ vars.APP_ID }}
+          client-id: ${{ env.BWS_APP_ID }}
           private-key: ${{ env.BWS_APP_PRIVATE_KEY }}
           preset: pr-read   # gh pr list in check-submodule-branches.sh
           repositories: console,renet,account,elite,homebrew-tap
@@ -743,6 +746,7 @@ jobs:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
             GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
+            GITHUB_APP_ID > BWS_APP_ID
 
       - name: Block legacy-peer-deps workarounds
         run: .ci/scripts/quality/check_npmrc.py
@@ -876,7 +880,7 @@ jobs:
       - uses: ./.github/actions/app-token
         id: app-token
         with:
-          client-id: ${{ vars.APP_ID }}
+          client-id: ${{ env.BWS_APP_ID }}
           private-key: ${{ env.BWS_APP_PRIVATE_KEY }}
           preset: readonly
           repositories: console,renet,account,elite,homebrew-tap
@@ -1347,11 +1351,12 @@ jobs:
           secrets: |
             GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
             DOCKERHUB_TOKEN > BWS_DOCKERHUB_TOKEN
+            GITHUB_APP_ID > BWS_APP_ID
 
       - uses: ./.github/actions/app-token
         id: app-token
         with:
-          client-id: ${{ vars.APP_ID }}
+          client-id: ${{ env.BWS_APP_ID }}
           private-key: ${{ env.BWS_APP_PRIVATE_KEY }}
           preset: readonly
           repositories: console,renet,account,elite,homebrew-tap
@@ -1377,24 +1382,24 @@ jobs:
       - name: Agent model roster matches its documented reasons
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_agent_model_roster.py
-      - name: Behavioral hints can actually fire
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check_hint_corpus.py
       - name: Baseline key semantics
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-baseline-key-semantics
+      - name: Behavioral hints can actually fire
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_hint_corpus.py
       - name: Check content for AI slop patterns
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_content_quality.py
-      - name: Check prose style (the work, not the person)
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-prose-style
       - name: Check E2E skip hygiene (no collected-then-skipped suites)
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-e2e-skip-hygiene
       - name: Check E2E test coverage for all renet functions
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_e2e_coverage.py
+      - name: Check prose style (the work, not the person)
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_prose_style.py
       - name: CSS DOM references
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-css-dom-refs
@@ -1591,11 +1596,12 @@ jobs:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
             GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
+            GITHUB_APP_ID > BWS_APP_ID
 
       - uses: ./.github/actions/app-token
         id: app-token
         with:
-          client-id: ${{ vars.APP_ID }}
+          client-id: ${{ env.BWS_APP_ID }}
           private-key: ${{ env.BWS_APP_PRIVATE_KEY }}
           preset: readonly
           repositories: console,renet,account,elite,homebrew-tap
@@ -1804,10 +1810,11 @@ jobs:
             CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID > BWS_CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID
             CLOUDFLARE_R2_MEDIA_ENDPOINT > BWS_CLOUDFLARE_R2_MEDIA_ENDPOINT
             CLOUDFLARE_R2_MEDIA_SECRET_ACCESS_KEY > BWS_CLOUDFLARE_R2_MEDIA_SECRET_ACCESS_KEY
+            GITHUB_APP_ID > BWS_APP_ID
       - uses: ./.github/actions/app-token
         id: app-token
         with:
-          client-id: ${{ vars.APP_ID }}
+          client-id: ${{ env.BWS_APP_ID }}
           private-key: ${{ env.BWS_APP_PRIVATE_KEY }}
           repositories: console,account
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -1964,11 +1971,12 @@ jobs:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
             GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
+            GITHUB_APP_ID > BWS_APP_ID
 
       - uses: ./.github/actions/app-token
         id: app-token
         with:
-          client-id: ${{ vars.APP_ID }}
+          client-id: ${{ env.BWS_APP_ID }}
           private-key: ${{ env.BWS_APP_PRIVATE_KEY }}
           preset: readonly
           repositories: console,renet,account,elite,homebrew-tap
@@ -2117,11 +2125,12 @@ jobs:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
             GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
+            GITHUB_APP_ID > BWS_APP_ID
 
       - uses: ./.github/actions/app-token
         id: app-token
         with:
-          client-id: ${{ vars.APP_ID }}
+          client-id: ${{ env.BWS_APP_ID }}
           private-key: ${{ env.BWS_APP_PRIVATE_KEY }}
           preset: readonly
           repositories: console,renet,account,elite,homebrew-tap
@@ -2277,6 +2286,9 @@ jobs:
       - name: Check every Dockerfile download is cryptographically verified
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-unverified-downloads
+      - name: GitHub Actions variables
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_actions_vars.py
       - name: Release key canonical
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_release_key_canonical.py
@@ -2383,11 +2395,12 @@ jobs:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
             GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
+            GITHUB_APP_ID > BWS_APP_ID
 
       - uses: ./.github/actions/app-token
         id: app-token
         with:
-          client-id: ${{ vars.APP_ID }}
+          client-id: ${{ env.BWS_APP_ID }}
           private-key: ${{ env.BWS_APP_PRIVATE_KEY }}
           preset: readonly
           repositories: console,renet,account,elite,homebrew-tap

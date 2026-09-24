@@ -1,8 +1,11 @@
 """`.ci/scripts/test/lib/workflow-rule.sh`, ported. The harness for the rules that live inside `.ci/scripts/quality/check_workflows.py`.
 
-WHY IT IS SHARED, and why between exactly these callers rather than every workflow test. check-workflows.sh hosts several banned-pattern rules, and each gets its own gate test driving it against a fixture tree. The incantation is
+WHY IT IS SHARED, and why between exactly these callers rather than every workflow test. The gate hosts several banned-pattern rules, and each gets its own gate test driving it against a fixture tree. The incantation is
 exact and easy to get subtly wrong: `WORKFLOW_INLINE_ONLY=1` is what empties
-GITHUB_YAMLS (check-workflows.sh:38-40) so the banned-pattern scans become no-ops and the FIXTURE TREE is the only thing judged. Without it a test both trips on and depends on the real `.github` state.
+the scanned file list (`workflows.py:651-655`) so the banned-pattern scans become no-ops and the FIXTURE TREE is the only thing judged. Without it a test both trips on and depends on the real `.github` state.
+
+THE SUBJECT IS THE PYTHON GATE NOW, and it used to be `.ci/scripts/quality/check-workflows.sh`.
+That twin was retired in W7P5-c once `.ci/shadow/w7p2-workflows.observations.jsonl` held K=5 (10 rows, 10 distinct trees, all `EQUIVALENT`), and the repoint was driven before the deletion rather than assumed: six drives over the three fixtures these callers build, with `CI` set and unset, compared stdout and stderr SEPARATELY, byte-identical on all six, against a control confirming a good fixture and a bad one do not produce the same bytes. Twin blob sha at the moment of deletion: 8b15557789b1fe8615c572a1076e6a3d7bc5bdca.
 
 test_gate_workflow_contracts.py looks like it belongs here and does NOT: it drives `.ci/scripts/security/check-workflow-gates.sh` with `WORKFLOWS_DIR` -- a different script, a different variable, no inline-only switch. The five lines rhyme; the contract does not. Folding it in would produce a helper with two meanings.
 
@@ -17,11 +20,12 @@ STREAMS ARE MERGED, matching `2>&1` in both bash callers. These rules write thei
 
 import os
 import pathlib
+import sys
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 
-CHECK = paths.from_root(".ci", "scripts", "quality", "check-workflows.sh")
+CHECK = paths.from_root(".ci", "scripts", "quality", "check_workflows.py")
 
 
 def run_check(
@@ -38,7 +42,7 @@ def run_check(
         env["CI"] = "true"
     if extra_env:
         env.update(extra_env)
-    return harness.run([str(CHECK)], env=env)
+    return harness.run([sys.executable, str(CHECK)], env=env)
 
 
 def write_job(path: pathlib.Path, *lines: str) -> None:

@@ -206,7 +206,49 @@ runs:
         echo "pre-placed sm-action $version/$triple (sha256 verified)"
 
     - name: Fetch from Bitwarden Secrets Manager
+      id: fetch
       uses: bitwarden/sm-action@1238aae8fc64b212641190a9227c8a734ab1a793  # v3.0.1
       with:
         access_token: ${{ inputs.access-token }}
         secrets: ${{ steps.resolve.outputs.mapping }}
+
+    # THE ROTATION NOTICE, AND WHY IT IS NOT OPTIONAL.
+    # `agent/plans/PLAN-bws-rotation-on-failure.md` deletes the hand-maintained expiry
+    # date and makes the FAILURE the only signal. That trade makes exactly one thing
+    # worse: a scheduled outage that arrived quietly becomes an unscheduled one, and CD
+    # is where an unpredicted death costs most. This step is the mitigation for that
+    # loss, which is why the plan marks it NOT OPTIONAL.
+    #
+    # THE CONDITION IS NARROW ON PURPOSE. `failure()` alone would also fire when
+    # "Resolve names to UUIDs" rejected a malformed line or a name absent from the map,
+    # neither of which is a credential problem, and a rotation notice printed over a
+    # typo is the precision decay that teaches readers to scroll past the next one.
+    # `steps.fetch.outcome == 'failure'` says the resolution was fine and the fetch
+    # itself is what died, which is the same narrowing the classifier does locally.
+    #
+    # NO CLASSIFIER RUNS HERE, and that is a deliberate difference from the two local
+    # emitters. sm-action's own stderr is not available to a following step, so there is
+    # nothing to classify; what remains is the one case the classifier's default covers
+    # anyway. The alternative -- guessing -- is how a check starts reporting on the
+    # wrong thing.
+    #
+    # A MISSING NOTICE FILE IS ITSELF AN ANNOTATION, never a silent success. An `exit 0`
+    # on a failed read would leave the job reporting only sm-action's own error, which
+    # names no procedure at all.
+    - name: Rotation notice (the fetch failed, and that is the only signal there is)
+      if: ${{ failure() && steps.fetch.outcome == 'failure' }}
+      shell: bash
+      env:
+        NOTICE: ${{ github.action_path }}/../../../.ci/config/bws-rotation-notice.txt
+      run: |
+        set -uo pipefail
+        if [[ ! -s "$NOTICE" ]]; then
+          echo "::error::the Bitwarden fetch failed AND .ci/config/bws-rotation-notice.txt is missing or empty at $NOTICE, so the rotation procedure cannot be printed. The credential still needs rotating; the instructions for it are what is absent."
+          exit 0
+        fi
+        # A workflow annotation is ONE line. Literal newlines end it, so the rest of the
+        # notice would be dropped on the floor with no sign that anything was lost;
+        # `%0A` is the encoding GitHub documents for exactly this, and awk does the
+        # joining without a subshell per line.
+        body="$(awk '{ printf "%s%%0A", $0 }' "$NOTICE")"
+        echo "::error title=BWS access token: rotate it::${body}"

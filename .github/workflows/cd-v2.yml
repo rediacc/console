@@ -89,11 +89,12 @@ jobs:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
             GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
+            GITHUB_APP_ID > BWS_APP_ID
 
       - uses: ./.github/actions/app-token
         id: app-token
         with:
-          client-id: ${{ vars.APP_ID }}
+          client-id: ${{ env.BWS_APP_ID }}
           private-key: ${{ env.BWS_APP_PRIVATE_KEY }}
           preset: cd
           repositories: console,renet,account,homebrew-tap,elite
@@ -260,11 +261,13 @@ jobs:
             CLOUDFLARE_R2_SECRET_ACCESS_KEY > BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY
             STRIPE_SECRET_KEY > BWS_STRIPE_SECRET_KEY
             CLOUDFLARE_API_TOKEN > BWS_CLOUDFLARE_API_TOKEN
+            GITHUB_APP_ID > BWS_APP_ID
+            CLOUDFLARE_ZONE_ID > BWS_CLOUDFLARE_ZONE_ID
       - uses: ./.github/actions/app-token
         if: needs.init.outputs.workers_only != 'true'
         id: app-token
         with:
-          client-id: ${{ vars.APP_ID }}
+          client-id: ${{ env.BWS_APP_ID }}
           private-key: ${{ env.BWS_APP_PRIVATE_KEY }}
           preset: cd
           repositories: console,renet,account,homebrew-tap,elite
@@ -276,10 +279,8 @@ jobs:
           filter: blob:none   # see the divergence-check checkout above
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+      - uses: ./.github/actions/setup-node-npm
         if: needs.init.outputs.workers_only != 'true'
-        with:
-          node-version: '22'
 
       # -----------------------------------------------------------------------
       # Step 1: Promote Docker images (channel -> version + latest)
@@ -380,7 +381,7 @@ jobs:
           CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ env.BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
           CLOUDFLARE_R2_ENDPOINT: ${{ env.BWS_CLOUDFLARE_R2_ENDPOINT }}
           CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ZONE_ID: ${{ vars.CLOUDFLARE_ZONE_ID }}
+          CLOUDFLARE_ZONE_ID: ${{ env.BWS_CLOUDFLARE_ZONE_ID }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.promote_r2_to_stable_hotfix
 
       - name: Promote Docker to stable (hotfix)
@@ -639,10 +640,13 @@ jobs:
             CLOUDFLARE_R2_ACCESS_KEY_ID > BWS_CLOUDFLARE_R2_ACCESS_KEY_ID
             CLOUDFLARE_R2_ENDPOINT > BWS_CLOUDFLARE_R2_ENDPOINT
             CLOUDFLARE_R2_SECRET_ACCESS_KEY > BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY
+            GITHUB_APP_ID > BWS_APP_ID
+            GIT_BOT_NAME > BWS_GIT_BOT_NAME
+            GIT_BOT_EMAIL > BWS_GIT_BOT_EMAIL
       - uses: ./.github/actions/app-token
         id: app-token
         with:
-          client-id: ${{ vars.APP_ID }}
+          client-id: ${{ env.BWS_APP_ID }}
           private-key: ${{ env.BWS_APP_PRIVATE_KEY }}
           preset: cd
           repositories: console,renet,account,homebrew-tap,elite
@@ -665,8 +669,8 @@ jobs:
       - name: Create version tag
         run: |
           VERSION="${{ needs.init.outputs.next_version }}"
-          git config user.name "${{ vars.GIT_BOT_NAME }}"
-          git config user.email "${{ vars.GIT_BOT_EMAIL }}"
+          git config user.name "${BWS_GIT_BOT_NAME}"
+          git config user.email "${BWS_GIT_BOT_EMAIL}"
           git tag -a "v${VERSION}" -m "v${VERSION}"
           git push origin "v${VERSION}"
           echo "::notice::Created tag v${VERSION}"
@@ -685,8 +689,8 @@ jobs:
             --push
         env:
           GITHUB_PAT: ${{ steps.app-token.outputs.token }}
-          GIT_BOT_NAME: ${{ vars.GIT_BOT_NAME }}
-          GIT_BOT_EMAIL: ${{ vars.GIT_BOT_EMAIL }}
+          GIT_BOT_NAME: ${{ env.BWS_GIT_BOT_NAME }}
+          GIT_BOT_EMAIL: ${{ env.BWS_GIT_BOT_EMAIL }}
 
       # Auto-advance the release-contract-floor ratchet to track the oldest
       # cli sentinel currently on R2. The bijection check uses this as a
@@ -699,8 +703,8 @@ jobs:
           CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ env.BWS_CLOUDFLARE_R2_ACCESS_KEY_ID }}
           CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ env.BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
           CLOUDFLARE_R2_ENDPOINT: ${{ env.BWS_CLOUDFLARE_R2_ENDPOINT }}
-          GIT_BOT_NAME: ${{ vars.GIT_BOT_NAME }}
-          GIT_BOT_EMAIL: ${{ vars.GIT_BOT_EMAIL }}
+          GIT_BOT_NAME: ${{ env.BWS_GIT_BOT_NAME }}
+          GIT_BOT_EMAIL: ${{ env.BWS_GIT_BOT_EMAIL }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.release.advance_contract_floor
 
       - name: Create GitHub Release

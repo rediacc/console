@@ -34,11 +34,14 @@ on:
         default: 'claude-sonnet-5'
     secrets:
       BWS_ACCESS_TOKEN:
-        # OPTIONAL, and it must stay that way: the two cross-repo callers in
-        # private/account and private/renet do not pass it, and a required
-        # secret they cannot supply fails their run, not ours. The shadow
-        # steps below are repo-guarded for the same reason.
-        required: false
+        # REQUIRED since 2026-09-24. It was optional so the cross-repo callers
+        # in private/account and private/renet could omit it, but the
+        # "Fetch secrets from Bitwarden" step lost its repo guard on 2026-09-09
+        # and runs for every caller, so an omitted token no longer skipped
+        # anything: it reviewed with a BLANK credential and failed deep inside
+        # the action (rediacc/account, every review from 2026-09-06). Both
+        # callers now pass it; a caller that forgets fails at startup, by name.
+        required: true
 # Every job below declares its own permissions, so this workflow-level default
 # is deliberately empty: a job added without a block gets nothing and fails
 # loudly, rather than silently inheriting a scope nobody audited it for.
