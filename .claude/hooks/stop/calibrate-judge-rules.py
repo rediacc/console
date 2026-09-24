@@ -174,30 +174,13 @@ SHAPE_CASES = [
         "the assertion closure, 12 files, 8 byte-identical",
         "fire",
         [
-            "scripts/gates/check-anchor-integrity.ts:235",
-            "scripts/gates/check-hydration-clean.ts:200",
-            "scripts/gates/check-layout-overflow.ts:267",
+            # RE-DERIVED 2026-09-24 by `grep -n 'const check = (name'` on each file, after a live run MISSED this fixture: all three lines had drifted, and :235 in anchor-integrity had become a locale error message, so the model was judging a sentence rather than the closure.
+            "scripts/gates/check-anchor-integrity.ts:244",
+            "scripts/gates/check-hydration-clean.ts:206",
+            "scripts/gates/check-layout-overflow.ts:265",
         ],
     ),
-    (
-        "28 hand-rolled mktemp+trap against an existing with_temp_dir",
-        "fire",
-        # COORDINATES CORRECTED 2026-09-02, and this is the THIRD fixture in this file built from a survey table without opening the files. Two of the three pointed at code that is not the shape they name: :44 in embed-asset-freshness is a heredoc writing a JSON fixture (the real mktemp+trap is :29 and :32), and :21 in ci-workflow-invariants is the `source test-helpers.sh` preamble
-        # (real pair at :28-:29). Only the autopilot one was right.
-        #
-        # THE COST WAS MEASURABLE AND IT LOOKED LIKE SOMETHING ELSE. `wl_shapedup.prompt_ section` sends ONLY file:line, never the code, so the model had to open exactly those lines -- and what it found was a heredoc, an import preamble and a trap, which are genuinely NOT one shape. It answered `silent`, correctly, on the input it was given. Across live runs the fixture then
-        # flip-flopped (MISS, OK, MISS), and that noise was nearly diagnosed as rubric drift and "fixed" by rewriting SHAPE_PROMPT -- which would have tuned the rubric to agree with wrong coordinates. Worse, an import preamble is what the sibling gate's own control calls "adoption, not duplication", so one coordinate was pointing at a span that is legitimately shared.
-        #
-        # The rule above still stands -- when a fixture flips, the fix is the PROMPT --
-        # but it assumes the fixture describes real code. VERIFY THE COORDINATES FIRST;
-        # that check is one `sed -n` per line and it is the cheapest step here.
-        # COORDINATES MOVED AGAIN 2026-09-21, when W7 P5 census batch B2 retired the embed-asset-freshness and ci-workflow-invariants twins. Re-verified by `sed -n` on the three lines below rather than transcribed: each is the `mktemp -d` of a hand-rolled pair whose `trap` sits on the next line or three below it.
-        [
-            ".ci/scripts/test/gates/test-autopilot-breakpoint-alignment.sh:40",
-            ".ci/scripts/test/gates/test-generate-tag-inputs.sh:46",
-            ".ci/scripts/test/gates/test-gate-anti-vacuity.sh:314",
-        ],
-    ),
+    # THE MKTEMP+TRAP FIRE FIXTURE WAS REMOVED 2026-09-24, the second fixture in this file retired rather than guessed again. All three of its files (test-autopilot-breakpoint-alignment.sh, test-generate-tag-inputs.sh, test-gate-anti-vacuity.sh) were ported to Python under .ci/rediacc_ci/tests/gates/ and deleted, so the live run's model correctly answered "instances do not exist". Of the surviving bash suites only `.ci/scripts/test/gates/test-toolchain.sh:38` still carries a genuine hand-rolled `mktemp -d` + `trap` pair beside `with_temp_dir` (`.ci/scripts/test/lib/test-helpers.sh:98`), and one instance is not a duplication fixture. Build any replacement from the counter's own output, as the note below already says.
     # A THIRD FIRE FIXTURE WAS REMOVED RATHER THAN GUESSED AGAIN. It cited check-em-dash-surfaces.ts:629 / check-dead-css.ts:181 / check-landmarks.ts:48 as one "selftest verdict tail" cluster. Checked line by line, they are not one shape: :629 is a `main()` argv preamble, a different cluster entirely. The model answered `already`, naming the real harness, with the divergence
     # "em-dash-surfaces uses a failures array, not a counter; belongs to a different cluster" -- correct, and the fixture was wrong.
     #
@@ -208,23 +191,13 @@ SHAPE_CASES = [
         "silent",
         # RE-VERIFIED AND REPOINTED 2026-09-21 for the same retirement. Two of the three now name the Python ports that carry those twins' cases, which strengthens the control rather than weakening it: the three signatures are visibly incompatible (one takes the gate handle and a workflow path, one takes a tmp_path and a mapping, one is a bash function setting LAST_OUT).
         [
-            ".ci/scripts/test/gates/test-autopilot-breakpoint-alignment.sh:47",
-            ".ci/rediacc_ci/tests/gates/test_gate_ci_workflow_invariants.py:42",
-            ".ci/rediacc_ci/tests/gates/test_gate_embed_asset_freshness.py:92",
+            # REPOINTED AGAIN 2026-09-24: the bash twin at test-autopilot-breakpoint-alignment.sh:47 was ported and deleted, so the bash contract now comes from test-runner-advice.sh:42, the same shape (a function setting LAST_OUT and returning rc). The two Python lines moved to the `def run_gate` lines themselves.
+            ".ci/scripts/test/gates/test-runner-advice.sh:42",
+            ".ci/rediacc_ci/tests/gates/test_gate_ci_workflow_invariants.py:40",
+            ".ci/rediacc_ci/tests/gates/test_gate_embed_asset_freshness.py:90",
         ],
     ),
-    (
-        # THE FIRST VERSION OF THIS FIXTURE WAS WRONG, and the model caught it. It cited check-dead-css.ts:187 / check-ssr-locale.ts:62 / check-svg-theme-reach.ts:60 as "the findings report"; those three lines are in fact a byte-identical `check`
-        # closure, so `consolidatable: yes` was the CORRECT answer and want=silent was the
-        # error. A negative fixture pointing at real duplication does not test the rubric, it tests whether the rubric will agree with a mistake. These lines are the actual bespoke report prose.
-        "CONTROL: the findings report is ten distinct shapes, not one",
-        "silent",
-        [
-            "scripts/gates/check-dead-css.ts:353",
-            "scripts/gates/check-landmarks.ts:130",
-            "scripts/gates/check-ssr-locale.ts:121",
-        ],
-    ),
+    # THE FINDINGS-REPORT CONTROL WAS RETIRED 2026-09-24, the third fixture here removed rather than guessed again. Re-pointed at each gate's own remedy sentence (check-dead-css.ts:343, check-landmarks.ts:131, check-ssr-locale.ts:150), it still fired on five consecutive live runs, and the model's reading was right: the prose sits inside a report loop that IS shared -- a count header, the first N items, a `... and N more` line, the explanation, `process.exit(1)` -- repeated across 20+ gates with only the limit changing. `scripts/lib/controls.ts` declines to own the report PROSE, which stays true, but no coordinate in these files shows the prose without the scaffold around it. The shared loop is tracked as its own finding.
     (
         "CONTROL: a generated file and its fixtures are copies on purpose",
         "silent",

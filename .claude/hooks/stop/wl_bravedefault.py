@@ -148,6 +148,19 @@ verb: a step that reaches an audience or an external account is not reversible
 however routine it looks.
   preference       nothing is at risk; it holds only because the operator
                    might have wanted it the other way.
+
+COST-ON-OTHERS IS NARROW. It holds only when the ACT ITSELF spends a
+resource someone else owns: a paid run on another person's budget, a human
+paged or asked to review, another session's work blocked or overwritten.
+The session's own work landing in the tree, or a regenerated artefact that
+can be redone, spends nobody's resource.
+
+WAITING FOR AN EVENT IS NOT A REASON. A default that waits for something
+the session itself will observe ("until CI is green", "when the pass
+finishes", "after the run lands") describes continuing. Judge the act the
+wait postpones: if that act is not irreversible, outward or cost-on-others,
+the hold is timid, and the braver form performs the act when the event
+lands instead of reporting and waiting to be told.
   none             no reason is given at all.
 
 The first three are legitimate reasons to default to not-doing. The last two
