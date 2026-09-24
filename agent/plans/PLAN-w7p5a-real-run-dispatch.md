@@ -276,7 +276,7 @@ The devbox was recreated with `./run.sh devbox up` mid-run (between items 5/7 an
 ### Findings from the real runs
 
 1. **`EXPECTED_DRY_RUN_PATHS` was stale** (`test_w7p5a_dry_run_ledgers.py`): the 2026-09-23 graduations of verify-edge-endpoints, verify-stable-endpoints and assert-edge-tag-exists left three pins behind, so the module failed (4 failed, 61 passed). Fixed first, with a comment that a graduation removes its pin in the same change. The 2026-09-24 graduations removed cf-purge-urls, write-release-sentinel and upload-repos-to-r2 the same way; 44 passed after.
-2. **simulate-promotion's empty-channel floor is unreachable against real R2, and the run dies silently.** `CHANNEL=w7p5a-empty` exits 1 on both sides after printing only `Copying apt/w7p5a-empty/ -> ...`. The installed `aws s3 ls` exits 1 on a missing prefix with no output, and `pipefail` ends the run at `simulate-promotion.sh:186` before `:194`'s `refusing to promote an empty channel`. The port pins the same structure (`simulate_promotion.py:52-60`, `THE_EMPTY_CHANNEL_FLOOR_SITS_BEHIND_PIPEFAIL`). The real run settles the "depending on the aws build" question: the floor never prints. The script and port are outside this writer's file set, so the fix goes to the coordinator.
+2. **simulate-promotion's empty-channel floor is unreachable against real R2, and the run dies silently.** `CHANNEL=w7p5a-empty` exits 1 on both sides after printing only `Copying apt/w7p5a-empty/ -> ...`. The installed `aws s3 ls` exits 1 on a missing prefix with no output, and `pipefail` ends the run at `simulate-promotion.sh:186` before `:194`'s `refusing to promote an empty channel`. The port pins the same structure (`simulate_promotion.py:52-60`, `THE_EMPTY_CHANNEL_FLOOR_SITS_BEHIND_PIPEFAIL`). The real run settles the "depending on the aws build" question: the floor never prints. FIXED 2026-09-24 in both twins (worklist #e5ce5408). The listing is now captured first: exit 1 with no output falls through to the floor, and any other failure re-emits aws's stderr and prints `aws s3 ls ... failed (exit N); nothing was promoted`. Two new differential cases fail on the pre-fix code, and a real re-run against R2 with a read-only token now prints the refusal on both sides.
 3. **cf-purge-urls had no non-production zone to use.** The account holds `rediacc.com` and `rediacc.io`, and neither is a staging zone, so the run used never-served URL paths on the production zone. The token was scoped to that one zone and the purge was URL-only.
 
 ### assert-artifact-version.sh, post-merge run sheet
@@ -705,3 +705,25 @@ The Drafted commands section above still holds each path's full env list. This s
 - Expected: either a no-op, `ratchet already at <cur> >= observed <oldest>` with exit 0 and nothing pushed, or a commit `chore(release-state): advance contract floor to <oldest> [skip ci]` pushed to main. The second side meets the advanced floor and prints the no-op line.
 - Rollback: `git revert <commit> && git push origin main`.
 - It is the one sheet that pushes to main. Run the no-op form first; it is the likely one, and it proves the R2 read without a push.
+
+### M-live progress (2026-09-24, session d778be9d)
+
+The coordinator relayed the operator's 2026-09-24 authorization for the M-live tier. The session ran only the runs whose pre-state check proved they change nothing in production, each with its rollback written down before the run.
+Each of the other fifteen changes live state: Worker deploys, secret stores, a public GitHub Release, pushes to main and to the public tap, R2 deletions and promotions, a full media-cache purge. They wait for the operator's own go in this session, because an authorization relayed through another agent is not taken as consent for irreversible production changes.
+
+| Path | Outcome | Pre-state proof / rollback |
+|---|---|---|
+| `release/advance-contract-floor.sh` | graduated, pair `w7p6-advance-contract-floor` | floor v1.2.21 = oldest R2 sentinel v1.2.21, so no commit and no push; both sides print the identical `ratchet already at v1.2.21` |
+| `release/mark-production.sh` | graduated, pair `w7p5a-mark-production` | `production` already at 880b1b3e (v1.3.12), v1.3.12 already Latest; rollback PATCH written before the run |
+| `release/cleanup-channel-docker-tags.sh` | graduated, pair `w7p6-cleanup-channel-docker-tags` | staging-only guard, no registry call; identical summaries |
+| `deploy/promote-docker-to-stable-hotfix.sh` | graduated, pair `w7p5a-promote-docker-to-stable-hotfix` | `:stable` = `:edge` digests for renet/rdc/server before and after; digests saved in `out/L-docker-rollback-digests.txt` |
+| `release/tag-submodules.sh` | not run | `private/renet` HEAD is `v1.3.12-16-g86719a5` while `v1.3.12` exists remotely at another commit, so the script's drift refusal fires (exit 1); it clears only with the next real release |
+| `release/update-homebrew-tap.sh` | not run | see finding 5; the formula already reads 1.3.12, so the next real release is the natural run |
+| the other thirteen | operator go needed | sheets above |
+
+Gate after the fourth graduation: `16 'blocked', 32 ledgered ... 25 have their real-run leg confirmed and 7 are leg-blocked`, rc=0 after each step. The ledger module then reported 32 passed. Token `w7p5a-live-r2read-1`: DELETE success, verify `success:false` (code 1000).
+
+Findings from this tier:
+
+4. **The devbox docker has no buildx plugin.** `docker buildx imagetools inspect ...` inside the devbox prints only `Run 'docker --help' for more information`. promote-docker-to-stable-hotfix.sh therefore ran on the host.
+5. **update-homebrew-tap.sh writes the PAT into the global git config** (`update-homebrew-tap.sh:78`, port `update_homebrew_tap.py:567-568`, sibling `.ci/scripts/ci/initialize.sh:104`). That is harmless on an ephemeral CI runner. On a workstation, and inside the devbox, whose `~/.gitconfig` is bind-mounted from the host, it persists `x-access-token:<PAT>` in plain text. The script also runs `git checkout -B main <origin> --force` in `private/homebrew-tap` (`:87`), which discards uncommitted work in a shared tree. Both are outside this writer's file set.

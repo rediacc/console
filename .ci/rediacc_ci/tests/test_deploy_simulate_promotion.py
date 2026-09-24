@@ -83,7 +83,7 @@ DEFAULT_BUCKET = {
 
 # A MODEL of the AWS CLI, not the AWS CLI. `aws` IS NOT INSTALLED IN THIS SANDBOX, so nothing here is checked against the real tool; the differential's evidence is independent of that, because both implementations go through the SAME fake and the argv, the streams and the exit codes are real evidence about the two callers.
 #
-# `FAKE_AWS_LS_EMPTY_EXITS` is the knob fact 3 needs: real `aws s3 ls` builds disagree about whether an empty prefix is an error, and the twin's floor is reachable only under the build that says it is not.
+# `FAKE_AWS_LS_EMPTY_EXITS` is the knob fact 3 needs: a real `aws s3 ls` on an empty prefix exits 1 with no output (observed against R2 on 2026-09-24), and both twins must still reach the empty-channel floor under it. `FAKE_AWS_LS_FAIL=<status>` is a listing that genuinely failed, which must NOT be read as an empty channel.
 FAKE_AWS = r'''#!/usr/bin/python3
 """Recording fake for `aws`. See the test module docstring."""
 import os
@@ -118,6 +118,10 @@ if argv[:2] == ["configure", "set"]:
     sys.exit(0)
 
 if argv[:2] == ["s3", "ls"]:
+    if os.environ.get("FAKE_AWS_LS_FAIL"):
+        # A listing that FAILED, the way aws v2 reports a service error: its own status and a message on stderr.
+        sys.stderr.write("An error occurred (AccessDenied) when calling the ListObjectsV2 operation: Access Denied\n")
+        sys.exit(int(os.environ["FAKE_AWS_LS_FAIL"]))
     prefix = argv[2][len("s3://"):]
     bucket, _, key_prefix = prefix.partition("/")
     base = os.path.join(root, bucket)
@@ -558,29 +562,45 @@ def test_fact_the_secret_key_is_never_checked(tmp_path) -> None:
     assert "✓ Promotion simulated" in old[0].stderr
 
 
-def test_fact_the_empty_channel_floor_sits_behind_pipefail(tmp_path) -> None:
-    """TWO ENDINGS FOR ONE INPUT, and which one you get depends on `aws`.
+def test_the_empty_channel_floor_is_reached_whatever_aws_s3_ls_exits(tmp_path) -> None:
+    """FACT 3, FIXED. The floor's refusal prints whether `aws s3 ls` exits 0 or, as the real CLI does against R2, exits 1 with no output on an empty prefix.
 
-    With an `aws s3 ls` that exits 0 on an empty prefix, the floor is reached and prints its sentence. With one that exits 1, `pipefail` ends the run one line earlier and the sentence never appears. BOTH are driven and BOTH agree, because the port reproduces the structure rather than guessing.
+    The exit-1 half is the regression: before 2026-09-24 the `aws s3 ls | awk` pipe under `pipefail` ended the run there with exit 1 and no message, on both twins.
     """
-    assert port.THE_EMPTY_CHANNEL_FLOOR_SITS_BEHIND_PIPEFAIL is True
+    assert port.EMPTY_LISTING_EXIT == 1
 
     empty = {k: v for k, v in DEFAULT_BUCKET.items() if not k.startswith("apk/")}
+    sentence = "✗ no objects found under apk/pr-123/; refusing to promote an empty channel"
 
-    _root, old, new = run_both(tmp_path / "a", empty)
-    _agree(old, new, "empty-ls-exits-zero")
-    proc, calls = old
-    assert proc.returncode == 1
-    assert (
-        "✗ no objects found under apk/pr-123/; refusing to promote an empty channel" in proc.stderr
-    )
-    assert "curl" not in calls, "an aborted promotion still purged"
+    for label, extra in (
+        ("empty-ls-exits-zero", {}),
+        ("empty-ls-exits-one", {"FAKE_AWS_LS_EMPTY_EXITS": "1"}),
+    ):
+        _root, old, new = run_both(tmp_path / label, empty, **extra)
+        _agree(old, new, label)
+        proc, calls = old
+        assert proc.returncode == 1, (label, proc.stderr)
+        assert sentence in proc.stderr, (label, proc.stderr)
+        assert "failed (exit" not in proc.stderr, (label, proc.stderr)
+        assert "curl" not in calls, "an aborted promotion still purged"
 
-    _root2, old2, new2 = run_both(tmp_path / "b", empty, FAKE_AWS_LS_EMPTY_EXITS="1")
-    _agree(old2, new2, "empty-ls-exits-one")
-    proc2, _calls2 = old2
-    assert proc2.returncode == 1
-    assert "no objects found under" not in proc2.stderr, proc2.stderr
+
+def test_a_failed_listing_is_not_read_as_an_empty_channel(tmp_path) -> None:
+    """The other side of fact 3's fix: a listing that genuinely fails keeps aws's status and message, and is never mistaken for the empty channel. Status 1 WITH a message on stderr is a failure too, not the empty shape."""
+    for status in ("254", "1"):
+        _root, old, new = run_both(tmp_path / status, FAKE_AWS_LS_FAIL=status)
+        _agree(old, new, "ls-fails-%s" % status)
+        proc, calls = old
+        assert proc.returncode == int(status), proc.stderr
+        assert "Access Denied" in proc.stderr, proc.stderr
+        assert (
+            "✗ aws s3 ls s3://rediacc-releases/apt/pr-123/ failed (exit %s); nothing was promoted"
+            % status
+            in proc.stderr
+        ), proc.stderr
+        assert "refusing to promote an empty channel" not in proc.stderr
+        assert "copy-object" not in calls
+        assert "curl" not in calls
 
 
 def test_fact_the_sed_fix_scratch_path_is_fixed(tmp_path) -> None:

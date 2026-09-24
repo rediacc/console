@@ -182,9 +182,29 @@ for dir in apt rpm apk archlinux; do
     DST_PREFIX="${dir}/${PROMOTED}/"
     export SRC_PREFIX DST_PREFIX
 
+    # The listing is captured rather than piped into awk. `aws s3 ls` exits 1
+    # with nothing on stdout or stderr when a prefix holds no objects (observed
+    # against real R2 on 2026-09-24), and the old `aws s3 ls | awk` pipe under
+    # pipefail ended the run right there, so the empty-channel floor below never
+    # printed and the job failed with no message at all. That one shape is the
+    # empty channel and falls through to the floor; any other non-zero exit is a
+    # listing that failed, and says so.
+    LISTING="$(mktemp)"
+    LISTING_ERR="$(mktemp)"
+    ls_rc=0
+    aws s3 ls "s3://${BUCKET}/${SRC_PREFIX}" --recursive "${EP[@]}" >"$LISTING" 2>"$LISTING_ERR" || ls_rc=$?
+    ls_err="$(<"$LISTING_ERR")"
+    rm -f "$LISTING_ERR"
+    if [[ $ls_rc -ne 0 ]] && { [[ $ls_rc -ne 1 ]] || [[ -s "$LISTING" ]] || [[ "$ls_err" =~ [^[:space:]] ]]; }; then
+        [[ -n "$ls_err" ]] && printf '%s\n' "$ls_err" >&2
+        rm -f "$LISTING"
+        log_error "aws s3 ls s3://${BUCKET}/${SRC_PREFIX} failed (exit ${ls_rc}); nothing was promoted"
+        exit "$ls_rc"
+    fi
+
     KEYS="$(mktemp)"
-    aws s3 ls "s3://${BUCKET}/${SRC_PREFIX}" --recursive "${EP[@]}" |
-        awk '{ for (i = 4; i <= NF; i++) printf "%s%s", $i, (i < NF ? OFS : ORS) }' >"$KEYS"
+    awk '{ for (i = 4; i <= NF; i++) printf "%s%s", $i, (i < NF ? OFS : ORS) }' "$LISTING" >"$KEYS"
+    rm -f "$LISTING"
 
     # An empty listing is a FAILURE, not a fast success: the install tests that
     # follow would then run against an empty channel and pass while proving

@@ -36,7 +36,7 @@ independent server-side copies at once, so two runs of the SAME implementation c
 The differential compares the copy calls as a MULTISET within each directory block rather than as a sequence, and says so where it does it. Everything outside those blocks is compared in order.
 
 -----------------------------------------------------------------------------
-FIVE FACTS ABOUT THE TWIN THAT LOOK LIKE MISTAKES. ALL FIVE ARE REPRODUCED
+FIVE FACTS ABOUT THE TWIN THAT LOOK LIKE MISTAKES. FOUR ARE REPRODUCED, THE THIRD WAS FIXED IN BOTH
 -----------------------------------------------------------------------------
   1. THE MISSING-CREDENTIAL MESSAGE NAMES THE WRONG VARIABLE. Twin :41 tests
      `AWS_ACCESS_KEY_ID` and twin :42 reports `CLOUDFLARE_R2_ACCESS_KEY_ID not
@@ -49,15 +49,15 @@ FIVE FACTS ABOUT THE TWIN THAT LOOK LIKE MISTAKES. ALL FIVE ARE REPRODUCED
      run with the id and no secret gets as far as the first `aws` call and fails
      there, with aws's message rather than this script's.
      `THE_SECRET_KEY_IS_NEVER_CHECKED` names it.
-  3. THE EMPTY-CHANNEL FLOOR MAY BE UNREACHABLE, DEPENDING ON THE `aws` BUILD.
-     The floor at twin :192 tests whether the awk output file is empty, but it
-     is only reached if the `aws s3 ls | awk` pipeline SUCCEEDED, and `pipefail`
-     is on. An `aws s3 ls` that exits non-zero on a prefix with no objects
-     therefore ends the run one line earlier, with aws's own message and aws's
-     own status, and the floor's sentence never prints. Both endings are driven
-     in the differential and both agree, because the port reproduces the
-     structure rather than the guess about which one the installed aws does.
-     `THE_EMPTY_CHANNEL_FLOOR_SITS_BEHIND_PIPEFAIL` names it.
+  3. THE EMPTY-CHANNEL FLOOR USED TO BE UNREACHABLE, AND NO LONGER IS (fixed in
+     both twins 2026-09-24). Real `aws s3 ls` exits 1 with nothing on stdout or
+     stderr on a prefix that holds no objects (observed against R2 on
+     2026-09-24), and the old `aws s3 ls | awk` pipe under `pipefail` ended the
+     run there: exit 1, no message. The listing is now captured first. That
+     exact shape (exit 1, empty stdout, blank stderr) falls through to the
+     floor and prints its refusal. Any other non-zero exit re-emits aws's
+     stderr and fails with `aws s3 ls ... failed (exit N)` and aws's status.
+     `EMPTY_LISTING_EXIT` names the one status read as "empty".
   4. `/tmp/config` IS A FIXED PATH SHARED BY BOTH SED-FIX FILES, and it is never
      removed. A run leaves the LAST downloaded config there, and a concurrent
      run of this script on the same machine would read the other's bytes. In CI
@@ -154,10 +154,11 @@ EXPORTED_FOR_CHILDREN = (
     "DST_PREFIX",
 )
 
-# The five facts in the module docstring, as constants so a test can assert each by name instead of restating the sentence.
+# The facts in the module docstring, as constants so a test can assert each by name instead of restating the sentence.
 THE_ACCESS_KEY_MESSAGE_NAMES_A_DIFFERENT_VARIABLE = True
 THE_SECRET_KEY_IS_NEVER_CHECKED = True
-THE_EMPTY_CHANNEL_FLOOR_SITS_BEHIND_PIPEFAIL = True
+# `aws s3 ls` on a prefix with no objects: this status, nothing on stdout, blank stderr (fact 3).
+EMPTY_LISTING_EXIT = 1
 THE_SED_FIX_SCRATCH_PATH_IS_FIXED = True
 AN_UNSET_ZONE_IS_AN_UNBOUND_VARIABLE_AT_THE_END = True
 
@@ -311,21 +312,34 @@ def _sleep(seconds: int) -> None:
 
 
 def list_keys(prefix: str, endpoint: str) -> list[str]:
-    """`aws s3 ls ... | awk '...' >"$KEYS"` (twin :186-187), under `pipefail`.
+    """The captured `aws s3 ls` then `awk` over the file (twin :186-208).
 
-    Raises `BashExitError` when either stage fails, which is fact 3: the floor below is only reached when the pipeline SUCCEEDED, so an `aws s3 ls` that exits non-zero on an empty prefix ends the run here instead.
+    Fact 3: exit `EMPTY_LISTING_EXIT` with empty stdout and blank stderr is the empty prefix and returns no keys, so the floor below is reached. Any other non-zero exit re-emits aws's stderr, logs the twin's sentence and raises `BashExitError` with aws's status.
 
     THE TEMPORARY FILE IS REAL, because the twin reads it twice (once for the copies, once for the purge URLs) and `[[ -s ]]` asks about the FILE. Its name is `mktemp`'s and appears nowhere observable.
     """
+    _flush()
+    listing = subprocess.run(
+        list_argv(prefix, endpoint),
+        capture_output=True,
+        check=False,
+    )
+    if listing.returncode and (
+        listing.returncode != EMPTY_LISTING_EXIT or listing.stdout or listing.stderr.strip()
+    ):
+        # `ls_err="$(<file)"` drops trailing newlines; `printf '%s\n'` adds one back, only when something is left.
+        err = listing.stderr.rstrip(b"\n")
+        if err:
+            sys.stderr.buffer.write(err + b"\n")
+            sys.stderr.flush()
+        log.error(
+            "aws s3 ls s3://%s/%s failed (exit %d); nothing was promoted"
+            % (BUCKET, prefix, listing.returncode)
+        )
+        raise BashExitError(listing.returncode)
     handle, keys_path = tempfile.mkstemp()
     os.close(handle)
     try:
-        _flush()
-        listing = subprocess.run(
-            list_argv(prefix, endpoint),
-            stdout=subprocess.PIPE,
-            check=False,
-        )
         with open(keys_path, "wb") as out:
             awk = subprocess.run(
                 ["awk", KEY_AWK],
@@ -333,14 +347,12 @@ def list_keys(prefix: str, endpoint: str) -> list[str]:
                 stdout=out,
                 check=False,
             )
-        # `pipefail`: the RIGHTMOST non-zero status wins.
-        status = awk.returncode or listing.returncode
-        if status:
-            raise BashExitError(status)
+        if awk.returncode:
+            raise BashExitError(awk.returncode)
         with open(keys_path, encoding="utf-8", errors="surrogateescape") as handle_in:
             text = handle_in.read()
     finally:
-        # `rm -f "$KEYS"` on both the refusal path (twin :193) and the normal one (twin :204).
+        # `rm -f "$KEYS"` on both the refusal path and the normal one.
         with contextlib.suppress(FileNotFoundError):
             os.unlink(keys_path)
     return read_lines(text)
