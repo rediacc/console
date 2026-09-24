@@ -59,6 +59,7 @@ ONE DELIBERATE DIVERGENCE, named rather than hidden: if the runner exists but is
 ledger exercises it, and it is written down because an undocumented divergence is the kind a later reader takes for a defect in the port.
 """
 
+import functools
 import os
 import pathlib
 import re
@@ -66,7 +67,7 @@ import subprocess
 import sys
 import tempfile
 
-from rediacc_ci import paths
+from rediacc_ci import paths, runtmp
 from rediacc_ci.controls import Controls
 
 # The three files the twin refuses to run without, relative to the repo root.
@@ -142,6 +143,12 @@ class _Tally:
         self.failed += 1
 
 
+@functools.cache
+def _run_tmp() -> str:
+    """This process's run directory, made on first use so `--selftest` and imports create nothing."""
+    return runtmp.run_dir("mutate-check-gate-")
+
+
 def run_scenario(
     runner: pathlib.Path, args: list[str], env_extra: dict[str, str] | None = None
 ) -> tuple[int, str]:
@@ -153,7 +160,8 @@ def run_scenario(
     if env_extra:
         environ.update(env_extra)
     # A PRIVATE TMPDIR PER SCENARIO, deleted when it returns. mutate-check.sh keeps `$TMPDIR/mutate-check.$$` on purpose, so a human can read the mutant and baseline logs it names; that is right for a person running the tool and wrong for this gate, which runs it several times per invocation and never reads those logs. Left at the default, every gate run added directories to the machine-wide /tmp that nothing removed: 400+ `mutate-check.<pid>` were found there on 2026-09-24, after the inode cap had been hit.
-    with tempfile.TemporaryDirectory(prefix="mutate-check-gate-") as scratch:
+    # And UNDER ONE PID-STAMPED RUN DIRECTORY, because `TemporaryDirectory` only cleans up when this process unwinds: a gate killed on its timeout left its scratch, and the mutant sandbox inside it, behind. The next run's `runtmp` sweep reclaims it.
+    with tempfile.TemporaryDirectory(prefix="scenario-", dir=_run_tmp()) as scratch:
         environ["TMPDIR"] = scratch
         try:
             completed = subprocess.run(

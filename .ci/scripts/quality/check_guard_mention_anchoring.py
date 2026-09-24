@@ -259,8 +259,9 @@ def controls() -> None:
         edit_guard = HOOKS / "pre-edit" / "block-roundlog-write.sh"
         if edit_guard.exists():
             # `[ -e "$FILE" ]` gates this guard before anything else -- a nonexistent path is silently allowed by design (creating a log is not truncating one), so the fixture must actually exist on disk.
-            rlog_dir = Path(tempfile.mkdtemp()) / "reports"
-            rlog_dir.mkdir()
+            # Under `td`, not a fresh `mkdtemp()`: that one was never removed, so every run of this gate left a directory in /tmp.
+            rlog_dir = Path(td) / "rlog" / "reports"
+            rlog_dir.mkdir(parents=True)
             rlog = rlog_dir / "pr-babysit-0827-1.md"
             rlog.write_text("## STATUS (round 1)\n")
             edit_payload = payload_for("edit", "irrelevant content", str(rlog))

@@ -6,10 +6,9 @@ BOTH DIRECTIONS, because a one-sided control is satisfiable by a broken hook: on
 The negative cases matter more than usual here. This guard sits on `git checkout`, which sessions legitimately use to switch branches all day. A guard that blocks that is one sessions will demand be removed, and then the tree has no guard at all.
 """
 
-import atexit
+import importlib.util
 import json
 import pathlib
-import shutil
 import subprocess
 import sys
 import tempfile
@@ -19,10 +18,20 @@ import tempfile
 # THE GUARD IS A PYTHON MODULE NOW. W5 P7 ported it and moved the bash original to .claude/oracles/, where the differential still compares the two byte for byte. This harness drives the LIVE guard, which is the dispatcher, for the reason the cutover exists at all: a suite that kept driving the retired file would keep passing while the thing that actually runs went unchecked. A REAL
 # FOREIGN REPOSITORY, built rather than named. The scope cases below assert that the guard stands down outside this checkout, and `target_root` resolves a path by asking git about it: a path that does not exist is unresolvable, the guard keeps guarding by design, and the case would then pass only while the fixture was missing -- green for the opposite of the reason it claims.
 # Measured on the first run of these two cases, which failed against a made-up /tmp path.
-_FOREIGN_DIR = tempfile.mkdtemp(prefix="guard-scope-")
+# `rediacc_ci.runtmp`, loaded BY FILE rather than through a `sys.path` hop (test_canonical_sys_path_hop.py freezes those): a pid-stamped run directory, removed at exit and swept by the next run when this one was killed before `atexit` could fire, which is how /tmp hit its inode cap on 2026-09-24.
+_RUNTMP = importlib.util.spec_from_file_location(
+    "runtmp", pathlib.Path(__file__).resolve().parents[3] / ".ci" / "rediacc_ci" / "runtmp.py"
+)
+if _RUNTMP is None or _RUNTMP.loader is None:
+    raise SystemExit(
+        "%s: .ci/rediacc_ci/runtmp.py is missing; this suite cannot make its run dir" % __file__
+    )
+runtmp = importlib.util.module_from_spec(_RUNTMP)
+_RUNTMP.loader.exec_module(runtmp)
+RUN_TMP = runtmp.run_dir("guard-scope-")
+_FOREIGN_DIR = tempfile.mkdtemp(prefix="foreign-", dir=RUN_TMP)
 subprocess.run(["git", "init", "-q", _FOREIGN_DIR], check=True, capture_output=True)
 pathlib.Path(_FOREIGN_DIR, "a.txt").write_text("hi\n", encoding="utf-8")
-atexit.register(shutil.rmtree, _FOREIGN_DIR, True)
 
 DISPATCH = str(pathlib.Path(__file__).resolve().parents[1] / "dispatch.py")
 GUARD_ARGV = [sys.executable, DISPATCH, "block_destructive_git_restore"]

@@ -7,11 +7,10 @@ against a real HEAD before the commit runs, and the range cases build real commi
 TWIN = None ON THE GUARD ITSELF, so this file is the whole differential, exactly as `test-block_prose_style_commit.py` is for its sibling. `check-hook-integrity.sh` reads this file's existence as crediting both directions.
 """
 
-import atexit
+import importlib.util
 import json
 import os
 import pathlib
-import shutil
 import subprocess
 import sys
 import tempfile
@@ -38,15 +37,26 @@ def run(command, cwd):
     return proc.returncode != 0, proc.stderr
 
 
+# `rediacc_ci.runtmp`, loaded BY FILE rather than through a `sys.path` hop (test_canonical_sys_path_hop.py freezes those): a pid-stamped run directory, removed at exit and swept by the next run when this one was killed before `atexit` could fire, which is how /tmp hit its inode cap on 2026-09-24.
+_RUNTMP = importlib.util.spec_from_file_location(
+    "runtmp", pathlib.Path(__file__).resolve().parents[3] / ".ci" / "rediacc_ci" / "runtmp.py"
+)
+if _RUNTMP is None or _RUNTMP.loader is None:
+    raise SystemExit(
+        "%s: .ci/rediacc_ci/runtmp.py is missing; this suite cannot make its run dir" % __file__
+    )
+runtmp = importlib.util.module_from_spec(_RUNTMP)
+_RUNTMP.loader.exec_module(runtmp)
+RUN_TMP = runtmp.run_dir("bulkxform-test-")
+
+
 def git(cwd, *args, check=True):
     return subprocess.run(["git", "-C", cwd, *args], capture_output=True, text=True, check=check)
 
 
 def scratch_dir():
-    """A temp directory removed at interpreter exit. Every repo and bare remote this suite makes goes through here: it builds a dozen git fixtures at module scope, and before this helper not one of them was deleted, which is the `.git base.txt r0.py` shape that filled the /tmp inode cap on 2026-09-24."""
-    d = tempfile.mkdtemp()
-    atexit.register(shutil.rmtree, d, ignore_errors=True)
-    return d
+    """A temp directory under this run's RUN_TMP, removed at interpreter exit or by the next run's sweep. Every repo and bare remote this suite makes goes through here: it builds a dozen git fixtures at module scope, and before this helper not one of them was deleted, which is the `.git base.txt r0.py` shape that filled the /tmp inode cap on 2026-09-24."""
+    return tempfile.mkdtemp(dir=RUN_TMP)
 
 
 def scratch_repo():

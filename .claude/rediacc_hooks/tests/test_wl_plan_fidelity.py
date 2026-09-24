@@ -8,15 +8,16 @@ the shim still says "unfaithful" and the check must stay SILENT because no plan 
 
 from __future__ import annotations
 
-import atexit
+import functools
 import json
 import os
 import pathlib
 import re
-import shutil
 import subprocess
 import tempfile
 import time
+
+from rediacc_ci import runtmp
 
 from rediacc_hooks.tests import wlfix
 from rediacc_hooks.tests.wlfix import wl  # noqa: F401
@@ -700,10 +701,14 @@ def test_220h_a_failed_tier_two_call_is_recorded_not_just_reported(wl):  # noqa:
     )
 
 
+@functools.cache
+def _run_tmp() -> str:
+    return runtmp.run_dir("plan-fidelity-test-")
+
+
 def build_drift_repo(dirty_docs: bool, extra_commits: int) -> str:
-    root = tempfile.mkdtemp()
-    # A git repository per call, three per run, outside pytest's tmp_path and so outside its retention policy; removed at exit rather than left in /tmp.
-    atexit.register(shutil.rmtree, root, ignore_errors=True)
+    # A git repository per call, three per run, outside pytest's tmp_path and so outside its retention policy; inside one pid-stamped run dir, removed at exit and swept by the next run when this one was killed first.
+    root = tempfile.mkdtemp(dir=_run_tmp())
 
     def sh(*args):
         subprocess.run(args, cwd=root, check=True, capture_output=True)

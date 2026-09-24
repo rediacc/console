@@ -5,20 +5,27 @@ Every control here is a RED/GREEN PAIR or it is not a control. The one that matt
 something. See agent/plans/PLAN-subagent-idle-detection.md.
 """
 
-import atexit
+import importlib.util
 import json
 import os
 import pathlib
-import shutil
 import sys
-import tempfile
 import time
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import wl_liveness as L
 
-TMP = pathlib.Path(tempfile.mkdtemp())
-atexit.register(shutil.rmtree, TMP, ignore_errors=True)
+# `rediacc_ci.runtmp`, loaded BY FILE rather than through a `sys.path` hop (test_canonical_sys_path_hop.py freezes those): a pid-stamped run directory, removed at exit and swept by the next run when this one was killed before `atexit` could fire, which is how /tmp hit its inode cap on 2026-09-24.
+_RUNTMP = importlib.util.spec_from_file_location(
+    "runtmp", pathlib.Path(__file__).resolve().parents[3] / ".ci" / "rediacc_ci" / "runtmp.py"
+)
+if _RUNTMP is None or _RUNTMP.loader is None:
+    raise SystemExit(
+        "%s: .ci/rediacc_ci/runtmp.py is missing; this suite cannot make its run dir" % __file__
+    )
+runtmp = importlib.util.module_from_spec(_RUNTMP)
+_RUNTMP.loader.exec_module(runtmp)
+TMP = pathlib.Path(runtmp.run_dir("teammate-idle-suite-"))
 SUB = TMP / "sess" / "subagents"
 SUB.mkdir(parents=True)
 

@@ -9,12 +9,10 @@ asserts, which is the real, unmocked forward this port makes, stopped by the sam
 
 from __future__ import annotations
 
-import atexit
 import functools
 import pathlib
-import shutil
-import tempfile
 
+from rediacc_ci import runtmp
 from rediacc_ci.tests import differential as diff
 from rediacc_ci.tests import pathmask
 
@@ -29,9 +27,8 @@ def masked_path() -> str:
     before it can reach R2. This used to be left to the host, and the host obliged on every developer machine and refused on a GitHub runner, which ships the CLI at /usr/local/bin/aws. See pathmask.py for why the mask
     mirrors a directory rather than guessing at `PATH=/usr/bin:/bin`.
     """
-    scratch = pathlib.Path(tempfile.mkdtemp(prefix="backfill-pathmask-"))
-    # Session-cached, so no single test owns it and pytest's tmp_path cannot hold it; removed at exit instead, or every run leaves one symlink farm in /tmp.
-    atexit.register(shutil.rmtree, scratch, ignore_errors=True)
+    # Session-cached, so no single test owns it and pytest's tmp_path cannot hold it. A pid-stamped run dir: removed at exit, and swept by the next run when this one was killed before exit, or every killed run leaves one symlink farm in /tmp.
+    scratch = pathlib.Path(runtmp.run_dir("backfill-pathmask-"))
     path = pathmask.path_without("aws", scratch, base=diff.BASE_ENV["PATH"])
     pathmask.assert_absent("aws", path)
     return path

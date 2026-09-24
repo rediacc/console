@@ -13,13 +13,11 @@ NOTE ON THE OTHER TWIN. `.ci/scripts/quality/check-plan-housekeeping.sh` (bash) 
 Python entry point in the retired bash twin, so this port changes only the harness language, not the subject.
 """
 
-import atexit
 import datetime
 import pathlib
 import shutil
-import tempfile
 
-from rediacc_ci import paths
+from rediacc_ci import paths, runtmp
 from rediacc_ci.tests.gates import harness
 
 GATE = paths.from_root(".ci", "scripts", "quality", "check_plan_housekeeping.py")
@@ -41,8 +39,8 @@ def _template():
     global _TEMPLATE  # noqa: PLW0603
     if _TEMPLATE is not None:
         return _TEMPLATE
-    root = pathlib.Path(tempfile.mkdtemp())
-    atexit.register(shutil.rmtree, root, ignore_errors=True)
+    # Module-cached, so no single test owns it; a pid-stamped run dir is removed at exit and swept by the next run when this one was killed first.
+    root = pathlib.Path(runtmp.run_dir("plan-housekeeping-test-"))
     agent = root / "agent"
     agent.mkdir(parents=True)
     _run("git", "-C", str(root), "init", "-q")

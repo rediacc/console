@@ -16,6 +16,7 @@ THE LEDGER. When `$GATE_HARNESS_LEDGER` names a file, every recorded control is 
 """
 
 import contextlib
+import functools
 import json
 import os
 import pathlib
@@ -25,6 +26,8 @@ import stat
 import subprocess
 import tempfile
 from typing import Any
+
+from rediacc_ci import runtmp
 
 LEDGER_ENV = "GATE_HARNESS_LEDGER"
 
@@ -201,13 +204,19 @@ def require_python_module(interpreter: str, module: str, fix: str) -> None:
         )
 
 
+@functools.cache
+def _run_tmp() -> str:
+    return runtmp.run_dir("gate-harness-")
+
+
 @contextlib.contextmanager
 def temp_dir():
     """`with_temp_dir`. Nests safely; removed on the way out, exception or not.
 
     The bash version binds the path into an EXIT trap because a shell function cannot otherwise clean up after an `exit` from inside itself. A context manager has that property natively, which is why this is the one helper whose shape changes: the trap was scaffolding for a language feature Python has.
     """
-    path = pathlib.Path(tempfile.mkdtemp())
+    # Under one pid-stamped run dir: `finally` does not run when pytest is killed on its timeout, and the next run's sweep is what reclaims the directory then.
+    path = pathlib.Path(tempfile.mkdtemp(dir=_run_tmp()))
     try:
         yield path
     finally:

@@ -7,6 +7,7 @@ PATH is manipulated per case rather than mocked, so "the host lacks it" is a fac
 """
 
 import atexit
+import importlib.util
 import json
 import os
 import pathlib
@@ -22,11 +23,18 @@ DISPATCH = str(pathlib.Path(__file__).resolve().parents[1] / "dispatch.py")
 GUARD_ARGV = [sys.executable, DISPATCH, "block_host_toolchain_run"]
 REPO = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", ".."))
 
-# ONE PARENT DIRECTORY PER RUN, STAMPED WITH THE PID, removed at exit. The sweep of parents left by killed runs arrives with the shared run-tmp helper; its procfs check needs a declared cross-OS seam, which that helper provides.
-_TMP_PREFIX = "hostguard-test-"
+# ONE PARENT DIRECTORY PER RUN, STAMPED WITH THE PID, and a sweep of every parent whose process is gone: `rediacc_ci.runtmp`, loaded BY FILE rather than through a `sys.path` hop, which test_canonical_sys_path_hop.py freezes; it is stdlib-only for exactly this reason. `atexit` does not run when the harness kills a run on its timeout, and each `_path_without` shim was ~6,500 symlinks on a WSL host (its PATH carries every Windows executable under /mnt/c): 81 leaked shims held 538,000 of /tmp's 1,048,576 inodes on 2026-09-24 and Bash could no longer write its own output.
+_RUNTMP = importlib.util.spec_from_file_location(
+    "runtmp", pathlib.Path(REPO) / ".ci" / "rediacc_ci" / "runtmp.py"
+)
+if _RUNTMP is None or _RUNTMP.loader is None:
+    raise SystemExit(
+        "%s: .ci/rediacc_ci/runtmp.py is missing; this suite cannot make its run dir" % __file__
+    )
+runtmp = importlib.util.module_from_spec(_RUNTMP)
+_RUNTMP.loader.exec_module(runtmp)
 
-RUN_TMP = tempfile.mkdtemp(prefix="%s%d-" % (_TMP_PREFIX, os.getpid()))
-atexit.register(shutil.rmtree, RUN_TMP, ignore_errors=True)
+RUN_TMP = runtmp.run_dir("hostguard-test-")
 
 # A PATH with the real tools plus a shim dir we control.
 shim = tempfile.mkdtemp(dir=RUN_TMP)

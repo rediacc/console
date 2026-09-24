@@ -15,6 +15,7 @@ The third pair is the one that matters most and is easiest to get wrong: the bui
 """
 
 import hashlib
+import importlib.util
 import json
 import os
 import pathlib
@@ -115,6 +116,18 @@ control(
 FIXSIG = "\n\n%s, so ALSO fill the `regression_gate` object.\n" % wl_judge._REGGATE_MARKER
 
 # The marker is a real file; keep every control out of the developer's own outstanding-demand state, which is keyed by TMPDIR and cwd.
+# `rediacc_ci.runtmp`, loaded BY FILE rather than through a `sys.path` hop (test_canonical_sys_path_hop.py freezes those): a pid-stamped run directory, removed at exit and swept by the next run when this one was killed before `atexit` could fire, which is how /tmp hit its inode cap on 2026-09-24.
+_RUNTMP = importlib.util.spec_from_file_location(
+    "runtmp", pathlib.Path(__file__).resolve().parents[3] / ".ci" / "rediacc_ci" / "runtmp.py"
+)
+if _RUNTMP is None or _RUNTMP.loader is None:
+    raise SystemExit(
+        "%s: .ci/rediacc_ci/runtmp.py is missing; this suite cannot make its run dir" % __file__
+    )
+runtmp = importlib.util.module_from_spec(_RUNTMP)
+_RUNTMP.loader.exec_module(runtmp)
+# Set BEFORE the first temp directory, because tempfile caches its answer: `wide-tier-`, `wide-settle-` and `schemalit-` further down used to land in /tmp itself, where only an explicit rmtree at the end removed them.
+tempfile.tempdir = runtmp.run_dir("judge-schema-suite-")
 _TMP = tempfile.TemporaryDirectory()
 os.environ["TMPDIR"] = _TMP.name
 MARKER = pathlib.Path(_TMP.name) / "sweep-marker.json"

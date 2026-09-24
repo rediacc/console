@@ -10,7 +10,7 @@ every floor. Each generated file is unique except for ONE deliberately shared bl
 TWIN = None ON THE GUARD ITSELF, so this file is the whole differential, exactly as `test-block_unproven_bulk_transform.py` is for its sibling. `check-hook-integrity.sh` reads this file's existence as crediting both directions.
 """
 
-import atexit
+import importlib.util
 import json
 import os
 import pathlib
@@ -24,6 +24,19 @@ HERE = pathlib.Path(__file__).resolve()
 DISPATCH = str(HERE.parents[1] / "dispatch.py")
 REPO = HERE.parents[3]
 GATE = REPO / "scripts" / "gates" / "check-shape-duplication.ts"
+
+# ONE PID-STAMPED RUN DIRECTORY holds the corpus repo and the foreign repo, and the next run sweeps it when this one was killed before `atexit` could fire. See `rediacc_ci.runtmp`, loaded BY FILE rather than through a `sys.path` hop, which test_canonical_sys_path_hop.py freezes; it is stdlib-only for exactly this reason.
+_RUNTMP = importlib.util.spec_from_file_location(
+    "runtmp", REPO / ".ci" / "rediacc_ci" / "runtmp.py"
+)
+if _RUNTMP is None or _RUNTMP.loader is None:
+    raise SystemExit(
+        "%s: .ci/rediacc_ci/runtmp.py is missing; this suite cannot make its run dir" % __file__
+    )
+runtmp = importlib.util.module_from_spec(_RUNTMP)
+_RUNTMP.loader.exec_module(runtmp)
+
+RUN_TMP = runtmp.run_dir("shapeprobe-")
 
 # The shared block: eight lines of plain code, carried by two generated files. Plain assignments on purpose -- an import preamble, a report line or a call to a shared helper is excluded by the gate's own predicates, so a fixture built from any of those would be silent for a reason that has nothing to do with this guard.
 TWIN_BLOCK = "\n".join("const shared_%02d = %d;" % (i, i) for i in range(8))
@@ -53,9 +66,8 @@ def body(tag, index, lines=30, twin=False):
 
 def build_repo():
     """A tracked corpus that clears every floor the gate enforces, plus the gate itself."""
-    root = pathlib.Path(tempfile.mkdtemp(prefix="shapeprobe-"))
-    # Registered at creation, not only removed by the rmtree at the bottom: that line runs only when the suite reaches it, and this repo holds a few hundred generated corpus files.
-    atexit.register(shutil.rmtree, root, ignore_errors=True)
+    # Inside RUN_TMP rather than only removed by the rmtree at the bottom: that line runs only when the suite reaches it, and this repo holds a few hundred generated corpus files.
+    root = pathlib.Path(tempfile.mkdtemp(prefix="corpus-", dir=RUN_TMP))
     families = [
         ("scripts/gates", "check-gen%03d.ts", 110, "ts"),
         (".ci/scripts/quality", "check-gen%03d.sh", 60, "qa"),
@@ -308,8 +320,7 @@ case("more corpus files than the cap", 'git commit -m "feat: many"', ROOT, NOTIC
 
 # Reproduces the 2026-09-23 class fix (shellscan.target_root), and this state IS the discriminator: ROOT has 13 corpus files staged RIGHT NOW, which the case just above proved fires NOTICE when the guard reads ROOT.
 # A `-C <foreign>` targeting an unrelated, cleanly-committed repo must stay SILENT -- if the guard mistakenly resolved back to CLAUDE_PROJECT_DIR (ROOT) instead of the command's own target, it would see these same 13 staged files and speak NOTICE instead.
-FOREIGN = pathlib.Path(tempfile.mkdtemp(prefix="shapeprobe-foreign-"))
-atexit.register(shutil.rmtree, FOREIGN, ignore_errors=True)
+FOREIGN = pathlib.Path(tempfile.mkdtemp(prefix="foreign-", dir=RUN_TMP))
 git(FOREIGN, "init", "-q", "-b", "main")
 git(FOREIGN, "config", "user.email", "fixture@example.invalid")
 git(FOREIGN, "config", "user.name", "Fixture")

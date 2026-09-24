@@ -6,6 +6,7 @@ HERMETIC BY CONSTRUCTION. Every case runs against a scratch repo with its own CL
 The refusal arms need a receipt planted at a specific tree sha, which is why they live here rather than in test-hooks.sh: that suite's `check` helper drives a guard against the live tree with no env or cwd control.
 """
 
+import importlib.util
 import json
 import os
 import pathlib
@@ -20,7 +21,19 @@ import tempfile
 DISPATCH = str(pathlib.Path(__file__).resolve().parents[1] / "dispatch.py")
 GUARD_ARGV = [sys.executable, DISPATCH, "block_unverified_push"]
 
-d = tempfile.mkdtemp()
+# `rediacc_ci.runtmp`, loaded BY FILE rather than through a `sys.path` hop (test_canonical_sys_path_hop.py freezes those): a pid-stamped run directory, removed at exit and swept by the next run when this one was killed before `atexit` could fire, which is how /tmp hit its inode cap on 2026-09-24.
+_RUNTMP = importlib.util.spec_from_file_location(
+    "runtmp", pathlib.Path(__file__).resolve().parents[3] / ".ci" / "rediacc_ci" / "runtmp.py"
+)
+if _RUNTMP is None or _RUNTMP.loader is None:
+    raise SystemExit(
+        "%s: .ci/rediacc_ci/runtmp.py is missing; this suite cannot make its run dir" % __file__
+    )
+runtmp = importlib.util.module_from_spec(_RUNTMP)
+_RUNTMP.loader.exec_module(runtmp)
+RUN_TMP = runtmp.run_dir("unverified-push-test-")
+# Inside RUN_TMP: the rmtree at the bottom runs only when the suite reaches it.
+d = tempfile.mkdtemp(dir=RUN_TMP)
 
 
 def git(*a, **kw):

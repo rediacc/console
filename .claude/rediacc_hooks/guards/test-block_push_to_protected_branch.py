@@ -10,16 +10,28 @@ temp directory the first time this module runs, exactly the shape `test_guards_d
 IT DRIVES THE LIVE GUARD THROUGH THE DISPATCHER, for the reason the P7 cutover exists: a suite driving anything else keeps passing while the thing that actually runs goes unchecked.
 """
 
-import atexit
+import importlib.util
 import json
 import os
 import pathlib
-import shutil
 import subprocess
 import sys
 import tempfile
 
 DISPATCH = str(pathlib.Path(__file__).resolve().parents[1] / "dispatch.py")
+
+# ONE PID-STAMPED RUN DIRECTORY holds both fixture repos, and the next run sweeps it when this one was killed before `atexit` could fire: 114 `guard-push-main-*` repos had leaked into /tmp by 2026-09-24. See `rediacc_ci.runtmp`, loaded BY FILE rather than through a `sys.path` hop, which test_canonical_sys_path_hop.py freezes; it is stdlib-only for exactly this reason.
+_RUNTMP = importlib.util.spec_from_file_location(
+    "runtmp", pathlib.Path(__file__).resolve().parents[3] / ".ci" / "rediacc_ci" / "runtmp.py"
+)
+if _RUNTMP is None or _RUNTMP.loader is None:
+    raise SystemExit(
+        "%s: .ci/rediacc_ci/runtmp.py is missing; this suite cannot make its run dir" % __file__
+    )
+runtmp = importlib.util.module_from_spec(_RUNTMP)
+_RUNTMP.loader.exec_module(runtmp)
+
+RUN_TMP = runtmp.run_dir("guard-push-main-")
 GUARD_ARGV = [sys.executable, DISPATCH, "block_push_to_protected_branch"]
 
 _FIXTURE_ENV = dict(
@@ -34,8 +46,7 @@ _FIXTURE_ENV = dict(
 
 
 def _make_repo(branch):
-    d = tempfile.mkdtemp(prefix="guard-push-main-")
-    atexit.register(shutil.rmtree, d, ignore_errors=True)
+    d = tempfile.mkdtemp(prefix="repo-", dir=RUN_TMP)
     subprocess.run(
         ["git", "init", "-q", "-b", branch, d], check=True, capture_output=True, env=_FIXTURE_ENV
     )
