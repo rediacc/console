@@ -5167,6 +5167,18 @@ export const GATES: readonly GateSpec[] = [
       step: 'W7P5-a real-run blocklist',
     },
   },
+  {
+    id: 'check:ci-bash-lib-ported',
+    run: 'npm run check:ci-bash-lib-ported',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_bash_lib_ported.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-static',
+      step: 'Bash-lib port completeness',
+    },
+  },
   // <<< gen-manifest: region 43
 ];
 

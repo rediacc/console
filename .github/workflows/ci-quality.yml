@@ -290,6 +290,9 @@ jobs:
       - name: Allowlist key matching
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_allowlist_key_matching.py
+      - name: Bash-lib port completeness
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_bash_lib_ported.py
       - name: Battery clean-tree guard
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_battery_clean_tree.py
@@ -2271,6 +2274,9 @@ jobs:
       # because its step carries an extra `if:` condition and a GH_TOKEN `env:` that a
       # generated step cannot express, and both losses would be invisible in a diff. The
       # gate-test battery below rides one hand-written step shared by 147 tests.
+      - name: Account env files retired
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_account_env_retired.py
       - name: Bitwarden secret map
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_bws_map.py
@@ -2289,9 +2295,6 @@ jobs:
       - name: GitHub Actions variables
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_actions_vars.py
-      - name: Account env files retired
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check_account_env_retired.py
       - name: Release key canonical
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_release_key_canonical.py
