@@ -132,13 +132,13 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          # .ci/scripts, because the compare step below RUNS one. It used to be
+          # 18 inline lines and needed no file; extracting it to
+          # .ci/scripts/ci/shadow-compare.sh turned a cone that stops at .ci/config
+          # into "No such file or directory" three steps later (job 100795527686).
           sparse-checkout: |
             .github/actions
             .ci/config
-            # .ci/scripts, because the compare step below RUNS one. It used to be
-            # 18 inline lines and needed no file; extracting it to
-            # .ci/scripts/ci/shadow-compare.sh turned a cone that stops at .ci/config
-            # into "No such file or directory" three steps later (job 100795527686).
             .ci/scripts
 
       - name: Fetch secrets from Bitwarden

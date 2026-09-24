@@ -411,11 +411,11 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          # .ci/rediacc_ci, because the step(s) below run `python3 -m rediacc_ci.*` and a cone that stops at .ci/scripts does not put that package on disk at all: the job dies with ModuleNotFoundError before judging anything, and a crash is not a verdict. Added 2026-09-21, sweeping the class the ci-complete cone was found in.
           sparse-checkout: |
             .ci/scripts
             .github/actions
             .ci/config
-            # .ci/rediacc_ci, because the step(s) below run `python3 -m rediacc_ci.*` and a cone that stops at .ci/scripts does not put that package on disk at all: the job dies with ModuleNotFoundError before judging anything, and a crash is not a verdict. Added 2026-09-21, sweeping the class the ci-complete cone was found in.
             .ci/rediacc_ci
 
       - name: Cancel older runs
@@ -582,30 +582,30 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          # .ci/rediacc_ci, because all THREE checks below are thin shims whose
+          # logic was ported out of them. check_resolved_threads.py says so in
+          # its own header -- "The logic lives in
+          # rediacc_ci.quality.resolved_threads; this file exists so the
+          # registry can invoke the port BY PATH" -- and each imports _cipath,
+          # which REFUSES to load when `.ci/rediacc_ci/__init__.py` is absent.
+          # A cone that stops at .ci/scripts therefore gets the shim and not
+          # the code, and the job dies with `RuntimeError: _cipath computed
+          # .../.ci as the .ci directory, but there is no rediacc_ci package in
+          # it` before any thread is read (job 104639221260).
+          #
+          # THAT CRASH IS NOT A VERDICT. It reports no unresolved threads
+          # because it never got far enough to look, while presenting as a
+          # Review Gate failure -- the shape check:ci-checkout-cone was written
+          # for, one level deeper than it reaches: it corroborates INVOKED
+          # paths, and says so deliberately, so a transitive import is outside
+          # what it can see.
+          #
+          # Swept before fixing: 116 files under .ci/scripts import _cipath,
+          # and this is the ONLY job that both invokes one and stops its cone
+          # short. All three of its checks share the fault and this one line
+          # fixes all three.
           sparse-checkout: |
             .ci/scripts
-            # .ci/rediacc_ci, because all THREE checks below are thin shims whose
-            # logic was ported out of them. check_resolved_threads.py says so in
-            # its own header -- "The logic lives in
-            # rediacc_ci.quality.resolved_threads; this file exists so the
-            # registry can invoke the port BY PATH" -- and each imports _cipath,
-            # which REFUSES to load when `.ci/rediacc_ci/__init__.py` is absent.
-            # A cone that stops at .ci/scripts therefore gets the shim and not
-            # the code, and the job dies with `RuntimeError: _cipath computed
-            # .../.ci as the .ci directory, but there is no rediacc_ci package in
-            # it` before any thread is read (job 104639221260).
-            #
-            # THAT CRASH IS NOT A VERDICT. It reports no unresolved threads
-            # because it never got far enough to look, while presenting as a
-            # Review Gate failure -- the shape check:ci-checkout-cone was written
-            # for, one level deeper than it reaches: it corroborates INVOKED
-            # paths, and says so deliberately, so a transitive import is outside
-            # what it can see.
-            #
-            # Swept before fixing: 116 files under .ci/scripts import _cipath,
-            # and this is the ONLY job that both invokes one and stops its cone
-            # short. All three of its checks share the fault and this one line
-            # fixes all three.
             .ci/rediacc_ci
             .github/actions
             .ci/config
@@ -688,13 +688,13 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          # .ci/scripts, because the compare step below RUNS one. It used to be
+          # 18 inline lines and needed no file; extracting it to
+          # .ci/scripts/ci/shadow-compare.sh turned a cone that stops at .ci/config
+          # into "No such file or directory" three steps later (job 100795527686).
           sparse-checkout: |
             .github/actions
             .ci/config
-            # .ci/scripts, because the compare step below RUNS one. It used to be
-            # 18 inline lines and needed no file; extracting it to
-            # .ci/scripts/ci/shadow-compare.sh turned a cone that stops at .ci/config
-            # into "No such file or directory" three steps later (job 100795527686).
             .ci/scripts
 
       - name: Fetch secrets from Bitwarden
@@ -1274,13 +1274,13 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          # .ci/scripts, because the compare step below RUNS one. It used to be
+          # 18 inline lines and needed no file; extracting it to
+          # .ci/scripts/ci/shadow-compare.sh turned a cone that stops at .ci/config
+          # into "No such file or directory" three steps later (job 100795527686).
           sparse-checkout: |
             .github/actions
             .ci/config
-            # .ci/scripts, because the compare step below RUNS one. It used to be
-            # 18 inline lines and needed no file; extracting it to
-            # .ci/scripts/ci/shadow-compare.sh turned a cone that stops at .ci/config
-            # into "No such file or directory" three steps later (job 100795527686).
             .ci/scripts
 
       - name: Fetch secrets from Bitwarden
@@ -1467,6 +1467,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          # .ci/rediacc_ci, because the step(s) below run `python3 -m rediacc_ci.*` and a cone that stops at .ci/scripts does not put that package on disk at all: the job dies with ModuleNotFoundError before judging anything, and a crash is not a verdict. Added 2026-09-21, sweeping the class the ci-complete cone was found in.
           sparse-checkout: |
             .github/actions
             .ci/scripts
@@ -1477,7 +1478,6 @@ jobs:
             package-lock.json
             tsconfig.json
             .ci/config
-            # .ci/rediacc_ci, because the step(s) below run `python3 -m rediacc_ci.*` and a cone that stops at .ci/scripts does not put that package on disk at all: the job dies with ModuleNotFoundError before judging anything, and a crash is not a verdict. Added 2026-09-21, sweeping the class the ci-complete cone was found in.
             .ci/rediacc_ci
 
       - name: Fetch secrets from Bitwarden
@@ -1753,15 +1753,15 @@ jobs:
       # must be on disk. Sparse, and BOTH entries are load-bearing.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          # .ci/rediacc_ci, because the step below runs `python3 -m
+          # rediacc_ci.ci.assert_ci_complete` and a cone that stops at
+          # .ci/scripts does not put that package on disk at all. The same
+          # class as the resolved-threads cone above: the job would die with
+          # ModuleNotFoundError before reading a single job result, and a
+          # crash is not a verdict. Added 2026-09-21, when the bash twin this
+          # cone was written for was already gone from the `run:` line.
           sparse-checkout: |
             .ci/scripts
-            # .ci/rediacc_ci, because the step below runs `python3 -m
-            # rediacc_ci.ci.assert_ci_complete` and a cone that stops at
-            # .ci/scripts does not put that package on disk at all. The same
-            # class as the resolved-threads cone above: the job would die with
-            # ModuleNotFoundError before reading a single job result, and a
-            # crash is not a verdict. Added 2026-09-21, when the bash twin this
-            # cone was written for was already gone from the `run:` line.
             .ci/rediacc_ci
 
       - name: Check all jobs passed
@@ -1846,11 +1846,11 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          # .ci/rediacc_ci, because the step(s) below run `python3 -m rediacc_ci.*` and a cone that stops at .ci/scripts does not put that package on disk at all: the job dies with ModuleNotFoundError before judging anything, and a crash is not a verdict. Added 2026-09-21, sweeping the class the ci-complete cone was found in.
           sparse-checkout: |
             .ci/scripts
             .github/actions
             .ci/config
-            # .ci/rediacc_ci, because the step(s) below run `python3 -m rediacc_ci.*` and a cone that stops at .ci/scripts does not put that package on disk at all: the job dies with ModuleNotFoundError before judging anything, and a crash is not a verdict. Added 2026-09-21, sweeping the class the ci-complete cone was found in.
             .ci/rediacc_ci
 
       - name: Fetch secrets from Bitwarden
@@ -1964,11 +1964,11 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          # .ci/rediacc_ci, for the reason the ci-complete cone above gives:
+          # the step below runs `python3 -m rediacc_ci.ci.assert_job_succeeded`
+          # and this cone did not put that package on disk.
           sparse-checkout: |
             .ci/scripts
-            # .ci/rediacc_ci, for the reason the ci-complete cone above gives:
-            # the step below runs `python3 -m rediacc_ci.ci.assert_job_succeeded`
-            # and this cone did not put that package on disk.
             .ci/rediacc_ci
       - name: Check finalize-release-sentinel conclusion (release channels only)
         if: needs.initialize.result == 'success' && (needs.initialize.outputs.channel == 'edge' || needs.initialize.outputs.channel == 'stable')
