@@ -7,7 +7,7 @@ So `modules()` reads the directory. A file named `block_x.py` or `warn_x.py` tha
 
 WHAT A GUARD MODULE DECLARES, and why each one is needed rather than derivable:
 
-    CHAIN    "pre-bash", "pre-edit", "pre-ask", "post-bash". NOT derivable
+    CHAIN    "pre-bash", "pre-edit", "pre-ask", "pre-agent", "post-bash". NOT derivable
              from the filename: `block-roundlog-truncate.sh` is pre-bash and
              `block-roundlog-write.sh` is pre-edit, and their stems differ by
              one word. It is also the key `check-hook-integrity.sh` uses, which
@@ -53,7 +53,7 @@ PACKAGE = "rediacc_hooks.guards"
 HERE = pathlib.Path(__file__).resolve().parent
 
 # The chains, in the order `.claude/settings.json` declares them. `post-bash` is here because `check-hook-integrity.sh` added it on 2026-08-28 after finding a whole registered chain outside its inventory: "that was a filename prefix escaping the net, this was a whole chain".
-CHAINS = ("pre-bash", "pre-edit", "pre-ask", "post-bash")
+CHAINS = ("pre-bash", "pre-edit", "pre-ask", "pre-agent", "post-bash")
 
 
 def stems():

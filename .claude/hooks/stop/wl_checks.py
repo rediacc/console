@@ -38,6 +38,7 @@ import wl_popup
 import wl_reggate
 import wl_report
 import wl_requests
+import wl_roster
 import wl_roundlog
 import wl_shapedup
 import wl_store as S
@@ -1217,6 +1218,21 @@ def poll_fast_path(worklist, session_id, event):
     state_doc = S.load_state(worklist, session_id)
     live_bg = [b for b in (event.get("background_tasks") or []) if b.get("status") == "running"]
     ci_watching, _watch_desc = wl_ci.ci_watch_only(live_bg)
+    # THE ROSTER FORFEIT (wl_roster). A cap, status, silent or dead defect is a block on the full battery, and a silent poll stop that skipped it would be the escape hatch the operator ruled out. A roster that cannot be computed forfeits too: this path may only ever fail into the battery. Leases on known subagents are the roster's, so the ladder rung forfeit below skips them exactly as
+    # wl_liveness.ladder does.
+    try:
+        _rv = wl_roster.roster(event, fold, session_id, cwd=event.get("cwd"))
+    except Exception:  # noqa: BLE001 -- a broken roster costs the battery, never an allow
+        return False
+    if (
+        _rv["over_cap"]
+        or _rv["status_due"]
+        or _rv["silent"]
+        or _rv["leased_dead"]
+        or _rv["unleased"]
+    ):
+        return False
+    _roster_ids = _rv["known_ids"]
     for rec in fold.items:
         if not C.owned_by_me(rec["owner"], session_id):
             continue
@@ -1245,6 +1261,8 @@ def poll_fast_path(worklist, session_id, event):
                     and any(str(b.get("id") or "") == _wid for b in live_bg)
                 ):
                     return False  # an expiring lease is a wake-up; the battery says so
+            if (rec.get("worker") or "") in _roster_ids:
+                continue  # the roster's 20-minute ping owns this lease, checked above
             if wl_liveness.blocking_rung_due(
                 state_doc,
                 "item:" + rec["id"],
@@ -2071,6 +2089,10 @@ PRIORITY_LADDER = (
                 "ladder-resolve",
                 "xsession",
                 "unconfirmed",
+                # The parallel-writer roster (wl_roster), placed here by the operator's own order: a writer over the cap, a worker owing its 20-minute status, and a worker gone silent are supervision owed while other agents edit the tree.
+                "roster-cap",
+                "roster-status",
+                "roster-silent",
             }
         ),
     ),
@@ -2106,6 +2128,9 @@ PRIORITY_LADDER = (
                 "many-work-crons",
                 # Same family, same tier: more than one of a single-instance instrument is live.
                 "many-waiters",
+                # The roster's integrity half: a live writer nothing leases, and a lease on a worker with no live agent in its lineage. Both are claims about in-flight work that the store and the harness contradict.
+                "roster-unleased",
+                "roster-dead",
             }
         ),
     ),
@@ -2354,6 +2379,11 @@ def run_stop(event, event_ok, worklist, hook_file):
     open_items, others, deferred_recs, in_flight_recs = S.classify_items(
         fold, session_id, live_worker_ids=_live_worker_ids
     )
+    # THE PARALLEL-WRITER ROSTER (wl_roster), computed ONCE here from the RAW event rather than the pruned `live_bg`: a reaped id whose transcript is not proven finished is still a live writer, and the cap must see it. Read by the bg-report predicate below; its defects are added after the ladder, and its HONEST verdict is applied just before the cadence gate. None means it could not be
+    # computed, and then nothing roster-shaped happens: no suppression, no roster key, the battery exactly as before.
+    _roster = None
+    with contextlib.suppress(Exception):
+        _roster = wl_roster.roster(event, fold, session_id, state_doc=state_doc, cwd=event.get("cwd"))
     # brief_line, NOT r["line"] -- and this was a live regression worth naming.
     #
     # v14 introduced brief_text precisely because rec["text"] accumulates every update forever and "every block that mentioned it printed them all" (wl_store.brief_text docstring). classify_items duly renders OPEN items through brief_line... and then hands deferred and in-flight back as raw records, so these two call sites reached past the fix to the full text.
@@ -2658,8 +2688,11 @@ def run_stop(event, event_ok, worklist, hook_file):
                         )
                 _all_live = _only_waiters
                 with contextlib.suppress(Exception):
-                    _all_live = _only_waiters or wl_liveness.all_waits_live(
-                        live_bg, bg_verdicts, _mates_fresh, bg_facts
+                    _all_live = (
+                        _only_waiters
+                        or wl_liveness.all_waits_live(live_bg, bg_verdicts, _mates_fresh, bg_facts)
+                        # The roster's term: every live task is a roster-verified subagent (live, not silent, owing no status) or a confirmed waiter. Subagents move to the 20-minute status clock; a shell or a teammate keeps this check-in.
+                        or wl_roster.roster_covers_all(live_bg, _roster, bg_verdicts)
                     )
                 if not _all_live or _bg_actionable:
                     bgwait_due = True
@@ -2801,6 +2834,49 @@ def run_stop(event, event_ok, worklist, hook_file):
             fn = display_latch.pop(key, None)
             if fn is not None:
                 fn()
+
+    # ---- THE PARALLEL-WRITER ROSTER'S DEFECTS (wl_roster), in the ALWAYS tier: never rotated away, and they defeat the cadence pause (guard A). The cap and the 20-minute ping are checked in EVERY roster state; honesty only decides what is suppressed further down. Every remedy printed is an action the session completes alone.
+    if _roster is not None:
+        _rrows = wl_roster.defect_rows(_roster)
+        if _roster["over_cap"]:
+            vadd(
+                "roster-cap",
+                True,
+                M.V_ROSTER_CAP
+                % (
+                    len(_roster["writers"]),
+                    wl_roster.WRITER_CAP,
+                    _rrows["cap"],
+                    " ".join(_roster["over_cap"]),
+                    me8,
+                ),
+            )
+        if _roster["status_due"]:
+            vadd(
+                "roster-status",
+                True,
+                M.V_ROSTER_STATUS
+                % (len(_roster["status_due"]), wl_roster.STATUS_PING_MIN, _rrows["status"], me8),
+            )
+        if _roster["silent"]:
+            vadd(
+                "roster-silent",
+                True,
+                M.V_ROSTER_SILENT
+                % (len(_roster["silent"]), wl_roster.STATUS_PING_MIN, _rrows["silent"], me8),
+            )
+        if _roster["unleased"]:
+            vadd(
+                "roster-unleased",
+                True,
+                M.V_ROSTER_UNLEASED % (len(_roster["unleased"]), _rrows["unleased"], me8),
+            )
+        if _roster["leased_dead"]:
+            vadd(
+                "roster-dead",
+                True,
+                M.V_ROSTER_DEAD % (len(_roster["leased_dead"]), _rrows["dead"], me8, me8),
+            )
 
     if bgwait_due:
         # A silent stream alone cannot distinguish "stuck" from "a poll loop that prints only at the end", so OS-verify before accusing: a worker whose process is confirmed alive is reported in those words. Fired live 2026-07-31 on a healthy `until ... completed` CI watch, 29 minutes silent by design.
@@ -4209,6 +4285,41 @@ def run_stop(event, event_ok, worklist, hook_file):
         counter.unlink(missing_ok=True)
         S.save_state(worklist, session_id, state_doc)
         C.emit({"systemMessage": quiet_note})
+    # ---- THE ROSTER'S HONEST SUPPRESSION (wl_roster.ROSTER_SUPPRESSES), in ONE place, just ahead of the cadence gate so every check has had its say. An HONEST roster means every item in flight is leased to a live worker the hook verified itself, so the pushes that exist to ask "is the waiting real" have their answer. Only those keys drop: requests, CI red, pr-finish, the
+    # judge tier and every integrity check still block, and the roster's own cap and ping keys were added above in every state. `agent-state` drops only for `stale`; `bg-report` only when no task outside the roster (a shell the OS did not confirm, a teammate) is running and no harness task is actionable, because those keep their 15-minute check-in.
+    if _roster is not None and _roster["state"] == "HONEST":
+        _outside = [
+            b
+            for b in live_bg
+            if not (
+                (b.get("type") == "subagent" and str(b.get("id") or "") in _roster["verified"])
+                or (b.get("type") == "shell" and bg_verdicts.get(str(b.get("id") or "")) == "confirmed")
+            )
+        ]
+
+        def _roster_drops(key):
+            if key not in wl_roster.ROSTER_SUPPRESSES:
+                return False
+            if key == "agent-state":
+                return astate == "stale"
+            if key == "bg-report":
+                return not _outside and not _bg_actionable
+            return True
+
+        violations = [v for v in violations if not _roster_drops(v[0])]
+        if bgwait_due and not any(k == "bg-report" for k, _a, _t in violations):
+            bgwait_due = False  # stood down, not delivered: the "last delivered" stamp stays true
+        if not violations:
+            # The allow carries the roster in place of a push, AHEAD of the guide, so the session can see what it is being trusted with and when the next status is owed.
+            _honest = M.N_ROSTER_HONEST % (
+                len(_roster["writers"]),
+                wl_roster.WRITER_CAP,
+                len(_roster["readers"]),
+                wl_roster.next_status_due(_roster),
+                "\n".join(wl_roster.summary_lines(_roster)),
+            )
+            guide = _honest + ("\n\n" + guide if guide else "")
+            guide_empty = False
     if bgwait_due:
         # Delivered for real (this stop emits it either way below), so the stamp the next check-in prints is banked here and saved eagerly:
         # the WORKLIST_FOCUS=off block path emits without saving.

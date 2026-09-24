@@ -899,6 +899,15 @@ def _item_cli(argv, worklist):
         # BEFORE the item_id parse below, because like --add this verb takes free text: `--triage <me> <finding...>`, with an optional `--id <item>` to triage a finding that is already tracked.
         _triage_cli(argv, worklist, me, die)
         return
+    if mode == "--status":
+        # THE PARALLEL-WRITER ROSTER'S ANSWER TO ITS 20-MINUTE PING (wl_roster.status_verb). Before the item_id parse because it takes an AGENT id or `all`, never an item. It is hook code reading the worker's transcript, not the lead typing a claim, and a read that finds no growth and nothing in flight is recorded SILENT without resetting the clock.
+        import wl_roster  # noqa: PLC0415 -- sibling, loaded only for this verb
+
+        text, rc = wl_roster.status_verb(
+            worklist, me, argv[2], session_id=C.resolve_session_id() or me
+        )
+        print(text, file=sys.stdout if rc == 0 else sys.stderr)
+        sys.exit(rc)
     item_id = argv[2].lstrip("#")
     fold = S.load(worklist, sync=True)
     rec = fold.by_id.get(item_id)
@@ -2126,6 +2135,7 @@ def main():
         "--defer",
         "--lease",
         "--update",
+        "--status",
         "--list",
     ):
         _item_cli(sys.argv[1:], C.worklist_for(C.project_start()))

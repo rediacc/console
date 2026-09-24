@@ -8,6 +8,7 @@
   ".claude/rediacc_hooks/guards/block_adhoc_sanctioned.py",
   ".claude/rediacc_hooks/guards/block_admin_merge.py",
   ".claude/rediacc_hooks/guards/block_agent_browser_repo_output.py",
+  ".claude/rediacc_hooks/guards/block_agent_cap.py",
   ".claude/rediacc_hooks/guards/block_agent_state_shape.py",
   ".claude/rediacc_hooks/guards/block_bash_write_to_running_script.py",
   ".claude/rediacc_hooks/guards/block_binary_deploy.py",

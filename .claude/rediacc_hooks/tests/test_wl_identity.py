@@ -460,6 +460,22 @@ def drive_l1(fix) -> L1Drive:
     fix.phantom_store("phantom1", 90)
     plant_adopt_chain(fix)
 
+    # One live subagent for the --status row: a meta and a transcript in this suite's own projects store, so the verb reads a real transcript and records a status rather than failing blind.
+    status_dir = (
+        fix.base / "claude" / "projects" / re.sub(r"[^A-Za-z0-9]", "-", str(fix.proj))
+    ) / wlfix.SID / "subagents"
+    status_dir.mkdir(parents=True, exist_ok=True)
+    (status_dir / "agent-a9000000000000001.meta.json").write_text(
+        json.dumps({"agentType": "general-purpose", "description": "l1 status probe"}),
+        encoding="utf-8",
+    )
+    (status_dir / "agent-a9000000000000001.jsonl").write_text(
+        json.dumps({"type": "assistant", "message": {"content": [{"type": "tool_use", "name": "Bash"}]}})
+        + "\n",
+        encoding="utf-8",
+    )
+    fix.env["CLAUDE_CONFIG_DIR"] = str(fix.base / "claude")
+
     # label, args (@WHO@ is substituted), needle proving the effect happened
     table = [
         ("--add", "--add @WHO@ l1-table-add", "added #"),
@@ -473,6 +489,7 @@ def drive_l1(fix) -> L1Drive:
         ),
         ("--update", "--update @WHO@ %s moved-a-bit" % i_update, "updated #"),
         ("--lease", "--lease @WHO@ %s +30 worker:l1bg" % i_lease, "leased #"),
+        ("--status", "--status @WHO@ all", "a9000000000000001 (general-purpose)"),
         ("--list", "--list --open @WHO@", "l1-list-item"),
         ("--state", "--state @WHO@", "STATE.md section written"),
         ("--loop", "--loop @WHO@ 2099-01-01T00:00:00Z 1 l1-label", "loop declared"),

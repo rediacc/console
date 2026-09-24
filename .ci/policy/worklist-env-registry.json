@@ -6,6 +6,18 @@
     "Enforced by check:ci-worklist-env-registry, both directions. Every field except `why` is DERIVED from the code by the gate and pinned here, so this file cannot drift into being a description of what somebody once intended."
   ],
   "$gate": ".ci/rediacc_ci/quality/worklist_env_registry.py",
+  "sealed_modules": {
+    ".claude/hooks/stop/wl_roster.py": {
+      "why": "the parallel-writer roster's limits are the operator's (4 writers, a 20-minute status ping, 2026-09-24, 'no escape hatches'), so no variable may retune them and a registered knob would be exactly the hatch that was ruled out",
+      "literals": {
+        "WRITER_CAP": 4,
+        "STATUS_PING_MIN": 20
+      }
+    },
+    ".claude/rediacc_hooks/guards/block_agent_cap.py": {
+      "why": "the PreToolUse half of the same writer cap; it imports WRITER_CAP from wl_roster, and an environment read here would let a spawn bypass the cap the Stop hook enforces"
+    }
+  },
   "exclusions": {
     "agent/": "invariant 7: agent/ is live gated state (.claude/hooks/stop/wl_store.py:274), not source. It is full of plans and briefs that NAME these variables in prose, and admitting it would register every name any plan ever discussed. Declared here rather than hardcoded in the gate so the reason travels with the exclusion.",
     "docs/": "prose about the program, not the program. Same argument as agent/: a documented name is not a read, and a gate that treats it as one can never report a name as dead."

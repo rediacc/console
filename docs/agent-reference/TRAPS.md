@@ -269,6 +269,17 @@ repository CI gate for this class: the worklist store is per-machine session sta
 Two instruments that lie during exactly this diagnosis, both measured: this box's `/usr/bin/find` is bfs 4.1.1, which REJECTS relative `-newermt` forms (`'-40 minutes'`, `'10 minutes ago'`) with exit 1, so under `2>/dev/null` a "what changed recently" sweep returns empty and reads as no activity; use absolute ISO timestamps or `stat -c '%y'` on the candidate files. And `grep -c
 $'\x00'` is not a NUL detector: bash strips the NUL from `$'\x00'`, the empty pattern matches every line, and the output is the file's line count regardless of content. Probe liveness with mtimes you computed yourself, and plant a control before trusting any zero.
 
+## A subagent is live by the harness list AND its own transcript, and a lease is judged at stop time through the agent's lineage
+Trap-Id: subagent-liveness-needs-transcript-and-lineage
+Enforced-By: file:.claude/hooks/stop/wl_checks.py
+Residue: The PreToolUse cap guard cannot see a task list and ESTIMATES from the last Stop event plus the metas started since it; the Stop hook's `roster-cap` recount from the authoritative event is the backstop, and a replay against the `.lastevent-` sidecar is only as fresh as the last FULL stop.
+
+Measured on 2026-09-24 in one session running parallel writers, and every signal the old ladder read was wrong in a different direction. The Stop event listed 15 subagents as `running`; 11 of them had ended their turn (`stop_reason: end_turn`) between 8 and 54 minutes earlier, so "the harness lists it" is not "it is working". More than 30 leases carried `worker_verified: false` while their workers were live,
+because `--lease` checks the id against the PREVIOUS stop's snapshot and a lease is taken seconds after the spawn, before any snapshot has seen it: verification at lease time is structurally blind for a new worker. And a parent agent that finished while its depth-2 child kept working drew `ladder-gone` on the parent's items, because the child's `parentAgentId` lives only in the child's meta and the event carries no parent marker.
+
+What `wl_roster` does instead: an agent is LIVE when the event lists it AND its transcript's last record did not end the turn; a lease is COVERED when its worker or any descendant by `parentAgentId` is live, and DEAD otherwise; both are computed at stop time against the current event. Two smaller lies found while building it. A meta file's mtime is the agent's last (re)START, not its spawn: an agent listed in a 07:16Z event carried an
+08:05Z meta mtime, because a resume rewrites the meta. And the `.lastevent-` sidecar is written only by a full stop, so after an hour of silent poll stops a replay against it reads current transcripts beside a 58-minute-old roster, and a writer spawned in between reads as a dead lease; `wl_roster.explain_lastevent` names such agents rather than letting the replay pass for a verdict.
+
 ## A mutation proof run in place poisons everyone else's measurements
 Trap-Id: in-place-mutation-poisons-shared-tree
 Enforced-By: JUDGMENT-ONLY

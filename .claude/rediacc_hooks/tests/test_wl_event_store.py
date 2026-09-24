@@ -588,6 +588,7 @@ def test_142_the_judge_caches_an_identical_world_and_message(wl):  # noqa: F811
 
 
 DEADCODE_REFS = wlfix.STOP_DIR.parents[2] / ".ci" / "scripts" / "quality"
+DEADCODE_GUARDS = wlfix.STOP_DIR.parents[1] / "rediacc_hooks" / "guards"
 
 
 def orphan_defs(directory, refs) -> list[str]:
@@ -604,6 +605,10 @@ def orphan_defs(directory, refs) -> list[str]:
     sources["worklist.py"] = (directory / "worklist.py").read_text(encoding="utf-8")
     extra = []
     for path in sorted(refs.glob("check_*.py")):
+        with contextlib.suppress(OSError):
+            extra.append(path.read_text(encoding="utf-8"))
+    # The hook GUARDS are the same kind of legitimate outside consumer: `guards/block_agent_cap.py` enforces the writer cap at spawn time by calling `wl_roster.live_writers_estimate`, so that it shares the Stop hook's number and reader types instead of re-deriving them. The planted-orphan control is unaffected, for the reason above.
+    for path in sorted(DEADCODE_GUARDS.glob("block_*.py")):
         with contextlib.suppress(OSError):
             extra.append(path.read_text(encoding="utf-8"))
     haystack = "\n".join(list(sources.values()) + extra)

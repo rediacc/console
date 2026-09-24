@@ -157,6 +157,115 @@ def scan_python(rel, source):
     return out
 
 
+# ---- SEALED MODULES ------------------------------------------------------------
+#
+# THE OTHER HALF OF THE REGISTRY'S CONTRACT, added 2026-09-24 for the parallel-writer roster (agent/plans/PLAN-parallel-writer-roster.md). Everything above asks "is every knob REGISTERED", which is the right question for a tuning knob and exactly the wrong one for a limit the operator set with the words "there should be no escape hatches". A registered knob is still a knob:
+# `WORKLIST_WRITER_CAP=99` would be a perfectly well-formed entry. So a module listed under `sealed_modules` may read NO environment variable at all, of any name, and registering the name cannot clear the finding. Each entry may also pin `literals`: module-level names whose value must be that exact `ast.Constant`, so a cap cannot become `int(...)` of anything.
+
+# Every way this tree spells an environment read, by attribute or bare name. `env` is `hookio.Event.env`, which is an environment read wearing a method.
+_ENV_ATTRS = frozenset({"environ", "environb", "getenv", "getenvb", "putenv", "unsetenv"})
+_ENV_METHODS = frozenset({"env"})
+
+
+def scan_env_any(source, rel="<sealed>"):
+    """[(line, spelling)] for every environment access in one Python source, of ANY name."""
+    tree = ast.parse(source, filename=rel)
+    out = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Attribute) and node.attr in _ENV_ATTRS:
+            out.append((node.lineno, ast.unparse(node)))
+        elif isinstance(node, ast.Name) and node.id in _ENV_ATTRS:
+            out.append((node.lineno, node.id))
+        elif isinstance(node, ast.ImportFrom) and node.module == "os":
+            out.extend(
+                (node.lineno, "from os import %s" % alias.name)
+                for alias in node.names
+                if alias.name in _ENV_ATTRS or alias.name == "*"
+            )
+        elif (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and node.func.attr in _ENV_METHODS
+        ):
+            out.append((node.lineno, ast.unparse(node.func)))
+    return sorted(set(out))
+
+
+def module_literals(source, rel="<sealed>"):
+    """{name: ast value node} for every module-level `NAME = ...` assignment."""
+    tree = ast.parse(source, filename=rel)
+    out = {}
+    for node in tree.body:
+        if isinstance(node, ast.Assign):
+            for target in node.targets:
+                if isinstance(target, ast.Name):
+                    out[target.id] = node.value
+        elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name) and node.value:
+            out[node.target.id] = node.value
+    return out
+
+
+def check_sealed(root, sealed):
+    """(findings, count) for the `sealed_modules` map. Pure over the files it names.
+
+    Read from DISK, not from `git ls-files`: a sealed module is a promise about the file that RUNS, and a new module is sealed before its first commit.
+    """
+    findings = []
+    for rel in sorted(sealed):
+        entry = sealed[rel]
+        if not isinstance(entry, dict):
+            findings.append("SEALED %s: the entry is not an object" % rel)
+            continue
+        why = entry.get("why", "")
+        if not isinstance(why, str) or len(why.strip()) < WHY_MIN_CHARS:
+            findings.append(
+                "SEALED %s needs a `why` of at least %d characters naming the limit that must "
+                "not be retuned from the environment. It has %d."
+                % (rel, WHY_MIN_CHARS, len(str(why).strip()))
+            )
+        path = pathlib.Path(root) / rel
+        try:
+            source = path.read_text(encoding="utf-8", errors="surrogateescape")
+        except OSError:
+            findings.append(
+                "SEALED %s does not exist. A sealed module that moved is no longer sealed: "
+                "update the key to its new path, or delete the entry with the reason." % rel
+            )
+            continue
+        try:
+            reads = scan_env_any(source, rel)
+            assigned = module_literals(source, rel)
+        except SyntaxError as exc:
+            raise RefusalError(
+                "sealed module %s does not parse (%s), so it cannot be proven free of "
+                "environment reads" % (rel, exc)
+            ) from exc
+        findings.extend(
+            "SEALED %s:%d reads the environment (`%s`). This module is sealed: %s Registering "
+            "the variable does NOT clear this; delete the read and keep the value a literal."
+            % (rel, line, spelling, why.strip().rstrip(".") + ".")
+            for line, spelling in reads
+        )
+        for name, want in sorted((entry.get("literals") or {}).items()):
+            node = assigned.get(name)
+            if node is None:
+                findings.append(
+                    "SEALED %s pins %s = %r, and no module-level assignment of %s exists"
+                    % (rel, name, want, name)
+                )
+            elif not isinstance(node, ast.Constant):
+                findings.append(
+                    "SEALED %s: %s is `%s`, which is not a literal. A computed threshold can be "
+                    "fed from anywhere; the pin is %r." % (rel, name, ast.unparse(node), want)
+                )
+            elif node.value != want:
+                findings.append(
+                    "SEALED %s: %s is %r and the registry pins %r. If the operator changed the "
+                    "limit, repin it here in the same change." % (rel, name, node.value, want)
+                )
+    return findings, len(sealed)
+
+
 _BASH_WITH_DEFAULT = re.compile(r"\$\{(WORKLIST_[A-Z0-9_]+):-([^}]*)\}")
 _BASH_BARE = re.compile(r"\$\{?(WORKLIST_[A-Z0-9_]+)(?![A-Z0-9_:])")
 
@@ -282,6 +391,13 @@ def load_registry(path):
             "%s declares no exclusions. agent/ and docs/ NAME these variables in "
             "prose; scanning them would register every name any plan ever discussed. "
             "The exclusions belong here with their reasons, not in the gate." % p
+        )
+    sealed = obj.get("sealed_modules")
+    if not isinstance(sealed, dict) or not sealed:
+        raise RefusalError(
+            "%s declares no sealed_modules. Those are the modules whose limits may not be "
+            "retuned from the environment at all; a registry without them would enforce "
+            "'registered' where the operator asked for 'no escape hatches'." % p
         )
     return obj
 
@@ -417,6 +533,8 @@ def run(root=None):
             "refusals, because every registered name would then read as dead." % scanned
         )
     findings, stats = evaluate(registry, reads)
+    sealed_findings, stats["sealed"] = check_sealed(root, registry["sealed_modules"])
+    findings.extend(sealed_findings)
     # An exclusion that excludes nothing is a claim about the tree that has stopped being true, and it is the half of the exclusion contract that rots.
     if excluded == 0 and exclusions:
         findings.append(
@@ -452,13 +570,14 @@ def main(argv=None):
     log.success(
         "worklist env registry: %d name(s) across %d file(s) at %d read site(s), "
         "all registered and all read; %d tracked file(s) scanned, %d excluded by "
-        "declaration; kinds %s"
+        "declaration; %d sealed module(s) read no environment; kinds %s"
         % (
             stats["names"],
             stats["files"],
             stats["sites"],
             stats["scanned"],
             stats["excluded"],
+            stats["sealed"],
             ", ".join("%s %d" % (k, stats["kinds"][k]) for k in sorted(stats["kinds"])),
         )
     )
@@ -482,9 +601,28 @@ echo "${WORKLIST_TAIL:-4}"
 
 _FIXTURE_PROSE = "A plan naming WORKLIST_GHOST and WORKLIST_FOCUS in prose.\n"
 
+# A sealed module: two literal limits, no environment access of any kind.
+_FIXTURE_SEALED = """import time
+
+CAP = 4
+PING_MIN = 20
+
+
+def now():
+    return time.time()
+"""
+
+_SEALED_WHY = (
+    "a fixture limit the operator set, so no variable may raise it and a registered knob "
+    "would be an escape hatch"
+)
+
 
 def _registry_obj():
     return {
+        "sealed_modules": {
+            "sealed.py": {"why": _SEALED_WHY, "literals": {"CAP": 4, "PING_MIN": 20}},
+        },
         "exclusions": {"agent/": "invariant 7, fixture"},
         "names": {
             "WORKLIST_FOCUS": {
@@ -500,12 +638,14 @@ def _registry_obj():
     }
 
 
-def _fixture(tmp, py=_FIXTURE_PY, sh=_FIXTURE_SH, registry=None):
+def _fixture(tmp, py=_FIXTURE_PY, sh=_FIXTURE_SH, registry=None, sealed=_FIXTURE_SEALED):
     """A real git repository, because the scanner reads `git ls-files`."""
     root = pathlib.Path(tmp)
     (root / ".ci" / "policy").mkdir(parents=True, exist_ok=True)
     (root / "agent").mkdir(parents=True, exist_ok=True)
     (root / "src.py").write_text(py, encoding="utf-8")
+    if sealed is not None:
+        (root / "sealed.py").write_text(sealed, encoding="utf-8")
     (root / "run.sh").write_text(sh, encoding="utf-8")
     (root / "agent" / "PLAN.md").write_text(_FIXTURE_PROSE, encoding="utf-8")
     (root / ".ci" / "policy" / REGISTRY_NAME).write_text(
@@ -668,6 +808,92 @@ def selftest():
     with tempfile.TemporaryDirectory() as tmp:
         root = _fixture(tmp, py="def broken(:\n")
         check("VACUITY: a file that does not parse is a REFUSAL, not a skip", _refuses(root))
+
+    # ---- sealed modules: no environment read of ANY name, and pinned literals ----
+    with tempfile.TemporaryDirectory() as tmp:
+        root = _fixture(tmp)
+        _, stats = run(root)
+        check("CONTROL: the clean sealed module is counted", stats["sealed"] == 1)
+
+    with tempfile.TemporaryDirectory() as tmp:
+        planted = plant(_FIXTURE_SEALED, "CAP = 4\n", 'import os\nCAP = 4\nX = os.environ.get("ANY")\n')
+        root = _fixture(tmp, sealed=planted)
+        findings, _ = run(root)
+        check(
+            "PLANT: an environment read in a sealed module reds",
+            any("SEALED sealed.py:" in f and "os.environ" in f for f in findings),
+        )
+
+    with tempfile.TemporaryDirectory() as tmp:
+        # Registered, well-formed, read with its pinned default: every check above passes it. Sealing is the only thing that can say no, which is the whole reason it exists.
+        planted = plant(
+            _FIXTURE_SEALED, "CAP = 4\n", 'import os\nCAP = 4\nL = os.environ.get("WORKLIST_LIMIT", "5")\n'
+        )
+        root = _fixture(tmp, sealed=planted)
+        findings, _ = run(root)
+        check(
+            "PLANT: registering the variable does not clear a sealed read",
+            any("SEALED sealed.py:" in f and "does NOT clear" in f for f in findings),
+        )
+
+    with tempfile.TemporaryDirectory() as tmp:
+        planted = plant(_FIXTURE_SEALED, "import time\n", "import time\nfrom os import getenv\n")
+        root = _fixture(tmp, sealed=planted)
+        findings, _ = run(root)
+        check(
+            "PLANT: `from os import getenv` in a sealed module reds",
+            any("from os import getenv" in f for f in findings),
+        )
+
+    with tempfile.TemporaryDirectory() as tmp:
+        planted = plant(_FIXTURE_SEALED, "    return time.time()\n", '    return event.env("X")\n')
+        root = _fixture(tmp, sealed=planted)
+        findings, _ = run(root)
+        check(
+            "PLANT: a hook event's .env() read in a sealed module reds",
+            any("event.env" in f for f in findings),
+        )
+
+    with tempfile.TemporaryDirectory() as tmp:
+        planted = plant(_FIXTURE_SEALED, "CAP = 4\n", 'CAP = int("4")\n')
+        root = _fixture(tmp, sealed=planted)
+        findings, _ = run(root)
+        check(
+            "PLANT: a pinned limit that is no longer a literal reds",
+            any("CAP is `int('4')`" in f for f in findings),
+        )
+
+    with tempfile.TemporaryDirectory() as tmp:
+        planted = plant(_FIXTURE_SEALED, "PING_MIN = 20\n", "PING_MIN = 999\n")
+        root = _fixture(tmp, sealed=planted)
+        findings, _ = run(root)
+        check(
+            "PLANT: a pinned limit with a different value reds",
+            any("PING_MIN is 999 and the registry pins 20" in f for f in findings),
+        )
+
+    with tempfile.TemporaryDirectory() as tmp:
+        root = _fixture(tmp, sealed=None)
+        findings, _ = run(root)
+        check(
+            "PLANT: a sealed module that no longer exists reds",
+            any("SEALED sealed.py does not exist" in f for f in findings),
+        )
+
+    with tempfile.TemporaryDirectory() as tmp:
+        # ANTI-SILENCER: the ordinary corpus reads the environment all the time (src.py does); only the sealed file is held to zero.
+        root = _fixture(tmp)
+        findings, _ = run(root)
+        check(
+            "ANTI-SILENCER: an environment read outside a sealed module is not a sealed finding",
+            not any("SEALED" in f for f in findings),
+        )
+
+    with tempfile.TemporaryDirectory() as tmp:
+        reg = _registry_obj()
+        del reg["sealed_modules"]
+        root = _fixture(tmp, registry=reg)
+        check("VACUITY: a registry with no sealed_modules is a REFUSAL", _refuses(root))
 
     return not check.ok
 

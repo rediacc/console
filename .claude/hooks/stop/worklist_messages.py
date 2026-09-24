@@ -1668,6 +1668,7 @@ CLI_ITEM_USAGE = (
     "                                (optional: TRIED:, NEEDS:, BLOCKED_ON: <person|system|run-id>)\n"
     "       --lease <my-prefix> <id> <+minutes|until-ISO8601Z> worker:<bg-task-id> [note...]\n"
     "       --update <my-prefix> <id> <what moved...>\n"
+    "       --status <my-prefix> [<agent-id>|all]   read a worker's transcript; answers the roster's 20-minute ping\n"
     "       --list"
 )
 
@@ -1736,7 +1737,7 @@ CLI_TRIAGE_PLAN = (
     "  2. Flip that header to 'Status: executing' and implement it now. Use a "
     "writer sub-agent when the plan's file set is disjoint from what you "
     "already have in flight, or when your context is heavy: state its exact "
-    "file ownership, at most 2 writers, and forbid git checkout, restore, "
+    "file ownership, at most 4 writers, and forbid git checkout, restore, "
     "stash and any sync or regenerate script. Implement inline otherwise.\n"
     "  3. Ride the current PR when the risk is compatible, otherwise cut the "
     "fix its own branch this same session. Then:\n"
@@ -1778,7 +1779,7 @@ CLI_TRIAGE_SELF = (
     "agent/plans/PLAN-<slug>.md with a 'Status: draft' header, then the "
     "header flips to executing and implementation happens THIS session (a "
     "writer sub-agent when the file set is disjoint or the context is heavy, "
-    "at most 2, inline otherwise), riding the current PR when the risk is "
+    "at most 4, inline otherwise), riding the current PR when the risk is "
     "compatible or its own branch when it is not.\n"
     "OPERATOR-ONLY only through a door:\n"
     + _DOORS
@@ -2672,4 +2673,82 @@ CLI_PLANREC_REVIVED = (
     "  refusal is not bureaucracy: the record's pointer is the hash of the bytes\n"
     "  on disk and the record then OVERWRITES those bytes, so compacting an\n"
     "  uncommitted file would leave its text in no commit and no working tree."
+)
+
+# ---- the parallel-writer roster (wl_roster; agent/plans/PLAN-parallel-writer-roster.md) ----------
+#
+# Every remedy below is an action the session completes ALONE, so no roster block can deadlock: stop an agent, message it, lease, release, tick, or read it with --status. The cap and the 20-minute ping are the operator's numbers, and no variable changes either one.
+
+V_ROSTER_CAP = (
+    "PARALLEL-WRITER CAP EXCEEDED: %d writer agent(s) are live and the cap is %d "
+    "(operator, 2026-09-24; there is no override). The writer roster, oldest first:\n"
+    "%s\n"
+    "  Stop the newest excess writer(s) now, TaskStop %s, then release or re-lease the "
+    "items they held:\n"
+    "    .claude/hooks/stop/worklist.py --lease %s <id> release\n"
+    "  Read-only work belongs to Plan or Explore agents, which the cap does not count."
+)
+
+V_ROSTER_STATUS = (
+    "WORKER STATUS DUE: %d leased worker(s) have gone %d minutes or more without a status "
+    "(a lease, a --status read that saw growth, the worker's own SendMessage, or its "
+    "SubagentStop report):\n"
+    "%s\n"
+    "  Read them all in one command. It records a status only when the transcript grew or a "
+    "tool call is in flight, so a stalled worker cannot be answered for:\n"
+    "    .claude/hooks/stop/worklist.py --status %s all"
+)
+
+V_ROSTER_SILENT = (
+    "SILENT WORKER: %d supervised agent(s) have written nothing for %d minutes or more with no "
+    "tool call in flight, or their last --status found no growth:\n"
+    "%s\n"
+    "  Ask each one directly (SendMessage to its id) or stop it (TaskStop <id>), then release "
+    "or re-lease its items:\n"
+    "    .claude/hooks/stop/worklist.py --lease %s <id> release"
+)
+
+V_ROSTER_UNLEASED = (
+    "UNLEASED WRITER: %d live writer agent(s) hold no lease, directly or through a parent "
+    "agent, so nothing ties them to the work they are doing:\n"
+    "%s\n"
+    "  Lease the item each one works on (a child agent inherits its parent's lease):\n"
+    "    .claude/hooks/stop/worklist.py --lease %s <item> +60 worker:<agent-id>"
+)
+
+V_ROSTER_DEAD = (
+    "LEASED TO A FINISHED WORKER: %d item(s) are leased to an agent that is not live, and no "
+    "agent in its lineage is live either:\n"
+    "%s\n"
+    "  Read what it left, then close each item with evidence, release it, or re-lease it to a "
+    "live worker:\n"
+    "    .claude/hooks/stop/worklist.py --tick %s <id> '<evidence>'\n"
+    "    .claude/hooks/stop/worklist.py --lease %s <id> release"
+)
+
+N_ROSTER_HONEST = (
+    "ROSTER HONEST: %d writer(s)/%d, %d reader(s), next status due %s. Every item in flight is "
+    "leased to a live worker, so the pushes a supervised wait would draw stand down; the cap "
+    "and the status ping still apply.\n"
+    "%s"
+)
+
+CLI_STATUS_ROW = (
+    "%(id)s (%(type)s) %(desc)r\n"
+    "  lineage: %(lineage)s; live children: %(children)s\n"
+    "  transcript: %(size)d bytes, last grew %(quiet)s ago; edit tool calls: %(edits)d\n"
+    "  last tool call: %(tool)s\n"
+    "  last text: %(text)s\n"
+    "  recorded: %(verdict)s"
+)
+
+CLI_STATUS_NONE = (
+    "--status: no live subagent matched %r. The roster reads the last Stop event plus every "
+    "agent started since it; an id that finished its turn is not live."
+)
+
+CLI_STATUS_BLIND = (
+    "--status: cannot locate this session's subagents directory for %r, so no transcript was "
+    "read and nothing was recorded. Pass the full session prefix of the session that spawned "
+    "the workers."
 )

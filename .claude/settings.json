@@ -31,6 +31,16 @@
             "timeout": 180
           }
         ]
+      },
+      {
+        "matcher": "^(Agent|Task)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/chain-head.sh\" pre-agent",
+            "timeout": 180
+          }
+        ]
       }
     ],
     "PostToolUse": [

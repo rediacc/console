@@ -50,6 +50,12 @@ ALWAYS_KEYS = frozenset(
         "bg-report",
         "agent-pushback",
         "giveup-claim",
+        # I3 -- the parallel-writer roster (wl_roster). The operator asked for a hard cap and a 20-minute ping with "no escape hatches", and a rotating or pausable key IS a hatch: the cadence and the rotation would hand the stop back while a fifth writer edits the tree. Each is a verdict about live workers whose silence would read as a pass.
+        "roster-cap",
+        "roster-status",
+        "roster-silent",
+        "roster-unleased",
+        "roster-dead",
         # I2 -- somebody else is blocked and cannot see this session stand down.
         "requests",
         "no-waiter",

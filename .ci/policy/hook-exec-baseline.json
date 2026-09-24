@@ -22,7 +22,7 @@
     "MultiEdit": "inside the anchored Edit-family alternation.",
     "NotebookEdit": "inside the anchored Edit-family alternation. The rarest of the four, which is why it is listed rather than assumed to track Edit.",
     "Read": "the highest-frequency tool in a session, and the floor row that a new wildcard PostToolUse entry would move first.",
-    "Task": "a subagent launch. Listed because a hook added here multiplies by the number of subagents, not by the number of turns.",
+    "Task": "a subagent launch. Listed because a hook added here multiplies by the number of subagents, not by the number of turns. It grew from 1 to 2 on 2026-09-24, deliberately: the `pre-agent` pattern (matcher `^(Agent|Task)$`) runs guards/block_agent_cap.py, the spawn-time half of the operator's 4-writer cap (agent/plans/PLAN-parallel-writer-roster.md).",
     "TodoWrite": "a wildcard-only tool whose name contains `Write`; it is the anchored-alternation counterpart of BashOutput and it is NOT ambiguous, which is the evidence that anchoring is what removes the ambiguity.",
     "Write": "inside the anchored Edit-family alternation."
   },
@@ -36,8 +36,8 @@
     }
   },
   "measured": {
-    "entryCount": 11,
-    "patternCount": 11,
+    "entryCount": 12,
+    "patternCount": 12,
     "tools": {
       "AskUserQuestion": {
         "search": {
@@ -137,14 +137,14 @@
       },
       "Task": {
         "search": {
-          "PreToolUse": 0,
+          "PreToolUse": 1,
           "PostToolUse": 1,
-          "total": 1
+          "total": 2
         },
         "fullmatch": {
-          "PreToolUse": 0,
+          "PreToolUse": 1,
           "PostToolUse": 1,
-          "total": 1
+          "total": 2
         }
       },
       "TodoWrite": {

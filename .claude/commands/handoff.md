@@ -66,7 +66,7 @@ file:line reference is a hypothesis, re-verify against the tree, run the real th
 em dashes in any authored text, in any language.
 
 6. **Staffing section (baked, its own section in README AND PROMPT.md):** Opus is
-the default for coding sub-agents. **Fable for the challenging pieces AND for planning agents.** Sonnet for all translation/naturalization work. At most 2 concurrent writers with disjoint file ownership stated verbatim in every prompt; investigation agents fan out freely; every sub-agent report is spot-checked against the artifacts before anything builds on it. The handoff NAMES
+the default for coding sub-agents. **Fable for the challenging pieces AND for planning agents.** Sonnet for all translation/naturalization work. At most 4 concurrent writers (the Stop hook roster and the pre-agent guard enforce it) with disjoint file ownership stated verbatim in every prompt; investigation agents fan out freely; every sub-agent report is spot-checked against the artifacts before anything builds on it. The handoff NAMES
 which pieces are Fable-tier.
 
 7. **Seed durable program state** at

@@ -859,10 +859,12 @@ def brief_line(rec):
     return line
 
 
-def _fold_events(events):
+def _fold_events(events, statuses=None):
     """(records, md_keys, cli_ids, last_md_hash, lineage). Chronological single pass; a later event wins, which is exactly the right answer for the one real conflict (a CLI tick vs a later deliberate markdown re-open).
 
-    `lineage` is the list of proven compaction edges, in order. It is a LIST and not a fold-to-latest: a session can compact more than once, and the chain a276391d -> 74de73ca -> ... is only resolvable if every hop survives."""
+    `lineage` is the list of proven compaction edges, in order. It is a LIST and not a fold-to-latest: a session can compact more than once, and the chain a276391d -> 74de73ca -> ... is only resolvable if every hop survives.
+
+    `statuses`, when a dict is passed, receives the `status` events (`worklist.py --status`) folded per WORKER rather than per item: {worker: {"last": <newest event>, "reset_at": <at of the newest event that was not silent>}}. An out-parameter rather than a sixth return value, so the existing five-way unpacks stay exactly as they are."""
     records, md_keys, cli_ids = {}, set(), set()
     lineage = []
     last_md_hash = ""
@@ -912,6 +914,16 @@ def _fold_events(events):
                     }
                 )
             continue  # not an item event; there is no `rec` to stamp below
+        elif kind == "status":
+            # PARALLEL-WRITER ROSTER (wl_roster). A status is about a WORKER, not an item, so it never stamps a record: an item's `upd` moving on a status read would reset the old 45/90/120 ladder by the back door, which is the one thing `--status` must not do. A SILENT status (the transcript had not grown) is recorded but never becomes `reset_at`, so answering a ping with a
+            # stalled worker leaves the clock where it was.
+            wid = str(ev.get("worker", ""))
+            if statuses is not None and wid:
+                slot = statuses.setdefault(wid, {"last": {}, "reset_at": ""})
+                slot["last"] = dict(ev)
+                if not ev.get("silent"):
+                    slot["reset_at"] = at
+            continue
         elif kind == "add":
             rid = ev.get("id")
             if not rid:
@@ -966,6 +978,8 @@ def _fold_events(events):
                 rec["worker"] = str(ev.get("worker", ""))
                 # Absent on events written before this field existed, which reads as False: an old lease is treated as unverifiable rather than as dead. That is the safe direction -- the age ladder still catches a genuine stall, whereas a false "gone" sends a session hunting a worker that never existed.
                 rec["worker_verified"] = bool(ev.get("worker_verified"))
+                # The lease's OWN time, kept apart from `upd`: the roster counts a lease as a fresh status, and `upd` also moves on an --update, which is prose from the lead and deliberately not a status.
+                rec["lease_at"] = at
                 note = str(ev.get("note", "")).strip()
                 if note:
                     rec["lastnote"] = note
@@ -1000,11 +1014,13 @@ class Fold:
     line (rendered legacy shape), first/upd stamps, origin, until/worker.
     """
 
-    def __init__(self, items, md_hash, lineage=()):
+    def __init__(self, items, md_hash, lineage=(), statuses=None):
         self.items = items
         self.md_hash = md_hash
         self.lineage = list(lineage)
         self.by_id = {r["id"]: r for r in items}
+        # {worker: {"last", "reset_at"}} from `status` events; see _fold_events.
+        self.statuses = dict(statuses or {})
 
     def aliases_of(self, session_id):
         """Every id proven to be the same conversation as `session_id`.
@@ -1046,8 +1062,11 @@ def load(worklist, sync=True):
             md_bytes = b""
     md_hash = hashlib.sha1(md_bytes).hexdigest()[:16]
 
+    statuses_box = [{}]
+
     def build(events):
-        records, md_keys, cli_ids, last_h, lin = _fold_events(events)
+        statuses_box[0] = {}
+        records, md_keys, cli_ids, last_h, lin = _fold_events(events, statuses=statuses_box[0])
         return records, md_keys, cli_ids, last_h, lin
 
     def diff(records, md_keys, parsed, at):
@@ -1125,7 +1144,7 @@ def load(worklist, sync=True):
         rec["line"] = _render_line(rec)
         items.append(rec)
     items.sort(key=lambda r: (r.get("first", ""), r["id"]))
-    fold = Fold(items, md_hash, lineage)
+    fold = Fold(items, md_hash, lineage, statuses=statuses_box[0])
     # BIND ONCE, HERE, and only for the identity this process actually resolved to. Every ownership question downstream goes through wl_core.owned_by_me, so binding at the single load point is what makes the compaction fix impossible to roll out half-applied. A process with no resolvable identity binds nothing and behaves exactly as it did before lineage existed.
     me = C.resolve_session_id()
     if me:
@@ -1205,6 +1224,28 @@ def lease_item(worklist, by, item_id, until, worker, note="", worker_verified=Fa
                 "worker": worker,
                 "note": note,
                 "worker_verified": bool(worker_verified),
+            }
+        ],
+    )
+
+
+def status_event(worklist, by, worker, size, mtime, inflight="", silent=False):
+    """Record one `--status` read of a worker's transcript (the parallel-writer roster).
+
+    Written by hook code that READ the transcript, never by the lead typing a claim: `size` and `mtime` are what the file said, `inflight` names a tool call the worker is sitting in, and `silent` is True when the transcript had not grown since the previous status and nothing was in flight. A silent status is kept for the record and does not reset the 20-minute clock.
+    """
+    append_events(
+        worklist,
+        [
+            {
+                "ev": "status",
+                "worker": worker,
+                "at": C.stamp_now(),
+                "by": by,
+                "size": int(size),
+                "mtime": float(mtime),
+                "inflight": str(inflight or ""),
+                "silent": bool(silent),
             }
         ],
     )
