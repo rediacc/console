@@ -1157,7 +1157,7 @@
     },
     "agent/plans/PLAN-stop-hook-continuity.md": {
       "status": "draft",
-      "owner": "unowned",
+      "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
       "open": 21,

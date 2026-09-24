@@ -1,6 +1,7 @@
 # PLAN: Stop-hook continuity. Make it surface what it computes, and stop generating turns
 
 Status: draft. This plan came from read-only research and no code has changed. It is not adopted by any session, so its boxes are advisory until the lead adopts it.
+Owner: d778be9d
 First-Seen: 2026-09-24
 Updated: 2026-09-24
 
