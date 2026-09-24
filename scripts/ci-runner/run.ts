@@ -86,6 +86,8 @@ interface Options {
   only?: string[];
   skip?: string[];
   manifest?: string;
+  /** `--receipt-out`: where to write the push receipt instead of this checkout's own `.ci/cache/`. */
+  receiptOut?: string;
 }
 
 /** Every flag off. Selftest-only, so a control states the flag it exercises
@@ -176,6 +178,16 @@ function parseArgs(argv: readonly string[]): Options {
       case '--verbose':
         opts.verbose = true;
         break;
+      case '--receipt-out': {
+        // A CLEAN-SNAPSHOT RECEIPT. The gates judge the worktree they run in, and the push carries HEAD^{tree}. In a tree shared with live writers, their uncommitted edits turn a receipt red for a tree that does not contain them (2026-09-24: 14 writers, python-lint red on two files in nobody's HEAD). Running ci:quick in a clean clone checked out at HEAD
+        // and writing the receipt into the pushing checkout's cache judges exactly the pushed tree. Nothing is trusted: the receipt still records the clone's own HEAD^{tree}, and block_unverified_push refuses unless that equals the pushing HEAD^{tree}. ABSOLUTE ONLY, because a relative path would resolve against whichever cwd npm happened to use.
+        const out = value(i, arg);
+        if (!path.isAbsolute(out))
+          throw new Error(`ci-runner: ${arg} needs an absolute path, got '${out}'`);
+        opts.receiptOut = out;
+        i += 1;
+        break;
+      }
       default:
         throw new Error(`ci-runner: unknown flag '${arg}'`);
     }
@@ -692,6 +704,31 @@ async function selftest(): Promise<number> {
     'CONTROL: an unnarrowed quick run must still report the whole lane, or the three above prove nothing'
   );
 
+  // --receipt-out: a snapshot clone's run lands where the pushing checkout's guard reads, and nowhere else.
+  require_(
+    receiptPathFor(parseArgs(['--quick', '--receipt-out', '/snap/receipt.json'])) ===
+      '/snap/receipt.json',
+    '--receipt-out must redirect the receipt to the given path'
+  );
+  require_(
+    receiptPathFor(parseArgs(['--quick'])) === RECEIPT_PATH,
+    "CONTROL: without --receipt-out the receipt stays in this checkout's own cache"
+  );
+  let relRefused = false;
+  try {
+    parseArgs(['--receipt-out', 'relative/receipt.json']);
+  } catch {
+    relRefused = true;
+  }
+  require_(
+    relRefused,
+    '--receipt-out must refuse a relative path, which would resolve against an arbitrary cwd'
+  );
+  require_(
+    narrowingFlags(parseArgs(['--quick', '--receipt-out', '/snap/r.json'])).length === 0,
+    '--receipt-out must not narrow the lane: it changes where the verdict is written, not which gates run'
+  );
+
   if (failures.length > 0) {
     process.stderr.write('CONTROL FAILED: ci-runner --selftest did not fire\n');
     for (const f of failures) process.stderr.write(`  - ${f}\n`);
@@ -774,6 +811,8 @@ interface Receipt {
   failed: string[];
   wallMs: number;
   finishedAt: string;
+  /** The checkout the gates actually ran in. Differs from the pushing checkout when `--receipt-out` wrote this from a snapshot clone. */
+  judgedRoot: string;
 }
 
 function gitOut(args: readonly string[]): string {
@@ -814,10 +853,15 @@ function narrowingFlags(opts: Options): string[] {
   return flags;
 }
 
-function writeReceipt(receipt: Receipt, warn: (text: string) => void): void {
+/** The receipt's destination: `--receipt-out` when given, else this checkout's own cache. */
+function receiptPathFor(opts: Options): string {
+  return opts.receiptOut ?? RECEIPT_PATH;
+}
+
+function writeReceipt(receipt: Receipt, dest: string, warn: (text: string) => void): void {
   try {
-    fs.mkdirSync(path.dirname(RECEIPT_PATH), { recursive: true });
-    fs.writeFileSync(RECEIPT_PATH, `${JSON.stringify(receipt, null, 2)}\n`);
+    fs.mkdirSync(path.dirname(dest), { recursive: true });
+    fs.writeFileSync(dest, `${JSON.stringify(receipt, null, 2)}\n`);
   } catch (err) {
     // LOUD, unlike the duration cache. That cache is an optimisation and is deliberately non-load-bearing; this authorises a push, so a silent failure to write it would present as "you never ran the gates".
     warn(`ci-runner: could not write the push receipt: ${(err as Error).message}\n`);
@@ -955,7 +999,9 @@ async function main(): Promise<number> {
         blocked: results.filter((r) => r.status === 'blocked').map((r) => r.id),
         wallMs: meta.wallMs,
         finishedAt: new Date().toISOString(),
+        judgedRoot: REPO_ROOT,
       },
+      receiptPathFor(opts),
       humanOut
     );
   }
