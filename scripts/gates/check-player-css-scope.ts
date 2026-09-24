@@ -34,6 +34,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
+import { reportFindings } from '../lib/findings-report.js';
 import { envRoot } from '../lib/repo-root.js';
 
 // ANCHORED ON THIS FILE, not on the caller's working directory. This read `process.env.PLAYER_CSS_ROOT ?? process.cwd()`, which check:ci-gate-cwd-independence did not see: its pattern only matched cwd as the FIRST argument of path.resolve/join, so the commonest shape of its own rule passed. The seam is preserved -- PLAYER_CSS_ROOT still overrides -- but the default is derived from
@@ -296,14 +297,15 @@ function main(): number {
     return 1;
   }
   if (r.offenders.length) {
-    console.error(
-      `✗ ${r.offenders.length} page(s) link the player stylesheet with no player on them:`
-    );
-    for (const o of r.offenders.slice(0, 10)) console.error(`    ${o}`);
-    if (r.offenders.length > 10) console.error(`    ... and ${r.offenders.length - 10} more`);
-    console.error(`  Each makes a render-blocking request for a component it never builds.`);
-    console.error(`  See agent/plans/PLAN-plyr-css-on-demand-loading.md.`);
-    return 1;
+    return reportFindings({
+      header: `✗ ${r.offenders.length} page(s) link the player stylesheet with no player on them:`,
+      items: r.offenders,
+      limit: 10,
+      remedy: [
+        `  Each makes a render-blocking request for a component it never builds.`,
+        `  See agent/plans/PLAN-plyr-css-on-demand-loading.md.`,
+      ],
+    });
   }
   console.log(
     `✓ player CSS scope: ${r.pages} page(s), ${r.links} stylesheet link(s), ${r.mounts} with a mount; no page links ${r.playerCss.join(', ')} without one`

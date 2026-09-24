@@ -93,6 +93,7 @@ import {
   topVerbs,
 } from '../lib/doc-providers.js';
 import { findRegions, OPEN_RE, type Region } from '../lib/doc-regions.js';
+import { truncatedLines } from '../lib/findings-report.js';
 
 const HERE = import.meta.dirname;
 const REPO = path.resolve(HERE, '..', '..');
@@ -998,13 +999,23 @@ function main(argv: string[]): number {
           `      derived:  ${JSON.stringify(delta.frameDerived[i] ?? '(end of region)')}`
         );
       }
-      for (const r of delta.added.slice(0, 10))
-        lines.push(`    + the tree has, the doc lacks: ${r}`);
-      if (delta.added.length > 10) lines.push(`    + ...and ${delta.added.length - 10} more`);
-      for (const r of delta.removed.slice(0, 10))
-        lines.push(`    - the doc has, the tree lacks: ${r}`);
-      if (delta.removed.length > 10) lines.push(`    - ...and ${delta.removed.length - 10} more`);
-      for (const r of delta.moved.slice(0, 5)) lines.push(`    ~ also MOVED: ${r}`);
+      lines.push(
+        ...truncatedLines(delta.added, {
+          limit: 10,
+          format: (r) => `+ the tree has, the doc lacks: ${r}`,
+          more: (n) => `+ ...and ${n} more`,
+        }),
+        ...truncatedLines(delta.removed, {
+          limit: 10,
+          format: (r) => `- the doc has, the tree lacks: ${r}`,
+          more: (n) => `- ...and ${n} more`,
+        }),
+        ...truncatedLines(delta.moved, {
+          limit: 5,
+          format: (r) => `~ also MOVED: ${r}`,
+          more: (n) => `~ ...and ${n} more`,
+        })
+      );
     }
     fail.push(
       `${at}  region \`${region.provider}\` does not match what gen-docs would emit\n` +

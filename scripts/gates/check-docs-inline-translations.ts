@@ -34,6 +34,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { SITE_LOCALES } from '@rediacc/locales';
 import { globSync } from 'glob';
+import { printTruncated } from '../lib/findings-report.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -445,11 +446,13 @@ function main(): void {
     console.log('\u001B[31mErrors:\u001B[0m');
     // Deduplicate errors
     const uniqueErrors = [...new Set(errors)];
-    uniqueErrors.slice(0, 20).forEach((e) => console.log(`  \u001B[31m\u2717\u001B[0m ${e}`));
-
-    if (uniqueErrors.length > 20) {
-      console.log(`  ... and ${uniqueErrors.length - 20} more errors`);
-    }
+    printTruncated(uniqueErrors, {
+      limit: 20,
+      indent: '  ',
+      format: (e) => `\u001B[31m\u2717\u001B[0m ${e}`,
+      more: (n) => `... and ${n} more errors`,
+      write: (l) => console.log(l),
+    });
 
     console.log(
       '\n\u001B[31m\u2717\u001B[0m Docs inline translation validation FAILED\n' +

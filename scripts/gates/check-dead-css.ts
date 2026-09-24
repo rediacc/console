@@ -38,6 +38,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { globSync } from 'glob';
 import { GREEN, NC, RED } from '../lib/console.js';
+import { refuseFindings } from '../lib/findings-report.js';
 
 import {
   baselineAdditions,
@@ -337,11 +338,12 @@ function main(): void {
     `${sheets().length} stylesheet(s), ${sources().length} source file(s); ${dead.length} dead class(es), baseline ${base.length}.`
   );
   if (fresh.length > 0) {
-    console.error(`\n${RED}✗${NC} ${fresh.length} NEW dead class(es):`);
-    for (const f of fresh.slice(0, 25)) console.error(`    ${f}`);
-    if (fresh.length > 25) console.error(`    ... and ${fresh.length - 25} more`);
-    console.error('\nDelete the rule, or render the class. Do not add it to the baseline.');
-    process.exit(1);
+    refuseFindings({
+      header: `\n${RED}✗${NC} ${fresh.length} NEW dead class(es):`,
+      items: fresh,
+      limit: 25,
+      remedy: '\nDelete the rule, or render the class. Do not add it to the baseline.',
+    });
   }
   if (fixed.length > 0) {
     console.error(

@@ -32,6 +32,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+import { printTruncated } from '../lib/findings-report.js';
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const LAYOUT = path.join(REPO, 'packages/www/src/layouts/DocsLayout.astro');
@@ -190,7 +191,7 @@ const main = (): number => {
     console.error(
       `✗ ${offences.length} code block(s) offer a copy control on something nobody can paste:\n`
     );
-    for (const o of offences.slice(0, 30)) console.error(`  ${o}`);
+    printTruncated(offences, { limit: 30, indent: '  ' });
     console.error(
       '\n  addUnitCopy in packages/www/src/layouts/DocsLayout.astro decides this in three'
     );

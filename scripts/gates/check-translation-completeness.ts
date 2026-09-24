@@ -30,6 +30,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { truncatedLines } from '../lib/findings-report.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -737,12 +738,7 @@ function checkLocaleDir(name: string, localeDir: string, flatFiles = false): Che
       errors.push(
         `[${name}/${lang}] ${untranslated} untranslated strings (${untranslatedRatio.toFixed(4)}%) - exceeds ${MAX_UNTRANSLATED_PERCENT}% threshold`
       );
-      if (untranslatedKeys.length > 0) {
-        untranslatedKeys.slice(0, 3).forEach((k) => errors.push(`    - ${k}`));
-        if (untranslatedKeys.length > 3) {
-          errors.push(`    ... and ${untranslatedKeys.length - 3} more`);
-        }
-      }
+      errors.push(...truncatedLines(untranslatedKeys, { limit: 3, format: (k) => `- ${k}` }));
     } else if (untranslated > 0) {
       warnings.push(
         `[${name}/${lang}] ${untranslated} untranslated strings (${untranslatedPercent}%)`

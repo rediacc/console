@@ -46,9 +46,9 @@ import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-
-import { flatten } from '../lib/language-detect.js';
 import { subset } from '@rediacc/locales';
+import { printTruncated } from '../lib/findings-report.js';
+import { flatten } from '../lib/language-detect.js';
 import {
   baselineAdditions,
   renderRefusal,
@@ -754,8 +754,7 @@ function main(): void {
     for (const f of fresh) byFile.set(f.file, [...(byFile.get(f.file) ?? []), f]);
     for (const [file, list] of [...byFile].sort((a, b) => b[1].length - a[1].length)) {
       console.error(`  ${file}  (${list.length})`);
-      for (const f of list.slice(0, 5)) console.error(`    ${f.where}: ${f.excerpt}`);
-      if (list.length > 5) console.error(`    ... and ${list.length - 5} more`);
+      printTruncated(list, { limit: 5, format: (f) => `${f.where}: ${f.excerpt}` });
     }
     console.error(
       `\nRestructure the sentence: a period, a comma, a colon or parentheses. Do NOT swap the\n` +
@@ -769,8 +768,7 @@ function main(): void {
       `\n${stale.length} baselined finding(s) are already fixed. The baseline only shrinks,\n` +
         `so remove them: npx tsx scripts/gates/check-em-dash-surfaces.ts --write-baseline\n`
     );
-    for (const id of stale.slice(0, 10)) console.error(`    ${id}`);
-    if (stale.length > 10) console.error(`    ... and ${stale.length - 10} more`);
+    printTruncated(stale, { limit: 10 });
   }
   process.exit(1);
 }

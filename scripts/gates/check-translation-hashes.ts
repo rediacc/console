@@ -30,6 +30,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { flattenAndHash } from '../lib/crc32.js';
+import { truncatedLines } from '../lib/findings-report.js';
 import {
   diffJsonTranslations,
   flattenJson,
@@ -235,44 +236,50 @@ function checkLocaleDir(config: LocaleCheckConfig): string[] {
       const modifiedChanges = diffChanges.filter(
         (c) => c.type === 'modified' && staleKeys.includes(c.key)
       );
-      for (const c of modifiedChanges.slice(0, 10)) {
-        errors.push(`  ~ ${c.key}`);
-        errors.push(`    old: ${JSON.stringify(c.oldValue)}`);
-        errors.push(`    new: ${JSON.stringify(c.newValue)}`);
-        errors.push(`    → Update this key in all non-English languages`);
-      }
-      if (modifiedChanges.length > 10) {
-        errors.push(`  ... and ${modifiedChanges.length - 10} more modified keys`);
-      }
+      errors.push(
+        ...truncatedLines(modifiedChanges, {
+          limit: 10,
+          indent: '  ',
+          format: (c) => [
+            `~ ${c.key}`,
+            `  old: ${JSON.stringify(c.oldValue)}`,
+            `  new: ${JSON.stringify(c.newValue)}`,
+            `  → Update this key in all non-English languages`,
+          ],
+          more: (n) => `... and ${n} more modified keys`,
+        })
+      );
     } else {
       // Fallback: just list keys
-      staleKeys.slice(0, 5).forEach((k) => errors.push(`  - ${k}`));
-      if (staleKeys.length > 5) {
-        errors.push(`  ... and ${staleKeys.length - 5} more`);
-      }
+      errors.push(
+        ...truncatedLines(staleKeys, { limit: 5, indent: '  ', format: (k) => `- ${k}` })
+      );
     }
   }
 
   if (newKeys.length > 0) {
     errors.push(`[${config.name}] New keys not in hash manifest: ${newKeys.length}`);
-    for (const k of newKeys.slice(0, 5)) {
-      errors.push(`  + ${k}: ${JSON.stringify(currentFlat[k])}`);
-      errors.push(`    → Translate and add to all non-English languages`);
-    }
-    if (newKeys.length > 5) {
-      errors.push(`  ... and ${newKeys.length - 5} more`);
-    }
+    errors.push(
+      ...truncatedLines(newKeys, {
+        limit: 5,
+        indent: '  ',
+        format: (k) => [
+          `+ ${k}: ${JSON.stringify(currentFlat[k])}`,
+          `  → Translate and add to all non-English languages`,
+        ],
+      })
+    );
   }
 
   if (deletedKeys.length > 0) {
     errors.push(`[${config.name}] Keys removed from English: ${deletedKeys.length}`);
-    for (const k of deletedKeys.slice(0, 5)) {
-      errors.push(`  - ${k}`);
-      errors.push(`    → Delete this key from all non-English languages`);
-    }
-    if (deletedKeys.length > 5) {
-      errors.push(`  ... and ${deletedKeys.length - 5} more`);
-    }
+    errors.push(
+      ...truncatedLines(deletedKeys, {
+        limit: 5,
+        indent: '  ',
+        format: (k) => [`- ${k}`, `  → Delete this key from all non-English languages`],
+      })
+    );
   }
 
   return errors;

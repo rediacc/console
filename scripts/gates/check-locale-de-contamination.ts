@@ -60,7 +60,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { DEFAULT_LOCALE, isSiteLocale, SITE_LOCALES } from '@rediacc/locales';
-
+import { printTruncated } from '../lib/findings-report.js';
 import {
   baselineAdditions,
   renderRefusal,
@@ -594,11 +594,11 @@ function main(): void {
     }
     for (const [where, list] of [...byLocale].sort((a, b) => b[1].length - a[1].length)) {
       console.error(`  ${where}  (${list.length})`);
-      for (const f of list.slice(0, 5)) {
-        const shown = f.value.length > 60 ? `${f.value.slice(0, 57)}...` : f.value;
-        console.error(`    ${f.file}:${f.key} = ${JSON.stringify(shown)}`);
-      }
-      if (list.length > 5) console.error(`    ... and ${list.length - 5} more`);
+      printTruncated(list, {
+        limit: 5,
+        format: (f) =>
+          `${f.file}:${f.key} = ${JSON.stringify(f.value.length > 60 ? `${f.value.slice(0, 57)}...` : f.value)}`,
+      });
     }
     console.error(
       '\nThese values are byte-identical to the German locale and differ from English.\n' +
@@ -612,8 +612,7 @@ function main(): void {
       `\n${stale.length} baselined finding(s) are already fixed. The baseline only shrinks,\n` +
         `so remove them: npx tsx scripts/gates/check-locale-de-contamination.ts --write-baseline\n`
     );
-    for (const id of stale.slice(0, 10)) console.error(`    ${id}`);
-    if (stale.length > 10) console.error(`    ... and ${stale.length - 10} more`);
+    printTruncated(stale, { limit: 10 });
   }
   process.exit(1);
 }

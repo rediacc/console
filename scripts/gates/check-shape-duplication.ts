@@ -204,7 +204,7 @@ export const ADVICE =
   '\n  Either extract the shared piece, or say which DIVERGENCE makes them not one' +
   '\n  thing (the way `run_gate()` has three incompatible return contracts).' +
   '\n  To accept one, put its FINGERPRINT (printed above, beside the copy count) into' +
-  '\n  scripts/data/shape-duplication-seed.json under "accepted", with a BLOCKER: reason' +
+  `\n  ${path.relative(ROOT, SEED_FILE)} under "accepted", with a BLOCKER: reason` +
   '\n  naming the divergence. The fingerprint used to be absent from this message, which' +
   '\n  left the documented escape hatch unusable without reading the source.' +
   '\n  Triage it: .claude/hooks/stop/worklist.py --triage <you> "<the finding>"';
@@ -761,6 +761,8 @@ export function isSharedHelperCall(line: string, helpers: ReadonlySet<string>): 
  * registers.
  */
 const NO_HELPERS: ReadonlySet<string> = new Set();
+/** The default for every `accepted` parameter, so a caller that passes none keeps the behaviour it was written against. */
+const NO_ACCEPTED: ReadonlySet<string> = new Set();
 
 export function windows(
   lines: NormLine[],
@@ -802,7 +804,10 @@ export interface Finding {
  * window of each other in every file. Same-files is the strict half: two genuinely
  * different spans that happen to sit adjacent in one file will differ in the others.
  */
-export function coalesce(findings: Finding[]): Finding[] {
+export function coalesce(
+  findings: Finding[],
+  accepted: ReadonlySet<string> = NO_ACCEPTED
+): Finding[] {
   const byFileSet = new Map<string, Finding[]>();
   for (const f of findings) {
     const key = f.files.map((x) => x.split(':')[0]).join('|');
@@ -817,16 +822,24 @@ export function coalesce(findings: Finding[]): Finding[] {
     );
     let cur = sorted[0];
     let merged = 1;
+    // Every window hash folded into this run, so an `accepted` entry naming ANY of them silences the whole run. See `judge` for why acceptance works at run granularity.
+    let members = [cur.shape];
+    const flush = () => {
+      if (!members.some((h) => accepted.has(h))) out.push({ ...cur, span: merged + WINDOW - 1 });
+    };
     for (const f of sorted.slice(1)) {
       const prev = Number(cur.files[0].split(':')[1]) + merged - 1;
-      if (Number(f.files[0].split(':')[1]) - prev <= WINDOW) merged += 1;
-      else {
-        out.push({ ...cur, span: merged + WINDOW - 1 });
+      if (Number(f.files[0].split(':')[1]) - prev <= WINDOW) {
+        merged += 1;
+        members.push(f.shape);
+      } else {
+        flush();
         cur = f;
         merged = 1;
+        members = [f.shape];
       }
     }
-    out.push({ ...cur, span: merged + WINDOW - 1 });
+    flush();
   }
   return out.sort((a, b) => b.files.length * b.span - a.files.length * a.span);
 }
@@ -864,9 +877,10 @@ export function countShapes(
 
 export function judge(
   perFile: Map<string, { h: string; line: number }[]>,
-  seed: Set<string>
+  seed: Set<string>,
+  accepted: ReadonlySet<string> = NO_ACCEPTED
 ): Finding[] {
-  const byShape = countShapes(perFile, seed);
+  const byShape = countShapes(perFile, skipSet(seed, accepted));
   const findings: Finding[] = [];
   for (const [h, files] of byShape) {
     if (files.size < N) continue;
@@ -876,7 +890,21 @@ export function judge(
       span: WINDOW,
     });
   }
-  return coalesce(findings);
+  return coalesce(findings, accepted);
+}
+
+/**
+ * The hashes to drop BEFORE coalescing: the anonymous seed, and never an accepted hash.
+ *
+ * WHY AN ACCEPTED HASH MUST SURVIVE UNTIL `coalesce`. A duplicated run of L lines yields L-4 overlapping windows, and the gate reports the merged run under its FIRST window's hash, which is the one an operator copies into `accepted`. Until 2026-09-24 that hash was dropped here with the seed, before merging, so the run's remaining windows re-merged into a run of L-1 lines and reported again under the SECOND hash. Accepting a 7-line run silenced nothing; only a run of exactly 5 lines ever went quiet. Keeping the accepted hash in the tally lets `coalesce` see the whole run and drop it as one.
+ *
+ * WHY RUN GRANULARITY RATHER THAN PRINTING EVERY WINDOW HASH. The run is this gate's unit of finding: it prints one fingerprint per run and the ADVICE asks for "its FINGERPRINT", singular. Listing every window instead would make one judgement cost L-4 `accepted` entries, each needing its own BLOCKER reason, and `deadAccepted` would then report a partly-refactored run piecemeal. The hash scheme is untouched either way, so no seed entry changes meaning.
+ *
+ * THE PRICE, stated so nobody has to rediscover it: a run that GROWS while keeping its accepted window stays silent, because the judgement is attached to the run. It does not survive a rewrite of that window (the hash dies and `deadAccepted` refuses). Acceptance is silent at any copy count, exactly as it always was for a 5-line shape; what changed is only the run LENGTH it covers. A separate run in the same files is a separate group member set and still reports, which a control pins.
+ */
+function skipSet(seed: Set<string>, accepted: ReadonlySet<string>): Set<string> {
+  if (accepted.size === 0) return seed;
+  return new Set([...seed].filter((h) => !accepted.has(h)));
 }
 
 /** Tracked files for one family, so the floor below is checked per family. */
@@ -1544,6 +1572,86 @@ function controls(): { name: string; ok: boolean; detail?: string }[] {
         return probeFindings(near, staged, seed).length === 0;
       })(),
     },
+    ...runAcceptanceControls(mk),
+  ];
+}
+
+/**
+ * THE PLANTED DEFECT for run-granularity acceptance (see `skipSet`), kept beside the other controls but in its own function so the fixture is built once.
+ *
+ * The plant is a 7-line run shared by N files: three overlapping windows, one merged finding reported under the FIRST window's hash. Accepting that hash must silence the whole run. The pre-fix behaviour is kept as a control too, because it is what proves the fixture really spans more than one window: if the run ever collapsed to a single window, the fix control would pass for free.
+ */
+function runAcceptanceControls(
+  mk: (n: number, body: string) => Map<string, { h: string; line: number }[]>
+): { name: string; ok: boolean; detail?: string }[] {
+  const RUN = Array.from({ length: 7 }, (_, i) => `const run${i} = compute(${i});`).join('\n');
+  const per = mk(N, RUN);
+  const hs = windows(normalise(RUN, 'ts')).map((w) => w.h);
+  const none = new Set<string>();
+  const plain = judge(per, none);
+  // A second run in the SAME files, separated from the first by per-file lines no other file shares, so the two can never merge.
+  const OTHER = Array.from({ length: 7 }, (_, i) => `const other${i} = derive(${i});`).join('\n');
+  const two = new Map(
+    Array.from({ length: N }, (_, f): [string, { h: string; line: number }[]] => [
+      `f${f}.ts`,
+      windows(
+        normalise(
+          [
+            RUN,
+            ...Array.from({ length: 6 }, (_, k) => `const only${f}x${k} = ${f * 10 + k};`),
+            OTHER,
+          ].join('\n'),
+          'ts'
+        )
+      ),
+    ])
+  );
+  return [
+    {
+      name: 'PLANT: a 7-line run shared by N files is ONE finding, 7 lines long, under its first hash',
+      ok: hs.length === 3 && plain.length === 1 && plain[0].span === 7 && plain[0].shape === hs[0],
+      detail: JSON.stringify({ windows: hs.length, plain }),
+    },
+    {
+      name: 'accepting the REPORTED hash of a 7-line run silences the whole run',
+      ok: judge(per, none, new Set([hs[0]])).length === 0,
+      detail: JSON.stringify(judge(per, none, new Set([hs[0]]))),
+    },
+    {
+      name: 'CONTROL: folded into the seed instead, the same hash leaks the run under its SECOND hash (the pre-fix behaviour, so the plant is live)',
+      ok: (() => {
+        const leak = judge(per, new Set([hs[0]]));
+        return leak.length === 1 && leak[0].shape === hs[1] && leak[0].span === 6;
+      })(),
+    },
+    {
+      name: 'any member hash accepts the run, not only the first',
+      ok: judge(per, none, new Set([hs[2]])).length === 0,
+    },
+    {
+      name: 'CONTROL: an accepted hash from nowhere in the run silences nothing',
+      ok: judge(per, none, new Set(['000000000000'])).length === 1,
+    },
+    {
+      name: 'CONTROL: accepting one run does not silence a SEPARATE run in the same files',
+      ok: (() => {
+        const both = judge(two, none);
+        const after = judge(two, none, new Set([hs[0]]));
+        return both.length === 2 && after.length === 1 && after[0].shape !== hs[0];
+      })(),
+      detail: JSON.stringify(judge(two, none, new Set([hs[0]]))),
+    },
+    {
+      name: 'the probe honours run acceptance the same way, so a commit is not warned about an accepted run',
+      ok: (() => {
+        const near = nearIndex(mk(N - 1, RUN));
+        const staged = new Map([['staged.ts', windows(normalise(RUN, 'ts'))]]);
+        return (
+          probeFindings(near, staged, none).length === 1 &&
+          probeFindings(near, staged, none, new Set([hs[0]])).length === 0
+        );
+      })(),
+    },
   ];
 }
 
@@ -1706,12 +1814,14 @@ function splitLoc(loc: string): { file: string; line: number } {
 export function probeFindings(
   near: Record<string, string[]>,
   staged: Map<string, { h: string; line: number }[]>,
-  seed: Set<string>
+  seed: Set<string>,
+  accepted: ReadonlySet<string> = NO_ACCEPTED
 ): Finding[] {
+  const skip = skipSet(seed, accepted);
   const byShape = new Map<string, Map<string, number>>();
   for (const [file, ws] of staged) {
     for (const w of ws) {
-      if (seed.has(w.h)) continue;
+      if (skip.has(w.h)) continue;
       let m = byShape.get(w.h);
       if (!m) {
         m = new Map();
@@ -1733,7 +1843,7 @@ export function probeFindings(
       span: WINDOW,
     });
   }
-  return coalesce(findings);
+  return coalesce(findings, accepted);
 }
 
 /**
@@ -1741,16 +1851,19 @@ export function probeFindings(
  *
  * `loadSeed` exits the process when an `accepted` reason is malformed, which is right for a gate whose job is to refuse and wrong for an advisory that must never fail a commit. The two agree on every tree where the gate passes, which is the only tree a commit is made on; a tree where they differ is one the gate is already red on.
  */
-function seedSilently(): Set<string> {
-  if (!existsSync(SEED_FILE)) return new Set();
+function seedSilently(): { seed: Set<string>; accepted: Set<string> } {
+  const none = { seed: new Set<string>(), accepted: new Set<string>() };
+  if (!existsSync(SEED_FILE)) return none;
   try {
     const raw = JSON.parse(readFileSync(SEED_FILE, 'utf8')) as {
       shapes?: string[];
       accepted?: Record<string, string>;
     };
-    return new Set([...(raw.shapes ?? []), ...Object.keys(raw.accepted ?? {})]);
+    // The accepted half comes back SEPARATELY because it silences a whole merged run, not one window; folding it into the seed would re-open the defect `skipSet` records.
+    const accepted = new Set(Object.keys(raw.accepted ?? {}));
+    return { seed: new Set([...(raw.shapes ?? []), ...accepted]), accepted };
   } catch {
-    return new Set();
+    return none;
   }
 }
 
@@ -1925,7 +2038,9 @@ function probeMain(): void {
     return;
   }
   const helpers = new Set(index.helpers);
-  const seed = req.noSeed ? new Set<string>() : seedSilently();
+  const { seed, accepted } = req.noSeed
+    ? { seed: new Set<string>(), accepted: new Set<string>() }
+    : seedSilently();
   const staged = new Map<string, { h: string; line: number }[]>();
   const skipped: string[] = [];
   for (const [file, src] of Object.entries(req.files)) {
@@ -1937,7 +2052,7 @@ function probeMain(): void {
     staged.set(file, windows(normalise(src, kindFor(file)), helpers));
   }
   process.stdout.write(
-    JSON.stringify({ findings: probeFindings(index.near, staged, seed), skipped })
+    JSON.stringify({ findings: probeFindings(index.near, staged, seed, accepted), skipped })
   );
 }
 
@@ -2066,14 +2181,14 @@ async function main(): Promise<void> {
     console.error(
       `\n  The shape they excuse is gone, so the reason is no longer true and the entry is` +
         `\n  buying silence for nothing. DELETE those keys from` +
-        `\n  scripts/data/shape-duplication-seed.json under "accepted". Do not re-seed to` +
+        `\n  ${path.relative(ROOT, SEED_FILE)} under "accepted". Do not re-seed to` +
         `\n  clear them: --seed rewrites every anonymous entry at once and would absorb any` +
         `\n  genuinely new duplication in the same stroke.`
     );
     process.exit(1);
   }
 
-  const findings = judge(perFile, seed);
+  const findings = judge(perFile, seed, new Set(accepted));
 
   // MACHINE-READABLE, for the stop-hook rule that asks the judged half of this question. `wl_shapedup.py` needs the file:line spans as data; parsing them back out of the human report would be a second, undeclared interface to the same answer.
   if (argv.includes('--json')) {

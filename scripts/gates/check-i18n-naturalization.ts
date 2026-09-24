@@ -36,6 +36,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { flattenAndHash } from '../lib/crc32.js';
+import { printTruncated } from '../lib/findings-report.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const TRANSLATIONS_DIR = path.join(__dirname, '../../packages/www/src/i18n/translations');
@@ -159,8 +160,7 @@ function main(): number {
     );
     for (const [lang, keys] of Object.entries(staleByLang)) {
       console.error(`  [${lang}] ${keys.length} stale:`);
-      for (const k of keys.slice(0, 8)) console.error(`    ~ ${k}`);
-      if (keys.length > 8) console.error(`    ... and ${keys.length - 8} more`);
+      printTruncated(keys, { limit: 8, format: (k) => `~ ${k}` });
     }
     console.error(`\nTo fix: re-naturalize ONLY the changed keys (do not re-do everything):`);
     console.error(`  npm run i18n:generate-hashes && npm run i18n:naturalize-status`);

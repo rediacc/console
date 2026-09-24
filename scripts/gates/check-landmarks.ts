@@ -33,6 +33,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { globSync } from 'glob';
 import { GREEN, NC, RED, YELLOW } from '../lib/console.js';
+import { printTruncated } from '../lib/findings-report.js';
 
 const ROOT = path.resolve(import.meta.dirname, '..', '..');
 const DIST = path.join(ROOT, 'packages/www/dist');
@@ -125,8 +126,7 @@ function main(): void {
       console.error(
         `\n${RED}✗${NC} ${duplicates.length} page(s) ship more than one <main> landmark:`
       );
-      for (const d of duplicates.slice(0, 15)) console.error(`    ${d}`);
-      if (duplicates.length > 15) console.error(`    ... and ${duplicates.length - 15} more`);
+      printTruncated(duplicates, { limit: 15 });
       console.error(
         '\nA nested <main> makes "skip to main content" ambiguous. The page owns exactly'
       );
@@ -134,7 +134,7 @@ function main(): void {
     }
     if (missing.length > 0) {
       console.error(`\n${RED}✗${NC} ${missing.length} page(s) carry NO <main> landmark:`);
-      for (const m of missing.slice(0, 15)) console.error(`    ${m}`);
+      printTruncated(missing, { limit: 15 });
     }
     process.exit(1);
   }

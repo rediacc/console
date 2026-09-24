@@ -48,6 +48,7 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
 import { SITE_LOCALES } from '@rediacc/locales';
+import { printTruncated } from '../lib/findings-report.js';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const DEFAULT_DIST = 'packages/www/dist';
@@ -440,7 +441,7 @@ function main(): void {
 
   if (missing.length > 0) {
     console.error(`✗ ${missing.length} referenced chunk(s) do not exist in the build:`);
-    for (const m of missing.slice(0, 10)) console.error(`    ${m}`);
+    printTruncated(missing, { limit: 10 });
     console.error('');
   }
 
@@ -454,9 +455,11 @@ function main(): void {
       console.error(
         `  /${m.locale}/  ${m.deferredBytes.toLocaleString()} B across ${chunks.length} chunk(s)`
       );
-      for (const f of chunks.slice(0, 5)) {
-        console.error(`      ${f.bytes.toLocaleString()} B  ${f.url}`);
-      }
+      printTruncated(chunks, {
+        limit: 5,
+        indent: '      ',
+        format: (f) => `${f.bytes.toLocaleString()} B  ${f.url}`,
+      });
     }
     console.error(
       `\n  Deferred is not free -- it is paid by whoever interacts. This ceiling exists so\n` +

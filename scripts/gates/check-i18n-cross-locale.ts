@@ -60,6 +60,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { DEFAULT_LOCALE, isSiteLocale, SITE_LOCALES } from '@rediacc/locales';
+import { printTruncated } from '../lib/findings-report.js';
 import {
   assertDetectionCoverage,
   DISCRIMINATIVE,
@@ -547,11 +548,11 @@ function main(): void {
   }
   for (const [pair, list] of [...byPair].sort((a, b) => b[1].length - a[1].length)) {
     console.error(`  ${pair}  (${list.length})`);
-    const shown = process.argv.includes('--all') ? list.length : 5;
-    for (const f of list.slice(0, shown))
-      console.error(`    ${f.file}:${f.key} = ${JSON.stringify(f.value)}`);
-    if (list.length > shown)
-      console.error(`    ... and ${list.length - shown} more (--all prints every one)`);
+    printTruncated(list, {
+      limit: process.argv.includes('--all') ? Infinity : 5,
+      format: (f) => `${f.file}:${f.key} = ${JSON.stringify(f.value)}`,
+      more: (n) => `... and ${n} more (--all prints every one)`,
+    });
   }
   console.error(
     "\nOne locale contains another locale's text. Translate from the ENGLISH source, not\n" +

@@ -48,6 +48,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { NON_ENGLISH_LOCALES } from '@rediacc/locales';
 import { globSync } from 'glob';
+import { printTruncated, truncatedLines } from '../lib/findings-report.js';
 import {
   contentWords,
   DISCRIMINATIVE,
@@ -956,27 +957,22 @@ function main(): void {
       byFile.get(relPath)!.push(issue);
     }
 
-    let shown = 0;
-    const maxToShow = 30;
-
-    for (const [file, issues] of byFile) {
-      if (shown >= maxToShow) break;
-
-      console.log(`  \x1b[33m${file}\x1b[0m`);
-      for (const issue of issues.slice(0, 5)) {
-        if (shown >= maxToShow) break;
-        console.log(`    Line ${issue.lineNumber}: ${issue.content}`);
-        shown++;
-      }
-      if (issues.length > 5) {
-        console.log(`    ... and ${issues.length - 5} more in this file`);
-      }
-      console.log('');
-    }
-
-    if (allIssues.length > maxToShow) {
-      console.log(`  ... and ${allIssues.length - maxToShow} more issues\n`);
-    }
+    // TRUNCATED BY FILE, NOT BY A RUNNING ISSUE COUNT. The old loop stopped at 30 issues mid-file and then printed "... and N more issues" against the total, so the same hidden issue was counted by both the per-file tail and the global one.
+    printTruncated([...byFile], {
+      limit: 30,
+      indent: '',
+      format: ([file, issues]) => [
+        `  \x1b[33m${file}\x1b[0m`,
+        ...truncatedLines(issues, {
+          limit: 5,
+          format: (issue) => `Line ${issue.lineNumber}: ${issue.content}`,
+          more: (n) => `... and ${n} more in this file`,
+        }),
+        '',
+      ],
+      more: (n) => `  ... and ${n} more file(s)\n`,
+      write: (l) => console.log(l),
+    });
   }
 
   // Native character analysis report
@@ -998,28 +994,38 @@ function main(): void {
       const rel = path.relative(DOCS_DIR, issue.file);
       byFile.set(rel, [...(byFile.get(rel) ?? []), issue]);
     }
-    let shown = 0;
-    for (const [file, issues] of [...byFile].sort((a, b) => b[1].length - a[1].length)) {
-      if (shown >= 30) break;
-      console.log(`  \x1b[33m${file}\x1b[0m  (${issues.length})`);
-      for (const issue of issues.slice(0, 3)) {
-        console.log(
-          `    Line ${issue.lineNumber} reads as ${issue.detected} (score ${issue.score}): ${issue.excerpt}`
-        );
-        shown++;
+    // 30 FILES, and the tail counts files. The old loop broke after 30 ISSUES but compared the file count against 30, so 20 files of 3 issues each printed 10 and hid 10 with no line saying so.
+    printTruncated(
+      [...byFile].sort((a, b) => b[1].length - a[1].length),
+      {
+        limit: 30,
+        indent: '  ',
+        format: ([file, issues]) => [
+          `\x1b[33m${file}\x1b[0m  (${issues.length})`,
+          ...truncatedLines(issues, {
+            limit: 3,
+            indent: '  ',
+            format: (issue) =>
+              `Line ${issue.lineNumber} reads as ${issue.detected} (score ${issue.score}): ${issue.excerpt}`,
+          }),
+        ],
+        more: (n) => `... and ${n} more file(s)\n`,
+        write: (l) => console.log(l),
       }
-    }
-    if (byFile.size > 30) console.log(`  ... and ${byFile.size - 30} more file(s)\n`);
+    );
     console.log('');
   }
 
   // Warnings (non-failing): Latin frontmatter without diacritics.
   if (nativeWarnings.length > 0) {
     console.log(`\x1b[33mWarnings (${nativeWarnings.length}, non-failing):\x1b[0m`);
-    for (const issue of nativeWarnings.slice(0, 10)) {
-      console.log(`  \x1b[33m!\x1b[0m ${path.relative(DOCS_DIR, issue.file)}: ${issue.message}`);
-    }
-    if (nativeWarnings.length > 10) console.log(`  ... and ${nativeWarnings.length - 10} more`);
+    printTruncated(nativeWarnings, {
+      limit: 10,
+      indent: '  ',
+      format: (issue) =>
+        `\x1b[33m!\x1b[0m ${path.relative(DOCS_DIR, issue.file)}: ${issue.message}`,
+      write: (l) => console.log(l),
+    });
     console.log('');
   }
 

@@ -61,14 +61,15 @@
  * lane: quality-security
  * ---- end gate ----
  */
-import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { printTruncated } from '../lib/findings-report.js';
 import { envRoot } from '../lib/repo-root.js';
 import {
   baselineAdditions,
   commitBaseline,
-  sharedSelftestCases,
   selftestVerdict,
+  sharedSelftestCases,
 } from '../lib/shrink-only-baseline.js';
 
 // ANCHORED ON THIS FILE, not on the caller's working directory. This read `process.env.SECRET_SCOPE_ROOT ?? process.cwd()`, which check:ci-gate-cwd-independence did not see: its pattern only matched cwd as the FIRST argument of path.resolve/join, so the commonest shape of its own rule passed. The seam is preserved -- SECRET_SCOPE_ROOT still overrides -- but the default is derived
@@ -238,7 +239,7 @@ function main(): number {
     console.error(
       `✗ ${drained.length} read(s) migrated -- ratchet the baseline in the same commit:`
     );
-    for (const d of drained.slice(0, 10)) console.error(`    ${d}`);
+    printTruncated(drained, { limit: 10 });
     console.error('  Run: npx tsx scripts/gates/check-secret-scope.ts --write-baseline');
     return 1;
   }

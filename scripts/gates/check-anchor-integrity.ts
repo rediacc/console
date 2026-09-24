@@ -46,6 +46,7 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
 import { isSiteLocale, SITE_LOCALES } from '@rediacc/locales';
+import { printTruncated, truncatedLines } from '../lib/findings-report.js';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const DEFAULT_DIST = 'packages/www/dist';
@@ -435,20 +436,25 @@ function main(): void {
 
   const byPage = new Map<string, DeadAnchor[]>();
   for (const f of findings) byPage.set(f.page, [...(byPage.get(f.page) ?? []), f]);
-  for (const [page, list] of [...byPage]
-    .sort((a, b) => b[1].length - a[1].length)
-    .slice(0, maxReport)) {
-    console.error(`  ${page}  (${list.length})`);
-    for (const f of list.slice(0, 5)) {
-      console.error(
-        f.kind === 'dead'
-          ? `    #${f.fragment} resolves to no element on this page`
-          : `    #${f.fragment} appears ${f.count} times in the table of contents`
-      );
+  printTruncated(
+    [...byPage].sort((a, b) => b[1].length - a[1].length),
+    {
+      limit: maxReport,
+      indent: '  ',
+      format: ([page, list]) => [
+        `${page}  (${list.length})`,
+        ...truncatedLines(list, {
+          limit: 5,
+          indent: '  ',
+          format: (f) =>
+            f.kind === 'dead'
+              ? `#${f.fragment} resolves to no element on this page`
+              : `#${f.fragment} appears ${f.count} times in the table of contents`,
+        }),
+      ],
+      more: (n) => `... and ${n} more page(s)`,
     }
-    if (list.length > 5) console.error(`    ... and ${list.length - 5} more`);
-  }
-  if (byPage.size > maxReport) console.error(`  ... and ${byPage.size - maxReport} more page(s)`);
+  );
 
   console.error(
     '\nHeading ids and TOC hrefs are produced by two different slug algorithms. Fix the\n' +

@@ -86,6 +86,7 @@ import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+import { printTruncated, truncatedLines } from '../lib/findings-report.js';
 import {
   baselineAdditions,
   renderRefusal,
@@ -596,8 +597,7 @@ function main(): void {
         `deleted from the\ncatalogs or wired up. This baseline is SHRINK-ONLY, so drain it:\n` +
         `  npx tsx scripts/gates/check-dead-translation-keys.ts --write-baseline\n`
     );
-    for (const k of drained.slice(0, 10)) console.error(`    ${k}`);
-    if (drained.length > 10) console.error(`    ... and ${drained.length - 10} more`);
+    printTruncated(drained, { limit: 10 });
     process.exit(1);
   }
 
@@ -622,14 +622,18 @@ function main(): void {
       `reachable by no code path, out of ${keys.length} key(s) ` +
       `(${previous.length} already baselined):\n`
   );
-  for (const [branch, list] of [...byBranch]
-    .sort((a, b) => b[1].length - a[1].length)
-    .slice(0, 30)) {
-    console.error(`  ${branch}  (${list.length})`);
-    for (const k of list.slice(0, 3)) console.error(`    ${k}`);
-    if (list.length > 3) console.error(`    ... and ${list.length - 3} more`);
-  }
-  if (byBranch.size > 30) console.error(`  ... and ${byBranch.size - 30} more branch(es)`);
+  printTruncated(
+    [...byBranch].sort((a, b) => b[1].length - a[1].length),
+    {
+      limit: 30,
+      indent: '  ',
+      format: ([branch, list]) => [
+        `${branch}  (${list.length})`,
+        ...truncatedLines(list, { limit: 3, indent: '  ' }),
+      ],
+      more: (n) => `... and ${n} more branch(es)`,
+    }
+  );
   console.error(
     `\nEach of these is also carried in twelve other catalogs, translated, re-naturalized on\n` +
       `every English change, and shipped to every visitor. Delete the branch from all 13\n` +

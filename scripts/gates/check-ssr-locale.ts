@@ -34,6 +34,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { GREEN, NC, RED } from '../lib/console.js';
+import { refuseFindings } from '../lib/findings-report.js';
 
 const ROOT = path.resolve(import.meta.dirname, '..', '..');
 const WWW = path.join(ROOT, 'packages/www');
@@ -143,14 +144,15 @@ function main(): void {
     process.exit(1);
   }
   if (findings.length > 0) {
-    console.error(`\n${RED}✗${NC} ${findings.length} server-rendered locale failure(s):\n`);
-    for (const f of findings.slice(0, 20)) console.error(`    ${f}`);
-    if (findings.length > 20) console.error(`    ... and ${findings.length - 20} more`);
-    console.error(
-      '\nAn island that calls useLanguage() renders English on the server, because there'
-    );
-    console.error('is no window. Pass `lang` down from BaseLayout and prefer it over the hook.');
-    process.exit(1);
+    refuseFindings({
+      header: `\n${RED}✗${NC} ${findings.length} server-rendered locale failure(s):\n`,
+      items: findings,
+      limit: 20,
+      remedy: [
+        '\nAn island that calls useLanguage() renders English on the server, because there',
+        'is no window. Pass `lang` down from BaseLayout and prefer it over the hook.',
+      ],
+    });
   }
   console.log(
     `${GREEN}✓${NC} ${checked} probe(s) across ${locales().length - 1} non-English locale(s): all server-render natively.`

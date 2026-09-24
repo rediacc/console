@@ -1,4 +1,5 @@
 #!/usr/bin/env tsx
+import { execFileSync } from 'node:child_process';
 /**
  * A shrink-only baseline's promise is that its entries are STABLE identities for
  * unresolved debt: fixing one shrinks the set, moving unrelated code around it does not.
@@ -41,8 +42,8 @@
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
-import { execFileSync } from 'node:child_process';
 import { globSync } from 'glob';
+import { printTruncated } from '../lib/findings-report.js';
 
 const REPO_ROOT = path.resolve(import.meta.dirname, '..', '..');
 
@@ -210,8 +211,7 @@ function main(): number {
     if (offenders.length > 0) {
       anyOffenders = true;
       console.error(`x ${rel}: ${offenders.length} line-number-shaped key(s):`);
-      for (const o of offenders.slice(0, 10)) console.error(`    ${o}`);
-      if (offenders.length > 10) console.error(`    ... and ${offenders.length - 10} more`);
+      printTruncated(offenders, { limit: 10 });
     }
   }
 

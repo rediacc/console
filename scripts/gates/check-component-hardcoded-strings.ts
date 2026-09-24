@@ -32,6 +32,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { globSync } from 'glob';
+import { printTruncated } from '../lib/findings-report.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const strict = process.argv.includes('--strict');
@@ -417,12 +418,13 @@ function main(): void {
   const label = strict ? '\x1b[31mERROR' : '\x1b[33mWARN';
   for (const [file, issues] of byFile) {
     console.log(`\x1b[33m${file}\x1b[0m`);
-    for (const issue of issues.slice(0, 10)) {
-      console.log(`  ${label}\x1b[0m Line ${issue.line} (${issue.context}): "${issue.text}"`);
-    }
-    if (issues.length > 10) {
-      console.log(`  ... and ${issues.length - 10} more in this file`);
-    }
+    printTruncated(issues, {
+      limit: 10,
+      indent: '  ',
+      format: (issue) => `${label}\x1b[0m Line ${issue.line} (${issue.context}): "${issue.text}"`,
+      more: (n) => `... and ${n} more in this file`,
+      write: (l) => console.log(l),
+    });
     console.log('');
   }
 

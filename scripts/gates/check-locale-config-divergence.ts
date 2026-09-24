@@ -47,6 +47,7 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
 import { isSiteLocale, SITE_LOCALES } from '@rediacc/locales';
+import { printTruncated } from '../lib/findings-report.js';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 
@@ -343,9 +344,11 @@ function main(): void {
   for (const [key, list] of [...byKey].sort((a, b) => b[1].length - a[1].length)) {
     console.error(`  ${key}`);
     console.error(`    English: ${JSON.stringify(list[0].english)}`);
-    for (const f of list.slice(0, 12))
-      console.error(`    ${f.locale}: ${JSON.stringify(f.actual)}`);
-    if (list.length > 12) console.error(`    ... and ${list.length - 12} more locale(s)`);
+    printTruncated(list, {
+      limit: 12,
+      format: (f) => `${f.locale}: ${JSON.stringify(f.actual)}`,
+      more: (n) => `... and ${n} more locale(s)`,
+    });
   }
   console.error(
     '\nThese are not translations. A boolean, a number or a null carries the same meaning in\n' +
