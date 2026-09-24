@@ -1,6 +1,6 @@
 """wl_defersettle: a `- [?]` whose premise the tree already answers is not a decision.
 
-WHY THIS EXISTS (operator, 2026-09-23). Deferrals were being parked on questions the repository had already settled: a "should the operator provide the R2 key" item while the key sat in private/account/.env, and a "one PR or several" item that CLAUDE.md's big-bang packaging rule answers in so many words. Each one sat in every stop's report until its DEFAULT window closed. The design is agent/plans/PLAN-defer-settle-classifier.md.
+WHY THIS EXISTS (operator, 2026-09-23). Deferrals were being parked on questions the repository had already settled: a "should the operator provide the R2 key" item while the key sat in the account's retired local env file, and a "one PR or several" item that CLAUDE.md's big-bang packaging rule answers in so many words. Each one sat in every stop's report until its DEFAULT window closed. The design is agent/plans/PLAN-defer-settle-classifier.md.
 
 WHAT IT IS NOT. `defer_audit` (wl_checks, DEFER_AUDIT_PROMPT) interrogates a deferral's PROSE and is a reasoning-only judge. This module is FACT-GROUNDED: Python computes a closed set of facts and hands them to the model as givens, the same no-tools grounding wl_judge uses for `fixset_files`. The model never investigates.
 
