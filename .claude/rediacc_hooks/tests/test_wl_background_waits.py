@@ -983,3 +983,223 @@ def test_163w_c9_the_ci_waiting_force_must_not_claim_a_reason_the_item_denies():
         if checks.deferral_waits_on_ci(rec) != want:
             bad.append(label)
     assert not bad, "163w-c9: misread WHY(s): %s" % bad
+
+
+# ---- plan stop-hook-overhaul 1.3: every live wait with an automatic liveness answer stands the check-in down ----
+
+MATE_ROSTER = [
+    {"id": "tm1", "type": "teammate", "status": "running", "description": "writer one"},
+    {"id": "tm2", "type": "teammate", "status": "running", "description": "writer two"},
+]
+MARK = "<- POSSIBLY STUCK"
+
+
+def overdue_stop(fix, said: str = SAID_MATES):
+    """Seed the wait clock, backdate it past the 15-minute window, and return the stop that is due.
+
+    The first stop only SEEDS the clock, so asserting silence on it is vacuous; every 1.3 case asserts on the second.
+    """
+    fix.task(7, "in_progress", "waiting on the workers")
+    fix.say(said)
+    fix.run()
+    seed_bgwait(fix)
+    fix.newturn()
+    fix.say(said)
+    return fix.run()
+
+
+def mate_world(fix, ages) -> None:
+    """A two-teammate roster with NO `.output` streams, one transcript per age in minutes, all in THIS session."""
+    fix.brief_now()
+    fix.hand_now()
+    bgout(fix)
+    for n, age in enumerate(ages):
+        mk_mate(fix, wlfix.SID, "mate%d" % n, age)
+    fix.env["CLAUDE_CONFIG_DIR"] = str(fix.base / "claude")
+    fix.bg = json.dumps(MATE_ROSTER)
+
+
+def test_13a_a_fully_fresh_teammate_roster_owes_no_check_in(wl):  # noqa: F811
+    """1.3: stream-less teammates whose transcripts are all still growing have an automatic liveness answer, so the overdue check-in stands down.
+
+    Goes red under the old `_only_waiters` predicate, which fired for any roster that was not wholly confirmed waiters. Case 13b is the paired control: one transcript aged past TEAMMATE_FRESH_MIN and the same fixture fires.
+    """
+    mate_world(wl, [0, 0])
+    got = overdue_stop(wl)
+    assert "PURE BACKGROUND WAIT" not in got.out, (
+        "13a: a roster its fresh transcripts fully cover still got the check-in: %r" % got.out[:400]
+    )
+
+
+def test_13b_control_one_teammate_aged_past_the_fresh_window_fires_and_is_marked(wl):  # noqa: F811
+    """CONTROL for 13a: one transcript aged past TEAMMATE_FRESH_MIN (15) leaves 1 fresh for 2 claimed, so the roster is NOT covered.
+
+    Aging EVERY transcript is not the control: `prune_background` reaps a wholly-stale roster (case 163v), leaving nothing to supervise. The per-row marker is the needle, not a bare "POSSIBLY STUCK": V_BG_REPORT's fixed text names that phrase on every check-in.
+    """
+    mate_world(wl, [0, 20])
+    got = overdue_stop(wl)
+    label = "13b CONTROL: a partly-stale teammate roster must still get the check-in"
+    assert_in(got, "PURE BACKGROUND WAIT", label)
+    assert_in(got, MARK + ": 1 of 2 teammate transcript(s) fresh", label)
+
+
+def test_13c_control_an_unreadable_transcript_store_fires(wl):  # noqa: F811
+    """CONTROL: no projects store at all is "cannot tell", never "all alive", so the check-in fires and says so."""
+    wl.brief_now()
+    wl.hand_now()
+    bgout(wl)
+    (wl.base / "emptyclaude").mkdir(parents=True, exist_ok=True)
+    wl.env["CLAUDE_CONFIG_DIR"] = str(wl.base / "emptyclaude")
+    wl.bg = json.dumps(MATE_ROSTER)
+    got = overdue_stop(wl)
+    label = "13c CONTROL: an unverifiable roster must get the check-in"
+    assert_in(got, "PURE BACKGROUND WAIT", label)
+    assert_in(got, MARK + ": unknown of 2 teammate transcript(s) fresh", label)
+
+
+SLEEP_ARG = "3727272727"
+
+
+def sleeper_row() -> dict:
+    return {
+        "id": "sj1",
+        "type": "shell",
+        "status": "running",
+        "description": "long build",
+        "command": "sleep %s" % SLEEP_ARG,
+    }
+
+
+def test_13d_an_os_confirmed_ordinary_shell_job_owes_no_check_in(wl):  # noqa: F811
+    """1.3: the widening is not waiter-specific. Any shell job the OS CONFIRMS is alive exits into a harness notification, so its liveness is already answered."""
+    wl.brief_now()
+    wl.hand_now()
+    bgout(wl)
+    stream(wl, "sj1")
+    proc = subprocess.Popen(
+        ["sleep", SLEEP_ARG], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+    )
+    wl.env["WORKLIST_HARNESS_PID"] = str(os.getpid())
+    try:
+        liveness = wlfix.import_wl("wl_liveness")
+        verdict = liveness.verify_background([sleeper_row()], ancestors={os.getpid()}).get("sj1")
+        assert verdict == "confirmed", "13d premise: verdict %r, so the case is vacuous" % verdict
+        wl.bg = json.dumps([sleeper_row()])
+        got = overdue_stop(wl, SAID_163)
+        assert "PURE BACKGROUND WAIT" not in got.out, (
+            "13d: a confirmed shell job still got the check-in: %r" % got.out[:400]
+        )
+    finally:
+        proc.kill()
+        proc.wait()
+
+
+def test_13e_control_the_same_shell_job_dead_fires(wl):  # noqa: F811
+    """CONTROL for 13d: the same declared command with NO process behind it is `suspect`, which answers nothing."""
+    wl.brief_now()
+    wl.hand_now()
+    bgout(wl)
+    stream(wl, "sj1")
+    wl.env["WORKLIST_HARNESS_PID"] = str(os.getpid())
+    wl.bg = json.dumps([sleeper_row()])
+    got = overdue_stop(wl, SAID_163)
+    assert_in(got, "PURE BACKGROUND WAIT", "13e CONTROL: a dead shell job must get the check-in")
+
+
+def test_13f_a_confirmed_waiter_beside_a_fresh_teammate_owes_no_check_in(wl):  # noqa: F811
+    """1.3: a mixed roster where every task is answered (an OS-confirmed waiter, a teammate its fresh transcript covers) stands down too.
+
+    The drained-waiter report still keys on `_only_waiters` and is not touched: 163q-c3 pins that a waiter beside a live worker is kept.
+    """
+    wl.brief_now()
+    wl.hand_now()
+    bgout(wl)
+    mk_mate(wl, wlfix.SID, "mate0", 0)
+    wl.env["CLAUDE_CONFIG_DIR"] = str(wl.base / "claude")
+    with live_waiter(wl):
+        assert waiter_verdict("wt1") == "confirmed", "13f premise: waiter not confirmed"
+        wl.bg = json.dumps([waiter_row("wt1"), MATE_ROSTER[0]])
+        got = overdue_stop(wl)
+        assert "PURE BACKGROUND WAIT" not in got.out, (
+            "13f: a fully-answered mixed roster still got the check-in: %r" % got.out[:400]
+        )
+
+
+SUBAGENT_ROSTER = [
+    {
+        "id": "a1111222233334444",
+        "type": "subagent",
+        "status": "running",
+        "description": "writer one",
+        "agent_type": "general-purpose",
+    },
+    {
+        "id": "a5555666677778888",
+        "type": "subagent",
+        "status": "running",
+        "description": "writer two",
+        "agent_type": "Plan",
+    },
+]
+
+
+def subagent_world(fix, ages, linked=None) -> None:
+    """A `type: "subagent"` roster in today's harness shape, one transcript per age in minutes.
+
+    The meta carries NO `taskKind` (0 of 306 live metas did, 2026-09-24), so `live_teammate_transcripts` never counts these. The harness's `tasks/<id>.output` is a SYMLINK to `subagents/agent-<id>.jsonl`, which is the id-to-transcript join the predicate rides; `linked` names which rows get one.
+    """
+    fix.brief_now()
+    fix.hand_now()
+    bgout(fix)
+    root = fix.base / "claude" / "projects" / re.sub(r"[^A-Za-z0-9]", "-", str(fix.proj))
+    folder = root / wlfix.SID / "subagents"
+    folder.mkdir(parents=True, exist_ok=True)
+    for row, age in zip(SUBAGENT_ROSTER, ages, strict=True):
+        tid = row["id"]
+        (folder / ("agent-%s.meta.json" % tid)).write_text(
+            json.dumps(
+                {
+                    "agentType": row["agent_type"],
+                    "description": row["description"],
+                    "spawnDepth": 1,
+                    "requestShape": "background",
+                    "model": "opus",
+                }
+            ),
+            encoding="utf-8",
+        )
+        transcript = folder / ("agent-%s.jsonl" % tid)
+        transcript.write_text(json.dumps({"type": "assistant"}) + "\n", encoding="utf-8")
+        backdate(transcript, age)
+        if linked is None or tid in linked:
+            (fix.base / "bgout" / ("%s.output" % tid)).symlink_to(transcript)
+    fix.env["CLAUDE_CONFIG_DIR"] = str(fix.base / "claude")
+    fix.bg = json.dumps(SUBAGENT_ROSTER)
+
+
+def test_13g_a_subagent_roster_with_fresh_joined_transcripts_owes_no_check_in(wl):  # noqa: F811
+    """1.3, in the shape today's Stop event actually carries: `type: "subagent"` rows, no taskKind. Each id joins to its own transcript through the `.output` symlink, so a fresh stream is an automatic liveness answer."""
+    subagent_world(wl, [0, 1])
+    got = overdue_stop(wl)
+    assert "PURE BACKGROUND WAIT" not in got.out, (
+        "13g: a fully-fresh subagent roster still got the check-in: %r" % got.out[:400]
+    )
+
+
+def test_13h_control_one_subagent_transcript_stale_fires(wl):  # noqa: F811
+    """CONTROL for 13g: one transcript quiet past BG_STALE_MIN (15) and the SAME roster fires, with that row accused."""
+    subagent_world(wl, [0, 20])
+    got = overdue_stop(wl)
+    label = "13h CONTROL: a stale subagent transcript must get the check-in"
+    assert_in(got, "PURE BACKGROUND WAIT", label)
+    assert_in(got, "a5555666677778888 (writer two): output last grew 20m ago", label)
+    assert_in(got, "<- POSSIBLY STUCK, investigate or restart", label)
+
+
+def test_13i_control_a_subagent_with_no_stream_fires(wl):  # noqa: F811
+    """CONTROL for 13g: a subagent whose `.output` join is missing is unverifiable, never live."""
+    subagent_world(wl, [0, 0], linked={"a1111222233334444"})
+    got = overdue_stop(wl)
+    label = "13i CONTROL: a subagent with no stream must get the check-in"
+    assert_in(got, "PURE BACKGROUND WAIT", label)
+    assert_in(got, MARK + ": no transcript stream for this subagent", label)

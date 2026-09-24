@@ -56,13 +56,15 @@ motivating shape is already caught by `want me to`.
 The hook prints `no output stream yet (a teammate agent reports at completion)` at `.claude/hooks/stop/wl_checks.py:3670` and then `V_BG_REPORT` (`.claude/hooks/stop/worklist_messages.py:1489`) orders the session to confirm "whether the stream evidence matches". There is no stream evidence. `bg_output_facts` (`.claude/hooks/stop/wl_liveness.py:206`) documents `age is None` as the
 by-design case.
 
-- [ ] Widen the suppressing predicate at `.claude/hooks/stop/wl_checks.py:3436` from
+- [x] Widen the suppressing predicate at `.claude/hooks/stop/wl_checks.py:3436` from
+    (ticked) 2026-09-24T07:52:02Z by d778be9d: uncommitted: all_waits_live at .claude/hooks/stop/wl_liveness.py:304 (confirmed shell, fresh joined subagent stream, teammate count via live_teammate_transcripts) drives the check-in at .claude/hooks/stop/wl_checks.py:2663; restamp kept on both arms; _only_waiters unchanged for the drained report
       `_only_waiters` to every live task with an automatic liveness answer, using the
       teammate count from `.claude/hooks/stop/wl_liveness.py:318`. Keep the restamp on both
       arms -- `.claude/hooks/stop/wl_checks.py:3426` explains why.
 - [x] Strip the "whether the stream evidence matches" clause for stream-less rows.
     (ticked) 2026-09-23T16:40:56Z by d778be9d: V_BG_REPORT wording fixed in commit c8e36d98a.
-- [ ] CONTROL in `.claude/hooks/stop/worklist-cases/14-background-waits.sh`: a roster of
+- [x] CONTROL in `.claude/hooks/stop/worklist-cases/14-background-waits.sh`: a roster of
+    (ticked) 2026-09-24T07:52:02Z by d778be9d: uncommitted: 14-background-waits.sh retired, control is test_13a..13i at .claude/rediacc_hooks/tests/test_wl_background_waits.py:1022-1199, 9 passed; planted defects: predicate reverted to _only_waiters fails 13a/13d/13f/13g, always-live fails 13b/13c/13e/13h/13i, subagent arm removed fails 13g
       fresh-transcript teammates with no `.output` gives NO check-in; the same roster aged
       past `TEAMMATE_FRESH_MIN` DOES fire and says POSSIBLY STUCK.
 

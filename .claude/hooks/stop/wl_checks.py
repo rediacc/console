@@ -2609,6 +2609,8 @@ def run_stop(event, event_ok, worklist, hook_file):
             _waiters_confirmed = []
     # EVERY live task must be a confirmed waiter, not merely one of them. A session waiting on a real long job AND holding a waiter still owes the check-in for the real job; relaxing on "any waiter present" would let one waiter silence supervision of everything else running beside it.
     _only_waiters = bool(_waiters_confirmed) and len(_waiters_confirmed) == len(live_bg)
+    # The fresh-teammate count behind the widened predicate; also read by the check-in's row render, so it lives outside the due arm.
+    _mates_fresh = None
     if live_bg and not open_items:
         _expired_any = any(
             C.DEFAULT_TOKEN.search(r["line"])
@@ -2645,7 +2647,18 @@ def run_stop(event, event_ok, worklist, hook_file):
                 # door.
                 _bgw["at"] = C.stamp_now()
                 state_doc["bgwait"] = _bgw
-                if not _only_waiters or _bg_actionable:
+                # Plan stop-hook-overhaul 1.3: widened from `_only_waiters` to every task with a POSITIVE automatic liveness answer (an OS-confirmed shell process, a subagent whose joined transcript stream is fresh, or a teammate roster its fresh transcripts fully cover). Kept as ONE named predicate so a further liveness term is a one-term add. A dead, suspect or unverifiable worker still fires. `_only_waiters` itself is unchanged: the drained-waiter report below keys on it.
+                if any(b.get("type") == "teammate" for b in live_bg):
+                    with contextlib.suppress(Exception):
+                        _mates_fresh = wl_liveness.live_teammate_transcripts(
+                            event.get("cwd"), session_id=session_id
+                        )
+                _all_live = _only_waiters
+                with contextlib.suppress(Exception):
+                    _all_live = _only_waiters or wl_liveness.all_waits_live(
+                        live_bg, bg_verdicts, _mates_fresh, bg_facts
+                    )
+                if not _all_live or _bg_actionable:
                     bgwait_due = True
             bgwait_next = C.stamp_ahead(wl_liveness.BG_REPORT_MIN)
     if not _in_pure_wait:
@@ -2790,11 +2803,24 @@ def run_stop(event, event_ok, worklist, hook_file):
         # A silent stream alone cannot distinguish "stuck" from "a poll loop that prints only at the end", so OS-verify before accusing: a worker whose process is confirmed alive is reported in those words. Fired live 2026-07-31 on a healthy `until ... completed` CI watch, 29 minutes silent by design.
         _bg_verd = bg_verdicts
         _rows = []
+        _mate_ids = {str(b.get("id") or "") for b in live_bg if b.get("type") == "teammate"}
+        _subagent_ids = {str(b.get("id") or "") for b in live_bg if b.get("type") == "subagent"}
+        # Plan 1.3: a stream-less teammate row is accused only when the fresh-transcript count cannot cover the claimed roster (or cannot be read). No join names WHICH teammate is dead, so every teammate row carries the count.
+        _mates_short = bool(_mate_ids) and (_mates_fresh is None or _mates_fresh < len(_mate_ids))
         for tid, desc, age, size, stale in bg_facts:
             if age is None:
+                _mate_suffix = ""
+                if tid in _mate_ids and _mates_short:
+                    _mate_suffix = "  <- POSSIBLY STUCK: %s of %d teammate transcript(s) fresh" % (
+                        "unknown" if _mates_fresh is None else str(_mates_fresh),
+                        len(_mate_ids),
+                    )
+                elif tid in _subagent_ids:
+                    # A subagent's `.output` is a symlink to its own transcript, so a missing stream is not "reports at completion": the join failed or the transcript is gone.
+                    _mate_suffix = "  <- POSSIBLY STUCK: no transcript stream for this subagent"
                 _rows.append(
-                    "    %s (%s): no output stream yet (a teammate agent reports at completion)"
-                    % (tid, desc)
+                    "    %s (%s): no output stream yet (a teammate agent reports at completion)%s"
+                    % (tid, desc, _mate_suffix)
                 )
             else:
                 if stale and _bg_verd.get(tid) == "confirmed":

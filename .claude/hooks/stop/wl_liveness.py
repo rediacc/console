@@ -301,6 +301,35 @@ def live_teammate_transcripts(cwd, fresh_min=None, session_id=""):
     return fresh
 
 
+def all_waits_live(live_bg, verdicts, fresh_mates, facts=None):
+    """True only when EVERY running background task carries a POSITIVE automatic liveness answer.
+
+    This is the predicate that lets the pure-wait check-in stand down (plan stop-hook-overhaul section 1.3). The check-in exists to learn whether a worker is still alive; where the hook can already answer that itself, a demand to confirm it buys nothing but ritual. One answer per task shape:
+
+    - `shell`: `verify_background` CONFIRMED the OS process (a waiter or any other job: its exit is the harness notification either way). `suspect` and `unverifiable` answer nothing.
+    - `subagent`: the harness's `tasks/<id>.output` is a symlink to `subagents/agent-<id>.jsonl`, so the task id JOINS to its own transcript and `bg_output_facts` (`facts`) already carries its age. Answered when that stream exists and is not stale (BG_STALE_MIN). These metas carry no `taskKind`, so `live_teammate_transcripts` never counts them; measured 2026-09-24, 0 of 306 metas in a live session did.
+    - `teammate`: counted, because a teammate has no such join (see `live_teammate_transcripts`). Covered only when the fresh-transcript count reaches the claimed count; `None` (store unreadable) is "cannot tell".
+
+    Any other task type has no automatic answer. An empty roster is not a live wait.
+    """
+    bg = [b for b in live_bg or [] if isinstance(b, dict)]
+    if not bg:
+        return False
+    streams = {str(tid): (age, stale) for tid, _desc, age, _size, stale in facts or []}
+    mates = 0
+    for b in bg:
+        kind, tid = b.get("type"), str(b.get("id") or "")
+        if kind == "teammate":
+            mates += 1
+        elif kind == "subagent":
+            age, stale = streams.get(tid, (None, True))
+            if age is None or stale:
+                return False
+        elif kind != "shell" or (verdicts or {}).get(tid) != "confirmed":
+            return False
+    return mates == 0 or (fresh_mates is not None and fresh_mates >= mates)
+
+
 # ---- teammate idle detection ------------------------------------------------
 
 # Stop reasons that mean the model ENDED ITS TURN rather than paused inside one. `tool_use` is deliberately absent: that is the mid-turn reason.
@@ -650,6 +679,15 @@ def ladder(fold, session_id, event, state_doc):
     fired = state_doc.setdefault("ladder", {})
     changed = False
 
+    # PARALLEL-WRITER ROSTER: a lease on a KNOWN SUBAGENT (a meta exists in this session) belongs to wl_roster, whose 20-minute status ping and lineage-aware dead check replace this ladder for it. Nesting the two was rejected in the plan: the same item would be reported at 45, blocked at 90 and at 120 on top of the ping, and the `gone` branch below would keep accusing a parent whose
+    # child is still working (plan F4). Shell workers, teammates leased by name and harness tasks stay here, because the roster cannot read their clocks. A roster that cannot be imported or cannot see the store skips nothing.
+    try:
+        import wl_roster  # noqa: PLC0415 -- wl_roster imports this module lazily too
+
+        roster_ids = wl_roster.known_subagent_ids(event.get("cwd") or "", session_id)
+    except Exception:  # noqa: BLE001 -- a missing roster must leave the ladder exactly as it was
+        roster_ids = set()
+
     subjects = []  # (key, label, age_min, stampkey, gone_worker)
     for rec in fold.items:
         if rec["state"] != ">" or not C.owned_by_me(rec["owner"], session_id):
@@ -658,6 +696,8 @@ def ladder(fold, session_id, event, state_doc):
             continue  # expired leases are open items already
         wm = C.WORKER.search(rec["line"])
         wid = rec.get("worker") or (wm.group(1) if wm else "")
+        if wid and wid in roster_ids:
+            continue
         # GONE means DROPPED, not merely unconfirmable. A worker only counts as gone if the harness could see it when the lease was taken and cannot see it now. An Agent leased by NAME never appears in a background-task list at all, and reporting that as "finished or stopped" sent this session chasing a worker that was actively writing files. Unverifiable workers fall through to
         # the age ladder, which catches a real stall without inventing a death.
         gone = bool(wid) and wid not in now_bg and bool(rec.get("worker_verified"))
