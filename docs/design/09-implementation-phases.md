@@ -158,7 +158,7 @@ Two gates now exist that did not: the per-leaf plane rule (`check-command-planes
 #### The original plan (kept for the record)
 
 Implement `06-cli-reshape.md`; **`spec/03-cli-contracts.md` §6 is the contract** (the leaf count is retired: see the R2 correction above and spec/03 §0). Re-annotate gating metadata. Regenerate renet-contract types, cli-docs, the skill reference, and the validate-cli-examples ground truth; update every documented `rdc` snippet (CLAUDE.md, docs, skills) in the same phase. CLI i18n
-English strings plus 12-locale naturalization (via the delta pipeline; kimi is the pipeline default, Sonnet only where kimi reads awkward).
+English strings plus 12-locale naturalization (via the delta pipeline; haiku is the pipeline default, Sonnet only where haiku reads awkward).
 
 #### ★ TASK ZERO, before a single command is renamed: the ref concept
 

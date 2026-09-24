@@ -2,13 +2,13 @@
 # Run a narration command inside the GPU image.
 #
 # THE SHARED GPU LEASE IS THE WHOLE POINT OF THIS WRAPPER. gpu_lock.py defaults its lease
-# to /tmp/rediacc-gpu.lock, and /tmp is PER CONTAINER, so without the bind mount below a
+# to /var/tmp/rediacc-gpu/rediacc-gpu.lock (gpu_lock.py:45), and a container's filesystem is
+# its own, so without the bind mount below a
 # containerised narration job and a host one each hold their own lease, both load VoxCPM,
 # and the card OOMs. Two VoxCPM jobs do not degrade, they fail.
 #
-# MEDIA_GPU_LOCK_FILE is documented in gpu_lock.py:20 as existing "for tests". Using it in
-# production is a DELIBERATE widening of that contract, made here because the alternative
-# is a lease that silently does not hold.
+# MEDIA_GPU_LOCK_FILE is the lease's one knob (gpu_lock.py:20), and this wrapper is its
+# production user: it points the container at the bind-mounted host lock.
 #
 # THE WORKSPACE IS MOUNTED AT ITS IDENTICAL HOST PATH, NOT AT /work. The callers
 # (step4000_voiceover.py, tts_bridge.py) pass ABSOLUTE host paths for the script, the

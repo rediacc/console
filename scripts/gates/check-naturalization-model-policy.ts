@@ -8,9 +8,10 @@
  *
  *   CLAUDE.md                                  "Use --model haiku"  (policy)
  *   private/growth .../ledger.py               default_model: haiku (metadata)
- *   private/growth .../registry.py             model: "kimi"        (what actually runs)
+ *   private/growth .../registry.py             model: "haiku"       (what actually runs)
  *
- * The third one drifted during a later refactor and nothing noticed, because the only
+ * The third one drifted to "kimi" during a later refactor and nothing noticed, until the
+ * 2026-09-24 fix put it back to haiku, because the only
  * artifact CI can see is the ledger this gate reads. On 2026-08-20 that drift surfaced
  * the hard way: the configured provider returned HTTP 402 mid-sweep, and the work was
  * being billed to a backend the policy doc does not mention at all.

@@ -16,7 +16,7 @@
 # measured identical to the host at 11243 of 12287 MiB.
 #
 # THE GPU LEASE DOES NOT CROSS THIS BOUNDARY BY DEFAULT, AND THAT IS A CORRECTNESS TRAP.
-# tutorial_tts/gpu_lock.py:33 defaults to /tmp/rediacc-gpu.lock and /tmp is per-container,
+# tutorial_tts/gpu_lock.py:45 defaults to /var/tmp/rediacc-gpu/rediacc-gpu.lock, inside the container's own filesystem,
 # so a container and the host, or two containers, each take their OWN lease and both load
 # VoxCPM. Two VoxCPM jobs do not degrade, they OOM. The runner MUST bind-mount a shared
 # lock path and set MEDIA_GPU_LOCK_FILE to it. See .ci/media/tools/run-in-tts.sh.
