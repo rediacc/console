@@ -41,7 +41,10 @@ const {
   mockAuthorizeSubscriptionViaDeviceCode: vi.fn(),
   mockGetSubscriptionTokenState: vi.fn(),
   mockBuildLocalVault: vi.fn((_opts: BuildLocalVaultOptions) => '{"vault":"ok"}'),
-  mockAcquireRemoteRenet: vi.fn(() => ({ remotePath: '/usr/bin/renet', uploaded: false })),
+  mockAcquireRemoteRenet: vi.fn((_access: string) => ({
+    remotePath: '/usr/bin/renet',
+    uploaded: false,
+  })),
   mockReadSSHKey: vi.fn(() => 'PRIVATE_KEY'),
   mockReadOptionalSSHKey: vi.fn(() => 'PUBLIC_KEY'),
   mockVerifyMachineSetup: vi.fn(),
@@ -1153,7 +1156,7 @@ describe('localExecutorService create/fork licensing flow', () => {
         machineName: 'hostinger',
       });
       expect(mockAcquireRemoteRenet).toHaveBeenCalled();
-      expect((mockAcquireRemoteRenet.mock.calls[0] as unknown[])[0]).toBe('read-only');
+      expect(mockAcquireRemoteRenet.mock.calls[0][0]).toBe('read-only');
     });
 
     it('a mutating function provisions renet', async () => {
@@ -1163,7 +1166,7 @@ describe('localExecutorService create/fork licensing flow', () => {
         machineName: 'hostinger',
       });
       expect(mockAcquireRemoteRenet).toHaveBeenCalled();
-      expect((mockAcquireRemoteRenet.mock.calls[0] as unknown[])[0]).toBe('provision');
+      expect(mockAcquireRemoteRenet.mock.calls[0][0]).toBe('provision');
     });
   });
 });
