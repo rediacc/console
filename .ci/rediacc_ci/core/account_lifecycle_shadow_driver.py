@@ -62,9 +62,13 @@ import signal
 import subprocess
 import sys
 import tempfile
+from typing import TYPE_CHECKING
 
 from rediacc_ci.core import account_lifecycle as lifecycle
 from rediacc_ci.core.stubfarm import Farm
+
+if TYPE_CHECKING:  # annotation-only import
+    from collections.abc import Mapping
 
 EXIT_CANNOT_RUN = 77
 BASE_NAME = "rediacc-account-lifecycle"
@@ -107,7 +111,7 @@ class Case:
     verb: str
     args: list[str] = dataclasses.field(default_factory=list)
     rows: list[dict] = dataclasses.field(default_factory=list)
-    env: dict[str, str | None] = dataclasses.field(default_factory=dict)
+    env: Mapping[str, str | None] = dataclasses.field(default_factory=dict)
     setup: tuple[str, ...] = ()
     hidden: tuple[str, ...] = ()
     unstub: tuple[str, ...] = ()

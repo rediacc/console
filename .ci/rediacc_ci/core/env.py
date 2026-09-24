@@ -97,6 +97,9 @@ import shlex
 import sys
 from typing import TYPE_CHECKING
 
+if TYPE_CHECKING:  # annotation-only import
+    from collections.abc import MutableMapping
+
 if TYPE_CHECKING:  # `pathlib` is reached only by the PathLike annotations below
     import pathlib
 
@@ -201,7 +204,7 @@ def overridden(
 
 def apply(
     path: pathlib.Path | str,
-    environ: dict[str, str] | None = None,
+    environ: MutableMapping[str, str] | None = None,
     *,
     names: list[str] | None = None,
     missing_ok: bool = True,

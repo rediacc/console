@@ -39,6 +39,7 @@ import re
 import subprocess
 import tempfile
 import time
+from typing import Any
 
 import wl_core as C
 
@@ -183,7 +184,7 @@ def bg_output_facts(cwd, session_id, live_bg):
             os.path.join(tempfile.gettempdir(), munged, *tails),
         ]
         base = next((c for c in candidates if os.path.isdir(c)), candidates[0])
-    rows = []
+    rows: list[tuple[Any, ...]] = []
     for b in live_bg or []:
         tid = str(b.get("id") or "?")
         desc = (b.get("description") or b.get("command") or "")[:70]

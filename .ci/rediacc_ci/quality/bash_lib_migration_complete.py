@@ -14,12 +14,15 @@ Exit 0 clean, 1 on findings, 2 when the gate's own controls fail (controls_first
 from __future__ import annotations
 
 import json
-import pathlib
 import re
 import sys
+from typing import TYPE_CHECKING
 
 from rediacc_ci import paths
 from rediacc_ci.controls import controls_first
+
+if TYPE_CHECKING:  # annotation-only import
+    import pathlib
 
 LIB_DIR = ".ci/lib"
 CORE_DIR = ".ci/rediacc_ci/core"
@@ -38,8 +41,8 @@ ALIASES: dict[str, str] = {
     "account_spawn": "spawn_background",
 }
 
-_BASH_FN = re.compile(r"^([A-Za-z_][A-Za-z0-9_]*)\s*\(\)", re.M)
-_PY_DEF = re.compile(r"^def ([A-Za-z_][A-Za-z0-9_]*)", re.M)
+_BASH_FN = re.compile(r"^([A-Za-z_][A-Za-z0-9_]*)\s*\(\)", re.MULTILINE)
+_PY_DEF = re.compile(r"^def ([A-Za-z_][A-Za-z0-9_]*)", re.MULTILINE)
 
 
 def _prefix(lib: str) -> str:
@@ -64,9 +67,11 @@ def unported(bash_text: str, py_texts: list[str], lib: str) -> list[str]:
 def findings(root: pathlib.Path) -> list[str]:
     out: list[str] = []
     baseline = json.loads((root / BASELINE).read_text(encoding="utf-8"))
-    for sh in sorted(p.name for p in (root / LIB_DIR).glob("*.sh")):
-        if sh not in LIBS:
-            out.append("%s/%s is not in LIBS: name its Python modules, or port and delete it" % (LIB_DIR, sh))
+    out.extend(
+        "%s/%s is not in LIBS: name its Python modules, or port and delete it" % (LIB_DIR, sh)
+        for sh in sorted(p.name for p in (root / LIB_DIR).glob("*.sh"))
+        if sh not in LIBS
+    )
     for lib, mods in LIBS.items():
         sh_path = root / LIB_DIR / lib
         if not sh_path.exists():
@@ -74,15 +79,23 @@ def findings(root: pathlib.Path) -> list[str]:
                 out.append("%s: the library is gone; drop its baseline entry" % lib)
             continue
         bash_text = sh_path.read_text(encoding="utf-8")
-        py_texts = [(root / CORE_DIR / m).read_text(encoding="utf-8") for m in mods if (root / CORE_DIR / m).exists()]
+        py_texts = [
+            (root / CORE_DIR / m).read_text(encoding="utf-8")
+            for m in mods
+            if (root / CORE_DIR / m).exists()
+        ]
         gaps = set(unported(bash_text, py_texts, lib))
         known = set(baseline.get(lib, []))
         present = set(_BASH_FN.findall(bash_text))
-        for fn in sorted(gaps - known):
-            out.append("%s: %s() has no Python twin in %s (NEW unported function)" % (lib, fn, ", ".join(mods)))
+        out.extend(
+            "%s: %s() has no Python twin in %s (NEW unported function)" % (lib, fn, ", ".join(mods))
+            for fn in sorted(gaps - known)
+        )
         for fn in sorted(known - gaps):
             why = "now has a Python twin" if fn in present else "no longer exists"
-            out.append("%s: baseline entry %s %s; remove it (the baseline only shrinks)" % (lib, fn, why))
+            out.append(
+                "%s: baseline entry %s %s; remove it (the baseline only shrinks)" % (lib, fn, why)
+            )
     return out
 
 
@@ -93,8 +106,12 @@ def selftest() -> bool:
     if unported(bash, ["def a():\n    pass\ndef b():\n    pass\n"], "account.sh"):
         print("\u2717 control: a fully ported library read as having gaps", file=sys.stderr)
         failed = True
-    if unported(bash + "account_new() {\n:\n}\n", ["def a():\n    pass\ndef b():\n    pass\n"], "account.sh") != ["account_new"]:
-        print("\u2717 control: a NEW bash function without a twin was not reported", file=sys.stderr)
+    if unported(
+        bash + "account_new() {\n:\n}\n", ["def a():\n    pass\ndef b():\n    pass\n"], "account.sh"
+    ) != ["account_new"]:
+        print(
+            "\u2717 control: a NEW bash function without a twin was not reported", file=sys.stderr
+        )
         failed = True
     if unported(bash, ["def a():\n    pass\n"], "account.sh") != ["account_b"]:
         print("\u2717 control: a removed Python def was not reported", file=sys.stderr)

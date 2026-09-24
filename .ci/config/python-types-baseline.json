@@ -3131,13 +3131,6 @@
       "message": "Unsupported right operand type for in (\"object\")"
     },
     {
-      "id": "0927a10f98edfff2",
-      "file": ".claude/hooks/stop/wl_liveness.py",
-      "code": "arg-type",
-      "count": 1,
-      "message": "Argument 1 to \"append\" of \"list\" has incompatible type \"tuple[str, Any | str, None, int, bool]\"; expected \"tuple[str, Any | str, int, int, bool]\""
-    },
-    {
       "id": "87afb6fa22721019",
       "file": ".claude/hooks/stop/wl_liveness.py",
       "code": "assignment",

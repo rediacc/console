@@ -402,17 +402,18 @@ def workflow_facts(fix, agent_age_min: float | None):
 def test_r9_a_running_workflow_is_judged_by_its_agents_transcripts(wl):  # noqa: F811
     """2026-09-24: a workflow's own .output stays empty until it returns, so every live workflow read POSSIBLY STUCK. Its agents' transcripts are the stream."""
     tid, _desc, age, size, stale = workflow_facts(wl, 1)
-    assert tid == "wtest0001" and age is not None and age <= 2 and size > 0 and stale is False, (
-        age,
-        size,
-        stale,
-    )
+    assert tid == "wtest0001", tid
+    assert age is not None, (age, size, stale)
+    assert age <= 2, (age, size, stale)
+    assert size > 0, (age, size, stale)
+    assert stale is False, (age, size, stale)
 
 
 def test_r9b_a_workflow_whose_agents_went_quiet_is_stale(wl):  # noqa: F811
     """The control: the same run with its only transcript 30 minutes old must still read stale, so r9 cannot pass vacuously."""
     _tid, _desc, age, _size, stale = workflow_facts(wl, 30)
-    assert stale is True and age >= 29, (age, stale)
+    assert stale is True, (age, stale)
+    assert age >= 29, (age, stale)
 
 
 def test_r4_five_leased_writers_exceed_the_cap_and_the_newest_is_the_excess(wl):  # noqa: F811

@@ -252,10 +252,11 @@ def spawn_background(
     _flush()
     handle = open(log_path, "wb") if log_path else None  # noqa: SIM115 -- handed to the child and closed below
     try:
-        if cwd is not None and local_common.cd_error(cwd) is not None:
+        cd_err = local_common.cd_error(cwd) if cwd is not None else None
+        if cd_err is not None:
             # The subshell's `cd` fails: its diagnostic lands in the log, and the job ends with status 1.
             if handle is not None:
-                handle.write((local_common.cd_error(cwd) + "\n").encode())
+                handle.write((cd_err + "\n").encode())
             proc = subprocess.Popen(
                 ["false"], stdout=handle, stderr=subprocess.STDOUT, process_group=0
             )
