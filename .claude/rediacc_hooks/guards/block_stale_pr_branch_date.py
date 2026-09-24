@@ -43,6 +43,7 @@ import pathlib
 from rediacc_hooks import hookio, shellscan
 
 CHAIN = "pre-bash"
+PREFIX_HATCH = r"(^|[;&|(][ \t]*)PR_BRANCH_DATE_OK=1[ \t]+([A-Za-z_][A-Za-z0-9_]*=[^ \t]*[ \t]+)*gh[ \t]+pr[ \t]+create"
 TWIN = "pre-bash/block-stale-pr-branch-date.sh"
 ORDER = 24
 
@@ -100,6 +101,9 @@ def run(ev):
         return hookio.ALLOW
 
     if ev.env("PR_BRANCH_DATE_OK") != "":
+        return hookio.ALLOW
+    # THE HATCH AS A COMMAND PREFIX TOO. The advice below says "re-run with PR_BRANCH_DATE_OK=1", and a hook only sees its OWN environment, so the prefix form an agent's Bash call can actually write was never read: the advice was unrunnable (2026-09-24, a multi-day wave's submodule PRs on 0923-1). Accepted only immediately before `gh pr create` in the raw command, where it is an assignment, not prose.
+    if hookio.grep_q(PREFIX_HATCH, cmd):
         return hookio.ALLOW
 
     # Fall back to $PWD rather than bailing: a hook already runs with the project as its cwd, and bailing on a missing .cwd would be a FAIL-OPEN -- the payload that omits it is exactly the one a bypass would use.

@@ -36,6 +36,8 @@ SCAN=$(hook_scan_target "$CMD")
 hook_gh_pr_at_command_pos "$SCAN" create || exit 0
 
 [[ -n "${PR_BRANCH_DATE_OK:-}" ]] && exit 0
+# The same hatch written as a command prefix, which is the only form an agent's Bash call can pass: the hook never sees the caller's environment.
+printf '%s\n' "$CMD" | grep -qE '(^|[;&|(][ \t]*)PR_BRANCH_DATE_OK=1[ \t]+([A-Za-z_][A-Za-z0-9_]*=[^ \t]*[ \t]+)*gh[ \t]+pr[ \t]+create' && exit 0
 
 # Fall back to $PWD rather than bailing: a hook already runs with the project
 # as its cwd, and bailing on a missing .cwd would be a FAIL-OPEN -- the payload

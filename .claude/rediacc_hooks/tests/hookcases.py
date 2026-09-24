@@ -997,6 +997,17 @@ STATIC: list[Case] = [
         bash_json("sh -c 'gh pr create --draft --head 0825-2 -t x'"),
         "stale-pr-branch: sh -c wrapper bypass blocked",
     ),
+    # THE HATCH AS A COMMAND PREFIX, the only form an agent's Bash call can pass: the hook reads its own environment, so a prefix was invisible and the guard's own advice was unrunnable (2026-09-24).
+    case(
+        "check 0 guards/block_stale_pr_branch_date.py",
+        bash_json("PR_BRANCH_DATE_OK=1 gh pr create --head 0825-2 -t x"),
+        "stale-pr-branch: the documented hatch works as a command prefix",
+    ),
+    case(
+        "check 2 guards/block_stale_pr_branch_date.py",
+        bash_json('echo "PR_BRANCH_DATE_OK=1 gh pr create" && gh pr create --head 0825-2 -t x'),
+        "stale-pr-branch CONTROL: the hatch quoted as prose opens nothing",
+    ),
     case(
         "check 2 guards/block_nondraft_pr_create.py",
         bash_json("cd private/renet && gh pr create --draft --title x"),
