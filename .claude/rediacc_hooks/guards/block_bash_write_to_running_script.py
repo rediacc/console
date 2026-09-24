@@ -119,8 +119,17 @@ PY_HEREDOC = r"write_text|open\(|<<[" + _S + r"]*.?(PY|EOPY|PYTHON)"
 # or it is a syntax error). Requiring a preceding space keeps every documented
 # true positive (all authored `NAME = value` in this repo) while dropping the
 # embedded-bash-as-data shape. `open(`/`Path(` are untouched -- neither of those idioms exists as bash syntax, so they carry no equivalent ambiguity.
+# `p = "x.txt"` AND `p="x.txt"`: the spaced form alone missed the compact assignment every short heredoc uses, so its target read as unidentifiable and the broad scan blocked a payload that only MENTIONED a running script (./rdc.sh, 2026-09-24). The leading `[^=!<>]` keeps `==`, `!=`, `<=`, `>=` out, and it stays plain ERE so the bash oracle can carry the identical pattern.
 ASSIGN_TARGET = (
-    r"([" + _S + r"]=[" + _S + r"]|open\(|Path\()[" + _S + r"]*[\"'][^\"']+\.[A-Za-z0-9]+"
+    r"([^=!<>"
+    + _S
+    + r"]["
+    + _S
+    + r"]*=["
+    + _S
+    + r"]*|open\(|Path\()["
+    + _S
+    + r"]*[\"'][^\"']+\.[A-Za-z0-9]+"
 )
 
 # Targets come from TWO places, and looking in only one of them was the bug.

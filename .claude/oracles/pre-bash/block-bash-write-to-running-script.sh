@@ -119,7 +119,7 @@ if printf '%s' "$CMD" | grep -qE 'write_text|open\(|<<[[:space:]]*.?(PY|EOPY|PYT
     ANYTARGET=$(
         {
             printf '%s' "$CMD" |
-                grep -oE '([[:space:]]=[[:space:]]|open\(|Path\()[[:space:]]*["'"'"'][^"'"'"']+\.[A-Za-z0-9]+' |
+                grep -oE '([^=!<>[:space:]][[:space:]]*=[[:space:]]*|open\(|Path\()[[:space:]]*["'"'"'][^"'"'"']+\.[A-Za-z0-9]+' |
                 grep -oE '[A-Za-z0-9_.$/-]+\.[A-Za-z0-9]+$'
             printf '%s' "$CMD" |
                 grep -oE '(^|[^->])>>?[[:space:]]*"?[^|&;<[:space:]"]+\.[A-Za-z0-9]+' |

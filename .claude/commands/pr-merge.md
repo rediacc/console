@@ -20,6 +20,8 @@ allowed-tools: Bash(git branch:*), Bash(git status:*), Bash(git submodule status
 ## Task: land the stacked PRs for branch `$ARGUMENTS`
 
 Merge the current branch's coordinated PRs (parent repo `rediacc/console` + any submodule PRs on the **same branch name**) and end on a clean local `main`. If `$ARGUMENTS` is empty, use the current branch. **This is the release path: a merge to `console/main` auto-triggers the edge deploy (`cd-v2.yml`) UNLESS the PR carries the `bump-none` label, in which case the merge is
+
+**A submodule PR's branch is named EXACTLY like the console branch.** The `Submodule Branches` gate and `/pr-merge` both match submodule PRs by that name, so a submodule change riding an older branch (a `0914-1` PR under a `0923-1` console branch) can never pass either. Open each submodule PR on the console branch name FROM THE START. If one already exists on a differently named branch, push the same head to a branch named like the console branch, open a NEW PR from it (linking the old one), and close the old PR with a pointer to the new one. Do NOT use GitHub's branch-rename API for this: it retargets PRs that use the branch as their BASE, and CLOSES the PR whose HEAD it is (measured 2026-09-24: renaming account and renet `0914-1` to `0923-1` closed #87 and #111, `head_ref_deleted`). Operator ruling 2026-09-24, after PR #590's gate refused account#87 and renet#111 on `0914-1`.
 deliberately release-free and steps 5 and 6 shrink to almost nothing. Only run when the user has asked to land the PRs.**
 
 Submodule map (path → GitHub repo): `private/renet` → `rediacc/renet`, `private/account` → `rediacc/account`, `private/elite` → `rediacc/elite`, `private/homebrew-tap` → `rediacc/homebrew-tap`.

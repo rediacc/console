@@ -12,6 +12,8 @@
  * Usage:
  *   npx tsx packages/cli/scripts/generate-skill-reference.ts > reference.md
  */
+import { writeFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import type { Command } from 'commander';
 import { cli } from '../src/cli.js';
 import { type CommandMeta, getCommandMeta } from '../src/config/command-metadata.js';
@@ -189,4 +191,14 @@ function generateReferenceMarkdown(commands: CommandCapability[]): string {
   return lines.join('\n');
 }
 
-process.stdout.write(generateReferenceMarkdown(walkCommands(cli)));
+// STDOUT BY DEFAULT, because rdc.sh captures it into a temp file and only swaps it in when it looks right. `--write` is for a person running `npm run generate:skill-reference`, which used to print the reference and leave .claude/skills/rdc/reference.md untouched.
+const markdown = generateReferenceMarkdown(walkCommands(cli));
+if (process.argv.includes('--write')) {
+  const target = fileURLToPath(
+    new URL('../../../.claude/skills/rdc/reference.md', import.meta.url)
+  );
+  writeFileSync(target, markdown);
+  process.stderr.write(`wrote ${target}\n`);
+} else {
+  process.stdout.write(markdown);
+}

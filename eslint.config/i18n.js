@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url';
 // --------------------------------------------------------------------------- i18n ENFORCEMENT: SOURCE RULES, LOCALE JSON, AND THE GENERATOR
 //
 // The i18nLocaleConfigs() generator and everything downstream of it: the CLI and account-web source-side enforcement, the three per-package locale trees it expands into nine blocks, the JSON rule disables that keep JS/TS rules off locale files, the account email-copy restriction, and the generated-file exemption that sits between them in the original.
@@ -13,6 +14,9 @@ import path from 'node:path';
 import json from '@eslint/json';
 import { EXEMPT_COMMAND_PREFIXES } from '../eslint-rules/lib/cli-exempt-lists.js';
 import { i18nJsonPlugin, i18nSourcePlugin } from '../eslint-rules/i18n/index.js';
+
+// ABSOLUTE, anchored at this file: a repo-relative path resolved against the process cwd, so `npm run lint` from packages/cli looked in packages/cli/packages/cli/... and crashed.
+const CLI_EN_LOCALE_DIR = fileURLToPath(new URL('../packages/cli/src/i18n/locales/en', import.meta.url));
 
 // The single-file config sat at the repository root, so `import.meta.dirname` meant the root and the two values below were absolute against it. From inside
 // eslint.config/ that same expression means one directory DEEPER, which would
@@ -164,17 +168,17 @@ export default [
       'custom/require-command-summary': 'error',
       // Enforce translation keys exist in locale files
       'custom/require-translation': ['error', {
-        localeDir: 'packages/cli/src/i18n/locales/en',
+        localeDir: CLI_EN_LOCALE_DIR,
       }],
       // Validate string literals passed to indirect translation-key helpers (e.g., errorResult('commands.update.errors.lockFailed')) against the locale dir. Prevents raw-key leaks where the string bypasses t() and is later interpolated into a translated template.
       'custom/require-translation-key-arg': ['error', {
-        localeDir: 'packages/cli/src/i18n/locales/en',
+        localeDir: CLI_EN_LOCALE_DIR,
         functions: [
           { name: 'errorResult', argIndex: 0 },
         ],
       }],
       'i18n-source/interpolation-match': ['error', {
-        localeDir: 'packages/cli/src/i18n/locales/en',
+        localeDir: CLI_EN_LOCALE_DIR,
       }],
       // Ban positional CLI syntax in help text / error strings / JSX. Mirrors custom/i18n/no-positional-cli-syntax but for source strings.
       'custom/no-positional-cli-syntax-source': 'error',
