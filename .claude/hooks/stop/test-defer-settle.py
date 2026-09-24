@@ -20,9 +20,9 @@ import types
 HERE = pathlib.Path(__file__).resolve().parent
 # ONE PRIVATE TMPDIR, removed at exit whatever happens: run_judge creates `$TMPDIR/claude-worklist/.judge`, and test_hooks_delegates fails any standalone suite that leaves an entry behind.
 _TMP = tempfile.mkdtemp(prefix="ds-test-")
+atexit.register(shutil.rmtree, _TMP, True)
 os.environ["TMPDIR"] = _TMP
 tempfile.tempdir = _TMP
-atexit.register(shutil.rmtree, _TMP, True)
 sys.path.insert(0, str(HERE))
 import wl_checks  # noqa: E402
 import wl_core  # noqa: E402
@@ -63,11 +63,20 @@ def make_root(env_key=True, script=True):
     (root / "package.json").write_text(
         json.dumps({"name": "fixture", "scripts": scripts}, indent=2) + "\n", encoding="utf-8"
     )
-    (root / "private" / "account").mkdir(parents=True)
-    lines = ["# fixture env", "UNRELATED_KEY=abc"]
+    (root / ".ci" / "config").mkdir(parents=True)
+    lines = ["{", '  "secrets": {', '    "UNRELATED_KEY": {"id": "abc"}']
     if env_key:
-        lines.append("CLOUDFLARE_R2_ACCESS_KEY_ID=%s" % SECRET)
-    (root / "private" / "account" / ".env").write_text("\n".join(lines) + "\n", encoding="utf-8")
+        # The fixture SECRET stands in as the entry's id: nothing from the map, value or id, may reach a fact.
+        lines[-1] += ","
+        lines.append('    "CLOUDFLARE_R2_ACCESS_KEY_ID": {"id": "%s"}' % SECRET)
+    lines += ["  }", "}"]
+    (root / ".ci" / "config" / "bws-secret-map.json").write_text(
+        "\n".join(lines) + "\n", encoding="utf-8"
+    )
+    (root / ".ci" / "policy").mkdir(parents=True)
+    (root / ".ci" / "policy" / ".dead-bash-allowlist").write_text(
+        "# a\n# b\nsome/path.sh\n", encoding="utf-8"
+    )
     return root
 
 
@@ -124,7 +133,7 @@ control("class1: one env fact for the present key", len(env), 1)
 control(
     "class1: its citation is the key's own line",
     env[0].cite if env else None,
-    "private/account/.env:3",
+    ".ci/config/bws-secret-map.json:4",
 )
 control("class1: a Fact has no value field at all", "value" in DS.Fact._fields, False)
 control("class1: the fact never carries the value", any(SECRET in repr(f) for f in facts), False)
@@ -532,12 +541,12 @@ control("catalog control: an entry ordering a merge is refused", refused, True)
 # ---------------------------------------------------------------- PAIR: nested dotfile citations resolve
 control(
     "cite: a nested dotfile line is evidence",
-    wl_checks.completion_evidence(str(root), "see private/account/.env:3"),
+    wl_checks.completion_evidence(str(root), "see .ci/policy/.dead-bash-allowlist:3"),
     True,
 )
 control(
     "cite control: a fabricated nested dotfile is not",
-    wl_checks.completion_evidence(str(root), "see private/nowhere/.env:3"),
+    wl_checks.completion_evidence(str(root), "see .ci/nowhere/.dead-bash-allowlist:3"),
     False,
 )
 

@@ -22,21 +22,9 @@ DISPATCH = str(pathlib.Path(__file__).resolve().parents[1] / "dispatch.py")
 GUARD_ARGV = [sys.executable, DISPATCH, "block_host_toolchain_run"]
 REPO = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", ".."))
 
-# ONE PARENT DIRECTORY PER RUN, STAMPED WITH THE PID, and a sweep of every parent whose process is gone. `atexit` does not run when the harness kills a run on its timeout, and each `_path_without` shim was ~6,500 symlinks on a WSL host (its PATH carries every Windows executable under /mnt/c): 81 leaked shims held 538,000 of /tmp's 1,048,576 inodes on 2026-09-24 and Bash could no longer write its own output.
+# ONE PARENT DIRECTORY PER RUN, STAMPED WITH THE PID, removed at exit. The sweep of parents left by killed runs arrives with the shared run-tmp helper; its procfs check needs a declared cross-OS seam, which that helper provides.
 _TMP_PREFIX = "hostguard-test-"
 
-
-def _sweep_dead_runs():
-    base = tempfile.gettempdir()
-    for name in os.listdir(base):
-        if not name.startswith(_TMP_PREFIX):
-            continue
-        pid = name[len(_TMP_PREFIX) :].split("-", 1)[0]
-        if pid.isdigit() and not os.path.exists("/proc/%s" % pid):
-            shutil.rmtree(os.path.join(base, name), ignore_errors=True)
-
-
-_sweep_dead_runs()
 RUN_TMP = tempfile.mkdtemp(prefix="%s%d-" % (_TMP_PREFIX, os.getpid()))
 atexit.register(shutil.rmtree, RUN_TMP, ignore_errors=True)
 

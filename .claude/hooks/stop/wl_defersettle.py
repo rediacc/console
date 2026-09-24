@@ -54,8 +54,8 @@ VERDICTS = ("settled", "execute_default", "genuinely_operator", "uncertain")
 ACTING = ("settled", "execute_default")
 FACT_KINDS = ("env_key_present", "standing_rule_match", "artifact_exists")
 
-# The ONLY places env_key_present looks. A fixed allowlist, never a search.
-ENV_FILES = ("private/account/.env", ".env", ".env.example")
+# The ONLY place env_key_present looks. A fixed allowlist, never a search. Bitwarden is the single source of truth since 2026-09-24 (the account .env files are retired), and this tracked map holds its key NAMES and ids, never a value.
+ENV_FILES = (".ci/config/bws-secret-map.json",)
 
 ENV_KEY_RE = re.compile(r"\b[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+\b")
 SCRIPT_KEY_RE = re.compile(r"(?<![\w:-])((?:check|gate-test|lint|i18n|test):[\w.:-]*\w)")
@@ -153,7 +153,7 @@ def _env_key_line(root, rel, key):
     p = pathlib.Path(root) / rel
     if not p.is_file():
         return None
-    pat = re.compile(r"^\s*(?:export\s+)?%s\s*=" % re.escape(key))
+    pat = re.compile(r'^\s*(?:(?:export\s+)?%s\s*=|"%s"\s*:)' % (re.escape(key), re.escape(key)))
     try:
         with open(p, encoding="utf-8", errors="replace") as fh:
             for n, line in enumerate(fh, 1):
