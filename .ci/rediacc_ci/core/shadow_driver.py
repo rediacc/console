@@ -84,7 +84,7 @@ import sys
 import tempfile
 import threading
 
-from rediacc_ci import log
+from rediacc_ci import log, runtmp
 from rediacc_ci.core import account, ports
 
 # The prefix `shadow-gate --finding-re '^obs '` is pointed at. Deliberately not a cross or a FAIL: those already mean "a finding" to the comparator's marker table, and an observation that AGREES is not a failure.
@@ -174,7 +174,9 @@ def build_sandbox(repo: pathlib.Path) -> pathlib.Path:
                 "the sandbox cannot be built: %s is missing from %s, so neither side would "
                 "have the code under comparison" % ("/".join(parts), repo)
             )
-    work = pathlib.Path(tempfile.mkdtemp(prefix="acct-shadow-"))
+    work = pathlib.Path(
+        tempfile.mkdtemp(prefix="acct-shadow-", dir=runtmp.shared("shadow-driver-"))
+    )
     for parts in SANDBOX_LINKS:
         target = work.joinpath(*parts)
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -215,7 +217,9 @@ class LiveServer:
             return
 
     def __init__(self, port: int) -> None:
-        handler = functools.partial(LiveServer.Quiet, directory=tempfile.mkdtemp())
+        handler = functools.partial(
+            LiveServer.Quiet, directory=tempfile.mkdtemp(dir=runtmp.shared("shadow-driver-"))
+        )
         try:
             self.server = http.server.ThreadingHTTPServer(("127.0.0.1", port), handler)
         except OSError as exc:

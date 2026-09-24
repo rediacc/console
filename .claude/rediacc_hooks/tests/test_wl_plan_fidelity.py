@@ -8,7 +8,6 @@ the shim still says "unfaithful" and the check must stay SILENT because no plan 
 
 from __future__ import annotations
 
-import functools
 import json
 import os
 import pathlib
@@ -693,14 +692,9 @@ def test_220h_a_failed_tier_two_call_is_recorded_not_just_reported(wl):  # noqa:
     )
 
 
-@functools.cache
-def _run_tmp() -> str:
-    return runtmp.run_dir("plan-fidelity-test-")
-
-
 def build_drift_repo(dirty_docs: bool, extra_commits: int) -> str:
     # A git repository per call, three per run, outside pytest's tmp_path and so outside its retention policy; inside one pid-stamped run dir, removed at exit and swept by the next run when this one was killed first.
-    root = tempfile.mkdtemp(dir=_run_tmp())
+    root = tempfile.mkdtemp(dir=runtmp.shared("plan-fidelity-test-"))
 
     def sh(*args):
         subprocess.run(args, cwd=root, check=True, capture_output=True)

@@ -35,10 +35,12 @@ if ! command -v asciinema &>/dev/null; then
     exit 1
 fi
 
-RAW_CAST="$(mktemp /tmp/tutorial-raw-XXXXXX.cast)"
-MARKED_CAST="$(mktemp /tmp/tutorial-marked-XXXXXX.cast)"
-EXIT_CODE_FILE="/tmp/tutorial-exit-code-$$"
-trap 'rm -f "$RAW_CAST" "$MARKED_CAST" "$EXIT_CODE_FILE"' EXIT
+# One pid-stamped directory for all three files (runtmp.SHELL_MKTEMP): the EXIT trap removes it, and a recording killed before the trap can run is swept by the next Python run_dir.
+RECORD_TMP="$(mktemp -d "${TMPDIR:-/tmp}/rediacc-sh-$$-n$(stat -Lc %i /proc/self/ns/pid 2>/dev/null || echo 0)-tutorial-record-XXXXXXXX")"
+RAW_CAST="$RECORD_TMP/raw.cast"
+MARKED_CAST="$RECORD_TMP/marked.cast"
+EXIT_CODE_FILE="$RECORD_TMP/exit-code"
+trap 'rm -rf "$RECORD_TMP"' EXIT
 
 echo "Recording: $(basename "$TUTORIAL_SCRIPT") → $(basename "$OUTPUT_CAST")"
 echo "Terminal: ${COLS}x${ROWS}"

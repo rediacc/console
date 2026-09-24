@@ -26,6 +26,7 @@ import subprocess
 import sys
 import tempfile
 
+from rediacc_ci import runtmp
 from rediacc_ci.core.stubfarm import Farm
 
 EXIT_CANNOT_RUN = 77
@@ -133,7 +134,7 @@ NEW_VERBS = {"r2": "r2-count-objects", "wait": "wait-for"}
 
 
 def observe(side: str, repo: pathlib.Path, case: Case) -> list[str]:
-    work = pathlib.Path(tempfile.mkdtemp(prefix="r2-shadow-"))
+    work = pathlib.Path(tempfile.mkdtemp(prefix="r2-shadow-", dir=runtmp.shared("shadow-driver-")))
     try:
         farm = Farm(work)
         farm.stub("aws", "probe", "sleep")

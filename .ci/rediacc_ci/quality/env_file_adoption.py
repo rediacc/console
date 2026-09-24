@@ -56,7 +56,7 @@ import stat
 import subprocess
 import tempfile
 
-from rediacc_ci import log, paths
+from rediacc_ci import log, paths, runtmp
 from rediacc_ci.controls import Controls, controls_first
 
 SHIM_REL = "scripts/lib/env-file.sh"
@@ -272,7 +272,7 @@ def selftest():
     """Both directions on fixtures, before the real tree is touched."""
     c = Controls("env file adoption", 8)
     root = paths.repo_root()
-    tmp = pathlib.Path(tempfile.mkdtemp())
+    tmp = pathlib.Path(tempfile.mkdtemp(dir=runtmp.shared("env-file-adoption-")))
     try:
         fixture = _write_fixture(tmp)
 
@@ -392,7 +392,7 @@ def selftest():
 def run(root=None):
     """Measure the tree at `root` and return (findings, n_scanned, n_invocations)."""
     base = root or paths.repo_root()
-    tmp = pathlib.Path(tempfile.mkdtemp())
+    tmp = pathlib.Path(tempfile.mkdtemp(dir=runtmp.shared("env-file-adoption-")))
     try:
         fixture = _write_fixture(tmp)
         sweep, n_scanned = check_sweep(base)

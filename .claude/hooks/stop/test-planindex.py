@@ -18,6 +18,7 @@ Run: python3 .claude/hooks/stop/test-planindex.py Reached by: .claude/hooks/test
 
 from __future__ import annotations
 
+import importlib.util
 import os
 import pathlib
 import re
@@ -30,6 +31,19 @@ import wl_checks as CK
 import wl_planfile
 import wl_planindex as PI
 import wl_planrec as R
+
+# `rediacc_ci.runtmp`, loaded BY FILE rather than through a `sys.path` hop (test_canonical_sys_path_hop.py freezes those): a pid-stamped run directory, removed at exit and swept by the next run when this one was killed before `atexit` could fire, which is how /tmp hit its inode cap on 2026-09-24.
+_RUNTMP = importlib.util.spec_from_file_location(
+    "runtmp", pathlib.Path(__file__).resolve().parents[3] / ".ci" / "rediacc_ci" / "runtmp.py"
+)
+if _RUNTMP is None or _RUNTMP.loader is None:
+    raise SystemExit(
+        "%s: .ci/rediacc_ci/runtmp.py is missing; this suite cannot make its run dir" % __file__
+    )
+runtmp = importlib.util.module_from_spec(_RUNTMP)
+_RUNTMP.loader.exec_module(runtmp)
+# IN-PROCESS ONLY: every `TemporaryDirectory`/`mkdtemp` below lands in the run dir, including the ones handed out without a `with` and cleaned up only when the suite reaches them. TMPDIR itself is left alone, so what this suite spawns sees the environment it always did.
+tempfile.tempdir = runtmp.run_dir("planindex-suite-")
 
 
 class Tally:

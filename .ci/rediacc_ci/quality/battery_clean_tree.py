@@ -104,7 +104,7 @@ import subprocess
 import sys
 import tempfile
 
-from rediacc_ci import paths
+from rediacc_ci import paths, runtmp
 from rediacc_ci.controls import Controls
 
 # The three extraction conditions, as three named patterns. Named rather than inlined because each one is a decision with a blast radius; see the port notes.
@@ -263,7 +263,7 @@ def main(argv: list[str] | None = None) -> int:
             print("      %s" % detail)
         failures += 1
 
-    tmp = tempfile.mkdtemp()
+    tmp = tempfile.mkdtemp(dir=runtmp.shared("battery-clean-tree-"))
     try:
         # --- the REAL function, extracted by name ------------------------
         try:

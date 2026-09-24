@@ -48,6 +48,7 @@ import subprocess
 import sys
 import tempfile
 
+from rediacc_ci import runtmp
 from rediacc_ci.core.stubfarm import Farm
 
 EXIT_CANNOT_RUN = 77
@@ -353,7 +354,7 @@ def emit_case(
 
 def observe(side: str, repo: pathlib.Path, case: Case) -> list[str]:
     """Run one case on one side in a fresh sandbox; return its observation lines."""
-    work = pathlib.Path(tempfile.mkdtemp(prefix="svc-shadow-"))
+    work = pathlib.Path(tempfile.mkdtemp(prefix="svc-shadow-", dir=runtmp.shared("shadow-driver-")))
     try:
         root = build_sandbox(repo, work, case)
         farm = build_farm(work, case)

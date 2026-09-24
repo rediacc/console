@@ -108,7 +108,7 @@ while [ $# -gt 0 ]; do
     esac
 done
 
-TRACE_DIR="$(mktemp -d)"
+TRACE_DIR="$(mktemp -d "${TMPDIR:-/tmp}/rediacc-sh-$$-n$(stat -Lc %i /proc/self/ns/pid 2>/dev/null || echo 0)-media-coverage-XXXXXXXX")"
 trap 'rm -rf "$TRACE_DIR"' EXIT
 
 # THE SUBJECT MODULES, which is not the same as *.sh in this folder. verify.sh is the test

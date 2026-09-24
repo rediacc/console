@@ -71,6 +71,9 @@ cleanup() {
         log_info "Removing E2E database..."
         rm -f "$ACCOUNT_DIR/e2e-account.db" "$ACCOUNT_DIR/e2e-account.db-wal" "$ACCOUNT_DIR/e2e-account.db-shm" 2>/dev/null || true
     fi
+    if [[ -n "${E2E_TMP:-}" ]]; then
+        rm -rf "$E2E_TMP"
+    fi
     log_info "Cleanup complete"
 }
 trap cleanup EXIT
@@ -103,7 +106,9 @@ if [[ "$SKIP_SETUP" != "true" ]]; then
         cd "$REPO_ROOT"
 
         log_step "Starting stripe listen for real Stripe webhook forwarding..."
-        STRIPE_LISTEN_LOG=$(mktemp)
+        # Inside a pid-stamped directory (runtmp.SHELL_MKTEMP) that cleanup() removes: this log carries the webhook signing secret, and a bare `mktemp` left it in /tmp after every run.
+        E2E_TMP="$(mktemp -d "${TMPDIR:-/tmp}/rediacc-sh-$$-n$(stat -Lc %i /proc/self/ns/pid 2>/dev/null || echo 0)-account-e2e-XXXXXXXX")"
+        STRIPE_LISTEN_LOG="$E2E_TMP/stripe-listen.log"
         stripe listen \
             --api-key "$STRIPE_SANDBOX_SECRET_KEY" \
             --forward-to "http://localhost:${ACCOUNT_API_PORT}/account/api/v1/webhooks/stripe" \

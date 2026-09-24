@@ -74,7 +74,7 @@ import tempfile
 import tomllib
 from dataclasses import dataclass, field
 
-from rediacc_ci import log, paths
+from rediacc_ci import log, paths, runtmp
 from rediacc_ci.controls import Controls, plant
 
 # The one root override, spelled the way `rediacc_ci.paths` spells it, so a harness that wants every gate pointed at a fixture sets ONE variable rather than learning this gate's private name.
@@ -352,6 +352,19 @@ def mentioned_paths(text: str, index: dict[str, list[str]]) -> set[str]:
     return out
 
 
+def _plugin_names(value: ast.expr) -> list[str]:
+    """The module names a `pytest_plugins = ...` assignment registers: one string, or a list or tuple of them.
+
+    A ROUTE THIS GATE USED TO MISS. pytest imports every module named there when it loads the conftest (or test module) that assigns it, which is an execution route as real as an `import`; `rediacc_ci.pytest_tmp` is reached only that way. Importing it too, to give this scanner an edge, is not an option: a plugin imported before pytest registers it cannot be assertion-rewritten, and this repo turns that warning into an error. Anything that is not a string literal is ignored, which errs toward reporting a file dead, never toward hiding one.
+    """
+    items = value.elts if isinstance(value, (ast.List, ast.Tuple)) else [value]
+    return [
+        item.value
+        for item in items
+        if isinstance(item, ast.Constant) and isinstance(item.value, str)
+    ]
+
+
 def import_targets(source: str, importer: str, pyset: frozenset[str]) -> set[str]:
     """Corpus paths the imports in `source` resolve to.
 
@@ -373,6 +386,10 @@ def import_targets(source: str, importer: str, pyset: frozenset[str]) -> set[str
             if base:
                 mods.append(base)
             mods.extend((base + "." if base else "") + alias.name for alias in node.names)
+        elif isinstance(node, ast.Assign) and any(
+            isinstance(t, ast.Name) and t.id == "pytest_plugins" for t in node.targets
+        ):
+            mods.extend(_plugin_names(node.value))
     out: set[str] = set()
     here = os.path.dirname(importer)
     for mod in mods:
@@ -647,7 +664,7 @@ def _refuses(root: pathlib.Path, **kw) -> bool:
 
 def selftest(verbose: bool = False) -> int:
     c = Controls("check-dead-python", floor=26, verbose=verbose)
-    tmp = pathlib.Path(tempfile.mkdtemp(prefix="dead-python-selftest-"))
+    tmp = pathlib.Path(tempfile.mkdtemp(prefix="selftest-", dir=runtmp.shared("dead-python-")))
     try:
         # -- the clean fixture, and the orphan it does not contain -----------
         base = _fixture(tmp / "clean")
@@ -695,6 +712,22 @@ def selftest(verbose: bool = False) -> int:
             "import sys\nsys.path.insert(0, '.')\nfrom check_orphan import VALUE\n",
         )
         c.check("route imported: an import from a wired file clears it", _findings(root), [])
+
+        plugin = {".ci/rediacc_ci/plug.py": "def pytest_configure():\n    pass\n"}
+        root = _fixture(
+            tmp / "plugin", {**plugin, "conftest.py": 'pytest_plugins = ["rediacc_ci.plug"]\n'}
+        )
+        c.check(
+            "route pytest_plugins: a module a conftest registers as a plugin is not dead",
+            _findings(root),
+            [],
+        )
+        root = _fixture(tmp / "plugin-unnamed", {**plugin, "conftest.py": "pytest_plugins = []\n"})
+        c.check(
+            "route pytest_plugins CONTROL: the same module with the registration removed IS reported",
+            _findings(root),
+            [".ci/rediacc_ci/plug.py"],
+        )
 
         root = _fixture(tmp / "mentioned", orphan)
         _write(root, "run.sh", "python3 .ci/scripts/quality/check_orphan.py\n")

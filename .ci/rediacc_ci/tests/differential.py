@@ -38,7 +38,20 @@ import re
 import selectors
 import subprocess
 
-from rediacc_ci import paths
+from rediacc_ci import paths, runtmp
+
+
+def _child_tmpdir() -> str:
+    r"""A TMPDIR for every child this module's environments start: `<run dir>/tmp`, one per test process.
+
+    WHY. Without it a child's `mktemp` wrote to /tmp itself, and a twin that leaves its `mktemp` files behind (a call log, a fetch log, a staged index) left them there for good: 4,948 `tmp.XXXXXXXXXX` files had accumulated by 2026-09-24. The run dir is removed at exit and swept by the next run when this one was killed first (`rediacc_ci.runtmp`).
+
+    WHY THE `/tmp` LEAF. Several differentials mask the random `mktemp` suffix with a regex written against its shape, `/tmp/tmp\.[A-Za-z0-9]{10}`. Ending the directory in `/tmp` keeps that shape as the path's tail, and the prefix before it is the same on both sides of a comparison because both run in this process.
+    """
+    leaf = os.path.join(runtmp.run_dir("difftest-"), "tmp")
+    os.mkdir(leaf)
+    return leaf
+
 
 # The environment every differential starts from. Deliberately tiny.
 #
@@ -50,6 +63,7 @@ BASE_ENV = {
     "HOME": os.environ.get("HOME", "/tmp"),
     "LC_ALL": "C",
     "LANG": "C",
+    "TMPDIR": _child_tmpdir(),
 }
 
 # How long any single differential child may run. A hung bash in a test suite is indistinguishable from a slow one until CI's own job timeout fires 15 minutes later, having reported nothing.

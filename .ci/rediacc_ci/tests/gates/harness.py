@@ -16,7 +16,6 @@ THE LEDGER. When `$GATE_HARNESS_LEDGER` names a file, every recorded control is 
 """
 
 import contextlib
-import functools
 import json
 import os
 import pathlib
@@ -151,6 +150,8 @@ def run(
     merged = dict(env or {}) if env_replace else dict(os.environ)
     if env and not env_replace:
         merged.update(env)
+    if not env_replace and "TMPDIR" not in (env or {}):
+        merged["TMPDIR"] = _child_tmpdir()
     proc = subprocess.run(
         argv,
         cwd=None if cwd is None else str(cwd),
@@ -204,9 +205,16 @@ def require_python_module(interpreter: str, module: str, fix: str) -> None:
         )
 
 
-@functools.cache
-def _run_tmp() -> str:
-    return runtmp.run_dir("gate-harness-")
+def _child_tmpdir() -> str:
+    """The TMPDIR every `run` child gets unless the caller names one: `<run dir>/tmp`, one per test process.
+
+    WHY. A gate's subject that calls `mktemp` or `os.tmpdir()` and leaves the result behind (a call log, a vitest `ssr` cache) wrote it to /tmp itself, and nothing ever removed it. The run dir goes at exit and is swept by the next run when this one was killed (`rediacc_ci.runtmp`). The `/tmp` leaf keeps the `mktemp` suffix shape (`/tmp/tmp.XXXXXXXXXX`) that differential masks match, as `differential._child_tmpdir` does.
+
+    WHY HERE AND NOT FOR THE WHOLE TEST PROCESS. Setting TMPDIR process-wide was tried and measured: tests that compare an in-process temp path with a child's (test_core_devbox.py) and guard fixtures that need one fixed path across runs (block_edit_of_running_script's world) cannot both hold under it. A child of `run` is neither.
+    """
+    leaf = os.path.join(runtmp.shared("gate-harness-children-"), "tmp")
+    os.makedirs(leaf, exist_ok=True)
+    return leaf
 
 
 @contextlib.contextmanager
@@ -216,7 +224,7 @@ def temp_dir():
     The bash version binds the path into an EXIT trap because a shell function cannot otherwise clean up after an `exit` from inside itself. A context manager has that property natively, which is why this is the one helper whose shape changes: the trap was scaffolding for a language feature Python has.
     """
     # Under one pid-stamped run dir: `finally` does not run when pytest is killed on its timeout, and the next run's sweep is what reclaims the directory then.
-    path = pathlib.Path(tempfile.mkdtemp(dir=_run_tmp()))
+    path = pathlib.Path(tempfile.mkdtemp(dir=runtmp.shared("gate-harness-")))
     try:
         yield path
     finally:

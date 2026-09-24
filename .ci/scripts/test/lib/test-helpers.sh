@@ -99,7 +99,7 @@ with_temp_dir() {
     local fn="$1"
     shift
     local TEMP
-    TEMP="$(mktemp -d)"
+    TEMP="$(mktemp -d "${TMPDIR:-/tmp}/rediacc-sh-$$-n$(stat -Lc %i /proc/self/ns/pid 2>/dev/null || echo 0)-with-temp-dir-XXXXXXXX")"
     # BLOCKER: expanding TEMP now is intentional — we want the specific temp path bound into the trap handler, not a reference that would read an empty variable after the function returns
     # shellcheck disable=SC2064
     # BLOCKER: expanding TEMP now is intentional — we want the specific path
@@ -120,7 +120,7 @@ with_fake_gh() {
     local fn="$2"
     shift 2
     local BIN
-    BIN="$(mktemp -d)"
+    BIN="$(mktemp -d "${TMPDIR:-/tmp}/rediacc-sh-$$-n$(stat -Lc %i /proc/self/ns/pid 2>/dev/null || echo 0)-with-fake-gh-XXXXXXXX")"
     cat >"$BIN/gh" <<FAKE
 #!/bin/bash
 cat "$output_file"
@@ -189,7 +189,7 @@ with_fake_bin() {
     local fn="$2"
     shift 2
     local FAKE_ROOT
-    FAKE_ROOT="$(mktemp -d)"
+    FAKE_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/rediacc-sh-$$-n$(stat -Lc %i /proc/self/ns/pid 2>/dev/null || echo 0)-with-fake-bin-XXXXXXXX")"
     mkdir -p "$FAKE_ROOT/bin" "$FAKE_ROOT/records"
     export FAKE_BIN_DIR="$FAKE_ROOT/bin"
     export FAKE_BIN_RECORDS="$FAKE_ROOT/records"

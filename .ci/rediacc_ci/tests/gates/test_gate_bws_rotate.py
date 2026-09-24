@@ -28,6 +28,8 @@ import sys
 import time
 from typing import TYPE_CHECKING, Any
 
+import pytest
+
 from rediacc_ci import paths
 
 if TYPE_CHECKING:
@@ -197,6 +199,23 @@ def _read_pty(master_fd: int, proc: subprocess.Popen, timeout: float) -> bytes:
     return b"".join(chunks)
 
 
+def _bounded_stdout(proc: subprocess.Popen, timeout: float) -> bytes:
+    """The child's stdout to EOF, but never longer than `timeout`.
+
+    WHY. This used to be `proc.stdout.read()`, which returns only when the child closes stdout, that is when it exits, and it ran BEFORE the bounded `_read_pty`. A child still waiting on its pty (the input written half a second in can lose that race on a loaded machine) therefore held the test forever: on 2026-09-24 three xdist workers sat in exactly that read for 51 minutes and the run never finished. Now the wait is bounded, the child is killed, and the case FAILS with what it printed.
+    """
+    try:
+        out, _ = proc.communicate(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+        out, _ = proc.communicate()
+        raise AssertionError(
+            "bws-rotate did not exit within %ss; it is probably still waiting on its pty. Output so far: %r"
+            % (timeout, (out or b"")[-800:])
+        ) from None
+    return out or b""
+
+
 def run_full(
     root: Path, pasted: str, extra_env: dict[str, str] | None = None, timeout: float = 20
 ) -> tuple[int, str]:
@@ -229,9 +248,7 @@ def run_full(
         os.write(master_fd, (pasted + "\n").encode("utf-8"))
     finally:
         pass
-    out = proc.stdout.read() if proc.stdout else b""
-    if proc.stdout:
-        proc.stdout.close()
+    out = _bounded_stdout(proc, timeout)
     tty_leak = _read_pty(master_fd, proc, timeout)
     proc.wait(timeout=timeout)
     os.close(master_fd)
@@ -385,9 +402,7 @@ def test_an_unreachable_fingerprint_tool_refuses_instead_of_blaming_the_candidat
     os.close(slave_fd)
     time.sleep(0.5)
     os.write(master_fd, (FIXTURE_TOKEN + "\n").encode("utf-8"))
-    stdout_bytes = proc.stdout.read() if proc.stdout else b""
-    if proc.stdout:
-        proc.stdout.close()
+    stdout_bytes = _bounded_stdout(proc, 20)
     out_bytes = stdout_bytes + _read_pty(master_fd, proc, 20)
     proc.wait(timeout=20)
     os.close(master_fd)
@@ -589,3 +604,26 @@ def test_no_part_of_the_value_reaches_any_stream(tmp_path):
     # The CONTROL for this assertion: the run genuinely produced output, and it genuinely carried the one derived value that IS publishable. Without this, a script that printed nothing at all would pass every line above.
     assert "4/4" in out, "the run did not reach the end, so the three checks above proved nothing"
     assert "client id " in out, "the publishable fingerprint was not printed either, so nothing was"
+
+
+def test_a_child_stuck_on_its_pty_fails_the_case_instead_of_hanging():
+    """CONTROL for `_bounded_stdout`: a child blocked reading a pty nobody writes to is the shape that held three workers for 51 minutes. It must become a failed case within the bound."""
+    master_fd, slave_fd = pty_module.openpty()
+    proc = subprocess.Popen(
+        [sys.executable, "-c", "import sys; sys.stdin.read()"],
+        stdin=slave_fd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+    os.close(slave_fd)
+    started = time.monotonic()
+    try:
+        with pytest.raises(AssertionError, match="did not exit within"):
+            _bounded_stdout(proc, 1)
+        assert time.monotonic() - started < 15, "the bound did not bound anything"
+        assert proc.poll() is not None, "the stuck child was left running"
+    finally:
+        if proc.poll() is None:
+            proc.kill()
+            proc.wait()
+        os.close(master_fd)

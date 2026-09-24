@@ -53,7 +53,7 @@ import sys
 import tempfile
 import time
 
-from rediacc_ci import paths
+from rediacc_ci import paths, runtmp
 
 INSTALL_SH_REL = "packages/www/public/install.sh"
 
@@ -138,7 +138,7 @@ def run_case(
     expect_channel: str,
     expect_account: str,
 ) -> None:
-    tmp_home = pathlib.Path(tempfile.mkdtemp())
+    tmp_home = pathlib.Path(tempfile.mkdtemp(dir=runtmp.shared("install-sh-config-")))
     config_file = tmp_home / ".config" / "rediacc" / "rediacc.json"
 
     env = dict(os.environ)
@@ -213,7 +213,7 @@ class MockServer:
 
     def __init__(self) -> None:
         self.port = free_port()
-        self.directory = pathlib.Path(tempfile.mkdtemp())
+        self.directory = pathlib.Path(tempfile.mkdtemp(dir=runtmp.shared("install-sh-config-")))
         well_known = self.directory / "account" / "api" / "v1" / ".well-known"
         well_known.mkdir(parents=True, exist_ok=True)
         (well_known / "server-info").write_text(SERVER_INFO, encoding="utf-8")

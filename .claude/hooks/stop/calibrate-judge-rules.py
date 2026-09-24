@@ -13,11 +13,11 @@ Each fixture is a real defect from this repo's own history (the five the operato
 WHAT A FAILURE HERE MEANS, and it is not the same as a red gate: an over-firing rule is a rule that gets skimmed, so a SILENT fixture that fires is at least as serious as a FIRE fixture that stays quiet.
 """
 
+import importlib.util
 import json
 import os
 import pathlib
 import sys
-import tempfile
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import wl_bravedefault as BD
@@ -241,14 +241,26 @@ def run_case(expected, extra, message, remaining):
     return ("OK" if got == expected else "MISS"), got, obj
 
 
+def _runtmp():
+    """`rediacc_ci.runtmp`, loaded BY FILE: this directory takes no `.ci` path hop (test_canonical_sys_path_hop.py freezes them)."""
+    spec = importlib.util.spec_from_file_location(
+        "runtmp", pathlib.Path(__file__).resolve().parents[3] / ".ci" / "rediacc_ci" / "runtmp.py"
+    )
+    if spec is None or spec.loader is None:
+        raise SystemExit(".ci/rediacc_ci/runtmp.py is missing")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
 def main():
     if "--live" not in sys.argv:
         print(__doc__)
         print("Refusing to run: this calls the real model and costs money. Pass --live.")
         return 0
     # A scratch TMPDIR so a calibration run never touches the demand markers of the live session running it.
-    tmp = tempfile.TemporaryDirectory()
-    os.environ["TMPDIR"] = tmp.name
+    # A pid-stamped run dir rather than a `TemporaryDirectory` held in a local: this run calls a live model for minutes, and a run interrupted or killed mid-way used to leave its scratch in /tmp. See `rediacc_ci.runtmp`.
+    os.environ["TMPDIR"] = _runtmp().run_dir("calibrate-judge-")
     # `--only <substring>` re-runs just the fixtures that missed. A rubric change is judged by the fixture it was made for, and paying for all fourteen to see two is how a calibration loop stops being run.
     only = ""
     if "--only" in sys.argv:

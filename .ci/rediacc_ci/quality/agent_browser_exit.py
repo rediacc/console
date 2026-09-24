@@ -81,7 +81,7 @@ import shutil
 import sys
 import tempfile
 
-from rediacc_ci import paths
+from rediacc_ci import paths, runtmp
 from rediacc_ci.controls import Controls
 
 # POSIX [[:space:]], written out. See the port notes for why `\s` is wrong here.
@@ -256,7 +256,7 @@ def inline_controls() -> int:
 
     A gate nobody has watched fail is not a gate. These are carried across unchanged, including the two `echo " PASS control: ..."` lines they print on stdout, because a harness reading this gate's output would notice their absence. `--selftest` below is the ADDITION; this is the preserved half.
     """
-    ctl = pathlib.Path(tempfile.mkdtemp())
+    ctl = pathlib.Path(tempfile.mkdtemp(dir=runtmp.shared("agent-browser-exit-")))
     try:
         _write(
             ctl / "bad.sh",

@@ -71,7 +71,7 @@ import shutil
 import subprocess
 import tempfile
 
-from rediacc_ci import log, paths
+from rediacc_ci import log, paths, runtmp
 from rediacc_ci.controls import Controls, controls_first
 
 MANIFEST_REL = ".ci/config/env-manifest.json"
@@ -654,7 +654,7 @@ def selftest() -> bool:
     )
 
     # The collision authority, both directions -- and the SUBSTRING direction is the one that was actually broken. See collision_findings' docstring.
-    tmp = pathlib.Path(tempfile.mkdtemp())
+    tmp = pathlib.Path(tempfile.mkdtemp(dir=runtmp.shared("env-manifest-")))
     try:
         (tmp / "near.ts").write_text("const x = 'REDIACC_DEAD_SUFFIX';\n", encoding="utf-8")
         (tmp / "exact.ts").write_text("banned: 'DEAD',\n", encoding="utf-8")

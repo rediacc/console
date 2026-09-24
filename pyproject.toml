@@ -403,7 +403,9 @@ cache_dir = ".ci/cache/pytest"
 # --strict-config  an unknown key in THIS table is an error. Without it a typo
 #                  here (`testpath`, `pythonpaths`) is ignored in silence, and
 #                  the failure surfaces as an empty collection much later.
-addopts = "-ra --strict-markers --strict-config"
+# `--dist loadgroup` HERE, not only on the gate's argv. `XDIST_GROUP` (rediacc_ci.xdist_groups) is inert under xdist's default `load`, and a bare `pytest -n auto` is the natural thing to type: on 2026-09-24 one did exactly that, test_guards_differential.py's session fixture (about 17,000 inodes and 6,000 bash forks) was built on
+# each of 24 workers, 656,000 inodes in one basetemp, and /tmp hit its inode cap. It has to be an ARGUMENT: xdist workers re-parse the controller's argv and ini (`xdist/workermanage.py`), so an option changed in a hook never reaches them, which was tried and measured. Without `-n` it is inert (a serial run is unchanged), and an explicit `--dist` on the command line still wins.
+addopts = "-ra --strict-markers --strict-config --dist loadgroup"
 
 # `/tmp` is a tmpfs, and a tmpfs has a HARD INODE CAP independent of its size --
 # 1,048,576 here. On 2026-09-14 that cap was reached with 19G of the 29G still

@@ -59,7 +59,7 @@ import subprocess
 import sys
 import tempfile
 
-from rediacc_ci import log
+from rediacc_ci import log, runtmp
 from rediacc_ci.core import local_common
 
 # The prefix `shadow-gate --finding-re '^obs '` is pointed at. Deliberately not a cross or a FAIL: those already mean "a finding" to the comparator's marker table, and an observation that AGREES is not a failure.
@@ -253,7 +253,7 @@ def build_sandbox(repo: pathlib.Path) -> pathlib.Path:
                 "the sandbox cannot be built: %s is missing from %s, so neither side would "
                 "have the code under comparison" % ("/".join(parts), repo)
             )
-    work = pathlib.Path(tempfile.mkdtemp(prefix="lc-shadow-"))
+    work = pathlib.Path(tempfile.mkdtemp(prefix="lc-shadow-", dir=runtmp.shared("shadow-driver-")))
     for parts in SANDBOX_LINKS:
         target = work.joinpath(*parts)
         target.parent.mkdir(parents=True, exist_ok=True)

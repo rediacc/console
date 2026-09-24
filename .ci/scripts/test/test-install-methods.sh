@@ -178,7 +178,7 @@ SKIP=0
 FAILED_TESTS=()
 
 # Temp directory for test artifacts
-TEST_DIR="$(mktemp -d)"
+TEST_DIR="$(mktemp -d "${TMPDIR:-/tmp}/rediacc-sh-$$-n$(stat -Lc %i /proc/self/ns/pid 2>/dev/null || echo 0)-install-methods-XXXXXXXX")"
 cleanup() {
     rm -rf "$TEST_DIR"
 }

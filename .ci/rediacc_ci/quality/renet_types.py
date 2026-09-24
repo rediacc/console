@@ -41,7 +41,7 @@ import subprocess
 import sys
 import tempfile
 
-from rediacc_ci import log, paths
+from rediacc_ci import log, paths, runtmp
 from rediacc_ci.controls import Controls
 
 # Where the submodule and the committed contract live, relative to the root.
@@ -165,7 +165,7 @@ def main(argv: list[str] | None = None) -> int:
         return built.returncode
 
     log.step("Checking types freshness...")
-    temp_dir = pathlib.Path(tempfile.mkdtemp())
+    temp_dir = pathlib.Path(tempfile.mkdtemp(dir=runtmp.shared("renet-types-")))
     try:
         version = _describe(root)
         generated = subprocess.run(

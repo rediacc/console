@@ -13,7 +13,6 @@ TWO MODULES CARRIED SELFTESTS THAT NOTHING RAN, found 2026-08-26: wl_git.py and 
 from a suite that never executed.
 """
 
-import functools
 import os
 import pathlib
 import re
@@ -166,18 +165,13 @@ def port_delegation_problem(fixture_present: bool, pyproject_source: str, module
 _SHARED_TOOL_CACHE = re.compile(r"^(node-compile-cache|tsx-[0-9]+)$")
 
 
-@functools.cache
-def _run_tmp() -> str:
-    return runtmp.run_dir("hook-suite-tmpdir-")
-
-
 # EVERY SUITE RUNS WITH ITS OWN EMPTY TMPDIR, AND LEAVING ANYTHING IN IT IS A FAILURE. /tmp here is a tmpfs capped at 1,048,576 inodes, and on 2026-09-24 the cap was hit: every Bash and Write call on the machine failed with ENOSPC for hours, and the cleanup removed 2,576 leaked `tmp*` directories, mostly git fixture repos made at module scope by these standalone suites and never deleted. pytest's own `tmp_path_retention_policy` cannot see them, because they are not pytest tests. Python's `tempfile` honours `TMPDIR`, so pointing it at a fresh directory per suite catches any `mkdtemp`/`TemporaryDirectory` leak in the class, and the directory is removed afterwards whatever the verdict.
 def _run(relative: str, tail: list[str]) -> tuple[subprocess.CompletedProcess, list[str]]:
     """Run one suite under a private TMPDIR; return its result and the entries it left behind."""
     path = HOOKS / relative
     argv = ["bash", str(path)] if path.suffix == ".sh" else ["python3", str(path), *tail]
     # Under one pid-stamped run dir, because the `finally` below does not run when pytest itself is killed on its timeout; the next run's sweep reclaims it then.
-    scratch = tempfile.mkdtemp(prefix="suite-", dir=_run_tmp())
+    scratch = tempfile.mkdtemp(prefix="suite-", dir=runtmp.shared("hook-suite-tmpdir-"))
     try:
         env = dict(os.environ, TMPDIR=scratch)
         done = subprocess.run(

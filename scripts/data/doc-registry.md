@@ -651,7 +651,7 @@ Scans: every tracked non-source, non-prose file carrying a `BLOCKER:` line.
 | .ci/shadow/w7p2-go-deps.observations.jsonl | 2 | inline |
 | .ci/shadow/w7p2-plan-housekeeping.observations.jsonl | 5 | inline |
 | .ci/shadow/w7p2-profiler-coverage.observations.jsonl | 3 | inline |
-| .ci/shadow/w7p5a-status.json | 7 | JSON value |
+| .ci/shadow/w7p5a-status.json | 6 | JSON value |
 | .ci/shadow/w7p5b-blocker-validator.observations.jsonl | 2 | inline |
 | .syncpackrc-reasons.json | 8 | JSON value |
 | agent/ledgers/plan-investigation.jsonl | 2 | inline |
@@ -696,7 +696,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/media/tts | 2 | (none) 1, .toml 1 |
 | .ci/policy | 23 | (none) 19, .json 3, .md 1 |
 | .ci/prompts | 1 | .md 1 |
-| .ci/rediacc_ci | 14 | .py 14 |
+| .ci/rediacc_ci | 15 | .py 15 |
 | .ci/rediacc_ci/build | 18 | .py 18 |
 | .ci/rediacc_ci/ci | 18 | .py 18 |
 | .ci/rediacc_ci/ci_signal | 2 | .py 2 |
@@ -717,7 +717,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/review | 6 | .py 6 |
 | .ci/rediacc_ci/security | 10 | .py 10 |
 | .ci/rediacc_ci/setup | 12 | .py 12 |
-| .ci/rediacc_ci/tests | 289 | .py 289 |
+| .ci/rediacc_ci/tests | 290 | .py 290 |
 | .ci/rediacc_ci/tests/data | 2 | .json 1, .yml 1 |
 | .ci/rediacc_ci/tests/gates | 173 | .py 172, .fixture 1 |
 | .ci/rediacc_ci/tests/goldens/actionlint | 17 | .golden 17 |
