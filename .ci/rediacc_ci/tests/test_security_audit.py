@@ -43,6 +43,7 @@ import typing
 import pytest
 
 from rediacc_ci import paths
+from rediacc_ci.core import toolchain
 from rediacc_ci.security import audit as port
 from rediacc_ci.tests import differential
 
@@ -461,6 +462,9 @@ def fx(tmp_path: pathlib.Path) -> Fixture:
         root / ".ci" / "rediacc_ci",
         ignore=shutil.ignore_patterns("__pycache__", "tests"),
     )
+    # The pins file, because the npm the gate upgrades to is read from it rather than written into the gate.
+    (root / ".devcontainer").mkdir()
+    shutil.copy2(ROOT / ".devcontainer" / "toolchain.env", root / ".devcontainer" / "toolchain.env")
 
     # The ONLY system tools the two implementations may reach. Resolved here and symlinked, so the PATH the gate runs under contains no third directory: see `Fixture.env`. A tool missing from this list fails loudly at fixture build time rather than as a mystery inside a case.
     sysbin = root / "fake" / "sysbin"
@@ -845,7 +849,8 @@ def test_an_old_npm_is_upgraded_before_signature_verification(fx: Fixture) -> No
     run = run_gate(fx)
     assert run.exit == 0
     assert "⚠ Upgrading npm to 11.x for Sigstore attestation key compatibility" in run.stdout
-    assert "call: npm install -g npm@11.17.0 --no-audit --no-fund" in run.calls
+    pin = toolchain.pin_for("npm", toolchain.load_pins(ROOT / ".devcontainer" / "toolchain.env"))
+    assert "call: npm install -g npm@%s --no-audit --no-fund" % pin in run.calls
 
 
 def test_a_failed_npm_upgrade_ends_the_run_with_npms_status(fx: Fixture) -> None:

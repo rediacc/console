@@ -14,14 +14,14 @@ WHY THE PACKAGE EXISTS ALREADY, EMPTY. Two things had to be true before any of t
      host these gates run on (measured 2026-09-06). .ci/bootstrap.sh is the
      answer, and this package is what it exists to make testable.
   2. A PACKAGE THE VACUITY FIXTURE CAN SEE.
-     .ci/scripts/test/gates/test-gate-anti-vacuity.sh runs every registered gate
+     .ci/rediacc_ci/tests/gates/test_gate_gate_anti_vacuity.py runs every registered gate
      inside a fixture tree built by copying a SHORT list of directories. Until
      ``.ci/rediacc_ci`` joined that list, any gate importing this package would
      have failed inside the fixture with ModuleNotFoundError -- a red that names
      neither the gate nor the real problem, on a harness whose entire job is
      telling a real failure from an absent input.
 
-WHERE IT SITS ON sys.path. The package directory is ``.ci/rediacc_ci``, so the importable name is ``rediacc_ci`` with ``.ci`` on the path. A consumer adds the repo's ``.ci`` directory to ``sys.path`` -- the same shape .ci/scripts/test/gates/test-gate-anti-vacuity.sh already uses to import ``check_fetch_retry`` out of ``.ci/scripts/quality``.
+WHERE IT SITS ON sys.path. The package directory is ``.ci/rediacc_ci``, so the importable name is ``rediacc_ci`` with ``.ci`` on the path. A consumer adds the repo's ``.ci`` directory to ``sys.path`` -- the same shape .ci/rediacc_ci/tests/gates/test_gate_gate_anti_vacuity.py already uses to import ``check_fetch_retry`` out of ``.ci/scripts/quality``.
 
 Deliberately no re-exports: an ``__init__`` that imports its submodules turns every consumer into a consumer of all of them, and this one is imported by a fixture whose point is that most of the tree is absent.
 """

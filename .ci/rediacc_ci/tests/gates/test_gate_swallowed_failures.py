@@ -498,7 +498,7 @@ def test_waiver_must_be_adjacent(gate):
 
 
 def test_empty_scope_is_blind_not_clean(gate):
-    """Anti-vacuity. A gate that scans zero files reports clean forever. This is the property the repo's test-gate-anti-vacuity.sh harness checks for other validators; that harness cannot check this one, because its fixture COPIES .ci/scripts into the empty tree, so this gate always has input there. The seam makes the same property testable directly."""
+    """Anti-vacuity. A gate that scans zero files reports clean forever. This is the property the repo's anti-vacuity harness (`.ci/rediacc_ci/tests/gates/test_gate_gate_anti_vacuity.py`) checks for other validators; that harness cannot check this one, because its fixture COPIES .ci/scripts into the empty tree, so this gate always has input there. The seam makes the same property testable directly."""
     with harness.temp_dir() as d:
         tree = d / "tree"
         (tree / SCAN_REL).mkdir(parents=True, exist_ok=True)

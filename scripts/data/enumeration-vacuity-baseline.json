@@ -1,7 +1,6 @@
 {
   "note": "shrink-only; see scripts/gates/check-enumeration-vacuity.ts. Drain by adding a vacuity guard, never by reseeding.",
   "unguarded": [
-    ".ci/scripts/quality/check-swallowed-failures.sh",
     ".ci/scripts/quality/check_e2e_case_blind_assertions.py",
     ".ci/scripts/quality/check_guard_feature_completeness.py",
     ".ci/scripts/quality/check_guard_mention_anchoring.py",

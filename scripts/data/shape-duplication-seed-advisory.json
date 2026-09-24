@@ -1,0 +1,6 @@
+{
+  "accepted": {
+    "b9a361994cf8": "BLOCKER: the gate test harness's own assertion vocabulary, not duplicated logic. Read at all 20 sites on 2026-09-24 (anchor .ci/rediacc_ci/tests/gates/test_gate_ci_parity.py:157): every one is gate.assert_contains(result.combined, <literal>, <literal>) followed by gate.log_pass(<literal>), with literals unrelated from site to site. Folding the pair into one helper would hide which assertion failed and save no logic, so it stays as written. Settled under the operator's 2026-09-24 ruling 'Accept, site-checked'.",
+    "984aea773b55": "BLOCKER: the gate test harness's refusal-assertion vocabulary, not duplicated logic. Read at all 10 sites on 2026-09-24 (anchor .ci/rediacc_ci/tests/gates/test_gate_media_args.py:325): each is gate.assert_exit_code(1, result.rc, <literal>) followed by gate.assert_contains(result.combined, <the refusal text that gate must print>, <literal>), and the needle is the whole point of each case, different at every site. Settled under the operator's 2026-09-24 ruling 'Accept, site-checked'."
+  }
+}

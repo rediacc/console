@@ -521,7 +521,7 @@ def test_reduced_plan_emits_exactly_the_out_of_scope_keys(gate, fixture):
 
 
 def test_quiet_wire_values_do_not_trip_the_kill_switch(gate, fixture):
-    """THE EXACT STRINGS ci.yml PRODUCES ON AN ORDINARY PR. `vars.FULL_CI` is the EMPTY STRING when the repository variable is unset, and the label check `contains(...)` renders the literal 'false', never an empty value. Both must read as "not forced". Comparing against 'true' rather than testing for non-emptiness is what makes that work, and this case exists so nobody can
+    """THE EXACT STRINGS ci.yml PRODUCES ON AN ORDINARY PR. FORCE_FULL_CI is the EMPTY STRING whenever the FULL_CI Bitwarden secret holds anything but its `full-ci-on` sentinel (ci.yml maps that one value to 'true' and every other to ''), and the label check `contains(...)` renders the literal 'false', never an empty value. Both must read as "not forced". Comparing against 'true' rather than testing for non-emptiness is what makes that work, and this case exists so nobody can
     later relax it to `[[ -n "$FORCE_FULL_CI" ]]` and make every PR full while the engine looks perfectly healthy."""
     run = fixture.run_gate("quietwire", env={"FORCE_FULL_CI": "", "FULL_CI_LABEL": "false"})
     gate.assert_exit_code(0, run.rc, "the gate must always exit 0")

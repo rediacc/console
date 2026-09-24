@@ -64,6 +64,7 @@ import pathlib
 import re
 import subprocess
 import sys
+import tempfile
 
 from rediacc_ci import paths
 from rediacc_ci.controls import Controls
@@ -151,19 +152,22 @@ def run_scenario(
     environ = dict(os.environ)
     if env_extra:
         environ.update(env_extra)
-    try:
-        completed = subprocess.run(
-            [str(runner), *args],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-            errors="replace",
-            env=environ,
-            check=False,
-        )
-    except OSError:
-        # See the port notes: bash reports 126 with its own diagnostic text, this reports 126 with none. No ledger fixture reaches here.
-        return 126, ""
+    # A PRIVATE TMPDIR PER SCENARIO, deleted when it returns. mutate-check.sh keeps `$TMPDIR/mutate-check.$$` on purpose, so a human can read the mutant and baseline logs it names; that is right for a person running the tool and wrong for this gate, which runs it several times per invocation and never reads those logs. Left at the default, every gate run added directories to the machine-wide /tmp that nothing removed: 400+ `mutate-check.<pid>` were found there on 2026-09-24, after the inode cap had been hit.
+    with tempfile.TemporaryDirectory(prefix="mutate-check-gate-") as scratch:
+        environ["TMPDIR"] = scratch
+        try:
+            completed = subprocess.run(
+                [str(runner), *args],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                errors="replace",
+                env=environ,
+                check=False,
+            )
+        except OSError:
+            # See the port notes: bash reports 126 with its own diagnostic text, this reports 126 with none. No ledger fixture reaches here.
+            return 126, ""
     # `$(...)` STRIPS EVERY TRAILING NEWLINE, and the twin captures through it. Without this the detail block printed one extra blank line per failing scenario, because `<<<"$OUT"` re-adds exactly one newline and `splitlines` then sees a final empty record. Found 2026-09-06 by the byte-for-byte case in tests/test_quality_mutate_check.py; the shadow differential could NOT see it,
     # because `bad()` prints ` FAIL <label>` with ONE space and scripts/lib/shadow-gate.ts needs two, so the whole block is chatter there.
     return completed.returncode, (completed.stdout or "").rstrip("\n")

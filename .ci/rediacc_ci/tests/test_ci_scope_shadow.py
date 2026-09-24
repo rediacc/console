@@ -518,7 +518,7 @@ def test_reduced_baseline_with_a_greenlight_grant() -> None:
 def test_operator_override_writes_a_forced_plan_and_never_runs_the_engine() -> None:
     code, stdout, _stderr, arts = recorded("an-operator-override")
     assert code == 0
-    assert "**OPERATOR OVERRIDE: full CI forced** by the FULL_CI repository variable." in stdout
+    assert "**OPERATOR OVERRIDE: full CI forced** by the FULL_CI Bitwarden secret." in stdout
     assert "--resolve-baseline" not in stdout
     assert "scope_mode=full" in arts
 

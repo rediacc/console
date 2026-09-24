@@ -9,6 +9,8 @@ mention it, compared as `file:line` sets.
 SEEDING IS OFF ON BOTH SIDES (`--no-seed`, and `noSeed` in the probe request), which is what makes the comparison say anything at all. Under the committed seed the standing backlog is silent by design, so both sides would answer "nothing" for every file in the sample and the test would pass without ever comparing two findings. With the seed off the corpus reports its real
 180-odd spans, and the sample is drawn so that some of them are in it.
 
+BOTH PROFILES, since agent/plans/PLAN-stop-hook-refactor-enforcement.md Commit 3 (its risk 5). The `advisory` profile scans four other families with their own helper set and their own cache, and the Stop hook's wide tier reads that cache; without a second case the advisory probe could drift from the advisory scan with nothing noticing, which is the exact defect this test exists for. Every test below runs once per profile.
+
 THE PLANTED CONTROL IS NOT DECORATION. A two-file entry in the cached index, given a fabricated third file, makes the probe report a finding the gate does not. If that does not fail the comparison, the comparison is not comparing anything.
 """
 
@@ -32,17 +34,22 @@ def _run(argv, **kwargs):
     return subprocess.run(argv, capture_output=True, text=True, check=False, **kwargs)
 
 
-@pytest.fixture(scope="module")
-def world(tmp_path_factory):
-    """ONE gate run: the index, the bundle and the unseeded findings all come out of it.
+# `None` is the default profile, run with the argv this test has always used, so the gate case stays byte-identical to before the advisory case existed.
+PROFILES = (None, "advisory")
+
+
+@pytest.fixture(scope="module", params=PROFILES, ids=lambda p: p or "gate")
+def world(request, tmp_path_factory):
+    """ONE gate run per profile: the index, the bundle and the unseeded findings all come out of it.
 
     The cache goes to a temporary directory through `SHAPE_PROBE_CACHE`, so this never overwrites the checkout's own cache -- which a live session's commit path is reading at the same moment.
     """
     cache = tmp_path_factory.mktemp("shape-index")
     env = dict(os.environ, SHAPE_PROBE_CACHE=str(cache))
-    proc = _run(
-        ["npx", "tsx", str(GATE), "--emit-index", "--no-seed", "--json"], cwd=str(ROOT), env=env
-    )
+    argv = ["npx", "tsx", str(GATE), "--emit-index", "--no-seed", "--json"]
+    if request.param:
+        argv += ["--profile", request.param]
+    proc = _run(argv, cwd=str(ROOT), env=env)
     line = ""
     for row in proc.stdout.splitlines():
         if row.startswith("{"):
@@ -51,6 +58,12 @@ def world(tmp_path_factory):
     index_path = cache / "index.json"
     assert index_path.is_file(), "the gate wrote no index: %s" % proc.stderr
     index = json.loads(index_path.read_text(encoding="utf-8"))
+    # THE PROFILE REACHED THE COUNTER, or the advisory case is the gate case run twice and proves nothing about the advisory scan. Read off the index the run itself wrote, not off the argv this fixture built.
+    wide = any(p.startswith(".claude/hooks/stop/") for p in index.get("pathspecs", []))
+    assert wide == (request.param == "advisory"), "profile %r produced an index over %s" % (
+        request.param,
+        index.get("pathspecs"),
+    )
     return {
         "cache": cache,
         "index_path": index_path,

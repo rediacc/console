@@ -55,6 +55,19 @@ def _gate_files() -> list[pathlib.Path]:
     return sorted((paths.repo_root() / ".ci" / "scripts" / "quality").glob("check-*.sh"))
 
 
+def _discriminating_corpus() -> list[pathlib.Path]:
+    """BOTH gate directories, which is the population the substitution classifier can still be shown to discriminate over.
+
+    DELIBERATELY NOT `_gate_files()`. That one is pinned to `.ci/scripts/quality/check-*.sh` by the set-equality floor above, which compares the glob against what git tracks there; widening it would break that comparison's whole point. This is a second, larger reading for the one case that needs two non-empty classes, and it is the same pair of directories the gate itself calls its
+    bash scope (`control_vacuity.py:403-410`).
+    """
+    root = paths.repo_root()
+    return sorted(
+        list((root / ".ci" / "scripts" / "quality").glob("check-*.sh"))
+        + list((root / ".ci" / "scripts" / "security").glob("*.sh"))
+    )
+
+
 def test_the_corpus_is_not_empty() -> None:
     """ZERO INPUTS IS A FAILURE. Every comparison below is vacuous if the glob stops matching, and a vacuous comparison passes silently.
 
@@ -126,11 +139,20 @@ def test_the_bash_classifier_still_discriminates_across_the_real_corpus() -> Non
     THE CONTROLLED HALF OF THIS FLOOR IS GONE, AND SAYING WHY IS THE POINT. It read 5, then 4, then 2 as the W7 P5 retirements took `.ci/scripts/quality/check-*.sh` down with them, and on 2026-09-21 the last bash file carrying a control of any kind, `check-review-turn-capacity.sh`, was retired too. Measured that day over `.ci/scripts/**`, `.claude/**`, `scripts/**` and
     `.github/**`: exactly one hit, that file. So a floor on `has_control` over this directory can only be zero now, and a zero floor is a check that cannot fail. The property it protected did not vanish with it, it moved: `test_the_python_arm_discriminates_across_the_real_corpus` below carries it, because that is where the controls are.
 
-    What survives here is the SUBSTITUTION classifier, which still has both classes in this directory and is still the thing the live-grep comparisons above depend on.
+    THE SUBSTITUTION CLASSIFIER OUTGREW THIS DIRECTORY ON 2026-09-23, the same way `has_control` did, and the population is WIDENED rather than the claim weakened.
+    W7P5-c retired four more twins here (`check-workflows.sh`, `check-plan-housekeeping.sh`, `check-dead-case-arms.sh`, `check-swallowed-failures.sh`), taking `.ci/scripts/quality/check-*.sh` to four files -- and all four build by substitution, so the
+    second assertion below could only fail. A uniform corpus makes "the classifier discriminates" unprovable: a `builds_by_substitution` that answered True unconditionally would satisfy it.
+
+    Lowering the claim was the wrong exit, because the property is not gone, only the directory is too small to show it. Measured on 2026-09-23 over the two gate directories together: 5 substituting (the four above plus `dependency-inventory.sh`) and 1 not (`check-workflow-gates.sh`). Both classes non-empty, so the comparison is a real one again. The security directory is the
+    right neighbour rather than an arbitrary one: `control_vacuity.py:403-410` already treats "the two gate directories" as this gate's own bash scope and refuses on their SUM, precisely so one of them reaching zero is visible instead of fatal.
     """
-    substituting = [p.name for p in _gate_files() if cv.builds_by_substitution(cv.read_lines(p))]
+    corpus = _discriminating_corpus()
+    substituting = [p.name for p in corpus if cv.builds_by_substitution(cv.read_lines(p))]
     assert len(substituting) >= 3, substituting
-    assert len(substituting) < len(_gate_files()), "everything classified as substituting"
+    assert len(substituting) < len(corpus), (
+        "everything in the two gate directories classified as substituting, so the "
+        "classifier cannot be shown to discriminate at all: %s" % [p.name for p in corpus]
+    )
     assert [p.name for p in _gate_files() if cv.has_control(cv.read_lines(p))] == [], (
         "a bash control is back in the gate directory; restore the controlled floor here "
         "and repoint the CONTROL at it rather than leaving this assertion inverted"

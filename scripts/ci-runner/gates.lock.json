@@ -1669,6 +1669,20 @@
     }
   },
   {
+    "id": "check:ci-actions-vars",
+    "run": "npm run check:ci-actions-vars",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_actions_vars.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-security",
+      "step": "GitHub Actions variables"
+    }
+  },
+  {
     "id": "check:ci-bws-rotation-notice",
     "run": "npm run check:ci-bws-rotation-notice",
     "gate": true,

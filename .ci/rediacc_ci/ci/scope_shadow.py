@@ -486,7 +486,7 @@ def main(argv: list[str]) -> int:
         os.environ.get("FORCE_FULL_CI", "") == "true"
         or os.environ.get("FULL_CI_LABEL", "") == "true"
     ):
-        override_reason = "the FULL_CI repository variable"
+        override_reason = "the FULL_CI Bitwarden secret"
         if os.environ.get("FULL_CI_LABEL", "") == "true":
             override_reason = "the full-ci PR label"
         emit(

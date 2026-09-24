@@ -40,8 +40,26 @@ import tempfile
 from rediacc_ci import paths
 from rediacc_ci.controls import Controls
 
-# The three spellings a www build wears. Kept as a list because a fourth spelling is how a fourth call site would arrive unnoticed. Compiled once; the twin re-passes the same alternation to grep on every call.
-SITE_RE = re.compile(r"build-www\.sh|npm run build:www|npm run build -w @rediacc/www")
+# The spellings a www build wears. Kept as a list because a fourth spelling is how a fourth call site would arrive unnoticed. Compiled once; the twin re-passes the same alternation to grep on every call.
+#
+# AND A FOURTH SPELLING IS EXACTLY WHAT ARRIVED, which is the second time this gate has been taught the same lesson. `c5cb6e8a6` ("80 workflow call sites run licensed Python ports instead of bash") repointed ci-build-docker.yml:123 from
+#
+#     - run: .ci/scripts/build/build-www.sh
+#     + run: PYTHONPATH=.ci python3 -m rediacc_ci.build.build_www
+#
+# and `.ci/scripts/build/build-www.sh` was then deleted outright by the W7 P6 retirement. The third call site did not go away; its NAME did. From that commit until this one the gate scanned two sites, called them all of them, and would have waved through a dropped token on the very site whose comment block still says it was "THE THIRD CALL SITE, and it was the one left behind".
+#
+# THE FLOOR IS WHAT CAUGHT IT, and nothing else could have. Both surviving sites carry their token, so every other assertion in this gate was green. Only `total < MIN_SITES` had anything to say. This is the whole argument for a floor, written down as an observed event rather than as a principle.
+#
+# `build-www.sh` is retained in the alternation although the file is deleted. A dead alternative cannot produce a false positive here -- no workflow invokes a script that does not exist -- and if the path is ever restored the gate sees it on the first run rather than after the next floor breach.
+SITE_RE = re.compile(
+    r"build-www\.sh"
+    r"|npm run build:www"
+    r"|npm run build -w @rediacc/www"
+    # Both spellings of the Python port: `-m rediacc_ci.build.build_www` as the workflow runs it today, and the direct `.../build_www.py` path that `.ci/scripts/ci/generate-tag.sh:217` names and a workflow could adopt.
+    r"|rediacc_ci\.build\.build_www"
+    r"|rediacc_ci/build/build_www\.py"
+)
 
 # The two filters, both carried. See the module docstring for why the first one cannot match and is kept anyway.
 DEAD_COMMENT_FILTER = re.compile(r"^\s*#")
@@ -192,6 +210,11 @@ def main(argv: list[str] | None = None) -> int:
             file=sys.stderr,
         )
         print("  green would assert nothing. Update find_sites().", file=sys.stderr)
+        # THE SPELLINGS, PRINTED. This has fired once for real, when c5cb6e8a6 renamed the third site from `build-www.sh` to the Python port, and the count alone sent the reader into `git log -S` archaeology. Listing what was searched for turns that into a diff against `grep -rn` on the workflow directory.
+        print(file=sys.stderr)
+        print("  Searched %s/*.yml for any of:" % workflows, file=sys.stderr)
+        for spelling in SITE_RE.pattern.split("|"):
+            print("    %s" % spelling, file=sys.stderr)
         return 1
 
     if bad > 0:
@@ -214,7 +237,7 @@ def selftest() -> int:
 
     The gate's own inline controls already prove one direction against a constructed pair. This proves the DECISION function on top of them -- the floor, the uncovered branch, the window edge -- which the inline controls never reach because they only ever call `audit`.
     """
-    ctl = Controls("www-build-token", floor=9, verbose=True)
+    ctl = Controls("www-build-token", floor=12, verbose=True)
 
     with tempfile.TemporaryDirectory() as tmp:
         base = pathlib.Path(tmp)
@@ -292,5 +315,39 @@ def selftest() -> int:
         write(short, "b.yml", with_token)
         ctl.check("FLOOR: two covered sites is a refusal", main([str(short)]), 1)
         ctl.check("FLOOR MIRROR: three covered sites is a pass", main([str(clean)]), 0)
+
+        # EVERY LIVE SPELLING, BYTE FOR BYTE AS A WORKFLOW WRITES IT.
+        # The gate went blind to the third call site for the whole life of `c5cb6e8a6` because the rename was invisible to a regex nobody re-read, and no selftest case here would have noticed: all nine of the cases above build their fixtures from `npm run build:www` alone, so the alternation was exercised on exactly one of its branches.
+        # These pin the other branches to the real invocation text.
+        spellings = workflow("spellings")
+        live = (
+            "npm run build:www",
+            "npm run build -w @rediacc/www",
+            "PYTHONPATH=.ci python3 -m rediacc_ci.build.build_www",
+            "python3 .ci/rediacc_ci/build/build_www.py",
+        )
+        for index, invocation in enumerate(live):
+            write(
+                spellings,
+                "s%d.yml" % index,
+                "jobs:\n  a:\n    steps:\n      - run: %s\n        env:\n          GITHUB_TOKEN: t\n"
+                % invocation,
+            )
+        _m, total, bad = audit(spellings)
+        ctl.check("SPELLINGS: every live invocation text is seen as a call site", total, len(live))
+        ctl.check("SPELLINGS: each of them counts as covered", bad, 0)
+
+        # THE MIRROR. A regex loose enough to match any `python3 -m` line would make the count above pass while asserting nothing, so a neighbouring module and a neighbouring npm script must both stay invisible.
+        decoys = workflow("decoys")
+        write(
+            decoys,
+            "d.yml",
+            "jobs:\n  a:\n    steps:\n"
+            "      - run: PYTHONPATH=.ci python3 -m rediacc_ci.build.build_json\n"
+            "      - run: npm run build:json\n"
+            "      - run: npm run build -w @rediacc/cli\n",
+        )
+        _m, total, _b = audit(decoys)
+        ctl.check("SPELLINGS MIRROR: a sibling build is not a www build", total, 0)
 
     return 0 if ctl.report() else 1

@@ -6,7 +6,7 @@ exit: 0
 shallow: `unknown`, grafts: `0` (grafts must be 0, or nothing below is meaningful)
 base: `unknown`  head: `deadbeefcafe`
 
-**OPERATOR OVERRIDE: full CI forced** by the FULL_CI repository variable.
+**OPERATOR OVERRIDE: full CI forced** by the FULL_CI Bitwarden secret.
 The engine did not run: no baseline walk, no classify, no reduction.
 
 **outputs written to $GITHUB_OUTPUT**
@@ -23,7 +23,7 @@ scope_mode=full
 shallow: `unknown`, grafts: `0` (grafts must be 0, or nothing below is meaningful)
 base: `unknown`  head: `deadbeefcafe`
 
-**OPERATOR OVERRIDE: full CI forced** by the FULL_CI repository variable.
+**OPERATOR OVERRIDE: full CI forced** by the FULL_CI Bitwarden secret.
 The engine did not run: no baseline walk, no classify, no reduction.
 
 **outputs written to $GITHUB_OUTPUT**

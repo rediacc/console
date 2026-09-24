@@ -88,7 +88,7 @@ from rediacc_ci.core import toolchain
 # `-i 4` four-space indent, `-ci` indent switch cases, `-d` diff mode (show what would change, exit non-zero if changes are needed). The twin keeps these in one space-separated `SHFMT_OPTS` string and word-splits it at four call sites, each carrying a `BLOCKER:` comment saying the splitting is intentional.
 SHFMT_OPTS = ("-i", "4", "-ci", "-d")
 
-# The vacuity floor's default. Measured 2026-09-04: 568 .sh files across the four scopes; re-measured 2026-09-21 at 306, after the bash-retirement campaign and batches M1 to M4, so the margin is 106 files and shrinking.
+# The vacuity floor's default. Measured 2026-09-04: 568 .sh files across the four scopes; re-measured 2026-09-21 at 306, after the bash-retirement campaign and batches M1 to M4; re-measured 2026-09-23 at 265 (`floor_count()` over the three roots), one of which is the `.ci/cache/` prune below and the rest further retirements, so the margin is 65 files and shrinking.
 #
 # The floor stays well under the count, to catch a broken enumeration rather than today's file count, and is restated on each retirement batch so a closing margin is visible early.
 DEFAULT_MIN_FILES = "200"
@@ -98,6 +98,14 @@ FLOOR_ROOTS = (".ci", ".claude", "scripts")
 
 # The two optional scopes at the end of main, in the twin's `for dir in` order. `scripts/docker` became `scripts/ops` on 2026-09-20 with W9 P2's move; the `is_dir()` guard below skips a scope that has stopped existing, so a stale name here would leave the whole scope unformatted and still report success.
 OPTIONAL_SCOPES = ("scripts/dev", "scripts/ops")
+
+# GITIGNORED WORKING DIRECTORIES THAT SIT INSIDE A SCANNED SCOPE, as repo-relative paths. Pruned here rather than in `paths.walk_tree` because only this gate's corpus is being decided; every other caller of that helper keeps the behaviour it has.
+#
+# `.ci/cache/` is `.gitignore:143`: the toolchain cache and the uv sdist cache. On 2026-09-23 it held `.ci/cache/toolchain/uv-cache/sdists-v9/pypi/pyyaml/6.0.2/.../src/packaging/build/libyaml.sh`, a THIRD-PARTY script unpacked from a PyPI sdist, and this gate reported its two-space indentation as a repository formatting finding. CI checks out none of it, nobody can fix it here,
+# and `shfmt -w` on it would be undone by the next cache write.
+#
+# Exactly the class of bug `paths.walk_tree`'s `.claude/worktrees` prune exists for: content invisible to `git ls-files` and to every CI checkout, entirely visible to a raw directory walk.
+PRUNED_SUBPATHS = (".ci/cache",)
 
 # ANSI, matching the twin's own literals. Not `rediacc_ci.log`'s; see the module docstring.
 RED = "\033[0;31m"
@@ -135,6 +143,18 @@ def log_info(message: str) -> None:
 # --------------------------------------------------------------------------- Enumeration ---------------------------------------------------------------------------
 
 
+def is_pruned(dirpath: str, name: str) -> bool:
+    """Is `<dirpath>/<name>` one of `PRUNED_SUBPATHS`? SUFFIX match, deliberately.
+
+    The gate itself walks RELATIVE roots (`main` chdirs to the repo root first), but `shell_files` is also called with ABSOLUTE roots by the tests and by the differential's hashing pass. A match anchored at the string start would prune for one caller and not the other, which is a corpus that depends on how it was spelled. The suffix carries its parent component (`.ci/cache`, never
+    `cache`), so a hypothetical `scripts/dev/cache/` is untouched.
+    """
+    candidate = pathlib.PurePath(dirpath, name).as_posix()
+    return any(
+        candidate == pruned or candidate.endswith("/" + pruned) for pruned in PRUNED_SUBPATHS
+    )
+
+
 def shell_files(root: pathlib.Path) -> list[str]:
     """Every `*.sh` regular file under `root`, in BYTE order. See the docstring.
 
@@ -145,9 +165,13 @@ def shell_files(root: pathlib.Path) -> list[str]:
     FIXED 2026-09-15: was a hand-rolled `os.scandir` stack that did not exclude `.claude/worktrees/` (sibling CHECKOUTS of this repository for isolated sub-agent sessions, git-excluded via `.git/info/exclude:11` so invisible to git and to CI, but not to a raw directory walk). A peer's worktree turned `test_security_shfmt` and
     `test_gate_vacuity_floors::test_shfmt_accepts_the_real_corpus` red on 2026-09-13 over files that are not in the repository at all. Landed on both sides at once, as it had to be: `-not -path './.claude/worktrees/*'` on `.ci/scripts/security/shfmt.sh:72` and `:104` (the bash twin `check:ci-shell-format` actually runs), and `paths.walk_tree` here -- a one-sided fix would have made
     this port's real-tree differential in `test_security_shfmt.py` report the (now intended) difference from the twin as a MISMATCH.
+
+    FIXED AGAIN 2026-09-23, same class, different directory: `PRUNED_SUBPATHS` now keeps `.ci/cache/` out of the corpus. The bash twin is retired, so this is a one-sided fix by construction; the ambient-`find` comparison in `test_security_shfmt.py` spells the same two prunes back at find so a prune removed here still reds there.
     """
     found: list[str] = []
-    for dirpath, _dirnames, filenames in paths.walk_tree(root):
+    for dirpath, dirnames, filenames in paths.walk_tree(root):
+        # PRUNED IN PLACE, so the subtree is never entered: `walk_tree` yields the same list object `os.walk` handed it, and mutating it here steers the walk exactly as mutating it inside the helper does. Filtering the results afterwards would still pay to stat 7,000-odd cached files on every run.
+        dirnames[:] = [name for name in dirnames if not is_pruned(dirpath, name)]
         for name in filenames:
             if not name.endswith(".sh"):
                 continue

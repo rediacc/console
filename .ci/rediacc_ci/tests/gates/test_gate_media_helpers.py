@@ -1,6 +1,6 @@
 """Port of `.ci/scripts/test/gates/test-media-helpers.sh`, retired in W7 P5.
 
-Two subjects, and the first one carries the second: `with_fake_bin` / `fake_bin_record` in `.ci/scripts/test/lib/test-helpers.sh`, and the `.ci/media` scan root in `.ci/scripts/quality/check-dead-case-arms.sh`.
+Two subjects, and the first one carries the second: `with_fake_bin` / `fake_bin_record` in `.ci/scripts/test/lib/test-helpers.sh`, and the `.ci/media` scan root in `.ci/scripts/quality/check_dead_case_arms.py`.
 
 WHY THE HELPER IS TESTED AT ALL. Six other gate tests claim to prove things about code that drives a GPU, a libvirt cluster and an R2 bucket, and every one of those claims rests on `with_fake_bin` actually EMPTYING PATH. A helper that quietly left PATH intact would make all six pass against the host's real binaries while reporting hermetic isolation, which is the exact shape of a
 green that means nothing. So the helper is tested first, and the assertion carrying the most weight is the negative one: the binaries nobody named are GONE.
@@ -8,17 +8,22 @@ green that means nothing. So the helper is tested first, and the assertion carry
 THE PORT DRIVES THE BASH HELPER, NOT ITS PYTHON COUSIN, and this is the whole reason the module is written the way it is. `rediacc_ci.tests.gates.harness` has its own `fake_bin` with the same contract, and calling that here would be a test of the port's own library while the file claims to be testing `.ci/scripts/test/lib/test-helpers.sh`. Every case below therefore runs `bash -c
 'source test-helpers.sh; with_fake_bin ... probe'` in a subprocess and reads its exit code, so the subject under test is the shipped shell function and nothing else. The probe bodies are the twin's, verbatim in shell, because translating them would change what is being asserted about a shell helper.
 
-NO `xdist_group`. Each case is one `bash -c` subprocess with its own `mkdtemp` fixture; `with_fake_bin` scopes its PATH change to a subshell inside that process, so nothing leaks even between the cases in one file, let alone between workers. The two cases that run the real `check-dead-case-arms.sh` only READ the tree.
+NO `xdist_group`. Each case is one `bash -c` subprocess with its own `mkdtemp` fixture; `with_fake_bin` scopes its PATH change to a subshell inside that process, so nothing leaks even between the cases in one file, let alone between workers. The two cases that run the real `check_dead_case_arms.py` only READ the tree.
 """
 
 import pathlib
 import shutil
+import sys
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 
 HELPERS = paths.from_root(".ci", "scripts", "test", "lib", "test-helpers.sh")
-GATE = paths.from_root(".ci", "scripts", "quality", "check-dead-case-arms.sh")
+# THE SUBJECT IS THE PYTHON GATE NOW. It was `.ci/scripts/quality/check-dead-case-arms.sh`
+# (blob `19c18e3f491528ad54c0e1fb8832f626b0eade9d`), retired in W7P5-c on its K=5 `EQUIVALENT`
+# ledger `.ci/shadow/w7p2-dead-case-arms.observations.jsonl`. See the identical note in
+# `test_gate_dead_case_arms.py` for the differential that was driven before the deletion.
+GATE = paths.from_root(".ci", "scripts", "quality", "check_dead_case_arms.py")
 MEDIA = paths.from_root(".ci", "media")
 
 
@@ -172,12 +177,12 @@ assert_eq "$PATH" "$before" "the caller's PATH must be unchanged by with_fake_bi
     gate.log_pass("the caller's PATH is untouched: the restriction is scoped to a subshell")
 
 
-# --------------------------------------------------------------------------- The .ci/media scan root in check-dead-case-arms.sh ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The .ci/media scan root in check_dead_case_arms.py ---------------------------------------------------------------------------
 
 
 def run_gate_media(media_dirs: str | None = None) -> harness.RunResult:
     env = {} if media_dirs is None else {"DEAD_CASE_MEDIA_DIRS": media_dirs}
-    return harness.run(["bash", str(GATE)], cwd=paths.repo_root(), env=env)
+    return harness.run([sys.executable, str(GATE)], cwd=paths.repo_root(), env=env)
 
 
 def test_media_root_is_wired_into_the_real_scan(gate, tmp_path: pathlib.Path):

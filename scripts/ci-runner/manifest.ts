@@ -1594,6 +1594,18 @@ export const GATES: readonly GateSpec[] = [
       step: 'Bitwarden secret map',
     },
   },
+  {
+    id: 'check:ci-actions-vars',
+    run: 'npm run check:ci-actions-vars',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_actions_vars.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-security',
+      step: 'GitHub Actions variables',
+    },
+  },
   // <<< gen-manifest: region 14
   {
     // The other half of `agent/plans/PLAN-bws-rotation-on-failure.md`. That plan deleted `.ci/config/bws-token-expiry.json` and its one reader, on the ruling that a hand-written date is a second source of truth nothing can check, and that a non-zero `bws` is the only signal there is. What remains is a PROCEDURE, and this asserts the three claims that procedure rests on: one
@@ -2545,7 +2557,6 @@ export const GATES: readonly GateSpec[] = [
       step: 'Test-file orphan check',
     },
   },
-  // <<< gen-manifest: region 18
   // Hand-registered rather than folded into a gen-manifest region: agent/plans/PLAN-haiku-model-routing.md section 4. Every agent declaring a non-opus model must be named, by filename, with a reason, in docs/agent-reference/model-routing.md, in the same commit -- the same bargain check-naturalization-model-policy.ts already makes for the naturalization ledger.
   {
     id: 'check:ci-agent-model-roster',
@@ -2559,6 +2570,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Agent model roster matches its documented reasons',
     },
   },
+  // <<< gen-manifest: region 18
   {
     id: 'check:ci-lint-scope-coverage',
     run: 'npm run check:ci-lint-scope-coverage',

@@ -134,6 +134,7 @@ BASELINE: dict[str, tuple[str, ...]] = {
     ".claude/hooks/stop/calibrate-judge-rules.py": ("cac5257d3f9d",),
     ".claude/hooks/stop/test-adhoc-watch.py": ("cac5257d3f9d",),
     ".claude/hooks/stop/test-always-tier.py": ("5163c1cfecb6",),
+    ".claude/hooks/stop/test-backlog.py": ("5163c1cfecb6",),
     ".claude/hooks/stop/test-completion-evidence.py": ("a30413cc683d",),
     ".claude/hooks/stop/test-judge-schema.py": ("cac5257d3f9d",),
     ".claude/hooks/stop/test-plan-status-parse.py": ("cac5257d3f9d",),

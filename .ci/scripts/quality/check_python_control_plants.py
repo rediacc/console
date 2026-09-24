@@ -328,7 +328,7 @@ def selftest(verbose: bool = False) -> int:
         len(findings_for(_UNGUARDED_ASSIGN)),
         1,
     )
-    # THE TWO REFUSALS, driven against real starved trees rather than asserted. `test-gate-anti-vacuity.sh` cannot reach these: its fixture copies `.ci/rediacc_ci` wholesale, so it hands this gate its real inputs and the gate correctly exits 0. Claiming a diagnostic there that cannot fire would be a false entry in a hand-verified registry, so the coverage lives here.
+    # THE TWO REFUSALS, driven against real starved trees rather than asserted. `.ci/rediacc_ci/tests/gates/test_gate_gate_anti_vacuity.py` cannot reach these: its fixture copies `.ci/rediacc_ci` wholesale, so it hands this gate its real inputs and the gate correctly exits 0. Claiming a diagnostic there that cannot fire would be a false entry in a hand-verified registry, so the coverage lives here.
     with tempfile.TemporaryDirectory() as tmp:
         empty = pathlib.Path(tmp)
         mods, sites, _ = scan(empty)
@@ -379,7 +379,7 @@ def main_against(root: pathlib.Path) -> str:
 def _root() -> pathlib.Path:
     """Resolved at CALL time, not import time.
 
-    THE ANTI-VACUITY REFUSALS ARE UNTESTABLE OTHERWISE, and untested refusals are the thing this gate exists to object to. A module-level constant cannot be pointed at a starved tree from a control, so the two refusals below would have been asserted by nothing -- exactly the shape `.ci/scripts/test/gates/ test-gate-anti-vacuity.sh` looks for, and it cannot reach them itself because
+    THE ANTI-VACUITY REFUSALS ARE UNTESTABLE OTHERWISE, and untested refusals are the thing this gate exists to object to. A module-level constant cannot be pointed at a starved tree from a control, so the two refusals below would have been asserted by nothing -- exactly the shape `.ci/rediacc_ci/tests/gates/test_gate_gate_anti_vacuity.py` looks for, and it cannot reach them itself because
     its fixture copies `.ci/rediacc_ci` wholesale and therefore feeds this gate its real inputs.
     """
     env = os.environ.get("PY_CONTROL_PLANTS_ROOT")

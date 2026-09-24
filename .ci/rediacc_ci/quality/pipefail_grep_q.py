@@ -113,8 +113,8 @@ mention-as-execution class, this time inside the gate written to catch a differe
 PORT NOTES.
 -----------------------------------------------------------------------------
 
-THE CORPUS IS `git ls-files`, INVOKED, NOT REIMPLEMENTED. The twin's pathspecs (`.ci/scripts/**/*.sh`, `scripts/**/*.sh`, `.claude/hooks/**/*.sh`) are matched by git's wildmatch, which by default lets `*` cross a `/`. A `pathlib.rglob` rewrite would be a SECOND definition of the corpus and would drift from the twin's the first time a directory moved -- and a corpus that quietly
-narrows is precisely the vacuity this gate's own floor exists to catch. It is a subprocess.
+THE CORPUS IS `git ls-files`, INVOKED, NOT REIMPLEMENTED. PATHSPECS below is handed to it verbatim, and every entry opts into pathname semantics with `:(glob)` magic, for the reason recorded at that definition: under git's DEFAULT wildmatch a doubled star widens nothing, it DEMANDS a slash, and the corpus silently lost the six shell files sitting at depth 1. A `pathlib.rglob`
+rewrite would be a SECOND definition of the corpus and would drift from the shipped pathspecs the first time a directory moved -- and a corpus that quietly narrows is precisely the vacuity this gate's own floor exists to catch. It is a subprocess.
 
 THE COLOUR CONDITION IS THE TWIN'S BUG, CARRIED. `[ -t 1 ]` tests STDOUT and `fail()` writes its coloured line to STDERR, which is the 11-file variant `rediacc_ci.log` was written to replace. `rediacc_ci.log` is deliberately NOT used here: it would decide colour from stderr and disable it under CI, so the two implementations would emit different bytes in exactly the environment CI
 runs in. Reported as a twin finding instead of repaired.

@@ -127,14 +127,18 @@ FROZEN = {
     "eligible-non-numeric": (
         1,
         "",
-        "release-age: could not reach scripts/lib/release-age.ts (tsx missing or "
-        "failing); treating 'not-a-number' as DEFERRED\n",
+        (
+            "release-age: could not reach scripts/lib/release-age.ts (tsx missing or "
+            "failing); treating 'not-a-number' as DEFERRED\n"
+        ),
     ),
     "eligible-empty-epoch": (
         1,
         "",
-        "release-age: could not reach scripts/lib/release-age.ts (tsx missing or "
-        "failing); treating '' as DEFERRED\n",
+        (
+            "release-age: could not reach scripts/lib/release-age.ts (tsx missing or "
+            "failing); treating '' as DEFERRED\n"
+        ),
     ),
     "deferred-yes": (0, "deferred\n", ""),
     "deferred-no": (1, "eligible\n", ""),
@@ -157,14 +161,18 @@ FROZEN_FT_OK = {
     "eligible-non-numeric": (
         1,
         "",
-        "release-age: could not reach scripts/lib/release-age.ts (tsx missing or "
-        "failing); treating 'not-a-number' as DEFERRED\n",
+        (
+            "release-age: could not reach scripts/lib/release-age.ts (tsx missing or "
+            "failing); treating 'not-a-number' as DEFERRED\n"
+        ),
     ),
     "eligible-empty-epoch": (
         1,
         "",
-        "release-age: could not reach scripts/lib/release-age.ts (tsx missing or "
-        "failing); treating '' as DEFERRED\n",
+        (
+            "release-age: could not reach scripts/lib/release-age.ts (tsx missing or "
+            "failing); treating '' as DEFERRED\n"
+        ),
     ),
     "deferred-yes": (1, "eligible\n", ""),
     "deferred-no": (1, "eligible\n", ""),
@@ -227,20 +235,26 @@ FROZEN_BROKEN = {
     "eligible-refuses-loudly": (
         1,
         "",
-        "release-age: could not reach scripts/lib/release-age.ts (tsx missing or "
-        "failing); treating '1756000000' as DEFERRED\n",
+        (
+            "release-age: could not reach scripts/lib/release-age.ts (tsx missing or "
+            "failing); treating '1756000000' as DEFERRED\n"
+        ),
     ),
     "deferred-fails-closed": (
         0,
         "deferred\n",
-        "release-age: could not reach scripts/lib/release-age.ts (tsx missing or "
-        "failing); treating '1756000000' as DEFERRED\n",
+        (
+            "release-age: could not reach scripts/lib/release-age.ts (tsx missing or "
+            "failing); treating '1756000000' as DEFERRED\n"
+        ),
     ),
     "deferred-fails-closed-even-when-now-is-far-future": (
         0,
         "deferred\n",
-        "release-age: could not reach scripts/lib/release-age.ts (tsx missing or "
-        "failing); treating '1756000000' as DEFERRED\n",
+        (
+            "release-age: could not reach scripts/lib/release-age.ts (tsx missing or "
+            "failing); treating '1756000000' as DEFERRED\n"
+        ),
     ),
 }
 

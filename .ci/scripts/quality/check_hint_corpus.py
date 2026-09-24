@@ -21,6 +21,7 @@ lane: quality-content
 
 from __future__ import annotations
 
+import contextlib
 import os
 import re
 import sys
@@ -33,9 +34,9 @@ REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", 
 HOOK_DIR = os.path.join(REPO_ROOT, ".claude", "hooks", "stop")
 HINTS_FILE = os.path.join(REPO_ROOT, "docs", "agent-reference", "HINTS.md")
 
-MIN_HINTS = 8          # H1, the number section 6.3 names literally
-ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]{2,48}$")   # H2
-HEADING_MAX = 160       # H4, matches HINTS.md's own schema line at HINTS.md:12
+MIN_HINTS = 8  # H1, the number section 6.3 names literally
+ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]{2,48}$")  # H2
+HEADING_MAX = 160  # H4, matches HINTS.md's own schema line at HINTS.md:12
 PRONOUN_RE = re.compile(
     r"(?<![\w'-])(i|i'm|i've|i'd|i'll|me|my|mine|myself|you|you're|you've|you'll|"
     r"your|yours|yourself|we|we're|we've|us|our|ours)(?![\w'-])",
@@ -65,21 +66,23 @@ def load_hints():
     paths.on_sys_path(HOOK_DIR)
     try:
         import wl_hints  # noqa: PLC0415
-        import wl_planrec as R  # noqa: PLC0415
+        import wl_planrec as plan_r  # noqa: PLC0415
     except ImportError as exc:
-        die(f"cannot import wl_hints or wl_planrec ({exc}). Refusing to pass while measuring nothing.")
+        die(
+            f"cannot import wl_hints or wl_planrec ({exc}). Refusing to pass while measuring nothing."
+        )
     for fn in ("hints_path", "load_corpus", "hint_pick", "render"):
         if not hasattr(wl_hints, fn):
             die(
                 f"wl_hints.{fn}() is missing (renamed? removed?). The hint module's frozen "
                 "contract changed; update this gate deliberately rather than letting it pass."
             )
-    if not hasattr(R, "resolve"):
+    if not hasattr(plan_r, "resolve"):
         die(
             "wl_planrec.resolve() is missing. Cannot verify source pointers; "
             "update this gate deliberately."
         )
-    return wl_hints, R
+    return wl_hints, plan_r
 
 
 def source_pointers(value):
@@ -97,7 +100,9 @@ def source_pointers(value):
 
 def judge_corpus(hints_mod, entries, parse_errors):
     """H1 through H4 assertions on the corpus."""
-    out = list(parse_errors)   # load_corpus's own errors: empty heading/id/source, duplicate id -- half of H2
+    out = list(
+        parse_errors
+    )  # load_corpus's own errors: empty heading/id/source, duplicate id -- half of H2
     active = [e for e in entries if e.get("status") == "active"]
 
     # H1 population floor
@@ -118,7 +123,9 @@ def judge_corpus(hints_mod, entries, parse_errors):
         if eid and e.get("source"):
             for kind, token in source_pointers(e["source"]):
                 if kind is None:
-                    out.append("%s: Source pointer %r carries no recognised kind prefix" % (eid, token))
+                    out.append(
+                        "%s: Source pointer %r carries no recognised kind prefix" % (eid, token)
+                    )
                     continue
                 ok, why = hints_mod.resolve(REPO_ROOT, kind, token) if hints_mod else (False, "")
                 if not ok:
@@ -126,7 +133,9 @@ def judge_corpus(hints_mod, entries, parse_errors):
         # H4 shape
         if heading:
             if len(heading) > HEADING_MAX:
-                out.append("%s: heading is %d chars, over %d" % (eid or "?", len(heading), HEADING_MAX))
+                out.append(
+                    "%s: heading is %d chars, over %d" % (eid or "?", len(heading), HEADING_MAX)
+                )
             m = PRONOUN_RE.search(heading)
             if m:
                 out.append("%s: heading carries the pronoun %r" % (eid or "?", m.group(0)))
@@ -163,7 +172,9 @@ def cycle_findings(pick_fn, entries):
         )
     extra = pick_fn(entries, ledger)
     if extra is None:
-        out.append("H6: hint_pick returned None immediately after a full cycle; the rotation must repeat forever")
+        out.append(
+            "H6: hint_pick returned None immediately after a full cycle; the rotation must repeat forever"
+        )
     elif extra[0]["id"] == picks[-1]:
         out.append(
             "H6: the pick right after a cycle boundary repeated the hint that just closed "
@@ -178,7 +189,7 @@ def write_hint(path: str, hint_id: str, heading: str, source: str) -> None:
         fh.write(f"## {heading}\n\nHint-Id: {hint_id}\nSource: {source}\nStatus: active\n\n")
 
 
-def controls_fired(hints_mod, R):
+def controls_fired(hints_mod, plan_r):
     """Drive the matcher and this gate's evaluator against planted defects.
 
     Returns the list of planted defects that were NOT caught. Anything in it means the instrument cannot fail, so no verdict may be issued.
@@ -187,20 +198,54 @@ def controls_fired(hints_mod, R):
 
     # Healthy fixture: 9 entries (one above MIN_HINTS)
     healthy_entries = [
-        ("investigate-with-fan-out", "Investigate questions with them by default, launching multiple agents in parallel", "file:CLAUDE.md:1, trap:check-cannot-fail"),
+        (
+            "investigate-with-fan-out",
+            "Investigate questions with them by default, launching multiple agents in parallel",
+            "file:CLAUDE.md:1, trap:check-cannot-fail",
+        ),
         ("plan-with-them", "Plan with them on anything non-trivial", "file:CLAUDE.md:1"),
-        ("writing-agents", "Writing agents: at most 2 at a time, with disjoint file ownership", "file:CLAUDE.md:1"),
-        ("spot-check-output", "Spot-check every agent's output against the artifact", "file:CLAUDE.md:1"),
-        ("model-by-task-shape", "Model choice is by task SHAPE, never by language or domain", "file:CLAUDE.md:1"),
-        ("verify-load-bearing", "Verify the load-bearing ones before relying on them", "file:CLAUDE.md:1"),
-        ("run-real-thing", "Run the real thing. Output, exit-code, and error-path defects", "file:CLAUDE.md:1"),
-        ("cannot-be-done-probe", "Cannot be done here is a claim, so probe it before making it", "file:CLAUDE.md:1"),
-        ("gate-that-ran", "Name the gates that ran, and the ones that were skipped", "file:CLAUDE.md:1"),
+        (
+            "writing-agents",
+            "Writing agents: at most 2 at a time, with disjoint file ownership",
+            "file:CLAUDE.md:1",
+        ),
+        (
+            "spot-check-output",
+            "Spot-check every agent's output against the artifact",
+            "file:CLAUDE.md:1",
+        ),
+        (
+            "model-by-task-shape",
+            "Model choice is by task SHAPE, never by language or domain",
+            "file:CLAUDE.md:1",
+        ),
+        (
+            "verify-load-bearing",
+            "Verify the load-bearing ones before relying on them",
+            "file:CLAUDE.md:1",
+        ),
+        (
+            "run-real-thing",
+            "Run the real thing. Output, exit-code, and error-path defects",
+            "file:CLAUDE.md:1",
+        ),
+        (
+            "cannot-be-done-probe",
+            "Cannot be done here is a claim, so probe it before making it",
+            "file:CLAUDE.md:1",
+        ),
+        (
+            "gate-that-ran",
+            "Name the gates that ran, and the ones that were skipped",
+            "file:CLAUDE.md:1",
+        ),
     ]
 
     def make_fixture(entries_list):
         """Create a temp HINTS.md file and load it."""
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False, encoding="utf-8") as fh:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".md", delete=False, encoding="utf-8"
+        ) as fh:
             path = fh.name
             fh.write("# Hints\n\n")
             for hint_id, heading, source in entries_list:
@@ -215,13 +260,12 @@ def controls_fired(hints_mod, R):
         """Load fixture and judge it with both evaluators."""
         path, entries, errors = make_fixture(entries_list)
         try:
-            findings = judge_corpus(R, entries, errors) + cycle_findings(hints_mod.hint_pick, entries)
-            return findings
+            return judge_corpus(plan_r, entries, errors) + cycle_findings(
+                hints_mod.hint_pick, entries
+            )
         finally:
-            try:
+            with contextlib.suppress(Exception):
                 os.unlink(path)
-            except Exception:
-                pass
 
     # CONTROL 0: on a HEALTHY fixture the evaluator must be silent
     findings = judge(healthy_entries)
@@ -253,14 +297,22 @@ def controls_fired(hints_mod, R):
 
     # CONTROL 4 (H3): unresolvable source
     bad_source_entries = list(healthy_entries)
-    bad_source_entries[0] = (bad_source_entries[0][0], bad_source_entries[0][1], "file:docs/agent-reference/DOES-NOT-EXIST-PLANTED.md:1")
+    bad_source_entries[0] = (
+        bad_source_entries[0][0],
+        bad_source_entries[0][1],
+        "file:docs/agent-reference/DOES-NOT-EXIST-PLANTED.md:1",
+    )
     findings = judge(bad_source_entries)
     if not any("does not resolve" in f for f in findings):
         missed.append("an unresolvable Source was not reported 'does not resolve'")
 
     # CONTROL 5 (H4): oversized heading and pronoun
     h4_entries = list(healthy_entries)
-    h4_entries[0] = (h4_entries[0][0], "Check your work before calling the artifact finished", h4_entries[0][2])  # pronoun
+    h4_entries[0] = (
+        h4_entries[0][0],
+        "Check your work before calling the artifact finished",
+        h4_entries[0][2],
+    )  # pronoun
     h4_entries[1] = (h4_entries[1][0], "x" * 161, h4_entries[1][2])  # 161 chars
     findings = judge(h4_entries)
     has_pronoun = any("pronoun" in f for f in findings)
@@ -270,8 +322,17 @@ def controls_fired(hints_mod, R):
 
     # CONTROL 6a (H5/H6): hint_pick stubbed to always return first entry
     active = [e for e in healthy_entries if True]  # all are active in healthy fixture
-    constant_pick = lambda entries, ledger: ({"id": active[0][0]}, 1, len(active))
-    findings = cycle_findings(constant_pick, [{"id": eid, "heading": h, "source": s, "status": "active"} for eid, h, s in healthy_entries])
+
+    def constant_pick(_entries, _ledger):
+        return ({"id": active[0][0]}, 1, len(active))
+
+    findings = cycle_findings(
+        constant_pick,
+        [
+            {"id": eid, "heading": h, "source": s, "status": "active"}
+            for eid, h, s in healthy_entries
+        ],
+    )
     if not any("never surfaced" in f for f in findings):
         missed.append("a hint_pick that only returns one entry was not reported H5")
 
@@ -293,7 +354,13 @@ def controls_fired(hints_mod, R):
             return (active[-1], 1, len(active))
         return None
 
-    findings = cycle_findings(repeating_pick, [{"id": eid, "heading": h, "source": s, "status": "active"} for eid, h, s in healthy_entries])
+    findings = cycle_findings(
+        repeating_pick,
+        [
+            {"id": eid, "heading": h, "source": s, "status": "active"}
+            for eid, h, s in healthy_entries
+        ],
+    )
     if not any("repeated the hint that just closed" in f for f in findings):
         missed.append("a hint_pick that repeats the last entry was not reported H6")
 
@@ -311,10 +378,10 @@ def main() -> int:
         )
         return 1
 
-    hints_mod, R = load_hints()
+    hints_mod, plan_r = load_hints()
 
     # --- control-first: prove this instrument can fail -------------------------
-    missed = controls_fired(hints_mod, R)
+    missed = controls_fired(hints_mod, plan_r)
     if missed:
         print(
             f"{RED}✗{NC} CONTROLS DID NOT FIRE, so this gate cannot detect what it exists for:",
@@ -326,7 +393,9 @@ def main() -> int:
 
     # --- real corpus judgment --------------------------------------------------
     entries, parse_errors = hints_mod.load_corpus(HINTS_FILE)
-    findings = judge_corpus(R, entries, parse_errors) + cycle_findings(hints_mod.hint_pick, entries)
+    findings = judge_corpus(plan_r, entries, parse_errors) + cycle_findings(
+        hints_mod.hint_pick, entries
+    )
 
     if findings:
         print(f"{RED}✗{NC} hints corpus defects:", file=sys.stderr)

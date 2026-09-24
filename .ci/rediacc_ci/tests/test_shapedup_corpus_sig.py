@@ -19,8 +19,7 @@ HOOK = paths.from_root(".claude", "hooks", "stop", "wl_shapedup.py")
 
 
 def _families() -> set[str]:
-    # THIS IS STILL THE FULL CORPUS, after agent/plans/PLAN-stop-hook-refactor-enforcement.md Commit 2's profile split: `PROFILES.gate.families` references this SAME `FAMILIES` constant by name rather than inlining a second array literal, so a text scan for `const FAMILIES = [...]` still finds the whole gate profile's pathspecs. `CORPUS_GLOBS` is asserted against the UNION of every
-    # profile's pathspecs, which today is just this one -- Commit 3's `advisory` profile, once it exists, gets a companion regex here (a second named constant, the same pattern) rather than a change to this docstring's promise; the counter never scans anything the Stop hook does not also watch for staleness, whatever profile is asking.
+    # THE GATE PROFILE'S CORPUS, after agent/plans/PLAN-stop-hook-refactor-enforcement.md Commit 2's profile split: `PROFILES.gate.families` references this SAME `FAMILIES` constant by name rather than inlining a second array literal, so a text scan for `const FAMILIES = [...]` still finds the whole gate profile's pathspecs. Commit 3's `advisory` profile has its own named constant, `ADVISORY_FAMILIES`, pinned against the hook's `CORPUS_GLOBS_WIDE` by the companion test below with the same pattern, so each tier's signature watches exactly the profile it runs and the counter never scans anything the Stop hook does not also watch for staleness, whatever profile is asking.
     #
     # THE LITERAL GREW A TYPE AND A FLOOR on 2026-09-08 -- `const FAMILIES: readonly
     # Family[] = [{ pathspec: '...', floor: N }, ...]` -- and this pattern, written
@@ -41,6 +40,23 @@ def _families() -> set[str]:
 def _corpus_globs() -> set[str]:
     m = re.search(r"CORPUS_GLOBS = \((.*?)\)", HOOK.read_text(encoding="utf-8"), re.DOTALL)
     assert m, "CORPUS_GLOBS literal not found in %s" % paths.relative_to_root(HOOK)
+    return set(re.findall(r'"([^"]+)"', m.group(1)))
+
+
+def _advisory_families() -> set[str]:
+    # THE WIDE TIER'S HALF (Commit 3). `const ADVISORY_FAMILIES` and not a looser `FAMILIES` pattern: the narrow regex above must keep matching only the gate's literal, and this one only the advisory one, or the two equalities could each pass against the other's list.
+    m = re.search(
+        r"const ADVISORY_FAMILIES(?:\s*:[^=]+)?\s*=\s*\[(.*?)\];",
+        COUNTER.read_text(encoding="utf-8"),
+        re.DOTALL,
+    )
+    assert m, "ADVISORY_FAMILIES literal not found in %s" % paths.relative_to_root(COUNTER)
+    return set(re.findall(r"[\'\"]([^\'\"]+)[\'\"]", m.group(1)))
+
+
+def _corpus_globs_wide() -> set[str]:
+    m = re.search(r"CORPUS_GLOBS_WIDE = \((.*?)\)", HOOK.read_text(encoding="utf-8"), re.DOTALL)
+    assert m, "CORPUS_GLOBS_WIDE literal not found in %s" % paths.relative_to_root(HOOK)
     return set(re.findall(r'"([^"]+)"', m.group(1)))
 
 
@@ -66,3 +82,27 @@ def test_both_literals_are_non_empty():
     """
     assert len(_families()) >= 3
     assert len(_corpus_globs()) >= 3
+
+
+def test_the_wide_signature_watches_exactly_what_the_advisory_profile_reads():
+    """Risk 7 of agent/plans/PLAN-stop-hook-refactor-enforcement.md, for the wide tier: the same exact equality in both directions, for the same reason as the gate profile's. A narrower wide signature serves a stale advisory verdict; a wider one means the two lists have drifted."""
+    families, globs = _advisory_families(), _corpus_globs_wide()
+    missing = sorted(families - globs)
+    extra = sorted(globs - families)
+    assert not missing, (
+        "the Stop hook's CORPUS_GLOBS_WIDE does not watch %s, which the advisory profile "
+        "READS: an edit to one of those files leaves the wide signature unchanged and the "
+        "hook serves a STALE advisory verdict" % missing
+    )
+    assert not extra, (
+        "the Stop hook's CORPUS_GLOBS_WIDE watches %s, which the advisory profile does not "
+        "read: the two lists have drifted" % extra
+    )
+
+
+def test_the_two_tiers_are_parsed_apart():
+    """The anti-vacuity half for the wide tier, and the proof that each regex found its OWN literal: both wide lists parse non-empty, and neither narrow list shares a pathspec with them. A narrow regex that had started matching the wide tuple, or the reverse, would make one equality compare a list with itself."""
+    assert len(_advisory_families()) >= 4
+    assert len(_corpus_globs_wide()) >= 4
+    assert not (_corpus_globs() & _corpus_globs_wide())
+    assert not (_families() & _advisory_families())

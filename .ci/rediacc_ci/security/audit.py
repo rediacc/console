@@ -145,7 +145,7 @@ import subprocess
 import sys
 
 from rediacc_ci import paths
-from rediacc_ci.core import advisory, age, blocker_validator, release_age
+from rediacc_ci.core import advisory, age, blocker_validator, release_age, toolchain
 from rediacc_ci.policy_paths import policy_rel
 
 # THE EM DASH IS BUILT, NEVER TYPED. Nine of the twin's messages carry U+2014 and byte equality is the whole claim of this file, but the repo's house rule bans the literal character from authored text and `check:ci-em-dash-surfaces` scans `.ci/**/*.py`. `core/allowlist.py:180` already resolves the same conflict the same way; this is that decision, not a new one.
@@ -167,9 +167,11 @@ PROD_ALLOWLIST = policy_rel(".audit-prod-allowlist")
 DEV_ALLOWLIST = policy_rel(".audit-allowlist")
 DEPS_BLOCKLIST = policy_rel(".deps-upgrade-blocklist")
 
-# `npm install -g npm@11.17.0` (audit.sh:387). Pinned in the twin, pinned here;
-# see the BLOCKER above it about npm 10's Sigstore client.
-NPM_PIN = "npm@11.17.0"
+
+# The npm installed when the running one is not 11.x (audit.sh:387), read from `.devcontainer/toolchain.env` NPM_VERSION, the one npm pin every lane shares. Read at call time, so importing this module never depends on the pins file; see the BLOCKER above it about npm 10's Sigstore client.
+def npm_pin() -> str:
+    return "npm@" + toolchain.pin_for("npm")
+
 
 # `while ((audit_sig_attempt < 3))` and `sleep 10` (audit.sh:394-404).
 SIGNATURE_ATTEMPTS = 3
@@ -1008,7 +1010,7 @@ class Audit:
         version, _status = capture(["npm", "--version"], line=385, quiet_err=False)
         if not version.startswith("11."):
             advisory.log_warn("Upgrading npm to 11.x for Sigstore attestation key compatibility")
-            proc = spawn(["npm", "install", "-g", NPM_PIN, "--no-audit", "--no-fund"], line=387)
+            proc = spawn(["npm", "install", "-g", npm_pin(), "--no-audit", "--no-fund"], line=387)
             if proc.returncode != 0:
                 raise Die(proc.returncode)
 

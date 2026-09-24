@@ -583,10 +583,27 @@ def test_shell_files_is_sorted_and_finds_the_nested_ones() -> None:
 
 
 def test_shell_files_agrees_with_the_ambient_find_as_a_set() -> None:
-    """Different ORDER, same SET. The whole divergence in one assertion."""
+    """Different ORDER, same SET. The whole divergence in one assertion.
+
+    THE TWO `-not -path` CLAUSES ARE THE PORT'S TWO PRUNES, spelled back at find so the comparison is about ORDER and nothing else. `.claude/worktrees/*` is a peer session's sibling checkout; `.ci/cache/*` is `.gitignore:143`, the toolchain and uv sdist caches, which on 2026-09-23 put a third-party `libyaml.sh` from a PyPI sdist into this gate's corpus and turned it red over
+    formatting nobody here can fix. Both are invisible to git and to CI and entirely visible to a raw walk. Drop either clause and this test fails describing the pruned files, which is the intended way to notice a prune that was removed on one side only.
+    """
     for rel in (".ci", ".claude"):
         found = subprocess.run(
-            ["find", rel, "-name", "*.sh", "-type", "f", "-not", "-path", ".claude/worktrees/*"],
+            [
+                "find",
+                rel,
+                "-name",
+                "*.sh",
+                "-type",
+                "f",
+                "-not",
+                "-path",
+                ".claude/worktrees/*",
+                "-not",
+                "-path",
+                ".ci/cache/*",
+            ],
             capture_output=True,
             text=True,
             check=True,

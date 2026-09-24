@@ -42,7 +42,7 @@ import path from 'node:path';
 import { globSync } from 'glob';
 import { githubToken } from '../lib/github-token.js';
 
-// Every markdown tree whose external links are load-bearing. Each root is guarded independently below: a root that matches zero files is a moved or renamed path, never a legitimate state, and it fails the run rather than silently shrinking the corpus (root pattern 1 in .ci/scripts/test/gates/test-gate-anti-vacuity.sh).
+// Every markdown tree whose external links are load-bearing. Each root is guarded independently below: a root that matches zero files is a moved or renamed path, never a legitimate state, and it fails the run rather than silently shrinking the corpus (root pattern 1 in `.ci/rediacc_ci/tests/gates/test_gate_gate_anti_vacuity.py`).
 //
 // packages/www/src/content/{docs,blog} are published to the website; docs/,
 // .ci/docs/ and .github/ are the operator-facing runbooks whose links get followed under time pressure; packages/cli/README.md ships in the npm tarball. Measured at the time of writing: 781 + 66 + 66 + 2 + 2 + 3 files.
@@ -598,7 +598,7 @@ async function processQueue(entries: LinkEntry[]): Promise<{
  * Collect markdown files per root.
  *
  * ANTI-VACUITY GUARD. Every entry in SCAN_ROOTS is a hardcoded path constant,
- * which is root pattern 1 in .ci/scripts/test/gates/test-gate-anti-vacuity.sh:
+ * which is root pattern 1 in `.ci/rediacc_ci/tests/gates/test_gate_gate_anti_vacuity.py`:
  * move or rename a tree and its glob returns zero files, every loop below
  * iterates zero times, and the gate prints "All external links are valid"
  * while checking less than it claims. Measured, not assumed: before this guard

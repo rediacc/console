@@ -2,7 +2,7 @@
 """Run the rediacc_ci suite, and refuse to call a collapsed collection green.
 
 WHAT THIS GATE IS FOR. `pytest` on its own is not a gate. Point it at a directory that no longer exists, mistype `testpaths`, break an import in a conftest, and it prints `no tests ran` and exits 5 -- or, worse, collects a handful of the files it can still see and exits 0. A wrapper that only forwards pytest's exit code turns the second case into a green CI step forever, which is
-the same failure `.ci/scripts/quality/check-python-lint.sh` documents for `ruff check` with an empty file list, and the same one `test-gate-anti-vacuity.sh` exists to catch across the whole battery.
+the same failure `.ci/scripts/quality/check-python-lint.sh` documents for `ruff check` with an empty file list, and the same one `.ci/rediacc_ci/tests/gates/test_gate_gate_anti_vacuity.py` exists to catch across the whole battery.
 
 So this refuses on three separate grounds before it will report a pass:
 

@@ -139,7 +139,7 @@ FAKE
 # the gate at an EMPTY tree and prove it reds. Without it the override is an
 # escape hatch, and the gate that uses it reports clean for a corpus it never
 # saw -- which is the whole failure class .ci/scripts/test/gates/
-# test-gate-anti-vacuity.sh exists to police.
+# `.ci/rediacc_ci/tests/gates/test_gate_gate_anti_vacuity.py` exists to police.
 #
 # Extracted 2026-09-02 because a third copy appeared and check:ci-shape-
 # duplication caught it. Only the `run_check`-shaped harnesses fit: the runner

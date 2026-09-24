@@ -1145,6 +1145,8 @@ What makes it a trap rather than a bug is the local signal. Plain `npm ci --dry-
 
 Sweep it: this repo tracks eight lockfiles and any of them can drift independently. Only one had.
 
+Closed at the source on 2026-09-24 (issue #587): CI installs with the pinned npm 11 through `.github/actions/setup-node-npm`, so no lane runs npm 10 any more, and `check:ci-lockfile` refuses a lockfile the pinned npm would rewrite. The npm 10 commands above record how the incident was reproduced; the fix today is `npx -y npm@<NPM_VERSION> install --package-lock-only --ignore-scripts`.
+
 ## A scaffold step in front of a monitor switches the guard off and looks like the guard failing
 Trap-Id: shadow-step-preempts-the-watchdog
 Enforced-By: gate:check:ci-workflow-gates

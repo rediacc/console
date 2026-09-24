@@ -35,7 +35,7 @@
  * function ever passes silently, every gate on it goes blind AT ONCE — strictly worse than
  * 35 hand-rolled closures of which one is already broken. So it ships with a meta-control
  * that plants a failing case and requires a non-zero return; see
- * `.ci/scripts/test/gates/test-gate-anti-vacuity.sh`. The harness may not acquire its
+ * `.ci/rediacc_ci/tests/gates/test_gate_gate_anti_vacuity.py`. The harness may not acquire its
  * first consumer before that control exists.
  *
  * WHAT THIS DELIBERATELY DOES NOT OWN: the findings report. Measured across ten gates, the

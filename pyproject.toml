@@ -152,7 +152,14 @@ ignore = [
 # Widening the global `ignore` to accommodate tests would switch the rule off for
 # the 100 non-test Python files too, which is the opposite of what is wanted.
 [tool.ruff.lint.per-file-ignores]
-"**/tests/test_*.py" = [
+# TWO SEGMENTS, NOT ONE, because `.ci/rediacc_ci/tests/gates/` is a real pytest
+# root too -- `testpaths` (below) already lists it beside `.ci/rediacc_ci/tests`
+# and `.claude/rediacc_hooks/tests`, and its 160 files are genuinely
+# pytest-collected there, so their bare `assert`s get the same rewriting the
+# reasoning below already rests on. A single `tests/test_*.py` segment missed
+# every file one directory deeper than a literal `tests/`, which is why this
+# glob was silently blind to that whole gates/ tree.
+"**/tests/**/test_*.py" = [
     # S101 (assert used). `assert` IS the pytest interface: pytest rewrites the
     # statement to produce its diff output, so a test written with `if not x:
     # raise` gets a worse failure message and buys nothing. Every OTHER file in
@@ -164,6 +171,14 @@ ignore = [
     # whole "D" set), so a test file needs nothing extra for missing docstrings.
     # Stated rather than listed: a redundant "D103" here would read as load
     # bearing to the next person and survive the day "D" is narrowed.
+    #
+    # S311 (non-cryptographic random). A test seeding `random.Random(seed)` for
+    # reproducible coverage of a shuffle/pick algorithm is exercising the
+    # algorithm, not producing a secret -- flagging it the same way a real
+    # token generator would be flagged buys nothing and would train a reviewer
+    # to skip the rule's real hits. Every OTHER file in this repo is still held
+    # to S311.
+    "S311",
 ]
 "**/rediacc_hooks/guards/test-*.py" = [
     # THE GLOB READ `test-block_*.py` UNTIL THE FIRST `warn_` HARNESS ARRIVED, and
@@ -196,6 +211,17 @@ ignore = [
     # (.claude/hooks/pre-bash/) there is no __init__.py and ruff did not treat
     # them as modules.
     "N999",
+]
+"**/hooks/{stop,context}/test-*.py" = [
+    # S311, THE SAME SIBLING FIX AS THE tests/test_*.py GLOB ABOVE, missed here
+    # because these run as scripts under `.claude/hooks/{stop,context}/`, not
+    # inside a `tests/` directory pytest collects -- `worklist.py`'s own
+    # outq_drain() reproducibility control seeds `random.Random(seed)` for the
+    # exact reason given above: exercising a same-tier sampling algorithm
+    # deterministically is not producing a secret. No S101 entry here: these
+    # files use a `control(label, got, want)` helper rather than bare
+    # `assert`, so that rule never fires on this class.
+    "S311",
 ]
 
 [tool.ruff.format]

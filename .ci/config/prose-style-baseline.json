@@ -2569,49 +2569,6 @@
     "fe4ca2edf06ffd2e"
    ]
   },
-  "agent/8f55d4f0/W7P3-batch5-brief.md": {
-   "R1": [
-    "1bc0ccb65e0e5172"
-   ],
-   "R11": [
-    "644f00f09190220b"
-   ]
-  },
-  "agent/9d92d9b6/NOTE-to-e580532b-guard-anchoring.md": {
-   "R1": [
-    "4fb850170a8c6a47"
-   ]
-  },
-  "agent/9d92d9b6/NOTE-to-e580532b-judge.md": {
-   "R1": [
-    "2e3cf0b760ad3b0e",
-    "37f5a5d0962a3a2e",
-    "59568e101d727bdf",
-    "6d69289991a6509a",
-    "a2bc84c02a3b637f",
-    "d2532969b7b10bd6"
-   ],
-   "R2": [
-    "90d5a69b187e3ba4",
-    "a46e04bf556c40ba"
-   ]
-  },
-  "agent/9d92d9b6/NOTE-to-e580532b.md": {
-   "R1": [
-    "2b588175d935dd20",
-    "3475d2c9ceb80c53",
-    "53872b50131b3641",
-    "b8eebffa97fc4a9b",
-    "dbd304740fb063a7"
-   ],
-   "R2": [
-    "11016e29bf31bea9",
-    "20554869a4dce305",
-    "2d89821c02afd9ad",
-    "6740fe4d8e992892",
-    "ade2432c8429d13b"
-   ]
-  },
   "agent/DECISIONS.md": {
    "R1": [
     "20c13abceabc64a4"
@@ -2762,6 +2719,100 @@
     "107290648fe72527"
    ]
   },
+  "agent/archive/2026-09-22-backfill/8f55d4f0/W7P3-batch5-brief.md": {
+   "R1": [
+    "bfc9b98c2cd17f52"
+   ],
+   "R11": [
+    "8d719525532aa95e"
+   ]
+  },
+  "agent/archive/2026-09-22-backfill/9d92d9b6/NOTE-to-e580532b-guard-anchoring.md": {
+   "R1": [
+    "c021a6825659ccdb"
+   ]
+  },
+  "agent/archive/2026-09-22-backfill/9d92d9b6/NOTE-to-e580532b-judge.md": {
+   "R1": [
+    "0041fa982e213924",
+    "5eaf714cd678c835",
+    "88c33d1457d12b74",
+    "91ffaf2d8acfe4ee",
+    "ae25be89ed7c777c",
+    "fac9fb15c3752f4e"
+   ],
+   "R2": [
+    "da9249dc54fd8941",
+    "f79fcade05d85f3f"
+   ]
+  },
+  "agent/archive/2026-09-22-backfill/9d92d9b6/NOTE-to-e580532b.md": {
+   "R1": [
+    "18ac0628733f7582",
+    "65ab40a6297caefc",
+    "72e2811172cc4a95",
+    "87f9a30f6983f880",
+    "bfad3212ebff0bf4"
+   ],
+   "R2": [
+    "081aaadee8853b4d",
+    "6fb1493475f05244",
+    "75be0dd03c3f02e0",
+    "c98dd33154dfbab9",
+    "dbb7914750a54aca"
+   ]
+  },
+  "agent/archive/2026-09-22-backfill/e580532b/NOTE-to-9d92d9b6.md": {
+   "R1": [
+    "0817f79988b3b655",
+    "2de4d0328df45e64",
+    "4f80f0d2ffd5c137",
+    "5858110bbf13a88d",
+    "6e564891376b40eb",
+    "e20eb5214db8dfc6"
+   ],
+   "R2": [
+    "0be0604958d849ed",
+    "197d50b4877be06a",
+    "3e165f15fd7e5389",
+    "3e49c1f71f03e59e",
+    "813687a67eb3d2ed",
+    "8fcdc6da93aa4eb7",
+    "ad91cbacfc14d0ed",
+    "bffb80093dece51f",
+    "c29850c856a1b79f",
+    "df67c62e4dffa94b"
+   ]
+  },
+  "agent/archive/2026-09-22-backfill/f4da5c2e/BITWARDEN-dev-shared-prompt.md": {
+   "R1": [
+    "4a0ef7ccd9922509"
+   ],
+   "R2": [
+    "0b02af0cde93b490",
+    "9485cbdb94f8ff83"
+   ]
+  },
+  "agent/archive/2026-09-22-backfill/f4da5c2e/W7P5c-licence-census.md": {
+   "R2": [
+    "0fca33d945cb7a1b"
+   ]
+  },
+  "agent/archive/2026-09-22-backfill/f4da5c2e/gate-test-ledger-coverage.md": {
+   "R2": [
+    "081de890b228e39e",
+    "083a7a4fa0925235",
+    "225510cc63e24401",
+    "29afd98eb2a6ebdf",
+    "74648b2a0e3d7e94",
+    "804393f149a8d850",
+    "9e188c1e4db9a64f",
+    "a70f7772d00bd86a",
+    "ec8aa1ef7c6bb8dd",
+    "f43b02867c442fee",
+    "fcadc48edf66f9e2"
+   ]
+  },
   "agent/archive/backup-storage/RULES.md": {
    "R1": [
     "12341adc420141eb",
@@ -2874,57 +2925,6 @@
    ],
    "R7": [
     "c50ce1faa0c89928"
-   ]
-  },
-  "agent/e580532b/NOTE-to-9d92d9b6.md": {
-   "R1": [
-    "36277498995d6e63",
-    "439ee04f3093db79",
-    "785601840fa0a6f9",
-    "ab927ed8bd7f3bdb",
-    "dce05523430028a6",
-    "eccfabc7b8d751b3"
-   ],
-   "R2": [
-    "0f8dafd535bbfa44",
-    "330ba82d18ea97d7",
-    "43a7d9a9db2de4b5",
-    "541b24d6a1f19801",
-    "5eb1963f8065537c",
-    "63f28c181b0bfc7a",
-    "870dbe2702065021",
-    "876356ae509f3682",
-    "d0efa01802d0107a",
-    "d124b7e4e43aa1d5"
-   ]
-  },
-  "agent/f4da5c2e/BITWARDEN-dev-shared-prompt.md": {
-   "R1": [
-    "320b3a0e79434458"
-   ],
-   "R2": [
-    "48962be4738a86a0",
-    "ca601011db10e201"
-   ]
-  },
-  "agent/f4da5c2e/W7P5c-licence-census.md": {
-   "R2": [
-    "d29b9035bc38a95c"
-   ]
-  },
-  "agent/f4da5c2e/gate-test-ledger-coverage.md": {
-   "R2": [
-    "20f92989063543d1",
-    "3750fcd8891949f2",
-    "408985da4e3cc6fb",
-    "53b0383cc7fdeabf",
-    "620aef8714597cad",
-    "674159bfb327e53d",
-    "7aacf584bf04c8cd",
-    "c2a8ee7e5ac582cf",
-    "c9523b93b90b87f0",
-    "cf2aabe40d207c7e",
-    "e147dec3a3b4b3c0"
    ]
   },
   "agent/plans/PLAN-b2-emit-matrix.md": {

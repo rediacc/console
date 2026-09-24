@@ -170,6 +170,27 @@ SCOPES = (
             "finding: the scope would claim nothing and this gate reds."
         ),
     ),
+    Scope(
+        name="pid-wait-anchor",
+        files=(".claude/rediacc_hooks/guards/block_unsatisfiable_pid_wait.py",),
+        classes=("procfs",),
+        env="REDIACC_PID_WAIT_PROCFS",
+        why=(
+            "A RECOGNISED path, not a read one. This guard refuses a wait loop whose "
+            "`/proc/<pid>` liveness test has an always-alive fallback PID; the literal "
+            "is the anchor it matches in somebody else's command text, so nothing here "
+            "opens a file. It is still in the class, and in the class's worst "
+            "direction: where proc.py's read would answer 'nothing is there' on a "
+            "machine with no procfs at /proc, a hard-coded anchor answers 'no loop "
+            "here' and the guard becomes an unconditional ALLOW that stays green under "
+            "every test run on a default Linux box. The seam names the root once and "
+            "builds BOTH the prefilter and the anchor regex from it, which is the part "
+            "a second hard-coded spelling would quietly undo. Its own scope rather "
+            "than a widening of proc-table: that scope covers the backend that READS "
+            "procfs, and folding a pattern into it would mean the two can no longer go "
+            "dead independently."
+        ),
+    ),
 )
 
 

@@ -211,7 +211,7 @@ def test_looks_like_repo_root_needs_all_three_markers(tmp_path):
 def test_the_anti_vacuity_fixture_shape_is_not_a_repo_root(tmp_path):
     """WHY repo_root() DOES NOT VALIDATE MARKERS.
 
-    test-gate-anti-vacuity.sh copies `.ci/rediacc_ci` into a tempdir with no `.git` and no package.json, then requires gates to run there. This asserts that such a tree really does fail the marker test, which is the measurement behind the resolver's decision not to apply one.
+    .ci/rediacc_ci/tests/gates/test_gate_gate_anti_vacuity.py copies `.ci/rediacc_ci` into a tempdir with no `.git` and no package.json, then requires gates to run there. This asserts that such a tree really does fail the marker test, which is the measurement behind the resolver's decision not to apply one.
     """
     fixture = tmp_path / "fixture"
     (fixture / ".ci" / "rediacc_ci").mkdir(parents=True)

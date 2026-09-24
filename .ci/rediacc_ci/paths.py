@@ -40,7 +40,7 @@ WHAT IT RESOLVES, AND IN WHAT ORDER. `repo_root()` has two rungs and no cwd:
 cwd IS NEVER A RUNG, and that is the one thing in here worth arguing for. This tree contains repositories INSIDE the repository: `private/renet` is a submodule and `private/growth` is a gitignored sibling checkout. Resolving upward from cwd walks into one of them, and the Stop hook has the receipt -- a session on branch 0804-1 was told to bootstrap `agent/main/` because
 private/growth happened to be on main, confirmed twice (see wl_core.project_start). `find_repo_root()` below exists for callers that genuinely have only a path to start from, and its docstring repeats the warning at the point of use.
 
-NO `.git` MARKER CHECK IN `repo_root()`, deliberately. It would be the obvious validation and it would break the anti-vacuity harness: `.ci/scripts/test/gates/test-gate-anti-vacuity.sh` builds a fixture tree by copying `scripts`, `.ci/scripts`, `.ci/config` and `.ci/rediacc_ci` into a tempdir with no `.git` in it, then runs gates there and requires `import rediacc_ci` to work. A
+NO `.git` MARKER CHECK IN `repo_root()`, deliberately. It would be the obvious validation and it would break the anti-vacuity harness: `.ci/rediacc_ci/tests/gates/test_gate_gate_anti_vacuity.py` builds a fixture tree by copying `scripts`, `.ci/scripts`, `.ci/config` and `.ci/rediacc_ci` into a tempdir with no `.git` in it, then runs gates there and requires `import rediacc_ci` to work. A
 marker check would make every gate importing this module refuse inside the fixture, and the red would name neither the gate nor the reason. `looks_like_repo_root()` is offered separately for callers that want to ASK; the resolver does not decide for them.
 """
 

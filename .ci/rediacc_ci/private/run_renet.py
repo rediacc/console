@@ -18,7 +18,7 @@ THE SUBMODULE GUARD IS THE ONLY DECISION IN THE FILE, AND IT HAS THREE ARMS
   absent, otherwise     -> one `log_warn` and EXIT 0
 
 The middle arm is the whole reason the guard is not a bare `[[ -e ]] || exit 0`, and `common.sh` says why in its own comment: this gate carries govulncheck, deadcode and golangci-lint, and all three would report success while checking nothing. The third arm keeps a fresh clone without `--recursive` workable, and it is a REAL HOLE IN THE LOCAL GATE that is documented rather than
-closed (`.ci/scripts/test/gates/test-gate-anti-vacuity.sh:317` records that this script used to exit 0 silently in CI too). `npm run check:ci-renet` on a machine with no submodule prints one warning and exits 0.
+closed (the retired `.ci/scripts/test/gates/test-gate-anti-vacuity.sh:317`, now ported to `.ci/rediacc_ci/tests/gates/test_gate_gate_anti_vacuity.py`, recorded that this script used to exit 0 silently in CI too). `npm run check:ci-renet` on a machine with no submodule prints one warning and exits 0.
 
 `CI` is tested as the LITERAL `"${CI:-false}" == "true"`, not through an
 is-CI helper, so `GITHUB_ACTIONS=true` with `CI` unset takes the LOCAL arm. That
