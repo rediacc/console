@@ -273,12 +273,35 @@ def _is_invoked(key, scan):
 
     DELIBERATELY NOT A READER BLOCKLIST. Enumerating grep/sed/cat/head/less/awk means the next reader command is a fresh false positive, and false positives are what teach a session to route around a guard: this one cost a writer a workaround before it cost me a command.
     """
-    interp = r"(bash|sh|zsh|source|\.|npm[{S}]+run|npx)"
-    # ONE `rx()` OVER THE WHOLE PATTERN. The first cut put the middle class outside it,
-    # so `{S}` stayed literal and `[^{S};&|]` read as "not {, S, }, ; & or |" -- which
-    # matches a SPACE, letting the pattern skip the whole command and find the key anywhere. Every mention case still blocked and the failure looked like the anchor not working rather than the class being wrong.
-    pat = hookio.rx(r"(^|[;&|(]|\$\(|`|" + interp + r"[{S}]+)[{S}]*[^{S};&|]*" + re.escape(key))
-    return hookio.grep_q(pat, scan)
+    # BY (SUB)COMMAND, NOT BY REGEX BOUNDARY. The first cut was one pattern whose `sh` alternative had no left boundary, so it matched as the SUFFIX of any `.sh` path: `grep x a.sh sync-media-to-r2.sh` read `a.sh`'s tail as an interpreter and refused a grep. Bounding the token broke `./run.sh --publish-www`, which that same suffix match was the only thing catching
+    # (agent/plans/PLAN-fix-is-invoked-sh-alternation.md). Both cases are decided by WHICH WORD OPENS THE COMMAND, which a regex over the flat string cannot see, so the scan is split into (sub)commands and each is judged on its first word.
+    for segment in _COMMAND_SPLIT.split(scan):
+        words = segment.split()
+        while words and (_ASSIGNMENT.match(words[0]) or words[0] in _PREFIX_WORDS):
+            words = words[1:]
+        if not words:
+            continue
+        if key in words[0]:
+            return True
+        opener = words[0]
+        args = words[1:]
+        if opener == "npm" and args[:1] == ["run"]:
+            args = args[1:]
+        elif not (
+            opener in _INTERPRETERS or opener.endswith(".sh") or opener.startswith(("./", "/"))
+        ):
+            continue
+        if any(key in word for word in args):
+            return True
+    return False
+
+
+# Where a (sub)command starts: a separator, a subshell or command substitution opener, a backtick, or a new line.
+_COMMAND_SPLIT = re.compile(r"[;&|()`\n]|\$\(")
+# `FOO=1 ./run.sh` and `sudo ./run.sh` still open with the script.
+_ASSIGNMENT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=")
+_PREFIX_WORDS = ("sudo", "env", "exec", "command", "time", "nohup")
+_INTERPRETERS = ("bash", "sh", "zsh", "source", ".", "npx")
 
 
 def _ci_seams():

@@ -1,6 +1,6 @@
 # PLAN: bound `_is_invoked`'s `sh` alternative without breaking real `.sh` invocations
 
-Status: draft
+Status: executing
 Owner: d778be9d
 Updated: 2026-09-23
 

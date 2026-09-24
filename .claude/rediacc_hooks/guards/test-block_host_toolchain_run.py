@@ -291,6 +291,21 @@ if os.path.exists(os.path.join(REPO, "private/account/.env")):
             "CONTROL: setting the credential inline states the intent, so it is accepted",
         )
     )
+    # THE REPORTED FALSE POSITIVE (agent/plans/PLAN-fix-is-invoked-sh-alternation.md): two `.sh` paths handed to grep, the second a NEEDS_ENV key. The old pattern read `run.sh`'s trailing `sh` as an interpreter and the next path as its script. Paired with `./run.sh --publish-www` above, which the SAME suffix match was the only thing catching, so neither direction can regress alone.
+    cases.append(
+        (
+            0,
+            run("grep -n R2 run.sh .ci/scripts/deploy/sync-media-to-r2.sh", REAL),
+            "CONTROL: two .sh paths handed to grep run neither",
+        )
+    )
+    cases.append(
+        (
+            2,
+            run("cd . && bash .ci/scripts/deploy/sync-media-to-r2.sh", REAL),
+            "an interpreter after a separator still runs the key",
+        )
+    )
 
 # --------------------------------------------------------------------------- EVERY TOOL IN THE ARRAY, NOT JUST TWO OF FIVE. check-host-toolchain-coverage.sh proves NPX_TOOLS/BARE_TOOLS LIST the same tools GATED_TOOLS pins; it says nothing about whether the ROUTING REGEX actually FIRES for each of them at runtime. A tool could sit in the array and still be unreachable -- a name
 # containing a regex metacharacter, a word-boundary edge case on a two-letter name like `go` -- and list-membership coverage would not catch it. Before this, npx-misuse was exercised for ruff and shfmt only, and bare-tool routing
