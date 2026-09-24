@@ -44,27 +44,6 @@
       "message": "Name \"failures\" already defined on line 513"
     },
     {
-      "id": "3d13a95db51332ff",
-      "file": ".ci/rediacc_ci/core/bws_env.py",
-      "code": "arg-type",
-      "count": 1,
-      "message": "Argument 1 to \"binary\" has incompatible type \"_Environ[str] | dict[Any, Any]\"; expected \"dict[Any, Any] | None\""
-    },
-    {
-      "id": "59a7501fb00c9d73",
-      "file": ".ci/rediacc_ci/core/bws_env.py",
-      "code": "arg-type",
-      "count": 1,
-      "message": "Argument 1 to \"map_path\" has incompatible type \"_Environ[str] | dict[Any, Any]\"; expected \"dict[Any, Any] | None\""
-    },
-    {
-      "id": "03a44ab9bf466457",
-      "file": ".ci/rediacc_ci/core/bws_env.py",
-      "code": "arg-type",
-      "count": 1,
-      "message": "Argument 2 to \"listing\" has incompatible type \"_Environ[str] | dict[Any, Any]\"; expected \"dict[Any, Any] | None\""
-    },
-    {
       "id": "b63ad461a3ca43a3",
       "file": ".ci/rediacc_ci/core/ports.py",
       "code": "assignment",
@@ -499,25 +478,11 @@
       "message": "Argument 1 to \"deepcopy\" has incompatible type \"dict[str, Collection[str]]\"; expected \"dict[str, dict[str, list[str]]]\""
     },
     {
-      "id": "88993d2dac43d097",
-      "file": ".ci/rediacc_ci/quality/secret_supply.py",
-      "code": "attr-defined",
-      "count": 1,
-      "message": "\"Collection[str]\" has no attribute \"__delitem__\""
-    },
-    {
       "id": "e64277aac8820d33",
       "file": ".ci/rediacc_ci/quality/secret_supply.py",
       "code": "index",
-      "count": 7,
+      "count": 2,
       "message": "Unsupported target for indexed assignment (\"Collection[str]\")"
-    },
-    {
-      "id": "14e06ecb47ad367f",
-      "file": ".ci/rediacc_ci/quality/secret_supply.py",
-      "code": "index",
-      "count": 11,
-      "message": "Value of type \"Collection[str]\" is not indexable"
     },
     {
       "id": "45c72c3cfc8d7804",
@@ -3950,13 +3915,6 @@
       "message": "List item 0 has incompatible type \"Any | str | None\"; expected \"str | bytes | PathLike[str] | PathLike[bytes]\""
     },
     {
-      "id": "28574d94e7d8891d",
-      "file": "scripts/ops/secret-rename.py",
-      "code": "assignment",
-      "count": 1,
-      "message": "Incompatible types in assignment (expression has type \"Path\", variable has type \"list[str]\")"
-    },
-    {
       "id": "62ada453e699633a",
       "file": "scripts/ops/secret-rename.py",
       "code": "assignment",
@@ -3969,34 +3927,6 @@
       "code": "attr-defined",
       "count": 2,
       "message": "\"int\" has no attribute \"strip\""
-    },
-    {
-      "id": "8f3a81e1519da67e",
-      "file": "scripts/ops/secret-rename.py",
-      "code": "attr-defined",
-      "count": 1,
-      "message": "\"list[str]\" has no attribute \"is_file\""
-    },
-    {
-      "id": "beeeeecfd0443d35",
-      "file": "scripts/ops/secret-rename.py",
-      "code": "attr-defined",
-      "count": 1,
-      "message": "\"list[str]\" has no attribute \"name\""
-    },
-    {
-      "id": "12e099255cf95ed3",
-      "file": "scripts/ops/secret-rename.py",
-      "code": "attr-defined",
-      "count": 1,
-      "message": "\"list[str]\" has no attribute \"read_text\""
-    },
-    {
-      "id": "559eff8b0d84848f",
-      "file": "scripts/ops/secret-rename.py",
-      "code": "attr-defined",
-      "count": 1,
-      "message": "\"list[str]\" has no attribute \"with_name\""
     },
     {
       "id": "4dc24736f3207660",

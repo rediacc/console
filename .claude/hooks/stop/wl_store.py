@@ -1062,7 +1062,7 @@ def load(worklist, sync=True):
             md_bytes = b""
     md_hash = hashlib.sha1(md_bytes).hexdigest()[:16]
 
-    statuses_box = [{}]
+    statuses_box: list[dict[Any, Any]] = [{}]
 
     def build(events):
         statuses_box[0] = {}

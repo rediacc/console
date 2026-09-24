@@ -37,7 +37,7 @@ import os
 import pathlib
 import re
 import time
-from typing import NamedTuple
+from typing import Any, NamedTuple
 
 import wl_core as C
 import wl_rules
@@ -85,7 +85,7 @@ class Fact(NamedTuple):
 
 
 # The hand-maintained standing-rule catalog. A live grep of CLAUDE.md was rejected: it would quote a paragraph nobody vetted for this purpose. Each `quote` must appear VERBATIM on one line of `file`; the citation is derived from where it is found, so an edit to the rule drops the fact instead of citing a line that no longer says it.
-CATALOG = (
+CATALOG: tuple[dict[str, Any], ...] = (
     {
         "id": "big-bang-packaging",
         "triggers": (

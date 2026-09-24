@@ -116,6 +116,7 @@ import pathlib
 import re
 import subprocess
 import sys
+from typing import Any
 
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Checker, controls_first, plant
@@ -723,7 +724,7 @@ _MANIFEST = {
     }
 }
 _MAP = {"project": "fixture-project", "secrets": {"FIX_HELD": {}, "FIX_ALIAS_SRC": {}}}
-_SPEC = {
+_SPEC: dict[str, Any] = {
     "ci_shared_project": "fixture-project",
     "bootstrap_names": ["FIX_UNSTATED"],
     "kinds": {

@@ -82,6 +82,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from typing import Any, cast
 
 from rediacc_ci.core import devbox
 
@@ -1975,7 +1976,7 @@ def main(argv: list[str]) -> int:
             return EXIT_CANNOT_RUN
 
     with contextlib.suppress(AttributeError, ValueError):
-        sys.stdout.reconfigure(errors="surrogateescape")
+        cast("Any", sys.stdout).reconfigure(errors="surrogateescape")
     try:
         return run_side(args.side, args.scenario, repo)
     except RefusalError as exc:

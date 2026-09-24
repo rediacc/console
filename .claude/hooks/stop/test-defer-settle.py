@@ -16,6 +16,7 @@ import shutil
 import sys
 import tempfile
 import types
+from typing import Any, cast
 
 HERE = pathlib.Path(__file__).resolve().parent
 # ONE PRIVATE TMPDIR, removed at exit whatever happens: run_judge creates `$TMPDIR/claude-worklist/.judge`, and test_hooks_delegates fails any standalone suite that leaves an entry behind.
@@ -33,6 +34,7 @@ _TMP = runtmp.run_dir("ds-test-")
 os.environ["TMPDIR"] = _TMP
 tempfile.tempdir = _TMP
 sys.path.insert(0, str(HERE))
+
 import wl_checks  # noqa: E402
 import wl_core  # noqa: E402
 import wl_defersettle as DS  # noqa: E402
@@ -150,7 +152,8 @@ section = DS.prompt_section([(r2, facts)])
 control("class1: the prompt carries the marker", DS.DEFER_SETTLE_MARKER in section, True)
 control("class1: the prompt never carries the value", SECRET in section, False)
 
-state, w = {}, Writes()
+state: dict[Any, Any] = {}
+w = Writes()
 batch = [(r2, facts)]
 out1 = rows(entry(r2["id"], "settled"))
 DS.apply_stop(out1, batch, state, str(root), None, run_id="run1", set_state=w)
@@ -241,7 +244,7 @@ novel = rec("c3d4e5f6", BB_NOVEL, why="the operator owns the glossary", how="ope
 control(
     "class2 control: a novel packaging question matches no rule", DS.gather_facts(root, novel), []
 )
-state_n = {}
+state_n: dict[Any, Any] = {}
 DS.apply_stop(
     rows(entry(novel["id"], "execute_default")), [], state_n, str(root), None, set_state=w
 )
@@ -348,7 +351,7 @@ class _TimedOut:
     timed_out = True
 
 
-CAPTURED = {}
+CAPTURED: dict[str, Any] = {}
 
 
 def _fake_run(cmd, **_kw):
@@ -365,7 +368,7 @@ def _fake_run(cmd, **_kw):
     )
 
 
-wl_judge.wl_proc = types.SimpleNamespace(
+cast("Any", wl_judge).wl_proc = types.SimpleNamespace(
     run=_fake_run, TIMEOUT_RC=wl_proc.TIMEOUT_RC, SPAWN_FAILED_RC=wl_proc.SPAWN_FAILED_RC
 )
 wl_judge.resolve_claude = lambda: "/bin/sh"
@@ -537,7 +540,7 @@ control(
 DS.check_catalog(wl_judge.FORBIDDEN_ORDERS)
 control("catalog: the shipped catalog passes the scan", True, True)
 _saved = DS.CATALOG
-DS.CATALOG = (dict(_saved[0], action="merge the open PRs and cut the release"),)
+cast("Any", DS).CATALOG = (dict(_saved[0], action="merge the open PRs and cut the release"),)
 try:
     DS.check_catalog(wl_judge.FORBIDDEN_ORDERS)
     refused = False
@@ -573,7 +576,7 @@ WLPATH = store_dir / "wl.md"
 
 def cli(*argv):
     err = io.StringIO()
-    code = 0
+    code: Any = 0
     with contextlib.redirect_stderr(err), contextlib.redirect_stdout(io.StringIO()):
         try:
             WL._item_cli(list(argv), WLPATH)

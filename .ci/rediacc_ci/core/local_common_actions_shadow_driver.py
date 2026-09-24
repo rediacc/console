@@ -96,7 +96,7 @@ class Case:
     verb: str
     args: list[str] = dataclasses.field(default_factory=list)
     rows: list[dict] = dataclasses.field(default_factory=list)
-    env: dict[str, str] = dataclasses.field(default_factory=dict)
+    env: dict[str, str | None] = dataclasses.field(default_factory=dict)  # None unsets the name
     setup: tuple[str, ...] = ()
     hidden: tuple[str, ...] = ()
     unstub: tuple[str, ...] = ()

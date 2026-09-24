@@ -91,6 +91,8 @@ import shutil
 import stat
 import subprocess
 import sys
+from collections.abc import Mapping
+from typing import Any
 
 from rediacc_ci import paths
 
@@ -561,7 +563,7 @@ def client_fingerprint(token: str) -> str:
     return hashlib.sha256(client_id.encode()).hexdigest()[:16]
 
 
-def token_path(env: dict | None = None) -> str:
+def token_path(env: Mapping[str, str] | None = None) -> str:
     """Where the bootstrap token file is: BWS_ACCESS_TOKEN_FILE, else the XDG default.
 
     The default is `${XDG_CONFIG_HOME:-$HOME/.config}/rediacc/bws-access-token`, computed from the mapping handed in rather than from `os.path.expanduser`, so a test that builds its own environment gets its own path and never the operator's real file.
@@ -1109,7 +1111,7 @@ def _store_verb(raw_specs: list[str]) -> int:
         for line in refusal.lines:
             print(line, file=sys.stderr)
         return 1
-    ids = {r.get("key"): r.get("id") for r in rows}
+    ids: dict[Any, Any] = {r.get("key"): r.get("id") for r in rows}
     absent = [n for n, _l in specs if not ids.get(n)]
     if absent:
         print(

@@ -138,8 +138,16 @@ def observations(out: str) -> dict[str, list[str]]:
     return grouped
 
 
+def _rule(rule: dict | None) -> dict:
+    """The picked rule, asserted present: a test that indexes None would fail with a TypeError that names nothing."""
+    assert rule is not None
+    return rule
+
+
 def status_of(step: list[str]) -> int:
-    return int(re.match(r"rc=(\d+)", step[0]).group(1))
+    m = re.match(r"rc=(\d+)", step[0])
+    assert m is not None, step[0]
+    return int(m.group(1))
 
 
 def stdout_of(step: list[str]) -> bytes:
@@ -466,11 +474,14 @@ def test_the_stub_answers_by_pattern_ordinal_and_history() -> None:
         driver.rule("docker", "ps", out="before\n", before=("docker", "run")),
         driver.rule("docker", "inspect", "x", exact=True, rc=3),
     ]
-    assert driver.pick_rule(table, ["curl"], [])["rc"] == 7
+    assert _rule(driver.pick_rule(table, ["curl"], []))["rc"] == 7
     assert driver.pick_rule(table, ["curl"], [["curl"]]) is None
-    assert driver.pick_rule(table, ["docker", "ps"], [])["out"] == "before\n"
-    assert driver.pick_rule(table, ["docker", "ps"], [["docker", "run", "-d"]])["out"] == "after\n"
-    assert driver.pick_rule(table, ["docker", "inspect", "x"], [])["rc"] == 3
+    assert _rule(driver.pick_rule(table, ["docker", "ps"], []))["out"] == "before\n"
+    assert (
+        _rule(driver.pick_rule(table, ["docker", "ps"], [["docker", "run", "-d"]]))["out"]
+        == "after\n"
+    )
+    assert _rule(driver.pick_rule(table, ["docker", "inspect", "x"], []))["rc"] == 3
     assert driver.pick_rule(table, ["docker", "inspect", "x", "y"], []) is None
 
 
@@ -644,7 +655,8 @@ class RecordingDevbox(devbox.Devbox):
         super().__init__(*args, **kwargs)
         self.calls: list[list[str]] = []
 
-    def run(self, argv, out=devbox.INHERIT, **_redirections):
+    def run(self, argv, out=devbox.INHERIT, err=devbox.INHERIT, extra_env=None):
+        del err, extra_env  # the parent's redirections; this fake answers every command in process
         self.calls.append(list(argv))
         if argv[1:2] == ["ps"]:
             answer = "cid\n"

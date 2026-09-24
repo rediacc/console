@@ -100,6 +100,7 @@ import re
 import stat
 import subprocess
 import sys
+from typing import Any
 
 from rediacc_ci import log
 
@@ -816,6 +817,7 @@ class Devbox:
             else:
                 _flush(out_stream)
                 stdout_arg = fd
+        stderr_arg: Any
         if err == TO_OUT and out == CAPTURE:
             stderr_arg = subprocess.STDOUT
             copy_err = None
