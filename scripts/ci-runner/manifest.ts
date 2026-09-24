@@ -1606,6 +1606,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'GitHub Actions variables',
     },
   },
+  // <<< gen-manifest: region 14
   {
     // agent/plans/PLAN-account-env-to-bws.md T19: the two account env files the Bitwarden move retired stay retired. Shrink-only baseline of the mentions that predate it, plus the dotenv-table ceiling and the token-path rule.
     id: 'check:ci-account-env-retired',
@@ -1619,7 +1620,6 @@ export const GATES: readonly GateSpec[] = [
       step: 'Account env files retired',
     },
   },
-  // <<< gen-manifest: region 14
   {
     // The other half of `agent/plans/PLAN-bws-rotation-on-failure.md`. That plan deleted `.ci/config/bws-token-expiry.json` and its one reader, on the ruling that a hand-written date is a second source of truth nothing can check, and that a non-zero `bws` is the only signal there is. What remains is a PROCEDURE, and this asserts the three claims that procedure rests on: one
     // notice file, one classifier (the trapguard ring keeps a copy it cannot import, and the copy is compared here), and five emitters that still reach it.

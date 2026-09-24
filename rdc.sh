@@ -104,43 +104,23 @@ if [[ "${1:-}" == "--dev" ]]; then
     shift
 fi
 if [[ "${RDC_DEV:-0}" == "1" ]]; then
-    # The dev config needs exactly two PUBLIC values: the gateway URL and the
-    # server's X25519 public key. Both come from the RUNNING gateway, never
-    # from a file under private/account: `./run.sh account dev` records its
-    # port as the `gateway_port=` line of this worktree's .account-state
-    # (.ci/lib/account.sh writes it), and the gateway publishes its public key
-    # at /.well-known/server-info. Nothing is ever `source`d here (not even
-    # with `set -a`), so no gateway secret can reach the CLI process
-    # environment.
-    #
-    # `|| true`: under `set -euo pipefail` a grep miss would otherwise kill the
-    # script silently here, before the fail-fast message below can print.
+    # Two PUBLIC values only, both from the RUNNING gateway: its port from this
+    # worktree's .account-state and its X25519 key from /.well-known/server-info.
+    # Nothing under private/account is read or sourced, so no secret reaches the CLI.
     dev_port=$(grep -E '^gateway_port=' "$ROOT_DIR/.account-state" 2>/dev/null | tail -1 | cut -d= -f2- || true)
-
-    # Fail fast when no gateway is recorded; a half-configured dev config
-    # would otherwise surface as a confusing CLI error later.
     if [[ -z "$dev_port" ]]; then
         log_error "RDC_DEV=1 but no running dev gateway recorded in .account-state."
         log_error "Start it first: ./run.sh account dev"
         exit 1
     fi
     dev_server="http://localhost:$dev_port"
-
-    # The liveness probe doubles as key discovery: a stale/unstarted gateway
-    # fails here with a clear message, and a live one hands back the public key.
     if ! server_info=$(curl -fsS --max-time 2 "$dev_server/account/api/v1/.well-known/server-info" 2>/dev/null); then
         log_error "Dev gateway not responding at $dev_server"
         log_error "Start it first: ./run.sh account dev"
         exit 1
     fi
-    # `{"e2e":{"keys":[{"keyId":"v1","publicKeySpki":"..."}]}}`; an empty key
-    # list (the gateway has no X25519 key) yields an empty dev_e2e_key, and the
-    # seeder below then leaves e2ePublicKey untouched.
-    dev_e2e_key=$(node -e '
-      let k = "";
-      try { k = JSON.parse(process.argv[1])?.e2e?.keys?.[0]?.publicKeySpki ?? ""; } catch {}
-      process.stdout.write(String(k));
-    ' "$server_info")
+    # An empty key list yields "", and the seeder below then leaves e2ePublicKey alone.
+    dev_e2e_key=$(node -e 'let k="";try{k=JSON.parse(process.argv[1])?.e2e?.keys?.[0]?.publicKeySpki??""}catch{}process.stdout.write(String(k))' "$server_info")
 
     # Seed/patch the "dev" named config. node is guaranteed present (we exec it
     # below); jq is not. The seeder writes a minimal v3 config when the file is
