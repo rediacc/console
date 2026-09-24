@@ -30,6 +30,7 @@
 import { execSync, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import https from 'node:https';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseBlockeredList, verifyAllBlockers } from '../lib/blocker-validator.js';
@@ -297,10 +298,33 @@ function getOutdatedPackages(): Record<string, OutdatedPackageInfo> {
 }
 
 /**
- * Find private packages that are outside npm workspaces
+ * Nested manifests one level deeper than the private/<dir> scan below reaches.
+ * private/account is a submodule whose own sub-packages (the web frontend, the
+ * e2e suite) carry INDEPENDENT package.json + package-lock.json and drift on
+ * their own schedule — that's exactly how private/account/web ended up on
+ * typescript ^6.0.3 and vitest ^4.1.10 while this gate reported "up-to-date":
+ * it only ever looked one level into `private/`, so a manifest nested one
+ * level further was invisible to it, not merely blocked or deferred.
+ *
+ * Listed explicitly rather than walked recursively so this can never pick up
+ * an unrelated nested manifest (a vendored fixture, a dist/ copy) as something
+ * this gate should be reporting on. Each entry is checked with existsSync
+ * below, same as the top-level scan, so an uninitialized/absent private/account
+ * submodule is tolerated exactly the same way — a missing nested manifest is
+ * skipped, never an error.
  */
-function getPrivatePackageDirs(): string[] {
-  const privateDir = path.join(CONSOLE_ROOT, 'private');
+const NESTED_PRIVATE_PACKAGE_DIRS = ['account/web', 'account/e2e'];
+
+/**
+ * Find private packages that are outside npm workspaces.
+ *
+ * `root` defaults to CONSOLE_ROOT and exists so --selftest can point this at a
+ * synthetic tmp tree and prove the nested-discovery and absent-submodule
+ * behavior directly, instead of depending on private/account happening to be
+ * checked out (or not) wherever the gate runs.
+ */
+function getPrivatePackageDirs(root: string = CONSOLE_ROOT): string[] {
+  const privateDir = path.join(root, 'private');
   if (!fs.existsSync(privateDir)) return [];
 
   const dirs: string[] = [];
@@ -308,6 +332,12 @@ function getPrivatePackageDirs(): string[] {
     const pkgPath = path.join(privateDir, dir, 'package.json');
     if (fs.existsSync(pkgPath)) {
       dirs.push(path.join(privateDir, dir));
+    }
+  }
+  for (const rel of NESTED_PRIVATE_PACKAGE_DIRS) {
+    const pkgPath = path.join(privateDir, rel, 'package.json');
+    if (fs.existsSync(pkgPath)) {
+      dirs.push(path.join(privateDir, rel));
     }
   }
   return dirs;
@@ -932,10 +962,56 @@ function selftest(): void {
     }
   }
 
+  // NESTED PRIVATE MANIFESTS. private/account/web and private/account/e2e sat outside every scan for a real span of time -- not blocked, not deferred, simply never looked at -- because getPrivatePackageDirs() only ever read one level into `private/`. Driven on a synthetic tmp tree, not the real checkout, so this keeps meaning the same thing whether or not the private/account submodule happens to be initialized wherever the gate runs.
+  const nestedProbeRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'check-deps-nested-'));
+  try {
+    fs.mkdirSync(path.join(nestedProbeRoot, 'private', 'account', 'web'), { recursive: true });
+    fs.mkdirSync(path.join(nestedProbeRoot, 'private', 'account', 'e2e'), { recursive: true });
+    fs.mkdirSync(path.join(nestedProbeRoot, 'private', 'renet'), { recursive: true });
+    for (const rel of ['account', 'account/web', 'account/e2e', 'renet']) {
+      fs.writeFileSync(path.join(nestedProbeRoot, 'private', rel, 'package.json'), '{}');
+    }
+    const found = getPrivatePackageDirs(nestedProbeRoot).map((d) =>
+      path.relative(path.join(nestedProbeRoot, 'private'), d)
+    );
+
+    // Absent-submodule probe: no private/account at all (nothing under private/ but renet) must not throw and must not report the nested dirs as present.
+    const absentProbeRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'check-deps-absent-'));
+    fs.mkdirSync(path.join(absentProbeRoot, 'private', 'renet'), { recursive: true });
+    fs.writeFileSync(path.join(absentProbeRoot, 'private', 'renet', 'package.json'), '{}');
+    let absentFound: string[];
+    try {
+      absentFound = getPrivatePackageDirs(absentProbeRoot);
+    } finally {
+      fs.rmSync(absentProbeRoot, { recursive: true, force: true });
+    }
+
+    const nestedChecks: Array<[string, boolean]> = [
+      ['top-level private/account is still found', found.includes('account')],
+      ['nested private/account/web is found', found.includes('account/web')],
+      ['nested private/account/e2e is found', found.includes('account/e2e')],
+      ['an unrelated top-level dir (renet) is unaffected', found.includes('renet')],
+      [
+        'a wholly absent private/account (uninitialized submodule) throws nothing and reports none of its nested dirs',
+        !absentFound.some((d) => d.includes(`${path.sep}account`)),
+      ],
+    ];
+    for (const [label, ok] of nestedChecks) {
+      if (!ok) {
+        console.error(`${RED}\u2717${NC} nested-private-manifest control failed: ${label}`);
+        process.exit(1);
+      }
+    }
+  } finally {
+    fs.rmSync(nestedProbeRoot, { recursive: true, force: true });
+  }
+
   console.log(
     `${GREEN}\u2713${NC} control fired on both shapes: an unrunnable probe and an unreachable ` +
-      'registry each fail the gate instead of passing it; and a scoped blocklist entry blocks ' +
-      'only its own directory (4 checks)'
+      'registry each fail the gate instead of passing it; a scoped blocklist entry blocks ' +
+      'only its own directory (4 checks); and nested private manifests ' +
+      '(private/account/web, private/account/e2e) are discovered, with an absent submodule ' +
+      'tolerated (5 checks)'
   );
   process.exit(0);
 }
