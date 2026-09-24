@@ -29,7 +29,8 @@ MODULE = "rediacc_ci.ci.assert_install_methods_complete"
 SUFFIXES = tuple(suffix for _, suffix in port.PLATFORMS)
 
 SUMMARY_MARKER = "--- summary ---\n"
-NO_SUMMARY = "<no summary written>"
+# Ends in a newline so a golden that ends on it keeps the final newline check:editorconfig requires of every text file. This is the test's own placeholder, not a byte the twin recorded.
+NO_SUMMARY = "<no summary written>\n"
 
 # `>>`, so an earlier step's section must survive underneath. One case pre-writes this.
 PREAMBLE = "## Earlier step\n\nkeep me\n"
