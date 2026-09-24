@@ -98,6 +98,8 @@ DEFAULT_MIN_DISTINCT = 8
 
 # Excluded by BASENAME, because both files carried planted sample lines that were instrument fixtures rather than label references. Both have since been retired, so the list matches nothing today and is kept because the twin's recorded output was produced with it in place.
 GREP_EXCLUDES = ("check-label-references.sh", "test-label-references.sh")
+# Recorded state, never code that consumes a label: the untracked build cache, and the shadow ledgers (observations of commands already run).
+RECORDED_PARTS = ("/.ci/cache/", "/.ci/shadow/")
 
 # The token every planted sample must yield, ASSEMBLED rather than written.
 #
@@ -120,7 +122,7 @@ PATTERNS: dict[str, dict[str, object]] = {
         "sample": "gh api -f 'labels[]=%s'" % SELFTEST_LABEL,
     },
     "search-filter": {
-        "find": re.compile(r"label:[A-Za-z0-9._-]+"),
+        "find": re.compile(r"(?<![\w-])label:[A-Za-z0-9._-]+"),
         "capture": re.compile(r"^label:"),
         "strip": True,
         "sample": '--search "merged:>=X label:%s"' % SELFTEST_LABEL,
@@ -199,6 +201,9 @@ def walk_text(root: pathlib.Path, *, apply_excludes: bool = True):
         if path.is_symlink() or not path.is_file():
             continue
         if apply_excludes and path.name in GREP_EXCLUDES:
+            continue
+        # RECORDED STATE IS NOT A CONSUMER. A search-filter token inside a shadow ledger's recorded command, and numbers in the untracked cache, were read as a label named with digits (2026-09-24); the cache also differs from machine to machine.
+        if any(part in path.resolve().as_posix() for part in RECORDED_PARTS):
             continue
         try:
             data = path.read_bytes()
@@ -379,7 +384,7 @@ def selftest() -> int:
     THE FLOOR IS DERIVED from the pattern registry, so adding a consumption shape without a sample turns this red rather than quietly shrinking the suite.
     """
     decoy = "a bare mention of %s in prose, and nothing that consumes it" % SELFTEST_LABEL
-    floor = 2 * len(PATTERNS) + 6
+    floor = 2 * len(PATTERNS) + 7
     ctl = Controls("label-references", floor=floor)
 
     with tempfile.TemporaryDirectory() as tmp:
@@ -399,6 +404,14 @@ def selftest() -> int:
             "an excluded basename contributes nothing",
             extract("search-filter", [pathlib.Path(tmp) / "check-label-references.sh"]),
             [],
+        )
+
+        # A CITATION IS NOT A FILTER. `route_label:902` is a file:line pointer whose name happens to end in `label`; with no left boundary the search-filter pattern read `902` as a label (2026-09-24). ASSEMBLED, for the same reason as the samples.
+        sample.write_text(
+            "see devbox_route_" + "label:%s for it\n" % SELFTEST_LABEL, encoding="utf-8"
+        )
+        ctl.check(
+            "search-filter ignores a `..._label:` citation", extract("search-filter", [sample]), []
         )
 
         # BINARY FILES ARE INVISIBLE TO ugrep, so they must be invisible here.
