@@ -323,7 +323,7 @@ def _clock(base=100, at="2026-01-01", rate=7, slack=20, floor=0):
     }
 
 
-def controls_fired(enforce, planfile):
+def controls_fired(enforce, planfile, planrec=None):
     """([missed], n_driven). `missed` names every planted defect that was NOT caught.
 
     THE COUNT IS DERIVED, NEVER A LITERAL. A constant in the success line saying "18 plants" is a claim about this function that nothing checks, and a plant deleted from the middle would leave the constant asserting coverage that is gone. `plant` both records and counts, so the two cannot disagree.
@@ -574,6 +574,19 @@ def controls_fired(enforce, planfile):
         "in_scope: the FINISHED/zero-box filter returned %r, wanted (1, 4)" % (scoped,),
         scoped == (1, 4),
     )
+    # EVIDENCE SLOT: a box with a note line beneath it carries its evidence AFTER the note, where `--plan-tick` writes it, and a box with nothing beneath it carries none.
+    if planrec is not None:
+        box = "- [x] Planted box for the evidence-slot control"
+        sig = planrec.box_sig(re.sub(r"[*_`]+", "", box[6:]).strip())
+        tick = "    (ticked) 2026-01-01T00:00:00Z by c0ntr01: ran the gate, exit 0"
+        caught(
+            "evidence_in_lines missed a (ticked) line written after the box's continuation note",
+            evidence_in_lines(planrec, [box, "      a continuation note", tick], sig) != "",
+        )
+        caught(
+            "evidence_in_lines invented an evidence line for a box that has none",
+            evidence_in_lines(planrec, [box, "      a continuation note", "", "text"], sig) == "",
+        )
     # MOVED PLAN: a row written under the plan's pre-move path must still be found once the plan sits in _done/, and a same-sig row from a DIFFERENT plan must not be.
     moved_rows = [{"plan": "agent/plans/PLAN-m.md", "sig": "bbbbbbbb", "head": "H0"}]
     caught(
@@ -628,7 +641,7 @@ def main(argv=None) -> int:
     FINISHED_STATES = planfile.FINISHED_STATES
 
     print("plan implementation clock: controls first, then the verdict")
-    missed, n_driven = controls_fired(enforce, planfile)
+    missed, n_driven = controls_fired(enforce, planfile, planrec)
     if missed:
         print(
             f"{RED}x{NC} CONTROLS DID NOT FIRE, so this gate cannot detect what it exists for; "
@@ -833,13 +846,22 @@ def registration_findings(boxes_gate):
 def _evidence_line(root, planrec, rel, sig):
     """The `    (ticked) ` line beneath the box `sig` names, or "".
 
-    READ FROM THE PLAN'S OWN TEXT, matched by SIGNATURE rather than by position in a list, so a plan that grew a paragraph above the box still answers correctly. `--plan-tick` inserts the evidence line immediately after the box line, which is what makes "the next line" the right place to look.
+    READ FROM THE PLAN'S OWN TEXT, matched by SIGNATURE rather than by position in a list, so a plan that grew a paragraph above the box still answers correctly.
     """
     try:
         with open(os.path.join(root, rel), encoding="utf-8", errors="replace") as fh:
             lines = fh.read().splitlines()
     except OSError:
         return ""
+    return evidence_in_lines(planrec, lines, sig)
+
+
+def evidence_in_lines(planrec, lines, sig):
+    """The evidence line for box `sig` in `lines`, or "". PURE, so the controls drive it directly.
+
+    THE SLOT IS THE VERB'S OWN, `wl_planrec._evidence_slot`: after the box AND its continuation lines. This read `lines[i + 1]` while `--plan-tick` had moved to inserting after the continuation (the 2026-09-24 fix for a wrapped box being split from its own second line), so every box with a note beneath it read as carrying no evidence line even when the verb had
+    just written one. Reading the same slot the writer uses is what keeps the two from drifting again.
+    """
     for i, raw in enumerate(lines):
         m = planrec.BOX_LINE_RE.match(raw)
         if not m or m.group(1).lower() != "x":
@@ -847,8 +869,9 @@ def _evidence_line(root, planrec, rel, sig):
         body = re.sub(r"[*_`]+", "", m.group(2)).strip()
         if planrec.box_sig(body) != sig:
             continue
-        if i + 1 < len(lines) and planrec.TICK_LINE_RE.match(lines[i + 1]):
-            return lines[i + 1].strip()
+        j = planrec._evidence_slot(lines, i)
+        if j < len(lines) and planrec.TICK_LINE_RE.match(lines[j]):
+            return lines[j].strip()
         return ""
     return ""
 
