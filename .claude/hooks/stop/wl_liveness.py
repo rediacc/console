@@ -187,6 +187,12 @@ def bg_output_facts(cwd, session_id, live_bg):
     for b in live_bg or []:
         tid = str(b.get("id") or "?")
         desc = (b.get("description") or b.get("command") or "")[:70]
+        if b.get("type") == "workflow":
+            wf = workflow_stream(cwd, session_id, b.get("name"))
+            if wf is not None:
+                age, size = wf
+                rows.append((tid, desc, int(age), size, age >= BG_STALE_MIN))
+                continue
         p = os.path.join(base, tid + ".output")
         try:
             st = os.stat(p)
@@ -195,6 +201,36 @@ def bg_output_facts(cwd, session_id, live_bg):
         except OSError:
             rows.append((tid, desc, None, 0, False))
     return rows
+
+
+def workflow_stream(cwd, session_id, name):
+    """(age_min, total_bytes) of a RUNNING workflow's agent transcripts, or None when its run directory cannot be found.
+
+    A workflow task's own `<id>.output` stays empty until the workflow returns, so reading it made every live workflow look POSSIBLY STUCK (2026-09-24: wf_887c90a5-909 read 27 minutes quiet while three of its agents wrote to their transcripts that minute). The event row carries the workflow's `name`, and each run persists its script as `workflows/scripts/<name>-<runId>.js`; the run's agents write under `subagents/workflows/<runId>/`. The newest such script names the run.
+    """
+    import wl_roster as R  # noqa: PLC0415 -- lazy: wl_roster imports this module
+
+    if not name:
+        return None
+    sub = R.session_subagents_dir(cwd, session_id)
+    if sub is None:
+        return None
+    scripts = sorted(
+        (sub.parent / "workflows" / "scripts").glob("%s-wf_*.js" % name),
+        key=lambda q: q.stat().st_mtime,
+    )
+    if not scripts:
+        return None
+    run_id = scripts[-1].stem[len(name) + 1 :]
+    run_dir = sub / "workflows" / run_id
+    try:
+        files = [q for q in run_dir.iterdir() if q.is_file()]
+    except OSError:
+        return None
+    if not files:
+        return None
+    newest = max(q.stat().st_mtime for q in files)
+    return (time.time() - newest) / 60.0, sum(q.stat().st_size for q in files)
 
 
 BG_STALE_MIN = int(os.environ.get("WORKLIST_BG_STALE_MIN", "15"))

@@ -356,6 +356,65 @@ def test_r3e_a_waiter_whose_shell_is_gone_is_finished(wl):  # noqa: F811
     assert [d[0] for d in v["leased_dead"]] == ["wait1"], v["leased_dead"]
 
 
+WORKFLOW_FACTS_SNIPPET = r"""
+import json, sys
+sys.path.insert(0, sys.argv[1])
+import wl_liveness as L
+row = {"id": "wtest0001", "type": "workflow", "status": "running", "description": "wf", "name": "demo-flow"}
+print(json.dumps(L.bg_output_facts(sys.argv[2], sys.argv[3], [row])))
+"""
+
+
+def workflow_facts(fix, agent_age_min: float | None):
+    """bg_output_facts for one running workflow whose run dir holds one agent transcript `agent_age_min` old (None: no run dir at all)."""
+    sub = subagents_dir(fix)
+    sub.mkdir(parents=True, exist_ok=True)
+    fix.env["CLAUDE_CONFIG_DIR"] = str(fix.base / "claude")
+    if agent_age_min is not None:
+        scripts = sub.parent / "workflows" / "scripts"
+        scripts.mkdir(parents=True, exist_ok=True)
+        (scripts / "demo-flow-wf_abc123-def.js").write_text(
+            "export const meta = {}\n", encoding="utf-8"
+        )
+        run = sub / "workflows" / "wf_abc123-def"
+        run.mkdir(parents=True, exist_ok=True)
+        tx = run / "agent-a1.jsonl"
+        tx.write_text("{}\n", encoding="utf-8")
+        backdate(tx, agent_age_min)
+    proc = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            WORKFLOW_FACTS_SNIPPET,
+            str(wlfix.STOP_DIR),
+            str(fix.proj),
+            wlfix.SID,
+        ],
+        capture_output=True,
+        text=True,
+        env=fix.stop_env(),
+        check=False,
+    )
+    assert proc.returncode == 0, proc.stderr[-800:]
+    return json.loads(proc.stdout)[0]
+
+
+def test_r9_a_running_workflow_is_judged_by_its_agents_transcripts(wl):  # noqa: F811
+    """2026-09-24: a workflow's own .output stays empty until it returns, so every live workflow read POSSIBLY STUCK. Its agents' transcripts are the stream."""
+    tid, _desc, age, size, stale = workflow_facts(wl, 1)
+    assert tid == "wtest0001" and age is not None and age <= 2 and size > 0 and stale is False, (
+        age,
+        size,
+        stale,
+    )
+
+
+def test_r9b_a_workflow_whose_agents_went_quiet_is_stale(wl):  # noqa: F811
+    """The control: the same run with its only transcript 30 minutes old must still read stale, so r9 cannot pass vacuously."""
+    _tid, _desc, age, _size, stale = workflow_facts(wl, 30)
+    assert stale is True and age >= 29, (age, stale)
+
+
 def test_r4_five_leased_writers_exceed_the_cap_and_the_newest_is_the_excess(wl):  # noqa: F811
     for i, aid in enumerate((W1, W2, W3, W4, W5)):
         mk_sub(wl, aid, "general-purpose", 10 - i)
