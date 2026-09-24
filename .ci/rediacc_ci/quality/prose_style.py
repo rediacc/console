@@ -1411,7 +1411,13 @@ def run_check(
     else:
         seen = {f.fid for f in findings}
         new = [f for f in findings if f.fid not in previous]
-        fixed = [fid for fid in previous if fid not in seen]
+        # A NAMED-FILE CHECK JUDGES ONLY THE NAMED FILES. Comparing the whole-tree baseline against a two-file scan reported every other file's debt as "no longer fires" and advised --write-baseline, which from that scope would have dropped them all (2026-09-24: 3,274 false stale entries for a two-file check).
+        scope = set(files) if targets else None
+        fixed = [
+            fid
+            for fid in previous
+            if fid not in seen and (scope is None or previous[fid][0] in scope)
+        ]
 
     if as_json:
         print(
@@ -2284,6 +2290,22 @@ def selftest():
         "LOCALE MIRROR: a locale copy keeps the width rules",
         {r.id for r in rules_for_path(it_doc, ship_rules, ship_globals)} >= {"R18", "R19"},
     )
+
+    # ---- a named-file check judges only the named files ------------------
+    with tempfile.TemporaryDirectory() as _sd:
+        _sroot = pathlib.Path(_sd)
+        (_sroot / ".ci" / "config").mkdir(parents=True)
+        (_sroot / "a.md").write_text("Clean prose.\n", encoding="utf-8")
+        (_sroot / "b.md").write_text("Also clean.\n", encoding="utf-8")
+        (_sroot / BASELINE_FILE).write_text(
+            json.dumps({"findings": {"b.md": {"R2": ["deadbeefdeadbeef"]}}}), encoding="utf-8"
+        )
+        _rc = run_check(_sroot, real_globals, real_rules, ["a.md"], as_json=True)
+        ctl.check(
+            "SCOPE: a named-file check does not report other files' baseline as stale", _rc, 0
+        )
+        _rc2 = run_check(_sroot, real_globals, real_rules, ["b.md"], as_json=True)
+        ctl.check("SCOPE MIRROR: the named file's own stale entry still fails", _rc2, 1)
 
     # ---- python and c-style extraction ----------------------------------
     py = "x = 1  # Did you run it?\ny = 'you are a string'\n"
