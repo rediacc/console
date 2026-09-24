@@ -16,7 +16,7 @@ from __future__ import annotations
 import copy
 import re
 import sys
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import yaml
 
@@ -82,7 +82,7 @@ def findings(root: pathlib.Path) -> list[str]:
     return out
 
 
-_GUARDED = {
+_GUARDED: dict[str, Any] = {
     "jobs": {
         "d": {
             "steps": [
