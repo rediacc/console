@@ -56,7 +56,7 @@ The filename says "baseline registry" because that is what the triage predicted.
 
 ## 0. What I got wrong, corrected before anything else
 
-I raised this finding as *"`check:ci-control-vacuity` is blind to 50 of 127 live quality gates, and widening the glob reds the tree with 31 findings because 31 of the 50 have no `--selftest`."* **Two of those three clauses are wrong**, and I verified the corrections against the tree rather than accepting them:
+This finding was first raised as *"`check:ci-control-vacuity` is blind to 50 of 127 live quality gates, and widening the glob reds the tree with 31 findings because 31 of the 50 have no `--selftest`."* **Two of those three clauses are wrong**, and the corrections were verified against the tree rather than accepted:
 
 - **`--selftest` is not the signal, and "no control" is not a finding.**
 `.ci/rediacc_ci/quality/control_vacuity.py:280-281` reads `if not has_control(lines): continue`. A gate with no control is SKIPPED. So widening the glob does not produce 31 findings; the 31/33 count measured a different gate's subject entirely.
@@ -117,7 +117,7 @@ The 12 files convert mechanically.
 `.ci/scripts/quality/check_plan_record.py` needs the `sys.path` hop spelled as in `.ci/scripts/quality/check_npmrc.py:17`.
 
 The new gate is NOT a widened `control_vacuity`. Three reasons in descending force: the live gate is the bash twin (`package.json:140`) and `.ci/rediacc_ci/tests/test_quality_control_vacuity.py:189` requires byte-identical output, so widening means writing an AST-equivalent predicate **in bash**; invariant 5 forbids deleting the twin, so widening means maintaining a bash
-Python-parser until W7 P5; and the predicate is genuinely different — `control_vacuity` asks "is there a proof?", this asks "did you use the harness?".
+Python-parser until W7 P5; and the predicate is genuinely different — `control_vacuity` asks "is there a proof?", this asks whether the harness was used.
 
 Predicate: inside a control region, `X.replace(...)` / `re.sub(..., X)` where `X` is
 a **bare `Name`** is a finding; `plant(...)` is not. The bare-`Name` restriction IS the exemption mechanism and needs no allowlist — it is what excludes `datetime.replace(tzinfo=…)` and `str(ROOT).lstrip("/").replace("/","-")`.
@@ -152,7 +152,7 @@ W7 P4 is actively rewriting. Land as one PR and rebase rather than interleaving.
 
 The gate ran against the real tree and produced 7 findings. Judged one by one:
 
-- **2 were my implementation bug.** `.ci/rediacc_ci/quality/no_otlp_creds.py:373` — `SPACE_RE.sub("", " \t\n")`.
+- **2 were an implementation bug in this work.** `.ci/rediacc_ci/quality/no_otlp_creds.py:373` — `SPACE_RE.sub("", " \t\n")`.
 For `.sub`/`.subn` the RECEIVER is a compiled regex, not the fixture; that call exercises the pattern itself. Fixed by narrowing `SUBSTITUTORS` to `.replace` alone.
 - **1 was a genuine miss, now converted.** `.ci/scripts/quality/check_plan_record.py:1090`
 `with_ph.replace("Status: parked", "Status: compacted", 1)` is a real mutant on a lowercase local, which the earlier `_UPPER`/`clean` sweeps did not reach.

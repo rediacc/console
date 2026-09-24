@@ -206,7 +206,7 @@ A new module `.claude/hooks/stop/wl_planenforce.py`, mechanical, with **one** `v
 2. **Status.** drop `FINISHED_STATES` (imported from `wl_planfile`). **Do not** drop `NOT_STARTED_STATES` -- see 1.3.
 3. **Boxes.** `wl_planfile.plan_boxes(text)`; zero open boxes means silent. A plan with raw `- [ ]` lines the parser resolves to none is reported as BLIND and never as clean, per the `V_PR_UNREADABLE` convention `.claude/hooks/stop/wl_planfile.py:91` already states.
 4. **The clock.** Compute the corpus ceiling (Part 5). If the live open-box count is at or under it, the gate is **silent** -- not advisory, silent. A clock that talks while it is satisfied is a clock nobody reads.
-5. **Ownership split.** `C.owned_by_me(plan_owner(root, rel), session_id)` partitions the over-ceiling debt into MINE (blocks) and PEERS' (named, with recipes, never blocked on -- Part 6).
+5. **Ownership split.** `C.owned_by_me(plan_owner(root, rel), session_id)` partitions the over-ceiling debt into `MINE` (blocks) and PEERS' (named, with recipes, never blocked on -- Part 6).
 6. **The one named box.** The block names exactly ONE box: the first open box of the newest-mtime in-scope plan this session can reach, with its 8-hex signature from `wl_planrec.box_sig`, and the exact `--plan-investigate` / `--plan-tick` command pair.
   `wl_backlog.render`'s discipline applies verbatim (`.claude/hooks/stop/wl_backlog.py:261`): **no live counter anywhere in the text**, because a minute-precision age moves `outq_add`'s content signature on every stop and re-enqueues forever. Counts of boxes and plans are stable between edits and are safe.
 
@@ -441,9 +441,9 @@ Its own comment (`.claude/hooks/stop/wl_backlog.py:150-151`) states the reason t
 
 The block's text partitions the over-ceiling debt:
 
-- **MINE** (`owned_by_me` true): named, with one box and its `--plan-investigate` / `--plan-tick` pair. Today: 212 boxes across 16 plans.
+- **`MINE`** (`owned_by_me` true): named, with one box and its `--plan-investigate` / `--plan-tick` pair. Today: 212 boxes across 16 plans.
 - **A PEER'S, and the peer reads IDLE**: named with `worklist.py --migrate <me> --plan <path>` and nothing else. Today: all three peers are idle, so all 86 boxes across 10 plans are in this bucket.
-  Migration stamps the adoption marker via `ADOPTED_OWNER_FMT` (`.claude/hooks/stop/wl_planfile.py:316`, written at `worklist.py:1016`), after which the plan is MINE and the existing `plan-adopted` vadd also applies -- the two blocks agree by construction because they read the same marker.
+  Migration stamps the adoption marker via `ADOPTED_OWNER_FMT` (`.claude/hooks/stop/wl_planfile.py:316`, written at `worklist.py:1016`), after which the plan is `MINE` and the existing `plan-adopted` vadd also applies -- the two blocks agree by construction because they read the same marker.
 - **A PEER'S, and the peer reads LIVE**: **counted and subtracted from the ceiling comparison, with the subtraction stated in the text.** This is the one arithmetic concession in the design and it is necessary: demanding drainage of boxes a live peer is actively working would make the ceiling unreachable by any action this session can take, which is the no-reachable-exit shape Part 2.4 exists to avoid. A peer that goes idle drops back into bucket two on the next stop, with no state to remember.
 
 Peer-owned boxes are **never** silently excluded from the census -- they are named and counted. `wl_backlog.render`'s own dead-peer block (`.claude/hooks/stop/wl_backlog.py:298-307`) is the format to follow.

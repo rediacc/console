@@ -7,7 +7,9 @@ First-Seen: 2026-09-24
 
 ## Why
 
-The operator, 2026-09-24: *"usually there is single writer. but ... the stop hook pushes a lot. I'd suggest a mechanism that the main session and stop hook work collaboratively on parallel writers maintenance. So, stop hook may skip pushing the main session when it detects that the main session is honest about the current parallel sub-agent writers. The important point is we must have a limit. I'd suggest having up to 4 writers in parallel. The stop hook system should also ping when it detects [that] the latest status report didn't come for [the] last 20 mins. So, there should be no escape hatches."*
+The operator, 2026-09-24:
+
+> *"usually there is single writer. but ... the stop hook pushes a lot. I'd suggest a mechanism that the main session and stop hook work collaboratively on parallel writers maintenance. So, stop hook may skip pushing the main session when it detects that the main session is honest about the current parallel sub-agent writers. The important point is we must have a limit. I'd suggest having up to 4 writers in parallel. The stop hook system should also ping when it detects [that] the latest status report didn't come for [the] last 20 mins. So, there should be no escape hatches."*
 
 ## Finding: the live incident, measured on this session's tree
 
@@ -87,10 +89,10 @@ The three sources are the Stop event, the subagent metas and transcripts, and th
 | **Subagent** | An event task with `type == "subagent"`, joined by id to `subagents/agent-<id>.meta.json`. |
 | **LIVE(id)** | The id is in the event's running list (the harness is authoritative for existence, as the honesty rule at `wl_liveness.py:20` already requires), **and** its transcript is not proven finished (`_record_is_idle` on the last record, `wl_liveness.py:383`, with quiet ≥ `IDLE_EDGE_EPSILON_S`). The `--reap` list is **ignored** for any subagent whose transcript is not proven finished. Otherwise reaping a live writer would hide it from the cap. |
 | **Lineage** | The transitive `parentAgentId` chain from the metas. `descendants(id)` and `ancestors(id)` are computed once per stop from the session's `subagents/` directory. |
-| **Covered lease** | A `[>]` item of mine with `worker:<id>`, where LIVE holds for `id` or any of its descendants. This fixes F4. |
-| **Leased-dead** | A `[>]` item of mine whose worker is a known subagent (a meta exists) and is not covered. This catches F5. |
+| **Covered lease** | A `[>]` item of this session with `worker:<id>`, where LIVE holds for `id` or any of its descendants. This fixes F4. |
+| **Leased-dead** | A `[>]` item of this session whose worker is a known subagent (a meta exists) and is not covered. This catches F5. |
 | **Writer** | A LIVE subagent at any spawn depth whose agent type is not in `READ_ONLY_AGENT_TYPES`, **or** whose transcript contains a tool call in `EDIT_TOOLS` (proven writer, even if its type claims read-only). `READ_ONLY_AGENT_TYPES` = `{"Plan", "Explore"}` plus the `.claude/agents/*.md` definitions whose `tools:` list includes none of `EDIT_TOOLS` (today that is `test-advisor`). `EDIT_TOOLS = {"Edit", "Write", "MultiEdit", "NotebookEdit"}`. Shell tasks are not writers; they are watchers and stay on the existing ladder. |
-| **Unleased writer** | A writer where neither it nor any ancestor holds one of my leases. A child writer inherits its parent's lease. |
+| **Unleased writer** | A writer where neither it nor any ancestor holds one of this session's leases. A child writer inherits its parent's lease. |
 | **Status time** | `status_at(id)` is the newest of: (a) the `at` of the lease event on any item leased to `id` or an ancestor (a spawn counts as a fresh status); (b) a `status` event written by the new verb `worklist.py --status` (below); (c) the timestamp of a `SendMessage` call in the transcript of `id` or a descendant (the worker speaking for itself, via `harvest_transcript`); (d) a SubagentStop capture for `id`. **`--update` is deliberately excluded**: it is prose from the lead, unverified, and it is what resets the old ladder. |
 | **Status due** | A LIVE leased worker (or a descendant covering its lease) with `now - status_at >= STATUS_PING_MIN`. |
 
@@ -101,7 +103,7 @@ The three sources are the Stop event, the subagent metas and transcripts, and th
 - `writers` and `readers`
 - the defect lists: `unleased`, `leased_dead`, `over_cap`, `status_due` and `silent`
 - `state`, one of three values:
-  - **HONEST**: no plain open items of mine, no defects, and every `[>]` of mine is a covered subagent lease or a shell lease that is live and not `suspect`.
+  - **HONEST**: no plain open items of this session, no defects, and every `[>]` of this session is a covered subagent lease or a shell lease that is live and not `suspect`.
   - **DISHONEST**: at least one defect.
   - **UNKNOWN**: a lease on a worker the roster cannot judge, such as a teammate leased by name with no resolvable meta, or a `suspect` shell. UNKNOWN changes nothing, and the existing battery runs exactly as today.
 
@@ -123,7 +125,7 @@ The three sources are the Stop event, the subagent metas and transcripts, and th
    - `stuck`, `idle-stall` and `solo-grind`
    - `agent-state`, only when its verdict is `stale` (`missing`, `thin`, `bloated`, `aimless` and `waitled` still fire)
 
-   Nothing else is dropped. Requests, CI red, pr-finish, the judge tier and integrity checks all still block. If nothing is left after the drop, the stop is **allowed** with a `systemMessage` roster summary: "ROSTER HONEST: N writer(s)/4, M reader(s), next status due HH:MMZ", one line per worker, capped by the existing `ROSTER_MAX` display budget. That replaces today's "What the OS could verify about your background workers" block (`worklist_messages.py:1366/1379/1391`) for subagent rows.
+   Nothing else is dropped. Requests, CI red, pr-finish, the judge tier and integrity checks all still block. If nothing is left after the drop, the stop is **allowed** with a `systemMessage` roster summary: "ROSTER HONEST: N writer(s)/4, M reader(s), next status due HH:MMZ", one line per worker, capped by the existing `ROSTER_MAX` display budget. That replaces today's `What the OS could verify about your background workers` block (`worklist_messages.py:1366/1379/1391`) for subagent rows.
 
 3. **The 45/90/120 ladder is replaced for subagent leases and kept for everything else.** `wl_liveness.ladder` (`:632`) skips any `item:` subject whose worker is a known subagent id. For those subjects the roster's 20-minute ping and lineage-aware dead check take over. The ladder keeps shell-worker leases, teammates leased by name, and `task:*` harness tasks, whose clocks the roster cannot read.
    - Nesting was rejected. Nested, the same item would get a report at 45 minutes, a block at 90 and another at 120 on top of the 20-minute ping. The ladder's `gone` branch would also keep producing the false death from F4.

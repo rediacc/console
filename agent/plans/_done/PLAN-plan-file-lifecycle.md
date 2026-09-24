@@ -78,7 +78,7 @@ A  agent/PLAN-stop-plan-box-enforcement.md
 ```
 
 **88 of 88 parsed open boxes are branch-new.** The pre-branch corpus has zero. The operator's "previous ones that's introduced before this branch" describes work from earlier the same day. The archive migration has an empty input set -- so the archive stays as a FORWARD mechanism and as the hatch that must be policed, but it is off the critical path. It also means a naive "no open
-boxes on files your branch touched" gate would be red on 8 files and 88 boxes on the very branch introducing it. That gate is unshippable, and the design below is not it.
+boxes on files the branch touched" gate would be red on 8 files and 88 boxes on the very branch introducing it. That gate is unshippable, and the design below is not it.
 
 ### The age question: git dates lie here, and they lie GREEN
 
@@ -167,7 +167,7 @@ unparseable ledger, or `PLAN_BOXES_ROOT` at nothing, prints `VACUOUS INPUT` and 
 
 | # | Cheat | Caught by | How |
 |---|---|---|---|
-| 1 | Archive a file you also edited | A2a | `-M100%` reports `R09x` |
+| 1 | Archive a file that was also edited | A2a | `-M100%` reports `R09x` |
 | 2 | Edit in commit 1, archive in commit 2 | A2a | tree-to-tree; commit boundaries invisible |
 | 3 | Delete the box line | A1 | sig leaves open, no legal home |
 | 4 | `- [ ]` -> plain `-` bullet | A1 | leaves the task set, or lands in neither open nor done |

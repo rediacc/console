@@ -6,17 +6,14 @@ Updated: 2026-09-22
 
 ## Why this plan exists
 
-`test_canonical_sys_path_hop.py::test_no_hand_written_hop_outside_the_exemptions_and_the_baseline` is red because 5 hand-written `sys.path.insert(...)` call sites exist in the tree that are in neither its `EXEMPT` dict nor its `BASELINE` dict.
-Per the test's own docstring, the fix is never "add every finding to `EXEMPT`" -- `EXEMPT` is reserved for hops that are structurally permanent (the resolver itself, the two `.ci` shims, one ruff-E402-forced ordering, and two genuinely circular guard imports).
+`test_canonical_sys_path_hop.py::test_no_hand_written_hop_outside_the_exemptions_and_the_baseline` is red because 5 hand-written `sys.path.insert(...)` call sites exist in the tree that are in neither its `EXEMPT` dict nor its `BASELINE` dict. Per the test's own docstring, the fix is never "add every finding to `EXEMPT`" -- `EXEMPT` is reserved for hops that are structurally permanent (the resolver itself, the two `.ci` shims, one ruff-E402-forced ordering, and two genuinely circular guard imports).
 Everything else either gets fixed to the canonical form or, if it is real still-standing debt of the same shape as hops already in the tree, gets added to `BASELINE` (and to `FRESH`, since all 4 non-wlfix sites were introduced on 2026-09-21/22, after PRE-A1 established the canonical form).
 
-Only 1 of the 5 sites (`wlfix.py`) can actually be rewritten to the canonical form without creating a new file.
-The other 4 sit inside dual-use package modules or standalone hook scripts where the canonical resolver (`rediacc_ci.paths`) is not yet reachable without the exact hop being eliminated -- the same chicken-and-egg the test's docstring already documents for `check_pytest.py` and `setup/shadow_driver.py`.
+Only 1 of the 5 sites (`wlfix.py`) can actually be rewritten to the canonical form without creating a new file. The other 4 sit inside dual-use package modules or standalone hook scripts where the canonical resolver (`rediacc_ci.paths`) is not yet reachable without the exact hop being eliminated -- the same chicken-and-egg the test's docstring already documents for `check_pytest.py` and `setup/shadow_driver.py`.
 
 ## Findings (verified against the tree, not assumed)
 
-The Fingerprint column is not a git object: it is `fingerprint()`'s own sha1-of-`ast.unparse` output (`.ci/rediacc_ci/tests/test_canonical_sys_path_hop.py:185`), the stable id the test's `BASELINE`/`FRESH` tables key on.
-It is written below behind a `fingerprint:` marker, which is what tells check:ci-plan-citations it is not a git object; the value itself is exactly what appears in that file's tables.
+The Fingerprint column is not a git object: it is `fingerprint()`'s own sha1-of-`ast.unparse` output (`.ci/rediacc_ci/tests/test_canonical_sys_path_hop.py:185`), the stable id the test's `BASELINE`/`FRESH` tables key on. It is written below behind a `fingerprint:` marker, which is what tells check:ci-plan-citations it is not a git object; the value itself is exactly what appears in that file's tables.
 
 | Site | Fingerprint | Class | Fix |
 |---|---|---|---|

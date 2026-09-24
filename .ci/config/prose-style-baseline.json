@@ -16,16 +16,16 @@
   "that shrank by 29 can still hide one brand-new violation. Comparing sizes is not",
   "the same claim as diffing the sets."
  ],
- "count": 3276,
- "files": 811,
+ "count": 2976,
+ "files": 733,
  "by_rule": {
-  "R1": 1621,
-  "R11": 160,
+  "R1": 1617,
+  "R11": 150,
   "R14": 1,
-  "R18": 15,
+  "R18": 14,
   "R19": 62,
-  "R2": 922,
-  "R7": 495
+  "R2": 639,
+  "R7": 493
  },
  "findings": {
   ".ci/breakpoint/README.md": {
@@ -63,8 +63,7 @@
     "eed5959eed0aa435"
    ],
    "R18": [
-    "8bb5a32b576a2a01",
-    "8f56e43dd35785d7"
+    "8bb5a32b576a2a01"
    ]
   },
   ".ci/config/prose-style-rules.json": {
@@ -797,11 +796,6 @@
   ".ci/rediacc_ci/tests/test_deploy_clone_d1.py": {
    "R7": [
     "891a21da008fe175"
-   ]
-  },
-  ".ci/rediacc_ci/tests/test_deploy_simulate_promotion.py": {
-   "R1": [
-    "d43dc5749eb5e905"
    ]
   },
   ".ci/rediacc_ci/tests/test_env_create_e2e_env.py": {
@@ -5151,101 +5145,9 @@
     "1fcaaae1a68a2cc2"
    ]
   },
-  "packages/www/src/content/blog/es/welcome.md": {
-   "R2": [
-    "f6f3390d56e3c4b6"
-   ]
-  },
-  "packages/www/src/content/blog/et/nis2-effectiveness-without-theatre.md": {
-   "R2": [
-    "0110da6893e28b60",
-    "0bb48f4bc9b69080",
-    "18721404f11d6fb6",
-    "8b956cc323306781",
-    "9723586eef222561",
-    "bbc669e5d31256db",
-    "bf6979cf0d1b49d1",
-    "d0651aab8a117a7c"
-   ]
-  },
-  "packages/www/src/content/blog/et/nis2-supply-chain-self-hosted.md": {
-   "R2": [
-    "21bfbda75686d091"
-   ]
-  },
-  "packages/www/src/content/blog/et/nis2-the-real-bill.md": {
-   "R2": [
-    "aeb08efc366297d7",
-    "e0b8aa2932b1261c"
-   ]
-  },
-  "packages/www/src/content/blog/fr/welcome.md": {
-   "R2": [
-    "4252ea8832149ad5"
-   ]
-  },
-  "packages/www/src/content/blog/it/git-diff-for-encrypted-disk-images.md": {
-   "R2": [
-    "3d248e93ed497130",
-    "3e7e9a5fadb7cb00",
-    "56233dd506c7032a",
-    "acf0972739914ad5",
-    "c9fdb0ec964b7032"
-   ]
-  },
-  "packages/www/src/content/blog/it/nis2-effectiveness-without-theatre.md": {
-   "R2": [
-    "063752bf75c283c0",
-    "b2ebc1a70364d831"
-   ]
-  },
-  "packages/www/src/content/blog/it/nis2-supply-chain-self-hosted.md": {
-   "R2": [
-    "05906fd4810c1122",
-    "457766688673fc81",
-    "c856aefa448e80eb",
-    "ef86c19789da57c5",
-    "f9c6e04d3d4dd018"
-   ]
-  },
-  "packages/www/src/content/blog/it/nis2-the-real-bill.md": {
-   "R2": [
-    "2869e780917d1fba",
-    "288af006287e0cad",
-    "2bb94c5dbdd975c5",
-    "7753cfbd854180db",
-    "84f19ebe4a900fa3",
-    "953589327de630a6",
-    "a8fde325d2978d93",
-    "b58fb93c8d4cf65d",
-    "bb094be60ddf4886",
-    "ce1f6913373e0479"
-   ]
-  },
-  "packages/www/src/content/blog/it/welcome.md": {
-   "R2": [
-    "85aa5fe05832bd1f"
-   ]
-  },
-  "packages/www/src/content/blog/pt/git-diff-for-encrypted-disk-images.md": {
-   "R2": [
-    "84bdda5107c165c7",
-    "bffde7d2bbd4545d"
-   ]
-  },
   "packages/www/src/content/docs/ar/rules-of-rediacc.md": {
    "R18": [
     "a87091080925dd15"
-   ]
-  },
-  "packages/www/src/content/docs/de/backup-restore.md": {
-   "R11": [
-    "20db818fd8494098"
-   ]
-  },
-  "packages/www/src/content/docs/de/kubernetes.md": {
-   "R1": [
-    "e37b6299cbd4c3ad"
    ]
   },
   "packages/www/src/content/docs/de/monitoring.md": {
@@ -6141,11 +6043,6 @@
     "6b5375cb06290a29"
    ]
   },
-  "packages/www/src/content/docs/es/backup-restore.md": {
-   "R11": [
-    "87fed4f8f306c728"
-   ]
-  },
   "packages/www/src/content/docs/es/monitoring.md": {
    "R19": [
     "d5c680fab923f616"
@@ -6154,21 +6051,6 @@
   "packages/www/src/content/docs/es/rules-of-rediacc.md": {
    "R18": [
     "44ba39588553357b"
-   ]
-  },
-  "packages/www/src/content/docs/et/backup-restore.md": {
-   "R11": [
-    "ad7853f3461b49dc"
-   ]
-  },
-  "packages/www/src/content/docs/et/legal-iso27001.md": {
-   "R2": [
-    "2b693bb6a8343de1"
-   ]
-  },
-  "packages/www/src/content/docs/et/on-premise.md": {
-   "R2": [
-    "f239d64b372a4224"
    ]
   },
   "packages/www/src/content/docs/et/rules-of-rediacc.md": {
@@ -6180,14 +6062,6 @@
    "R19": [
     "04a570880cfb1da2",
     "2df110f8ba95e6af"
-   ],
-   "R2": [
-    "d016c57eca93e461"
-   ]
-  },
-  "packages/www/src/content/docs/fr/backup-restore.md": {
-   "R11": [
-    "fd0a8151b0aad8b7"
    ]
   },
   "packages/www/src/content/docs/fr/monitoring.md": {
@@ -6195,480 +6069,25 @@
     "e14eb41c645f8432"
    ]
   },
-  "packages/www/src/content/docs/fr/pruning.md": {
-   "R7": [
-    "ca48cb211985bd54"
-   ]
-  },
   "packages/www/src/content/docs/fr/rules-of-rediacc.md": {
    "R18": [
     "acf702bb23871842"
    ]
   },
-  "packages/www/src/content/docs/it/account-management.md": {
-   "R2": [
-    "2d99926b60380d73",
-    "368728026a62f6a8",
-    "a6fcda1daec03349"
-   ]
-  },
-  "packages/www/src/content/docs/it/account-security.md": {
-   "R2": [
-    "5adb6db6af107518",
-    "ae088a2b0fefe6f4"
-   ]
-  },
-  "packages/www/src/content/docs/it/ai-agents-json-output.md": {
-   "R2": [
-    "3f66a383d8051754",
-    "8ea8a7659470cdb9"
-   ]
-  },
-  "packages/www/src/content/docs/it/ai-agents-safety.md": {
-   "R2": [
-    "75399f79766928e8",
-    "8c8b4861b3143456",
-    "9365b3629e59c93a",
-    "b4aca31f4f717470"
-   ]
-  },
-  "packages/www/src/content/docs/it/architecture.md": {
-   "R2": [
-    "01d17d1e62a04940",
-    "4cc414797e08b6e0",
-    "4d343634c674e6b9",
-    "820c7d64fc856a96",
-    "c6aa1515c7a3ed35",
-    "ffe89a0613234564"
-   ]
-  },
-  "packages/www/src/content/docs/it/autostart-recovery.md": {
-   "R2": [
-    "060c73d446976add",
-    "1c12ea4af90ff64d",
-    "be77e85b25b6d320",
-    "dc04030de2f1a3dd"
-   ]
-  },
-  "packages/www/src/content/docs/it/backup-restore.md": {
-   "R11": [
-    "ef589499ac7e81c8"
-   ],
-   "R2": [
-    "369f168995e2875f",
-    "4e54081a6d32a1c2",
-    "5f213f85ad207ccc",
-    "77df7dc42405fd4f",
-    "7d33feadb2cce345",
-    "c9823d7044307932",
-    "cd694d6018b51564",
-    "cf3961640b4c9b41",
-    "d1cd04724162e4e2",
-    "e17c7b76f984002c",
-    "feaf1e49f0c7169a"
-   ]
-  },
-  "packages/www/src/content/docs/it/blackout.md": {
-   "R2": [
-    "3633c45bb298c5d5",
-    "3a0e60b23db36fba",
-    "3e17de48dc7a71a1",
-    "4bb9fdb7fd02d4e7",
-    "b6f1a284034608b5",
-    "c6ce9ae4302299c4",
-    "cde6040eb019e201",
-    "d77d90b792ee73a5",
-    "dc512bb71effed28",
-    "e346bf7fe0e8d5b6"
-   ]
-  },
-  "packages/www/src/content/docs/it/config-storage.md": {
-   "R2": [
-    "1139fd770930a9a4",
-    "20495f27ec629bd0",
-    "b52161bfde52ba2c"
-   ]
-  },
-  "packages/www/src/content/docs/it/cross-backup.md": {
-   "R2": [
-    "6c8d899b24dac519",
-    "af1de28f012a72ac"
-   ]
-  },
-  "packages/www/src/content/docs/it/data-regions.md": {
-   "R2": [
-    "05b923f807b010ac"
-   ]
-  },
-  "packages/www/src/content/docs/it/development-environments.md": {
-   "R2": [
-    "355ecbcdca8865ba",
-    "4f7960a5285d3fd6",
-    "90fd5ecb33e2501f",
-    "9bdd5b026e3759d1",
-    "ca452bc161754dbf",
-    "eb20071630581399",
-    "ffde2d16bb6a94e7"
-   ]
-  },
-  "packages/www/src/content/docs/it/dynamic-resource-scaling.md": {
-   "R2": [
-    "2eb69e315f3e7498",
-    "351b86ec646abac2",
-    "41c05414d43b6b97",
-    "96248520e7c416e5",
-    "b99bbc5489265727"
-   ]
-  },
-  "packages/www/src/content/docs/it/experimental-vms.md": {
-   "R2": [
-    "33747148832a1cd4"
-   ]
-  },
-  "packages/www/src/content/docs/it/hub.md": {
-   "R2": [
-    "139b34ec1c81140e",
-    "172f310eb0c88de4",
-    "2cf222174cd65221",
-    "2d9da50da6c90c6d",
-    "3d5f5e7e8ef948b3",
-    "5145351a0b8b68e0",
-    "96efd31e4300d87a",
-    "b4f785ab46cf0a43",
-    "c8d3a9f148b00162"
-   ]
-  },
-  "packages/www/src/content/docs/it/installation.md": {
-   "R2": [
-    "406362805118308d",
-    "eba737b0e3c7a3cb"
-   ]
-  },
-  "packages/www/src/content/docs/it/kubernetes.md": {
-   "R2": [
-    "3cefb9d20c8da077",
-    "47bd9c2fb43f26e0",
-    "52d294880a3dc69c",
-    "82a63c66817a1f1a",
-    "92e9d03276bc74e5",
-    "b09d3710f5e18e0c",
-    "b6b4be33ea8a0225"
-   ]
-  },
-  "packages/www/src/content/docs/it/legacy-database-scaling.md": {
-   "R2": [
-    "2a51b0454cdb765b",
-    "3d94943ca828d7f4",
-    "72d60c1a3306d648",
-    "9968718d1009e38f",
-    "d3230f7576c77eb3",
-    "fe66fdc4430dfe97",
-    "fe859f1485d0ec26"
-   ]
-  },
-  "packages/www/src/content/docs/it/legal-ccpa.md": {
-   "R2": [
-    "956606889bcffe78",
-    "d751a7599b6a6b07"
-   ]
-  },
-  "packages/www/src/content/docs/it/legal-data-sovereignty.md": {
-   "R2": [
-    "2db746253471bda4",
-    "a5da3f537e86dbb2",
-    "f2656301170d1f44"
-   ]
-  },
-  "packages/www/src/content/docs/it/legal-gdpr.md": {
-   "R2": [
-    "42eda869da7d775d",
-    "dfa727fc19562aed",
-    "f460076553aafdb0"
-   ]
-  },
-  "packages/www/src/content/docs/it/legal-hipaa.md": {
-   "R2": [
-    "85a6ed32d4735cae",
-    "a4629d3bc89d40ff"
-   ]
-  },
-  "packages/www/src/content/docs/it/legal-iso27001.md": {
-   "R2": [
-    "211d0485ff299bcb",
-    "37535efd7d33a067",
-    "49c9a5df72dd04ce"
-   ]
-  },
-  "packages/www/src/content/docs/it/legal-nis2-dora.md": {
-   "R2": [
-    "6b9a77f0419bb16a"
-   ]
-  },
-  "packages/www/src/content/docs/it/legal-overview.md": {
-   "R2": [
-    "1403a44e25a8fd8b",
-    "2989ccb291975c12",
-    "35fdf3f46eabcce5",
-    "9224227534b56eed"
-   ]
-  },
-  "packages/www/src/content/docs/it/legal-pci-dss.md": {
-   "R2": [
-    "9efebda33bcf853a",
-    "c28f6d7854d462c0",
-    "d9481dd683edff54",
-    "ec223bcafd6847b7"
-   ]
-  },
-  "packages/www/src/content/docs/it/legal-soc2.md": {
-   "R2": [
-    "33fcf3b08c19b473",
-    "f9872d88da1a91b4"
-   ]
-  },
-  "packages/www/src/content/docs/it/license-chain.md": {
-   "R2": [
-    "026c345b0f7cf6d7",
-    "1b93f6863b45d0d2",
-    "7020cca84054fcff",
-    "db66c6e327c33833"
-   ]
-  },
-  "packages/www/src/content/docs/it/limits.md": {
-   "R2": [
-    "3fd3a3fbfe902ab1",
-    "45d84ddaf20733fd",
-    "4be861db17e2d24f",
-    "579d3659e960e069",
-    "778d6cedd081708f",
-    "95d5e8eb35d6a29f",
-    "cfd92ee7e1bafb3d"
-   ]
-  },
-  "packages/www/src/content/docs/it/migration.md": {
-   "R2": [
-    "274be3e83bebdfaf",
-    "4df6149bb319299b",
-    "8db1dcdd40fdf146",
-    "b39580f16f9c12cc",
-    "df4c31ff58fc30a6"
-   ]
-  },
   "packages/www/src/content/docs/it/monitoring.md": {
    "R19": [
     "c7aba8f9605ba717"
-   ],
-   "R2": [
-    "2daf109d59fe162d",
-    "70eed40d9c354615",
-    "9ec3ac5b920e26da",
-    "e4e26a5ab67e9be3"
-   ]
-  },
-  "packages/www/src/content/docs/it/networking.md": {
-   "R2": [
-    "19aec49c73e89fb3",
-    "2649acaa5a163d87",
-    "3f327c76d4c62883",
-    "4b7c1740f99753f5",
-    "6158ed719add029b",
-    "653b780a3a20e896",
-    "def777ea92b6e1ae",
-    "e065daaa4b5931c1",
-    "ed694a6abb2c1244",
-    "f39c67354facb03c"
-   ]
-  },
-  "packages/www/src/content/docs/it/on-premise.md": {
-   "R2": [
-    "8f36f4deabf08c83"
-   ]
-  },
-  "packages/www/src/content/docs/it/proxy-and-executor.md": {
-   "R2": [
-    "4c99e877f2fed39f",
-    "6d070ef04d938c58",
-    "a610392a1adad9d6",
-    "ece29741df971d95"
-   ]
-  },
-  "packages/www/src/content/docs/it/pruning.md": {
-   "R2": [
-    "2d8691d2958a6d83",
-    "5632a246d5e7e6c8",
-    "95d618d67b0239d4",
-    "ea52615cca98cef6"
-   ]
-  },
-  "packages/www/src/content/docs/it/quick-start.md": {
-   "R2": [
-    "614bb502b41a0dcc",
-    "a0593e12002d6465"
-   ]
-  },
-  "packages/www/src/content/docs/it/rdc-cheat-sheet.md": {
-   "R2": [
-    "efede223a89084d7"
-   ]
-  },
-  "packages/www/src/content/docs/it/release-channels.md": {
-   "R2": [
-    "229f499844ef46c7"
-   ]
-  },
-  "packages/www/src/content/docs/it/repo-branching.md": {
-   "R2": [
-    "0d178bd296dbe137",
-    "6978c851893ff3cd",
-    "7085a8502b78ca88",
-    "7181e0d84211b1a6",
-    "94cddccddc10bc0b",
-    "b827314ff3eb38b1",
-    "de1288b82eb909a2"
-   ]
-  },
-  "packages/www/src/content/docs/it/repo-diff.md": {
-   "R2": [
-    "1828b89a6146fbf2",
-    "77e4f14101d81815",
-    "a2ec0448f159ce0b",
-    "b7bcf467e6d43405"
-   ]
-  },
-  "packages/www/src/content/docs/it/repositories.md": {
-   "R2": [
-    "0964459c42408f1b",
-    "1b3be91d51a9ea96",
-    "715d561a33c15ef0",
-    "7a4c25bdd993e5f8",
-    "7adba69280936533",
-    "85181ca019958fa1"
-   ]
-  },
-  "packages/www/src/content/docs/it/requirements.md": {
-   "R2": [
-    "de00052f490584e2"
-   ]
-  },
-  "packages/www/src/content/docs/it/risk-free-upgrades.md": {
-   "R2": [
-    "37961eaaa649a152",
-    "a0c056bf1a382a56",
-    "b261a042b45b567f",
-    "eb45f9360f96ed37",
-    "f0fbe096d08e666c",
-    "fb91b796bb65d50c"
    ]
   },
   "packages/www/src/content/docs/it/rules-of-rediacc.md": {
    "R18": [
     "8f14a00443206e04"
-   ],
-   "R2": [
-    "0e7a14353f96aa57",
-    "11f5aa1d428c0d85",
-    "224fb25c39a8e417",
-    "261e69a20888d0a1",
-    "3467f1c46382015a",
-    "580c6e33334b4157",
-    "59d934aa4d39968e",
-    "62a7bcb8a015c584",
-    "6c0e7624387e631a",
-    "72f559fbfdf2a726",
-    "7ec6afe044287f7b",
-    "8b894c457092b130",
-    "9646e739c2c0cb4c",
-    "b9b5338b984bf037",
-    "d5ebb7dea420e2fa",
-    "e9a30c37dc7b5fcf",
-    "fbb825e00bbac638"
-   ]
-  },
-  "packages/www/src/content/docs/it/server-reference.md": {
-   "R2": [
-    "1fa4608d87a59455",
-    "280b6ad2d32c9efc",
-    "4dbb6111b88d64be",
-    "9f1eb6f2d046c85e",
-    "af596d333dd9ad70",
-    "f424e27d846a444a"
    ]
   },
   "packages/www/src/content/docs/it/services.md": {
    "R19": [
     "26189ac6ff711a1e",
     "44f697f05c08ba6b"
-   ],
-   "R2": [
-    "078ff8426e6b46f8",
-    "4d459263c2f01ce5",
-    "5e67e61826ef60d0",
-    "63ae0aa48c97247b",
-    "63baa56d9a39ee18",
-    "82129e5e8eaa401a",
-    "9a2509a2f8439583",
-    "a3247326b9c64e67",
-    "b2a46eed70b64b55",
-    "c63bcd6c939cf6bb",
-    "fb29fb41aa402745"
-   ]
-  },
-  "packages/www/src/content/docs/it/setup.md": {
-   "R2": [
-    "7ce7bea12cca7185",
-    "b45772db8271c6cf",
-    "c03384758e57e014"
-   ]
-  },
-  "packages/www/src/content/docs/it/subscription-licensing.md": {
-   "R2": [
-    "176c530173230c03",
-    "1fdca0248f07df0d",
-    "34a62c283055645b",
-    "3c5a0e57cd8dc32b",
-    "4134609837294e6f",
-    "57403614200a33f4",
-    "634ed4dd6302666c",
-    "ab920c1b5444e418",
-    "c9f66adedf898e0d",
-    "fa4941cf40527f4d"
-   ]
-  },
-  "packages/www/src/content/docs/it/time-travel-recovery.md": {
-   "R2": [
-    "0321d7911a504170",
-    "46b171bfbe181ae1",
-    "7b9a73c0989374c1",
-    "ab9af372d811e298",
-    "dbf663d276d6af4e",
-    "fa247b3e7737a627"
-   ]
-  },
-  "packages/www/src/content/docs/it/tools.md": {
-   "R2": [
-    "9dd76ee09734a56c",
-    "edb11a98a108e008"
-   ]
-  },
-  "packages/www/src/content/docs/it/troubleshooting.md": {
-   "R2": [
-    "60a3ec63552ff859",
-    "afab2aa2a5758ea0",
-    "d120af1db6cb4292"
-   ]
-  },
-  "packages/www/src/content/docs/it/web-console.md": {
-   "R2": [
-    "7772fbe55db97000",
-    "80ac63ebce0ce1f1"
-   ]
-  },
-  "packages/www/src/content/docs/it/zero-cost-backup.md": {
-   "R2": [
-    "0008eb0d82fe4a4f",
-    "5c421c3a2cdd6bb3",
-    "742d23fd55575370",
-    "f397ba22f5bfdb57"
    ]
   },
   "packages/www/src/content/docs/ja/services.md": {
@@ -6686,11 +6105,6 @@
     "573a142d934c3446"
    ]
   },
-  "packages/www/src/content/docs/pt/ai-agents-cursor.md": {
-   "R2": [
-    "c0b66c6279fcdbb9"
-   ]
-  },
   "packages/www/src/content/docs/pt/backup-restore.md": {
    "R19": [
     "19d9890a6eea8b56",
@@ -6702,11 +6116,6 @@
     "117f28e26fb43c1b"
    ]
   },
-  "packages/www/src/content/docs/pt/pruning.md": {
-   "R11": [
-    "c9635aab18ea2827"
-   ]
-  },
   "packages/www/src/content/docs/pt/rules-of-rediacc.md": {
    "R18": [
     "2d6749f1a686564a"
@@ -6716,16 +6125,6 @@
    "R19": [
     "97a657f1113995f8",
     "a5db3d8b6e937c83"
-   ]
-  },
-  "packages/www/src/content/docs/pt/tools.md": {
-   "R11": [
-    "bff6f7376ea8b59d"
-   ]
-  },
-  "packages/www/src/content/docs/ru/backup-restore.md": {
-   "R11": [
-    "b8f25d63a63d4c26"
    ]
   },
   "packages/www/src/content/docs/ru/monitoring.md": {
@@ -6743,16 +6142,6 @@
     "6b1cf2ed28c3b9ea"
    ]
   },
-  "packages/www/src/content/docs/ru/setup.md": {
-   "R1": [
-    "693c08bc28055cff"
-   ]
-  },
-  "packages/www/src/content/docs/tr/backup-restore.md": {
-   "R11": [
-    "97098d57cb481fc5"
-   ]
-  },
   "packages/www/src/content/docs/tr/rules-of-rediacc.md": {
    "R18": [
     "0371a8a71f3c4fae"
@@ -6766,11 +6155,6 @@
   "packages/www/src/content/docs/zh/ai-agents-mcp.md": {
    "R19": [
     "f2f8e786c4a6983b"
-   ]
-  },
-  "packages/www/src/content/docs/zh/backup-restore.md": {
-   "R11": [
-    "4704444d58c978c5"
    ]
   },
   "packages/www/src/plugins/heading-anchors.mjs": {
@@ -6935,14 +6319,6 @@
   "scripts/gates/check-embed-asset-versions.ts": {
    "R7": [
     "13519309e243999b"
-   ]
-  },
-  "scripts/gates/check-env-credential-drift.ts": {
-   "R1": [
-    "f3c98277e7fbd7b5"
-   ],
-   "R7": [
-    "a5694fb8de248a17"
    ]
   },
   "scripts/gates/check-external-links.ts": {

@@ -1,9 +1,7 @@
 # PLAN: a Stop-hook advisory that names the ONE next plan to implement, newest-first, validated against other sessions
 
 Status: done 2026-09-22 -- all 20 boxes ticked.
-`wl_backlog.py` (eligibility chain, Depends-On redirect, claim check, dead-peer count, render with the bulk-mtime-cluster note, wiring, per-session cap) is live and verified against the real tree; `test-backlog.py` carries 39 controls (not 7 -- the plan's own estimate was low) and passes clean.
-`WORKLIST_BACKLOG_MAX_PER_SESSION` is registered in both env registries; `.claude/hooks/stop/test-backlog.py` is registered in `test_canonical_sys_path_hop.py`'s BASELINE at fingerprint `5163c1cfecb6`.
-Part 4a records a fresh re-run against the live tree (120 plans scanned, self-nominated, with the rendered-vs-fresh open-box-count staleness noted and explained).
+`wl_backlog.py` (eligibility chain, Depends-On redirect, claim check, dead-peer count, render with the bulk-mtime-cluster note, wiring, per-session cap) is live and verified against the real tree; `test-backlog.py` carries 39 controls (not 7 -- the plan's own estimate was low) and passes clean. `WORKLIST_BACKLOG_MAX_PER_SESSION` is registered in both env registries; `.claude/hooks/stop/test-backlog.py` is registered in `test_canonical_sys_path_hop.py`'s BASELINE at fingerprint `5163c1cfecb6`. Part 4a records a fresh re-run against the live tree (120 plans scanned, self-nominated, with the rendered-vs-fresh open-box-count staleness noted and explained).
 Owner: d778be9d
 First-Seen: 2026-09-22
 Updated: 2026-09-22
@@ -24,8 +22,7 @@ Two further filters put the entire backlog out of reach: `PLAN_DRIFT_MIN_MOVES` 
 
 ### 0.2 `plans_block` (`.claude/hooks/stop/wl_checks.py:974`) is informational and fires twice per session
 
-Traced to its callers: `handle_session_start` at `.claude/hooks/stop/wl_checks.py:1685` and the PostCompact path at `.claude/hooks/stop/wl_checks.py:1750`. Both are wired from `.claude/settings.json` (`SessionStart` at `:110`, `PostCompact` at `:99`). It prints every live plan with box counts and the two tree-wide totals from `_plan_census_summary` (`.claude/hooks/stop/wl_checks.py:1015`).
-It runs ONCE, at the top of a session, ahead of everything the session then does, and it gates nothing. `plan_box_census`'s own docstring (`.claude/hooks/stop/wl_checks.py:948`) names that placement as a FEATURE for a census -- "it cannot be starved the way the per-stop advisory was" -- which is exactly why it cannot also serve as a per-stop nudge.
+Traced to its callers: `handle_session_start` at `.claude/hooks/stop/wl_checks.py:1685` and the PostCompact path at `.claude/hooks/stop/wl_checks.py:1750`. Both are wired from `.claude/settings.json` (`SessionStart` at `:110`, `PostCompact` at `:99`). It prints every live plan with box counts and the two tree-wide totals from `_plan_census_summary` (`.claude/hooks/stop/wl_checks.py:1015`). It runs ONCE, at the top of a session, ahead of everything the session then does, and it gates nothing. `plan_box_census`'s own docstring (`.claude/hooks/stop/wl_checks.py:948`) names that placement as a FEATURE for a census -- "it cannot be starved the way the per-stop advisory was" -- which is exactly why it cannot also serve as a per-stop nudge.
 A listing of 24 plans read once at minute zero is orientation, and orientation is not pressure.
 
 ### 0.3 `wl_planfile.plan_rows` (`.claude/hooks/stop/wl_planfile.py:334`) asks whether a plan's boxes are TRACKED, not whether they are DONE
@@ -34,8 +31,7 @@ Its design note 1 (`.claude/hooks/stop/wl_planfile.py:14-22`) rules out ever bec
 
 ### 0.4 `wl_store.plan_candidates` (`.claude/hooks/stop/wl_store.py:1764`) is the exact mirror image, and its only caller is `/migrate`
 
-This is the closest relative and the most important one.
-Its docstring already states the gap almost word for word -- "what committed, undone design exists that nobody live is driving" -- and it already solves three of the hard sub-problems: it sources box counts from `wl_planindex.index_census` rather than a fresh scan, it filters on `FINISHED_STATES` and deliberately NOT on `in_scope_status` (because `draft` is this repo's default header on plans under active execution), and it runs `plan_owner` only over the short list the census already narrowed.
+This is the closest relative and the most important one. Its docstring already states the gap almost word for word -- "what committed, undone design exists that nobody live is driving" -- and it already solves three of the hard sub-problems: it sources box counts from `wl_planindex.index_census` rather than a fresh scan, it filters on `FINISHED_STATES` and deliberately NOT on `in_scope_status` (because `draft` is this repo's default header on plans under active execution), and it runs `plan_owner` only over the short list the census already narrowed.
 
 And then, at `.claude/hooks/stop/wl_store.py:1729`, it does the one thing that makes it useless here:
 
@@ -56,11 +52,9 @@ Measured on this tree, 24 plan files are non-finished and carry at least one ope
 
 A new file `.claude/hooks/stop/wl_backlog.py`, exporting `next_plan(...)` and `render(...)`, called from the plan-advisory region of `run_stop` (beside the `wl_planfile` block at `.claude/hooks/stop/wl_checks.py:3109-3151`) and delivered through `outq_add` (`.claude/hooks/stop/wl_checks.py:1350`) at priority 2.
 
-NOT a function inside `wl_checks.py`, despite that file already holding `plan_drift_rows`. `wl_checks.py` is 4865 lines; every per-stop signal built recently is its own module with its own controls file beside it (`wl_planfile.py`, `wl_classsweep.py`, `wl_shapedup.py`, `wl_claimcheck.py`).
-`wl_planfile.plan_rows`'s signature gives the operative reason in its own docstring: "`recs` and `plan_owner` are passed in rather than imported so this module never depends on wl_checks, which imports it (and so the selftest can drive it with fixtures)." The same inversion is used here.
+NOT a function inside `wl_checks.py`, despite that file already holding `plan_drift_rows`. `wl_checks.py` is 4865 lines; every per-stop signal built recently is its own module with its own controls file beside it (`wl_planfile.py`, `wl_classsweep.py`, `wl_shapedup.py`, `wl_claimcheck.py`). `wl_planfile.plan_rows`'s signature gives the operative reason in its own docstring: "`recs` and `plan_owner` are passed in rather than imported so this module never depends on wl_checks, which imports it (and so the selftest can drive it with fixtures)." The same inversion is used here.
 
-MECHANICAL, not judged. No model call, and the reason is not cost. Every judged rule in this tree exists because its question is evaluative -- `wl_shapedup` asks whether several shapes SHOULD become one thing, `wl_classsweep` asks whether a defect has siblings -- and each pays for a rubric hashed into `.ci/config/rubric-calibration.json`.
-Ordering plan files by recency, ownership and claim state is arithmetic over file metadata and the worklist event stream. There is nothing to calibrate, and a judged answer could not be reproduced by the dry run in Part 4 or pinned by a control.
+MECHANICAL, not judged. No model call, and the reason is not cost. Every judged rule in this tree exists because its question is evaluative -- `wl_shapedup` asks whether several shapes SHOULD become one thing, `wl_classsweep` asks whether a defect has siblings -- and each pays for a rubric hashed into `.ci/config/rubric-calibration.json`. Ordering plan files by recency, ownership and claim state is arithmetic over file metadata and the worklist event stream. There is nothing to calibrate, and a judged answer could not be reproduced by the dry run in Part 4 or pinned by a control.
 
 ADVISORY, never a `vadd`. The reason is the one `wl_planfile`'s design note 1 records at 24x the scale: 278 open boxes across 24 plans, none of which the current session created. A blocking tier over a standing backlog walls every session behind work it did not cause. `agent/plans/PLAN-stop-hook-refactor-enforcement.md:158` reaches the identical conclusion about a 90-finding corpus.
 
@@ -79,48 +73,37 @@ A plan is a NOMINATION CANDIDATE when every one of these holds. The order is cho
 
 ### 1.3 DESC order is FILE MTIME, and the two alternatives were checked against real disagreement
 
-`plan_records` (`.claude/hooks/stop/wl_checks.py:812`) already returns every plan newest-mtime-first (`rows.sort(key=lambda r: -r[3])`), and `plans_block` re-imposes that same order from its own `stat` pass at `.claude/hooks/stop/wl_checks.py:992-993` with the reason spelled out: the committed index sorts by path, so an index that dropped mtime "would silently change which plan a compacted session gets excerpted".
-The primitive exists; this mechanism consumes it and does not re-derive it.
+`plan_records` (`.claude/hooks/stop/wl_checks.py:812`) already returns every plan newest-mtime-first (`rows.sort(key=lambda r: -r[3])`), and `plans_block` re-imposes that same order from its own `stat` pass at `.claude/hooks/stop/wl_checks.py:992-993` with the reason spelled out: the committed index sorts by path, so an index that dropped mtime "would silently change which plan a compacted session gets excerpted". The primitive exists; this mechanism consumes it and does not re-derive it.
 
 The other two readings of "newest" were tested against this tree and both fail on real data:
 
-**Git last-touch DISAGREES and is coarser.** Commit `a81967e94` ("92 moved plans' citations repoint at agent/plans/ directly") touched 92 plan files in one commit. Under a git-touch key, 92 plans tie at one instant and a mechanical citation repoint promotes `PLAN-stop-hook-refactor-enforcement.md` above plans genuinely written later.
-Worse, commit `3c88fa636` committed `PLAN-stop-hook-behavioral-hints.md` and `PLAN-github-actions-to-bitwarden.md` together, so git-touch cannot separate them AT ALL, while mtime separates them cleanly (17:12:59 versus 17:10:59). A key that cannot order the two newest plans in the backlog is not a key.
+**Git last-touch DISAGREES and is coarser.** Commit `a81967e94` ("92 moved plans' citations repoint at agent/plans/ directly") touched 92 plan files in one commit. Under a git-touch key, 92 plans tie at one instant and a mechanical citation repoint promotes `PLAN-stop-hook-refactor-enforcement.md` above plans genuinely written later. Worse, commit `3c88fa636` committed `PLAN-stop-hook-behavioral-hints.md` and `PLAN-github-actions-to-bitwarden.md` together, so git-touch cannot separate them AT ALL, while mtime separates them cleanly (17:12:59 versus 17:10:59). A key that cannot order the two newest plans in the backlog is not a key.
 
-**`First-Seen:` is date-granular and absent on most of the backlog.** 101 of 108 top-level plans carry it, but of the four plans the operator named, only `PLAN-github-actions-to-bitwarden.md` has the field at all, and its value is `2026-09-22` -- the same date every other plan written today would carry.
-It ties the exact set the mechanism must order, and is missing from three quarters of it.
+**`First-Seen:` is date-granular and absent on most of the backlog.** 101 of 108 top-level plans carry it, but of the four plans the operator named, only `PLAN-github-actions-to-bitwarden.md` has the field at all, and its value is `2026-09-22` -- the same date every other plan written today would carry. It ties the exact set the mechanism must order, and is missing from three quarters of it.
 
 **Two honest weaknesses of mtime, stated rather than hidden.**
 
 First, mtime is not stable across a clone. `wl_planindex.render_census` (`.claude/hooks/stop/wl_planindex.py:163`) says so directly, which is why the committed census sorts by path. This is acceptable here because the advisory is per-session on one machine and is never committed, but it means the controls must assert the ORDERING PROPERTY over fixture mtimes the test sets, never a named plan.
 
-Second, and more serious: bulk git operations rewrite mtime. Measured on this tree, five plans share mtime `15:38:05`, five share `15:29:15`, and nine share `09-21 19:54:5x` -- checkout timestamps, not edit recency. A fresh `git checkout` could promote a hundred old plans above today's work.
-The mitigation costs nothing and uses data already in hand: when the nominee shares its mtime SECOND with two or more other plans, the body says so by name and names the runner-up, so a reader can see a bulk-touch signature rather than trusting a number that a checkout produced.
-Ties break on path, which is stable and matches the `sorted(d.glob(...))` order the old path gave (`.claude/hooks/stop/wl_checks.py:990-991`).
+Second, and more serious: bulk git operations rewrite mtime. Measured on this tree, five plans share mtime `15:38:05`, five share `15:29:15`, and nine share `09-21 19:54:5x` -- checkout timestamps, not edit recency. A fresh `git checkout` could promote a hundred old plans above today's work. The mitigation costs nothing and uses data already in hand: when the nominee shares its mtime SECOND with two or more other plans, the body says so by name and names the runner-up, so a reader can see a bulk-touch signature rather than trusting a number that a checkout produced. Ties break on path, which is stable and matches the `sorted(d.glob(...))` order the old path gave (`.claude/hooks/stop/wl_checks.py:990-991`).
 
-**Status does NOT get a priority bump over mtime, deliberately.** `PLAN-plan-path-migration.md` reads `Status: executing` with 9 open boxes and is older than three drafts. Promoting it would be the mechanism re-litigating the operator's ordering, which is the behaviour this whole plan exists to end.
-It also already has a signal of its own: `plan_drift_rows` admits `executing` by name (`.claude/hooks/stop/wl_checks.py:870`) and this session owns it.
+**Status does NOT get a priority bump over mtime, deliberately.** `PLAN-plan-path-migration.md` reads `Status: executing` with 9 open boxes and is older than three drafts. Promoting it would be the mechanism re-litigating the operator's ordering, which is the behaviour this whole plan exists to end. It also already has a signal of its own: `plan_drift_rows` admits `executing` by name (`.claude/hooks/stop/wl_checks.py:870`) and this session owns it.
 
 ### 1.4 The "other sessions" validation, and the one signal that actually works
 
 The requirement is that a plan is not named as "next" while somebody is on it. Three sources were evaluated against live data.
 
-**Git blame on the plan file CANNOT answer this, and the measurement is decisive.** Every commit in this repo carries the operator's identity: `a0c1f4690`, `271e2e747` and `3c88fa636` are all `Author: Muhammed Fatih Bayraktar <mfbayraktar@live.com>`. The `PR-TASK:` trailer carries a task id, not a session id.
-A session prefix appears nowhere in commit metadata, so "which session last touched this plan" is not derivable from git at any cost.
+**Git blame on the plan file CANNOT answer this, and the measurement is decisive.** Every commit in this repo carries the operator's identity: `a0c1f4690`, `271e2e747` and `3c88fa636` are all `Author: Muhammed Fatih Bayraktar <mfbayraktar@live.com>`. The `PR-TASK:` trailer carries a task id, not a session id. A session prefix appears nowhere in commit metadata, so "which session last touched this plan" is not derivable from git at any cost.
 
-**Ticked boxes are a LAGGING indicator and are insufficient alone.** Measured at 17:35 today: `PLAN-eliminate-worklist-report-per-stop-env.md` reads `Status: draft` with 20 open boxes and 0 ticked, while its implementation is ALREADY IN THE WORKING TREE -- `git status --porcelain` shows `.claude/hooks/stop/wl_checks.py` modified, and the modified file reads `OUTQ_PER_STOP = 3` at `.claude/hooks/stop/wl_checks.py:1318` (hardcoded, the env lookup gone) and `def outq_drain(worklist, session_id, state_doc, n, rng=None)` at `:1417`.
-That is sections 1 and 2 of the plan, landed, with zero boxes ticked and the status word untouched. Any mechanism keyed on boxes or status would have nominated a plan under active implementation.
+**Ticked boxes are a LAGGING indicator and are insufficient alone.** Measured at 17:35 today: `PLAN-eliminate-worklist-report-per-stop-env.md` reads `Status: draft` with 20 open boxes and 0 ticked, while its implementation is ALREADY IN THE WORKING TREE -- `git status --porcelain` shows `.claude/hooks/stop/wl_checks.py` modified, and the modified file reads `OUTQ_PER_STOP = 3` at `.claude/hooks/stop/wl_checks.py:1318` (hardcoded, the env lookup gone) and `def outq_drain(worklist, session_id, state_doc, n, rng=None)` at `:1417`. That is sections 1 and 2 of the plan, landed, with zero boxes ticked and the status word untouched. Any mechanism keyed on boxes or status would have nominated a plan under active implementation.
 
-**The worklist event stream IS the answer, it is already loaded, and it is the same store `session_liveness` reads.** `agent/worklist/<session>.jsonl` carries `by`, `at`, `h` (host) and `br` (branch) per event. The check is: no worklist item in any state of `(' ', '>', '?')`, owned by ANY session, whose text contains the plan file's BASENAME.
-Proven live by item `e37d6d62`, added `2026-09-22T15:27:08Z`, text "Implement PLAN-eliminate-worklist-report-per-stop-env.md: hardcode OUTQ_PER_STOP=3, randomized same-tier drain, registry/manifest cleanup, test-site replacements".
-Basename containment, not token similarity: the filename is an exact, unambiguous token and `wl_planfid.TASK_MATCH` fuzziness would buy nothing but false positives here. ANY owner, not just this session, for the same reason `wl_planfile.item_rows` gives at `.claude/hooks/stop/wl_planfile.py:205` -- "a peer tracking it is tracked".
+**The worklist event stream IS the answer, it is already loaded, and it is the same store `session_liveness` reads.** `agent/worklist/<session>.jsonl` carries `by`, `at`, `h` (host) and `br` (branch) per event. The check is: no worklist item in any state of `(' ', '>', '?')`, owned by ANY session, whose text contains the plan file's BASENAME. Proven live by item `e37d6d62`, added `2026-09-22T15:27:08Z`, text "Implement PLAN-eliminate-worklist-report-per-stop-env.md: hardcode OUTQ_PER_STOP=3, randomized same-tier drain, registry/manifest cleanup, test-site replacements". Basename containment, not token similarity: the filename is an exact, unambiguous token and `wl_planfid.TASK_MATCH` fuzziness would buy nothing but false positives here.
+ANY owner, not just this session, for the same reason `wl_planfile.item_rows` gives at `.claude/hooks/stop/wl_planfile.py:205` -- "a peer tracking it is tracked".
 
 **Peer-owned plans are COUNTED, never NOMINATED, and the dead-owner clock is `session_liveness` unmodified.** `wl_store.session_liveness` (`.claude/hooks/stop/wl_store.py:1272`) is the one liveness clock -- `.lastevent-<p>.json` inside `LIVE_MIN` (30, `.claude/hooks/stop/wl_store.py:1269`), then the `.sessions` brief inside `SESSION_BRIEF_STALE_MIN` (90), then the transcript, then a host-stamped store event -- and the 45/90/120 worker ladder in `.claude/hooks/stop/wl_liveness.py:45-47` is a different object for a different question (a leased worker, not a peer session) and is not touched.
 
-As measured today, the three peer owners in the eligible set all read `idle`: `74de73ca` ("newest event 2026-09-04T21:49:48Z"), `f4da5c2e` ("2026-09-15T13:26:09Z"), `8f55d4f0` ("2026-09-07T19:06:43Z"). By the operator's literal rule their plans qualify.
-They are still not nominated, and the reason is that this repo already has a committed ownership-transfer act: `worklist.py --migrate <me> --plan <path>` writes the adoption marker that `wl_planfile.ADOPTED_OWNER_FMT` (`.claude/hooks/stop/wl_planfile.py:316`) defines and `is_adopted` (`:321`) reads back.
-Implementing a plan whose header names another session, without that act, produces precisely the double-implementation this validation exists to prevent, and leaves a committed document that contradicts who did the work. So dead-peer plans get ONE counted line naming the newest of them and the exact `--migrate --plan` command.
-The dead-owner check is performed and surfaced; the adoption step is not skipped.
+As measured today, the three peer owners in the eligible set all read `idle`: `74de73ca` ("newest event 2026-09-04T21:49:48Z"), `f4da5c2e` ("2026-09-15T13:26:09Z"), `8f55d4f0` ("2026-09-07T19:06:43Z"). By the operator's literal rule their plans qualify. They are still not nominated, and the reason is that this repo already has a committed ownership-transfer act: `worklist.py --migrate <me> --plan <path>` writes the adoption marker that `wl_planfile.ADOPTED_OWNER_FMT` (`.claude/hooks/stop/wl_planfile.py:316`) defines and `is_adopted` (`:321`) reads back.
+Implementing a plan whose header names another session, without that act, produces precisely the double-implementation this validation exists to prevent, and leaves a committed document that contradicts who did the work. So dead-peer plans get ONE counted line naming the newest of them and the exact `--migrate --plan` command. The dead-owner check is performed and surfaced; the adoption step is not skipped.
 
 ### 1.5 `Depends-On:`, a new OPTIONAL header, parsed the way `Owner:` is -- and it REDIRECTS rather than skips
 
@@ -137,11 +120,9 @@ A prose matcher is two-for-three wrong on the only three hits in the corpus. So:
 **Semantics: a dependency blocks only while its target is NEITHER finished NOR claimed.** Not "until the target is finished", and the live tree shows why. `PLAN-stop-hook-behavioral-hints.md:257` states "`pick_random` is extracted from work that has not landed yet.
   Section 3.1 names the fallback so this plan cannot be blocked by that one", and `:264` scopes the dependency to ONE of its twenty boxes. Its target is in flight right now. A rule demanding FINISHED would serialize a 24-plan backlog into a single chain and reintroduce, as policy, the stall the operator asked to remove.
 
-**A blocked plan REDIRECTS the nomination to its dependency rather than being silently skipped.** DESC order picks the newest; the dependency edge walks down to the thing that must land first; the body prints the walk.
-This is strictly better than jumping to an unrelated plan, and it removes the reader's last excuse to re-litigate the ordering, because the reasoning is shown rather than implied.
+**A blocked plan REDIRECTS the nomination to its dependency rather than being silently skipped.** DESC order picks the newest; the dependency edge walks down to the thing that must land first; the body prints the walk. This is strictly better than jumping to an unrelated plan, and it removes the reader's last excuse to re-litigate the ordering, because the reasoning is shown rather than implied.
 
-**Failure modes, all reported and none silent.** A `Depends-On:` naming a plan that does not exist is REPORTED in the body and does not block -- the `V_PR_UNREADABLE` convention already applied at `.claude/hooks/stop/wl_checks.py:875-876` ("a plan the check cannot stat is exactly the one worth naming out loud").
-A cycle is detected by a visited set, reported by name, and resolved by falling back to mtime order within the cycle; a mechanism that goes silent on a cycle has bought itself a permanent blind spot.
+**Failure modes, all reported and none silent.** A `Depends-On:` naming a plan that does not exist is REPORTED in the body and does not block -- the `V_PR_UNREADABLE` convention already applied at `.claude/hooks/stop/wl_checks.py:875-876` ("a plan the check cannot stat is exactly the one worth naming out loud"). A cycle is detected by a visited set, reported by name, and resolved by falling back to mtime order within the cycle; a mechanism that goes silent on a cycle has bought itself a permanent blind spot.
 
 **None of the four current backlog plans should carry the header, and none does.** Behavioral-hints' dependency is per-task with an author-stated fallback, which is a paragraph, not a hard edge. The header means "cannot be started at all".
 
@@ -185,8 +166,7 @@ RIDE THE EXISTING TIERS. Four reasons, in order of weight:
 3. Priority 1 is refused on the rule already written at `.claude/hooks/stop/wl_checks.py:3108` -- 1 is for a report a peer is blocked on, and `.claude/hooks/stop/wl_checks.py:3578` gives the precedent (an identity split, "not something to ration"). A backlog nudge is neither.
 4. Priority 3 is refused because 3 is the hint tier, shown "only ever on a stop that has nothing more important to say" (`.claude/hooks/stop/wl_checks.py:1446-1448`). The operator asked for this specifically, which is the same argument `plan-tasks` used to sit at 2.
 
-**The residual risk, named.** A nomination that queues behind three tier-2 items on a busy stop is delayed. It is not lost -- `outq_drain` removes by identity and never by slicing (`.claude/hooks/stop/wl_checks.py:1417`) -- and the per-session cap counts adds, so a delayed nomination costs nothing from the budget.
-If measurement later shows nominations routinely starved, the fix is a tier, and the counter that would prove it is the `shown` ledger already written per key.
+**The residual risk, named.** A nomination that queues behind three tier-2 items on a busy stop is delayed. It is not lost -- `outq_drain` removes by identity and never by slicing (`.claude/hooks/stop/wl_checks.py:1417`) -- and the per-session cap counts adds, so a delayed nomination costs nothing from the budget. If measurement later shows nominations routinely starved, the fix is a tier, and the counter that would prove it is the `shown` ledger already written per key.
 
 ## Part 2 -- Interaction with the report-drain plan
 
@@ -253,8 +233,7 @@ NEXT PLAN TO IMPLEMENT -- agent/plans/PLAN-stop-hook-behavioral-hints.md
 
 **The claim branch is exercised on real data, not hypothetically.** `PLAN-eliminate-worklist-report-per-stop-env.md` is `draft` with 20 open boxes and 0 ticked, and would be the third nomination by mtime -- yet its implementation is in the working tree at this moment. Only check 1.4 sees that. Box counts do not, status does not, and git blame cannot.
 
-**Forward projection, one step.** Once the printed `--add` runs, behavioral-hints is disqualified by its own acknowledgement and the next nomination is `PLAN-github-actions-to-bitwarden.md` (16 open). Report-per-stop remains correctly skipped.
-The advisory settles by being acted on, which is the property `PLAN-fix-stop-hook-completion-evidence-refire.md` was written because the completion-evidence check lacked.
+**Forward projection, one step.** Once the printed `--add` runs, behavioral-hints is disqualified by its own acknowledgement and the next nomination is `PLAN-github-actions-to-bitwarden.md` (16 open). Report-per-stop remains correctly skipped. The advisory settles by being acted on, which is the property `PLAN-fix-stop-hook-completion-evidence-refire.md` was written because the completion-evidence check lacked.
 
 **The DESC-versus-dependency tension, resolved on the real corpus.** `PLAN-stop-hook-behavioral-hints.md:112` declares in prose that it "lands AFTER" the report-per-stop plan, and it is simultaneously the newest by mtime. Three candidate rules give three answers, and only one of them is right:
 
@@ -287,9 +266,7 @@ Three deltas from the original dry run, all expected rather than concerning:
 2. **The nominee is this plan file itself.** `PLAN-stop-hook-behavioral-hints.md` and `PLAN-github-actions-to-bitwarden.md`, the two ranked ahead of it at design time, both landed in the interim.
    Their own Status headers now read `done`/`draft`, with the `github-actions` one mid-migration but still newer-owned-and-claimed elsewhere, so DESC-by-mtime correctly surfaced this file next once its own edits became its newest mtime. Self-nomination is not a bug: the predicate has no special case excluding "the plan that documents this mechanism," and there should not be one.
 3. **The rendered open-box count (13) is STALE against a fresh read (3).** A direct `wl_planfile.raw_box_counts` call against the on-disk text at the same instant returns `(3, 17)`.
-   The advisory sources its count from `wl_planindex.index_census`'s cache (section 1.2, box `:274`'s own instruction: "verify against the STALE index state the tree is in today"), which had not been invalidated since before this session's edits to this very file landed.
-   This is the exact staleness Part 0/1 built the CLAIM and DEPENDENCY checks to be robust against -- the count is cosmetic (it still nominates the right file, still counts it as eligible), and the advisory being ADVISORY, not a `vadd`, means a stale display never blocks a turn.
-   Re-running `plan_records`/`index_census` after a fresh index rebuild would show 3; the number above is left unedited as the honest as-observed output rather than hand-corrected.
+   The advisory sources its count from `wl_planindex.index_census`'s cache (section 1.2, box `:274`'s own instruction: "verify against the STALE index state the tree is in today"), which had not been invalidated since before this session's edits to this very file landed. This is the exact staleness Part 0/1 built the CLAIM and DEPENDENCY checks to be robust against -- the count is cosmetic (it still nominates the right file, still counts it as eligible), and the advisory being ADVISORY, not a `vadd`, means a stale display never blocks a turn. Re-running `plan_records`/`index_census` after a fresh index rebuild would show 3; the number above is left unedited as the honest as-observed output rather than hand-corrected.
 
 ## Part 5 -- Risks
 

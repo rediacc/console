@@ -14,7 +14,7 @@ The operator ruled on 2026-09-24 (worklist `#ecb07ba6`, which replaces `#28be556
    - 5 i18n rules deliberately off (`eslint.config/i18n.js:100-120`).
 2. **Biome is installed but barely used.** `node_modules/@biomejs/biome` is 2.5.14, but its linter is off globally (`biome.json:10-12`) and on only for `private/account` (`biome.json:110-135`). The `$schema` still says 2.3.8 (`biome.json:2`).
    - 2.5.14 has most of the ESLint equivalents, many of them in `nursery`.
-   - It supports GritQL plugins, including per-override `plugins` with `includes`. I checked this in `configuration_schema.json` (`OverridePattern.plugins`, `PluginWithOptions`).
+   - It supports GritQL plugins, including per-override `plugins` with `includes`, as `configuration_schema.json` confirms (`OverridePattern.plugins`, `PluginWithOptions`).
 3. **TypeScript 7.0.2 has no classic compiler API.** Its package root export is only `./lib/version.cjs` (`npm view typescript@7.0.2 exports`). Two files use `import ts from 'typescript'` and will break. The ruling doesn't mention them:
    - `scripts/gates/check-control-in-string.ts:40`
    - `packages/cli/src/__tests__/renet-access-ledger.test.ts:4`

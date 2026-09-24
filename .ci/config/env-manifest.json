@@ -62,7 +62,10 @@
       "authority": "docs/environment-variables.md",
       "live_in": ".ci/rediacc_ci/env/create_e2e_env.py",
       "shard": "harness",
-      "why": "DEBUG is a CLI tombstone (docs/environment-variables.md:107 replaces it with REDIACC_DEBUG scopes) and, separately, the harness's own `DEBUG=true` switch (create_e2e_env.py, .ci/rediacc_ci/log.py, breakpoint-common.sh). The e2e suite's example env file that also set it is deleted (2026-09-24). Two variables that share a spelling, so a repo-wide ban would be false and it is NOT in the tombstone shard. THE AUTHORITY IS THE DOC AND NOT THE TEST, and that is a finding rather than a preference: packages/cli/src/__tests__/env-tombstones.test.ts bans fourteen retired names and DEBUG is not one of them, so nothing in code enforces the documented deletion. This entry pointed at the test until a plant on the real tree showed the check passing for the wrong reason -- the match was a plain substring and REDIACC_DAEMON_DEBUG contains DEBUG. Both the matcher and the claim were wrong; both are fixed here."
+      "why": [
+        "DEBUG is a CLI tombstone (docs/environment-variables.md:107 replaces it with REDIACC_DEBUG scopes) and, separately, the harness's own `DEBUG=true` switch (create_e2e_env.py, .ci/rediacc_ci/log.py, breakpoint-common.sh). The e2e suite's example env file that also set it is deleted (2026-09-24). Two variables that share a spelling, so a repo-wide ban would be false and it is NOT in the tombstone shard.",
+        "THE AUTHORITY IS THE DOC AND NOT THE TEST, and that is a finding rather than a preference: packages/cli/src/__tests__/env-tombstones.test.ts bans fourteen retired names and DEBUG is not one of them, so nothing in code enforces the documented deletion. This entry pointed at the test until a plant on the real tree showed the check passing for the wrong reason -- the match was a plain substring and REDIACC_DAEMON_DEBUG contains DEBUG. Both the matcher and the claim were wrong; both are fixed here."
+      ]
     }
   ],
   "notes": {

@@ -8,7 +8,9 @@ Every `file:line` anchor below was verified against the tree on 2026-09-03, and 
 
 ## 0. The ask, and what it actually names
 
-The operator's words: sessions at their start and after a compaction "hit the wall and repeat the same mistakes like completing the job without updating the remainings by invoking stop hook's commands with specific arguments. Currently, we print them in different moments but I suppose not in first touch."
+The operator's words, about sessions at their start and after a compaction:
+
+> "hit the wall and repeat the same mistakes like completing the job without updating the remainings by invoking stop hook's commands with specific arguments. Currently, we print them in different moments but I suppose not in first touch."
 
 Two failures, which are one failure at two ends of a session:
 
@@ -166,8 +168,8 @@ silent overwrite.
 `.claude/hooks/context/onboard.py` (239 lines) and `worklist-cases/25-first-touch.sh` (138 lines) are written and driven directly. Verified by hand across every path: unarmed is silent; arm (a) emits once with the session prefix pre-substituted and stays silent on the next call in the same epoch; arm (b) stays silent across five non-edit tool calls, advances the marker to
 `await-edit`, then emits on the first Edit and not again; a subagent is silent; the off switch works; a corrupt marker still exits 0 with no stray stdout.
 
-**One real bug found while testing, and it is worth recording because the code carried a comment claiming the opposite was handled.** `worklist.py --list --open <me>` exits **1** for an EMPTY slice, so keying "can I answer?" on the exit code collapsed *owns nothing* into *cannot say* — and arm (b) could therefore never fire at all. It now keys on the output, and the converse is
-asserted as its own case: a store that REFUSES to answer (identity mismatch) must produce silence, never the confident "you own 0 items" notice.
+**One real bug found while testing, and it is worth recording because the code carried a comment claiming the opposite was handled.** `worklist.py --list --open <me>` exits **1** for an EMPTY slice, so keying the can-it-answer check on the exit code collapsed *owns nothing* into *cannot say* — and arm (b) could therefore never fire at all. It now keys on the output, and the converse is
+asserted as its own case: a store that REFUSES to answer (identity mismatch) must produce silence, never the confident `you own 0 items` notice.
 
 Also corrected: this plan named `24-first-touch.sh`, but slot 24 went to `24-lineage.sh` in the meantime. `CASE_FILES` is an explicit ordered list, not a glob, so the collision would have been silent.
 

@@ -92,8 +92,7 @@ export const TRACKED: ReadonlyArray<{ key: string; slugs: string[] }> = [
   //
   // AWS_IAM_ADMIN_ACCESS_KEY_ID / AWS_IAM_ADMIN_SECRET_ACCESS_KEY, CF_GLOBAL_API_KEY, CF_EMAIL Operator-held ADMIN credentials that mint the others. No slug records
   //     them and none can; see the note above the SES entry.
-  // NOT `AWS_IAM_ADMIN_ACCESS_KEY_ID`. It was tracked against the ses-* slugs until 2026-09-02, which is a category error: `AWS_IAM_ADMIN_ACCESS_KEY_ID`/`AWS_IAM_ADMIN_SECRET_ACCESS_KEY` are the AWS **IAM admin** credential the rotation tool uses to CREATE and DELETE the SES sending keys (`scripts/rotation/lib/credentials.ts:59-61`, `resolveAwsAdmin`). It is not itself a rotated
-  // sending key, no manifest slug records it, and none can -- there is no admin slug. So the check could never pass for it, and a gate that is permanently red is worse than one that cannot fail: it teaches you to skip the output.
+  // NOT `AWS_IAM_ADMIN_ACCESS_KEY_ID`. It was tracked against the ses-* slugs until 2026-09-02, which is a category error: `AWS_IAM_ADMIN_ACCESS_KEY_ID`/`AWS_IAM_ADMIN_SECRET_ACCESS_KEY` are the AWS **IAM admin** credential the rotation tool uses to CREATE and DELETE the SES sending keys (`scripts/rotation/lib/credentials.ts:59-61`, `resolveAwsAdmin`). It is not itself a rotated sending key, no manifest slug records it, and none can -- there is no admin slug. So the check could never pass for it, and a gate that is permanently red is worse than one that cannot fail: it teaches readers to skip the output.
   //
   // The real gap this leaves is honest and worth stating: the admin credential is outside the rotation record entirely, so nothing tracks its age. Closing that means adding an `aws-admin` slug to the manifest, which is the operator's call, not this gate's.
 ];
@@ -147,8 +146,7 @@ export const findDrift = (
     let state: string | undefined;
     for (const s of slugs) {
       const found = ids.get(s)?.get(value);
-      // Prefer an `active` match: a value may legitimately appear under one
-      // slug as active and another as grace.
+      // Prefer an `active` match: a value may legitimately appear under one slug as active and another as grace.
       if (found && (state === undefined || found === 'active')) state = found;
     }
     if (state === undefined) {
@@ -197,9 +195,7 @@ const selftest = (): number => {
       })
     ).length === 0
   );
-  // THE SECOND DEFECT, added 2026-09-02: membership is not enough. A value can
-  // be recorded and still be on its way out, which is the live state of
-  // `.env`'s CLOUDFLARE_R2_ACCESS_KEY_ID (the `Github-R2` token, `grace` under cf-r2).
+  // THE SECOND DEFECT, added 2026-09-02: membership is not enough. A value can be recorded and still be on its way out, which is the live state of `.env`'s CLOUDFLARE_R2_ACCESS_KEY_ID (the `Github-R2` token, `grace` under cf-r2).
   const graceIds = manifestIds({
     credentials: { 'cf-r2': { versions: [{ id: 'TOK_GRACE', state: 'grace' }] } },
   });

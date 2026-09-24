@@ -504,7 +504,7 @@ is the ledger, and the protection lives in the tiers of §4. The charter rewrite
 1. **`.claude/hooks/stop/wl_store.py:231` is not the reader.** `:231` is `agent_traps_path`; the corpus
 reader is `trap_headings` at `.claude/hooks/stop/wl_store.py:265-284`. Everything the brief says about the 40-cap and file-order truncation is correct, at those lines.
 2. **`npm run <missing>` is not silent.** Measured: exit code 1, empty stdout, and
-`npm error Missing script: "<name>"` with did-you-mean suggestions on stderr. The 0807 report's "non-zero-or-silent" framing is imprecise, and the imprecision mattered: the real root cause is stdout-only reading, and the correct instrument is a deterministic pre-call block (§6, candidate A) rather than a response heuristic.
+`npm error Missing script: "<name>"` with `did-you-mean` suggestions on stderr. The 0807 report's "non-zero-or-silent" framing is imprecise, and the imprecision mattered: the real root cause is stdout-only reading, and the correct instrument is a deterministic pre-call block (§6, candidate A) rather than a response heuristic.
 3. **`git add -A` was genuinely unguarded, confirmed at the time.** The only hit anywhere under
 `.claude/hooks/pre-bash/` (since relocated to `.claude/rediacc_hooks/guards/`) was a fixture line inside `test-block-git-amend.py` (now `.claude/rediacc_hooks/guards/test-block_git_amend.py:24`), a file that was then referenced by nothing in the repo and is now the live guard's own wired harness.
 `.claude/rediacc_hooks/guards/block_blanket_git_add.py` has since closed the gap this correction names.

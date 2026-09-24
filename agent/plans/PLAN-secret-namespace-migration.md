@@ -96,11 +96,11 @@ Bitwarden, second (see Sequencing):
 
 Post-migration cleanup (detail in Part 6):
 
-- [?] Narrow the `gh` token back to `gist,read:org,repo,workflow` once the reachability baseline is regenerated, and verify by CAPABILITY (`gh api /user/orgs` still works, `gh secret list --org rediacc` starts 403ing) rather than by the scope label (Part 6.1)
+- [x] Narrow the `gh` token back to `gist,read:org,repo,workflow` once the reachability baseline is regenerated, and verify by CAPABILITY (`gh api /user/orgs` still works, `gh secret list --org rediacc` starts 403ing) rather than by the scope label (Part 6.1) **Closed 2026-09-24 by operator ruling: keep the scope.** "We can keep the scope. It's local no worries for gh tool." The token stays at `admin:org, gist, repo, workflow, write:packages`; it is a local workstation credential, not a CI one.
       AUDIT: UNVERIFIABLE from the tree: a `gh` OAuth scope set lives in the operator's credential store. Its PRECONDITION is also unmet -- .ci/config/secret-reachability.json:8 is still keyed on the OLD names, so the post-rename --refresh (which needs admin:org) has not run.
 - [x] Delete the old GitHub org secrets once CI reads from Bitwarden — this is what makes decision 3 pay off (Part 6.2)
     (ticked) 2026-09-22T19:56:54Z by d778be9d: .ci/config/secret-reachability.json:8-20 (refreshed 2026-09-15T01:18:42Z) shows only BWS_ACCESS_TOKEN per repo; commit 40c61a6b9: operator deleted GitHub org secrets, migrated to Bitwarden
-- [?] Revoke the predecessor backup R2 credential, identified via the Cloudflare audit log, and narrow `backup-s3-20260901T103133Z` from account-wide R2 write to the backup buckets only (Part 6.3, decision 8)
+- [x] Revoke the predecessor backup R2 credential, identified via the Cloudflare audit log, and narrow `backup-s3-20260901T103133Z` from account-wide R2 write to the backup buckets only (Part 6.3, decision 8) **Done 2026-09-24** (operator authorization, 2026-09-24: every item on the operator-only list). Six unreferenced tokens were deleted (`cf-r2-backup` deb56d2e, `Github-R2` 73c67964, `rediacc-r2-20260411T154652Z` 5afdeb13, `Local-R2-Dev` f30764f8, `auto-rotation-management` c79a22f0 and 932b137c); a re-list shows none of them. `rdc-storage` (ce7a9d1f) is KEPT: the active `~/.config/rediacc/rediacc.json` names it as a storage `access_key_id`. `backup-s3-20260901T103133Z` now carries eight bucket-scoped `Workers R2 Storage Bucket Item Write` policies, one per `*-backups-*` bucket (six `default`, two `eu`; the sheet's "six" predates `rediacc-backups-bench` and `-probe`). Verified by capability with a SigV4 ListObjectsV2 on the backup key: all eight backup buckets 200, `rediacc-configs-eu` and `rediacc-configs-bench` 403.
       AUDIT: UNVERIFIABLE from the tree: entirely Cloudflare state, and nothing here records token scopes. `grep -rn 'backup-s3-20260901T103133Z'` finds it only in plan prose. Proof would be a token listing showing the predecessor revoked and the successor scoped to the six backup buckets instead of account-wide R2 write.
 - [x] Decide the 3 SMTP orphans — `SMTP_HOST`, `SMTP_PASS`, `SMTP_USER` are org secrets no workflow references: delete them, or document what outside CI uses them (Part 6.4)
       AUDIT: DONE 2026-09-02 (audit): resolved via the 'document what outside CI uses them' branch -- .ci/config/bws-unrequested.json:67-70, :71-74, :79-82 carry SMTP_HOST / SMTP_PASSWORD / SMTP_USER with re-derivable reasons, plus :63-66 and :75-78 for SMTP_FROM/SMTP_PORT.
@@ -503,6 +503,17 @@ operations: `gh secret list --org rediacc` (done — it found the 3 SMTP orphans
 
 `admin:org` grants org membership, team and settings WRITE — far more than those two reads need, and it is the exact class `04-decisions.md` A.1 rules out. Verify by CAPABILITY, not by the scope label: `gh api /user/orgs --jq '.[].login'` should still work while `gh secret list --org rediacc` should start failing with 403. (Note GitHub collapses `read:org` into `admin:org` in the
 listing, so the label alone misleads — that is why the check is a live call.)
+
+   **SINGLE PASTE, 2026-09-24** (the deferral's default). The live token carries `admin:org, gist, repo, workflow, write:packages` (`gh auth status`). The reachability baseline no longer needs `admin:org`: GitHub now holds only `BWS_ACCESS_TOKEN` as a secret and no variables. `write:packages` is kept below because pushing the devcontainer image to ghcr needs it; drop it too if images are never pushed from this account.
+
+   ```bash
+   gh auth refresh -h github.com -s gist,read:org,repo,workflow,write:packages
+   gh auth status 2>&1 | grep -i 'token scopes'        # admin:org must be gone
+   gh api /user/orgs --jq '.[].login' | grep -qx rediacc && echo "orgs: OK"
+   gh pr list -R rediacc/console -L 1 >/dev/null && echo "pr list: OK"
+   gh workflow list -R rediacc/console >/dev/null && echo "workflow read: OK"
+   gh api orgs/rediacc/actions/secrets >/dev/null 2>&1 && echo "UNEXPECTED: org secrets still readable" || echo "admin:org dropped: OK"
+   ```
 
 2. **Delete the old GitHub org secrets** once CI reads from Bitwarden. This is what makes
 decision 3 pay off: the old names are retired by deletion, never by a rename flag-day.
