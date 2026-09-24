@@ -302,6 +302,60 @@ def test_r3c_a_harness_listed_but_finished_writer_is_not_live(wl):  # noqa: F811
     assert [d[0] for d in v["leased_dead"]] == ["fin1"]
 
 
+def plant_shell_wait(fix, aid: str, shell_id: str, running: bool = True) -> None:
+    """The waiter shape: the agent's transcript launched background shell `shell_id` before ending its turn, and (when `running`) the event lists that shell as still running with no owner."""
+    tx = subagents_dir(fix) / ("agent-%s.jsonl" % aid)
+    st = tx.stat()
+    launch = {
+        "type": "user",
+        "message": {
+            "content": [
+                {
+                    "type": "tool_result",
+                    "content": "Command running in background with ID: %s." % shell_id,
+                }
+            ]
+        },
+        "toolUseResult": {"backgroundTaskId": shell_id},
+    }
+    lines = tx.read_text(encoding="utf-8").splitlines(keepends=True)
+    tx.write_text(
+        "".join(lines[:-1]) + json.dumps(launch, separators=(",", ":")) + "\n" + lines[-1],
+        encoding="utf-8",
+    )
+    os.utime(tx, (st.st_atime, st.st_mtime))
+    if running:
+        rows = json.loads(fix.bg)
+        rows.append(
+            {"id": shell_id, "type": "shell", "status": "running", "description": "receipt run"}
+        )
+        fix.bg = json.dumps(rows)
+
+
+def test_r3d_an_agent_waiting_on_its_own_running_shell_is_live_and_fills_a_slot(wl):  # noqa: F811
+    """The 2026-09-24 flicker: the babysitter ended its turn waiting on receipt shell bp0oujd2w, the event listed only the shell, and the roster called it finished while a queued item read a free slot."""
+    for i, aid in enumerate((W1, W2, W3)):
+        mk_sub(wl, aid, "general-purpose", 10 - i)
+        plant_lease(wl, "cap%d" % i, aid)
+    mk_sub(wl, W4, "pr-babysitter", 30, last="end_turn", running=False)
+    plant_shell_wait(wl, W4, "bshell01")
+    plant_lease(wl, "wait1", W4)
+    plant_lease(wl, "queued1", "queue")
+    v = verdict(wl)
+    assert v["leased_dead"] == [], v["leased_dead"]
+    assert W4 in v["writers"], v["writers"]
+    assert ("queued1", "queue", "queue") in [tuple(c) for c in v["covered"]], v["covered"]
+
+
+def test_r3e_a_waiter_whose_shell_is_gone_is_finished(wl):  # noqa: F811
+    """The control's other edge: the same transcript with the shell no longer running is a dead lease, so the waiter rule cannot keep a finished agent alive."""
+    mk_sub(wl, W4, "pr-babysitter", 30, last="end_turn", running=False)
+    plant_shell_wait(wl, W4, "bshell01", running=False)
+    plant_lease(wl, "wait1", W4)
+    v = verdict(wl)
+    assert [d[0] for d in v["leased_dead"]] == ["wait1"], v["leased_dead"]
+
+
 def test_r4_five_leased_writers_exceed_the_cap_and_the_newest_is_the_excess(wl):  # noqa: F811
     for i, aid in enumerate((W1, W2, W3, W4, W5)):
         mk_sub(wl, aid, "general-purpose", 10 - i)
@@ -332,6 +386,17 @@ def test_r4q_a_queued_item_is_covered_only_while_the_cap_is_full(wl):  # noqa: F
     v = verdict(wl)
     assert ("queued1", "queue", "queue") in [tuple(c) for c in v["covered"]], v["covered"]
     assert v["leased_dead"] == [], v["leased_dead"]
+
+
+def test_r4q3_a_queued_item_never_owes_a_status(wl):  # noqa: F811
+    """`queue` has no transcript and cannot report, so an old queue lease must not raise WORKER STATUS DUE (2026-09-24: it blocked a stop with no remedy)."""
+    for i, aid in enumerate((W1, W2, W3, W4)):
+        mk_sub(wl, aid, "general-purpose", 10 - i)
+        plant_lease(wl, "cap%d" % i, aid)
+    plant_lease(wl, "queued1", "queue", lease_age_min=25)
+    v = verdict(wl)
+    assert "queue" not in v["status_due"], v["status_due"]
+    assert ("queued1", "queue", "queue") in [tuple(c) for c in v["covered"]], v["covered"]
 
 
 def test_r4q2_a_queued_item_with_a_free_slot_is_a_defect(wl):  # noqa: F811
@@ -441,9 +506,9 @@ def test_r6b_the_sealed_modules_read_no_environment_and_the_limits_are_literals(
         attrs = {n.attr for n in ast.walk(tree) if isinstance(n, ast.Attribute)}
         assert not ({"environ", "getenv"} & (names | attrs)), "%s reads the environment" % path
     consts = {}
-    for node in ast.parse(ROSTER_PY.read_text(encoding="utf-8")).body:
-        if isinstance(node, ast.Assign) and isinstance(node.targets[0], ast.Name):
-            consts[node.targets[0].id] = node.value
+    for stmt in ast.parse(ROSTER_PY.read_text(encoding="utf-8")).body:
+        if isinstance(stmt, ast.Assign) and isinstance(stmt.targets[0], ast.Name):
+            consts[stmt.targets[0].id] = stmt.value
     for name, want in (("WRITER_CAP", 4), ("STATUS_PING_MIN", 20)):
         node = consts.get(name)
         shown = ast.unparse(node) if node is not None else "absent"

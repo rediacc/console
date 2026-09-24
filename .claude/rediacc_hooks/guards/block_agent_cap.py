@@ -78,7 +78,8 @@ def run(event):
     doc = event.doc
     if not isinstance(doc, dict) or doc.get("tool_name") not in ("Agent", "Task"):
         return hookio.ALLOW
-    tool_input = doc.get("tool_input") if isinstance(doc.get("tool_input"), dict) else {}
+    raw_input = doc.get("tool_input")
+    tool_input = raw_input if isinstance(raw_input, dict) else {}
     kind = str(tool_input.get("subagent_type") or "general-purpose")
     cwd = str(doc.get("cwd") or event.cwd)
     session_id = str(doc.get("session_id") or "")
