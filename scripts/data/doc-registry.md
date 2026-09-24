@@ -617,7 +617,7 @@ Scans: every tracked non-source, non-prose file carrying a `BLOCKER:` line.
 | .ci/policy/.ci-parity-exempt | 10 | # comment |
 | .ci/policy/.cli-i18n-orphan-allowlist | 6 | inline |
 | .ci/policy/.dead-bash-allowlist | 13 | # comment |
-| .ci/policy/.deps-upgrade-blocklist | 19 | inline |
+| .ci/policy/.deps-upgrade-blocklist | 12 | inline |
 | .ci/policy/.devcontainer-upgrade-blocklist | 1 | prose only (no live entry) |
 | .ci/policy/.e2e-coverage-allowlist | 3 | # comment |
 | .ci/policy/.embed-assets-upgrade-blocklist | 2 | # comment |
@@ -679,7 +679,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/media/tts | 2 | (none) 1, .toml 1 |
 | .ci/policy | 23 | (none) 19, .json 3, .md 1 |
 | .ci/prompts | 1 | .md 1 |
-| .ci/rediacc_ci | 13 | .py 13 |
+| .ci/rediacc_ci | 14 | .py 14 |
 | .ci/rediacc_ci/build | 18 | .py 18 |
 | .ci/rediacc_ci/ci | 18 | .py 18 |
 | .ci/rediacc_ci/ci_signal | 2 | .py 2 |
@@ -700,7 +700,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/review | 6 | .py 6 |
 | .ci/rediacc_ci/security | 10 | .py 10 |
 | .ci/rediacc_ci/setup | 12 | .py 12 |
-| .ci/rediacc_ci/tests | 286 | .py 286 |
+| .ci/rediacc_ci/tests | 287 | .py 287 |
 | .ci/rediacc_ci/tests/data | 2 | .json 1, .yml 1 |
 | .ci/rediacc_ci/tests/gates | 173 | .py 172, .fixture 1 |
 | .ci/rediacc_ci/tests/goldens/actionlint | 17 | .golden 17 |

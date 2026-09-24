@@ -33,9 +33,9 @@ import https from 'node:https';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseBlockeredList, verifyAllBlockers } from '../lib/blocker-validator.js';
-import { getMinReleaseAgeMs, isWithinFreshnessWindow } from '../lib/release-age.js';
 import { BLUE, GREEN, NC, RED, YELLOW } from '../lib/console.js';
 import { policyPath } from '../lib/policy-paths.js';
+import { getMinReleaseAgeMs, isWithinFreshnessWindow } from '../lib/release-age.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONSOLE_ROOT = path.resolve(__dirname, '..', '..');
@@ -894,7 +894,7 @@ function selftest(): void {
     }
   }
 
-  // SCOPED BLOCKLIST ENTRIES, both directions. The whole reason `<dir>:<pkg>` exists is that a BARE entry for a package private/account shares with console would stop this gate reporting it for CONSOLE too. If that ever silently starts happening, the freeze note in .deps-upgrade-blocklist has quietly become a hole in console's own freshness checking, and nothing else would say so.
+  // SCOPED BLOCKLIST ENTRIES, both directions. The whole reason `<dir>:<pkg>` exists is that a BARE entry for a package private/account shares with console would stop this gate reporting it for CONSOLE too. If that ever silently starts happening, a scoped entry in .deps-upgrade-blocklist has quietly become a hole in console's own freshness checking, and nothing else would say so.
   // Driven on a synthetic blocklist rather than the real file, so the controls keep meaning the same thing when that file is edited.
   const probe = new Map<string, BlocklistEntry>([
     ['private/account:typescript', { reason: 'BLOCKER: scoped fixture' }],

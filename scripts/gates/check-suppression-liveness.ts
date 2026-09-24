@@ -30,8 +30,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { collectActionRefs } from '../lib/action-refs.js';
-import { parseDockerfileVersions } from '../lib/dockerfile-versions.js';
+import { NC, RED } from '../lib/console.js';
 import { DEVCONTAINER_PIN_SOURCES } from '../lib/devcontainer-pin-sources.js';
+import { parseDockerfileVersions } from '../lib/dockerfile-versions.js';
 import { EMBED_ASSET_SOURCES } from '../lib/embed-asset-sources.js';
 import { isPolicyFileName, policyPath } from '../lib/policy-paths.js';
 import {
@@ -43,7 +44,6 @@ import {
   runProbes,
   type Universe,
 } from '../lib/suppression-liveness.js';
-import { NC, RED } from '../lib/console.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONSOLE_ROOT = process.env.SUPPRESSION_LIVENESS_ROOT || path.join(__dirname, '..', '..');
@@ -143,7 +143,7 @@ function declaredPackageNames(root: string): Universe | null {
     } catch {
       continue;
     }
-    // The SCOPED spelling too, `<dir>:<package>`, for the manifests that can carry one. `.deps-upgrade-blocklist` gained that form because private/account is under an operator freeze while four of its frozen packages are ALSO console's own, and a bare entry would have blinded console's freshness check
+    // The SCOPED spelling too, `<dir>:<package>`, for the manifests that can carry one. `.deps-upgrade-blocklist` gained that form because a package held back in one manifest can ALSO be console's own (as four were during the private/account freeze lifted 2026-09-24), and a bare entry would blind console's freshness check
     // for them. Without this the liveness probe called every scoped entry DEAD --
     // correctly, by its own lights: no manifest declared that literal string.
     //
