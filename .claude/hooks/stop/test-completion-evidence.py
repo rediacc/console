@@ -7,10 +7,13 @@ joins is not a control. This calls the function directly against the REAL repo, 
 The bug: completion_evidence delegated to citation_state, which uses CITE_RE.search and therefore judges only the FIRST citation in a line. A tick carrying four resolving full paths read as evidence-free because a bare "05-docs-and-decommission.md" happened to come first.
 """
 
+import atexit
 import importlib.util
 import inspect
+import os
 import pathlib
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -19,6 +22,12 @@ sys.path.insert(0, str(pathlib.Path(__file__).parent))
 import wl_checks as W
 import wl_claimcheck as CC
 import wl_classsweep as CS
+
+# A PRIVATE TMPDIR FOR THE WHOLE RUN, removed at exit. The ledgers under test take a flock sidecar at `$TMPDIR/claude-worklist/.judge/<ledger>-<sha1 of the ledger path>.lock`, and every fixture here is a fresh random directory, so each run left new lock files in the machine-wide /tmp that nothing removed. The code under test reads TMPDIR at call time, so pointing it here keeps those sidecars, and every other temp directory this suite makes, inside one directory deleted at exit.
+_PRIVATE_TMP = tempfile.mkdtemp(prefix="completion-evidence-suite-")
+atexit.register(shutil.rmtree, _PRIVATE_TMP, ignore_errors=True)
+os.environ["TMPDIR"] = _PRIVATE_TMP
+tempfile.tempdir = _PRIVATE_TMP
 
 ROOT = pathlib.Path(__file__).resolve().parents[3]
 

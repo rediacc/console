@@ -23,6 +23,7 @@ THE ONE PROPERTY THIS FILE EXISTS FOR, if it must be reduced to one: a record's 
 could be lost by a change made somewhere else for an unrelated reason. Pinned here so that change fails loudly instead of quietly turning every compacted record into a source of phantom boxes for check:ci-plan-boxes.
 """
 
+import atexit
 import json
 import os
 import pathlib
@@ -38,6 +39,12 @@ import wl_checks as K  # noqa: E402
 import wl_planfid as P  # noqa: E402
 import wl_planfile as F  # noqa: E402
 import wl_planrec as R  # noqa: E402
+
+# A PRIVATE TMPDIR FOR THE WHOLE RUN, removed at exit. The investigation ledger under test takes a flock sidecar at `$TMPDIR/claude-worklist/.judge/plan-investigation-<sha1 of the ledger path>.lock`, and the fixture root is a fresh random directory, so each run left a new lock file in the machine-wide /tmp; the `_gitdir` PATH shim for the `--why model` case below leaked the same way. The code under test reads TMPDIR at call time, so pointing it here keeps both, and every other temp directory this suite makes, inside one directory deleted at exit.
+_PRIVATE_TMP = tempfile.mkdtemp(prefix="planrec-suite-")
+atexit.register(shutil.rmtree, _PRIVATE_TMP, ignore_errors=True)
+os.environ["TMPDIR"] = _PRIVATE_TMP
+tempfile.tempdir = _PRIVATE_TMP
 
 
 class Tally:

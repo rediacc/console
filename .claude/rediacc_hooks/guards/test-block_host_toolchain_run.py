@@ -6,6 +6,7 @@ The interesting half is the ALLOW half. A guard that pushes every `npm run` into
 PATH is manipulated per case rather than mocked, so "the host lacks it" is a fact the guard establishes with `command -v`, exactly as it does in the wild.
 """
 
+import atexit
 import json
 import os
 import pathlib
@@ -23,6 +24,8 @@ REPO = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), 
 
 # A PATH with the real tools plus a shim dir we control.
 shim = tempfile.mkdtemp()
+# Every temp directory here is registered for removal the moment it exists, because the explicit rmtree calls further down only run when the suite reaches them, and `_path_without` below is called once per stripped tool with no cleanup at all: ten directories leaked per run before this.
+atexit.register(shutil.rmtree, shim, ignore_errors=True)
 
 
 def fake(name):
@@ -64,6 +67,7 @@ def run_full(cmd, path=None):
 REAL = os.environ.get("PATH", "")
 WITH_SHIM = f"{shim}:{REAL}"
 
+
 # EVERY OTHER TOOL THIS TEST OR THE GUARD ITSELF NEEDS must stay resolvable through a "host lacks <tool>" PATH strip below, even when the excluded tool's own directory ALSO resolves one of them. Measured live, 2026-09-23, on this exact devbox image: `bash`, `docker` AND `shellcheck` all resolve to `/usr/bin`. A strip keyed only on "does this dir contain <tool>" removes the whole directory,
 # which silently took `bash` out from under `subprocess.run(["bash", GUARD])` the first time this was hit, and, on a subtler path, took `docker` out from under the GUARD ITSELF the second time: the guard's own "is a devbox running" check shells out to `docker ps`, so stripping `/usr/bin` to hide `shellcheck` also hid `docker`, which made the guard report "no devbox" and fall back to its
 # note-only branch instead of routing -- the exact shape of a false negative this constructed-absence design exists to prevent, just aimed at the guard's OWN toolchain rather than the one under test.
@@ -75,6 +79,7 @@ def _path_without(tool, base):
     First `base` directory to offer a given name wins, matching normal PATH resolution order, so a name shadowed further down `base` stays shadowed here too.
     """
     shim_dir = tempfile.mkdtemp()
+    atexit.register(shutil.rmtree, shim_dir, ignore_errors=True)
     seen = set()
     for directory in base.split(os.pathsep):
         if not directory or not os.path.isdir(directory):
@@ -480,6 +485,7 @@ from rediacc_hooks import guards  # noqa: E402 - the path hop above is what make
 GUARD = guards.load("block_host_toolchain_run")
 
 fixture_root = tempfile.mkdtemp()
+atexit.register(shutil.rmtree, fixture_root, ignore_errors=True)
 os.makedirs(os.path.join(fixture_root, ".ci", "policy"))
 fixture_list = os.path.join(fixture_root, ".ci", "policy", ".host-toolchain-exceptions")
 

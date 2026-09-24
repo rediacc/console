@@ -9,8 +9,10 @@ asserts, which is the real, unmocked forward this port makes, stopped by the sam
 
 from __future__ import annotations
 
+import atexit
 import functools
 import pathlib
+import shutil
 import tempfile
 
 from rediacc_ci.tests import differential as diff
@@ -28,6 +30,8 @@ def masked_path() -> str:
     mirrors a directory rather than guessing at `PATH=/usr/bin:/bin`.
     """
     scratch = pathlib.Path(tempfile.mkdtemp(prefix="backfill-pathmask-"))
+    # Session-cached, so no single test owns it and pytest's tmp_path cannot hold it; removed at exit instead, or every run leaves one symlink farm in /tmp.
+    atexit.register(shutil.rmtree, scratch, ignore_errors=True)
     path = pathmask.path_without("aws", scratch, base=diff.BASE_ENV["PATH"])
     pathmask.assert_absent("aws", path)
     return path

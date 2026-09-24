@@ -16,7 +16,9 @@ from a suite that never executed.
 import os
 import pathlib
 import re
+import shutil
 import subprocess
+import tempfile
 
 import pytest
 
@@ -158,32 +160,56 @@ def port_delegation_problem(fixture_present: bool, pyproject_source: str, module
     return None
 
 
-def _run(relative: str, tail: list[str]) -> subprocess.CompletedProcess:
+# Fixed-name caches that node and tsx keep under TMPDIR (`node-compile-cache`, `tsx-<uid>`), created by a suite that shells out to a tsx gate. One per user, reused by every later run rather than added to, so in the real /tmp they cannot accumulate; they are exempt by exact shape, never by prefix, and anything else left behind still fails.
+_SHARED_TOOL_CACHE = re.compile(r"^(node-compile-cache|tsx-[0-9]+)$")
+
+
+# EVERY SUITE RUNS WITH ITS OWN EMPTY TMPDIR, AND LEAVING ANYTHING IN IT IS A FAILURE. /tmp here is a tmpfs capped at 1,048,576 inodes, and on 2026-09-24 the cap was hit: every Bash and Write call on the machine failed with ENOSPC for hours, and the cleanup removed 2,576 leaked `tmp*` directories, mostly git fixture repos made at module scope by these standalone suites and never deleted. pytest's own `tmp_path_retention_policy` cannot see them, because they are not pytest tests. Python's `tempfile` honours `TMPDIR`, so pointing it at a fresh directory per suite catches any `mkdtemp`/`TemporaryDirectory` leak in the class, and the directory is removed afterwards whatever the verdict.
+def _run(relative: str, tail: list[str]) -> tuple[subprocess.CompletedProcess, list[str]]:
+    """Run one suite under a private TMPDIR; return its result and the entries it left behind."""
     path = HOOKS / relative
     argv = ["bash", str(path)] if path.suffix == ".sh" else ["python3", str(path), *tail]
-    return subprocess.run(
-        argv,
-        capture_output=True,
-        stdin=subprocess.DEVNULL,
-        timeout=SUITE_TIMEOUT_S,
-        check=False,
+    scratch = tempfile.mkdtemp(prefix="hook-suite-tmpdir-")
+    try:
+        env = dict(os.environ, TMPDIR=scratch)
+        done = subprocess.run(
+            argv,
+            capture_output=True,
+            stdin=subprocess.DEVNULL,
+            timeout=SUITE_TIMEOUT_S,
+            check=False,
+            env=env,
+        )
+        leftovers = sorted(n for n in os.listdir(scratch) if not _SHARED_TOOL_CACHE.match(n))
+    finally:
+        shutil.rmtree(scratch, ignore_errors=True)
+    return done, leftovers
+
+
+def _assert_no_leak(name: str, leftovers: list[str]) -> None:
+    assert not leftovers, (
+        "%s left %d entr(y/ies) in its private TMPDIR after exiting: %s. A standalone suite "
+        "must delete every temp directory it creates (try/finally or atexit + rmtree); leaked "
+        "fixture repos are what filled the /tmp inode cap on 2026-09-24."
+        % (name, len(leftovers), ", ".join(leftovers[:20]))
     )
 
 
 def _folded(relative: str, tail: list[str], counter, floor: int, name: str, unit: str) -> None:
     path = HOOKS / relative
     assert path.is_file(), "%s missing" % relative
-    done = _run(relative, tail)
+    done, leftovers = _run(relative, tail)
     text = (done.stdout + done.stderr).decode("utf-8", "replace")
     assert done.returncode == 0, "%s exited %d:\n%s" % (name, done.returncode, text[-2000:])
     found = _count(counter, text)
-    ok = found >= floor and found > 0
+    ok = found >= floor and found > 0 and not leftovers
     hooklabels.record(0, "%s: %d %s(s) passed" % (name, found, unit), ok=ok)
     assert found > 0, (
         "%s exited 0 but reported NO %ss. A selftest that prints nothing and exits 0 "
         "is a vacuous green." % (name, unit)
     )
     assert found >= floor, "%s: %d %s(s), expected >= %d" % (name, found, unit, floor)
+    _assert_no_leak(name, leftovers)
 
 
 @pytest.mark.xdist_group("hooks-delegates")
@@ -201,13 +227,14 @@ def test_a_counted_selftest_is_folded_with_a_floor(relative, tail, counter, floo
 def test_an_orphan_control_suite_runs_and_says_something(relative):
     path = HOOKS / relative
     assert path.is_file(), "%s missing" % relative
-    done = _run(relative, [])
+    done, leftovers = _run(relative, [])
     text = (done.stdout + done.stderr).decode("utf-8", "replace")
-    ok = done.returncode == 0 and text.strip() != ""
+    ok = done.returncode == 0 and text.strip() != "" and not leftovers
     last = text.rstrip("\n").split("\n")[-1] if text.strip() else ""
     hooklabels.record(0, "%s: %s" % (relative, last[:90]), ok=ok)
     assert done.returncode == 0, "%s exited %d:\n%s" % (relative, done.returncode, text[-2000:])
     assert text.strip() != "", "%s printed nothing, which is what a stub returns" % relative
+    _assert_no_leak(relative, leftovers)
 
 
 def test_tailed_discovery_meets_its_floor():

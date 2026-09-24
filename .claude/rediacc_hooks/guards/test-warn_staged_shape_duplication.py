@@ -10,6 +10,7 @@ every floor. Each generated file is unique except for ONE deliberately shared bl
 TWIN = None ON THE GUARD ITSELF, so this file is the whole differential, exactly as `test-block_unproven_bulk_transform.py` is for its sibling. `check-hook-integrity.sh` reads this file's existence as crediting both directions.
 """
 
+import atexit
 import json
 import os
 import pathlib
@@ -53,6 +54,8 @@ def body(tag, index, lines=30, twin=False):
 def build_repo():
     """A tracked corpus that clears every floor the gate enforces, plus the gate itself."""
     root = pathlib.Path(tempfile.mkdtemp(prefix="shapeprobe-"))
+    # Registered at creation, not only removed by the rmtree at the bottom: that line runs only when the suite reaches it, and this repo holds a few hundred generated corpus files.
+    atexit.register(shutil.rmtree, root, ignore_errors=True)
     families = [
         ("scripts/gates", "check-gen%03d.ts", 110, "ts"),
         (".ci/scripts/quality", "check-gen%03d.sh", 60, "qa"),
@@ -306,6 +309,7 @@ case("more corpus files than the cap", 'git commit -m "feat: many"', ROOT, NOTIC
 # Reproduces the 2026-09-23 class fix (shellscan.target_root), and this state IS the discriminator: ROOT has 13 corpus files staged RIGHT NOW, which the case just above proved fires NOTICE when the guard reads ROOT.
 # A `-C <foreign>` targeting an unrelated, cleanly-committed repo must stay SILENT -- if the guard mistakenly resolved back to CLAUDE_PROJECT_DIR (ROOT) instead of the command's own target, it would see these same 13 staged files and speak NOTICE instead.
 FOREIGN = pathlib.Path(tempfile.mkdtemp(prefix="shapeprobe-foreign-"))
+atexit.register(shutil.rmtree, FOREIGN, ignore_errors=True)
 git(FOREIGN, "init", "-q", "-b", "main")
 git(FOREIGN, "config", "user.email", "fixture@example.invalid")
 git(FOREIGN, "config", "user.name", "Fixture")

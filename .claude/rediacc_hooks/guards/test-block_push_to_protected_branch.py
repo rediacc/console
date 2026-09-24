@@ -10,9 +10,11 @@ temp directory the first time this module runs, exactly the shape `test_guards_d
 IT DRIVES THE LIVE GUARD THROUGH THE DISPATCHER, for the reason the P7 cutover exists: a suite driving anything else keeps passing while the thing that actually runs goes unchecked.
 """
 
+import atexit
 import json
 import os
 import pathlib
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -33,6 +35,7 @@ _FIXTURE_ENV = dict(
 
 def _make_repo(branch):
     d = tempfile.mkdtemp(prefix="guard-push-main-")
+    atexit.register(shutil.rmtree, d, ignore_errors=True)
     subprocess.run(
         ["git", "init", "-q", "-b", branch, d], check=True, capture_output=True, env=_FIXTURE_ENV
     )

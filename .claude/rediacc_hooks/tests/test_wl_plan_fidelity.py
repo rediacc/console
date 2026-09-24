@@ -8,10 +8,12 @@ the shim still says "unfaithful" and the check must stay SILENT because no plan 
 
 from __future__ import annotations
 
+import atexit
 import json
 import os
 import pathlib
 import re
+import shutil
 import subprocess
 import tempfile
 import time
@@ -700,6 +702,8 @@ def test_220h_a_failed_tier_two_call_is_recorded_not_just_reported(wl):  # noqa:
 
 def build_drift_repo(dirty_docs: bool, extra_commits: int) -> str:
     root = tempfile.mkdtemp()
+    # A git repository per call, three per run, outside pytest's tmp_path and so outside its retention policy; removed at exit rather than left in /tmp.
+    atexit.register(shutil.rmtree, root, ignore_errors=True)
 
     def sh(*args):
         subprocess.run(args, cwd=root, check=True, capture_output=True)

@@ -5,9 +5,11 @@ Every control here is a RED/GREEN PAIR or it is not a control. The one that matt
 something. See agent/plans/PLAN-subagent-idle-detection.md.
 """
 
+import atexit
 import json
 import os
 import pathlib
+import shutil
 import sys
 import tempfile
 import time
@@ -16,6 +18,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import wl_liveness as L
 
 TMP = pathlib.Path(tempfile.mkdtemp())
+atexit.register(shutil.rmtree, TMP, ignore_errors=True)
 SUB = TMP / "sess" / "subagents"
 SUB.mkdir(parents=True)
 
