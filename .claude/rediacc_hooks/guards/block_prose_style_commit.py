@@ -236,20 +236,51 @@ def messages(command, cwd=None):
             # `body=@<file>` token would otherwise be read, wrongly, as a
             # literal filename.
             value = tokens[index + 1][len("body=") :]
-            out.append(("--body", _read_file(value[1:], cwd) if value.startswith("@") else value))
+            out.append(
+                (
+                    "--body",
+                    _read_file(_expand_assigned(value[1:], command), cwd)
+                    if value.startswith("@")
+                    else value,
+                )
+            )
             index += 2
             continue
         if token in ("-F", "--file", "--body-file"):
             if index + 1 < len(tokens):
-                out.append((token, _read_file(tokens[index + 1], cwd)))
+                out.append((token, _read_file(_expand_assigned(tokens[index + 1], command), cwd)))
             index += 2
             continue
         if token.startswith(("--file=", "--body-file=")):
-            out.append((token.split("=", 1)[0], _read_file(token.split("=", 1)[1], cwd)))
+            name = _expand_assigned(token.split("=", 1)[1], command)
+            out.append((token.split("=", 1)[0], _read_file(name, cwd)))
             index += 1
             continue
         index += 1
     return [(label, text) for label, text in out if text]
+
+
+# `$NAME` / `${NAME}`, the two spellings a same-command assignment is referenced by.
+PARAM = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}|\$([A-Za-z_][A-Za-z0-9_]*)")
+
+
+def _expand_assigned(word, command):
+    """`word` with the command's own earlier `NAME=value` statements expanded, as bash would before reading `-F $S/msg`.
+
+    shlex returns `$S/msg` verbatim, so without this `-F` read a file literally named `$S/msg`, got nothing, and every guard reading `messages()` judged an EMPTY message: a commit carrying its `PR-TASK:` trailer and proof line was refused for lacking them (#09fd19cd, 2026-09-25). Only statements BEFORE the verb count (`shellscan.assignments_before`); a word that still carries `$` or a backtick afterwards is returned unchanged, and reading it fails open as before.
+    """
+    if "$" not in word:
+        return word
+    names = {}
+    for verb in ("gh pr", "gh api", "git commit"):
+        names.update(shellscan.assignments_before(command, verb))
+    text = word
+    for _ in range(4):
+        new = PARAM.sub(lambda m: names.get(m.group(1) or m.group(2), m.group(0)), text)
+        if new == text:
+            break
+        text = new
+    return word if ("$" in text or "`" in text) else text
 
 
 def _read_file(name, cwd):

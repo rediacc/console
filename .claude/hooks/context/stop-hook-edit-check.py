@@ -129,6 +129,9 @@ def hook_target(path):
     rel = pathlib.PurePosixPath(path.relative_to(root).as_posix())
     if "tests" in rel.parts:
         return None
+    # A `test-*.py` / `test_*.py` suite beside the guards is not code the lifecycle table runs, and importing it RUNS it: the smoke test then reported the suite's own passing lines as "no longer loads cleanly" (2026-09-25, test-block_prose_style_commit.py, 38 cases, 0 failures).
+    if rel.name.startswith(("test-", "test_")):
+        return None
     scripts = lifecycle_scripts(root)
     for script in scripts:
         top = package_top(root, script.parent)

@@ -223,3 +223,10 @@ def test_a_directory_newly_wired_into_lifecycle_is_covered_with_no_edit_to_the_c
     text = context_of(out)
     assert "undefined_fresh_name" in text, text
     assert "F821" in text, text
+
+
+def test_a_test_suite_beside_the_hooks_is_not_smoke_imported(stop_copy):
+    """INVERSE: a `test-*.py` suite RUNS when imported, so smoke-importing it reported its own passing lines as a load failure (2026-09-25). Its F821 is not this hook's business either."""
+    suite = stop_copy / "test-p26-suite.py"
+    suite.write_text("print('case one   want=allowed got=allowed ok')\n" + PLANT, encoding="utf-8")
+    assert drive(edit(suite)) == (0, "", "")

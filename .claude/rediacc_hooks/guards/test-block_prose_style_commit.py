@@ -173,6 +173,24 @@ CASES = [
         % COMMIT,
         False,
     ),
+    # `-F $VAR/...` with the variable assigned EARLIER IN THE SAME COMMAND (#09fd19cd). Before the fix the path was read literally, the message came back empty, and the violation in the file went unseen; BLOCKED here proves the file was read.
+    (
+        "-F through a same-command $VAR reads the file",
+        "D=%s; %s -F $D/%s -- README.md"
+        % (pathlib.Path(BODY_FILE_PATH).parent, COMMIT, pathlib.Path(BODY_FILE_PATH).name),
+        True,
+    ),
+    (
+        "--file=${VAR}/... reads the file too",
+        "D=%s; %s --file=${D}/%s"
+        % (pathlib.Path(BODY_FILE_PATH).parent, COMMIT, pathlib.Path(BODY_FILE_PATH).name),
+        True,
+    ),
+    (
+        "-F through a variable never assigned stays unexamined (fails open)",
+        "%s -F $NEVER_SET_HERE/%s" % (COMMIT, pathlib.Path(BODY_FILE_PATH).name),
+        False,
+    ),
 ]
 
 
