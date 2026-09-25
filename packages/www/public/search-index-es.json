@@ -5514,7 +5514,7 @@
   {
     "id": "search-6016",
     "content": "Configuración",
-    "body": "Navegue a Almacenamiento de configuración en la barra lateral, luego haga clic en Configurar almacenamiento de configuración La lista de verificación de requisitos verifica su navegador, 2FA y el estado de la sesión Haga clic en Iniciar configuración. Para una ranura de passkey tocará su clave de seguridad dos veces: Primer toque: registra el passkey Segundo toque: deriva las claves de cifrado vía PRF Configuración completa, su secreto de passkey se almacena en el llavero de su sistema operativo Tras la configuración, añada una ranura de contraseña maestra o de código de recuperación desde la página de Almacenamiento de configuración, para que un autenticador perdido o no compatible no le deje bloqueado.",
+    "body": "Navegue a Almacenamiento de configuración en la barra lateral, luego haga clic en Configurar almacenamiento de configuración La lista de verificación de requisitos verifica su navegador, 2FA y el estado de la sesión Elige el primer método de desbloqueo y haz clic en Crear almacén de configuración: Passkey, si tu proveedor admite PRF: tocas tu llave de seguridad dos veces, una para registrarla y otra para derivar las claves de cifrado. Contraseña maestra, que funciona en cualquier navegador, también con proveedores de passkeys sin PRF como Bitwarden. Opcionalmente, un código de recuperación, que se muestra una sola vez y debes guardar antes de crear el almacén. Configuración completada. La CLI guarda el secreto de desbloqueo en el llavero de tu sistema operativo. Puedes añadir una passkey más adelante desde la página de Config Storage. Mantén al menos dos métodos de desbloqueo para que un autenticador perdido o no compatible no te deje fuera.",
     "excerpt": "Navegue a Almacenamiento de configuración en la barra lateral, luego haga clic en Configurar almacenamiento de configuración La lista de verificación...",
     "category": "Documentation",
     "page": "/es/docs/config-storage",
@@ -5526,7 +5526,7 @@
   {
     "id": "search-6017",
     "content": "Compatibilidad de proveedores PRF",
-    "body": "| Proveedor | Soporte PRF | Plataformas | |----------|:-----------:|-----------| | YubiKey / claves de seguridad FIDO2 | ✅ | Windows 11, macOS, Linux | | iCloud Keychain | ✅ | macOS 15+, iOS 18+ | | Google Password Manager | ✅ | Android | | 1Password | ✅ | Android, iOS | | Dashlane | ✅ | Multiplataforma | | Extensión Bitwarden | ❌ | En desarrollo | | Windows Hello | ❌ | No soportado |",
+    "body": "| Proveedor | Soporte PRF | Plataformas | |----------|:-----------:|-----------| | YubiKey / claves de seguridad FIDO2 | ✅ | Windows 11, macOS, Linux | | iCloud Keychain | ✅ | macOS 15+, iOS 18+ | | Google Password Manager | ✅ | Android | | 1Password | ✅ | Android, iOS | | Dashlane | ✅ | Multiplataforma | | Extensión Bitwarden | ❌ | Utilice una contraseña maestra en su lugar | | Windows Hello | ❌ | No soportado |",
     "excerpt": "| Proveedor | Soporte PRF | Plataformas | |----------|:-----------:|-----------| | YubiKey / claves de seguridad FIDO2 | ✅ | Windows 11, macOS, Linux...",
     "category": "Documentation",
     "page": "/es/docs/config-storage",

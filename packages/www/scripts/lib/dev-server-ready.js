@@ -18,7 +18,6 @@
  */
 export function stripAnsi(text) {
   // General CSI, not just SGR: astro also emits cursor and erase sequences.
-  // eslint-disable-next-line no-control-regex
   return text.replaceAll(/\x1b\[[0-9;?]*[ -/]*[@-~]/g, '');
 }
 

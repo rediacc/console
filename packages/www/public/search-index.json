@@ -5669,7 +5669,7 @@
   {
     "id": "search-4570",
     "content": "Setup",
-    "body": "Navigate to Config Storage in the sidebar, then click Set Up Config Storage The requirements checklist verifies your browser, 2FA, and session status Click Start Setup. For a passkey slot you'll touch your security key twice: First touch: registers the passkey Second touch: derives encryption keys via PRF Setup complete, your passkey secret is stored in your OS keyring After setup, add a master password or recovery code slot from the Config Storage page so a lost or unsupported authenticator cannot lock you out.",
+    "body": "Navigate to Config Storage in the sidebar, then click Set Up Config Storage The requirements checklist verifies your browser, 2FA, and session status Choose the first unlock method, then click Create config store: Passkey, when the provider supports PRF: the security key is touched twice, once to register it and once to derive the encryption keys. Master password, which works with any browser, including passkey providers without PRF such as Bitwarden. Optionally a recovery code, shown once, to save before the store is created. Setup complete. The CLI keeps the unlock secret in the OS keyring. A passkey can be added later from the Config Storage page. Keep at least two unlock methods, so a lost or unsupported authenticator cannot lock the store.",
     "excerpt": "Navigate to Config Storage in the sidebar, then click Set Up Config Storage The requirements checklist verifies your browser, 2FA, and session status...",
     "category": "Documentation",
     "page": "/en/docs/config-storage",
@@ -5681,7 +5681,7 @@
   {
     "id": "search-4571",
     "content": "PRF Provider Compatibility",
-    "body": "| Provider | PRF Support | Platforms | |----------|:-----------:|-----------| | YubiKey / FIDO2 security keys | ✅ | Windows 11, macOS, Linux | | iCloud Keychain | ✅ | macOS 15+, iOS 18+ | | Google Password Manager | ✅ | Android | | 1Password | ✅ | Android, iOS | | Dashlane | ✅ | Cross-platform | | Bitwarden extension | ❌ | In development | | Windows Hello | ❌ | Not supported |",
+    "body": "| Provider | PRF Support | Platforms | |----------|:-----------:|-----------| | YubiKey / FIDO2 security keys | ✅ | Windows 11, macOS, Linux | | iCloud Keychain | ✅ | macOS 15+, iOS 18+ | | Google Password Manager | ✅ | Android | | 1Password | ✅ | Android, iOS | | Dashlane | ✅ | Cross-platform | | Bitwarden extension | ❌ | Use a master password instead | | Windows Hello | ❌ | Not supported |",
     "excerpt": "| Provider | PRF Support | Platforms | |----------|:-----------:|-----------| | YubiKey / FIDO2 security keys | ✅ | Windows 11, macOS, Linux | | iClou...",
     "category": "Documentation",
     "page": "/en/docs/config-storage",

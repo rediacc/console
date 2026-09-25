@@ -5514,7 +5514,7 @@
   {
     "id": "search-17480",
     "content": "Kurulum",
-    "body": "Kenar çubuğunda Yapılandırma Depolama'ya gidin, ardından Yapılandırma Depolamayı Kur'a tıklayın Gereksinimler kontrol listesi tarayıcınızı, 2FA'yı ve oturum durumunu doğrular Kurulumu Başlat'a tıklayın. Passkey yuvası için güvenlik anahtarınıza iki kez dokunmanız gerekecek: İlk dokunuş: passkey'i kaydeder İkinci dokunuş: PRF aracılığıyla şifreleme anahtarlarını türetir Kurulum tamamlandı, passkey sırrınız işletim sisteminizin anahtar zincirinde saklanır Kurulumdan sonra, kayıp veya desteklenmeyen bir kimlik doğrulayıcının sizi dışarıda bırakmaması için Yapılandırma Depolama sayfasından bir ana parola veya kurtarma kodu yuvası ekleyin.",
+    "body": "Kenar çubuğunda Yapılandırma Depolama'ya gidin, ardından Yapılandırma Depolamayı Kur'a tıklayın Gereksinimler kontrol listesi tarayıcınızı, 2FA'yı ve oturum durumunu doğrular İlk kilit açma yöntemini seçin ve Yapılandırma deposu oluştur'a tıklayın: Passkey, sağlayıcınız PRF destekliyorsa: güvenlik anahtarınıza iki kez dokunursunuz; biri kaydetmek, diğeri şifreleme anahtarlarını türetmek için. Ana parola, her tarayıcıyla çalışır; Bitwarden gibi PRF desteklemeyen passkey sağlayıcılarıyla da. İsteğe bağlı olarak bir kurtarma kodu: yalnızca bir kez gösterilir ve depo oluşturulmadan önce saklanmalıdır. Kurulum tamamlandı. CLI kilit açma sırrını işletim sisteminizin anahtar zincirinde tutar. Passkey daha sonra Config Storage sayfasından eklenebilir. Kaybolan ya da desteklenmeyen bir doğrulayıcı sizi dışarıda bırakmasın diye en az iki kilit açma yöntemi tutun.",
     "excerpt": "Kenar çubuğunda Yapılandırma Depolama'ya gidin, ardından Yapılandırma Depolamayı Kur'a tıklayın Gereksinimler kontrol listesi tarayıcınızı, 2FA'yı ve...",
     "category": "Documentation",
     "page": "/tr/docs/config-storage",
@@ -5526,7 +5526,7 @@
   {
     "id": "search-17481",
     "content": "PRF Sağlayıcı Uyumluluğu",
-    "body": "| Sağlayıcı | PRF Desteği | Platformlar | |----------|:-----------:|-----------| | YubiKey / FIDO2 güvenlik anahtarları | ✅ | Windows 11, macOS, Linux | | iCloud Keychain | ✅ | macOS 15+, iOS 18+ | | Google Password Manager | ✅ | Android | | 1Password | ✅ | Android, iOS | | Dashlane | ✅ | Çapraz platform | | Bitwarden eklentisi | ❌ | Geliştirme aşamasında | | Windows Hello | ❌ | Desteklenmiyor |",
+    "body": "| Sağlayıcı | PRF Desteği | Platformlar | |----------|:-----------:|-----------| | YubiKey / FIDO2 güvenlik anahtarları | ✅ | Windows 11, macOS, Linux | | iCloud Keychain | ✅ | macOS 15+, iOS 18+ | | Google Password Manager | ✅ | Android | | 1Password | ✅ | Android, iOS | | Dashlane | ✅ | Çapraz platform | | Bitwarden eklentisi | ❌ | Bunun yerine ana parola kullanın | | Windows Hello | ❌ | Desteklenmiyor |",
     "excerpt": "| Sağlayıcı | PRF Desteği | Platformlar | |----------|:-----------:|-----------| | YubiKey / FIDO2 güvenlik anahtarları | ✅ | Windows 11, macOS, Linux...",
     "category": "Documentation",
     "page": "/tr/docs/config-storage",

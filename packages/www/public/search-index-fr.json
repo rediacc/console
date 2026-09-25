@@ -5514,7 +5514,7 @@
   {
     "id": "search-8882",
     "content": "Configuration",
-    "body": "Accédez à Stockage de configuration dans la barre latérale, puis cliquez sur Configurer le stockage de configuration La liste de vérification des prérequis vérifie votre navigateur, la 2FA et l'état de la session Cliquez sur Démarrer la configuration. Pour un emplacement passkey, vous devrez toucher votre clé de sécurité deux fois : Premier toucher : enregistre le passkey Second toucher : dérive les clés de chiffrement via PRF Configuration terminée, votre secret de passkey est stocké dans le trousseau de clés de votre système d'exploitation Une fois la configuration terminée, ajoutez un emplacement mot de passe principal ou code de récupération depuis la page Stockage de configuration, pour qu'un authentificateur perdu ou non pris en charge ne puisse pas vous bloquer l'accès.",
+    "body": "Accédez à Stockage de configuration dans la barre latérale, puis cliquez sur Configurer le stockage de configuration La liste de vérification des prérequis vérifie votre navigateur, la 2FA et l'état de la session Choisissez la première méthode de déverrouillage, puis cliquez sur Créer l'espace de configuration : Passkey, si votre fournisseur prend en charge PRF : vous touchez votre clé de sécurité deux fois, une fois pour l'enregistrer et une fois pour dériver les clés de chiffrement. Mot de passe maître, qui fonctionne avec n'importe quel navigateur, y compris les fournisseurs de passkeys sans PRF comme Bitwarden. En option, un code de récupération, affiché une seule fois et à conserver avant la création du stockage. La configuration est terminée. La CLI conserve le secret de déverrouillage dans le trousseau de votre système. Une passkey peut être ajoutée plus tard depuis la page Config Storage. Gardez au moins deux méthodes de déverrouillage, pour qu'un authentificateur perdu ou non pris en charge ne vous bloque pas.",
     "excerpt": "Accédez à Stockage de configuration dans la barre latérale, puis cliquez sur Configurer le stockage de configuration La liste de vérification des prér...",
     "category": "Documentation",
     "page": "/fr/docs/config-storage",
@@ -5526,7 +5526,7 @@
   {
     "id": "search-8883",
     "content": "Compatibilité des fournisseurs PRF",
-    "body": "| Fournisseur | Support PRF | Plateformes | |----------|:-----------:|-----------| | YubiKey / clés de sécurité FIDO2 | ✅ | Windows 11, macOS, Linux | | iCloud Keychain | ✅ | macOS 15+, iOS 18+ | | Google Password Manager | ✅ | Android | | 1Password | ✅ | Android, iOS | | Dashlane | ✅ | Multiplateforme | | Extension Bitwarden | ❌ | En développement | | Windows Hello | ❌ | Non supporté |",
+    "body": "| Fournisseur | Support PRF | Plateformes | |----------|:-----------:|-----------| | YubiKey / clés de sécurité FIDO2 | ✅ | Windows 11, macOS, Linux | | iCloud Keychain | ✅ | macOS 15+, iOS 18+ | | Google Password Manager | ✅ | Android | | 1Password | ✅ | Android, iOS | | Dashlane | ✅ | Multiplateforme | | Extension Bitwarden | ❌ | Utilisez plutôt un mot de passe principal | | Windows Hello | ❌ | Non supporté |",
     "excerpt": "| Fournisseur | Support PRF | Plateformes | |----------|:-----------:|-----------| | YubiKey / clés de sécurité FIDO2 | ✅ | Windows 11, macOS, Linux |...",
     "category": "Documentation",
     "page": "/fr/docs/config-storage",

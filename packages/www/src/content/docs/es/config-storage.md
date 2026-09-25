@@ -10,8 +10,8 @@ tags:
 subcategory: account
 order: 8
 language: es
-sourceHash: "e4b2eecb8bdf0015"
-sourceCommit: "433347c5ea4754300fe3da80c4bfcee42dd161bc"
+sourceHash: "5530b0697303f1ea"
+sourceCommit: "be639ddfad898be528e9fca6a458b8d9e174e206"
 ---
 
 # Almacenamiento de configuración

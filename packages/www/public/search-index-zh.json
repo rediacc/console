@@ -5514,8 +5514,8 @@
   {
     "id": "search-18913",
     "content": "设置",
-    "body": "在侧边栏导航至配置存储，然后点击设置配置存储 需求检查表验证您的浏览器、双因素认证和会话状态 点击开始设置。设置通行密钥槽时，您需要触摸安全密钥两次： 第一次触摸：注册通行密钥 第二次触摸：通过PRF派生加密密钥 设置完成，您的通行密钥密钥存储在操作系统的密钥环中 设置完成后，建议在配置存储页面再添加一个主密码或恢复码密钥槽，以免因认证器丢失或不受支持而被锁在外面。",
-    "excerpt": "在侧边栏导航至配置存储，然后点击设置配置存储 需求检查表验证您的浏览器、双因素认证和会话状态 点击开始设置。设置通行密钥槽时，您需要触摸安全密钥两次： 第一次触摸：注册通行密钥 第二次触摸：通过PRF派生加密密钥 设置完成，您的通行密钥密钥存储在操作系统的密钥环中 设置完成后，建议在配置存储页面再添...",
+    "body": "在侧边栏导航至配置存储，然后点击设置配置存储 需求检查表验证您的浏览器、双因素认证和会话状态 选择第一种解锁方式，然后点击 创建配置存储： 通行密钥：适用于支持 PRF 的提供商。你需要触碰安全密钥两次，一次用于注册，一次用于派生加密密钥。 主密码：适用于任何浏览器，也适用于 Bitwarden 等不支持 PRF 的通行密钥提供商。 可选的 恢复码：只显示一次，需要在创建存储前保存好。 设置完成。CLI 会把解锁密钥保存在操作系统的钥匙串中。 通行密钥可以稍后在 Config Storage 页面添加。请至少保留两种解锁方式，以免丢失或不受支持的验证器把你锁在外面。",
+    "excerpt": "在侧边栏导航至配置存储，然后点击设置配置存储 需求检查表验证您的浏览器、双因素认证和会话状态 选择第一种解锁方式，然后点击 创建配置存储： 通行密钥：适用于支持 PRF 的提供商。你需要触碰安全密钥两次，一次用于注册，一次用于派生加密密钥。 主密码：适用于任何浏览器，也适用于 Bitwarden 等...",
     "category": "Documentation",
     "page": "/zh/docs/config-storage",
     "fragment": "setup",
@@ -5526,7 +5526,7 @@
   {
     "id": "search-18914",
     "content": "PRF提供商兼容性",
-    "body": "| 提供商 | PRF支持 | 平台 | |----------|:-----------:|-----------| | YubiKey / FIDO2安全密钥 | ✅ | Windows 11、macOS、Linux | | iCloud Keychain | ✅ | macOS 15+、iOS 18+ | | Google Password Manager | ✅ | Android | | 1Password | ✅ | Android、iOS | | Dashlane | ✅ | 跨平台 | | Bitwarden扩展 | ❌ | 开发中 | | Windows Hello | ❌ | 不支持 |",
+    "body": "| 提供商 | PRF支持 | 平台 | |----------|:-----------:|-----------| | YubiKey / FIDO2安全密钥 | ✅ | Windows 11、macOS、Linux | | iCloud Keychain | ✅ | macOS 15+、iOS 18+ | | Google Password Manager | ✅ | Android | | 1Password | ✅ | Android、iOS | | Dashlane | ✅ | 跨平台 | | Bitwarden扩展 | ❌ | 请改用主密码 | | Windows Hello | ❌ | 不支持 |",
     "excerpt": "| 提供商 | PRF支持 | 平台 | |----------|:-----------:|-----------| | YubiKey / FIDO2安全密钥 | ✅ | Windows 11、macOS、Linux | | iCloud Keychain | ✅ | macOS 15+、iOS...",
     "category": "Documentation",
     "page": "/zh/docs/config-storage",

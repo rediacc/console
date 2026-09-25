@@ -5514,7 +5514,7 @@
   {
     "id": "search-3137",
     "content": "Einrichtung",
-    "body": "Navigieren Sie zu Konfigurationsspeicher in der Seitenleiste und klicken Sie auf Konfigurationsspeicher einrichten Die Anforderungscheckliste überprüft Ihren Browser, 2FA und den Sitzungsstatus Klicken Sie auf Einrichtung starten. Für einen Passkey-Slot berühren Sie Ihren Sicherheitsschlüssel zweimal: Erste Berührung: registriert den Passkey Zweite Berührung: leitet Verschlüsselungsschlüssel über PRF ab Einrichtung abgeschlossen - Ihr Passkey-Geheimnis wird in Ihrem Betriebssystem-Schlüsselbund gespeichert Fügen Sie nach der Einrichtung über die Seite Konfigurationsspeicher einen Master-Passwort- oder Wiederherstellungscode-Slot hinzu, damit Sie ein verlorener oder nicht unterstützter Authentifikator nicht aussperrt.",
+    "body": "Navigieren Sie zu Konfigurationsspeicher in der Seitenleiste und klicken Sie auf Konfigurationsspeicher einrichten Die Anforderungscheckliste überprüft Ihren Browser, 2FA und den Sitzungsstatus Wählen Sie die erste Entsperrmethode und klicken Sie auf Konfigurationsspeicher erstellen: Passkey, wenn Ihr Anbieter PRF unterstützt: Sie berühren Ihren Sicherheitsschlüssel zweimal, einmal zur Registrierung und einmal zum Ableiten der Schlüssel. Master-Passwort, das mit jedem Browser funktioniert, auch mit Passkey-Anbietern ohne PRF wie Bitwarden. Optional ein Wiederherstellungscode, der einmal angezeigt wird und vor dem Anlegen des Speichers gesichert werden muss. Die Einrichtung ist abgeschlossen. Die CLI bewahrt das Entsperrgeheimnis im Schlüsselbund Ihres Betriebssystems auf. Ein Passkey lässt sich später auf der Seite „Config Storage“ hinzufügen. Behalten Sie mindestens zwei Entsperrmethoden, damit ein verlorener oder nicht unterstützter Authenticator Sie nicht aussperrt.",
     "excerpt": "Navigieren Sie zu Konfigurationsspeicher in der Seitenleiste und klicken Sie auf Konfigurationsspeicher einrichten Die Anforderungscheckliste überprüf...",
     "category": "Documentation",
     "page": "/de/docs/config-storage",
@@ -5526,7 +5526,7 @@
   {
     "id": "search-3138",
     "content": "PRF-Anbieter-Kompatibilität",
-    "body": "| Anbieter | PRF-Unterstützung | Plattformen | |----------|:-----------:|-----------| | YubiKey / FIDO2-Sicherheitsschlüssel | ✅ | Windows 11, macOS, Linux | | iCloud Keychain | ✅ | macOS 15+, iOS 18+ | | Google Password Manager | ✅ | Android | | 1Password | ✅ | Android, iOS | | Dashlane | ✅ | Plattformübergreifend | | Bitwarden-Erweiterung | ❌ | In Entwicklung | | Windows Hello | ❌ | Nicht unterstützt |",
+    "body": "| Anbieter | PRF-Unterstützung | Plattformen | |----------|:-----------:|-----------| | YubiKey / FIDO2-Sicherheitsschlüssel | ✅ | Windows 11, macOS, Linux | | iCloud Keychain | ✅ | macOS 15+, iOS 18+ | | Google Password Manager | ✅ | Android | | 1Password | ✅ | Android, iOS | | Dashlane | ✅ | Plattformübergreifend | | Bitwarden-Erweiterung | ❌ | Stattdessen ein Master-Passwort verwenden | | Windows Hello | ❌ | Nicht unterstützt |",
     "excerpt": "| Anbieter | PRF-Unterstützung | Plattformen | |----------|:-----------:|-----------| | YubiKey / FIDO2-Sicherheitsschlüssel | ✅ | Windows 11, macOS,...",
     "category": "Documentation",
     "page": "/de/docs/config-storage",

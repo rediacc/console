@@ -5514,7 +5514,7 @@
   {
     "id": "search-7449",
     "content": "Seadistamine",
-    "body": "Naviseeri külgribal Konfiguratsioonisalv ja klõpsa Seadista konfiguratsioonisalv Nõuete kontrollnimekiri kontrollib brauserit, 2FA-d ja seansi olekut Klõpsa Alusta seadistamist. Passkey-pesa jaoks pead puudutama oma turvavõtit kaks korda: Esimene puudutus: registreerib passkey'i Teine puudutus: tuletab krüpteerimisvõtmed PRF kaudu Seadistamine lõpetatud, sinu passkey saladus salvestatakse sinu OS-i võtmehoidlasse Pärast seadistamist lisa Konfiguratsioonisalve lehelt peaparooli või taastekoodi pesa, et kadunud või PRF-i mittetoetav autentimisseade ei jätaks sind salvest välja.",
+    "body": "Naviseeri külgribal Konfiguratsioonisalv ja klõpsa Seadista konfiguratsioonisalv Nõuete kontrollnimekiri kontrollib brauserit, 2FA-d ja seansi olekut Vali esimene lukust avamise viis ja klõpsa Loo konfiguratsioonihoidla: Pääsuvõti, kui su teenusepakkuja toetab PRF-i: puudutad turvavõtit kaks korda, üks kord registreerimiseks ja teist korda krüpteerimisvõtmete tuletamiseks. Ülemparool, mis töötab igas brauseris, ka PRF-i toeta pääsuvõtme pakkujatega nagu Bitwarden. Soovi korral taastekood, mida näidatakse ainult üks kord ja mis tuleb enne hoidla loomist salvestada. Seadistus on valmis. CLI hoiab lukust avamise saladust sinu operatsioonisüsteemi võtmehoidlas. Pääsuvõtme saab hiljem lisada Config Storage lehelt. Hoia alles vähemalt kaks lukust avamise viisi, et kaotatud või toeta autentija sind välja ei lukustaks.",
     "excerpt": "Naviseeri külgribal Konfiguratsioonisalv ja klõpsa Seadista konfiguratsioonisalv Nõuete kontrollnimekiri kontrollib brauserit, 2FA-d ja seansi olekut...",
     "category": "Documentation",
     "page": "/et/docs/config-storage",
@@ -5526,7 +5526,7 @@
   {
     "id": "search-7450",
     "content": "PRF-pakkuja ühilduvus",
-    "body": "| Pakkuja | PRF tugi | Platvormid | |----------|:-----------:|-----------| | YubiKey / FIDO2 turvavõtmed | ✅ | Windows 11, macOS, Linux | | iCloud Keychain | ✅ | macOS 15+, iOS 18+ | | Google Password Manager | ✅ | Android | | 1Password | ✅ | Android, iOS | | Dashlane | ✅ | Platvormideülene | | Bitwarden laiendus | ❌ | Arenduses | | Windows Hello | ❌ | Pole toetatud |",
+    "body": "| Pakkuja | PRF tugi | Platvormid | |----------|:-----------:|-----------| | YubiKey / FIDO2 turvavõtmed | ✅ | Windows 11, macOS, Linux | | iCloud Keychain | ✅ | macOS 15+, iOS 18+ | | Google Password Manager | ✅ | Android | | 1Password | ✅ | Android, iOS | | Dashlane | ✅ | Platvormideülene | | Bitwarden laiendus | ❌ | Kasuta selle asemel peaparooli | | Windows Hello | ❌ | Pole toetatud |",
     "excerpt": "| Pakkuja | PRF tugi | Platvormid | |----------|:-----------:|-----------| | YubiKey / FIDO2 turvavõtmed | ✅ | Windows 11, macOS, Linux | | iCloud Key...",
     "category": "Documentation",
     "page": "/et/docs/config-storage",
