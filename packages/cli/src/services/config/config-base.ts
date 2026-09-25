@@ -27,6 +27,11 @@ export class ConfigServiceBase {
   /** True when the current remote snapshot was served from the offline cache. */
   private _remoteOffline = false;
 
+  constructor() {
+    // State writes (`configFileStorage.updateState`) of a remote config are pushed through this service (T17).
+    configFileStorage.setRemoteStateWriter((name, updater) => this.pushStateEdit(name, updater));
+  }
+
   /**
    * Set a runtime config override (used by --config flag).
    * Takes precedence over default config name.
@@ -221,7 +226,7 @@ export class ConfigServiceBase {
     }
 
     // Awaited on purpose: a fire-and-forget refresh that loses the write is silent staleness on the next offline read.
-    // The in-memory config IS what the cache now holds (host-local sections overlaid by the one overlayHostLocal),
+    // The in-memory config IS what the cache now holds (device-local pointers overlaid by the one overlayDeviceLocal),
     // so RemoteResourceState.load sees `state` and a later push cannot rewrite state.repos without it (F3).
     config = await writeRemoteCache(configName, config, version);
 
@@ -372,6 +377,32 @@ export class ConfigServiceBase {
       }
     }
     await configFileStorage.update(name, edit);
+  }
+
+  /**
+   * Push a state edit of the active remote config: `state` syncs (T17), so a network-ID allocation or
+   * a runtime record written only to the cache would be erased by the next pull, and two devices
+   * allocating at once would hand out the same ID. `updateDocument` replays the edit on the fresh
+   * server copy after a version conflict, so the loser of a race allocates again.
+   */
+  private async pushStateEdit(
+    name: string,
+    updater: (cfg: RdcConfig) => RdcConfig
+  ): Promise<RdcConfig> {
+    if (name !== this.getEffectiveConfigName()) {
+      throw new Error(
+        `Config "${name}" is remote-enabled but is not the active config; select it with --config to write its state`
+      );
+    }
+    const state = await this.getResourceState();
+    const { RemoteResourceState } = await import('./resource-state.js');
+    if (!(state instanceof RemoteResourceState)) {
+      throw new Error(`Config "${name}" is remote-enabled but its store is not loaded`);
+    }
+    const pushed = await state.updateDocument(updater);
+    // The resource view re-seated itself on the pushed document; the memoized snapshot follows it.
+    this._remoteConfig = pushed;
+    return pushed;
   }
 
   // --- Language Settings ---

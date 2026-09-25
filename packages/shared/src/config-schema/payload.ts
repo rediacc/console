@@ -18,7 +18,8 @@
 
 import type { EncryptedConfigPayload, FullConfig } from '../config-crypto/index.js';
 import { selectiveDecrypt, selectiveEncrypt } from '../config-crypto/index.js';
-import type { RdcConfig } from './schemas.js';
+import { type RdcConfig, RdcConfigSchema } from './schemas.js';
+import { DEVICE_LOCAL_POINTERS } from './sensitivity.js';
 import { getByPointer, pathsToCommit } from './walker.js';
 
 /** Pointer/value pairs whose HMACs are committed in the envelope. */
@@ -41,75 +42,103 @@ export function buildCommitEntries(config: RdcConfig): CommitEntry[] {
   }));
 }
 
+/** Envelope keys: the plaintext half of a `FullConfig`, never part of the synced document's blob. */
+const ENVELOPE_KEYS: ReadonlySet<string> = new Set([
+  'envelopeVersion',
+  'id',
+  'version',
+  'sdkEpoch',
+  'teamId',
+  'orgId',
+  'lastModified',
+  'commitments',
+]);
+
 /**
- * `account`, `defaults` and `infra` travel WHOLE, every key: they are synced with
- * no local override (operator ruling D3, PLAN-config-sync-hardening F5), so a key
- * left out here would be lost on the next pull. Some of their leaves are also
- * committed (userEmail, universalUser, certEmail, cfDnsZoneId), and committed means
- * carried, or the first pull/re-push round trip drops them and trips the server's
- * anti-downgrade check. The sections
- * deliberately NOT projected are host-local by design and carry no committed
- * pointers: `remote` (store pointer, commit:false), `state` (runtime half,
- * stripped before push), `encryption` (at-rest metadata), `renetPath` (binary
- * override, public). Spread-if-present, never `key: value ?? undefined`.
+ * Document roots whose children ride one level up in the blob: `resources.machines` travels as
+ * `machines`, `credentials.ssh` as `ssh`. That is the v2 wire encoding every existing blob uses; it
+ * is structural (every child is hoisted, none is chosen), so it decides WHERE a key travels, never
+ * WHETHER it does.
  */
-function projectTopLevelSections(config: RdcConfig): Partial<FullConfig> {
-  return {
-    ...(config.account === undefined ? {} : { account: config.account }),
-    ...(config.defaults === undefined ? {} : { defaults: config.defaults }),
-    ...(config.infra === undefined ? {} : { infra: config.infra }),
+const HOISTED_ROOTS = ['resources', 'credentials'] as const;
+type HoistedRoot = (typeof HOISTED_ROOTS)[number];
+
+/** Child keys the schema declares under a hoisted root, unwrapping `.optional()`. */
+function schemaChildKeys(root: HoistedRoot): ReadonlySet<string> {
+  let schema = (RdcConfigSchema.shape as Record<string, unknown>)[root] as {
+    unwrap?: () => unknown;
+    shape?: Record<string, unknown>;
   };
+  while (schema.unwrap && !schema.shape) schema = schema.unwrap() as typeof schema;
+  return new Set(Object.keys(schema.shape ?? {}));
+}
+
+const HOISTED_CHILDREN: Record<HoistedRoot, ReadonlySet<string>> = {
+  resources: schemaChildKeys('resources'),
+  credentials: schemaChildKeys('credentials'),
+};
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+/** Remove the value at a one- or two-segment pointer, cloning the parent it edits. */
+function omitPointer(doc: Record<string, unknown>, pointer: string): void {
+  const [root, child] = pointer.split('/').slice(1);
+  if (child === undefined) {
+    delete doc[root];
+    return;
+  }
+  const parent = doc[root];
+  if (!isPlainObject(parent) || !(child in parent)) return;
+  const { [child]: _dropped, ...rest } = parent;
+  doc[root] = rest;
 }
 
 /**
- * The remaining v3 families. All-public leaves (nothing committed except
- * deletedRepositories' credential pointers), but they must ride in the blob or a
- * push/pull round trip silently loses every datastore, cluster, and
- * backup-strategy definition. Spread-if-present, same discipline as everywhere
- * in this projection.
+ * The synced half of a config: the whole document minus DEVICE_LOCAL_POINTERS (sensitivity.ts), the
+ * one exclusion list. Everything else travels, `state` and keys this CLI does not know included.
+ * Undefined-valued keys are dropped (spread-if-present): the walker keys off property EXISTENCE, so
+ * an explicit-undefined key would commit a pointer the blob cannot back.
  */
-function projectResourceFamilies(resources: RdcConfig['resources']): Partial<FullConfig> {
-  return {
-    ...(resources?.datastores === undefined ? {} : { datastores: resources.datastores }),
-    ...(resources?.clusters === undefined ? {} : { clusters: resources.clusters }),
-    ...(resources?.backupStrategies === undefined
-      ? {}
-      : { backupStrategies: resources.backupStrategies }),
-    ...(resources?.deletedRepositories === undefined
-      ? {}
-      : { deletedRepositories: resources.deletedRepositories }),
+export function syncedDocument(config: RdcConfig): Record<string, unknown> {
+  const doc: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(config as Record<string, unknown>)) {
+    if (value !== undefined) doc[key] = value;
+  }
+  for (const pointer of DEVICE_LOCAL_POINTERS) omitPointer(doc, pointer);
+  return doc;
+}
+
+/** The blob half of the wire encoding: the synced document, hoisted roots flattened one level. */
+function encodeBlobSections(synced: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  const put = (key: string, value: unknown) => {
+    if (value === undefined) return;
+    // Two document paths landing on one wire key would silently overwrite each other.
+    if (key in out || ENVELOPE_KEYS.has(key)) {
+      throw new Error(`Config wire encoding: "${key}" would be carried twice`);
+    }
+    out[key] = value;
   };
+  for (const [key, value] of Object.entries(synced)) {
+    if (key === 'id') continue; // the envelope carries it
+    if ((HOISTED_ROOTS as readonly string[]).includes(key) && isPlainObject(value)) {
+      for (const [child, childValue] of Object.entries(value)) put(child, childValue);
+    } else {
+      put(key, value);
+    }
+  }
+  return out;
 }
 
 /**
- * Committed org secrets and policy that ride inside the ciphertext, or a push/
- * rotation round trip drops them (data loss) and the re-push commits fewer
- * pointers than the server was told to expect (anti-downgrade rejection). These
- * paths are in the sensitivity registry, so an explicit-undefined key would
- * commit a pointer the blob cannot back — spread-if-present only. Policy travels
- * inside the ciphertext because the executor enforces it and only ever sees what
- * the blob carries. See __tests__/undefined-keys.test.ts.
- */
-function projectCommittedSecrets(config: RdcConfig): Partial<FullConfig> {
-  return {
-    ...(config.resources?.cloudProviders === undefined
-      ? {}
-      : { cloudProviders: config.resources.cloudProviders }),
-    ...(config.credentials?.cfDnsApiToken === undefined
-      ? {}
-      : { cfDnsApiToken: config.credentials.cfDnsApiToken }),
-    ...(config.policy === undefined ? {} : { policy: config.policy }),
-  };
-}
-
-/**
- * Project an `RdcConfig` into the `FullConfig` shape the crypto layer encrypts.
+ * Project an `RdcConfig` into the `FullConfig` shape the crypto layer encrypts: the envelope plus
+ * `syncedDocument(config)` in the wire encoding. There is no per-section list here; a new schema key
+ * syncs by default, and only DEVICE_LOCAL_POINTERS stay home.
  *
  * `version` is the version being WRITTEN (that is, current + 1). The caller owns
  * the increment because only it knows the version it pulled.
- *
- * The per-section spreads keep the exact key order and spread-if-present
- * discipline the anti-downgrade check depends on; see the helper docs.
  */
 export function toFullConfig(
   config: RdcConfig,
@@ -124,14 +153,37 @@ export function toFullConfig(
     // Commitments are recomputed inside selectiveEncrypt from commitEntries;
     // this placeholder keeps the type total.
     commitments: { alg: 'HMAC-SHA256', fckSalt: '', fields: {} },
-    ...projectTopLevelSections(config),
-    machines: config.resources?.machines ?? {},
-    repositories: config.resources?.repositories ?? {},
-    storages: config.resources?.storages ?? {},
-    ...projectResourceFamilies(config.resources),
-    ssh: config.credentials?.ssh,
-    ...projectCommittedSecrets(config),
+    ...encodeBlobSections(syncedDocument(config)),
   };
+}
+
+/**
+ * Inverse of `toFullConfig`: rebuild the config document from a decrypted envelope. A blob key the
+ * schema declares under a hoisted root goes back under it; every other key is a top-level section.
+ * The three core resource families come back as `{}` when absent, and `encryption` as a plaintext
+ * placeholder the device overlay replaces (it is device-local).
+ *
+ * Spread-if-present throughout: only keys the blob carries are written, so the rebuilt document
+ * commits exactly the pointer set the pushed one did.
+ */
+export function fromFullConfig(decrypted: FullConfig): RdcConfig {
+  const resources: Record<string, unknown> = { machines: {}, repositories: {}, storages: {} };
+  const credentials: Record<string, unknown> = {};
+  const doc: Record<string, unknown> = {
+    schemaVersion: 3,
+    id: decrypted.id,
+    version: decrypted.version,
+  };
+  for (const [key, value] of Object.entries(decrypted)) {
+    if (ENVELOPE_KEYS.has(key) || value === undefined) continue;
+    if (HOISTED_CHILDREN.resources.has(key)) resources[key] = value;
+    else if (HOISTED_CHILDREN.credentials.has(key)) credentials[key] = value;
+    else doc[key] = value;
+  }
+  doc.resources = resources;
+  if (Object.keys(credentials).length > 0) doc.credentials = credentials;
+  doc.encryption = { mode: 'plaintext' };
+  return doc as RdcConfig;
 }
 
 /**
@@ -151,7 +203,11 @@ export function buildConfigPushPayload(
     fckSalt?: string;
   }
 ): Promise<EncryptedConfigPayload> {
-  const fullConfig = toFullConfig(config, {
+  // The blob is JSON, so the commitments are computed over the JSON form too: an explicit-undefined
+  // key anywhere (a `knownHosts: undefined` in a rebuilt ssh pair) would otherwise commit a pointer
+  // the blob cannot carry, and the next push built from a pulled copy would drop it (anti-downgrade).
+  const doc = JSON.parse(JSON.stringify(config)) as RdcConfig;
+  const fullConfig = toFullConfig(doc, {
     version: params.version,
     sdkEpoch: params.sdkEpoch,
     teamId: params.teamId,
@@ -160,20 +216,15 @@ export function buildConfigPushPayload(
   return selectiveEncrypt(fullConfig, params.sdkDerived, params.cek, {
     sdkEpoch: params.sdkEpoch,
     fckSalt: params.fckSalt,
-    commitEntries: buildCommitEntries(config),
+    commitEntries: buildCommitEntries(doc),
   });
 }
 
 /**
- * Inverse of `buildConfigPushPayload`: decrypt a pulled envelope back into the
- * synced halves of the config (account, defaults, infra, every `resources`
- * family, ssh, policy, org secrets — see SENSITIVE_FIELDS).
- *
- * Returns `FullConfig` rather than a whole `RdcConfig` because the host-local
- * sections (HOST_LOCAL_POINTERS: `remote`, `state`, `encryption`, `renetPath`,
- * the master-password verifier) never leave the client; `account` and `defaults`
- * do travel, in the blob. Verifies the HMAC and rejects non-v2 envelopes, both
- * inside `selectiveDecrypt`.
+ * Inverse of `buildConfigPushPayload`: decrypt a pulled envelope. `fromFullConfig` turns the result
+ * back into a document; the device-local pointers (DEVICE_LOCAL_POINTERS) are absent, because they
+ * never left the pushing device. Verifies the HMAC and rejects non-v2 envelopes, both inside
+ * `selectiveDecrypt`.
  */
 export function decryptConfigPullPayload(
   payload: EncryptedConfigPayload,

@@ -20,6 +20,7 @@ const { mockConfigFileStorage, mockAdapter, disk } = vi.hoisted(() => {
       load: vi.fn(() => Promise.resolve(disk.current)),
       loadDecrypted: vi.fn(() => Promise.resolve(structuredClone(disk.current))),
       update: vi.fn(),
+      setRemoteStateWriter: vi.fn(),
       updateCache: vi.fn((_name: string, updater: (c: RdcConfig) => RdcConfig) => {
         disk.current = updater(structuredClone(disk.current) as RdcConfig);
         return Promise.resolve(disk.current);
@@ -95,8 +96,8 @@ describe('defaults edits on a remote config', () => {
     const [pushed, fromVersion] = mockAdapter.push.mock.calls[0] as [RdcConfig, number];
     expect(fromVersion).toBe(4);
     expect(pushed.defaults).toEqual({ universalUser: 'deploy', datastoreSize: '80%' });
-    expect(pushed.state).toBeUndefined();
-    // The cache follows the push, host-local sections intact.
+    expect(pushed.state).toEqual({ networkIds: { next: 3000 } });
+    // The cache follows the push, device-local pointers and state intact.
     const cached = disk.current as RdcConfig;
     expect(cached.defaults).toEqual({ universalUser: 'deploy', datastoreSize: '80%' });
     expect(cached.remote?.cachedVersion).toBe(5);

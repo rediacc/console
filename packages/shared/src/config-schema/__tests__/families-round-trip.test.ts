@@ -42,12 +42,10 @@ function resourceFamilyKeys(): string[] {
 
 /**
  * Every top-level RdcConfig section, classified. A section is either part of
- * the plaintext envelope, carried inside the encrypted blob, or host-local by
- * design (never synced, and therefore never committed — see the `remote` and
- * `masterPasswordVerifier` entries in sensitivity.ts for the doctrine).
- * A new top-level section fails the classification test until it is added to
- * exactly one of these lists AND (if carried) to SENSITIVE_FIELDS +
- * toFullConfig + fullConfigToRdcConfig.
+ * the plaintext envelope, carried inside the encrypted blob, or device-local
+ * (DEVICE_LOCAL_POINTERS: never synced, and therefore never committed).
+ * A new top-level section syncs by default (T17); this list only pins the
+ * fixture's expectations, device-local-registry.test.ts is the gate.
  */
 const ENVELOPE_SECTIONS = ['schemaVersion', 'id', 'version'] as const;
 const CARRIED_SECTIONS = [
@@ -57,8 +55,9 @@ const CARRIED_SECTIONS = [
   'resources',
   'infra',
   'policy',
+  'state',
 ] as const;
-const HOST_LOCAL_SECTIONS = ['encryption', 'remote', 'renetPath', 'state'] as const;
+const HOST_LOCAL_SECTIONS = ['encryption', 'remote', 'renetPath'] as const;
 
 /**
  * A config populating EVERY resource family (schema-validated below, so a
@@ -222,7 +221,7 @@ describe('resource families round trip', () => {
     }
   });
 
-  it('carried top-level sections survive; host-local sections stay home', async () => {
+  it('carried top-level sections survive; device-local sections stay home', async () => {
     const original = allFamiliesConfig();
     const rebuilt = await pushPullRoundTrip(original);
 
@@ -230,10 +229,11 @@ describe('resource families round trip', () => {
     expect(rebuilt.defaults).toEqual(original.defaults);
     expect(rebuilt.infra).toEqual(original.infra);
     expect(rebuilt.policy).toEqual(original.policy);
+    // Runtime state is shared by every device of a store (T17): networkIds above all.
+    expect(rebuilt.state).toEqual(original.state);
 
-    // Host-local sections must NOT be resurrected from the blob: a pulled config must never overwrite this host's store pointer, runtime state, or at-rest settings with another host's.
+    // Device-local sections must NOT be resurrected from the blob: a pulled config must never overwrite this device's store pointer or at-rest settings with another device's.
     expect(rebuilt.remote).toBeUndefined();
-    expect(rebuilt.state).toBeUndefined();
     expect(rebuilt.renetPath).toBeUndefined();
     expect(rebuilt.encryption).toEqual({ mode: 'plaintext' });
   });

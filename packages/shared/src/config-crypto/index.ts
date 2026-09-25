@@ -45,7 +45,6 @@ export {
   PRF_EVAL_SALT_VALUE,
   prfEvalSalt,
   SDK_WINDOW_SECONDS,
-  SENSITIVE_FIELDS,
 } from './constants.js';
 // X25519 CEK handoff
 export {

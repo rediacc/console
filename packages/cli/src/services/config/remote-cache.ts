@@ -3,9 +3,10 @@
  *
  * The local config file of a remote-enabled config is a full-content,
  * read-only CACHE of the last successful pull/push, not a bare pointer.
- * Content sections mirror the server copy; the host-local sections named by
- * HOST_LOCAL_POINTERS (packages/shared config-schema/sensitivity.ts) stay host-local; `account` and
- * `defaults` are synced like every other section (operator ruling D3). One helper owns that merge so enable, read-refresh,
+ * Everything mirrors the server copy except the device-local pointers named by
+ * DEVICE_LOCAL_POINTERS (packages/shared config-schema/sensitivity.ts), the one exclusion list of
+ * config sync (T17). `state` syncs too, merged per repo (see `mergeState`). One helper owns that
+ * merge so enable, read-refresh,
  * mutation-push, `remote refresh`, and the CEK-rotation verify all write the
  * same shape.
  *
@@ -14,7 +15,7 @@
  * envelope version is authoritative and tracked in `remote.cachedVersion`.
  */
 
-import { HOST_LOCAL_POINTERS, RdcConfigSchema } from '@rediacc/shared/config-schema';
+import { DEVICE_LOCAL_POINTERS, RdcConfigSchema } from '@rediacc/shared/config-schema';
 import { configFileStorage } from '../../adapters/config-file-storage.js';
 import { t } from '../../i18n/index.js';
 import type { RdcConfig, RemoteConfig } from '../../types/index.js';
@@ -32,7 +33,7 @@ function setOrDelete(doc: Record<string, unknown>, key: string, value: unknown):
   else doc[key] = value;
 }
 
-/** Overlay one host-local pointer (one or two segments) from `local` onto `out`, cloning any parent it edits. */
+/** Overlay one device-local pointer (one or two segments) from `local` onto `out`, cloning any parent it edits. */
 function overlayPointer(
   out: Record<string, unknown>,
   local: Record<string, unknown>,
@@ -52,22 +53,54 @@ function overlayPointer(
   out[root] = edited;
 }
 
+type RepoStates = NonNullable<NonNullable<RdcConfig['state']>['repos']>;
+
+/** Per repo and tag: the pulled runtime wins where both copies have it, each side's own survives. */
+function mergeRepoStates(
+  pulled: RepoStates | undefined,
+  local: RepoStates | undefined
+): RepoStates {
+  const merged: RepoStates = { ...(local ?? {}) };
+  for (const [repo, tags] of Object.entries(pulled ?? {})) {
+    merged[repo] = { ...(merged[repo] ?? {}), ...tags };
+  }
+  return merged;
+}
+
 /**
- * Overlay THIS host's sections onto a pulled (or just-pushed) server copy. The one
- * implementation, driven by HOST_LOCAL_POINTERS: every writer of a pulled document (the cache
+ * The `state` a pulled copy leaves in the cache.
+ *
+ * - The pulled copy carries no `state` at all: it was pushed before state synced (T17), so the local
+ *   state is kept whole, and the next push publishes it. This one-time migration is what keeps an
+ *   upgrade from erasing every repo's networkId.
+ * - Otherwise the pulled state wins, except `repos`, merged per repo and tag: a repo only this device
+ *   has runtime for keeps it, and the pulled runtime wins for a repo both have.
+ */
+function mergeState(
+  pulled: RdcConfig['state'],
+  local: RdcConfig['state']
+): RdcConfig['state'] | undefined {
+  if (pulled === undefined) return local;
+  if (local?.repos === undefined) return pulled;
+  return { ...pulled, repos: mergeRepoStates(pulled.repos, local.repos) };
+}
+
+/**
+ * Overlay THIS device's pointers onto a pulled (or just-pushed) server copy. The one
+ * implementation, driven by DEVICE_LOCAL_POINTERS: every writer of a pulled document (the cache
  * merge, the in-memory load, the push's cache write, the conflict rebase) goes through here.
  *
- * - Each host-local pointer takes the LOCAL value, absence included: the pulled value is never
- *   trusted there (a pull rebuilds `encryption` as plaintext and carries no `state`).
+ * - Each device-local pointer takes the LOCAL value, absence included: the pulled value is never
+ *   trusted there (a pull rebuilds `encryption` as plaintext and carries no `remote`).
+ * - `state` syncs, merged by `mergeState` (a pulled copy without state never erases local state).
  * - Unknown top-level keys from `local` survive unless `pulled` carries the same key (F18, the
  *   `.loose()` contract in schemas.ts).
- * - `account` and `defaults` follow the server with no local override (operator ruling D3,
- *   PLAN-config-sync-hardening F5): layering local keys over the pulled ones kept a stale copy on
- *   every device that had pulled once, and its next push reverted another device's change.
+ * - Everything else, `account` and `defaults` included, follows the server with no local override
+ *   (operator ruling D3, PLAN-config-sync-hardening F5).
  *
  * Pure: neither input is mutated.
  */
-export function overlayHostLocal(pulled: RdcConfig, local: RdcConfig): RdcConfig {
+export function overlayDeviceLocal(pulled: RdcConfig, local: RdcConfig): RdcConfig {
   const out: Record<string, unknown> = { ...pulled };
   const localDoc = local as Record<string, unknown>;
 
@@ -75,13 +108,14 @@ export function overlayHostLocal(pulled: RdcConfig, local: RdcConfig): RdcConfig
     if (!KNOWN_TOP_LEVEL_KEYS.has(key) && !(key in out)) out[key] = value;
   }
 
-  for (const pointer of HOST_LOCAL_POINTERS) overlayPointer(out, localDoc, pointer);
+  for (const pointer of DEVICE_LOCAL_POINTERS) overlayPointer(out, localDoc, pointer);
+  setOrDelete(out, 'state', mergeState(pulled.state, local.state));
   return out as RdcConfig;
 }
 
 /**
- * Merge a pulled (or just-pushed) server copy into the local cache file shape: `overlayHostLocal`,
- * plus fresh cache metadata on the `remote` pointer. The local `version` counter is host-local; the
+ * Merge a pulled (or just-pushed) server copy into the local cache file shape: `overlayDeviceLocal`,
+ * plus fresh cache metadata on the `remote` pointer. The local `version` counter is device-local; the
  * server's envelope version lives in `remote.cachedVersion`.
  */
 export function mergeRemoteIntoCache(
@@ -89,7 +123,7 @@ export function mergeRemoteIntoCache(
   pulled: RdcConfig,
   version: number
 ): RdcConfig {
-  const merged = overlayHostLocal(pulled, local);
+  const merged = overlayDeviceLocal(pulled, local);
   if (merged.remote) {
     merged.remote = {
       ...merged.remote,
@@ -106,7 +140,7 @@ export function mergeRemoteIntoCache(
  * the no-bump `updateCache` path (the storage layer re-encrypts per field).
  *
  * Returns the merged PLAINTEXT document, exactly what the cache now holds, so an in-memory
- * reader sees the same host-local sections (`state` above all) the file does.
+ * reader sees the same device-local pointers and merged `state` the file does.
  */
 export async function writeRemoteCache(
   configName: string,

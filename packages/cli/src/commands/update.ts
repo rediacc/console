@@ -8,6 +8,7 @@ import { configFileStorage } from '../adapters/config-file-storage.js';
 import { t } from '../i18n/index.js';
 import { getSubscriptionServerUrl } from '../services/account/subscription-auth.js';
 import { getEffectiveConfigName } from '../services/config/config-name.js';
+import { updateSyncedConfig } from '../services/config/synced-write.js';
 import { outputService } from '../services/core/output.js';
 import { writeStderr } from '../services/core/request-context.js';
 import { applyPendingUpdate, getAppliedAtStartup } from '../services/update/background-updater.js';
@@ -46,7 +47,7 @@ export async function handleChannelSwitch(
     outputService.error(t('commands.update.configMissing', { name }));
     process.exit(1);
   }
-  await configFileStorage.update(name, (cfg) => ({
+  await updateSyncedConfig(name, (cfg) => ({
     ...cfg,
     account: { ...(cfg.account ?? {}), updateChannel: channel },
   }));

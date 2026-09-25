@@ -234,7 +234,7 @@ const RAW_REGISTRY: Record<PointerTemplate, SensitivityMeta> = {
   '/infra/certEmail': { kind: 'pii' },
   '/infra/cfDnsZoneId': { kind: 'identifier' },
 
-  // ── State (runtime status half; never pushed) ────────────────────────────── payload.ts strips `state` before push, so nothing here may carry a commitment: any non-public entry below MUST set `commit: false` (a committed-but-not-carried pointer is dropped on the first pull and bricks the re-push — same doctrine as masterPasswordVerifier). Runtime observations are registered
+  // ── State (runtime status half; synced like the rest, T17) ─────────────────── `state` travels in the blob, but nothing here carries a commitment: any non-public entry below sets `commit: false`. Runtime observations come and go (a replica set is removed, a cert cache is replaced), and a committed pointer could only vanish with the anti-downgrade proof a deletion needs (F2). Runtime observations are registered
   // `public` so the coverage gate forces a conscious sensitivity choice whenever a new runtime field lands; records and arrays whose values are primitives are registered at the container level (same style as backupStrategies/*/include).
   '/state/datastores/*/attachedTo': { kind: 'public' },
   '/state/datastores/*/lastHolder': { kind: 'public' },
@@ -268,7 +268,7 @@ const RAW_REGISTRY: Record<PointerTemplate, SensitivityMeta> = {
   '/state/repos/*/*/reflog/*/at': { kind: 'public' },
   '/state/repos/*/*/reflog/*/message': { kind: 'public' },
   '/state/networkIds/next': { kind: 'public' },
-  // Host-local last-backup-activity record per repo (state, never pushed). All leaves are runtime observations keyed by a repo name the config already lists in the clear — registered public, so nothing here is committed.
+  // Last-backup-activity record per repo (state). All leaves are runtime observations keyed by a repo name the config already lists in the clear — registered public, so nothing here is committed.
   '/state/backupRuns/*/lastRunAt': { kind: 'public' },
   '/state/backupRuns/*/kind': { kind: 'public' },
   '/state/backupRuns/*/status': { kind: 'public' },
@@ -286,7 +286,7 @@ const RAW_REGISTRY: Record<PointerTemplate, SensitivityMeta> = {
   '/state/renetProvision/*/setupVerifiedAt': { kind: 'public' },
   '/state/renetProvision/*/srcMtimeMs': { kind: 'public' },
   '/state/renetProvision/*/srcSize': { kind: 'public' },
-  // ACME cert cache moved from /infra/acmeCertCache. `data` is the compressed acme.json dump — Traefik resolver state with private keys inside — `commit:false` because state never enters the server envelope. The fields beside it are the domain/expiry inventory and transfer bookkeeping.
+  // ACME cert cache moved from /infra/acmeCertCache. `data` is the compressed acme.json dump — Traefik resolver state with private keys inside — `commit:false` per the state rule above; it is encrypted at rest locally and travels decrypted inside the CEK-encrypted blob. The fields beside it are the domain/expiry inventory and transfer bookkeeping.
   '/state/certCache/*/baseDomain': { kind: 'public' },
   '/state/certCache/*/updatedAt': { kind: 'public' },
   '/state/certCache/*/sourceMachine': { kind: 'public' },
@@ -346,31 +346,33 @@ export const SENSITIVITY_REGISTRY: Map<PointerTemplate, Required<SensitivityMeta
 );
 
 /**
- * Host-local pointers: the parts of a config document that belong to THIS host and never come from a pull.
- * A pulled (or just-pushed) server copy is overlaid with the local value at each pointer, absence included,
- * by the one `overlayHostLocal` in packages/cli/src/services/config/remote-cache.ts. The server copy never
- * carries these: `toFullConfig` (payload.ts) does not project them, and `fullConfigToRdcConfig` rebuilds a
- * document without them (or with a placeholder, `encryption: plaintext`). Every other top-level key of
- * RdcConfigSchema is projected by `toFullConfig`; `__tests__/host-local-registry.test.ts` fails when a new
- * key is neither.
+ * Device-local pointers: the ONE exclusion list of config sync. Everything in a config document syncs
+ * (operator ruling 2026-09-25, PLAN-config-sync-hardening T17), `state` included, except the value at
+ * each pointer here, which belongs to this device alone:
+ *
+ * - `toFullConfig` (payload.ts) pushes the document minus these pointers, so the server copy never
+ *   carries them;
+ * - `overlayDeviceLocal` (packages/cli/src/services/config/remote-cache.ts) takes this device's value at
+ *   each of them over a pulled or just-pushed server copy, absence included.
+ *
+ * `__tests__/device-local-registry.test.ts` fails when an entry no longer names a schema node, and
+ * proves every other key round-trips.
  *
  * - `/schemaVersion`, `/version`: the local file's format marker and its own optimistic counter. The
  *   server's envelope version lives in `remote.cachedVersion`.
- * - `/remote`: how this host reaches the store (commit:false throughout).
- * - `/state`: runtime observations, stripped before every push. Losing it on a pull wiped every repo's
- *   networkId (F3, PLAN-config-sync-hardening).
- * - `/encryption`: this file's at-rest mode.
- * - `/renetPath`: a filesystem override for this host's renet binary.
+ * - `/remote`: how this device reaches the store (commit:false throughout).
+ * - `/encryption`: this file's at-rest mode and its per-field ciphertexts; the push carries the
+ *   decrypted values instead.
+ * - `/renetPath`: a filesystem override for this device's renet binary.
  * - `/credentials/masterPasswordVerifier`: meaningful only to this file's at-rest mode (F4).
  *
- * Nested pointers are one level deep and sit under a projected root. No pointer here may carry a
- * committed template: a committed-but-not-carried pointer bricks the re-push (anti-downgrade).
+ * Pointers are one or two segments deep. No pointer here may carry a committed template: a
+ * committed-but-not-carried pointer bricks the re-push (anti-downgrade).
  */
-export const HOST_LOCAL_POINTERS = [
+export const DEVICE_LOCAL_POINTERS = [
   '/schemaVersion',
   '/version',
   '/remote',
-  '/state',
   '/encryption',
   '/renetPath',
   '/credentials/masterPasswordVerifier',

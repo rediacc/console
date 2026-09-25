@@ -284,6 +284,7 @@ async function buildReconcileDeps(
 ): Promise<ReconcileDeps> {
   const { fetchMachineStatus } = await import('../services/machine/machine-status.js');
   const { configFileStorage } = await import('../adapters/config-file-storage.js');
+  const { updateSyncedConfig } = await import('../services/config/synced-write.js');
   const noop = async () => {};
   return {
     loadConfig: async () => {
@@ -303,7 +304,7 @@ async function buildReconcileDeps(
     writeResources: dryRun
       ? noop
       : async (updater) => {
-          await configFileStorage.update(cfgName, updater);
+          await updateSyncedConfig(cfgName, updater);
         },
   };
 }
@@ -393,13 +394,17 @@ ${t('help.examples')}
         const accountUpdate = await buildInitAccountUpdate(options.server);
 
         const mpUpdate = await handleMasterPasswordSetup(options);
-        const merged: RdcConfig = mergeInitUpdates(newConfig, {
-          renetPath: options.renetPath,
-          accountUpdate,
-          sshContent,
-          mpUpdate,
-        });
-        await configFileStorage.save(merged, configName);
+        const parts = { renetPath: options.renetPath, accountUpdate, sshContent, mpUpdate };
+        const { isRemoteConfigFile, updateSyncedConfig } = await import(
+          '../services/config/synced-write.js'
+        );
+        if (exists && (await isRemoteConfigFile(configName))) {
+          // Re-initializing a remote config edits the store, not only this host's cache of it.
+          await updateSyncedConfig(configName, (cfg) => mergeInitUpdates(cfg, parts));
+        } else {
+          const merged: RdcConfig = mergeInitUpdates(newConfig, parts);
+          await configFileStorage.save(merged, configName);
+        }
         outputService.success(t('commands.config.init.success', { name: configName }));
       } catch (error) {
         handleError(error);

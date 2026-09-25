@@ -22,6 +22,7 @@ import type { Placement, RdcConfig, RdcState, RepoFamily } from '@rediacc/shared
 import type { ListResult } from '@rediacc/shared/renet-contract/data/list-types.generated';
 import { configFileStorage } from '../../adapters/config-file-storage.js';
 import { configService } from './config-resources.js';
+import { updateSyncedConfig } from './synced-write.js';
 
 /** One repository as observed on a machine, keyed by its on-disk GUID. */
 interface ObservedRepo {
@@ -304,9 +305,9 @@ export async function reconcile(configName?: string): Promise<ReconcileReport> {
     writeState: async (updater) => {
       await configFileStorage.updateState(name, updater);
     },
-    // Version-bumping write for the --accept-observed declaration rewrite.
+    // Version-bumping write for the --accept-observed declaration rewrite, pushed for a remote config.
     writeResources: async (updater) => {
-      await configFileStorage.update(name, updater);
+      await updateSyncedConfig(name, updater);
     },
   });
 }

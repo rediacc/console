@@ -1,6 +1,6 @@
 /**
  * `rdc config remote disable` turns the cache back into a plain local config. The pull carries no host-local
- * sections, so the written file must take them from the local copy through `overlayHostLocal`
+ * sections, so the written file must take them from the local copy through `overlayDeviceLocal`
  * (PLAN-config-sync-hardening T3): networkIds, renetPath, the master-password verifier, the encryption mode and
  * unknown top-level keys all survive, and only the remote pointer goes.
  */

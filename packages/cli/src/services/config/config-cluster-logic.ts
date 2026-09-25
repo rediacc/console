@@ -1,12 +1,14 @@
 /**
  * Pure cluster helpers + config-store writes, split out of config-resources.ts
  * to keep that file under the line budget. These take a plain config value or a
- * config name; they do not import the ConfigService, so there is no import
- * cycle. ConfigService exposes thin methods that delegate here.
+ * config name; they do not import the ConfigService statically, so there is no import
+ * cycle. ConfigService exposes thin methods that delegate here. Declaration writes go
+ * through updateSyncedConfig, which pushes them for a remote config.
  */
 
 import { configFileStorage } from '../../adapters/config-file-storage.js';
 import type { CloudProviderConfig, ClusterConfig, RdcConfig } from '../../types/index.js';
+import { updateSyncedConfig } from './synced-write.js';
 
 /** Projected `<cluster>-<pool>-<n>` names across all clusters -> owning cluster. */
 function projectedMemberNames(config: RdcConfig | null): Map<string, string> {
@@ -96,7 +98,7 @@ export async function writeClusterToStore(
   name: string,
   clusterConfig: ClusterConfig
 ): Promise<void> {
-  await configFileStorage.update(configName, (cfg) => ({
+  await updateSyncedConfig(configName, (cfg) => ({
     ...cfg,
     resources: {
       ...(cfg.resources ?? {}),
@@ -110,7 +112,7 @@ export async function updateClusterInStore(
   name: string,
   updates: Partial<ClusterConfig>
 ): Promise<void> {
-  await configFileStorage.update(configName, (cfg) => {
+  await updateSyncedConfig(configName, (cfg) => {
     const clusters = { ...(cfg.resources?.clusters ?? {}) };
     if (!(name in clusters)) throw new Error(`Cluster "${name}" not found`);
     clusters[name] = { ...clusters[name], ...updates };
@@ -146,7 +148,7 @@ export async function setClusterMemberIdsInStore(
 }
 
 export async function removeClusterFromStore(configName: string, name: string): Promise<void> {
-  await configFileStorage.update(configName, (cfg) => {
+  await updateSyncedConfig(configName, (cfg) => {
     const clusters = { ...(cfg.resources?.clusters ?? {}) };
     if (!(name in clusters)) throw new Error(`Cluster "${name}" not found`);
     delete clusters[name];
@@ -198,7 +200,7 @@ export async function writeCloudProviderToStore(
   name: string,
   config: CloudProviderConfig
 ): Promise<void> {
-  await configFileStorage.update(configName, (cfg) => ({
+  await updateSyncedConfig(configName, (cfg) => ({
     ...cfg,
     resources: {
       ...(cfg.resources ?? {}),
@@ -211,7 +213,7 @@ export async function removeCloudProviderFromStore(
   configName: string,
   name: string
 ): Promise<void> {
-  await configFileStorage.update(configName, (cfg) => {
+  await updateSyncedConfig(configName, (cfg) => {
     const providers = { ...(cfg.resources?.cloudProviders ?? {}) };
     if (!(name in providers)) throw new Error(`Cloud provider "${name}" not found`);
     delete providers[name];

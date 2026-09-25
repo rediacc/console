@@ -1,14 +1,14 @@
 /**
- * Host-local sections survive the whole remote cycle: pull, in-memory load, a resource write, the
- * push, the cache write after it, and a 409 rebase in between.
+ * Device-local pointers survive the whole remote cycle: pull, in-memory load, a resource write, the
+ * push, the cache write after it, and a 409 rebase in between; `state` syncs and is merged per repo.
  *
  * The disk is an in-memory document behind a mocked configFileStorage; the server is a fake adapter
- * whose pull returns what `fullConfigToRdcConfig` rebuilds (no state, no remote pointer, no
- * renetPath, no verifier, `encryption: plaintext`). Everything between them is the real code:
- * ConfigServiceBase.getCurrent -> loadRemote -> writeRemoteCache -> overlayHostLocal ->
+ * whose pull returns what `fullConfigToRdcConfig` rebuilds from a copy pushed before state synced
+ * (no state, no remote pointer, no renetPath, no verifier, `encryption: plaintext`). Everything between them is the real code:
+ * ConfigServiceBase.getCurrent -> loadRemote -> writeRemoteCache -> overlayDeviceLocal ->
  * RemoteResourceState -> persist -> pushOnce -> mergeRemoteIntoCache.
  *
- * F3/F4/F18 in agent/plans/PLAN-config-sync-hardening.md; renetPath from bd0278084.
+ * F3/F4/F18 and T17 in agent/plans/PLAN-config-sync-hardening.md; renetPath from bd0278084.
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -40,6 +40,7 @@ vi.mock('../../../adapters/config-file-storage.js', () => ({
     load: () => Promise.resolve(clone(h.disk)),
     loadDecrypted: () => Promise.resolve(clone(h.disk)),
     getOrCreateDefault: () => Promise.resolve(clone(h.disk)),
+    setRemoteStateWriter: () => undefined,
     updateCache: (_name: string, updater: (c: RdcConfig) => RdcConfig) => {
       h.disk = clone(updater(clone(h.disk) as RdcConfig));
       return Promise.resolve(clone(h.disk));
@@ -75,7 +76,7 @@ vi.mock('../../../adapters/remote-config-adapter.js', async (importOriginal) => 
 });
 
 import { ConfigServiceBase } from '../config-base.js';
-import { overlayHostLocal } from '../remote-cache.js';
+import { overlayDeviceLocal } from '../remote-cache.js';
 
 const REMOTE = {
   apiUrl: 'https://account.example.com',
@@ -144,11 +145,13 @@ beforeEach(() => {
   h.conflictsLeft = 0;
 });
 
-describe('host-local sections across pull + write', () => {
-  it('keeps every repo networkId and the networkIds counter (F3)', async () => {
+describe('device-local pointers and state across pull + write', () => {
+  it('keeps every repo networkId and the networkIds counter, and publishes them (F3, T17)', async () => {
     await pullThenWriteAMachine();
     expect(h.pushed).toHaveLength(1);
-    expect(h.pushed[0]).not.toHaveProperty('state');
+    // The server copy had no state (pushed before state synced): the local state is kept and pushed.
+    expect(h.pushed[0]).toHaveProperty('state.networkIds.next', 2880);
+    expect(h.pushed[0]).toHaveProperty(['state', 'repos', 'shop', 'latest', 'networkId'], 2816);
     expect(disk().resources?.machines).toHaveProperty('m2');
     expect(disk().state?.repos?.shop.latest).toEqual({ networkId: 2816, registryPort: 5001 });
     expect(disk().state?.networkIds).toEqual({ next: 2880 });
@@ -186,28 +189,69 @@ describe('host-local sections across pull + write', () => {
   });
 });
 
-describe('overlayHostLocal', () => {
+describe('overlayDeviceLocal', () => {
   const local = localDisk() as RdcConfig;
 
   it('lets a pulled document that carries the same unknown key win', () => {
     const pulled = { ...serverDoc(), futureKey: 'server' } as unknown as RdcConfig;
-    expect((overlayHostLocal(pulled, local) as Disk).futureKey).toBe('server');
+    expect((overlayDeviceLocal(pulled, local) as Disk).futureKey).toBe('server');
   });
 
-  it('takes host-local absence from local too (the pull never decides a host-local section)', () => {
-    const bare = { ...localDisk(), renetPath: undefined, state: undefined } as unknown as RdcConfig;
-    const pulled = { ...serverDoc(), renetPath: '/server/renet', state: { reconciledAt: 'x' } };
-    const out = overlayHostLocal(pulled as unknown as RdcConfig, bare);
-    expect(out).not.toHaveProperty('renetPath');
-    expect(out).not.toHaveProperty('state');
+  it('takes device-local absence from local too (the pull never decides a device-local pointer)', () => {
+    const bare = { ...localDisk(), renetPath: undefined } as unknown as RdcConfig;
+    const pulled = { ...serverDoc(), renetPath: '/server/renet' };
+    expect(overlayDeviceLocal(pulled as unknown as RdcConfig, bare)).not.toHaveProperty(
+      'renetPath'
+    );
+  });
+
+  it('takes the pulled state (T17: state syncs)', () => {
+    const bare = { ...localDisk(), state: undefined } as unknown as RdcConfig;
+    const pulled = { ...serverDoc(), state: { reconciledAt: 'x' } } as unknown as RdcConfig;
+    expect(overlayDeviceLocal(pulled, bare).state).toEqual({ reconciledAt: 'x' });
+  });
+
+  it('keeps the local state whole when the pulled copy has none (one-time migration)', () => {
+    const pulled = serverDoc() as unknown as RdcConfig;
+    expect(overlayDeviceLocal(pulled, local).state).toEqual(local.state);
+  });
+
+  it('merges repos per repo and tag: pulled wins where both have one, each side keeps its own', () => {
+    const pulled = {
+      ...serverDoc(),
+      state: {
+        networkIds: { next: 4000 },
+        repos: { shop: { latest: { networkId: 3008 } }, blog: { latest: { networkId: 3072 } } },
+      },
+    } as unknown as RdcConfig;
+    const mine = {
+      ...localDisk(),
+      state: {
+        networkIds: { next: 2880 },
+        repos: {
+          shop: { latest: { networkId: 2816 }, dev: { networkId: 2944 } },
+          legacy: { latest: { networkId: 2752 } },
+        },
+      },
+    } as unknown as RdcConfig;
+    expect(overlayDeviceLocal(pulled, mine).state).toEqual({
+      networkIds: { next: 4000 },
+      repos: {
+        shop: { latest: { networkId: 3008 }, dev: { networkId: 2944 } },
+        blog: { latest: { networkId: 3072 } },
+        legacy: { latest: { networkId: 2752 } },
+      },
+    });
   });
 
   it('drops a verifier the pull carries when local has none, without creating credentials', () => {
     const noCreds = { ...localDisk(), credentials: undefined } as unknown as RdcConfig;
     const withVerifier = { ...serverDoc(), credentials: { masterPasswordVerifier: 'x' } };
-    expect(overlayHostLocal(withVerifier as unknown as RdcConfig, noCreds).credentials).toEqual({});
+    expect(overlayDeviceLocal(withVerifier as unknown as RdcConfig, noCreds).credentials).toEqual(
+      {}
+    );
     const noCredsPulled = { ...serverDoc(), credentials: undefined } as unknown as RdcConfig;
-    expect(overlayHostLocal(noCredsPulled, noCreds)).not.toHaveProperty(
+    expect(overlayDeviceLocal(noCredsPulled, noCreds)).not.toHaveProperty(
       'credentials.masterPasswordVerifier'
     );
   });
@@ -216,7 +260,7 @@ describe('overlayHostLocal', () => {
     const pulled = serverDoc() as unknown as RdcConfig;
     const before = clone(pulled);
     const localBefore = clone(local);
-    overlayHostLocal(pulled, local);
+    overlayDeviceLocal(pulled, local);
     expect(pulled).toEqual(before);
     expect(local).toEqual(localBefore);
   });

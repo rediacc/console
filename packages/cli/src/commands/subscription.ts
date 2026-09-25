@@ -2,7 +2,6 @@ import { SUBSCRIPTION_DEFAULTS } from '@rediacc/shared/config';
 import { TELEMETRY_SUBSCRIPTION_SOURCES } from '@rediacc/shared/telemetry';
 import { Command } from 'commander';
 import { t } from '../i18n/index.js';
-import { configFileStorage } from '../adapters/config-file-storage.js';
 import { accountServerFetch, fetchServerInfo } from '../services/account/account-client.js';
 import { readAccountPointer } from '../services/account/account-pointer.js';
 import {
@@ -12,9 +11,10 @@ import {
   normalizeServerUrl,
   saveStoredSubscriptionToken,
 } from '../services/account/subscription-auth.js';
-import { getEffectiveConfigName } from '../services/config/config-name.js';
 import { authorizeSubscriptionViaDeviceCode } from '../services/account/subscription-device-auth.js';
+import { getEffectiveConfigName } from '../services/config/config-name.js';
 import { configService } from '../services/config/config-resources.js';
+import { updateSyncedConfig } from '../services/config/synced-write.js';
 import { outputService } from '../services/core/output.js';
 import { discoverRegions } from '../services/provision/region-discovery.js';
 import { telemetryService } from '../services/telemetry/telemetry.js';
@@ -50,7 +50,7 @@ async function patchActiveAccount(fields: {
   if (fields.updateChannel !== undefined) defined.updateChannel = fields.updateChannel;
   if (Object.keys(defined).length === 0) return;
   try {
-    await configFileStorage.update(getEffectiveConfigName(), (cfg) => ({
+    await updateSyncedConfig(getEffectiveConfigName(), (cfg) => ({
       ...cfg,
       account: { ...(cfg.account ?? {}), ...defined },
     }));
@@ -266,7 +266,7 @@ export function registerSubscriptionCommands(program: Command): void {
         // config's accountServer/e2ePublicKey are cleared; updateChannel and
         // releasesUrl (update preferences, not server identity) survive.
         try {
-          await configFileStorage.update(getEffectiveConfigName(), (cfg) => {
+          await updateSyncedConfig(getEffectiveConfigName(), (cfg) => {
             if (!cfg.account) return cfg;
             const account = { ...cfg.account };
             account.accountServer = undefined;

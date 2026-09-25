@@ -217,13 +217,19 @@ const ENVELOPE_KEYS = new Set([
 ]);
 
 /**
+ * Runtime state is merged into the cache per repo (remote-cache.ts `mergeState`), never replaced
+ * wholesale, so it is not content an enable could lose.
+ */
+const MERGED_SECTIONS = new Set(['state']);
+
+/**
  * The synced half of a config: exactly what a push carries (toFullConfig), minus the envelope, with
  * empty sections dropped so an absent family and an empty one compare equal.
  */
 function syncedContent(config: RdcConfig): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(toFullConfig(config, { version: 0, sdkEpoch: 0 }))) {
-    if (ENVELOPE_KEYS.has(key) || isEmpty(value)) continue;
+    if (ENVELOPE_KEYS.has(key) || MERGED_SECTIONS.has(key) || isEmpty(value)) continue;
     out[key] = value;
   }
   return out;
@@ -274,11 +280,8 @@ async function pullOrSeed(
     const { ConfigServerError } = await import('../services/config/config-server-client.js');
     if (!(error instanceof ConfigServerError && error.status === 404)) throw error;
 
-    const { stripStateForPush } = await import('../adapters/config-field-crypto.js');
-    const seedDoc = stripStateForPush(local);
-    // Belt and braces: the push projection drops `remote` anyway.
-    delete seedDoc.remote;
-    await adapter.push(seedDoc, 0); // server inserts at version 1
+    // The push projection sends the document minus the device-local pointers (`remote` among them); `state` seeds the store with this device's network IDs.
+    await adapter.push(local, 0); // server inserts at version 1
     const pulled = await adapter.pull();
     outputService.success(t('commands.config.remote.enable.seeded'));
     return { pulled, seeded: true };

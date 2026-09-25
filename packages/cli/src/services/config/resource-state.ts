@@ -17,7 +17,6 @@
 
 import { DEFAULTS } from '@rediacc/shared/config';
 import type { Placement, RdcConfig, RepoFamily, RepoRecord } from '@rediacc/shared/config-schema';
-import { stripStateForPush } from '../../adapters/config-field-crypto.js';
 import { configFileStorage } from '../../adapters/config-file-storage.js';
 import {
   type RemoteConfigAdapter,
@@ -317,21 +316,75 @@ export class LocalResourceState implements ResourceState {
 /** Bounded 409-replay attempts before surfacing the conflict to the user. */
 const REMOTE_PUSH_MAX_ATTEMPTS = 3;
 
+function sameJson(a: unknown, b: unknown): boolean {
+  return JSON.stringify(a) === JSON.stringify(b);
+}
+
+/**
+ * Re-apply this process's edit of one record bucket onto the fresh server copy, key by key: a key
+ * this process added, changed or removed (relative to `base`, the copy it edited) takes this
+ * process's value; every other key keeps the fresh copy's, so a record another device added in the
+ * meantime survives (two devices creating a repo at once both keep theirs).
+ */
+function rebaseRecord<T>(
+  fresh: Record<string, T>,
+  base: Record<string, T>,
+  mine: Record<string, T>
+): Record<string, T> {
+  const out = { ...fresh };
+  for (const key of new Set([...Object.keys(base), ...Object.keys(mine)])) {
+    if (!Object.hasOwn(mine, key)) {
+      delete out[key];
+    } else if (!Object.hasOwn(base, key) || !sameJson(mine[key], base[key])) {
+      out[key] = mine[key];
+    }
+  }
+  return out;
+}
+
+/** Rebase one bucket: records key by key, the list and the ssh pair whole (this process's value if it changed). */
+function rebaseBucket(
+  bucket: keyof LocalState,
+  fresh: LocalState,
+  base: LocalState,
+  mine: LocalState
+): LocalState {
+  switch (bucket) {
+    case 'machines':
+      return { ...fresh, machines: rebaseRecord(fresh.machines, base.machines, mine.machines) };
+    case 'storages':
+      return { ...fresh, storages: rebaseRecord(fresh.storages, base.storages, mine.storages) };
+    case 'repositories':
+      return {
+        ...fresh,
+        repositories: rebaseRecord(fresh.repositories, base.repositories, mine.repositories),
+      };
+    default:
+      return sameJson(mine[bucket], base[bucket]) ? fresh : { ...fresh, [bucket]: mine[bucket] };
+  }
+}
+
+/** A push attempt that lost the compare-and-swap, or the document it pushed. */
+type PushAttempt = { conflict: RemoteVersionConflictError } | { pushed: RdcConfig };
+
 /**
  * ResourceState backed by the remote encrypted config store. Mutations push the
- * REAL on-disk config with `state` stripped (spec 04 §1.3), never a
- * reconstructed subset, so no bucket can be dropped.
+ * REAL on-disk config (the projection leaves only the device-local pointers home),
+ * never a reconstructed subset, so no bucket can be dropped.
  *
  * Writes fail CLOSED when the server is unreachable (no local write, no queue
  * a queued write would silently diverge from the server), and replay a 409
- * up to 3 times by re-pulling and re-applying ONLY the mutated bucket
- * (bucket-level last-write-wins; cross-bucket concurrent writes survive).
+ * up to 3 times by re-pulling and re-applying this process's edit to the fresh
+ * copy: a bucket mutation key by key (`rebaseBucket`), a document edit by
+ * running the edit again.
  */
 export class RemoteResourceState implements ResourceState {
   private readonly adapter: RemoteConfigAdapter;
   private readonly configName: string;
   private version: number;
   private state: LocalState;
+  /** The server copy `state` was last loaded from: what a rebase diffs this process's edits against. */
+  private base: LocalState;
 
   private constructor(
     adapter: RemoteConfigAdapter,
@@ -343,6 +396,7 @@ export class RemoteResourceState implements ResourceState {
     this.configName = configName;
     this.version = version;
     this.state = state;
+    this.base = structuredClone(state);
   }
 
   static load(
@@ -401,15 +455,19 @@ export class RemoteResourceState implements ResourceState {
   }
 
   /**
-   * Edit synced sections outside the resource buckets (`defaults`, `account`, ...) and push the
-   * edit, with the same conflict replay as a bucket mutation: after a 409 the edit is applied again
-   * to the fresh server copy, never to the stale one. A remote config's local file is a cache that
-   * the next pull overwrites, so an edit that only lands there is lost.
+   * Edit any part of the document (`defaults`, `account`, `state`, ...) and push the edit, with the
+   * same conflict replay as a bucket mutation: after a 409 the edit is applied again to the fresh
+   * server copy, never to the stale one. A remote config's local file is a cache that the next pull
+   * overwrites, so an edit that only lands there is lost. Returns the document that was pushed (as
+   * the cache now holds it), and re-seats this view on it.
    */
-  async updateDocument(edit: (doc: RdcConfig) => RdcConfig): Promise<void> {
-    await this.pushWithReplay(edit, (view) => {
+  async updateDocument(edit: (doc: RdcConfig) => RdcConfig): Promise<RdcConfig> {
+    const pushed = await this.pushWithReplay(edit, (view) => {
       this.state = loadLocalState(view);
     });
+    this.state = loadLocalState(pushed);
+    this.base = structuredClone(this.state);
+    return pushed;
   }
 
   /** Push one bucket's mutation, replaying version conflicts per the class doc. */
@@ -417,27 +475,29 @@ export class RemoteResourceState implements ResourceState {
     await this.pushWithReplay(
       (base) => persistPatch(this.state, base),
       (view) => {
-        this.state = { ...loadLocalState(view), [mutated]: this.state[mutated] };
+        const fresh = loadLocalState(view);
+        this.state = rebaseBucket(mutated, fresh, this.base, this.state);
+        this.base = structuredClone(fresh);
       }
     );
+    this.base = structuredClone(this.state);
   }
 
   /**
    * Push `build(base)`, where `base` is the on-disk cache. On a version conflict, rebase: re-pull,
    * write the fresh server copy into the cache (so the next `base` is the server's document plus
-   * this host's sections), let `onRebase` re-seat the in-memory view, and build again. On success
-   * the cache follows the push (merged carries `state`, so the runtime half survives locally even
-   * though the push strips it).
+   * this device's pointers), let `onRebase` re-seat the in-memory view, and build again. On success
+   * the cache follows the push; the pushed document is returned.
    */
   private async pushWithReplay(
     build: (base: RdcConfig) => RdcConfig,
     onRebase: (view: RdcConfig) => void
-  ): Promise<void> {
+  ): Promise<RdcConfig> {
     let conflict: Error | null = null;
     for (let attempt = 1; attempt <= REMOTE_PUSH_MAX_ATTEMPTS; attempt++) {
       const result = await this.pushOnce(build);
-      if (result === null) return;
-      conflict = result;
+      if ('pushed' in result) return result.pushed;
+      conflict = result.conflict;
       if (attempt < REMOTE_PUSH_MAX_ATTEMPTS) onRebase(await this.rebaseOnFreshPull());
     }
     throw new Error(
@@ -447,31 +507,33 @@ export class RemoteResourceState implements ResourceState {
   }
 
   /**
-   * One push attempt of `build(on-disk config)`. On success writes the cache and returns null; a version conflict is RETURNED (not thrown) so the replay loop stays flat;
-   * anything else is thrown, with unreachable servers converted to the fail-closed error.
+   * One push attempt of `build(on-disk config)`. The whole document goes: the push projection
+   * (toFullConfig) leaves the device-local pointers home, `state` travels. On success writes the
+   * cache and returns the pushed document; a version conflict is RETURNED (not thrown) so the replay
+   * loop stays flat; anything else is thrown, with unreachable servers converted to the fail-closed
+   * error.
    */
-  private async pushOnce(
-    build: (base: RdcConfig) => RdcConfig
-  ): Promise<RemoteVersionConflictError | null> {
+  private async pushOnce(build: (base: RdcConfig) => RdcConfig): Promise<PushAttempt> {
     const base = await configFileStorage.loadDecrypted(this.configName);
     const merged = build(base);
-    const pushDoc = stripStateForPush(merged);
     try {
-      const result = await this.adapter.push(pushDoc, this.version);
+      const result = await this.adapter.push(merged, this.version);
       this.version = result.version;
-      await configFileStorage.updateCache(this.configName, () =>
-        mergeRemoteIntoCache(merged, pushDoc, result.version)
-      );
-      return null;
+      let cached: RdcConfig = merged;
+      await configFileStorage.updateCache(this.configName, () => {
+        cached = mergeRemoteIntoCache(merged, merged, result.version);
+        return cached;
+      });
+      return { pushed: cached };
     } catch (error) {
-      if (error instanceof RemoteVersionConflictError) return error;
+      if (error instanceof RemoteVersionConflictError) return { conflict: error };
       throw this.toWriteError(error);
     }
   }
 
   /**
    * Another device pushed since our snapshot: re-pull and write the fresh server copy into the
-   * on-disk cache, host-local sections overlaid (F6). The next attempt's base is then the server's
+   * on-disk cache, device-local pointers overlaid (F6). The next attempt's base is then the server's
    * document, so a family this push did not touch (`policy`, `infra`, `defaults`, ...) goes back
    * as the other device left it instead of reverting to our stale copy. Returns the cache's new
    * content. An unreachable server during the re-pull fails closed the same way as the push.

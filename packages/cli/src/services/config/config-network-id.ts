@@ -19,8 +19,11 @@ function scanUsedNetworkIds(config: RdcConfig): Set<number> {
 /**
  * Allocate the next network ID in a named config, advancing the forward
  * counter. The counter lives in `state.networkIds.next` (status half) and is
- * written via `updateState` so allocation churn never bumps the version
- * counter (R2-F2).
+ * written via `updateState`, so allocation churn never bumps the local version
+ * counter (R2-F2). On a remote config that write is pushed and settled by the
+ * server's compare-and-swap: the updater runs again on the fresh server copy
+ * after a conflict, so the loser of a race allocates past the winner's ID, and
+ * the returned ID is the one from the attempt that landed.
  */
 export async function allocateNetworkIdInStore(configName: string): Promise<number> {
   let allocated = 0;

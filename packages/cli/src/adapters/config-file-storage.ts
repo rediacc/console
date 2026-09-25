@@ -3,6 +3,7 @@ import { promises as fs } from 'node:fs';
 import { basename, join } from 'node:path';
 import {
   createEmptyRdcConfig,
+  hasRemoteConfig,
   type MigrationContext,
   parseConfig,
   type RdcConfig,
@@ -84,8 +85,15 @@ function isMasterPassword(config: RdcConfig): boolean {
  * updater plaintext, and re-encrypt per field on save. Callers never see blobs,
  * and there is no second plaintext path a persist can clobber.
  */
+/** Pushes a state edit of a remote-enabled config to its store (registered by the config service). */
+export type RemoteStateWriter = (
+  name: string,
+  updater: (config: RdcConfig) => RdcConfig
+) => Promise<RdcConfig>;
+
 export class ConfigFileStorage {
   private readonly cache = new Map<string, RdcConfig>();
+  private remoteStateWriter: RemoteStateWriter | null = null;
   private readonly lockDepths = new Map<string, number>();
   private readonly configDir: string;
 
@@ -352,9 +360,9 @@ export class ConfigFileStorage {
 
   /**
    * Update the STATE half of a config (runtime status). Does NOT bump the
-   * version counter, status churn must not create optimistic-version
-   * conflicts or audit noise (spec 04 §1.3 property 1). The writer is
-   * responsible for touching only `state.*`.
+   * local version counter: status churn must not create audit noise (spec 04
+   * §1.3 property 1). The writer is responsible for touching only `state.*`.
+   * A remote-enabled config's state write is pushed (see below).
    */
   async updateState(name: string, updater: (config: RdcConfig) => RdcConfig): Promise<RdcConfig> {
     const scoped = currentRequestConfig();
@@ -368,7 +376,22 @@ export class ConfigFileStorage {
     } catch {
       throw new Error(`Config "${name}" does not exist; refusing to create it for a state write`);
     }
+    // `state` syncs (T17): on a remote config the file is a cache the next pull overwrites, so the
+    // write is pushed, settled by the server's compare-and-swap (two devices allocating a network ID
+    // at once end with distinct IDs). It fails closed when the server is unreachable, like any write.
+    if (this.remoteStateWriter && hasRemoteConfig(await this.load(name))) {
+      return this.remoteStateWriter(name, updater);
+    }
     return this.mutate(name, updater, false, { createIfMissing: false });
+  }
+
+  /**
+   * Route state writes of remote-enabled configs through `writer`. The config service registers
+   * itself here: the push needs its adapter and resource view, which this layer cannot import
+   * without a module cycle.
+   */
+  setRemoteStateWriter(writer: RemoteStateWriter | null): void {
+    this.remoteStateWriter = writer;
   }
 
   /**

@@ -23,10 +23,10 @@ import {
   SENSITIVITY_REGISTRY,
 } from '@rediacc/shared/config-schema';
 import type { Command } from 'commander';
-import { configFileStorage } from '../../adapters/config-file-storage.js';
 import { t } from '../../i18n/index.js';
 import { digestForPointer, redactClone, shortFingerprint } from '../../schema/fingerprint.js';
 import { configService } from '../../services/config/config-resources.js';
+import { updateConfigAtPointer } from '../../services/config/synced-write.js';
 import { type AuditEventDraft, auditLog } from '../../services/core/audit-log.js';
 import {
   evaluateMutations,
@@ -56,8 +56,8 @@ function emit(draft: AuditEventDraft): void {
  * Apply a JSON-Pointer mutation to the in-memory config, returning the new
  * config. Operates on the v2 shape via getByPointer/setByPointer semantics.
  *
- * Set/unset are persisted by the caller via configFileStorage.update ,
- * MutationGate validates first.
+ * Set/unset/rotate are persisted by the caller via updateConfigAtPointer (pushed for a remote
+ * config unless the pointer is device-local); MutationGate validates first.
  */
 function applyMutation(config: unknown, pointer: string, newValue: unknown): unknown {
   if (pointer === '') return newValue;
@@ -192,8 +192,9 @@ export function registerFieldCommands(parent: Command, _program: Command): void 
         }
 
         const configName = configService.getCurrentName();
-        await configFileStorage.update(
+        await updateConfigAtPointer(
           configName,
+          pointer,
           (cfg) => applyMutation(cfg, pointer, newValue) as typeof cfg
         );
 
@@ -252,8 +253,9 @@ export function registerFieldCommands(parent: Command, _program: Command): void 
         }
 
         const configName = configService.getCurrentName();
-        await configFileStorage.update(
+        await updateConfigAtPointer(
           configName,
+          pointer,
           (cfg) => applyMutation(cfg, pointer, undefined) as typeof cfg
         );
 
@@ -300,8 +302,9 @@ export function registerFieldCommands(parent: Command, _program: Command): void 
         });
 
         const configName = configService.getCurrentName();
-        await configFileStorage.update(
+        await updateConfigAtPointer(
           configName,
+          pointer,
           (cfg) => applyMutation(cfg, pointer, newValue) as typeof cfg
         );
 

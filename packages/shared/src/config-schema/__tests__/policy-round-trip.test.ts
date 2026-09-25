@@ -2,8 +2,8 @@
  * The policy document must survive the encrypted round trip.
  *
  * This is the regression test for the worst bug found in the proxy campaign.
- * `selectiveEncrypt` builds the ciphertext by copying SENSITIVE_FIELDS, and
- * `policy` was not in that list, while `toFullConfig` did not copy it either.
+ * `selectiveEncrypt` built the ciphertext by copying a hand-kept field list
+ * (retired by T17 for the one device-local exclusion list), and `policy` was not in it, while `toFullConfig` did not copy it either.
  * So the rules were dropped twice over: a push discarded them, and a pull could
  * not have returned them anyway.
  *

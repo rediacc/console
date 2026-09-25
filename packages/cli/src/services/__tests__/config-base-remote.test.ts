@@ -32,6 +32,7 @@ const {
       save: vi.fn(),
       update: vi.fn(),
       updateCache: vi.fn(),
+      setRemoteStateWriter: vi.fn(),
       list: vi.fn(),
       delete: vi.fn(),
       clearCache: vi.fn(),

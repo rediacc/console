@@ -2,7 +2,7 @@
  * Seed-on-enable (`finalizeEnable` / `applyHandoff`).
  *
  * The five contract cases: fresh store seeds at version 0→1 with a
- * state/remote-free doc; a missing handoff configId is minted from the local
+ * whole local doc (the push projection leaves the device-local pointers home); a missing handoff configId is minted from the local
  * config's id; a differing existing store aborts without --force on a non-TTY
  * (credentials cleaned up); --force replaces local content with the server
  * copy; any non-404 pull error aborts with the local file untouched.
@@ -158,7 +158,7 @@ describe('finalizeEnable (seed-on-enable)', () => {
     mockConfigFileStorage.getConfigPath.mockReturnValue(`/tmp/${CONFIG_NAME}.json`);
   });
 
-  it('seeds a fresh store: 404 → push v0 (no state/remote) → pull-back proof → cache written', async () => {
+  it('seeds a fresh store: 404 → push v0 (state included) → pull-back proof → cache written', async () => {
     mockAdapterInstance.pull
       .mockRejectedValueOnce(new ConfigServerError('Config not found', 404))
       .mockResolvedValueOnce({ config: structuredClone(serverConfig), version: 1, sdkEpoch: 1 });
@@ -166,12 +166,11 @@ describe('finalizeEnable (seed-on-enable)', () => {
 
     await finalizeEnable(pendingRemote(CONFIG_ID), CONFIG_NAME);
 
-    // Seed push: currentVersion=0, doc carries neither state nor remote.
+    // Seed push: currentVersion=0, the local document with its state (T17: state syncs, so the store starts with this device's network IDs). The projection drops the device-local pointers.
     expect(mockAdapterInstance.push).toHaveBeenCalledTimes(1);
     const [seedDoc, currentVersion] = mockAdapterInstance.push.mock.calls[0] as [RdcConfig, number];
     expect(currentVersion).toBe(0);
-    expect(seedDoc.state).toBeUndefined();
-    expect(seedDoc.remote).toBeUndefined();
+    expect(seedDoc.state).toEqual(localConfig.state);
     expect(seedDoc.resources?.machines).toHaveProperty('m1');
 
     // Round-trip proof: a second pull ran.

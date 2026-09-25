@@ -52,6 +52,7 @@ import {
   resolveRepoKey,
 } from './config-resources-resolve.js';
 import type { ResourceState } from './resource-state.js';
+import { updateSyncedConfig } from './synced-write.js';
 
 export { AmbiguousRepoTargetError } from './config-resources-resolve.js';
 
@@ -281,7 +282,7 @@ class ConfigService extends ConfigServiceBase {
   }): Promise<void> {
     const name = this.getEffectiveConfigName();
     await this.requireSelfHosted(name);
-    await configFileStorage.update(name, (cfg) => ({
+    await updateSyncedConfig(name, (cfg) => ({
       ...cfg,
       credentials:
         'cfDnsApiToken' in updates
@@ -516,72 +517,66 @@ class ConfigService extends ConfigServiceBase {
     strategyName: string,
     update: Partial<BackupStrategyConfig>
   ): Promise<void> {
-    const configName = this.getEffectiveConfigName();
-    const current = await this.requireSelfHosted(configName);
-    const strategies: Record<string, BackupStrategyConfig> = {
-      ...(current.resources?.backupStrategies ?? {}),
-    };
-    const existing = strategies[strategyName] ?? { destinations: [], schedule: '' };
-    strategies[strategyName] = { ...existing, ...update };
-    await configFileStorage.update(configName, (cfg) => ({
-      ...cfg,
-      resources: { ...(cfg.resources ?? {}), backupStrategies: strategies },
-    }));
+    await this.editBackupStrategies((strategies) => {
+      const existing = strategies[strategyName] ?? { destinations: [], schedule: '' };
+      strategies[strategyName] = { ...existing, ...update };
+    });
   }
 
   async removeBackupStrategy(strategyName: string): Promise<void> {
-    const configName = this.getEffectiveConfigName();
-    const current = await this.requireSelfHosted(configName);
-    const strategies: Record<string, BackupStrategyConfig> = {
-      ...(current.resources?.backupStrategies ?? {}),
-    };
-    delete strategies[strategyName];
-    await configFileStorage.update(configName, (cfg) => ({
-      ...cfg,
-      resources: { ...(cfg.resources ?? {}), backupStrategies: strategies },
-    }));
+    await this.editBackupStrategies((strategies) => {
+      delete strategies[strategyName];
+    });
   }
 
   async addBackupDestination(strategyName: string, dest: BackupStrategyDestination): Promise<void> {
-    const configName = this.getEffectiveConfigName();
-    const current = await this.requireSelfHosted(configName);
-    const strategies: Record<string, BackupStrategyConfig> = {
-      ...(current.resources?.backupStrategies ?? {}),
-    };
-    if (!Object.hasOwn(strategies, strategyName)) {
+    const current = await this.requireSelfHosted();
+    // Checked up front for the teaching error; the edit below re-checks against the document it is given.
+    if (!Object.hasOwn(current.resources?.backupStrategies ?? {}, strategyName)) {
       throw new Error(
         `Backup strategy "${strategyName}" not found. Create it first with: rdc backup strategy set ${strategyName} --cron "..."`
       );
     }
-    const strategy = strategies[strategyName];
-    const destinations = [...strategy.destinations];
-    const idx = destinations.findIndex((d) => d.name === dest.name);
-    if (idx >= 0) destinations[idx] = { ...destinations[idx], ...dest };
-    else destinations.push(dest);
-    destinations.sort((a, b) => a.name.localeCompare(b.name));
-    strategies[strategyName] = { ...strategy, destinations };
-    await configFileStorage.update(configName, (cfg) => ({
-      ...cfg,
-      resources: { ...(cfg.resources ?? {}), backupStrategies: strategies },
-    }));
+    await this.editBackupStrategies((strategies) => {
+      const strategy = strategies[strategyName] as BackupStrategyConfig | undefined;
+      if (!strategy) throw new Error(`Backup strategy "${strategyName}" not found`);
+      const destinations = [...strategy.destinations];
+      const idx = destinations.findIndex((d) => d.name === dest.name);
+      if (idx >= 0) destinations[idx] = { ...destinations[idx], ...dest };
+      else destinations.push(dest);
+      destinations.sort((a, b) => a.name.localeCompare(b.name));
+      strategies[strategyName] = { ...strategy, destinations };
+    });
   }
 
   async removeBackupDestination(strategyName: string, destName: string): Promise<void> {
+    await this.editBackupStrategies((strategies) => {
+      if (!Object.hasOwn(strategies, strategyName)) return;
+      const strategy = strategies[strategyName];
+      strategies[strategyName] = {
+        ...strategy,
+        destinations: strategy.destinations.filter((d) => d.name !== destName),
+      };
+    });
+  }
+
+  /**
+   * Edit `resources.backupStrategies` of the active config through the synced write path. `edit`
+   * mutates a copy taken from the document being written, so a push that replays after a version
+   * conflict applies it to the fresh server copy.
+   */
+  private async editBackupStrategies(
+    edit: (strategies: Record<string, BackupStrategyConfig>) => void
+  ): Promise<void> {
     const configName = this.getEffectiveConfigName();
-    const current = await this.requireSelfHosted(configName);
-    const strategies: Record<string, BackupStrategyConfig> = {
-      ...(current.resources?.backupStrategies ?? {}),
-    };
-    if (!Object.hasOwn(strategies, strategyName)) return;
-    const strategy = strategies[strategyName];
-    strategies[strategyName] = {
-      ...strategy,
-      destinations: strategy.destinations.filter((d) => d.name !== destName),
-    };
-    await configFileStorage.update(configName, (cfg) => ({
-      ...cfg,
-      resources: { ...(cfg.resources ?? {}), backupStrategies: strategies },
-    }));
+    await this.requireSelfHosted(configName);
+    await updateSyncedConfig(configName, (cfg) => {
+      const strategies: Record<string, BackupStrategyConfig> = {
+        ...(cfg.resources?.backupStrategies ?? {}),
+      };
+      edit(strategies);
+      return { ...cfg, resources: { ...(cfg.resources ?? {}), backupStrategies: strategies } };
+    });
   }
 
   // ============================================================================

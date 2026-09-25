@@ -147,21 +147,3 @@ export async function decryptConfigFields(config: RdcConfig, password: string): 
 
   return { ...result, encryption: { mode: 'master-password', encryptedFields: {} } };
 }
-
-/**
- * Serialize-for-push view: strip the entire `state` bucket and any encrypted
- * field whose pointer targets `/state/*`. The status half never enters the
- * remote config store (spec 04 §1.3 property 1).
- */
-export function stripStateForPush(config: RdcConfig): RdcConfig {
-  const { state: _state, ...rest } = config;
-  void _state;
-  if (rest.encryption?.encryptedFields) {
-    const kept: Record<string, { data: string }> = {};
-    for (const [pointer, blob] of Object.entries(rest.encryption.encryptedFields)) {
-      if (!pointer.startsWith('/state/')) kept[pointer] = blob;
-    }
-    rest.encryption = { ...rest.encryption, encryptedFields: kept };
-  }
-  return rest;
-}

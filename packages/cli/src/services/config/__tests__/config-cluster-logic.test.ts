@@ -16,6 +16,8 @@ const update = vi.fn<(name: string, fn: (cfg: RdcConfig) => RdcConfig) => Promis
 vi.mock('../../../adapters/config-file-storage.js', () => ({
   configFileStorage: {
     update: (name: string, fn: (cfg: RdcConfig) => RdcConfig) => update(name, fn),
+    // A local config: updateSyncedConfig edits the file (a remote one is pushed).
+    exists: () => Promise.resolve(false),
   },
 }));
 

@@ -2,8 +2,8 @@
  * Selective Encryption (envelope v2 with field commitments).
  *
  * Separates config into a plaintext envelope (v2 — adds per-field HMAC
- * commitments) and an encrypted blob (SENSITIVE_FIELDS: machines, repositories,
- * storages, ssh, policy).
+ * commitments) and an encrypted blob carrying every other key of the `FullConfig`
+ * (config-schema/payload.ts decides what that is: the whole synced document).
  *
  * Server reads the envelope for authorization, versioning, and precondition
  * enforcement; it never sees the encrypted blob's plaintext — including the
@@ -17,7 +17,7 @@ import {
   type FieldCommitments,
   generateFckSalt,
 } from './commitments.js';
-import { SENSITIVE_FIELDS } from './constants.js';
+import { ENVELOPE_FIELDS } from './constants.js';
 import { hmacCompute, hmacVerify } from './hmac.js';
 import { configDecrypt, configEncrypt } from './layers.js';
 import type {
@@ -26,6 +26,13 @@ import type {
   EncryptedConfigPayload,
   FullConfig,
 } from './types.js';
+
+/** The plaintext envelope's keys; everything else in a FullConfig is encrypted. */
+const ENVELOPE_KEYS: ReadonlySet<string> = new Set<string>([
+  ...ENVELOPE_FIELDS,
+  'envelopeVersion',
+  'commitments',
+]);
 
 /**
  * Options for envelope v2 construction.
@@ -74,13 +81,12 @@ export async function selectiveEncrypt(
   if (config.orgId) envelope.orgId = config.orgId;
   if (config.lastModified) envelope.lastModified = config.lastModified;
 
-  // SENSITIVE_FIELDS is the single source of truth for what the blob carries. A field missing from that list is silently dropped on push and simply absent on pull, with no error anywhere — which is exactly how the policy document came to never reach the executor. Add fields there, not here.
+  // Every key that is not envelope rides in the blob. The projection (toFullConfig) is where the one exclusion list applies; a second list here is how `policy` once never reached the executor.
   const sensitive: ConfigSensitiveData = {};
-  const write = sensitive as Record<string, unknown>;
-  for (const field of SENSITIVE_FIELDS) {
-    const value = config[field];
+  for (const [field, value] of Object.entries(config)) {
+    if (ENVELOPE_KEYS.has(field)) continue;
     // Omit-if-undefined, never write an undefined-valued key: the sensitivity walker treats a present-but-undefined key as a committed pointer, so a config rebuilt from this object would commit a path the blob cannot back.
-    if (value !== undefined) write[field] = value;
+    if (value !== undefined) sensitive[field] = value;
   }
 
   const sensitiveJson = JSON.stringify(sensitive);

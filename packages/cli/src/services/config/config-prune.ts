@@ -18,11 +18,11 @@
 
 import { gunzipSync, gzipSync } from 'node:zlib';
 import type { ArchivedRepository, RdcConfig } from '@rediacc/shared/config-schema';
-import { configFileStorage } from '../../adapters/config-file-storage.js';
 import { parseRepoRef } from '../../utils/config-schema.js';
 import { type ConfigAnchors, pruneCertsByAnchor } from '../account/cert-cache.js';
 import { type DroppedRef, pruneDanglingRefs } from './config-refs-prune.js';
 import { configService } from './config-resources.js';
+import { updateSyncedConfig } from './synced-write.js';
 
 /** Default archive grace period if not set in config. Mirrors `prune.ts`. */
 const DEFAULT_GRACE_DAYS = 7;
@@ -278,7 +278,7 @@ export async function analyzeConfigPrune(
   const wantArchives = !options.certsOnly && !options.refsOnly;
   const wantRefs = !options.certsOnly && !options.archivesOnly;
 
-  // Deep-clone so the analysis pass leaves the in-memory config untouched, the apply path re-runs the same logic via `configFileStorage.update`.
+  // Deep-clone so the analysis pass leaves the in-memory config untouched, the apply path re-runs the same logic via `updateSyncedConfig`.
   const clone = JSON.parse(JSON.stringify(config)) as RdcConfig;
   const graceDays = options.graceDays ?? clone.defaults?.pruneGraceDays ?? DEFAULT_GRACE_DAYS;
 
@@ -405,7 +405,8 @@ function mutateAndExtractArchives(
 
 /**
  * Apply the prune. Writes the cleaned config atomically via
- * `configFileStorage.update`. Returns the same analysis the dry-run path
+ * `updateSyncedConfig` (pushed for a remote config; a replay after a version conflict
+ * re-runs the analysis against the fresh server copy). Returns the same analysis the dry-run path
  * produces, callers can render either path identically.
  */
 export async function applyConfigPrune(
@@ -427,7 +428,7 @@ export async function applyConfigPrune(
     orphanStateRepos: [],
   };
 
-  await configFileStorage.update(configName, (cfg) => {
+  await updateSyncedConfig(configName, (cfg) => {
     const graceDays = options.graceDays ?? cfg.defaults?.pruneGraceDays ?? DEFAULT_GRACE_DAYS;
 
     // Prune archives FIRST so the cert-anchor pass below sees the post-prune resource set. If we built anchors from the pre-prune config, certs anchored to repositories about to be purged would survive the run as "live" and need a second invocation to be removed.

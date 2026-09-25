@@ -4,8 +4,9 @@
  * The server enforces two things the client must keep consistent:
  *   - pathsToCommit(config) — the sensitive pointers whose HMACs go in the
  *     envelope. Anti-downgrade rejects a push that commits FEWER than before.
- *   - SENSITIVE_FIELDS — the top-level sections that actually travel inside the
- *     ciphertext, and so survive a push -> pull round trip.
+ *   - the carried set — what actually travels inside the ciphertext (the whole
+ *     document minus DEVICE_LOCAL_POINTERS), and so survives a push -> pull
+ *     round trip.
  *
  * If a pointer is COMMITTED but its data is not CARRIED, a round trip (a CEK
  * rotation, a container config load, or an ordinary `config remote` pull) drops

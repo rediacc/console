@@ -32,11 +32,11 @@
 
 import type { RdcConfig } from '@rediacc/shared/config-schema';
 import { RefGrammarError, splitRef } from '@rediacc/shared/ref';
-import { configFileStorage } from '../../adapters/config-file-storage.js';
 import { t } from '../../i18n/index.js';
 import { notFound } from '../../utils/cli-exit-error.js';
 import { ValidationError } from '../../utils/errors.js';
 import { configService } from './config-resources.js';
+import { updateSyncedConfig } from './synced-write.js';
 
 type DatastoreConfig = NonNullable<NonNullable<RdcConfig['resources']>['datastores']>[string];
 export type DatastoreState = NonNullable<NonNullable<RdcConfig['state']>['datastores']>[string];
@@ -136,7 +136,7 @@ export async function requireDatastoreHost(ref: string): Promise<string> {
 }
 
 export async function recordDatastore(name: string, record: DatastoreConfig): Promise<void> {
-  await configFileStorage.update(configService.getEffectiveConfigName(), (cfg) => ({
+  await updateSyncedConfig(configService.getEffectiveConfigName(), (cfg) => ({
     ...cfg,
     resources: {
       ...(cfg.resources ?? {}),
@@ -146,7 +146,7 @@ export async function recordDatastore(name: string, record: DatastoreConfig): Pr
 }
 
 export async function forgetDatastore(name: string): Promise<void> {
-  await configFileStorage.update(configService.getEffectiveConfigName(), (cfg) => {
+  await updateSyncedConfig(configService.getEffectiveConfigName(), (cfg) => {
     const datastores = { ...(cfg.resources?.datastores ?? {}) };
     delete datastores[name];
     // #89, swept: the observation goes with the declaration. The delete path happens to clear the hint first (via setDatastoreState) whenever the datastore is attached, so this was not reachable in practice, but that made it a trap, not a non-bug: it relied on every caller remembering, and `forget` means forget. Clearing both halves here is what makes the invariant hold no matter

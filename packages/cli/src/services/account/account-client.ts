@@ -21,12 +21,12 @@ import {
   TOKEN_IP_MISMATCH,
   type TokenIpRebindHint,
 } from '@rediacc/shared/subscription/types';
-import { configFileStorage } from '../../adapters/config-file-storage.js';
 import { t } from '../../i18n/index.js';
 import { ValidationError } from '../../utils/errors.js';
 import { getInstallMethod, getNpmUpdateCommand } from '../../utils/platform.js';
 import { VERSION } from '../../version.js';
 import { getEffectiveConfigName } from '../config/config-name.js';
+import { isRemoteConfigFile, updateSyncedConfig } from '../config/synced-write.js';
 import { writeStderr } from '../core/request-context.js';
 import { resolveChannel } from '../update/updater.js';
 import { readAccountPointer } from './account-pointer.js';
@@ -92,12 +92,17 @@ async function discoverServerKey(): Promise<{
     if (!key?.publicKeySpki) return null;
 
     // Cache in the active config for next startup, but only when the pointer had none. Guarded: the config file may not exist yet on a fresh machine (discovery still returns the key regardless).
+    // Not for a remote config: its file is a cache of the server copy, and pushing from here would re-enter this very key lookup through the pull the push starts with.
+    // A remote config gets the key from the store, where `subscription login --server` puts it.
+    const configName = getEffectiveConfigName();
     if (!readAccountPointer().e2ePublicKey) {
       try {
-        await configFileStorage.update(getEffectiveConfigName(), (cfg) => ({
-          ...cfg,
-          account: { ...(cfg.account ?? {}), e2ePublicKey: key.publicKeySpki },
-        }));
+        if (!(await isRemoteConfigFile(configName))) {
+          await updateSyncedConfig(configName, (cfg) => ({
+            ...cfg,
+            account: { ...(cfg.account ?? {}), e2ePublicKey: key.publicKeySpki },
+          }));
+        }
       } catch {
         // Config may not exist yet; discovery result still stands.
       }
@@ -329,7 +334,7 @@ async function accountServerFetchOnce<T>(
   if (status >= 400) {
     const msg = (parsed as { error?: string }).error ?? `Account server returned HTTP ${status}`;
     const code = (parsed as { code?: string }).code;
-    throw createAccountError(msg, status, code, parsed as Record<string, unknown>);
+    throw createAccountError(msg, status, code, parsed);
   }
 
   return parsed;

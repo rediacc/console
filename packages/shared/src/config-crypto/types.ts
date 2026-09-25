@@ -32,46 +32,39 @@ export interface ConfigEnvelope {
   commitments: FieldCommitments;
 }
 
-/** The sensitive config data that gets encrypted */
+/**
+ * The encrypted half of a config: the whole synced document (every key except the device-local
+ * pointers, `DEVICE_LOCAL_POINTERS` in config-schema/sensitivity.ts) in the v2 wire encoding, where
+ * `resources.*` and `credentials.*` ride one level up. The named fields are the ones callers read
+ * today; the index signature is the rest (`state`, keys a newer CLI added), all carried.
+ *
+ * Committed leaves (account.userEmail, defaults.universalUser, infra.*, the org secrets, archived
+ * repo credentials) must travel: a committed-but-not-carried field is dropped by the first pull,
+ * and the re-push then commits fewer pointers than the server stored, which anti-downgrade rejects.
+ */
 export interface ConfigSensitiveData {
-  /**
-   * Top-level document sections, synced whole (operator ruling D3: no local
-   * override). Some of their leaves are COMMITTED (account.userEmail,
-   * defaults.universalUser, infra.certEmail/cfDnsZoneId), and committed means they
-   * must travel: a committed-but-not-carried field is dropped by the first
-   * pull, and the re-push then commits fewer pointers than the server stored —
-   * anti-downgrade rejects it as a conflict.
-   */
+  [section: string]: unknown;
   account?: Record<string, unknown>;
   defaults?: Record<string, unknown>;
   infra?: Record<string, unknown>;
   machines?: Record<string, unknown>;
   repositories?: Record<string, unknown>;
   storages?: Record<string, unknown>;
-  /** v3 resource families. Public topology, but they must TRAVEL or sync drops them. */
   datastores?: Record<string, unknown>;
   clusters?: Record<string, unknown>;
   backupStrategies?: Record<string, unknown>;
-  /**
-   * Archived repositories (an ARRAY, unlike the record families). Their
-   * credential/sshPrivateKey pointers are committed by the sensitivity
-   * registry, so this list must ride in the blob — a committed-but-not-carried
-   * field bricks push after the first round trip.
-   */
+  /** Archived repositories (an ARRAY, unlike the record families). */
   deletedRepositories?: unknown[];
   ssh?: Record<string, unknown>;
-  /** Cloud provider credentials (apiToken, sshUser). Committed, so must travel. */
   cloudProviders?: Record<string, unknown>;
-  /** Cloudflare DNS API token — an org secret, committed, so must travel. */
   cfDnsApiToken?: unknown;
   /**
-   * The authorization rules the executor enforces.
-   *
-   * Typed `unknown` on purpose: config-crypto is a generic crypto library and
-   * must not learn the shape of a Rediacc policy document. The config-schema
-   * layer owns that shape and validates it on both sides of the wire.
+   * The authorization rules the executor enforces. Typed `unknown` on purpose: config-crypto is a
+   * generic crypto library and must not learn the shape of a Rediacc policy document.
    */
   policy?: unknown;
+  /** Runtime state: repo network IDs, heads, the network-ID counter (T17: synced). */
+  state?: Record<string, unknown>;
 }
 
 /** Result of selective encryption: plaintext envelope + encrypted blob */
