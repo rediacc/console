@@ -3,3 +3,7 @@
 {"at":"2026-09-06T18:42:56Z","by":"8f55d4f0","id":"24c98380","title":"Secret namespace migration and the move to Bitwarden","covers":[],"order":null}
 {"at":"2026-09-23T11:53:10Z","by":"d778be9d","id":"55627c58","title":"Unstick main's Console CI: submodule pointer, dependency freshness, security audit","covers":[],"order":null}
 {"at":"2026-09-24T11:46:19Z","by":"d778be9d","id":"f8ff8ede","title":"rdc read-only verbs never provision a machine (PLAN-rdc-readonly-mode)","covers":["f8ff8ede"],"order":null}
+{"at":"2026-09-24T19:01:21Z","by":"d778be9d","id":"e4eaf80b","title":"Config storage without a PRF passkey: master-password first slot, org-scoped config routes, headless enable handoff","covers":[],"order":null}
+{"at":"2026-09-24T19:01:21Z","by":"d778be9d","id":"01c7d773","title":"Stop hook: stand down while every writer slot is live, and order a retro at compaction","covers":[],"order":null}
+{"at":"2026-09-24T19:01:59Z","by":"d778be9d","id":"e4eaf80b","title":"Config storage without a PRF passkey: master-password first slot, org-scoped config routes, headless enable handoff","covers":["05adad66","18fa5497","4bbdca38","5a5199be","fa5c407e"],"order":null}
+{"at":"2026-09-24T19:02:00Z","by":"d778be9d","id":"01c7d773","title":"Stop hook: stand down while every writer slot is live, and order a retro at compaction","covers":["064a3fd1"],"order":null}

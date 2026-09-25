@@ -51,7 +51,7 @@ The "N TWIN BEHAVIOURS REPRODUCED RATHER THAN FIXED" paragraphs in PLAN-tooling-
   - Two READMEs.
 - **Every bash oracle has a Python port whose `TWIN` names it.** Six guards were never bash (`TWIN = None`).
 - **`KNOWN_DIVERGENCES`** is declared only by `.claude/rediacc_hooks/guards/block_long_sleep.py:83`, and it is empty.
-- **The mutant control needs no bash.** `test_the_differential_can_fail` (`.claude/rediacc_hooks/tests/test_guards_differential.py:673`) plants each port's `DEFECT` and compares the port with itself-with-the-bug. It already covers the `TWIN = None` guards, and so does `test_every_untwinned_guard_discriminates` (`:645`).
+- **The mutant control needs no bash.** `test_the_differential_can_fail` (`.claude/rediacc_hooks/tests/test_guards_differential.py:549`) plants each port's `DEFECT` and compares the port with itself-with-the-bug. It already covers the `TWIN = None` guards, and so does `test_every_guard_discriminates` (`:530`).
 - **What the oracles cost.**
   - They account for 5,844 of the suite's 8,467 cases (`.claude/oracles/README.md`).
   - The guard differential sets the suite's single-worker floor: 294.65 s (`.ci/rediacc_ci/check_pytest.py:100`).
@@ -135,6 +135,13 @@ The "N TWIN BEHAVIOURS REPRODUCED RATHER THAN FIXED" paragraphs in PLAN-tooling-
 - **The kept cases** move to ONE suite, `tests/test_bash_semantics.py`. It does not run twin guards. It runs a real `bash -c` or `bash -n` over the construct and asserts the fact the Python scanner relies on ("bash reads this heredoc as ending at line 3"). So a bash upgrade that changes the fact fails loudly, and the scanner's assumption is re-examined.
 - **Expected size:** tens of cases, not thousands. `shellscan`'s differential is the main source.
 - **The count and the list** are recorded here before A3 deletes anything.
+- **Recorded 2026-09-24 by the A4 writer.** `.claude/rediacc_hooks/tests/test_bash_semantics.py` holds 77 rows, one per probe in A0 section 3's nine tables.
+  - Three A0 rows carry two or three probes and are split into lettered rows: Q7a/b, X1a-c, X2a/b.
+  - A0 numbers its separator table S1-S6, which collides with the S1-S3 safe divergences, so those rows are SEP1-SEP6.
+  - Each row names the corpus and EDGE_CASES entries it replaces in `source`, and the Python that leans on it in `relies_on`. The source list therefore lives beside the probe instead of being copied here.
+  - The suite has 257 tests: 77 real-bash facts, 77 reliance checks, 70 in-process scanner-agreement checks, 29 Rule T guard verdicts, two real-repository checks (L12 and L15) and two anti-vacuity controls.
+  - All 257 pass on bash 5.3.9, because A4 fixed every `contradicted` row.
+  - The one kept divergence is S3 (row Q11). It is PINNED as a passing assertion instead of an `xfail(strict=True)`, because `check:ci-pytest` counts an xfail as a test that did not pass.
 
 ### A1. Freeze the goldens before anything is deleted (sonnet writer; the harness design reviewed by the lead)
 
@@ -168,6 +175,12 @@ The "N TWIN BEHAVIOURS REPRODUCED RATHER THAN FIXED" paragraphs in PLAN-tooling-
   - (ii) bash semantics that are the intended contract stay, as documentation;
   - (iii) duplication that exists only for a twin is removed;
   - (i) copied bugs go to A4.
+- **The `this-worktree` fixture, decided 2026-09-24 by the A4 writer (W-A's open question).**
+  - Before: the `this-worktree` ENVS variant of `block_merge_with_unpushed`, `block_untagged_commit` and `block_unverified_push` snapshotted the LIVE checkout (`_snapshot_this_worktree`). Every commit anyone landed moved its goldens: the unpushed-commit list, the epic list from `agent/pr/<branch>.md`, the tree the refusal names.
+  - Decision: a fixed synthetic repository, `_synthetic_this_worktree` in `test_guards_differential.py`. It is built by `_build_repo` with the pinned commit dates W-A introduced, and keeps the real shape: an `MMDD-N` branch, three commits ahead of its remote-tracking ref, an `agent/pr/<branch>.md` in `worklist.py --publish` format, and no pre-push receipt.
+  - The fixture key `this-worktree-snapshot` and the env label are unchanged, so the guards' `ENVS` did not move.
+  - The one-time re-record is tagged `intentional`: 20 records in `block_merge_with_unpushed`, 31 in `block_untagged_commit`, none in `block_unverified_push`, whose answers did not depend on the live tree.
+  - `_git_read` was deleted with the snapshot builder, its only caller.
 
 ### A4. Rule T fixes, hook side
 

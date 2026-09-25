@@ -6,7 +6,7 @@ Updated: 2026-09-24
 
 ## 0. Verdict
 
-The first production deploy (2026-09-24) created the Worker, the custom domain `proxy.eu.rediacc.com`, and the container application `rediacc-proxy-eu-executorcontainer` (evidence: `.ci/cache/w7p5a-realrun/out/lead/1m-real-bash.stdout`, "Deployed rediacc-proxy-eu triggers ... proxy.eu.rediacc.com (custom domain)", Version 7c7a3192). The image was built from the `v1312` tree (`.ci/cache/w7p5a-realrun/LEAD-RUNBOOK.md` line 35, an untracked cache file), not from HEAD.
+The first production deploy (2026-09-24) created the Worker, the custom domain `proxy.eu.rediacc.com`, and the container application `rediacc-proxy-eu-executorcontainer` (evidence: `.ci/cache/w7p5a-realrun/out/lead/1m-real-bash.stdout`, "Deployed rediacc-proxy-eu triggers ... proxy.eu.rediacc.com (custom domain)", Version 7c7a3192). The image was built from the `v1312` tree (`.ci/cache/w7p5a-realrun/LEAD-RUNBOOK.md:35`), not from HEAD.
 
 **It cannot run a command against a machine today, and setting EXECUTOR_TOKEN alone will not fix that.** There are five blockers (B1-B5, section 1.3). Three of them (B1-B3) also block the web console tier. The unit tests do not catch them because each test mocks the exact seam that is broken (section 2).
 
@@ -54,7 +54,7 @@ The cost is about $0 marginal while it stays like this. Without EXECUTOR_TOKEN n
 | `EXECUTOR_TOKEN` secret: a portal API token, scope exactly `proxy:exec`, in the org that owns hostinger's config | `workers/proxy/wrangler.toml:16-17`, `workers/proxy/src/index.ts:32,76` | **missing** |
 | Container receives its token | `packages/cli/src/commands/serve.ts:61-67` reads `REDIACC_TOKEN` | **never passed (B1)** |
 | Org has a remote config store holding hostinger | `packages/cli/src/services/serve/container-config.ts:115-118`, `private/account/src/routes/configs.ts:552-561` | operator must confirm (`rdc config remote status`) |
-| Caller token carries `proxy:exec` | `workers/proxy/src/index.ts:89`, `packages/cli/src/services/serve/auth.ts line 121 (blob 4afac347d8e08f5e671237241cf5f8bf6729b1ae)` | CLI login token does not (B5) |
+| Caller token carries `proxy:exec` | `workers/proxy/src/index.ts:89`, `packages/cli/src/services/serve/auth.ts:121` | CLI login token does not (B5) |
 
 The design is single-org. Introspection answers `active:false` for a token from another org (`private/account/src/routes/proxy.ts:66-67`), so one `EXECUTOR_TOKEN` means one org.
 
@@ -76,7 +76,7 @@ Blockers:
   - The Worker passes only `envVars = { REDIACC_EXECUTOR_MODE: 'container' }` (`workers/proxy/src/index.ts:49-51`). Nothing in `packages/cli/src` reads `REDIACC_EXECUTOR_MODE`, so the variable is dead.
   - `rdc serve` throws when `REDIACC_TOKEN` is absent (`packages/cli/src/commands/serve.ts:61-67`).
   - `EXECUTOR_TOKEN` exists only in the Worker env. It is never handed to the DO or the container.
-  - Fix: in `ExecutorContainer`, build `envVars` from `this.env`: `REDIACC_TOKEN: env.EXECUTOR_TOKEN`, `REDIACC_ACCOUNT_SERVER: env.ACCOUNT_URL` (`packages/cli/src/commands/serve.ts:69` resolves the URL through `packages/cli/src/services/account/subscription-auth.ts:33-41`). The library forwards `envVars` at start (`@cloudflare/containers` `dist/lib/container.js` lines 1327 and 1336, in node_modules).
+  - Fix: in `ExecutorContainer`, build `envVars` from `this.env`: `REDIACC_TOKEN: env.EXECUTOR_TOKEN`, `REDIACC_ACCOUNT_SERVER: env.ACCOUNT_URL` (`packages/cli/src/commands/serve.ts:69` resolves the URL through `packages/cli/src/services/account/subscription-auth.ts:33-41`). The library forwards `envVars` at start (`workers/proxy/node_modules/@cloudflare/containers/dist/lib/container.js`, lines 1327 and 1336).
 - **B2: the image has no renet binary.**
   - It ships only `cli-bundle.cjs`, `ssh2` and `cpu-features` (`Dockerfile:71-73`). It is not a SEA.
   - Outside a SEA, `acquireRenet` resolves a local renet through the path or `which renet` (`packages/cli/src/services/renet/renet-execution.ts:189-191`, `:50-72`) and throws "Renet binary not found ... and not in PATH". Every machine command therefore fails.
@@ -205,7 +205,7 @@ Sources: developers.cloudflare.com/containers/pricing, /durable-objects/platform
   - "Charges start when a request is sent to the container or when it is manually started. Charges stop after the container instance goes to sleep." Scale-to-zero is the default, and there is no minimum instance count.
   - Image storage limit is 50 GB per account. Storage is not listed as billed.
 - **Durable Objects:** 1M requests and 400k GB-s included. SQLite: 5 GB, 25B row reads and 50M row writes included. Negligible here.
-- **Library defaults:** `sleepAfter` defaults to `'10m'` (`@cloudflare/containers` 0.3.7, `dist/lib/container.js` line 20). The proxy sets `'4m'` (`workers/proxy/src/index.ts:47`). An open HTTP stream counts as in flight, and the idle timer restarts only when the stream ends (`container.js` lines 887-960), so long `repo up` streams keep the container awake correctly.
+- **Library defaults:** `sleepAfter` defaults to `'10m'` (`@cloudflare/containers` 0.3.7, `workers/proxy/node_modules/@cloudflare/containers/dist/lib/container.js`, line 20). The proxy sets `'4m'` (`workers/proxy/src/index.ts:47`). An open HTTP stream counts as in flight, and the idle timer restarts only when the stream ends (`workers/proxy/node_modules/@cloudflare/containers/dist/lib/container.js`, lines 887-960), so long `repo up` streams keep the container awake correctly.
 - **Current settings:** `instance_type = "basic"` (1/4 vCPU, 1 GiB, 4 GB disk; `workers/proxy/wrangler.toml:28`), `max_instances = 20` (`:29`), `sleepAfter = '4m'`.
 
 Per running `basic` instance-hour:
@@ -237,7 +237,7 @@ Do this when development, testing and improvement are finished, or right away if
 
 1. `npx wrangler containers list`: record the id of `rediacc-proxy-eu-executorcontainer`.
 2. `npx wrangler containers images list`: record the `rediacc-proxy-eu-executorcontainer:<tag>` entries.
-3. `npx wrangler delete --name rediacc-proxy-eu` (the runbook's rollback form adds `--force`, `LEAD-RUNBOOK.md` line 35). This removes the script, its versions, its secrets (EXECUTOR_TOKEN), the `proxy.eu.rediacc.com` custom domain, and the DO namespace it owns.
+3. `npx wrangler delete --name rediacc-proxy-eu` (the runbook's rollback form adds `--force`, `.ci/cache/w7p5a-realrun/LEAD-RUNBOOK.md:35`). This removes the script, its versions, its secrets (EXECUTOR_TOKEN), the `proxy.eu.rediacc.com` custom domain, and the DO namespace it owns.
 4. `npx wrangler containers delete <id>` if step 1's app is still listed.
 5. `npx wrangler containers images delete rediacc-proxy-eu-executorcontainer:<tag>` for every tag from step 2.
 6. Revoke the `proxy:exec` portal token(s) created for EXECUTOR_TOKEN and for the caller.
@@ -291,3 +291,23 @@ Run on the dev box with an operator-created portal token (scope `proxy:exec`; ke
     - `repo down ...`: 0 containers afterwards
   - Cleanup: `rdc repo delete demo-stackoverflow:proxytrial@hostinger -y` (LUKS unmounted, repository deleted); `repo list` no longer shows the fork, and the daemon is stopped.
   - **Phase 1 is complete:** the executor protocol drives a real machine end to end, including a detached `repo up` stream. Phase 2, the Cloudflare container, still needs B1-B4.
+
+## Writer B status (2026-09-24, session d778be9d)
+
+- **S1 fixed.** The executor computes grand-ness itself (`resolveGrandRepoMutation`, `packages/cli/src/services/serve/policy.ts`) from the config the command runs against. The command set is the CLI guard's `grandGuard`; the repo test is the CLI guard's `grandGuid` check, but it fails closed on an unparseable or unknown ref. `repo promote` counts as a grand mutation by definition. With no policy document a grand-repo mutation is refused for every role; a document opts in with `allowGrandRepos`. Reads stay allowed. Test: `services/serve/__tests__/grand-repo-guard.test.ts` (missing test 7), container and daemon tiers.
+- **F1 fixed.** Before running a command, the executor introspects its own token (`AuthVerifier.canWriteAudit`, cached for 60 s). If it cannot audit, a change is refused with 503 and a read runs with a WARNING in the result's stderr and the executor log. **EXECUTOR_TOKEN (the container's `REDIACC_TOKEN`) needs `audit:write` alongside `proxy:exec`.** Test: the `audit capability (F1)` block of the same file.
+- **B3 fixed.** `CommandRequestContext.config` carries a request-scoped config. `configFileStorage` (load, save, update*, exists, list) and `configService` (getCurrent, getDecryptedConfig, getResourceState) serve it during a container dispatch and on the re-attach route. Writes stay in memory, and a spec write adds a WARNING to the result. Daemons keep their disk config. Test: `container-config.test.ts`, which no longer mocks `configService` at all. Execution resolves `10.9.9.9` and the decrypted SSH key (missing test 2), and re-attach resolves the machine the same way.
+- **B4 fixed.** `ProxyClient.ensureSession()` asks for server-info and grants only to a `container`. It seals the CEK from `RemoteConfigAdapter.unwrapCek()` (new) with `cekHandoffEncrypt` and grants once per process per executor and token; a failed grant is retried. Tests: `services/executor/__tests__/proxy-client-session.test.ts` (unit, missing test 3), and the loopback variant in `container-config.test.ts`, where a real `rdc --proxy` completes the grant.
+- Found, outside Writer B's files:
+  - (a) `commands/serve.ts` `loadDaemonConfig` returns `getLocalConfig()`, which has no `policy`. A daemon therefore never enforces a policy document.
+  - (b) `utils/errors.ts` `outputJsonError` writes with `process.stdout.write` rather than `writeStdout`. A dispatched command's JSON error goes to the executor's stdout, and the client sees only "The command exited with code 1".
+  - (c) `utils/command-policy.ts` passes `name:base` refs through `getRepository`, which misses the grand's `latest` key, so the local agent guard returns early (fail-open) if a verb accepts `:base`.
+
+## Writer A status (2026-09-24, session d778be9d)
+
+- **B1 fixed.** `ExecutorContainer.envVars` is built from the Worker env by `executorEnvVars(env)`: `REDIACC_TOKEN` = `EXECUTOR_TOKEN`, `REDIACC_ACCOUNT_SERVER` = `ACCOUNT_URL` (`workers/proxy/src/index.ts`). The dead `REDIACC_EXECUTOR_MODE` is gone. A Worker with no `EXECUTOR_TOKEN` answers 401 without introspecting. `sleepAfter` is `'2m'` (section 4, recommendation 2).
+- **Missing test 1 added.** `workers/proxy/src/__tests__/index.test.ts` (plain vitest, `npm run test:unit`; the Container is a stub), 14 tests: health, seven 401 cases, org:team and org:default, the executor-token guard, and the B1 envVars regression. Against the old `index.ts`, 3 of them fail.
+- **B2 fixed.** The Dockerfile copies `workers/proxy/renet/renet-linux-amd64` to `/usr/local/bin/renet`, and the bundle takes its `CLI_VERSION` from that renet's own `renet version`, so the two cannot disagree. `deploy-proxy.sh` and `deploy_proxy.py` build it on a real deploy with `build-renet.sh --version $(resolve-version.sh --current)`. A real deploy refuses before any build without `ACCOUNT_ED25519_PUBLIC_KEY`, because the executor uploads its renet to machines.
+- **Missing test 10 added.** Both deploy twins smoke-test the host named by `wrangler.toml`'s route: `/v1/health` must answer 200 and an unauthenticated `/v1/server-info` must answer 401. The false "dry run does a docker build" header claim is corrected. `test_deploy_deploy_proxy.py` has 29 tests; against the old twins, 11 fail.
+- **Missing test 4 added.** `check:ci-proxy-image-smoke` (slow, local-only) builds the image and runs it with a fake account server. It asserts the process stays up, `/v1/health`, `/v1/server-info` in `mode: container` with a `cliVersion` equal to the shipped renet, `/v1/session` introspected with the executor's own token, and `renet version`. As a control, the same image started without `REDIACC_TOKEN` must exit naming the variable. Green on this box.
+- **Open, outside the file set:** CI does not run the Worker tests yet (the `check:test-workers` script and its ci-quality.yml step cover only `workers/www`), and no CI job runs the image smoke.

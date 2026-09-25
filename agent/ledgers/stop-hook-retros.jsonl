@@ -1,0 +1,12 @@
+{"at": "2026-09-24T19:01:46Z", "band": "post-compact", "epoch": null, "ev": "ordered", "from_off": 0, "session": "d778be9d", "state_md_at": "2026-09-24T18:32:55Z", "threshold": null, "to_off": 235805252, "transcript": "/home/developer/.claude/projects/-home-developer-console/d778be9d-a8e6-4b88-a419-e8a03e7e9888.jsonl", "usage": null}
+{"at": "2026-09-24T19:37:41Z", "band": "early", "epoch": 30, "ev": "ordered", "from_off": 235805252, "session": "d778be9d", "state_md_at": "2026-09-24T19:37:40Z", "threshold": 967000, "to_off": 236722957, "transcript": "/home/developer/.claude/projects/-home-developer-console/d778be9d-a8e6-4b88-a419-e8a03e7e9888.jsonl", "usage": 789965}
+{"at": "2026-09-24T19:38:15Z", "band": "early", "ev": "tracked", "item": "4f167b47", "session": "d778be9d"}
+{"at": "2026-09-24T19:39:23Z", "band": "post-compact", "ev": "tracked", "item": "754157e3", "session": "d778be9d"}
+{"agent": "ab3a6ddab93217bdc", "at": "2026-09-24T19:39:23Z", "band": "early", "ev": "dispatched", "item": "4f167b47", "session": "d778be9d"}
+{"at": "2026-09-24T19:40:31Z", "band": "post-compact", "ev": "saved", "item": "754157e3", "plan": "agent/plans/PLAN-stop-hook-retro-20260924.md", "session": "d778be9d", "tasks_open": 1, "tasks_total": 15}
+{"at": "2026-09-24T19:52:15Z", "band": "early", "ev": "saved", "item": "4f167b47", "plan": "agent/plans/PLAN-stop-hook-retro-20260924.md", "session": "d778be9d", "tasks_open": 9, "tasks_total": 23}
+{"at": "2026-09-24T20:02:31Z", "band": "post-compact", "ev": "voided", "session": "d778be9d", "why": "sub-agent a149262d8b6a1601f compaction 19:01:44Z"}
+{"at": "2026-09-25T13:32:11Z", "band": "late", "epoch": 30, "ev": "ordered", "from_off": 236722957, "session": "d778be9d", "state_md_at": "2026-09-25T13:32:11Z", "threshold": 967000, "to_off": 238604947, "transcript": "/home/developer/.claude/projects/-home-developer-console/d778be9d-a8e6-4b88-a419-e8a03e7e9888.jsonl", "usage": 949872}
+{"at": "2026-09-25T13:32:35Z", "band": "late", "ev": "tracked", "item": "9f9ca9e7", "session": "d778be9d"}
+{"agent": "ae06fedae89115ef2", "at": "2026-09-25T13:33:10Z", "band": "late", "ev": "dispatched", "item": "9f9ca9e7", "session": "d778be9d"}
+{"at": "2026-09-25T13:46:10Z", "band": "late", "ev": "saved", "item": "9f9ca9e7", "plan": "agent/plans/PLAN-stop-hook-retro-20260925.md", "session": "d778be9d", "tasks_open": 10, "tasks_total": 10}

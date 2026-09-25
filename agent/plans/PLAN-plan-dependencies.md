@@ -1,6 +1,6 @@
 # PLAN: plan dependencies. A plan does not start before the plans it needs are finished
 
-Status: draft
+Status: approved
 Owner: d778be9d
 First-Seen: 2026-09-24
 Depends-On: PLAN-stop-hook-continuity.md
@@ -11,6 +11,15 @@ Worklist: #9fb25f26
 **Why this plan depends on PLAN-stop-hook-continuity.md.** Its P2.4 `BLOCKED_BY` machinery is what this plan reuses. That machinery (`wl_leasehelp.py`, `wl_store.classify_items`, the UNBLOCKED note in `wl_checks.py`) is uncommitted on branch `0923-1`, and that plan still has one open box (P2.6). This plan edits the same files. It is the first real `Depends-On:` edge.
 
 **Line numbers** refer to the working tree on `0923-1`, measured 2026-09-24. Most of `.claude/hooks/stop/` is modified there and not committed.
+
+## Operator rulings (2026-09-24, /ask)
+
+- **Run it** (Recommended option chosen).
+- **Allow task edges too** (overrides this plan's section 1 "declined"). `Depends-On:` also accepts `PLAN-y.md#<task-ref>`. The rewording hazard the planner raised must be designed out, not accepted:
+  - a task edge names a STABLE task id, not the 8-hex content hash. Boxes gain an optional explicit id prefix (the retro plan's `**R20260924.3**` style, or `T3`), and an edge `PLAN-y.md#T3` resolves by that id;
+  - an edge by content sig is also accepted, but the gate (new finding D9) reports a task edge whose target box no longer exists, and names the closest current box by id and text so a reword is a one-line fix, never a silent break;
+  - completion of a task edge = that box is `[x]` with a `present`/ticked evidence row; the stop-hook FIRST row names that box directly;
+  - tests: task-edge resolve, reworded-box D9 with suggestion, id-edge surviving a reword, task edge complete/incomplete in the lease/tick gate.
 
 ## Tasks
 
@@ -24,7 +33,7 @@ Two writers at most. Writer A owns the grammar, the CI gate, the guard, the reco
   - make `revive()` (.claude/hooks/stop/wl_planrec.py:2567) carry the record's `Depends-On:` into the revived header, or refuse without one;
   - make `check_plan_folders.py --move` (:459) refuse a move into `_removed/` while any required plan still depends on the plan being moved, and print those dependents.
 - [ ] T5 [A] Wiring:
-  - `package.json` gets `check :ci-plan-deps` next to :192;
+  - `package.json` gets a `ci-plan-deps` gate entry next to :192;
   - `scripts/ci-runner/manifest.ts` gets an entry after the `check:ci-plan-folders` entry (:2023-2044);
   - `.github/workflows/ci-quality.yml` gets a "Plan dependencies" step after :614;
   - then run `npm run gen:gates-lock`, `npm run gate:bind` and `npm run gen:docs` (ci-gates.md, the plan-records.md header table, doc-registry.md);
@@ -45,6 +54,7 @@ Two writers at most. Writer A owns the grammar, the CI gate, the guard, the reco
   - `--add` recipes carry `PLAN-x.md [<sig>]` (.claude/hooks/stop/wl_planfile.py:658, .claude/hooks/stop/wl_backlog.py:343, the wl_planenforce render).
 - [ ] T9 [B] Add the controls in `.claude/hooks/stop/test-depgate.py` (section 5c), and rewrite the DEPENDENCY controls in `test-backlog.py` to the new semantics.
 - [ ] T10 [lead] Run `check_plan_deps.py --draft` and put the 13 plans with candidate edges to the operator through /ask (section 4). Apply all 30 values with `--set ... --write`. Land them in the same commit as T2 and T3, with a bulk-transform proof line in the commit message.
+- [ ] T12 [A] Task edges per the operator ruling: stable task ids in boxes, `PLAN-y.md#<id>` and `#<sig>` edges, finding D9 with nearest-box suggestion, task-level completion in the lease/tick gate and the FIRST row.
 - [ ] T11 [lead] Update the prose:
   - CLAUDE.md line 37 (the plan sentence);
   - agent/README.md layout section (:16-32);
@@ -204,7 +214,7 @@ A plan that leaves the exempt set must gain the field at that moment: a Status e
 - **The message** prints both accepted shapes and `check_plan_deps.py --draft <path>` for a suggestion.
 - **Fails open** when the stop directory or the module is unimportable (the sibling's convention, block_plan_without_tasks.py header). CI D1-D7 is the backstop.
 
-### (b) CI: `check :ci-plan-deps`
+### (b) CI: the `ci-plan-deps` gate
 
 **Findings.** Each has a planted control in `--selftest`, and the gate header carries a `---- gate ----` block (step: Plan dependencies, needs: none, selftest: true, lane: quality-branch).
 

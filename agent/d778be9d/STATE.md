@@ -1,19 +1,18 @@
-## SESSION d778be9d 2026-09-24T06:49:41Z
+## SESSION d778be9d 2026-09-25T13:51:31Z
 
-Branch 0923-1, PR #590. MAIN IS BROKEN (all GitHub Actions vars deleted on operator order; main's workflows still read vars.*) -- pr-babysitter a149262d8b6a1601f is landing PR #590 (item #f2dd1732; briefings reports/pr-babysit-0923-1-briefing.md + -v2.md). Operator runs /pr-merge.
+Updated 2026-09-25 ~14:00Z. Branch 0923-1 (PR #590 open). Tree is uncommitted and large; lead commits verified batches by path only when asked (see STATE history / memory feedback_commit_push_backup_no_babysit).
 
-## In flight
-- OBS/rdc writer ae404e341fcdf699b (#f962bb8e): move /tmp/rediacc_20260426124447.json into ~/.config/rediacc/, fix ./rdc.sh, list repos, settle OBS_OTLP_CREDENTIALS JSON vs base64 (possible live prod telemetry defect) read-only.
-
-## Uncommitted, NOT yet verified (resume here)
-- .claude/rediacc_hooks/guards/block_nonstandard_branch_name.py: added a foreign-repo exemption (target_root outside this checkout -> ALLOW; submodules keep the rule). NEEDS cases in .claude/rediacc_hooks/tests/hookcases.py (git -C /home/developer/rovaip branch chore/x <sha> allowed; git -C private/account branch chore/x still blocked; plain git branch chore/x blocked) and a planted-defect proof, then tell the babysitter to absorb it.
-
-## Operator rulings this stretch
-- rovaip: another project. Local rovaip branches may be deleted (they were); NEVER touch rovaip remote branches.
-- Drop gitlab e2e-test-separate-v2 (not yet done: delete it on the gitlab remote with `git push gitlab --delete e2e-test-separate-v2`, log its tip cc1870147 to .ci/cache/deleted-branches-all.txt first).
-- Admin creds in ci-shared (done, gates green); dev keys _DEV in ci-shared; dev SES aliases EU (recorded in agent/plans/PLAN-account-env-to-bws.md).
+## True right now
+- Operator order 2026-09-25 (spec verbatim: scratchpad operator-xyzw-20260925.md, also restated in items): four proposals in order Y > X > W > Z.
+  - Y focus mode #a4438d31, X plan priority/concurrency #137c872b, W CI time budget #02c52f29, Z per-commit review #69251980. Each has a Plan agent running; its final message is the plan text to save to agent/plans/PLAN-stop-hook-focus-mode.md, PLAN-plan-priority-concurrency.md, PLAN-ci-time-budget.md, PLAN-per-commit-review.md.
+  - One writer slot is held for Y via #11fbc2a2 lease note HOLD_FOR:#a4438d31. Seven PLAN-stop-hook-retro-20260925 boxes (.1 .2 .5 .6 .7 .8 .10) carry BLOCKED_BY:#a4438d31 (same stop-hook files).
+- Running writers: date-independent block_stale_pr_branch_date golden #34654813; prose_style drain via shrink_only #1d5e31a3.
+- Item 10 (M-live hotfix promote) py-side re-run with the fixed promote (--reuse-bash, fresh cfkit token) running as background shell; log scratchpad/item10-rerun.log. Items cfbcfa7a e44fe9c0 23d07e25 16c53409 are leased to it. Success must restore production cli/stable/install.sh to REDIACC_CHANNEL:-stable: confirm with verify_stable_endpoints, do not assume.
+- Operator must re-run `! ./rdc.sh config remote enable` (CLI preflight now sends Access-Control-Allow-Private-Network, config-remote.ts:59). Proxy trial #a2a8491c waits on it.
+- Fixed and verified this stretch (uncommitted): wl_roster shell_waiters horizon (:439), wl_store BLOCKED_BY via --update (:973), retro .3/.4 (wl_classsweep glob_covers, shape_cluster_diff JSON mode), account org race + no-team /me, installer channel stamp, shellscan golden path tokens, env-registry updated.
 
 ## Next action
-1. Finish the branch-name guard cases above and verify.
-2. Delete gitlab e2e-test-separate-v2 per the ruling.
-3. When a writer slot frees (babysitter + OBS hold both): run the stale-.sh plan update (#8ea2de80, survey done: 10 plans, 66 refs, all UPDATE), then the queue: stop-hook-overhaul 1.3, check:deps, harness output, report scaffold, shape counter, minimum-release-age, decided-not-done plan state, PLAN-account-env-to-bws boxes.
+1. On each Plan-agent completion: spot-check load-bearing file:line claims, save the plan file, then start Y's writer in the held slot (release #11fbc2a2's HOLD_FOR). X's migration table goes to the operator for approval before writing.
+2. When item 10 finishes: read the log rc and PARITY line, run verify_stable_endpoints for cli/stable/install.sh, tick cfbcfa7a/e44fe9c0/23d07e25/16c53409 with evidence.
+3. Spot-check and tick the two running writers.
+4. Commit batches by path (2a94fc77), then ci:quick and push 0923-1 as separate commands.

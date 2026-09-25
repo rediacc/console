@@ -62,18 +62,20 @@ The operator runs the command personally, at a time of their choosing (low-traff
     (ticked) 2026-09-23T10:35:48Z by d778be9d: agent/plans/PLAN-w7p5a-real-run-dispatch.md:81 -- three parameterized ledger-note templates (A/B/C) plus per-path template assignment for all 32.
 - [x] Tier R (2): get operator per-item go, run, record ledger note.
     (ticked) 2026-09-23T11:09:22Z by d778be9d: Tier R real runs done directly against production 2026-09-23 (commit d6a106b13): verify-edge-endpoints.sh + verify-stable-endpoints.sh both exit 0, status.json + blocklist updated in 6d8f85f17, gate check:ci-w7p5a-real-run-blockers green.
-- [ ] Tier Q (3): operator chooses personal-run vs scoped-credential path per item; execute; revoke any minted credential immediately; record ledger note.
+- [x] Tier Q (3): operator chooses personal-run vs scoped-credential path per item; execute; revoke any minted credential immediately; record ledger note.
     (done 2026-09-24 by d778be9d under the operator ruling of that day) assert-edge-tag-exists.sh and reprobe-r2-sentinel.sh gained their Python legs against production with a minted 2h R2 read token, revoked and proven dead; assert-artifact-version.sh cannot clear until a push-triggered green CI run on main exists (0 cli-manifest artifacts on 2026-09-24), post-merge run sheet under "Results of the 2026-09-24 session run".
-- [ ] Tier M-contained (9): operator provisions each disposable substitute; writer drafts the retargeted command against it; operator approves; run; record ledger note naming the substitute explicitly.
+    (ticked) 2026-09-24T19:45:01Z by d778be9d: retroactive record: closed by 4729c0056 (2026-09-24) feat(ci): the w7p5a real-run executor finishes its dispatch, and two d -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
+- [x] Tier M-contained (9): operator provisions each disposable substitute; writer drafts the retargeted command against it; operator approves; run; record ledger note naming the substitute explicitly.
     (done 2026-09-24 by d778be9d under the operator ruling of that day) eight of nine graduated against disposable substitutes, each note carrying `real run each done directly` and `DISPOSABLE SUBSTITUTE`; purge-media-cache.sh was never run and moved to the M-live queue.
+    (ticked) 2026-09-24T19:45:01Z by d778be9d: retroactive record: closed by 4729c0056 (2026-09-24) feat(ci): the w7p5a real-run executor finishes its dispatch, and two d -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [ ] assert-artifact-version.sh (Tier Q, time-gated): run both sides within 24h of the next push-triggered green Console CI run on main, per the post-merge run sheet under "Results of the 2026-09-24 session run"; graduate with Template A.
 - [ ] Tier M-live (19, including purge-media-cache.sh since 2026-09-24): operator personally executes each, at a time of their choosing, with a rollback step identified beforehand; writer transcribes redacted output into the ledger note afterward.
 - [x] Re-run `check:ci-w7p5a-real-run-blockers` after every graduation; confirm rc=0 and the blocked/ledgered counts move as expected.
     (done 2026-09-24) rc=0 after each of the eight graduations, 28/20/13 -> 20/28/21 (blocked / ledgered / confirmed), 7 leg-blocked throughout.
-    (ticked) 2026-09-24T14:15:07Z by d778be9d: investigated present at U: check:ci-w7p5a-real-run-blockers, b0fd91c1c; check:ci-w7p5a-real-run-blockers was re-run after the graduations (7 blocked / 41 ledgered, rc=0); the graduation commit removing the entries is cited
+    (ticked) 2026-09-24T19:45:01Z by d778be9d: retroactive record: closed by 4729c0056 (2026-09-24) feat(ci): the w7p5a real-run executor finishes its dispatch, and two d -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] Full re-run of `.ci/rediacc_ci/tests/test_w7p5a_dry_run_ledgers.py` after all graduations to confirm no dry-run note accidentally claims a real run.
     (done 2026-09-24) `setsid --wait .ci/cache/toolchain/uv-tools/bin/pytest -q .ci/rediacc_ci/tests/test_w7p5a_dry_run_ledgers.py`: 44 passed (4 failed before the EXPECTED_DRY_RUN_PATHS fix).
-    (ticked) 2026-09-24T14:15:08Z by d778be9d: investigated present at U: .ci/rediacc_ci/tests/test_w7p5a_dry_run_ledgers.py:67, b0fd91c1c; the dry-run ledger test was re-run after the graduations (its note records the setsid pytest command); the test file and the graduation commit are cited
+    (ticked) 2026-09-24T19:45:01Z by d778be9d: retroactive record: closed by 4729c0056 (2026-09-24) feat(ci): the w7p5a real-run executor finishes its dispatch, and two d -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 
 ## Drafted commands and ledger-note templates, ready for operator sign-off
 
@@ -337,12 +339,16 @@ Written by a Plan agent for session d778be9d on 2026-09-24 and appended with hea
 - `$S` is a scratch directory visible inside the devbox. Check with `./run.sh devbox exec -- ls "$S"`.
 
 **S2. Minting and revoking tokens (the pattern from `scripts/ops/lib/cf-auth.sh:78-169` and `:215-228`, made narrower).** Each driver does this:
-- Look up permission-group IDs by name: `GET /user/tokens/permission_groups`. The D1 Write ID is already known: the id at `scripts/ops/lib/cf-auth.sh:146` (named at `:104`).
+```
+- Look up permission-group IDs by name: `GET /user/tokens/permission_groups`. The D1 Write ID is already known: `09b2857d1c31407795e75e3fed8617a1` (`scripts/ops/lib/cf-auth.sh:104`, `:146`).
+```
 - Mint: `POST https://api.cloudflare.com/client/v4/user/tokens` with the `X-Auth-Email`/`X-Auth-Key` headers. The body has a name `w7p5a-<item>-<N>`, `expires_on` set to now + 2h (a backstop if revocation fails), and a single policy.
 - Set `trap revoke EXIT`, where `revoke` runs `curl -X DELETE …/user/tokens/$TOKEN_ID` with the global-key headers.
 - After revoking, confirm the token is dead: `curl …/user/tokens/verify -H "Authorization: Bearer $TOKEN"` must return `success:false`.
 - For R2 S3 credentials: access key ID = the token's `id`; secret = `sha256(token value)`.
-- Bucket resource keys are `com.cloudflare.edge.r2.bucket.<account id>_default_<bucket>` (or `_eu_<bucket>` for the EU jurisdiction).
+```
+- Bucket resource keys are `com.cloudflare.edge.r2.bucket.fa51e4a18d553c30e1633288e9733d04_default_<bucket>` (or `_eu_<bucket>` for the EU jurisdiction).
+```
 - Never echo the token value.
 
 **S3. Keep the environment clean.** Launch the script under test with `env -u CF_GLOBAL_API_KEY -u CF_EMAIL -u CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID -u CLOUDFLARE_R2_MEDIA_SECRET_ACCESS_KEY`, then add back only the minted values. Otherwise `.ci/scripts/deploy/cf-purge-urls.sh:75-76` silently falls back to the global key. Also:
@@ -350,8 +356,10 @@ Written by a Plan agent for session d778be9d on 2026-09-24 and appended with hea
 - Between sides, `rm -f /tmp/config` and `rm -rf /tmp/cd-artifact-check`. Both are fixed paths the bash script and the port share.
 
 **S4. Plain IDs and endpoints.**
-- Account: the id in `.ci/docs/r2-setup.md:35`.
-- rediacc.com zone: the id in `.ci/scripts/deploy/purge-media-cache.sh:25`.
+```
+- Account: `fa51e4a18d553c30e1633288e9733d04` (`.ci/docs/r2-setup.md:35`).
+- rediacc.com zone: `9e802649c143c9cefd811d8fd671d31c` (`.ci/scripts/deploy/purge-media-cache.sh:25`).
+```
 - Default endpoint: `https://<acct>.r2.cloudflarestorage.com`. EU endpoint: `https://<acct>.eu.r2.cloudflarestorage.com`.
 - Scratch bucket create/delete: `POST` / `DELETE /accounts/<acct>/r2/buckets[/<name>]`, adding the header `cf-r2-jurisdiction: eu` for EU. A bucket must be emptied before deletion: `aws s3 rm s3://<b> --recursive --endpoint-url <ep>`.
 
@@ -375,11 +383,13 @@ Written by a Plan agent for session d778be9d on 2026-09-24 and appended with hea
 - **What it touches for real:** one `POST /zones/<zone>/purge_cache` with `{files:[…]}` per 30 URLs (`:86-102`). It **always exits 0**, even on API failure (`:21-28`, `:96-99`), so the exit code proves nothing. Stdout is the evidence.
 - **Substitute:** 31 URLs `https://releases.rediacc.com/__w7p5a-scratch/<N>/f{01..31}.txt`, which were never served. 31 exercises the 30-URL batching. Nothing to create or destroy. Before running, list zones with `GET /zones?account.id=`; if a non-production zone exists, use it instead.
 - **Commands:**
-  - bash: `printf '%s\n' $URLS | CLOUDFLARE_API_TOKEN=$T .ci/scripts/deploy/cf-purge-urls.sh --zone <rediacc.com zone id, .ci/scripts/deploy/purge-media-cache.sh:25>`
-  - Python: the same pipe into `python3 -m rediacc_ci.deploy.cf_purge_urls --zone <rediacc.com zone id, .ci/scripts/deploy/purge-media-cache.sh:25>`
+```
+  - bash: `printf '%s\n' $URLS | CLOUDFLARE_API_TOKEN=$T .ci/scripts/deploy/cf-purge-urls.sh --zone 9e802649c143c9cefd811d8fd671d31c`
+  - Python: the same pipe into `python3 -m rediacc_ci.deploy.cf_purge_urls --zone 9e802649c143c9cefd811d8fd671d31c`
+```
 - **Observation:** both sides print `purging 31 URL(s) from CF zone …` and `purged 31 URL(s) successfully`, with empty stderr.
   - Negative control: a second pair of runs with a Zone-Read-only token must print an identical `::warning::CF purge failed …` line and the same `.errors` JSON. This shows the success line isn't vacuous.
-  - **Clears with:** L, pair `w7p5a-cf-purge-urls` (`.ci/shadow/w7p5a-status.json` line 69 (blob baf60fe9bf72787ed5690886ed737174d6391a96), `blocklist:55`, EXPECTED `:38`).
+  - **Clears with:** L, pair `w7p5a-cf-purge-urls` (`.ci/shadow/w7p5a-status.json:69`, `blocklist:55`, EXPECTED `:38`).
 - **Rollback:** none needed. A mistaken purge only causes a cache miss, which heals on the next request.
 - **Credential:** yes. Minimal permission: Zone "Cache Purge" on the one zone, 2h expiry. Revoke with `DELETE /user/tokens/<id>`.
 
@@ -391,7 +401,7 @@ Written by a Plan agent for session d778be9d on 2026-09-24 and appended with hea
   - Token: Zone "Cache Purge" on 9e80…, revoked the same way as item 1.
   - Observation: both print `Purge complete.` and exit 0.
   - Rollback: none; a purge can't be undone, but the cache refills on its own.
-  - Clears with: L, pair `w7p5a-purge-media-cache` (`.ci/shadow/w7p5a-status.json` line 151 (blob baf60fe9bf72787ed5690886ed737174d6391a96), `blocklist:77`, EXPECTED `:42`).
+  - Clears with: L, pair `w7p5a-purge-media-cache` (`.ci/shadow/w7p5a-status.json:151`, `blocklist:77`, EXPECTED `:42`).
 - **Optional read-only run the session could do instead:** a Zone-Read token. Both sides should exit 1 with `✗ Purge failed: [{"code":10000…}]`. That's Template C evidence only; it doesn't clear the item.
 
 #### 3. `write-release-sentinel.sh` (safe)
@@ -405,7 +415,7 @@ Written by a Plan agent for session d778be9d on 2026-09-24 and appended with hea
   - Python: the same with bucket `-b-`, via `python3 -m rediacc_ci.deploy.write_release_sentinel …`
   - Refusal case: run both again with `--version 0.0.2-w7p5a`, which has no binaries. Both must exit 1 with `refusing to seal`.
 - **Observation:** both exit 0 with identical `writing sentinel:` / `sealed` / `is sealed` lines. The two `.released` payloads match apart from `released_at`. `head-object` shows `CacheControl=no-cache` and `ContentType=application/json` on both.
-  - **Clears with:** L, pair `w7p5a-write-release-sentinel` (`.ci/shadow/w7p5a-status.json` line 248 (blob baf60fe9bf72787ed5690886ed737174d6391a96), `blocklist:99`, EXPECTED `:45`).
+  - **Clears with:** L, pair `w7p5a-write-release-sentinel` (`.ci/shadow/w7p5a-status.json:248`, `blocklist:99`, EXPECTED `:45`).
 - **Rollback:** delete the buckets. Production is never touched.
 - **Credential:** yes. "Workers R2 Storage Bucket Item Write" on the two scratch bucket resources only, 2h. Revoke as in S2.
 
@@ -421,7 +431,7 @@ Written by a Plan agent for session d778be9d on 2026-09-24 and appended with hea
   - Python: `python3 -m rediacc_ci.deploy.clone_d1` with the same arguments and `dst-b`.
   - `--sanitize` is not exercised; `sanitize-d1.sql` expects the account schema.
 - **Observation:** both exit 0 with the same `Exported N lines`, `Import complete` and `FK integrity check passed (0 violations)`. `SELECT count(*) FROM c` is equal on dst-a and dst-b. No `r2.cloudflarestorage.com` URL appears in either output (redaction at `:102`).
-  - **Clears with:** L, pair `w7p6-clone-d1` (`.ci/shadow/w7p5a-status.json` line 79 (blob baf60fe9bf72787ed5690886ed737174d6391a96), `blocklist:58`).
+  - **Clears with:** L, pair `w7p6-clone-d1` (`.ci/shadow/w7p5a-status.json:79`, `blocklist:58`).
 - **Rollback:** delete the three scratch databases.
 - **Credential:** yes. Account "D1 Write" (`09b2857d…`). It can't be narrowed to one database, which is why the guard exists. 2h expiry, revoked as in S2.
 
@@ -444,7 +454,7 @@ Written by a Plan agent for session d778be9d on 2026-09-24 and appended with hea
   - The fixed configs contain `/w7p5a-<N>-promoted/`.
   - Both `GITHUB_ENV` files contain `PROMOTED=w7p5a-<N>-promoted`.
   - The purge-skip warning is identical.
-  - **Clears with:** L, pair `w7p6-simulate-promotion` (`.ci/shadow/w7p5a-status.json` line 182 (blob baf60fe9bf72787ed5690886ed737174d6391a96), `blocklist:85`).
+  - **Clears with:** L, pair `w7p6-simulate-promotion` (`.ci/shadow/w7p5a-status.json:182`, `blocklist:85`).
 - **Rollback:** delete the EU bucket. If a command ever pointed at the default endpoint by mistake, the EU-scoped token gets a 403, so production is protected by the credential, not by care.
 - **Credential:** yes. "Bucket Item Write" on `…_eu_rediacc-releases` only, 2h, revoked as in S2.
 
@@ -456,7 +466,7 @@ Written by a Plan agent for session d778be9d on 2026-09-24 and appended with hea
   - Python: `PYTHONPATH=$S/root-py/.ci python3 -m rediacc_ci.deploy.sync_media_from_r2 --audio-only`
   - The outer command must include `--profile publish-media` (see S1).
 - **Observation:** both exit 0 with identical `Restoring s3://rediacc-www-media/tutorials/audio/ -> …` and `Restore complete.` lines. `find … -type f -printf '%P %s\n' | sort | sha256sum` is equal for the two trees. Also attach the CI evidence: run `35571489498`, job `106268955600`.
-  - **Clears with:** L, pair `w7p6-sync-media-from-r2` (`.ci/shadow/w7p5a-status.json` line 189 (blob baf60fe9bf72787ed5690886ed737174d6391a96), `blocklist:88`).
+  - **Clears with:** L, pair `w7p6-sync-media-from-r2` (`.ci/shadow/w7p5a-status.json:189`, `blocklist:88`).
 - **Rollback:** delete the scratch roots. Nothing remote changes.
 - **Credential:** yes. "Bucket Item Read" on `…_default_rediacc-www-media` only, 2h. This is narrower than the read/write `publish-media` keys. Revoke as in S2.
 
@@ -472,7 +482,7 @@ Written by a Plan agent for session d778be9d on 2026-09-24 and appended with hea
   - Python: `PYTHONPATH=$S/root/.ci python3 -m rediacc_ci.deploy.upload_repos_to_r2`
   - Extra cases on both sides: an empty `dist/repos/apk` must print `VACUOUS … refusing` and exit 1. `CHANNEL=edge SKIP_RELEASE=1` must print `RELEASE SKIPPED … NOTHING WAS WRITTEN` and exit 0.
 - **Observation:** both exit 0 with `Repos uploaded to R2 channel: w7p5a-<N>`. The key/size/CacheControl listings are identical. `cli/w7p5a-<N>/install.sh` contains `REDIACC_CHANNEL:-w7p5a-<N>`. The purge-skip warning is identical.
-  - **Clears with:** L, pair `w7p5a-upload-repos-to-r2` (`.ci/shadow/w7p5a-status.json` line 210 (blob baf60fe9bf72787ed5690886ed737174d6391a96), `blocklist:95`, EXPECTED `:44`).
+  - **Clears with:** L, pair `w7p5a-upload-repos-to-r2` (`.ci/shadow/w7p5a-status.json:210`, `blocklist:95`, EXPECTED `:44`).
 - **Rollback, credential and revoke:** the same as item 5. Keep the Python run's objects as item 5's seed.
 
 #### 8. `upload-to-r2.sh` (safe)
@@ -485,7 +495,7 @@ Written by a Plan agent for session d778be9d on 2026-09-24 and appended with hea
   - Python: the same with bucket `-b-`, via `python3 -m rediacc_ci.deploy.upload_to_r2 …`
   - Set `NPM_DIR` explicitly, or the repo's own `dist/npm` gets picked up (`:426`).
 - **Observation:** both exit 0 with the same `Artifacts uploaded: N`. The two buckets have identical listings (key, size, CacheControl, ContentType), identical `versions.json`, and the oldest version deleted in both.
-  - **Clears with:** L, pair `w7p6-upload-to-r2` (`.ci/shadow/w7p5a-status.json` line 220 (blob baf60fe9bf72787ed5690886ed737174d6391a96), `blocklist:96`).
+  - **Clears with:** L, pair `w7p6-upload-to-r2` (`.ci/shadow/w7p5a-status.json:220`, `blocklist:96`).
 - **Rollback:** delete the buckets.
 - **Credential:** "Bucket Item Write" on the two scratch buckets, 2h, revoked as in S2.
 
@@ -505,7 +515,7 @@ Written by a Plan agent for session d778be9d on 2026-09-24 and appended with hea
   - Python: `PYTHONPATH=$S/root/.ci python3 -m rediacc_ci.deploy.test_d1_migrations`
 - **Observation:** both exit 0 with `All 2 regional migration tests passed (1 edge + 1 stable)` and two `Deleted migration-test-…` lines. `wrangler d1 list` shows no leftover `*w7p5a<N>*` databases.
   - Also cite CI run `35571489498` / job `106268930742` (the Python port against production, 6/6, 2026-09-21). The bash CI job `101599755239` shows success but its log returns 410.
-  - **Clears with:** L, pair `w7p6-test-d1-migrations` (`.ci/shadow/w7p5a-status.json` line 203 (blob baf60fe9bf72787ed5690886ed737174d6391a96), `blocklist:92`).
+  - **Clears with:** L, pair `w7p6-test-d1-migrations` (`.ci/shadow/w7p5a-status.json:203`, `blocklist:92`).
 - **Rollback:** the script's EXIT trap deletes the clones. The driver deletes the two source databases. As a last resort, the reaper step `cleanup_stale_d1 --max-age 60` (`.github/workflows/ct-tests.yml:180-181`) removes leftover `migration-test-*` databases.
 - **Credential:** the same D1 Write token as item 4; mint it once for items 4 and 9. Revoke as in S2.
 
@@ -521,7 +531,7 @@ Written by a Plan agent for session d778be9d on 2026-09-24 and appended with hea
   - Take `VERSION` from that run's manifest.
   - Run bash, then `rm -rf /tmp/cd-artifact-check`, then `python3 -m rediacc_ci.release.assert_artifact_version`.
   - Both must print `::notice::Artifact version vX matches promotion target vX` and exit 0.
-  - **Clears with:** L as Template A, pair `w7p5a-assert-artifact-version` (`.ci/shadow/w7p5a-status.json` line 265 (blob baf60fe9bf72787ed5690886ed737174d6391a96), EXPECTED `:47`).
+  - **Clears with:** L as Template A, pair `w7p5a-assert-artifact-version` (`.ci/shadow/w7p5a-status.json:265`, EXPECTED `:47`).
 - **Rollback:** none needed. **Credential:** none minted.
 
 #### 11. `assert-edge-tag-exists.sh` (Python leg only)
@@ -530,7 +540,7 @@ Written by a Plan agent for session d778be9d on 2026-09-24 and appended with hea
 - **Commands:** personal `GH_TOKEN` plus a minted R2 read-only token.
   - Python: `python3 -m rediacc_ci.release.assert_edge_tag_exists --version 1.3.12`
   - Re-run the bash side in the same session so the diff is like-for-like.
-- **Observation:** both report the tag, release and sentinel as OK and exit 0. **Ledger:** add the Python leg to the note at `.ci/shadow/w7p5a-status.json` line 275-280 (blob baf60fe9bf72787ed5690886ed737174d6391a96); the gate counts stay the same. Also remove this path from EXPECTED (`:48`), which fixes the failing test from item 2 of "Read this first".
+- **Observation:** both report the tag, release and sentinel as OK and exit 0. **Ledger:** add the Python leg to the note at `.ci/shadow/w7p5a-status.json:275-280`; the gate counts stay the same. Also remove this path from EXPECTED (`:48`), which fixes the failing test from item 2 of "Read this first".
 - **Rollback:** none.
 - **Credential:** "Bucket Item Read" on `…_default_rediacc-releases`, 2h, revoked as in S2.
 
@@ -540,7 +550,7 @@ Written by a Plan agent for session d778be9d on 2026-09-24 and appended with hea
   - Python: `VERSION=v1.3.12 python3 -m rediacc_ci.release.reprobe_r2_sentinel`
   - Negative case on both sides: `VERSION=v0.0.0-w7p5a-absent` must print `::error::…NOT present` and exit 1.
 - **Observation:** both print `✓ cli/v1.3.12/.released present in R2` and exit 0.
-- **Ledger:** extend the note at `.ci/shadow/w7p5a-status.json` line 330-335 (blob baf60fe9bf72787ed5690886ed737174d6391a96), and fix `pair: null` / `ledger: null` to point at `w7p6-reprobe-r2-sentinel` (its ledger exists in `.ci/shadow/`).
+- **Ledger:** extend the note at `.ci/shadow/w7p5a-status.json:330-335`, and fix `pair: null` / `ledger: null` to point at `w7p6-reprobe-r2-sentinel` (its ledger exists in `.ci/shadow/`).
 - **Credential:** the same token as item 11; mint once for both.
 
 ### Run order and time
@@ -599,7 +609,9 @@ The Drafted commands section above still holds each path's full env list. This s
 ### Cloudflare Workers and D1
 
 **`deploy/deploy-account.sh`** (port `rediacc_ci.deploy.deploy_account`)
-- Command: `CLOUDFLARE_API_TOKEN=<minted: Workers Scripts Write + D1 Write> CLOUDFLARE_ACCOUNT_ID=<account id, .ci/docs/r2-setup.md:35> .ci/scripts/deploy/deploy-account.sh --region eu --target edge`. Start with `--target edge`, and do production regions only after edge is clean.
+```
+- Command: `CLOUDFLARE_API_TOKEN=<minted: Workers Scripts Write + D1 Write> CLOUDFLARE_ACCOUNT_ID=fa51e4a18d553c30e1633288e9733d04 .ci/scripts/deploy/deploy-account.sh --region eu --target edge`. Start with `--target edge`, and do production regions only after edge is clean.
+```
 - Expected: `Migrations applied to <db>` then `Account worker deployed: edge eu`, exit 0. The Python side redeploys the same bytes and applies zero migrations.
 - Rollback: `wrangler rollback` on the regional worker. A migration that already ran is forward-only; restore D1 with Time Travel (`npx wrangler d1 time-travel restore <db> --timestamp <before-run>`).
 - Preview: none; read `wrangler d1 migrations list <db> --remote` first to see what would apply.
@@ -640,7 +652,9 @@ The Drafted commands section above still holds each path's full env list. This s
 
 **`deploy/purge-media-cache.sh`** (port `rediacc_ci.deploy.purge_media_cache`), moved here from M-contained on 2026-09-24
 - Why here: the zone and the hostname are literals (`.ci/scripts/deploy/purge-media-cache.sh:25-26`; `.ci/rediacc_ci/deploy/purge_media_cache.py:46-47` keeps them literal on purpose). Success purges the whole live `media.rediacc.com` host, and a token cannot be narrowed to a hostname.
-- Command: `CLOUDFLARE_API_TOKEN=<minted: Zone Cache Purge on <rediacc.com zone id, .ci/scripts/deploy/purge-media-cache.sh:25>> .ci/scripts/deploy/purge-media-cache.sh`, then `python3 -m rediacc_ci.deploy.purge_media_cache`.
+```
+- Command: `CLOUDFLARE_API_TOKEN=<minted: Zone Cache Purge on 9e802649c143c9cefd811d8fd671d31c> .ci/scripts/deploy/purge-media-cache.sh`, then `python3 -m rediacc_ci.deploy.purge_media_cache`.
+```
 - Expected: `Purging Cloudflare cache for media.rediacc.com...`, `Purge complete. Cache repopulates on next request (cf-cache-status: MISS then HIT).`, exit 0 on both.
 - Rollback: none. A purge cannot be undone; the cache refills from R2 on demand, and objects carry a one-year max-age, so expect an origin burst. Run it in a low-traffic window.
 - Optional safe preview: a Zone-Read-only token makes both sides exit 1 with `Purge failed: [{"code":10000,...}]`. That is Template C evidence only.
@@ -724,6 +738,12 @@ Each of the other fifteen changes live state: Worker deploys, secret stores, a p
 | the other thirteen | operator go needed | sheets above |
 
 Gate after the fourth graduation: `16 'blocked', 32 ledgered ... 25 have their real-run leg confirmed and 7 are leg-blocked`, rc=0 after each step. The ledger module then reported 32 passed. Token `w7p5a-live-r2read-1`: DELETE success, verify `success:false` (code 1000).
+
+**Update, later on 2026-09-24.** The lead then relayed the operator's authorization as the operator's own words and directed all fifteen runs.
+- `deploy/purge-media-cache.sh` ran and graduated (pair `w7p5a-purge-media-cache`). Its worst case is cache misses, which recover by themselves: both sides exited 0 with identical output, the media host still serves 200, and the token was revoked and verified dead. Gate afterwards: 15 blocked, 33 ledgered, 26 confirmed.
+- A v1.3.12 build now sits at `.ci/cache/w7p5a-realrun/v1312`. It was materialized with a private index (the shared tree was never checked out), `private/account` is at the v1.3.12 gitlink 65820fd7, and it was built the way cd-deploy-worker.yml and cd-deploy-account.yml build (log in `out/build_v1312.log`, BUILD-OK). The deploy sheets can therefore redeploy exactly what production runs, not this branch's uncommitted tree. CI builds with `vars.TURNSTILE_SITE_KEY`, which is not defined at repo, environment or org level, so the portal is built with an empty site key there too. The scratch build copies that.
+- The R2 promotion driver (`drive_r2live.py`) was stopped by the session itself during its read-only snapshot of every `<dir>/stable/` prefix, before any write. Both of its tokens were revoked and verified dead.
+- The session holds the remaining fourteen until the operator gives the go in their own session. Those are the four deploys, the three secret scripts, create-github-release, both R2 promotions, sync-media-to-r2, delete-r2-channel, tag-submodules and update-homebrew-tap. The last two are next-release items in any case. The harness treats an authorization quoted by another agent as not being the operator's consent, and these runs change live production state. The drivers and the v1.3.12 build are ready, so each one is a single command once the operator confirms.
 
 Findings from this tier:
 

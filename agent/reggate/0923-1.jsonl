@@ -1,1 +1,16 @@
 {"kind":"charge","sig":"d570f644f01c","why":"proven","at":"2026-09-23T10:56:52Z","br":"0923-1"}
+{"kind":"charge","sig":"dd7f5b4f7190","why":"proven","at":"2026-09-24T10:17:41Z","br":"0923-1"}
+{"kind":"charge","sig":"217f905443f8","why":"proven","at":"2026-09-24T12:20:38Z","br":"0923-1"}
+{"kind":"charge","sig":"f7bc430b9c28","why":"proven","at":"2026-09-24T12:26:38Z","br":"0923-1"}
+{"kind":"charge","sig":"9bd95be88a04","why":"proven","at":"2026-09-24T14:07:48Z","br":"0923-1"}
+{"kind":"charge","sig":"1955853f3c5a","why":"proven","at":"2026-09-24T15:46:07Z","br":"0923-1"}
+{"kind":"charge","sig":"b35de37a8c29","why":"proven","at":"2026-09-24T16:10:30Z","br":"0923-1"}
+{"kind":"charge","sig":"3e64ee9dafbf","why":"proven","at":"2026-09-24T16:17:15Z","br":"0923-1"}
+{"kind":"debt","sig":"a36ca2883098","blind_spot":"Token flow through proxy:exec was not inspected by existing credential routing checks, leaving tokens to escape IP binding detection when passed through executor handlers.","surface":"unit","artifact":"private/account/src/__tests__/middleware/api-token.test.ts","charged":8,"at":"2026-09-24T16:23:57Z","br":"0923-1"}
+{"kind":"charge","sig":"a36ca2883098","why":"capped","at":"2026-09-24T16:23:57Z","br":"0923-1"}
+{"kind":"charge","sig":"1056a0a7977f","why":"proven","at":"2026-09-24T17:01:28Z","br":"0923-1"}
+{"kind":"debt","sig":"8d05ac51018b","blind_spot":"No gate verifies that search_hits_instance correctly grounds pattern matches against the actual changed files in a fix-set","surface":"hooks","artifact":".claude/hooks/test-judge-fixset-grounding.py","charged":10,"at":"2026-09-24T17:19:59Z","br":"0923-1"}
+{"kind":"charge","sig":"8d05ac51018b","why":"capped","at":"2026-09-24T17:19:59Z","br":"0923-1"}
+{"kind":"debt","sig":"bfb157ab4027","blind_spot":"No check validates the stop hook's signal derivation (items_sig) matches the demand that signal answers. This inconsistency is internal to the hook and invisible to external gates.","surface":"hooks","artifact":".claude/rediacc_hooks/tests/test_wl_remaining_bank.py","charged":11,"at":"2026-09-24T17:23:56Z","br":"0923-1"}
+{"kind":"charge","sig":"bfb157ab4027","why":"capped","at":"2026-09-24T17:23:56Z","br":"0923-1"}
+{"kind":"charge","sig":"10f2b8836d45","why":"proven","at":"2026-09-24T19:43:53Z","br":"0923-1"}

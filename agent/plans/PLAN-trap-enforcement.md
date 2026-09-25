@@ -174,8 +174,8 @@ the prompt, and make overflow loud, per the unify plan's instinct.
 ### 4.1 Stop adding one file per hook
 
 Today each hook is registered individually in `.claude/settings.json`: 18 separate PreToolUse entries for Bash (`:9-77`), 4 for edits (`:86-98`), 2 PostToolUse for Bash (`:109-113`). **There is no dispatcher**; the JSON array order is the only thing that encodes ordering, and adding a hook means two synchronized edits. Each Bash tool call therefore spawns 18 `bash` processes, and
-each hook that sources `pre-bash/lib/command-scan.sh` forks roughly ten more (`.claude/oracles/pre-bash/lib/command-scan.sh:108-113` chains awk, tr, sed, awk, tr, sed). Order 200 processes per Bash tool call, with **no `timeout` on any PreToolUse hook** (the only timeout in the file is `:142`, Stop=300s) and a worst case around 70 seconds of unbounded network wait on a single `gh pr merge` line
-(`.claude/oracles/pre-bash/block-admin-merge.sh:64,82,92` and `.claude/oracles/pre-bash/block-premature-ready.sh:49`).
+each hook that sources `pre-bash/lib/command-scan.sh` forks roughly ten more (`.claude/oracles/pre-bash/lib/command-scan.sh`, lines 108-113 in the last committed blob `1349f1b0830c`, chains awk, tr, sed, awk, tr, sed). Order 200 processes per Bash tool call, with **no `timeout` on any PreToolUse hook** (the only timeout in the file is `:142`, Stop=300s) and a worst case around 70 seconds of unbounded network wait on a single `gh pr merge` line
+(`.claude/oracles/pre-bash/block-admin-merge.sh`, lines 64, 82 and 92 in the last committed blob `b2ec7ede98bc`, and `.claude/oracles/pre-bash/block-premature-ready.sh`, line 49 in the last committed blob `0e66b62fa986`).
 
 Adding five more entries in that style is a 28% increase in per-call fork cost for no functional gain. Introduce **`.claude/hooks/trapguard/`**, registered exactly twice:
 
@@ -222,7 +222,7 @@ Over budget, remaining rules are skipped and the overrun is logged. No rule may 
 exception is appended to `~/.claude/trapguard/errors.jsonl` and the next rule runs. The Stop hook surfaces a non-empty error log as a `vadd(..., always=True, ...)` violation, because `always=True` is the documented tier for hook-integrity failures (`.claude/hooks/stop/wl_checks.py:2184-2190`). A silently failing guard is the trap this whole plan is about; failing open is correct, failing open
 *quietly* is not.
 5. **Block resolution.** First `tier == "block"` verdict wins: message to stderr,
-`exit 2`. That matches every existing hook's contract (`.claude/oracles/pre-bash/block-worktree-add.sh:36-37`).
+`exit 2`. That matches every existing hook's contract (`.claude/oracles/pre-bash/block-worktree-add.sh`, lines 36-37 in the last committed blob `78ec4974ce7d`).
 6. **Inject resolution.** All `tier == "inject"` verdicts are concatenated into one
 `hookSpecificOutput.additionalContext` and printed as JSON with `exit 0`. Live precedent for the exact envelope: `.claude/hooks/stop/wl_wait.py line 386-396 (blob 20dff1b2804531862015c2cd71bfe5cad3be4151)`.
 7. **One shot per session per trap.** Inject verdicts are suppressed if
@@ -304,7 +304,7 @@ npm scripts as exiting "non-zero-or-silent". Measured against a script name chos
 The trap is a session reading stdout only, which is the same root cause as `docs/agent-reference/TRAPS.md:101` ("Read stdout and stderr SEPARATELY"). That changes the instrument for the better: the referent is resolvable *before* the call, so this becomes a deterministic Tier 2 block instead of a response heuristic.
 - *Surface:* PreToolUse, `trapguard` rule id `npm-script-exists`.
 - *Detection rule:* for each `npm run <name>` / `npm run-script <name>` anchored at a
-command position (reuse the anchoring idiom of `.claude/oracles/pre-bash/lib/command-scan.sh:120` `hook_gh_pr_at_command_pos`), resolve the governing `package.json`: `--prefix <dir>` or `-w <workspace>` in the same segment, else a `cd <dir>` earlier in the same segment, else the repo root. Block when `<name>` is absent from that file's `.scripts`. **Fail open** on: a name containing `$`, backtick or `{`
+command position (reuse the anchoring idiom of `.claude/oracles/pre-bash/lib/command-scan.sh`, line 120 in the last committed blob `1349f1b0830c`, `hook_gh_pr_at_command_pos`), resolve the governing `package.json`: `--prefix <dir>` or `-w <workspace>` in the same segment, else a `cd <dir>` earlier in the same segment, else the repo root. Block when `<name>` is absent from that file's `.scripts`. **Fail open** on: a name containing `$`, backtick or `{`
 (dynamic); an unresolvable directory; an unparseable `package.json`.
 - *Why blocking is safe:* `certain_failure = True`. The command exits 1 regardless, so
 a false block costs nothing a true block does not already cost.

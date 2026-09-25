@@ -8,8 +8,8 @@ Approach: clean break. Nothing is kept for compatibility: no shims, no dual path
 
 The messaging machinery has four layers. All four are session-to-session, and all four go.
 
-1. **The request log.** `wl_requests.py` owns a separate JSONL sidecar at `$TMPDIR/claude-worklist/<slug>.requests` (`.claude/hooks/stop/wl_store.py:518-519`). It has its own event kinds (`ask`, `answer`, `decline`, `ack`, `escalate`, `reassign`) and its own fold (`.claude/hooks/stop/wl_requests.py line 40-87 (blob 326bae9f3857eefca445a9231d4a779a267a60a9)`). The CLI verbs are `--ask`, `--answer`, `--decline`, `--ack` and `--requests` (`.claude/hooks/stop/worklist.py:2014-2016`). `--ask operator` rides the same log.
-2. **The inbox poll.** `--poll <me>` (`.claude/hooks/stop/worklist.py:2017-2023`, `.claude/hooks/stop/wl_requests.py line 411-431 (blob 326bae9f3857eefca445a9231d4a779a267a60a9)`) writes a `.pollmark-<me8>` marker. That marker enables `poll_fast_path` (`.claude/hooks/stop/wl_checks.py:1166-1300`), a silent Stop exit. The rest of the poll layer hangs off it:
+1. **The request log.** `wl_requests.py` owns a separate JSONL sidecar at `$TMPDIR/claude-worklist/<slug>.requests` (`.claude/hooks/stop/wl_store.py:518-519`). It has its own event kinds (`ask`, `answer`, `decline`, `ack`, `escalate`, `reassign`) and its own fold (`wl_requests.py`, lines 40-87 in the last committed blob `326bae9f3857`). The CLI verbs are `--ask`, `--answer`, `--decline`, `--ack` and `--requests` (`.claude/hooks/stop/worklist.py:2014-2016`). `--ask operator` rides the same log.
+2. **The inbox poll.** `--poll <me>` (`.claude/hooks/stop/worklist.py:2017-2023`, `wl_requests.py`, lines 411-431 in the last committed blob `326bae9f3857`) writes a `.pollmark-<me8>` marker. That marker enables `poll_fast_path` (`.claude/hooks/stop/wl_checks.py:1166-1300`), a silent Stop exit. The rest of the poll layer hangs off it:
    - the "two-cron shape" (a poll cron beside the work cron): `POLL_*`, `is_poll_cron`, the `no-poll` and `many-poll-crons` checks
    - the poll backoff ladder
    - the no-op wake ladder, whose only output (`quiet_wake_note`) is a poll-cron rung swap
@@ -21,7 +21,7 @@ The messaging machinery has four layers. All four are session-to-session, and al
    - `wl_liveness.waiter_tasks` and `confirmed_waiters`
    - the pre-bash guard `block_shell_background_waiter.py`
 
-   **Decision: remove the waiter entirely.** Every rule that enforces it is gated on a live peer session: the nudge returns early when there are no peers (`.claude/hooks/stop/wl_wait.py line 583-591 (blob 20dff1b2804531862015c2cd71bfe5cad3be4151)`), `no-waiter` needs `_peers` (`.claude/hooks/stop/wl_checks.py:3884-3890`), and `no-waiter-asked` needs an open request. Its one non-request wake source is new sub-agent reports on the branch. For this session's own agents that duplicates the harness task notification. For another session's agents on the same branch it is cross-session mail. `wl_report.py` (capture, `--reports`, and the `unread-reports` Stop check) stays.
+   **Decision: remove the waiter entirely.** Every rule that enforces it is gated on a live peer session: the nudge returns early when there are no peers (`wl_wait.py`, lines 583-591 in the last committed blob `20dff1b28045`), `no-waiter` needs `_peers` (`.claude/hooks/stop/wl_checks.py:3884-3890`), and `no-waiter-asked` needs an open request. Its one non-request wake source is new sub-agent reports on the branch. For this session's own agents that duplicates the harness task notification. For another session's agents on the same branch it is cross-session mail. `wl_report.py` (capture, `--reports`, and the `unread-reports` Stop check) stays.
 4. **Stop-check surfaces:**
    - `requests`, `answers`, `xsession` (the `waiting-cross-session` Remaining state), `req-escalated`, `req-open`, `backoff`
    - the "open operator request is supervision" suppression (`.claude/hooks/stop/wl_checks.py:2712-2722`)
@@ -32,7 +32,7 @@ The messaging machinery has four layers. All four are session-to-session, and al
 
 | Keep | Depends on messaging? | Cut |
 |---|---|---|
-| Reporting peers' open items (the `others` and `orphans` sections at `.claude/hooks/stop/wl_checks.py line 5155-5210 (blob 5a8904da5ad64d44df6a7e6095da16a81a681eff)`, `others_briefs`, `N_AGENT_PEERS`, `CTX_POSTCOMPACT_PEERS`, `--brief` and the `.sessions` briefs) | No. It reads `classify_items` and `read_briefs`, never the request log. | None. `--brief` stays because peer reporting reads it. |
+| Reporting peers' open items (the `others` and `orphans` sections (lines 5155-5210 in the pre-removal blob `5a8904da5ad6`), `others_briefs`, `N_AGENT_PEERS`, `CTX_POSTCOMPACT_PEERS`, `--brief` and the `.sessions` briefs) | No. It reads `classify_items` and `read_briefs`, never the request log. | None. `--brief` stays because peer reporting reads it. |
 | `--migrate` | Prose only: `.claude/hooks/stop/worklist.py:1318` prints "requests addressed to %s are NOT moved; read them with --requests" | Delete that line. Edit `.claude/skills/migrate/SKILL.md:32,60`. |
 | `--adopt` | No (`_adopt_cli` never touches `R`) | None. |
 | `--reassign` (phantom repair, not listed as a keep but used by the phantom backstop) | Yes. `.claude/hooks/stop/worklist.py:1457-1470` moves open requests. `CLI_REASSIGN_*` text names requests and `--poll`. | Drop the request half. Items-only `reassign` store events stay. |
@@ -95,14 +95,14 @@ R = remove (whole file or block). E = edit. Line numbers are current HEAD, excep
 | `.claude/hooks/stop/wl_checks.py:4056,4071-4079,4088-4100` | E | Drop `xw_bad`/`xw_ok`, the `waiting-cross-session` arm and the `xsession` vadd. `idle_tasks` no longer excludes `xw_ok`. Fix the comment at `:4090`. |
 | `.claude/hooks/stop/wl_checks.py:4267-4287` | R | The no-op wake ladder block (`quiet_note` and its emit) |
 | `.claude/hooks/stop/wl_checks.py:4286,4381,4424,5101` | R | `bank_pollbase(...)` calls |
-| `.claude/hooks/stop/wl_checks.py line 5119-5140 (blob 5a8904da5ad64d44df6a7e6095da16a81a681eff)` | R | The `backoff` outq (`_req_ages`, `poll_backoff_tip`) |
-| `.claude/hooks/stop/wl_checks.py line 5165-5193 (blob 5a8904da5ad64d44df6a7e6095da16a81a681eff)` | R | The `req-open` outq, including the `--answer operator` relay |
+| `wl_checks.py` lines 5119-5140 in the pre-removal blob `5a8904da5ad6` | R | The `backoff` outq (`_req_ages`, `poll_backoff_tip`) |
+| `wl_checks.py` lines 5165-5193 in the pre-removal blob `5a8904da5ad6` | R | The `req-open` outq, including the `--answer operator` relay |
 | `.claude/hooks/stop/wl_store.py:11,18` | E | Docstring: `.requests` "precedent" and sidecar list (drop `.requests`, `.pollbase-*`, `.pollmark-*`, `.waiter-*`, `.waiternudge-*`) |
 | `.claude/hooks/stop/wl_store.py:518-519` | R | `requests_path` |
 | `.claude/hooks/stop/wl_store.py:535` | E | Prose citing `.requests` as precedent |
 | `.claude/hooks/stop/wl_store.py:2053` | E | `compact` docstring "The .requests sidecar is never touched" |
 | `.claude/hooks/stop/wl_store.py:2468-2506` | E | `world_sig`: drop the `my_requests_sig(...)` blob term and the poll prose. The judge cache is invalidated once; that is harmless. |
-| `.claude/hooks/stop/wl_store.py line 2509-2545 (blob fd3d0d64857c60d4f0c0eaafdfa04efa47cc2ebf)` | R | `my_requests_sig` |
+| `.claude/hooks/stop/wl_store.py:2509-2545` | R | `my_requests_sig` |
 | `.claude/hooks/stop/wl_core.py:40` | E | Comment: request from/to charset |
 | `.claude/hooks/stop/wl_core.py:184` | E | `same_session` docstring: callers list "request routing ... the waiter" |
 | `.claude/hooks/stop/wl_core.py:189-203` | R | `UNCHECKED_ME = ("operator",)` and its whole comment block. It exists only for `--answer operator`. |
@@ -149,9 +149,9 @@ R = remove (whole file or block). E = edit. Line numbers are current HEAD, excep
 | `.claude/rediacc_hooks/guards/*.py`, pre-bash `ORDER = 15..45` (31 files: `block_self_matching_pgrep` 15 … `block_unsatisfiable_pid_wait` 45) | E | Decrement ORDER by 1. `.claude/rediacc_hooks/tests/test_dispatch.py:142-190` requires a contiguous run. |
 | `.claude/rediacc_hooks/tests/hookcases.py:2020-2062` | R | The background-waiter cases |
 | `.claude/rediacc_hooks/hookio.py:159` | E | Comment citing block-shell-background-waiter.sh |
-| `.claude/rediacc_hooks/guards/block_unverified_push.py:62-66` | E | Message: drop the `--ask` line; say "ask the operator or leave a `[?]`". **Its twin `.claude/oracles/pre-bash/block-unverified-push.sh:83-87` must change byte-identically, because the differential compares stderr.** |
+| `.claude/rediacc_hooks/guards/block_unverified_push.py:62-66` | E | Message: drop the `--ask` line; say "ask the operator or leave a `[?]`". **Its twin `.claude/oracles/pre-bash/block-unverified-push.sh` (lines 83-87 in the last committed blob `160f6ee8b01c`) must change byte-identically, because the differential compares stderr.** |
 | `.claude/rediacc_hooks/guards/block_self_matching_pgrep.py:84,94,102` | keep | Generic example payloads ("wl_wait.py" is just a string). Leave them so the differential corpus is unchanged. |
-| `.claude/hooks/trapguard/dispatch.py:6` | E | The citation of `.claude/hooks/stop/wl_wait.py line 139-143 (blob 20dff1b2804531862015c2cd71bfe5cad3be4151)` as evidence of the PostToolUse keys: move that fact into this docstring |
+| `.claude/hooks/trapguard/dispatch.py:6` | E | The citation of `wl_wait.py` (lines 139-143 in the last committed blob `20dff1b28045`) as evidence of the PostToolUse keys: move that fact into this docstring |
 | `.ci/scripts/ci/ci-trace.py:50-51,58-63,495-504` | E | Keep the mandatory unit suffix, drop the sibling-tool rationale. The selftest check at `:501-504` asserts on the unit refusal only. |
 | `.ci/rediacc_ci/quality/hook_integrity.py:135` | E | Docstring list of machinery files |
 | `.ci/rediacc_ci/review/standing_orders_brief.py:15,278-282` | E/R | Drop the `WAITING FOR ME FROM PEER SESSIONS` section and its `--poll` call |
@@ -175,7 +175,7 @@ R = remove (whole file or block). E = edit. Line numbers are current HEAD, excep
 | `scripts/data/hook-inventory-baseline.json:46` | E (drain) | The guard |
 | `scripts/data/doc-registry-preport.json` `retired.hook-guards` | E | Add reasons for `.claude/hooks/stop/wl_requests.py`, `.claude/hooks/stop/wl_wait.py` and `.claude/rediacc_hooks/guards/block_shell_background_waiter.py`. **Never** `--snapshot --force`. |
 | `scripts/data/doc-registry.md:455,463,584,589` | regen | Generated |
-| `scripts/data/shape-duplication-seed-advisory.json`, the `fingerprint:11d7ad0f0842` entry | verify | The reason text cites `wl_requests`. Edit only if check-shape-duplication flags a stale seed. |
+| `scripts/data/shape-duplication-seed-advisory.json:56` | verify | The reason text cites `wl_requests`. Edit only if check-shape-duplication flags a stale seed. |
 | `.ci/rediacc_ci/tests/goldens/claude-hooks/*.golden` | keep | Frozen recordings. `test_guards_differential` iterates `guards.stems()` (`:345`), so cases naming a deleted guard are never run. Cross-feed payloads stay valid. |
 | `agent/plans/PLAN-stop-hook-rulings-campaign.md:92-97` | lead | Two open boxes build on `--poll`. Re-scope them or record them abandoned through the plan verbs; writers do not touch plan files. |
 | `agent/plans/PLAN-uncommitted-work-exposure-check.md:24,62,77,85` | lead | Placement text cites `poll_fast_path`; update the prose |

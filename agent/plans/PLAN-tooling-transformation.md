@@ -6178,7 +6178,7 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       about it. The boundary is now a lookahead over the shell separators and the control
       drives **seven** spellings.
       **The widened sweep immediately found a real site outside all three named roots:**
-      `.claude/oracles/pre-bash/block-host-toolchain-run.sh:111` — a guard that blocks unsafe
+      `.claude/oracles/pre-bash/block-host-toolchain-run.sh` (line 111 in the last committed blob `fa600833585d`) — a guard that blocks unsafe
       uploads while ADVISING `set -a; . private/account/.env; set +a`, on the file holding
       ACCOUNT_ED25519_PRIVATE_KEY and ACCOUNT_JWT_SECRET. Fixed as a class, not an instance:
       the advice now names the shim in the bash oracle AND in its Python twin
