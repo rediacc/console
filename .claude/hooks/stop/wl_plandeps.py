@@ -12,6 +12,18 @@ Tokens are bare basenames, because every plan moves once at close and a path wou
 
 EXTENSIBLE BY TABLE. `FIELD_SPECS` maps a header field to (window, parser). `parse_header` runs every spec it holds, so PLAN-plan-priority-concurrency.md T1 adds `Priority`, `Concurrency` and `Owns` as three entries with their own window (`X_HEADER_LINES = 12`) and needs no change to the scan, the duplicate rule or the outside-window rule.
 
+THE X FIELDS (PLAN-plan-priority-concurrency.md section 1), one anchored line each:
+
+    Priority: P0|P1|P2|P3 [(operator)] [-- <reason>]
+    Concurrency: parallel [-- <reason>]
+    Concurrency: exclusive -- <reason, 12+ chars>
+    Owns: <glob>[ (<note>)], <glob>, ...
+    Owns: none -- <reason, 12+ chars>
+
+`(operator)` is the only marker, and an operator-set Priority is never changed by the AI (the pre-edit guard freezes it, CI D17 backstops it). An Owns item may carry a trailing parenthesised note (`routes/index.ts (one mount line)`), because the live corpus already narrows claims that way; the note is kept for the reader and the glob is judged whole, which over-claims toward refusal, the safe side. The glob refusal rules (absolute, `..`, `!`, backslash, more than 32 brace expansions) and the overlap engine live in `wl_planconc`.
+
+`X_FIELDS_REQUIRED` is the one switch between "optional until the migration" and "mandatory". It is False until PLAN-plan-priority-concurrency.md T11 writes the three lines into every required plan, and T11 flips it in the same commit. While False, the gate reports X findings without failing and the guard refuses only NEW ones (the plan-deps ratchet shape); the operator freeze (D17 and the guard's freeze) is enforced either way.
+
 STDLIB ONLY AT IMPORT. The guard runs this in the pre-edit chain on every plan edit. `wl_planfile` (for `FINISHED_STATES`) is imported lazily inside `finished_states`, so a broken sibling module costs the guard its completeness answer, never its import. Reads no environment variable.
 
 NEVER RAISES ON THE READ PATH. `Graph.load` skips an unreadable file rather than failing the stop or the edit; the gate's vacuity floor (D8) is what notices a corpus that stopped loading.
@@ -42,6 +54,19 @@ REMOVED_DIR = "agent/plans/_removed"
 PLAN_DIRS = (PLANS_DIR, DONE_DIR, REMOVED_DIR)
 INDEX_REL = "agent/INDEX.md"
 
+# The X fields' window: plan_lifecycle.HEADER_LINES, wider than HEADER_LINES because `set_x` appends them AFTER the existing header block so no spine field (Status, Owner, Depends-On, a record's Full-Text*/Record-Sig) moves.
+X_HEADER_LINES = 12
+PRIORITY = "Priority"
+CONCURRENCY = "Concurrency"
+OWNS = "Owns"
+X_FIELDS = (PRIORITY, CONCURRENCY, OWNS)
+# See the module docstring. PLAN-plan-priority-concurrency.md T11 sets this to True in the migration commit.
+X_FIELDS_REQUIRED = False
+OPERATOR_MARK = "operator"
+PARALLEL = "parallel"
+EXCLUSIVE = "exclusive"
+OWNS_NONE = "none"
+
 FIELD = "Depends-On"
 NO_DEP = "no-dep"
 REASON_MIN = 12
@@ -58,6 +83,12 @@ TOKEN_RE = re.compile(r"^(PLAN-[A-Za-z0-9._-]+\.md)(?:#([A-Za-z0-9._-]+))?$")
 # The separator between a value and its reason: `--` or an em dash, each surrounded by whitespace.
 REASON_SPLIT_RE = re.compile(r"\s+(?:--|\u2014)\s+")
 NO_DEP_RE = re.compile(r"^no-dep(?:\s+(?:--|\u2014)(?:\s+(.*))?)?$")
+# The X value grammars, applied to the text after `Key: ` (PLAN-plan-priority-concurrency.md section 1).
+PRIORITY_VALUE_RE = re.compile(r"^(P[0-3])(?: \((operator)\))?(?: (?:--|\u2014) (\S.*))?$")
+CONCURRENCY_VALUE_RE = re.compile(r"^(parallel|exclusive)(?: (?:--|\u2014) (\S.*))?$")
+OWNS_NONE_RE = re.compile(r"^none(?:\s+(?:--|\u2014)(?:\s+(.*))?)?$")
+# An Owns item's optional trailing note: `path (new)`, `file.ts (one mount line)`.
+OWNS_NOTE_RE = re.compile(r"^(\S+)(?:\s+\(([^()]*)\))?$")
 # A worklist item implements a plan box when the plan's basename is IMMEDIATELY followed by ` [<8hex>]`, the existing `PLAN-x.md [41f56150]` convention. A bare mention links nothing.
 LINK_RE = re.compile(r"(PLAN-[A-Za-z0-9._-]+\.md) \[([0-9a-f]{8})\]")
 PLAN_CITE_RE = re.compile(r"\bPLAN-[A-Za-z0-9._-]+\.md\b")
@@ -78,6 +109,15 @@ D_WITHDRAWN = "D4"
 D_SELF = "D5"
 D_CYCLE = "D6"
 D_AMBIGUOUS = "D7"
+# The X findings (PLAN-plan-priority-concurrency.md section 6b). D8 is the gate's vacuity floor; D17 (an operator Priority removed or demoted since the merge-base) is the gate's alone, because only it can see the base.
+D_PRIORITY_MISSING = "D10"
+D_PRIORITY_MALFORMED = "D11"
+D_CONCURRENCY = "D12"
+D_OWNS = "D13"
+D_OWNS_GLOB = "D14"
+D_UNIVERSAL = "D15"
+D_WINDOW = "D16"
+D_OPERATOR_DEMOTED = "D17"
 
 # Resolution states of one token.
 LIVE = "live"
@@ -150,6 +190,21 @@ class Header:
         f = self.fields.get(FIELD)
         return f.parsed if f is not None else None
 
+    @property
+    def priority(self) -> Priority | None:
+        f = self.fields.get(PRIORITY)
+        return f.parsed if f is not None else None
+
+    @property
+    def concurrency(self) -> Concurrency | None:
+        f = self.fields.get(CONCURRENCY)
+        return f.parsed if f is not None else None
+
+    @property
+    def owns(self) -> Owns | None:
+        f = self.fields.get(OWNS)
+        return f.parsed if f is not None else None
+
     def field_errors(self, name: str) -> list[str]:
         """Every error for one field: its value's and the structural ones."""
         out = [msg for fname, msg in self.errors if fname == name]
@@ -159,16 +214,13 @@ class Header:
         return out
 
 
-def _reason_errors(reason: str, what: str) -> list[str]:
+def _reason_errors(reason: str, what: str, why: str = "say WHY the plan stands alone") -> list[str]:
     reason = (reason or "").strip()
     if not reason:
         return ["%s needs a reason after `--`" % what]
     errors = []
     if len(reason) < REASON_MIN:
-        errors.append(
-            "%s reason %r is under %d characters; say WHY the plan stands alone"
-            % (what, reason, REASON_MIN)
-        )
+        errors.append("%s reason %r is under %d characters; %s" % (what, reason, REASON_MIN, why))
     if reason.lower().strip(" .,;:!?`'\"") in VAGUE_REASONS:
         errors.append("%s reason %r is a placeholder, not a reason" % (what, reason))
     return errors
@@ -220,8 +272,125 @@ def parse_depends(value: str) -> tuple[DependsOn | None, list[str]]:
     return DependsOn(edges=tuple(edges), note=note), []
 
 
+@dataclasses.dataclass(frozen=True)
+class Priority:
+    """A parsed `Priority:`. `level` 0 is most urgent; `operator` is True only for the `(operator)` marker."""
+
+    level: int
+    operator: bool = False
+    reason: str = ""
+
+    def __str__(self) -> str:
+        out = "P%d" % self.level
+        if self.operator:
+            out += " (%s)" % OPERATOR_MARK
+        return out + (" -- %s" % self.reason if self.reason else "")
+
+
+@dataclasses.dataclass(frozen=True)
+class Concurrency:
+    mode: str
+    reason: str = ""
+
+    @property
+    def exclusive(self) -> bool:
+        return self.mode == EXCLUSIVE
+
+
+@dataclasses.dataclass(frozen=True)
+class Owns:
+    """A parsed `Owns:`. `globs` is empty exactly when the plan declared `none -- <reason>`, and `none` holds that reason. `notes` maps a glob to its parenthesised note."""
+
+    globs: tuple[str, ...] = ()
+    none: str = ""
+    notes: tuple[tuple[str, str], ...] = ()
+
+
+def parse_priority(value: str) -> tuple[Priority | None, list[str]]:
+    value = (value or "").strip()
+    m = PRIORITY_VALUE_RE.match(value)
+    if not m:
+        return None, [
+            "%r is not `P0`-`P3`, optionally ` (operator)`, optionally ` -- <reason>`" % value
+        ]
+    return Priority(int(m.group(1)[1]), bool(m.group(2)), (m.group(3) or "").strip()), []
+
+
+def parse_concurrency(value: str) -> tuple[Concurrency | None, list[str]]:
+    value = (value or "").strip()
+    m = CONCURRENCY_VALUE_RE.match(value)
+    if not m:
+        return None, ["%r is not `parallel [-- <reason>]` or `exclusive -- <reason>`" % value]
+    mode, reason = m.group(1), (m.group(2) or "").strip()
+    if mode == EXCLUSIVE:
+        errors = _reason_errors(reason, "`exclusive`", "say WHY it stops every other plan")
+        if errors:
+            return None, errors
+    return Concurrency(mode, reason), []
+
+
+def parse_owns(value: str) -> tuple[Owns | None, list[str]]:
+    """The comma list, or `none -- <reason>`. Only the list SHAPE is judged here; whether each glob is legal is `wl_planconc.normalize_owns`' question (finding D14)."""
+    value = (value or "").strip()
+    if not value:
+        return None, ["the value is empty; list the globs this plan edits, or `none -- <reason>`"]
+    m = OWNS_NONE_RE.match(value)
+    if m:
+        errors = _reason_errors(m.group(1) or "", "`none`", "say why the plan edits no file")
+        if errors:
+            return None, errors
+        return Owns(none=m.group(1).strip()), []
+    errors = []
+    globs: list[str] = []
+    notes: list[tuple[str, str]] = []
+    for raw in _split_owns(value):
+        item = raw.strip()
+        if not item:
+            errors.append("an empty item (a leading, trailing or doubled comma)")
+            continue
+        if item.lower().startswith(OWNS_NONE + " "):
+            errors.append("`none` mixed with a list; a plan either owns files or owns none")
+            continue
+        im = OWNS_NOTE_RE.match(item)
+        if not im:
+            errors.append(
+                "%r is not one glob with an optional `(note)`; separate globs with commas" % item
+            )
+            continue
+        glob = im.group(1)
+        if glob in globs:
+            errors.append("%s is listed twice" % glob)
+            continue
+        globs.append(glob)
+        if im.group(2):
+            notes.append((glob, im.group(2).strip()))
+    if errors:
+        return None, errors
+    return Owns(globs=tuple(globs), notes=tuple(notes)), []
+
+
+def _split_owns(value: str) -> list[str]:
+    """Split on commas that are outside `{...}` and `(...)`, so `a/{b,c}.py` and `x.ts (a, b only)` stay whole."""
+    out, cur, depth = [], [], 0
+    for ch in value:
+        if ch in "{(":
+            depth += 1
+        elif ch in "})":
+            depth = max(0, depth - 1)
+        if ch == "," and depth == 0:
+            out.append("".join(cur))
+            cur = []
+            continue
+        cur.append(ch)
+    out.append("".join(cur))
+    return out
+
+
 FIELD_SPECS: dict[str, FieldSpec] = {
     FIELD: FieldSpec(FIELD, HEADER_LINES, parse_depends),
+    PRIORITY: FieldSpec(PRIORITY, X_HEADER_LINES, parse_priority),
+    CONCURRENCY: FieldSpec(CONCURRENCY, X_HEADER_LINES, parse_concurrency),
+    OWNS: FieldSpec(OWNS, X_HEADER_LINES, parse_owns),
 }
 
 
@@ -343,6 +512,88 @@ def set_header(text: str, value: str) -> str:
     raise ValueError(
         "no `Status:` line or `# ` title in the first %d lines to insert after" % STATUS_LINES
     )
+
+
+_HEAD_KEY_RE = re.compile(r"^[A-Za-z][A-Za-z-]*:[ \t]")
+
+
+def header_block_end(lines: list[str]) -> int:
+    """The index AFTER the last line of the header block: the contiguous non-blank run that starts at `Status:` (or, for a Status-less companion, right after its `# ` title). A wrapped continuation line belongs to the block, so nothing is inserted between a field and its own second line."""
+    start = None
+    for idx, line in enumerate(lines[:STATUS_LINES]):
+        if STATUS_RE.match(line.rstrip("\r\n")):
+            start = idx
+            break
+    if start is None:
+        for idx, line in enumerate(lines[:STATUS_LINES]):
+            if line.startswith("# "):
+                start = idx
+                break
+    if start is None:
+        raise ValueError(
+            "no `Status:` line or `# ` title in the first %d lines to anchor on" % STATUS_LINES
+        )
+    end = start + 1
+    while end < len(lines):
+        bare = lines[end].rstrip("\r\n")
+        if not bare.strip() or bare.startswith("#") or _BODY_START_RE.match(bare):
+            break
+        end += 1
+    return end
+
+
+def set_x(text: str, fields: dict[str, str]) -> str:
+    """`text` with each named X field (`Priority`, `Concurrency`, `Owns`) set to its value. Pure; values are not validated here (the callers run `parse_header` on the result).
+
+    An existing line inside the X window is replaced IN PLACE, and any second, emphasised or out-of-window copy is removed. A missing field is APPENDED directly after the header block (section 1 placement), in the order Priority, Concurrency, Owns, so no existing field changes its line number. ValueError when a field name is not an X field, when there is nothing to anchor on, or when a field would land past `X_HEADER_LINES`.
+    """
+    unknown = sorted(set(fields) - set(X_FIELDS))
+    if unknown:
+        raise ValueError("not an X field: %s" % ", ".join(unknown))
+    lines = text.splitlines(keepends=True)
+    if lines and not lines[-1].endswith(("\n", "\r")):
+        lines[-1] += "\n"
+    missing = []
+    for name in X_FIELDS:
+        if name not in fields:
+            continue
+        new_line = "%s: %s" % (name, fields[name].strip())
+        key, emph = _key_re(name), _emph_re(name)
+        hits = []
+        for idx, line in enumerate(lines):
+            bare = line.rstrip("\r\n")
+            if _BODY_START_RE.match(bare):
+                break
+            if key.match(bare) or emph.match(bare):
+                hits.append(idx)
+        keep = next((i for i in hits if i < X_HEADER_LINES and key.match(lines[i])), None)
+        if keep is not None:
+            ending = lines[keep][len(lines[keep].rstrip("\r\n")) :] or "\n"
+            lines[keep] = new_line + ending
+        for idx in reversed(hits):
+            if idx != keep:
+                del lines[idx]
+        if keep is None:
+            missing.append(new_line)
+    if missing:
+        end = header_block_end(lines)
+        for offset, new_line in enumerate(missing):
+            lines.insert(end + offset, new_line + "\n")
+    out = "".join(lines)
+    header = parse_header(out)
+    late = [n for n in fields if n not in header.fields]
+    if late:
+        raise ValueError(
+            "%s would land past line %d, outside the X window; shorten the header block above it"
+            % (", ".join(late), X_HEADER_LINES)
+        )
+    return out
+
+
+def linked_plan(text: str) -> str | None:
+    """The plan basename a worklist item implements, from the `PLAN-x.md [<8hex>]` convention (plan-deps section 2c), or None. The first link wins; a bare mention links nothing."""
+    m = LINK_RE.search(text or "")
+    return m.group(1) if m else None
 
 
 # --------------------------------------------------------------------------- The graph.

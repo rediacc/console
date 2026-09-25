@@ -8,6 +8,10 @@ SCOPE. `agent/plans/PLAN-*.md` at the top level only. `_done/`, `_removed/`, `.c
 
 REFUSED: missing, malformed, dangling, withdrawn, ambiguous, a self-dependency, a cycle through this plan (codes D1-D7, shared with the gate).
 
+THE X FIELDS (agent/plans/PLAN-plan-priority-concurrency.md section 6a, T4). The same result document is judged for `Priority:`, `Concurrency:` and `Owns:` through `wl_planconc.x_findings` (D10-D16, shared with the gate). While `wl_plandeps.X_FIELDS_REQUIRED` is False (until the T11 migration) a MISSING field is not refused, a malformed one is, and a plan that already carried a malformed line may keep it (the same ratchet as below, on the X codes); once it is True every X finding is refused.
+
+THE OPERATOR FREEZE. An on-disk `Priority:` carrying `(operator)` is the operator's: an Edit or Write that drops the line, drops the marker, or changes the level or the reason (whitespace-normalised) is refused, and so is introducing `(operator)` on a line that had none. The one escape carries no token: ALLOWED when the new line still carries `(operator)` AND the operator's latest turn (`wl_admit.turn_tools`), or an AskUserQuestion answer after it, names both the plan (basename or slug) and the new `P0`-`P3`. The AI can write neither. Bash writes bypass this chain; CI D17 is the backstop.
+
 PRE-BACKFILL RATCHET. The plan lands this guard in the same commit as the backfill of the field into every live plan (T10) and gives it no grandfather clause. In a shared working tree the guard is live the moment this file exists, while about thirty plans still lack the field; refusing every box tick on those plans would stop every parallel writer. So while `PRE_BACKFILL_RATCHET` is True, an edit that leaves a plan's pre-existing findings unchanged or fewer (same codes, no new one) is ALLOWED with a warning naming them, and anything that adds a finding is refused. T10 sets it to False in the commit that backfills the field; the suite reads the constant and flips its expectations with it.
 
 ITS EVIDENCE. `OWN_SUITE = True` (never bash, so no golden), so the dedicated suite `.claude/rediacc_hooks/guards/test-block_plan_without_depends.py` drives this guard through the dispatcher in both directions against fixture plan trees, and plants `DEFECT` in-process; `.claude/hooks/stop/test-plandeps.py` covers the grammar it imports.
@@ -30,8 +34,9 @@ ANCHORING = "structure: refuses a live plan whose resulting text lacks a valid D
 # See the module docstring. PLAN-plan-dependencies T10 sets this to False in the commit that backfills the field.
 PRE_BACKFILL_RATCHET = False
 
-# The core condition: the verdict. Planting `[]` makes every plan pass, and the EDGE_CASES below carry refusals that must then change.
-DEFECT = ("problems = graph.check(rel)", "problems = []")
+# The operator freeze's comparison (PLAN-plan-priority-concurrency.md section 8): planting "" lets the AI change an operator value, and the EDGE_CASE that introduces `(operator)` with no operator turn must then change. The suite also plants the D1-D7 verdict (`VERDICT_DEFECT`).
+DEFECT = ("frozen = _freeze(before_h, header, rel, doc)", 'frozen = ""')
+VERDICT_DEFECT = ("problems = graph.check(rel)", "problems = []")
 
 STOP_DIR = pathlib.Path(__file__).resolve().parents[2] / "hooks" / "stop"
 PLAN_RE = re.compile(r"(?:^|/)agent/plans/PLAN-[^/]+\.md$")
@@ -41,7 +46,7 @@ UNEXAMINED = (
     "edit passed UNEXAMINED. check:ci-plan-deps is the backstop."
 )
 
-HEADER = """BLOCKED: %s would be a live plan without a valid `Depends-On:` header.
+HEADER = """BLOCKED: %s would be a live plan without a valid header (`Depends-On:`, or a Priority/Concurrency/Owns line).
 
 A plan does not start before the plans it needs are finished, so every live plan
 says what it needs, or says why it needs nothing:
@@ -184,14 +189,159 @@ EDGE_CASES = [
         },
     ),
     ("no file path at all", {"tool_name": "Write", "tool_input": {"content": "Status: draft\n"}}),
+    # The X fields and the operator freeze.
+    (
+        "a malformed Priority",
+        {
+            "tool_name": "Write",
+            "tool_input": {
+                "file_path": "agent/plans/PLAN-zz-probe.md",
+                "content": "# P\n\nStatus: draft\nDepends-On: no-dep -- a probe plan with no upstream work\nPriority: P7\n",
+            },
+        },
+    ),
+    (
+        "the AI introducing an operator Priority with no operator turn",
+        {
+            "tool_name": "Write",
+            "tool_input": {
+                "file_path": "agent/plans/PLAN-zz-probe.md",
+                "content": "# P\n\nStatus: draft\nDepends-On: no-dep -- a probe plan with no upstream work\nPriority: P1 (operator)\n",
+            },
+        },
+    ),
+    (
+        "an AI Priority",
+        {
+            "tool_name": "Write",
+            "tool_input": {
+                "file_path": "agent/plans/PLAN-zz-probe.md",
+                "content": "# P\n\nStatus: draft\nDepends-On: no-dep -- a probe plan with no upstream work\nPriority: P1 -- proposed by AI\nConcurrency: parallel\nOwns: docs/zz-probe.md\n",
+            },
+        },
+    ),
 ]
 
 
-def _grammar():
-    """wl_plandeps, with the stop directory on sys.path for the import and for `finished_states`' lazy wl_planfile import. The caller removes the entry again."""
-    import wl_plandeps  # noqa: PLC0415 -- loaded only for a plan edit
+FROZEN = """BLOCKED: Priority on %s is operator-set; the AI never changes it.
 
-    return wl_plandeps
+  %s
+
+Ask the operator (AskUserQuestion), or they edit the line. An operator-directed
+change is accepted when the new line still carries `(operator)` and the operator's
+latest turn (or an AskUserQuestion answer after it) names both the plan and the new
+`P0`-`P3`.
+"""
+
+X_FOOTER = """
+The X header lines (PLAN-plan-priority-concurrency.md section 1), inside the first 12 lines:
+
+    Priority: P0|P1|P2|P3 [-- <reason>]            (`(operator)` is the operator's alone)
+    Concurrency: parallel [-- <reason>]  |  exclusive -- <reason, 12+ chars>
+    Owns: <glob>[ (<note>)], <glob>, ...  |  none -- <reason, 12+ chars>
+
+    .ci/scripts/quality/check_plan_deps.py --set-x %s "Owns: ..." --write
+"""
+
+PLAN_LEVEL_RE = re.compile(r"\bP([0-3])\b")
+
+
+def _grammar():
+    """(wl_plandeps, wl_planconc), with the stop directory on sys.path for the import and for `finished_states`' lazy wl_planfile import. The caller removes the entry again."""
+    import wl_planconc  # noqa: PLC0415 -- loaded only for a plan edit
+    import wl_plandeps  # noqa: PLC0415
+
+    return wl_plandeps, wl_planconc
+
+
+def _operator_texts(transcript_path):
+    """The operator's latest turn and every AskUserQuestion answer after it, from the transcript tail. [] when there is no transcript: then there is no escape, which is the freeze's safe side."""
+    if not transcript_path:
+        return []
+    try:
+        import json  # noqa: PLC0415
+
+        import wl_admit  # noqa: PLC0415 -- the rare path: an operator value is being changed
+    except ImportError:
+        return []
+    _tools, last = wl_admit.turn_tools(transcript_path)
+    texts = [last] if last else []
+    try:
+        with open(transcript_path, "rb") as fh:
+            fh.seek(0, 2)
+            size = fh.tell()
+            fh.seek(max(0, size - wl_admit.TAIL_BYTES))
+            chunk = fh.read()
+    except OSError:
+        return texts
+    asks, answers = set(), []
+    for raw in chunk.split(b"\n"):
+        try:
+            rec = json.loads(raw)
+        except ValueError:
+            continue
+        if not isinstance(rec, dict):
+            continue
+        # wl_admit's one definition of "the operator spoke", not a second copy of it.
+        if wl_admit._is_operator_turn(rec):
+            answers = []
+            continue
+        content = (rec.get("message") or {}).get("content")
+        if not isinstance(content, list):
+            continue
+        for block in content:
+            if not isinstance(block, dict):
+                continue
+            if block.get("type") == "tool_use" and block.get("name") == "AskUserQuestion":
+                asks.add(block.get("id"))
+            elif block.get("type") == "tool_result" and block.get("tool_use_id") in asks:
+                body = block.get("content")
+                if isinstance(body, list):
+                    body = " ".join(str(b.get("text") or "") for b in body if isinstance(b, dict))
+                answers.append(str(body or ""))
+    return texts + answers
+
+
+def _operator_directed(rel, new_pr, doc):
+    """True when an operator turn names this plan and the new level."""
+    base = rel.rsplit("/", 1)[-1]
+    slug = base[len("PLAN-") : -len(".md")]
+    for text in _operator_texts(doc.get("transcript_path")):
+        named = base in text or re.search(r"(?<![\w-])%s(?![\w-])" % re.escape(slug), text)
+        if named and str(new_pr.level) in PLAN_LEVEL_RE.findall(text):
+            return True
+    return False
+
+
+def _freeze(before, after, rel, doc):
+    """Why the result breaks the operator freeze, or "". `before` is the on-disk header (None for a new file)."""
+    was = before.priority if before is not None else None
+    now = after.priority
+    norm = lambda t: " ".join((t or "").split())  # noqa: E731
+    if was is not None and was.operator:
+        same = (
+            now is not None
+            and now.operator
+            and (now.level, norm(now.reason)) == (was.level, norm(was.reason))
+        )
+        if same:
+            return ""
+        if now is not None and now.operator and _operator_directed(rel, now, doc):
+            return ""
+        if now is None:
+            return "the edit drops the operator-set `Priority: %s`" % was
+        if not now.operator:
+            return "the edit demotes the operator-set `Priority: %s` to the AI value `%s`" % (
+                was,
+                now,
+            )
+        return "the edit changes the operator-set `Priority: %s` to `%s`" % (was, now)
+    if now is not None and now.operator and not _operator_directed(rel, now, doc):
+        return (
+            "the edit introduces `Priority: %s`, and only an operator turn can mark a value `(operator)`"
+            % now
+        )
+    return ""
 
 
 def _result_text(doc, path):
@@ -245,12 +395,22 @@ def run(ev):
     inserted = syspath.on_sys_path(STOP_DIR)
     try:
         try:
-            deps = _grammar()
+            deps, conc = _grammar()
             finished = deps.finished_states()
         except (ImportError, OSError, SyntaxError) as exc:
             ev.warn(UNEXAMINED % exc)
             return hookio.ALLOW
         header = deps.parse_header(text)
+        try:
+            before_text = path.read_text(encoding="utf-8") if path.is_file() else None
+        except OSError:
+            before_text = None
+        before_h = deps.parse_header(before_text) if before_text is not None else None
+        # The freeze runs on EVERY plan edit, finished plans included: a record's operator value is still the operator's.
+        frozen = _freeze(before_h, header, rel, doc)
+        if frozen:
+            ev.warn_raw(FROZEN % (rel, frozen))
+            return hookio.DENY
         if (
             deps.is_stub_header(header)
             or header.status in finished
@@ -259,12 +419,26 @@ def run(ev):
             return hookio.ALLOW
         graph = deps.Graph.load(tree, override={rel: text})
         problems = graph.check(rel)
-        if not problems:
+        xprob = [
+            (f.code, f.message)
+            for f in conc.x_findings(header, text)
+            if deps.X_FIELDS_REQUIRED or not f.missing
+        ]
+        if xprob and not deps.X_FIELDS_REQUIRED and before_h is not None:
+            had_x = {f.code for f in conc.x_findings(before_h, before_text) if not f.missing}
+            if {code for code, _ in xprob} <= had_x:
+                ev.warn(
+                    "block-plan-without-depends: %s keeps a malformed X header line (%s) it already "
+                    "had; allowed only until the migration (PLAN-plan-priority-concurrency T11)."
+                    % (rel, ", ".join(sorted(had_x)))
+                )
+                xprob = []
+        if not problems and not xprob:
             return hookio.ALLOW
-        if PRE_BACKFILL_RATCHET and path.is_file():
+        if problems and PRE_BACKFILL_RATCHET and path.is_file():
             before = deps.Graph.load(tree).check(rel)
             had = {code for code, _ in before}
-            if before and {code for code, _ in problems} <= had:
+            if before and {code for code, _ in problems} <= had and not xprob:
                 ev.warn(
                     "block-plan-without-depends: %s still lacks a valid `Depends-On:` (%s); allowed "
                     "only until the backfill (PLAN-plan-dependencies T10). Fix it with "
@@ -276,11 +450,14 @@ def run(ev):
         if inserted and str(STOP_DIR) in sys.path:
             sys.path.remove(str(STOP_DIR))
 
+    both = problems + xprob
     lines = [HEADER % rel]
-    for code, msg in problems[:12]:
+    for code, msg in both[:12]:
         lines.append("  %s  %s\n" % (code, msg))
-    if len(problems) > 12:
-        lines.append("  ... and %d more\n" % (len(problems) - 12))
+    if len(both) > 12:
+        lines.append("  ... and %d more\n" % (len(both) - 12))
     lines.append(FOOTER % rel)
+    if xprob:
+        lines.append(X_FOOTER % rel)
     ev.warn_raw("".join(lines))
     return hookio.DENY

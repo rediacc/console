@@ -422,7 +422,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/hooks/stop/test-deflect.py | (none) | (nothing) | py |
 | .claude/hooks/stop/test-judge-schema.py | (none) | via .claude/rediacc_hooks/tests/test_hooks_delegates.py | py |
 | .claude/hooks/stop/test-plan-status-parse.py | (none) | via .claude/rediacc_hooks/guards/block_plan_without_tasks.py | py |
-| .claude/hooks/stop/test-plandeps.py | (none) | via .claude/rediacc_hooks/guards/block_plan_without_depends.py | py |
+| .claude/hooks/stop/test-plandeps.py | (none) | via .claude/rediacc_hooks/guards/block_plan_concurrency.py | py |
 | .claude/hooks/stop/test-planenforce.py | (none) | via .claude/hooks/stop/wl_planenforce.py | py |
 | .claude/hooks/stop/test-planfile.py | (none) | via .claude/hooks/stop/test-planenforce.py | py |
 | .claude/hooks/stop/test-planindex.py | (none) | via .claude/hooks/stop/wl_planindex.py | py |
@@ -430,7 +430,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/hooks/stop/test-popup.py | (none) | via .claude/hooks/stop/wl_popup.py | py |
 | .claude/hooks/stop/test-reggate-ledger.py | (none) | (nothing) | py |
 | .claude/hooks/stop/test-teammate-idle.py | (none) | via .claude/rediacc_hooks/tests/test_hooks_delegates.py | py |
-| .claude/hooks/stop/wl_admit.py | (none) | via .claude/rediacc_hooks/tests/test_hooks_delegates.py | py |
+| .claude/hooks/stop/wl_admit.py | (none) | via .claude/rediacc_hooks/guards/block_plan_without_depends.py | py |
 | .claude/hooks/stop/wl_agents.py | (none) | via .claude/rediacc_hooks/guards/block_settled_questions.py | py |
 | .claude/hooks/stop/wl_backlog.py | (none) | via .claude/hooks/stop/test-planenforce.py | py |
 | .claude/hooks/stop/wl_bgsweep.py | (none) | via .claude/rediacc_hooks/tests/test_wl_identity.py | py |
@@ -453,6 +453,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/hooks/stop/wl_lineage.py | (none) | via .claude/hooks/stop/wl_core.py | py |
 | .claude/hooks/stop/wl_liveness.py | (none) | via .claude/hooks/stop/test-teammate-idle.py | py |
 | .claude/hooks/stop/wl_lkg.py | (none) | via .claude/hooks/stop/worklist.py | py |
+| .claude/hooks/stop/wl_planconc.py | (none) | via .claude/hooks/stop/test-plandeps.py | py |
 | .claude/hooks/stop/wl_plandeps.py | (none) | via .claude/hooks/stop/test-plandeps.py | py |
 | .claude/hooks/stop/wl_planenforce.py | (none) | via .claude/hooks/stop/wl_checks.py | py |
 | .claude/hooks/stop/wl_planfid.py | (none) | via .claude/hooks/stop/test-planrec.py | py |
@@ -468,7 +469,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/hooks/stop/wl_resprofile.py | (none) | via .claude/hooks/stop/wl_checks.py | py |
 | .claude/hooks/stop/wl_ressample.py | (none) | via .claude/hooks/stop/wl_common.py | py |
 | .claude/hooks/stop/wl_retro.py | (none) | via .claude/hooks/context/ctx_budget.py | py |
-| .claude/hooks/stop/wl_roster.py | (none) | via .claude/hooks/stop/wl_checks.py | py |
+| .claude/hooks/stop/wl_roster.py | (none) | via .claude/hooks/stop/test-plandeps.py | py |
 | .claude/hooks/stop/wl_roundlog.py | (none) | via .claude/hooks/stop/wl_checks.py | py |
 | .claude/hooks/stop/wl_rules.py | (none) | via .claude/hooks/stop/test-judge-schema.py | py |
 | .claude/hooks/stop/wl_shapedup.py | (none) | via .claude/hooks/stop/test-judge-schema.py | py |
@@ -515,6 +516,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/guards/block_nondraft_pr_create.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_nonstandard_branch_name.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_pathspecless_git_commit.py | (none) | via dispatch.py (glob) | py |
+| .claude/rediacc_hooks/guards/block_plan_concurrency.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_plan_without_depends.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_plan_without_tasks.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_premature_ready.py | (none) | via dispatch.py (glob) | py |
@@ -548,6 +550,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/guards/test-block_git_hook_bypass.py | (none) | (nothing) | py |
 | .claude/rediacc_hooks/guards/test-block_host_toolchain_run.py | (none) | (nothing) | py |
 | .claude/rediacc_hooks/guards/test-block_no_review_ineligible.py | (none) | (nothing) | py |
+| .claude/rediacc_hooks/guards/test-block_plan_concurrency.py | (none) | via .claude/rediacc_hooks/guards/block_plan_concurrency.py | py |
 | .claude/rediacc_hooks/guards/test-block_plan_without_depends.py | (none) | via .claude/rediacc_hooks/guards/block_plan_without_depends.py | py |
 | .claude/rediacc_hooks/guards/test-block_prose_style_commit.py | (none) | via .claude/hooks/context/stop-hook-edit-check.py | py |
 | .claude/rediacc_hooks/guards/test-block_prose_style_edit.py | (none) | via .claude/rediacc_hooks/guards/block_prose_style_edit.py | py |
@@ -638,7 +641,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/tests/test_wl_waiter_controls.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/wlfix.py | (none) | via .claude/hooks/stop/wl_popup.py | py |
 
-238 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
+241 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
 
 <!-- <<< gen-docs -->
 

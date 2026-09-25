@@ -110,6 +110,7 @@ import tempfile
 from typing import Any
 
 import wl_core as C
+import wl_plandeps as PD
 import wl_planfid as PFID
 import wl_planfile as PF
 import wl_proc
@@ -180,6 +181,12 @@ HEADER_FIELD_KEYS = frozenset(
         "Supersedes",
         "Extends",
         "Related",
+        # A parked record is a required plan (wl_plandeps), so its `Depends-On:` must survive a re-render; it rides after `Record-Sig` with the X lines.
+        "Depends-On",
+        # agent/plans/PLAN-plan-priority-concurrency.md T6: the X lines ride a record verbatim, rendered AFTER `Record-Sig` so the spine above stays inside HEADER_LINES.
+        "Priority",
+        "Concurrency",
+        "Owns",
     }
 )
 FULLTEXT_RE = re.compile(r"^Full-Text:[ \t]*([0-9a-f]{7,40})[ \t]+(\S+)[ \t]*$", re.MULTILINE)
@@ -522,6 +529,18 @@ def _owner_line(head):
     return m.group(1).strip() if m else ""
 
 
+def x_values(text):
+    """{field: raw value} for every X header line (`Priority`, `Concurrency`, `Owns`) inside `wl_plandeps.X_HEADER_LINES`, verbatim, malformed ones included: a record preserves what the plan said, the way it preserves `Owner:`, and judging it is check:ci-plan-deps' job."""
+    fields = PD.parse_header(text or "").fields
+    return {name: fields[name].value for name in PD.X_FIELDS if name in fields}
+
+
+def depends_value(text):
+    """The raw `Depends-On:` value inside its 10-line window, or "". Found 2026-09-25: render() never wrote it, so re-rendering a parked record (a required plan) dropped the line and turned check:ci-plan-deps red with D1."""
+    f = PD.parse_header(text or "").fields.get(PD.FIELD)
+    return f.value if f is not None else ""
+
+
 def parse(text):
     """A record as a dict, or None when this is not a record at all.
 
@@ -575,6 +594,8 @@ def parse(text):
         "history": [
             ln for ln in (secs.get("History", "") or "").splitlines() if ln.strip().startswith("-")
         ],
+        "depends": depends_value(text),
+        "x": x_values(text),
         "problems": problems,
     }
 
@@ -842,6 +863,16 @@ def render(rec):
         lines.append("Full-Text: %s %s" % (rec["full_text_sha"], rec["full_text_path"]))
     lines.append("Full-Text-Blob: %s" % rec["blob"])
     lines.append("Record-Sig: %s" % record_sig(rec))
+    # AFTER the signature, never above it: title, Status, Owner, Full-Text, Full-Text-Blob and Record-Sig fill lines 1-6, so the X lines land at 7-9, inside the 12-line X window, and no spine field moves.
+    if rec.get("depends"):
+        lines.append("Depends-On: %s" % rec["depends"])
+    # One literal append per field, each under `if rec.get(...)`, because that is the shape gen-docs reads to derive the plan-record-grammar table (scripts/lib/doc-providers.ts): a generic loop there documents the fields as "never written by render()", which is false.
+    if rec.get("x") and rec["x"].get("Priority"):
+        lines.append("Priority: %s" % rec["x"]["Priority"])
+    if rec.get("x") and rec["x"].get("Concurrency"):
+        lines.append("Concurrency: %s" % rec["x"]["Concurrency"])
+    if rec.get("x") and rec["x"].get("Owns"):
+        lines.append("Owns: %s" % rec["x"]["Owns"])
     lines.append("")
 
     for name in PROSE_SECTIONS:
@@ -1552,6 +1583,8 @@ def compact(root, rel, me, why="author", park=False, now=None):
         "blob": d["blob"],
         "sections": prose,
         "boxes": d["boxes"],
+        "depends": depends_value(text),
+        "x": x_values(text),
         "history": [],
         "trailer": {
             "Record-Kind": status,
@@ -2595,4 +2628,24 @@ def revive(root, rel):
     body = _git_raw(root, "cat-file", "blob", rec["blob"])
     if not body:
         raise RecordError("blob %s read back empty; refusing to overwrite the record" % rec["blob"])
-    return body, "restored %d byte(s) from blob %s" % (len(body), rec["blob"][:12])
+    note = "restored %d byte(s) from blob %s" % (len(body), rec["blob"][:12])
+    # A REVIVED PLAN IS LIVE AGAIN, so it owes the X lines (agent/plans/PLAN-plan-priority-concurrency.md T6). A plan compacted before they existed has none in its blob; the record's own header carries them over. Only a field the text lacks is added, so a blob that already has all three comes back byte for byte.
+    have = x_values(body)
+    carry = {k: v for k, v in (rec.get("x") or {}).items() if k not in have}
+    if carry:
+        try:
+            body = PD.set_x(body, carry)
+        except ValueError as exc:
+            raise RecordError(
+                "cannot carry %s over into %s: %s" % (", ".join(carry), rel, exc)
+            ) from exc
+        note += "; carried %s over from the record" % ", ".join(carry)
+    missing = [k for k in PD.X_FIELDS if k not in x_values(body)]
+    if missing and PD.X_FIELDS_REQUIRED:
+        raise RecordError(
+            "%s would come back live without %s, which every live plan carries. Set them on the "
+            'record first -- `.ci/scripts/quality/check_plan_deps.py --set-x %s "Priority: P3 -- <why>" '
+            '"Concurrency: parallel" "Owns: <globs>" --write` -- then revive.'
+            % (rel, ", ".join(missing), rel)
+        )
+    return body, note

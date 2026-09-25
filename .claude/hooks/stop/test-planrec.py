@@ -129,6 +129,10 @@ PLAN = (
     "# A fixture plan\n"
     "Status: executing\n"
     "Owner: deadbeef\n"
+    # The X lines every live plan carries once PLAN-plan-priority-concurrency T11 lands, so revive() round-trips this plan in both states of `X_FIELDS_REQUIRED`.
+    "Priority: P2 -- the fixture plan\n"
+    "Concurrency: parallel\n"
+    "Owns: docs/fixture/**\n"
     "\n"
     "## Problem\n"
     "Something was broken and this plan describes the fix.\n"
@@ -467,6 +471,90 @@ raises(
 )
 (ROOT / REL).write_text(PLAN, encoding="utf-8")
 
+# --------------------------------------------------------------------------- 8b. The X lines ride the record (agent/plans/PLAN-plan-priority-concurrency.md T6). ---------------------------------------------------------------------------
+XV = {"Priority": "P2 -- the fixture plan", "Concurrency": "parallel", "Owns": "docs/fixture/**"}
+control("compact carried the plan's X lines into the record", REC["x"], XV)
+_xl = RECORD.splitlines()
+_sig = next(i for i, ln in enumerate(_xl) if ln.startswith("Record-Sig:"))
+control(
+    "render: the X lines follow Record-Sig, in order",
+    _xl[_sig + 1 : _sig + 4],
+    ["Priority: P2 -- the fixture plan", "Concurrency: parallel", "Owns: docs/fixture/**"],
+)
+truthy("render: Record-Sig stays inside HEADER_LINES", _sig + 1 <= R.HEADER_LINES)
+control(
+    "render: every X line parses inside the X window",
+    sorted(R.PD.parse_header(RECORD).fields) == sorted(["Priority", "Concurrency", "Owns"]),
+    True,
+)
+control(
+    "render: a record without them renders none", R.render(dict(REC, x={})).count("Priority:"), 0
+)
+control("parse: reads the X lines back verbatim", R.parse(RECORD)["x"], XV)
+control(
+    "the X lines do not move the signature",
+    R.parse(R.render(dict(REC, x={})))["record_sig"],
+    REC["record_sig"],
+)
+RENET_SHAPED = (
+    "# PLAN: parked\nStatus: parked\nDepends-On: no-dep -- cites no other plan\nOwner: w\n"
+    "Full-Text-Blob: %s\nRecord-Sig: 823c73dd\n\n## Why\nparked\n" % ("0" * 40)
+)
+control(
+    "parse: a record's Depends-On is read",
+    R.parse(RENET_SHAPED)["depends"],
+    "no-dep -- cites no other plan",
+)
+control(
+    "render: a parked record keeps its Depends-On (it is a required plan)",
+    R.PD.parse_header(R.render(R.parse(RENET_SHAPED))).depends is not None,
+    True,
+)
+control("render: a record without one renders none", RECORD.count("Depends-On:"), 0)
+# A LEGACY BLOB: a plan compacted before the X lines existed. Its record carries them (the migration writes them into the record's header), the blob does not.
+LEGACY = PLAN.replace(
+    "Priority: P2 -- the fixture plan\nConcurrency: parallel\nOwns: docs/fixture/**\n", ""
+)
+_legacy_blob = subprocess.run(
+    ["git", "-C", str(ROOT), "hash-object", "-w", "--stdin"],
+    input=LEGACY,
+    capture_output=True,
+    text=True,
+    check=True,
+).stdout.strip()
+(ROOT / REL).write_text(R.render(dict(REC, blob=_legacy_blob)), encoding="utf-8")
+xbody, xnote = R.revive(ROOT, REL)
+control("revive: carries the X lines into a blob that lacks them", R.x_values(xbody), XV)
+truthy("revive: ...and says so", "carried" in xnote)
+control(
+    "revive: every other byte of the blob is kept",
+    [ln for ln in xbody.splitlines() if not ln.startswith(("Priority:", "Concurrency:", "Owns:"))],
+    LEGACY.splitlines(),
+)
+control(
+    "revive: the carried lines sit right after the header block",
+    xbody.splitlines()[3:6],
+    _xl[_sig + 1 : _sig + 4],
+)
+(ROOT / REL).write_text(R.render(dict(REC, blob=_legacy_blob, x={})), encoding="utf-8")
+_was_required = R.PD.X_FIELDS_REQUIRED
+try:
+    R.PD.X_FIELDS_REQUIRED = True
+    raises(
+        "revive: once the fields are mandatory, a record and blob carrying none are refused with the fix",
+        lambda: R.revive(ROOT, REL),
+        "--set-x",
+    )
+    R.PD.X_FIELDS_REQUIRED = False
+    control(
+        "revive: before the migration the same record revives untouched",
+        R.revive(ROOT, REL)[0],
+        LEGACY,
+    )
+finally:
+    R.PD.X_FIELDS_REQUIRED = _was_required
+(ROOT / REL).write_text(PLAN, encoding="utf-8")
+
 # --------------------------------------------------------------------------- 9. Sizes, placeholders and the index. ---------------------------------------------------------------------------
 truthy("the record is smaller than the plan", len(RECORD) < len(PLAN))
 truthy(
@@ -512,7 +600,7 @@ truthy("CONTROL: an unparseable status is still in scope", F.in_scope_status("UN
 # drops a trailing blank line, and the revived file then no longer hashes to the blob it came from -- which contradicts the single claim the whole design rests on. One plan in the real tree already ends that way. ---------------------------------------------------------------------------
 EDGE = "agent/PLAN-edge.md"
 EDGE_TEXT = (
-    "# Edge\nStatus: executing\n\n## Why\nA reason.\n\n"
+    "# Edge\nStatus: executing\nPriority: P3\nConcurrency: parallel\nOwns: docs/edge/**\n\n## Why\nA reason.\n\n"
     + PAD
     + "\n## Tasks\n- [x] "
     + TASK_DONE
@@ -1314,7 +1402,7 @@ falsy("a plain plan is not a record", R.is_record(PLAN))
 truthy("the rendered record IS one", R.is_record(RECORD))
 control("parse() returns None for a plain plan rather than a blank record", R.parse(PLAN), None)
 
-if Tally.count < 220:
+if Tally.count < 240:
     Tally.fails += 1
     print(
         "FAIL  only %d control(s) ran; the file is not being executed as written" % Tally.count,

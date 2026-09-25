@@ -29,11 +29,15 @@ INDEX = (
 )
 
 
+#: Every fixture plan carries a valid X triple (agent/plans/PLAN-plan-priority-concurrency.md), so each tree below means the same before and after `wl_plandeps.X_FIELDS_REQUIRED` flips at the T11 migration.
+X_TRIPLE = "Priority: P2 -- a fixture plan\nConcurrency: parallel\nOwns: docs/fixture/**\n"
+
+
 def _plan(status="in-progress", dep=None):
     text = "# PLAN: sample\n\nStatus: %s\nOwner: cafe0000\n" % status
     if dep is not None:
         text += "Depends-On: %s\n" % dep
-    return text + "\n## Tasks\n\n- [ ] T1 a box\n"
+    return text + X_TRIPLE + "\n## Tasks\n\n- [ ] T1 a box\n"
 
 
 def _seed(tmp_path: pathlib.Path, **plans: str | None) -> pathlib.Path:
@@ -252,3 +256,239 @@ def test_draft_proposes_and_never_writes(gate, tmp_path):
     )
     gate.assert_eq({p: p.read_bytes() for p in root.rglob("*.md")}, snapshot, "no file changed")
     gate.log_pass("--draft proposes from citations and writes nothing")
+
+
+# --------------------------------------------------------------------------- The X fields (agent/plans/PLAN-plan-priority-concurrency.md T3).
+
+
+def _xplan(pri="P2 -- a fixture plan", dep="no-dep -- a fixture plan with X lines"):
+    return _plan(dep=dep).replace("Priority: P2 -- a fixture plan\n", "Priority: %s\n" % pri)
+
+
+def test_x_fields_are_pending_not_red_before_the_migration(gate, tmp_path):
+    """While `X_FIELDS_REQUIRED` is False a tree without the X lines stays green, and says what is pending."""
+    if D.X_FIELDS_REQUIRED:
+        pytest.skip("the migration has landed; the strict half is the gate's --selftest")
+    malformed = _xplan(pri="P0. an operator ruling", dep="PLAN-y.md")
+    result = _gate(_seed(tmp_path, x=malformed))
+    gate.assert_exit(0, result, "missing and malformed X lines are reported, not failed")
+    gate.assert_contains(result.out, "X fields pending migration", "the pending block is printed")
+    gate.assert_contains(
+        result.out, "D11  agent/plans/PLAN-x.md", "a malformed line present is named"
+    )
+    gate.assert_contains(
+        result.out, "enforcement OFF until the T11 migration", "the green says it is lax"
+    )
+    gate.log_pass("X findings are visible and not enforced before the migration")
+
+
+def test_d17_an_operator_demotion_reds_the_tree(gate, tmp_path):
+    root = _seed(tmp_path, x=_xplan(pri="P1", dep="PLAN-y.md"))
+    base = tmp_path / "base"
+    _write(base, "agent/plans/PLAN-x.md", _xplan(pri="P1 (operator) -- ruled", dep="PLAN-y.md"))
+    result = _gate(root, "--base-tree", str(base))
+    gate.assert_exit(1, result, "an operator Priority demoted to an AI value")
+    gate.assert_contains(result.err, "    D17  ", "D17 is named")
+    gate.log_pass("D17 planted through --base-tree reds the tree")
+
+
+def test_d17_a_kept_marker_is_info_not_red(gate, tmp_path):
+    root = _seed(tmp_path, x=_xplan(pri="P0 (operator) -- ruled", dep="PLAN-y.md"))
+    base = tmp_path / "base"
+    _write(base, "agent/plans/PLAN-x.md", _xplan(pri="P1 (operator) -- ruled", dep="PLAN-y.md"))
+    result = _gate(root, "--base-tree", str(base))
+    gate.assert_exit(0, result, "the operator's own level change")
+    gate.assert_contains(result.out, "INFO D17 agent/plans/PLAN-x.md", "shown as INFO")
+    gate.log_pass("a level change that keeps the marker is INFO only")
+
+
+def test_d17_reads_the_merge_base_from_git(gate, tmp_path):
+    """The real path: `git merge-base HEAD main`, then one `git grep` at the base. A plan on main carries an operator value; the branch demotes it."""
+    import subprocess  # noqa: PLC0415
+
+    root = _seed(tmp_path, x=_xplan(pri="P1 (operator) -- ruled", dep="PLAN-y.md"))
+
+    def git(*args):
+        subprocess.run(["git", "-C", str(root), *args], check=True, capture_output=True, text=True)
+
+    git("init", "-q", "-b", "main")
+    git("-c", "user.name=f", "-c", "user.email=f@example.com", "add", "-A")
+    git("-c", "user.name=f", "-c", "user.email=f@example.com", "commit", "-qm", "base")
+    git("checkout", "-q", "-b", "0925-1")
+    path = root / "agent/plans/PLAN-x.md"
+    path.write_text(
+        path.read_text(encoding="utf-8").replace("P1 (operator) -- ruled", "P1 -- ruled"),
+        encoding="utf-8",
+    )
+    result = _gate(root)
+    gate.assert_exit(1, result, "demoted on the branch")
+    gate.assert_contains(result.err, "    D17  ", "D17 from git")
+    path.write_text(
+        path.read_text(encoding="utf-8").replace("P1 -- ruled", "P1 (operator) -- ruled"),
+        encoding="utf-8",
+    )
+    result = _gate(root)
+    gate.assert_exit(0, result, "restored")
+    gate.assert_contains(
+        result.out, "1 operator-set Priority line(s) there", "the base was really read"
+    )
+    gate.log_pass("D17 reads the base from git and clears when the value is restored")
+
+
+def test_set_x_writes_only_with_write_and_refuses_the_freeze(gate, tmp_path):
+    root = _seed(tmp_path, x=_xplan(pri="P1 (operator) -- ruled", dep="PLAN-y.md"))
+    path = root / "agent/plans/PLAN-x.md"
+    before = path.read_bytes()
+    dry = _gate(root, "--set-x", "agent/plans/PLAN-x.md", "Owns: docs/new/**")
+    gate.assert_exit(0, dry, "a valid Owns")
+    gate.assert_eq(path.read_bytes(), before, "a dry run writes nothing")
+    frozen = _gate(
+        root, "--set-x", "agent/plans/PLAN-x.md", "Priority: P0 (operator) -- ruled", "--write"
+    )
+    gate.assert_exit(1, frozen, "an operator value")
+    gate.assert_contains(frozen.err, "operator-set", "the refusal says why")
+    gate.assert_eq(path.read_bytes(), before, "the refusal writes nothing")
+    wrote = _gate(root, "--set-x", "agent/plans/PLAN-x.md", "Owns: docs/new/**", "--write")
+    gate.assert_exit(0, wrote, "written")
+    gate.assert_contains(
+        path.read_text(encoding="utf-8"), "Owns: docs/new/**\n", "the line is in the file"
+    )
+    gate.log_pass("--set-x is a dry run by default and never touches an operator value")
+
+
+def test_overlaps_names_the_pair_and_a_shared_file(gate, tmp_path):
+    root = _seed(
+        tmp_path,
+        x=_xplan(dep="PLAN-y.md").replace(
+            "Owns: docs/fixture/**", "Owns: src/shared.py, docs/x/**"
+        ),
+    )
+    y = root / "agent/plans/PLAN-y.md"
+    y.write_text(
+        y.read_text(encoding="utf-8").replace("Owns: docs/fixture/**", "Owns: src/*.py"),
+        encoding="utf-8",
+    )
+    _write(root, "src/shared.py", "")
+    result = _gate(root, "--overlaps")
+    gate.assert_exit(0, result, "advisory")
+    gate.assert_contains(result.out, "PLAN-x.md  x  PLAN-y.md", "the pair")
+    gate.assert_contains(result.out, "shared files (1): src/shared.py", "the materialised file")
+    gate.log_pass("--overlaps names the pair, the witness and the real shared file")
+
+
+# ---- the migration dry run (section 8): five plans, two of them required.
+
+MIG_GOLDEN = (
+    "--- a/agent/plans/PLAN-live.md\n"
+    "+++ b/agent/plans/PLAN-live.md\n"
+    "@@ -5,2 +5,5 @@\n"
+    " Depends-On: no-dep -- a fixture plan stands alone\n"
+    "+Priority: P1 -- seed: Status executing, 1 open box(es)\n"
+    "+Concurrency: parallel\n"
+    "+Owns: src/a.py, src/b.py\n"
+    " \n"
+    "--- a/agent/plans/PLAN-rec.md\n"
+    "+++ b/agent/plans/PLAN-rec.md\n"
+    "@@ -8,2 +8,5 @@\n"
+    " Record-Sig: 823c73dd\n"
+    "+Priority: P3 -- seed: Status parked, 0 open box(es)\n"
+    "+Concurrency: parallel\n"
+    "+Owns: none -- seed: the plan cites no repo path to edit\n"
+    " \n"
+    "migrate-x --diff: 2 of 2 required plan(s) would change; nothing was written.\n"
+)
+
+
+def _mig_tree(tmp_path: pathlib.Path) -> pathlib.Path:
+    root = tmp_path / "mig"
+    _write(
+        root,
+        "agent/plans/PLAN-live.md",
+        "# PLAN: live\n\nStatus: executing\nOwner: cafe0000\nDepends-On: no-dep -- a fixture plan stands alone\n\n## Tasks\n\n- [ ] T1 edit `src/a.py` and `src/b.py`\n- [x] T0 read `src/c.py`\n",
+    )
+    _write(
+        root,
+        "agent/plans/PLAN-rec.md",
+        "# PLAN: rec\nStatus: parked\nDepends-On: no-dep -- cites no other plan\nFirst-Seen: 2026-09-17\nOwner: housekeeping writer\nFull-Text: f7a5351a9 agent/PLAN-rec.md\nFull-Text-Blob: %s\nRecord-Sig: 823c73dd\n\n## Why\nparked\n"
+        % ("0f714f0ac7" * 4),
+    )
+    _write(
+        root,
+        "agent/plans/PLAN-stub.md",
+        "# stub\n\nStatus: moved\nMoved-To: agent/plans/_done/PLAN-old.md\n",
+    )
+    _write(
+        root, "agent/plans/PLAN-comp.md", "# PLAN: comp\nStatus: compacted\nOwner: x\n\n## Why\nx\n"
+    )
+    _write(
+        root,
+        "agent/plans/_done/PLAN-old.md",
+        "# PLAN: old\n\nStatus: done\n\n- [ ] T1 `src/a.py`\n",
+    )
+    for name in ("a", "b", "c"):
+        _write(root, "src/%s.py" % name, "")
+    return root
+
+
+def _snapshot(root: pathlib.Path) -> dict:
+    import hashlib  # noqa: PLC0415
+
+    return {
+        p.relative_to(root).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
+        for p in sorted(root.rglob("*"))
+        if p.is_file()
+    }
+
+
+def test_migrate_x_diff_is_golden_and_writes_nothing(gate, tmp_path):
+    root = _mig_tree(tmp_path)
+    before = _snapshot(root)
+    result = _gate(root, "--migrate-x", "--diff")
+    gate.assert_exit(0, result, "a dry run")
+    gate.assert_eq(
+        result.out,
+        MIG_GOLDEN,
+        "the diff equals the golden: only the two required plans, three lines each",
+    )
+    gate.assert_eq(_snapshot(root), before, "the tree is byte-identical afterwards")
+    gate.log_pass("--migrate-x --diff is the golden and writes nothing")
+
+
+def test_migrate_x_apply_needs_write_refuses_drift_and_adds_three_lines(gate, tmp_path):
+    root = _mig_tree(tmp_path)
+    saved = _gate(root, "--migrate-x", "--save")
+    gate.assert_exit(0, saved, "--save")
+    proposal = root / ".ci/cache/plan-x-migration/proposal.json"
+    gate.assert_eq(proposal.is_file(), True, "the proposal is written under the ignored cache")
+    before = _snapshot(root)
+    dry = _gate(root, "--migrate-x", "--apply", str(proposal))
+    gate.assert_exit(0, dry, "--apply without --write")
+    gate.assert_eq(_snapshot(root), before, "--apply without --write writes nothing")
+    table = _gate(root, "--migrate-x", "--table")
+    gate.assert_contains(table.out, "2 row(s).", "the approval table has the two required plans")
+    live = root / "agent/plans/PLAN-live.md"
+    original = live.read_text(encoding="utf-8")
+    live.write_text(original + "\nedited after --save\n", encoding="utf-8")
+    drift = _gate(root, "--migrate-x", "--apply", str(proposal), "--write")
+    gate.assert_exit(1, drift, "a file changed since --save")
+    gate.assert_contains(drift.err, "changed since --save", "the refusal names the drift")
+    gate.assert_contains(
+        live.read_text(encoding="utf-8"), "edited after --save", "nothing was written over it"
+    )
+    live.write_text(original, encoding="utf-8")
+    wrote = _gate(root, "--migrate-x", "--apply", str(proposal), "--write")
+    gate.assert_exit(0, wrote, "--apply --write")
+    gate.assert_contains(wrote.out, "3\t0\tagent/plans/PLAN-live.md", "numstat 3 0")
+    gate.assert_contains(wrote.out, "3\t0\tagent/plans/PLAN-rec.md", "numstat 3 0 on the record")
+    rec = (root / "agent/plans/PLAN-rec.md").read_text(encoding="utf-8").splitlines()
+    gate.assert_eq(
+        rec.index("Record-Sig: 823c73dd") + 1 <= 10, True, "the record's spine stays within line 10"
+    )
+    gate.assert_eq(
+        [ln.split(":")[0] for ln in rec[8:11]],
+        ["Priority", "Concurrency", "Owns"],
+        "the X lines land at 9-11",
+    )
+    gate.log_pass(
+        "--apply writes only with --write, refuses drift, and adds exactly three lines per file"
+    )

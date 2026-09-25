@@ -26,6 +26,12 @@
     },
     ".claude/rediacc_hooks/guards/block_focus_spawn.py": {
       "why": "the PreToolUse half of focus mode: it refuses writer spawns while a PR wind-down is declared, and an environment read here would let a spawn bypass the focus the Stop hook enforces"
+    },
+    ".claude/hooks/stop/wl_planconc.py": {
+      "why": "plan priority order and the plan-concurrency rules (the mutex and the Owns overlap, operator 2026-09-25 section X); a variable that retuned what counts as an overlap, or which lease counts as live, would be an escape hatch around the pre-agent guard and the roster that read it"
+    },
+    ".claude/rediacc_hooks/guards/block_plan_concurrency.py": {
+      "why": "the PreToolUse half of plan concurrency: it refuses a writer spawn that breaks a live exclusive plan or claims files a live plan owns, and an environment read here would let a spawn bypass it"
     }
   },
   "exclusions": {
