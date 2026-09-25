@@ -210,12 +210,12 @@
         "all"
       ],
       "patterns": [
-        "(?i)\\byou\\b",
-        "(?i)\\byour\\b",
-        "(?i)\\byours\\b",
-        "(?i)\\byourself\\b",
-        "(?i)\\byourselves\\b",
-        "(?i)\\byou'(?:re|ve|ll|d)\\b"
+        "(?i)(?<![-/.\\w])\\byou\\b(?![-/]\\w)(?!\\.\\w)",
+        "(?i)(?<![-/.\\w])\\byour\\b(?![-/]\\w)(?!\\.\\w)",
+        "(?i)(?<![-/.\\w])\\byours\\b(?![-/]\\w)(?!\\.\\w)",
+        "(?i)(?<![-/.\\w])\\byourself\\b(?![-/]\\w)(?!\\.\\w)",
+        "(?i)(?<![-/.\\w])\\byourselves\\b(?![-/]\\w)(?!\\.\\w)",
+        "(?i)(?<![-/.\\w])\\byou'(?:re|ve|ll|d)\\b(?![-/]\\w)(?!\\.\\w)"
       ],
       "exceptions": [],
       "examples": [
@@ -228,6 +228,16 @@
           "text": "Have the tests been run?",
           "expect": "clean",
           "kind": "good"
+        },
+        {
+          "text": "The plan lives in PLAN-commit-as-you-go.md now.",
+          "expect": "clean",
+          "kind": "good"
+        },
+        {
+          "text": "Did you.",
+          "expect": "flag",
+          "kind": "bad"
         }
       ]
     },
@@ -240,13 +250,13 @@
         "all"
       ],
       "patterns": [
-        "\\bI\\b",
-        "\\bI'(?:m|ll|ve|d)\\b",
-        "(?i)\\blet me\\b",
-        "(?i)\\bme\\b",
-        "(?i)\\bmy\\b",
-        "(?i)\\bmine\\b",
-        "(?i)\\bmyself\\b"
+        "(?<![-/.\\w])\\bI\\b(?![-/]\\w)(?!\\.\\w)",
+        "(?<![-/.\\w])\\bI'(?:m|ll|ve|d)\\b(?![-/]\\w)(?!\\.\\w)",
+        "(?i)(?<![-/.\\w])\\blet\\x20me\\b(?![-/]\\w)(?!\\.\\w)",
+        "(?i)(?<![-/.\\w])\\bme\\b(?![-/]\\w)(?!\\.\\w)",
+        "(?i)(?<![-/.\\w])\\bmy\\b(?![-/]\\w)(?!\\.\\w)",
+        "(?i)(?<![-/.\\w])\\bmine\\b(?![-/]\\w)(?!\\.\\w)",
+        "(?i)(?<![-/.\\w])\\bmyself\\b(?![-/]\\w)(?!\\.\\w)"
       ],
       "exceptions": [
         "(?i)\\bmy (?:mistake|error|bad|fault|apologies|apology)\\b",
@@ -296,6 +306,16 @@
           "text": "Phase I covered the survey.",
           "expect": "clean",
           "kind": "good"
+        },
+        {
+          "text": "The route is GET /portal/me for the profile.",
+          "expect": "clean",
+          "kind": "good"
+        },
+        {
+          "text": "Ask me.",
+          "expect": "flag",
+          "kind": "bad"
         }
       ]
     },

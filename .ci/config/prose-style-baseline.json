@@ -15,16 +15,16 @@
   "that shrank by 29 can still hide one brand-new violation. Comparing sizes is not",
   "the same claim as diffing the sets."
  ],
- "count": 2950,
- "files": 728,
+ "count": 2903,
+ "files": 717,
  "by_rule": {
-  "R1": 1608,
+  "R1": 1584,
   "R11": 150,
   "R14": 1,
-  "R18": 14,
+  "R18": 13,
   "R19": 62,
-  "R2": 632,
-  "R7": 483
+  "R2": 612,
+  "R7": 481
  },
  "findings": {
   ".ci/breakpoint/README.md": {
@@ -47,14 +47,6 @@
     "336426ff6d8dda99"
    ]
   },
-  ".ci/config/carried-reds.json": {
-   "R18": [
-    "a2e4fb4c2acb9783"
-   ],
-   "R2": [
-    "bdd9543ade51aff1"
-   ]
-  },
   ".ci/config/env-manifest.json": {
    "R1": [
     "31757ffb12c43f3f",
@@ -67,7 +59,6 @@
   },
   ".ci/config/prose-style-rules.json": {
    "R1": [
-    "22fe182669235c38",
     "a372293b257a3584",
     "a43d1ee56aaf4f12",
     "ad2492b83de9c858",
@@ -79,7 +70,6 @@
     "98c86c0cdc78d756"
    ],
    "R2": [
-    "0d58c74c3153eacf",
     "4e07df087368fb91",
     "57ad69724668c864",
     "678a1fba893e1615",
@@ -797,11 +787,6 @@
     "891a21da008fe175"
    ]
   },
-  ".ci/rediacc_ci/tests/test_env_create_e2e_env.py": {
-   "R7": [
-    "21611d060802c577"
-   ]
-  },
   ".ci/rediacc_ci/tests/test_infra_ci_start_elite.py": {
    "R7": [
     "2ce20239c0bbd1ef",
@@ -1016,8 +1001,7 @@
   },
   ".ci/scripts/ci/watchdog-monitor.cjs": {
    "R1": [
-    "135fee91179aad61",
-    "cd1a28fec8c594b2"
+    "135fee91179aad61"
    ],
    "R2": [
     "63f212c332c0681b",
@@ -1348,7 +1332,6 @@
   },
   ".claude/agents/pr-babysitter.md": {
    "R1": [
-    "00dcb15d64343764",
     "0928fa77826c4c34",
     "0affd2f61926bb0f",
     "12ed2d465d6dc36a",
@@ -1374,7 +1357,6 @@
     "7dd6467bbefb3d45",
     "7ff15dba064801a0",
     "84781f869f498559",
-    "8bccb55ba8682d47",
     "8d4f735187adbc8e",
     "8faae96d8c27f0d4",
     "8ff21a02d6a273f3",
@@ -1388,17 +1370,14 @@
     "b19250416dcb6347",
     "b1b6a782e65b0aab",
     "b2d1bc11e9f86448",
-    "b3c7aa64d7e44f10",
     "be9dd21e6977a7b6",
     "c1efd3732d1e2c72",
     "cbac3dfe38d20936",
     "cbb12e7188885f75",
-    "cc4cb954cdc851e1",
     "ce0fd7bc356d58bd",
     "d47a4ec3dcdb9731",
     "dd3508002d26e5a4",
     "e1bf4f00a58ef7fe",
-    "e9333ca06876ff74",
     "eabc19bcc225771b",
     "f909c2a5fb1c7485",
     "fcc2082cc9800793"
@@ -1408,7 +1387,6 @@
    ],
    "R2": [
     "082af21c0070e4d6",
-    "127a1e0b851b32f6",
     "562b3557d2b95e02"
    ]
   },
@@ -1470,19 +1448,15 @@
   ".claude/commands/pr-babysit.md": {
    "R1": [
     "12b7ac609acf5e23",
-    "194f4f3e13d1d0f0",
-    "28c31ce76672ced7",
     "33bc0e7271527723",
     "3658916a9f2cee5f",
     "3f2b071dfbecaa0b",
     "5bf357a88a12c5e3",
     "5e6bda587c07e910",
-    "6b52de562b9b9225",
     "7aa697a5dd5b2f3d",
     "99edc574de5348fe",
     "a4c3f424a307fb0e",
     "ad0ef73e0ec83f52",
-    "b91f4eb1ee705a4a",
     "c265d6c277b3589a",
     "c46a664eacc38abd",
     "cb9b416f5f278e7f",
@@ -1506,7 +1480,6 @@
     "17a9b6e8ccf089cf",
     "4293a2d76ef325cd",
     "5c71dcb3f1a209de",
-    "899f82d77c675d9f",
     "abca684229274a70",
     "afdea05da4477b19",
     "b806e7176bf7daff",
@@ -1704,8 +1677,7 @@
   },
   ".claude/hooks/stop/wl_classsweep.py": {
    "R2": [
-    "7090cf52cd9d6c03",
-    "87c048163b0bee2e"
+    "7090cf52cd9d6c03"
    ]
   },
   ".claude/hooks/stop/wl_core.py": {
@@ -1992,7 +1964,6 @@
   },
   ".claude/rediacc_hooks/guards/block_edit_of_running_script.py": {
    "R1": [
-    "74cb473c3cf58be5",
     "eafaaba6b80b8331"
    ]
   },
@@ -2680,7 +2651,6 @@
     "b6c6cdf9c767ebf6"
    ],
    "R2": [
-    "185e5067156cad7d",
     "19eb752a210e4c2c",
     "2340cc38ed766db2",
     "26a7e4a5c1da7c20",
@@ -2688,7 +2658,6 @@
     "8a5e86a02d0f1d69",
     "8f3394ee9d5c3161",
     "943f270acdef8927",
-    "9db69c60f671b17a",
     "b952e8d828464643",
     "bd34b52c6d78af45"
    ]
@@ -2710,7 +2679,6 @@
    "R2": [
     "25ef48ccef931fc9",
     "9c30e0b1150cf351",
-    "b8413118d5c2a95e",
     "d6472a348e5ecba3",
     "e9e835cac8c8d80e",
     "f95c970f3b33cd9e"
@@ -2910,8 +2878,7 @@
     "7191deb41dc02559"
    ],
    "R2": [
-    "b3c051404f18a16e",
-    "dd006dc5ab521e06"
+    "b3c051404f18a16e"
    ]
   },
   "agent/programs/www-simplification/01-verified-context.md": {
@@ -3395,8 +3362,6 @@
     "1b8cda05975c1152",
     "219b652480ca6d4d",
     "253a70b5de2bbd11",
-    "299bc85254dcaa18",
-    "303cebd0432da886",
     "310feab8374292b6",
     "3e5fa3101f36b979",
     "43a7650433902d62",
@@ -3440,7 +3405,6 @@
     "e36fddf872dc3995",
     "e45820837621c8c6",
     "e88b331fa0515997",
-    "eb43d654cebac205",
     "ebcdc089b5fdfd5a",
     "ebffe69bf52bb516",
     "efb6d2a64a7809d8",
@@ -3506,9 +3470,6 @@
    "R2": [
     "26a5b842b47e6959",
     "92364c787d5f2406"
-   ],
-   "R7": [
-    "931a6c2d46a2c5bb"
    ]
   },
   "docs/agent-reference/local-env.md": {
@@ -3924,9 +3885,6 @@
    ]
   },
   "docs/design/05-feature-layer.md": {
-   "R1": [
-    "346f0297e2fa5b67"
-   ],
    "R7": [
     "f525cfa70dfad583"
    ]
@@ -4362,12 +4320,6 @@
     "5b31ce9ad73fc7c2"
    ]
   },
-  "packages/cli/src/commands/repo-push-stats.ts": {
-   "R2": [
-    "0ff05cbf2c3de755",
-    "d8a09f277e76f6b4"
-   ]
-  },
   "packages/cli/src/commands/repo-secret.ts": {
    "R1": [
     "4391b719076c76a2"
@@ -4397,11 +4349,6 @@
    "R1": [
     "018e3b2880e039b8",
     "58071419018f4258"
-   ]
-  },
-  "packages/cli/src/services/__tests__/config-prune-orphan-repos.test.ts": {
-   "R2": [
-    "95bda7af78bfd723"
    ]
   },
   "packages/cli/src/services/__tests__/config-strategy-binding.test.ts": {
@@ -4458,9 +4405,6 @@
    ]
   },
   "packages/cli/src/services/cluster/repo-replicate.ts": {
-   "R1": [
-    "9624da4b31c541a8"
-   ],
    "R7": [
     "e0246429054cd3f9"
    ]
@@ -4634,11 +4578,6 @@
     "a2f92767e2c4ba7a"
    ]
   },
-  "packages/e2e-tests/tests/18-ops-workflow.test.ts": {
-   "R2": [
-    "82d55447b0f33cd9"
-   ]
-  },
   "packages/e2e-tests/tests/25-backup-chunk-store.test.ts": {
    "R2": [
     "6e5f7a330ae13d7a"
@@ -4809,11 +4748,6 @@
     "8c57073d46b7af44"
    ]
   },
-  "packages/shared/src/storage-browser/parsers.ts": {
-   "R2": [
-    "6c13da2218ae159d"
-   ]
-  },
   "packages/shared/src/subscription/delegation-cert-policy.ts": {
    "R1": [
     "c99ba52fe58bf478"
@@ -4845,12 +4779,6 @@
   "packages/www/plans/tfans/02-ansible-modules.md": {
    "R11": [
     "8c456aafd8046153"
-   ]
-  },
-  "packages/www/plans/tfans/05-terraform-provider.md": {
-   "R2": [
-    "906ad25365d6c817",
-    "a58c83bda98b618c"
    ]
   },
   "packages/www/plans/tfans/06-terraform-resources.md": {
@@ -4916,11 +4844,6 @@
     "ae30de77b5f0753d"
    ]
   },
-  "packages/www/scripts/lib/landing-terminal-catalog.js": {
-   "R2": [
-    "e019b369a7072e4d"
-   ]
-  },
   "packages/www/scripts/lib/scenes/browser.ts": {
    "R7": [
     "07157ad829a18f96"
@@ -4959,12 +4882,6 @@
     "d08fb604d9a76cb7"
    ]
   },
-  "packages/www/scripts/validate-landing-cli-usage.js": {
-   "R2": [
-    "2fbf0aeacf312ce7",
-    "5d270073bcf39cd1"
-   ]
-  },
   "packages/www/scripts/validate-tutorial-transcripts.js": {
    "R1": [
     "84923704e2c52c6a"
@@ -4973,12 +4890,6 @@
   "packages/www/src/components/DocsSearchMount.tsx": {
    "R7": [
     "164ae3cf93fb11fc"
-   ]
-  },
-  "packages/www/src/components/Navigation.tsx": {
-   "R1": [
-    "078151aed20c9156",
-    "64e1e6a1bfaf2a09"
    ]
   },
   "packages/www/src/components/TutorialVideoPlayer.tsx": {
@@ -5351,14 +5262,11 @@
     "5081be969e9d6a37",
     "559a058f3b728432",
     "5c4068915cdec45b",
-    "8faf6fd45b7697cf",
     "9a53a5e1013d4b64",
     "a1b19ea7afa081a2",
     "a1c347b2f3addfd8",
-    "a9c339399d786c17",
     "b86aedb09aaf7aac",
     "dd7790abda1a922a",
-    "ee48e033abe12d9e",
     "f9b5a3f77ef9d716",
     "fa2efaf114cc74a9"
    ]
@@ -5435,7 +5343,6 @@
   },
   "packages/www/src/content/docs/en/kubernetes.md": {
    "R1": [
-    "39363e7fe2a9e5e8",
     "6186de16b851f723",
     "71650d4dea8a848e",
     "92eefc673b02e8a3",
@@ -6391,9 +6298,6 @@
    "R1": [
     "b1ae4fb9cb05d5d9"
    ],
-   "R2": [
-    "9a9fedc9a86236c7"
-   ],
    "R7": [
     "9f6098be1cc15d8b"
    ]
@@ -6415,11 +6319,6 @@
   "scripts/gen/i18n-backfill-commits.ts": {
    "R7": [
     "6b63ccb74c77c7af"
-   ]
-  },
-  "scripts/gen/validate-cli-examples.ts": {
-   "R2": [
-    "fabcb2ee6f3269ca"
    ]
   },
   "scripts/lib/controls.ts": {
