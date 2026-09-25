@@ -13,3 +13,9 @@ Updated 2026-09-25 ~21:30Z. PAUSED by operator ("do not start new sub-agents. I'
 2. Item 10: read scratchpad/item10-rerun3.log tail; if killed by hibernate, re-run lead_run.py 10 --reuse-bash (bws profile publish-solutions).
 3. Push (#83f94e68): with the machine idle, re-time check:ci-guard-mention-anchoring, ci-python-env-registry, ci-gate-tree-writes, ci-changed-selection alone; fix or mark slow with reason; clean-clone ci:quick receipt (/home/developer/pushclone-0923, checkout -f FETCH_HEAD); push console, private/account, private/renet.
 4. Remaining plan boxes: team-scoping T8 CLI (#5ca796b9, now unblocked), T8 envelope v3 + T9 tombstones, T10, T11 (auto-refresh, 7-day tokens), T13, T14 docs (DESIGN-CONFIG-STORAGE.md + private/account/CLAUDE.md now wrong about state), T16 version restore, T15 closure with two-machine live smoke; #108d09aa follow-ups.
+
+## Operator answers for the next session (2026-09-25, before the pause)
+- Logout is PER DEVICE: move the login fields into DEVICE_LOCAL_POINTERS (new item).
+- Offline state writes on remote configs fail closed; local configs must keep working offline (verified: config-file-storage.ts:382 and synced-write.ts:42 route only configs with `remote`); name the cause in each caller's error and add a local-config test (new item).
+- First thing tomorrow: re-time the 4 slow gates on the idle machine, push console + account + renet, THEN finish config sync.
+- Final live check: two local config dirs on this machine acting as two devices, against eu, on a throwaway test repo; never the operator's real repos.
