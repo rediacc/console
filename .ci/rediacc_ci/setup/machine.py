@@ -35,7 +35,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from rediacc_ci import log, paths
-from rediacc_ci.setup import bridge, host, phases
+from rediacc_ci.setup import bridge, githooks, host, phases
 from rediacc_ci.setup.ctx import Ctx
 
 if TYPE_CHECKING:  # pragma: no cover - `pathlib` is only ever an annotation here
@@ -218,6 +218,10 @@ def check(ctx: Ctx, constants: dict[str, str]) -> int:
         ctx.say("  compiler    MISSING (setup installs build-essential; install:natives needs it)")
         pending += 1
 
+    row, hooks_pending = githooks.check_row(ctx.root)
+    ctx.say(row)
+    pending += hooks_pending
+
     email = host._git_global(ctx, "user.email")
     if email:
         # NOTE THE COLUMN. The bash writes `' git identity %s\n'`, two spaces narrower than every other row because the label is two characters longer. It looks like a typo and it is the existing output; changing it would be a diff in a gate's input for no reason.
@@ -306,6 +310,12 @@ def run_setup(ctx: Ctx, options: Options, constants: dict[str, str]) -> int:
             timeout=1800,
         )
         ctx.say()
+
+    # The commit-policy hooks, once the submodules exist: `git-hooks-path` points core.hooksPath at .claude/rediacc_hooks/git in the console and every checked-out submodule.
+    ctx.step("Commit-policy git hooks")
+    if githooks.install(ctx.root, say=ctx.info) != 0:
+        return 1
+    ctx.say()
 
     if host.go_toolchain(ctx) != 0:
         return 1

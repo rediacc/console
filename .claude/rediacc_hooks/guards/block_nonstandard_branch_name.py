@@ -11,47 +11,26 @@ CITED BY HEADING, NOT LINE. Three of this file's original `:NNN` references rott
 
 `main` is allowed because it is not a feature branch. Nothing else is special cased: if a name is neither `main` nor `MMDD-N`, the convention does not describe it, and the operator is the one who decides to widen the convention.
 
-PORT NOTE ON `read -ra TOKENS <<<"$BRANCH_ARGS"`. `read` splits on IFS (space, tab, newline -- NOT `\\r`, which Python's bare `str.split()` would also eat), performs no pathname expansion, and reads ONE line. `BRANCH_ARGS` has already been through `head -1`, so the single-line part is guaranteed; the split below is written out with the exact IFS set rather than delegated to
-`split()`.
+ONE PARSER FOR THE WHOLE ONE-BRANCH FAMILY (the commit-policy plan, F1 and T2). Until 2026-09-25 this guard found branch names with quote-blind regexes over the raw command, stripping heredoc bodies but deliberately not quoted strings. It refused a read-only `grep -n -e "checkout -b" -e "git branch [a-z0-9]"` live, reading the quoted PATTERN as a branch being created. It now asks `commit_policy.branch_creations`, which walks what bash would run through the shared lexer (`shellscan._analyse`), so a quoted pattern is an argument of `grep`, a heredoc body is data, a variable assignment runs nothing, and a `sh -c '...'` payload is still walked. `block_second_branch` reads the same parser, so the two guards agree by construction about what counts as creating a branch.
+
+THE START-POINT CARVE-OUT IS GONE WITH THE REGEXES. The old reader could land on the start point of `checkout -b <name> <start>` and so skipped a SHA, `origin/...` or `refs/...` candidate. The parser takes the name from the flag's own value, so `checkout -b origin/x` is now judged as the branch `origin/x` it creates, which is not `MMDD-N`.
 """
 
-import os
 import re
 
-from rediacc_hooks import hookio, shellscan
+from rediacc_hooks import commit_policy, hookio
 
 CHAIN = "pre-bash"
 ORDER = 16
 
-# The earlier draft, restored. Skipping any candidate that merely CONTAINS a slash silently let `checkout -b feature/x` through -- the exact shape this hook exists to refuse -- while still looking like a start-point carve-out.
-DEFECT = (r"^[0-9a-f]{7,40}$|^origin/|^refs/", r"^[0-9a-f]{7,40}$|/")
+# The shape check itself. With it gone every name passes, which is the whole convention this guard exists for.
+DEFECT = ('if name == "main" or SHAPE.match(name):', "if True:")
 
-# Cheap reject: no branch-creating verb anywhere.
-HAS_BRANCH_VERB = hookio.rx(
-    r"git([{S}]+-[A-Za-z-]+([{S}]+[^ ;&|]+)?)*[{S}]+(branch|checkout|switch)([{S}]|$)"
-)
+# `feature/x`, `0826-1-prerebase`: anything that is neither `main` nor this.
+SHAPE = re.compile(r"^[0-9]{4}-[0-9]+$")
 
-# -b/-B (checkout), -c/-C (switch): the new name is the next token.
-#
-# ANCHORED TO A COMMAND POSITION, and the anchor is not decoration. Without it the pattern matched a shell VARIABLE ASSIGNMENT whose value happened to hold
-# the words -- `SLASH='git checkout -b some/name'` -- and refused a line that
-# runs nothing. Requiring `git` after a command boundary is what makes this a guard on an act rather than on a vocabulary.
-GIT_AT_CMD = hookio.rx(r"(^|[;&|(]|\$\(|`)[{S}]*git([{S}]+-[A-Za-z-]+([{S}]+[^ ;&|]+)?)*[{S}]+")
-
-NEW_BRANCH_FLAG = GIT_AT_CMD + hookio.rx(
-    r"(checkout|switch)([{S}]+-[A-Za-z-]+)*[{S}]+-[bBcC][{S}]+[^{S};|&)]+"
-)
-
-LAST_FIELD = hookio.rx(r"[^{S}]+$")
-
-BRANCH_TAIL = GIT_AT_CMD + hookio.rx(r"branch[{S}]+[^;|&]*")
-
-# A read-only or delete invocation is not our business.
-READ_ONLY = hookio.rx(
-    r"(^|[{S}])-(d|D|r|a|v|-list|-show-current|-contains|-merged|-no-merged|-delete|-remotes|-all|-verbose|-set-upstream-to|-unset-upstream|-edit-description)"
-)
-
-RENAME = hookio.rx(r"(^|[{S}])-[mM]([{S}]|$)")
+# The creation kinds this guard judges the NAME of. A push, a `gh pr create --head` and a `git/refs` POST name a REMOTE branch; whether that may exist at all is `block_second_branch`'s question, and it refuses every such name that is not the one live branch.
+JUDGED = frozenset(("checkout-b", "switch-c", "branch", "rename", "copy"))
 
 EDGE_CASES = [
     ("the 2026-08-26 shape", "git checkout -b 0826-1-prerebase"),
@@ -71,79 +50,39 @@ EDGE_CASES = [
     ("a variable assignment runs nothing", "SLASH='git checkout -b some/name'"),
     ("a heredoc body is data", "cat > note.md <<'EOF'\ngit checkout -b some/name\nEOF"),
     ("switching to main", "git checkout main"),
+    # F1, refused live on 2026-09-25: a quoted grep PATTERN is not a branch being created.
+    (
+        "F1: a grep for the verbs runs grep",
+        'grep -n -e "checkout -b" -e "git branch [a-z0-9]" x.py',
+    ),
+    ("a wrapper payload is still walked", "sh -c 'git checkout -b feature/x'"),
+    ("a remote-looking name is a name being created", "git checkout -b origin/x"),
 ]
-
-
-def _tokens(text):
-    """`read -ra TOKENS <<<"$text"` -- IFS words, no expansion, first line."""
-    first = text.split("\n")[0] if text != "" else ""
-    return [t for t in re.split(r"[ \t]+", first.strip(" \t")) if t != ""]
 
 
 def run(ev):
     cmd = ev.raw("tool_input", "command")
-    if cmd == "":
+    if cmd in ("", "null"):
         return hookio.ALLOW
 
-    # A HEREDOC BODY IS DATA, NOT A COMMAND. This hook blocked its own commit message for saying so: the message described the slashed-name shape the guard refuses, and the guard read the description as the act. It then blocked the edit that would have fixed it, for the same reason -- the fix had to come through the Edit tool. That is the fifth mention-vs-execution false positive
-    # in one session, so this uses the SHARED stripper the rest of the pre-bash family already uses rather than inventing a fifth private one.
-    #
-    # Only heredoc BODIES are dropped, deliberately: hook_scan_target also strips quoted strings, and a branch name may legitimately be quoted, so using it would fail this open on `git branch "bad name"`.
-    cmd = shellscan._command_substitution(shellscan._strip_heredocs(cmd))
-
-    if not hookio.grep_q(HAS_BRANCH_VERB, cmd):
-        return hookio.ALLOW
-
-    # ANOTHER PROJECT'S BRANCHES ARE NOT THIS REPO'S CONVENTION. Found 2026-09-24 restoring four branches in /home/developer/rovaip (a different project) with `git -C /home/developer/rovaip branch chore/... <sha>`: the MMDD-N rule refused them. Exempt only a target OUTSIDE this checkout; submodules under private/ are separate git roots but keep the rule, because /pr-merge matches their coordinated branch names exactly.
+    # ANOTHER PROJECT'S BRANCHES ARE NOT THIS REPO'S CONVENTION. Found 2026-09-24 restoring four branches in /home/developer/rovaip (a different project) with `git -C /home/developer/rovaip branch chore/... <sha>`: the MMDD-N rule refused them. Exempt only a target that resolves to a repository OUTSIDE this checkout; submodules under private/ are separate git roots but keep the rule, because /pr-merge matches their coordinated branch names exactly. A directory that resolves to no repository at all is judged as this one, the direction the old line-wide hint failed in too.
     root = ev.env("CLAUDE_PROJECT_DIR") or hookio.git_out(["rev-parse", "--show-toplevel"])
-    other = shellscan.target_root(cmd, root) if root else ""
-    if other and not os.path.realpath(other).startswith(os.path.realpath(root) + os.sep):
-        return hookio.ALLOW
-
+    base = ev.field("cwd") or root
     candidate = ""
-    spans = hookio.grep_o(NEW_BRANCH_FLAG, cmd)
-    tails = hookio.grep_o(LAST_FIELD, hookio._grep_out(spans))
-    name = tails[0] if tails else ""
-    if name != "":
+    for creation in commit_policy.branch_creations(cmd, root, base):
+        if creation.kind not in JUDGED:
+            continue
+        if creation.repo_root and not commit_policy.is_inside(creation.repo_root, root):
+            continue
+        # Strip quotes a wrapper payload happened to leave on the word.
+        name = creation.name.strip("'\"")
+        # `main` is not a feature branch. `MMDD-N` is the convention.
+        if name == "main" or SHAPE.match(name):
+            continue
         candidate = name
-
-    # `git branch [-m|-M] ...`: the new name is the LAST positional, because the rename form is `-m <old> <new>` and the create form is `branch <new> [start]`. Handled separately so a rename INTO a legal name passes while a rename INTO a suffixed one does not -- which is exactly how this session fixed its own.
-    if candidate == "":
-        cut = hookio.sed_sub(
-            hookio.rx(r".*[{S}]branch[{S}]+"),
-            "",
-            hookio._grep_out(hookio.grep_o(BRANCH_TAIL, cmd)),
-            count=1,
-        )
-        rows, _ = shellscan._records(cut)
-        branch_args = shellscan._command_substitution(rows[0] + "\n") if rows else ""
-        if not hookio.grep_q(READ_ONLY, branch_args):
-            tokens = _tokens(branch_args)
-            for tok in tokens:
-                if tok.startswith("-"):
-                    continue
-                candidate = tok
-            # `git branch <new> <start-point>`: the START POINT is an existing ref, not a name being created, so only the FIRST positional is judged -- unless this is a rename, where the new name is the SECOND.
-            if not hookio.grep_q(RENAME, branch_args):
-                for tok in tokens:
-                    if tok.startswith("-"):
-                        continue
-                    candidate = tok
-                    break
+        break
 
     if candidate == "":
-        return hookio.ALLOW
-    # Strip quotes the session happened to use.
-    candidate = hookio.sed_sub(r"^['\"]", "", candidate, count=1)
-    candidate = hookio.sed_sub(r"['\"]$", "", candidate, count=1)
-
-    # `main` is not a feature branch. `MMDD-N` is the convention.
-    if candidate == "main":
-        return hookio.ALLOW
-    if hookio.grep_q(r"^[0-9]{4}-[0-9]+$", candidate):
-        return hookio.ALLOW
-    # A SHA or a remote-tracking ref is a START POINT, not a name being created, so it is not this hook's call. NOTE the anchors: an earlier draft skipped any candidate containing a slash, which silently let `checkout -b feature/x` through -- the exact shape this hook exists to refuse. Caught by its own control, which is the argument for writing the controls first.
-    if hookio.grep_q(r"^[0-9a-f]{7,40}$|^origin/|^refs/", candidate):
         return hookio.ALLOW
 
     ev.warn_raw(

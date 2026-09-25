@@ -38,7 +38,7 @@ import pathlib
 import re
 import subprocess
 
-from rediacc_hooks import hookio, shellscan
+from rediacc_hooks import commit_policy, hookio, shellscan
 
 CHAIN = "pre-bash"
 ORDER = 37
@@ -116,6 +116,8 @@ ENVS = [
     ("snapshot", {"CLAUDE_PROJECT_DIR": "{FIXTURE:epic-snapshot}"}, {}),
     # This checkout's SHAPE, synthetic and pinned since 2026-09-24: a `MMDD-N` branch and an `agent/pr/<branch>.md` in the published format, with no other session able to rewrite either. See `_synthetic_this_worktree` in test_guards_differential.py.
     ("this-worktree", {"CLAUDE_PROJECT_DIR": "{FIXTURE:this-worktree-snapshot}"}, {}),
+    # ON `main`, where a `[hotfix]` needs no trailer (F5 of the commit-policy plan) and anything else still does.
+    ("main", {"CLAUDE_PROJECT_DIR": "{FIXTURE:git-main}"}, {}),
 ]
 
 EDGE_CASES = [
@@ -139,6 +141,11 @@ EDGE_CASES = [
     ("git -C into another tree", 'git -C /tmp commit -m "x"'),
     # A TAB after `-C` is a blank like any other since the Rule T fix to shellscan.target_root (A4); /tmp is not a repository, so this and the space form above both judge this tree.
     ("git -C with a TAB is still a -C", 'git -C\t/tmp commit -m "x"'),
+    # F5: a hotfix on `main` has no epic to name. Off `main` the tag buys nothing here.
+    (
+        "a hotfix names no epic",
+        'git commit -m "fix(ci): x [hotfix]\n\nHotfix-Evidence: 12345678" -- a.ts',
+    ),
 ]
 
 
@@ -278,6 +285,12 @@ def run(ev):
                 branch = hookio._command_substitution(hookio.sed_sub(r"^refs/heads/", "", text))
                 break
     # Still empty means a plain detached checkout, where there genuinely IS no branch and therefore no published epic set. The guard allows, as it does whenever it has nothing to judge against.
+    # F5 of the commit-policy plan. A `[hotfix]` commit on `main` belongs to no epic: `main` has no `agent/pr/main.md`, so the trailer could only ever be an invented id. `block_commit_on_main` owns what a hotfix must carry instead (`Hotfix-Evidence:`, the file limit); this guard only stops demanding the one thing a hotfix cannot have. Everywhere else the tag changes nothing here.
+    if branch == "main" and "hotfix" in commit_policy.tags(
+        commit_policy.commit_message_text(cmd, root) or msg
+    ):
+        return hookio.ALLOW
+
     branch_key = branch.replace("/", "-")
     snap = "%s/agent/pr/%s.md" % (root, branch_key)
     known = ""

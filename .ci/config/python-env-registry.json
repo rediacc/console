@@ -1820,6 +1820,9 @@
       "WHY_ON_EDIT_SEEN_MAX",
       "WHY_ON_EDIT_SIMILAR"
     ],
+    ".claude/rediacc_hooks/git/githooks.py": [
+      "COMMIT_POLICY_OK"
+    ],
     ".claude/rediacc_hooks/guards/block_inline_python.py": [
       "TMPDIR"
     ],
@@ -1830,6 +1833,9 @@
       "REDIACC_PID_WAIT_PROCFS"
     ],
     ".claude/rediacc_hooks/guards/test-block_host_toolchain_run.py": [
+      "PATH"
+    ],
+    ".claude/rediacc_hooks/guards/test-block_second_branch.py": [
       "PATH"
     ],
     ".claude/rediacc_hooks/guards/test-warn_staged_shape_duplication.py": [

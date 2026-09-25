@@ -67,6 +67,12 @@ PHASES: tuple[Phase, ...] = (
         False,
         condition="$ROOT_DIR/.gitmodules exists",
     ),
+    Phase(
+        "git-hooks-path",
+        ".ci/rediacc_ci/setup/githooks.py",
+        # FATAL: the commit-policy hooks are the operator's ruling (2026-09-25, "for everyone, with the COMMIT_POLICY_OK=1 override"), and a setup that silently leaves them off leaves the policy unenforced for every command the pre-bash guards never see. After the submodules, so each checked-out one is pointed at the hooks too.
+        True,
+    ),
     Phase("setup_go_toolchain", ".ci/lib/setup.sh:339", True),
     Phase("setup_gh_cli", ".ci/lib/setup.sh:485", True),
     Phase("ensure_host_tools", ".ci/lib/local-common.sh:587", True),

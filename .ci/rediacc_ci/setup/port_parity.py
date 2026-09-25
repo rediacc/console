@@ -162,6 +162,8 @@ def _mentions(line: str, key: str) -> bool:
         return ('"%s"' % key in line) or ("_credential_drift(" in line and key.startswith("check:"))
     if key == "account-bws-bootstrap":
         return "_account_bws_bootstrap(" in line
+    if key == "git-hooks-path":
+        return "githooks.install(" in line
     return False
 
 
