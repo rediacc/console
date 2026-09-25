@@ -1722,7 +1722,10 @@ FIXSET_PROVENANCE = {
         "the fix-set has no resolvable commit yet, so this is the whole working tree's current `git status --porcelain`"
     ),
     "status-minus-live-writers": (
-        "the fix-set has no resolvable commit yet, so this is the working tree's current `git status --porcelain` minus every file a writer agent that is still live has edited; those belong to that writer's own tick"
+        "the fix-set has no resolvable commit yet, so this is the working tree's current `git status --porcelain` minus every file a writer agent changed while it is still live or an item leased to it is not ticked; those belong to that writer's own tick"
+    ),
+    "item-writers": (
+        "the fix-set is a tick of an item worked by writer agents, so this is the working tree's current `git status --porcelain` narrowed to the files those writers changed (edit tools and Bash writes alike); the rest of the tree is other work"
     ),
     None: "provenance unknown",
 }
@@ -2505,13 +2508,22 @@ V_ROSTER_DEAD = (
     "    .claude/hooks/stop/worklist.py --lease %s <id> release"
 )
 
-# agent/plans/PLAN-stop-hook-retro-20260924.md R.5: only the K oldest queued items are named, K being the free writer slots less a HOLD_FOR reservation.
+# agent/plans/PLAN-stop-hook-retro-20260924.md R.5: only the K oldest queued items are named, K being the free writer slots less a HOLD_FOR reservation. R20260925.5: an item waiting on an open BLOCKED_BY blocker is skipped, and the last line names that token as the remedy.
 V_QUEUE_SLOT = (
     "QUEUED WORK AND A FREE WRITER SLOT: %(free)d slot(s) free, %(queued)d queued: start "
     "%(ids)s. Spawn a writer for each and move its lease onto it:\n"
     "    .claude/hooks/stop/worklist.py --lease %(me)s <id> +60 worker:<agent-id>\n"
     "  The other queued items stay covered behind the cap. A slot meant for one named item is "
-    "held by leasing ONE queued item with HOLD_FOR:#<id> in its note."
+    "held by leasing ONE queued item with HOLD_FOR:#<id> in its note.\n"
+    "  Waiting on another item? A queued item whose BLOCKED_BY blocker is still open is skipped "
+    "here and never fails closed:\n"
+    "    .claude/hooks/stop/worklist.py --update %(me)s <id> 'BLOCKED_BY:#<blocker>'"
+)
+
+# An expired or malformed lease fails closed into an open item (wl_store.classify_items). The last clause is the remedy for an item that is really waiting on another (agent/plans/PLAN-stop-hook-retro-20260925.md R20260925.5): a BLOCKED_BY token makes it `waiting` instead of open. Substitutions: the item's display line, the lease state, the session prefix, the item id.
+N_LEASE_FAILED_CLOSED = (
+    "%s   <- [>] lease %s; finish it, renew the lease, or tick it; waiting on another item? "
+    ".claude/hooks/stop/worklist.py --update %s %s 'BLOCKED_BY:#<blocker>'"
 )
 
 # The allow line of a cap-saturated wait (agent/plans/PLAN-stop-hook-cap-saturated-wait.md): live writers / cap, their short ids, the queued count, how many work-order checks stood down, and when the next status is owed.

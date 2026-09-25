@@ -11,8 +11,8 @@ import importlib.util
 import json
 import re
 import shutil
-import sys
 
+from rediacc_hooks import syspath
 from rediacc_hooks.tests import wlfix
 from rediacc_hooks.tests.test_wl_judge_fixset_scope import capturing_judge
 from rediacc_hooks.tests.test_wl_roster import (
@@ -232,7 +232,7 @@ def load_standdown():
     assert spec is not None
     assert spec.loader is not None
     mod = importlib.util.module_from_spec(spec)
-    sys.path.insert(0, str(stop_dir))
+    syspath.on_sys_path(stop_dir)
     spec.loader.exec_module(mod)
     return mod
 

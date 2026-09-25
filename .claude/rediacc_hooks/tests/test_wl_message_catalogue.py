@@ -102,11 +102,13 @@ ARITY = {
     "N_ROSTER_HONEST": (3, 4, 1, "12:00Z", "rows"),
     "N_CAP_WAIT": (4, 4, "a1b2c3d4, e5f6a7b8", 3, 7, "12:00Z"),
     "N_CAP_WAIT_COMPACTION": (),
-    # Focus mode (agent/plans/PLAN-stop-hook-focus-mode.md): mode, PR, since, parked now, advisories held, me.
+    # Focus mode (agent/plans/PLAN-stop-hook-focus-mode.md): mode, PR, since, parked now, advisories held, session prefix.
     "N_FOCUS": ("babysit", "543", "2026-09-25T10:00:00Z", 3, 2, "deadbeef"),
     # why, what (mode PR since), parked names, advisories held, refused spawns.
     "N_FOCUS_ENDED": ("merged", "babysit PR #543 since t", "plan-adopted x2", 1, 0),
     "N_FOCUS_COMPACTION": (),
+    # wl_store.classify_items' fail-closed lease line (R20260925.5): display line, lease state, session prefix, item id.
+    "N_LEASE_FAILED_CLOSED": ("- [>] x", "expired", "m", "abcd1234"),
     "N_FOCUS_PR_UNREADABLE": ("543", "branch", "gh failed", 24),
     "CTX_POSTCOMPACT_FOCUS": ("babysit", "543", "branch", "t", "543", "deadbeef"),
     "CLI_FOCUS_USAGE": None,

@@ -976,6 +976,9 @@ def _fold_events(events, statuses=None, focus=None):
                 records[rid]["triage"] = ev["tr"]
             if ev.get("ju"):
                 records[rid]["just"] = ev["ju"]
+            if isinstance(ev.get("lw"), list):
+                # COMPACT CARRY-OVER of the lease history below: a compacted log has no lease events for a done item, and the judge's `item-writers` fix-set is joined on exactly that history.
+                records[rid]["lease_workers"] = [str(w) for w in ev["lw"] if w]
             cli_ids.add(rid)
         elif kind == "reassign":
             # v19: an item's OWNER moves to a live session. Appended, never rewritten, like every other event here -- that is what makes the lock-free fold sound, and it keeps the log truthful about who actually wrote the item. Only the `o` field moves; `by` on the original events still names the phantom, because it really did write them.
@@ -1012,6 +1015,10 @@ def _fold_events(events, statuses=None, focus=None):
                 rec["state"] = ">"
                 rec["until"] = str(ev.get("until", ""))
                 rec["worker"] = str(ev.get("worker", ""))
+                # THE LEASE HISTORY (agent/plans/PLAN-stop-hook-retro-20260925.md R20260925.2): every worker this item was ever leased to, in first-lease order. `worker` is only the CURRENT one and an unlease clears it, while the judge needs "which writers did this item's work" after the item is ticked: their uncommitted edits stay out of the lead's fix-set until then, and are the item's own fix-set at its tick.
+                hist = rec.setdefault("lease_workers", [])
+                if rec["worker"] and rec["worker"] not in hist:
+                    hist.append(rec["worker"])
                 # Absent on events written before this field existed, which reads as False: an old lease is treated as unverifiable rather than as dead. That is the safe direction -- the age ladder still catches a genuine stall, whereas a false "gone" sends a session hunting a worker that never existed.
                 rec["worker_verified"] = bool(ev.get("worker_verified"))
                 # The lease's OWN time, kept apart from `upd`: the roster counts a lease as a fresh status, and `upd` also moves on an --update, which is prose from the lead and deliberately not a status.
@@ -1384,10 +1391,20 @@ def classify_items(fold, session_id, live_worker_ids=None):
             elif ls == "expired" and rec.get("worker") and rec["worker"] in (live_worker_ids or ()):
                 rec["lease_tolerated"] = True
                 in_flight.append(rec)
+            elif (
+                ls == "expired"
+                and rec.get("worker") == LH.QUEUE_WORKER
+                and LH.waiting_on(rec, by_id)
+            ):
+                # A QUEUED ITEM WAITING ON ANOTHER is `waiting`, not open (agent/plans/PLAN-stop-hook-retro-20260925.md R20260925.5). Its queue lease expired while the item it declared BLOCKED_BY is still open, so there is nothing to start and nothing to renew; failing closed here cost a turn on 2026-09-24 (#bea10927, waiting on A3). Only the explicit token counts (Decision 4), and the blocker chain's root still blocks as an ordinary item.
+                rec["waiting_on"] = LH.waiting_on(rec, by_id)
             else:
-                # Fail closed: an expired or malformed lease is an open item.
+                # Fail closed: an expired or malformed lease is an open item. The line names BLOCKED_BY as the remedy for an item that is really waiting on another.
+                # worklist_messages is imported HERE, not at module top: worklist.py survives a broken messages module for its query modes (see its FAILURE MODE note), and wl_store sits under every one of them.
+                import worklist_messages as M  # noqa: PLC0415
+
                 open_items.append(
-                    "%s   <- [>] lease %s; finish it, renew the lease, or tick it" % (disp, ls)
+                    M.N_LEASE_FAILED_CLOSED % (disp, ls, str(session_id or "")[:8], rec["id"])
                 )
     return open_items, others, deferred, in_flight
 
@@ -1536,6 +1553,8 @@ def snapshot_events(fold, by="compact"):
                 add_ev[key] = r[field]
         if r.get("upd") and r["upd"] != r["first"]:
             add_ev["upd"] = r["upd"]
+        if r.get("lease_workers"):
+            add_ev["lw"] = list(r["lease_workers"])
         if r.get("mg"):
             add_ev["mg"] = r["mg"]
         out.append(add_ev)

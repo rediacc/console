@@ -1080,3 +1080,206 @@ def test_q4b_inverse_a_pure_wait_on_a_quiet_workflow_still_checks_in(wl):  # noq
     workflow_world(wl, 30)
     got = overdue(wl)
     assert "PURE BACKGROUND WAIT" in got.out, got.out[:800]
+
+
+# ---- R20260925.5: a queued item waiting on another is skipped, not started ----------------------------
+
+BLOCKER = "b10c0001"
+
+
+def plant_queued(fix, item_id: str, text: str, age_min: float, expired: bool = False) -> None:
+    """An item of the lead's on `worker:queue`, its lease `age_min` old and (when `expired`) already past its expiry."""
+    lease_until = time.strftime(
+        "%Y-%m-%dT%H:%MZ", time.gmtime(time.time() + (-120 if expired else 3600))
+    )
+    rows = [
+        {
+            "ev": "add",
+            "id": item_id,
+            "at": stamp(age_min + 1),
+            "by": wlfix.ME,
+            "s": " ",
+            "o": wlfix.ME,
+            "t": text,
+        },
+        {
+            "ev": "lease",
+            "id": item_id,
+            "at": stamp(age_min),
+            "by": wlfix.ME,
+            "until": lease_until,
+            "worker": "queue",
+            "note": "",
+            "worker_verified": True,
+        },
+    ]
+    with fix.events.open("a", encoding="utf-8") as fh:
+        fh.write("".join(json.dumps(r) + "\n" for r in rows))
+
+
+def blocked_queue_world(fix, blocker_open: bool = True, expired: bool = False) -> None:
+    """3 live writers (1 free slot), an open blocker item, and two queued items: the OLDER one declares BLOCKED_BY the blocker (#bea10927 on 2026-09-24, waiting on A3's golden files)."""
+    for i, aid in enumerate((W1, W2, W3)):
+        mk_sub(fix, aid, "general-purpose", 10 - i)
+        plant_lease(fix, "cap%d" % i, aid)
+    plant_lease(fix, BLOCKER, W1)
+    if not blocker_open:
+        with fix.events.open("a", encoding="utf-8") as fh:
+            fh.write(
+                json.dumps(
+                    {
+                        "ev": "state",
+                        "id": BLOCKER,
+                        "at": stamp(0),
+                        "by": wlfix.ME,
+                        "s": "x",
+                        "note": "done rc=0",
+                    }
+                )
+                + "\n"
+            )
+    plant_queued(fix, "q0000old", "(deadbeef) golden update BLOCKED_BY:#%s" % BLOCKER, 30, expired)
+    plant_queued(fix, "q0000new", "(deadbeef) independent writer work", 10)
+
+
+def test_r25_5_a_queued_item_waiting_on_an_open_blocker_is_skipped_for_the_next(wl):  # noqa: F811
+    """CONTROL: queue_start took the K oldest with no waiting check, so the one free slot named the blocked item."""
+    blocked_queue_world(wl)
+    v = verdict(wl)
+    assert v["queue_start"] == ["q0000new"], v["queue_start"]
+    assert [tuple(x) for x in v["queue_skipped"]] == [("q0000old", "waiting on #%s" % BLOCKER)], v
+    assert ("q0000old", "queue", "queue") in [tuple(c) for c in v["covered"]], v["covered"]
+
+
+def test_r25_5_inverse_the_blocker_closed_and_the_oldest_is_named_again(wl):  # noqa: F811
+    blocked_queue_world(wl, blocker_open=False)
+    v = verdict(wl)
+    assert v["queue_start"] == ["q0000old"], v["queue_start"]
+    assert v["queue_skipped"] == [], v["queue_skipped"]
+
+
+def test_r25_5_an_expired_queue_lease_on_a_waiting_item_reads_as_waiting(wl):  # noqa: F811
+    """19:45:03 on 2026-09-24: #bea10927's queue lease expired while it still waited on A3, and open-items blocked on it."""
+    blocked_queue_world(wl, expired=True)
+    v = verdict(wl)
+    assert "q0000old" not in v["open"], v["open"]
+    assert "q0000old" not in v["queue_start"], v["queue_start"]
+
+
+def test_r25_5_inverse_an_expired_queue_lease_with_its_blocker_closed_fails_closed(wl):  # noqa: F811
+    blocked_queue_world(wl, blocker_open=False, expired=True)
+    v = verdict(wl)
+    assert "q0000old" in v["open"], v["open"]
+
+
+QUEUE_PICK_SNIPPET = r"""
+import json, sys
+sys.path.insert(0, sys.argv[1])
+import wl_roster as R
+recs = [
+    {"id": "a", "lease_at": "2026-09-25T10:00:00Z", "text": ""},
+    {"id": "b", "lease_at": "2026-09-25T11:00:00Z", "text": ""},
+]
+by_id = {r["id"]: r for r in recs}
+held = lambda r, _b, _s: "held by PLAN-y.md" if r["id"] == "b" else ""
+out = {
+    "default": R.queue_pick(recs, 1, by_id, "deadbeef")["start"],
+    "order_key": R.queue_pick(recs, 1, by_id, "deadbeef", order_key=lambda r: r["id"] != "b")["start"],
+    "skip": R.queue_pick(recs, 2, by_id, "deadbeef", order_key=lambda r: r["id"] != "b", skips=(*R.QUEUE_SKIPS, held)),
+}
+out["skip"]["hold"] = None
+print(json.dumps(out))
+"""
+
+
+def test_r25_5_queue_pick_takes_an_order_key_and_more_skips():
+    """The seam PLAN-plan-priority-concurrency.md section 5c builds on: a picker's `order_key` replaces the lease-age order, and a concurrency hold is one more entry in `skips`, reported beside the waiting ones."""
+    proc = subprocess.run(
+        [sys.executable, "-c", QUEUE_PICK_SNIPPET, str(wlfix.STOP_DIR)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert proc.returncode == 0, proc.stderr[-600:]
+    got = json.loads(proc.stdout)
+    assert got["default"] == ["a"], got
+    assert got["order_key"] == ["b"], got
+    assert got["skip"]["start"] == ["a"], got
+    assert got["skip"]["skipped"] == [["b", "held by PLAN-y.md"]], got
+
+
+# ---- R20260925.8: the Stop roster and the spawn guard's estimate agree ------------------------------
+
+
+def parity(fix) -> tuple[list, list]:
+    """(roster() writers from the CURRENT event, live_writers_estimate ids from the LAST Stop event plus the metas), for one fixture."""
+    return sorted(verdict(fix)["writers"]), sorted(estimate(fix))
+
+
+def test_r25_8_parity_a_killed_agent_is_in_neither(wl):  # noqa: F811
+    """#b9d4dcb2: a TaskStop-ped writer whose transcript still ends waiting on a shell that died with it. The Stop roster freed its slot while the spawn guard refused three spawns at 19:40:09, 19:44:30 and 19:52:58 on 2026-09-24."""
+    mk_sub(wl, W1, "general-purpose", 1)
+    mk_sub(wl, W4, "pr-babysitter", 5, last="end_turn", running=False)
+    plant_shell_wait(wl, W4, "bshell77", running=False)
+    lastevent_file(wl).write_text(wl.event(), encoding="utf-8")
+    roster_ids, estimate_ids = parity(wl)
+    assert roster_ids == estimate_ids == [W1], (roster_ids, estimate_ids)
+
+
+def test_r25_8_parity_a_shell_waiter_is_in_both(wl):  # noqa: F811
+    mk_sub(wl, W1, "general-purpose", 1)
+    mk_sub(wl, W4, "pr-babysitter", 5, last="end_turn", running=False)
+    plant_shell_wait(wl, W4, "bshell01")
+    lastevent_file(wl).write_text(wl.event(), encoding="utf-8")
+    roster_ids, estimate_ids = parity(wl)
+    assert roster_ids == estimate_ids == sorted([W1, W4]), (roster_ids, estimate_ids)
+
+
+def test_r25_8_parity_a_fresh_spawn_the_last_event_never_saw_is_in_both(wl):  # noqa: F811
+    """The spawn came after the last Stop event was written: the estimate counts it from its meta, the next event lists it."""
+    mk_sub(wl, W1, "general-purpose", 1)
+    lastevent_file(wl).write_text(wl.event(), encoding="utf-8")
+    backdate(lastevent_file(wl), 2)
+    mk_sub(wl, W2, "general-purpose", 0.5)
+    roster_ids, estimate_ids = parity(wl)
+    assert roster_ids == estimate_ids == sorted([W1, W2]), (roster_ids, estimate_ids)
+
+
+LEASE_HISTORY_SNIPPET = r"""
+import json, sys
+sys.path.insert(0, sys.argv[1])
+import wl_store as S
+
+class F:
+    def __init__(self, recs):
+        self.items, self.lineage, self.focus = list(recs.values()), [], {}
+
+ev = [
+    {"ev": "add", "id": "it1", "at": "2026-09-25T10:00:00Z", "by": "deadbeef", "s": " ", "o": "deadbeef", "t": "x"},
+    {"ev": "lease", "id": "it1", "at": "2026-09-25T10:01:00Z", "by": "deadbeef", "until": "2026-09-25T11:00Z", "worker": "aA"},
+    {"ev": "unlease", "id": "it1", "at": "2026-09-25T10:02:00Z", "by": "deadbeef", "t": ""},
+    {"ev": "lease", "id": "it1", "at": "2026-09-25T10:03:00Z", "by": "deadbeef", "until": "2026-09-25T11:00Z", "worker": "aB"},
+    {"ev": "lease", "id": "it1", "at": "2026-09-25T10:04:00Z", "by": "deadbeef", "until": "2026-09-25T11:00Z", "worker": "aA"},
+    {"ev": "state", "id": "it1", "at": "2026-09-25T10:05:00Z", "by": "deadbeef", "s": "x", "note": "done"},
+]
+recs = S._fold_events(ev)[0]
+for r in recs.values():
+    r.setdefault("origin", "cli")
+again = S._fold_events(S.snapshot_events(F(recs)))[0]
+print(json.dumps([recs["it1"]["lease_workers"], again["it1"].get("lease_workers"), again["it1"]["state"]]))
+"""
+
+
+def test_r25_2_the_lease_history_survives_an_unlease_and_a_compaction():
+    """`worker` is only the current lease and an unlease clears it; the judge's `item-writers` fix-set joins on the whole history, so the fold keeps it and a compacted log carries it (`lw`)."""
+    proc = subprocess.run(
+        [sys.executable, "-c", LEASE_HISTORY_SNIPPET, str(wlfix.STOP_DIR)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert proc.returncode == 0, proc.stderr[-800:]
+    folded, compacted, state = json.loads(proc.stdout)
+    assert folded == ["aA", "aB"], folded
+    assert compacted == ["aA", "aB"], compacted
+    assert state == "x", state

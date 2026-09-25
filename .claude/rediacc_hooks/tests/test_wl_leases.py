@@ -9,7 +9,7 @@ import json
 import re
 
 from rediacc_hooks.tests import wlfix
-from rediacc_hooks.tests.test_wl_roster import mk_sub, subagents_dir
+from rediacc_hooks.tests.test_wl_roster import W1, mk_sub, plant_lease, plant_queued, subagents_dir
 from rediacc_hooks.tests.wlfix import wl  # noqa: F401
 
 
@@ -231,3 +231,49 @@ def test_l6_the_operator_switch_turns_the_stop_path_off_and_only_it(wl):  # noqa
     wl.say("working\\n\\n## Remaining\\n- the item")
     assert wl.run({"WORKLIST_FOCUS": "off"}).out.strip() == ""
     assert wl.cli("--list", "--open", wlfix.ME).rc == 0  # verbs unaffected
+
+
+# ---- R20260925.5: an expired queue lease on a waiting item reads as waiting ---------------------------
+
+
+def queued_waiter_world(fix, with_token: bool) -> None:
+    """A blocker leased to a live writer, and a queued item whose queue lease expired: with `with_token` it declares BLOCKED_BY the blocker (the #bea10927 shape of 19:45:03 on 2026-09-24), without it it is an ordinary dead queue lease."""
+    ready(fix)
+    mk_sub(fix, W1, "general-purpose", 1)
+    plant_lease(fix, "b10c0001", W1)
+    text = "(deadbeef) golden update waits on the writer"
+    plant_queued(
+        fix, "q0000old", text + (" BLOCKED_BY:#b10c0001" if with_token else ""), 30, expired=True
+    )
+    fix.say("working\n\n## Remaining\n- #b10c0001 on the writer, #q0000old queued")
+
+
+def test_l7_an_expired_queue_lease_waiting_on_an_open_blocker_does_not_fail_closed(wl):  # noqa: F811
+    """CONTROL: before R20260925.5 the expired lease failed closed into an open item although its blocker was still being worked, and the lead renewed it by hand with the note "blocked on A3"."""
+    queued_waiter_world(wl, with_token=True)
+    out = wl.run({"WORKLIST_FOCUS": "off"}).out
+    assert "lease expired; finish it" not in out, out[:1200]
+    # The guide says the same: waiting, not a dead lease to re-lease.
+    assert "#q0000old LEASE DEAD" not in out, out[:1600]
+    assert "[>] #q0000old waiting (#b10c0001)" in out, out[:1600]
+
+
+def test_l7b_inverse_the_same_lease_without_the_token_fails_closed_and_names_the_remedy(wl):  # noqa: F811
+    queued_waiter_world(wl, with_token=False)
+    out = wl.run({"WORKLIST_FOCUS": "off"}).out
+    assert "lease expired; finish it" in out, out[:1200]
+    assert "#q0000old LEASE DEAD" in out, out[:1600]
+    assert "--update deadbeef q0000old 'BLOCKED_BY:#<blocker>'" in out, out[:1600]
+
+
+def test_l7c_the_queue_slot_block_names_blocked_by_as_the_remedy(wl):  # noqa: F811
+    """V_QUEUE_SLOT: a free slot and a startable queued item; the block says how to mark one that is really waiting."""
+    ready(wl)
+    mk_sub(wl, W1, "general-purpose", 1)
+    plant_lease(wl, "b10c0001", W1)
+    plant_queued(wl, "q0000new", "(deadbeef) independent writer work", 10)
+    wl.say("working\n\n## Remaining\n- #b10c0001 on the writer, #q0000new queued")
+    out = wl.run({"WORKLIST_FOCUS": "off"}).out
+    assert "QUEUED WORK AND A FREE WRITER SLOT" in out, out[:1200]
+    assert "start #q0000new" in out, out[:1200]
+    assert "--update deadbeef <id> 'BLOCKED_BY:#<blocker>'" in out, out[:1600]

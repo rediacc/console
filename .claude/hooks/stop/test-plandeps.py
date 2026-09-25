@@ -10,7 +10,6 @@ EVERY REFUSAL HAS A PASSING TWIN built from the same fixture with one fact chang
 
 import importlib.util
 import pathlib
-import types
 
 import wl_plandeps as D
 
@@ -30,7 +29,7 @@ def _by_file(name):
 controls = _by_file("controls")
 runtmp = _by_file("runtmp")
 
-CONTROL_FLOOR = 95
+CONTROL_FLOOR = 90  # 95 until linked_plan/tracked_by/plan_names (unused, dead code) were removed with their 8 controls on 2026-09-25
 T = controls.Controls("plandeps", floor=CONTROL_FLOOR)
 check = T.check
 
@@ -370,44 +369,6 @@ check(
     ["PLAN-nope.md"],
 )
 check("roots: a no-dep plan has none", G.roots("agent/plans/PLAN-z.md"), [])
-
-# --------------------------------------------------------------------------- linked_plan and tracked_by.
-
-check(
-    "linked_plan: a sig right after the name links",
-    D.linked_plan("PLAN-x.md [41f56150] body"),
-    "PLAN-x.md",
-)
-check("linked_plan: a bare mention does not", D.linked_plan("write PLAN-x.md"), None)
-check(
-    "linked_plan: the sig after the second token gives the second",
-    D.linked_plan("after PLAN-a.md do PLAN-b.md [41f56150] x"),
-    "PLAN-b.md",
-)
-check(
-    "linked_plan: a path prefix still links the basename",
-    D.linked_plan("agent/plans/PLAN-x.md [41f56150]"),
-    "PLAN-x.md",
-)
-check("linked_plan: a non-hex sig does not", D.linked_plan("PLAN-x.md [notahex1]"), None)
-
-
-FOLD = types.SimpleNamespace(
-    items=[
-        {"id": "aa11aa11", "state": " ", "text": "(cafe0000) PLAN-z.md [12345678] do it"},
-        {"id": "bb22bb22", "state": "x", "text": "(cafe0000) PLAN-y.md [12345678] done"},
-        {"id": "cc33cc33", "state": ">", "basetext": "PLAN-y.md leased"},
-    ]
-)
-
-
-check("tracked_by: an open item tracks", D.tracked_by("PLAN-z.md", FOLD), ["aa11aa11"])
-check(
-    "tracked_by: a ticked one does not, a leased one does",
-    D.tracked_by("agent/plans/PLAN-y.md", FOLD),
-    ["cc33cc33"],
-)
-check("tracked_by: nothing tracks an unnamed plan", D.tracked_by("PLAN-q.md", FOLD), [])
 
 # --------------------------------------------------------------------------- set_header.
 

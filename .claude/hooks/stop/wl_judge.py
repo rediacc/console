@@ -742,8 +742,9 @@ def run_judge(
     # WHICH question this stop actually asked, so a fresh fire displaces the old demand into its `owed` slot instead of destroying it, and a fresh silent/degraded answer -- which is about a DIFFERENT fix-set -- leaves the old demand alone rather than discharging it.
     fix_stop_now = is_fix_stop(extra)
     # NOTHING OF THE LEAD'S IS LEFT (agent/plans/PLAN-stop-hook-retro-20260924.md R.1): a tick-based fix-set whose every dirty file a live writer is still editing is that writer's work in flight, so no fresh sweep or proof is asked about it. The regression-gate question still is, and an outstanding demand is still followed up. A commit-based fix-set never takes this arm.
+    # R20260925.2: a tick answered by its own writers' files (`item-writers`) with none of them still dirty has nothing uncommitted left to sweep or prove either; the commit that carried them is its own unit.
     sweep_proof_fresh = fix_stop_now and not (
-        fixset_provenance == "status-minus-live-writers" and not fixset_files
+        fixset_provenance in ("status-minus-live-writers", "item-writers") and not fixset_files
     )
     sweep_outstanding = CS.discharge_if_evidenced(CS.load_outstanding(), transcript)
     sweep_extra = CS.prompt_section(sweep_proof_fresh, sweep_outstanding, transcript)

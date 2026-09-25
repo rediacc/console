@@ -377,7 +377,7 @@ def fixset_files(root, ids, live_paths=None):
     `ids` are fix_signals' own ids: commit shas for a commit-based fix-set, a single tick id for a tick-based one. A tick id is not a tree-ish, so `_diff_tree_files` answers `[]` for it -- correct, because a tick-based fix-set's evidence is necessarily still UNCOMMITTED. Falls back to `git status --porcelain`, the same ground truth `gate_only_fixset`'s own docstring already calls
     out as the honest answer for that shape, so a hallucinated bulk transform can be checked against what git ACTUALLY shows changed rather than trusted from the judge's own prose (agent/plans/PLAN-judge-prompt-trap-conflation.md).
 
-    `live_paths` (wl_roster.live_writer_paths) is subtracted on the status arm ONLY, under provenance `"status-minus-live-writers"` (agent/plans/PLAN-stop-hook-retro-20260924.md R.1): the dirty tree is shared, and a live writer's uncommitted edits are not the lead's fix-set. The obligation for them belongs in that writer's own tick. A commit-based fix-set is never trimmed.
+    `live_paths` (wl_roster.live_writer_paths) is subtracted on the status arm ONLY, under provenance `"status-minus-live-writers"` (agent/plans/PLAN-stop-hook-retro-20260924.md R.1): the dirty tree is shared, and a writer's uncommitted edits are not the lead's fix-set while the writer is live or an item leased to it is un-ticked (R20260925.2). The obligation for them belongs in that writer's own tick: when `ids` is a tick whose item had agent lease workers (`live_paths.by_tick`), the answer is those workers' paths intersected with the dirty tree, under provenance `"item-writers"`. A path covers every file below it. A commit-based fix-set is never trimmed.
 
     A MOVED GITLINK IS EXPANDED into `<sub>/<file>` for every file the submodule's own range changed, on both arms (R20260924.19). The gitlink path alone stays listed. At 16:23:57Z on 2026-09-24 the judge said "no test files appear in this fix-set" while the tests sat in private/account commit aea435154, because the list carried `private/account` and nothing under it.
     """
@@ -393,11 +393,27 @@ def fixset_files(root, ids, live_paths=None):
     dirty = {_porcelain_path(ln) for ln in status.splitlines() if ln.strip()}
     files.update(dirty)
     files.update(_expand_gitlinks(root, _gitlink_moves_status(root, sorted(dirty))))
+    # A TICK ANSWERS FOR ITS OWN WRITERS (agent/plans/PLAN-stop-hook-retro-20260925.md R20260925.2). An item that had agent lease workers is asked about exactly the dirty files those workers changed, not the whole tree: at 19:47:31 on 2026-09-24 the judge picked a "class" out of another writer's uncommitted rewrites. An item that never had a worker lease keeps the status arm below.
+    by_tick = getattr(live_paths, "by_tick", None) or {}
+    own = [by_tick[i] for i in ids or [] if i in by_tick]
+    if own:
+        mine = set().union(*own)
+        return sorted(f for f in files if _covers(mine, f)), "item-writers"
     if live_paths:
-        kept = {f for f in files if f not in live_paths}
+        kept = {f for f in files if not _covers(live_paths, f)}
         if kept != files:
             return sorted(kept), "status-minus-live-writers"
     return sorted(files), "status-fallback"
+
+
+def _covers(paths, rel):
+    """True when the `git status` path `rel` is one of `paths` or lies under one: a writer's Bash-made directory removal (`rm -rf .claude/oracles`) covers every file below it (R20260925.1)."""
+    rel = str(rel).rstrip("/")
+    for raw in paths or ():
+        p = str(raw).rstrip("/")
+        if p and (rel == p or rel.startswith(p + "/")):
+            return True
+    return False
 
 
 def gate_only_fixset(root, shas):

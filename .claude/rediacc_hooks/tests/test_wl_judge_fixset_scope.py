@@ -25,6 +25,7 @@ PROOF_MARKER = "PROOF OBLIGATION: DID THE BULK TRANSFORM PROVE ITSELF"
 SWEEP_MARKER = "SWEEP THE CLASS, NOT THE INSTANCE"
 FOLLOWUP_OPENING = "An earlier stop this session was told"
 WRITER = "a3000000000000001"
+SUCCESSOR = "a3000000000000002"
 
 PKG_REAL_GATE = (
     '{"name":"p","version":"0.0.0","scripts":'
@@ -96,10 +97,58 @@ def add_edit(fix, aid: str, rel: str) -> None:
     os.utime(tx, (st.st_atime, st.st_mtime))
 
 
-def tick_world(fix, writer_live: bool, lead_file: str = "") -> None:
+def lease_event(fix, item_id: str, worker: str, seconds_ago: float) -> dict:
+    """One lease event on an EXISTING item (test_wl_roster.plant_lease re-adds the item, which would reset its lease history)."""
+    row = {
+        "ev": "lease",
+        "id": item_id,
+        "at": iso(seconds_ago),
+        "by": "deadbeef",
+        "until": time.strftime("%Y-%m-%dT%H:%MZ", time.gmtime(time.time() + 3600)),
+        "worker": worker,
+        "note": "",
+        "worker_verified": True,
+    }
+    with fix.events.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(row) + "\n")
+    return row
+
+
+def plant_item(fix, item_id: str, text: str, worker: str = "", ticked: bool = False) -> None:
+    """A CLI item of the lead's, optionally leased to `worker` (its lease history) and optionally ticked, written straight into the store."""
+    add_row = {
+        "ev": "add",
+        "id": item_id,
+        "at": iso(900),
+        "by": "deadbeef",
+        "s": " ",
+        "o": "deadbeef",
+        "t": text,
+    }
+    with fix.events.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(add_row) + "\n")
+    if worker:
+        lease_event(fix, item_id, worker, 800)
+    if ticked:
+        tick = {
+            "ev": "state",
+            "id": item_id,
+            "at": iso(60),
+            "by": "deadbeef",
+            "s": "x",
+            "note": "verified, rc=0",
+        }
+        with fix.events.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps(tick) + "\n")
+
+
+WRITER_ITEM_TEXT = "(deadbeef) writer reworks the parser in packages/x/a.ts"
+
+
+def tick_world(fix, writer_live: bool, lead_file: str = "", writer_item: str = "") -> None:
     """A fixture repo whose tracked `packages/x/a.ts` is modified by a writer agent, plus a tick of the lead's that touches code.
 
-    `writer_live` decides whether that writer is still running (mid-turn in a tool call, listed by the event) or has finished (turn ended, not listed). `lead_file` adds a second dirty file nobody but the lead edited.
+    `writer_live` decides whether that writer is still running (mid-turn in a tool call, listed by the event) or has finished (turn ended, not listed). `lead_file` adds a second dirty file nobody but the lead edited. `writer_item` gives the writer an item leased to it (R20260925.2): `"open"` still open, `"ticked"` ticked BEFORE the fix marker, so only the lead's tick is new.
     """
     fix.say("done for now\n\n## Remaining\n- #wr01 rides the writer")
     fix.brief_now()
@@ -111,7 +160,14 @@ def tick_world(fix, writer_live: bool, lead_file: str = "") -> None:
         (fix.proj / rel).write_text("one\n", encoding="utf-8")
     fix.git("add", "-A")
     fix.git("commit", "-qm", "chore: seed")
+    if writer_item == "ticked":
+        plant_item(fix, "wi000001", WRITER_ITEM_TEXT, worker=WRITER, ticked=True)
     fix.run()  # initialises the regression-gate marker at this HEAD
+    if writer_item == "open":
+        # Still open and handed on to a live successor that has edited nothing yet: the finished writer's edits are in its lease history, unverified.
+        plant_item(fix, "wi000001", WRITER_ITEM_TEXT, worker=WRITER)
+        mk_sub(fix, SUCCESSOR, "general-purpose", 1, last="tool_use")
+        lease_event(fix, "wi000001", SUCCESSOR, 300)
     (fix.proj / "packages/x/a.ts").write_text("two\n", encoding="utf-8")
     if lead_file:
         (fix.proj / lead_file).write_text("two\n", encoding="utf-8")
@@ -152,8 +208,8 @@ def test_r1_a_live_writers_edit_asks_no_sweep_or_proof(wl):  # noqa: F811
 
 
 def test_r1_inverse_a_finished_writers_edit_is_still_in_the_fixset(wl):  # noqa: F811
-    """A finished writer's edit has landed, so it is the lead's to account for: the questions are still asked."""
-    tick_world(wl, writer_live=False)
+    """REWRITTEN per R20260925 Decision 1: a finished writer whose item is TICKED has handed its edit to the lead, so the questions are still asked about it. (A finished writer that never held a lease is the lead's at once too; `test_r25_2_*` covers the un-ticked case, which stays subtracted.)"""
+    tick_world(wl, writer_live=False, writer_item="ticked")
     wl.runj()
     prompt = prompt_of(wl)
     assert PROOF_MARKER in prompt, prompt[-1500:]
@@ -720,3 +776,236 @@ def test_r25_4_inverse_a_hand_rolled_key_diff_or_another_scope_stays_owed(wl):  
     wl.setup()
     plant_search_call(wl, LOCALE_PROOF_CMD.replace("packages/cli", "packages/www"), 300)
     assert evidenced(wl, LOCALE_PROOF_DEMAND, "proof") is False, "the tool over another tree"
+
+
+# ---- R20260925.1: a writer's Bash-made writes are its edits too ------------------------------------
+
+# A3 (agent aee082fbda5047b70) on 2026-09-24, verbatim from its transcript except the checkout path, which is the fixture's. Every one of these went through Bash, so `edit_paths` saw none of them and the judge at 19:47:31 and 19:50:04 asked the lead to sweep and prove them.
+A3_CMDS = {
+    "18:16:01": (
+        "cd {root}/.claude/rediacc_hooks/guards && for f in $(grep -l '^TWIN = \"' *.py | sort); do\n"
+        '  sed -i \'/^TWIN = "/d\' "$f"\n'
+        "done\n"
+        'echo "done"\n'
+        "grep -l '^TWIN = \"' *.py | wc -l"
+    ),
+    "18:40:48": (
+        "python3 - <<'EOF'\n"
+        "import json\n"
+        'p = "scripts/data/enumeration-vacuity-baseline.json"\n'
+        "d = json.load(open(p))\n"
+        'before = len(d["unguarded"])\n'
+        'd["unguarded"] = [x for x in d["unguarded"] if x != ".ci/scripts/quality/check_guard_feature_completeness.py"]\n'
+        'json.dump(d, open(p, "w"), indent=2)\n'
+        'open(p, "a").write("\\n")\n'
+        "EOF"
+    ),
+    "18:41:43": (
+        "python3 - <<'EOF'\n"
+        "import json, subprocess\n"
+        'orig_text = subprocess.run(["git","show","HEAD:.ci/config/prose-style-baseline.json"], capture_output=True, text=True, check=True).stdout\n'
+        "d = json.loads(orig_text)\n"
+        'with open(".ci/config/prose-style-baseline.json", "w", encoding="utf-8") as f:\n'
+        "    json.dump(d, f, indent=1)\n"
+        '    f.write("\\n")\n'
+        "EOF"
+    ),
+    "18:43:26": (
+        "git rm -r --cached .claude/oracles >/dev/null 2>&1; rm -rf .claude/oracles\n"
+        "ls .claude/oracles 2>&1\n"
+        "git status --porcelain .claude/oracles | head -5"
+    ),
+}
+# The dirty file each command leaves behind in the fixture.
+A3_FILES = {
+    "18:16:01": ".claude/rediacc_hooks/guards/block_x.py",
+    "18:40:48": "scripts/data/enumeration-vacuity-baseline.json",
+    "18:41:43": ".ci/config/prose-style-baseline.json",
+    "18:43:26": ".claude/oracles/block_x.sh",
+}
+# A file ONLY the lead changed, in the same directory as one A3 rewrote (Decision 2's adversarial case).
+LEAD_NEIGHBOUR = ".ci/config/lead-only.json"
+
+BASH_PATHS_SNIPPET = r"""
+import json, sys
+sys.path.insert(0, sys.argv[1])
+import wl_roster as R
+print(json.dumps(sorted(R.bash_write_paths(sys.argv[2], sys.argv[3], sys.argv[3]))))
+"""
+
+
+def bash_paths(fix, cmd: str) -> list:
+    proc = subprocess.run(
+        [sys.executable, "-c", BASH_PATHS_SNIPPET, str(wlfix.STOP_DIR), cmd, str(fix.proj)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert proc.returncode == 0, proc.stderr[-600:]
+    return json.loads(proc.stdout)
+
+
+def add_bash(fix, aid: str, command: str) -> None:
+    """Insert a Bash call into the agent's transcript, before its final record, run from the checkout root."""
+    tx = subagents_dir(fix) / ("agent-%s.jsonl" % aid)
+    st = tx.stat()
+    call = {
+        "type": "assistant",
+        "cwd": str(fix.proj),
+        "message": {
+            "content": [
+                {"type": "tool_use", "id": "tu_bash", "name": "Bash", "input": {"command": command}}
+            ]
+        },
+    }
+    lines = tx.read_text(encoding="utf-8").splitlines(keepends=True)
+    tx.write_text("".join(lines[:-1]) + json.dumps(call) + "\n" + lines[-1], encoding="utf-8")
+    os.utime(tx, (st.st_atime, st.st_mtime))
+
+
+def test_r25_1_each_a3_command_names_the_file_it_wrote(wl):  # noqa: F811
+    """The four A3 commands, one by one: a `"$f"` operand under a `cd` covers the directory it runs in, a Python heredoc that writes counts its repo-path literals, and `git rm -r` / `rm -rf` cover the directory they remove."""
+    root = str(wl.proj)
+    got = {k: bash_paths(wl, c.format(root=root)) for k, c in A3_CMDS.items()}
+    assert got["18:16:01"] == [".claude/rediacc_hooks/guards"], got
+    assert "scripts/data/enumeration-vacuity-baseline.json" in got["18:40:48"], got
+    assert got["18:41:43"] == [".ci/config/prose-style-baseline.json"], got
+    assert got["18:43:26"] == [".claude/oracles"], got
+
+
+def test_r25_1_inverse_a_read_only_command_writes_nothing(wl):  # noqa: F811
+    """One fact apart from each fire: the same verbs and paths READ, never written. A `sed` without `-i`, a Python body that only loads, a `git status` of the removed tree, a quoted `rm -rf` inside a grep pattern, and an unknowable operand whose literal part is the whole checkout (never the whole tree)."""
+    for cmd in (
+        "cd {root}/.claude/rediacc_hooks/guards && sed -n '/^TWIN = \"/p' block_x.py",
+        "python3 - <<'EOF'\nimport json\nd = json.load(open(\"scripts/data/enumeration-vacuity-baseline.json\"))\nEOF",
+        "git status --porcelain .claude/oracles | head -5; ls .claude/oracles",
+        "grep -rn 'rm -rf .claude/oracles' .claude/hooks",
+        'rm -rf "$x"',
+    ):
+        assert bash_paths(wl, cmd.format(root=str(wl.proj))) == [], cmd
+
+
+def a3_world(fix, with_bash: bool) -> None:
+    """A3 live, its four Bash rewrites on disk and in its transcript (when `with_bash`), and the lead's own tick touching code, with a lead-only neighbour file."""
+    fix.say("done for now\n\n## Remaining\n- #wr01 rides the writer")
+    fix.brief_now()
+    fix.hand_now()
+    fix.reg_repo()
+    (fix.proj / "package.json").write_text(PKG_REAL_GATE, encoding="utf-8")
+    for rel in [*A3_FILES.values(), LEAD_NEIGHBOUR]:
+        (fix.proj / rel).parent.mkdir(parents=True, exist_ok=True)
+        (fix.proj / rel).write_text("one\n", encoding="utf-8")
+    fix.git("add", "-A")
+    fix.git("commit", "-qm", "chore: seed")
+    fix.run()
+    for rel in [*A3_FILES.values(), LEAD_NEIGHBOUR]:
+        if rel.startswith(".claude/oracles/"):
+            (fix.proj / rel).unlink()
+        else:
+            (fix.proj / rel).write_text("two\n", encoding="utf-8")
+    mk_sub(fix, WRITER, "general-purpose", 1, last="tool_use")
+    if with_bash:
+        for cmd in A3_CMDS.values():
+            add_bash(fix, WRITER, cmd.format(root=str(fix.proj)))
+    plant_lease(fix, "wr01", WRITER)
+    sha = fix.git("rev-parse", "--short", "HEAD").stdout.strip()
+    fix.add_item("- [x] (deadbeef) fixed the config reader in %s, %s" % (LEAD_NEIGHBOUR, sha))
+    capturing_judge(
+        fix,
+        {
+            "verdict": "stop",
+            "reason": "ok",
+            "next_action": "none",
+            "regression_gate": regression_gate(),
+        },
+    )
+
+
+def test_r25_1_a3s_bash_writes_leave_the_leads_fixset(wl):  # noqa: F811
+    """CONTROL, the 19:47:31 and 19:50:04 incident: all four A3 files are subtracted, and the lead-only file beside A3's baseline still draws the questions."""
+    a3_world(wl, with_bash=True)
+    wl.runj()
+    prompt = prompt_of(wl)
+    assert PROOF_MARKER in prompt, prompt[-1500:]
+    listed = fixset_block(prompt)
+    assert LEAD_NEIGHBOUR in listed, listed
+    for rel in A3_FILES.values():
+        assert rel not in listed, (rel, listed)
+
+
+def test_r25_1_inverse_the_same_files_without_the_bash_calls_stay_in_the_fixset(wl):  # noqa: F811
+    """One fact apart: the same dirty files and the same live writer, but its transcript never ran the commands, so nothing ties them to it and they are the lead's."""
+    a3_world(wl, with_bash=False)
+    wl.runj()
+    listed = fixset_block(prompt_of(wl))
+    for rel in A3_FILES.values():
+        assert rel in listed, (rel, listed)
+
+
+# ---- R20260925.2: a writer's paths stay out until its item is ticked, and the tick answers for them ---
+
+
+def test_r25_2_a_finished_writer_with_an_unticked_item_stays_subtracted(wl):  # noqa: F811
+    """CONTROL, A3 at 19:50:04: finished 41 seconds earlier, its edits unverified and its item open. Before R.2 a finished writer's edits were the lead's at once."""
+    tick_world(wl, writer_live=False, lead_file="packages/x/b.ts", writer_item="open")
+    wl.runj()
+    listed = fixset_block(prompt_of(wl))
+    assert "packages/x/b.ts" in listed, listed
+    assert "packages/x/a.ts" not in listed, listed
+
+
+def test_r25_2_inverse_the_same_writer_with_its_item_ticked_is_the_leads_again(wl):  # noqa: F811
+    tick_world(wl, writer_live=False, lead_file="packages/x/b.ts", writer_item="ticked")
+    wl.runj()
+    listed = fixset_block(prompt_of(wl))
+    assert "packages/x/a.ts" in listed, listed
+
+
+def writer_tick_world(fix, leased: bool) -> None:
+    """The writer's OWN item is the new tick: a writer-edited `a.ts` and a lead-only `b.ts` are dirty, and the item was (or, for the inverse, was not) leased to the writer."""
+    fix.say("done for now\n\n## Remaining\n- nothing open")
+    fix.brief_now()
+    fix.hand_now()
+    fix.reg_repo()
+    (fix.proj / "package.json").write_text(PKG_REAL_GATE, encoding="utf-8")
+    for rel in ("packages/x/a.ts", "packages/x/b.ts"):
+        (fix.proj / rel).parent.mkdir(parents=True, exist_ok=True)
+        (fix.proj / rel).write_text("one\n", encoding="utf-8")
+    fix.git("add", "-A")
+    fix.git("commit", "-qm", "chore: seed")
+    fix.run()
+    for rel in ("packages/x/a.ts", "packages/x/b.ts"):
+        (fix.proj / rel).write_text("two\n", encoding="utf-8")
+    mk_sub(fix, WRITER, "general-purpose", 30, last="end_turn", running=False)
+    add_edit(fix, WRITER, "packages/x/a.ts")
+    plant_item(fix, "wi000001", WRITER_ITEM_TEXT, worker=WRITER if leased else "", ticked=True)
+    capturing_judge(
+        fix,
+        {
+            "verdict": "stop",
+            "reason": "ok",
+            "next_action": "none",
+            "regression_gate": regression_gate(),
+        },
+    )
+
+
+def test_r25_2_a_writers_tick_is_asked_about_its_writers_files_only(wl):  # noqa: F811
+    """The tick of an item a writer worked is asked about that writer's dirty files, under the `item-writers` provenance, not about the lead's `b.ts`."""
+    writer_tick_world(wl, leased=True)
+    wl.runj()
+    prompt = prompt_of(wl)
+    listed = fixset_block(prompt)
+    assert "packages/x/a.ts" in listed, listed
+    assert "packages/x/b.ts" not in listed, listed
+    assert "narrowed to the files those writers changed" in prompt, listed
+
+
+def test_r25_2_inverse_an_item_that_never_had_a_worker_keeps_the_status_arm(wl):  # noqa: F811
+    writer_tick_world(wl, leased=False)
+    wl.runj()
+    prompt = prompt_of(wl)
+    listed = fixset_block(prompt)
+    assert "packages/x/a.ts" in listed, listed
+    assert "packages/x/b.ts" in listed, listed
+    assert "narrowed to the files those writers changed" not in prompt, listed

@@ -39,7 +39,7 @@ WRITER_CAP = 4
 # The operator's number. A leased worker whose newest evidence (a transcript write, a tool call in flight, a lease, a --status, its own SendMessage or SubagentStop) is this old is `roster-silent`. Evidence counts as status since 2026-09-24 (operator ruling "Evidence counts as status"), so the separate `roster-status` ping is merged into it.
 STATUS_PING_MIN = 20
 # A lease on `worker:queue` holds writer work the cap forbids starting. It is covered ONLY while every writer slot is taken; the moment one frees it is a defect naming the item to start, so it can never park work behind a cap that is not full.
-QUEUE_WORKER = "queue"
+QUEUE_WORKER = LH.QUEUE_WORKER
 # The tool calls that prove an agent writes, whatever its declared type says.
 EDIT_TOOLS = frozenset({"Edit", "Write", "MultiEdit", "NotebookEdit"})
 # The harness types that never write (plan F6: 0 edit calls in 66 Plan and 65 Explore transcripts). Custom read-only types are ADDED from `.claude/agents/*.md` by `read_only_types`, never subtracted.
@@ -99,6 +99,53 @@ def hold_valid(target, by_id, session_id):
     if not isinstance(rec, dict):
         return False
     return rec.get("state") in (" ", ">") and C.owned_by_me(rec.get("owner"), session_id)
+
+
+def queue_order(rec):
+    """The default order queued items are started in: oldest queue lease first, then id. A picker's `order_key` replaces it (agent/plans/PLAN-plan-priority-concurrency.md section 2 puts its `(blocked, op_rank, ai_rank, age)` here, with `lease_at` as the age term)."""
+    return (_epoch(rec.get("lease_at")) or 0, rec["id"])
+
+
+def queue_waiting(rec, by_id, _session_id):
+    """The skip reason for a queued item still waiting on an open BLOCKED_BY blocker, or "". Only the explicit token counts, never prose (agent/plans/PLAN-stop-hook-retro-20260925.md, Decision 4)."""
+    blockers = LH.waiting_on(rec, by_id)
+    return "waiting on %s" % ", ".join("#" + b for b in blockers) if blockers else ""
+
+
+# The reasons a queued item is NOT startable although a slot is free, tried in order; the first non-empty reason wins. Each is `(rec, by_id, session_id) -> reason or ""`. A concurrency hold (agent/plans/PLAN-plan-priority-concurrency.md section 5c) is one more entry, not a new code path.
+QUEUE_SKIPS = (queue_waiting,)
+
+
+def queue_pick(queued, free, by_id, session_id, order_key=None, skips=QUEUE_SKIPS):
+    """Which queued items to start now. THE QUEUE IS NOT A FINISHED WORKER.
+
+    agent/plans/PLAN-stop-hook-retro-20260924.md R.5: every queued item used to read as `leased_dead` the moment one slot was free, so 15 "start it" lines were printed for 1 free slot. Only the first K startable items are named, K being the free slots less at most one HOLD_FOR reservation; the rest stay covered behind the cap.
+
+    R20260925.5 (agent/plans/PLAN-stop-hook-retro-20260925.md): an item a `skips` predicate refuses is never named, and the NEXT startable one takes its slot. On 2026-09-24 queue-slot twice named an item the lead could not start because another writer held what it needed (#bea10927 waiting on A3), and each naming was overridden by hand.
+
+    Returns {"start": [id], "free": K, "hold": rec or None, "covered": [id], "skipped": [(id, reason)]}. A skipped item stays covered: it is waiting, not dead and not open.
+    """
+    order_key = order_key or queue_order
+    ordered = sorted(queued, key=order_key)
+    hold = next((r for r in ordered if hold_valid(hold_target(r), by_id, session_id)), None)
+    slots = max(0, max(0, free) - (HOLD_MAX if hold is not None else 0))
+    start: list[str] = []
+    covered: list[str] = []
+    skipped: list[tuple[str, str]] = []
+    for r in ordered:
+        if r is hold:
+            continue
+        reason = next((why for why in (fn(r, by_id, session_id) for fn in skips) if why), "")
+        if reason:
+            skipped.append((r["id"], reason))
+            covered.append(r["id"])
+        elif len(start) < slots:
+            start.append(r["id"])
+        else:
+            covered.append(r["id"])
+    if hold is not None:
+        covered.append(hold["id"])
+    return {"start": start, "free": slots, "hold": hold, "covered": covered, "skipped": skipped}
 
 
 # ---- locating the session's agents -------------------------------------------
@@ -539,6 +586,10 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
                 open_ids.append(r["id"])
             continue
         if ls != "fresh" and not (ls == "expired" and w and w in live_ids):
+            if ls == "expired" and w == QUEUE_WORKER and LH.waiting_on(r, by_id):
+                # R20260925.5: an expired queue lease on an item still waiting on its BLOCKED_BY blocker reads as `waiting`, exactly as classify_items; queue_pick below skips it.
+                leases.setdefault(w, []).append(r)
+                continue
             open_ids.append(r["id"])  # fails closed into an open item, exactly as classify_items
             continue
         leases.setdefault(w, []).append(r)
@@ -554,21 +605,12 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
     covered: list[Any] = []
     leased_dead: list[Any] = []
     unknown: list[Any] = []
-    # THE QUEUE IS NOT A FINISHED WORKER (agent/plans/PLAN-stop-hook-retro-20260924.md R.5). Every queued item used to read as `leased_dead` the moment one slot was free, so 15 "start it" lines were printed for 1 free slot. Now only the K oldest are named, K being the free slots less at most one HOLD_FOR reservation; the rest stay covered behind the cap.
-    queued = sorted(
-        leases.get(QUEUE_WORKER, ()), key=lambda r: (_epoch(r.get("lease_at")) or 0, r["id"])
-    )
-    hold = next(
-        (r for r in queued if hold_valid(hold_target(r), by_id, session_id)),
-        None,
-    )
-    free = max(0, WRITER_CAP - len(writers))
-    slots = max(0, free - (HOLD_MAX if hold is not None else 0))
-    rest = [r for r in queued if r is not hold]
-    queue_start = [r["id"] for r in rest[:slots]]
-    covered.extend((r["id"], QUEUE_WORKER, QUEUE_WORKER) for r in rest[slots:])
-    if hold is not None:
-        covered.append((hold["id"], QUEUE_WORKER, QUEUE_WORKER))
+    queued = list(leases.get(QUEUE_WORKER, ()))
+    pick = queue_pick(queued, WRITER_CAP - len(writers), by_id, session_id)
+    queue_start = pick["start"]
+    slots = pick["free"]
+    hold = pick["hold"]
+    covered.extend((i, QUEUE_WORKER, QUEUE_WORKER) for i in pick["covered"])
     for w, recs in leases.items():
         if w == LH.LEAD_WORKER:
             covered.extend((r["id"], w, w) for r in recs)
@@ -721,6 +763,7 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
         "queue_start": queue_start,
         "queue_free": slots,
         "queue_held": hold["id"] if hold is not None else "",
+        "queue_skipped": pick["skipped"],
         "queued": len(queued),
         "over_cap": over_cap,
         "status_due": status_due,
@@ -734,8 +777,193 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
     }
 
 
+# ---- what a writer changed on disk -------------------------------------------------
+
+# The commands whose PATH OPERANDS a Bash call writes, deletes or moves (agent/plans/PLAN-stop-hook-retro-20260925.md R20260925.1). A3 made 330 Bash calls against 78 Edits on 2026-09-24, and every edit the judge then asked the lead to sweep went through Bash: `sed -i` over the guards, two Python rewrites of baseline files, `git rm -r --cached` plus `rm -rf` of a directory.
+BASH_WRITE_VERBS = frozenset({"rm", "mv", "cp", "sed", "tee", "truncate", "install"})
+# `git <sub>` spellings whose operands are written.
+GIT_WRITE_SUBS = frozenset({"rm", "mv"})
+# A cheap prefilter: a command with none of these cannot write a file by any route read below, so the lexer never sees it.
+_BASH_MAYBE_WRITES = re.compile(r">|\b(?:rm|mv|cp|sed|tee|truncate|install|python3?|git)\b")
+# A Python body that writes, deletes or moves a file. Its presence makes every repo-path literal in the body count as written, which errs toward subtracting (Decision 2): a missed subtraction costs the lead a blocked turn, an extra one only defers the question to the writer's own tick.
+_PY_WRITES = re.compile(
+    r"open\((?:[^()]|\([^()]*\))*?,\s*(?:mode\s*=\s*)?['\"][rbt]*[wax+][rbtwax+]*['\"]"
+    r"|\.write_(?:text|bytes)\(|\.unlink\(|\.rename\(|\.touch\("
+    r"|\bos\.(?:remove|unlink|rename|replace|rmdir)\(|\bshutil\.(?:rmtree|move|copy\w*)\("
+)
+# A string literal that reads as a repo path: path characters only, with a `/` or a file extension. `HEAD:x` and `utf-8` are not.
+_PY_PATH_LIT = re.compile(r"""['"]([A-Za-z0-9_.@+-][A-Za-z0-9_./@+-]*)['"]""")
+# Shell characters that make an operand's value unknowable before it runs (`"$f"`, `*.py`): the literal directory in front of the first one is what the operand can touch.
+_UNEXPANDABLE = re.compile(r"[$*?\[`{~]")
+
+
+def _operands(argv, takes_value=()):
+    """The non-option arguments of `argv`, with each option in `takes_value` consuming the next word. `--` ends the options."""
+    out, skip, ended = [], False, False
+    for arg in argv:
+        if skip:
+            skip = False
+            continue
+        if ended or not arg.startswith("-") or arg == "-":
+            out.append(arg)
+        elif arg == "--":
+            ended = True
+        elif arg in takes_value:
+            skip = True
+    return out
+
+
+def _target_dir(argv):
+    """The `-t DIR` / `--target-directory=DIR` of cp, mv and install, or ""."""
+    for k, arg in enumerate(argv):
+        if arg == "-t" and k + 1 < len(argv):
+            return argv[k + 1]
+        if arg.startswith("--target-directory="):
+            return arg.split("=", 1)[1]
+    return ""
+
+
+def _sed_files(argv):
+    """The files an IN-PLACE sed rewrites, or [] when it is not in place."""
+    in_place = any(
+        a.startswith("--in-place") or (a.startswith("-") and not a.startswith("--") and "i" in a)
+        for a in argv
+    )
+    if not in_place:
+        return []
+    scripted = any(a in ("-e", "-f") or a.startswith(("--expression", "--file")) for a in argv)
+    ops = _operands(argv, takes_value=("-e", "-f", "-l"))
+    return ops if scripted else ops[1:]
+
+
+def _run_operands(run):
+    """The path operands one simple command writes, deletes or moves, as the lexer quote-removed them."""
+    import posixpath  # noqa: PLC0415 -- stdlib, only on the Bash arm
+
+    name = posixpath.basename(str(run.name or ""))
+    argv = [str(a) for a in run.argv or []]
+    if name == "git" and run.git_sub in GIT_WRITE_SUBS:
+        at = argv.index(run.git_sub) if run.git_sub in argv else 0
+        return _operands(argv[at + 1 :])
+    if name not in BASH_WRITE_VERBS:
+        return []
+    if name == "sed":
+        return _sed_files(argv)
+    if name == "truncate":
+        return _operands(argv, takes_value=("-s", "-r"))
+    if name in ("cp", "install"):
+        target = _target_dir(argv)
+        if target:
+            return [target]
+        if name == "install" and any(a in {"-d", "--directory"} for a in argv):
+            return _operands(argv, takes_value=("-m", "-o", "-g"))
+        ops = _operands(argv, takes_value=("-m", "-o", "-g", "-S"))
+        return ops[-1:] if len(ops) > 1 else []
+    # rm, mv (sources vanish, the destination appears), tee.
+    return _operands(argv, takes_value=("-t",)) + ([_target_dir(argv)] if _target_dir(argv) else [])
+
+
+def _norm_under(path, base, root):
+    """`path` joined to the absolute directory `base`, normalised, and made relative to `root`; None for a path that cannot name a repo file (the root itself, or an unknowable operand whose literal part is the root)."""
+    import posixpath  # noqa: PLC0415
+
+    m = _UNEXPANDABLE.search(path)
+    if m:
+        # The directory in front of the first unknowable character covers whatever the operand expands to (`"$f"` from a `cd` into the guards directory covers the guards directory).
+        path = posixpath.dirname(path[: m.start()])
+    full = posixpath.normpath(path if path.startswith("/") else posixpath.join(base, path))
+    root = str(root).rstrip("/")
+    if full == root:
+        return None  # never the whole tree: that would subtract every lead edit with it
+    if full.startswith(root + "/"):
+        return full[len(root) + 1 :]
+    return full  # outside the repo: kept absolute, which matches no `git status` line
+
+
+def bash_write_paths(cmd, cwd, root):
+    """Every repo-relative path a Bash command writes, deletes or moves, read from what bash would RUN (agent/plans/PLAN-stop-hook-retro-20260925.md R20260925.1).
+
+    Three routes: an output redirect (the lexer's per-run writes, the same answer `shellscan.write_targets` gives, with the run's own directory), the path operands of `BASH_WRITE_VERBS` and `git rm|mv`, and the repo-path string literals of a Python heredoc or `-c` body that writes, unlinks or moves a file. Every path is joined to the `cd` in force for its clause and then to `cwd`, the directory the call ran in. A directory operand is returned as the directory and covers its subtree (`wl_reggate._covers`). An unknowable operand (`"$f"`, `*.json`) is cut back to its literal directory. Never raises: an unlexable command writes nothing it can prove.
+    """
+    import posixpath  # noqa: PLC0415
+
+    if not cmd or not _BASH_MAYBE_WRITES.search(cmd):
+        return set()
+    try:
+        shellscan = _shellscan()
+        analysis = shellscan._analyse(
+            cmd
+        )  # the lexer's own walk, the same entry commit_policy.git_runs reads
+        runs = list(analysis.runs)
+        loose = shellscan.write_targets(cmd)
+    except Exception:  # noqa: BLE001 -- a command the lexer cannot read proves no write
+        return set()
+    base_cwd = str(cwd or root)
+    out, seen_writes = set(), []
+
+    def add(raw, run_cwd):
+        base = base_cwd if run_cwd is None else posixpath.join(base_cwd, str(run_cwd))
+        rel = _norm_under(str(raw), base, root)
+        if rel:
+            out.add(rel)
+
+    py_bodies = []
+    for run in runs:
+        for target in run.writes or []:
+            seen_writes.append(target)
+            add(target, run.cwd)
+        for operand in _run_operands(run):
+            add(operand, run.cwd)
+        if posixpath.basename(str(run.name or "")).startswith("python"):
+            argv = [str(a) for a in run.argv or []]
+            body = argv[argv.index("-c") + 1] if "-c" in argv[:-1] else ""
+            py_bodies.append((body, run.cwd))
+    for target in loose:
+        # A redirect on a brace group or a subshell belongs to no simple command, so only write_targets sees it.
+        if target not in seen_writes:
+            add(target, None)
+    if py_bodies:
+        heredocs = _heredoc_bodies(shellscan, cmd)
+        for body, run_cwd in py_bodies:
+            for text in [body, *heredocs]:
+                if text and _PY_WRITES.search(text):
+                    for lit in _PY_PATH_LIT.findall(text):
+                        if "/" in lit or re.search(r"\.[A-Za-z0-9]{1,8}$", lit):
+                            add(lit, run_cwd)
+    return {p for p in out if p not in ("/dev/null", "/dev/stdout", "/dev/stderr")}
+
+
+def _heredoc_bodies(shellscan, cmd):
+    lexer = shellscan._Lexer(cmd)
+    try:
+        lexer.tokens()
+    except Exception:  # noqa: BLE001 -- an unlexable command has no readable heredoc
+        return []
+    return [
+        lexer.src[h.body_start : h.body_end]
+        for h in lexer.heredocs
+        if h.body_start is not None and h.body_end is not None
+    ]
+
+
+def _shellscan():
+    """`rediacc_hooks.shellscan`, the guards' lexer, reached with `.claude` on sys.path the way that package expects."""
+    import importlib.util  # noqa: PLC0415
+
+    # The ONE canonical hop for .claude code (.claude/rediacc_hooks/syspath.py), loaded by file path because
+    # this module lives outside the rediacc_hooks package (test_canonical_sys_path_hop).
+    helper = pathlib.Path(__file__).resolve().parents[2] / "rediacc_hooks" / "syspath.py"
+    spec = importlib.util.spec_from_file_location("_rediacc_syspath", helper)
+    syspath = importlib.util.module_from_spec(spec)  # type: ignore[arg-type]
+    spec.loader.exec_module(syspath)  # type: ignore[union-attr]
+    syspath.on_sys_path(syspath.CLAUDE_DIR)
+    from rediacc_hooks import shellscan  # noqa: PLC0415
+
+    return shellscan
+
+
 def edit_paths(jsonl, root):
-    """The repo-relative `file_path` (or `notebook_path`) of every edit tool call in one transcript. Paths outside `root` are kept absolute, which never matches a `git status` line and so subtracts nothing."""
+    """Every repo-relative path one transcript's tool calls changed: the `file_path` (or `notebook_path`) of every edit tool call, and since R20260925.1 every path a Bash call wrote, deleted or moved (`bash_write_paths`, joined to the record's own `cwd`). Paths outside `root` are kept absolute, which never matches a `git status` line and so subtracts nothing."""
     try:
         data = jsonl.read_bytes()
     except (OSError, AttributeError):
@@ -751,34 +979,77 @@ def edit_paths(jsonl, root):
         for block in content:
             if not isinstance(block, dict) or block.get("type") != "tool_use":
                 continue
-            if block.get("name") not in EDIT_TOOLS:
-                continue
             raw = block.get("input")
             inp = raw if isinstance(raw, dict) else {}
+            if block.get("name") == "Bash":
+                out |= bash_write_paths(str(inp.get("command") or ""), rec.get("cwd"), root)
+                continue
+            if block.get("name") not in EDIT_TOOLS:
+                continue
             path = str(inp.get("file_path") or inp.get("notebook_path") or "")
             if path:
                 out.add(path.removeprefix(base))
     return out
 
 
-def live_writer_paths(cwd, session_id, event, now=None):
-    """Every path a writer that is LIVE NOW has edited, repo-relative (agent/plans/PLAN-stop-hook-retro-20260924.md R.1).
+class WriterPaths(set):
+    """The paths the judge's tick-based fix-set subtracts, plus `by_tick`: {tick id: the paths of that ticked item's own lease workers}. A plain set to every caller that only subtracts; `wl_reggate.fixset_files` reads `by_tick` to answer a tick with its own writers' files (R20260925.2)."""
 
-    The judge's tick-based fix-set is the whole dirty tree, which carries every in-flight writer's uncommitted edits; on 2026-09-24 six of ten judge blocks demanded a sweep or a proof for work a writer still had in flight. Live is the roster's own predicate: listed running by the event (or a shell waiter) and not proven finished. A FINISHED writer's edits are not subtracted, since they have landed and are the lead's to account for. Never raises: an unreadable roster subtracts nothing, which keeps the demand.
+    by_tick: dict
+
+    def __init__(self, paths=(), by_tick=None):
+        super().__init__(paths)
+        self.by_tick = dict(by_tick or {})
+
+
+def _agent_workers(rec, metas):
+    """The agents this item was ever leased to, oldest first: the fold's lease history, or the current worker for a record folded before that history existed. `queue` and `lead` are no agents."""
+    hist = list(rec.get("lease_workers") or ())
+    if not hist and rec.get("worker"):
+        hist = [str(rec["worker"])]
+    return [w for w in hist if w in metas]
+
+
+def live_writer_paths(cwd, session_id, event, now=None, fold=None):
+    """Every path the lead's tick-based fix-set must NOT carry, repo-relative, as a `WriterPaths`.
+
+    agent/plans/PLAN-stop-hook-retro-20260924.md R.1: the judge's tick-based fix-set is the whole dirty tree, which carries every in-flight writer's uncommitted edits; on 2026-09-24 six of ten judge blocks demanded a sweep or a proof for work a writer still had in flight. Live is the roster's own predicate: listed running by the event (or a shell waiter) and not proven finished.
+
+    agent/plans/PLAN-stop-hook-retro-20260925.md R20260925.2 (Decision 1): a FINISHED writer's edits stay subtracted while any item ever leased to it (or to an agent above it) is not ticked. Uncommitted edits the lead has not verified have not landed: at 19:50:04 on 2026-09-24 A3 had finished 41 seconds earlier and its baseline rewrites drew a sweep the lead could not own. Once every such item is ticked the writer's paths are the lead's again. A finished writer that never held a lease is the lead's at once, as before.
+
+    `by_tick` maps each ticked item of this session that had agent lease workers to those workers' paths (their descendants included), keyed by `wl_reggate._tick_id` of its line. `fold` is the stop's own fold when the caller has one; it is loaded without syncing otherwise. Never raises: an unreadable roster subtracts nothing, which keeps the demand.
     """
     now = time.time() if now is None else now
     try:
         metas = load_metas(session_subagents_dir(cwd, session_id))
         if not metas:
-            return set()
+            return WriterPaths()
+        kids = children_map(metas)
         running = _running(event or {})
         waiters = shell_waiters(running, metas)
         listed = {str(b.get("id") or "") for b in running if b.get("type") == "subagent"} | set(
             waiters
         )
-        root = C.project_root(C.project_start({"cwd": cwd}))
-        out = set()
-        for aid in sorted(listed):
+        start = C.project_start({"cwd": cwd})
+        root = C.project_root(start)
+        cache: dict[str, set] = {}
+
+        def paths_of(aids):
+            out = set()
+            for aid in aids:
+                m = metas.get(aid)
+                if not m or m.get("jsonl") is None:
+                    continue
+                if aid not in cache:
+                    cache[aid] = edit_paths(m["jsonl"], root)
+                out |= cache[aid]
+            return out
+
+        def lineage(aids):
+            return {d for a in aids for d in [a, *descendants(a, kids)]}
+
+        live = set()
+        for aid in listed:
             m = metas.get(aid)
             if not m or m.get("jsonl") is None:
                 continue
@@ -786,10 +1057,27 @@ def live_writer_paths(cwd, session_id, event, now=None):
                 m["jsonl"], now, m.get("name", ""), cwd, session_id
             ):
                 continue
-            out |= edit_paths(m["jsonl"], root)
-        return out
+            live.add(aid)
+        if fold is None:
+            import wl_store as S  # noqa: PLC0415
+
+            fold = S.load(C.worklist_for(start), sync=False)
+        import wl_reggate as RG  # noqa: PLC0415 -- wl_reggate imports nothing of the roster
+
+        pending, by_tick = set(), {}
+        for rec in getattr(fold, "items", None) or []:
+            if not C.owned_by_me(rec.get("owner"), session_id):
+                continue
+            workers = _agent_workers(rec, metas)
+            if not workers:
+                continue
+            if rec.get("state") == "x":
+                by_tick[RG._tick_id(rec.get("line") or "")] = frozenset(paths_of(lineage(workers)))
+            elif rec.get("state") not in LH.CLOSED_STATES:
+                pending |= set(workers)
+        return WriterPaths(paths_of(lineage(live | pending)), by_tick)
     except Exception:  # noqa: BLE001 -- subtracting nothing keeps the demand, the safe side
-        return set()
+        return WriterPaths()
 
 
 def known_subagent_ids(cwd, session_id):

@@ -27,7 +27,7 @@ import re
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable
+    from collections.abc import Callable
 
 # The window a field must sit in. Ten is the smallest header window among the readers (wl_checks, wl_planrec, wl_backlog, plan_lifecycle), so a field inside it is visible to all of them.
 HEADER_LINES = 10
@@ -637,40 +637,3 @@ class Graph:
 
 
 # --------------------------------------------------------------------------- The worklist link.
-
-
-def linked_plan(item_text: str) -> str | None:
-    """The plan basename an item implements: a `PLAN-x.md` IMMEDIATELY followed by ` [<8hex>]`. A bare mention (`write PLAN-x.md`) links nothing, because a wrong refusal of a planning item costs more than a missed link."""
-    m = LINK_RE.search(item_text or "")
-    return m.group(1) if m else None
-
-
-def tracked_by(plan: str, fold: Any) -> list[str]:
-    """Ids of every open, leased or deferred item, ANY owner, whose base text carries `plan`'s basename. [] means untracked.
-
-    The rule of `wl_backlog._claimed` (basename containment), returning ids rather than a bool so a FIRST row can name who tracks the root. `wl_backlog` switches to this in T8.
-    """
-    base = os.path.basename(plan or "")
-    if not base:
-        return []
-    out = []
-    for r in list(getattr(fold, "items", None) or []):
-        if not isinstance(r, dict):
-            continue
-        if str(r.get("state") or " ") not in _OPEN_ITEM_STATES:
-            continue
-        text = str(r.get("basetext") or "").strip()
-        if not text:
-            text = str(r.get("text") or "").strip().split("  ", 1)[0]
-        if base in text:
-            out.append(str(r.get("id") or ""))
-    return out
-
-
-def plan_names(texts: Iterable[str]) -> list[str]:
-    """Every distinct plan basename cited across `texts`, in first-seen order."""
-    seen: dict[str, None] = {}
-    for text in texts:
-        for name in PLAN_CITE_RE.findall(text or ""):
-            seen.setdefault(name, None)
-    return list(seen)

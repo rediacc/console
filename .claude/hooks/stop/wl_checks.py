@@ -1532,13 +1532,19 @@ def guided_slice(fold, session_id, verdicts=None, me=None, root=None, full=False
         else:
             plan = ""
         before = len(rows)
-        waiting = wl_leasehelp.waiting_on(rec, by_id) if st == " " else []
+        # An EXPIRED queue lease on an item still waiting on its BLOCKED_BY blocker reads as waiting too, the same answer wl_store.classify_items gives it (agent/plans/PLAN-stop-hook-retro-20260925.md R20260925.5); the guide said "LEASE DEAD ... re-lease" for it while the stop allowed.
+        queue_wait = (
+            st == ">"
+            and rec.get("worker") == wl_leasehelp.QUEUE_WORKER
+            and C.lease_state(rec["line"]) == "expired"
+        )
+        waiting = wl_leasehelp.waiting_on(rec, by_id) if st == " " or queue_wait else []
         if waiting:
             rows.append(
                 (
                     3,
-                    "  - [ ] #%s waiting (%s) %s\n        NEXT: nothing until they close; it reopens by itself"
-                    % (rid, ", ".join("#" + w for w in waiting), txt),
+                    "  - [%s] #%s waiting (%s) %s\n        NEXT: nothing until they close; it reopens by itself"
+                    % (st, rid, ", ".join("#" + w for w in waiting), txt),
                 )
             )
         elif st == " ":

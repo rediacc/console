@@ -16,6 +16,8 @@ import re
 
 # The in-session lead's own worker name. Not a background task id, so the roster never counts it as a writer.
 LEAD_WORKER = "lead"
+# The placeholder worker of a queued item: writer work the cap forbids starting (wl_roster.QUEUE_WORKER re-exports it). Here so wl_store.classify_items can tell a queued item waiting on a BLOCKED_BY blocker from a dead lease without importing the roster.
+QUEUE_WORKER = "queue"
 # How many items the lead may hold inline at once. A sealed literal: more than this is not "driving it inline", it is a parking bay.
 LEAD_MAX = 3
 # How far ahead a hook-written lease (an auto-lease or a lead renewal) reaches. Inside wl_core.MAX_LEASE_MIN.
