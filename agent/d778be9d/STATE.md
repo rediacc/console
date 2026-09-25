@@ -1,18 +1,13 @@
-## SESSION d778be9d 2026-09-25T13:51:31Z
+## SESSION d778be9d 2026-09-25T17:05:43Z
 
-Updated 2026-09-25 ~14:00Z. Branch 0923-1 (PR #590 open). Tree is uncommitted and large; lead commits verified batches by path only when asked (see STATE history / memory feedback_commit_push_backup_no_babysit).
+Updated 2026-09-25 ~17:15Z. Branch 0923-1 (PR #590). Stop hook OFF (.ci/config/stop-hook.json) until Y/X/W/Z land (#d50c60f6). Last push c707ed4d0; unpushed commits since: c55b8a0a9 plan-deps, c18ca3eca commit-policy guards, fb8e25e3c resumable download, ae64b9306 deploy skill, bd0278084 CLI (pull epoch key, renetPath, 401 reasons, IP rebind CLI). eu runs account 6046d44 (c6dea776). Operator's config "rediacc" is remote-enabled (store c7b1e776, config 1880812c), renetPath restored.
 
 ## True right now
-- Operator order 2026-09-25 (spec verbatim: scratchpad operator-xyzw-20260925.md, also restated in items): four proposals in order Y > X > W > Z.
-  - Y focus mode #a4438d31, X plan priority/concurrency #137c872b, W CI time budget #02c52f29, Z per-commit review #69251980. Each has a Plan agent running; its final message is the plan text to save to agent/plans/PLAN-stop-hook-focus-mode.md, PLAN-plan-priority-concurrency.md, PLAN-ci-time-budget.md, PLAN-per-commit-review.md.
-  - One writer slot is held for Y via #11fbc2a2 lease note HOLD_FOR:#a4438d31. Seven PLAN-stop-hook-retro-20260925 boxes (.1 .2 .5 .6 .7 .8 .10) carry BLOCKED_BY:#a4438d31 (same stop-hook files).
-- Running writers: date-independent block_stale_pr_branch_date golden #34654813; prose_style drain via shrink_only #1d5e31a3.
-- Item 10 (M-live hotfix promote) py-side re-run with the fixed promote (--reuse-bash, fresh cfkit token) running as background shell; log scratchpad/item10-rerun.log. Items cfbcfa7a e44fe9c0 23d07e25 16c53409 are leased to it. Success must restore production cli/stable/install.sh to REDIACC_CHANNEL:-stable: confirm with verify_stable_endpoints, do not assume.
-- Operator must re-run `! ./rdc.sh config remote enable` (CLI preflight now sends Access-Control-Allow-Private-Network, config-remote.ts:59). Proxy trial #a2a8491c waits on it.
-- Fixed and verified this stretch (uncommitted): wl_roster shell_waiters horizon (:439), wl_store BLOCKED_BY via --update (:973), retro .3/.4 (wl_classsweep glob_covers, shape_cluster_diff JSON mode), account org race + no-team /me, installer channel stamp, shellscan golden path tokens, env-registry updated.
+- UNCOMMITTED, all verified, ready to commit in 4 batches: (1) retro R.1/.2/.5/.8 stop hook (.claude/hooks/stop/wl_*.py, worklist_messages.py, test_wl_*.py) + dead-code removal in wl_plandeps.py/test-plandeps.py (floor 90) + wl_roster _shellscan via syspath, PR-TASK 01c7d773; (2) gate hygiene (syspath.py, guards hop edits + ANCHORING decl, onboard.py, regolden.py, test-bgsweep/defer-settle/deflect, test-block_host_toolchain_run, check_guard_mention_anchoring.py, test_canonical_sys_path_hop.py, test_gate_python_control_plants.py, chmod of 5 guard tests) PR-TASK e87fa3ce; (3) docs writer (CLAUDE.md rule 1 + focus-mode exception, output-styles, pr-merge/pr-babysit/handoff, agents x3, pr-epics SKILL, ci-gates/TRAPS/08-driver-contract) PR-TASK e87fa3ce; (4) private/account pointer bump to 6046d44. Verification run bg b4t3am8nj (all test_wl_*, stop suites, anchoring, sys.path hop).
+- New plan agent/plans/PLAN-config-sync-hardening.md (#2326b9ed): harness-first (H1-H17 it.fails), P0 F3 (every remote write wipes state.repos networkIds: operator warned to avoid write commands), F4, F6, F7; decisions D1-D9 to ask (D1 deletion, D2 v3 migration, D4 token lifetime, D5 SDK layer most important).
+- Open: #92cfb2a2 tags only in subject; #e83d9ba9 push guard judges console tree for submodule push; #2a7f77c2 prose false positive on paths; #09fd19cd bulk guard $VAR message; item 10 re-run bg b0l8con11 (#cfbcfa7a/#e44fe9c0/#23d07e25).
 
 ## Next action
-1. On each Plan-agent completion: spot-check load-bearing file:line claims, save the plan file, then start Y's writer in the held slot (release #11fbc2a2's HOLD_FOR). X's migration table goes to the operator for approval before writing.
-2. When item 10 finishes: read the log rc and PARITY line, run verify_stable_endpoints for cli/stable/install.sh, tick cfbcfa7a/e44fe9c0/23d07e25/16c53409 with evidence.
-3. Spot-check and tick the two running writers.
-4. Commit batches by path (2a94fc77), then ci:quick and push 0923-1 as separate commands.
+1. When b4t3am8nj finishes clean: commit batches 1-4 by path (literal -F path; no bracket tags in messages).
+2. Start writers: config-sync harness T1+T2 (C, private/account/tests/integration/config-sync) and T3 host-local registry (B) — T3 first priority (F3 data loss). Ask operator D1, D2, D4, D5.
+3. ci:quick in clean clone /home/developer/pushclone-0923 at new HEAD, then push 0923-1.
