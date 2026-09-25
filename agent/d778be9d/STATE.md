@@ -6,7 +6,7 @@ Updated 2026-09-25 ~21:30Z. PAUSED by operator ("do not start new sub-agents. I'
 - Config sync hardening (agent/plans/PLAN-config-sync-hardening.md, rulings in section 5): landed harness H1-H17 + state-sync S1-S5 + edit-sync + team-scope; T3, T4, T5, T6, T7, T12, T17 (exclusion list DEVICE_LOCAL_POINTERS: /schemaVersion /version /remote /encryption /renetPath /credentials/masterPasswordVerifier; all state incl networkIds syncs), T18 (every edit pushes via synced-write.ts). Verified on the combined tree: shared 721, cli 2568, account integration 1886 passed + 13 expected fail, all typechecks 0.
 - F19 team scoping server T1-T7 landed (account 4217a9e). F20 renet guard landed (renet e027a2e, console c102a6c08).
 - Operator decisions parked: #4c16ec15 (logout clears account on every device, DEFAULT keep synced), #a6c94eea (state writes fail closed offline, DEFAULT yes).
-- Possibly still running at pause: X writer A abfe9e3a59e63b0ab (#137c872b, PLAN-plan-priority-concurrency T1-T6, files .claude/hooks/stop/wl_plandeps.py wl_planconc.py wl_planrec.py test-plandeps.py, check_plan_deps.py, block_plan_without_depends.py, block_plan_concurrency.py + suites, hook-inventory-baseline.json); item 10 promote re-run b0l8con11 in devbox (#cfbcfa7a/#e44fe9c0/#23d07e25). Hibernate may kill both: check their output/uncommitted files first.
+- X writer A FINISHED and committed (T1-T6, X_FIELDS_REQUIRED=False until T11); writer B (T7-T10) not started. Item 10 promote re-run b0l8con11 may still be running in devbox (#cfbcfa7a/#e44fe9c0/#23d07e25).
 
 ## Next action
 1. If X writer's files are uncommitted: spot-check (its suites + check:ci-plan-deps/dead-python/hook-integrity/doc-region-parity) and commit, PR-TASK of the X epic; tick #137c872b progress.
