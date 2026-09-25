@@ -1,0 +1,7 @@
+{
+  "$comment": "Operator switch for the Stop hook (.claude/hooks/stop/worklist.py with no arguments). enabled:false makes every stop allow without running any check; the worklist verbs keep working. Operator order 2026-09-25: off until the Y/X/W/Z programs land (worklist items #a4438d31, #137c872b, #02c52f29, #69251980), then set enabled back to true (tracked by the re-enable item named in 'reenable').",
+  "enabled": false,
+  "since": "2026-09-25",
+  "reason": "operator: the stop hook is too aggressive; off until X/Y/W/Z are complete",
+  "reenable": "when #a4438d31 #137c872b #02c52f29 #69251980 are all ticked"
+}

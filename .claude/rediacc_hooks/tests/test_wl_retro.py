@@ -7,7 +7,10 @@ The retro-order cases (R.11 to R.13) belong in this module as well.
 
 from __future__ import annotations
 
+import importlib.util
 import json
+import shutil
+import time
 
 from rediacc_hooks.tests.test_wl_judge_fixset_scope import timeout_fix_world
 from rediacc_hooks.tests.wlfix import wl  # noqa: F401
@@ -108,6 +111,7 @@ def retro_items(fix) -> list[str]:
 def test_r12_post_compact_orders_the_retro_once(wl):  # noqa: F811
     """CONTROL: before R.12 the PostCompact briefing carried no retro order and wrote no row."""
     wl.plant_state("## Next action\n\nkeep going")
+    wl.append_transcript(boundary(False))
     first = compact(wl)
     assert "STOP-HOOK RETRO" in first, first[-600:]
     assert "--retro-brief deadbeef post-compact" in first, first[-600:]
@@ -124,6 +128,7 @@ def test_r12_post_compact_orders_the_retro_once(wl):  # noqa: F811
 
 
 def test_r12_the_missing_state_arm_orders_after_the_write(wl):  # noqa: F811
+    wl.append_transcript(boundary(False))
     text = compact(wl)
     assert "After you write STATE.md" in text, text[-600:]
 
@@ -184,7 +189,12 @@ def test_r13_retro_brief_prints_the_id_and_the_previous_range_end(wl):  # noqa: 
         )
         + "\n"
     )
-    plant_rows(wl, ordered("early", 0, 100), ordered("late", 100, 250, at="2026-09-24T12:00:00Z"))
+    plant_rows(
+        wl,
+        ordered("early", 0, 100),
+        {"ev": "saved", "session": "deadbeef", "band": "early", "item": "aaaa0001"},
+        ordered("late", 100, 250, at="2026-09-24T12:00:00Z"),
+    )
     got = wl.cli("--retro-brief", "deadbeef", "late")
     assert got.rc == 0, got.err[:300]
     tracked = [r for r in ledger_rows(wl) if r["ev"] == "tracked"]
@@ -243,3 +253,189 @@ def test_r13_a_leased_item_writes_the_dispatched_row_once(wl):  # noqa: F811
     wl.run()
     dispatched = [r for r in ledger_rows(wl) if r["ev"] == "dispatched"]
     assert [(r["item"], r["agent"]) for r in dispatched] == [(item, "bw9")], ledger_rows(wl)
+
+
+# ---- R.16 and R.17: attribute the compaction, window from the last reviewed retro, `voided` ----------
+
+
+def _now_stamp(ago: float = 0.0) -> str:
+    return time.strftime("%Y-%m-%dT%H:%M:%S.000Z", time.gmtime(time.time() - ago))
+
+
+def boundary(sidechain: bool, agent: str = "", ago: float = 2.0) -> dict:
+    """The `compact_boundary` record, in the shape measured in agent-a149262d8b6a1601f.jsonl line 7512."""
+    rec = {
+        "type": "system",
+        "subtype": "compact_boundary",
+        "isSidechain": sidechain,
+        "timestamp": _now_stamp(ago),
+        "sessionId": "deadbeef",
+        "compactMetadata": {"trigger": "auto", "postTokens": 5941},
+    }
+    if agent:
+        rec["agentId"] = agent
+    return rec
+
+
+def plant_subagent_boundary(fix, agent: str = "a149262d8b6a1601f") -> None:
+    sub = fix.transcript.with_suffix("") / "subagents"
+    sub.mkdir(parents=True, exist_ok=True)
+    (sub / ("agent-%s.jsonl" % agent)).write_text(
+        json.dumps({"type": "user", "isSidechain": True, "message": {"content": "go"}})
+        + "\n"
+        + json.dumps(boundary(True, agent))
+        + "\n",
+        encoding="utf-8",
+    )
+
+
+def ctx_fresh(fix):
+    path = fix.stem(".state-deadbeef.json")
+    if not path.is_file():
+        return None
+    return json.loads(path.read_text(encoding="utf-8")).get("ctx_fresh")
+
+
+def test_r16_a_subagent_compaction_in_the_measured_shape_orders_nothing(wl):  # noqa: F811
+    """CONTROL, the payload measured at 19:01:44Z: the LEAD's session_id and transcript_path, NO agent_id, and the boundary only in a subagents/agent-X.jsonl. Before R.16 this wrote the lead's post-compact row, carried the order and stamped the lead's ctx_fresh."""
+    wl.plant_state("## Next action\n\nkeep going")
+    plant_subagent_boundary(wl)
+    text = compact(wl)
+    assert "STOP-HOOK RETRO" not in text, text[-600:]
+    assert ledger_rows(wl) == [], ledger_rows(wl)
+    assert ctx_fresh(wl) is None, ctx_fresh(wl)
+    assert text.startswith("This compaction is sub-agent a149262d8b6a1601f's"), text[:300]
+
+
+def test_r16_inverse_a_lead_boundary_orders_one_row(wl):  # noqa: F811
+    wl.plant_state("## Next action\n\nkeep going")
+    plant_subagent_boundary(wl)
+    wl.append_transcript(boundary(False))
+    text = compact(wl)
+    assert "--retro-brief deadbeef post-compact" in text, text[-600:]
+    assert [(r["ev"], r["band"]) for r in ledger_rows(wl)] == [("ordered", "post-compact")]
+    assert (ctx_fresh(wl) or {}).get("why") == "post-compact", ctx_fresh(wl)
+    assert "sub-agent" not in text[:200], text[:200]
+
+
+def test_r16_an_old_lead_boundary_is_unknown_and_orders_nothing(wl):  # noqa: F811
+    """The Decision: an owner that cannot be determined orders no retro and leaves ctx_fresh alone. The lead's own boundary 16:25Z was 2.5 hours old at 19:01Z."""
+    wl.plant_state("## Next action\n\nkeep going")
+    wl.append_transcript(boundary(False, ago=9000))
+    text = compact(wl)
+    assert "STOP-HOOK RETRO" not in text, text[-600:]
+    assert ledger_rows(wl) == []
+    assert ctx_fresh(wl) is None
+    assert "sub-agent" not in text[:200], text[:200]
+
+
+def test_r16_mutant_the_agent_id_only_guard_lets_the_control_write_a_row(wl, tmp_path):  # noqa: F811
+    """MUTANT: revert handle_post_compact's attribution to R.12's `not event.get("agent_id")` guard in a copy of the stop directory; the measured-shape control then writes the lead's row again."""
+    src = wl.hook.parent
+    dst = tmp_path / "hooks" / "stop"
+    shutil.copytree(src, dst, ignore=shutil.ignore_patterns("__pycache__"))
+    shutil.copytree(
+        src.parent / "context", dst.parent / "context", ignore=shutil.ignore_patterns("__pycache__")
+    )
+    checks = dst / "wl_checks.py"
+    body = checks.read_text(encoding="utf-8")
+    real = "owner = _compaction_owner(event, sid)"
+    assert real in body, "the attribution call moved; update the mutant"
+    checks.write_text(
+        body.replace(real, 'owner = "agent:x" if event.get("agent_id") else "lead"', 1),
+        encoding="utf-8",
+    )
+    wl.hook = dst / wl.hook.name
+    wl.plant_state("## Next action\n\nkeep going")
+    plant_subagent_boundary(wl)
+    text = compact(wl)
+    assert "STOP-HOOK RETRO" in text, text[-600:]
+    assert [(r["ev"], r["band"]) for r in ledger_rows(wl)] == [("ordered", "post-compact")]
+
+
+def test_r17_the_brief_window_starts_at_the_last_saved_retro(wl):  # noqa: F811
+    """CONTROL: before R.17 the window and `since` started at the newest `ordered` row, here the unreviewed post-compact at 12:00Z, which hid the 11:00Z block."""
+    wl.stem(".blocklog-deadbeef.jsonl").write_text(
+        json.dumps({"at": "2026-09-24T11:00:00Z", "key": "unreviewed", "named": [], "judge": {}})
+        + "\n"
+        + json.dumps({"at": "2026-09-24T09:00:00Z", "key": "reviewed", "named": [], "judge": {}})
+        + "\n"
+    )
+    plant_rows(
+        wl,
+        ordered("late", 0, 100, at="2026-09-24T10:00:00Z"),
+        {"ev": "saved", "session": "deadbeef", "band": "late", "item": "aaaa0001"},
+        ordered("post-compact", 100, 300, at="2026-09-24T12:00:00Z"),
+        ordered("early", 300, 400, at="2026-09-24T13:00:00Z"),
+    )
+    got = wl.cli("--retro-brief", "deadbeef", "early")
+    assert got.rc == 0, got.err[:300]
+    assert "bytes 100-400" in got.out, got.out[:800]
+    assert "led by unreviewed: 1" in got.out, got.out
+    assert "reviewed: 1" not in got.out.replace("unreviewed: 1", ""), got.out
+
+
+def test_r17_a_voided_pair_gets_no_item_and_can_be_ordered_again(wl):  # noqa: F811
+    """CONTROL: before R.17 there was no `voided` event, so sync tracked the misattributed row and the dedupe key stayed taken."""
+    plant_rows(wl, ordered("post-compact", 0, 500))
+    spec = importlib.util.spec_from_file_location(
+        "_t_ctx_budget", wl.hook.parents[1] / "context" / "ctx_budget.py"
+    )
+    assert spec is not None
+    assert spec.loader is not None
+    cb = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(cb)
+    cb.retro_void(wl.proj, "deadbeef", "post-compact", "sub-agent X compaction")
+    assert ledger_rows(wl)[-1]["ev"] == "voided", ledger_rows(wl)
+    assert cb.retro_ordered(cb.retro_rows(wl.proj), "deadbeef", "post-compact") is None
+    wl.brief_now()
+    wl.hand_now()
+    wl.say("all done")
+    got = wl.run()
+    assert retro_items(wl) == [], got.out[:400]
+    assert not [r for r in ledger_rows(wl) if r["ev"] == "tracked"], ledger_rows(wl)
+    wl.plant_state("## Next action\n\nkeep going")
+    wl.append_transcript(boundary(False))
+    text = compact(wl)
+    assert "--retro-brief deadbeef post-compact" in text, text[-600:]
+    live = [r for r in ledger_rows(wl) if r["ev"] == "ordered"]
+    assert len(live) == 2, live
+    assert live[-1]["from_off"] == 0, live[-1]
+
+
+# ---- SessionStart source=compact is attributed too (retro writer A's finding #d85ee, second retro) ----
+
+
+def session_start(fix, source: str) -> None:
+    """The SessionStart payload in the measured PostCompact shape: the LEAD's session_id and transcript_path, no agent_id."""
+    payload = {
+        "session_id": fix.sid,
+        "cwd": str(fix.proj),
+        "transcript_path": str(fix.transcript),
+        "source": source,
+    }
+    env = dict(fix.env)
+    env["CLAUDE_PROJECT_DIR"] = str(fix.proj)
+    got = fix.python(["--session-start"], stdin=json.dumps(payload), env=env)
+    assert got.rc == 0, got.err[:300]
+
+
+def test_session_start_compact_of_a_subagent_leaves_ctx_fresh_alone(wl):  # noqa: F811
+    """CONTROL: before the fix handle_session_start called mark_context_fresh for source=compact with no attribution, so a sub-agent's compaction stamped the lead's ctx_fresh here even after R.16 gated handle_post_compact."""
+    plant_subagent_boundary(wl)
+    session_start(wl, "compact")
+    assert ctx_fresh(wl) is None, ctx_fresh(wl)
+
+
+def test_session_start_compact_of_the_lead_marks_ctx_fresh(wl):  # noqa: F811
+    plant_subagent_boundary(wl)
+    wl.append_transcript(boundary(False))
+    session_start(wl, "compact")
+    assert (ctx_fresh(wl) or {}).get("why") == "session-start:compact", ctx_fresh(wl)
+
+
+def test_session_start_of_a_new_session_still_marks_ctx_fresh(wl):  # noqa: F811
+    """A startup or resume is always the lead's own: no attribution is asked for."""
+    plant_subagent_boundary(wl)
+    session_start(wl, "startup")
+    assert (ctx_fresh(wl) or {}).get("why") == "session-start:startup", ctx_fresh(wl)

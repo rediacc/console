@@ -3018,7 +3018,8 @@ _refresh_at = [
 _judge_if_at = [
     i
     for i, ln in enumerate(_wc_lines)
-    if ln.startswith("    if (something_remains or reg_signals) and not wl_judge.JUDGE_DISABLED:")
+    # A prefix, not the whole line: d393a4e8c appended `and not _in_cap_wait` and this exact-line pin went red with it.
+    if ln.startswith("    if (something_remains or reg_signals) and not wl_judge.JUDGE_DISABLED")
 ]
 control("exactly one refresh_index call site in wl_checks.py", len(_refresh_at), 1)
 control("the judge section's opening `if` is found", len(_judge_if_at), 1)

@@ -132,8 +132,17 @@ def test_96b_the_sha_arm_spends_its_budget_on_the_longest_candidates():
         calls.append(args)
         return original(repo, *args)
 
+    # The sha arm asks each root ONCE with `git cat-file --batch-check` since R20260924.20, outside `_git`, so its calls are counted here too and bounded by the number of roots.
+    batches: list = []
+    original_batch = checks._objects_in
+
+    def counting_batch(repo, toks):
+        batches.append(repo)
+        return original_batch(repo, toks)
+
     core._git = counting
     checks.C._git = counting
+    checks._objects_in = counting_batch
     try:
         # Two leading tags is the REAL rendered shape, not a worst case: the session tag is mandatory and `_render_line` emits it on the folded line.
         tag = "- [x] (0ad063bf) (0ad063bf) "
@@ -170,14 +179,23 @@ def test_96b_the_sha_arm_spends_its_budget_on_the_longest_candidates():
                 True,
             ),
         ]
+        roots = len(checks.evidence_roots(root))
         for name, text, want in cases:
             calls.clear()
+            batches.clear()
             got = checks.completion_evidence(root, text)
             assert got == want, "%s (got %s)" % (name, got)
             assert len(calls) <= 5, "%s-git-calls-bounded (%d)" % (name, len(calls))
+            assert len(batches) <= roots, "%s-one-batch-per-root (%d)" % (name, len(batches))
+            assert len(set(batches)) == len(batches), "%s-a-root-asked-twice" % name
+        # Non-vacuous: the fabricated sha really walked every root, once each.
+        batches.clear()
+        checks.completion_evidence(root, tag + "verified at " + "d" * 40)
+        assert len(batches) == roots, (len(batches), roots)
     finally:
         core._git = original
         checks.C._git = original
+        checks._objects_in = original_batch
 
 
 def test_96_control_completions_that_predate_the_marker_never_nag(wl):  # noqa: F811

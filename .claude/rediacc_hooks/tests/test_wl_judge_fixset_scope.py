@@ -180,14 +180,21 @@ SWEEP_OUTSTANDING = {
 }
 
 
-def plant_sweep_demand(fix, fired_ago_s: float) -> None:
-    """The class-sweep marker exactly as `wl_rules.Demand.bank` writes it. The path is keyed on the hook's cwd, which is this process's cwd."""
+def plant_demand(fix, name: str, fields: dict, fired_ago_s: float) -> None:
+    """A rule's demand marker exactly as `wl_rules.Demand.bank` writes it. The path is keyed on the hook's cwd, which is this process's cwd."""
     key = hashlib.sha1(os.getcwd().encode("utf-8", "replace")).hexdigest()[:12]
-    path = fix.base / "tmp" / "claude-worklist" / ".judge" / ("classsweep-%s.json" % key)
+    path = fix.base / "tmp" / "claude-worklist" / ".judge" / ("%s-%s.json" % (name, key))
     path.parent.mkdir(parents=True, exist_ok=True)
     at = time.time() - fired_ago_s
-    record = dict(SWEEP_OUTSTANDING, fires=1, at=at, first_at=at, owed=None)
+    record = dict(fields, fires=1, at=at, first_at=at, owed=None)
     path.write_text(json.dumps(record), encoding="utf-8")
+
+
+def plant_sweep_demand(fix, fired_ago_s: float, search: str = "") -> None:
+    fields = dict(SWEEP_OUTSTANDING)
+    if search:
+        fields["search"] = search
+    plant_demand(fix, "classsweep", fields, fired_ago_s)
 
 
 def plant_search_call(fix, command: str, seconds_ago: float, result: bool = True) -> None:
@@ -318,7 +325,13 @@ SETTINGS_BEFORE = '{\n  "hooks": {\n    "timeout": 135\n  }\n}\n'
 SETTINGS_AFTER = '{\n  "hooks": {\n    "timeout": 75\n  }\n}\n'
 
 
-def timeout_fix_world(fix, search: str) -> None:
+# GROUNDED on purpose (R.19): the class names the fix-set's own file, so the fire still blocks. An ungrounded class is queued as the `sweep-ungrounded` advisory instead.
+GROUNDED_CLASS = "hook timeout values in .claude/settings.json over the budget"
+
+
+def timeout_fix_world(
+    fix, search: str, defect_class: str = GROUNDED_CLASS, proof: dict | None = None
+) -> None:
     fix.say("done for now")
     fix.brief_now()
     fix.reg_repo()
@@ -340,7 +353,7 @@ def timeout_fix_world(fix, search: str) -> None:
             "regression_gate": regression_gate(),
             "class_sweep": {
                 "applicable": True,
-                "defect_class": "hook timeout values over the budget",
+                "defect_class": defect_class,
                 "locus": ".claude/settings.json",
                 "search": search,
                 "evidence": "",
@@ -348,6 +361,7 @@ def timeout_fix_world(fix, search: str) -> None:
                 "swept": False,
                 "instruction": "count the other hook timeouts",
             },
+            **({"proof_obligation": proof} if proof else {}),
         },
     )
 
@@ -367,3 +381,342 @@ def test_r3_inverse_a_search_that_finds_the_fixed_instance_is_kept(wl):  # noqa:
     assert '"decision": "block"' in out, out[:600]
     assert "Run: grep -rn" in out, out[-1200:]
     assert "does not match the fix's own changed lines" not in out, out[-1200:]
+
+
+# ---- R.18: the discharge reads what the lead actually ran (second retro, point #2) ---------------
+
+EVIDENCED_SNIPPET = r"""
+import json, sys
+sys.path.insert(0, sys.argv[1])
+import wl_classsweep as CS
+import wl_proofcheck as PF
+fn = CS.sweep_evidenced if sys.argv[4] == "sweep" else PF.proof_evidenced
+print(json.dumps(fn(json.loads(sys.argv[2]), sys.argv[3])))
+"""
+
+
+def evidenced(fix, fields: dict, rule: str = "sweep") -> bool:
+    at = time.time() - 600
+    outstanding = dict(fields, fires=1, at=at, first_at=at)
+    proc = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            EVIDENCED_SNIPPET,
+            str(wlfix.STOP_DIR),
+            json.dumps(outstanding),
+            str(fix.transcript),
+            rule,
+        ],
+        capture_output=True,
+        text=True,
+        env=fix.stop_env(),
+        check=False,
+    )
+    assert proc.returncode == 0, proc.stderr[-600:]
+    return json.loads(proc.stdout)
+
+
+ORACLE_DEMAND = {"defect_class": "x", "search": r"grep -r 'bash_results\|oracle' .ci/x/"}
+FIND_DEMAND = {"defect_class": "x", "search": "find .ci/x -name '*d.py' -type f"}
+
+
+def test_r18_a_near_literal_rerun_discharges_the_sweep(wl):  # noqa: F811
+    """CONTROL, 16:10:39Z: the lead ran the same paths with a shared alternative, and the demand stayed owed for three more stops because the whole pattern was not a substring of the command."""
+    plant_search_call(wl, r"grep -rln 'bash_results\|ORACLES\b' .ci/x/", 300)
+    assert evidenced(wl, ORACLE_DEMAND) is True
+
+
+def test_r18_a_find_demand_run_verbatim_discharges(wl):  # noqa: F811
+    """CONTROL, 16:29:15Z: a `find` demand run verbatim was never discharged, because `search_pattern` read grep and rg only."""
+    plant_search_call(wl, "find .ci/x -name '*d.py' -type f", 300)
+    assert evidenced(wl, FIND_DEMAND) is True
+
+
+def test_r18_inverse_a_shared_word_without_a_shared_path_stays_owed(wl):  # noqa: F811
+    plant_search_call(wl, "grep -r 'oracle' docs/", 300)
+    assert evidenced(wl, ORACLE_DEMAND) is False, "an alternative with no shared path discharged it"
+    wl.setup()
+    plant_search_call(wl, "grep -rn 'bash' .ci/x/", 300)
+    assert evidenced(wl, ORACLE_DEMAND) is False, "a shared path with no 6-character alternative"
+    wl.setup()
+    plant_search_call(wl, "find .ci/x -name '*.ts'", 300)
+    assert evidenced(wl, FIND_DEMAND) is False, "a different find glob discharged it"
+    wl.setup()
+    plant_search_call(wl, "find .ci/x -name '*d.py' -type f", 300, result=False)
+    assert evidenced(wl, FIND_DEMAND) is False, "a find with no result discharged it"
+
+
+PROOF_DEMAND = {"transform_kind": "reflow of comments", "scope": "packages/x comments"}
+
+
+def test_r18_a_shape_cluster_diff_on_the_scope_discharges_the_proof(wl):  # noqa: F811
+    """CONTROL: before R.18 a proof demand had no discharge at all; it rode 16:10:30, 16:23:57 and 16:29:10."""
+    plant_search_call(
+        wl, "python3 .ci/scripts/quality/shape_cluster_diff.py --rev HEAD packages/x", 300
+    )
+    assert evidenced(wl, PROOF_DEMAND, "proof") is True
+
+
+def test_r18_inverse_a_proof_elsewhere_or_another_tool_stays_owed(wl):  # noqa: F811
+    plant_search_call(wl, "python3 .ci/scripts/quality/shape_cluster_diff.py --rev HEAD docs/", 300)
+    assert evidenced(wl, PROOF_DEMAND, "proof") is False, "a proof over another path"
+    wl.setup()
+    plant_search_call(wl, "git diff --stat HEAD packages/x", 300)
+    assert evidenced(wl, PROOF_DEMAND, "proof") is False, "a diff stat is not a proof"
+    wl.setup()
+    plant_search_call(
+        wl, "python3 .ci/scripts/quality/shape_cluster_diff.py --rev HEAD packages/x", 300, False
+    )
+    assert evidenced(wl, PROOF_DEMAND, "proof") is False, "a proof with no result"
+
+
+def test_r18_the_real_stop_asks_no_proof_followup_the_transcript_answers(wl):  # noqa: F811
+    """CONTROL for the wiring at wl_judge.run_judge: before R.18 `PF.load_outstanding()` was used raw, so the follow-up was asked whatever the transcript showed."""
+    deferral_world(wl)
+    plant_demand(wl, "proofcheck", PROOF_DEMAND, 600)
+    plant_search_call(
+        wl, "python3 .ci/scripts/quality/shape_cluster_diff.py --rev HEAD packages/x", 300
+    )
+    wl.say("answer\n\n## Remaining\n- the quarantine decision, deferred with its justification")
+    wl.runj()
+    assert PROOF_MARKER not in prompt_of(wl), "the proof follow-up was asked again"
+
+
+def test_r18_adversarial_the_real_stop_still_follows_up_an_unrun_proof(wl):  # noqa: F811
+    deferral_world(wl)
+    plant_demand(wl, "proofcheck", PROOF_DEMAND, 600)
+    wl.runj()
+    assert PROOF_MARKER in prompt_of(wl), prompt_of(wl)[-1200:]
+
+
+LONG_OWED = "grep -rn 'owed_" + "x" * 215 + "_tail' .claude/settings.json"
+
+
+def test_r18_a_long_still_owed_search_is_shown_in_full(wl):  # noqa: F811
+    """CONTROL, 16:13:17Z: the block read "STILL OWED: A bash orac"; the owed search sat at the end of `reason`, under apply_order's 400-character cap and still_owed_sentence's 160."""
+    assert len(LONG_OWED) >= 250
+    timeout_fix_world(wl, "grep -rn '\"timeout\"' .claude/settings.json")
+    plant_sweep_demand(wl, 600, search=LONG_OWED)
+    out = wl.runj().out
+    assert '"decision": "block"' in out, out[:600]
+    text = json.loads(out)["reason"]
+    line = next((ln for ln in text.splitlines() if "STILL OWED (run to discharge)" in ln), "")
+    assert LONG_OWED in line, text[-1500:]
+
+
+def test_r18_adversarial_a_dropped_owed_search_is_never_handed_over(wl):  # noqa: F811
+    """A demand is banked whatever its search validated to, so the STILL OWED line must not re-emit a search `enforce` dropped: the line that carries it is now outside every cap and every filter on `next_action`."""
+    timeout_fix_world(wl, "grep -rn '\"timeout\"' .claude/settings.json")
+    plant_sweep_demand(wl, 600, search="git clean -xdf .claude/")
+    out = wl.runj().out
+    text = json.loads(out)["reason"]
+    assert "STILL OWED (run to discharge)" in text, text[-1500:]
+    assert "git clean" not in text, text[-1500:]
+
+
+# ---- R.19: a gitlink's own files, and an ungrounded fire is advisory ----------------------------
+
+FIXSET_SNIPPET = r"""
+import json, sys
+sys.path.insert(0, sys.argv[1])
+import wl_reggate as R
+print(json.dumps(R.fixset_files(sys.argv[2], json.loads(sys.argv[3]))))
+"""
+
+
+def fixset(fix, ids: list[str]) -> tuple[list[str], str]:
+    proc = subprocess.run(
+        [sys.executable, "-c", FIXSET_SNIPPET, str(wlfix.STOP_DIR), str(fix.proj), json.dumps(ids)],
+        capture_output=True,
+        text=True,
+        env=fix.stop_env(),
+        check=False,
+    )
+    assert proc.returncode == 0, proc.stderr[-600:]
+    files, provenance = json.loads(proc.stdout)
+    return files, provenance
+
+
+def gitlink_world(fix) -> object:
+    """A parent repo carrying `sub` as a gitlink (no .gitmodules needed), then a `sub` commit adding tests/a.test.ts."""
+    fix.reg_repo()
+    sub = fix.proj / "sub"
+    sub.mkdir()
+    for args in (
+        ("init", "-q"),
+        ("config", "user.email", "t@t"),
+        ("config", "user.name", "t"),
+    ):
+        subprocess.run(["git", *args], cwd=str(sub), check=True, capture_output=True)
+    (sub / "src.ts").write_text("one\n", encoding="utf-8")
+    subprocess.run(["git", "add", "-A"], cwd=str(sub), check=True, capture_output=True)
+    subprocess.run(["git", "commit", "-qm", "seed"], cwd=str(sub), check=True, capture_output=True)
+    fix.git("add", "sub")
+    fix.git("commit", "-qm", "chore: add sub")
+    (sub / "tests").mkdir()
+    (sub / "tests" / "a.test.ts").write_text("test\n", encoding="utf-8")
+    subprocess.run(["git", "add", "-A"], cwd=str(sub), check=True, capture_output=True)
+    subprocess.run(["git", "commit", "-qm", "test"], cwd=str(sub), check=True, capture_output=True)
+    return sub
+
+
+def test_r19_a_moved_gitlink_lists_the_submodule_files(wl):  # noqa: F811
+    """CONTROL, 16:23:57Z: "no test files appear in this fix-set" while the tests sat in private/account commit aea435154; the fix-set listed only the gitlink path."""
+    gitlink_world(wl)
+    files, _how = fixset(wl, ["tickid01"])
+    assert "sub/tests/a.test.ts" in files, files
+    wl.git("add", "sub")
+    wl.git("commit", "-qm", "fix: bump sub")
+    sha = wl.git("rev-parse", "HEAD").stdout.strip()
+    files, how = fixset(wl, [sha])
+    assert how == "diff-tree", how
+    assert "sub/tests/a.test.ts" in files, files
+
+
+def test_r19_inverse_an_unmoved_gitlink_adds_nothing(wl):  # noqa: F811
+    gitlink_world(wl)
+    wl.git("add", "sub")
+    wl.git("commit", "-qm", "fix: bump sub")
+    (wl.proj / "base.txt").write_text("changed\n", encoding="utf-8")
+    files, _how = fixset(wl, ["tickid01"])
+    assert files == ["base.txt"], files
+
+
+UNGROUNDED_TEXT = "queued here instead of blocking"
+
+
+def queued_keys(fix) -> list[str]:
+    path = fix.stem(".state-deadbeef.json")
+    if not path.is_file():
+        return []
+    doc = json.loads(path.read_text(encoding="utf-8"))
+    return [str(e.get("key")) for e in (doc.get("outq") or {}).get("items") or []]
+
+
+def advised(fix, got) -> bool:
+    """The `sweep-ungrounded` advisory reached the session: still queued, or drained into this stop's allow report."""
+    return UNGROUNDED_TEXT in got.out or any(
+        k.startswith("sweep-ungrounded") for k in queued_keys(fix)
+    )
+
+
+def test_r19_an_ungrounded_sweep_fire_is_an_advisory(wl):  # noqa: F811
+    """CONTROL, 15:49:19Z and 16:10:30Z: the block's own text said UNVERIFIED and it blocked anyway."""
+    timeout_fix_world(
+        wl, "grep -rn '\"timeout\"' .claude/settings.json", "hook timeout values over the budget"
+    )
+    got = wl.runj()
+    assert got.decision != "block", got.out[:800]
+    assert advised(wl, got), got.out[-1500:]
+
+
+def test_r19_an_ungrounded_proof_fire_is_an_advisory(wl):  # noqa: F811
+    proof = {
+        "applicable": True,
+        "transform_kind": "a reflow",
+        "scope": "packages/nowhere",
+        "proof_kind": "none",
+        "evidence": "",
+        "proof_attached": False,
+        "instruction": "run a structural diff",
+    }
+    timeout_fix_world(wl, "grep -rn '\"timeout\"' .claude/settings.json", proof=proof)
+    got = wl.runj()
+    assert got.decision == "block", got.out[:600]
+    assert "PROOF OBLIGATION" not in json.loads(got.out)["reason"], got.out[-1200:]
+    assert advised(wl, got), queued_keys(wl)
+
+
+def test_r19_inverse_a_grounded_fire_still_blocks(wl):  # noqa: F811
+    timeout_fix_world(wl, "grep -rn '\"timeout\"' .claude/settings.json")
+    got = wl.runj()
+    assert got.decision == "block", got.out[:600]
+    assert SWEEP_MARKER in got.out, got.out[-1200:]
+    assert not advised(wl, got), queued_keys(wl)
+
+
+# ---- R20260925.3: a covering `find` glob discharges the sweep (agent/plans/PLAN-stop-hook-retro-20260925.md section 2) ----
+
+BASELINE_DEMAND = {
+    "defect_class": "shrink-only baselines",
+    "search": "find .ci/config .ci/rediacc_ci -name '*-baseline.json' -type f",
+}
+BASELINE_COVER = "find .ci/config .ci/rediacc_ci scripts/data -name '*baseline*.json' -type f"
+
+
+def test_r25_3_a_covering_find_glob_with_a_shared_path_discharges(wl):  # noqa: F811
+    """CONTROL, 19:50:04 marker against the 19:50:12 command: a superset of the glob and the paths, and the demand stayed owed because `near_literal` needs the demand's glob as a substring."""
+    plant_search_call(wl, BASELINE_COVER, 300)
+    assert evidenced(wl, BASELINE_DEMAND) is True
+
+
+def test_r25_3_inverse_a_narrower_glob_stays_owed(wl):  # noqa: F811
+    plant_search_call(wl, "find .ci/config .ci/rediacc_ci -name 'ci-baseline.json' -type f", 300)
+    assert evidenced(wl, BASELINE_DEMAND) is False, "a narrower glob discharged it"
+
+
+def test_r25_3_inverse_a_covering_glob_with_no_shared_path_stays_owed(wl):  # noqa: F811
+    plant_search_call(wl, "find scripts/data -name '*baseline*.json' -type f", 300)
+    assert evidenced(wl, BASELINE_DEMAND) is False, "a covering glob over other paths discharged it"
+
+
+def test_r25_3_inverse_a_case_sensitive_cover_of_an_iname_demand_stays_owed(wl):  # noqa: F811
+    demand = dict(BASELINE_DEMAND, search=BASELINE_DEMAND["search"].replace("-name", "-iname"))
+    plant_search_call(wl, BASELINE_COVER, 300)
+    assert evidenced(wl, demand) is False, "-name does not cover an -iname demand"
+    wl.setup()
+    plant_search_call(wl, BASELINE_COVER.replace("-name", "-iname"), 300)
+    assert evidenced(wl, demand) is True, "an -iname cover of an -iname demand"
+
+
+# ---- R20260925.4: shape_cluster_diff's JSON key-path mode discharges the locale proof --------------
+
+SHAPE_TOOL = wlfix.STOP_DIR.parents[2] / ".ci" / "scripts" / "quality" / "shape_cluster_diff.py"
+LOCALES = "packages/cli/src/i18n/locales"
+LOCALE_PROOF_DEMAND = {
+    "transform_kind": "Automatic translation key regeneration across 16 locales",
+    "scope": "packages/cli/src/i18n/locales/",
+}
+LOCALE_PROOF_CMD = ".ci/scripts/quality/shape_cluster_diff.py --rev HEAD " + LOCALES
+
+
+def run_shape_tool_on_locales(fix) -> subprocess.CompletedProcess:
+    """The real tool in a throwaway repo: one committed locale file, then a working-tree edit adding a key."""
+    repo = fix.base / "locrepo"
+    loc = repo / LOCALES / "de" / "cli.json"
+    loc.parent.mkdir(parents=True, exist_ok=True)
+    loc.write_text(json.dumps({"commands": {"up": "Hoch"}}, indent=2), encoding="utf-8")
+    git = ["git", "-c", "user.email=t@example.invalid", "-c", "user.name=t"]
+    for argv in (["init", "-q"], ["add", "-A"], ["commit", "-q", "-m", "base"]):
+        subprocess.run(git + argv, cwd=repo, check=True, capture_output=True)
+    loc.write_text(
+        json.dumps({"commands": {"up": "Hoch", "down": "Runter"}}, indent=2), encoding="utf-8"
+    )
+    return subprocess.run(
+        [sys.executable, str(SHAPE_TOOL), "--rev", "HEAD", LOCALES],
+        cwd=repo,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+
+def test_r25_4_the_ordered_proof_is_a_key_diff_and_discharges_the_locale_demand(wl):  # noqa: F811
+    """CONTROL: the judge ordered `shape_cluster_diff` on the locales, a tool that shaped JSON as prose lines. It now reports key paths, and the ordered command discharges the demand through the unwidened PROOF_TOOL_RE."""
+    ran = run_shape_tool_on_locales(wl)
+    assert ran.returncode == 0, ran.stdout + ran.stderr
+    assert "added commands.down" in ran.stdout, ran.stdout
+    plant_search_call(wl, LOCALE_PROOF_CMD, 300)
+    assert evidenced(wl, LOCALE_PROOF_DEMAND, "proof") is True
+
+
+def test_r25_4_inverse_a_hand_rolled_key_diff_or_another_scope_stays_owed(wl):  # noqa: F811
+    """PROOF_TOOL_RE stays narrow: the lead's own key diff at 19:44:02 is not the proof tool, and the tool over another tree is not the scope."""
+    plant_search_call(
+        wl, "python3 -c 'import json; print(\"unexpected 0\")' " + LOCALES + "/de/cli.json", 300
+    )
+    assert evidenced(wl, LOCALE_PROOF_DEMAND, "proof") is False, "a hand-rolled key diff"
+    wl.setup()
+    plant_search_call(wl, LOCALE_PROOF_CMD.replace("packages/cli", "packages/www"), 300)
+    assert evidenced(wl, LOCALE_PROOF_DEMAND, "proof") is False, "the tool over another tree"

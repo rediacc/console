@@ -73,7 +73,7 @@ def _date_of(ordered):
 def ensure_tracked(worklist, root, me8, band, store):
     """The tracking item's id for (me8, band), adding it and its `tracked` row on first call. None when no retro was ordered for that pair."""
     cb = ctx()
-    rows = cb.retro_rows(root)
+    rows = cb.retro_live(cb.retro_rows(root))
     ordered = cb.retro_ordered(rows, me8, band)
     if ordered is None:
         return None
@@ -104,11 +104,12 @@ def sync(worklist, root, session_id, store):
     if not cb.retro_ledger_path(root).is_file():
         return
     me8 = cb.session_slug(session_id)
-    rows = cb.retro_rows(root)
+    # Live rows only: a `voided` pair gets no tracking item, and its old tracked row is not carried forward (R20260924.17).
+    rows = cb.retro_live(cb.retro_rows(root))
     for row in rows:
         if row.get("ev") == "ordered" and row.get("session") == me8:
             ensure_tracked(worklist, root, me8, row.get("band"), store)
-    rows = cb.retro_rows(root)
+    rows = cb.retro_live(cb.retro_rows(root))
     fold = None
     for row in rows:
         if row.get("ev") != "tracked" or row.get("session") != me8:
@@ -220,13 +221,17 @@ def box_census(root):
 
 
 def brief(worklist, root, me8, band, item):
-    """The Plan agent's prompt for (me8, band): the transcript range, the logs since the previous retro, and the boxes it must not re-propose."""
+    """The Plan agent's prompt for (me8, band): the transcript range, the logs since the previous REVIEWED retro, and the boxes it must not re-propose.
+
+    The window starts after the newest earlier retro that reached `saved` (else `dispatched`), not after the newest `ordered` row: an order nobody reviewed covered nothing (R20260924.17). `from_off` is recomputed here for the same reason rather than read from the row, which recorded the start as it looked when the order was written.
+    """
     cb = ctx()
-    rows = cb.retro_rows(root)
+    rows = cb.retro_live(cb.retro_rows(root))
     ordered = cb.retro_ordered(rows, me8, band) or {}
-    cut = next((i for i, r in enumerate(rows) if r is ordered), len(rows))
-    earlier = [r for r in rows[:cut] if r.get("ev") == "ordered" and r.get("session") == me8]
-    since = str(earlier[-1].get("at") or "") if earlier else ""
+    start = cb.retro_window_start(rows, me8, before=ordered or None)
+    since = str(start.get("at") or "") if start else ""
+    to_off = int(ordered.get("to_off") or 0)
+    from_off = min(int(start.get("to_off") or 0), to_off) if start else 0
     date = _date_of(ordered)
     wl = pathlib.Path(worklist)
     blocklog = wl.with_suffix(".blocklog-%s.jsonl" % me8)
@@ -241,8 +246,8 @@ def brief(worklist, root, me8, band, item):
         "item": item,
         "plan": "agent/plans/PLAN-stop-hook-retro-%s.md" % date,
         "transcript": ordered.get("transcript") or "(not recorded)",
-        "from_off": int(ordered.get("from_off") or 0),
-        "to_off": int(ordered.get("to_off") or 0),
+        "from_off": from_off,
+        "to_off": to_off,
         "blocklog": blocklog,
         "blocks": _block_counts(_jsonl_since(blocklog, since)),
         "hints": _lines(

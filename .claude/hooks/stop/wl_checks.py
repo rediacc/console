@@ -11,7 +11,9 @@ import os
 import pathlib
 import random
 import re
+import subprocess
 import sys as _sys
+import time
 import types as _types
 from typing import Any
 
@@ -41,7 +43,9 @@ import wl_reggate
 import wl_report
 import wl_roster
 import wl_roundlog
+import wl_rules
 import wl_shapedup
+import wl_standdown
 import wl_store as S
 import worklist_messages as M
 
@@ -298,6 +302,38 @@ def _bare_cite_resolves(root, text):
     return False
 
 
+def ask_answer_times(transcript):
+    """Epoch seconds of every AskUserQuestion tool_result in the lead transcript's tail, oldest first. [] when there is no transcript or it cannot be read."""
+    if not transcript:
+        return []
+    try:
+        with open(transcript, "rb") as fh:
+            fh.seek(0, 2)
+            size = fh.tell()
+            fh.seek(max(0, size - ASKED_TAIL_BYTES))
+            lines = fh.read().splitlines()
+    except (OSError, TypeError):
+        return []
+    asks, times = set(), []
+    for rec in wl_common.records(lines, need=b'"tool_'):
+        content = (rec.get("message") or {}).get("content")
+        if not isinstance(content, list):
+            continue
+        for block in content:
+            if not isinstance(block, dict):
+                continue
+            if block.get("type") == "tool_use" and block.get("name") == "AskUserQuestion":
+                asks.add(str(block.get("id") or ""))
+            elif block.get("type") == "tool_result" and str(block.get("tool_use_id") or "") in asks:
+                try:
+                    times.append(
+                        datetime.datetime.fromisoformat(str(rec.get("timestamp") or "")).timestamp()
+                    )
+                except ValueError:
+                    continue
+    return times
+
+
 def _asked_in_transcript(text, transcript):
     """True when an `ASKED:<minute>` in `text` matches an AskUserQuestion tool_result in the lead transcript within ASKED_WINDOW_S. The transcript is the harness's record of the question being answered, which the session cannot write by describing it."""
     stamps = []
@@ -310,34 +346,25 @@ def _asked_in_transcript(text, transcript):
             )
     if not stamps or not transcript:
         return False
-    asks = set()
-    try:
-        with open(transcript, "rb") as fh:
-            fh.seek(0, 2)
-            size = fh.tell()
-            fh.seek(max(0, size - ASKED_TAIL_BYTES))
-            lines = fh.read().splitlines()
-    except (OSError, TypeError):
-        return False
-    for rec in wl_common.records(lines, need=b'"tool_'):
-        content = (rec.get("message") or {}).get("content")
-        if not isinstance(content, list):
-            continue
-        for block in content:
-            if not isinstance(block, dict):
-                continue
-            if block.get("type") == "tool_use" and block.get("name") == "AskUserQuestion":
-                asks.add(str(block.get("id") or ""))
-            elif block.get("type") == "tool_result" and str(block.get("tool_use_id") or "") in asks:
-                try:
-                    at = datetime.datetime.fromisoformat(
-                        str(rec.get("timestamp") or "")
-                    ).timestamp()
-                except ValueError:
-                    continue
-                if any(abs(at - st) <= ASKED_WINDOW_S for st in stamps):
-                    return True
-    return False
+    return any(
+        abs(at - st) <= ASKED_WINDOW_S for at in ask_answer_times(transcript) for st in stamps
+    )
+
+
+# How far back the tick refusal looks for an operator answer to offer as ready-to-paste `ASKED:` evidence (R20260924.21).
+ASK_HINT_WINDOW_S = 2 * 3600
+
+
+def tick_refusal_hint(transcript, now=None):
+    """The line CLI_TICK_NO_EVIDENCE ends with: the newest AskUserQuestion answer of the last ASK_HINT_WINDOW_S as a ready-to-paste `ASKED:<minute>Z`, or "" (R20260924.21). Rows 1 to 3 of the 2026-09-24 tick refusals quoted "16:0xZ" because nothing named the shape or the minute."""
+    now = time.time() if now is None else now
+    recent = [t for t in ask_answer_times(transcript) if 0 <= now - t <= ASK_HINT_WINDOW_S]
+    if not recent:
+        return ""
+    minute = datetime.datetime.fromtimestamp(max(recent), tz=datetime.UTC).strftime(
+        "%Y-%m-%dT%H:%MZ"
+    )
+    return M.CLI_TICK_ASKED_HINT % minute
 
 
 def completion_evidence(root, text, transcript=None):
@@ -372,16 +399,71 @@ def completion_evidence(root, text, transcript=None):
     #
     # THE BUDGET IS SHARED ACROSS CANDIDATES AND ROOTS, not five calls PER candidate: a repo with several submodules multiplies "at most five candidates" into five times (1 + submodule count) calls the moment none of them resolve, which is exactly the unbounded shape this whole cap exists to prevent (case 96b, planted with 4 real submodules and a fabricated 40-hex sha, measured 25
     # calls before this counter existed). One counter spent depth-first -- root then each submodule for the CURRENT candidate before moving to the next -- keeps a single real submodule sha found on the first candidate cheap (root miss, submodule hit, done in 2 calls) while still hard-capping the worst case at five subprocess calls regardless of how many candidates or submodules exist.
-    roots = [root] + [os.path.join(root, p) for p, _branch in wl_git.submodules(root)]
-    spent = 0
-    for _, _, tok in sorted(cands)[:5]:
-        for r in roots:
-            if spent >= 5:
-                return False
-            spent += 1
-            if C._git(r, "rev-parse", "--verify", "--quiet", tok + "^{object}"):
-                return True
-    return False
+    #
+    # ONE `cat-file --batch-check` PER ROOT since R20260924.20, so the cost is the number of roots, never candidates times roots, and every candidate is asked at once. The roots now include the independent repos under private/ (`evidence_roots`): real shas of private/generative and private/growth were refused at 18:37:08Z and 18:37:16Z on 2026-09-24.
+    toks = [tok for _, _, tok in sorted(cands)[:EVIDENCE_CANDIDATES]]
+    if not toks:
+        return False
+    return any(_objects_in(r, toks) for r in evidence_roots(root))
+
+
+# How many hex candidates one batch asks about. A batch costs one subprocess whatever its size; the cap only bounds a pathological line.
+EVIDENCE_CANDIDATES = 16
+# How deep under private/ an independent repo is looked for (R20260924.20, the Decision "Sibling repos for tick evidence"): private/growth/corporate/legal-tax/maasikas.emta.ee sits at depth 4.
+SIBLING_DEPTH = 4
+# Directories the walk never descends into: object stores and dependency trees, never a repo of our own.
+_WALK_SKIP = frozenset({".git", "node_modules", ".venv", "venv", "__pycache__", "dist", "build"})
+_EVIDENCE_ROOTS: dict[str, list[str]] = {}
+
+
+def sibling_repo_roots(root):
+    """Every git repo under `<root>/private/` down to SIBLING_DEPTH that is not a submodule, found by one walk and cached per root for the process. They are gitignored and independent, so neither `git -C root` nor `wl_git.submodules` ever sees their objects."""
+    base = os.path.join(str(root), "private")
+    known = {os.path.normpath(os.path.join(str(root), p)) for p, _b in wl_git.submodules(root)}
+    found = []
+    for cur, dirs, _files in os.walk(base):
+        depth = 0 if cur == base else os.path.relpath(cur, base).count(os.sep) + 1
+        if (
+            depth
+            and os.path.exists(os.path.join(cur, ".git"))
+            and os.path.normpath(cur) not in known
+        ):
+            found.append(cur)
+        if depth >= SIBLING_DEPTH or os.path.normpath(cur) in known:
+            dirs[:] = []
+            continue
+        dirs[:] = sorted(d for d in dirs if d not in _WALK_SKIP)
+    return found
+
+
+def evidence_roots(root):
+    """The repos a tick's sha may live in, in the order they are asked: `root`, its submodules, then the independent repos under private/ (`sibling_repo_roots`). Cached per root for the process."""
+    key = os.path.abspath(str(root))
+    if key not in _EVIDENCE_ROOTS:
+        subs = [os.path.join(str(root), p) for p, _branch in wl_git.submodules(root)]
+        _EVIDENCE_ROOTS[key] = [str(root), *subs, *sibling_repo_roots(root)]
+    return _EVIDENCE_ROOTS[key]
+
+
+def _objects_in(repo, toks):
+    """True when `repo`'s object store holds any of `toks`: ONE `git cat-file --batch-check` for all of them. An ambiguous short sha or a missing one answers no; any failure answers no."""
+    try:
+        proc = subprocess.run(
+            ["git", "-C", str(repo), "cat-file", "--batch-check"],
+            input="".join(t + "\n" for t in toks),
+            capture_output=True,
+            text=True,
+            timeout=20,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return False
+    if proc.returncode != 0:
+        return False
+    return any(
+        len(parts) >= 2 and parts[1] in ("commit", "tree", "blob", "tag")
+        for parts in (ln.split() for ln in proc.stdout.splitlines())
+    )
 
 
 # v16: an issue reference is a URL, and completion_evidence passes on ANY URL by shape, so `--tick <me> <id> 'filed as .../issues/560'` closed a finding. That is the loophole the fix-in-session rule outlaws: filing settles nothing unless one of the three last-resort doors applies, and the tick has to say WHICH. Shape-only, the same division of labor as the WHY/HOW gate: whether the
@@ -1019,8 +1101,29 @@ def _json_or_none(line):
         return None
 
 
-def submodule_decision_recorded(root, path, sha):
-    """Has ANY session ticked an item naming this submodule path and target sha?
+# A decision word in an item's note (R20260924.23), upper case as the lead writes it.
+_DECISION_RE = re.compile(r"\b(?:KEEP|DROP)\b")
+_SHA_PREFIX_RE = re.compile(r"\b[0-9a-f]{7,40}\b")
+
+
+def _open_item_decides(rec, path, sha, session_id):
+    """True when `rec` is an open or `[>]` item this session owns whose latest note carries KEEP or DROP, `path`, and a sha prefix of 7 or more characters of `sha` (R20260924.23)."""
+    if rec.get("state") not in (" ", ">") or not C.owned_by_me(rec.get("owner"), session_id):
+        return False
+    note = str(rec.get("lastnote") or rec.get("basetext") or rec.get("text") or "")
+    if path not in note or not _DECISION_RE.search(note):
+        return False
+    target = str(sha).lower()
+    return any(
+        target.startswith(tok) or tok.startswith(target)
+        for tok in _SHA_PREFIX_RE.findall(note.lower())
+    )
+
+
+def submodule_decision_recorded(root, path, sha, fold=None, session_id=None):
+    """Has ANY session ticked an item naming this submodule path and target sha, or has THIS session recorded KEEP or DROP for it in an open item?
+
+    THE OPEN-ITEM ARM (R20260924.23): with `fold` and `session_id`, an owned open or `[>]` item whose latest note carries KEEP or DROP, the path, and a sha prefix of 7+ characters counts too (`_open_item_decides`). On 2026-09-24 the move `private/account 9fda8c7c2 -> aea435154` blocked twice, 17.5 minutes apart, while #f2dd1732's note already read "9fda8c7 -> aea4351 ...: KEEP"; the lead then staged the gitlink only to silence the check. Only THIS session's items: a decision in a peer's open item is still in flight, while a TICKED one below binds everyone.
 
     The check offers two doors, KEEP (stage it) and DROP (`git submodule update --checkout`), and there is a third that is often the right one: leave the worktree alone and never stage it, which is correct when the parent's HEAD already matches and the checkout belongs to a peer session. Nothing in the warning could see that such a decision existed, so a session that had decided,
     ticked and documented it was told off every fifteen minutes.
@@ -1029,6 +1132,10 @@ def submodule_decision_recorded(root, path, sha):
 
     FAIL-SAFE BY CONSTRUCTION. Any error at all returns False, which restores exactly the previous behaviour. This function runs inside the stop hook of every session in the worktree, so the cost of it being wrong is not local, and the safe direction is to warn too often rather than too rarely.
     """
+    if fold is not None and session_id:
+        with contextlib.suppress(AttributeError, TypeError):
+            if any(_open_item_decides(rec, path, sha, session_id) for rec in fold.by_id.values()):
+                return True
     try:
         store = pathlib.Path(root) / "agent" / "worklist"
         if not store.is_dir():
@@ -1204,7 +1311,7 @@ def judge_flags(verdict, reggate=""):
     }
 
 
-def outq_drain(worklist, session_id, state_doc, n, rng=None):
+def outq_drain(worklist, session_id, state_doc, n, rng=None, only=None):
     """(texts, remaining): up to n entries, TIER ORDER preserved, same-tier choice randomized.
 
     Priority tiers are still released strictly ascending (a priority-3 item never displaces a priority-1 one), but which entries fill a tier's share of the budget is now picked at random rather than FIFO by `seq`. This is deliberate: at a fixed budget of `OUTQ_PER_STOP`, FIFO meant an old same-tier item could sit queued indefinitely behind a stream of newer arrivals at
@@ -1212,11 +1319,15 @@ def outq_drain(worklist, session_id, state_doc, n, rng=None):
 
     `rng` is the whole determinism seam: `None` resolves to the module-level `random` for real stops, and a test passes `random.Random(seed)` to drive the same code path in-process rather than trying to reach a subprocess's random state.
 
-    Removes exactly those entries BY IDENTITY (never by slicing or clearing -- a clear silently eats every one-shot that had not reached its turn), records shown[] for the volatile ones, and persists before returning, because the caller emits and emit() exits the process."""
+    Removes exactly those entries BY IDENTITY (never by slicing or clearing -- a clear silently eats every one-shot that had not reached its turn), records shown[] for the volatile ones, and persists before returning, because the caller emits and emit() exits the process.
+
+    `only`, when given, is a predicate over the entry's display key: entries it rejects are neither candidates nor touched, and stay queued (focus mode's batching). The returned remaining count still counts them."""
     q = _outq(state_doc)
     r = rng if rng is not None else random
     tiers: dict[Any, Any] = {}
     for e in q["items"]:
+        if only is not None and not only(_outq_display_key(e)):
+            continue
         tiers.setdefault(int(e.get("prio") or 0), []).append(e)
     take = []
     budget = max(0, n)
@@ -1275,13 +1386,17 @@ def _outq_group_line(key, entries):
     return first if len(entries) == 1 else "%d queued, newest: %s" % (len(entries), first)
 
 
-def outq_digest(worklist, session_id, state_doc, n=OUTQ_DIGEST_MAX, skip=()):
+def outq_digest(worklist, session_id, state_doc, n=OUTQ_DIGEST_MAX, skip=(), only=None):
     """The blocked stop's view of the advisory queue: (digest text or "", delivered count).
 
-    One line per entry, `key: first line`, highest priority (lowest number) first then oldest, at most `n` lines. An entry whose WHOLE text is one line has been fully shown by that line, so it is DELIVERED: removed by identity and, for a volatile entry, recorded in `shown` exactly as `outq_drain` records it. A multi-line body stays queued for a clean stop, where it is released in full. Keys in `skip` are neither named nor delivered: the caller already shows them in full. Persists before returning, because the caller emits and emit() exits."""
+    One line per entry, `key: first line`, highest priority (lowest number) first then oldest, at most `n` lines. An entry whose WHOLE text is one line has been fully shown by that line, so it is DELIVERED: removed by identity and, for a volatile entry, recorded in `shown` exactly as `outq_drain` records it. A multi-line body stays queued for a clean stop, where it is released in full. Keys in `skip` are neither named nor delivered: the caller already shows them in full, and entries `only` rejects (a predicate over the display key) are left queued untouched. Persists before returning, because the caller emits and emit() exits."""
     q = _outq(state_doc)
     items = sorted(
-        (e for e in q["items"] if _outq_display_key(e) not in skip),
+        (
+            e
+            for e in q["items"]
+            if _outq_display_key(e) not in skip and (only is None or only(_outq_display_key(e)))
+        ),
         key=lambda e: (int(e.get("prio") or 0), int(e.get("seq") or 0)),
     )
     if not items:
@@ -1518,7 +1633,9 @@ def mark_context_fresh(event, why):
 def handle_session_start(event):
     # FIRST statement, not last: the design-docs/plans blocks below return early when a project has neither, and such a project would otherwise never be marked.
     source = str(event.get("source") or "").strip().lower()
-    mark_context_fresh(event, "session-start:" + (source or "unknown"))
+    # A COMPACTION IS ATTRIBUTED FIRST, exactly as handle_post_compact does it (R20260924.16): a sub-agent's compaction arrives with the lead's session_id and transcript_path and no agent_id, and stamping the lead's ctx_fresh for it is the defect R.16 fixed on the PostCompact path and left open here (retro writer A's finding, second retro of 2026-09-24). Any other source is the session's own start.
+    if source != "compact" or _compaction_owner(event, event.get("session_id", "")) == "lead":
+        mark_context_fresh(event, "session-start:" + (source or "unknown"))
     # COMPACT IS NOT A NEW SESSION. Claude Code fires SessionStart with
     # source=compact on every compaction, on TOP of the PostCompact hook, and
     # this handler used to ignore the source entirely: a session working on something else got "READ ALL OF THEM before acting" pointed at the standing program docs, mid-task, as if it had just started. It is also a straight duplicate -- handle_post_compact already re-points at DESIGN_DOCS and already hands back the durable plans, plus STATE.md, RULES.md and the trap titles, which
@@ -1577,15 +1694,30 @@ def handle_session_start(event):
     )
 
 
+def _compaction_owner(event, sid):
+    """ "lead", "agent:<id>" or "unknown" for this PostCompact (R20260924.16). An `agent_id` in the payload settles it; the measured sub-agent payload carries none, so otherwise the transcripts decide (ctx_budget.compaction_owner). Any failure is "unknown", which acts like a sub-agent: no retro order, no ctx_fresh."""
+    if event.get("agent_id"):
+        return "agent:%s" % event.get("agent_id")
+    try:
+        import wl_retro as _RT  # noqa: PLC0415 -- optional; the briefing must not need it
+
+        return _RT.ctx().compaction_owner(event.get("transcript_path"), sid)
+    except Exception:  # noqa: BLE001 -- attribution must never cost the briefing
+        return "unknown"
+
+
 def handle_post_compact(event):
-    # FIRST statement, for the same reason as handle_session_start, and this is the case the marker is genuinely load-bearing for: a compacted session KEEPS its state doc, so the judge-reason signature below would otherwise read as unchanged and hand it the stamp alone.
-    mark_context_fresh(event, "post-compact")
+    sid = event.get("session_id", "")
+    # WHOSE COMPACTION, before anything acts on it. A sub-agent's PostCompact arrives with the lead's session_id and transcript_path and no agent_id (measured 2026-09-24T19:01:44Z), so without this check it stamped the lead's ctx_fresh and took the lead's one post-compact retro.
+    owner = _compaction_owner(event, sid)
+    # FIRST action for the lead, for the same reason as handle_session_start, and this is the case the marker is genuinely load-bearing for: a compacted session KEEPS its state doc, so the judge-reason signature below would otherwise read as unchanged and hand it the stamp alone.
+    if owner == "lead":
+        mark_context_fresh(event, "post-compact")
     # PostCompact hook: the model has just lost its context. Hand the documents straight back as additionalContext so continuity does not depend on it remembering to go looking. Since the agent-notes split this returns MORE than the old handover ever could: STATE.md in full, RULES.md in full, and the TRAPS.md titles -- the first time a compacted session gets the standing rules at
     # all, delivered exactly once per
     # compaction. Full TRAPS.md is deliberately excluded (designed to grow);
     # titles plus the path is the same economy the judge uses.
     root = C.project_root(C.project_start(event))
-    sid = event.get("session_id", "")
     # THE PROMPT CARRIES RESIDUE, NOT TITLES. A trap whose Enforced-By resolves to a live gate or hook is enforced whether or not anyone reads about it, so spending prompt on its title buys nothing; a JUDGMENT-ONLY trap is enforced by attention alone, which is exactly what a prompt can supply. 48 titles -> 43 residue sentences today, and the ratio improves every time a trap gets
     # mechanized, which is the incentive worth creating.
     traps = S.trap_prompt_lines(root)
@@ -1623,6 +1755,17 @@ def handle_post_compact(event):
             guided_slice(_fold, sid, None, (sid or "")[:8], root)
             or "  (nothing open, in flight or deferred)",
         )
+        # FOCUS MODE survives compaction in the store; the compacted session must know that writer spawns are refused.
+        _pc_focus = wl_standdown.active_focus(_fold.focus, lambda o: C.owned_by_me(o, sid))
+        if _pc_focus:
+            msg += "\n\n" + M.CTX_POSTCOMPACT_FOCUS % (
+                _pc_focus.get("mode"),
+                _pc_focus.get("pr") or "?",
+                _pc_focus.get("branch"),
+                _pc_focus.get("at"),
+                _pc_focus.get("pr") or "<n>",
+                (sid or "")[:8],
+            )
     # AFTER the briefing, on BOTH arms. Own section first is the point: a compacted session reads top-down, and the block it must act on is its own. On the missing arm this is the whole state content there is -- before sections, that arm returned none at all, so a compacted session sharing a checkout was told to reconstruct from nothing while a peer's section sat in the file
     # unread.
     if peers:
@@ -1641,10 +1784,10 @@ def handle_post_compact(event):
     cl_listing, _cl_n = wl_checklist.checklists_block(root)
     if cl_listing:
         msg += "\n\n" + M.CTX_CHECKLISTS % cl_listing
-    # THE STOP-HOOK RETRO (agent/plans/PLAN-stop-hook-retro-20260924.md R20260924.12), after the briefing, the facts and the plans, once per session: the `ordered` row in agent/ledgers/stop-hook-retros.jsonl is the dedupe record. A subagent's event never orders one, the same guard band-notice.py applies; the briefing itself is left exactly as it was for that event. Suppressed like
-    # the hint below, because a compaction that cannot hand back the briefing is far worse than a missing retro order.
+    # THE STOP-HOOK RETRO (agent/plans/PLAN-stop-hook-retro-20260924.md R20260924.12), after the briefing, the facts and the plans, once per session: the `ordered` row in agent/ledgers/stop-hook-retros.jsonl is the dedupe record. Ordered ONLY when the lead itself compacted (R20260924.16): a sub-agent's or an unattributable compaction orders nothing, and the briefing itself is emitted either way.
+    # Suppressed like the hint below, because a compaction that cannot hand back the briefing is far worse than a missing retro order.
     with contextlib.suppress(Exception):
-        if sid and not event.get("agent_id"):
+        if sid and owner == "lead":
             import wl_retro as _RT  # noqa: PLC0415 -- optional; the briefing must not need it
 
             _ctxb = _RT.ctx()
@@ -1688,6 +1831,9 @@ def handle_post_compact(event):
         _why = _R.why_for_paths(root, sorted(_R.dirty_paths(root, "."))[:60])
         if _why:
             msg += "\n\n" + _why
+    # The Decision on a sub-agent's briefing: keep all of it, and say first whose compaction it was, since the STATE.md above is the lead's.
+    if owner.startswith("agent:"):
+        msg = M.CTX_POSTCOMPACT_SUBAGENT % owner[len("agent:") :] + "\n\n" + msg
     C.emit(
         {
             "systemMessage": "PostCompact: STATE.md %s (agent/%s/STATE.md)"
@@ -1890,6 +2036,8 @@ PRIORITY_LADDER = (
             {
                 # The worklist's own `- [ ]` boxes, and the two states that turn a parked box back into an order.
                 "open-items",
+                # In focus mode, the open items carrying the focus PR's `pr:<n>`: the babysit loop's own fix work (wl_standdown).
+                "focus-pr-items",
                 # A plan this session ADOPTED (its Owner line says so) with boxes nothing tracks: the adoption is the statement that it is being executed.
                 "plan-adopted",
                 # The same question widened from "adopted" to ALL, per the operator's own ruling, and bounded by a descending ceiling rather than by a fire cap. T_MISSION is the ladder's own argument rather than a promotion: "the thing this session was ASKED to do is not done ... everything else is housekeeping around work that has not landed". See wl_planenforce.
@@ -2129,6 +2277,133 @@ def _ctx_late_band(session_id):
         return False
 
 
+def _focus_refused_count(worklist, me8, since):
+    """Writer spawns block_focus_spawn refused since `since`, from its `.focusrefused-<me8>.jsonl` ledger."""
+    n = 0
+    with contextlib.suppress(OSError):
+        for line in (
+            worklist.with_suffix(".focusrefused-%s.jsonl" % me8)
+            .read_text(encoding="utf-8")
+            .splitlines()
+        ):
+            with contextlib.suppress(ValueError, AttributeError):
+                if str(json.loads(line).get("at") or "") >= str(since or ""):
+                    n += 1
+    return n
+
+
+def focus_ended_line(sd, why, refused):
+    """The one-line parked summary (M.N_FOCUS_ENDED): top 6 parked keys by stops parked, then "+N more", capped at 300 characters."""
+    parked = sd.get("parked") if isinstance(sd.get("parked"), dict) else {}
+    ranked = sorted(parked.items(), key=lambda kv: (-int(kv[1] or 0), kv[0]))
+    names = ", ".join("%s x%d" % (k, int(n or 0)) for k, n in ranked[:6]) or "nothing"
+    if len(ranked) > 6:
+        names += " +%d more" % (len(ranked) - 6)
+    what = "%s PR #%s since %s" % (sd.get("mode") or "?", sd.get("pr") or "?", sd.get("focus_at"))
+    return (M.N_FOCUS_ENDED % (why, what, names, int(sd.get("adv_held") or 0), refused))[:300]
+
+
+def focus_advisory_filter(focus, state_doc):
+    """The `only=` predicate for this stop's advisory release: None (everything) outside focus or when the batch is due, else the PR's own advisory keys."""
+    if not focus or wl_standdown.batch_due(state_doc.get("standdown")):
+        return None
+    return wl_standdown.advisory_kept
+
+
+def focus_advisory_bookkeeping(worklist, session_id, focus, state_doc):
+    """After a focused release: restamp `batch_at` when the batch was due, and count what is still held. Persists."""
+    sd = state_doc.get("standdown")
+    if not focus or not isinstance(sd, dict):
+        return
+    if wl_standdown.batch_due(sd):
+        sd["batch_at"] = C.stamp_now()
+    sd["adv_held"] = sum(
+        1 for e in _outq(state_doc)["items"] if not wl_standdown.advisory_kept(_outq_display_key(e))
+    )
+    S.save_state(worklist, session_id, state_doc)
+
+
+def focus_resolve(root, worklist, session_id, me8, fold, state_doc):
+    """(focus, ended): this stop's active focus event or None, and the parked summary line or "".
+
+    Ends an expired or finished focus, and queues the summary when a focus that was on at the last stop is not the one on now. The summary is a priority-0 sticky entry, so the allow drain delivers it; the block path appends it in full and forgets the entry, because a block's digest shows only 150 characters of it.
+    """
+    owned = lambda o: C.owned_by_me(o, session_id)  # noqa: E731
+    focus = None
+    why = ""
+    with contextlib.suppress(Exception):
+        focus = wl_standdown.active_focus(fold.focus, owned)
+    if focus:
+        if wl_standdown.expired(focus):
+            why = "expired"
+        else:
+            try:
+                why, err = wl_ci.focus_pr_end(root, worklist, session_id, focus)
+            except Exception as exc:  # noqa: BLE001 -- a blind read continues focus, and says so
+                why, err = "", "%s: %s" % (type(exc).__name__, str(exc)[:120])
+            if err:
+                outq_add(
+                    worklist,
+                    session_id,
+                    state_doc,
+                    "focus-pr-unreadable",
+                    M.N_FOCUS_PR_UNREADABLE
+                    % (
+                        focus.get("pr") or "?",
+                        focus.get("branch"),
+                        str(err)[:120],
+                        wl_standdown.FOCUS_MAX_HOURS,
+                    ),
+                    1,
+                )
+        if why:
+            with contextlib.suppress(Exception):
+                S.focus_event(
+                    worklist,
+                    me8,
+                    focus.get("o") or me8,
+                    "off",
+                    branch=focus.get("branch"),
+                    pr=focus.get("pr"),
+                    why=why,
+                )
+            focus = None
+    ended = ""
+    sd = state_doc.get("standdown")
+    if (
+        isinstance(sd, dict)
+        and sd.get("focus_at")
+        and (not focus or sd.get("focus_at") != focus.get("at"))
+    ):
+        if not why:
+            # Ended by the verb (or replaced by a newer on-event): the newest owned event says why.
+            newest: dict[str, Any] = max(
+                (e for o, e in (fold.focus or {}).items() if o and owned(o)),
+                key=lambda e: (str(e.get("at") or ""), int(e.get("ns") or 0)),
+                default={},
+            )
+            why = (
+                str(newest.get("why") or "operator")
+                if newest.get("mode") == "off"
+                else "replaced by a new focus"
+            )
+        ended = focus_ended_line(sd, why, _focus_refused_count(worklist, me8, sd.get("focus_at")))
+        outq_add(worklist, session_id, state_doc, "focus-ended", ended, 0, sticky=True)
+        state_doc.pop("standdown", None)
+        S.save_state(worklist, session_id, state_doc)
+    return focus, ended
+
+
+def outq_forget(state_doc, key, text):
+    """Drop the queued sticky entry `key` whose text is `text`: the caller delivered it in full."""
+    q = _outq(state_doc)
+    q["items"] = [
+        e
+        for e in q["items"]
+        if not (_outq_display_key(e) == key and str(e.get("text") or "") == text)
+    ]
+
+
 def run_stop(event, event_ok, worklist, hook_file):
     """The full stop battery. Gathers EVERY static violation, then emits ONE block (five independent blocking checks would cost five turns to clear, which is the "stuck in a loop" the old MAX_BLOCKS existed to paper over), then consults the judge on stops where work remains, then allows with a report."""
     session_id = event.get("session_id", "")
@@ -2167,6 +2442,9 @@ def run_stop(event, event_ok, worklist, hook_file):
             1,
             sticky=True,
         )
+
+    # ---- FOCUS MODE (agent/plans/PLAN-stop-hook-focus-mode.md section 3), resolved before classification: a PR wind-down the session declared with `--focus`. Expiry first, then the cheap merged/closed read; an end writes the `off` event, and this stop then runs the full battery. The parked summary is queued on the stop that sees the end, whoever ended it.
+    _focus, _focus_ended = focus_resolve(root, worklist, session_id, me8, fold, state_doc)
 
     lines = fold.lines()
     # v14 gap 4: computed HERE (it used to sit below) so classification can tolerate an expired lease whose worker the OS still shows RUNNING: a full CI battery legitimately outlives the 120-minute lease cap, and the v13 night cost three manual renewals for a watcher that was verifiably alive the whole time. A worker the OS cannot see keeps failing closed.
@@ -2588,7 +2866,7 @@ def run_stop(event, event_ok, worklist, hook_file):
         state_doc.pop("bgwait", None)
 
     # THE CAP-SATURATED WAIT (agent/plans/PLAN-stop-hook-cap-saturated-wait.md). A sibling of the pure wait, not a widening of it: pure wait owns the shell/teammate check-in clock and never reads the roster, while this state needs the verified roster and stands down far more (the judge, report shape, hygiene). Every writer slot live and nothing this session could start:
-    # the work orders stand down, and only the keys in wl_roster.CAP_WAIT_KEEPS still block.
+    # the work orders stand down, and only the keys in wl_standdown.CAP_WAIT still block.
     _in_cap_wait = False
     with contextlib.suppress(Exception):
         _cap_tasks = (
@@ -2597,6 +2875,8 @@ def run_stop(event, event_ok, worklist, hook_file):
             else C.actionable_tasks(session_id, event.get("transcript_path"))
         )
         _in_cap_wait = wl_roster.cap_saturated_wait(_roster, open_items, _cap_tasks)
+    # EITHER STAND-DOWN skips every paid judge call and counts as supervision for the stuck detector: focus mode is the operator's declared wind-down, and its orders are the PR's own checks (agent/plans/PLAN-stop-hook-focus-mode.md section 4).
+    _in_standdown = _in_cap_wait or bool(_focus)
 
     # STUCK DETECTION. Runs before the others so the count advances on every stop, including the ones where something else already fired: a session blocked three times running on the same check has also moved nothing.
     # SUPERVISED = a live background task AND an in-flight item the session is still
@@ -2632,7 +2912,7 @@ def run_stop(event, event_ok, worklist, hook_file):
         C._git(root, "rev-parse", "HEAD"),
         bool(live_bg),
         # A cap-saturated wait is supervision by construction (every slot is a verified-live writer); counting it as unsupervised made the 3x overrun fire on the first stop after the wait ended.
-        supervised=_supervised or _in_cap_wait,
+        supervised=_supervised or _in_standdown,
         own_stamp=_own_stamp,
     )
 
@@ -2874,6 +3154,15 @@ def run_stop(event, event_ok, worklist, hook_file):
             False,
             M.V_OPEN_ITEMS % (len(open_items), "\n".join("    " + i for i in open_items)),
         )
+    # FOCUS MODE: the PR's own fix work (items carrying the focus's `pr:<n>`) still blocks; `open-items` above is still produced and the FOCUS profile parks it, so the rest is counted and named on exit.
+    if _focus:
+        _pr_open = [i for i in open_items if wl_standdown.pr_linked(i, _focus)]
+        if _pr_open:
+            vadd(
+                "focus-pr-items",
+                False,
+                M.V_OPEN_ITEMS % (len(_pr_open), "\n".join("    " + i for i in _pr_open)),
+            )
     # ---- v21 THE IDLE-STALL GATE, in the ALWAYS tier, directly beside the rotating `open-items` it backstops. It must not be rotated or paused: the whole failure is that `open-items` CAN be, so a copy of it in the same tier would buy nothing. Wrapped, because a stall detector that crashes a stop is worse than one that is absent -- on any exception the ordinary `open-items` block
     # above still stands.
     try:
@@ -3140,23 +3429,29 @@ def run_stop(event, event_ok, worklist, hook_file):
                 )
                 break
             _pf_text = wl_planfile.render_all(_pf_rows, _pf_unread)
-            if _pf_text:
+            # Not produced in focus mode: plan boxes park until the PR is done.
+            if _pf_text and not _focus:
                 outq_add(worklist, session_id, state_doc, "plan-tasks", _pf_text, 2)
     except Exception:  # noqa: BLE001 -- a plan read must never wedge a stop
         pass
 
     # ---- PLAN BACKLOG NOMINATION (wl_backlog). Answers the question `plan-tasks` above does not: which committed, undone design should THIS session implement next. The operator's own words: "we plan but don't implement". DESC by mtime (plan_records' own order), validated against a live worklist claim and a peer's liveness -- see wl_backlog's module docstring and
     # agent/plans/PLAN-stop-hook-plan-backlog-nudge.md. ADVISORY, never a vadd, same tier and same reasoning as plan-tasks: a blocking nomination over a standing backlog nobody here created would wall every session behind work it did not cause.
+    # SKIPPED IN FOCUS MODE, not filtered: producing it spends `backlog_nominated` on a nomination nobody would see.
     try:
-        _bl_candidate, _bl_reason, _bl_stats = wl_backlog.next_plan(
-            root,
-            plan_records(root),
-            fold,
-            session_id,
-            plan_owner,
-            worklist,
-            state_doc,
-            projects_dir,
+        _bl_candidate, _bl_reason, _bl_stats = (
+            (None, "", {})
+            if _focus
+            else wl_backlog.next_plan(
+                root,
+                plan_records(root),
+                fold,
+                session_id,
+                plan_owner,
+                worklist,
+                state_doc,
+                projects_dir,
+            )
         )
         if _bl_candidate is not None:
             _bl_text = wl_backlog.render(_bl_candidate, _bl_reason, _bl_stats, session_id)
@@ -3191,7 +3486,7 @@ def run_stop(event, event_ok, worklist, hook_file):
         )
         if _pe_state == wl_planenforce.BLOCK and _pe_text:
             vadd("plan-unimplemented", False, M.V_PLAN_UNIMPLEMENTED % {"body": _pe_text})
-        elif _pe_state == wl_planenforce.WARN and _pe_text:
+        elif _pe_state == wl_planenforce.WARN and _pe_text and not _focus:
             outq_add(worklist, session_id, state_doc, "plan-clock", _pe_text, 2)
     except Exception:  # noqa: BLE001 -- a plan read must never wedge a stop
         pass
@@ -3215,7 +3510,10 @@ def run_stop(event, event_ok, worklist, hook_file):
         _same = _sub.get("sig") == _sub_sig
         _sub_age = C.stamp_age_min(_sub.get("at")) if _same else None
         # A RECORDED DECISION LENGTHENS THE LATCH; it never removes it. See submodule_decision_recorded: the third door (leave it, never stage it) is invisible to this warning, so a session that decided correctly was told off every fifteen minutes. A day is long enough to stop interrupting the work and short enough that a stale decision is re-examined rather than enshrined.
-        _decided = all(submodule_decision_recorded(root, p, b) for p, _a, b, _w in moves)
+        _decided = all(
+            submodule_decision_recorded(root, p, b, fold=fold, session_id=session_id)
+            for p, _a, b, _w in moves
+        )
         _latch = SUBMODULE_DECIDED_LATCH_MIN if _decided else SUBMODULE_LATCH_MIN
         _due = (not _same) or _sub_age is None or _sub_age >= _latch
         if _due:
@@ -3241,7 +3539,9 @@ def run_stop(event, event_ok, worklist, hook_file):
     except Exception:  # noqa: BLE001 -- blindness must not grant slack
         qstate, qdetail = "unknown", None
     queue_note = ""
-    fstate, fdetail = wl_ci.pr_body_freshness(root)
+    # FOCUS MODE ARMS BOTH PR READS from the focus's own branch: `--focus` declared the PR this session's (agent/plans/PLAN-stop-hook-focus-mode.md section 3).
+    _focus_ref = str((_focus or {}).get("branch") or "") or None
+    fstate, fdetail = wl_ci.pr_body_freshness(root, ref=_focus_ref)
     pr_stale_folded = False
     if fstate == "stale":
         if qstate == "saturated":
@@ -3283,9 +3583,28 @@ def run_stop(event, event_ok, worklist, hook_file):
             session_id,
             live_bg,
             (last_msg or "") + "\n" + "\n".join(deferred),
+            ref=_focus_ref,
+            owned=bool(_focus_ref),
         )
     except Exception as exc:  # noqa: BLE001 -- a broken CI check must SAY SO, not vanish
         cistate, cidetail = "unreadable", "%s: %s" % (type(exc).__name__, str(exc)[:120])
+    # FILL IN THE FOCUS PR NUMBER once the CI read knows it: the spawn guard matches fix work on `pr:<n>`, so the store needs it. Same `at`, so neither the 24-hour cap nor the parked ledger restarts.
+    if _focus and not _focus.get("pr") and isinstance(cidetail, dict):
+        with contextlib.suppress(Exception):
+            _ci_info = cidetail.get("info") if "info" in cidetail else cidetail
+            _ci_pr = _ci_info.get("pr") if isinstance(_ci_info, dict) else None
+            if _ci_pr:
+                S.focus_event(
+                    worklist,
+                    me8,
+                    _focus.get("o") or me8,
+                    _focus.get("mode"),
+                    branch=_focus.get("branch"),
+                    pr=_ci_pr,
+                    why="pr-resolved",
+                    at=_focus.get("at"),
+                )
+                _focus = dict(_focus, pr=int(_ci_pr))
     if cistate == "unreadable":
         vadd("ci-unreadable", True, M.V_CI_UNREADABLE % cidetail)
     elif cistate in ("trouble", "downgraded", "soft"):
@@ -3870,7 +4189,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     # ---- v20 PLAN FIDELITY. Cheap when there is no approved plan (one bounded transcript scan, incremental after the first stop), and it spends a model call only when a plan EXISTS and the tracked items look coarse against it. A degraded run is QUEUED rather than blocked or dropped: the queue survives the block stops this session is likely to be having, so the note lands on the
     # first clean one instead of vanishing. The trade is that a session which never reaches a clean stop is told late, the same trade the agent hint already makes and for the same reason.
     # Paid (a model call); its verdict would be stood down in a cap-saturated wait anyway, so it is not bought.
-    if not wl_judge.JUDGE_DISABLED and not _in_cap_wait:
+    if not wl_judge.JUDGE_DISABLED and not _in_standdown:
         _pf_note = ""
         try:
             _pf_note = planfid_check(worklist, session_id, event, fold, lines, me8, last_msg, vadd)
@@ -3964,8 +4283,10 @@ def run_stop(event, event_ok, worklist, hook_file):
             )
             guide = _honest + ("\n\n" + guide if guide else "")
             guide_empty = False
-    # ---- THE CAP-SATURATED WAIT'S STAND-DOWN (agent/plans/PLAN-stop-hook-cap-saturated-wait.md step 6), a stricter second pass after the HONEST one. Only wl_roster.CAP_WAIT_KEEPS survive; the STATE.md demand survives only when compaction is imminent (the late band, ~2% before auto-compact) and the document is not current.
-    if _in_cap_wait:
+    # ---- THE STAND-DOWN, a stricter second pass after the HONEST one: the cap-saturated wait (agent/plans/PLAN-stop-hook-cap-saturated-wait.md step 6) or focus mode (agent/plans/PLAN-stop-hook-focus-mode.md section 4), whose keep-lists live in wl_standdown. FOCUS governs when both hold: it is the operator's declaration, and its judge skip covers the cap wait's. The STATE.md demand
+    # survives only when compaction is imminent (the late band, ~2% before auto-compact) and the document is not current.
+    _profile = wl_standdown.FOCUS if _focus else wl_standdown.CAP_WAIT if _in_cap_wait else None
+    if _profile is not None:
         _compaction_due = astate in (
             "missing",
             "thin",
@@ -3976,39 +4297,61 @@ def run_stop(event, event_ok, worklist, hook_file):
             "no-dir",
         ) and _ctx_late_band(session_id)
         _dropped = sorted(
-            {v[0] for v in violations if not wl_roster.cap_wait_keeps(v[0], v[1], _compaction_due)}
+            {
+                v[0]
+                for v in violations
+                if not wl_standdown.keeps(_profile, v[0], v[1], _compaction_due)
+            }
         )
         violations = [
-            v for v in violations if wl_roster.cap_wait_keeps(v[0], v[1], _compaction_due)
+            v for v in violations if wl_standdown.keeps(_profile, v[0], v[1], _compaction_due)
         ]
         if _compaction_due:
+            _cnote = M.N_FOCUS_COMPACTION if _focus else M.N_CAP_WAIT_COMPACTION
             violations = [
-                (k, a, t + "\n" + M.N_CAP_WAIT_COMPACTION)
-                if k in wl_roster.CAP_WAIT_COMPACTION_KEYS
-                else (k, a, t)
+                (k, a, t + "\n" + _cnote) if k in _profile.compaction_keys else (k, a, t)
                 for k, a, t in violations
             ]
         if bgwait_due and not any(k == "bg-report" for k, _a, _t in violations):
             bgwait_due = False  # stood down, not delivered
-        state_doc["capwait"] = {
-            "at": C.stamp_now(),
-            "dropped": _dropped,
-            "astate": astate,
-            "compaction_due": _compaction_due,
-        }
-        if not violations:
-            _rv = _roster or {}  # never empty here: cap_saturated_wait is False without a roster
-            _note = M.N_CAP_WAIT % (
-                len(_rv.get("writers") or ()),
-                wl_roster.WRITER_CAP,
-                ", ".join(str(w)[:8] for w in _rv.get("writers") or ()),
-                int(_rv.get("queued") or 0),
-                len(_dropped),
-                wl_roster.next_status_due(_rv),
-            )
-            _base = "" if _guide_empty_pre_roster else _guide_pre_roster
-            guide = _note + ("\n\n" + _base if _base else "")
-            guide_empty = False
+        if _focus:
+            state_doc.pop("capwait", None)
+            _sd = state_doc.get("standdown")
+            if not isinstance(_sd, dict) or _sd.get("focus_at") != _focus.get("at"):
+                # A new focus: the batch clock starts now, so the first stop holds rather than releasing everything.
+                _sd = {"focus_at": _focus.get("at"), "parked": {}, "adv_held": 0}
+                _sd["batch_at"] = C.stamp_now()
+            _sd["mode"], _sd["pr"] = _focus.get("mode"), _focus.get("pr")
+            _parked = _sd.setdefault("parked", {})
+            for _base in {str(k).split(":", 1)[0] for k in _dropped}:
+                _parked[_base] = int(_parked.get(_base) or 0) + 1
+            _sd["parked_now"] = len(_dropped)
+            state_doc["standdown"] = _sd
+            if not violations:
+                # N_FOCUS replaces the guide on a focused allow; it is rendered after the drain, which is what knows how many advisories are held.
+                guide, guide_empty = "", True
+        else:
+            state_doc["capwait"] = {
+                "at": C.stamp_now(),
+                "dropped": _dropped,
+                "astate": astate,
+                "compaction_due": _compaction_due,
+            }
+            if not violations:
+                _rv = (
+                    _roster or {}
+                )  # never empty here: cap_saturated_wait is False without a roster
+                _note = M.N_CAP_WAIT % (
+                    len(_rv.get("writers") or ()),
+                    wl_roster.WRITER_CAP,
+                    ", ".join(str(w)[:8] for w in _rv.get("writers") or ()),
+                    int(_rv.get("queued") or 0),
+                    len(_dropped),
+                    wl_roster.next_status_due(_rv),
+                )
+                _base = "" if _guide_empty_pre_roster else _guide_pre_roster
+                guide = _note + ("\n\n" + _base if _base else "")
+                guide_empty = False
     else:
         state_doc.pop("capwait", None)
     if bgwait_due:
@@ -4114,7 +4457,20 @@ def run_stop(event, event_ok, worklist, hook_file):
         )
         # THE ADVISORY QUEUE WAS STARVED BY A PRODUCTIVE SESSION: `outq_drain` runs on the allow path only, and measured 2026-09-17, ten parsed plan boxes went unseen across roughly twenty consecutive blocked stops. The digest (operator ruling 2026-09-24, "One quoted + others named") names up to OUTQ_DIGEST_MAX sections on every block and delivers the one-line ones outright; a
         # multi-line body stays queued for a clean stop, so the focused violation above is never displaced by a wall. The two CI notes are skipped because they already ride `extras` in full.
-        _digest, _ = outq_digest(worklist, session_id, state_doc, skip=("ci-queue", "ci-report"))
+        if _focus_ended:
+            # The parked summary in full, ahead of the digest, which would cap it at 150 characters.
+            extras += "\n\n" + _focus_ended
+            outq_forget(state_doc, "focus-ended", _focus_ended)
+            S.save_state(worklist, session_id, state_doc)
+        # FOCUS MODE BATCHES THE REST: only the PR's own advisories are named until the batch comes due (wl_standdown.FOCUS_BATCH_MIN), then everything once.
+        _digest, _ = outq_digest(
+            worklist,
+            session_id,
+            state_doc,
+            skip=("ci-queue", "ci-report"),
+            only=focus_advisory_filter(_focus, state_doc),
+        )
+        focus_advisory_bookkeeping(worklist, session_id, _focus, state_doc)
         if _digest:
             extras += "\n\n" + _digest
         onboard_marker = onboard.load_marker(session_id) if onboard else {}
@@ -4186,7 +4542,8 @@ def run_stop(event, event_ok, worklist, hook_file):
         with contextlib.suppress(Exception):  # an advisory must never wedge a stop
             _hl = state_doc.setdefault("hints", {})
             _hage = C.stamp_age_min(_hl.get("block_at") or "")
-            if _hage is None or _hage >= BLOCK_HINT_MIN:
+            # Not in focus mode: the wind-down spends no tokens on advice.
+            if not _focus and (_hage is None or _hage >= BLOCK_HINT_MIN):
                 _hpick = wl_hints.hint_pick(wl_hints.load_corpus(wl_hints.hints_path(root))[0], _hl)
                 if _hpick:
                     _block_hint = "\n\n" + wl_hints.render(*_hpick)
@@ -4257,8 +4614,8 @@ def run_stop(event, event_ok, worklist, hook_file):
     for k in [k for k in audit_cache if k not in fold.by_id]:
         del audit_cache[k]  # its item is gone; a banked verdict for it is litter
     audit_batch = []
-    # The deferral audit rides the judge call, which a cap-saturated wait skips.
-    if not wl_judge.JUDGE_DISABLED and not _in_cap_wait:
+    # The deferral audit rides the judge call, which a cap-saturated wait and focus mode skip.
+    if not wl_judge.JUDGE_DISABLED and not _in_standdown:
         for r in sorted(
             deferred_recs,
             key=lambda r: (-(C.stamp_age_min(r.get("upd", "")) or 0), r.get("id", "")),
@@ -4282,7 +4639,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     settle_batch = []
     with contextlib.suppress(Exception):
         settle_batch = wl_defersettle.build_batch(
-            root, state_doc, deferred_recs, disabled=wl_judge.JUDGE_DISABLED
+            root, state_doc, deferred_recs, disabled=wl_judge.JUDGE_DISABLED or _in_standdown
         )
     # ADMISSION DETECTOR (wl_admit.py). The prefilter runs on every stop, above the block exit, and is measured at under 0.4 ms with zero tokens, firing on ~1% of real turns. It decides only whether to SPEND a model call; it is never the last word on a negative, because the regexes provably miss the euphemistic phrasings.
     #
@@ -4290,7 +4647,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     # THE JUDGE-SKIPPED PATH. The main judge runs only when something remains or a fix signal fired. A stop with a clean board and an admission in its final message would otherwise be seen by nobody, and that is a likely shape: the session finished its work, and says on the way out that it broke something along the way.
     # A cap-saturated wait skips the main judge (below), so an admission then takes this path: an admission of breakage must never go unseen.
     if admit_hits and not (
-        (something_remains or reg_signals) and not wl_judge.JUDGE_DISABLED and not _in_cap_wait
+        (something_remains or reg_signals) and not wl_judge.JUDGE_DISABLED and not _in_standdown
     ):
         _ad, _aerr = wl_judge.run_admission(admit_text)
         if _aerr:
@@ -4325,7 +4682,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     judge_cached = False
     # THE JUDGE STANDS DOWN IN A CAP-SATURATED WAIT (agent/plans/PLAN-stop-hook-cap-saturated-wait.md step 7). Its orders ("Do the next action", SWEEP THE CLASS, PROOF OBLIGATION) cannot be acted on with every writer slot full; on 2026-09-24 it blocked twice with a reason that itself called the wait legitimate. Unsettled regression fix-sets are not lost: the marker advances
     # only when a fix-set settles, so the next unsaturated stop asks again.
-    if (something_remains or reg_signals) and not wl_judge.JUDGE_DISABLED and not _in_cap_wait:
+    if (something_remains or reg_signals) and not wl_judge.JUDGE_DISABLED and not _in_standdown:
         streak = int(counter.read_text()) if counter.exists() else 0
         # THE JUDGE IS ASKED ABOUT ITS OWN HISTORY, not the battery's. `counter` counts every stop block from every check; the prompt calls the number "times this gate has already said continue" and tells the judge to distrust itself above 3. On 2026-09-04 it read 69 while the judge had spoken a handful of times. See wl_judge.continue_streak.
         judge_log = wl_judge.judge_log_path(worklist, me8)
@@ -4482,6 +4839,9 @@ def run_stop(event, event_ok, worklist, hook_file):
                     + guide_tail,
                 }
             )
+        # UNGROUNDED SWEEP AND PROOF FIRES (R20260924.19): queued, never blocked on, and before any path below that can exit. STICKY, because the fix-set that raised one is banked and never re-asked.
+        for _adv in verdict.get("advisories") or []:
+            outq_add(worklist, session_id, state_doc, "sweep-ungrounded", str(_adv), 2, sticky=True)
         # DEFER-SETTLE VERDICT: banks, corroborates, and acts only through wl_defersettle's own evidence-gated tick. It cannot block, so it runs before any path below that can exit.
         if settle_batch:
             with contextlib.suppress(Exception):
@@ -4680,7 +5040,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                         _also = M.R_REGGATE_ALSO % (
                             str(verdict.get("reason") or "")[:700],
                             str(verdict.get("next_action") or "")[:200],
-                        )
+                        ) + wl_rules.render_owed(verdict)
                     blocklog(worklist, me8, "reggate", judge=judge_flags(verdict, kind))
                     C.emit(
                         {
@@ -4763,7 +5123,8 @@ def run_stop(event, event_ok, worklist, hook_file):
                     "decision": "block",
                     "reason": M.R_JUDGE_CONTINUE
                     % (
-                        verdict["reason"],
+                        # The STILL OWED lines ride directly under the reason, each on its own line and outside every cap (R20260924.18).
+                        verdict["reason"] + wl_rules.render_owed(verdict),
                         verdict["next_action"],
                         "\n".join("  " + r for r in remaining_lines[:12]),
                     )
@@ -4874,12 +5235,14 @@ def run_stop(event, event_ok, worklist, hook_file):
         outq_add(worklist, session_id, state_doc, "handoff", _handoff, 1, refresh_min=60)
     # The specialist-agent hint, LAST of the producers and lowest priority of them, on the ALLOW PATH ONLY and deliberately: a blocked session already has something more urgent being said to it every stop. The trade is that a session which never reaches a clean stop is never hinted, which is acceptable for exactly the same reason.
     with contextlib.suppress(Exception):  # an advisory must never wedge a stop
-        agent_hint_queue(
-            worklist,
-            session_id,
-            state_doc,
-            (last_msg or "") + "\n" + "\n".join(remaining_lines),
-        )
+        # Not in focus mode: a hint would spend the session's hint budget on a line the batch holds.
+        if not _focus:
+            agent_hint_queue(
+                worklist,
+                session_id,
+                state_doc,
+                (last_msg or "") + "\n" + "\n".join(remaining_lines),
+            )
     # THE BEHAVIORAL-HINT QUEUE PRODUCERS, matching agent_hint_queue's own placement exactly: BEFORE outq_drain, so anything queued here has the SAME chance to drain on THIS stop that every other producer gets, rather than only ever being seen on the next one -- a corpus error queued after the drain call would otherwise sit until a LATER, possibly genuinely-silent stop, and single-handedly break that stop's silence. These two are ordinary queue items and are NOT gated on other content already firing; only the hint LINE ITSELF, picked below, carries that gate.
     hint_entries, hint_errs = [], []
     with contextlib.suppress(Exception):  # an advisory must never wedge a stop
@@ -4905,16 +5268,42 @@ def run_stop(event, event_ok, worklist, hook_file):
                 refresh_min=wl_hints.PROPOSAL_REFRESH_MIN,
             )
     # UP TO OUTQ_PER_STOP sections per stop, highest priority first and randomized inside a priority class. The "+N more" tail is MANDATORY for the reason spelled out at the guide's own truncation: a silent cap reads as "that is everything", and there is no knob left to widen it for one turn.
-    texts, remaining = outq_drain(worklist, session_id, state_doc, OUTQ_PER_STOP)
+    # FOCUS MODE releases only the PR's own advisories in full; the rest is held and delivered one line each when the batch comes due (agent/plans/PLAN-stop-hook-focus-mode.md section 6).
+    _drain_only = wl_standdown.advisory_kept if _focus else None
+    texts, remaining = outq_drain(worklist, session_id, state_doc, OUTQ_PER_STOP, only=_drain_only)
     parts.extend(texts)
-    if remaining:
+    if _focus:
+        if wl_standdown.batch_due(state_doc.get("standdown")):
+            _batch, _ = outq_digest(
+                worklist,
+                session_id,
+                state_doc,
+                only=lambda k: not wl_standdown.advisory_kept(k),
+            )
+            if _batch:
+                parts.append(_batch)
+        focus_advisory_bookkeeping(worklist, session_id, _focus, state_doc)
+        _fsd = state_doc.get("standdown") or {}
+        parts.insert(
+            0,
+            M.N_FOCUS
+            % (
+                _focus.get("mode"),
+                _focus.get("pr") or "?",
+                _focus.get("at"),
+                int(_fsd.get("parked_now") or 0),
+                int(_fsd.get("adv_held") or 0),
+                me8,
+            ),
+        )
+    elif remaining:
         parts.append(M.N_OUTQ_MORE % remaining)
     # THE ROTATING BEHAVIORAL HINT, LAST. Normally gated on parts already being non-empty: it rides an output the stop was already going to produce, so it is not usually the reason one exists.
     #
     # wl_popup.should_pop() is the one deliberate exception (PLAN-popup-reminder.md): a ~20% independent roll that lets this same hint fire on an otherwise-silent stop too, "out of the blue" by design.
     #
     # Checked here, not inside wl_hints, because "did anything else fire this stop, or did the roll" is exactly what this one condition already answers -- a second check inside the module would just ask the same question twice and could drift from this one.
-    if parts or wl_popup.should_pop():
+    if not _focus and (parts or wl_popup.should_pop()):
         with contextlib.suppress(Exception):  # an advisory must never wedge a stop
             ledger = state_doc.setdefault("hints", {})
             picked = wl_hints.hint_pick(hint_entries, ledger)

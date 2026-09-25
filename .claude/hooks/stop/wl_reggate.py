@@ -322,6 +322,54 @@ def _porcelain_path(line):
     return path.split(" -> ", 1)[-1].strip().strip('"')
 
 
+_SUBPROJECT_RE = re.compile(r"^([-+])Subproject commit ([0-9a-f]{7,40})", re.MULTILINE)
+_NULL_SHA = re.compile(r"^0+$")
+
+
+def _submodule_files(root, path, old, new):
+    """`<path>/<file>` for every file the submodule at `path` changed between `old` and `new`, or [] when either is missing or the range does not resolve there."""
+    if not old or not new or _NULL_SHA.match(old) or _NULL_SHA.match(new) or old == new:
+        return []
+    sub = os.path.join(str(root), path)
+    listed = C._git(sub, "diff", "--name-only", old, new) or ""
+    return ["%s/%s" % (path, f.strip()) for f in listed.splitlines() if f.strip()]
+
+
+def _gitlink_moves_status(root, paths):
+    """{path: (old, new)} for each of `paths` that is a gitlink whose working-tree commit differs from HEAD's, read from `git diff HEAD -- <path>`."""
+    out = {}
+    for path in paths:
+        # A gitlink is a checked-out repository; a plain dirty file never costs a git call here.
+        if not os.path.exists(os.path.join(str(root), path, ".git")):
+            continue
+        diff = C._git(root, "diff", "--no-color", "--no-ext-diff", "HEAD", "--", path) or ""
+        if "Subproject commit" not in diff:
+            continue
+        sides = dict(_SUBPROJECT_RE.findall(diff))
+        if "-" in sides and "+" in sides:
+            out[path] = (sides["-"], sides["+"])
+    return out
+
+
+def _gitlink_moves_commit(root, sha):
+    """{path: (old, new)} for each gitlink one commit moved, read from `git diff-tree --raw` (mode 160000)."""
+    out = {}
+    raw = C._git(root, "diff-tree", "--no-commit-id", "-r", "--raw", "--abbrev=40", sha) or ""
+    for line in raw.splitlines():
+        meta, _, path = line.partition("\t")
+        parts = meta.lstrip(":").split()
+        if len(parts) >= 4 and "160000" in (parts[0], parts[1]) and path:
+            out[path.strip()] = (parts[2], parts[3])
+    return out
+
+
+def _expand_gitlinks(root, moves):
+    files = []
+    for path, (old, new) in moves.items():
+        files.extend(_submodule_files(root, path, old, new))
+    return files
+
+
 def fixset_files(root, ids, live_paths=None):
     """(files, provenance). The real files THIS fix-set touched, computed by git, never narrated. `provenance` is `"diff-tree"` when every id resolved to a real commit, or `"status-fallback"` when nothing did and the answer is the whole working tree's `git status --porcelain` instead -- named so a caller can tell the judge WHICH ground truth it is being shown, since the two answer
     different questions (agent/plans/PLAN-sweep-obligation-carry-forward.md task "Label the injected file list with its provenance").
@@ -330,14 +378,21 @@ def fixset_files(root, ids, live_paths=None):
     out as the honest answer for that shape, so a hallucinated bulk transform can be checked against what git ACTUALLY shows changed rather than trusted from the judge's own prose (agent/plans/PLAN-judge-prompt-trap-conflation.md).
 
     `live_paths` (wl_roster.live_writer_paths) is subtracted on the status arm ONLY, under provenance `"status-minus-live-writers"` (agent/plans/PLAN-stop-hook-retro-20260924.md R.1): the dirty tree is shared, and a live writer's uncommitted edits are not the lead's fix-set. The obligation for them belongs in that writer's own tick. A commit-based fix-set is never trimmed.
+
+    A MOVED GITLINK IS EXPANDED into `<sub>/<file>` for every file the submodule's own range changed, on both arms (R20260924.19). The gitlink path alone stays listed. At 16:23:57Z on 2026-09-24 the judge said "no test files appear in this fix-set" while the tests sat in private/account commit aea435154, because the list carried `private/account` and nothing under it.
     """
     files = set()
     for i in ids or []:
-        files.update(_diff_tree_files(root, i))
+        found = _diff_tree_files(root, i)
+        files.update(found)
+        if found:
+            files.update(_expand_gitlinks(root, _gitlink_moves_commit(root, i)))
     if files:
         return sorted(files), "diff-tree"
     status = C._git(root, "status", "--porcelain") or ""
-    files.update(_porcelain_path(ln) for ln in status.splitlines() if ln.strip())
+    dirty = {_porcelain_path(ln) for ln in status.splitlines() if ln.strip()}
+    files.update(dirty)
+    files.update(_expand_gitlinks(root, _gitlink_moves_status(root, sorted(dirty))))
     if live_paths:
         kept = {f for f in files if f not in live_paths}
         if kept != files:

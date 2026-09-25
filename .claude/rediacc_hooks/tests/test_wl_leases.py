@@ -185,3 +185,47 @@ def test_l4b_inverse_an_unknown_blocker_and_a_cycle_are_refused(wl):  # noqa: F8
     got = wl.cli("--update", wlfix.ME, a, "now waits on the second BLOCKED_BY:#%s" % b)
     assert got.rc == 2, (got.rc, got.err)
     assert "cycle" in got.err, got.err
+
+
+def test_l4c_a_blocked_by_set_by_update_makes_the_item_wait(wl):  # noqa: F811
+    """2026-09-25: `--update <id> 'BLOCKED_BY:#<root>'` passed validation, then the fold kept it only as the display note, so `waiting_on` never saw it and the item stayed open work. A later update without the token must not unblock it either."""
+    ready(wl)
+    root = add(wl, "(deadbeef) the root of the chain")
+    child = add(wl, "(deadbeef) an ordinary item")
+    assert wl.cli("--update", wlfix.ME, child, "BLOCKED_BY:#%s waits on the root" % root).rc == 0
+    assert wl.cli("--update", wlfix.ME, child, "progress note with no token").rc == 0
+    wl.say("working\n\n## Remaining\n- #%s and #%s" % (root, child))
+    reason = json.loads(wl.run({"WORKLIST_FOCUS": "off"}).out)["reason"]
+    open_block = reason.split("OPEN worklist item(s)", 1)[1].split("\n\n", 1)[0]
+    assert "1 OPEN worklist item(s)" in reason, reason[:800]
+    assert "an ordinary item" not in open_block, open_block
+    assert "#%s waiting (#%s)" % (child, root) in reason, reason[-800:]
+
+
+def test_l5_a_lease_names_exactly_one_worker(wl):  # noqa: F811
+    """2026-09-25: `worker:a1,a2` was accepted and stored whole; the roster matches one id, so both writers read as UNLEASED."""
+    ready(wl)
+    item = add(wl, "(deadbeef) two writers on one item")
+    got = wl.cli("--lease", wlfix.ME, item, "+60", "worker:abc123def,fed321cba", "note")
+    assert got.rc != 0, (got.rc, got.out)
+    assert "not one worker id" in got.err, got.err
+    assert wl.cli("--lease", wlfix.ME, item, "+60", "worker:abc123def", "note").rc == 0
+
+
+def test_l6_the_operator_switch_turns_the_stop_path_off_and_only_it(wl):  # noqa: F811
+    """Operator order 2026-09-25: `.ci/config/stop-hook.json` `enabled: false` allows every stop; verbs keep working; a missing or unreadable file keeps the hook on."""
+    ready(wl)
+    add(wl, "(deadbeef) open work that would block")
+    wl.say("working\\n\\n## Remaining\\n- the item")
+    assert "OPEN worklist item" in wl.run({"WORKLIST_FOCUS": "off"}).out  # CONTROL: no config, the hook blocks
+    cfg = wl.proj / ".ci" / "config" / "stop-hook.json"
+    cfg.parent.mkdir(parents=True, exist_ok=True)
+    cfg.write_text("{not json", encoding="utf-8")
+    wl.newturn()
+    wl.say("working\\n\\n## Remaining\\n- the item")
+    assert "OPEN worklist item" in wl.run({"WORKLIST_FOCUS": "off"}).out  # unreadable -> still on
+    cfg.write_text('{"enabled": false}', encoding="utf-8")
+    wl.newturn()
+    wl.say("working\\n\\n## Remaining\\n- the item")
+    assert wl.run({"WORKLIST_FOCUS": "off"}).out.strip() == ""
+    assert wl.cli("--list", "--open", wlfix.ME).rc == 0  # verbs unaffected

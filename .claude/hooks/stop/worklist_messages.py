@@ -150,7 +150,8 @@ V_COMPLETION_EVIDENCE = (
     "COMPLETION WITHOUT EVIDENCE. S-2 was marked completed on another spike's "
     "evidence, nothing recorded a result anywhere, and the hole surfaced hours "
     "later. A completion must leave a record: a sha, a run id, a file:line, an "
-    "exit code, or a URL. You have it in hand at completion time, so this costs "
+    "exit code (rc=N counts), a URL, or ASKED:<YYYY-MM-DDTHH:MMZ> for an operator "
+    "answer. You have it in hand at completion time, so this costs "
     "one paste; if you do NOT have it, the item is not done.\n%s%s"
     "    For ticks, put the evidence IN THE LINE (it is the durable record). "
     "For tasks, put it on the line mentioning the #id in your message."
@@ -1435,11 +1436,21 @@ CLI_RELAY_USAGE = (
     "Moves every [>] lease this session holds on <old-worker> to <new-worker> in one call."
 )
 
+# EVERY accepted shape is named (R20260924.21): R.8 added `rc=N`, a bare basename and `ASKED:`, and three refusals in a row on 2026-09-24 quoted "16:0xZ" because this text never said so. The second %s is wl_checks.tick_refusal_hint: the newest operator answer's minute, ready to paste, or "".
 CLI_TICK_NO_EVIDENCE = (
-    "REFUSED: ticking #%s needs evidence in the line (a real sha, a run id, "
-    "a file:line that resolves, an exit code, or a URL). You have it in hand "
-    "at completion time, so this costs one paste; if you do NOT have it, the "
-    "item is not done."
+    "REFUSED: ticking #%s needs evidence in the line. Accepted shapes:\n"
+    "  sha                       a real commit or object of this repo, a submodule, or a repo under private/\n"
+    "  run id                    a CI run number (9 or more digits)\n"
+    "  file:line                 a path:line that resolves, or a bare name.ext:N naming one tracked file\n"
+    "  exit code                 `exit 0`, `exit code: 1`, or rc=N\n"
+    "  URL                       any https:// link (an issue link alone also needs its door:)\n"
+    "  ASKED:<YYYY-MM-DDTHH:MMZ> an operator AskUserQuestion answer within 5 minutes of that minute\n"
+    "You have it in hand at completion time, so this costs one paste; if you do NOT have it, the "
+    "item is not done.%s"
+)
+
+CLI_TICK_ASKED_HINT = (
+    "\nThe newest operator answer in this session's transcript, ready to paste: ASKED:%s"
 )
 
 # ---- v16: the fix-in-session rule, the triage verb, the tick door gate ------ WHY (operator, 2026-07-31): a finding is FIXED in the session that finds it. "It is big" was the standing excuse for filing an issue and calling the finding handled, and --tick took a bare issue URL as evidence, so the excuse was not merely rhetorical, it worked. The machinery now answers the size
@@ -1632,6 +1643,8 @@ CTX_POSTCOMPACT_FACTS = (
 CTX_POSTCOMPACT_RETRO = "STOP-HOOK RETRO (standing procedure PLAN-stop-hook-continuity.md P3.1): compaction replaced this session's context, but its transcript is intact at %(transcript)s. %(when)s, run `python3 .claude/hooks/stop/worklist.py --retro-brief %(me8)s post-compact` and dispatch it as ONE background Agent with subagent_type Plan; save what it returns to agent/plans/PLAN-stop-hook-retro-%(date)s.md. It covers transcript bytes %(from)d-%(to)d, everything since the last retro. Emitted once per session."
 CTX_POSTCOMPACT_RETRO_WHEN_BRIEFED = "After reading the briefing above"
 CTX_POSTCOMPACT_RETRO_WHEN_MISSING = "After you write STATE.md"
+# Prefixed to the PostCompact briefing when the compaction was a sub-agent's (R20260924.16): the payload carries the lead's session_id, so the STATE.md in the briefing is the lead's, and no retro is ordered for it.
+CTX_POSTCOMPACT_SUBAGENT = "This compaction is sub-agent %s's; the STATE.md below is the lead's."
 
 # The item wl_retro.sync (or --retro-brief) adds for an `ordered` ledger row. The ordinary open-items check enforces it; `#<id>` in the brief is what the auto-lease links to the Plan agent; the plan path is the tick evidence that closes it.
 RETRO_ITEM = (
@@ -1987,6 +2000,10 @@ Query:
 
 Session state:
   --brief <me> <text...>        publish what you are changing right now
+  --focus <me> babysit|merge|off [--pr <n>] [--branch <b>]
+                                a PR wind-down: finish, don't start (plan,
+                                queue and hygiene pushes park, writer spawns
+                                are refused); `--focus <me>` prints the state
   --state <me>                  rewrite agent/<me>/STATE.md (body on stdin)
   --loop <me> <next> <count> <what...>   declare a scheduled loop
 
@@ -2507,6 +2524,61 @@ N_CAP_WAIT_COMPACTION = (
     "(Kept although every writer slot is full: the context is in its last band before auto-compact, "
     "and the recovery document must be current before it is summarised.)"
 )
+# FOCUS MODE (agent/plans/PLAN-stop-hook-focus-mode.md). The allow line of a focused stop: mode, PR, since, parked checks, held advisories, and the session prefix for the off command.
+N_FOCUS = (
+    "FOCUS MODE (%s PR #%s since %s): %d check(s) parked, %d advisory(ies) held; CI red, dead "
+    "watches, unread reports, STATE.md near compaction and hook integrity still block. Ends on "
+    "--focus %s off or when the PR merges."
+)
+# The one-line parked summary on the stop that detects the end: why, the parked keys (top 6 then "+N more"), held advisories, refused spawns.
+N_FOCUS_ENDED = (
+    "FOCUS ENDED (%s): parked for %s: %s; %d advisory(ies) held, draining from this stop; %d "
+    "writer spawn(s) refused. The full battery applies from this stop."
+)
+# Appended to a STATE.md demand focus KEPT because compaction is imminent.
+N_FOCUS_COMPACTION = (
+    "(Kept although focus mode is on: the context is in its last band before auto-compact, and "
+    "the recovery document must be current before it is summarised.)"
+)
+# Advisory: the merged/closed read failed, so focus continues (the 24-hour cap bounds it).
+N_FOCUS_PR_UNREADABLE = (
+    "focus: could not read whether PR #%s on %s merged (%s); focus continues until the PR reads "
+    "merged, --focus off, or the %d-hour cap."
+)
+# The PostCompact line: a compacted session must know that writer spawns are refused.
+CTX_POSTCOMPACT_FOCUS = (
+    "FOCUS MODE IS ON (%s PR #%s on %s since %s): finish, don't start. Writer spawns are refused "
+    "except declared focus-fix work (`focus-fix:#<id>` naming an item carrying pr:%s). End it "
+    "with `.claude/hooks/stop/worklist.py --focus %s off`."
+)
+
+CLI_FOCUS_USAGE = (
+    "usage: worklist.py --focus <me> babysit|merge [--pr <n>] [--branch <b>]\n"
+    "       worklist.py --focus <me> off\n"
+    "       worklist.py --focus <me>\n"
+    "\n"
+    "Focus mode is a PR wind-down: finish, don't start. Running writers and in-flight\n"
+    "items finish; new writer spawns are refused except declared fix work\n"
+    "(`focus-fix:#<id>` in the spawn, naming an open item carrying pr:<n>). The Stop\n"
+    "hook parks plan, queue and hygiene pushes and keeps CI red, dead watches, unread\n"
+    "reports, STATE.md near compaction and hook integrity. It ends on `off`, when the\n"
+    "PR merges or closes, or after 24 hours. The branch defaults to the checkout's\n"
+    "and may not be main or a detached HEAD.\n"
+)
+CLI_FOCUS_ON = (
+    "focus ON for %s: %s, PR #%s on %s. Writer spawns are refused except `focus-fix:#<id>` "
+    "work naming an item that carries pr:%s; plan, queue and hygiene pushes park until "
+    "`--focus %s off` or the PR merges."
+)
+CLI_FOCUS_PR_UNKNOWN = (
+    "focus: no open PR found for %s (%s); recorded with no PR number. The Stop hook fills it "
+    "in from the CI read once the PR exists."
+)
+CLI_FOCUS_OFF = "focus OFF for %s (was %s, PR #%s, since %s)."
+CLI_FOCUS_NOT_ON = "focus is not on for %s; nothing to end."
+CLI_FOCUS_STATUS = "focus: %s, PR #%s on %s since %s; %d check(s) parked so far."
+CLI_FOCUS_REFUSED = "focus: %s"
+
 N_ROSTER_HONEST = (
     "ROSTER HONEST: %d writer(s)/%d, %d reader(s), next status due %s. Every item in flight is "
     "leased to a live worker, so the pushes a supervised wait would draw stand down; the cap "

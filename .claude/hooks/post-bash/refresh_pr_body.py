@@ -8,7 +8,7 @@ The Stop hook already blocks on the same condition, but blocking is the wrong mo
 WHAT IT WRITES, and why it is not gaming the gate. It maintains a delimited block at the end of the body listing the pushed head and the last few commit subjects. That is genuinely useful description content -- a reviewer opening the PR sees what most recently landed -- and it happens to make the body newer than the tip, which is exactly what the gate is asking for. A no-op edit
 that only moved a timestamp would satisfy the gate while telling the reader nothing; this tells them something.
 
-PORTED FROM `.claude/hooks/post-bash/refresh-pr-body.sh` BY W7 P6. The bash original is kept as `.claude/oracles/post-bash/refresh-pr-body.sh` and `.claude/rediacc_hooks/tests/test_post_bash_differential.py` runs both over the same scripted `git` and `gh` stubs, comparing exit code, stdout and stderr byte for byte.
+PORTED FROM `.claude/hooks/post-bash/refresh-pr-body.sh` BY W7 P6. The bash original was kept as `.claude/oracles/post-bash/refresh-pr-body.sh` until PLAN-retire-bash-oracles A3 deleted it; `.claude/rediacc_hooks/tests/test_post_bash_differential.py` compared the two over the same scripted `git` and `gh` stubs, byte for byte, and froze the result as `tests/goldens/post-bash.jsonl` before the deletion. The same suite now runs this port against that golden.
 
 THE 10-SECOND STDIN DEADLINE HAS NO COUNTERPART HERE, for the reason its sibling `cancel_old_ci.py` records: since the 2026-09-21 collapse the member is spawned with the payload already on a closed pipe, so neither side's deadline can fire.
 

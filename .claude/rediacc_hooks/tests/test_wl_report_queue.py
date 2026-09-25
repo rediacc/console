@@ -302,7 +302,21 @@ def test_177_the_judge_line_is_a_stamp_unless_the_context_is_fresh_or_the_reason
         ),
         encoding="utf-8",
     )
-    ctx_event(wl, "--post-compact")
+    # The lead's own compaction, in the shape R20260924.16 attributes: its boundary in the lead transcript and the event naming that transcript. A PostCompact nobody can attribute leaves ctx_fresh alone.
+    wl.append_transcript(
+        {
+            "type": "system",
+            "subtype": "compact_boundary",
+            "isSidechain": False,
+            "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S.000Z", time.gmtime()),
+        }
+    )
+    wl.python(
+        ["--post-compact"],
+        stdin=json.dumps(
+            {"session_id": wl.sid, "cwd": str(wl.proj), "transcript_path": str(wl.transcript)}
+        ),
+    )
     judge_turn(wl)
     got = wl.runj()
     assert "MARKER_REASON_ONE" in got.out, (

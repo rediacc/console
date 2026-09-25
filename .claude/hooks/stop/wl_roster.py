@@ -50,47 +50,13 @@ ROSTER_SUPPRESSES = frozenset({"bg-report", "stuck", "idle-stall", "solo-grind",
 # The four defect keys. `roster-status` was merged into `roster-silent` on 2026-09-24 ("Evidence counts as status").
 ROSTER_KEYS = ("roster-cap", "roster-silent", "roster-unleased", "roster-dead", "queue-slot")
 
-# THE CAP-SATURATED WAIT (operator 2026-09-24: "the stop hook should not be invoked (or should skip the order) when writer slots are full! There could be exceptions like 2% compaction etc."; agent/plans/PLAN-stop-hook-cap-saturated-wait.md). With every writer slot verified live and nothing open, the lead cannot start anything, so a work order is busywork. A KEEP-list rather than a drop-list,
-# deliberately: a check added later stands down by default, which is what "should not be invoked" means. What stays is what the lead CAN and MUST act on even then: a slot that is really free (a dead writer, a finished worker still holding a lease), an expired DEFAULT, a broken hook, an unread report, a tick without evidence, and STATE.md when compaction is imminent (`agent-state` / `agent-absent`, only with `compaction_due`).
-CAP_WAIT_KEEPS = frozenset(
-    {
-        # The roster itself: each of these means a slot is free or a lease is on nobody.
-        "roster-cap",
-        "roster-silent",
-        "roster-unleased",
-        "roster-dead",
-        "queue-slot",
-        "ladder-gone",
-        "ladder-idle",
-        # Deferrals whose window closed must execute; a [?] without DEFAULT is malformed.
-        "defer-expired",
-        "undefaulted",
-        # Hook integrity: the hook cannot see, or said it has a bug.
-        "event-unparseable",
-        "hook-blind",
-        "cl-shape",
-        # One-shot latches spent when computed (I1): hiding them would burn them unseen.
-        "agent-bootstrap",
-        # Owed and ledger honesty.
-        "unread-reports",
-        "completion",
-        "adhoc-watch",
-        "adhoc-watch-broken",
-        "found-not-fixed",
-        "deferred-finding",
-        "deflected-finding",
-    }
-)
-# Kept whatever their suffix: `agent-pushback:<id>`, `giveup-claim:<id>` (one-shot latches, as above).
-CAP_WAIT_KEEP_PREFIXES = ("agent-pushback:", "giveup-claim:")
-# Kept only when compaction is imminent: the recovery document must be current before the context is summarised.
-CAP_WAIT_COMPACTION_KEYS = frozenset({"agent-state", "agent-absent"})
+# THE CAP-SATURATED WAIT (operator 2026-09-24; agent/plans/PLAN-stop-hook-cap-saturated-wait.md). Its keep-list lives in wl_standdown.CAP_WAIT beside the focus profile that generalises it; the predicate stays here because it needs WRITER_CAP.
 
 
 def cap_saturated_wait(verdict, open_items, actionable_tasks):
     """True when every writer slot is verified live and this session has nothing it could start.
 
-    `verdict` is this stop's `roster()` result; `open_items` is `classify_items`' open list (a plain `[ ]`, an expired lease, a `worker:lead` lease with nothing live); `actionable_tasks` is the harness tasks the session could do now. Every other disallowed item state surfaces as a KEPT key instead (see CAP_WAIT_KEEPS), so an exception arrives as one focused block rather than the whole battery.
+    `verdict` is this stop's `roster()` result; `open_items` is `classify_items`' open list (a plain `[ ]`, an expired lease, a `worker:lead` lease with nothing live); `actionable_tasks` is the harness tasks the session could do now. Every other disallowed item state surfaces as a KEPT key instead (see wl_standdown.CAP_WAIT), so an exception arrives as one focused block rather than the whole battery.
     """
     return (
         bool(verdict)
@@ -99,16 +65,6 @@ def cap_saturated_wait(verdict, open_items, actionable_tasks):
         and not open_items
         and not actionable_tasks
     )
-
-
-def cap_wait_keeps(key, always, compaction_due):
-    """True when violation `key` still blocks in a cap-saturated wait."""
-    del (
-        always
-    )  # the always-tier is about cadence, not about whether the lead can act; see CAP_WAIT_KEEPS
-    if key in CAP_WAIT_KEEPS or str(key).startswith(CAP_WAIT_KEEP_PREFIXES):
-        return True
-    return bool(compaction_due) and key in CAP_WAIT_COMPACTION_KEYS
 
 
 # How long an agent that ended its turn with a background shell still armed counts as WAITING rather than finished, when no fresh Stop event can confirm the shell. The lease cap: a wait longer than any lease is not supervision the estimate should vouch for.
@@ -420,7 +376,7 @@ def _running(event):
     ]
 
 
-def shell_waiters(running, metas):
+def shell_waiters(running, metas, now=None):
     """{agent id: shell id} for every agent the event does NOT list as running whose own transcript launched a shell that still runs.
 
     An agent that armed a background command and ended its turn is WAITING, not finished: the harness resumes it when that shell exits, yet the event reports the agent itself as completed. Its launch leaves `"backgroundTaskId":"<id>"` in the agent's transcript, and that is the only link between the two, since the event's shell rows carry no owner.
@@ -432,8 +388,13 @@ def shell_waiters(running, metas):
     out: dict[Any, Any] = {}
     if not shell_ids:
         return out
+    now = time.time() if now is None else now
     for aid, m in metas.items():
         if aid in listed or m.get("jsonl") is None:
+            continue
+        # BOUNDED LIKE transcript_waiting: an agent that armed a daemon (`./run.sh account dev`) and ended its turn is "waiting" on a shell that never exits. Past WAIT_HORIZON_MIN of transcript silence it is finished, not waiting; without the bound a completed writer held a slot and raised UNLEASED WRITER 1010 minutes later (2026-09-25, a5469082799b4a5af on bi06trcl0).
+        mt = _mtime(m["jsonl"])
+        if mt is None or now - mt > WAIT_HORIZON_MIN * 60:
             continue
         # ARMED, not merely launched (agent/plans/PLAN-stop-hook-retro-20260924.md R.6): a shell whose `<task-id>` notification already reached the agent's own transcript is one it is no longer waiting on, even while the event still lists that shell as running. Without this a finished writer held a slot (2026-09-24 15:08, a9130421).
         armed = armed_shells(m["jsonl"])
@@ -889,6 +850,10 @@ def live_estimate(cwd, session_id, now=None):
         elif aid not in types and aid not in waiters:
             # WAITING SINCE THE EVENT: the last Stop event may already call it completed while the shell it armed after that event still runs. Its own transcript says so.
             wshell = transcript_waiting(m["jsonl"], now)
+            # "After that event" is checked, not assumed: a transcript that has not moved since the event was written armed its shell BEFORE it, and the event (which lists every running shell) did not list the agent's. A TaskStop-ped agent is exactly that shape -- its transcript still ends waiting on a shell that died with it -- and this branch kept it live for WAIT_HORIZON_MIN, holding a writer slot the Stop hook already saw free (2026-09-24, pr-babysitter a149262d8b6a1601f, #b9d4dcb2).
+            mt_agent = _mtime(m["jsonl"])
+            if wshell and since is not None and (mt_agent is None or mt_agent <= since):
+                wshell = ""
             if wshell:
                 waiters[aid] = wshell
                 types[aid] = m["type"]

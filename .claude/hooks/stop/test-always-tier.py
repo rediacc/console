@@ -206,6 +206,10 @@ def main():
     if wl_checks.check_tier("a-key-nobody-defined") != wl_checks.T_HYGIENE:
         fails.append("check_tier does not default an unknown key to T_HYGIENE")
 
+    # 7. Focus mode's PR fix work sits where `open-items` does (agent/plans/PLAN-stop-hook-focus-mode.md section 4): it is the one slice of the queue focus keeps, so it must defeat the cadence pause like the rest of T_MISSION.
+    if wl_checks.check_tier("focus-pr-items") != wl_checks.check_tier("open-items"):
+        fails.append("focus-pr-items is not on open-items' tier of the ladder")
+
     for f in fails:
         print("FAIL: %s" % f)
     print(

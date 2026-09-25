@@ -17,6 +17,8 @@ NOT DUPLICATED, REUSED. `validate_search`, `names_destructive` and the Demand cl
 """
 
 import os
+import re
+import shlex
 
 import wl_classsweep as CS
 import wl_common
@@ -141,6 +143,66 @@ def prompt_section(fix_signal, outstanding=None):
     return ""
 
 
+# A structural proof tool actually RUN, as a command (R20260924.18). Narrower than the guard's PROOF_PHRASE on purpose: "sampled 3 files" is prose a message can carry, never a command the transcript can show.
+PROOF_TOOL_RE = re.compile(r"shape[-_]cluster[-_]diff", re.IGNORECASE)
+# The one proof step a STILL OWED line hands over for a carried proof demand.
+PROOF_STEP = ".ci/scripts/quality/shape_cluster_diff.py --rev <base-sha> %s"
+
+
+def scope_paths(scope):
+    """The path-shaped words of a demand's prose `scope`: a word carrying `/`, or a file name with an extension. "packages/x comments" -> ["packages/x"]."""
+    out = []
+    for raw in re.split(r"[\s,;()`'\"]+", scope or ""):
+        word = raw.strip().removeprefix("./").rstrip("/.:")
+        if not word:
+            continue
+        if "/" in word or re.fullmatch(r"[\w.-]+\.[A-Za-z0-9]{1,8}", word):
+            out.append(word)
+    return out
+
+
+def _runs_proof_on(scope_list, command):
+    if not PROOF_TOOL_RE.search(command or ""):
+        return False
+    try:
+        tokens = shlex.split(command)
+    except ValueError:
+        tokens = command.split()
+    for tok in tokens:
+        have = tok.strip().removeprefix("./").rstrip("/")
+        if not have or have.startswith("-"):
+            continue
+        for want in scope_list:
+            # The same path, a directory above it, or a path inside it: each runs the proof over the scope's files.
+            if have == want or want.startswith(have + "/") or have.startswith(want + "/"):
+                return True
+    return False
+
+
+def proof_evidenced(outstanding, transcript):
+    """True when the lead transcript, AFTER the demand first fired, holds a Bash call that runs a shape-cluster diff on a path named in the demand's `scope`, and whose result came back (R20260924.18). The proof twin of `wl_classsweep.sweep_evidenced`, reading the same harness record.
+
+    Fails toward "not evidenced": a scope naming no path, a call before the demand, another tool, another path, or a call with no result each keep the demand.
+    """
+    if not isinstance(outstanding, dict) or not transcript:
+        return False
+    wanted = scope_paths(outstanding.get("scope") or "")
+    since = CS.demand_since(outstanding)
+    if not wanted or since <= 0:
+        return False
+    return CS.ran_after(transcript, since, lambda cmd: _runs_proof_on(wanted, cmd))
+
+
+def discharge_if_evidenced(outstanding, transcript, path=None):
+    """The outstanding proof demand after discharging every head the transcript already answers, or None. Mirrors `wl_classsweep.discharge_if_evidenced`: a discharged head is PROMOTED, so a demand parked in `owed` is asked next rather than lost."""
+    for _ in range(2):  # a head plus its one `owed` slot
+        if not outstanding or not proof_evidenced(outstanding, transcript):
+            return outstanding
+        PROOF_DEMAND.promote(path)
+        outstanding = load_outstanding(path)
+    return outstanding
+
+
 _clean = wl_common.clean
 
 
@@ -196,9 +258,11 @@ def enforce(out, payload, fixset_files=None, displaced=None):
     `displaced` is the demand THIS fire is about to bump into the marker's `owed` slot (wl_rules.Demand.displace), or None. Mirrors `wl_classsweep.enforce`'s identical parameter: the STILL OWED sentence re-emits only text already validated when that demand first fired.
     """
     reason = V_REASON % (payload["transform_kind"], V_ASSERTED if payload["asserted"] else "")
+    owed = []
     if isinstance(displaced, dict) and displaced.get("transform_kind"):
-        reason += wl_rules.still_owed_sentence(
-            displaced["transform_kind"], "scope %s" % (displaced.get("scope") or "(not recorded)")
+        reason += wl_rules.still_owed_sentence(displaced["transform_kind"])
+        owed.append(
+            wl_rules.owed_line(PROOF_STEP % (displaced.get("scope") or "(scope not recorded)"))
         )
     if not wl_rules.scope_grounded(payload.get("scope", ""), fixset_files):
         reason += (
@@ -232,7 +296,7 @@ def enforce(out, payload, fixset_files=None, displaced=None):
             "report its real output (for prose, .ci/scripts/quality/shape_cluster_diff.py "
             "--rev <base-sha> <files>; for code, an AST comparison)."
         )
-    wl_rules.apply_order(out, reason, action)
+    wl_rules.apply_order(out, reason, action, owed)
     return "proof-obligation: %s" % payload["transform_kind"][:160]
 
 
@@ -262,8 +326,17 @@ def apply_verdict(out, outstanding=None, path=None, fixset_files=None, asked=Non
     Mirrors `wl_classsweep.apply_verdict` exactly, including the `asked` contract: `"fresh"` displaces `outstanding` into `owed` on a fire and leaves both untouched on silent/degraded; `"followup"` banks a re-fire over `outstanding` as before and promotes a live `owed` record on silent/degraded; `None` (the default) reproduces the byte-identical legacy behaviour of always banking on fire and always clearing on silent/degraded, for any caller that has not adopted the parameter.
 
     `fixset_files` defaults to `None`, so every existing call site that does not know about it behaves byte-identically to before this parameter existed (see `wl_rules.scope_grounded`).
+
+    kind is also 'ungrounded' (R20260924.19), as in `wl_classsweep.apply_verdict`: a FRESH fire whose scope is not in `fixset_files` changes nothing and returns the advisory text.
     """
     kind, payload = read_verdict(out)
+    if (
+        kind == "fire"
+        and asked == "fresh"
+        and not wl_rules.scope_grounded(payload.get("scope", ""), fixset_files)
+    ):
+        # UNGROUNDED IS ADVISORY (R20260924.19), exactly as in wl_classsweep.apply_verdict.
+        return "ungrounded", CS.ungrounded_note("proof obligation", payload.get("scope", ""))
     if kind == "fire":
         if asked == "fresh":
             note = enforce(out, payload, fixset_files, displaced=outstanding)

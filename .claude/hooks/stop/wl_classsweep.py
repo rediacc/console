@@ -36,6 +36,7 @@ which is the one thing this rule cannot afford.
 """
 
 import datetime
+import fnmatch
 import os
 import re
 import shlex
@@ -223,10 +224,23 @@ _VALUED_OPTS = frozenset(
 _CMD_SEPARATORS = frozenset({"|", "||", "&&", ";"})
 
 
-def search_pattern(search):
-    """The pattern argument of the first `grep`, `rg` or `git grep` in a search command, or "".
+# `find`'s name tests, whose value is the glob a `find` sweep is really asking about (R20260924.18).
+_FIND_NAME_OPTS = ("-name", "-iname", "-path", "-ipath", "-wholename")
 
-    Shared by the transcript discharge (R.2) and the instance grounding (R.3) of agent/plans/PLAN-stop-hook-retro-20260924.md, so both read one command the same way. "" whenever the command does not parse or names no such tool: the callers then change nothing.
+
+def _find_pattern(tokens, j):
+    """The glob of the first name test in a `find` starting at token j, or "" (R20260924.18)."""
+    while j < len(tokens) and tokens[j] not in _CMD_SEPARATORS:
+        if tokens[j] in _FIND_NAME_OPTS and j + 1 < len(tokens):
+            return tokens[j + 1]
+        j += 1
+    return ""
+
+
+def search_pattern(search):
+    """The pattern argument of the first `grep`, `rg` or `git grep` in a search command, or the glob of the first `find -name|-iname|-path`, or "".
+
+    Shared by the transcript discharge (R.2) and the instance grounding (R.3) of agent/plans/PLAN-stop-hook-retro-20260924.md, so both read one command the same way. "" whenever the command does not parse or names no such tool: the callers then change nothing. `find` was added by R20260924.18: a `find` demand run verbatim at 16:29:15Z stayed owed for two more stops.
     """
     try:
         tokens = shlex.split(search or "")
@@ -235,6 +249,12 @@ def search_pattern(search):
     i = 0
     while i < len(tokens):
         base = os.path.basename(tokens[i])
+        if base == "find":
+            found = _find_pattern(tokens, i + 1)
+            if found:
+                return found
+            i += 1
+            continue
         if base in _SEARCH_TOOLS:
             j = i + 1
         elif base == "git" and i + 1 < len(tokens) and tokens[i + 1] == "grep":
@@ -329,24 +349,138 @@ def _epoch(stamp):
         return None
 
 
-def sweep_evidenced(outstanding, transcript):
-    """True when the lead transcript, AFTER the demand first fired, holds a Bash tool call whose command contains the demand's own search pattern AND whose tool_result came back (agent/plans/PLAN-stop-hook-retro-20260924.md R.2).
+# The shortest shared alternative that counts as a near-literal rerun (R20260924.18, the operator Decision "Near-literal discharge"). Six characters: `bash_results` from the 16:10:39Z sweep clears it, while `grep`, `test` or `.ts` do not.
+NEAR_LITERAL_MIN = 6
 
-    WHY. A FOLLOWUP judges only the last message, so a sweep the session really ran two turns earlier had to be re-run to be seen (2026-09-24 14:57). The transcript is the harness's record, not the session's narration, so it is evidence the lead cannot fabricate by describing it.
 
-    Fails toward "not evidenced": no pattern, a pattern under 3 characters, no timestamp on the call, a call before the demand, or a call with no result each keep the demand.
-    """
-    if not isinstance(outstanding, dict) or not transcript:
-        return False
-    pattern = search_pattern(outstanding.get("search") or "")
-    if len(pattern) < 3:
+def search_paths(search):
+    """The path operands of the first search tool in `search`: what follows grep's or rg's pattern, or `find`'s starting points. [] when nothing parses (R20260924.18)."""
+    try:
+        tokens = shlex.split(search or "")
+    except ValueError:
+        return []
+    i = 0
+    while i < len(tokens):
+        base = os.path.basename(tokens[i])
+        if base == "find":
+            out = []
+            for tok in tokens[i + 1 :]:
+                if tok in _CMD_SEPARATORS or tok.startswith(("-", "(", "!")):
+                    break
+                out.append(tok)
+            return out
+        if base in _SEARCH_TOOLS:
+            j = i + 1
+        elif base == "git" and i + 1 < len(tokens) and tokens[i + 1] == "grep":
+            j = i + 2
+        else:
+            i += 1
+            continue
+        out, seen_pattern = [], False
+        while j < len(tokens) and tokens[j] not in _CMD_SEPARATORS:
+            tok = tokens[j]
+            if tok in ("-e", "--regexp"):
+                seen_pattern = True
+                j += 2
+                continue
+            if tok.startswith("-") and tok != "--":
+                j += 2 if tok in _VALUED_OPTS else 1
+                continue
+            if tok == "--":
+                j += 1
+                continue
+            if seen_pattern:
+                out.append(tok)
+            else:
+                seen_pattern = True
+            j += 1
+        return out
+    return []
+
+
+def _norm_path(tok):
+    return tok.strip().strip("'\"").removeprefix("./").rstrip("/")
+
+
+def shares_path(demand_paths, command):
+    """True when `command` names one of `demand_paths`, or a directory above one (a broader search covers it). Tokens are compared whole, never as substrings, so `.ci/x` does not match `.ci/xy`."""
+    wanted = [p for p in (_norm_path(d) for d in demand_paths) if p]
+    if not wanted:
         return False
     try:
-        since = float(outstanding.get("first_at") or outstanding.get("at") or 0)
-    except (TypeError, ValueError):
+        tokens = shlex.split(command or "")
+    except ValueError:
+        tokens = (command or "").split()
+    for tok in tokens:
+        have = _norm_path(tok)
+        if not have or have.startswith("-"):
+            continue
+        if any(w == have or w.startswith(have + "/") for w in wanted):
+            return True
+    return False
+
+
+def alternatives(pattern):
+    """A grep pattern's alternatives, split on `\\|` and `|`."""
+    return [a for a in re.split(r"\\\||\|", pattern or "") if a]
+
+
+def near_literal(search, command):
+    """True when `command` reruns `search` near-literally: it contains one of the demand pattern's alternatives of NEAR_LITERAL_MIN or more characters (case-insensitive) AND names one of its path operands (R20260924.18)."""
+    pattern = search_pattern(search)
+    alts = [a.lower() for a in alternatives(pattern) if len(a) >= NEAR_LITERAL_MIN]
+    low = (command or "").lower()
+    if not alts or not any(a in low for a in alts):
         return False
-    if since <= 0:
+    return shares_path(search_paths(search), command)
+
+
+# The name tests a glob cover reads (R20260925.3). `-path` is left out: its glob spans directories, so a sample of it says nothing about a `-name` glob.
+_FIND_COVER_OPTS = ("-name", "-iname")
+
+
+def find_name_glob(command):
+    """(option, glob) of the first `-name` or `-iname` test after the first `find` in `command`, or None. A compound command (`cd x && find ...`) is read from its `find` on."""
+    try:
+        tokens = shlex.split(command or "")
+    except ValueError:
+        return None
+    for i, tok in enumerate(tokens):
+        if os.path.basename(tok) != "find":
+            continue
+        j = i + 1
+        while j < len(tokens) and tokens[j] not in _CMD_SEPARATORS:
+            if tokens[j] in _FIND_COVER_OPTS and j + 1 < len(tokens):
+                return tokens[j], tokens[j + 1]
+            j += 1
+        return None
+    return None
+
+
+def glob_covers(search, command):
+    """True when `command` is a `find` whose `-name|-iname` glob covers the demand's own `find` glob AND the two share a path operand (R20260925.3).
+
+    WHY. At 19:50:12 the lead ran `find .ci/config .ci/rediacc_ci scripts/data -name '*baseline*.json' -type f` against a demand for `find .ci/config .ci/rediacc_ci -name '*-baseline.json' -type f`: a superset of both the glob and the paths. `near_literal` needs the demand's pattern as a substring, which a broader glob never contains, so the demand stayed owed.
+
+    HOW. The demand's glob is SAMPLED, each `*` and `?` replaced by `x`, and the sample must match the lead's glob. A narrower lead glob (`ci-baseline.json`) rejects the sample and the demand stays owed. An `-iname` lead compares case-insensitively; an `-iname` demand is not covered by a case-sensitive `-name`.
+    """
+    demand = find_name_glob(search)
+    lead = find_name_glob(command)
+    if not demand or not lead:
         return False
+    (d_opt, d_glob), (l_opt, l_glob) = demand, lead
+    if d_opt == "-iname" and l_opt != "-iname":
+        return False
+    sample = d_glob.replace("*", "x").replace("?", "x")
+    if l_opt == "-iname":
+        sample, l_glob = sample.lower(), l_glob.lower()
+    if not fnmatch.fnmatchcase(sample, l_glob):
+        return False
+    return shares_path(search_paths(search), command)
+
+
+def ran_after(transcript, since, matches):
+    """True when the lead transcript holds, at or after epoch `since`, a Bash tool_use whose command satisfies `matches(command)` AND whose tool_result came back. The transcript is the harness's record, not the session's narration. Shared by the sweep and proof discharges."""
     calls = set()
     for rec in wl_common.records(_tail_lines(transcript, EVIDENCE_TAIL_BYTES), need=b'"tool_'):
         content = (rec.get("message") or {}).get("content")
@@ -361,7 +495,7 @@ def sweep_evidenced(outstanding, transcript):
                     isinstance(block, dict)
                     and block.get("type") == "tool_use"
                     and block.get("name") == "Bash"
-                    and pattern in str((block.get("input") or {}).get("command") or "")
+                    and matches(str((block.get("input") or {}).get("command") or ""))
                 ):
                     calls.add(str(block.get("id") or ""))
         elif rec.get("type") == "user" and calls:
@@ -373,6 +507,41 @@ def sweep_evidenced(outstanding, transcript):
                 ):
                     return True
     return False
+
+
+def demand_since(outstanding):
+    """The epoch a demand first fired, or 0 when it carries none."""
+    try:
+        return float(outstanding.get("first_at") or outstanding.get("at") or 0)
+    except (TypeError, ValueError, AttributeError):
+        return 0
+
+
+def sweep_evidenced(outstanding, transcript):
+    """True when the lead transcript, AFTER the demand first fired, holds a Bash tool call whose command contains the demand's own search pattern AND whose tool_result came back (agent/plans/PLAN-stop-hook-retro-20260924.md R.2).
+
+    WHY. A FOLLOWUP judges only the last message, so a sweep the session really ran two turns earlier had to be re-run to be seen (2026-09-24 14:57). The transcript is the harness's record, not the session's narration, so it is evidence the lead cannot fabricate by describing it.
+
+    A NEAR-LITERAL rerun counts too (R20260924.18): a shared alternative of NEAR_LITERAL_MIN or more characters plus a shared path operand (`near_literal`). At 16:10:39Z the lead ran the demand's paths with `bash_results`, one of its two alternatives, and the demand stayed owed for three more stops.
+
+    A COVERING `find` counts too (R20260925.3): a `-name|-iname` glob that matches a sample of the demand's glob, plus a shared path operand (`glob_covers`).
+
+    Fails toward "not evidenced": no pattern, a pattern under 3 characters, no timestamp on the call, a call before the demand, or a call with no result each keep the demand.
+    """
+    if not isinstance(outstanding, dict) or not transcript:
+        return False
+    search = outstanding.get("search") or ""
+    pattern = search_pattern(search)
+    if len(pattern) < 3:
+        return False
+    since = demand_since(outstanding)
+    if since <= 0:
+        return False
+    return ran_after(
+        transcript,
+        since,
+        lambda cmd: pattern in cmd or near_literal(search, cmd) or glob_covers(search, cmd),
+    )
 
 
 def discharge_if_evidenced(outstanding, transcript, path=None):
@@ -556,6 +725,19 @@ V_ACTION_DROPPED = (
 )
 
 
+def owed_search(search):
+    """The text a STILL OWED line may hand over for a banked demand's search. A demand is banked whatever its search validated to, so a search `enforce` DROPPED when it fired (it writes, names an operator-reserved act, or does not parse) is dropped here too, never re-emitted as an order to run, and its reason is not quoted either, since that reason names the act."""
+    if not search:
+        return "(no search recorded)"
+    ok, _why = validate_search(search)
+    if ok and not wl_rules.names_operator_reserved(search) and not names_destructive(search):
+        return search
+    return (
+        "grep for copies of the changed code yourself; the recorded search was dropped, "
+        "because it is not a read-only command that runs"
+    )
+
+
 def enforce(out, payload, fixset_files=None, displaced=None, instance=None):
     """Write the sweep order into a judge verdict, in place. Returns the note.
 
@@ -570,11 +752,11 @@ def enforce(out, payload, fixset_files=None, displaced=None, instance=None):
     `displaced` is the demand THIS fire is about to bump into the marker's `owed` slot (see wl_rules.Demand.displace), or None when there is nothing to carry. Its class and search were already validated when that demand first fired, so the STILL OWED sentence appended here re-emits only that already-checked text, never anything fresh from the model.
     """
     reason = V_REASON % (payload["defect_class"], V_ASSERTED if payload["asserted"] else "")
+    owed = []
     if isinstance(displaced, dict) and displaced.get("defect_class"):
-        reason += wl_rules.still_owed_sentence(
-            displaced["defect_class"],
-            "run %s" % (displaced.get("search") or "(no search recorded)"),
-        )
+        # The class in `reason`, the FULL search on a STILL OWED line of its own (R20260924.18): the cap on `reason` cut it mid-word at 16:13:17Z and 16:17:15Z.
+        reason += wl_rules.still_owed_sentence(displaced["defect_class"])
+        owed.append(wl_rules.owed_line(owed_search(displaced.get("search"))))
     if not wl_rules.scope_grounded(payload.get("defect_class", ""), fixset_files):
         reason += (
             " UNVERIFIED: git's own file list for this fix-set does not match '%s' -- if that "
@@ -594,6 +776,9 @@ def enforce(out, payload, fixset_files=None, displaced=None, instance=None):
         action = V_ACTION_UNGROUNDED
     elif ok:
         action = V_ACTION % payload["search"]
+        if len(action) > wl_rules.ACTION_MAX:
+            # The search would be cut by apply_order's next_action cap; the whole of it rides a STILL OWED line.
+            owed.append(wl_rules.owed_line(payload["search"]))
     elif payload["search"]:
         action = V_ACTION_DROPPED % {"why": why[:70]}
     else:
@@ -611,7 +796,7 @@ def enforce(out, payload, fixset_files=None, displaced=None, instance=None):
             }
         else:
             action = V_ACTION_NOSEARCH % payload["instruction"]
-    wl_rules.apply_order(out, reason, action)
+    wl_rules.apply_order(out, reason, action, owed)
     return "class-sweep: %s" % payload["defect_class"][:160]
 
 
@@ -644,6 +829,18 @@ def clear_outstanding(path=None):
     SWEEP_DEMAND.clear(path)
 
 
+# The advisory an ungrounded fresh fire becomes (R20260924.19). Code-authored; the model's own text appears only as the quoted, capped claim.
+V_UNGROUNDED = (
+    "The judge fired a %s on this fix-set, naming '%s', and git's own file list for the fix-set "
+    "matches none of it, so it was queued here instead of blocking. If that defect is real, sweep "
+    "it; if not, nothing is owed."
+)
+
+
+def ungrounded_note(rule, claim):
+    return V_UNGROUNDED % (rule, " ".join(str(claim or "").split())[:160])
+
+
 def apply_verdict(out, outstanding=None, path=None, fixset_files=None, asked=None, instance=None):
     """(kind, note). Mutates `out` when the rule fires; owns the marker lifecycle.
 
@@ -656,8 +853,17 @@ def apply_verdict(out, outstanding=None, path=None, fixset_files=None, asked=Non
     `fixset_files` defaults to `None`, so every existing call site that does not know about it behaves byte-identically to before this parameter existed (see `wl_rules.scope_grounded`).
 
     `instance` (see `enforce`) is honoured on a FRESH ask only: a follow-up's search is about an older fix-set, not about these commits.
+
+    kind is also 'ungrounded' (R20260924.19): a FRESH fire whose class `wl_rules.scope_grounded` cannot find in `fixset_files`. `out` is not touched, no demand is banked, and the note is the advisory text the caller queues under `sweep-ungrounded`. A follow-up or a legacy (`asked=None`) fire keeps the annotate-and-block behaviour.
     """
     kind, payload = read_verdict(out)
+    if (
+        kind == "fire"
+        and asked == "fresh"
+        and not wl_rules.scope_grounded(payload.get("defect_class", ""), fixset_files)
+    ):
+        # UNGROUNDED IS ADVISORY (R20260924.19, the operator Decision "An UNVERIFIED sweep or proof fire"): git's own file list does not match the class the judge named, so the fire is a caveat for the session to read, not an order to act on. Nothing is banked and `outstanding` is left exactly as a silent answer leaves it. The caller queues `ungrounded_note`.
+        return "ungrounded", ungrounded_note("class sweep", payload.get("defect_class", ""))
     if kind == "fire":
         if asked == "fresh":
             note = enforce(out, payload, fixset_files, displaced=outstanding, instance=instance)

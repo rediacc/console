@@ -1,6 +1,6 @@
 """The cap-saturated wait: agent/plans/PLAN-stop-hook-cap-saturated-wait.md.
 
-Operator order, 2026-09-24: "the stop hook should not be invoked (or should skip the order) when writer slots are full! There could be exceptions like 2% compaction etc." With every writer slot verified live and nothing this session could start, the work orders (the judge, the quiet ladder, report shape, hygiene) stand down and the stop allows with one line naming the writers. Only wl_roster.CAP_WAIT_KEEPS still block.
+Operator order, 2026-09-24: "the stop hook should not be invoked (or should skip the order) when writer slots are full! There could be exceptions like 2% compaction etc." With every writer slot verified live and nothing this session could start, the work orders (the judge, the quiet ladder, report shape, hygiene) stand down and the stop allows with one line naming the writers. Only wl_standdown.CAP_WAIT's keeps still block.
 
 EVERY EXCEPTION CASE HAS ITS ALLOW TWIN, differing by one planted fact: a fifth open item, a dead fourth writer, the late context band with a missing STATE.md, an expired DEFAULT. The allow case is the incident itself: four live writers, three queue leases 95 minutes old, and a judge that would have said "continue".
 """
@@ -225,21 +225,43 @@ def test_c8_the_quiet_ladder_never_fires_on_a_queue_lease(wl):  # noqa: F811
     assert "worker:queue is NOT in the harness" not in got.out, got.out[:900]
 
 
-def test_c9_every_kept_key_has_a_producer():
-    """A keep-list entry nothing produces is a typo that silently stands a real check down."""
+def load_standdown():
+    """wl_standdown loaded from the real stop directory."""
     stop_dir = wlfix.STOP_DIR
-    src = "".join(p.read_text(encoding="utf-8") for p in stop_dir.glob("wl_*.py"))
-    spec = importlib.util.spec_from_file_location("_wl_roster_c9", stop_dir / "wl_roster.py")
+    spec = importlib.util.spec_from_file_location("_wl_standdown_c9", stop_dir / "wl_standdown.py")
     assert spec is not None
     assert spec.loader is not None
     mod = importlib.util.module_from_spec(spec)
     sys.path.insert(0, str(stop_dir))
     spec.loader.exec_module(mod)
-    missing = [
-        k
-        for k in sorted(mod.CAP_WAIT_KEEPS)
-        if not re.search(r"""["']%s["']""" % re.escape(k), src.replace("CAP_WAIT_KEEPS", ""))
-    ]
+    return mod
+
+
+def producer_source() -> str:
+    """Every stop module but the keep-lists' own, so a key named only in wl_standdown.py counts as having no producer."""
+    return "".join(
+        p.read_text(encoding="utf-8")
+        for p in sorted(wlfix.STOP_DIR.glob("wl_*.py"))
+        if p.name != "wl_standdown.py"
+    )
+
+
+def test_c9_every_kept_key_has_a_producer():
+    """A keep-list entry nothing produces is a typo that silently stands a real check down. Iterates every profile."""
+    mod = load_standdown()
+    src = producer_source()
+    missing: list[str] = []
+    for prof in mod.PROFILES:
+        missing.extend(
+            "%s:%s" % (prof.name, k)
+            for k in sorted(prof.keeps | prof.always_keeps | prof.compaction_keys)
+            if not re.search(r"""["']%s["']""" % re.escape(k), src)
+        )
+        missing.extend(
+            "%s:%s*" % (prof.name, pre)
+            for pre in prof.prefixes
+            if not re.search(r"""["']%s""" % re.escape(pre), src)
+        )
     assert not missing, "keep-list keys with no producer: %s" % missing
 
 
@@ -280,7 +302,7 @@ def test_m1_without_roster_dead_in_the_keep_list_a_dead_lease_stands_down(wl):  
     saturated(wl)
     mk_sub(wl, "a1000000000000009", "general-purpose", 30, last="end_turn", running=False)
     plant_lease(wl, "dead1", "a1000000000000009")
-    mutated_hook(wl, "wl_roster.py", '        "roster-dead",\n', "")
+    mutated_hook(wl, "wl_standdown.py", '        "roster-dead",\n', "")
     got = stop(wl)
     assert "LEASED TO A FINISHED WORKER" not in got.out, (
         "m1: the c4 case does not depend on the keep-list entry"
@@ -305,7 +327,7 @@ def test_m2_without_defer_expired_in_the_keep_list_an_expired_default_stands_dow
             )
             + "\n"
         )
-    mutated_hook(wl, "wl_roster.py", '        "defer-expired",\n', "")
+    mutated_hook(wl, "wl_standdown.py", '        "defer-expired",\n', "")
     got = stop(wl)
     assert got.decision == "allow", (
         "m2: the c5 case does not depend on the keep-list entry: %s" % got.out[:400]

@@ -34,6 +34,7 @@ RESOLUTION ORDER, as this module implements it (env, then settings highest-scope
     permits has settled the question by surviving, and that observation wins.
 """
 
+import calendar
 import json
 import os
 import re
@@ -469,22 +470,126 @@ def retro_append(project, row):
         os.close(fd)
 
 
+def retro_live(rows):
+    """The rows a `voided` event has not cancelled, voided events themselves dropped. A `voided` row cancels every EARLIER row of its `(session, band)`, so the pair's dedupe key is free again and a later `ordered` row for it is live (R20260924.17)."""
+    dead: set[int] = set()
+    seen: dict[tuple, list[int]] = {}
+    for i, row in enumerate(rows):
+        key = (row.get("session"), row.get("band"))
+        if row.get("ev") == "voided":
+            dead.update(seen.pop(key, ()))
+            dead.add(i)
+        else:
+            seen.setdefault(key, []).append(i)
+    return [r for i, r in enumerate(rows) if i not in dead]
+
+
+def retro_void(project, me8, band, why):
+    """Append the `voided` row freeing (me8, band); the one writer for it, so a misattributed order is corrected in the ledger's own format rather than by hand."""
+    row = {"ev": "voided", "at": utc_stamp(), "session": me8, "band": band, "why": why}
+    retro_append(project, row)
+    return row
+
+
 def retro_ordered(rows, me8, band):
-    """The `ordered` row for (session, band), or None. THE DEDUPE KEY is exactly this pair (the plan's Decision): a later epoch does not earn a second retro for a band already covered."""
-    for row in rows:
+    """The live `ordered` row for (session, band), or None. THE DEDUPE KEY is exactly this pair (the plan's Decision): a later epoch does not earn a second retro for a band already covered, unless a `voided` row freed it."""
+    for row in retro_live(rows):
         if row.get("ev") == "ordered" and row.get("session") == me8 and row.get("band") == band:
             return row
     return None
 
 
-def retro_from_off(rows, me8):
-    """Where the next retro's transcript range starts: the previous `ordered` row's `to_off` for this session, so no two retros read the same bytes."""
-    offs = [
-        int(r.get("to_off") or 0)
-        for r in rows
-        if r.get("ev") == "ordered" and r.get("session") == me8
-    ]
-    return max(offs) if offs else 0
+def retro_window_start(rows, me8, before=None):
+    """The `ordered` row the next retro's window starts after: the newest live one for this session, earlier than `before` (a row object) when given, whose band reached `saved`; failing that, the newest that reached `dispatched`; else None.
+
+    NOT the newest `ordered` row (R20260924.17). An order nobody reviewed covered nothing, and taking its end as the next start is how a sub-agent's misattributed row at 19:01:46Z hid 19 blocked stops from the next brief.
+    """
+    live = retro_live(rows)
+    cut = next((i for i, r in enumerate(live) if r is before), len(live))
+    reached = {
+        ev: {(r.get("session"), r.get("band")) for r in live if r.get("ev") == ev}
+        for ev in ("saved", "dispatched")
+    }
+    earlier = [r for r in live[:cut] if r.get("ev") == "ordered" and r.get("session") == me8]
+    for ev in ("saved", "dispatched"):
+        hits = [r for r in earlier if (me8, r.get("band")) in reached[ev]]
+        if hits:
+            return hits[-1]
+    return None
+
+
+def retro_from_off(rows, me8, before=None):
+    """Where the next retro's transcript range starts: the `to_off` of retro_window_start's row, or 0."""
+    start = retro_window_start(rows, me8, before)
+    return int(start.get("to_off") or 0) if start else 0
+
+
+# --- who compacted ----------------------------------------------------------
+# R20260924.16. A sub-agent's PostCompact reaches the hooks with the LEAD's session_id and transcript_path and no agent_id (measured 2026-09-24T19:01:44Z, agent a149262d8b6a1601f), so the payload cannot say whose context was replaced. The transcripts can: the compaction writes its `compact_boundary` into the compacting context's own file seconds before the hook runs.
+COMPACT_ATTRIB_S = 120
+COMPACT_TAIL = 2 * 1024 * 1024
+
+
+def _stamp_epoch(stamp):
+    try:
+        return calendar.timegm(time.strptime(str(stamp)[:19], "%Y-%m-%dT%H:%M:%S"))
+    except (ValueError, OverflowError):
+        return None
+
+
+def _newest_boundary(path, sidechain):
+    """(epoch, record) of the newest compact_boundary in the file's last COMPACT_TAIL bytes whose isSidechain equals `sidechain`, or None."""
+    try:
+        _start, lines = _iter_tail_lines(path, COMPACT_TAIL)
+    except OSError:
+        return None
+    for raw_line in reversed(lines):
+        raw = raw_line.strip()
+        if b"compact_boundary" not in raw or not raw.startswith(b"{"):
+            continue
+        try:
+            d = json.loads(raw)
+        except ValueError:
+            continue
+        if _is_compact_boundary(d) and bool(d.get("isSidechain")) == sidechain:
+            at = _stamp_epoch(d.get("timestamp"))
+            return (at, d) if at is not None else None
+    return None
+
+
+def compaction_owner(transcript_path, sid, now=None):
+    """ "lead", "agent:<id>" or "unknown": whose context the compaction that fired this PostCompact replaced.
+
+    "lead" when the lead transcript's newest `isSidechain:false` boundary is within COMPACT_ATTRIB_S of `now`; else "agent:<id>" for the newest such boundary in a `<transcript minus .jsonl>/subagents/agent-*.jsonl` modified in that window; else "unknown", which the caller must treat as NOT the lead (the Decision: a wrong row takes a band for good, a missing one costs one retro).
+    """
+    now = time.time() if now is None else now
+    if not transcript_path:
+        return "unknown"
+    lead = Path(transcript_path)
+    hit = _newest_boundary(lead, False) if lead.is_file() else None
+    if hit and abs(now - hit[0]) <= COMPACT_ATTRIB_S:
+        return "lead"
+    best = None
+    try:
+        agents = list((lead.with_suffix("") / "subagents").glob("agent-*.jsonl"))
+    except OSError:
+        agents = []
+    for path in agents:
+        try:
+            if now - path.stat().st_mtime > COMPACT_ATTRIB_S:
+                continue
+        except OSError:
+            continue
+        got = _newest_boundary(path, True)
+        if not got or abs(now - got[0]) > COMPACT_ATTRIB_S:
+            continue
+        rec_sid = got[1].get("sessionId")
+        if sid and rec_sid and rec_sid != sid and session_slug(rec_sid) != session_slug(sid):
+            continue
+        if best is None or got[0] > best[0]:
+            agent = got[1].get("agentId") or path.stem[len("agent-") :]
+            best = (got[0], agent)
+    return "agent:%s" % best[1] if best else "unknown"
 
 
 def retro_order_row(

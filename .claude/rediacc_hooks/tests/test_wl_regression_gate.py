@@ -452,12 +452,9 @@ def test_96_a_ticks_evidence_is_its_closing_note_not_the_whole_accumulated_histo
             "note": "leased to worker:%s" % worker,
             "worker_verified": True,
         }
+        # As many as the scan asks about in one batch (R20260924.20 raised it from 5 to wl_checks.EVIDENCE_CANDIDATES), so the real sha still falls outside it.
         for worker in (
-            "af61cd805486b8e9f",
-            "a6f203ba2d1dad4df",
-            "a3eb1f38776140810",
-            "a2e744ce62808099b",
-            "aef4695176ce25a76",
+            "a%016x" % (0xAF61CD805486B8E9 + i) for i in range(checks.EVIDENCE_CANDIDATES)
         )
     )
     events.append(
@@ -479,7 +476,7 @@ def test_96_a_ticks_evidence_is_its_closing_note_not_the_whole_accumulated_histo
     assert len(rec["line"]) > 250, "fixture did not accumulate a long enough history: %r" % (
         rec["line"],
     )
-    # CONTROL: the full accumulated line, scanned alone, still misses the real sha -- pins the underlying "5 longest hex candidates" fragility so this fixture cannot silently stop testing anything.
+    # CONTROL: the full accumulated line, scanned alone, still misses the real sha -- pins the underlying "N longest hex candidates" fragility so this fixture cannot silently stop testing anything.
     assert checks.completion_evidence(str(wl.proj), rec["line"]) is False, (
         "CONTROL: the full accumulated history unexpectedly carried recognisable evidence"
     )

@@ -359,6 +359,15 @@ def test_r3e_a_waiter_whose_shell_is_gone_is_finished(wl):  # noqa: F811
     assert [d[0] for d in v["leased_dead"]] == ["wait1"], v["leased_dead"]
 
 
+def test_r3f_a_waiter_on_a_daemon_past_the_horizon_is_finished(wl):  # noqa: F811
+    """2026-09-25, a5469082799b4a5af: a writer armed `./run.sh account dev` (a shell that never exits) and ended its turn. 1010 minutes later it still counted as a live writer and raised UNLEASED WRITER. Differs from r3d by one fact: the transcript is quiet past WAIT_HORIZON_MIN."""
+    mk_sub(wl, W4, "general-purpose", 30, last="end_turn", running=False)
+    plant_shell_wait(wl, W4, "bdaemon1")
+    backdate(subagents_dir(wl) / ("agent-%s.jsonl" % W4), 1010)
+    v = verdict(wl)
+    assert W4 not in v["writers"], v["writers"]
+
+
 WORKFLOW_FACTS_SNIPPET = r"""
 import json, sys
 sys.path.insert(0, sys.argv[1])
@@ -915,6 +924,31 @@ def test_q1b_control_a_shell_already_reported_back_frees_the_slot(wl):  # noqa: 
     assert got.rc != 0, got.out[:300]
     assert "3 of 4 writer slots are busy" in got.err, got.err[:400]
     assert "spawn that writer first" in got.err, got.err[:400]
+
+
+def estimate(fix) -> list:
+    proc = subprocess.run(
+        [sys.executable, "-c", ESTIMATE_SNIPPET, str(wlfix.STOP_DIR), str(fix.proj), wlfix.SID],
+        capture_output=True,
+        text=True,
+        env=fix.stop_env(),
+        check=False,
+    )
+    assert proc.returncode == 0, proc.stderr[-600:]
+    return json.loads(proc.stdout)
+
+
+def test_q3_a_stopped_agent_quiet_since_the_event_frees_its_slot(wl):  # noqa: F811
+    """#b9d4dcb2, 2026-09-24: after TaskStop on the pr-babysitter, the spawn guard kept counting it for WAIT_HORIZON_MIN. The event no longer listed it or its shell, yet its transcript still ended "waiting on a shell" that had died with it. A transcript that has not moved since the event was written is the event's to judge."""
+    mk_sub(wl, W4, "pr-babysitter", 5, last="end_turn", running=False)
+    plant_shell_wait(wl, W4, "bshell77", running=False)
+    lastevent_file(wl).write_text(wl.event(), encoding="utf-8")
+    assert W4 not in estimate(wl)
+    # CONTROL: the same waiter whose transcript moved AFTER the event armed its shell after it, which the event cannot know, so it still fills a slot.
+    tx = subagents_dir(wl) / ("agent-%s.jsonl" % W4)
+    future = time.time() + 60
+    os.utime(tx, (future, future))
+    assert W4 in estimate(wl)
 
 
 def test_q2_an_expired_lease_on_a_waiter_stays_in_flight(wl):  # noqa: F811

@@ -271,12 +271,39 @@ class Demand:
             (path or self.path()).unlink(missing_ok=True)
 
 
-def still_owed_sentence(label, detail):
-    """The deterministic "STILL OWED" clause appended to a displacing stop's reason (plan task 4/121): code-authored text built only from a class and search/scope this same rule already validated when the demand first fired -- never a re-emission of fresh model text."""
-    return " STILL OWED: %s -- %s" % ((label or "")[:160], (detail or "")[:160])
+def still_owed_sentence(label, detail=""):
+    """The deterministic "STILL OWED" clause appended to a displacing stop's reason (plan task 4/121): code-authored text built only from a class and search/scope this same rule already validated when the demand first fired -- never a re-emission of fresh model text.
+
+    SHORT ON PURPOSE since R20260924.18: the command itself rides `owed_line`, on its own line outside apply_order's caps. At 16:13:17Z this sentence was the last thing in `reason` and the block read "STILL OWED: A bash orac"."""
+    return " STILL OWED: %s%s" % (
+        (label or "")[:120],
+        " -- %s" % detail[:80] if detail else " -- see the STILL OWED line below",
+    )
 
 
-def apply_order(out, reason, action):
+# apply_order's caps on a fresh order's `reason` and `next_action`.
+REASON_MAX = 400
+ACTION_MAX = 200
+# The label every rendered STILL OWED line starts with (R20260924.18).
+OWED_LABEL = "STILL OWED (run to discharge): "
+# A search is at most wl_classsweep.SEARCH_MAX characters; this is headroom, never the cap that cuts one.
+OWED_LINE_MAX = 600
+
+
+def owed_line(what):
+    """One STILL OWED line: the full command or proof step that discharges a carried demand. Rendered on its own line of the block (`render_owed`), outside apply_order's 400/200-character caps."""
+    return (OWED_LABEL + " ".join(str(what or "").split()))[:OWED_LINE_MAX]
+
+
+def render_owed(verdict):
+    """The block text for a verdict's STILL OWED lines: "" when there are none, else one indented line each, preceded by a newline."""
+    lines = verdict.get("still_owed") if isinstance(verdict, dict) else None
+    if not isinstance(lines, list):
+        return ""
+    return "".join("\n  %s" % str(ln) for ln in lines if ln)
+
+
+def apply_order(out, reason, action, owed=None):
     """Write a rule's finding into a judge verdict. Returns nothing; mutates.
 
     A STOP becomes a CONTINUE carrying this rule's reason and order, which is how the rule blocks: wl_checks turns any "continue" into a block.
@@ -284,10 +311,14 @@ def apply_order(out, reason, action):
     A verdict that is ALREADY "continue" is APPENDED to, never overwritten. The judge's own order ("three items are open, work #a1b2") is not less important than a rule's, and a rule that clobbered it would trade one true instruction
     for another and hide the trade. The session then sees both, and the block it
     was getting anyway now carries the extra finding.
+
+    `owed` is a list of `owed_line` strings. They land in `out["still_owed"]`, which wl_checks renders on lines of their own (`render_owed`), so no cap on `reason` or `next_action` can cut the command a session is told to run (R20260924.18).
     """
+    if owed:
+        out.setdefault("still_owed", []).extend(owed)
     if out.get("verdict") == "continue":
         out["reason"] = ("%s  ALSO: %s NEXT: %s" % (out.get("reason", ""), reason, action))[:700]
         return
     out["verdict"] = "continue"
-    out["reason"] = reason[:400]
-    out["next_action"] = action[:200]
+    out["reason"] = reason[:REASON_MAX]
+    out["next_action"] = action[:ACTION_MAX]

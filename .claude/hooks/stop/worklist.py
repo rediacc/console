@@ -197,6 +197,77 @@ def _identity_or_die(me, die):
         die(msg)
 
 
+def _focus_cli(argv):
+    """`worklist.py --focus <me> babysit|merge|off [--pr <n>] [--branch <b>]`, or `--focus <me>` for the state (agent/plans/PLAN-stop-hook-focus-mode.md section 1)."""
+    import wl_standdown  # noqa: PLC0415
+
+    me = argv[0] if argv else ""
+    if not C.PREFIX_RE.match(me or "") or len(argv) > 6:
+        _die2(M.CLI_FOCUS_USAGE)
+    _identity_or_die(me, _die2)
+    root = C.project_root(C.project_start())
+    wl = C.worklist_for(C.project_start())
+    fold = S.load(wl, sync=False)
+    sid = C.resolve_session_id() or me
+    cur = wl_standdown.active_focus(fold.focus, lambda o: C.owned_by_me(o, sid))
+    if len(argv) == 1:
+        if cur is None:
+            print(M.CLI_FOCUS_NOT_ON % me)
+            return
+        parked = (S.load_state(wl, sid).get("standdown") or {}).get("parked") or {}
+        print(
+            M.CLI_FOCUS_STATUS
+            % (cur.get("mode"), cur.get("pr") or "?", cur.get("branch"), cur.get("at"), len(parked))
+        )
+        return
+    mode = argv[1]
+    if mode == "off":
+        if len(argv) != 2:
+            _die2(M.CLI_FOCUS_USAGE)
+        if cur is None:
+            print(M.CLI_FOCUS_NOT_ON % me)
+            return
+        S.focus_event(wl, me, me, "off", branch=cur.get("branch"), pr=cur.get("pr"), why="operator")
+        print(M.CLI_FOCUS_OFF % (me, cur.get("mode"), cur.get("pr") or "?", cur.get("at")))
+        return
+    if mode not in wl_standdown.FOCUS_MODES:
+        _die2(M.CLI_FOCUS_USAGE)
+    pr, branch, i = None, "", 2
+    while i < len(argv):
+        if argv[i] == "--pr" and i + 1 < len(argv) and argv[i + 1].lstrip("#").isdigit():
+            pr = int(argv[i + 1].lstrip("#"))
+        elif argv[i] == "--branch" and i + 1 < len(argv) and argv[i + 1].strip():
+            branch = argv[i + 1].strip()
+        else:
+            _die2(M.CLI_FOCUS_USAGE)
+        i += 2
+    # The raw ref, not C.git_branch's slug: this names the PR's head ref on GitHub.
+    branch = branch or C._git(root, "symbolic-ref", "--short", "-q", "HEAD") or ""
+    if not branch or branch in ("main", "master", "HEAD"):
+        _die2(
+            M.CLI_FOCUS_REFUSED
+            % (
+                "focus needs a PR branch, and %s is not one (pass --branch <pr-head-ref>)"
+                % (branch or "a detached HEAD")
+            )
+        )
+    note = ""
+    if pr is None:
+        import wl_ci  # noqa: PLC0415
+
+        data, err = wl_ci._gh_json(
+            root, ["pr", "list", "--head", branch, "--state", "open", "--json", "number"]
+        )
+        if not err and isinstance(data, list) and data and isinstance(data[0], dict):
+            pr = data[0].get("number")
+        else:
+            note = M.CLI_FOCUS_PR_UNKNOWN % (branch, err or "gh returned no open PR")
+    S.focus_event(wl, me, me, mode, branch=branch, pr=pr, why="operator")
+    if note:
+        print(note)
+    print(M.CLI_FOCUS_ON % (me, mode, pr or "?", branch, pr or "<n>", me))
+
+
 # Bounded wait for the Stop payload. Long enough for a slow writer, short enough that a missing payload fails the hook instead of stalling the session.
 STDIN_WAIT_SECONDS = 10.0
 
@@ -992,7 +1063,7 @@ def _item_cli(argv, worklist):
     if mode == "--tick":
         if not rest or not CK.completion_evidence(root, rest, _lead_transcript(me)):
             _log_tick_refusal(worklist, me, item_id, rest, "no-evidence")
-            die(M.CLI_TICK_NO_EVIDENCE % item_id)
+            die(M.CLI_TICK_NO_EVIDENCE % (item_id, CK.tick_refusal_hint(_lead_transcript(me))))
         # v16 THE DOOR GATE. completion_evidence passes on ANY URL by shape, so a bare issue link closed a finding: filing WAS a resolution, in code, whatever the prose said. An issue now settles an item only when the tick names the last-resort door that made filing the right answer. Shape-only; whether the door is TRUE is the judge's question, and every tick already flows into
         # that path.
         if CK.issue_only_evidence(root, rest):
@@ -1103,6 +1174,12 @@ def _item_cli(argv, worklist):
                 "an in-flight claim with no worker to trace is the gap this "
                 "program exists to catch"
             )
+        # ONE worker per lease, spelled the way WORKER parses it. `worker:a1,a2` was accepted and stored whole, while the roster matches a single id, so both agents read as UNLEASED (2026-09-25). Two writers on one item get one item each.
+        if not C.WORKER.fullmatch(wm):
+            die(
+                "%s is not one worker id; a lease names exactly one (worker:<id>, letters, digits, "
+                "'.', '_' or '-'). Two writers on one piece of work need one item each." % wm
+            )
         _hold = ""
         if wm == "worker:queue":
             # QUEUED BEHIND THE CAP, accepted only when the cap really is full: otherwise the queue would be an escape hatch for work that could start now.
@@ -1133,8 +1210,15 @@ def _item_cli(argv, worklist):
                         "session. Release that lease first"
                         % (", ".join("#" + r["id"] for r in _holders), wl_roster.HOLD_MAX)
                     )
+            import wl_standdown  # noqa: PLC0415
+
+            _qsid = C.resolve_session_id() or me
+            # FOCUS MODE (agent/plans/PLAN-stop-hook-focus-mode.md section 1): starting the work is exactly what focus forbids, so the free-slot refusal would leave work refused at spawn with nowhere to park. The spawn guard's own message says to park it here.
+            _focused = (
+                wl_standdown.active_focus(fold.focus, lambda o: C.owned_by_me(o, _qsid)) is not None
+            )
             busy = wl_roster.live_writers_estimate(os.getcwd(), me)
-            if not _hold and (busy is None or len(busy) < wl_roster.WRITER_CAP):
+            if not _hold and not _focused and (busy is None or len(busy) < wl_roster.WRITER_CAP):
                 # A slot held for a writer about to be spawned is taken by SPAWNING that writer, or by the one bounded HOLD_FOR reservation above; an unmarked queue lease with a free slot is still refused.
                 die(
                     "worker:queue is only for writer work the cap forbids starting, and %s of %d "
@@ -1678,9 +1762,23 @@ def _teammate_idle_cli():
         fh.write(json.dumps(rec, sort_keys=True) + "\n")
 
 
+def _stop_hook_disabled():
+    """True only when `.ci/config/stop-hook.json` exists, parses, and says `"enabled": false`."""
+    try:
+        root = C.project_root(C.project_start()) or os.getcwd()
+        with open(os.path.join(root, ".ci", "config", "stop-hook.json"), encoding="utf-8") as fh:
+            return json.load(fh).get("enabled") is False
+    except Exception:  # noqa: BLE001 -- any doubt keeps the hook on
+        return False
+
+
 def main():
     # FIRST STATEMENT, DELIBERATELY. `claude -p` runs this hook again; the guard is the only thing that works (--settings with empty hooks does not).
     if os.environ.get("STOPHOOK_CHILD"):
+        sys.exit(0)
+
+    # OPERATOR SWITCH, the Stop path only (a bare invocation; every verb passes arguments). `.ci/config/stop-hook.json` `enabled: false` allows every stop without running a check. Committed and visible rather than an env var, so it survives restarts and a peer session sees the same state. Unreadable or missing config means ENABLED: the switch can only turn the hook off on purpose.
+    if len(sys.argv) == 1 and _stop_hook_disabled():
         sys.exit(0)
 
     # BEFORE every other arm. Asking a tool how to use it must never reach the Stop-hook path, which reads stdin as JSON and, finding none, emits a block telling the caller they have a hook bug. That happened, and the answer to "how do I use this" was a wall of unrelated advice.
@@ -1884,24 +1982,43 @@ def main():
                 % (", ".join(reaped_rows), reaped_path)
             )
         return
-    if sys.argv[1:2] == ["--publish"] and len(sys.argv) < 4:
+    if sys.argv[1:2] == ["--publish"] and len(sys.argv) < 3:
         # Bare-verb arity guard, same shape and same reason as --epic below.
         sys.stderr.write(M.CLI_PUBLISH_USAGE)
         sys.exit(2)
-    if len(sys.argv) > 3 and sys.argv[1] == "--publish":
+    if len(sys.argv) > 2 and sys.argv[1] == "--publish":
         import wl_epic as E  # noqa: PLC0415 -- sibling, probed not assumed
 
         me = sys.argv[2]
         _identity_or_die(me, _die2)
-        branch = sys.argv[3]
-        # project_start(), not getcwd(): its ladder ends AT cwd, so this only adds the CLAUDE_PROJECT_DIR rung every other verb already honours. Resolving from cwd alone walks into a nested repo (private/renet, private/growth) and reads the wrong store, which is the incident project_start was written for.
-        wl = C.worklist_for(C.project_start())
-        fold = S.load(wl, sync=False)
-        body = E.render(fold)
         # WORKLIST_PUBLISH_ROOT lets a test point the snapshot somewhere harmless. Without it the L1 harness ran --publish with the real repo as cwd and left agent/pr/l1probe.md in a TRACKED directory: a suite that dirties a shared working tree, which is the one thing this repo's sessions cannot tolerate from each other.
         root = pathlib.Path(
             os.environ.get("WORKLIST_PUBLISH_ROOT") or C.project_root(os.getcwd()) or os.getcwd()
         )
+        # THE BRANCH DEFAULTS TO HEAD'S (R20260924.22). A `--publish <me>` with no branch used to print usage and write nothing, and on 2026-09-24 a session spent three calls finding that out after a commit guard judged the snapshot this call was meant to write. `symbolic-ref`, not `rev-parse --abbrev-ref`: a detached HEAD answers EMPTY here rather than the literal "HEAD", so it still
+        # asks for a branch instead of writing agent/pr/HEAD.md (the same reason wl_core.git_branch gives).
+        branch = sys.argv[3] if len(sys.argv) > 3 else ""
+        if branch == "":
+            import subprocess  # noqa: PLC0415 -- only this default needs it, and the module imports it nowhere else
+
+            try:
+                head = subprocess.run(
+                    ["git", "-C", str(root), "symbolic-ref", "--short", "-q", "HEAD"],
+                    capture_output=True,
+                    text=True,
+                    timeout=5,
+                    check=False,
+                )
+                branch = head.stdout.strip() if head.returncode == 0 else ""
+            except (OSError, subprocess.SubprocessError):
+                branch = ""
+        if branch == "":
+            sys.stderr.write(M.CLI_PUBLISH_USAGE)
+            sys.exit(2)
+        # project_start(), not getcwd(): its ladder ends AT cwd, so this only adds the CLAUDE_PROJECT_DIR rung every other verb already honours. Resolving from cwd alone walks into a nested repo (private/renet, private/growth) and reads the wrong store, which is the incident project_start was written for.
+        wl = C.worklist_for(C.project_start())
+        fold = S.load(wl, sync=False)
+        body = E.render(fold)
         out = root / "agent" / "pr" / ("%s.md" % branch.replace("/", "-"))
         out.parent.mkdir(parents=True, exist_ok=True)
         header = (
@@ -2119,6 +2236,9 @@ def main():
                 ", covering " + ", ".join(covers) if covers else "",
             )
         )
+        return
+    if sys.argv[1:2] == ["--focus"]:
+        _focus_cli(sys.argv[2:])
         return
     if sys.argv[1:2] == ["--brief"]:
         # Same class as --loop above, same fix.

@@ -49,14 +49,15 @@ def publish_divergence(root):
     return "ok", 0, ref
 
 
-def pr_body_freshness(root):
+def pr_body_freshness(root, ref=None):
     """(state, detail) -- did we push after the last PR-description edit?
 
     FAIL FAST TO SAVE A CI ROUND. `Quality / Static` runs a PR-description freshness gate, and the cost of failing it is a full ~55-minute round for a mistake that takes ten seconds to fix. This session has made it twice, both times by treating the body refresh as a separate step instead of part of the push, which its own memory says not to do.
 
     Scoped to WORKLIST_PUBLISH_REF, so a session that has not opted in pays nothing. When it IS set and the lookup fails, that is reported as a hook-side inability rather than passing quietly.
     """
-    target = os.environ.get("WORKLIST_PUBLISH_REF", "")
+    # `ref` is a focus-mode PR branch (wl_standdown): the session declared the PR its own, so the opt-in is that declaration.
+    target = ref or os.environ.get("WORKLIST_PUBLISH_REF", "")
     if not target:
         return "unset", ""
     tip = _git(root, "log", "-1", "--format=%cI", "origin/%s" % target)
@@ -707,7 +708,7 @@ def ci_queue_state(root, worklist, session_id):
     return state, detail
 
 
-def ci_trouble(root, worklist, session_id, live_bg, ack_text):
+def ci_trouble(root, worklist, session_id, live_bg, ack_text, ref=None, owned=False):
     """(state, detail) -- is the open PR in trouble nobody is on?
 
     state: unset | multi-session | no-pr | ok | watched | soft | trouble |
@@ -729,11 +730,13 @@ def ci_trouble(root, worklist, session_id, live_bg, ack_text):
          because the facts still have to reach the operator every stop.
 
     A NEW failure set (new head SHA, or a different set of failing jobs) re-arms the budget: a new red is worth interrupting for exactly once more.
+
+    FOCUS MODE ARMS IT (agent/plans/PLAN-stop-hook-focus-mode.md section 3): the caller passes the focus's `ref` and `owned=True`. `--focus` is the session declaring the PR its own, which is the one fact the multi-session skip below could not know, so that skip does not apply. Both exits above still do.
     """
-    ref = os.environ.get("WORKLIST_PUBLISH_REF", "")
+    ref = ref or os.environ.get("WORKLIST_PUBLISH_REF", "")
     if not ref:
         return "unset", None  # not opted in: zero network cost, same as pr_body_freshness
-    if not S.sole_live_session(worklist, session_id):
+    if not owned and not S.sole_live_session(worklist, session_id):
         # With a second live session, red may be their push, and nagging this session about someone else's work is the failure mode to avoid.
         return "multi-session", None
     tip = _git(root, "rev-parse", "origin/%s" % ref)
@@ -787,6 +790,67 @@ def ci_trouble(root, worklist, session_id, live_bg, ack_text):
         marker_p.write_text(json.dumps({"sig": sig, "blocks": blocks + 1}), encoding="utf-8")
     detail["n"] = blocks + 1
     return "trouble", detail
+
+
+def focuspr_path(worklist, session_id):
+    return worklist.with_suffix(".focuspr-%s" % (session_id or "unknown")[:8])
+
+
+def focus_pr_end(root, worklist, session_id, focus):
+    """(reason, error): "merged", "closed" or "" -- has the focus's PR finished? (agent/plans/PLAN-stop-hook-focus-mode.md section 3.)
+
+    ONE small GraphQL read, cached for wl_standdown.FOCUS_PR_TTL_S in a `.focuspr-<me8>` sidecar, and only while focus is on. The node must be the focus's PR number, or, while that is unknown, the newest one closed AFTER the focus began, so a reused branch name cannot end it. A failed read returns ("", error): focus continues (the 24-hour cap bounds a permanently blind check) and the caller reports it.
+    """
+    import wl_standdown  # noqa: PLC0415 -- sealed, stdlib only
+
+    branch = str((focus or {}).get("branch") or "")
+    if not branch:
+        return "", ""
+    cache_p = focuspr_path(worklist, session_id)
+    key = "%s|%s|%s" % (branch, (focus or {}).get("pr"), (focus or {}).get("at"))
+    with contextlib.suppress(OSError, ValueError, TypeError):
+        c = json.loads(cache_p.read_text(encoding="utf-8"))
+        if c.get("key") == key and time.time() - float(c.get("t") or 0) <= (
+            wl_standdown.FOCUS_PR_TTL_S
+        ):
+            return str(c.get("reason") or ""), ""
+    owner, name = repo_slug(root)
+    if not owner:
+        return "", "could not derive owner/name from remote.origin.url"
+    query = (
+        '{repository(owner:"%s",name:"%s"){pullRequests(headRefName:"%s",'
+        "states:[MERGED,CLOSED],first:5,orderBy:{field:UPDATED_AT,direction:DESC})"
+        "{nodes{number state mergedAt closedAt}}}}"
+    ) % (owner, name, branch)
+    data, err = _gh_json(root, ["api", "graphql", "-f", "query=" + query])
+    if err:
+        return "", err
+    try:
+        nodes = data["data"]["repository"]["pullRequests"]["nodes"] or []
+    except (KeyError, TypeError):
+        return "", "graphql response had no pullRequests.nodes"
+    want = (focus or {}).get("pr")
+    since = str((focus or {}).get("at") or "")
+    hit = None
+    for n in nodes:
+        if not isinstance(n, dict):
+            continue
+        if want not in (None, "", 0):
+            if str(n.get("number")) == str(want):
+                hit = n
+                break
+            continue
+        closed = str(n.get("mergedAt") or n.get("closedAt") or "")
+        # Both are ISO8601 UTC seconds with a Z (C.stamp_now and GitHub's DateTime), so text order is time order.
+        if closed and closed >= since:
+            hit = n
+            break
+    reason = ""
+    if hit is not None:
+        reason = "merged" if str(hit.get("state")).upper() == "MERGED" else "closed"
+    with contextlib.suppress(OSError, TypeError):
+        cache_p.write_text(json.dumps({"key": key, "t": time.time(), "reason": reason}))
+    return reason, ""
 
 
 def _ci_cache_write(path, sha, state, info, steps, final):

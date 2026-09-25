@@ -3,7 +3,7 @@
 
 Always exits 0 (advisory only). Uses $CLAUDE_PROJECT_DIR so it reads the CURRENT worktree's branch (the previous hardcoded path pointed at the main worktree and misread the branch).
 
-PORTED FROM `.claude/hooks/post-bash/cancel-old-ci.sh` BY W7 P6. The bash original is kept as `.claude/oracles/post-bash/cancel-old-ci.sh` and `.claude/rediacc_hooks/tests/test_post_bash_differential.py` runs both over the same scripted `git` and `gh` stubs, comparing exit code, stdout and stderr byte for byte.
+PORTED FROM `.claude/hooks/post-bash/cancel-old-ci.sh` BY W7 P6. The bash original was kept as `.claude/oracles/post-bash/cancel-old-ci.sh` until PLAN-retire-bash-oracles A3 deleted it; `.claude/rediacc_hooks/tests/test_post_bash_differential.py` compared the two over the same scripted `git` and `gh` stubs, byte for byte, and froze the result as `tests/goldens/post-bash.jsonl` before the deletion. The same suite now runs this port against that golden.
 
 THE 10-SECOND STDIN DEADLINE HAS NO COUNTERPART HERE, and that is a fact about the caller rather than a dropped feature. The twin opens with a bounded `read -r -d "" -t 10` because a stdin that stays open and silent blocks a bare `jq` forever; this hook is advisory, so its deadline exits 0. Since the 2026-09-21 collapse the member is spawned by `lifecycle.run_pattern` with
 `input=payload`, which closes the pipe, so the deadline cannot fire on either side and `sys.stdin.read()` is the same read. The differential drives both over a closed stdin for the same reason.

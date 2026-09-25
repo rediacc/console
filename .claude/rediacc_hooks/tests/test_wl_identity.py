@@ -289,10 +289,25 @@ def test_182_sessionstart_source_compact_does_not_re_inject_the_docs_blurb(wl): 
     out = ss_out(None)
     assert "READ ALL OF THEM" in out, "CONTROL: a missing source silenced the hook: %s" % out[:300]
 
-    # The marker the judge stamp rides on is set BEFORE the compact return, so a compacted session still gets the full approval reason on its next judged stop.
+    # The marker the judge stamp rides on is set BEFORE the compact return, so a compacted session still gets the full approval reason on its next judged stop. Since the second retro of 2026-09-24 only the LEAD's own compaction marks it (wl_checks._compaction_owner), so the lead's boundary is planted and the transcript named.
     for path in (wl.base / "tmp" / "claude-worklist").glob("*.state-*.json"):
         path.unlink()
-    ss_out("compact")
+    wl.append_transcript(
+        {
+            "type": "system",
+            "subtype": "compact_boundary",
+            "isSidechain": False,
+            "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S.000Z", time.gmtime(time.time() - 2)),
+        }
+    )
+    payload = {
+        "session_id": wl.sid,
+        "cwd": str(wl.proj),
+        "hook_event_name": "SessionStart",
+        "source": "compact",
+        "transcript_path": str(wl.transcript),
+    }
+    wl.python(["--session-start"], stdin=json.dumps(payload))
     docs = [
         json.loads(path.read_text(encoding="utf-8"))
         for path in (wl.base / "tmp" / "claude-worklist").glob("*.state-*.json")
@@ -483,6 +498,7 @@ def drive_l1(fix) -> L1Drive:
         ("--list", "--list --open @WHO@", "l1-list-item"),
         ("--state", "--state @WHO@", "STATE.md section written"),
         ("--loop", "--loop @WHO@ 2099-01-01T00:00:00Z 1 l1-label", "loop declared"),
+        ("--focus", "--focus @WHO@ babysit --branch l1-pr-branch --pr 1", "focus ON for"),
         ("--brief", "--brief @WHO@ l1-brief-text", "brief recorded"),
         ("--intent", "--intent @WHO@ l1-intent-text --for 30", "intent recorded"),
         ("--reap", "--reap @WHO@ l1task9", "reaped 1 task"),

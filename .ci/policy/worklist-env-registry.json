@@ -16,6 +16,16 @@
     },
     ".claude/rediacc_hooks/guards/block_agent_cap.py": {
       "why": "the PreToolUse half of the same writer cap; it imports WRITER_CAP from wl_roster, and an environment read here would let a spawn bypass the cap the Stop hook enforces"
+    },
+    ".claude/hooks/stop/wl_standdown.py": {
+      "literals": {
+        "FOCUS_BATCH_MIN": 30,
+        "FOCUS_MAX_HOURS": 24
+      },
+      "why": "the stand-down keep-lists (the cap-saturated wait and focus mode) decide which checks still block while the session is told to wait; a variable that retuned a list or the focus batch and expiry limits would be exactly the escape hatch the roster rules out"
+    },
+    ".claude/rediacc_hooks/guards/block_focus_spawn.py": {
+      "why": "the PreToolUse half of focus mode: it refuses writer spawns while a PR wind-down is declared, and an environment read here would let a spawn bypass the focus the Stop hook enforces"
     }
   },
   "exclusions": {

@@ -102,6 +102,20 @@ ARITY = {
     "N_ROSTER_HONEST": (3, 4, 1, "12:00Z", "rows"),
     "N_CAP_WAIT": (4, 4, "a1b2c3d4, e5f6a7b8", 3, 7, "12:00Z"),
     "N_CAP_WAIT_COMPACTION": (),
+    # Focus mode (agent/plans/PLAN-stop-hook-focus-mode.md): mode, PR, since, parked now, advisories held, me.
+    "N_FOCUS": ("babysit", "543", "2026-09-25T10:00:00Z", 3, 2, "deadbeef"),
+    # why, what (mode PR since), parked names, advisories held, refused spawns.
+    "N_FOCUS_ENDED": ("merged", "babysit PR #543 since t", "plan-adopted x2", 1, 0),
+    "N_FOCUS_COMPACTION": (),
+    "N_FOCUS_PR_UNREADABLE": ("543", "branch", "gh failed", 24),
+    "CTX_POSTCOMPACT_FOCUS": ("babysit", "543", "branch", "t", "543", "deadbeef"),
+    "CLI_FOCUS_USAGE": None,
+    "CLI_FOCUS_ON": ("deadbeef", "babysit", "543", "branch", "543", "deadbeef"),
+    "CLI_FOCUS_PR_UNKNOWN": ("branch", "gh failed"),
+    "CLI_FOCUS_OFF": ("deadbeef", "babysit", "543", "t"),
+    "CLI_FOCUS_NOT_ON": ("deadbeef",),
+    "CLI_FOCUS_STATUS": ("babysit", "543", "branch", "t", 2),
+    "CLI_FOCUS_REFUSED": ("reason",),
     "CLI_STATUS_ROW": {
         "id": "a1",
         "type": "t",
@@ -168,7 +182,8 @@ ARITY = {
     # (count, threshold_min, rows): the orphan-background-shell sweep.
     "V_BG_ORPHAN": (2, 20, "    pid 123, 45.0 min old: bash\n"),
     "CLI_ITEM_USAGE": None,
-    "CLI_TICK_NO_EVIDENCE": ("id",),
+    "CLI_TICK_NO_EVIDENCE": ("id", ""),
+    "CLI_TICK_ASKED_HINT": ("2026-09-24T16:04Z",),
     # v16: the triage verb, the tick door gate and the plan-file convention.
     "CLI_TICK_ISSUE_DOOR": ("id",),
     "CLI_TRIAGE_INLINE": {"id": "i", "me": "m", "reason": "r"},
@@ -256,6 +271,8 @@ ARITY = {
     },
     "CTX_POSTCOMPACT_RETRO_WHEN_BRIEFED": None,
     "CTX_POSTCOMPACT_RETRO_WHEN_MISSING": None,
+    # R20260924.16: the one line a sub-agent's compaction briefing starts with.
+    "CTX_POSTCOMPACT_SUBAGENT": ("a",),
     "RETRO_ITEM": {"me8": "m", "band": "b", "date": "d"},
     "CLI_RETRO_BRIEF_USAGE": None,
     "RETRO_BRIEF": {

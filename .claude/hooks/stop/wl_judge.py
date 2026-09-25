@@ -723,7 +723,9 @@ def run_judge(
 ):
     """(verdict_dict, error_string). Exactly one is non-None.
 
-    `transcript` is the lead's transcript path: an outstanding sweep demand it already answers is discharged before the prompt is built (wl_classsweep.discharge_if_evidenced). `fixset_instance` is `(root, commit ids)` for a commit-based fix-set, which grounds a fresh sweep's search in the fix's own diff (wl_classsweep.search_hits_instance).
+    `transcript` is the lead's transcript path: an outstanding sweep or proof demand it already answers is discharged before the prompt is built (wl_classsweep.discharge_if_evidenced, wl_proofcheck.discharge_if_evidenced).
+
+    The verdict may carry two lists beside the schema's fields: `still_owed`, the STILL OWED lines wl_checks renders on their own lines (wl_rules.render_owed), and `advisories`, the `sweep-ungrounded` texts of fresh fires git's file list does not ground (R20260924.18, R20260924.19). `fixset_instance` is `(root, commit ids)` for a commit-based fix-set, which grounds a fresh sweep's search in the fix's own diff (wl_classsweep.search_hits_instance).
     """
     exe = resolve_claude()
     if not exe or not os.path.exists(exe):
@@ -747,7 +749,8 @@ def run_judge(
     sweep_extra = CS.prompt_section(sweep_proof_fresh, sweep_outstanding, transcript)
     sweep_asked = "fresh" if sweep_proof_fresh else "followup"
     # THE PROOF OBLIGATION rides the same call for the same reason the class sweep does: the question is about the same fix-set the regression gate already shows the judge, and a second model call would double the cost of every fix stop.
-    proof_outstanding = PF.load_outstanding()
+    # DISCHARGED FROM THE TRANSCRIPT like the sweep above (R20260924.18): a shape-cluster diff the lead already ran on the demand's scope answers the follow-up. It was used raw until then, and proof STILL OWED rode 16:10:30, 16:23:57 and 16:29:10 on 2026-09-24.
+    proof_outstanding = PF.discharge_if_evidenced(PF.load_outstanding(), transcript)
     proof_extra = PF.prompt_section(sweep_proof_fresh, proof_outstanding)
     proof_asked = "fresh" if sweep_proof_fresh else "followup"
     # THE BRAVE-DEFAULT rule rides the same call on its own trigger: a parked decision whose DEFAULT does nothing. Its trigger is the remaining list, not `extra`, so the two rules are independent and either may be asked alone.
@@ -878,6 +881,9 @@ def run_judge(
             instance=fixset_instance,
         )
         fired = kind == "fire"
+        if kind == "ungrounded":
+            # R20260924.19: queued by wl_checks as the `sweep-ungrounded` advisory, never a block.
+            out.setdefault("advisories", []).append(note)
         if kind == "degraded":
             # Never a block (see wl_classsweep FAIL SEMANTICS), but never silent either: a paid question that produced no answer must be visible in the one field the session always reads.
             out["reason"] = ("%s [class-sweep not judged: %s]" % (out.get("reason", ""), note))[
@@ -889,6 +895,8 @@ def run_judge(
             out, proof_outstanding, fixset_files=fixset_files, asked=proof_asked
         )
         fired = fired or kind == "fire"
+        if kind == "ungrounded":
+            out.setdefault("advisories", []).append(note)
         if kind == "degraded":
             out["reason"] = (
                 "%s [proof-obligation not judged: %s]" % (out.get("reason", ""), note)

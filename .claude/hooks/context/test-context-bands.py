@@ -573,11 +573,16 @@ def test_retro(hooks_dir):
             "%r rows=%d" % (ctx[:200], len(retro_rows(sb))),
         )
 
+        # The early retro was reviewed: R20260924.17 starts the next window after the newest SAVED retro, not the newest order.
+        with (sb.project / "agent" / "ledgers" / "stop-hook-retros.jsonl").open("a") as fh:
+            fh.write(
+                json.dumps({"ev": "saved", "session": SLUG, "band": "early", "item": "e0"}) + "\n"
+            )
         sb.write_transcript(852_000)
         sb.post_tool()
         touch_state_md(sb, 15)
         ctx = fired(sb.post_tool()) or ""
-        rows = retro_rows(sb)
+        rows = [r for r in retro_rows(sb) if r.get("ev") == "ordered"]
         check(
             "retro: the late band orders its own retro",
             "--retro-brief %s late" % SLUG in ctx

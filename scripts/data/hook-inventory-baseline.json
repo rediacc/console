@@ -20,6 +20,7 @@
   ".claude/rediacc_hooks/guards/block_compacted_plan_edit.py",
   ".claude/rediacc_hooks/guards/block_destructive_git_restore.py",
   ".claude/rediacc_hooks/guards/block_edit_of_running_script.py",
+  ".claude/rediacc_hooks/guards/block_focus_spawn.py",
   ".claude/rediacc_hooks/guards/block_git_amend.py",
   ".claude/rediacc_hooks/guards/block_git_empty_commit.py",
   ".claude/rediacc_hooks/guards/block_git_force_push.py",
