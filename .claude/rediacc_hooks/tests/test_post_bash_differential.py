@@ -1,17 +1,17 @@
-"""The proof for the two ported post-bash hooks: a differential against their bash twins.
+"""The proof for the two ported post-bash hooks: a differential against a frozen golden.
 
 WHY THESE TWO ARE NOT IN `test_guards_differential.py`. That file's subject is a GUARD: a pure function of an event whose whole contract is (rc, stdout, stderr) over a payload. `cancel-old-ci.sh` and `refresh-pr-body.sh` are not guards. They always exit 0, nothing registers them in a chain, and their observable behaviour is a conversation with `git` and `gh` -- which is
-exactly why they need a fixture the guard differential has no place for. Their answer depends on what those two programs said, so the comparison has to hold that constant on both sides.
+exactly why they need a fixture the guard differential has no place for. Their answer depends on what those two programs said, so the comparison has to hold that constant.
 
-THE STUBS ARE THE SEAM, and they are ONE pair of programs shared by both sides. A stub per side would prove that two transcriptions agree. Each case declares a table of `argv -> (rc, stdout, stderr)`; the stub looks its own invocation up and answers from it, so the bash and the port are handed identical bytes in identical order.
+THE STUBS ARE THE SEAM. Each case declares a table of `argv -> (rc, stdout, stderr)`; the stub looks its own invocation up and answers from it, so the port is handed the identical bytes a recording session handed it.
 
-THE BODY FILE IS COMPARED, NOT JUST THE CALL. `refresh-pr-body` writes a temp file and hands it to `gh api -F body=@<path>`. The path is a `mktemp` name and differs between the two runs by construction, so the stub COPIES the file's contents into a per-run recording and the argv is normalised to `body=@<TMP>`. What is compared is the DOCUMENT the hook composed, which is
-the thing the twin's awk-and-printf block exists to produce.
+THE BODY FILE IS COMPARED, NOT JUST THE CALL. `refresh-pr-body` writes a temp file and hands it to `gh api -F body=@<path>`. The path is a `mktemp` name that differs between runs by construction, so the stub COPIES the file's contents into a per-run recording and the argv is normalised to `body=@<TMP>`. What is compared is the DOCUMENT the hook composed.
 
-THE ORACLES ARE THE REAL TRACKED FILES at `.claude/oracles/post-bash/`, never a copy made here: a differential against a transcription proves the transcription. They are read-only in this suite.
+WHERE THE RECORDED ANSWER CAME FROM, since PLAN-retire-bash-oracles A3. Until then this file also ran the tracked bash originals at `.claude/oracles/post-bash/` and compared the port against them directly (`test_port_and_twin_agree`). A1 froze those answers into `tests/goldens/post-bash.jsonl`, A2 pointed the comparison at that file, and A3 deleted the oracle tree and the
+bash-side test once the golden was proven to match. `test_port_matches_golden` below is the only comparison now.
 
-ANTI-VACUITY. `test_the_cases_are_not_all_silent` refuses a corpus where every case produced the same empty answer, which is what a stub table that stopped being reached would look like. `test_a_planted_defect_is_caught` mutates a COPY of each port -- the trailing space the twin's `tr '\\n' ' '` leaves in the branch list, and the block-stripping awk -- and requires the
-comparison to go red, because a green that has never been shown to be able to go red is not evidence.
+ANTI-VACUITY. `test_the_cases_are_not_all_silent` refuses a corpus where every case produced the same empty answer, which is what a stub table that stopped being reached would look like. `test_a_planted_defect_is_caught` mutates a COPY of each port -- the trailing space the retired twin's `tr '\\n' ' '` left in the branch list, and the block-stripping awk -- and requires the
+comparison against the GOOD port to go red, because a green that has never been shown to be able to go red is not evidence.
 """
 
 from __future__ import annotations
@@ -25,15 +25,14 @@ import tempfile
 
 import pytest
 
-from rediacc_hooks.tests import guardcorpus
+from rediacc_hooks.tests import goldenio, guardcorpus
 
 ROOT = guardcorpus.repo_root()
-ORACLES = ROOT / ".claude" / "oracles" / "post-bash"
 PORTS = ROOT / ".claude" / "hooks" / "post-bash"
 
 SUBJECTS = {
-    "cancel-old-ci": (ORACLES / "cancel-old-ci.sh", PORTS / "cancel_old_ci.py"),
-    "refresh-pr-body": (ORACLES / "refresh-pr-body.sh", PORTS / "refresh_pr_body.py"),
+    "cancel-old-ci": PORTS / "cancel_old_ci.py",
+    "refresh-pr-body": PORTS / "refresh_pr_body.py",
 }
 
 # The stub both sides run. It normalises a `body=@<path>` argument to a fixed token and copies that file into the recording, so a `mktemp` name cannot make the two sides differ for a reason that is not about either of them.
@@ -367,10 +366,10 @@ def _run(argv, payload, env, cwd) -> tuple[int, bytes, bytes]:
     return proc.returncode, proc.stdout, proc.stderr
 
 
-def _answer(subject, payload, table, base, *, which, port_path=None, with_gh=True):
-    twin, port = SUBJECTS[subject]
+def _answer(subject, payload, table, base, *, port_path=None, with_gh=True):
+    port = SUBJECTS[subject]
     env, work = _world(base, table, with_gh=with_gh)
-    argv = ["bash", str(twin)] if which == "old" else ["python3", str(port_path or port)]
+    argv = ["python3", str(port_path or port)]
     rc, out, err = _run(argv, payload, env, work)
     record = base / "record.txt"
     calls = base / "calls.txt"
@@ -385,18 +384,40 @@ def _answer(subject, payload, table, base, *, which, port_path=None, with_gh=Tru
     }
 
 
-def _both(subject, payload_doc, table, *, with_gh=True, port_path=None):
-    payload = json.dumps(payload_doc)
-    with tempfile.TemporaryDirectory() as td:
-        old_base = pathlib.Path(td) / "old"
-        new_base = pathlib.Path(td) / "new"
-        old_base.mkdir()
-        new_base.mkdir()
-        old = _answer(subject, payload, table, old_base, which="old", with_gh=with_gh)
-        new = _answer(
-            subject, payload, table, new_base, which="new", with_gh=with_gh, port_path=port_path
-        )
-    return old, new
+# --------------------------------------------------------------------------- The golden mode (PLAN-retire-bash-oracles A2) ---------------------------------------------------------------------------
+#
+# AGAINST A FROZEN RECORD. Until PLAN-retire-bash-oracles A3, `test_port_and_twin_agree` ran the real oracle here and compared it against the port on every call; A1 froze that oracle's answers into `goldens/post-bash.jsonl`, A2 pointed this section at that file, and A3 deleted the oracle-running test once the golden was proven to match.
+
+GOLDEN_PATH = goldenio.golden_path("post-bash")
+
+
+def golden_key(subject, label, payload_doc, table):
+    return goldenio.case_key(
+        "%s:%s" % (subject, label),
+        json.dumps(payload_doc, sort_keys=True),
+        json.dumps(table, sort_keys=True),
+    )
+
+
+def _encode_answer(answer):
+    """`_answer`'s dict, JSON-safe: bytes decoded with the same `surrogateescape` this whole suite uses, then made UTF-8-clean field by field."""
+    return {
+        "rc": answer["rc"],
+        "out": goldenio.encode_field(answer["out"].decode("utf-8", "surrogateescape")),
+        "err": goldenio.encode_field(answer["err"].decode("utf-8", "surrogateescape")),
+        "body": None if answer["body"] is None else goldenio.encode_field(answer["body"]),
+        "calls": goldenio.encode_field(answer["calls"]),
+    }
+
+
+def _decode_answer(record):
+    return {
+        "rc": record["rc"],
+        "out": goldenio.decode_field(record["out"]).encode("utf-8", "surrogateescape"),
+        "err": goldenio.decode_field(record["err"]).encode("utf-8", "surrogateescape"),
+        "body": None if record["body"] is None else goldenio.decode_field(record["body"]),
+        "calls": goldenio.decode_field(record["calls"]),
+    }
 
 
 @pytest.mark.parametrize(
@@ -404,23 +425,35 @@ def _both(subject, payload_doc, table, *, with_gh=True, port_path=None):
     CASES,
     ids=["%s: %s" % (c[0], c[1]) for c in CASES],
 )
-def test_port_and_twin_agree(subject, label, payload_doc, table):
-    old, new = _both(subject, payload_doc, table)
-    assert new == old, "%s / %s diverged:\n--- twin ---\n%r\n--- port ---\n%r" % (
-        subject,
-        label,
-        old,
-        new,
+def test_port_matches_golden(subject, label, payload_doc, table):
+    _header, silent, records = goldenio.read_golden(GOLDEN_PATH)
+    key = golden_key(subject, label, payload_doc, table)
+    want = goldenio.lookup(silent, records, key)
+    assert want is not None, (
+        "no golden record for %s / %s (key %s) -- run regolden.py post-bash --reason '<why>'"
+        % (subject, label, key)
+    )
+    payload = json.dumps(payload_doc)
+    with tempfile.TemporaryDirectory() as td:
+        new = _answer(subject, payload, table, pathlib.Path(td))
+    assert new == _decode_answer(want), (
+        "%s / %s diverged from the golden:\n--- golden ---\n%r\n--- port ---\n%r"
+        % (subject, label, want, new)
+    )
+
+
+def test_post_bash_golden_exists():
+    assert GOLDEN_PATH.is_file(), (
+        "%s is missing -- run regolden.py post-bash --reason '<why>' to freeze it" % GOLDEN_PATH
     )
 
 
 def test_a_missing_gh_stands_the_refresh_hook_down():
-    """`command -v gh || exit 0`, driven with `gh` absent from PATH on both sides."""
-    old, new = _both(
-        "refresh-pr-body", {"tool_input": {"command": "git push"}}, _git(), with_gh=False
-    )
-    assert old["rc"] == 0
-    assert new == old
+    """`command -v gh || exit 0`, driven with `gh` absent from PATH."""
+    payload = json.dumps({"tool_input": {"command": "git push"}})
+    with tempfile.TemporaryDirectory() as td:
+        answer = _answer("refresh-pr-body", payload, _git(), pathlib.Path(td), with_gh=False)
+    assert answer["rc"] == 0
 
 
 def test_the_cases_are_not_all_silent():
@@ -428,9 +461,11 @@ def test_the_cases_are_not_all_silent():
     seen = set()
     bodies = 0
     for subject, _label, payload_doc, table in CASES:
-        _old, new = _both(subject, payload_doc, table)
-        seen.add((new["rc"], new["out"], new["err"]))
-        if new["body"] is not None:
+        payload = json.dumps(payload_doc)
+        with tempfile.TemporaryDirectory() as td:
+            answer = _answer(subject, payload, table, pathlib.Path(td))
+        seen.add((answer["rc"], answer["out"], answer["err"]))
+        if answer["body"] is not None:
             bodies += 1
     assert len(seen) >= 5, "the corpus produced only %d distinct answers" % len(seen)
     assert bodies >= 1, "no case ever composed a PR body, so the document is never compared"
@@ -447,7 +482,7 @@ PLANTS = {
 @pytest.mark.parametrize("subject", sorted(PLANTS))
 def test_a_planted_defect_is_caught(subject):
     """A green that has never been shown to be able to go red is not evidence."""
-    _twin, port = SUBJECTS[subject]
+    port = SUBJECTS[subject]
     source = port.read_text(encoding="utf-8")
     old_text, new_text = PLANTS[subject]
     assert old_text in source, "%s: the plant's anchor moved: %r" % (subject, old_text)
@@ -461,30 +496,18 @@ def test_a_planted_defect_is_caught(subject):
         for case_subject, _label, payload_doc, table in CASES:
             if case_subject != subject:
                 continue
-            good_old, good_new = _both(case_subject, payload_doc, table)
-            assert good_new == good_old
-            _old, bad = _both(case_subject, payload_doc, table, port_path=broken)
-            if bad != good_old:
+            payload = json.dumps(payload_doc)
+            with tempfile.TemporaryDirectory() as good_td:
+                good = _answer(case_subject, payload, table, pathlib.Path(good_td))
+            with tempfile.TemporaryDirectory() as bad_td:
+                bad = _answer(case_subject, payload, table, pathlib.Path(bad_td), port_path=broken)
+            if bad != good:
                 fired = True
                 break
     assert fired, "PLANT DID NOT FIRE for %s: this differential cannot see the defect" % subject
     assert port.read_text(encoding="utf-8") == source
 
 
-def test_the_oracles_are_the_tracked_files():
-    """The bash side must be the real tracked original, not a copy this suite made."""
-    for subject, (twin, port) in SUBJECTS.items():
-        assert twin.is_file(), "%s: the oracle is gone: %s" % (subject, twin)
-        assert port.is_file(), "%s: the port is gone: %s" % (subject, port)
-        tracked = subprocess.run(
-            ["git", "-C", str(ROOT), "ls-files", "--error-unmatch", str(twin.relative_to(ROOT))],
-            capture_output=True,
-            check=False,
-        )
-        assert tracked.returncode == 0, "%s is not tracked, so it is not an oracle" % twin
-
-
-def test_python3_and_bash_are_both_available():
-    """The control on the harness itself: neither side may be skipped into a green."""
-    assert shutil.which("bash"), "bash is missing, so the twin side never ran"
-    assert shutil.which("python3"), "python3 is missing, so the port side never ran"
+def test_python3_is_available():
+    """The control on the harness itself: the port side may not be skipped into a green."""
+    assert shutil.which("python3"), "python3 is missing, so the port never ran"

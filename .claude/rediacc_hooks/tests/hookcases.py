@@ -1395,10 +1395,10 @@ STATIC: list[Case] = [
         bash_json("gh pr view 531"),
         "premature-ready: non-ready command ignored",
     ),
-    # Regression: the phrase inside heredoc/doc prose is NOT an invocation. The unanchored v1 fired on a round-log heredoc that merely mentioned the flow.
+    # Regression: the phrase inside heredoc/doc prose is NOT an invocation. The unanchored v1 fired on a round-log heredoc that merely mentioned the flow. The delimiter is QUOTED since 2026-09-24 (PLAN-retire-bash-oracles A4, A0 L3): under a bare `<<EOF` bash expands the backticks and really runs `gh pr ready`, so the unquoted spelling this case used to carry was a flip, not prose; block_premature_ready's EDGE_CASES pin both spellings.
     case(
         "check 0 guards/block_premature_ready.py",
-        bash_json("cat >> log.md <<EOF\ngreen-gated `gh pr ready` + hook-banned --admin\nEOF"),
+        bash_json("cat >> log.md <<'EOF'\ngreen-gated `gh pr ready` + hook-banned --admin\nEOF"),
         "premature-ready: prose mention in heredoc ignored",
     ),
     case(

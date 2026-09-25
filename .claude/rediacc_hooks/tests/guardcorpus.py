@@ -2,21 +2,20 @@
 with the guard it was written for.
 
 WHY THIS AND NOT `corpus.harvest()`. That harvester answers "what command strings has this repo ever fed a hook", which is the right question for `shellscan`, whose subject is one text filter applied to all of them. A guard is different: it is 46 separate programs, each with its own preamble, its own event shape and its own message, and the thing worth proving is that EACH port
-answers as its own twin does. `.claude/hooks/test-hooks.sh` already holds that pairing, and holds it as the accumulated record of every bypass and every over-block this repo has paid for:
+answers as its own frozen golden says it should. `.claude/hooks/test-hooks.sh` already held that pairing, as the accumulated record of every bypass and every over-block this repo has paid for:
 
     check 2 guards/block_raw_pr_body_edit.py "$(bash_json 'gh pr edit ...')" "label"
     ^     ^ ^                                 ^                              ^
     verb  | the guard                         the event                      why
 
-so one pass over the file yields (guard, payload) for every call site. Those are the inputs; the ORACLE is the bash guard itself, run on the same bytes.
+so one pass over the file yields (guard, payload) for every call site. Those are the inputs; the reference is `tests/goldens/<stem>.jsonl`, frozen from the bash guard before PLAN-retire-bash-oracles A3 deleted it.
 
 THE KEY SPELLING CHANGED AT THE P7 CUTOVER and the reason is not cosmetic. A
 case names its guard by the key `check-hook-integrity.sh` inventories it under,
-so that one spelling drives the suite, credits the coverage assertion and keys this corpus. The guards are Python modules now, living at `.claude/rediacc_hooks/guards/`, so the key is `guards/<module>.py`; the bash original the differential compares against was moved to `.claude/oracles/<chain>/<name>.sh` and is reached through the port module's own TWIN field rather than by
-rewriting the key.
+so that one spelling drives the suite, credits the coverage assertion and keys this corpus. The guards are Python modules now, living at `.claude/rediacc_hooks/guards/`, so the key is `guards/<module>.py`.
 
-THE EXPECTED EXIT CODE IN COLUMN 2 IS DELIBERATELY NOT THE ORACLE, and that is the difference between a differential and a re-run of the suite. Several payloads interpolate suite-local variables (`$PB_DIR`, `$PLAN_TMP`, `$BW_TMP`) that this module does not reconstruct, so the bytes it recovers are not always the bytes the suite fed. That weakens nothing: both implementations
-receive the IDENTICAL bytes, and disagreement between them is the finding. It also means a payload reconstructed imperfectly is still a perfectly good differential input, which is why no attempt is made to run the suite.
+THE EXPECTED EXIT CODE IN COLUMN 2 IS DELIBERATELY NOT THE REFERENCE, and that is the difference between a differential and a re-run of the suite. Several payloads interpolate suite-local variables (`$PB_DIR`, `$PLAN_TMP`, `$BW_TMP`) that this module does not reconstruct, so the bytes it recovers are not always the bytes the suite fed. That weakens nothing: the port is still
+judged against the golden on the IDENTICAL bytes, and disagreement is the finding. It also means a payload reconstructed imperfectly is still a perfectly good differential input, which is why no attempt is made to run the suite.
 
 CROSS-FEEDING IS HALF THE CORPUS. A guard tested only on the events it was written for is tested only where it says no. Over-blocking is the failure mode that gets a guard deleted -- `check-hook-integrity.sh` says so in as many words, "an over-blocking guard is one that gets deleted, which is how the rule dies" -- and it only shows up on somebody else's input. So every guard is
 also run against a deterministic sample of the WHOLE payload pool.
@@ -24,7 +23,6 @@ also run against a deterministic sample of the WHOLE payload pool.
 
 import hashlib
 import json
-import pathlib
 import re
 
 from rediacc_hooks.tests import corpus
@@ -249,12 +247,3 @@ DEGENERATE_PAYLOADS = [
     ("questions empty", '{"tool_input":{"questions":[]}}'),
     ("background flag", '{"tool_input":{"command":"read -t 600 x","run_in_background":true}}'),
 ]
-
-
-# The retired bash originals. They are NOT hooks and nothing registers them; see `.claude/oracles/README.md` for why they are kept and why they had to leave `.claude/hooks/`.
-ORACLES = "oracles"
-
-
-def guard_path(root, twin):
-    """The bash original on disk, from a port module's chain-qualified TWIN."""
-    return pathlib.Path(root) / ".claude" / ORACLES / twin

@@ -74,9 +74,6 @@ def suite_source():
 
 
 SUITE = SUITE_GOLDEN
-# MOVED TO THE ORACLE TREE BY W7 P6, which ported the last bash guard that sourced it. `.claude/hooks/pre-bash/` then held nothing and was removed, and the 20-line forwarder that stood at the oracle path was REPLACED by the real 303-line library, so the 28 oracles beside it resolve `lib/command-scan.sh` directly instead of through a hop. One copy, and this differential still runs
-# the real tracked bytes rather than a transcription of them.
-LIB = repo_root() / ".claude" / "oracles" / "pre-bash" / "lib" / "command-scan.sh"
 
 # The floor the harvest must clear. Corpus-derived floors are the rule (driver contract section 6), and this one is: it is a fraction of the `bash_json` call sites counted in the same pass, so adding cases to the suite raises it and a broken parser that recovers three payloads reds instead of quietly proving the port against three inputs.
 HARVEST_RATIO_FLOOR = 0.9
@@ -341,6 +338,54 @@ EDGE_CASES = [
     ("eval with nothing after", "eval"),
     ("carriage return", "gh pr merge 1 --admin\r"),
     ("tab separated", "gh\tpr\tmerge\t1\t--admin"),
+    # -- Rule T (PLAN-retire-bash-oracles A4): A0's fail-open list, each a command bash RUNS that the sed/awk pipeline could not see. Every one reads pos:merge=0 now; each is followed by the prose or data twin that must stay unseen. --
+    ("L1 assignment value runs its substitution", "x=$(gh pr merge 1 --admin)"),
+    ("L1 assignment value runs its backticks", "x=`gh pr merge 1 --admin`"),
+    ("L1 a substitution-valued prefix", "X=$(date) gh pr merge 1 --admin"),
+    ("L2 a substitution inside double quotes runs", 'git commit -m "$(gh pr merge 1 --admin)"'),
+    ("L2 control: double-quoted prose is not run", 'git commit -m "never gh pr merge 1 --admin"'),
+    ("L3 an unquoted heredoc body expands", "cat > R.md <<EOF\n$(gh pr merge 1 --admin)\nEOF"),
+    (
+        "L3 control: a quoted heredoc body is data",
+        "cat > R.md <<'EOF'\n$(gh pr merge 1 --admin)\nEOF",
+    ),
+    ("L4 a here-string into a shell runs", "bash <<< 'gh pr merge 1 --admin'"),
+    ("L4 a heredoc piped into a shell runs", "cat <<'EOF' | sh\ngh pr merge 1 --admin\nEOF"),
+    (
+        "L4 control: a heredoc into python is not shell",
+        "python3 - <<'EOF'\ngh pr merge 1 --admin\nEOF",
+    ),
+    ("L5 a here-string has no body", "cat <<<x\ngh pr merge 1 --admin"),
+    ("L5 a quoted marker is not a heredoc", 'echo "<<EOF"\ngh pr merge 1 --admin'),
+    ("L5 a commented marker is not a heredoc", "true # <<EOF\ngh pr merge 1 --admin"),
+    ("L6 an apostrophe inside double quotes", "echo \"it's\"; gh pr merge 1 --admin; echo 'y'"),
+    ("L6 an escaped double quote", 'echo "p \\" q"; gh pr merge 1 --admin; echo "r"'),
+    ("L7 a quoted command word", '"gh" pr merge 1 --admin'),
+    ("L7 a partly quoted command word", 'g"h" pr merge 1 --admin'),
+    ("L7 an escaped command word", "\\gh pr merge 1 --admin"),
+    ("L7 an ANSI-C quoted command word", "$'gh' pr merge 1 --admin"),
+    ("L8 a backslash-newline joins the command", "gh pr \\\nmerge 1 --admin"),
+    ("L9 a brace group", "{ gh pr merge 1 --admin; }"),
+    ("L9 a negation", "! gh pr merge 1 --admin"),
+    (
+        "L9 then and do",
+        "if true; then gh pr merge 1 --admin; fi; while false; do gh pr ready 2; done",
+    ),
+    ("L9 time and command", "time gh pr merge 1 --admin; command gh pr ready 2"),
+    ("L9 a leading redirect", ">/dev/null gh pr merge 1 --admin"),
+    ("L9 a leading descriptor redirect", "2>&1 gh pr merge 1 --admin"),
+    ("L9 control: command -v only prints", "command -v gh pr merge"),
+    ("L10 c inside a bundle", "bash -ce 'gh pr merge 1 --admin'"),
+    ("L10 options after -c", "bash -c -e 'gh pr merge 1 --admin'"),
+    ("L10 a quoted -c", "bash '-c' 'gh pr merge 1 --admin'"),
+    ("L11 an eval word as an argument", "echo eval && sh -c 'gh pr merge 1 --admin'"),
+    ("L11 two wrappers on one line", "sh -c true; sh -c 'gh pr merge 1 --admin'"),
+    ("L12 a subshell cd does not persist", "(cd private/renet && git fetch); git status"),
+    ("L12 a pipeline cd does not persist", "cd private/renet | true; git status"),
+    ("L12 a -C names one git command", "git -C private/renet fetch; git status"),
+    ("L12 a gh after a -C is not in the submodule", "git -C private/renet fetch; gh pr merge 3"),
+    ("S1 a space-indented marker does not close", "cat <<EOF\n  EOF\ngh pr merge 1 --admin\nEOF"),
+    ("S2 a marker with a dash is the whole word", "cat <<END-X\nEND\ngh pr merge 1 --admin\nEND-X"),
 ]
 
 
