@@ -26,13 +26,31 @@ A big-bang PR is the norm here, so nothing about it can be flat. The worklist is
 
 Break the chain anywhere and the symptom appears somewhere else: an unpublished snapshot fails the block gate, an untagged commit is reviewed by nobody at all.
 
+## Cadence: one verified unit, one commit, one tick
+
+CLAUDE.md rule 1 commits verified work as it lands, so the chain runs once per unit rather than once per wave:
+
+    <acceptance check, exit code read>        the unit is verified
+    git commit -F <msg> -- <paths>            one epic, its PR-TASK trailer
+    worklist.py --tick <me> <id> "commit:<sha> ..."   the tick names the commit
+
+- **One unit, one epic.** A unit that spans two epics is two commits. Above 20 files it needs a
+proof line anyway, which is the signal to split it.
+- **The lead commits.** A writer's output is committed by the lead after the spot-check, with the
+epic of the item the writer was given.
+- **A tick with no commit says why**: `nocommit:<no-tracked-change|research|operator-deferred>`.
+- **Pushing is separate**: at an epic milestone, at least every 2 hours of committed work, and
+before a stop that leaves unpushed commits, each with its `ci:quick` receipt.
+- **A `[hotfix]` on `main` carries no `PR-TASK:`** (there is no `agent/pr/main.md`); its
+`Hotfix-Evidence:` trailer takes the place of the epic.
+
 ## Three things that are not obvious
 
 **Epics live in a sidecar, never the event log.** `compact()` folds the log to `md`/`add`/`lease`, so a novel event kind is destroyed on the next run. Measured: after a compact the log holds only those kinds. `record_intent` learned this first; `wl_epic.py` follows it.
 
 **The store is unreadable from CI.** It lives in TMPDIR, which is why `agent/pr/<branch>.md` exists and why it is the contract every gate diffs against. A stale snapshot is a red gate, deliberately.
 
-**History is never back-filled.** `trapguard` blocks `git filter-repo --message-callback`, after an incident that lost 96 trailers across 93 commits. Tag commits when you make them.
+**History is never back-filled.** `trapguard` blocks `git filter-repo --message-callback`, after an incident that lost 96 trailers across 93 commits, and `block_git_amend` refuses an amend. A commit is tagged when it is made.
 
 ## Where it can go wrong quietly
 

@@ -316,4 +316,4 @@ On 2026-08-28 that landed AFTER the sentinels had already been deleted, leaving 
 
 ## Never, without explicit operator approval
 
-Publish to R2, flip `VIDEO_LANGS`, commit, or push. The working tree is the deliverable and usually holds other sessions' work - `private/elite`, `private/renet` and `.ci/` are frequently someone else's in-flight changes. Repair forward; never `git checkout`/`restore`/`stash`/`clean`.
+Publish to R2 or flip `VIDEO_LANGS`. Commits are the lead's (CLAUDE.md rule 1): this agent never commits, branches or pushes, and reports the exact files it touched so the lead can commit them by path. The working tree usually holds other sessions' work - `private/elite`, `private/renet` and `.ci/` are frequently someone else's in-flight changes. Repair forward; never `git checkout`/`restore`/`stash`/`clean`.

@@ -111,5 +111,5 @@ a negated character class. `grep -cE '(^|[^a-z-])ease' file` printed 0 where `gr
 untracked; use `git status --porcelain` or you will report your own work as absent.
 - Colour escapes sit BETWEEN the indent and the word in gate output, so `grep '^  PASS'`
 counts zero on a gate visibly printing PASS lines. Use `cat -A` when a count contradicts what you can plainly read.
-- Work stays uncommitted unless the operator asks. Never `git checkout/restore/stash/clean`
-in this tree; repair forward.
+- Commits are the lead's (CLAUDE.md rule 1): this agent never commits, branches or pushes, and
+reports the exact files it touched so the lead can commit them by path once spot-checked. Never `git checkout/restore/stash/clean` in this tree; repair forward.

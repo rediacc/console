@@ -116,7 +116,7 @@ Four drafts asserted different figures for these. Cite the COMMAND, not the numb
 
 ## 5b. Verifying work that is not committed yet
 
-This program keeps work uncommitted until the operator asks for a commit, and that rule collides with a whole class of gates. Many of them enumerate through `git ls-files`, so they read the INDEX, not the working tree. A deletion that is real on disk but absent from the index makes them either crash with ENOENT or, worse, pass while still counting the file they were meant to
+Work sits uncommitted between its edit and its commit (CLAUDE.md rule 1 commits it once verified, and verifying comes first), and a shared tree holds other sessions' uncommitted work besides; both collide with a whole class of gates. Many of them enumerate through `git ls-files`, so they read the INDEX, not the working tree. A deletion that is real on disk but absent from the index makes them either crash with ENOENT or, worse, pass while still counting the file they were meant to
 notice.
 
 Measured on 2026-09-06: `check-shell-declared-commands.ts` crashed on six unstaged deletions and only reported the truth once the deletions were visible to a git index.

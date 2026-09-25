@@ -62,7 +62,7 @@ Deliverables are file-verified: every `file:` path must exist and be non-empty, 
      `spec/` subdir only for large as-built suites.
 
 5. **Ethos block (baked, copy into every README):** Validate, do not believe: every
-file:line reference is a hypothesis, re-verify against the tree, run the real thing, read stdout and stderr separately, plant a control before trusting any zero. Everything stays local and uncommitted: no commit/branch/push/PR unless the operator asks in-task; never `git checkout/restore/stash/clean`; repair forward. Testing and concurrency support are first-class deliverables. NO
+file:line reference is a hypothesis, re-verify against the tree, run the real thing, read stdout and stderr separately, plant a control before trusting any zero. Verified work is committed as it lands, by the lead, on the one branch and its one PR (CLAUDE.md rule 1); writers never commit; no second branch or PR; never `git checkout/restore/stash/clean`; repair forward. Testing and concurrency support are first-class deliverables. NO
 em dashes in any authored text, in any language.
 
 6. **Staffing section (baked, its own section in README AND PROMPT.md):** Opus is
@@ -80,7 +80,7 @@ leases renewed on wake; `- [x]` only after probing the artifact; queued future w
 
 9. **Write `agent/programs/<slug>/PROMPT.md` and print it verbatim in chat.** Contents, kept
 concise: mission sentence pointing at `agent/programs/<slug>/README.md` and its read order; two-sentence validation ethos; ask-the-decision-points-early instruction; the staffing section from step 6; the program-state paths from step 7; the `agent/programs/<slug>/CHECKLIST.md` path plus the worklist seeding instruction from step 8, spelled out with the literal token format
-`cl:<slug>/<wN>` so the consuming session can seed without reading anything else; the local-and-uncommitted line; the testing emphasis; the definition of done.
+`cl:<slug>/<wN>` so the consuming session can seed without reading anything else; the commit-as-it-lands line; the testing emphasis; the definition of done.
 
 10. **Append ONE pointer line** to the auto-memory `MEMORY.md` (title, docs path,
     one-line hook). Update mode: refresh the existing line instead of adding another.

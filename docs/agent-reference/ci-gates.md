@@ -369,14 +369,40 @@ Practical consequence: **acceptance and execution resolve against different refs
 **AI agents MUST NOT push to `main` (console or any submodule) or trigger a release without an explicit, per-task user request.** Every push to `main` runs the full release pipeline (`cd-v2.yml` deploys edge on green), so an unprompted main push is an unprompted release. Approving an implementation plan is **not** authorization to push to `main` or release. Branch protection
 forbids direct pushes (`.github/CONTRIBUTING.md`); do not work around it.
 
-Per *Session Defaults*, the standing default is to land nothing at all: leave the work uncommitted and let the operator decide. This section governs the case where the operator HAS asked for the work to land. Then the route is a feature branch and a PR for them to merge, never a direct push to `main`. When in doubt, stop and ask.
+Per *Session Defaults* rule 1, verified work is committed as it lands on the one `MMDD-N` branch and reaches `main` only through its PR. `main` takes a commit only as a `[hotfix]` (see *Commit policy* below), and that commit is PUSHED only by the operator with `!`: `block_push_to_protected_branch` refuses every push to `main` from an agent's Bash, and the git-level `pre-push` hook refuses it everywhere else unless `COMMIT_POLICY_OK=1` is set. When in doubt, stop and ask.
 
-**One documented exception, and only one:** a MAIN-ONLY failure during a `/pr-merge` run, after that command has already merged. See step 5 of `.claude/commands/pr-merge.md` for the full rule and the classification test.
+**One documented agent-initiated exception, and only one:** a MAIN-ONLY failure during a `/pr-merge` run, after that command has already merged. The fix is committed on `main` as a `[hotfix]` and the operator pushes it. See step 5 of `.claude/commands/pr-merge.md` for the full rule and the classification test.
 
 The reason is instrument validity, not urgency: the PR was green, so a failure that appears only after the merge lives in a path PR CI structurally cannot run (`refs/heads/main`-gated jobs, the dispatch-only Release workflow, or Docker, which PRs only dry-run). **A fresh PR would go green without exercising the fix at all** -- it is the wrong instrument, so its verdict is
 worthless. The verification loop is the next `main` run.
 
-Classify first: if the failing job RAN AND PASSED on the PR, it is transient, not main-only -- do not fix it, the watchdog auto-retries. Only a job the PR could never have run earns the direct push. It does not extend to re-cutting a release, and it does not apply outside that command's own release path.
+Classify first: if the failing job RAN AND PASSED on the PR, it is transient, not main-only -- do not fix it, the watchdog auto-retries. Only a job the PR could never have run earns the `[hotfix]`. It does not extend to re-cutting a release, and it does not apply outside that command's own release path.
+
+### Commit policy
+
+Operator ruling 2026-09-25 (the commit-policy plan under agent/plans): verified work is committed as it lands, on one branch with one PR, and the tags a commit may carry are few. The rules live once in `.claude/rediacc_hooks/commit_policy.py`, with their data in `.ci/config/commit-policy.json`, and are enforced twice.
+
+**The pre-bash layer**, authoritative for agents, refuses before anything runs:
+
+| Guard | Refuses |
+|---|---|
+| `block_second_branch` | a second live branch in any repo: `checkout -b/-B`, `switch -c/-C`, `branch <new>`, `branch -c`, `worktree add -b`, `push <remote> <src>:<new>`, `push -u <remote> <new>`, `gh pr create --head <other>`, a `git/refs` POST. A new local branch is admitted only from `main` with no live branch left, under today's next `MMDD-N`; in a submodule, only the console's current branch name. A rename and every read or delete form pass. `gh` failing while a creation is judged is a refusal. |
+| `block_second_open_pr` | `gh pr create` while this account already has an open PR in that repo. |
+| `block_commit_on_main` | a commit on `main` that is not a well-formed `[hotfix]`, and `[hotfix]` on any other branch. |
+| `block_ci_skip_token` | a CI skip token anywhere in a commit message (subject, body, `-F` file, heredoc, `--trailer`). |
+| `block_no_review_ineligible` | `[no-review]` on a commit that is not purely writing, and on any `[hotfix]`. |
+| `block_git_hook_bypass` | `commit --no-verify` / `-n`, `push --no-verify`, the same flag on `merge`/`am`/`rebase`/`cherry-pick`, `-c core.hooksPath=`, `--config-env core.hooksPath=`, `git config core.hooksPath <x>` (and its unset forms), `GIT_CONFIG_*` config by environment, and `COMMIT_POLICY_OK=1` set by an agent. Reads such as `git config --get core.hooksPath` pass. |
+
+**The git-level layer** is the backstop for what never reaches a pre-bash hook: the operator's terminal, `!` commands, and subprocesses. `./run.sh setup` installs it (the `git-hooks-path` phase in `.ci/rediacc_ci/setup/githooks.py`) by pointing `core.hooksPath` at `.claude/rediacc_hooks/git/`, as local config, in the console and every checked-out submodule; `/tmp` fixtures and CI checkouts are untouched. `commit-msg` checks tags and skip tokens, `reference-transaction` refuses a branch creation that breaks the one-branch rule from local facts only (no `gh`), and `pre-push` refuses a push to `main` and a push creating a remote branch other than the current one. `COMMIT_POLICY_OK=1` in the environment is the operator's override and makes every one of these hooks exit 0; the pre-bash guards never honour it.
+
+**The tags.** A tag is a bracketed word in the SUBJECT line.
+
+- **`[hotfix]`**, on `main` only and required there. It sits at the end of the subject, and the message carries a `Hotfix-Evidence:` trailer: the red `main` run (a bare run id or an `actions/runs` URL) when the fix is the main-only failure class of `/pr-merge` step 5, or `ASKED:<YYYY-MM-DDTHH:MMZ>` when the operator called it a hotfix in this task. At most `hotfix_max_files` (5) paths. No `PR-TASK:` trailer, since `main` has no epic. Always reviewed, never `[no-review]`. Pushed only by the operator.
+- **`[no-review]`**, on writing only. Every path must match `no_review_eligible` (`agent/**`, `docs/**`, `**/*.md`) and none `no_review_denied` (`.claude/**`, which holds agent programs, and `CLAUDE.md`, which is policy). The tag only narrows: an eligible commit left untagged is reviewed anyway. The per-commit reviewer re-checks eligibility before writing a `skipped (no-review)` verdict.
+
+**CI skip tokens are refused, and there is no `[no-ci]`.** GitHub skips the workflow for a head commit carrying `[skip ci]`, `[ci skip]`, `[no ci]`, `[skip actions]`, `[actions skip]` or a `skip-checks: true` trailer, and a skipped workflow leaves its required checks pending: the ruleset requires `CI Complete` and `Review Complete`, so the PR sits at "Expected" until something else is pushed. On `main` a skip also skips the release, which is exactly why the two CD bot commits use one; they run as subprocesses in CI and never reach either layer. A custom `[no-ci]` was rejected rather than built: it would need a second skip path in `initialize` beside the attested scope-engine skip-plan and the pointer-bump fast path, which already make cheap commits cheap; CI runs per push, not per commit, so committing often costs nothing once pushes are batched; and the `ci:quick` receipt is required before any push anyway. `[no-ci]` is refused too, so nobody believes it does something.
+
+**Pushing is separate from committing.** A push is a backup and a CI trigger, never one per commit: at an epic milestone, at least every 2 hours of committed work, and before a stop that leaves unpushed commits. Each push needs its `ci:quick` receipt (`block_unverified_push`; `--receipt-out` from a clean clone when the tree is shared).
 
 ### Submodule commit order
 

@@ -12,17 +12,21 @@ cross-session collision risk needs raising, park it as a worklist `[?]` naming t
 
 Standing rules for every task, in this repo and its submodules. The operator should never have to restate them.
 
-### 1. Work stays uncommitted until asked
+### 1. Verified work is committed as it lands, on the one branch
 
-The default deliverable is an **uncommitted working tree**. Do not `git commit`, create a branch, push, or open a PR unless the operator asks for it in that task. Approving a plan is not approval to commit. (`main` and releases carry stricter rules; see *Never push to `main` or cut a release without explicit user authorization*.)
+Verified work is committed right away, in small reviewable commits on the single current branch, so uncommitted work never piles up into a mountain nobody can review (operator ruling 2026-09-25; the commit-policy plan under agent/plans).
 
-**And when a PR is asked for: ONE open PR at a time.** New work goes onto the branch of the PR that is already open, not into a second one. This is enforced by `.claude/rediacc_hooks/guards/block_second_open_pr.py` (chain `pre-bash`) rather than left to memory, because it was left to memory once and a single night produced four stacked PRs: each new one was individually reasonable,
-and the pile arrived on the operator, who then had to review and merge them in a fixed order. A second PR does not get work finished sooner, it splits one decision into several. A genuinely independent second PR is the operator's call; ask, and say why the work cannot ride the open one.
+- **A verified unit** serves one stated purpose inside one epic (one `PR-TASK:` id), has had its acceptance check run with the exit code read (a named test, gate or command at `rc=0`, or the lead's spot-check of a writer's output, rule 4), and touches only paths this session owns: its own edits and the file lists its writers reported. Other sessions' uncommitted paths are theirs, and are never committed by inference.
+- **Cadence.** The unit is committed as soon as it is verified, before the next one starts. A worklist item is committed first, then ticked with `commit:<sha>`. Writers never commit: the lead commits each writer's spot-checked output as the report is accepted. A unit above 20 files needs a proof line anyway (`block_unproven_bulk_transform`), which is the signal to split it.
+- **Commit form.** `git add -- <new paths>`, then `git commit -F <msg> -- <paths>` (the pathspec form `block_pathspecless_git_commit` enforces). Conventional Commits subject, the verification commands and their exit codes in the body, a `PR-TASK: <id>` trailer, no Co-Authored-By line, no amending: a mistake gets a new fix commit.
+- **Pushing is separate from committing.** Pushes are backups and CI triggers, never one per commit: at an epic milestone, at least every 2 hours of committed work, and before a stop that leaves unpushed commits. Each push still needs a `ci:quick` receipt (`block_unverified_push`).
+- **One branch, one PR, and no agent path to a second.** Each repository (the console and each submodule under `private/`) holds at most one live `MMDD-N` branch and at most one open PR, whose head is that branch. `block_second_branch` refuses every spelling of a second branch (`checkout -b`, `switch -c`, `branch <new>`, a push to a new remote name, `gh pr create --head <other>`), and `block_second_open_pr` refuses a second PR. A second branch or PR is the operator's own `!` command; there is nothing to ask for.
+- **`main` takes only a hotfix, and only the operator pushes it.** `block_commit_on_main` refuses a commit on `main` unless its subject ends in `[hotfix]` and it carries a `Hotfix-Evidence:` trailer (the red main run, or `ASKED:<ISO minute>` when the operator called it a hotfix in this task) and touches at most 5 files; off `main` the tag is refused. The push stays the operator's `!` (`block_push_to_protected_branch`). The tags, the refused CI skip tokens and the git-level hooks behind them are in [docs/agent-reference/ci-gates.md](docs/agent-reference/ci-gates.md) *Commit policy*.
 
-This means there is **no safety net**, and the tree usually holds work from other sessions and agents:
+The commit is the safety net, and the tree still holds work from other sessions and agents:
 
 - Never `git checkout` / `restore` / `stash` / `clean` to undo a mistake of this session's
-own making. It deletes uncommitted work, including work belonging to others. Repair forward instead.
+own making. It deletes uncommitted work, including work belonging to others. Repair forward instead, with a new commit when the mistake is already committed.
 - Prefer targeted edits over scripted bulk rewrites. When one must be scripted, re-verify
 the WHOLE file afterward, not just the part it aimed at. A find-and-replace scoped wider than intended lands in a neighbouring key, function, or file, and the session's own verification will miss it if it only re-checks the target.
 
@@ -35,7 +39,7 @@ nothing, a flag that misbehaves, an error that explains nothing) means a defect 
 - **Discovery is always in scope, and so is the fix.** A finding is fixed in the
 session that finds it. Filing an issue never closes a finding. Small and local (no new abstraction, no signature change rippling outward): fix it inline immediately and say so. Bigger than that: ask the machinery (`worklist.py --triage <me> <finding...>` answers INLINE, PLAN+SUBAGENT, or OPERATOR-ONLY with the exact next command), have a Plan agent write the design to
 `agent/plans/PLAN-<slug>.md` (committed, survives compaction; it moves once at close into `_done/` or `_removed/` and leaves a stub, which `check:ci-plan-folders --move` does in one step), then implement it THIS session: via a writer sub-agent when the fix's file set is disjoint from the work in hand or the context is heavy (disjoint ownership, max 4, rule 4), inline otherwise. The
-fix rides the current PR when risk-compatible, otherwise its own branch cut the same session.
+fix rides the one branch and its open PR as its own commit (rule 1); there is no second branch to cut for it.
 - **Issues are a last resort with exactly three doors:** the fix needs
 operator-only powers (secrets, purchases, external accounts, production deploys); the operator explicitly deferred it when asked; or the target is outside this session's write access. "It is big" is not a door. Any last-resort issue must carry the evidence (exact command, exact output) and a ready-to-run brief a future session can execute without rediscovery, and its worklist item
 closes only with the door named in the tick evidence (`door:operator-only`, `door:operator-deferred`, or `door:no-write-access`).
@@ -99,9 +103,10 @@ Two mechanisms make this easy to fall into, so name them:
   2. **A push-back is not a work order for one item.** The hook naming the next
      item does not mean "do that one and stop". It means the queue is not
      empty. Drain it: keep going until every remaining item is genuinely (a)-(d)
-     above. The one exception is a full writer cap: with every writer slot verified live and every remaining item leased or queued (`worker:queue`), the hook stands down (`CAP-SATURATED WAIT`) and stopping is correct. It still blocks on a free slot, a dead writer, an expired `DEFAULT`, or a stale STATE.md in the last context band before compaction (agent/plans/PLAN-stop-hook-cap-saturated-wait.md).
+     above. There are two exceptions. The first is a full writer cap: with every writer slot verified live and every remaining item leased or queued (`worker:queue`), the hook stands down (`CAP-SATURATED WAIT`) and stopping is correct. It still blocks on a free slot, a dead writer, an expired `DEFAULT`, or a stale STATE.md in the last context band before compaction (agent/plans/PLAN-stop-hook-cap-saturated-wait.md).
+     The second is `FOCUS MODE`, a PR wind-down that `/pr-babysit` and `/pr-merge` switch on with `worklist.py --focus <me> babysit|merge [--pr <n>] [--branch <b>]`: finish, don't start. Running writers and in-flight items finish, and plan, queue and hygiene pushes park and are named in one `FOCUS ENDED` line when focus ends. CI red, dead watches, unread reports, STATE.md near compaction and hook integrity still block. The judge is skipped and advisories are batched. `block_focus_spawn` refuses new writer spawns except declared fix work: `focus-fix:#<id>` in the spawn, naming an open item of this session that carries `pr:<n>` (plus the `pr-babysitter` loop itself under `babysit`). Focus ends on `--focus <me> off`, when the PR merges or closes, or after 24 hours (agent/plans/PLAN-stop-hook-focus-mode.md).
 
-The operator's asks decide PACKAGING, never WHETHER (rule 2). "Waiting for the operator to pick a branch" does not block the code that would go on either branch — write it under the default and let the answer choose where it lands. And a turn that ends is a turn that costs a round trip: the bar for stopping is "there is genuinely nothing left to advance", not "a defensible report
+The operator's asks decide PACKAGING, never WHETHER (rule 2). "Waiting for the operator to pick the packaging" does not block the code that would go into either one — write it under the default and let the answer choose where it lands. And a turn that ends is a turn that costs a round trip: the bar for stopping is "there is genuinely nothing left to advance", not "a defensible report
 has been produced".
 
 ### 3. Verification comes before the claim
