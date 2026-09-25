@@ -486,7 +486,6 @@
           "overwriteAborted": "Activación abortada: la configuración local \"{{config}}\" tiene contenido que difiere de la copia del servidor. Vuelve a ejecutar con --force para reemplazarla, o confirma en una terminal interactiva.",
           "overwriteConfirm": "La configuración local \"{{config}}\" tiene {{machines}} máquina(s) y {{repos}} repositorio(s) que serán reemplazados por la copia del servidor (el archivo anterior se conserva en {{backupPath}}). ¿Continuar?",
           "passwordForbidden": "El servidor de cuenta rechazó la inscripción de la configuración: {{error}}",
-          "passwordIpBound": "El token API en REDIACC_TOKEN está vinculado a una dirección IP de cliente distinta. Un token se vincula a la dirección desde la que se usa por primera vez, por lo que un token creado en otro lugar no puede inscribirse desde esta máquina. Emite un token nuevo desde el portal web y vuelve a intentarlo.",
           "passwordMissingScope": "El token API en REDIACC_TOKEN no lleva el scope config:enroll. Emite un token con ese scope desde el portal web y vuelve a intentarlo.",
           "passwordNonInteractive": "Se requiere una contraseña maestra de configuración. Define REDIACC_CONFIG_PASSWORD, o ejecuta el comando sin --password en una terminal interactiva.",
           "passwordNoSlot": "No hay ningún password slot aprovisionado para tu almacenamiento de configuración. Añade uno desde el portal (Config Storage > key slots) y vuelve a intentarlo.",
@@ -524,6 +523,10 @@
           "description": "Mostrar estado de conexión remota"
         },
         "tokenExpired": "Token de configuración remota expirado. Vuelve a autenticarte con: rdc config remote enable",
+        "tokenIpMismatch": "El token de configuración de este dispositivo está vinculado a otra dirección de red. Vuelve a ejecutar rdc config remote enable para obtener un token para este dispositivo.",
+        "tokenExhausted": "El token de configuración de este dispositivo ya lo consumió otra solicitud (cambia con cada uso). Vuelve a autenticarte con: rdc config remote enable",
+        "tokenInvalid": "El servidor de configuración no reconoce el token de configuración de este dispositivo. Vuelve a autenticarte con: rdc config remote enable",
+        "tokenRejected": "El servidor de configuración rechazó el token de configuración de este dispositivo ({{reason}}). Vuelve a autenticarte con: rdc config remote enable",
         "undecryptableIdentity": "La configuración {{configId}} en el almacén {{storeId}} fue cifrada con una clave distinta a la que posee tu slot, por lo que este dispositivo no puede leerla. Esto ocurre cuando el almacén ya contiene una configuración de otra inscripción. Extrae esa configuración en un dispositivo ya inscrito y comprueba a cuál te referías, o pide a un administrador que vuelva a compartir la clave del almacén con este dispositivo desde el portal (Config Storage > key slots).",
         "undecryptableSession": "La configuración {{configId}} se desbloqueó con tu clave, pero la capa de sesión del servidor no quiso abrirla ({{detail}}). Vuelve a intentar el comando; si sigue fallando, vuelve a inscribirte con: rdc config remote enable",
         "unreachable": "Servidor de configuración {{server}} no está disponible",
@@ -2222,7 +2225,20 @@
       "activationFailed": "Error en la activación de la máquina. Asegúrese de que su suscripción esté activa y que la ranura de máquina esté disponible.",
       "notLoggedIn": "No ha iniciado sesión. Ejecute primero `rdc subscription login`.",
       "tokenRequired": "Se requiere token de suscripción. Establezca la variable de entorno REDIACC_SUBSCRIPTION_TOKEN o ejecute `rdc subscription login` en su terminal.",
-      "tokenWarning": "No se encontró token de suscripción. Los comandos que requieren licencia (repo create, repo fork) fallarán. Establezca la variable de entorno REDIACC_SUBSCRIPTION_TOKEN o ejecute `rdc subscription login` en su terminal."
+      "tokenWarning": "No se encontró token de suscripción. Los comandos que requieren licencia (repo create, repo fork) fallarán. Establezca la variable de entorno REDIACC_SUBSCRIPTION_TOKEN o ejecute `rdc subscription login` en su terminal.",
+      "ipRebind": {
+        "prompt": "Tu dirección IP ha cambiado. Introduce el código de 6 dígitos de tu app de autenticación para trasladar este inicio de sesión aquí:",
+        "moved": "Este inicio de sesión ya funciona desde {{ip}}.",
+        "wrongCode": "El código no es correcto. Te quedan {{remaining}} intentos antes de que se bloquee el traslado de este inicio de sesión.",
+        "replayed": "Ese código ya se usó. Espera al siguiente código de tu app de autenticación e introdúcelo.",
+        "locked": "Demasiados códigos incorrectos. El traslado de este inicio de sesión a una nueva dirección IP queda bloqueado durante {{minutes}} min. Vuelve a intentarlo más tarde o ejecuta `rdc subscription login`.",
+        "disabled": "Demasiados códigos incorrectos: el traslado de este inicio de sesión a una nueva dirección IP queda desactivado para este token. Ejecuta `rdc subscription login` para volver a iniciar sesión.",
+        "reloginOnly": "Tu dirección IP ha cambiado y este inicio de sesión solo funciona desde la anterior. La autenticación en dos pasos está desactivada en esta cuenta, así que no se puede trasladar: ejecuta `rdc subscription login` para volver a iniciar sesión. Si activas la autenticación en dos pasos, la próxima vez bastará con un código de tu app de autenticación.",
+        "notFirstUse": "Este token no está ligado a la dirección IP desde la que se usó por primera vez, así que no se puede trasladar a otra. Revisa la vinculación de IP del token en el portal web.",
+        "nonInteractive": "Tu dirección IP ha cambiado y este inicio de sesión solo funciona desde la anterior. Para trasladarlo aquí, ejecuta cualquier comando de rdc en una terminal interactiva (por ejemplo, `rdc subscription status`) e introduce el código de tu app de autenticación. O ejecuta `rdc subscription login` para volver a iniciar sesión.",
+        "stillMismatched": "El servidor de cuentas sigue viendo otra dirección IP después del traslado. Puede que tu conexión alterne entre direcciones (por ejemplo, IPv4 e IPv6). Vuelve a ejecutar el comando o ejecuta `rdc subscription login`.",
+        "attemptsExhausted": "Tres códigos incorrectos seguidos. Vuelve a ejecutar el comando para intentarlo de nuevo, o ejecuta `rdc subscription login` para volver a iniciar sesión."
+      }
     },
     "sync": {
       "absolutePathBlocked": "La ruta --remote debe ser relativa, no absoluta. Use una ruta relativa a la raíz del repositorio.",

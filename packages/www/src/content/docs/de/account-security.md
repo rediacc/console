@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 13
 language: de
-sourceHash: "5d139c4889b6a803"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "cbfa1730b069f73c"
+sourceCommit: "c707ed4d0e178e7c4cec46e5ff989a1472a8eb82"
 ---
 
 ### Authentifizierung
@@ -36,7 +36,7 @@ API-Token authentifizieren Maschine-zu-Maschine-Operationen (CLI-Lizenzaktivieru
 - `subscription:read` -- Abonnementdetails lesen
 
 **Sicherheitsfunktionen:**
-- IP-Bindung: Die erste Anfrage bindet den Token an diese IP-Adresse
+- IP-Bindung: Ein Token gilt nur für die IP-Adresse seiner ersten Anfrage; eine neue Adresse erfordert eine TOTP-Prüfung oder eine neue Anmeldung (siehe unten)
 - Team-Einschränkung: Token können auf ein bestimmtes Team beschränkt werden
 - Automatischer Widerruf: Token werden widerrufen, wenn der Ersteller aus der Organisation entfernt wird
 
@@ -45,6 +45,18 @@ Token erstellen:
 # Über das Portal: API Tokens > Create
 # Der Token-Wert wird nur einmal angezeigt -- sicher aufbewahren
 ```
+
+#### Wenn sich die IP-Adresse ändert
+
+Ein an eine IP-Adresse gebundener Token wird von jeder anderen Adresse abgelehnt, etwa wenn der Internetanbieter eine neue Adresse vergibt. Die CLI übernimmt die Übertragung:
+
+- **Interaktives Terminal, 2FA aktiv**: Die CLI fragt nach dem 6-stelligen Code aus der Authenticator-App, überträgt den Token auf die neue Adresse und führt den Befehl erneut aus. Backup-Codes werden dafür nicht akzeptiert.
+- **Skripte und CI (kein Terminal)**: Der Befehl schlägt fehl und nennt beide Lösungen: einmal einen beliebigen `rdc`-Befehl in einem interaktiven Terminal ausführen (zum Beispiel `rdc subscription status`) und den Code eingeben, oder `rdc subscription login` ausführen.
+- **2FA aus**: Der Token lässt sich nicht übertragen. `rdc subscription login` stellt einen neuen aus; mit aktivierter 2FA genügt beim nächsten Mal ein Code.
+- **Falsche Codes**: 5 falsche Codes innerhalb von 15 Minuten sperren die Übertragung, zuerst für 5 Minuten, danach jeweils doppelt so lange, höchstens 1 Stunde. Nach 4 Sperren ist die Übertragung für diesen Token abgeschaltet, bis zur nächsten Anmeldung mit `rdc subscription login`.
+- **Executor-Token** mit der IP-Bindung `unbound` oder `cloudflare` sind nicht betroffen.
+
+Jede Übertragung erscheint im Aktivitätsprotokoll des Portals, mit der alten und der neuen Adresse.
 
 ### Device-Code-Ablauf
 

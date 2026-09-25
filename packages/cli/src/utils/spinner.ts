@@ -65,6 +65,23 @@ export function stopSpinner(success = true, text?: string): void {
   currentSpinner = null;
 }
 
+/**
+ * Run `fn` with the running spinner paused, for a prompt that must own the
+ * terminal mid-operation. The same spinner resumes with its text afterwards,
+ * unless `fn` stopped or replaced it.
+ */
+export async function suspendSpinner<T>(fn: () => Promise<T>): Promise<T> {
+  const spinner = currentSpinner;
+  if (!spinner?.isSpinning) return fn();
+  const text = spinner.text;
+  spinner.stop();
+  try {
+    return await fn();
+  } finally {
+    if (currentSpinner === spinner) spinner.start(text);
+  }
+}
+
 export async function withSpinner<T>(
   text: string,
   fn: () => Promise<T>,

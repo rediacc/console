@@ -146,6 +146,8 @@ class AuditService {
             ...(e.onBehalfOfTokenId ? { onBehalfOfTokenId: e.onBehalfOfTokenId } : {}),
           })),
         },
+        // A background flush never prompts for an authenticator code; a refused token just drops the batch.
+        ipRebind: false,
       });
       const timeout = new Promise<never>((_, reject) => {
         timer = setTimeout(() => reject(new Error('audit flush timeout')), FLUSH_TIMEOUT_MS);

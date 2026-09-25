@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 13
 language: it
-sourceHash: "5d139c4889b6a803"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "cbfa1730b069f73c"
+sourceCommit: "c707ed4d0e178e7c4cec46e5ff989a1472a8eb82"
 ---
 
 ### Autenticazione
@@ -36,7 +36,7 @@ I token API autenticano le operazioni machine-to-machine (attivazione licenza CL
 - `subscription:read` -- Leggere i dettagli dell'abbonamento
 
 **Funzionalità di sicurezza:**
-- Binding IP: la prima richiesta blocca il token su quell'indirizzo IP
+- Binding IP: un token vale solo per l'indirizzo IP della sua prima richiesta; un nuovo indirizzo richiede una verifica TOTP o un nuovo accesso (vedi sotto)
 - Scope per team: i token possono essere limitati a un team specifico
 - Revoca automatica: i token vengono revocati quando il creatore viene rimosso dall'organizzazione
 
@@ -45,6 +45,18 @@ Creazione di un token:
 # Tramite il portale: API Tokens > Create
 # Il valore del token viene mostrato una sola volta -- salvalo in modo sicuro
 ```
+
+#### Quando cambia l'indirizzo IP
+
+Un token legato a un indirizzo IP viene rifiutato da qualsiasi altro indirizzo, per esempio quando il provider assegna un indirizzo nuovo. La CLI gestisce lo spostamento:
+
+- **Terminale interattivo, 2FA attiva**: la CLI chiede il codice a 6 cifre dell'app di autenticazione, sposta il token sul nuovo indirizzo ed esegue di nuovo il comando. I codici di backup non valgono per uno spostamento.
+- **Script e CI (senza terminale)**: il comando fallisce e indica entrambe le soluzioni: eseguire una volta un qualsiasi comando `rdc` in un terminale interattivo (per esempio `rdc subscription status`) e inserire il codice, oppure eseguire `rdc subscription login`.
+- **2FA disattivata**: il token non si può spostare. `rdc subscription login` ne rilascia uno nuovo e, con la 2FA attiva, al prossimo spostamento basta un codice.
+- **Codici errati**: 5 codici errati in 15 minuti bloccano lo spostamento, prima per 5 minuti e poi per il doppio ogni volta, fino a 1 ora. Dopo 4 blocchi lo spostamento viene disattivato per quel token fino al successivo `rdc subscription login`.
+- **I token degli executor** con binding IP `unbound` o `cloudflare` non sono interessati.
+
+Ogni spostamento compare nel registro attività del portale, con l'indirizzo vecchio e quello nuovo.
 
 ### Flusso Device Code
 

@@ -45,10 +45,12 @@ vi.mock('@rediacc/shared/config-crypto', () => ({
 import type { RemoteConfig } from '../../types/index.js';
 import {
   isNetworkError,
+  RemoteAuthError,
   RemoteConfigAdapter,
   RemotePasskeySecretMissingError,
   RemoteStaleSlotError,
   RemoteTokenExpiredError,
+  RemoteTokenIpMismatchError,
   RemoteUnreachableError,
   RemoteVersionConflictError,
 } from '../remote-config-adapter.js';
@@ -117,6 +119,52 @@ describe('RemoteConfigAdapter', () => {
   // ─── pull() ──────────────────────────────────────────────────────────
 
   describe('pull', () => {
+    it('decrypts with the key the PULL returns (the push epoch), not the session key of the current epoch', async () => {
+      // 2026-09-25: after the first remote enable every later pull failed with "the server
+      // session layer would not open it": the blob is sealed under the epoch it was pushed in,
+      // and the pull response carries that epoch's sdk_derived, which the CLI ignored.
+      mockFromBase64.mockImplementation((b64: string) => new TextEncoder().encode(String(b64)));
+      mockImportAesKey.mockImplementation(async (bytes: Uint8Array) => ({
+        marker: new TextDecoder().decode(bytes),
+      }));
+      mockConfigServerFetch.mockResolvedValueOnce({
+        data: { server_secret: 'c2Vy', sdk_derived: 'SESSION_EPOCH_KEY', sdkEpoch: 42 },
+      });
+      mockConfigServerFetch.mockResolvedValueOnce({
+        data: {
+          configData: 'encrypted-blob',
+          envelope: {
+            configId: 'config-001',
+            version: 3,
+            teamId: null,
+            lastModified: 'x',
+            sdkEpoch: 7,
+          },
+          hmac: 'hmac-value',
+          sdk_derived: 'PUSH_EPOCH_KEY',
+        },
+      });
+      mockSelectiveDecrypt.mockResolvedValue({
+        id: 'c',
+        version: 3,
+        machines: {},
+        repositories: {},
+        storages: {},
+        ssh: null,
+      });
+
+      const result = await adapter.pull();
+
+      const [payload, , sdkKey] = mockSelectiveDecrypt.mock.calls.at(-1) as [
+        { envelope: { sdkEpoch: number } },
+        unknown,
+        { marker: string },
+      ];
+      expect(sdkKey.marker).toBe('PUSH_EPOCH_KEY');
+      expect(payload.envelope.sdkEpoch).toBe(7);
+      expect(result.sdkEpoch).toBe(7);
+    });
+
     it('should fetch session, fetch config, decrypt, and return result', async () => {
       // Session endpoint
       mockConfigServerFetch.mockResolvedValueOnce({
@@ -207,11 +255,59 @@ describe('RemoteConfigAdapter', () => {
       expect(tokenStorage.updateToken).toHaveBeenCalledWith(CONFIG_NAME, 'tok_rotated_2');
     });
 
-    it('should throw RemoteTokenExpiredError on 401', async () => {
+    it('should throw RemoteTokenExpiredError on 401 token_expired', async () => {
       const { ConfigServerError } = await import('../../services/config/config-server-client.js');
-      mockConfigServerFetch.mockRejectedValueOnce(new ConfigServerError('Unauthorized', 401));
+      mockConfigServerFetch.mockRejectedValueOnce(
+        new ConfigServerError('Config auth failed: token_expired', 401)
+      );
 
       await expect(adapter.pull()).rejects.toThrow(RemoteTokenExpiredError);
+    });
+
+    // A 401 keeps the server's reason: ip_mismatch is NOT an expired token, and
+    // reading it as one sent the user in a loop (the relay handoff bug).
+    it('should throw RemoteTokenIpMismatchError on 401 ip_mismatch, not an expiry', async () => {
+      const { ConfigServerError } = await import('../../services/config/config-server-client.js');
+      mockConfigServerFetch.mockRejectedValueOnce(
+        new ConfigServerError('Config auth failed: ip_mismatch', 401)
+      );
+
+      const err = await adapter.pull().catch((e: unknown) => e);
+      expect(err).toBeInstanceOf(RemoteTokenIpMismatchError);
+      expect(err).not.toBeInstanceOf(RemoteTokenExpiredError);
+      expect((err as RemoteAuthError).reason).toBe('ip_mismatch');
+      expect((err as Error).message).toContain('rdc config remote enable');
+      expect((err as Error).message).not.toBe(new RemoteTokenExpiredError().message);
+    });
+
+    it.each([
+      ['token_exhausted', 'token_exhausted'],
+      ['invalid_token', 'invalid_token'],
+      ['decryption_failed', 'decryption_failed'],
+    ])('should keep reason %s on a 401 with its own message', async (serverReason, reason) => {
+      const { ConfigServerError } = await import('../../services/config/config-server-client.js');
+      mockConfigServerFetch.mockRejectedValueOnce(
+        new ConfigServerError(`Config auth failed: ${serverReason}`, 401)
+      );
+
+      const err = await adapter.pull().catch((e: unknown) => e);
+      expect(err).toBeInstanceOf(RemoteAuthError);
+      expect(err).not.toBeInstanceOf(RemoteTokenExpiredError);
+      expect((err as RemoteAuthError).reason).toBe(reason);
+      expect((err as Error).message).not.toBe(new RemoteTokenExpiredError().message);
+    });
+
+    it('should carry an unrecognized 401 verbatim rather than calling it expired', async () => {
+      const { ConfigServerError } = await import('../../services/config/config-server-client.js');
+      mockConfigServerFetch.mockRejectedValueOnce(
+        new ConfigServerError('Config token required (X-Config-Token header)', 401)
+      );
+
+      const err = await adapter.pull().catch((e: unknown) => e);
+      expect(err).toBeInstanceOf(RemoteAuthError);
+      expect(err).not.toBeInstanceOf(RemoteTokenExpiredError);
+      expect((err as RemoteAuthError).reason).toBe('unauthorized');
+      expect((err as Error).message).toContain('Config token required (X-Config-Token header)');
     });
 
     it('should throw RemotePasskeySecretMissingError when passkey_secret is missing', async () => {

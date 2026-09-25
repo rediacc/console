@@ -486,7 +486,6 @@
           "overwriteAborted": "Activation annulée : la configuration locale \"{{config}}\" contient un contenu différent de la copie du serveur. Relancez avec --force pour la remplacer, ou confirmez dans un terminal interactif.",
           "overwriteConfirm": "La configuration locale \"{{config}}\" contient {{machines}} machine(s) et {{repos}} dépôt(s) qui seront remplacés par la copie du serveur (l'ancien fichier est conservé sous {{backupPath}}). Continuer ?",
           "passwordForbidden": "Le serveur de compte a refusé l'inscription de la configuration : {{error}}",
-          "passwordIpBound": "Le jeton API dans REDIACC_TOKEN est lié à une autre adresse IP client. Un jeton se lie à l'adresse depuis laquelle il est utilisé pour la première fois, donc un jeton créé ailleurs ne peut pas s'inscrire depuis cette machine. Émettez un nouveau jeton depuis le portail web et réessayez.",
           "passwordMissingScope": "Le jeton API dans REDIACC_TOKEN ne porte pas le scope config:enroll. Émettez un jeton avec ce scope depuis le portail web et réessayez.",
           "passwordNonInteractive": "Un mot de passe maître de configuration est requis. Définissez REDIACC_CONFIG_PASSWORD, ou lancez la commande sans --password dans un terminal interactif.",
           "passwordNoSlot": "Aucun password slot n'est provisionné pour votre stockage de configuration. Ajoutez-en un depuis le portail (Config Storage > key slots), puis réessayez.",
@@ -524,6 +523,10 @@
           "description": "Afficher l'état de la connexion distante"
         },
         "tokenExpired": "Jeton de configuration distante expiré. Réauthentifiez-vous avec : rdc config remote enable",
+        "tokenIpMismatch": "Le jeton de configuration de cet appareil est lié à une autre adresse réseau. Relancez rdc config remote enable pour obtenir un jeton propre à cet appareil.",
+        "tokenExhausted": "Le jeton de configuration de cet appareil a déjà été consommé par une autre requête (il change à chaque utilisation). Réauthentifiez-vous avec : rdc config remote enable",
+        "tokenInvalid": "Le serveur de configuration ne reconnaît pas le jeton de configuration de cet appareil. Réauthentifiez-vous avec : rdc config remote enable",
+        "tokenRejected": "Le serveur de configuration a refusé le jeton de configuration de cet appareil ({{reason}}). Réauthentifiez-vous avec : rdc config remote enable",
         "undecryptableIdentity": "La configuration {{configId}} dans le store {{storeId}} a été chiffrée avec une clé différente de celle que détient votre slot, donc cet appareil ne peut pas la lire. Cela arrive quand le store contient déjà une configuration issue d'une autre inscription. Récupérez cette configuration depuis un appareil déjà inscrit et vérifiez de quelle configuration il s'agissait, ou demandez à un administrateur de repartager la clé du store avec cet appareil depuis le portail (Config Storage > key slots).",
         "undecryptableSession": "La configuration {{configId}} a été déverrouillée avec votre clé, mais la couche de session du serveur a refusé de l'ouvrir ({{detail}}). Relancez la commande ; si l'échec persiste, réinscrivez-vous avec : rdc config remote enable",
         "unreachable": "Le serveur de configuration {{server}} est injoignable",
@@ -2222,7 +2225,20 @@
       "activationFailed": "Échec de l'activation de la machine. Assurez-vous que votre abonnement est actif et que l'emplacement machine est disponible.",
       "notLoggedIn": "Non connecté. Exécutez d’abord `rdc subscription login`.",
       "tokenRequired": "Jeton d'abonnement requis. Définissez la variable d'environnement REDIACC_SUBSCRIPTION_TOKEN ou exécutez `rdc subscription login` dans votre terminal.",
-      "tokenWarning": "Aucun jeton d'abonnement trouvé. Les commandes nécessitant une licence (repo create, repo fork) échoueront. Définissez la variable d'environnement REDIACC_SUBSCRIPTION_TOKEN ou exécutez `rdc subscription login` dans votre terminal."
+      "tokenWarning": "Aucun jeton d'abonnement trouvé. Les commandes nécessitant une licence (repo create, repo fork) échoueront. Définissez la variable d'environnement REDIACC_SUBSCRIPTION_TOKEN ou exécutez `rdc subscription login` dans votre terminal.",
+      "ipRebind": {
+        "prompt": "Votre adresse IP a changé. Saisissez le code à 6 chiffres de votre application d'authentification pour transférer cette connexion ici :",
+        "moved": "Cette connexion fonctionne désormais depuis {{ip}}.",
+        "wrongCode": "Ce code est incorrect. Encore {{remaining}} essais avant que le transfert de cette connexion soit bloqué.",
+        "replayed": "Ce code a déjà servi. Attendez le code suivant dans votre application d'authentification, puis saisissez-le.",
+        "locked": "Trop de codes erronés. Le transfert de cette connexion vers une nouvelle adresse IP est bloqué pendant {{minutes}} min. Réessayez plus tard ou lancez `rdc subscription login`.",
+        "disabled": "Trop de codes erronés : le transfert de cette connexion vers une nouvelle adresse IP est désactivé pour ce jeton. Lancez `rdc subscription login` pour vous reconnecter.",
+        "reloginOnly": "Votre adresse IP a changé et cette connexion ne fonctionne que depuis l'ancienne. L'authentification à deux facteurs est désactivée sur ce compte, la connexion ne peut donc pas être transférée : lancez `rdc subscription login` pour vous reconnecter. Avec l'authentification à deux facteurs activée, un code de votre application suffira la prochaine fois.",
+        "notFirstUse": "Ce jeton n'est pas lié à l'adresse IP de sa première utilisation, il ne peut donc pas être transféré vers une autre. Vérifiez la liaison IP du jeton dans le portail web.",
+        "nonInteractive": "Votre adresse IP a changé et cette connexion ne fonctionne que depuis l'ancienne. Pour la transférer ici, lancez n'importe quelle commande rdc dans un terminal interactif (par exemple `rdc subscription status`) et saisissez le code de votre application d'authentification. Ou lancez `rdc subscription login` pour vous reconnecter.",
+        "stillMismatched": "Le serveur de comptes voit toujours une autre adresse IP après le transfert. Votre connexion alterne peut-être entre plusieurs adresses (par exemple IPv4 et IPv6). Relancez la commande ou lancez `rdc subscription login`.",
+        "attemptsExhausted": "Trois codes erronés d'affilée. Relancez la commande pour réessayer, ou lancez `rdc subscription login` pour vous reconnecter."
+      }
     },
     "sync": {
       "absolutePathBlocked": "Le chemin --remote doit être relatif, pas absolu. Utilisez un chemin relatif à la racine du dépôt.",

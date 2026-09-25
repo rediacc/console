@@ -21,7 +21,7 @@ import type { RdcConfig, RemoteConfig } from '../../types/index.js';
 /**
  * Merge a pulled (or just-pushed) server copy into the local cache file shape.
  * Pulled content sections win; `remote` (stamped with fresh cache metadata),
- * `state`, `encryption`, and the local `account`/`defaults` overrides are
+ * `state`, `encryption`, `renetPath`, and the local `account`/`defaults` overrides are
  * re-applied from `local`, the same precedence `loadRemote` uses in memory.
  */
 export function mergeRemoteIntoCache(
@@ -40,6 +40,9 @@ export function mergeRemoteIntoCache(
     state: local.state,
     encryption: local.encryption,
   };
+  // renetPath is host-local like state and encryption (never projected to the server, payload.ts): a pull that
+  // dropped it silently switched a dev machine back to the default renet binary (2026-09-25, first remote enable).
+  if (local.renetPath !== undefined) merged.renetPath = local.renetPath;
   if (local.account) merged.account = { ...(pulled.account ?? {}), ...local.account };
   if (local.defaults) merged.defaults = { ...(pulled.defaults ?? {}), ...local.defaults };
   return merged;

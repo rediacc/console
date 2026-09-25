@@ -50,10 +50,61 @@ interface SessionMaterial {
 
 // ─── Error Classes ──────────────────────────────────────────────────────
 
-export class RemoteTokenExpiredError extends Error {
+/**
+ * The server refused this device's config token (HTTP 401). `reason` is the
+ * server's own code from "Config auth failed: <reason>" (config-token.ts), so
+ * each cause keeps its message instead of all 401s reading as "expired".
+ */
+export class RemoteAuthError extends Error {
+  constructor(
+    public readonly reason: string,
+    message: string
+  ) {
+    super(message);
+    this.name = 'RemoteAuthError';
+  }
+}
+
+/** The token is past its lifetime, or this device holds none at all. */
+export class RemoteTokenExpiredError extends RemoteAuthError {
   constructor() {
-    super(t('commands.config.remote.tokenExpired'));
+    super('token_expired', t('commands.config.remote.tokenExpired'));
     this.name = 'RemoteTokenExpiredError';
+  }
+}
+
+/**
+ * The token is bound to another client address: a token chain binds to the
+ * address that first uses it, so a token some other client already spent
+ * (the enabling browser, before the device-token fix) fails here.
+ */
+export class RemoteTokenIpMismatchError extends RemoteAuthError {
+  constructor() {
+    super('ip_mismatch', t('commands.config.remote.tokenIpMismatch'));
+    this.name = 'RemoteTokenIpMismatchError';
+  }
+}
+
+const AUTH_REASON_RE = /Config auth failed: ([a-z_]+)/;
+
+/** Map a 401 onto the error for the server's stated reason. */
+export function remoteAuthErrorFor(serverMessage: string): RemoteAuthError {
+  const reason = AUTH_REASON_RE.exec(serverMessage)?.[1];
+  switch (reason) {
+    case 'token_expired':
+      return new RemoteTokenExpiredError();
+    case 'ip_mismatch':
+      return new RemoteTokenIpMismatchError();
+    case 'token_exhausted':
+      return new RemoteAuthError(reason, t('commands.config.remote.tokenExhausted'));
+    case 'invalid_token':
+    case 'decryption_failed':
+      return new RemoteAuthError(reason, t('commands.config.remote.tokenInvalid'));
+    default:
+      return new RemoteAuthError(
+        reason ?? 'unauthorized',
+        t('commands.config.remote.tokenRejected', { reason: serverMessage })
+      );
   }
 }
 
@@ -105,14 +156,19 @@ export function isNetworkError(err: unknown): boolean {
   while (current && typeof current === 'object' && !seen.has(current)) {
     seen.add(current);
     if (current instanceof ConfigServerError) return current.status >= 500;
-    const code = (current as { code?: unknown }).code;
-    if (typeof code === 'string' && (NETWORK_ERROR_CODES.has(code) || code.startsWith('UND_ERR'))) {
-      return true;
-    }
-    if (current instanceof TypeError && /fetch failed/i.test(current.message)) return true;
+    if (isNetworkErrorNode(current)) return true;
     current = (current as { cause?: unknown }).cause;
   }
   return false;
+}
+
+/** One link of the cause chain: a socket/undici code, or fetch's TypeError. */
+function isNetworkErrorNode(node: object): boolean {
+  const code = (node as { code?: unknown }).code;
+  if (typeof code === 'string' && (NETWORK_ERROR_CODES.has(code) || code.startsWith('UND_ERR'))) {
+    return true;
+  }
+  return node instanceof TypeError && /fetch failed/i.test(node.message);
 }
 
 export class RemotePasskeySecretMissingError extends Error {
@@ -187,9 +243,19 @@ export class RemoteConfigAdapter {
         lastModified: string;
         envelopeVersion?: 2;
         commitments?: FieldCommitments;
+        sdkEpoch?: number;
       };
       hmac: string | null;
+      sdk_derived: string;
     }>(pullPath, token);
+
+    // The session layer was sealed under the epoch the config was PUSHED in, and the pull
+    // response carries that epoch's key (configs.ts derives it from the stored sdkEpoch).
+    // `session.sdkDerived` is the CURRENT epoch's key: using it opened the blob only until
+    // the epoch window rolled over, then every pull failed as "the server session layer
+    // would not open it" (2026-09-25, right after the first remote enable).
+    const pulledSdkDerived = await importAesKey(fromBase64(pullResp.data.sdk_derived));
+    const pulledSdkEpoch = pullResp.data.envelope.sdkEpoch ?? session.sdkEpoch;
 
     // Decrypt: Layer 2 (CEK) + Layer 1 (SDK) Server-stored envelope is v2 (see Step 5). Until the server supports that,
     // fabricate empty commitments so the v2 shape is well-formed; selectiveDecrypt
@@ -199,7 +265,7 @@ export class RemoteConfigAdapter {
         envelopeVersion: 2,
         id: pullResp.data.envelope.configId,
         version: pullResp.data.envelope.version,
-        sdkEpoch: session.sdkEpoch,
+        sdkEpoch: pulledSdkEpoch,
         teamId: pullResp.data.envelope.teamId ?? undefined,
         lastModified: pullResp.data.envelope.lastModified,
         commitments: pullResp.data.envelope.commitments ?? {
@@ -214,7 +280,7 @@ export class RemoteConfigAdapter {
 
     let decrypted: Awaited<ReturnType<typeof selectiveDecrypt>>;
     try {
-      decrypted = await selectiveDecrypt(payload, cek, session.sdkDerived);
+      decrypted = await selectiveDecrypt(payload, cek, pulledSdkDerived);
     } catch (error) {
       throw this.classifyDecryptFailure(error, pullResp.data.envelope.configId);
     }
@@ -227,7 +293,7 @@ export class RemoteConfigAdapter {
     return {
       config,
       version: pullResp.data.envelope.version,
-      sdkEpoch: session.sdkEpoch,
+      sdkEpoch: pulledSdkEpoch,
     };
   }
 
@@ -398,16 +464,16 @@ export class RemoteConfigAdapter {
 }
 
 /**
- * Map a transport/server failure onto the adapter's typed taxonomy: 401 →
- * token expired, 409 → version conflict (server message verbatim), and
- * network-class failures (fetch TypeError, ECONN*, 5xx, including the
+ * Map a transport/server failure onto the adapter's typed taxonomy: 401 → the
+ * RemoteAuthError for the server's stated reason, 409 → version conflict
+ * (server message verbatim), and network-class failures (fetch TypeError, ECONN*, 5xx, including the
  * getServerKeyMaterial fetch inside configServerFetch) → unreachable, so read
  * paths can cache-serve and write paths fail closed. Everything else passes
  * through unchanged.
  */
 function classifyFetchError(error: unknown, apiUrl: string): unknown {
   if (error instanceof ConfigServerError) {
-    if (error.status === 401) return new RemoteTokenExpiredError();
+    if (error.status === 401) return remoteAuthErrorFor(error.message);
     if (error.status === 409) return new RemoteVersionConflictError(error.message);
   }
   if (isNetworkError(error)) return new RemoteUnreachableError(apiUrl, error);

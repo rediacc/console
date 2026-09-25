@@ -1,5 +1,6 @@
 import type { SlotKdfParams } from '@rediacc/shared/config-crypto';
 import { toBase64 } from '@rediacc/shared/config-crypto';
+import { TOKEN_IP_MISMATCH } from '@rediacc/shared/subscription/types';
 import { t } from '../i18n/index.js';
 import { accountServerFetch } from '../services/account/account-client.js';
 import { outputService } from '../services/core/output.js';
@@ -25,13 +26,15 @@ interface PasswordEnrollResponse {
 /**
  * Turn a 403 from `POST /configs/password-enroll` into an actionable message.
  *
- * Six unrelated causes share that status, and only one of them is the passkey
- * policy that this code used to blame for all of them. The account server sends
- * them as bare `HTTPException`s, so the envelope is `{"error":"<message>"}` with
- * NO machine-readable `code` (see private/account/src/middleware/error-handler.ts
- * and src/middleware/api-token.ts) and `accountServerFetch` therefore leaves
- * `error.code` undefined. Matching the server's text is the only discriminator
- * available today; `code` is preferred whenever the server starts sending one.
+ * Several unrelated causes share that status, and only one of them is the
+ * passkey policy that this code used to blame for all of them. The IP-binding
+ * refusal carries `code: TOKEN_IP_MISMATCH` and is handled centrally in
+ * `accountServerFetch`, which has already produced its localized message by
+ * the time it reaches here. The rest are still bare `HTTPException`s, so the
+ * envelope is `{"error":"<message>"}` with NO machine-readable `code` (see
+ * private/account/src/middleware/error-handler.ts and
+ * src/middleware/api-token.ts) and matching the server's text is the only
+ * discriminator for them; `code` is preferred whenever the server sends one.
  *
  * Anything unrecognised repeats the server's own words rather than guessing.
  */
@@ -39,11 +42,9 @@ function describeEnrollForbidden(error: unknown): string {
   const { code, message } = error as { code?: string; message?: string };
   const serverMessage = message ?? '';
 
+  if (code === TOKEN_IP_MISMATCH) return serverMessage;
   if (code === 'REQUIRE_PASSKEY' || serverMessage.includes('requires a passkey')) {
     return t('commands.config.remote.enable.passwordRequirePasskey');
-  }
-  if (serverMessage.includes('bound to a different IP')) {
-    return t('commands.config.remote.enable.passwordIpBound');
   }
   if (serverMessage.includes('Missing required scope')) {
     return t('commands.config.remote.enable.passwordMissingScope');

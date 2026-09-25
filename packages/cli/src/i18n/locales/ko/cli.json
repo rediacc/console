@@ -486,7 +486,6 @@
           "overwriteAborted": "활성화가 중단되었습니다: 로컬 설정 \"{{config}}\"에 서버 사본과 다른 내용이 있습니다. 교체하려면 --force로 다시 실행하거나 대화형 터미널에서 확인하세요.",
           "overwriteConfirm": "로컬 설정 \"{{config}}\"에는 서버 사본으로 교체될 {{machines}}개의 머신과 {{repos}}개의 저장소가 있습니다 (이전 파일은 {{backupPath}}에 보관됩니다). 계속하시겠습니까?",
           "passwordForbidden": "계정 서버가 설정 등록을 거부했습니다: {{error}}",
-          "passwordIpBound": "REDIACC_TOKEN의 API 토큰이 다른 클라이언트 IP 주소에 바인딩되어 있습니다. 토큰은 처음 사용된 주소에 바인딩되므로 다른 곳에서 생성한 토큰으로는 이 머신에서 등록할 수 없습니다. 웹 포털에서 새 토큰을 발급받고 다시 시도하세요.",
           "passwordMissingScope": "REDIACC_TOKEN의 API 토큰에 config:enroll 스코프가 없습니다. 웹 포털에서 해당 스코프를 가진 토큰을 발급받고 다시 시도하세요.",
           "passwordNonInteractive": "설정 마스터 비밀번호가 필요합니다. REDIACC_CONFIG_PASSWORD를 설정하거나, 대화형 터미널에서 --password 없이 실행하세요.",
           "passwordNoSlot": "설정 스토리지에 프로비저닝된 비밀번호 슬롯이 없습니다. 포털(Config Storage > key slots)에서 하나를 추가한 뒤 다시 시도하세요.",
@@ -524,6 +523,10 @@
           "description": "원격 연결 상태를 표시합니다"
         },
         "tokenExpired": "원격 설정 토큰이 만료되었습니다. 다음으로 재인증하십시오: rdc config remote enable",
+        "tokenIpMismatch": "이 기기의 설정 토큰이 다른 네트워크 주소에 묶여 있습니다. 이 기기용 토큰을 받으려면 rdc config remote enable을 다시 실행하십시오.",
+        "tokenExhausted": "이 기기의 설정 토큰은 이미 다른 요청에서 사용되었습니다(사용할 때마다 교체됨). 다음으로 재인증하십시오: rdc config remote enable",
+        "tokenInvalid": "설정 서버가 이 기기의 설정 토큰을 인식하지 못합니다. 다음으로 재인증하십시오: rdc config remote enable",
+        "tokenRejected": "설정 서버가 이 기기의 설정 토큰을 거부했습니다({{reason}}). 다음으로 재인증하십시오: rdc config remote enable",
         "undecryptableIdentity": "스토어 {{storeId}}의 설정 {{configId}}은 당신의 슬롯이 가진 키와 다른 키로 암호화되어 있어 이 기기에서 읽을 수 없습니다. 이는 스토어에 이미 다른 등록에서 나온 설정이 있을 때 발생합니다. 이미 등록된 기기에서 해당 설정을 가져와 어떤 설정을 의도했는지 확인하거나, 관리자에게 포털(Config Storage > key slots)에서 이 기기와 스토어 키를 다시 공유해 달라고 요청하세요.",
         "undecryptableSession": "설정 {{configId}}은 당신의 키로 잠금이 해제되었지만 서버 세션 계층이 열기를 거부했습니다 ({{detail}}). 명령을 다시 시도하세요. 계속 실패하면 다음 명령으로 다시 등록하세요: rdc config remote enable",
         "unreachable": "설정 서버 {{server}}에 연결할 수 없습니다",
@@ -2222,7 +2225,20 @@
       "activationFailed": "라이선스 발급에 실패했습니다. 구독이 활성 상태이고 머신 슬롯이 사용 가능한지 확인하세요.",
       "notLoggedIn": "로그인되어 있지 않습니다. 일반 사용자는 `rdc subscription login`을 실행하세요. 자동화 환경에서는 `rdc subscription login --token <token>`을 실행하거나 `REDIACC_SUBSCRIPTION_TOKEN`을 설정하세요.",
       "tokenRequired": "구독 토큰이 필요합니다. REDIACC_SUBSCRIPTION_TOKEN 환경 변수를 설정하거나, 터미널에서 `rdc subscription login`을 실행하세요.",
-      "tokenWarning": "구독 토큰을 찾을 수 없습니다. 라이선스가 필요한 명령(repo create, repo fork)이 실패할 수 있습니다. REDIACC_SUBSCRIPTION_TOKEN 환경 변수를 설정하거나 터미널에서 `rdc subscription login`을 실행하세요."
+      "tokenWarning": "구독 토큰을 찾을 수 없습니다. 라이선스가 필요한 명령(repo create, repo fork)이 실패할 수 있습니다. REDIACC_SUBSCRIPTION_TOKEN 환경 변수를 설정하거나 터미널에서 `rdc subscription login`을 실행하세요.",
+      "ipRebind": {
+        "prompt": "IP 주소가 바뀌었습니다. 이 로그인을 여기로 옮기려면 인증 앱에 표시된 6자리 코드를 입력하세요:",
+        "moved": "이제 이 로그인은 {{ip}}에서 사용할 수 있습니다.",
+        "wrongCode": "코드가 올바르지 않습니다. 이 로그인 이동이 잠기기 전까지 남은 시도 횟수: {{remaining}}.",
+        "replayed": "이미 사용한 코드입니다. 인증 앱에 다음 코드가 나타날 때까지 기다린 뒤 입력하세요.",
+        "locked": "잘못된 코드를 너무 많이 입력했습니다. 이 로그인을 새 IP 주소로 옮기는 기능이 {{minutes}}분 동안 잠겼습니다. 나중에 다시 시도하거나 `rdc subscription login`을 실행하세요.",
+        "disabled": "잘못된 코드를 너무 많이 입력해 이 토큰에서는 로그인을 새 IP 주소로 옮기는 기능이 꺼졌습니다. `rdc subscription login`을 실행해 다시 로그인하세요.",
+        "reloginOnly": "IP 주소가 바뀌었는데 이 로그인은 이전 주소에서만 사용할 수 있습니다. 이 계정은 2단계 인증이 꺼져 있어 로그인을 옮길 수 없습니다. `rdc subscription login`을 실행해 다시 로그인하세요. 2단계 인증을 켜 두면 다음에는 인증 앱 코드만으로 충분합니다.",
+        "notFirstUse": "이 토큰은 처음 사용한 IP 주소에 묶이는 방식이 아니어서 다른 주소로 옮길 수 없습니다. 웹 포털에서 토큰의 IP 바인딩 설정을 확인하세요.",
+        "nonInteractive": "IP 주소가 바뀌었는데 이 로그인은 이전 주소에서만 사용할 수 있습니다. 여기로 옮기려면 대화형 터미널에서 아무 rdc 명령(예: `rdc subscription status`)이나 실행하고 인증 앱의 코드를 입력하세요. 또는 `rdc subscription login`을 실행해 다시 로그인하세요.",
+        "stillMismatched": "이동한 뒤에도 계정 서버에는 다른 IP 주소가 보입니다. 연결이 여러 주소(예: IPv4와 IPv6) 사이를 오가고 있을 수 있습니다. 명령을 다시 실행하거나 `rdc subscription login`을 실행하세요.",
+        "attemptsExhausted": "잘못된 코드를 세 번 연속 입력했습니다. 다시 시도하려면 명령을 다시 실행하거나, `rdc subscription login`을 실행해 다시 로그인하세요."
+      }
     },
     "sync": {
       "absolutePathBlocked": "--remote 경로는 절대 경로가 아닌 상대 경로여야 합니다. 리포지토리 루트를 기준으로 한 상대 경로를 사용하세요.",

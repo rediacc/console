@@ -163,6 +163,8 @@ async function provision(
         commitments: payload.envelope.commitments,
       },
       hmac: payload.hmac,
+      // The server's pull always returns the key of the epoch the blob was pushed in (configs.ts pull route).
+      sdk_derived: toBase64(rawSdk),
     },
   };
 }
@@ -308,7 +310,8 @@ describe('RemoteConfigAdapter — real crypto round-trip', () => {
     // Same CEK on both sides, so the HMAC and the CEK layer both pass; only the
     // server-derived SDK layer is wrong. That is a retryable session problem, not a store-identity problem, and it must not claim the latter.
     const f = await provision(PASSWORD);
-    wireConfigApi({ ...f.session, sdk_derived: toBase64(randomBytes(32)) }, f.config);
+    // The pull response carries the session-layer key (the push epoch's), so that is where the wrong key goes.
+    wireConfigApi(f.session, { ...f.config, sdk_derived: toBase64(randomBytes(32)) });
 
     const adapter = new RemoteConfigAdapter(
       REMOTE,

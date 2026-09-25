@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 13
 language: et
-sourceHash: "5d139c4889b6a803"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "cbfa1730b069f73c"
+sourceCommit: "c707ed4d0e178e7c4cec46e5ff989a1472a8eb82"
 ---
 
 ### Autentimine
@@ -36,7 +36,7 @@ API-tokenid autendivad masinatevahelisi toiminguid (CLI litsentsi aktiveerimine,
 - `subscription:read` - Tellimuse üksikasjade lugemine
 
 **Turvafunktsioonid:**
-- IP-sidumine: esimene päring lukustab tokeni sellele IP-aadressile
+- IP-sidumine: token kehtib ainult oma esimese päringu IP-aadressilt; uue aadressi jaoks on vaja TOTP-kontrolli või uut sisselogimist (vt allpool)
 - Meeskonna piirang: tokeneid saab piirata konkreetse meeskonnaga
 - Automaatne tühistamine: tokenid tühistatakse, kui looja eemaldatakse organisatsioonist
 
@@ -45,6 +45,18 @@ Tokeni loomine:
 # Portaali kaudu: API Tokens > Create
 # Tokeni väärtus kuvatakse üks kord - salvestage see turvaliselt
 ```
+
+#### Kui IP-aadress muutub
+
+Ühe IP-aadressiga seotud token lükatakse igalt teiselt aadressilt tagasi, näiteks kui internetiteenuse pakkuja annab uue aadressi. CLI tõstab tokeni ise ümber:
+
+- **Interaktiivne terminal, 2FA sees**: CLI küsib autentimisrakenduse 6-kohalist koodi, tõstab tokeni uuele aadressile ja käivitab käsu uuesti. Varukoodid tõstmiseks ei sobi.
+- **Skriptid ja CI (terminalita)**: käsk ebaõnnestub ja nimetab mõlemad lahendused: käivita üks kord interaktiivses terminalis mis tahes `rdc` käsk (näiteks `rdc subscription status`) ja sisesta kood või käivita `rdc subscription login`.
+- **2FA väljas**: tokenit ei saa tõsta. `rdc subscription login` väljastab uue ja kui 2FA on sees, piisab järgmisel tõstmisel koodist.
+- **Valed koodid**: 5 valet koodi 15 minuti jooksul lukustavad tõstmise, esmalt 5 minutiks ja seejärel iga kord kaks korda kauemaks, kuni 1 tunnini. Pärast 4 lukustust on tõstmine selle tokeni jaoks keelatud kuni järgmise `rdc subscription login` käivitamiseni.
+- **Executori tokeneid**, mille IP-sidumine on `unbound` või `cloudflare`, see ei puuduta.
+
+Iga tõstmine on näha portaali tegevuslogis koos vana ja uue aadressiga.
 
 ### Seadme koodivogu
 

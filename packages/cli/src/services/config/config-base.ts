@@ -219,14 +219,7 @@ export class ConfigServiceBase {
       return cached;
     }
 
-    // Local pointer fields take precedence over anything remote might send.
-    if (localConfig.remote) config.remote = localConfig.remote;
-    if (localConfig.account) {
-      config.account = { ...(config.account ?? {}), ...localConfig.account };
-    }
-    if (localConfig.defaults) {
-      config.defaults = { ...(config.defaults ?? {}), ...localConfig.defaults };
-    }
+    overlayHostLocal(config, localConfig);
 
     // Awaited on purpose: a fire-and-forget refresh that loses the write is silent staleness on the next offline read.
     await writeRemoteCache(configName, config, version);
@@ -397,5 +390,20 @@ export class ConfigServiceBase {
     result.team ??= await this.getTeam();
     result.region ??= await this.getRegion();
     return result;
+  }
+}
+
+/**
+ * Local pointer and host-local fields take precedence over anything a pull sends: the
+ * `remote` pointer, the `renetPath` binary override (never synced, payload.ts; without it
+ * a remote-enabled config ran the default renet binary, 2026-09-25), and the local
+ * `account`/`defaults` overrides layered over the pulled values.
+ */
+function overlayHostLocal(config: RdcConfig, localConfig: RdcConfig): void {
+  if (localConfig.remote) config.remote = localConfig.remote;
+  if (localConfig.renetPath !== undefined) config.renetPath = localConfig.renetPath;
+  if (localConfig.account) config.account = { ...(config.account ?? {}), ...localConfig.account };
+  if (localConfig.defaults) {
+    config.defaults = { ...(config.defaults ?? {}), ...localConfig.defaults };
   }
 }

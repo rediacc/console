@@ -486,7 +486,6 @@
           "overwriteAborted": "Etkinleştirme iptal edildi: Yerel yapılandırma \"{{config}}\", sunucu kopyasından farklı içerik barındırıyor. Değiştirmek için --force ile yeniden çalıştırın veya etkileşimli bir terminalde onaylayın.",
           "overwriteConfirm": "Yerel yapılandırma \"{{config}}\", sunucu kopyasıyla değiştirilecek {{machines}} makine ve {{repos}} depo içeriyor (önceki dosya {{backupPath}} konumunda saklanır). Devam edilsin mi?",
           "passwordForbidden": "Hesap sunucusu yapılandırma kaydını reddetti: {{error}}",
-          "passwordIpBound": "REDIACC_TOKEN içindeki API belirteci farklı bir istemci IP adresine bağlı. Bir belirteç ilk kullanıldığı adrese bağlanır, bu nedenle başka bir yerde oluşturulan bir belirteç bu makineden kayıt olamaz. Web portalından yeni bir belirteç alın ve tekrar deneyin.",
           "passwordMissingScope": "REDIACC_TOKEN içindeki API belirteci config:enroll kapsamını taşımıyor. Web portalından bu kapsama sahip bir belirteç alın ve tekrar deneyin.",
           "passwordNonInteractive": "Bir yapılandırma ana parolası gereklidir. REDIACC_CONFIG_PASSWORD değişkenini ayarlayın veya etkileşimli bir terminalde --password olmadan çalıştırın.",
           "passwordNoSlot": "Yapılandırma deponuz için hazırlanmış bir password slot yok. Portaldan bir tane ekleyin (Config Storage > key slots), sonra tekrar deneyin.",
@@ -524,6 +523,10 @@
           "description": "Uzak bağlantı durumunu göster"
         },
         "tokenExpired": "Uzak yapılandırma jetonu süresi doldu. Yeniden kimlik doğrulayın: rdc config remote enable",
+        "tokenIpMismatch": "Bu cihazın yapılandırma jetonu farklı bir ağ adresine bağlı. Bu cihaz için jeton almak üzere rdc config remote enable komutunu yeniden çalıştırın.",
+        "tokenExhausted": "Bu cihazın yapılandırma jetonu başka bir istek tarafından zaten kullanıldı (her kullanımda yenilenir). Yeniden kimlik doğrulayın: rdc config remote enable",
+        "tokenInvalid": "Yapılandırma sunucusu bu cihazın yapılandırma jetonunu tanımıyor. Yeniden kimlik doğrulayın: rdc config remote enable",
+        "tokenRejected": "Yapılandırma sunucusu bu cihazın yapılandırma jetonunu reddetti ({{reason}}). Yeniden kimlik doğrulayın: rdc config remote enable",
         "undecryptableIdentity": "{{storeId}} deposundaki {{configId}} yapılandırması, sizin yuvanızın taşıdığından farklı bir anahtarla şifrelenmiş, bu nedenle bu cihaz onu okuyamıyor. Bu, depo zaten başka bir kayıttan gelen bir yapılandırma taşıdığında olur. O yapılandırmayı zaten kayıtlı bir cihazda çekip hangi yapılandırmayı kastettiğinizi kontrol edin veya bir yöneticiden depo anahtarını portaldan (Config Storage > key slots) bu cihazla yeniden paylaşmasını isteyin.",
         "undecryptableSession": "{{configId}} yapılandırmasının kilidi anahtarınızla açıldı ancak sunucu oturum katmanı onu açmayı reddetti ({{detail}}). Komutu tekrar deneyin; hata sürerse şu komutla yeniden kaydolun: rdc config remote enable",
         "unreachable": "Yapılandırma sunucusu {{server}}'a ulaşılamıyor",
@@ -2222,7 +2225,20 @@
       "activationFailed": "Makine etkinleştirme başarısız. Aboneliğinizin aktif olduğundan ve makine yuvasının mevcut olduğundan emin olun.",
       "notLoggedIn": "Giriş yapılmamış. Önce `rdc subscription login` komutunu çalıştırın.",
       "tokenRequired": "Abonelik jetonu gerekli. REDIACC_SUBSCRIPTION_TOKEN ortam değişkenini ayarlayın veya terminalinizde `rdc subscription login` çalıştırın.",
-      "tokenWarning": "Abonelik jetonu bulunamadı. Lisans gerektiren komutlar (repo create, repo fork) başarısız olacak. REDIACC_SUBSCRIPTION_TOKEN ortam değişkenini ayarlayın veya terminalinizde `rdc subscription login` çalıştırın."
+      "tokenWarning": "Abonelik jetonu bulunamadı. Lisans gerektiren komutlar (repo create, repo fork) başarısız olacak. REDIACC_SUBSCRIPTION_TOKEN ortam değişkenini ayarlayın veya terminalinizde `rdc subscription login` çalıştırın.",
+      "ipRebind": {
+        "prompt": "IP adresiniz değişti. Bu oturumu buraya taşımak için kimlik doğrulama uygulamanızdaki 6 haneli kodu girin:",
+        "moved": "Bu oturum artık {{ip}} adresinden çalışıyor.",
+        "wrongCode": "Kod yanlış. Bu oturumun taşınması kilitlenmeden önce kalan deneme hakkı: {{remaining}}.",
+        "replayed": "Bu kod zaten kullanıldı. Kimlik doğrulama uygulamanızda bir sonraki kodun çıkmasını bekleyip onu girin.",
+        "locked": "Çok fazla yanlış kod girildi. Bu oturumun yeni bir IP adresine taşınması {{minutes}} dk boyunca kilitli. Daha sonra yeniden deneyin ya da `rdc subscription login` çalıştırın.",
+        "disabled": "Çok fazla yanlış kod girildi, bu yüzden bu belirteç için oturumu yeni bir IP adresine taşıma kapatıldı. Yeniden giriş yapmak için `rdc subscription login` çalıştırın.",
+        "reloginOnly": "IP adresiniz değişti ve bu oturum yalnızca eski adresten çalışıyor. Bu hesapta iki adımlı doğrulama kapalı olduğu için oturum taşınamaz: yeniden giriş yapmak için `rdc subscription login` çalıştırın. İki adımlı doğrulamayı açarsanız bir dahaki sefere kimlik doğrulama uygulamasındaki kod yeterli olur.",
+        "notFirstUse": "Bu belirteç ilk kullanıldığı IP adresine bağlı değil, bu yüzden başka bir adrese taşınamaz. Belirtecin IP bağlamasını web portalından kontrol edin.",
+        "nonInteractive": "IP adresiniz değişti ve bu oturum yalnızca eski adresten çalışıyor. Oturumu buraya taşımak için etkileşimli bir terminalde herhangi bir rdc komutu çalıştırın (örneğin `rdc subscription status`) ve kimlik doğrulama uygulamanızdaki kodu girin. Ya da yeniden giriş yapmak için `rdc subscription login` çalıştırın.",
+        "stillMismatched": "Taşımadan sonra hesap sunucusu hâlâ farklı bir IP adresi görüyor. Bağlantınız adresler arasında gidip geliyor olabilir (örneğin IPv4 ile IPv6). Komutu yeniden çalıştırın ya da `rdc subscription login` çalıştırın.",
+        "attemptsExhausted": "Art arda üç yanlış kod girildi. Yeniden denemek için komutu tekrar çalıştırın ya da yeniden giriş yapmak için `rdc subscription login` çalıştırın."
+      }
     },
     "sync": {
       "absolutePathBlocked": "--remote yolu mutlak değil, göreli olmalıdır. Depo kök dizinine göre göreli bir yol kullanın.",

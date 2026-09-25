@@ -486,7 +486,6 @@
           "overwriteAborted": "Aktiveerimine katkestati: kohalik konfiguratsioon \"{{config}}\" sisaldab serveri koopiast erinevat sisu. Käivita uuesti lipuga --force, et see asendada, või kinnita interaktiivses terminalis.",
           "overwriteConfirm": "Kohalikus konfiguratsioonis \"{{config}}\" on {{machines}} masin(at) ja {{repos}} hoidla(t), mis asendatakse serveri koopiaga (eelmine fail säilib asukohas {{backupPath}}). Kas jätkata?",
           "passwordForbidden": "Kontoserver keeldus konfiguratsiooni registreerimisest: {{error}}",
-          "passwordIpBound": "REDIACC_TOKEN-is olev API-token on seotud teise kliendi IP-aadressiga. Token seotakse aadressiga, kust seda esimest korda kasutati, seega mujal loodud tokeniga ei saa sellest masinast registreeruda. Väljasta portaalist uus token ja proovi uuesti.",
           "passwordMissingScope": "REDIACC_TOKEN-is olev API-token ei kanna config:enroll õigust. Väljasta portaalist token, millel see õigus on, ja proovi uuesti.",
           "passwordNonInteractive": "Vajalik on konfiguratsiooni peaparool. Määra REDIACC_CONFIG_PASSWORD või käivita ilma --password liputa interaktiivses terminalis.",
           "passwordNoSlot": "Sinu konfiguratsioonihoidla jaoks pole password slot'i jagatud. Lisa see portaalist (Config Storage > key slots) ja proovi uuesti.",
@@ -524,6 +523,10 @@
           "description": "Kuva kaugühenduse olek"
         },
         "tokenExpired": "Kaugsalvestuse konfiguratsioonitõend on aegunud. Autentimine uuesti: rdc config remote enable",
+        "tokenIpMismatch": "Selle seadme konfiguratsioonitõend on seotud teise võrguaadressiga. Selle seadme jaoks tõendi saamiseks käivita uuesti rdc config remote enable.",
+        "tokenExhausted": "Selle seadme konfiguratsioonitõend on juba teise päringu poolt ära kasutatud (see vahetub iga kasutusega). Autentimine uuesti: rdc config remote enable",
+        "tokenInvalid": "Konfiguratsiooniserver ei tunne selle seadme konfiguratsioonitõendit ära. Autentimine uuesti: rdc config remote enable",
+        "tokenRejected": "Konfiguratsiooniserver lükkas selle seadme konfiguratsioonitõendi tagasi ({{reason}}). Autentimine uuesti: rdc config remote enable",
         "undecryptableIdentity": "Konfiguratsioon {{configId}} hoidlas {{storeId}} on krüptitud teise võtmega, kui sinu pesa omab, seega see seade ei saa seda lugeda. See juhtub, kui hoidla sisaldab juba teisest registreerimisest pärit konfiguratsiooni. Tõmba see konfiguratsioon juba registreeritud seadmelt ja kontrolli, millist konfiguratsiooni silmas pidasid, või palu administraatoril jagada hoidla võti selle seadmega uuesti portaalist (Config Storage > key slots).",
         "undecryptableSession": "Konfiguratsioon {{configId}} avanes sinu võtmega, kuid serveri seansikiht ei tahtnud seda avada ({{detail}}). Proovi käsku uuesti; kui see ikka ebaõnnestub, registreeru uuesti käsuga: rdc config remote enable",
         "unreachable": "Konfiguratsiooniserver {{server}} pole kättesaadav",
@@ -2222,7 +2225,20 @@
       "activationFailed": "Litsentsi väljastamine ebaõnnestus. Veendu, et su tellimus on aktiivne ja masina slot on saadaval.",
       "notLoggedIn": "Pole sisse logitud. Inimesed peaksid käivitama `rdc subscription login`. Automatiseerimine peaks käivitama `rdc subscription login --token <token>` või seadistama `REDIACC_SUBSCRIPTION_TOKEN`.",
       "tokenRequired": "Tellimuse token on nõutud. Kas seadista REDIACC_SUBSCRIPTION_TOKEN keskkonna muutuja või käivita `rdc subscription login` oma terminalis.",
-      "tokenWarning": "Tellimuse tokenit ei leitud. Litsentsi nõudvad käsud (repo create, repo fork) ebaõnnestuvad. Seadista REDIACC_SUBSCRIPTION_TOKEN keskkonna muutuja või käivita `rdc subscription login` oma terminalis."
+      "tokenWarning": "Tellimuse tokenit ei leitud. Litsentsi nõudvad käsud (repo create, repo fork) ebaõnnestuvad. Seadista REDIACC_SUBSCRIPTION_TOKEN keskkonna muutuja või käivita `rdc subscription login` oma terminalis.",
+      "ipRebind": {
+        "prompt": "Sinu IP-aadress muutus. Selle sisselogimise siia tõstmiseks sisesta autentimisrakenduse 6-kohaline kood:",
+        "moved": "See sisselogimine töötab nüüd aadressilt {{ip}}.",
+        "wrongCode": "Kood ei ole õige. Enne kui selle sisselogimise tõstmine lukustub, on jäänud katseid: {{remaining}}.",
+        "replayed": "Seda koodi on juba kasutatud. Oota autentimisrakenduses järgmist koodi ja sisesta see.",
+        "locked": "Liiga palju valesid koode. Selle sisselogimise tõstmine uuele IP-aadressile on {{minutes}} min lukus. Proovi hiljem uuesti või käivita `rdc subscription login`.",
+        "disabled": "Liiga palju valesid koode, seega on selle tokeni puhul sisselogimise tõstmine uuele IP-aadressile välja lülitatud. Uuesti sisselogimiseks käivita `rdc subscription login`.",
+        "reloginOnly": "Sinu IP-aadress muutus ja see sisselogimine töötab ainult vanalt aadressilt. Selle konto kaheastmeline autentimine on välja lülitatud, seega sisselogimist tõsta ei saa: uuesti sisselogimiseks käivita `rdc subscription login`. Kui lülitad kaheastmelise autentimise sisse, piisab järgmisel korral autentimisrakenduse koodist.",
+        "notFirstUse": "See token ei ole seotud IP-aadressiga, kust seda esimest korda kasutati, seega ei saa seda teisele aadressile tõsta. Kontrolli tokeni IP-sidumist veebiportaalis.",
+        "nonInteractive": "Sinu IP-aadress muutus ja see sisselogimine töötab ainult vanalt aadressilt. Selle siia tõstmiseks käivita interaktiivses terminalis mis tahes rdc käsk (näiteks `rdc subscription status`) ja sisesta autentimisrakenduse kood. Või käivita uuesti sisselogimiseks `rdc subscription login`.",
+        "stillMismatched": "Kontoserver näeb pärast tõstmist endiselt teist IP-aadressi. Sinu ühendus võib vahetada aadresse (näiteks IPv4 ja IPv6 vahel). Käivita käsk uuesti või käivita `rdc subscription login`.",
+        "attemptsExhausted": "Kolm valet koodi järjest. Uuesti proovimiseks käivita käsk uuesti või logi `rdc subscription login` abil uuesti sisse."
+      }
     },
     "sync": {
       "absolutePathBlocked": "--remote tee peab olema suhteline, mitte absoluutne. Kasuta teed, mis on suhteline repositooriumi juurkaustast.",

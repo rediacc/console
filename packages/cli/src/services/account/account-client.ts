@@ -14,6 +14,13 @@ import {
   openResponse,
   sealRequest,
 } from '@rediacc/shared/e2e';
+import {
+  API_TOKEN_IP_REBIND_PATH,
+  type ApiTokenIpRebindRequest,
+  type ApiTokenIpRebindResponse,
+  TOKEN_IP_MISMATCH,
+  type TokenIpRebindHint,
+} from '@rediacc/shared/subscription/types';
 import { configFileStorage } from '../../adapters/config-file-storage.js';
 import { t } from '../../i18n/index.js';
 import { ValidationError } from '../../utils/errors.js';
@@ -28,6 +35,7 @@ import {
   getSubscriptionTokenState,
   normalizeServerUrl,
 } from './subscription-auth.js';
+import { ensureRebound } from './token-ip-rebind.js';
 
 /** Cached server key material (imported once per process). */
 let serverKeyCache: {
@@ -115,11 +123,19 @@ export interface AccountFetchOptions {
   serverUrl?: string;
   /** Skip authentication header entirely (for unauthenticated endpoints) */
   noAuth?: boolean;
+  /**
+   * Offer to move the token to this IP when the server answers TOKEN_IP_MISMATCH
+   * (default true). Background callers (audit flush, telemetry) pass false: a
+   * prompt during a timed-out send or an exit flush would be wrong.
+   */
+  ipRebind?: boolean;
 }
 
-interface AccountFetchError extends Error {
+export interface AccountFetchError extends Error {
   status: number;
   code?: string;
+  /** The parsed inner error body (`rebind`, `retryAfter`, `attemptsRemaining`, `reason`, ...). */
+  details?: Record<string, unknown>;
 }
 
 /**
@@ -190,22 +206,81 @@ export async function accountServerFetch<T = unknown>(
   path: string,
   options: AccountFetchOptions = {}
 ): Promise<T> {
-  const method = options.method ?? DEFAULT_HTTP_METHOD;
-
-  // Resolve server URL
+  // Resolve the token once, so the rebind and the retry use the SAME token as the refused request (stored, REDIACC_TOKEN, or options.token).
+  const token = options.noAuth ? undefined : (options.token ?? resolveStoredToken());
   const serverUrl = options.serverUrl ?? resolveServerUrl();
+  try {
+    return await accountServerFetchOnce<T>(path, options, token, serverUrl);
+  } catch (error) {
+    if (!isTokenIpMismatch(error) || token === undefined || options.ipRebind === false) {
+      throw error;
+    }
+    return reboundRetry<T>(path, options, token, serverUrl, error);
+  }
+}
 
-  // Build inner request headers
+function isTokenIpMismatch(error: unknown): error is AccountFetchError {
+  const e = error as Partial<AccountFetchError> | null;
+  return e?.status === 403 && e.code === TOKEN_IP_MISMATCH;
+}
+
+/** Move the token to this IP (prompting on a TTY), then replay the refused request exactly once. */
+async function reboundRetry<T>(
+  path: string,
+  options: AccountFetchOptions,
+  token: string,
+  serverUrl: string,
+  refusal: AccountFetchError
+): Promise<T> {
+  const hint: TokenIpRebindHint = refusal.details?.rebind === 'relogin' ? 'relogin' : 'totp';
+  await ensureRebound({
+    token,
+    hint,
+    rebind: (code) =>
+      accountServerFetchOnce<ApiTokenIpRebindResponse>(
+        API_TOKEN_IP_REBIND_PATH,
+        { method: 'POST', body: { code } satisfies ApiTokenIpRebindRequest },
+        token,
+        serverUrl
+      ),
+  });
+  // Exactly one retry. A second mismatch (say, IPv4 and IPv6 egress alternating) is reported, never prompted again.
+  try {
+    return await accountServerFetchOnce<T>(path, options, token, serverUrl);
+  } catch (retryError) {
+    if (!isTokenIpMismatch(retryError)) throw retryError;
+    throw createAccountError(
+      t('errors.subscription.ipRebind.stillMismatched'),
+      403,
+      TOKEN_IP_MISMATCH,
+      retryError.details
+    );
+  }
+}
+
+/** Inner request headers: the CLI version, the bearer token when there is one, and the body type. */
+function innerHeaders(token: string | undefined, hasBody: boolean): Record<string, string> {
   const headers: Record<string, string> = {
     'x-cli-version': VERSION,
   };
-  if (!options.noAuth) {
-    const token = options.token ?? resolveStoredToken();
+  if (token !== undefined) {
     headers['Authorization'] = `Bearer ${token}`;
   }
-  if (options.body !== undefined) {
+  if (hasBody) {
     headers['Content-Type'] = 'application/json';
   }
+  return headers;
+}
+
+/** One tunnel round trip with an already-resolved token (undefined sends no Authorization header). */
+async function accountServerFetchOnce<T>(
+  path: string,
+  options: AccountFetchOptions,
+  token: string | undefined,
+  serverUrl: string
+): Promise<T> {
+  const method = options.method ?? DEFAULT_HTTP_METHOD;
+  const headers = innerHeaders(token, options.body !== undefined);
 
   // Encrypt the request
   const { key: serverKey, keyId } = await getServerKeyMaterial();
@@ -254,7 +329,7 @@ export async function accountServerFetch<T = unknown>(
   if (status >= 400) {
     const msg = (parsed as { error?: string }).error ?? `Account server returned HTTP ${status}`;
     const code = (parsed as { code?: string }).code;
-    throw createAccountError(msg, status, code);
+    throw createAccountError(msg, status, code, parsed as Record<string, unknown>);
   }
 
   return parsed;
@@ -276,9 +351,15 @@ function resolveStoredToken(): string {
   return tokenState.token.token;
 }
 
-function createAccountError(message: string, status: number, code?: string): AccountFetchError {
+function createAccountError(
+  message: string,
+  status: number,
+  code?: string,
+  details?: Record<string, unknown>
+): AccountFetchError {
   const error = new Error(message) as AccountFetchError;
   error.status = status;
   if (code) error.code = code;
+  if (details) error.details = details;
   return error;
 }

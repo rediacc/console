@@ -78,6 +78,15 @@ describe('mergeRemoteIntoCache', () => {
     expect(merged.account?.userEmail).toBe('me@example.com');
   });
 
+  it('keeps the host-local renetPath, which the server copy never carries', () => {
+    // 2026-09-25: the first remote enable dropped a dev machine's renetPath, silently
+    // switching it back to the default renet binary.
+    const withPath = { ...local, renetPath: '/opt/dev/renet' } as RdcConfig;
+    expect(mergeRemoteIntoCache(withPath, pulled, 5).renetPath).toBe('/opt/dev/renet');
+    // Control: no local override leaves the field absent, not blank.
+    expect(mergeRemoteIntoCache(local, pulled, 5)).not.toHaveProperty('renetPath');
+  });
+
   it('leaves remote undefined when local has no pointer (defensive)', () => {
     const bare = { ...local, remote: undefined };
     const merged = mergeRemoteIntoCache(bare, pulled, 5);

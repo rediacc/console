@@ -486,7 +486,6 @@
           "overwriteAborted": "有効化を中止しました: ローカル設定 \"{{config}}\" にはサーバーのコピーと異なる内容が含まれています。置き換えるには --force を付けて再実行するか、対話的なターミナルで確認してください。",
           "overwriteConfirm": "ローカル設定 \"{{config}}\" にはサーバーのコピーで置き換えられる {{machines}} 台のマシンと {{repos}} 個のリポジトリがあります（以前のファイルは {{backupPath}} に保持されます）。続行しますか？",
           "passwordForbidden": "アカウントサーバーが設定の登録を拒否しました: {{error}}",
-          "passwordIpBound": "REDIACC_TOKEN のAPIトークンは別のクライアントIPアドレスに紐づいています。トークンは最初に使用されたアドレスに紐づくため、別の場所で作成されたトークンはこのマシンから登録できません。Webポータルから新しいトークンを発行し、もう一度お試しください。",
           "passwordMissingScope": "REDIACC_TOKEN のAPIトークンには config:enroll スコープがありません。Webポータルからそのスコープを持つトークンを発行し、もう一度お試しください。",
           "passwordNonInteractive": "設定のマスターパスワードが必要です。REDIACC_CONFIG_PASSWORD を設定するか、対話的なターミナルで --password を付けずに実行してください。",
           "passwordNoSlot": "設定ストレージ用のパスワードスロットがプロビジョニングされていません。ポータル（Config Storage > key slots）から追加してから、もう一度お試しください。",
@@ -524,6 +523,10 @@
           "description": "リモート接続状態を表示"
         },
         "tokenExpired": "リモート設定トークンの有効期限が切れました。再認証してください: rdc config remote enable",
+        "tokenIpMismatch": "このデバイスの設定トークンは別のネットワークアドレスに紐付いています。このデバイス用のトークンを取得するには、rdc config remote enable をもう一度実行してください。",
+        "tokenExhausted": "このデバイスの設定トークンは別のリクエストで既に使用済みです（使用のたびに更新されます）。再認証してください: rdc config remote enable",
+        "tokenInvalid": "設定サーバーがこのデバイスの設定トークンを認識できません。再認証してください: rdc config remote enable",
+        "tokenRejected": "設定サーバーがこのデバイスの設定トークンを拒否しました（{{reason}}）。再認証してください: rdc config remote enable",
         "undecryptableIdentity": "ストア {{storeId}} 内の設定 {{configId}} はあなたのスロットが持つキーとは異なるキーで暗号化されているため、このデバイスでは読み取れません。これはストアが別の登録による設定を既に保持している場合に発生します。既に登録済みのデバイスでその設定を取得し、意図した設定を確認するか、管理者にポータル（Config Storage > key slots）からこのデバイスにストアのキーを再共有してもらってください。",
         "undecryptableSession": "設定 {{configId}} はあなたのキーで復号されましたが、サーバーのセッション層が開けませんでした（{{detail}}）。コマンドを再試行してください。失敗が続く場合は次のコマンドで再登録してください: rdc config remote enable",
         "unreachable": "設定サーバー {{server}} に到達できません",
@@ -2222,7 +2225,20 @@
       "activationFailed": "マシンの有効化に失敗しました。サブスクリプションがアクティブで、マシンスロットが利用可能であることを確認してください。",
       "notLoggedIn": "ログインしていません。先に `rdc subscription login` を実行してください。",
       "tokenRequired": "サブスクリプショントークンが必要です。環境変数 REDIACC_SUBSCRIPTION_TOKEN を設定するか、ターミナルで `rdc subscription login` を実行してください。",
-      "tokenWarning": "サブスクリプショントークンが見つかりません。ライセンスが必要なコマンド (repo create、repo fork) は失敗します。環境変数 REDIACC_SUBSCRIPTION_TOKEN を設定するか、ターミナルで `rdc subscription login` を実行してください。"
+      "tokenWarning": "サブスクリプショントークンが見つかりません。ライセンスが必要なコマンド (repo create、repo fork) は失敗します。環境変数 REDIACC_SUBSCRIPTION_TOKEN を設定するか、ターミナルで `rdc subscription login` を実行してください。",
+      "ipRebind": {
+        "prompt": "IP アドレスが変わりました。このログインをここへ移すには、認証アプリに表示される 6 桁のコードを入力してください:",
+        "moved": "このログインは {{ip}} から使えるようになりました。",
+        "wrongCode": "コードが正しくありません。このログインの移動がロックされるまで、あと {{remaining}} 回試せます。",
+        "replayed": "このコードはすでに使われています。認証アプリに次のコードが表示されるのを待ってから入力してください。",
+        "locked": "間違ったコードが多すぎます。このログインを新しい IP アドレスへ移す操作は {{minutes}} 分間ロックされています。しばらくしてからやり直すか、`rdc subscription login` を実行してください。",
+        "disabled": "間違ったコードが多すぎたため、このトークンではログインを新しい IP アドレスへ移す操作が無効になりました。`rdc subscription login` を実行してログインし直してください。",
+        "reloginOnly": "IP アドレスが変わりましたが、このログインは以前のアドレスからしか使えません。このアカウントでは二要素認証がオフのため、ログインを移すことはできません。`rdc subscription login` を実行してログインし直してください。二要素認証をオンにしておけば、次回からは認証アプリのコードだけで済みます。",
+        "notFirstUse": "このトークンは最初に使われた IP アドレスに紐づくタイプではないため、別のアドレスへ移せません。Web ポータルでトークンの IP バインド設定を確認してください。",
+        "nonInteractive": "IP アドレスが変わりましたが、このログインは以前のアドレスからしか使えません。ここへ移すには、対話型ターミナルで任意の rdc コマンド (例: `rdc subscription status`) を実行し、認証アプリのコードを入力してください。または `rdc subscription login` を実行してログインし直してください。",
+        "stillMismatched": "移動したあとも、アカウントサーバーには別の IP アドレスが見えています。接続が複数のアドレス (IPv4 と IPv6 など) を行き来している可能性があります。コマンドをもう一度実行するか、`rdc subscription login` を実行してください。",
+        "attemptsExhausted": "3 回続けてコードが間違っていました。やり直すにはコマンドをもう一度実行するか、`rdc subscription login` を実行してログインし直してください。"
+      }
     },
     "sync": {
       "absolutePathBlocked": "--remote パスは絶対パスではなく相対パスでなければなりません。リポジトリルートからの相対パスを使用してください。",

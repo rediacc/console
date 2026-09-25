@@ -3,9 +3,11 @@ import { EXIT_CODES } from '../types/index.js';
 
 // Lazy-load inquirer (pulls in rxjs and the whole prompt graph) only when an interactive prompt is actually shown. Startup, including --version, --help, and every non-prompting command, never executes it. The dynamic
 // import is cached by the module loader, so repeated prompts pay once.
-async function getPrompt(): Promise<ReturnType<typeof import('inquirer')['createPromptModule']>> {
+async function getPrompt(
+  streams?: Parameters<typeof import('inquirer')['createPromptModule']>[0]
+): Promise<ReturnType<typeof import('inquirer')['createPromptModule']>> {
   const { createPromptModule } = await import('inquirer');
-  return createPromptModule();
+  return createPromptModule(streams);
 }
 
 function requireInteractive(context: string): void {
@@ -42,4 +44,22 @@ export async function askConfirm(message: string, defaultValue = false): Promise
     },
   ]);
   return answer;
+}
+
+/**
+ * Ask for a short visible value that must match `pattern` (re-asks until it does).
+ * Renders on stderr, so `--output json` stdout stays clean. Returns the trimmed input.
+ */
+export async function askInput(message: string, pattern: RegExp): Promise<string> {
+  requireInteractive('Input');
+  const prompt = await getPrompt({ output: process.stderr });
+  const { answer } = await prompt([
+    {
+      type: 'input',
+      name: 'answer',
+      message,
+      validate: (value: string) => pattern.test(value.trim()),
+    },
+  ]);
+  return String(answer).trim();
 }

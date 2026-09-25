@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 13
 language: pt
-sourceHash: "5d139c4889b6a803"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "cbfa1730b069f73c"
+sourceCommit: "c707ed4d0e178e7c4cec46e5ff989a1472a8eb82"
 ---
 
 ### Autenticação
@@ -36,7 +36,7 @@ Os tokens de API autenticam operações máquina-a-máquina (ativação de licen
 - `subscription:read` -- Ler detalhes da subscrição
 
 **Funcionalidades de segurança:**
-- Vinculação a IP: o primeiro pedido bloqueia o token nesse endereço IP
+- Vinculação a IP: um token só vale para o endereço IP do seu primeiro pedido; um endereço novo exige uma verificação TOTP ou um novo início de sessão (ver abaixo)
 - Âmbito de equipa: os tokens podem ser restritos a uma equipa específica
 - Revogação automática: os tokens são revogados quando o criador é removido da organização
 
@@ -45,6 +45,18 @@ Criar um token:
 # Via portal: API Tokens > Create
 # O valor do token é apresentado uma única vez -- guarde-o em segurança
 ```
+
+#### Quando o endereço IP muda
+
+Um token vinculado a um endereço IP é recusado a partir de qualquer outro, por exemplo quando o fornecedor de Internet atribui um endereço novo. A CLI trata da transferência:
+
+- **Terminal interativo, 2FA ativa**: a CLI pede o código de 6 dígitos da app de autenticação, transfere o token para o novo endereço e executa o comando de novo. Os códigos de recuperação não servem para uma transferência.
+- **Scripts e CI (sem terminal)**: o comando falha e indica as duas soluções: executar uma vez qualquer comando `rdc` num terminal interativo (por exemplo, `rdc subscription status`) e introduzir o código, ou executar `rdc subscription login`.
+- **2FA desativada**: o token não pode ser transferido. `rdc subscription login` emite um novo e, com a 2FA ativa, a próxima transferência só precisa de um código.
+- **Códigos errados**: 5 códigos errados em 15 minutos bloqueiam a transferência, primeiro durante 5 minutos e depois o dobro de cada vez, até 1 hora. Após 4 bloqueios, a transferência fica desativada para esse token até ao próximo `rdc subscription login`.
+- **Os tokens de executor** com vinculação a IP `unbound` ou `cloudflare` não são afetados.
+
+Cada transferência aparece no registo de atividade do portal, com o endereço antigo e o novo.
 
 ### Fluxo de Código de Dispositivo
 

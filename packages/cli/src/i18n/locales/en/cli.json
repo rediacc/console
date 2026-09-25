@@ -273,6 +273,10 @@
       "remote": {
         "description": "Manage remote config storage connection",
         "tokenExpired": "Remote config token expired. Re-authenticate with: rdc config remote enable",
+        "tokenIpMismatch": "This device's config token is tied to a different network address. Run rdc config remote enable again to get a token for this device.",
+        "tokenExhausted": "This device's config token was already spent by another request (it rotates on every use). Re-authenticate with: rdc config remote enable",
+        "tokenInvalid": "The config server does not recognize this device's config token. Re-authenticate with: rdc config remote enable",
+        "tokenRejected": "The config server rejected this device's config token ({{reason}}). Re-authenticate with: rdc config remote enable",
         "unreachable": "Config server {{server}} is unreachable",
         "offlineCacheWarning": "Config server {{server}} is unreachable; serving config \"{{config}}\" from the offline cache (server version {{version}}, cached {{age}} ago). Changes cannot be saved until the server is reachable.",
         "offlineNoCache": "Config server {{server}} is unreachable and config \"{{config}}\" has no offline cache yet. Run \"rdc config remote refresh\" once the server is reachable to seed the cache.",
@@ -313,7 +317,6 @@
           "passwordPrompt": "Config master password:",
           "passwordNonInteractive": "A config master password is required. Set REDIACC_CONFIG_PASSWORD, or run without --password in an interactive terminal.",
           "passwordRequirePasskey": "This organization requires a passkey to unlock config storage; password enrollment is disabled. Enroll from a browser with: rdc config remote enable",
-          "passwordIpBound": "The API token in REDIACC_TOKEN is bound to a different client IP address. A token binds to the address it is first used from, so a token created elsewhere cannot enroll from this machine. Issue a fresh token from the web portal and retry.",
           "passwordMissingScope": "The API token in REDIACC_TOKEN does not carry the config:enroll scope. Issue a token with that scope from the web portal and retry.",
           "passwordTeamGone": "The team this API token belongs to has been archived or removed. Issue a new token for an active team from the web portal and retry.",
           "passwordTokenNotEnrollable": "This API token cannot enroll a config slot because it is not tied to a user in an organization. Issue a personal token from your own account in the web portal and retry.",
@@ -2202,7 +2205,20 @@
       "notLoggedIn": "Not logged in. Humans should run `rdc subscription login`. Automation should run `rdc subscription login --token <token>` or set `REDIACC_SUBSCRIPTION_TOKEN`.",
       "tokenRequired": "Subscription token required. Either set REDIACC_SUBSCRIPTION_TOKEN env var, or run `rdc subscription login` in your terminal.",
       "activationFailed": "License issuance failed. Ensure your subscription is active and a machine slot is available.",
-      "tokenWarning": "No subscription token found. License-required commands (repo create, repo fork) will fail. Set REDIACC_SUBSCRIPTION_TOKEN env var or run `rdc subscription login` in your terminal."
+      "tokenWarning": "No subscription token found. License-required commands (repo create, repo fork) will fail. Set REDIACC_SUBSCRIPTION_TOKEN env var or run `rdc subscription login` in your terminal.",
+      "ipRebind": {
+        "prompt": "Your IP address changed. Enter the 6-digit code from your authenticator app to move this login here:",
+        "moved": "This login now works from {{ip}}.",
+        "wrongCode": "That code is not correct. {{remaining}} tries left before moving this login is locked.",
+        "replayed": "That code was already used. Wait for the next code in your authenticator app, then enter it.",
+        "locked": "Too many wrong codes. Moving this login to a new IP address is locked for {{minutes}} min. Try again later, or run `rdc subscription login`.",
+        "disabled": "Too many wrong codes, so moving this login to a new IP address is turned off for this token. Run `rdc subscription login` to sign in again.",
+        "reloginOnly": "Your IP address changed, and this login only works from the old one. Two-factor authentication is off for this account, so the login cannot be moved: run `rdc subscription login` to sign in again. With two-factor authentication on, an authenticator code is enough next time.",
+        "notFirstUse": "This token is not tied to the IP address it was first used from, so it cannot be moved to a new one. Check the token's IP binding in the web portal.",
+        "nonInteractive": "Your IP address changed, and this login only works from the old one. To move it here, run any rdc command in an interactive terminal (for example `rdc subscription status`) and enter the code from your authenticator app. Or run `rdc subscription login` to sign in again.",
+        "stillMismatched": "The account server still sees a different IP address after the move. Your connection may be switching between addresses (for example IPv4 and IPv6). Run the command again, or run `rdc subscription login`.",
+        "attemptsExhausted": "Three wrong codes in a row. Run the command again to retry, or run `rdc subscription login` to sign in again."
+      }
     },
     "sync": {
       "localPathNotFound": "Local path does not exist: {{path}}",
