@@ -64,8 +64,11 @@ FOUR FACTS ABOUT THE TWIN THAT LOOK LIKE MISTAKES. ALL FOUR ARE REPRODUCED
      PRODUCTION. Driven 2026-09-13 on the sibling, which shares the mechanism
      line for line: a stale `old-0.0.1.apk` left in `/tmp/promote-apk` reached
      `apk/stable/`, exit 0, no warning. `STALE_TMP_IS_PROMOTED` names it.
+     RULE T DELTA (#a8d1d6d0): the port empties each stage before its first
+     download, because the resumable `sync` it downloads with would otherwise
+     also KEEP a same-size older leftover in place of the current object.
 
-None is repaired here. This wave's acceptance rule is agreement with the live twin, and changing what the release promotion uploads is a cutover-box decision rather than a port's.
+Facts 3 and 4 are now Rule T deltas (see their constants); facts 1 and 2 are not repaired here. This wave's acceptance rule is agreement with the live twin, and changing what the release promotion uploads is a cutover-box decision rather than a port's.
 
 -----------------------------------------------------------------------------
 `[[ -f "$f" ]] && sed_in_place ...` DOES NOT END THE RUN WHEN THE FILE IS
@@ -234,7 +237,10 @@ PHASE_FILTERED_FILES_ARE_PURGED_BUT_NEVER_UPLOADED = True
 PURGE_LIST_IS_BUILT_FROM_THE_DOWNLOAD = True
 # RULE T DELTA (2026-09-24): the twin counts AFTER uploading, so an empty download reached a sync that failed with aws's own "does not exist" and the floor's sentence never printed. The port counts first and uploads nothing from an empty stage.
 VACUITY_FLOOR_RUNS_AFTER_THE_UPLOAD = False
-STALE_TMP_IS_PROMOTED = True
+STALE_TMP_IS_PROMOTED = False
+# RULE T DELTA (2026-09-25, #a8d1d6d0): the twin stages `<dir>/edge/` with `aws s3 cp --recursive`, which fetches every object on every attempt, so under the retry a flaky link broke a different file each time and `rpm/edge` failed 3/3. The port stages with `aws s3 sync` (no `--recursive`, which sync refuses) into a stage emptied once per run, so a retry fetches only what is still missing. `transfer_retry`'s docstring carries the aws-cli behaviour this rests on. The emptying also retires `STALE_TMP_IS_PROMOTED`.
+DOWNLOAD_VERB = "sync"
+DOWNLOAD_IS_RESUMABLE = True
 
 
 class MissingEnvError(Exception):
@@ -308,15 +314,17 @@ def endpoint_args(endpoint: str) -> list[str]:
 
 
 def download_argv(dir_name: str, tmp: str, endpoint: str) -> list[str]:
-    """`aws s3 cp s3://<bucket>/<dir>/edge/ <tmp>/ $EP --recursive --only-show-errors` (twin :72)."""
+    """`aws s3 sync s3://<bucket>/<dir>/edge/ <tmp>/ $EP --only-show-errors`.
+
+    The twin (:72) says `cp ... --recursive`; `DOWNLOAD_VERB` is the Rule T delta that makes a retried download resume.
+    """
     return [
         "aws",
         "s3",
-        "cp",
+        DOWNLOAD_VERB,
         "s3://%s/%s/edge/" % (BUCKET, dir_name),
         tmp + "/",
         *endpoint_args(endpoint),
-        "--recursive",
         "--only-show-errors",
     ]
 
@@ -446,6 +454,8 @@ def _promote_dirs(endpoint: str) -> list[str]:
         print("Promoting %s/edge/ -> %s/stable/ (2-phase)" % (dir_name, dir_name))
         tmp = TMP_PREFIX + dir_name
 
+        # RULE T DELTA (#a8d1d6d0): empty the stage ONCE, before the first attempt, so the retries below resume this run's download and never an earlier run's.
+        transfer_retry.fresh_stage(tmp)
         status = _run_retried(
             download_argv(dir_name, tmp, endpoint), "download of %s/edge" % dir_name
         )

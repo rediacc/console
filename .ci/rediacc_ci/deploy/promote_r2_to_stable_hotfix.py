@@ -77,9 +77,12 @@ THREE FACTS ABOUT THE TWIN THAT LOOK LIKE MISTAKES. ALL THREE ARE REPRODUCED
      warning, and it was purged as though it had been promoted on purpose.
      `/tmp/config` and `/tmp/script` are never removed at all. Latent on a
      GitHub-hosted runner, whose `/tmp` is fresh per job; live on a self-hosted
-     one and on a local run. `STALE_TMP_IS_PROMOTED` names it.
+     one and on a local run. `STALE_TMP_IS_PROMOTED` names it. RULE T DELTA
+     (#a8d1d6d0): the port empties each stage before its first download,
+     because the resumable `sync` it downloads with would otherwise also KEEP
+     a same-size older leftover in place of the current object.
 
-None is repaired here. This wave's acceptance rule is agreement with the live twin, and changing what the emergency release lane uploads is a cutover-box decision rather than a port's.
+Facts 2 and 3 are now Rule T deltas (see their constants); fact 1 is not repaired here. This wave's acceptance rule is agreement with the live twin, and changing what the emergency release lane uploads is a cutover-box decision rather than a port's.
 
 -----------------------------------------------------------------------------
 THREE `${VAR:?msg}` GUARDS, ONE DIVERGENCE
@@ -157,7 +160,10 @@ REQUIRED_ENV: tuple[tuple[str, str], ...] = (
 PURGE_LIST_CONTAINS_DUPLICATES = True
 # RULE T DELTA (2026-09-24): the twin counts AFTER uploading, so an empty download reached an upload that failed with aws's own "does not exist". The port counts first and uploads nothing from an empty stage.
 VACUITY_FLOOR_RUNS_AFTER_THE_UPLOAD = False
-STALE_TMP_IS_PROMOTED = True
+STALE_TMP_IS_PROMOTED = False
+# RULE T DELTA (2026-09-25, #a8d1d6d0): the twin stages `<dir>/edge/` with `aws s3 cp --recursive`, which fetches every object on every attempt, so under the retry a flaky link broke a different file each time and `rpm/edge` failed 3/3. The port stages with `aws s3 sync` (no `--recursive`, which sync refuses) into a stage emptied once per run, so a retry fetches only what is still missing. `transfer_retry`'s docstring carries the aws-cli behaviour this rests on. The emptying also retires `STALE_TMP_IS_PROMOTED`.
+DOWNLOAD_VERB = "sync"
+DOWNLOAD_IS_RESUMABLE = True
 # RULE T DELTA (2026-09-25, #b22efec4): the twin's recursive copy uploads the EDGE-defaulted installers and channel configs to `stable/` and re-bakes them only in the two loops after every directory is done, so a run that dies in between leaves production installing edge. That happened on 2026-09-24 when the Python side's minted token expired during `apt`. The port stamps the
 # staged copy (`channel_stamp.stamp_stable`) BEFORE uploading it. The re-bake loops still run, now as a no-op re-assertion, so every argv, every stream and the purge list stay the twin's; only the CONTENT of those four uploads differs.
 EDGE_DEFAULT_REACHES_STABLE_BEFORE_THE_REBAKE = False
@@ -237,15 +243,17 @@ def endpoint_args(endpoint: str) -> list[str]:
 
 
 def download_argv(dir_name: str, tmp: str, endpoint: str) -> list[str]:
-    """`aws s3 cp s3://<bucket>/<dir>/edge/ <tmp>/ $EP --recursive --only-show-errors` (twin :68)."""
+    """`aws s3 sync s3://<bucket>/<dir>/edge/ <tmp>/ $EP --only-show-errors`.
+
+    The twin (:68) says `cp ... --recursive`; `DOWNLOAD_VERB` is the Rule T delta that makes a retried download resume.
+    """
     return [
         "aws",
         "s3",
-        "cp",
+        DOWNLOAD_VERB,
         "s3://%s/%s/edge/" % (BUCKET, dir_name),
         tmp + "/",
         *endpoint_args(endpoint),
-        "--recursive",
         "--only-show-errors",
     ]
 
@@ -389,6 +397,8 @@ def _promote_dirs(endpoint: str) -> list[str]:
         print("Promoting %s/edge/ -> %s/stable/" % (dir_name, dir_name))
         tmp = TMP_PREFIX + dir_name
 
+        # RULE T DELTA (#a8d1d6d0): empty the stage ONCE, before the first attempt, so the retries below resume this run's download and never an earlier run's.
+        transfer_retry.fresh_stage(tmp)
         status = _run_retried(
             download_argv(dir_name, tmp, endpoint), "download of %s/edge" % dir_name
         )

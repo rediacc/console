@@ -96,6 +96,9 @@ FAKE_AWS = r'''#!/usr/bin/python3
 Logs every argv. For an upload it logs the destination key and the file's
 CONTENT, which is the only way the channel rewrites are visible. Serves and
 stores objects under $FAKE_S3_ROOT/<bucket>/<key>.
+
+A DOWNLOAD models the two aws-cli properties the resumable stage rests on (#a8d1d6d0, driven against aws-cli 2.36.40): a downloaded file is stamped with the object's mtime truncated to whole seconds, and a download-direction `sync` skips a same-size local file that is not newer than the object. $FAKE_GET_LOG, when set, receives one `GET` line per object actually fetched. $FAKE_AWS_BREAK_KEY breaks that key's read
+for the first $FAKE_AWS_BREAK_TIMES fetches (counted in $FAKE_AWS_BREAK_COUNTER): the file is left absent, as aws leaves it, the other files still transfer, and the call exits 1.
 """
 import fnmatch
 import os
@@ -147,6 +150,29 @@ for i, a in enumerate(argv):
 positional = [a for i, a in enumerate(argv[2:], start=2) if not a.startswith("-") and i not in consumed]
 src, dst = positional[0], positional[1]
 recursive = "--recursive" in argv or verb == "sync"
+download = is_s3(src) and not is_s3(dst)
+get_log = os.environ.get("FAKE_GET_LOG", "")
+break_key = os.environ.get("FAKE_AWS_BREAK_KEY", "")
+break_times = int(os.environ.get("FAKE_AWS_BREAK_TIMES", "0") or "0")
+broken = []
+
+
+def fetched(key, note=""):
+    if get_log:
+        with open(get_log, "a") as fh:
+            fh.write("GET\t%s%s\n" % (key, note))
+
+
+def breaks(key):
+    if key != break_key:
+        return False
+    counter = os.environ["FAKE_AWS_BREAK_COUNTER"]
+    done = int(open(counter).read()) if os.path.exists(counter) else 0
+    if done >= break_times:
+        return False
+    with open(counter, "w") as fh:
+        fh.write(str(done + 1))
+    return True
 
 
 def keep(full, base):
@@ -160,8 +186,27 @@ def keep(full, base):
 
 
 def store(source_path, target_path):
+    if download:
+        key = source_path[len(root) + 1:]
+        if verb == "sync" and os.path.isfile(target_path):
+            have, want = os.stat(target_path), os.stat(source_path)
+            if have.st_size == want.st_size and have.st_mtime <= want.st_mtime:
+                return
+        if breaks(key):
+            fetched(key, "\tBROKEN")
+            broken.append(key)
+            sys.stderr.write(
+                "download failed: s3://%s to %s ('Connection broken: IncompleteRead(4 bytes read, "
+                "4 more expected)', IncompleteRead(4 bytes read, 4 more expected))\n"
+                % (key, target_path)
+            )
+            return
+        fetched(key)
     os.makedirs(os.path.dirname(target_path) or ".", exist_ok=True)
     shutil.copyfile(source_path, target_path)
+    if download:
+        stamp = int(os.stat(source_path).st_mtime)
+        os.utime(target_path, (stamp, stamp))
     if is_s3(dst):
         with open(source_path) as fh:
             emit("UPLOAD\t%s\nCONTENT<<<%s>>>\n" % (target_path[len(root) + 1:], fh.read()))
@@ -185,6 +230,8 @@ if recursive:
         if rules and not keep(full, base):
             continue
         store(full, os.path.join(local(dst).rstrip("/"), rel))
+    if broken:
+        sys.exit(1)
 else:
     source_path = local(src)
     if not os.path.isfile(source_path):
@@ -340,7 +387,7 @@ def _agree(old, new, label: str, old_calls: str = "", new_calls: str = "") -> No
     )
     assert new.stdout == old.stdout, f"{label}: stdout diverged:\n{old.stdout!r}\n{new.stdout!r}"
     assert new.stderr == old.stderr, f"{label}: stderr diverged:\n{old.stderr!r}\n{new.stderr!r}"
-    expected = _with_the_stamp(old_calls)
+    expected = _with_the_stamp(_with_the_resumable_download(old_calls))
     assert new_calls == expected, f"{label}: call log diverged:\n{expected}\n---\n{new_calls}"
 
 
@@ -360,6 +407,50 @@ INCOMPLETE_READ = (
     "('Connection broken: IncompleteRead(7540288 bytes read, 848320 more expected)', "
     "IncompleteRead(7540288 bytes read, 848320 more expected))\n"
 )
+
+
+# RULE T DELTA (#a8d1d6d0), the one permitted ARGV difference: the twin stages each `<dir>/edge/` with `aws s3 cp --recursive`, the port with `port.DOWNLOAD_VERB` and no `--recursive`, so a retried download fetches only what is still missing. Each entry is (twin token, port token); `None` drops the token. Applied to the twin's call log before it is compared, and to nothing else.
+RESUMABLE_DOWNLOAD_DELTA: tuple[tuple[str, str | None], ...] = (
+    ("cp", port.DOWNLOAD_VERB),
+    ("--recursive", None),
+)
+
+
+def _is_stage_download(fields: list[str]) -> bool:
+    return (
+        fields[:3] == ["aws", "s3", "cp"]
+        and len(fields) > 4
+        and fields[3].endswith("/edge/")
+        and fields[4].startswith(port.TMP_PREFIX)
+    )
+
+
+def _with_the_resumable_download(calls: str) -> str:
+    """The twin's call log with each staging download rewritten into the port's resumable form, per `RESUMABLE_DOWNLOAD_DELTA`."""
+    lines = []
+    for line in calls.split("\n"):
+        fields = line.split("\t")
+        if _is_stage_download(fields):
+            for twin_token, port_token in RESUMABLE_DOWNLOAD_DELTA:
+                at = fields.index(twin_token)
+                if port_token is None:
+                    del fields[at]
+                else:
+                    fields[at] = port_token
+        lines.append("\t".join(fields))
+    return "\n".join(lines)
+
+
+def _gets(path: pathlib.Path, prefix: str) -> dict[str, int]:
+    """How many times the fake FETCHED each key under `prefix` (a broken read counts)."""
+    counts: dict[str, int] = {}
+    if not path.exists():
+        return counts
+    for line in path.read_text(encoding="utf-8").splitlines():
+        key = line.split("\t")[1]
+        if key.startswith(prefix):
+            counts[key] = counts.get(key, 0) + 1
+    return counts
 
 
 def _uploads(calls: str) -> list[tuple[str, str]]:
@@ -515,12 +606,30 @@ def test_defect_purge_list_contains_duplicates(tmp_path) -> None:
     assert len(urls) == len(set(urls)) + 4, urls
 
 
-def test_defect_stale_tmp_is_promoted(tmp_path) -> None:
-    """A LEFTOVER `/tmp/promote-apk` REACHES `apk/stable/` ON THE NEXT RUN.
+def _without_url(calls: str, url: str) -> str:
+    """`calls` with `url` taken out of the purge body, re-serialised the way cf-purge-urls.sh's `jq -c` writes it."""
+    lines = []
+    for line in calls.split("\n"):
+        if line.startswith("curl\t") and "--data" in line:
+            fields = line.split("\t")
+            at = fields.index("--data") + 1
+            body = json.loads(fields[at])
+            body["files"] = [u for u in body["files"] if u != url]
+            fields[at] = json.dumps(body, separators=(",", ":"))
+            lines.append("\t".join(fields))
+            continue
+        lines.append(line)
+    return "\n".join(lines)
+
+
+def test_defect_stale_tmp_is_promoted_by_the_twin_and_not_by_the_port(tmp_path) -> None:
+    """A LEFTOVER `/tmp/promote-apk` REACHES `apk/stable/` ON THE TWIN'S NEXT RUN.
 
     `rm -rf "$TMP"` is the last statement of the loop body, so an early exit leaves the directory behind and the following run copies INTO it and then uploads the whole thing. Driven here by planting the leftover directly, which is the state a cancelled workflow or a failed `aws` leaves.
+
+    RULE T DELTA (#a8d1d6d0): the port empties the stage before its first download, which its resumable `sync` needs (a same-size older leftover would otherwise be kept), so the leftover never reaches stable. Every other call and both streams still agree.
     """
-    assert port.STALE_TMP_IS_PROMOTED is True
+    assert port.STALE_TMP_IS_PROMOTED is False
 
     def plant() -> None:
         stale = port.TMP_PREFIX + "apk"
@@ -529,11 +638,22 @@ def test_defect_stale_tmp_is_promoted(tmp_path) -> None:
             fh.write("bytes from a run that died\n")
 
     _root, old, new, old_calls, new_calls = run_both(tmp_path, pre=plant)
-    _agree(old, new, "stale-tmp", old_calls, new_calls)
-
-    assert old.returncode == 0, "the stale file did not even slow the run down"
+    assert old.returncode == new.returncode == 0, (old.stderr, new.stderr)
+    # The purge script counts the URLs it posts; the port posts one fewer, the leftover's.
+    posted = len(_urls(old_calls))
+    assert new.stdout == old.stdout.replace("%d URL(s)" % posted, "%d URL(s)" % (posted - 1))
+    assert old.stderr == new.stderr
     assert "UPLOAD\trediacc-releases/apk/stable/old-0.0.1.apk" in old_calls
     assert "https://releases.rediacc.com/apk/stable/old-0.0.1.apk" in _urls(old_calls)
+    assert "old-0.0.1.apk" not in new_calls, new_calls
+    # Without the leftover's upload and URL, the two logs are the same.
+    twin = _with_the_stamp(_with_the_resumable_download(old_calls))
+    twin = twin.replace(
+        "UPLOAD\trediacc-releases/apk/stable/old-0.0.1.apk\nCONTENT<<<bytes from a run that died\n>>>\n",
+        "",
+    )
+    twin = _without_url(twin, "https://releases.rediacc.com/apk/stable/old-0.0.1.apk")
+    assert new_calls == twin, f"{twin}\n---\n{new_calls}"
 
 
 def test_defect_the_vacuity_floor_runs_after_the_upload(tmp_path) -> None:
@@ -693,6 +813,66 @@ def test_no_cloudflare_credential_warns_and_still_exits_zero(tmp_path) -> None:
     assert "curl" not in old_calls
 
 
+# --------------------------------------------------------------------------- A retried download resumes (#a8d1d6d0) ---------------------------------------------------------------------------
+
+BROKEN_KEY = "rediacc-releases/rpm/edge/rdc.rpm"
+
+
+def _download_with_one_broken_read(
+    tmp_path, *, revert_to_cp: bool
+) -> tuple[typing.Any, dict[str, int]]:
+    """Run the port with `rpm/edge/rdc.rpm`'s first read broken, and return what the fake fetched under `rpm/edge/`.
+
+    `revert_to_cp` plants the pre-#a8d1d6d0 download (`cp ... --recursive`) into the fixture's copy of the port: the mutation control.
+    """
+    root = fixture(tmp_path)
+    if revert_to_cp:
+        target = root / ".ci" / "rediacc_ci" / "deploy" / PORT_FILE.name
+        source = target.read_text(encoding="utf-8")
+        plant = source.replace("        DOWNLOAD_VERB,\n", '        "cp",\n', 1).replace(
+            '        tmp + "/",\n        *endpoint_args(endpoint),\n        "--only-show-errors",\n    ]',
+            '        tmp + "/",\n        *endpoint_args(endpoint),\n        "--recursive",\n'
+            '        "--only-show-errors",\n    ]',
+            1,
+        )
+        assert plant.count('"--recursive"') == source.count('"--recursive"') + 1, (
+            "the plant did not apply; the control is broken, not the test"
+        )
+        target.write_text(plant, encoding="utf-8")
+    gets = root / "gets.log"
+    new, _calls = _run(
+        root,
+        "new",
+        PROMOTE_RETRY_DELAY_S="0",
+        FAKE_GET_LOG=str(gets),
+        FAKE_AWS_BREAK_KEY=BROKEN_KEY,
+        FAKE_AWS_BREAK_TIMES="1",
+        FAKE_AWS_BREAK_COUNTER=str(root / "breaks"),
+    )
+    assert new.returncode == 0, new.stderr
+    assert "download of rpm/edge failed (exit 1), retrying (2/3)" in new.stderr, new.stderr
+    return new, _gets(gets, "rediacc-releases/rpm/edge/")
+
+
+def _only_the_broken_file_was_fetched_again(gets: dict[str, int]) -> bool:
+    others = {k: n for k, n in gets.items() if k != BROKEN_KEY}
+    return gets.get(BROKEN_KEY) == 2 and len(others) >= 2 and set(others.values()) == {1}
+
+
+def test_a_retried_download_fetches_only_what_the_broken_attempt_left_missing(tmp_path) -> None:
+    """THE 2026-09-25 FAILURE. `rpm/edge` failed 3/3 because every retry fetched the whole directory again and drew a fresh broken read. The port's second attempt fetches the one file the first left absent and nothing else."""
+    assert port.DOWNLOAD_IS_RESUMABLE is True
+    _new, gets = _download_with_one_broken_read(tmp_path, revert_to_cp=False)
+    assert _only_the_broken_file_was_fetched_again(gets), gets
+
+
+def test_mutation_control_a_cp_recursive_download_refetches_everything(tmp_path) -> None:
+    """PROVE THE TEST ABOVE CAN FAIL: the same run with the download reverted to `cp --recursive` fetches every `rpm/edge` file twice, and the resume check rejects it."""
+    _new, gets = _download_with_one_broken_read(tmp_path, revert_to_cp=True)
+    assert not _only_the_broken_file_was_fetched_again(gets), gets
+    assert set(gets.values()) == {2}, gets
+
+
 # --------------------------------------------------------------------------- The planted defect ---------------------------------------------------------------------------
 
 
@@ -718,7 +898,7 @@ def test_planted_defect_is_caught_only_by_the_call_log(tmp_path) -> None:
     assert new.returncode == old.returncode, "the plant changed the exit code; wrong plant"
     assert new.stdout == old.stdout, "the plant changed stdout; wrong plant"
     assert new.stderr == old.stderr, "the plant changed stderr; wrong plant"
-    assert new_calls != _with_the_stamp(old_calls), (
+    assert new_calls != _with_the_stamp(_with_the_resumable_download(old_calls)), (
         "THE CALL LOG DID NOT SEE IT: this gate cannot fail"
     )
     assert old_calls.count("--cache-control") == new_calls.count("--cache-control") + 5
@@ -745,15 +925,15 @@ def test_endpoint_args_reproduces_the_unquoted_word_split() -> None:
 
 def test_the_argv_builders_carry_the_twins_flags_in_the_twins_order() -> None:
     ep = "https://r2.example.invalid"
+    # RULE T DELTA (#a8d1d6d0): `sync` where the twin says `cp ... --recursive`; see RESUMABLE_DOWNLOAD_DELTA.
     assert port.download_argv("cli", "/tmp/promote-cli", ep) == [
         "aws",
         "s3",
-        "cp",
+        "sync",
         "s3://rediacc-releases/cli/edge/",
         "/tmp/promote-cli/",
         "--endpoint-url",
         ep,
-        "--recursive",
         "--only-show-errors",
     ]
     assert port.upload_argv("cli", "/tmp/promote-cli", ep)[-2:] == ["--cache-control", "no-cache"]
