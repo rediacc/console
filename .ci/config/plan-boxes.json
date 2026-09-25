@@ -440,6 +440,30 @@
       "open_sigs": [],
       "done_sigs": []
     },
+    "agent/plans/PLAN-commit-as-you-go.md": {
+      "status": "draft",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 13,
+      "done": 0,
+      "open_sigs": [
+        "34d60b8a",
+        "605e3a20",
+        "6c92e542",
+        "83c2eaf9",
+        "9883d9ac",
+        "9a2c7936",
+        "9b63908f",
+        "9f0b0075",
+        "a273780b",
+        "a70f79c8",
+        "a8a74c4b",
+        "d2b71cf1",
+        "f86f9978"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-completion-strategy.md": {
       "status": "compacted",
       "owner": "f4da5c2e",
@@ -1400,18 +1424,6 @@
       "done": 0,
       "open_sigs": [],
       "done_sigs": []
-    },
-    "agent/plans/PLAN-stop-hook-cap-saturated-wait.md": {
-      "status": "done",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 0,
-      "done": 1,
-      "open_sigs": [],
-      "done_sigs": [
-        "7433b50f"
-      ]
     },
     "agent/plans/PLAN-stop-hook-continuity.md": {
       "status": "executing",
@@ -2934,6 +2946,18 @@
         "f95260f7",
         "f9d0ddf8",
         "fcb9be74"
+      ]
+    },
+    "agent/plans/_done/PLAN-stop-hook-cap-saturated-wait.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-09-25",
+      "open": 0,
+      "done": 1,
+      "open_sigs": [],
+      "done_sigs": [
+        "7433b50f"
       ]
     },
     "agent/plans/_done/PLAN-stop-hook-plan-agent-check-declined.md": {
