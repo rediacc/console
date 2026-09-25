@@ -318,6 +318,13 @@ def run(ev):
     if shellscan.target_root(scan, root, verb="push") != "":
         return hookio.ALLOW
 
+    # THE SHELL'S OWN WORKING DIRECTORY NAMES THE REPO TOO, not only `-C`/`cd` in the command. A plain `git push origin 0923-1` run with the tool's cwd already inside private/account was judged against the CONSOLE receipt and refused as "a different tree" (#e83d9ba9, 2026-09-25). A payload cwd whose top level is not this root's is another repository's push.
+    cwd = ev.raw("cwd")
+    if cwd not in ("", "null"):
+        top = hookio.git_out(["-C", cwd, "rev-parse", "--show-toplevel"], want_rc=True)
+        if top and os.path.realpath(top) != os.path.realpath(root):
+            return hookio.ALLOW
+
     # SUBMODULE PUSHES ARE OUT OF SCOPE, deliberately. They advance no console branch and trigger no console CI; cancel-old-ci.sh draws the same line for the same reason. The pointer-bump commit that DOES advance console is covered by the ordinary path.
     if hookio.case_glob(
         cmd,

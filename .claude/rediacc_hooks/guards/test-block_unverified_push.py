@@ -179,6 +179,30 @@ cases.append(
 )
 cases.append((0, run("git push origin -d 0914-1 tooling-w0"), "CONTROL: the -d spelling, two refs"))
 cases.append((0, run("git push origin :0914-1"), "CONTROL: a colon refspec is a delete too"))
+
+
+def run_from(cmd, payload_cwd):
+    """`run`, with the tool's working directory in the payload the way the harness sends it."""
+    env = dict(os.environ, CLAUDE_PROJECT_DIR=d)
+    return subprocess.run(
+        GUARD_ARGV,
+        input=json.dumps({"tool_input": {"command": cmd}, "cwd": payload_cwd}),
+        capture_output=True,
+        text=True,
+        cwd=d,
+        env=env,
+        check=False,
+    ).returncode
+
+
+# A PLAIN PUSH WHOSE TOOL CWD IS A NESTED REPOSITORY (#e83d9ba9), driven with NO receipt so the cwd is the only thing that can let it through; the inverse keeps the same command, from this tree's own root, refused.
+_sub = os.path.join(d, "private", "sub")
+os.makedirs(_sub, exist_ok=True)
+subprocess.run(["git", "init", "-q", _sub], check=True)
+cases.append(
+    (0, run_from(PUSH, _sub), "CONTROL: a plain push from a submodule cwd is that repo's push")
+)
+cases.append((2, run_from(PUSH, d), "the same push from this tree's own cwd is still judged"))
 cases.append(
     (
         2,
