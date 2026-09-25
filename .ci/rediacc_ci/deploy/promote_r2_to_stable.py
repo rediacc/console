@@ -12,6 +12,7 @@ FACTORED OUT
 -----------------------------------------------------------------------------
 The full argument is in `promote_r2_to_stable_hotfix.py`'s docstring and is not repeated here. The short form: the two BASH twins share nothing but `common.sh`'s `require_cmd` and `sed_in_place`, there is no promote-specific bash library and `release-state-validator.sh` is reached by neither, so a shared Python helper would have no bash counterpart and would let an edit to one twin
 silently change the other's port. The four near-identical blocks are the download leg, the `VACUOUS:` floor, the `find`-driven purge loop and the closing purge pipeline. Collapsing them belongs to the cutover box that deletes both bash files.
+The one shared piece is the stable channel stamp (`channel_stamp.py`, #b22efec4), for the reason the sibling's docstring gives.
 
 -----------------------------------------------------------------------------
 NOTHING HERE REACHES R2 OR CLOUDFLARE IN A TEST
@@ -92,7 +93,7 @@ import subprocess
 import sys
 
 from rediacc_ci.core import common
-from rediacc_ci.deploy import transfer_retry
+from rediacc_ci.deploy import channel_stamp, transfer_retry
 
 # The twin's own name, carried in its four guard messages. A literal, because the bytes must survive the port.
 SELF = "promote-r2-to-stable.sh"
@@ -212,20 +213,10 @@ PHASE_TWO: dict[str, tuple[tuple[str, ...], ...]] = {
     ),
 }
 
-# The per-directory channel rewrites (twin :74-92), applied to the LOCAL copy before phase 2. `cli` rewrites two files with two expressions each; `rpm` and `archlinux` rewrite one file with one expression. A directory absent from this table rewrites nothing, which is `apt` and `apk`.
-INSTALL_SED = (
-    "s|REDIACC_CHANNEL:-edge|REDIACC_CHANNEL:-stable|g",
-    's|} else { "edge" }|} else { "stable" }|g',
-)
-CHANNEL_SED = "s|/edge/|/stable/|g"
-REWRITES: dict[str, tuple[tuple[str, tuple[str, ...]], ...]] = {
-    "cli": (
-        ("install.sh", INSTALL_SED),
-        ("install.ps1", INSTALL_SED),
-    ),
-    "rpm": (("rediacc.repo", (CHANNEL_SED,)),),
-    "archlinux": (("rediacc.conf", (CHANNEL_SED,)),),
-}
+# The per-directory channel rewrites (twin :74-92), applied to the LOCAL copy before phase 2. `cli` rewrites two files with two expressions each; `rpm` and `archlinux` rewrite one file with one expression. A directory absent from this table rewrites nothing, which is `apt` and `apk`. The table lives in `channel_stamp`, shared with the hotfix sibling (#b22efec4).
+INSTALL_SED = channel_stamp.INSTALL_SED
+CHANNEL_SED = channel_stamp.CHANNEL_SED
+REWRITES = channel_stamp.REWRITES
 
 # `"$SCRIPT_DIR/cf-purge-urls.sh"` (twin :180), where SCRIPT_DIR is `.ci/scripts/deploy`. Relative to the repository root so the cutover to `cf_purge_urls.py` is a one-line change in the box that owns it.
 PURGE_SCRIPT_RELATIVE = ".ci/scripts/deploy/cf-purge-urls.sh"
@@ -402,9 +393,12 @@ def _run(argv: list[str], **kwargs) -> int:
 
 
 def _run_retried(argv: list[str], what: str) -> int:
-    """`_run` with the shared bounded retry (transfer_retry.py, Rule T #4175e786)."""
+    """One `aws` call with the shared bounded retry (transfer_retry.py, Rule T #4175e786). A refusal (`AccessDenied`, an expired token) is not retried."""
     return transfer_retry.retried(
-        lambda: _run(argv), what, SELF, float(environment()["PROMOTE_RETRY_DELAY_S"] or "0")
+        lambda: transfer_retry.run_captured(argv),
+        what,
+        SELF,
+        float(environment()["PROMOTE_RETRY_DELAY_S"] or "0"),
     )
 
 
@@ -435,19 +429,14 @@ def _rewrite(dir_name: str, tmp: str) -> None:
     `[[ -f "$f" ]] || continue` for `cli`, and `[[ -f ... ]] && sed_in_place ...`
     for the other two. An absent file is skipped by both spellings and does NOT
     end the run; see the module docstring, where that was driven rather than assumed.
+
+    RULE T DELTA (#b22efec4): a file that is present but still points at edge after the stamp (a template spelling the stamp does not recognise, which sed passes through with exit 0) is refused here, before any upload.
     """
-    for name, expressions in REWRITES.get(dir_name, ()):
-        target = os.path.join(tmp, name)
-        if not os.path.isfile(target):
-            continue
-        args: list[str] = []
-        for expression in expressions:
-            args += ["-e", expression]
-        args.append(target)
-        _flush()
-        status = common.sed_in_place(args)
-        if status:
-            raise BashExitError(status)
+    try:
+        channel_stamp.stamp_stable(dir_name, tmp)
+    except channel_stamp.StampError as exc:
+        print("%s: %s" % (SELF, exc), file=sys.stderr)
+        raise BashExitError(exc.status) from exc
 
 
 def _promote_dirs(endpoint: str) -> list[str]:

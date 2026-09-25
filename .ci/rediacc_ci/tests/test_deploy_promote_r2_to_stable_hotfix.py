@@ -18,6 +18,7 @@ from __future__ import annotations
 import ast
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -117,8 +118,12 @@ with open(log) as fh:
     call_index = len([line for line in fh if line.startswith("aws\t")])
 rc = int(os.environ.get("FAKE_AWS_RC", "0"))
 fail_on = os.environ.get("FAKE_AWS_FAIL_ON_CALL", "")
-if rc or (fail_on and str(call_index) == fail_on):
-    sys.stderr.write("fatal error: An error occurred (AccessDenied)\n")
+# Every call from this index on fails: the shape of a credential that expires mid-run.
+fail_from = int(os.environ.get("FAKE_AWS_FAIL_FROM_CALL", "0") or "0")
+if rc or (fail_on and str(call_index) == fail_on) or (fail_from and call_index >= fail_from):
+    sys.stderr.write(
+        os.environ.get("FAKE_AWS_STDERR", "fatal error: An error occurred (AccessDenied)\n")
+    )
     sys.exit(rc or 1)
 
 
@@ -335,7 +340,46 @@ def _agree(old, new, label: str, old_calls: str = "", new_calls: str = "") -> No
     )
     assert new.stdout == old.stdout, f"{label}: stdout diverged:\n{old.stdout!r}\n{new.stdout!r}"
     assert new.stderr == old.stderr, f"{label}: stderr diverged:\n{old.stderr!r}\n{new.stderr!r}"
-    assert new_calls == old_calls, f"{label}: call log diverged:\n{old_calls}\n---\n{new_calls}"
+    expected = _with_the_stamp(old_calls)
+    assert new_calls == expected, f"{label}: call log diverged:\n{expected}\n---\n{new_calls}"
+
+
+# RULE T DELTA (#b22efec4). The twin's recursive copy uploads the EDGE-defaulted installers and channel configs to `stable/` and only re-bakes them in a later loop, so a run that dies in between leaves production installing edge. The port stamps the staged copy BEFORE any upload. That is the ONE permitted difference in the call log: the CONTENT of these four keys' uploads, never an argv.
+STABLE_POINTERS = {
+    "rediacc-releases/cli/stable/install.sh": ("REDIACC_CHANNEL:-stable", "REDIACC_CHANNEL:-edge"),
+    "rediacc-releases/cli/stable/install.ps1": ('} else { "stable" }', '} else { "edge" }'),
+    "rediacc-releases/rpm/stable/rediacc.repo": ("/rpm/stable/", "/edge/"),
+    "rediacc-releases/archlinux/stable/rediacc.conf": ("/archlinux/stable/", "/edge/"),
+}
+
+UPLOAD_RE = re.compile(r"UPLOAD\t(.*?)\nCONTENT<<<(.*?)>>>\n", re.DOTALL)
+
+# What `aws` printed on 2026-09-24 when a large .deb broke mid-read (M-live item 10): the transient class the retry exists for.
+INCOMPLETE_READ = (
+    "download failed: s3://rediacc-releases/apt/edge/pool/x.deb to /tmp/promote-apt/pool/x.deb "
+    "('Connection broken: IncompleteRead(7540288 bytes read, 848320 more expected)', "
+    "IncompleteRead(7540288 bytes read, 848320 more expected))\n"
+)
+
+
+def _uploads(calls: str) -> list[tuple[str, str]]:
+    """Every (key, content) the fake stored, in upload order."""
+    return UPLOAD_RE.findall(calls)
+
+
+def _with_the_stamp(calls: str) -> str:
+    """The twin's call log with the stable default stamped into the four channel-pointer uploads, which is what the port uploads instead."""
+
+    def stamp(match: re.Match[str]) -> str:
+        key, content = match.group(1), match.group(2)
+        if key in STABLE_POINTERS:
+            content = content.replace("REDIACC_CHANNEL:-edge", "REDIACC_CHANNEL:-stable")
+            content = content.replace('} else { "edge" }', '} else { "stable" }')
+            if key.endswith((".repo", ".conf")):
+                content = content.replace("/edge/", "/stable/")
+        return "UPLOAD\t%s\nCONTENT<<<%s>>>\n" % (key, content)
+
+    return UPLOAD_RE.sub(stamp, calls)
 
 
 def _urls(calls: str) -> list[str]:
@@ -383,6 +427,59 @@ def test_the_channel_rewrites_reach_the_uploaded_bytes(tmp_path) -> None:
     assert 'CONTENT<<<$c = if ($e) { "edge" } else { "stable" }\n>>>' in old_calls
     assert "baseurl=https://releases.rediacc.com/rpm/stable/" in old_calls
     assert "Server = https://releases.rediacc.com/archlinux/stable/" in old_calls
+
+
+def test_no_upload_ever_carries_an_edge_default_to_stable(tmp_path) -> None:
+    """#b22efec4: EVERY upload of a stable channel pointer carries the stable default, including the recursive copy's.
+
+    The twin's recursive copy puts the edge body on `stable/` first and fixes it one loop later; that window is how production came to install edge.
+    """
+    _root, old, new, old_calls, new_calls = run_both(tmp_path)
+    _agree(old, new, "stamp", old_calls, new_calls)
+
+    seen = set()
+    for key, content in _uploads(new_calls):
+        if key in STABLE_POINTERS:
+            good, bad = STABLE_POINTERS[key]
+            assert good in content, (key, content)
+            assert bad not in content, (key, content)
+            seen.add(key)
+    assert seen == set(STABLE_POINTERS), seen
+    # The twin's window, reproduced so the delta stays visible.
+    assert any(
+        k == "rediacc-releases/cli/stable/install.sh" and "REDIACC_CHANNEL:-edge" in c
+        for k, c in _uploads(old_calls)
+    )
+
+
+def test_a_run_that_dies_after_the_cli_upload_leaves_the_stable_default_in_place(tmp_path) -> None:
+    """THE 2026-09-24 INCIDENT. Call 1 downloads cli/edge, call 2 uploads cli/stable, call 3 (apt) and everything after fails: the credential expired.
+
+    The twin leaves `cli/stable/install.sh` defaulting to edge, because the re-bake loop never runs. The port stamped before uploading, so what is on stable is right however far the run got.
+    """
+    root, old, new, _old_calls, _new_calls = run_both(
+        tmp_path, FAKE_AWS_FAIL_FROM_CALL="3", PROMOTE_RETRY_DELAY_S="0"
+    )
+    assert old.returncode == new.returncode == 1, (old.stderr, new.stderr)
+    stable = "rediacc-releases/cli/stable/"
+    twin_sh = (root / "old-s3" / stable / "install.sh").read_text(encoding="utf-8")
+    port_sh = (root / "new-s3" / stable / "install.sh").read_text(encoding="utf-8")
+    port_ps1 = (root / "new-s3" / stable / "install.ps1").read_text(encoding="utf-8")
+    assert "REDIACC_CHANNEL:-edge" in twin_sh, twin_sh
+    assert "REDIACC_CHANNEL:-stable" in port_sh, port_sh
+    assert '} else { "stable" }' in port_ps1, port_ps1
+
+
+def test_an_installer_the_stamp_cannot_reach_is_refused_before_any_upload(tmp_path) -> None:
+    """A template whose default the substitution does not recognise would reach stable still pointing at edge, with sed exiting 0. The port refuses instead."""
+    bucket = dict(DEFAULT_BUCKET)
+    bucket["cli/edge/install.sh"] = '#!/bin/sh\n: "${REDIACC_CHANNEL:=edge}"\n'
+    root = fixture(tmp_path, bucket)
+    new, new_calls = _run(root, "new")
+    assert new.returncode == 1, new.stderr
+    assert "install.sh" in new.stderr, new.stderr
+    assert "stable" in new.stderr, new.stderr
+    assert "UPLOAD" not in new_calls, new_calls
 
 
 def test_a_nested_file_keeps_its_directories_in_the_purge_url(tmp_path) -> None:
@@ -538,10 +635,13 @@ def test_a_missing_aws_refuses_before_the_variable_guards(tmp_path) -> None:
 def test_one_transient_aws_failure_stops_the_twin_but_the_port_retries_through_it(tmp_path) -> None:
     """RULE T DELTA (#4175e786). Call 4 fails once. The twin, unguarded under `set -e`, stops half-done; the port repeats the idempotent transfer, says so on stderr, and completes."""
     _root, old, new, old_calls, _new_calls = run_both(
-        tmp_path, FAKE_AWS_FAIL_ON_CALL="4", PROMOTE_RETRY_DELAY_S="0"
+        tmp_path,
+        FAKE_AWS_FAIL_ON_CALL="4",
+        FAKE_AWS_STDERR=INCOMPLETE_READ,
+        PROMOTE_RETRY_DELAY_S="0",
     )
     assert old.returncode == 1
-    assert old.stderr == "fatal error: An error occurred (AccessDenied)\n"
+    assert old.stderr == INCOMPLETE_READ
     assert old.stdout == (
         "Promoting cli/edge/ -> cli/stable/\nPromoting apt/edge/ -> apt/stable/\n"
     ), old.stdout
@@ -551,14 +651,25 @@ def test_one_transient_aws_failure_stops_the_twin_but_the_port_retries_through_i
 
 
 def test_a_persistent_aws_failure_stops_both_sides(tmp_path) -> None:
-    """A failure the retry cannot outlast still stops the port, after three tries, with aws's status and nothing purged."""
+    """A transient failure the retry cannot outlast still stops the port, after three tries, with aws's status and nothing purged."""
     _root, old, new, old_calls, new_calls = run_both(
-        tmp_path, FAKE_AWS_RC="1", PROMOTE_RETRY_DELAY_S="0"
+        tmp_path, FAKE_AWS_RC="1", FAKE_AWS_STDERR=INCOMPLETE_READ, PROMOTE_RETRY_DELAY_S="0"
     )
     assert old.returncode == new.returncode == 1
     assert new.stderr.count("retrying (") == 2, new.stderr
     assert "curl" not in old_calls
     assert "curl" not in new_calls
+
+
+def test_access_denied_is_fatal_on_the_first_try(tmp_path) -> None:
+    """#b22efec4: an expired or wrong credential does not heal in ten seconds, so retrying it only repeats the refusal and delays the verdict."""
+    root = fixture(tmp_path)
+    new, new_calls = _run(root, "new", FAKE_AWS_RC="1", PROMOTE_RETRY_DELAY_S="0")
+    assert new.returncode == 1
+    assert "retrying (" not in new.stderr, new.stderr
+    assert "AccessDenied" in new.stderr, new.stderr
+    assert "not retrying" in new.stderr, new.stderr
+    assert len([ln for ln in new_calls.splitlines() if ln.startswith("aws\t")]) == 1, new_calls
 
 
 def test_an_unset_zone_becomes_an_empty_argument_and_the_purge_refuses(tmp_path) -> None:
@@ -607,7 +718,9 @@ def test_planted_defect_is_caught_only_by_the_call_log(tmp_path) -> None:
     assert new.returncode == old.returncode, "the plant changed the exit code; wrong plant"
     assert new.stdout == old.stdout, "the plant changed stdout; wrong plant"
     assert new.stderr == old.stderr, "the plant changed stderr; wrong plant"
-    assert new_calls != old_calls, "THE CALL LOG DID NOT SEE IT: this gate cannot fail"
+    assert new_calls != _with_the_stamp(old_calls), (
+        "THE CALL LOG DID NOT SEE IT: this gate cannot fail"
+    )
     assert old_calls.count("--cache-control") == new_calls.count("--cache-control") + 5
 
 

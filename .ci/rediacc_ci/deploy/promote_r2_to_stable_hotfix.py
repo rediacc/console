@@ -13,6 +13,8 @@ Four blocks are near-identical between the two twins: the `for dir in cli apt rp
 promote-specific bash library, and `release-state-validator.sh` is reached by neither. A Python helper holding those four blocks would therefore have no bash counterpart, and the acceptance rule for this wave is agreement with the LIVE twin: a shared module would mean one Python function standing in for two bash blocks that are free to drift, and a later edit to one twin would
 silently change the other's port. The same ruling was taken for `infra/docker_prepull.py` and its near-twin. The duplication is named here so a reader sees it was measured, and the cutover box that eventually deletes both bash files is the right place to collapse it.
 
+ONE EXCEPTION, taken 2026-09-25 (#b22efec4): the stable channel stamp lives in `channel_stamp.py` and both promotes call it on the staged copy before any upload. It is a production fix rather than a port of either twin, and two copies of it are exactly how one lane came to publish edge-defaulted installers to stable while the other did not.
+
 The blocks are NOT identical, which is the other half of the argument. This lane uploads with `aws s3 cp --recursive` and rewrites the channel-pointer files by DOWNLOADING THEM BACK from `stable/` afterwards; the sibling uploads with two phases of `aws s3 sync` and rewrites the same files on the LOCAL copy before phase 2. The purge lists that come out differ accordingly, and so
 does the closing line.
 
@@ -103,7 +105,7 @@ import subprocess
 import sys
 
 from rediacc_ci.core import common
-from rediacc_ci.deploy import transfer_retry
+from rediacc_ci.deploy import channel_stamp, transfer_retry
 
 # The twin's own name, carried in its three guard messages. A literal, because the bytes must survive the port.
 SELF = "promote-r2-to-stable-hotfix.sh"
@@ -134,14 +136,11 @@ CONFIG_FILES = ("rpm/stable/rediacc.repo", "archlinux/stable/rediacc.conf")
 # The two install scripts re-baked back to `stable` (twin :103).
 INSTALL_FILES = ("cli/stable/install.sh", "cli/stable/install.ps1")
 
-# `sed_in_place 's|/edge/|/stable/|g'` (twin :91).
-CONFIG_SED = "s|/edge/|/stable/|g"
+# `sed_in_place 's|/edge/|/stable/|g'` (twin :91). Shared with the soak-gated sibling through `channel_stamp`.
+CONFIG_SED = channel_stamp.CHANNEL_SED
 
 # The two install-script substitutions (twin :107-108), in the twin's order: the shell default first, the PowerShell one second.
-INSTALL_SED = (
-    "s|REDIACC_CHANNEL:-edge|REDIACC_CHANNEL:-stable|g",
-    's|} else { "edge" }|} else { "stable" }|g',
-)
+INSTALL_SED = channel_stamp.INSTALL_SED
 
 # `"$SCRIPT_DIR/cf-purge-urls.sh"` (twin :117), where SCRIPT_DIR is `.ci/scripts/deploy`. Relative to the repository root so the cutover to `cf_purge_urls.py` is a one-line change in the box that owns it.
 PURGE_SCRIPT_RELATIVE = ".ci/scripts/deploy/cf-purge-urls.sh"
@@ -159,6 +158,9 @@ PURGE_LIST_CONTAINS_DUPLICATES = True
 # RULE T DELTA (2026-09-24): the twin counts AFTER uploading, so an empty download reached an upload that failed with aws's own "does not exist". The port counts first and uploads nothing from an empty stage.
 VACUITY_FLOOR_RUNS_AFTER_THE_UPLOAD = False
 STALE_TMP_IS_PROMOTED = True
+# RULE T DELTA (2026-09-25, #b22efec4): the twin's recursive copy uploads the EDGE-defaulted installers and channel configs to `stable/` and re-bakes them only in the two loops after every directory is done, so a run that dies in between leaves production installing edge. That happened on 2026-09-24 when the Python side's minted token expired during `apt`. The port stamps the
+# staged copy (`channel_stamp.stamp_stable`) BEFORE uploading it. The re-bake loops still run, now as a no-op re-assertion, so every argv, every stream and the purge list stay the twin's; only the CONTENT of those four uploads differs.
+EDGE_DEFAULT_REACHES_STABLE_BEFORE_THE_REBAKE = False
 
 
 class MissingEnvError(Exception):
@@ -347,9 +349,12 @@ def _flush() -> None:
 
 
 def _run_retried(argv: list[str], what: str) -> int:
-    """`_run` with the shared bounded retry (transfer_retry.py, Rule T #4175e786)."""
+    """One `aws` call with the shared bounded retry (transfer_retry.py, Rule T #4175e786). A refusal (`AccessDenied`, an expired token) is not retried."""
     return transfer_retry.retried(
-        lambda: _run(argv), what, SELF, float(environment()["PROMOTE_RETRY_DELAY_S"] or "0")
+        lambda: transfer_retry.run_captured(argv),
+        what,
+        SELF,
+        float(environment()["PROMOTE_RETRY_DELAY_S"] or "0"),
     )
 
 
@@ -397,6 +402,12 @@ def _promote_dirs(endpoint: str) -> list[str]:
                 file=sys.stderr,
             )
             raise BashExitError(1)
+        # RULE T DELTA (#b22efec4): stamp the stable channel into the staged copy BEFORE it is uploaded.
+        try:
+            channel_stamp.stamp_stable(dir_name, tmp)
+        except channel_stamp.StampError as exc:
+            print("%s: %s" % (SELF, exc), file=sys.stderr)
+            raise BashExitError(exc.status) from exc
         status = _run_retried(
             upload_argv(dir_name, tmp, endpoint), "upload of %s/stable" % dir_name
         )
@@ -436,7 +447,7 @@ def _rebake_install_scripts(endpoint: str) -> list[str]:
 
     WHY IT EXISTS, in the twin's words: `cd-stage.yml` baked `edge` into
     `cli/edge/install.{sh,ps1}`, and the raw recursive copy above carried that
-    into `cli/stable/`. This rewrites it back.
+    into `cli/stable/`. This rewrites it back. In the port the copy is already stamped (`EDGE_DEFAULT_REACHES_STABLE_BEFORE_THE_REBAKE`), so this is a re-assertion kept for call-log parity with the twin.
     """
     urls: list[str] = []
     for key in INSTALL_FILES:

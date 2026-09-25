@@ -81,6 +81,13 @@ DEFAULT_BUCKET = {
     ),
 }
 
+# What `aws` printed on 2026-09-24 when a large .deb broke mid-read (M-live item 10): the transient class the retry exists for.
+INCOMPLETE_READ = (
+    "download failed: s3://rediacc-releases/apt/edge/pool/x.deb to /tmp/promote-apt/pool/x.deb "
+    "('Connection broken: IncompleteRead(7540288 bytes read, 848320 more expected)', "
+    "IncompleteRead(7540288 bytes read, 848320 more expected))\n"
+)
+
 FAKE_AWS = r'''#!/usr/bin/python3
 """A MODEL of `aws s3 cp/sync`, not the AWS CLI. See the test module docstring.
 
@@ -109,8 +116,12 @@ with open(log) as fh:
     call_index = len([line for line in fh if line.startswith("aws\t")])
 rc = int(os.environ.get("FAKE_AWS_RC", "0"))
 fail_on = os.environ.get("FAKE_AWS_FAIL_ON_CALL", "")
-if rc or (fail_on and str(call_index) == fail_on):
-    sys.stderr.write("fatal error: An error occurred (AccessDenied)\n")
+# Every call from this index on fails: the shape of a credential that expires mid-run.
+fail_from = int(os.environ.get("FAKE_AWS_FAIL_FROM_CALL", "0") or "0")
+if rc or (fail_on and str(call_index) == fail_on) or (fail_from and call_index >= fail_from):
+    sys.stderr.write(
+        os.environ.get("FAKE_AWS_STDERR", "fatal error: An error occurred (AccessDenied)\n")
+    )
     sys.exit(rc or 1)
 
 
@@ -396,6 +407,30 @@ def test_the_rewrites_happen_before_phase_two_uploads_them(tmp_path) -> None:
     assert "baseurl=https://releases.rediacc.com/rpm/edge/" not in old_calls
 
 
+def test_an_installer_the_stamp_cannot_reach_is_refused_before_any_upload(tmp_path) -> None:
+    """#b22efec4, swept to this sibling. A template whose default the substitution does not recognise would reach stable still pointing at edge, with sed exiting 0. The port refuses before any upload."""
+    bucket = dict(DEFAULT_BUCKET)
+    bucket["cli/edge/install.sh"] = '#!/bin/sh\n: "${REDIACC_CHANNEL:=edge}"\n'
+    root = fixture(tmp_path, bucket)
+    new, new_calls = _run(root, "new")
+    assert new.returncode == 1, new.stderr
+    assert "install.sh" in new.stderr, new.stderr
+    assert "stable" in new.stderr, new.stderr
+    assert "UPLOAD" not in new_calls, new_calls
+
+
+def test_a_run_that_dies_after_the_cli_uploads_leaves_the_stable_default_in_place(tmp_path) -> None:
+    """#b22efec4, swept to this sibling: calls 1-3 are cli's download and two syncs, call 4 (apt) and everything after fails. The stamp precedes every upload here, so cli/stable is right however far the run got."""
+    root, old, new, _old_calls, _new_calls = run_both(
+        tmp_path, FAKE_AWS_FAIL_FROM_CALL="4", PROMOTE_RETRY_DELAY_S="0"
+    )
+    assert old.returncode == new.returncode == 1, (old.stderr, new.stderr)
+    for side in ("old", "new"):
+        stable = root / f"{side}-s3" / "rediacc-releases" / "cli" / "stable"
+        assert "REDIACC_CHANNEL:-stable" in (stable / "install.sh").read_text(encoding="utf-8")
+        assert '} else { "stable" }' in (stable / "install.ps1").read_text(encoding="utf-8")
+
+
 def test_an_absent_rewrite_target_does_not_end_the_run(tmp_path) -> None:
     """`[[ -f "$f" ]] && sed_in_place ...` IS EXEMPT FROM `set -e`.
 
@@ -555,10 +590,13 @@ def test_a_missing_aws_refuses_before_the_variable_guards(tmp_path) -> None:
 def test_one_transient_aws_failure_stops_the_twin_but_the_port_retries_through_it(tmp_path) -> None:
     """RULE T DELTA (#4175e786). Call 5 is `apt`'s phase-1 sync. The twin, unguarded under `set -e`, stops there with `cli` promoted and `apt` half-done. The port repeats the idempotent transfer, says so on stderr, and completes, as M-live item 9 needed twice on 2026-09-24."""
     _root, old, new, old_calls, _new_calls = run_both(
-        tmp_path, FAKE_AWS_FAIL_ON_CALL="5", PROMOTE_RETRY_DELAY_S="0"
+        tmp_path,
+        FAKE_AWS_FAIL_ON_CALL="5",
+        FAKE_AWS_STDERR=INCOMPLETE_READ,
+        PROMOTE_RETRY_DELAY_S="0",
     )
     assert old.returncode == 1
-    assert old.stderr == "fatal error: An error occurred (AccessDenied)\n"
+    assert old.stderr == INCOMPLETE_READ
     assert old.stdout.splitlines() == [
         "Promoting cli/edge/ -> cli/stable/ (2-phase)",
         "Promoting apt/edge/ -> apt/stable/ (2-phase)",
@@ -575,12 +613,23 @@ def test_one_transient_aws_failure_stops_the_twin_but_the_port_retries_through_i
 def test_a_persistent_aws_failure_stops_both_sides_with_awss_status(tmp_path) -> None:
     """A failure the retry cannot outlast still stops the port, after TRANSFER_ATTEMPTS tries, with aws's own status and nothing purged."""
     _root, old, new, old_calls, new_calls = run_both(
-        tmp_path, FAKE_AWS_RC="1", PROMOTE_RETRY_DELAY_S="0"
+        tmp_path, FAKE_AWS_RC="1", FAKE_AWS_STDERR=INCOMPLETE_READ, PROMOTE_RETRY_DELAY_S="0"
     )
     assert old.returncode == new.returncode == 1
     assert new.stderr.count("retrying (") == 2, new.stderr
     assert "curl" not in old_calls
     assert "curl" not in new_calls
+
+
+def test_access_denied_is_fatal_on_the_first_try(tmp_path) -> None:
+    """#b22efec4: an expired or wrong credential does not heal in ten seconds, so retrying it only repeats the refusal and delays the verdict."""
+    root = fixture(tmp_path)
+    new, new_calls = _run(root, "new", FAKE_AWS_RC="1", PROMOTE_RETRY_DELAY_S="0")
+    assert new.returncode == 1
+    assert "retrying (" not in new.stderr, new.stderr
+    assert "AccessDenied" in new.stderr, new.stderr
+    assert "not retrying" in new.stderr, new.stderr
+    assert len([ln for ln in new_calls.splitlines() if ln.startswith("aws\t")]) == 1, new_calls
 
 
 def test_an_unset_zone_becomes_an_empty_argument_and_the_purge_refuses(tmp_path) -> None:
