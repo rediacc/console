@@ -2215,7 +2215,7 @@
         "disabled": "Too many wrong codes, so moving this login to a new IP address is turned off for this token. Run `rdc subscription login` to sign in again.",
         "reloginOnly": "Your IP address changed, and this login only works from the old one. Two-factor authentication is off for this account, so the login cannot be moved: run `rdc subscription login` to sign in again. With two-factor authentication on, an authenticator code is enough next time.",
         "notFirstUse": "This token is not tied to the IP address it was first used from, so it cannot be moved to a new one. Check the token's IP binding in the web portal.",
-        "nonInteractive": "Your IP address changed, and this login only works from the old one. To move it here, run any rdc command in an interactive terminal (for example `rdc subscription status`) and enter the code from your authenticator app. Or run `rdc subscription login` to sign in again.",
+        "nonInteractive": "Your IP address changed, and this login only works from the old one. To move it here, run any Rediacc CLI command in an interactive terminal (for example `rdc subscription status`) and enter the code from your authenticator app. Or run `rdc subscription login` to sign in again.",
         "stillMismatched": "The account server still sees a different IP address after the move. Your connection may be switching between addresses (for example IPv4 and IPv6). Run the command again, or run `rdc subscription login`.",
         "attemptsExhausted": "Three wrong codes in a row. Run the command again to retry, or run `rdc subscription login` to sign in again."
       }
