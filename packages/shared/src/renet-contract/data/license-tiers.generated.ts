@@ -138,6 +138,7 @@ export const LICENSE_TIERS: Readonly<Record<string, LicenseTierEntry>> = {
   "network_ensure_ips": { tier: "operate", pending: false },
   "network_prune": { tier: "none", pending: false },
   "network_ps_status": { tier: "none", pending: false },
+  "network_used": { tier: "none", pending: false },
   "plugin_start": { tier: "operate", pending: false },
   "plugin_status": { tier: "none", pending: false },
   "plugin_stop": { tier: "none", pending: false },

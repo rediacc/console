@@ -19,6 +19,10 @@ export class SystemCheckMethods {
     return this.testFunction({ function: 'machine_version' });
   }
 
+  async networkUsed(): Promise<ExecResult> {
+    return this.testFunction({ function: 'network_used' });
+  }
+
   async sshTest(): Promise<ExecResult> {
     return this.testFunction({ function: 'machine_ssh_test' });
   }

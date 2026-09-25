@@ -24,6 +24,7 @@ const EXPECTED_READ_ONLY = [
   'machine_ping',
   'machine_ssh_test',
   'machine_version',
+  'network_used',
   'repository_autostart_list',
   'repository_cat',
   'repository_diff',

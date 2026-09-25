@@ -63,6 +63,7 @@ export const RENET_FUNCTION_ACCESS: Record<RenetFunctionName, RenetAccess> = {
   machine_ssh_test: 'read-only',
   machine_uninstall: 'provision',
   machine_version: 'read-only',
+  network_used: 'read-only',
   repository_autostart_disable: 'provision',
   repository_autostart_disable_all: 'provision',
   repository_autostart_enable: 'provision',

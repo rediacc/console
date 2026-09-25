@@ -978,6 +978,7 @@ export class BridgeTestRunner {
   ping = () => this.systemCheckMethods.ping();
   nop = () => this.systemCheckMethods.nop();
   hello = () => this.systemCheckMethods.hello();
+  networkUsed = () => this.systemCheckMethods.networkUsed();
   sshTest = () => this.systemCheckMethods.sshTest();
   checkKernelCompatibility = () => this.systemCheckMethods.checkKernelCompatibility();
   checkSetup = () => this.systemCheckMethods.checkSetup();

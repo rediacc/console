@@ -13,7 +13,7 @@ import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
  * machine_uninstall here made it read as covered when nothing here calls it.
  * The gate strips comments now; the name is written split below so this line
  * cannot resurrect the claim.
- * - machine_ping, daemon_nop, machine_version, machine_ssh_test, setup,
+ * - machine_ping, daemon_nop, machine_version, network_used, machine_ssh_test, setup,
  *   machine_(uninstall) -- NOT exercised here, see .e2e-coverage-allowlist
  * - machine_check_kernel, machine_check_setup, machine_check_memory
  * - machine_check_sudo, machine_check_tools, machine_check_renet, machine_check_criu
@@ -55,6 +55,15 @@ test.describe('System Functions @bridge @smoke', () => {
     expect(result.code).toBe(0);
     const output = runner.getCombinedOutput(result);
     expect(output).toMatch(/renet|version|hello|\d+\.\d+/);
+  });
+
+  test('network_used lists every network-ID claimant as a JSON array', async () => {
+    const result = await runner.networkUsed();
+
+    expect(runner.isSuccess(result)).toBe(true);
+    expect(result.code).toBe(0);
+    const output = runner.getCombinedOutput(result);
+    expect(output).toMatch(/\[/);
   });
 
   test('ssh_test should succeed', async () => {
