@@ -7,31 +7,30 @@ So `modules()` reads the directory. A file named `block_x.py` or `warn_x.py` tha
 
 WHAT A GUARD MODULE DECLARES, and why each one is needed rather than derivable:
 
-    CHAIN    "pre-bash", "pre-edit", "pre-ask", "pre-agent", "post-bash". NOT derivable
-             from the filename: `block-roundlog-truncate.sh` is pre-bash and
-             `block-roundlog-write.sh` is pre-edit, and their stems differ by
-             one word. It is also the key `check-hook-integrity.sh` uses, which
-             chain-qualifies names precisely so "two chains can never collide
-             on one basename".
-    TWIN     the bash original, CHAIN-QUALIFIED (`pre-bash/block-git-amend.sh`),
-             or `None` for a guard that was never bash. See TWIN = None below.
-             It was a path under `.claude/hooks` until the P7 cutover and is now
-             a key into `.claude/oracles/`, where those files were
-             moved; the STRING is unchanged, so the differential and the comment
-             archaeology both still resolve. This is the differential's oracle
-             and the reason it exists: the port is judged against the file it
-             was made from, not against its author's understanding of it. The
-             field survives the cutover for that reason and because it is the
-             only pointer back to the prose.
-    ORDER    the guard's position in its chain, counting COMMANDS and not
-             guards. The chain head's jq and python3 checks hold positions 1
-             and 2 of every chain, so a chain's first ported guard is at 3
-             (pre-edit at 4, behind why-on-edit.py). The collapse preserved every
-             position rather than renumbering: the dispatcher entry occupies the
-             span its guards used to fill one command each. Hook order is
-             load-bearing (`check_hooks_resolvable.py` has a whole predicate
-             about the chain head leading), so it is recorded rather than left to
-             a directory listing's alphabet.
+    CHAIN      "pre-bash", "pre-edit", "pre-ask", "pre-agent", "post-bash". NOT
+               derivable from the filename: `block-roundlog-truncate.sh` is
+               pre-bash and `block-roundlog-write.sh` is pre-edit, and their
+               stems differ by one word. It is also the key
+               `check-hook-integrity.sh` uses, which chain-qualifies names
+               precisely so "two chains can never collide on one basename".
+    OWN_SUITE  `True` for a guard that was never bash and therefore has no
+               frozen golden to be judged against; absent (equivalently
+               `False`) for every other guard, which is judged against
+               `tests/goldens/<stem>.jsonl` instead. See OWN_SUITE below.
+               PLAN-retire-bash-oracles A3 deleted `.claude/oracles/` and every
+               `TWIN` constant that pointed into it, once every twinned guard
+               had a golden frozen from its bash original (A1); this field is
+               what is left of that distinction, for the handful of guards a
+               golden was never possible for.
+    ORDER      the guard's position in its chain, counting COMMANDS and not
+               guards. The chain head's jq and python3 checks hold positions 1
+               and 2 of every chain, so a chain's first ported guard is at 3
+               (pre-edit at 4, behind why-on-edit.py). The collapse preserved every
+               position rather than renumbering: the dispatcher entry occupies the
+               span its guards used to fill one command each. Hook order is
+               load-bearing (`check_hooks_resolvable.py` has a whole predicate
+               about the chain head leading), so it is recorded rather than left to
+               a directory listing's alphabet.
 
 THIS REGISTRY IS WHAT `.claude/settings.json` RUNS, since the P7 cutover on 2026-09-06. One command per chain invokes `dispatch.py --chain <name>`, and the chain it runs is `by_chain(<name>)` -- this directory scan, in ORDER. Two consequences worth stating in the file that owns them:
 
@@ -43,7 +42,7 @@ THIS REGISTRY IS WHAT `.claude/settings.json` RUNS, since the P7 cutover on 2026
     Before the cutover a broken glob here cost nothing, because settings.json
     named 38 bash files directly.
 
-The bash originals still exist, at `.claude/oracles/`, and `tests/test_guards_differential.py` still compares every port against its own one byte for byte. They are no longer registered anywhere and are no longer guards; see that directory's README for why they are kept and why they had to leave `.claude/hooks/`.
+The bash originals are gone. `.claude/oracles/` held them, byte for byte, only until every twinned guard had a frozen golden to be judged against instead (PLAN-retire-bash-oracles A1); A3 deleted the tree once that freeze was proven complete. `tests/test_guards_differential.py` now compares every port against `tests/goldens/<stem>.jsonl`, not against a live bash process.
 """
 
 import importlib
@@ -90,31 +89,30 @@ def by_chain(chain):
     return sorted(mods, key=lambda m: (m.ORDER, m.__name__))
 
 
-def twin_of(module):
-    """The bash original this module was ported from, repo-relative, or None.
+def has_own_suite(module):
+    """Whether this module opts out of golden evidence and stands on its own suite.
 
-    TWIN = None IS A SENTINEL AND NOT AN OVERSIGHT, added 2026-09-16 for
-    `block_prose_style_edit` and `block_prose_style_commit`, the first two guards in this package that were never bash.
+    `OWN_SUITE = True` IS A SENTINEL AND NOT AN OVERSIGHT, added 2026-09-16 for
+    `block_prose_style_edit` and `block_prose_style_commit`, the first two guards in this package that were never bash (then spelled `TWIN = None`; PLAN-retire-bash-oracles A3 retired the `TWIN` name along with the oracle tree it pointed into, once every OTHER guard had a golden frozen from its bash original instead).
 
-    WHY THE FIELD COULD NOT SIMPLY BE FILLED IN. All 46 guards that existed before them landed on ONE day, 2026-09-06, the P7 cutover, because every one of them is a PORT. The harness encoded that as an invariant -- `test_dispatch` asserted `isinstance(module.TWIN, str)`, and the differential read `ORACLES / module.TWIN` in four places -- so a genuinely new guard could not be added
+    WHY THE FIELD COULD NOT SIMPLY BE LEFT OFF. All 46 guards that existed before them landed on ONE day, 2026-09-06, the P7 cutover, because every one of them is a PORT. The harness encoded that as an invariant -- `test_dispatch` asserted `isinstance(module.TWIN, str)`, and the differential read `ORACLES / module.TWIN` in four places -- so a genuinely new guard could not be added
     at all without either this sentinel or a fake bash file. The fake was not available either: `.ci/scripts/quality/check_language_policy.py` freezes the SET of shell files under `.ci` and `.claude` and refuses a new one, "the surface may shrink and may never grow". Inventing one to satisfy an assertion would also have been a lie to the assertion, whose whole point is that "the
     port is judged against the file it was made from".
 
-    SKIPPING THE ORACLE IS NOT A FREE PASS OUT OF HAVING EVIDENCE, and the harness now says so in one place rather than leaving it to authors:
-    `test_every_port_has_a_present_twin` REQUIRES a guard declaring `TWIN = None`
-    to carry a dedicated `test-<stem>.py` beside it. A twinned guard is judged against bash; an untwinned one is judged against a suite written for it. Both are still judged.
+    HAVING NO GOLDEN IS NOT A FREE PASS OUT OF HAVING EVIDENCE, and the harness
+    says so in one place rather than leaving it to authors: `test_every_port_has_goldens` REQUIRES a guard declaring `OWN_SUITE = True` to carry a dedicated `test-<stem>.py` beside it. A golden-backed guard is judged against its frozen record; an OWN_SUITE one is judged against a suite written for it. Both are still judged.
     """
-    return module.TWIN
+    return getattr(module, "OWN_SUITE", False)
 
 
-def twinned():
-    """Guard modules that HAVE a bash oracle: the differential's subject."""
-    return [m for m in modules() if m.TWIN is not None]
+def golden_backed():
+    """Guard modules judged against a frozen golden: the differential's subject."""
+    return [m for m in modules() if not has_own_suite(m)]
 
 
-def untwinned():
-    """Guard modules with no oracle, which are tested against their own suites.
+def suite_only():
+    """Guard modules with no golden, which are tested against their own suites.
 
     Counted and named rather than silently excluded. A helper that filtered them out of `modules()` would make this set invisible, which is exactly the shape `check-hook-integrity.sh` records rotting once already: "five `gh_case` cases sitting in a gap list they had not been in for months".
     """
-    return [m for m in modules() if m.TWIN is None]
+    return [m for m in modules() if has_own_suite(m)]

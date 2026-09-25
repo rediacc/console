@@ -3,7 +3,7 @@
 
 BOTH DIRECTIONS. A guard that refused every spawn would pass the refusal cases and a guard that refused none would pass the allow cases, so each refusal below has an allow twin differing by one planted fact: one writer fewer, a reader instead of a writer, a transcript that ended its turn.
 
-LOAD-BEARING, NOT OPTIONAL. The guard declares `TWIN = None` (it was never bash), so `test_guards_differential.py` requires this file beside it, and `test_hooks_delegates.py` discovers and runs it.
+LOAD-BEARING, NOT OPTIONAL. The guard declares `OWN_SUITE = True` (it was never bash, so it has no golden either), so `test_guards_differential.py` requires this file beside it, and `test_hooks_delegates.py` discovers and runs it.
 
 IT DRIVES THE LIVE GUARD THROUGH THE DISPATCHER against a real fixture on disk: a projects store with subagent metas and transcripts (`CLAUDE_CONFIG_DIR`), a project root (`CLAUDE_PROJECT_DIR`) and a worklist directory (`TMPDIR`) where the last Stop event is written. The fixture lives in ONE pid-stamped directory that is removed on exit.
 """

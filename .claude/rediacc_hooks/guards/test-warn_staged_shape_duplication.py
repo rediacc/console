@@ -7,7 +7,7 @@ and an in-process call would compare something else.
 WHY THE SCRATCH CORPUS IS THIS BIG. The gate refuses to write an index it does not trust: each family carries a FLOOR (100, 50, 100 and 1 tracked files) and the whole scan carries two more (200 files, 5000 windows), because a scan that shrank silently would cache a confident green. A three-file fixture would be refused, correctly, so the fixture generates a corpus that clears
 every floor. Each generated file is unique except for ONE deliberately shared block, which keeps the near index small and makes the third copy the only finding there is to find.
 
-TWIN = None ON THE GUARD ITSELF, so this file is the whole differential, exactly as `test-block_unproven_bulk_transform.py` is for its sibling. `check-hook-integrity.sh` reads this file's existence as crediting both directions.
+OWN_SUITE = True ON THE GUARD ITSELF, so this file is the whole differential, exactly as `test-block_unproven_bulk_transform.py` is for its sibling. `check-hook-integrity.sh` reads this file's existence as crediting both directions.
 """
 
 import importlib.util

@@ -22,7 +22,6 @@ import subprocess
 from rediacc_hooks import hookio, shellscan
 
 CHAIN = "pre-bash"
-TWIN = "pre-bash/warn-remote-drift.sh"
 ORDER = 19
 
 # Remote strictly behind local is a NORMAL push of new commits. Without this arm every push of anything ever is refused as drift, which makes the guard an outage rather than a check -- the exact failure its own header forbids.
@@ -164,7 +163,7 @@ def run(ev):
     # ALLOW rather than block: this hook is an ADVISORY drift warning, and a guard that cannot establish where it is has no standing to judge a command. Refusing here would fire on every invocation outside a checkout.
     if this_root == "":
         return hookio.ALLOW
-    if shellscan.target_root(cmd, this_root) != "":
+    if shellscan.target_root(cmd, this_root, verb="push") != "":
         return hookio.ALLOW
 
     branch = hookio.git_out(["symbolic-ref", "--short", "-q", "HEAD"], cwd=root, want_rc=True)

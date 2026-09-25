@@ -9,7 +9,7 @@ the gate itself exists to count. So the gate bundles itself into `.ci/cache/shap
 IT NEVER DENIES. "Is this the Nth copy" is a judgement with an escape hatch (the seed's `accepted` block, with a BLOCKER reason), the probe has the known approximation gaps listed below, and the CI gate owns the refusal. A warning must be SEEN, so it is written to stderr and, as a `systemMessage` plus `additionalContext`, to stdout. Whether a PreToolUse exit-0 JSON body reaches the
 operator is unverified here; the stderr copy is what makes the message unconditional.
 
-TWIN = None, the same sentinel and for the same reason as `block_unproven_bulk_transform`: a fresh guard authored directly, with no bash original to port from and nothing to differential-test against. `test-warn_staged_shape_duplication.py` beside it stands in for that differential.
+OWN_SUITE = True, the same sentinel and for the same reason as `block_unproven_bulk_transform`: a fresh guard authored directly, with no bash original to port from and no golden to compare against. `test-warn_staged_shape_duplication.py` beside it stands in for that differential.
 
 THE DECISION TABLE, in the order the branches are taken:
 
@@ -51,7 +51,7 @@ from rediacc_hooks import hookio, shellscan
 from rediacc_hooks.guards import block_prose_style_commit as PSC
 
 CHAIN = "pre-bash"
-TWIN = None
+OWN_SUITE = True
 # Re-keyed from 42 to 43 on 2026-09-22 by the insertion of block_push_to_protected_branch.py at 39.
 ORDER = 42
 
@@ -314,7 +314,7 @@ def _probe_commit(ev, deadline):
     root = ev.env("CLAUDE_PROJECT_DIR", "") or hookio.git_out(["rev-parse", "--show-toplevel"])
 
     # ANOTHER REPO'S STAGED FILES ARE NOT THIS GUARD'S BUSINESS, same class as block_unproven_bulk_transform's 2026-09-23 fix (see shellscan.target_root's own docstring): a `-C <other-repo>`/`cd <other-repo> &&` commit would otherwise be scanned against CONSOLE's own staged paths.
-    if shellscan.target_root(scan, root) != "":
+    if shellscan.target_root(scan, root, verb="commit") != "":
         return hookio.ALLOW
 
     cwd = ev.field("cwd") or root

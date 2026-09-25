@@ -131,7 +131,7 @@ PATTERNS = {
         "matcher": "Bash",
         "head": True,
         "collapsed": True,
-        # PYTHON SINCE W7 P6, same order, same budgets, same stop-at-refusal semantics. Both were bash until the port; their originals are kept as `.claude/oracles/post-bash/*.sh` and `tests/test_post_bash_differential.py` runs each pair over one shared set of `git` and `gh` stubs. Neither ever exits 2, so nothing behind them was ever stopped and nothing is now.
+        # PYTHON SINCE W7 P6, same order, same budgets, same stop-at-refusal semantics. Both were bash until the port; their originals were kept as `.claude/oracles/post-bash/*.sh` until PLAN-retire-bash-oracles A3 deleted them, and `tests/test_post_bash_differential.py` now runs each port against a golden frozen from that same shared set of `git` and `gh` stubs. Neither ever exits 2, so nothing behind them was ever stopped and nothing is now.
         "members": _members(
             "python3 " + _P % "hooks/post-bash/cancel_old_ci.py",
             "python3 " + _P % "hooks/post-bash/refresh_pr_body.py",

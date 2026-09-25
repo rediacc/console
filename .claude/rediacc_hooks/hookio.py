@@ -414,15 +414,35 @@ def run_rc(argv, cwd=None, env=None):
     return proc.returncode
 
 
-def have(name):
-    """`command -v <name> >/dev/null 2>&1`.
+def command_v(name):
+    """What bash 5.3's `command -v <name>` prints for a name that is not a builtin, function or alias; "" when it prints nothing.
+
+    RULE T (PLAN-retire-bash-oracles A4, A0 L15). The lookup this replaces returned the first PATH entry where `os.access(X_OK)` held, and a DIRECTORY passes that test: with `PATH=/etc:/usr/bin`, `ssh` resolved to the directory `/etc/ssh`. Bash's search, measured 2026-09-24 against `/usr/bin/bash` 5.3.9, is:
+
+      * a name containing `/` is not searched: it is printed when it is an executable file;
+      * otherwise the FIRST EXECUTABLE REGULAR FILE on PATH wins, directories never count;
+      * only when no executable exists anywhere does the first NON-executable regular file win (`PATH=/etc:/usr/bin command -v hosts` prints `/etc/hosts`, rc 0);
+      * an empty PATH entry means the current directory, printed as `./<name>`.
 
     PATH is read at CALL time, never cached: the differential prepends a stub directory between two calls in one process, and a cached answer would make every case after the first read the wrong PATH.
     """
+    if "/" in name:
+        return name if os.path.isfile(name) and os.access(name, os.X_OK) else ""
+    fallback = ""
     for directory in os.environ.get("PATH", "").split(os.pathsep):
-        if directory and os.access(os.path.join(directory, name), os.X_OK):
-            return True
-    return False
+        candidate = os.path.join(directory or ".", name)
+        if not os.path.isfile(candidate):
+            continue
+        if os.access(candidate, os.X_OK):
+            return candidate
+        if fallback == "":
+            fallback = candidate
+    return fallback
+
+
+def have(name):
+    """`command -v <name> >/dev/null 2>&1`: true exactly when `command_v` prints something."""
+    return command_v(name) != ""
 
 
 def git_out(args, cwd=None, want_rc=False):

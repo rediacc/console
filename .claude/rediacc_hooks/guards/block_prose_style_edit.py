@@ -3,25 +3,26 @@
 THE STYLE, in one line: make the work, the event or the artifact the subject, or use the shared `we`. Never `you`, never `I`. The eighteen rules, their severities, their scopes and their examples live in `.ci/config/prose-style-rules.json` and nowhere else; this guard loads them and holds no rule text of its own, so a rule edited there is enforced here with no edit to this file.
 
 =============================================================================
-THIS GUARD HAS NO BASH TWIN, AND IT IS THE FIRST ONE THAT DOES NOT
+THIS GUARD HAS NO BASH TWIN, AND IT WAS THE FIRST ONE THAT DID NOT
 =============================================================================
 
-`TWIN = None` below is a sentinel, not an oversight, and it was added for this
-guard. Every one of the 46 guards in this package landed on ONE day, 2026-09-06, the P7 cutover, because every one of them is a PORT of a pre-existing bash hook. There was consequently no precedent for a guard that was never bash, and the harness assumed there could not be one: `test_dispatch.py` asserted `isinstance(module.TWIN, str)`, and `test_guards_differential.py` read
-`ORACLES / module.TWIN` in four places, one of which (`test_every_port_has_a_present_twin`) asserted the oracle file exists.
+`OWN_SUITE = True` below is a sentinel, not an oversight, and it was added for
+this guard. Every one of the 46 guards in this package landed on ONE day, 2026-09-06, the P7 cutover, because every one of them was a PORT of a pre-existing bash hook. There was consequently no precedent for a guard that was never bash, and the harness assumed there could not be one: `test_dispatch.py` asserted `isinstance(module.TWIN, str)`, and `test_guards_differential.py` read
+`ORACLES / module.TWIN` in four places, one of which (`test_every_port_has_a_present_twin`) asserted the oracle file exists. Both are gone now (PLAN-retire-bash-oracles A3 deleted `.claude/oracles/` and every `TWIN` constant with it, once every twinned guard had a frozen golden instead), but the sentinel this guard needed first is still the one this whole package uses.
 
 A twin could not be written even as a formality. `.ci/scripts/quality/check_language_policy.py` freezes the SET of shell files under `.ci` and `.claude` and refuses a new one -- "the surface may shrink and may never grow" -- so inventing a bash file purely to satisfy an assertion would have been blocked by a different gate, and would have been a lie to this one.
 
-WHAT REPLACES THE ORACLE, because "no twin" must not mean "no evidence". A TWIN-less guard is held to MORE, not less:
+WHAT REPLACES THE ORACLE, because "no twin" must not mean "no evidence". An
+OWN_SUITE guard is held to MORE, not less:
 
   * a dedicated per-guard suite beside it, `test-block_prose_style_edit.py`,
     which `check-hook-integrity.sh` already recognises as covering both
-    directions and which `test_every_port_has_a_present_twin` now REQUIRES of
-    any guard declaring `TWIN = None`. Skipping the oracle is not a free pass
+    directions and which `test_every_port_has_goldens` now REQUIRES of any
+    guard declaring `OWN_SUITE = True`. Having no golden is not a free pass
     out of having a control.
   * the DEFECT below, planted by `test_the_differential_can_fail`, which
-    compares the guard against ITSELF-WITH-A-BUG rather than against bash and so
-    works identically without an oracle.
+    compares the guard against ITSELF-WITH-A-BUG rather than against a frozen
+    record and so works identically without one.
   * the engine's own 65-control selftest, and
     `.ci/rediacc_ci/tests/test_quality_prose_style.py`, which generates one case
     per example in the rules file.
@@ -52,7 +53,7 @@ import sys
 from rediacc_hooks import hookio
 
 CHAIN = "pre-edit"
-TWIN = None
+OWN_SUITE = True
 ORDER = 12
 
 # THE SCOPE TEST. Planting `False` makes the guard lint every file it is handed, including the two exclusions that are decisions rather than oversights (`private/` submodules, `.sh`), and the EDGE_CASES below carry one of each, plus `packages/www`, which is linted like every other tree so the plant changes a real answer.

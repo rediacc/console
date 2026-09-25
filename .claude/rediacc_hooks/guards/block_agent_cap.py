@@ -10,7 +10,7 @@ WHAT IS NEVER REFUSED. A Plan or Explore spawn, or any custom type whose `tools:
 
 FAILS OPEN WHEN IT CANNOT COUNT, and says so on stderr. That is not an escape hatch, because the Stop hook recounts from the authoritative event on the next stop and blocks there; a guard that refused every spawn whenever its estimate was blind would be a bootstrap deadlock instead.
 
-ITS EVIDENCE. `TWIN = None` (never bash), so the dedicated suite `.claude/rediacc_hooks/guards/test-block_agent_cap.py` drives this guard through the dispatcher in both directions, and `.claude/rediacc_hooks/tests/test_wl_roster.py` drives the Stop half.
+ITS EVIDENCE. `OWN_SUITE = True` (never bash, so no golden either), so the dedicated suite `.claude/rediacc_hooks/guards/test-block_agent_cap.py` drives this guard through the dispatcher in both directions, and `.claude/rediacc_hooks/tests/test_wl_roster.py` drives the Stop half.
 
 NO ENVIRONMENT READ. This file is a sealed module in `.ci/policy/worklist-env-registry.json`: an environment read added here is CI red. The payload's own `cwd` and `session_id` are what locate the session.
 """
@@ -21,7 +21,7 @@ import sys
 from rediacc_hooks import hookio
 
 CHAIN = "pre-agent"
-TWIN = None
+OWN_SUITE = True
 ORDER = 3
 
 # The planted defect for the differential: a guard that stops exempting read-only spawns tries to count them, and speaks where it used to stay silent.

@@ -24,8 +24,8 @@ Measured on bash 5.3.9 on this host, and hard-coded below in exactly that order 
 
 A different bash could hash differently. That is a property of the ORIGINAL, not of this port, and the differential is what would report it: the two sides would disagree on `$HIT` for a command naming two keys, on the machine where the hash order differs. Recorded here so such a report is read as what it is.
 
-`command -v` DOES NOT MEAN "EXECUTABLE", and this guard's own comment says so. Measured on bash 5.3.9: with a mode-0600 file on PATH, `command -v faketool` prints its path and exits 0, while `test -x` on that path exits 1. The port therefore resolves the path the way `command -v` does -- first PATH entry holding a file of that name, executability NOT consulted -- and then applies
-`os.access(..., X_OK)` separately. Collapsing the two into one `which()` would be a different test that agrees on a healthy host and disagrees on the half-installed one this line exists for.
+`command -v` DOES NOT MEAN "EXECUTABLE", and this guard's own comment says so. Measured on bash 5.3.9: with a mode-0600 file on PATH, `command -v faketool` prints its path and exits 0, while `test -x` on that path exits 1. The port therefore resolves the path the way `command -v` does and then applies
+`os.access(..., X_OK)` separately. What `command -v` does was itself misread here until Rule T (A0 L15, 2026-09-24): it prints a non-executable file only when NO executable of that name exists anywhere on PATH, and never a directory; `hookio.command_v` carries the measured rules. Collapsing the two into one `which()` would be a different test that agrees on a healthy host and disagrees on the half-installed one this line exists for.
 
 `for tok in $SCAN` IS UNQUOTED, so bash both word-splits it on IFS and then PATHNAME-EXPANDS each word against the current directory. With no `nullglob`, a word that matches nothing stays literal. Both halves are reproduced, because a token carrying a `*` is not exotic in a command line and dropping the expansion would make the host-bound walk look at a different set of paths.
 """
@@ -39,7 +39,6 @@ import sys
 from rediacc_hooks import hookio, shellscan
 
 CHAIN = "pre-bash"
-TWIN = "pre-bash/block-host-toolchain-run.sh"
 ORDER = 34
 
 # The host-bound arm, added 2026-08-28. Without it a command reaching into a component with its own `.venv` is routed into the container, where the venv's absolute shebangs and host glibc do not exist: the measured symptom was `ModuleNotFoundError: No module named anyio`.
@@ -215,18 +214,11 @@ EDGE_CASES = [
 
 
 def _command_v(tool):
-    """`command -v <tool>` on bash 5.3.9: the first PATH entry holding that file.
+    """`command -v <tool>` on bash 5.3.9, which is `hookio.command_v`.
 
-    Executability is deliberately NOT consulted here; see the module docstring
-    for the measurement. The caller applies `test -x` to the result.
+    RULE T (PLAN-retire-bash-oracles A4, A0 L15): this used to return the first PATH entry that EXISTED, a directory included, so `PATH=/etc:/usr/bin` resolved `ssh` to the directory `/etc/ssh`, and `test -x` on a directory is true. The module docstring's measurement was right that a non-executable file CAN be printed; it missed that bash only falls back to one when no executable exists anywhere on PATH, and never prints a directory. The caller still applies `test -x` to the result, exactly as the bash did.
     """
-    for directory in os.environ.get("PATH", "").split(os.pathsep):
-        if not directory:
-            continue
-        candidate = os.path.join(directory, tool)
-        if os.path.exists(candidate):
-            return candidate
-    return ""
+    return hookio.command_v(tool)
 
 
 def _have_executable(tool):

@@ -14,11 +14,12 @@ import re
 from rediacc_hooks import hookio, shellscan
 
 CHAIN = "pre-bash"
-TWIN = "pre-bash/block-git-amend.sh"
 ORDER = 17
 
 # BUT STRIPPING QUOTES ALONE OPENS AN EVASION: without the wrapper payload appended, `sh -c "git commit --amend"` has the whole command inside a quoted span, the span is removed, and the guard returns 0.
-DEFECT = (r'"%s\n%s" % (stripped, wrapped)', r'"%s\n%s" % (stripped, "")')
+#
+# THE DEFECT MOVED TO THE LIFT (PLAN-retire-bash-oracles A4). Dropping the wrapped half no longer changes any answer, because `shellscan.lifted_commands` finds the payload's amend in the stripped view's absence and lifts it; that redundancy is the point of the Rule T fix, and it made the old defect a control that could not fail. Dropping the lift instead reopens every A0 shape the EDGE_CASES below pin (an unquoted heredoc substitution, a quoted command word, an env prefix), which the view alone never saw.
+DEFECT = ("lifted = shellscan.lifted_commands(cmd, scan)", "lifted = []")
 
 # ANCHORED TO COMMAND POSITION 2026-08-28, after check:ci-guard-mention-anchoring found this guard refusing an ordinary sentence. Matching the phrase ANYWHERE means a doc line, a worklist note or an `echo` explaining the rule is refused as if it were the rule being broken. This NARROWS PROSE ONLY: every control below still blocks the real command, at line start and after a
 # separator.
@@ -56,6 +57,19 @@ EDGE_CASES = [
     ("quoted prose is not a command", "echo 'git commit --amend'"),
     ("a wrapper payload is still scanned", 'sh -c "git commit --amend"'),
     ("an ordinary commit", "git commit -m 'fix(cli): x'"),
+    # Rule T, A0 L3: an unquoted-delimiter heredoc body expands its substitutions, so this amends; the quoted-delimiter twin just below it is data and stays allowed.
+    (
+        "an unquoted cat heredoc runs its substitution",
+        "cat > R.md <<EOF\n$(git commit --amend --no-edit)\nEOF",
+    ),
+    (
+        "a quoted cat heredoc keeps its substitution as data",
+        "cat > R.md <<'EOF'\n$(git commit --amend --no-edit)\nEOF",
+    ),
+    # Rule T, the 2026-09-03 env-prefix class that shellscan closed for seven guards: this view never had the strip, so one `FOO=bar ` token still hid the amend here.
+    ("an env prefix does not hide the command", "FOO=bar git commit --amend --no-edit"),
+    # Rule T, A0 L7: quote removal applies to the command word.
+    ("a quoted command word is still git", '"git" commit --amend --no-edit'),
 ]
 
 
@@ -125,6 +139,10 @@ def run(ev):
         )
     )
     scan = "%s\n%s" % (stripped, wrapped)
+    # RULE T (PLAN-retire-bash-oracles A4, A0 L3): THE CAT/TEE STRIP ABOVE DROPS A BODY THAT STILL RUNS CODE. A heredoc with an UNQUOTED delimiter expands `$(...)` and backticks in its body, so `cat <<EOF` followed by a `$(git commit --amend)` line amends while this view shows only `cat <<EOF`. The same holds for every other shape A0 lists (an `x=$(...)` value, a quoted command word, a reserved word or redirect in front of the command, `bash -ce`, a second wrapper). `shellscan.lifted_commands` names every command bash runs that THIS view does not already show at a command position, so the documented-heredoc behaviour above is untouched and only the missed executions are added.
+    lifted = shellscan.lifted_commands(cmd, scan)
+    if lifted:
+        scan = "%s\n%s" % (scan, "\n".join(lifted))
 
     if hookio.grep_q_line(AMEND, scan):
         ev.warn(MESSAGE)

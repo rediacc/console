@@ -37,14 +37,12 @@ except the thing that differs.
 """
 
 import datetime
-import os
 import pathlib
 
 from rediacc_hooks import hookio, shellscan
 
 CHAIN = "pre-bash"
 PREFIX_HATCH = r"(^|[;&|(][ \t]*)PR_BRANCH_DATE_OK=1[ \t]+([A-Za-z_][A-Za-z0-9_]*=[^ \t]*[ \t]+)*gh[ \t]+pr[ \t]+create"
-TWIN = "pre-bash/block-stale-pr-branch-date.sh"
 ORDER = 23
 
 # The escape hatch. Without it a deliberately long-lived branch (resuming a multi-day wave onto its existing PR) can never file its PR, which is the shape that gets a guard bypassed rather than obeyed.
@@ -106,10 +104,11 @@ def run(ev):
     if hookio.grep_q(PREFIX_HATCH, cmd):
         return hookio.ALLOW
 
-    # Fall back to $PWD rather than bailing: a hook already runs with the project as its cwd, and bailing on a missing .cwd would be a FAIL-OPEN -- the payload that omits it is exactly the one a bypass would use.
+    # Fall back to the dispatcher's `ev.cwd` rather than bailing: bailing on a missing .cwd would be a FAIL-OPEN -- the payload that omits it is exactly the one a bypass would use. NOT `$PWD`, which this read until 2026-09-24 (#ab3018c9): the hook process's inherited shell variable is neither the payload nor what the dispatcher was handed, so the same payload named a different
+    # checkout depending on where the caller stood, and running the differential from `.claude/` changed 28 of this guard's messages. `ev.cwd` is what every other guard's fallback reads.
     cwd = ev.field("cwd")
     if not (cwd != "" and pathlib.Path(cwd).is_dir()):
-        cwd = os.environ.get("PWD") or os.getcwd()
+        cwd = ev.cwd
     if not pathlib.Path(cwd).is_dir():
         return hookio.ALLOW
 

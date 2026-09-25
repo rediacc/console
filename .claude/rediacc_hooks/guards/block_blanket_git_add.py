@@ -30,7 +30,6 @@ import pathlib
 from rediacc_hooks import hookio, shellscan
 
 CHAIN = "pre-bash"
-TWIN = "pre-bash/block-blanket-git-add.sh"
 ORDER = 29
 
 # The PR #566 finding, undone: with `>` and a redirection out of the terminator set, `git add -A > /dev/null` and `git add -A 2>&1` stage the whole tree and walk straight past this guard, which is what they did before review caught it.
@@ -81,6 +80,10 @@ EDGE_CASES = [
     # SCOPE, added 2026-09-09. A scratch repo under a session's own scratchpad is not this shared checkout and firing there only teaches sessions to route around the guard. A SUBMODULE is not that case: different toplevel, same shared tree.
     ("a foreign scratch repo is not this checkout", "git -C /tmp/scratch/plantree add -A"),
     ("a submodule IS this checkout and stays guarded", "git -C private/account add -A"),
+    # RULE T (PLAN-retire-bash-oracles A4, A0 L9): the copied anchor missed a reserved word or a leading redirect.
+    ("L9 then runs the next word", "if true; then git add -A; fi"),
+    ("L9 a leading redirect", ">/dev/null git add -A"),
+    ("control: command -v only prints", "command -v git add -A"),
 ]
 
 
@@ -114,7 +117,7 @@ def run(ev):
     # which repos the new predicate had just stopped protecting.
     #
     # Empty target means "this root, or unresolvable", so the guard keeps guarding by default; a resolvable target under the project directory keeps guarding too.
-    _target = shellscan.target_root(scan, shellscan.repo_root_env())
+    _target = shellscan.target_root(scan, shellscan.repo_root_env(), verb="add")
     if _target != "" and not _is_inside(_target, shellscan.repo_root_env()):
         return hookio.ALLOW
 

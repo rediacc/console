@@ -13,8 +13,8 @@ provably always-alive by construction -- `0` is in fact provably NEVER alive (`/
 THIS GUARD HAS NO BASH TWIN
 =============================================================================
 
-`TWIN = None` is a sentinel, not an oversight, matching the precedent `block_prose_style_edit.py` set on 2026-09-06 (that guard's own docstring: "THIS GUARD HAS NO BASH TWIN, AND IT IS THE FIRST ONE THAT DOES NOT").
-What replaces the oracle: a dedicated per-guard suite beside it, `test-block_unsatisfiable_pid_wait.py`, which `test_every_port_has_a_present_twin` requires of any guard declaring `TWIN = None`; and the `DEFECT` below, planted by `test_the_differential_can_fail`, which compares the guard against ITSELF-WITH-A-BUG rather than against bash.
+`OWN_SUITE = True` is a sentinel, not an oversight, matching the precedent `block_prose_style_edit.py` set on 2026-09-06 (that guard's own docstring: "THIS GUARD HAS NO BASH TWIN, AND IT WAS THE FIRST ONE THAT DID NOT").
+What replaces the oracle: a dedicated per-guard suite beside it, `test-block_unsatisfiable_pid_wait.py`, which `test_every_port_has_goldens` requires of any guard declaring `OWN_SUITE = True`; and the `DEFECT` below, planted by `test_the_differential_can_fail`, which compares the guard against ITSELF-WITH-A-BUG rather than against a frozen record.
 
 SCOPE, DELIBERATELY NARROW. `/proc/<pid>` existence tests only (`-e`/`-d`); `kill -0 $(...)` is the identical bug spelled differently and is a named, undetected gap -- see docs/agent-reference/TRAPS.md's Residue line for this trap. Loops only: a one-shot `if [ -e /proc/$(...) ]` costs one wrong read, not an unbounded wait, and is out of scope for the same reason
 `block_self_matching_pgrep.py` leaves a one-shot `pgrep -cf` alone. A bare `cat <path> || echo <default>` used OUTSIDE a `/proc/` test is the ordinary, extremely common "read a value or use a default" idiom and must never be caught -- the `/proc/` requirement in the anchor is load-bearing, not incidental. A fallback the guard cannot resolve statically (a variable, e.g. `echo
@@ -30,7 +30,7 @@ import re
 from rediacc_hooks import hookio
 
 CHAIN = "pre-bash"
-TWIN = None
+OWN_SUITE = True
 ORDER = 44
 
 # THE TEST IS THE BUG ITSELF. Without it, every /proc/$(cat X || echo N) inside a wait loop is refused regardless of N, including the safe case (N=0, which is provably NEVER alive) and the unexaminable case (N is a variable the guard could not resolve). Nullifying this turns the incident's own fire-case into a silent allow.

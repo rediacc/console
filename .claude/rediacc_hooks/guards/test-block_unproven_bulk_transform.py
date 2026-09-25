@@ -4,7 +4,7 @@
 HERMETIC BY CONSTRUCTION, the same shape as `test-block_unverified_push.py`: every case runs against a scratch repo with its own tree, its own staged index and (for the range cases) its own commit history and upstream, so this never touches the real repo's index or history. Commit and push are exercised as the guard actually sees them: the commit case stages real files
 against a real HEAD before the commit runs, and the range cases build real commits with a real `@{u}` so `_push_target`/`_range_commits` resolve against genuine git state rather than a mock.
 
-TWIN = None ON THE GUARD ITSELF, so this file is the whole differential, exactly as `test-block_prose_style_commit.py` is for its sibling. `check-hook-integrity.sh` reads this file's existence as crediting both directions.
+OWN_SUITE = True ON THE GUARD ITSELF, so this file is the whole differential, exactly as `test-block_prose_style_commit.py` is for its sibling. `check-hook-integrity.sh` reads this file's existence as crediting both directions.
 """
 
 import importlib.util

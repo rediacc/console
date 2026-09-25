@@ -13,8 +13,8 @@ so it still matches and still blocks.
 
 WRITE INTENT IS REQUIRED, not merely the filename. Every second command in this repo mentions a .sh path -- running it, grepping it, checking its processes. Blocking on the name alone would be the over-matching that gets a guard switched off, so this needs a write operator AND a live process.
 
-PORT NOTE ON THE DUPLICATION WITH ITS EDIT-TOOL SIBLING. `pattern_for` and the pgrep loop below are the same twenty lines as block_edit_of_running_script.py, and that is deliberate: the two BASH files duplicate them too, and the duplication is exactly what produced the sibling drift their comments record (the path anchor reached the Edit-side guard on 2026-08-30, three days after
-this one got it on 2026-08-27). A port whose job is fidelity does not get to unify them, because each half is judged against its own twin; unifying is a P6 change, once there is no twin left to diverge from.
+`pattern_for` AND THE PGREP LOOP NOW LIVE IN `rediacc_hooks.runningscript`, shared with the Edit-tool sibling (PLAN-retire-bash-oracles A3: "unifying is a P6 change, once there is no twin left to diverge from" -- this is that change). Until then each guard carried its own copy of the same twenty lines, because the two BASH originals duplicated them too and a port whose job was fidelity
+did not get to unify what its twin kept apart; that duplication is exactly what produced the sibling drift their comments recorded (the path anchor reached the Edit-side guard on 2026-08-30, three days after this one got it on 2026-08-27).
 
 PORT NOTE ON `for cand in $TARGETS`. That is an UNQUOTED expansion, so bash splits on IFS -- dropping empty fields, which is why an empty first line from `printf '%s\\n%s'` costs nothing -- and then GLOBS each word against the filesystem. The globbing has never mattered here (a `.sh` path holding a `*` or a `?` would already have been skipped by the `$` test or failed to match a
 process) and is not reproduced; the splitting is, because the empty-field case happens on every command that reaches the fallback with no redirect targets.
@@ -25,15 +25,13 @@ is the UTF-8 encoding rather than Python's default codepoint comparison. The two
 
 import atexit
 import os
-import re
 import signal
 import subprocess
 import tempfile
 
-from rediacc_hooks import hookio, proc
+from rediacc_hooks import hookio, proc, runningscript, shellscan
 
 CHAIN = "pre-bash"
-TWIN = "pre-bash/block-bash-write-to-running-script.sh"
 ORDER = 15
 
 # AN ASCII ARROW IS NOT A REDIRECT, and this is the FIFTH round of the same
@@ -42,6 +40,8 @@ ORDER = 15
 DEFECT = ('NOT_ARROW = r"(^|[^->])"', 'NOT_ARROW = r"(^|[^ZZ])"')
 
 # A real redirect's `>` is preceded by whitespace, start-of-string, or a digit (`2>`). Never by `-`. Requiring that keeps every true positive and drops the arrow. One constant, used by BOTH the intent test and the target harvest, because the two disagreeing about what a redirect is was how the class kept coming back.
+#
+# RULE T DECISION (PLAN-retire-bash-oracles A4, A0 L14), 2026-09-24: THE ARROW RULE STAYS FOR THE RAW-TEXT PATTERNS, AND IS NO LONGER THE WHOLE ANSWER. The premise above is false for bash: an UNQUOTED `x->f.sh` is the word `x-` followed by a real `>` opening `f.sh` (`echo x->/dev/null` prints nothing). What made the arrow worth excluding was prose, and prose that names an arrow is QUOTED, which a regex over the raw command cannot tell from a real redirect. The lexer can, so `shellscan.write_targets` now supplies the redirects bash actually performs (quote-aware, so the 2026-09-01 arrow inside `echo '... -> x.sh'` is still no target) and `run` unions them with the regex harvest. `NOT_ARROW` keeps doing the one job it is still right for: stopping a quoted or heredoc'd arrow from scoring in the raw-text patterns. The same union closes `>|`, which truncates even under noclobber and which `_NOT_SEP`'s `|` exclusion made invisible to every pattern here.
 NOT_ARROW = r"(^|[^->])"
 
 _S = hookio.SPACE
@@ -120,6 +120,7 @@ PY_HEREDOC = r"write_text|open\(|<<[" + _S + r"]*.?(PY|EOPY|PYTHON)"
 # true positive (all authored `NAME = value` in this repo) while dropping the
 # embedded-bash-as-data shape. `open(`/`Path(` are untouched -- neither of those idioms exists as bash syntax, so they carry no equivalent ambiguity.
 # NO WHITESPACE INSIDE THE QUOTED TARGET (2026-09-24, #a655c5f5): `grep -n "source\\|PATS=" a.sh; ls lib/b.sh` read the CLOSING quote after `PATS=` as an opening one, and `[^"']+` then ran across `; ls` to the next `.sh`, refusing a command that only listed a running script. A real target literal holds no whitespace.
+# THE QUOTE MUST CLOSE RIGHT AFTER THE EXTENSION (2026-09-24, found by PLAN-retire-bash-oracles A4's full hook-suite run): with the whitespace ban alone, `ROUTE=".<live>.sh devbox exec"` still scored `<live>.sh` as a target, because nothing required the quoted span to END there, and the round-3 control in test_hooks_procs.py ("a bash-shaped assignment MENTION inside replacement text") went red at 0868e3a53. A real target literal is the WHOLE quoted string, so a lookahead now demands its closing quote.
 # `p = "x.txt"` AND `p="x.txt"`: the spaced form alone missed the compact assignment every short heredoc uses, so its target read as unidentifiable and the broad scan blocked a payload that only MENTIONED a running script (./rdc.sh, 2026-09-24). The leading `[^=!<>]` keeps `==`, `!=`, `<=`, `>=` out, and it stays plain ERE so the bash oracle can carry the identical pattern.
 ASSIGN_TARGET = (
     r"([^=!<>"
@@ -132,7 +133,7 @@ ASSIGN_TARGET = (
     + _S
     + r"]*[\"'][^\"'"
     + _S
-    + r"]+\.[A-Za-z0-9]+"
+    + r"]+\.[A-Za-z0-9]+(?=[\"'])"
 )
 
 # Targets come from TWO places, and looking in only one of them was the bug.
@@ -141,10 +142,6 @@ ASSIGN_TARGET = (
 REDIR_TARGET = NOT_ARROW + r">>?[" + _S + r']*"?[^|&;<' + _S + r'"]+\.[A-Za-z0-9]+'
 
 ANY_TAIL = r"[A-Za-z0-9_.$/-]+\.[A-Za-z0-9]+$"
-
-HOOK_CHAIN = r"\.claude/hooks/((pre-bash|pre-edit|pre-ask|post-bash)/|chain-head\.sh)"
-
-META = r"([.\[\\*^$()+?{}|])"
 
 MESSAGE = """BLOCKED: '%(base)s' is being executed right now, and this command writes to it.
 
@@ -324,6 +321,10 @@ EDGE_CASES = [
     ),
     # A variable expansion is recognised and then skipped.
     ("a variable in the target", "echo x > $SP/mp-$ver.sh"),
+    # Rule T, A0 L14: an UNQUOTED arrow is a real redirect, and `>|` truncates even under noclobber. The quoted arrow above stays prose.
+    ("an unquoted arrow is a redirect onto a running script", "echo x->%s" % LIVE_SCRIPT),
+    ("a noclobber-proof redirect onto a running script", "echo x >| %s" % LIVE_SCRIPT),
+    ("a double-quoted arrow is still prose", 'echo "x->%s"' % LIVE_SCRIPT),
     # 2026-09-24, #a655c5f5: a closing quote after `PATS=` read as an opening one ran across `; ls` to a running script.
     (
         "a closing quote does not open a target that spans a listing",
@@ -341,51 +342,6 @@ def _sort_u(lines):
 def _pipe(pattern, text):
     """One `grep -oE` stage, feeding the next one grep's own output shape."""
     return hookio._grep_out(hookio.grep_o(pattern, text))
-
-
-def pattern_for(base):
-    """`(^|[/[:space:]])[<first>]<escaped rest>`.
-
-    BRACKET THE FIRST CHARACTER so this pgrep cannot match the shell running this hook, whose command line carries the path it was handed. That is the self-matching trap block-self-matching-pgrep exists for, and this is exactly where it would bite again.
-
-    ANCHOR TO A PATH BOUNDARY. `pgrep -f` matches anywhere in a command line, so a bare basename matches any process whose command line merely CONTAINS it as a substring: `ver.sh` matched a running `wslServer.sh`, and the guard reported VS Code's server as the job about to be corrupted. The basename must start at the beginning, after a `/`, or after whitespace.
-
-    ESCAPE THE DOTS. `.` is a regex wildcard and the basename was interpolated raw, so a target whose name is one letter plus `.sh` produced the pattern `[x].sh`, which matches any process containing `x<any>sh` -- and for the letter `b` that is **/bin/bash**, i.e. every bash process on the machine.
-
-    Measured 2026-09-01: writing a TypeScript control whose FIXTURE filename was one letter plus the shell suffix was refused, naming `/bin/bash --init-file ...` as the job it would corrupt. No script of that name was running anywhere. Round six of this guard's over-matching, and the first that is not about command shape at all -- the previous five were all "a mention scored as a
-    target"; this one is the TARGET name itself becoming a wildcard.
-    """
-    esc = re.sub(META, r"\\\1", base[1:])
-    return r"(^|[/" + _S + r"])[" + base[:1] + r"]" + esc
-
-
-def live_shells(pat, limit):
-    """The pgrep loop, as its accumulated text.
-
-    `pgrep -af` matches any process whose ARGUMENTS mention the name, which is the very trap this guard exists to prevent, wearing a different hat. Measured 2026-08-27: an edit to the hook suite was refused because a PEER session's `claude -p` carried a long prompt that happened to contain that filename. No interpreter was executing the script at all, and the refusal was
-    unarguable.
-
-    A process is RUNNING the script only if an interpreter is executing it. So require the matching process to BE a shell, and the name to sit in the first few argv slots where a script argument lives, rather than buried in a prose payload.
-    """
-    try:
-        pids = proc.pgrep_full(pat)
-    except (proc.ProcError, re.error):
-        pids = []
-    running = ""
-    for rpid in pids:
-        if not proc.is_shell(rpid):
-            continue
-        rargs = proc.cmdline_tr(rpid)
-        if rargs is None:
-            rargs = ""
-        first4 = " ".join(rargs.split(" ")[:4])
-        if not hookio.grep_q(pat, first4):
-            continue
-        if hookio.grep_q(HOOK_CHAIN, rargs):
-            continue
-        running += "%d %s\n" % (rpid, rargs[:80])
-    kept = running.split("\n")[:limit] if running != "" else []
-    return hookio._command_substitution("\n".join(kept))
 
 
 def _targets(cmd):
@@ -425,14 +381,19 @@ def run(ev):
     if cmd == "":
         return hookio.ALLOW
 
-    if not hookio.grep_q(WRITE_INTENT, cmd):
+    # The redirects bash really performs onto a `.sh` (see the Rule T note at NOT_ARROW).
+    real = [t for t in shellscan.write_targets(cmd) if t.endswith(".sh")]
+    intent = hookio.grep_q(WRITE_INTENT, cmd)
+    if not intent and not real:
         return hookio.ALLOW
 
-    for cand in _targets(cmd).split():
+    cands = _targets(cmd).split() if intent else []
+    cands += [t for t in dict.fromkeys(real) if t not in cands]
+    for cand in cands:
         if hookio.case_glob(cand, "*$*"):
             continue
         base = cand.rsplit("/", 1)[-1]
-        running = live_shells(pattern_for(base), 2)
+        running = runningscript.live_shells(runningscript.pattern_for(base), 2)
         if running == "":
             continue
         body = hookio._command_substitution(

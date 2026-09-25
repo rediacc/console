@@ -4,8 +4,8 @@
 BOTH DIRECTIONS, because a one-sided control is satisfiable by a broken hook: one that always blocks passes the positive cases, one that never blocks passes the negative ones. A prose linter is the worst case for a one-sided suite, because "flag everything" and "flag the right things" look identical from the block side alone.
 
 WHY THIS FILE IS LOAD-BEARING RATHER THAN OPTIONAL. This guard declares
-`TWIN = None`: it was never bash, so `test_guards_differential.py` has no oracle
-to judge it against. That test now REQUIRES a `test-<stem>.py` beside any guard carrying the sentinel, precisely so the sentinel cannot become the cheap way out of having evidence. `check-hook-integrity.sh` reads this file's existence too, crediting the guard with both directions under section B.
+`OWN_SUITE = True`: it was never bash, so there is no golden to judge it
+against. `test_guards_differential.py` REQUIRES a `test-<stem>.py` beside any guard carrying the sentinel, precisely so the sentinel cannot become the cheap way out of having evidence. `check-hook-integrity.sh` reads this file's existence too, crediting the guard with both directions under section B.
 
 IT DRIVES THE LIVE GUARD THROUGH THE DISPATCHER, not the module's `run` directly and not a copy: `python3 dispatch.py block_prose_style_edit` is what `.claude/settings.json` ultimately invokes, and a suite that tested anything else would keep passing while the thing that actually runs went unchecked.
 

@@ -17,7 +17,6 @@ None, which is why `git_out` is called with `want_rc` set rather than with the d
 from rediacc_hooks import hookio, shellscan
 
 CHAIN = "pre-bash"
-TWIN = "pre-bash/block-merge-with-unpushed.sh"
 ORDER = 27
 
 # On `main` there is no feature branch to strand, and /pr-merge deliberately ends there; without this arm the guard refuses the last step of the sanctioned landing sequence.
@@ -28,8 +27,7 @@ ENVS = [
     ("ahead", {"CLAUDE_PROJECT_DIR": "{FIXTURE:git-ahead}"}, {}),
     ("synced", {"CLAUDE_PROJECT_DIR": "{FIXTURE:git-synced}"}, {}),
     ("main", {"CLAUDE_PROJECT_DIR": "{FIXTURE:git-main}"}, {}),
-    # A FROZEN clone of this checkout, never the checkout itself: a real branch with real history and a real remote-tracking ref, and immune to the commit a concurrent session lands between the differential's bash pass and its Python side. See `_snapshot_this_worktree` in test_guards_differential.py for the measured divergence (66 unpushed commits from bash, 67 from the port) that
-    # retired the live spelling on 2026-09-22.
+    # This checkout's SHAPE, never the checkout itself: a real-looking branch with history and a remote-tracking ref behind it. The live spelling was retired on 2026-09-22 after the measured divergence (66 unpushed commits from bash, 67 from the port), and the per-session clone that replaced it on 2026-09-24, because a golden cannot freeze a tree that moves. See `_synthetic_this_worktree` in test_guards_differential.py.
     ("this-worktree", {"CLAUDE_PROJECT_DIR": "{FIXTURE:this-worktree-snapshot}"}, {}),
 ]
 

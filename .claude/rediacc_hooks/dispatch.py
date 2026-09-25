@@ -98,7 +98,8 @@ def main(argv):
     if argv[0] == "--list":
         for stem in guards.stems():
             module = guards.load(stem)
-            print("%-10s %-40s %s" % (module.CHAIN, stem, module.TWIN))
+            evidence = "own-suite" if guards.has_own_suite(module) else "golden"
+            print("%-10s %-40s %s" % (module.CHAIN, stem, evidence))
         return 0
     payload = sys.stdin.read()
     if argv[0] == "--chain":

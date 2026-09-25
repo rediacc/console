@@ -9,7 +9,6 @@ as well as an unset one, and empty is precisely what the network path yields whe
 from rediacc_hooks import hookio, shellscan
 
 CHAIN = "pre-bash"
-TWIN = "pre-bash/block-premature-ready.sh"
 ORDER = 25
 
 # The `--undo` test read from the whole line instead of from this invocation: `gh pr ready --undo 1; gh pr ready 531` then looks like an always-allowed undo and the real flip skips the green gate entirely.
@@ -74,6 +73,15 @@ EDGE_CASES = [
     (
         "prose naming the GraphQL bypass",
         "git commit -m '...gh api graphql markPullRequestReadyForReview...'",
+    ),
+    # RULE T (PLAN-retire-bash-oracles A4, A0 L3). The suite used to assert that a round-log heredoc mentioning `gh pr ready` in BACKTICKS was prose. With an unquoted delimiter it is not: bash expands the backticks while writing the log and really flips the PR. The quoted-delimiter spelling is the prose, and stays allowed.
+    (
+        "L3 backticks in an unquoted heredoc run",
+        "cat >> log.md <<EOF\ngreen-gated `gh pr ready` + hook-banned --admin\nEOF",
+    ),
+    (
+        "control: the same line under a quoted delimiter is prose",
+        "cat >> log.md <<'EOF'\ngreen-gated `gh pr ready` + hook-banned --admin\nEOF",
     ),
 ]
 

@@ -7,7 +7,7 @@ It cannot judge WHETHER a transform is mechanical the way the LLM can and judges
 
 THREE SURFACES, ONE RULE. `git commit` checks the STAGED diff against the message being written. `git push` and `gh pr create` check every commit in the range about to leave the tree, because either one can carry a bulk commit this guard never saw at commit time -- an operator `!`-bypassed commit, a peer's commit merged in, or a commit made before this guard existed.
 
-TWIN = None, the same sentinel and for the same reason as `block_prose_style_commit`/`block_prose_style_edit`: this is a fresh guard authored directly, with no bash original to port from and nothing to differential-test against. `test-block_unproven_bulk_transform.py` stands in for that differential, exactly as it does for its siblings.
+OWN_SUITE = True, the same sentinel and for the same reason as `block_prose_style_commit`/`block_prose_style_edit`: this is a fresh guard authored directly, with no bash original to port from and no golden to compare against. `test-block_unproven_bulk_transform.py` stands in for that differential, exactly as it does for its siblings.
 
 WHAT COUNTS AS PROOF, kept identical to the phrases `wl_proofcheck.PROOF_PROMPT` asks the judge to look for: a shape-cluster diff, an AST-equality or AST-diff statement, a byte-identity claim, or an explicit statement that files were sampled and read.
 A bare file count or diff stat does NOT count -- "884 files changed" is exactly the assertion that shipped alongside a real incident this rule exists for.
@@ -17,10 +17,12 @@ THE THRESHOLD IS A SCALE PROXY, NOT A MECHANISM DETECTOR. This guard cannot tell
 FAILS OPEN ON AN UNRESOLVABLE RANGE, on the same reasoning `messages()`'s `-F <unreadable path>` arm already uses: a range this guard cannot compute is UNEXAMINED, not a finding. A branch with no upstream, or a push whose target this guard cannot resolve, is allowed rather than guessed at.
 """
 
+import glob
 import json
 import os
 import pathlib
 import re
+import shlex
 import subprocess
 
 from rediacc_hooks import hookio, shellscan
@@ -28,7 +30,7 @@ from rediacc_hooks.guards import block_prose_style_commit as PSC
 from rediacc_hooks.guards import block_unverified_push as PUSH
 
 CHAIN = "pre-bash"
-TWIN = None
+OWN_SUITE = True
 # Re-keyed from 41 to 42 on 2026-09-22 by the insertion of block_push_to_protected_branch.py at 39.
 ORDER = 41
 
@@ -54,7 +56,19 @@ PROOF_PHRASE = re.compile(
     re.IGNORECASE,
 )
 
-BLOCK_COMMIT = """BLOCKED: %d staged file(s) is a bulk transform's scale, and this commit's own
+# WHOSE COUNT IT IS, said in the first line (R20260924.22). The fallback to the staged index is kept, because guessing permissively is how a real bulk commit walks past, but a pathspec commit does not commit the index, so presenting the index count as "this commit's" sent a session hunting for 54 files its 17-file commit never touched (2026-09-24 19:01:33).
+COUNT_INDEX = "%d staged file(s) is a bulk transform's scale"
+COUNT_PATHSPEC = "this commit's pathspec covers %d file(s), a bulk transform's scale"
+COUNT_UNEXPANDED = (
+    "pathspec %s could not be expanded; %d is the shared index, not this commit, and it is a bulk\n"
+    "transform's scale"
+)
+COUNT_UNRESOLVED = (
+    "pathspec %s did not resolve; %d is the shared index, not this commit, and it is a bulk\n"
+    "transform's scale"
+)
+
+BLOCK_COMMIT = """BLOCKED: %s, and this commit's own
 message carries no proof it did not destroy structure it does not know about.
 
 A bare file count or diff stat does not count. Run
@@ -148,6 +162,70 @@ def _commit_pathspecs(scan):
     if not matches:
         return []
     return [word for word in matches[-1].split() if word != "--"]
+
+
+# A token that still needs the shell after expansion: a parameter, or a substitution this guard does not run.
+UNEXPANDED = re.compile(r"\$|`")
+PARAM = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}|\$([A-Za-z_][A-Za-z0-9_]*)")
+# The two substitutions worth expanding here, because both are READ-ONLY listings of this tree: `$(ls <glob>...)` and `$(git ls-files <args>...)`.
+LISTING_SUBST = re.compile(r"\$\((ls|git ls-files)((?:[ \t]+[^()$`;&|<>]*)?)\)")
+
+
+def _listing(kind, args, cwd):
+    """What `$(ls <args>)` / `$(git ls-files <args>)` prints in `cwd`, or None when it cannot be known without the shell."""
+    try:
+        words = shlex.split(args)
+    except ValueError:
+        return None
+    if kind == "git ls-files":
+        out = hookio.git_out(["ls-files", *words], cwd=cwd, want_rc=True)
+        return None if out is None else out.split()
+    listed = []
+    for word in words:
+        if word.startswith("-"):
+            return None
+        hits = sorted(glob.glob(word, root_dir=cwd)) if glob.has_magic(word) else [word]
+        listed.extend(hits or [word])
+    return listed
+
+
+def _expand_pathspecs(tokens, cmd, cwd):
+    """`(paths, unexpanded)`: the pathspec tokens with same-command `$NAME`/`${NAME}` assignments expanded, as bash would word-split and glob them.
+
+    R20260924.22. `P="... $(ls .../cli.json)"; git commit -F $M -- $P` left `$P` as a literal token, `_pathspecs_resolve` failed on it, and the guard judged the shared index instead (2026-09-24 19:01:33: "54 staged file(s)" for a 17-file commit). A token that still carries `$` or a backtick afterwards is returned in `unexpanded`, and the caller falls back to the index AND says it did.
+    """
+    if not any("$" in t or "`" in t for t in tokens):
+        return tokens, []
+    names = shellscan.assignments_before(cmd, "git commit")
+    paths = []
+    unexpanded = []
+    for token in tokens:
+        text = token
+        for _ in range(4):
+            new = PARAM.sub(lambda m: names.get(m.group(1) or m.group(2), m.group(0)), text)
+            if new == text:
+                break
+            text = new
+        pieces = []
+        pos = 0
+        ok = True
+        for match in LISTING_SUBST.finditer(text):
+            listed = _listing(match.group(1), match.group(2), cwd)
+            if listed is None:
+                ok = False
+                break
+            pieces.append(text[pos : match.start()])
+            pieces.append(" ".join(listed))
+            pos = match.end()
+        pieces.append(text[pos:])
+        text = "".join(pieces)
+        if not ok or UNEXPANDED.search(text):
+            unexpanded.append(token)
+            continue
+        for word in text.split():
+            hits = sorted(glob.glob(word, root_dir=cwd)) if glob.has_magic(word) else []
+            paths.extend(hits or [word])
+    return paths, unexpanded
 
 
 def _commit_files(sha, cwd):
@@ -259,7 +337,7 @@ def run(ev):
     # ANOTHER REPO'S STAGED COUNT IS NOT THIS GUARD'S BUSINESS.
     # Same class of defect as block_untagged_commit / block_unverified_push / block_blanket_git_add (see shellscan.target_root's own docstring): reproduced live 2026-09-23, a writer's `git -C <scratchpad fixture> commit` (equally: a leading `cd <fixture> &&`) was refused citing 255 staged files, which was CONSOLE's own count, never the fixture's.
     # `root`/CLAUDE_PROJECT_DIR is only the right tree to judge when the command does not name a different one itself. `target_root` returns "" for an unresolvable hint, so a bogus `-C` path does NOT exempt a command: the guard falls through and keeps judging `root`.
-    if shellscan.target_root(scan, root) != "":
+    if shellscan.target_root(scan, root, verb="commit") != "":
         return hookio.ALLOW
 
     cwd = ev.field("cwd") or root
@@ -269,12 +347,31 @@ def run(ev):
         # An EMPTY narrowed set falls back to the staged count ONLY when the tail did not resolve.
         # Guessing in the permissive direction is how a real bulk commit walks past a guard whose whole subject is scale, so a `--` belonging to some other clause still gets judged on the index. A pathspec naming paths this repository knows is a different answer: the commit really is that narrow, and it reads as empty only because this guard runs BEFORE the command that writes
         # those paths. See `_pathspecs_resolve`.
-        paths = _commit_pathspecs(scan)
-        files = _pathspec_files(cwd, paths) if paths else []
-        if not files and not (paths and _pathspecs_resolve(cwd, paths)):
+        paths, unexpanded = _expand_pathspecs(_commit_pathspecs(scan), cmd, cwd)
+        files = _pathspec_files(cwd, paths) if paths and not unexpanded else []
+        count = COUNT_PATHSPEC
+        if unexpanded:
             files = _staged_files(cwd)
+            count = COUNT_UNEXPANDED % (", ".join("`%s`" % t for t in unexpanded), len(files))
+        elif not files and not (paths and _pathspecs_resolve(cwd, paths)):
+            files = _staged_files(cwd)
+            count = (
+                COUNT_UNRESOLVED % (" ".join("`%s`" % t for t in paths), len(files))
+                if paths
+                else COUNT_INDEX % len(files)
+            )
+        else:
+            count = count % len(files)
         if len(files) >= BULK_FILE_THRESHOLD and not _proof_shown(_commit_message_text(cmd, cwd)):
-            ev.warn(BLOCK_COMMIT % len(files))
+            # An earlier clause that stages, commits, writes a file or publishes changes what was just counted, or the message file read for proof (R20260924.22).
+            ev.warn_raw(
+                shellscan.split_refusal(
+                    shellscan.earlier_mutators(cmd, "git commit"),
+                    "git commit",
+                    "the index, the worktree and the commit message file",
+                )
+            )
+            ev.warn(BLOCK_COMMIT % count)
             return hookio.DENY
         return hookio.ALLOW
 
@@ -289,6 +386,7 @@ def run(ev):
             hit = _first_unproven(shas, cwd)
             if hit:
                 sha, count = hit
+                _warn_range_split(ev, cmd, "git push")
                 ev.warn(BLOCK_RANGE % (base, len(shas), sha[:10], count))
                 return hookio.DENY
         return hookio.ALLOW
@@ -300,11 +398,21 @@ def run(ev):
             hit = _first_unproven(shas, cwd)
             if hit:
                 sha, count = hit
+                _warn_range_split(ev, cmd, "gh pr create")
                 ev.warn(BLOCK_RANGE % (base, len(shas), sha[:10], count))
                 return hookio.DENY
         return hookio.ALLOW
 
     return hookio.ALLOW
+
+
+def _warn_range_split(ev, cmd, verb):
+    """A commit made by an earlier clause of the same command is not yet in the range this guard walked (R20260924.22)."""
+    ev.warn_raw(
+        shellscan.split_refusal(
+            shellscan.earlier_mutators(cmd, verb, {"commit"}), verb, "the commits in the range"
+        )
+    )
 
 
 EDGE_CASES = [

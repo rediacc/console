@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Control harness for block_push_to_protected_branch.
 
-WHY THIS FILE IS LOAD-BEARING. The guard declares `TWIN = None` (it was never bash: no direct-push-to-main guard existed before this incident), so `test_guards_differential.py` has no bash oracle for it and instead REQUIRES a `test-<stem>.py` beside it -- see `guards.twin_of` and `test_every_port_has_a_present_twin`. This is that file, and `check-hook-integrity.sh` credits the
+WHY THIS FILE IS LOAD-BEARING. The guard declares `OWN_SUITE = True` (it was never bash: no direct-push-to-main guard existed before this incident), so it has no golden either and `test_guards_differential.py` instead REQUIRES a `test-<stem>.py` beside it -- see `test_every_port_has_goldens`. This is that file, and `check-hook-integrity.sh` credits the
 guard with coverage under both directions because of it.
 
 TWO REAL REPOS, ON DISK, BUILT ONCE. Half this guard's cases depend on which branch the checkout is ON (the implicit forms: a bare `git push`, `git push origin`, `git push origin HEAD`), and that is not something a fixed payload can encode -- it has to come from an actual `git symbolic-ref` read against an actual working tree. `MAIN_REPO` and `FEATURE_REPO` are built fresh in a

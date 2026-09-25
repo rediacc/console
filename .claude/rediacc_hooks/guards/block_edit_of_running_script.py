@@ -17,34 +17,30 @@ PORT NOTE ON THE THREE PROCESS READS. `pgrep -f`, `ps -o comm=` and
 truncated to 15 characters on Linux, `ps -o args=` cannot say where the NUL
 separators were, and a kernel thread's empty cmdline is invisible to `pgrep -f`. `cmdline_tr` in particular keeps the TRAILING SPACE that `tr` leaves behind, which `cut -d' ' -f1-4` and the grep below cannot see and which a port would therefore drop by accident.
 
+`pattern_for` AND `live_shells` NOW LIVE IN `rediacc_hooks.runningscript`, shared with this guard's Bash-side sibling (PLAN-retire-bash-oracles A3, "P6 change, once there is no twin left to diverge from" -- both twins' own words). Until then each guard carried its own copy, because the two BASH originals duplicated them too and a port whose job was fidelity did not get to unify what its
+twin kept apart. There is no twin left, so this file keeps only what is genuinely its own: `run()`, the fixture world and the message.
+
 PORT NOTE ON WHY THIS GUARD'S FIXTURE STARTS A REAL PROCESS. Every branch that produces output is behind "an interpreter is executing this script right now", and nothing in the payload or the environment can fake that: the bash twin consults the real process table through real pgrep. So the fixture below LAUNCHES two `bash <script>` processes, in their own session, and kills them
 when the interpreter that built them exits. Both sides then read the same two processes, and the pids in the message are identical because it is literally the same process. Its Bash-side sibling (block-bash-write-to-running-script.sh) reads the same world through the same token rather than starting two more.
 """
 
 import atexit
 import os
-import re
 import signal
 import subprocess
 import tempfile
 
-from rediacc_hooks import hookio, proc
+from rediacc_hooks import hookio, proc, runningscript
 
 CHAIN = "pre-edit"
-TWIN = "pre-edit/block-edit-of-running-script.sh"
 ORDER = 7
 
-# HOOK-CHAIN SIBLINGS ARE NOT A RUNNING JOB, and dropping the exclusion is not a small over-block: every guard in a chain runs on the call carrying your edit, so the refusal is PERMANENT and no amount of waiting clears it. Its Bash-side sibling cost four blocked commands that way on 2026-08-27, one of them its own repair.
+# THE LIMIT ARGUMENT, ZEROED. `live_shells` truncates to the first N matches before this guard ever reads them, so pinning it at 0 answers every case as though nothing were running -- local to this file's own `run()`, unlike the old HOOK_CHAIN-exclusion defect this guard carried before its process-table scan moved to `rediacc_hooks.runningscript` (PLAN-retire-bash-oracles A3): a
+# defect textually planted into THIS module's source can no longer reach into a function that lives in a different one.
 DEFECT = (
-    "if hookio.grep_q(HOOK_CHAIN, rargs):\n            continue",
-    "if False:\n            continue",
+    "runningscript.live_shells(runningscript.pattern_for(base), 3)",
+    "runningscript.live_shells(runningscript.pattern_for(base), 0)",
 )
-
-HOOK_CHAIN = r"\.claude/hooks/((pre-bash|pre-edit|pre-ask|post-bash)/|chain-head\.sh)"
-
-# The characters `sed 's/[.[\*^$()+?{}|]/\\&/g'` escapes. Note that inside a
-# POSIX bracket expression a backslash is an ORDINARY character, so `\` is a member of the set rather than an escape.
-META = r"([.\[\\*^$()+?{}|])"
 
 MESSAGE = """BLOCKED: '%(base)s' is being executed by a live process right now.
 
@@ -222,54 +218,6 @@ EDGE_CASES = [
 ]
 
 
-def pattern_for(base):
-    """`(^|[/[:space:]])[<first>]<escaped rest>`, built exactly as the bash does.
-
-    BRACKET CLASS ON THE FIRST CHARACTER, and it is not decoration: without it this pgrep matches the shell running this very hook, whose command line contains the path it was handed. That is the self-matching trap block- self-matching-pgrep.sh exists for, and writing this guard is exactly where it would have bitten again.
-
-    ANCHOR TO A PATH BOUNDARY. A bare basename matches any process whose command line merely CONTAINS it as a substring (`ver.sh` inside a running `wslServer.sh`). The basename must start at the beginning, after a `/`, or after whitespace. Fixed here 2026-08-30 to match the Bash-side sibling (block-bash-write-to-running-script.sh), which got this anchor on 2026-08-27 and this guard
-    never did -- a sibling drift, not a design choice.
-
-    ESCAPE THE DOTS, same defect and same fix as the Bash-side twin. `.` is a regex wildcard and the basename was interpolated raw, so a one-letter name plus the shell suffix produced `[x].sh` -- which for `b` matches **/bin/bash**, i.e. every bash process alive. Measured on the twin 2026-09-01: an edit was refused naming `/bin/bash --init-file ...` as the job it would corrupt,
-    with no such script running.
-    Found here by sweeping the class rather than by being bitten a second time; the two guards build this pattern identically, so a fix to one that skipped the other would have left the same hole open on the Edit door.
-    """
-    esc = re.sub(META, r"\\\1", base[1:])
-    return hookio.rx(r"(^|[/{S}])[") + base[:1] + r"]" + esc
-
-
-def live_shells(pat, limit):
-    """The `for RPID in $(pgrep -f -- "$PAT")` loop, as its accumulated text.
-
-    `pgrep -af` matches any process whose ARGUMENTS mention the name, which is the very trap this guard exists to prevent, wearing a different hat. Fixed here 2026-08-30, mirroring the Bash-side sibling's 2026-08-27 fix (review-found on PR #579, on a different guard, same class): a running `claude -p '<huge prompt text>'` invocation -- the stop-hook judge itself -- has this exact
-    filename embedded in its prompt (an example inside docs/agent-reference/TRAPS.md, quoted in this very file's own comments) and was scored as "executing" it. No interpreter was running the script at all.
-
-    A process is RUNNING the script only if an interpreter is executing it. So require the matching process to BE a shell, and the name to sit in the first few argv slots where a script argument lives, rather than buried in a prose payload.
-    """
-    try:
-        pids = proc.pgrep_full(pat)
-    except (proc.ProcError, re.error):
-        # `pgrep ... 2>/dev/null` in a `$( )`: a pattern pgrep refuses, or a process table it cannot read, both yield an empty word list and the loop simply never runs.
-        pids = []
-    running = ""
-    for rpid in pids:
-        if not proc.is_shell(rpid):
-            continue
-        rargs = proc.cmdline_tr(rpid)
-        if rargs is None:
-            rargs = ""
-        # `cut -d' ' -f1-4`: the first four SPACE-delimited fields, with runs of spaces counting as empty fields exactly as cut reads them.
-        first4 = " ".join(rargs.split(" ")[:4])
-        if not hookio.grep_q(pat, first4):
-            continue
-        if hookio.grep_q(HOOK_CHAIN, rargs):
-            continue
-        running += "%d %s\n" % (rpid, rargs[:80])
-    # `$(printf '%s' "$running" | head -N)`
-    kept = running.split("\n")[:limit] if running != "" else []
-    return hookio._command_substitution("\n".join(kept))
-
-
 def indented(running):
     """`$(printf '%s\\n' "$RUNNING" | sed 's/^/    /')`, inside the heredoc."""
     return hookio._command_substitution(hookio.sed_sub(r"^", "    ", hookio._printf_line(running)))
@@ -283,7 +231,7 @@ def run(ev):
         return hookio.ALLOW
 
     base = path.rsplit("/", 1)[-1]
-    running = live_shells(pattern_for(base), 3)
+    running = runningscript.live_shells(runningscript.pattern_for(base), 3)
     if running == "":
         return hookio.ALLOW
 

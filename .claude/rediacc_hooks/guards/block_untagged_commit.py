@@ -30,8 +30,7 @@ matched so far, which Python spells as a capture group; a lookbehind cannot be u
 either, so the two features actually used (`\\K` and `{6,32}`) are reproduced
 directly rather than the engine being emulated.
 
-WHAT THIS GUARD INHERITS FROM `shellscan.target_root`. Its `-C` hint grep accepts a TAB, but the sed that strips the flag demands a literal space, so a TAB-separated `git -C<tab><path>` resolves to the empty root and this guard then judges the console tree instead of the named submodule. That is a defect in the bash and it is reproduced deliberately, because a port that quietly
-improved it would disagree with its oracle and the disagreement would be reported as the port being wrong.
+WHAT THIS GUARD USED TO INHERIT FROM `shellscan.target_root`. Its `-C` hint grep accepted a TAB, but the sed that stripped the flag demanded a literal space, so a TAB-separated `git -C<tab><path>` resolved to the empty root and this guard then judged the console tree instead of the named submodule. That was a defect in the bash, reproduced deliberately while the oracle was the spec. Rule T (PLAN-retire-bash-oracles A4) fixed it at its source: `target_root` now reads each git invocation's `-C` through the shared lexer, where a tab is a blank like any other (`tests/goldens/shellscan.jsonl`, case "-C with a tab", carries the intentional delta).
 """
 
 import os
@@ -42,7 +41,6 @@ import subprocess
 from rediacc_hooks import hookio, shellscan
 
 CHAIN = "pre-bash"
-TWIN = "pre-bash/block-untagged-commit.sh"
 ORDER = 37
 
 # The id-validation arm is the one the 2026-08-27 typo finding added, and the one that makes a trailer worth more than its shape. With it gone every well-formed id passes, including one that names no epic.
@@ -116,7 +114,7 @@ FIXTURES = {"epic-snapshot": _fixture}
 
 ENVS = [
     ("snapshot", {"CLAUDE_PROJECT_DIR": "{FIXTURE:epic-snapshot}"}, {}),
-    # A FROZEN clone of this checkout rather than the live one: the real branch and the real `agent/pr/<branch>.md` the clone carries, with no other session able to rewrite either between the differential's two sides. See block_merge_with_unpushed.py:31.
+    # This checkout's SHAPE, synthetic and pinned since 2026-09-24: a `MMDD-N` branch and an `agent/pr/<branch>.md` in the published format, with no other session able to rewrite either. See `_synthetic_this_worktree` in test_guards_differential.py.
     ("this-worktree", {"CLAUDE_PROJECT_DIR": "{FIXTURE:this-worktree-snapshot}"}, {}),
 ]
 
@@ -139,8 +137,8 @@ EDGE_CASES = [
     # A foreign checkout's commits are not this repo's epics' business.
     ("a commit in another tree", 'cd /tmp && git commit -m "x"'),
     ("git -C into another tree", 'git -C /tmp commit -m "x"'),
-    # The tab defect inherited from shellscan.target_root, pinned here so a future "fix" to that module is a visible divergence rather than a quiet one.
-    ("git -C with a TAB resolves to the empty root", 'git -C\t/tmp commit -m "x"'),
+    # A TAB after `-C` is a blank like any other since the Rule T fix to shellscan.target_root (A4); /tmp is not a repository, so this and the space form above both judge this tree.
+    ("git -C with a TAB is still a -C", 'git -C\t/tmp commit -m "x"'),
 ]
 
 
@@ -152,6 +150,14 @@ def _grep_qx(needle, haystack):
     pattern = re.compile(needle)
     records, _ = hookio._records(hookio._here_string(haystack))
     return any(pattern.fullmatch(record) for record in records)
+
+
+def _same_file(target, names, root):
+    """Whether a redirect target is one of the `-F` message files, as written or under `root`."""
+    if not target:
+        return False
+    norm = os.path.normpath
+    return any(norm(target) in (norm(n), norm("%s/%s" % (root, n))) for n in names)
 
 
 def _epic_menu(ev, known, snap, branch_key, branch):
@@ -200,7 +206,7 @@ def run(ev):
     # (one that cannot possibly name an epic for a repo it has never heard of), so every such commit was refused for a trailer no epic file could ever supply. Detect a `cd`/`git -C` into another repo anywhere on the line -- a cd applies to every later segment, so this is deliberately line-wide, matching hook_target_repo's convention in lib/command-scan.sh -- and if the git root
     # THAT resolves to is a real repo distinct from this one, this guard has nothing to check: that repo's commits are not this repo's epics' business. THE RESOLUTION MOVED TO lib/command-scan.sh when a third guard needed it. Two siblings had the same defect -- block-unverified-push.sh refused a foreign repo's push against THIS tree's gate stamp (reproduced live), and
     # warn-remote-drift.sh has the same shape latently -- so the walk this file pioneered is now shared rather than copied twice more.
-    if shellscan.target_root(scan, root) != "":
+    if shellscan.target_root(scan, root, verb="commit") != "":
         return hookio.ALLOW
 
     # THE TOOL CALL'S OWN `cwd` IS A SECOND, MORE RELIABLE SIGNAL than the text-parsed `cd`/`-C` hint above -- reproduced live 2026-09-23: a session ran `git commit` with the Bash tool's `cwd` field pointed at an independent local clone (`/home/developer/console-ci-fix-scratch`, cloned to keep a risky change out of this shared tree), with no `cd`/`-C` anywhere in the command text
@@ -225,10 +231,12 @@ def run(ev):
         msg = msg + "\n" + cmd
 
     # 3. -F <file> / --file=<file>: read it off disk.
+    msg_files = []
     for match in hookio.grep_o(FILE_ARGS, cmd):
         name = hookio.sed_sub(hookio.rx(r"^(-F|--file)([{S}]+|=)"), "", match).rstrip("\n")
         if name in {"", "-"}:
             continue
+        msg_files.append(name)
         for cand in (name, "%s/%s" % (root, name)):
             path = pathlib.Path(cand)
             if path.is_file():
@@ -287,13 +295,26 @@ def run(ev):
     match = TRAILER.search(msg)
     found = match.group(1) if match else ""
 
+    # AN EARLIER CLAUSE MAY WRITE WHAT WAS JUST READ (R20260924.22): `worklist.py --publish` rewrites the epic snapshot, and a `printf ... > <msg>` rewrites the `-F` file. This guard ran before either, so it says so above its finding rather than leaving the session to discover it (2026-09-24 19:02:10: "names no epic" for an epic the same command's `--publish` was about to write).
+    split = shellscan.split_refusal(
+        [
+            m
+            for m in shellscan.earlier_mutators(cmd, "git commit", {"publish", "redirect"})
+            if m.kind == "publish" or _same_file(m.target, msg_files, root)
+        ],
+        "git commit",
+        "agent/pr/%s.md and the commit message file" % branch_key,
+    )
+
     if found == "":
+        ev.warn_raw(split)
         ev.warn_raw(MISSING_TRAILER)
         _epic_menu(ev, known, snap, branch_key, branch)
         return hookio.DENY
 
     # A trailer whose id names no epic is WORSE than no trailer: it looks tagged. Only judge when a snapshot exists -- with none, there is no set to judge against, and refusing would block the very first commit of a new branch.
     if known and not _grep_qx(found, known):
+        ev.warn_raw(split)
         ev.warn_raw(
             "BLOCKED: PR-TASK id '%s' names no epic on this branch.\n"
             "\n"

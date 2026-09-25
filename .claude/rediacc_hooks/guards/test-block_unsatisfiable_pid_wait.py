@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Control harness for block_unsatisfiable_pid_wait.
 
-WHY THIS FILE IS LOAD-BEARING. The guard declares `TWIN = None` (it was never bash: the trap it catches was only found live, 2026-09-21/22), so `test_guards_differential.py` has no bash oracle for it and instead REQUIRES a `test-<stem>.py` beside it -- see `guards.twin_of` and `test_every_port_has_a_present_twin`.
+WHY THIS FILE IS LOAD-BEARING. The guard declares `OWN_SUITE = True` (it was never bash: the trap it catches was only found live, 2026-09-21/22), so it has no golden either and `test_guards_differential.py` instead REQUIRES a `test-<stem>.py` beside it -- see `test_every_port_has_goldens`.
 This is that file, and `check-hook-integrity.sh` credits the guard with coverage under both directions because of it.
 
 IT DRIVES THE LIVE GUARD THROUGH THE DISPATCHER, for the reason the P7 cutover exists: a suite driving anything else keeps passing while the thing that actually runs goes unchecked.

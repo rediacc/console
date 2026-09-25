@@ -2,8 +2,8 @@
 
 THE OTHER HALF OF `block_prose_style_edit`. That guard sees the bytes going into a FILE; this one sees the bytes going into a COMMIT or a PULL REQUEST, which never touch the working tree and which no file-scoped hook can reach. A style enforced on documents and not on the messages describing them is enforced on the half nobody reads.
 
-TWIN = None, the same sentinel and for the same reason as its sibling. The
-argument is written out once, in `block_prose_style_edit.py`; the short version is that no bash original exists, `check_language_policy.py` refuses a new shell file under `.claude`, and the evidence that replaces the oracle is a dedicated per-guard suite plus the planted DEFECT below.
+OWN_SUITE = True, the same sentinel and for the same reason as its sibling. The
+argument is written out once, in `block_prose_style_edit.py`; the short version is that no bash original ever existed, `check_language_policy.py` refuses a new shell file under `.claude`, and the evidence for a guard with no golden to compare against is a dedicated per-guard suite plus the planted DEFECT below.
 
 =============================================================================
 WHAT IT READS OUT OF A COMMAND LINE
@@ -45,7 +45,7 @@ import sys
 from rediacc_hooks import hookio, shellscan
 
 CHAIN = "pre-bash"
-TWIN = None
+OWN_SUITE = True
 # Re-keyed from 40 to 41 on 2026-09-22 by the insertion of block_push_to_protected_branch.py at 39.
 ORDER = 40
 

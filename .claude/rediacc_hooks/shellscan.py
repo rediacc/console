@@ -63,8 +63,10 @@ NAMES. The bash `hook_` prefix existed because bash has one namespace. Here the 
 
 import json
 import os
+import posixpath
 import re
 import subprocess
+import typing
 
 # `[[:space:]]` in the C locale, written out. Python's `\s` is Unicode-aware (it matches U+00A0 and friends), which would widen every anchor in this file against a command containing non-breaking space -- a silent behaviour change in the direction of matching MORE, which for a guard is the safe direction but is still not what the bash does.
 SPACE = r" \t\n\v\f\r"
@@ -154,26 +156,26 @@ def _wrapper_payload(text):
 
 
 # Drop heredoc bodies: from a line introducing `<< [-] ['"]?MARKER['"]?` up to the line that is exactly MARKER (optionally tab-indented for <<-). Keeps the introducing line (which may itself hold the real command) and the rest.
+#
+# RULE T (PLAN-retire-bash-oracles A4, A0 L5 and S1/S2): THE HEREDOCS ARE NOW FOUND BY `_Lexer`, NOT BY A REGEX OVER EACH LINE. The regex `<<-?[ \t]*['"]?[A-Za-z_][A-Za-z0-9_]*['"]?` fired on three things that are not heredocs, and each one swallowed every later line as "body", so a real command after it was never scanned: a here-string `<<<x`, a `"<<EOF"` inside quotes, and a `# <<EOF` in a comment. Bash runs the lines after all three. The same regex also closed the body on `^[ \t]*M[ \t]*$`, which bash does not do for a plain `<<` (no indentation stripping at all) or for a trailing blank, and stopped the marker at a `-` (`<<END-X` closed at a line reading `END`); those two only ever over-scanned, the safe direction, and are corrected with the rest because the lexer reads the terminator the way bash does. The output format is the awk's: every kept record, newline-terminated.
 def _strip_heredocs(text):
     records, _ = _records(text)
-    out = []
-    skip = False
-    marker = ""
-    for record in records:
-        if skip:
-            # awk builds this pattern by CONCATENATION, so `marker` is a regex, not a literal. The match above only ever captures `[A-Za-z_][A-Za-z0-9_]*`, so it carries no metacharacters -- which is the only reason a dynamic regex is safe here.
-            if re.search("^[ \t]*" + marker + "[ \t]*$", record):
-                skip = False
+    if not records:
+        return ""
+    lexer = _Lexer(text)
+    lexer.tokens()
+    spans = sorted(
+        (hd.body_start, hd.term_end) for hd in lexer.heredocs if hd.body_start is not None
+    )
+    kept = []
+    last = 0
+    for start, end in spans:
+        if start < last:
             continue
-        line = record
-        m = re.search(r"<<-?[ \t]*['\"]?[A-Za-z_][A-Za-z0-9_]*['\"]?", line)
-        if m:
-            mm = m.group(0)
-            mm = re.sub(r"<<-?[ \t]*['\"]?", "", mm)
-            mm = re.sub(r"['\"]?$", "", mm)
-            marker = mm
-            skip = True
-        out.append(line)
+        kept.append(text[last:start])
+        last = end
+    kept.append(text[last:])
+    out, _ = _records("".join(kept))
     return _awk_out(out)
 
 
@@ -192,12 +194,14 @@ def _strip_heredocs(text):
 #
 # The fix belongs HERE rather than in seven regexes: an assignment prefix is a property of shell syntax, which is what this file normalises, and a seventh copy of the anchor would have been a seventh chance to miss it. The assignments are dropped rather than kept because no guard matches on them; the one guard that needs their VALUES reads them from the RAW command for exactly that
 # reason.
+#
+# RULE T (A0 L1): THE VALUE MAY NOT SWALLOW A SUBSTITUTION. The class used to be "anything but a blank or a separator", so in `x=$(git push --force origin main)` it ate `$(git ` as the value of `x`, the strip left ` push --force origin main)`, and the push was gone from the scan: `block_git_force_push` refused `git push --force origin main` (rc 2) and allowed the same push inside the assignment (rc 0), measured 2026-09-24. Bash runs the substitution. So a `$(` or a backtick ends the value: the assignment is then not stripped, the substitution stays where the `$(` anchor sees it, and a command behind a substitution-valued prefix (`X=$(date) git push`) is lifted by `lifted_commands` instead.
 _ENV_PREFIX = re.compile(
     r"(^|[;&|(]|\$\(|`)(["
     + BLANK
-    + r"]*)([A-Za-z_][A-Za-z0-9_]*=[^"
+    + r"]*)([A-Za-z_][A-Za-z0-9_]*=(?:[^"
     + BLANK
-    + r";&|]*["
+    + r";&|$`]|\$(?!\())*["
     + BLANK
     + r"]+)"
 )
@@ -291,7 +295,12 @@ def scan_target(cmd):
     wrapped = _command_substitution(
         _strip_env_prefix(_sed_quotes_to_spaces(_wrapper_payload(_tr(nohd, "\n", " "))))
     )
-    return "%s\n%s" % (stripped, wrapped)
+    view = "%s\n%s" % (stripped, wrapped)
+    # RULE T (A0 L1-L11): every command bash runs that the two lines above do not show at a command position, one canonical line each (see `lifted_commands`). Appended only when there is one, so a command the old pipeline already read correctly keeps its byte-identical scan target.
+    lifted = lifted_commands(cmd, view)
+    if lifted:
+        view = "%s\n%s" % (view, "\n".join(lifted))
+    return view
 
 
 def _sed_strip_quoted_spans(text):
@@ -363,6 +372,8 @@ def gh_pr_segment(scan, verb):
 
 
 # target_repo <segment> <whole-scan> <cwd> Resolve the rediacc repo a `gh pr` invocation targets, in order: 1. --repo/-R in the SAME segment as the verb 2. a `cd`/`git -C` into private/<submodule> anywhere on the line (a cd applies to every later segment, so this one is deliberately line-wide) 3. the session cwd's origin remote 4. rediacc/console
+#
+# RULE T (A0 L12): "ANYWHERE ON THE LINE" WAS WRONG IN BOTH DIRECTIONS. A `cd` persists only in the shell that ran it: one inside `( ... )`, inside a pipeline stage, inside a `$(...)` or in a background job is gone by the next command, and a `git -C` names the directory of that ONE git command and no other. The line-wide grep read `git -C private/renet fetch; gh pr merge 3` as a renet merge and `gh pr merge 3 && cd private/renet` likewise. Step 2 now asks `_analyse` which directory THIS gh invocation actually runs in; only a line with no gh invocation the walk can find keeps the line-wide grep, since there is then no invocation to scope to.
 def target_repo(seg, scan, cwd):
     repo = _command_substitution(
         _grep_out(
@@ -373,10 +384,12 @@ def target_repo(seg, scan, cwd):
         )
     )
     if repo == "":
-        submodules = r"private/(renet|account|elite|homebrew-tap)"
-        first = _grep_only(r"(cd |-C )[^;|&]*" + submodules, scan + "\n")
-        second = _grep_only(submodules, _grep_out(first))
-        sm = _command_substitution(_grep_out(second[:1]))
+        sm = _gh_submodule(seg, scan)
+        if sm is None:
+            submodules = r"private/(renet|account|elite|homebrew-tap)"
+            first = _grep_only(r"(cd |-C )[^;|&]*" + submodules, scan + "\n")
+            second = _grep_only(submodules, _grep_out(first))
+            sm = _command_substitution(_grep_out(second[:1]))
         if sm != "":
             # `${sm#private/}` removes the SHORTEST matching prefix, once.
             # `str.removeprefix` is exactly `${sm#private/}`: shortest prefix,
@@ -424,22 +437,40 @@ def pr_selector(seg, verb):
 #
 # Measured 2026-09-01, the same defect was live in a sibling: `git -C <scratch> push` was refused by block-unverified-push.sh because it compared the SCRATCH repo's push to the CONSOLE tree's gate-run stamp (reproduced: exit 2). warn-remote-drift.sh has the identical shape and is latent -- quiet today only because console's remote happens not to be ahead.
 #
-# A `cd` applies to every later segment, so the scan is deliberately line-wide, matching target_repo's convention. Prints "" when the command targets THIS root, when no hint is present, or when the hint does not resolve to a git repo -- so a caller can treat empty as "this repo, proceed" and never has to distinguish absent from same.
-def target_root(scan, this_root):
-    hints = _grep_only(r"(cd [^;|&]*|-C[" + SPACE + r"]+[^" + SPACE + r";|&]+)", _printf_line(scan))
-    hint = _command_substitution(_grep_out(hints[-1:]))
-    if hint != "":
-        # Five sed expressions, applied in order to the one line. Note the FIRST one: the grep above accepts `-C<tab>path`, but this strip requires a literal space after `-C`, so a tab-separated hint keeps its `-C\t` prefix and fails to resolve. That is the bash's behaviour, carried across deliberately -- a `re.sub` widened to `[[:space:]]` here would be a silent behaviour change,
-        # and this file's whole point is that behaviour changes come from findings and not from tidying.
-        hint = re.sub(r"^(cd |-C )[" + SPACE + r"]*", "", hint, count=1)
-        hint = re.sub(r"[" + SPACE + r"]*&&.*$", "", hint, count=1)
-        hint = re.sub(r"^[\"']", "", hint, count=1)
-        hint = re.sub(r"[\"']$", "", hint, count=1)
-        hint = re.sub(r"[" + SPACE + r"]+$", "", hint, count=1)
-    if hint == "":
+# A `cd` applies to every later segment of the SAME shell; until the Rule T fix in the docstring below this scan was line-wide, matching target_repo's convention, and that is exactly what A0 L12 measured failing. Prints "" when the command targets THIS root, when no hint is present, or when the hint does not resolve to a git repo -- so a caller can treat empty as "this repo, proceed" and never has to distinguish absent from same.
+def target_root(scan, this_root, verb=None):
+    """Rule T (A0 L12, and the tab defect PLAN-retire-bash-oracles A4 names at block_untagged_commit.py:142).
+
+    The line-wide grep this replaces took the LAST `cd`/`-C` hint anywhere, so `(cd private/renet && git fetch); git status`, `cd private/renet | true; git status` and `git -C private/renet fetch; git status` all resolved to renet while bash ran `git status` in THIS tree, and a guard that stands down for another repo then stood down for a command in this one. Its `-C` strip also demanded a literal space, so `git -C<TAB>private/renet` resolved to nothing and the guard judged the wrong tree the other way.
+
+    Now each git invocation's directory comes from `_analyse`: the `cd`s that persist to it (not those in a subshell, a pipeline stage, a substitution or a background job) with its own `-C` flags composed on top. `verb`, when a caller passes one, narrows that to the invocations running that subcommand; with none matching, every git invocation counts. The answer is a different root only when EVERY counted invocation resolves to that same root; any disagreement answers "" (judge this root), the direction every caller fails safe in. A scan with no git invocation at all falls back to the directory its last command runs in, which is what a `cd <dir> && <tool>` line means.
+    """
+    runs = _analyse(scan).runs
+    gits = [r for r in runs if r.git_sub is not None]
+    if verb is not None:
+        gits = [r for r in gits if r.git_sub == verb] or gits
+    if gits:
+        dirs = [r.git_dir for r in gits]
+    elif runs:
+        dirs = [runs[-1].cwd]
+    else:
+        dirs = []
+    roots = set()
+    for directory in dict.fromkeys(dirs):
+        roots.add(_resolve_root(directory, this_root))
+        if len(roots) > 1:
+            return ""
+    return roots.pop() if roots else ""
+
+
+def _resolve_root(directory, this_root):
+    """The toplevel of the repository `directory` sits in, or "" when that is this root or nothing resolves.
+
+    bash `case "$hint" in /*) ... ;; *) ...` -- a leading slash, nothing more elaborate. A `~` or a `$HOME` is NOT expanded here, so it never resolves.
+    """
+    if directory is None or directory in ("", "."):
         return ""
-    # bash `case "$hint" in /*) ... ;; *) ...` -- a leading slash, nothing more elaborate. A `~` or a `$HOME` is NOT expanded here, in either language.
-    abs_path = hint if hint.startswith("/") else this_root + "/" + hint
+    abs_path = directory if directory.startswith("/") else this_root + "/" + directory
     target = _git_stdout(["-C", abs_path, "rev-parse", "--show-toplevel"], want_rc=True)
     if target is None:
         return ""
@@ -447,6 +478,24 @@ def target_root(scan, this_root):
     if target not in ("", this_root):
         return target
     return ""
+
+
+def _gh_submodule(seg, scan):
+    """The submodule the `gh` invocation named by `seg` runs in, "" for none, or None when the walk finds no gh invocation to ask about."""
+    ghs = [r for r in _analyse(scan).runs if r.name.rsplit("/", 1)[-1] == "gh"]
+    if not ghs:
+        return None
+    want = _collapse(seg)
+    mine = [
+        r
+        for r in ghs
+        if want.startswith(_collapse(r.canonical)) or _collapse(r.canonical).startswith(want)
+    ]
+    found = set()
+    for run in mine or ghs:
+        m = re.search(r"(^|/)private/(renet|account|elite|homebrew-tap)(/|$)", run.cwd or "")
+        found.add("private/" + m.group(2) if m else "")
+    return found.pop() if len(found) == 1 else ""
 
 
 def _printf_line(text):
@@ -496,3 +545,1166 @@ def repo_root_env():
     Not part of the bash lib -- each guard computes it itself -- but every caller of `target_root` needs the same answer, and a second spelling of it is exactly the drift `.ci/rediacc_ci/paths.py` was written to end.
     """
     return os.environ.get("CLAUDE_PROJECT_DIR", "")
+
+
+# =============================================================================
+# THE LEXER: WHAT BASH ACTUALLY RUNS (PLAN-retire-bash-oracles A4, Rule T)
+# =============================================================================
+#
+# EVERYTHING ABOVE IS A LINE-FOR-LINE PORT OF A SED/AWK PIPELINE, AND A0 MEASURED FIFTEEN PLACES WHERE THAT PIPELINE DISAGREES WITH BASH IN THE FAIL-OPEN DIRECTION (agent/plans/PLAN-retire-bash-oracles.A0.md section 1, L1-L15). The differential against `command-scan.sh` was blind to them by construction: the oracle carried the same bugs. Each one is a command bash runs that no anchor in any guard can see: `x=$(git push --force origin main)`, `"git" push --force origin main`, `{ git push --force origin main; }`, `bash -ce '...'`, `cat <<EOF` with a `$(...)` in its body, `bash <<'EOF'`, and so on.
+#
+# THE FIX IS ADDITIVE, NOT A REWRITE OF THE VIEW. The text every guard's regex already runs against (the prose-stripped line plus the first wrapper payload) keeps its exact bytes, because its shape IS the prose defence: a quoted span is deleted so that a commit message naming a command is not that command. What this section adds is a real tokenizer that walks the command the way bash's own grammar does and lists every simple command bash would execute, at any depth: substitutions (bare, inside double quotes, in an assignment value, in an unquoted heredoc body), subshells, brace groups, wrapper payloads (`sh -c`, every `-c` spelling bash accepts, and every wrapper on the line rather than only the first), `eval`, a shell reading a heredoc, a here-string or a pipe, and the command behind a reserved word, a prefix builtin or a leading redirect. Each one is rendered as a CANONICAL LINE: its command word with quoting removed, then its arguments with quoted spans dropped exactly as the view drops them.
+#
+# A canonical line is appended to the scan target ONLY WHEN THE VIEW DOES NOT ALREADY SHOW IT at a command position (`_visible`). So every case the old pipeline already handled produces the byte-identical scan target, and the goldens move only where a bypass is being closed.
+#
+# THE MODEL, AND ITS EDGE. A command is lifted when bash's grammar runs it. Text that only a runtime decision turns into code (a string computed and then `eval`'d, `base64 -d | sh`, a function body that is never called) is outside a static scanner's reach and is not claimed here; a function body IS lifted, because its definition cannot be told from its call without running the script, and over-reporting is the safe direction for a guard.
+
+_OPERATORS = (";;&", ";;", ";&", "&&", "||", "|&", ";", "&", "|", "(", ")")
+_REDIRECT = re.compile(r"(\d+|\{[A-Za-z_][A-Za-z0-9_]*\})?(&>>|<<<|<<-|&>|>>|>\||<>|<&|>&|<<|<|>)")
+_ASSIGNMENT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*(\[[^\]]*\])?\+?=")
+_WORD_END = " \t\n;&|()<>"
+_SEPARATORS = (";", "&", "&&", "||", "\n", ";;", ";&", ";;&")
+# Reserved words that may stand in front of a command without being one. `{` and `}` are handled as structure, `for`/`select`/`case`/`function`/`[[` open a clause whose words are not a command.
+_RESERVED_PREFIX = frozenset(
+    ("!", "then", "do", "else", "elif", "if", "while", "until", "fi", "done", "esac", "}", "coproc")
+)
+_NOT_A_COMMAND = frozenset(("for", "select", "case", "function", "[[", "]]", "in"))
+# Prefix commands that run the NEXT word as the command, with the options each one takes a value for. `command -v`/`-V` only prints, so it is handled apart.
+_PREFIX_COMMANDS = {
+    "command": frozenset(),
+    "builtin": frozenset(),
+    "exec": frozenset(("-a",)),
+    "time": frozenset(),
+    "nohup": frozenset(),
+    "setsid": frozenset(),
+    "env": frozenset(("-u", "--unset", "-C", "--chdir", "-S", "--split-string")),
+    "sudo": frozenset(("-u", "-g", "-h", "-p", "-C", "-D", "-r", "-t", "-U", "-T", "-R")),
+    "nice": frozenset(("-n", "--adjustment")),
+    "timeout": frozenset(("-s", "--signal", "-k", "--kill-after")),
+    "stdbuf": frozenset(("-i", "-o", "-e")),
+    "xargs": frozenset(
+        ("-I", "-L", "-n", "-P", "-d", "-E", "-s", "-a", "--max-args", "--delimiter")
+    ),
+}
+# A prefix command that takes one positional operand before the command it runs.
+_PREFIX_OPERAND = frozenset(("timeout",))
+# How deep substitutions and payloads may nest before the rest is treated as opaque. Real commands nest two or three deep; the cap only exists so that a pathological input cannot exhaust the interpreter's stack inside a guard.
+_MAX_DEPTH = 24
+
+
+class _Part:
+    """One piece of a word: `lit`, `esc`, `sq`, `ansi`, `dq`, `subst`, `bq`, `procsub`, `arith` or `param`.
+
+    `raw` is the source text, `value` what quote removal leaves, `sub` the token list of a command substitution, `parts` the pieces of a double-quoted string or of a `${...}` expansion.
+    """
+
+    __slots__ = ("kind", "parts", "raw", "sub", "value")
+
+    def __init__(self, kind, raw, value="", sub=None, parts=None):
+        self.kind = kind
+        self.raw = raw
+        self.value = value
+        self.sub = sub
+        self.parts = parts or []
+
+
+class _Word:
+    __slots__ = ("end", "parts", "start")
+
+    def __init__(self, start, end, parts):
+        self.start = start
+        self.end = end
+        self.parts = parts
+
+
+class _Op:
+    __slots__ = ("start", "text")
+
+    def __init__(self, text, start):
+        self.text = text
+        self.start = start
+
+
+class _Heredoc:
+    """A `<<`/`<<-` redirect's body, once the lexer has read it."""
+
+    __slots__ = ("body_end", "body_start", "delim", "quoted", "strip_tabs", "substs", "term_end")
+
+    def __init__(self, delim, quoted, strip_tabs):
+        self.delim = delim
+        self.quoted = quoted
+        self.strip_tabs = strip_tabs
+        self.body_start = None
+        self.body_end = None
+        self.term_end = None
+        self.substs = []
+
+
+class _Redir:
+    __slots__ = ("heredoc", "op", "target")
+
+    def __init__(self, op, target, heredoc=None):
+        self.op = op
+        self.target = target
+        self.heredoc = heredoc
+
+
+def _decode_ansi(body):
+    """`$'...'` escapes, the subset bash documents. An unknown escape keeps its backslash, as bash does."""
+    simple = {
+        "n": "\n",
+        "t": "\t",
+        "r": "\r",
+        "a": "\a",
+        "b": "\b",
+        "e": "\x1b",
+        "E": "\x1b",
+        "f": "\f",
+        "v": "\v",
+        "\\": "\\",
+        "'": "'",
+        '"': '"',
+        "?": "?",
+    }
+
+    def one(m):
+        seq = m.group(1)
+        head = seq[0]
+        if head in simple and len(seq) == 1:
+            return simple[head]
+        if head == "x" and len(seq) > 1:
+            return chr(int(seq[1:], 16))
+        if head in "uU" and len(seq) > 1:
+            return chr(min(int(seq[1:], 16), 0x10FFFF))
+        if head.isdigit():
+            return chr(int(seq, 8) & 0xFF)
+        if head == "c" and len(seq) == 2:
+            return chr(ord(seq[1]) & 0x1F)
+        return "\\" + seq
+
+    return re.sub(
+        r"\\(x[0-9a-fA-F]{1,2}|u[0-9a-fA-F]{1,4}|U[0-9a-fA-F]{1,8}|[0-7]{1,3}|c.|.)",
+        one,
+        body,
+        flags=re.DOTALL,
+    )
+
+
+class _Lexer:
+    """Tokenise one command string the way bash's parser does, closely enough to know what runs.
+
+    It never raises and always terminates: an unterminated quote is read as a literal character (bash would reject the whole line and run nothing, so reading on is the over-reporting direction), an unterminated substitution runs to the end of the input, and nesting deeper than `_MAX_DEPTH` is left opaque.
+    """
+
+    def __init__(self, src, depth=0):
+        self.src = src
+        self.depth = depth
+        self.pending: list = []
+        self.heredocs: list = []
+
+    def tokens(self):
+        return self._list(0, len(self.src), None)[0]
+
+    # -- the token stream --------------------------------------------------
+
+    def _list(self, i, limit, closer):
+        src = self.src
+        toks: list = []
+        parens = 0
+        at_cmd = True
+        while i < limit:
+            c = src[i]
+            if c in " \t":
+                i += 1
+                continue
+            if c == "\\" and i + 1 < limit and src[i + 1] == "\n":
+                i += 2
+                continue
+            if c == "#":
+                # A comment runs to the end of the line and is never code. Its quote characters open nothing, which is half of A0's L6: `true # it's` followed by a command on the next line.
+                j = src.find("\n", i, limit)
+                i = limit if j < 0 else j
+                continue
+            if c == "\n":
+                toks.append(_Op("\n", i))
+                i += 1
+                at_cmd = True
+                if self.pending:
+                    i = self._bodies(i, limit)
+                continue
+            if c == ")" and closer == ")" and parens == 0:
+                return toks, i + 1
+            if at_cmd and src.startswith("((", i):
+                j = self._arith_end(i + 2, limit)
+                if j > 0:
+                    toks.append(_Word(i, j, [_Part("arith", src[i:j])]))
+                    i = j
+                    at_cmd = False
+                    continue
+            if c in "<>" and i + 1 < limit and src[i + 1] == "(":
+                word, i = self._word(i, limit)
+                toks.append(word)
+                at_cmd = False
+                continue
+            m = _REDIRECT.match(src, i, limit)
+            if m:
+                i = self._redirect(m, limit, toks)
+                continue
+            op = next((o for o in _OPERATORS if src.startswith(o, i) and i + len(o) <= limit), None)
+            if op is not None:
+                if op == "(":
+                    parens += 1
+                elif op == ")" and parens:
+                    parens -= 1
+                toks.append(_Op(op, i))
+                i += len(op)
+                at_cmd = op != ")"
+                continue
+            word, i = self._word(i, limit)
+            toks.append(word)
+            at_cmd = _word_value(word) in _RESERVED_PREFIX or _word_value(word) == "{"
+        return toks, limit
+
+    def _redirect(self, m, limit, toks):
+        src = self.src
+        op = m.group(2)
+        j = m.end()
+        while j < limit and src[j] in " \t":
+            j += 1
+        target = None
+        if j < limit and src[j] not in "\n;&|()<>":
+            target, j = self._word(j, limit)
+        heredoc = None
+        if op in ("<<", "<<-") and target is not None:
+            quoted = any(p.kind in ("sq", "dq", "esc", "ansi") for p in target.parts)
+            heredoc = _Heredoc(_word_value(target), quoted, op == "<<-")
+            self.pending.append(heredoc)
+            self.heredocs.append(heredoc)
+        toks.append(_Redir(op, target, heredoc))
+        return j
+
+    def _bodies(self, i, limit):
+        """Read the bodies of every heredoc opened on the line that just ended, in order.
+
+        THE TERMINATOR IS THE WHOLE LINE, COMPARED EXACTLY, which is what bash does and what the regex above did not (A0 S1, S2): a plain `<<` never strips indentation, a trailing blank keeps a line from closing the body, and `<<END-X` waits for `END-X` rather than `END`. Only `<<-` strips leading TABS, never spaces.
+        """
+        src = self.src
+        for hd in self.pending:
+            hd.body_start = i
+            while True:
+                if i >= limit:
+                    hd.body_end = limit
+                    hd.term_end = limit
+                    break
+                j = src.find("\n", i, limit)
+                line_end = limit if j < 0 else j
+                line = src[i:line_end]
+                if (line.lstrip("\t") if hd.strip_tabs else line) == hd.delim:
+                    hd.body_end = i
+                    hd.term_end = limit if j < 0 else line_end + 1
+                    i = hd.term_end
+                    break
+                i = limit if j < 0 else line_end + 1
+            if not hd.quoted:
+                hd.substs = self._scan_substs(hd.body_start, hd.body_end)
+        self.pending = []
+        return i
+
+    # -- words ---------------------------------------------------------------
+
+    def _word(self, i, limit):
+        src = self.src
+        start = i
+        parts: list = []
+        lit: list[str] = []
+
+        def flush():
+            if lit:
+                text = "".join(lit)
+                parts.append(_Part("lit", text, text))
+                lit.clear()
+
+        while i < limit:
+            c = src[i]
+            if c in _WORD_END:
+                if c in "<>" and i == start and i + 1 < limit and src[i + 1] == "(":
+                    toks, j = self._sub(i + 2, limit)
+                    parts.append(_Part("procsub", src[i:j], src[i:j], sub=toks))
+                    i = j
+                    continue
+                break
+            if c == "\\":
+                if i + 1 >= limit:
+                    lit.append(c)
+                    i += 1
+                elif src[i + 1] == "\n":
+                    i += 2
+                else:
+                    flush()
+                    parts.append(_Part("esc", src[i : i + 2], src[i + 1]))
+                    i += 2
+                continue
+            if c == "'":
+                j = src.find("'", i + 1, limit)
+                if j < 0:
+                    lit.append(c)
+                    i += 1
+                    continue
+                flush()
+                parts.append(_Part("sq", src[i : j + 1], src[i + 1 : j]))
+                i = j + 1
+                continue
+            if c == '"' or (c == "$" and i + 1 < limit and src[i + 1] == '"'):
+                part, j = self._dq(i + (1 if c == "$" else 0), limit)
+                if part is None:
+                    lit.append(c)
+                    i += 1
+                    continue
+                flush()
+                part.raw = src[i:j]
+                parts.append(part)
+                i = j
+                continue
+            if c == "$" and i + 1 < limit and src[i + 1] == "'":
+                j = self._ansi_end(i + 2, limit)
+                if j < 0:
+                    lit.append(c)
+                    i += 1
+                    continue
+                flush()
+                parts.append(_Part("ansi", src[i : j + 1], _decode_ansi(src[i + 2 : j])))
+                i = j + 1
+                continue
+            special = self._special(i, limit)
+            if special is not None:
+                flush()
+                parts.append(special[0])
+                i = special[1]
+                continue
+            lit.append(c)
+            i += 1
+        flush()
+        return _Word(start, i, parts), i
+
+    def _special(self, i, limit):
+        """A `$(...)`, `$((...))`, `${...}` or backtick starting at `i`, as `(part, end)`; None when there is none."""
+        src = self.src
+        c = src[i]
+        if c == "`":
+            j = self._bq_end(i + 1, limit)
+            if j < 0:
+                return None
+            toks = self._nested(i + 1, j)
+            return _Part("bq", src[i : j + 1], src[i : j + 1], sub=toks), j + 1
+        if c != "$" or i + 1 >= limit:
+            return None
+        nxt = src[i + 1]
+        if nxt == "(":
+            if src.startswith("((", i + 1):
+                j = self._arith_end(i + 3, limit)
+                if j > 0:
+                    return _Part("arith", src[i:j], src[i:j]), j
+            toks, j = self._sub(i + 2, limit)
+            return _Part("subst", src[i:j], src[i:j], sub=toks), j
+        if nxt == "{":
+            j, inner = self._brace_end(i + 2, limit)
+            return _Part("param", src[i:j], src[i:j], parts=inner), j
+        return None
+
+    def _dq(self, i, limit):
+        """A double-quoted string opening at `i`, as `(part, end)`, or `(None, i)` when it never closes.
+
+        A0's L2 lives here: `$(...)` and backticks inside double quotes EXECUTE, so they are parsed rather than skipped. An unterminated string rolls back every heredoc the attempt registered, so a failed parse leaves no trace.
+        """
+        src = self.src
+        mark = (len(self.pending), len(self.heredocs))
+        j = i + 1
+        parts: list = []
+        lit: list[str] = []
+
+        def flush():
+            if lit:
+                text = "".join(lit)
+                parts.append(_Part("lit", text, text))
+                lit.clear()
+
+        while j < limit:
+            c = src[j]
+            if c == '"':
+                flush()
+                value = "".join(p.value for p in parts)
+                return _Part("dq", src[i : j + 1], value, parts=parts), j + 1
+            if c == "\\" and j + 1 < limit:
+                nxt = src[j + 1]
+                if nxt == "\n":
+                    j += 2
+                    continue
+                if nxt in '$`"\\':
+                    lit.append(nxt)
+                    j += 2
+                    continue
+                lit.append(c)
+                j += 1
+                continue
+            special = self._special(j, limit)
+            if special is not None:
+                flush()
+                parts.append(special[0])
+                j = special[1]
+                continue
+            lit.append(c)
+            j += 1
+        del self.pending[mark[0] :]
+        del self.heredocs[mark[1] :]
+        return None, i
+
+    def _scan_substs(self, i, limit):
+        """Every substitution in an unquoted heredoc body: the body is data, but these run (A0 L3)."""
+        src = self.src
+        found: list = []
+        while i < limit:
+            c = src[i]
+            if c == "\\":
+                i += 2
+                continue
+            special = self._special(i, limit) if c in "$`" else None
+            if special is not None:
+                found.append(special[0])
+                i = special[1]
+                continue
+            i += 1
+        return found
+
+    # -- spans ---------------------------------------------------------------
+
+    def _sub(self, i, limit):
+        """The tokens of a `$(`/`<(` body starting at `i`, and the index after its `)`."""
+        if self.depth >= _MAX_DEPTH:
+            return [], limit
+        self.depth += 1
+        try:
+            return self._list(i, limit, ")")
+        finally:
+            self.depth -= 1
+
+    def _nested(self, i, j):
+        if self.depth >= _MAX_DEPTH:
+            return []
+        self.depth += 1
+        try:
+            return self._list(i, j, None)[0]
+        finally:
+            self.depth -= 1
+
+    def _bq_end(self, i, limit):
+        src = self.src
+        while i < limit:
+            if src[i] == "\\":
+                i += 2
+                continue
+            if src[i] == "`":
+                return i
+            i += 1
+        return -1
+
+    def _ansi_end(self, i, limit):
+        src = self.src
+        while i < limit:
+            if src[i] == "\\":
+                i += 2
+                continue
+            if src[i] == "'":
+                return i
+            i += 1
+        return -1
+
+    def _arith_end(self, i, limit):
+        """The index after the `))` closing an arithmetic span, or -1 when there is none (then `((` is two subshells)."""
+        src = self.src
+        depth = 0
+        while i < limit:
+            c = src[i]
+            if c == "(":
+                depth += 1
+            elif c == ")":
+                if depth == 0:
+                    return i + 2 if src.startswith("))", i) else -1
+                depth -= 1
+            i += 1
+        return -1
+
+    def _brace_end(self, i, limit):
+        """`${...}`: the index after its `}`, and any substitution nested in it (`${x:-$(cmd)}` runs cmd)."""
+        src = self.src
+        depth = 0
+        inner: list = []
+        while i < limit:
+            c = src[i]
+            if c == "\\":
+                i += 2
+                continue
+            if c == "'":
+                j = src.find("'", i + 1, limit)
+                i = limit if j < 0 else j + 1
+                continue
+            special = self._special(i, limit) if c in "$`" else None
+            if special is not None:
+                inner.append(special[0])
+                i = special[1]
+                continue
+            if c == "{":
+                depth += 1
+            elif c == "}":
+                if depth == 0:
+                    return i + 1, inner
+                depth -= 1
+            i += 1
+        return limit, inner
+
+
+def _word_value(word):
+    """The word after quote removal. A substitution keeps its source text: its RESULT is unknowable here, and its commands are walked separately."""
+    return "".join(p.value for p in word.parts)
+
+
+def _word_render(word):
+    """The word as the prose-stripped view shows it: unquoted text and unquoted substitutions kept as written, every quoted span dropped. Matching the view is what lets `_visible` recognise a command the view already shows."""
+    return "".join(p.raw for p in word.parts if p.kind not in ("sq", "dq", "ansi"))
+
+
+# --------------------------------------------------------------------------- the parse ---------------------------------------------------------------------------
+
+
+def _parse(toks):
+    """Group a token list into `[("sep", op) | ("pipe", [element, ...])]`.
+
+    An element is `("cmd", items)`, `("sub", list, redirs)` for `( ... )` or `("brace", list, redirs)` for `{ ...; }`. Only the structure that decides WHICH SHELL a command runs in is modelled -- a subshell, a pipeline stage, a background job -- because that is what decides whether a `cd` persists (A0 L12).
+    """
+    n = len(toks)
+    pos = 0
+
+    def is_word(t, text):
+        return (
+            isinstance(t, _Word)
+            and len(t.parts) == 1
+            and t.parts[0].kind == "lit"
+            and t.parts[0].raw == text
+        )
+
+    def redirs():
+        nonlocal pos
+        out: list = []
+        while pos < n and isinstance(toks[pos], _Redir):
+            out.append(toks[pos])
+            pos += 1
+        return out
+
+    def element(end):
+        nonlocal pos
+        t = toks[pos]
+        if isinstance(t, _Op) and t.text == "(":
+            pos += 1
+            body = parse_list(")")
+            return ("sub", body, redirs())
+        if is_word(t, "{"):
+            pos += 1
+            body = parse_list("}")
+            return ("brace", body, redirs())
+        items: list = []
+        while pos < n and not isinstance(toks[pos], _Op):
+            t = toks[pos]
+            if end == "}" and not items and is_word(t, "}"):
+                break
+            items.append(t)
+            pos += 1
+            # A reserved word stands at a command position, so a `(` or `{` right after one opens a group rather than ending this command.
+            opens_group = pos < n and (
+                (isinstance(toks[pos], _Op) and toks[pos].text == "(") or is_word(toks[pos], "{")
+            )
+            if (
+                isinstance(t, _Word)
+                and _word_value(t) in _RESERVED_PREFIX
+                and len(items) == 1
+                and opens_group
+            ):
+                break
+        return ("cmd", items)
+
+    def parse_list(end):
+        nonlocal pos
+        out: list = []
+        while pos < n:
+            t = toks[pos]
+            if isinstance(t, _Op):
+                if t.text == ")":
+                    pos += 1
+                    if end == ")":
+                        return out
+                    continue
+                if t.text in _SEPARATORS:
+                    out.append(("sep", t.text))
+                    pos += 1
+                    continue
+                if t.text in ("|", "|&"):
+                    pos += 1
+                    continue
+            if end == "}" and is_word(t, "}"):
+                pos += 1
+                return out
+            stages = [element(end)]
+            while pos < n and isinstance(toks[pos], _Op) and toks[pos].text in ("|", "|&"):
+                pos += 1
+                if pos < n and not (isinstance(toks[pos], _Op) and toks[pos].text != "("):
+                    stages.append(element(end))
+            out.append(("pipe", stages))
+        return out
+
+    return parse_list(None)
+
+
+# --------------------------------------------------------------------------- the walk ---------------------------------------------------------------------------
+
+
+class _Run:
+    """One simple command bash would execute, as the walk found it."""
+
+    __slots__ = ("argv", "canonical", "cwd", "git_dir", "git_sub", "name", "usage", "writes")
+
+    def __init__(self, name, argv, canonical, cwd):
+        self.name = name
+        self.argv = argv
+        self.canonical = canonical
+        self.cwd = cwd
+        self.git_dir = None
+        self.git_sub = None
+        # How the command's RESULT is consumed: "status" when its exit status decides something (`&&`, `||`, `if`/`while`/`until`/`!`, a `$?` in the next clause), "kill" when its output feeds a `kill` (`kill $(...)`, `| xargs kill`). `block_self_matching_pgrep` reads it: a self-matching `pgrep -f` only costs something when one of these is true.
+        self.usage = set()
+        # The files this command's own output redirects write, in order, quote-removed. `earlier_mutators` reads them: a `printf ... > msg` before a `git commit -F msg` changes what a guard judging the commit reads.
+        self.writes = []
+
+
+class _Analysis:
+    """What one walk found: `runs` in execution order, `heredocs` read, and `writes`, every output redirect bash performs as `(operator, target)` with the target quote-removed."""
+
+    __slots__ = ("heredocs", "runs", "writes")
+
+    def __init__(self):
+        self.runs: list = []
+        self.heredocs: list = []
+        self.writes: list = []
+
+
+# The redirect operators that open their target for WRITING. `>|` is here because it truncates even under `set -C`, which is exactly when a guard might have assumed `>` could not (A0 L14); `>&` only when its target is a file rather than a descriptor, which `write_targets` decides.
+_WRITE_OPS = frozenset((">", ">>", ">|", "&>", "&>>", "<>", ">&"))
+
+
+def write_targets(cmd):
+    """Every file an output redirect in `cmd` writes, in order, as bash reads it: quote-removed, and only where bash really redirects.
+
+    A0 L14: `x->f.sh` IS a redirect in bash (the word is `x-`, then `>` opens `f.sh`), while an arrow inside a quoted span never is. A regex over the raw text can only choose one of those; the lexer knows which is which. Descriptor duplications (`2>&1`, `>&-`) are not files and are left out; `/dev/null` and friends are left in, since whether they count is the caller's policy, not grammar.
+    """
+    out: list[str] = []
+    for op, target in _analyse(cmd).writes:
+        if op == ">&" and re.match(r"^(\d+|-)$", target):
+            continue
+        out.append(target)
+    return out
+
+
+def _join_dir(cwd, arg):
+    """Where `cd <arg>` lands from `cwd`, as a path string relative to the root the walk started in (None means that root)."""
+    if arg.startswith("/"):
+        return posixpath.normpath(arg)
+    if cwd is None:
+        return posixpath.normpath(arg)
+    return posixpath.normpath(cwd + "/" + arg)
+
+
+def _shell_payload(argv):
+    """For `sh`/`bash`/... argv (the name excluded): `("c", payload)` for `-c`, `("stdin", None)` when the shell reads its script from stdin, `("file", None)` for a script operand.
+
+    A0 L10: bash's `-c` is a FLAG, not a token that must end a bundle. It may sit anywhere in any single-dash bundle (`-ce`, `-ec`), other options may follow it (`-c -e`, `-c --`), and the payload is the first OPERAND after all of them. Quote removal has already happened by the time bash sees `'-c'`.
+    """
+    c_mode = False
+    k = 0
+    while k < len(argv):
+        arg = argv[k]
+        if arg in {"--", "-"}:
+            k += 1
+            break
+        if arg.startswith("--"):
+            if arg in ("--rcfile", "--init-file"):
+                k += 1
+            k += 1
+            continue
+        if len(arg) > 1 and arg[0] in "-+":
+            letters = arg[1:]
+            if "c" in letters and arg[0] == "-":
+                c_mode = True
+            if "o" in letters or "O" in letters:
+                k += 1
+            k += 1
+            continue
+        break
+    if c_mode:
+        return ("c", argv[k]) if k < len(argv) else ("c", None)
+    if k < len(argv) and "s" not in "".join(
+        a[1:] for a in argv[:k] if a.startswith("-") and not a.startswith("--")
+    ):
+        return ("file", None)
+    return ("stdin", None)
+
+
+def _strip_prefixes(words):
+    """Drop reserved words, assignments and prefix commands from the front of a simple command.
+
+    Returns `(words, prefixed)`; `words` is empty when nothing runs (a bare assignment, `command -v x`, a `for` clause). A0 L9: every one of these puts a word between the command position and the command, and every anchor in every guard stops there.
+    """
+    prefixed = False
+    k = 0
+    while k < len(words) and _word_value(words[k]) in _RESERVED_PREFIX:
+        prefixed = True
+        k += 1
+    if k < len(words) and _word_value(words[k]) == "time":
+        prefixed = True
+        k += 1
+        while k < len(words) and _word_value(words[k]) in ("-p", "--"):
+            k += 1
+    while k < len(words) and _ASSIGNMENT.match(_word_value(words[k])):
+        prefixed = True
+        k += 1
+    while k < len(words):
+        name = _word_value(words[k])
+        if name in _NOT_A_COMMAND:
+            return [], prefixed
+        if name not in _PREFIX_COMMANDS:
+            break
+        if name == "command" and any(_word_value(w) in ("-v", "-V") for w in words[k + 1 : k + 3]):
+            return [], prefixed
+        takes = _PREFIX_COMMANDS[name]
+        prefixed = True
+        k += 1
+        while k < len(words):
+            arg = _word_value(words[k])
+            if arg == "--":
+                k += 1
+                break
+            if name == "env" and _ASSIGNMENT.match(arg):
+                k += 1
+                continue
+            if arg.startswith("-") and len(arg) > 1:
+                k += 2 if arg in takes else 1
+                continue
+            break
+        if name in _PREFIX_OPERAND and k < len(words):
+            k += 1
+    return words[k:], prefixed
+
+
+def _git_invocation(argv, cwd):
+    """`(subcommand, directory)` for a `git` argv: every `-C` before the subcommand composes onto the current directory, the way git applies them."""
+    here = cwd
+    k = 0
+    while k < len(argv):
+        arg = argv[k]
+        if arg == "-C" and k + 1 < len(argv):
+            here = _join_dir(here, argv[k + 1])
+            k += 2
+            continue
+        if arg in (
+            "-c",
+            "--git-dir",
+            "--work-tree",
+            "--namespace",
+            "--super-prefix",
+            "--config-env",
+            "--exec-path",
+        ) and k + 1 < len(argv):
+            k += 2
+            continue
+        if arg.startswith("-"):
+            k += 1
+            continue
+        return arg, here
+    return "", here
+
+
+def _base(name):
+    return name.rsplit("/", 1)[-1]
+
+
+def _reads_status(item):
+    """Whether a parsed list item reads `$?` anywhere in its own words: the clause after `pgrep ...;` that tests what it returned."""
+    if item[0] != "pipe":
+        return False
+    for stage in item[1]:
+        if stage[0] != "cmd":
+            continue
+        for tok in stage[1]:
+            if isinstance(tok, _Word) and "$?" in "".join(p.raw for p in tok.parts):
+                return True
+    return False
+
+
+class _Walker:
+    def __init__(self, analysis, depth):
+        self.analysis = analysis
+        self.depth = depth
+
+    def text(self, src, cwd, persist):
+        """Walk a command string. `persist` says whether a `cd` in it outlives it (an `eval` does; a `sh -c` does not)."""
+        if self.depth >= _MAX_DEPTH or src == "":
+            return cwd
+        lexer = _Lexer(src)
+        toks = lexer.tokens()
+        self.analysis.heredocs.extend(lexer.heredocs)
+        inner = _Walker(self.analysis, self.depth + 1)
+        state = [cwd]
+        inner.items(_parse(toks), state, lexer)
+        return state[0] if persist else cwd
+
+    def items(self, items, state, lexer):
+        runs = self.analysis.runs
+        for idx, item in enumerate(items):
+            if item[0] == "sep":
+                continue
+            stages = item[1]
+            background = idx + 1 < len(items) and items[idx + 1] == ("sep", "&")
+            isolated = len(stages) > 1 or background
+            # A pipeline's status is its LAST stage's, and it is consumed when an `&&`/`||` follows it or the next clause reads `$?`.
+            follow = (
+                items[idx + 1][1] if idx + 1 < len(items) and items[idx + 1][0] == "sep" else None
+            )
+            tested = follow in ("&&", "||") or (
+                follow in (";", "\n") and idx + 2 < len(items) and _reads_status(items[idx + 2])
+            )
+            spans = []
+            for pos, stage in enumerate(stages):
+                own = [state[0]] if isolated else state
+                start = len(runs)
+                self.element(
+                    stage,
+                    own,
+                    lexer,
+                    stages[pos - 1] if pos else None,
+                    tested=tested and pos == len(stages) - 1,
+                )
+                spans.append((start, len(runs)))
+            # `pgrep -f x | xargs kill`: a later stage that kills consumes every earlier stage's output as pids.
+            for pos in range(1, len(spans)):
+                if any(_base(r.name) == "kill" for r in runs[spans[pos][0] : spans[pos][1]]):
+                    for r in runs[spans[0][0] : spans[pos][0]]:
+                        r.usage.add("kill")
+
+    def element(self, stage, state, lexer, upstream, tested=False):
+        kind = stage[0]
+        if kind == "sub":
+            self.items(stage[1], [state[0]], lexer)
+            self.redirs(stage[2], state, lexer)
+            return
+        if kind == "brace":
+            self.items(stage[1], state, lexer)
+            self.redirs(stage[2], state, lexer)
+            return
+        words = [t for t in stage[1] if isinstance(t, _Word)]
+        redirs = [t for t in stage[1] if isinstance(t, _Redir)]
+        first_inner = len(self.analysis.runs)
+        for word in words:
+            self.parts(word.parts, state, lexer)
+        first_write = len(self.analysis.writes)
+        self.redirs(redirs, state, lexer)
+        own_writes = [
+            target
+            for op, target in self.analysis.writes[first_write:]
+            if not (op == ">&" and re.match(r"^(\d+|-)$", target))
+        ]
+        # `if pgrep ...`, `while ! pgrep ...`: a leading condition keyword means this command's status decides something.
+        lead = []
+        for word in words:
+            value = _word_value(word)
+            if value not in _RESERVED_PREFIX:
+                break
+            lead.append(value)
+        words, _prefixed = _strip_prefixes(words)
+        if not words:
+            return
+        name = _word_value(words[0])
+        if name == "" or any(ch in name for ch in " \t\n"):
+            return
+        argv = [_word_value(w) for w in words[1:]]
+        rendered = [r for r in (_word_render(w) for w in words[1:]) if r != ""]
+        run = _Run(name, argv, " ".join([name, *rendered]), state[0])
+        run.writes = own_writes
+        if tested or any(w in ("if", "elif", "while", "until", "!") for w in lead):
+            run.usage.add("status")
+        base = name.rsplit("/", 1)[-1]
+        # `kill $(pgrep -f x)`: the substitutions in a kill's own words produced its pids.
+        if base == "kill":
+            for inner in self.analysis.runs[first_inner:]:
+                inner.usage.add("kill")
+        self.analysis.runs.append(run)
+        if base in ("cd", "pushd"):
+            operands = [a for a in argv if not (a.startswith("-") and len(a) > 1)]
+            # `cd` with no operand, `cd -` and `cd ~` land somewhere this walk cannot name; an unresolvable directory makes every caller keep judging its own root, the direction the guards fail safe in.
+            target = operands[0] if operands else "~"
+            state[0] = _join_dir(state[0], target)
+        elif base == "git":
+            run.git_sub, run.git_dir = _git_invocation(argv, state[0])
+        elif base == "eval":
+            state[0] = self.nested(" ".join(argv), state[0], persist=True)
+        elif base in SHELL_NAMES:
+            mode, payload = _shell_payload(argv)
+            if mode == "c" and payload is not None:
+                self.nested(payload, state[0], persist=False)
+            elif mode == "stdin":
+                self.stdin(redirs, lexer, state, upstream)
+
+    def stdin(self, redirs, lexer, state, upstream):
+        """A shell reading its script from stdin runs whatever arrives there (A0 L4): a heredoc body, a here-string, or the output of `cat <<EOF`/`echo` upstream in the pipe."""
+        for redir in redirs:
+            if redir.heredoc is not None and redir.heredoc.body_start is not None:
+                hd = redir.heredoc
+                self.nested(lexer.src[hd.body_start : hd.body_end], state[0], persist=False)
+            elif redir.op == "<<<" and redir.target is not None:
+                self.nested(_word_value(redir.target), state[0], persist=False)
+        if upstream is None or upstream[0] != "cmd":
+            return
+        words, _ = _strip_prefixes([t for t in upstream[1] if isinstance(t, _Word)])
+        if not words:
+            return
+        feeder = _word_value(words[0]).rsplit("/", 1)[-1]
+        if feeder == "cat":
+            ups = [t for t in upstream[1] if isinstance(t, _Redir)]
+            for redir in ups:
+                if redir.heredoc is not None and redir.heredoc.body_start is not None:
+                    hd = redir.heredoc
+                    self.nested(lexer.src[hd.body_start : hd.body_end], state[0], persist=False)
+                elif redir.op == "<<<" and redir.target is not None:
+                    self.nested(_word_value(redir.target), state[0], persist=False)
+        elif feeder in ("echo", "printf"):
+            args = [_word_value(w) for w in words[1:]]
+            while args and feeder == "echo" and re.match(r"^-[neE]+$", args[0]):
+                args = args[1:]
+            self.nested(" ".join(args), state[0], persist=False)
+
+    def nested(self, src, cwd, persist):
+        return _Walker(self.analysis, self.depth + 1).text(src, cwd, persist)
+
+    def redirs(self, redirs, state, lexer):
+        for redir in redirs:
+            if redir.target is not None:
+                self.parts(redir.target.parts, state, lexer)
+                if redir.op in _WRITE_OPS:
+                    self.analysis.writes.append((redir.op, _word_value(redir.target)))
+            if redir.heredoc is not None:
+                self.parts(redir.heredoc.substs, state, lexer)
+
+    def parts(self, parts, state, lexer):
+        """Every substitution inside a word runs, in a subshell of its own (so a `cd` inside it never persists).
+
+        A substitution was tokenised by the SAME lexer as the text around it, so its heredoc offsets index `lexer.src` and a `bash <<EOF` inside a `$(...)` still finds its body.
+        """
+        for part in parts:
+            if part.sub is not None and self.depth < _MAX_DEPTH:
+                inner = _Walker(self.analysis, self.depth + 1)
+                inner.items(_parse(part.sub), [state[0]], lexer)
+            if part.parts:
+                self.parts(part.parts, state, lexer)
+
+
+_ANALYSIS_CACHE: dict = {}
+
+
+def _analyse(cmd):
+    """Walk `cmd` once and remember the answer: every guard in a chain asks about the same command, and the walk is a pure function of the string."""
+    hit = _ANALYSIS_CACHE.get(cmd)
+    if hit is not None:
+        return hit
+    analysis = _Analysis()
+    _Walker(analysis, 0).text(cmd, None, persist=True)
+    if len(_ANALYSIS_CACHE) > 64:
+        _ANALYSIS_CACHE.clear()
+    _ANALYSIS_CACHE[cmd] = analysis
+    return analysis
+
+
+# --------------------------------------------------------------------------- lifting ---------------------------------------------------------------------------
+
+_ANCHOR_CHARS = ";&|(`"
+
+
+def _collapse(text):
+    return re.sub(r"[ \t]+", " ", text).strip(" \t")
+
+
+def _anchored_segments(view):
+    """Every tail of `view` that starts at a command position as the NARROWEST guard anchor sees one: a line start, or just after `;`, `&`, `|` or `(`.
+
+    Narrowest on purpose, and the backtick is left out for that reason: `block_git_force_push` anchors on `(^|[;&|(])`, so a push reachable only behind a backtick (`` x=`git push --force` ``) is invisible to it and has to be lifted onto a line of its own.
+    """
+    out: list[str] = []
+    for record in view.split("\n"):
+        out.append(_collapse(record))
+        out.extend(_collapse(record[m.end() :]) for m in re.finditer(r"[;&|(]", record))
+    return out
+
+
+def _visible(canonical, segments):
+    cut = canonical
+    for ch in _ANCHOR_CHARS:
+        at = cut.find(ch)
+        if at >= 0:
+            cut = cut[:at]
+    cut = _collapse(cut)
+    if cut == "":
+        return True
+    for seg in segments:
+        if seg.startswith(cut) and (len(seg) == len(cut) or seg[len(cut)] in " ;&|()`<>"):
+            return True
+    return False
+
+
+def lifted_commands(cmd, view):
+    """The canonical line of every command bash runs in `cmd` that `view` does not already show at a command position.
+
+    `view` is whatever text the caller's regexes run over. `scan_target` passes its own prose-stripped line plus wrapper payload; `block_git_amend`, which builds its own view, passes that. The lines come back in the order bash would run the commands, each once.
+    """
+    segments = _anchored_segments(view)
+    out: list[str] = []
+    for run in _analyse(cmd).runs:
+        line = run.canonical
+        if line in out or _visible(line, segments):
+            continue
+        out.append(line)
+    return out
+
+
+# --------------------------------------------------------------------------- same-command state (PLAN-stop-hook-retro-20260924 #3, R20260924.22) ---------------------------------------------------------------------------
+#
+# EVERY PRE-BASH GUARD RUNS ONCE, BEFORE THE FIRST CLAUSE. A guard judging `git commit` or `git push` reads the index, HEAD, a message file or an epic snapshot as they are at that instant, and an earlier clause of the same command (`git add`, `git commit`, `printf > msg`, `npm run ci:quick`, `worklist.py --publish`) may be about to change exactly that. Four refusals in one hour on
+# 2026-09-24 judged such a world and said nothing about it, so the session spent calls working out why a correct command was refused. These helpers let a guard SAY so. They never turn a refusal into an allow: the guard still fails closed, it just names the clause to split off.
+
+
+class Mutator(typing.NamedTuple):
+    """One earlier clause that writes something a guard reads: its `kind`, a `label` to print, and the file `target` of a redirect (else None)."""
+
+    kind: str
+    label: str
+    target: str | None
+
+
+# The files nobody's verdict depends on.
+_NOT_A_FILE = ("/dev/null", "/dev/stdout", "/dev/stderr", "/dev/tty")
+
+
+def _verb_matches(run, verb):
+    words = verb.split()
+    if _base(run.name) != words[0]:
+        return False
+    if words[0] == "git":
+        return run.git_sub == words[1]
+    return run.argv[: len(words) - 1] == words[1:]
+
+
+def _mutators_of(run):
+    base = _base(run.name)
+    out: list[Mutator] = []
+    for target in run.writes:
+        if target in _NOT_A_FILE or target.startswith("/dev/fd/"):
+            continue
+        out.append(Mutator("redirect", "%s > %s" % (base, target), target))
+    argv = run.argv
+    if base == "git" and run.git_sub == "commit":
+        out.append(Mutator("commit", "git commit", None))
+    elif base == "git" and run.git_sub in ("add", "rm", "mv"):
+        out.append(Mutator("stage", "git %s" % run.git_sub, None))
+    elif base == "npm" and argv[:1] in (["run"], ["run-script"]) and len(argv) > 1:
+        if argv[1] == "ci" or argv[1].startswith("ci:"):
+            out.append(Mutator("ci", "npm run %s" % argv[1], None))
+    elif "--publish" in argv and (
+        base == "worklist.py" or any(_base(a) == "worklist.py" for a in argv[:1])
+    ):
+        out.append(Mutator("publish", "worklist.py --publish", None))
+    return out
+
+
+def earlier_mutators(cmd, verb, kinds=None):
+    """The clauses of `cmd` that run BEFORE its first `verb` and write something a guard judging `verb` reads, in execution order.
+
+    `verb` is `"git commit"`, `"git push"` or `"gh pr create"`. `kinds` narrows the answer to what one guard actually reads, out of: `stage` (`git add|rm|mv`), `commit`, `ci` (`npm run ci`, `npm run ci:*`), `publish` (`worklist.py --publish`) and `redirect` (an output redirect to a real file; `target` carries the path). A command that never runs `verb` has nothing before it, and neither has a clause AFTER the verb, which cannot have changed what the guard read.
+    """
+    runs = _analyse(cmd).runs
+    idx = next((i for i, run in enumerate(runs) if _verb_matches(run, verb)), None)
+    if idx is None:
+        return []
+    out: list[Mutator] = []
+    for run in runs[:idx]:
+        out.extend(m for m in _mutators_of(run) if kinds is None or m.kind in kinds)
+    return out
+
+
+V_SPLIT = """BLOCKED: nothing in this command ran, including `%(mutator)s`.
+
+Every pre-bash guard runs ONCE, before the first clause. This one judged
+%(judged)s as it was BEFORE `%(mutator)s`, an earlier clause of this same
+command that changes it, so the finding below is about that earlier state.
+
+Run `%(mutator)s` as its own call, then `%(verb)s`.%(more)s
+
+"""
+
+
+def split_refusal(mutators, verb, judged):
+    """The `V_SPLIT` preamble a guard prints above its own refusal, or "" when no earlier clause changes what it judged."""
+    if not mutators:
+        return ""
+    labels = []
+    for m in mutators:
+        if m.label not in labels:
+            labels.append(m.label)
+    more = ""
+    if len(labels) > 1:
+        more = "\nOther earlier clauses that change it: %s." % ", ".join(
+            "`%s`" % label for label in labels[1:]
+        )
+    return V_SPLIT % {"mutator": labels[0], "judged": judged, "verb": verb, "more": more}
+
+
+def assignments_before(cmd, verb):
+    """`{NAME: value}` for every plain `NAME=value` statement at the top level of `cmd` before its first `verb`, quote-removed, later assignments winning.
+
+    ONLY A STATEMENT COUNTS. `P=x git commit -- $P` does not count: bash expands `$P` BEFORE that prefix assignment applies, so the old value is the one used, and this cannot know it. `export NAME=value` counts. A substitution inside the value is kept as its source text (`$(ls x/*.json)`), for the caller to expand or to refuse to.
+    """
+    words = verb.split()
+    out: dict[str, str] = {}
+    cur: list = []
+
+    def finish():
+        values = [_word_value(w) for w in cur]
+        if not values:
+            return False
+        if values[0] == "export":
+            values = values[1:]
+        if values and all(_ASSIGNMENT.match(v) for v in values):
+            for v in values:
+                match = _ASSIGNMENT.match(v)
+                if match is None:
+                    continue
+                name = match.group(0)
+                append = name.endswith("+=")
+                key = name.rstrip("+=").split("[", 1)[0]
+                value = v[len(name) :]
+                out[key] = (out.get(key, "") + value) if append else value
+            return False
+        rest = [v for v in values if not _ASSIGNMENT.match(v)]
+        return bool(rest) and _base(rest[0]) == words[0] and all(w in rest[1:] for w in words[1:])
+
+    for tok in _Lexer(cmd).tokens():
+        if isinstance(tok, _Op):
+            if finish():
+                return out
+            cur = []
+            continue
+        if isinstance(tok, _Word):
+            cur.append(tok)
+    return out

@@ -20,7 +20,7 @@ the port is judged by AGREEMENT with its twin and a machine without jq is a case
 THE `jq` FILTERS, spelled out because their defaults are load-bearing: `.headTree // ""`, `.whole // false`, `.exitCode // 1`, `(.failed // []) | join(", ")`, `.dirtyDigest // ""`, `(.blocked // []) | join(", ")`. `//` is falsy-tested, not null-tested, so a `whole` of `false` and a `whole` that is absent produce the same string, which is what makes the narrowed-run refusal fail
 CLOSED on a receipt shape the runner has not written yet.
 
-WHAT THIS GUARD INHERITS FROM `shellscan.target_root`: the TAB-after-`-C` defect, reproduced deliberately. See `block_untagged_commit`'s port notes.
+WHAT THIS GUARD USED TO INHERIT FROM `shellscan.target_root`: the TAB-after-`-C` defect, reproduced deliberately until Rule T (PLAN-retire-bash-oracles A4) fixed it at its source. See `block_untagged_commit`'s port notes.
 """
 
 import hashlib
@@ -33,7 +33,6 @@ import subprocess
 from rediacc_hooks import hookio, shellscan
 
 CHAIN = "pre-bash"
-TWIN = "pre-bash/block-unverified-push.sh"
 # Re-keyed from 39 to 40 on 2026-09-22 to make room for block_push_to_protected_branch.py at
 # 39: "this branch may not be pushed to at all" is checked before "is this tree gate-verified".
 ORDER = 39
@@ -174,8 +173,8 @@ FIXTURES = {
     ),
 }
 
-# The last variant is a FROZEN clone of this checkout, and it closes the second half of the race the FIXTURES comment above names. Keying on `HEAD^{tree}` survives a dirty tree by design, but it does NOT survive a commit: with one interleaved between the differential's bash pass and its Python side, this guard named two different tree hashes in the same refusal, one per side. The
-# snapshot has a real history and a real branch and neither moves. See `_snapshot_this_worktree` in test_guards_differential.py.
+# The last variant is this checkout's SHAPE, and it closes the second half of the race the FIXTURES comment above names. Keying on `HEAD^{tree}` survives a dirty tree by design, but it does NOT survive a commit: with one interleaved between the differential's bash pass and its Python side, this guard named two different tree hashes in the same refusal, one per side. The
+# world has a history and a branch and neither moves; since 2026-09-24 it is synthetic rather than a clone, so a golden frozen from it stays true. See `_synthetic_this_worktree` in test_guards_differential.py.
 ENVS = [(name, {"CLAUDE_PROJECT_DIR": "{FIXTURE:%s}" % name}, {}) for name in sorted(FIXTURES)] + [
     ("this-worktree", {"CLAUDE_PROJECT_DIR": "{FIXTURE:this-worktree-snapshot}"}, {})
 ]
@@ -189,8 +188,8 @@ EDGE_CASES = [
     # SUBMODULE PUSHES ARE OUT OF SCOPE, deliberately.
     ("cd into a submodule", "cd private/account && git push origin 0831-1"),
     ("git -C into a submodule", "git -C private/renet push"),
-    # The tab defect inherited from shellscan.target_root, pinned here so a later change to that module is a visible divergence rather than a quiet one.
-    ("git -C with a TAB resolves to the empty root", "git -C\t/tmp push"),
+    # A TAB after `-C` is a blank like any other since the Rule T fix to shellscan.target_root (A4); /tmp is not a repository, so the push is judged against this tree either way.
+    ("git -C with a TAB is still a -C", "git -C\t/tmp push"),
     ("a push in another tree", "cd /tmp && git push"),
 ]
 
@@ -226,6 +225,17 @@ def _alt(doc, key, fallback):
 
 
 def _refuse(ev, reason):
+    # AN EARLIER CLAUSE MAY MOVE HEAD OR REWRITE THE RECEIPT (R20260924.22). This guard judges `HEAD^{tree}`, the receipt and carried-reds.json at HEAD as they are before the command runs, so a `git commit` or `npm run ci:quick` earlier in the same command changes all three. 2026-09-24 19:28:10: a carry-file fix committed by an earlier clause was judged at the pre-commit HEAD, and the refusal
+    # never said so.
+    ev.warn_raw(
+        shellscan.split_refusal(
+            shellscan.earlier_mutators(
+                ev.field("tool_input", "command"), "git push", {"commit", "ci"}
+            ),
+            "git push",
+            "HEAD^{tree}, the pre-push receipt and .ci/config/carried-reds.json at HEAD",
+        )
+    )
     ev.warn_raw("BLOCKED: %s\n%s" % (reason, REFUSAL_TAIL))
     return hookio.DENY
 
@@ -305,7 +315,7 @@ def run(ev):
 
     # ANOTHER REPO'S PUSH IS NOT THIS TREE'S BUSINESS, and it was being refused as though it were. Reproduced 2026-09-01: `git -C <scratch-repo> push origin main` exited 2 here, because the gate-run stamp compared below belongs to CONSOLE and the scratch tree can never match it. The message then reads as "your gates are stale" about a repo the gates were never run against. Same
     # class as block-untagged-commit.sh:52-69; the resolution now lives in lib/command-scan.sh rather than being written a third time.
-    if shellscan.target_root(scan, root) != "":
+    if shellscan.target_root(scan, root, verb="push") != "":
         return hookio.ALLOW
 
     # SUBMODULE PUSHES ARE OUT OF SCOPE, deliberately. They advance no console branch and trigger no console CI; cancel-old-ci.sh draws the same line for the same reason. The pointer-bump commit that DOES advance console is covered by the ordinary path.

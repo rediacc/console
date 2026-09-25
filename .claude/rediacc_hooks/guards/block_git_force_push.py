@@ -14,7 +14,6 @@ Nothing in this repo pushes with --mirror or a + refspec (verified by grep over 
 from rediacc_hooks import hookio, shellscan
 
 CHAIN = "pre-bash"
-TWIN = "pre-bash/block-git-force-push.sh"
 ORDER = 18
 
 # Re-qualifying the plus arm to `+refs/` is precisely the first attempt the header records: `+main:main` and `+HEAD:main` go back to being allowed while the long form is still refused, which is what made the hole look closed.
@@ -67,6 +66,41 @@ EDGE_CASES = [
     # The 2026-08-30 routing exists for these two.
     ("prose about force-pushing is not one", "echo 'never git push --force'"),
     ("a wrapper payload is still scanned", 'eval "git push --force origin main"'),
+    # RULE T (PLAN-retire-bash-oracles A4): A0's fail-open list, measured rc 0 on 2026-09-24 and refused since `shellscan.lifted_commands`. Every shape below is a push bash RUNS; the prose, data and print-only twins after them stay allowed.
+    ("L1 an assignment's substitution runs", "x=$(git push --force origin main)"),
+    ("L1 an assignment's backticks run", "x=`git push --force origin main`"),
+    ("L2 a substitution inside double quotes runs", 'echo "$(git push --force origin main)"'),
+    (
+        "L3 an unquoted heredoc body expands",
+        "cat > R.md <<EOF\n$(git push --force origin main)\nEOF",
+    ),
+    ("L4 a shell reading a heredoc runs it", "bash <<'EOF'\ngit push --force origin main\nEOF"),
+    ("L4 a shell reading a here-string runs it", "bash <<< 'git push --force origin main'"),
+    ("L5 a here-string swallows no later line", "cat <<<x\ngit push --force origin main"),
+    (
+        "L6 an apostrophe inside double quotes pairs with nothing",
+        "echo \"it's\"; git push --force origin main; echo 'y'",
+    ),
+    ("L7 a quoted command word is still git", '"git" push --force origin main'),
+    ("L7 an escaped command word is still git", "\\git push --force origin main"),
+    ("L8 a backslash-newline joins the command", "git push \\\n--force origin main"),
+    ("L9 a brace group", "{ git push --force origin main; }"),
+    ("L9 a leading redirect", ">/dev/null git push --force origin main"),
+    (
+        "L9 sudo and time run the next word",
+        "sudo git push -f origin main; time git push --mirror origin",
+    ),
+    ("L10 c inside a short-flag bundle", "bash -ce 'git push --force origin main'"),
+    ("L11 the second wrapper on a line", "sh -c true; sh -c 'git push --force origin main'"),
+    (
+        "control: a quoted heredoc body is data",
+        "cat > R.md <<'EOF'\n$(git push --force origin main)\nEOF",
+    ),
+    (
+        "control: double-quoted prose is not a push",
+        'git commit -m "never git push --force origin main"',
+    ),
+    ("control: command -v only prints", "command -v git push --force"),
 ]
 
 

@@ -44,7 +44,7 @@ FAILS OPEN on the branch lookup for the three implicit forms (`git symbolic-ref`
 from rediacc_hooks import hookio, shellscan
 
 CHAIN = "pre-bash"
-TWIN = None
+OWN_SUITE = True
 # AHEAD OF block_unverified_push (its old position, now 40), deliberately: "this branch may not be pushed to at all" is the more fundamental refusal, and telling a session to go run `npm run ci:quick` for a push it was never going to be allowed to make, regardless of that run's colour, is the wrong message to lead with. Every guard from here on was re-keyed by one to make room.
 ORDER = 38
 
@@ -145,7 +145,7 @@ def run(ev):
     # `cd "${CLAUDE_PROJECT_DIR:-.}"`, same convention as block_merge_with_unpushed.py, then
     # resolve any `-C <dir>` / `cd <dir>` hint the command itself carries (a chained dispatcher runs several guards in one interpreter, so this reads cwd rather than changing it).
     root = ev.project_dir
-    target = shellscan.target_root(scan, root)
+    target = shellscan.target_root(scan, root, verb="push")
     git_root = target if target != "" else root
 
     branch = hookio.git_out(["symbolic-ref", "--short", "-q", "HEAD"], cwd=git_root, want_rc=True)

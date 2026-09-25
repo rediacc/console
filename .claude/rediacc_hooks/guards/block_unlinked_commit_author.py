@@ -39,7 +39,6 @@ import subprocess
 from rediacc_hooks import hookio, shellscan
 
 CHAIN = "pre-bash"
-TWIN = "pre-bash/block-unlinked-commit-author.sh"
 ORDER = 5
 
 # The `--author=` arm is the one whose two corrections this file's header
@@ -169,7 +168,7 @@ def run(ev):
         return hookio.DENY
 
     # WHICH REPO IS JUDGED, and this deliberately DIFFERS from block-untagged-commit.sh. That guard exits on ANY foreign root because epics are console's business alone. Three submodules carried this exact defect, so a commit into one of them IS in scope here; only a repo outside this tree is somebody else's identity policy.
-    target = shellscan.target_root(scan, root)
+    target = shellscan.target_root(scan, root, verb="commit")
     if target != "":
         if not hookio.case_glob(target, "%s/*" % root):
             return hookio.ALLOW  # an independent checkout -- not this guard's business

@@ -18,7 +18,6 @@ create and easy to forget, and each one is a place uncommitted work can silently
 from rediacc_hooks import hookio, shellscan
 
 CHAIN = "pre-bash"
-TWIN = "pre-bash/block-worktree-add.sh"
 ORDER = 28
 
 # THE WRAPPER SAILED STRAIGHT PAST THE FIRST CHECK, and removing the second one puts it back: `./run.sh worktree create` runs the banned command through a script whose text never contains it.
@@ -73,6 +72,14 @@ EDGE_CASES = [
     ("removing a worktree is allowed", "git worktree remove /tmp/wt"),
     ("run.sh doing something else", "./run.sh setup --check"),
     ("prose is stripped before the scan", "echo 'git worktree add /tmp/wt'"),
+    # RULE T (PLAN-retire-bash-oracles A4, A0 L9): GIT_AT_CMD's anchor is the copied `(^|[;&|(]|\$\(|`)`, which misses every reserved word, prefix builtin and leading redirect. These ran with rc 0 until `shellscan.lifted_commands`; the heredoc twin below them is data and stays allowed.
+    ("L9 a brace group", "{ git worktree add /tmp/wt main; }"),
+    ("L9 a leading redirect", "2>/dev/null git worktree add /tmp/wt main"),
+    ("L7 a quoted command word", '"git" worktree add /tmp/wt main'),
+    (
+        "control: a quoted heredoc naming the command is data",
+        "cat > n.md <<'EOF'\ngit worktree add /tmp/wt main\nEOF",
+    ),
 ]
 
 
