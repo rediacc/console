@@ -49,7 +49,6 @@ import tempfile
 from rediacc_hooks import hookio
 
 CHAIN = "pre-edit"
-TWIN = "pre-edit/block-compacted-plan-edit.sh"
 ORDER = 11
 
 # The blob VALUE test, and the reason the value tests exist at all. Reproduced 2026-09-06 against this hook with real payloads: four of five spine-destroying edits passed the line-anchored patterns, including `old_string: "<40 hex>"` -- which is the SHORTEST unique string in a record and therefore the one the Edit tool's "minimal unique old_string" advice leads you straight to.

@@ -35,7 +35,6 @@ import re
 from rediacc_hooks import hookio
 
 CHAIN = "pre-edit"
-TWIN = "pre-edit/block-agent-state-shape.sh"
 ORDER = 6
 
 # The docs exclusion, which the 2026-08-14 note above is entirely about: with it gone, `docs/agent/<anything>/STATE.md` is refused because `agent` is an ordinary word in this tree, and the guard blocks writes nobody was making

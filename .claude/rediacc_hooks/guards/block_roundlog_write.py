@@ -34,7 +34,6 @@ import tempfile
 from rediacc_hooks import hookio
 
 CHAIN = "pre-edit"
-TWIN = "pre-edit/block-roundlog-write.sh"
 ORDER = 9
 
 # CREATING one is not truncating one, and without this line the two halves of the contract deadlock. Walking the documented path hit it head-on on 2026-08-27: `worklist.py --roundlog` refuses to create a log ("This verb REPLACES a STATUS block, it does not create a round log ... Write the wave header first"), and this guard then refused the write it had just been told to make.

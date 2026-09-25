@@ -41,7 +41,6 @@ unreachable rather than dropped, and the differential drives both sides with the
 from rediacc_hooks import hookio, shellscan
 
 CHAIN = "pre-bash"
-TWIN = "pre-bash/block-pathspecless-git-commit.sh"
 # Re-keyed from 43 to 44 on 2026-09-22 by the insertion of block_push_to_protected_branch.py at 39.
 ORDER = 43
 

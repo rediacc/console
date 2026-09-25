@@ -26,7 +26,6 @@ import subprocess
 from rediacc_hooks import hookio
 
 CHAIN = "pre-bash"
-TWIN = "pre-bash/warn-submodule-deletions.sh"
 ORDER = 6
 
 # Without the "did anything get deleted" test every submodule in .gitmodules is reported, with `wc -l` counting the empty string as one line -- so a clean checkout is announced as having one of its files staged for deletion, and the loudest arm ("this is EVERY tracked file") fires on a submodule where nothing was touched at all.

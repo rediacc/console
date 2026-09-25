@@ -40,7 +40,6 @@ import pathlib
 from rediacc_hooks import hookio, shellscan
 
 CHAIN = "pre-bash"
-TWIN = "pre-bash/block-raw-pr-body-edit.sh"
 ORDER = 36
 
 # The `gh api ... -X PATCH -F body=` arm, added 2026-09-04. Without it the door

@@ -51,7 +51,6 @@ import tempfile
 from rediacc_hooks import hookio
 
 CHAIN = "pre-edit"
-TWIN = "pre-edit/block-plan-without-tasks.sh"
 ORDER = 10
 
 # The grandfather clause, and the measured 59-of-62 note above is entirely about it: without it every amendment to a legacy prose plan is refused, which is the over-block that gets a guard deleted within a week.

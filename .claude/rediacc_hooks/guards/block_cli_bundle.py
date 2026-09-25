@@ -25,7 +25,6 @@ for taste rather than from a finding.
 from rediacc_hooks import hookio, shellscan
 
 CHAIN = "pre-bash"
-TWIN = "pre-bash/block-cli-bundle.sh"
 ORDER = 8
 
 # Re-inserting the `.*` between the program slot and the bundle name is exactly the original defect this guard's header is about: the path stops having to be the program and goes back to being any substring of the line, so `node scripts/x.mjs --outdir packages/cli/dist/out.js` is refused again.

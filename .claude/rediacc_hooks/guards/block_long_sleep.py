@@ -35,7 +35,6 @@ requires the exit code and stdout to match, and requires stderr to keep differin
 from rediacc_hooks import hookio
 
 CHAIN = "pre-bash"
-TWIN = "pre-bash/block-long-sleep.sh"
 ORDER = 13
 
 FG_MAX = 20

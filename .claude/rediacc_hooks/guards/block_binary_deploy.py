@@ -19,7 +19,6 @@ the prose above is the only surviving record of them, which is exactly what sect
 from rediacc_hooks import hookio
 
 CHAIN = "pre-bash"
-TWIN = "pre-bash/block-binary-deploy.sh"
 ORDER = 7
 
 # Dropping the host-spec test restores the `^scp ` behaviour the 2026-08-27 change removed: every scp is a deploy again, downloads included. It is the one line that separates "uploading a binary" from "pulling a log back".

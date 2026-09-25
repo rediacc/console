@@ -28,7 +28,6 @@ import subprocess
 from rediacc_hooks import hookio, shellscan
 
 CHAIN = "pre-bash"
-TWIN = "pre-bash/block-admin-merge.sh"
 ORDER = 26
 
 # The outright ban is arm 1 and the whole 2026-07-22 ruling. Dropping it does not merely change a message: an --admin merge falls through to the ordinary resolution path and is judged as if it were a normal one.

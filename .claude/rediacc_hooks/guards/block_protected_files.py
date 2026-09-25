@@ -17,7 +17,6 @@ PORT NOTE. `PROTECTED` is interpolated into the ERE by the bash, so the two path
 from rediacc_hooks import hookio, shellscan
 
 CHAIN = "pre-bash"
-TWIN = "pre-bash/block-protected-files.sh"
 ORDER = 3
 
 # Widening the gap back to `.*` is the exact over-block the header records: the verb and the path stop having to share a clause, so `git checkout main && cat .claude/settings.json` is refused for reading a file.

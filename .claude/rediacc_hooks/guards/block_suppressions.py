@@ -34,7 +34,6 @@ the empty string is spelled as its own disjunct rather than folded into the patt
 from rediacc_hooks import hookio
 
 CHAIN = "pre-edit"
-TWIN = "pre-edit/block-suppressions.sh"
 ORDER = 4
 
 # Narrowing 1, and the one the 2026-08-27 measurement exists for. Dropping the extension test restores "does this content contain the token, anywhere, in any file" -- which refused `docs/style.md` teaching the rule it enforces.

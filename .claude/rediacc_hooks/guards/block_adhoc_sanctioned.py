@@ -22,7 +22,6 @@ import importlib.util
 from rediacc_hooks import hookio, shellscan
 
 CHAIN = "pre-bash"
-TWIN = "pre-bash/block-adhoc-sanctioned.sh"
 ORDER = 32
 
 # HEREDOC BODIES ONLY: swapping in the full scanner is the failure the header below records, and it turns this guard's strongest fixture green while catching nothing.

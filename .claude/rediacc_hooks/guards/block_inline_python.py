@@ -33,7 +33,6 @@ import tempfile
 from rediacc_hooks import hookio
 
 CHAIN = "pre-edit"
-TWIN = "pre-edit/block-inline-python.sh"
 ORDER = 8
 
 # The documented escape. Removing it does not make the guard stricter in any useful way -- it makes it the guard "somebody deletes the first time it is wrong", which removes the protection permanently rather than for one edit.

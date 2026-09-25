@@ -15,7 +15,6 @@ grep a single empty record and the other giving it none.
 from rediacc_hooks import hookio
 
 CHAIN = "pre-bash"
-TWIN = "pre-bash/block-ci-reverse-poll.sh"
 ORDER = 12
 
 # The line whose loss the differential must notice: with the `&&[[:space:]]*sleep` tail gone the pattern still matches every `gh run view N --jq`, so the guard refuses a plain read of a run. Chosen because it is the half that makes this a POLLING guard rather than a `gh run view` ban. A SOURCE substring pair, not an evaluated one. The first cut of this computed the two halves with

@@ -41,7 +41,6 @@ import json
 from rediacc_hooks import hookio
 
 CHAIN = "pre-ask"
-TWIN = "pre-ask/block-settled-questions.sh"
 ORDER = 3
 
 # The clause anchor. Without it a sentence ABOUT the rule is refused as if it were the rule being broken -- "Should I explain in the report why we never commit unasked?" -- which is the mention-vs-target class reaching the pre-ask chain, where check_guard_mention_anchoring.py cannot see it because it globs pre-bash only.

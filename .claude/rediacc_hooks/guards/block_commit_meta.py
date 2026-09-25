@@ -25,7 +25,6 @@ import pathlib
 from rediacc_hooks import hookio, shellscan
 
 CHAIN = "pre-bash"
-TWIN = "pre-bash/block-commit-meta.sh"
 ORDER = 4
 
 # The commit-verb gate is the whole 2026-08-27 fix. Without it the phrase test runs against every command again, so grepping the docs for the banned trailer is refused as though it were adding one.

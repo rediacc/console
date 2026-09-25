@@ -21,7 +21,6 @@ import re
 from rediacc_hooks import hookio, shellscan
 
 CHAIN = "pre-bash"
-TWIN = "pre-bash/block-nonstandard-branch-name.sh"
 ORDER = 16
 
 # The earlier draft, restored. Skipping any candidate that merely CONTAINS a slash silently let `checkout -b feature/x` through -- the exact shape this hook exists to refuse -- while still looking like a start-point carve-out.

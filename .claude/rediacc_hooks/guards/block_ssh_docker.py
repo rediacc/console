@@ -11,7 +11,6 @@ trailing newline `scan_target` writes is removed before grep ever sees it; and t
 from rediacc_hooks import hookio, shellscan
 
 CHAIN = "pre-bash"
-TWIN = "pre-bash/block-ssh-docker.sh"
 ORDER = 9
 
 # The bridge-VM carve-out. Without it every `ssh 192.168.111.x docker ...` is refused, and that address range is the one machine where raw docker over ssh is the sanctioned thing to do.

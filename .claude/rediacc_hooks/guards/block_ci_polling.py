@@ -18,7 +18,6 @@ pattern would be a third spelling neither file could be checked against.
 from rediacc_hooks import hookio
 
 CHAIN = "pre-bash"
-TWIN = "pre-bash/block-ci-polling.sh"
 ORDER = 11
 
 # Dropping the SUBCOMMAND makes every `gh run <anything>` after a wait a refusal, so re-running a failed job on a delay is blocked as if it were polling. It is the half that names WHICH gh calls re-fetch the job tree.
