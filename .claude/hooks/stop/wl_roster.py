@@ -23,8 +23,10 @@ WHAT IS AND IS NOT A WRITER. Plan and Explore agents never wrote across 131 tran
 
 import datetime
 import json
+import os
 import pathlib
 import re
+import tempfile
 import time
 from typing import Any
 
@@ -470,7 +472,37 @@ def armed_shells(jsonl):
             out.remove(sid)
         if b"<task-id>%s</task-id>" % sid not in data[m.end() :]:
             out.append(sid)
-    return [x.decode() for x in out]
+    return [x.decode() for x in out if not shell_ended(jsonl, x.decode())]
+
+
+# The harness's last line in a finished shell's `tasks/<id>.output`: `[killed]`, or `[exited with code N]`.
+_SHELL_END = re.compile(rb"\[(?:killed|exited with code -?\d+)\]\s*$")
+
+
+def shell_ended(jsonl, sid):
+    """True when shell `sid`'s own output stream ends with the harness's terminal marker.
+
+    THE STREAM IS THE AUTHORITY, not the agent's transcript. A shell that ends after its agent already finished never gets its `<task-id>` notification into that transcript, so `armed_shells` read it as armed forever and the agent held a writer slot: on 2026-09-25 the finished harness writer a9fb71e0 (quiet 67 minutes) blocked a spawn at 4 of 4 on `br7n2v42t`, whose stream read `[killed]`. The stream sits at `<tmp>/claude-<uid>/<project>/<session>/tasks/<id>.output`, and the agent transcript at `<projects>/<project>/<session>/subagents/agent-<id>.jsonl` names both segments. A stream that cannot be found or read proves nothing, so the shell stays armed (the safe side for a cap).
+    """
+    try:
+        path = pathlib.Path(jsonl)
+        session, project = path.parents[1].name, path.parents[2].name
+    except (IndexError, TypeError):
+        return False
+    # No environment override, on purpose: this module is sealed against env reads (test_r6b), so no knob can free a writer slot.
+    bases = [
+        os.path.join(tempfile.gettempdir(), "claude-%d" % os.getuid(), project, session, "tasks"),
+        os.path.join(tempfile.gettempdir(), project, session, "tasks"),
+    ]
+    for b in bases:
+        try:
+            with open(os.path.join(b, sid + ".output"), "rb") as fh:
+                fh.seek(0, os.SEEK_END)
+                fh.seek(max(0, fh.tell() - 256))
+                return bool(_SHELL_END.search(fh.read()))
+        except OSError:
+            continue
+    return False
 
 
 def transcript_waiting(jsonl, now):

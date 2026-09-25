@@ -12,7 +12,9 @@ from __future__ import annotations
 import ast
 import json
 import os
+import pathlib
 import re
+import shutil
 import subprocess
 import sys
 import time
@@ -924,6 +926,45 @@ def test_q1b_control_a_shell_already_reported_back_frees_the_slot(wl):  # noqa: 
     assert got.rc != 0, got.out[:300]
     assert "3 of 4 writer slots are busy" in got.err, got.err[:400]
     assert "spawn that writer first" in got.err, got.err[:400]
+
+
+def _shell_stream(wl, text):
+    """Plant the harness's `tasks/bshell09.output` for the waiter's shell where `shell_ended` derives it from the transcript path, under the fixture's own TMPDIR (the roster reads no other environment). The caller removes it."""
+    tx = subagents_dir(wl) / ("agent-%s.jsonl" % W4)
+    d = (
+        pathlib.Path(wl.env["TMPDIR"])
+        / ("claude-%d" % os.getuid())
+        / tx.parents[2].name
+        / tx.parents[1].name
+        / "tasks"
+    )
+    d.mkdir(parents=True, exist_ok=True)
+    (d / "bshell09.output").write_text(text, encoding="utf-8")
+    return d.parent
+
+
+def test_q1c_a_shell_whose_stream_ended_frees_the_slot_without_a_notification(wl):  # noqa: F811
+    """A shell killed or exited AFTER its agent finished never reports back into that transcript. Its own stream's terminal marker is the proof (2026-09-25: a finished writer held a slot 67 minutes on a `[killed]` shell)."""
+    item = waiting_since_the_event(wl)
+    for marker in ("partial output\n[killed]\n", "done\n\n[exited with code 0]\n"):
+        planted = _shell_stream(wl, marker)
+        try:
+            got = wl.cli("--lease", wlfix.ME, item, "+30", "worker:queue", "held for the cap")
+        finally:
+            shutil.rmtree(planted, ignore_errors=True)
+        assert got.rc != 0, (marker, got.out[:300])
+        assert "3 of 4 writer slots are busy" in got.err, got.err[:400]
+
+
+def test_q1d_control_a_stream_still_growing_keeps_the_agent_waiting(wl):  # noqa: F811
+    """INVERSE: a stream with no terminal marker is a shell still running, so the agent still fills its slot."""
+    item = waiting_since_the_event(wl)
+    planted = _shell_stream(wl, "step 3 of 9 ...\n")
+    try:
+        got = wl.cli("--lease", wlfix.ME, item, "+30", "worker:queue", "held for the cap")
+    finally:
+        shutil.rmtree(planted, ignore_errors=True)
+    assert got.rc == 0, got.err[:400]
 
 
 def estimate(fix) -> list:
