@@ -560,12 +560,12 @@ def structure_controls(td: Path) -> None:
     # A path that does not exist, like the real plan guard's own first path: the baseline must then be found among its siblings.
     fp = str(docs / "a-probe.md")
 
-    def plant(name: str, declaration: str, rule: str) -> Path:
+    def write_guard(name: str, declaration: str, rule: str) -> Path:
         path = td / name
         path.write_text(_FIXTURE.format(declaration=declaration, rule=rule))
         return path
 
-    structure = plant("structure_declared.py", _VALID, _STRUCTURE_RULE)
+    structure = write_guard("structure_declared.py", _VALID, _STRUCTURE_RULE)
     outcome, detail = assess(structure, "edit", fp)
     if outcome != "clean" or "a-accepted.md" not in detail:
         fail(
@@ -577,7 +577,7 @@ def structure_controls(td: Path) -> None:
             "the planted structure guard does not refuse the bare sentence; the control proves nothing"
         )
 
-    bare = plant("structure_undeclared.py", "", _STRUCTURE_RULE)
+    bare = write_guard("structure_undeclared.py", "", _STRUCTURE_RULE)
     outcome, detail = assess(bare, "edit", fp)
     if outcome != "prose":
         fail(
@@ -585,7 +585,7 @@ def structure_controls(td: Path) -> None:
             f"({outcome}: {detail}); the plain probe has stopped firing"
         )
 
-    mention = plant("mention_declared.py", _VALID, _MENTION_RULE)
+    mention = write_guard("mention_declared.py", _VALID, _MENTION_RULE)
     outcome, detail = assess(mention, "edit", fp)
     if outcome != "prose":
         fail(
@@ -593,10 +593,10 @@ def structure_controls(td: Path) -> None:
             f"({outcome}: {detail}); the declaration would excuse the very class this gate catches"
         )
 
-    short = plant("structure_short.py", 'ANCHORING = "structure: short"', _STRUCTURE_RULE)
+    short = write_guard("structure_short.py", 'ANCHORING = "structure: short"', _STRUCTURE_RULE)
     if assess(short, "edit", fp)[0] != "invalid":
         fail("a structure declaration with a too-short reason was accepted")
-    missing = plant("structure_noreason.py", 'ANCHORING = "document shape"', _STRUCTURE_RULE)
+    missing = write_guard("structure_noreason.py", 'ANCHORING = "document shape"', _STRUCTURE_RULE)
     if assess(missing, "edit", fp)[0] != "invalid":
         fail("an ANCHORING constant without the `structure:` form was accepted")
     if assess(structure, "command", fp)[0] != "invalid":

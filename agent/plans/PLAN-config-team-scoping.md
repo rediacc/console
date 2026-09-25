@@ -183,6 +183,8 @@ A member removed from Y keeps both the key and any Y plaintext already in their 
 
 ## 5. Operator decisions (recommended option first)
 
+**Rulings, 2026-09-25 (operator):** E1 (a) server-side enforcement only, documented; E2 (a) live membership check plus an optional `scope_team_id` narrowing; E1b, E3, E4, E5: the recommended options unless the operator says otherwise.
+
 - **E1, cryptographic isolation:**
   - (a) server-side enforcement only, documented as such (section 4), **recommended**;
   - (b) plan per-team stores now;

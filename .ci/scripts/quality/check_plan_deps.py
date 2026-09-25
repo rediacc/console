@@ -229,7 +229,7 @@ def selftest() -> int:
         ("a duplicate token", "PLAN-y.md, PLAN-y.md"),
     ):
         tally.check("D2 planted: %s" % label, _codes(_with(x=_plan(dep=value))), {"D2"})
-    two = _plan(dep="PLAN-y.md").replace("Owner:", "Depends-On: PLAN-z.md\nOwner:")
+    two = controls.plant(_plan(dep="PLAN-y.md"), "Owner:", "Depends-On: PLAN-z.md\nOwner:")
     tally.check("D2 planted: a second line", _codes(_with(x=two)), {"D2"})
     late = (
         "# PLAN: x\n\nStatus: draft\n"
@@ -239,12 +239,12 @@ def selftest() -> int:
     tally.check("D2 planted: the field at line 11", _codes(_with(x=late)), {"D2"})
     tally.check(
         "D2 twin: the same field at line 10",
-        _codes(_with(x=late.replace("Note-6: x\n", ""))),
+        _codes(_with(x=controls.plant(late, "Note-6: x\n", ""))),
         set(),
     )
     tally.check(
         "D2 planted: an emphasised key",
-        _codes(_with(x=_plan().replace("Owner:", "**Depends-On:** PLAN-y.md\nOwner:"))),
+        _codes(_with(x=controls.plant(_plan(), "Owner:", "**Depends-On:** PLAN-y.md\nOwner:"))),
         {"D2"},
     )
 

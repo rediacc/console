@@ -226,6 +226,12 @@ The fake models renet's behavior today, with a switch for the guard:
 
 ## 5. Operator decisions (recommended option first)
 
+**Rulings, 2026-09-25 (operator):**
+- D1 is **(b), sync, overriding the recommendation**, in the operator's words: "striping the networkid is a disaster! renet makes different docker instances based on networkid so if we strip all other commands like term/repo become corrupted. it's key info per repo and we aim to have shared machines per team. so they can access the same machines. if we strip there is no real sharing to access the same repos". A repo's `networkId` and the config's `networkIds.next` counter are synced through the store like the rest of the repo record. Two devices allocating at once are settled by the hardening plan's compare-and-swap push (T5, landed in the account tree). Machine discovery from (a) stays as the FALLBACK for a repo whose record still has no ID (data pushed before this change, or a device that diverged), so no device ever allocates blind.
+- D2: (a) renet refuses a held ID (`network_id_in_use`) and a silent renumber (`network_id_mismatch`).
+- D3-D6: the recommended options, unless the operator says otherwise.
+- Consequence for the rewrite of sections 2-4: `networkId` moves from `state.repos[*][*]` into the synced repo record, and `networkIds.next` out of `state`; HOST_LOCAL_POINTERS keeps the rest of `/state`; a config-schema migration moves existing local values on load; the first push after the change publishes the IDs the pushing device holds; `allocateNetworkIdInStore` becomes a synced-counter write retried through the CAS rebase.
+
 - **D1, approach:**
   - (a) the machine is authoritative, the CLI discovers, and renet guards (section 3), **recommended**;
   - (b) sync the IDs through the config store: move `networkId` into `RepoRecord` and sync the counter; needs the hardening plan's T4 and T5 plus a migration;

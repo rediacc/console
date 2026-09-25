@@ -496,6 +496,25 @@
       ],
       "done_sigs": []
     },
+    "agent/plans/PLAN-config-networkid-sync.md": {
+      "status": "draft",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 8,
+      "done": 0,
+      "open_sigs": [
+        "43a26f19",
+        "497bd19f",
+        "5bcae656",
+        "7febe0df",
+        "82c99ae0",
+        "db26e6cd",
+        "ecf2fbb1",
+        "f46ceea9"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-config-passkey-optional.md": {
       "status": "approved",
       "owner": "d778be9d",
@@ -508,6 +527,56 @@
         "af41ded2",
         "cb17a5a5",
         "d72e974f"
+      ],
+      "done_sigs": []
+    },
+    "agent/plans/PLAN-config-sync-hardening.md": {
+      "status": "draft",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 17,
+      "done": 0,
+      "open_sigs": [
+        "08dc5472",
+        "1e925024",
+        "26cfd48c",
+        "2719c3f0",
+        "3dc0b75f",
+        "40fcf48e",
+        "4da3c6c5",
+        "5def7433",
+        "6dc965e5",
+        "8d86ebae",
+        "972d071f",
+        "a06b3426",
+        "aa633f4b",
+        "b33ab570",
+        "c075725e",
+        "cc3fd747",
+        "ec7ecf90"
+      ],
+      "done_sigs": []
+    },
+    "agent/plans/PLAN-config-team-scoping.md": {
+      "status": "draft",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 11,
+      "done": 0,
+      "open_sigs": [
+        "50817698",
+        "5aecf30b",
+        "84613e65",
+        "95f99e5d",
+        "a120f6fd",
+        "a1929226",
+        "bca8a2e1",
+        "c607653c",
+        "c70d11f1",
+        "e6fc8a05",
+        "e8152c55"
       ],
       "done_sigs": []
     },
@@ -1680,6 +1749,27 @@
       "open": 0,
       "done": 0,
       "open_sigs": [],
+      "done_sigs": []
+    },
+    "agent/plans/PLAN-token-ip-rebind.md": {
+      "status": "draft",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 10,
+      "done": 0,
+      "open_sigs": [
+        "08d66672",
+        "4cfbac1a",
+        "6f3b5d55",
+        "83f46a00",
+        "8513c37d",
+        "adec66b8",
+        "b2765c61",
+        "ccc8658a",
+        "dc10d40d",
+        "e473cbe9"
+      ],
       "done_sigs": []
     },
     "agent/plans/PLAN-tooling-transformation.md": {

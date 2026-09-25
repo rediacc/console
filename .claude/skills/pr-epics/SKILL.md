@@ -34,15 +34,7 @@ CLAUDE.md rule 1 commits verified work as it lands, so the chain runs once per u
     git commit -F <msg> -- <paths>            one epic, its PR-TASK trailer
     worklist.py --tick <me> <id> "commit:<sha> ..."   the tick names the commit
 
-- **One unit, one epic.** A unit that spans two epics is two commits. Above 20 files it needs a
-proof line anyway, which is the signal to split it.
-- **The lead commits.** A writer's output is committed by the lead after the spot-check, with the
-epic of the item the writer was given.
-- **A tick with no commit says why**: `nocommit:<no-tracked-change|research|operator-deferred>`.
-- **Pushing is separate**: at an epic milestone, at least every 2 hours of committed work, and
-before a stop that leaves unpushed commits, each with its `ci:quick` receipt.
-- **A `[hotfix]` on `main` carries no `PR-TASK:`** (there is no `agent/pr/main.md`); its
-`Hotfix-Evidence:` trailer takes the place of the epic.
+The rules around it (one epic per unit, the lead commits, a tick with no commit, when to push, a `[hotfix]` on `main`) are in [trailers.md](trailers.md#cadence).
 
 ## Three things that are not obvious
 

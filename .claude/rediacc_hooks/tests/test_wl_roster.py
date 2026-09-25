@@ -1247,20 +1247,29 @@ def test_r25_8_parity_a_fresh_spawn_the_last_event_never_saw_is_in_both(wl):  # 
 
 LEASE_HISTORY_SNIPPET = r"""
 import json, sys
+from datetime import datetime, timedelta, timezone
 sys.path.insert(0, sys.argv[1])
 import wl_store as S
+
+# Derived from now, never a literal date: the store SORTS by timestamp before folding, so the one-minute spacing is what carries the order.
+T0 = datetime.now(timezone.utc).replace(microsecond=0) - timedelta(minutes=10)
+
+def at(minute):
+    return (T0 + timedelta(minutes=minute)).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+UNTIL = (T0 + timedelta(hours=1)).strftime("%Y-%m-%dT%H:%MZ")
 
 class F:
     def __init__(self, recs):
         self.items, self.lineage, self.focus = list(recs.values()), [], {}
 
 ev = [
-    {"ev": "add", "id": "it1", "at": "2026-09-25T10:00:00Z", "by": "deadbeef", "s": " ", "o": "deadbeef", "t": "x"},
-    {"ev": "lease", "id": "it1", "at": "2026-09-25T10:01:00Z", "by": "deadbeef", "until": "2026-09-25T11:00Z", "worker": "aA"},
-    {"ev": "unlease", "id": "it1", "at": "2026-09-25T10:02:00Z", "by": "deadbeef", "t": ""},
-    {"ev": "lease", "id": "it1", "at": "2026-09-25T10:03:00Z", "by": "deadbeef", "until": "2026-09-25T11:00Z", "worker": "aB"},
-    {"ev": "lease", "id": "it1", "at": "2026-09-25T10:04:00Z", "by": "deadbeef", "until": "2026-09-25T11:00Z", "worker": "aA"},
-    {"ev": "state", "id": "it1", "at": "2026-09-25T10:05:00Z", "by": "deadbeef", "s": "x", "note": "done"},
+    {"ev": "add", "id": "it1", "at": at(0), "by": "deadbeef", "s": " ", "o": "deadbeef", "t": "x"},
+    {"ev": "lease", "id": "it1", "at": at(1), "by": "deadbeef", "until": UNTIL, "worker": "aA"},
+    {"ev": "unlease", "id": "it1", "at": at(2), "by": "deadbeef", "t": ""},
+    {"ev": "lease", "id": "it1", "at": at(3), "by": "deadbeef", "until": UNTIL, "worker": "aB"},
+    {"ev": "lease", "id": "it1", "at": at(4), "by": "deadbeef", "until": UNTIL, "worker": "aA"},
+    {"ev": "state", "id": "it1", "at": at(5), "by": "deadbeef", "s": "x", "note": "done"},
 ]
 recs = S._fold_events(ev)[0]
 for r in recs.values():

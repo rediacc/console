@@ -461,7 +461,7 @@ What `--plan-why <path>` answers from. Each row is a path a compacted plan cited
 
 ## Plan census
 
-Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans block can be printed from THIS file instead of opening all 168 of them. The hook checks freshness with `stat` alone (path set plus byte size) and falls back to reading the plans, loudly, when the two disagree.
+Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans block can be printed from THIS file instead of opening all 171 of them. The hook checks freshness with `stat` alone (path set plus byte size) and falls back to reading the plans, loudly, when the two disagree.
 
 | Plan | Status | lines | open | ticked | bytes |
 |---|---|---|---|---|---|
@@ -496,7 +496,10 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-commit-as-you-go.md` | draft | 371 | 13 | 0 | 32476 |
 | `agent/plans/PLAN-completion-strategy.md` | compacted | 39 | 0 | 0 | 3909 |
 | `agent/plans/PLAN-config-handoff-relay-only.md` | draft | 397 | 11 | 0 | 35708 |
+| `agent/plans/PLAN-config-networkid-sync.md` | draft | 272 | 8 | 0 | 29402 |
 | `agent/plans/PLAN-config-passkey-optional.md` | approved | 116 | 4 | 0 | 12469 |
+| `agent/plans/PLAN-config-sync-hardening.md` | draft | 440 | 17 | 0 | 47148 |
+| `agent/plans/PLAN-config-team-scoping.md` | draft | 228 | 11 | 0 | 27881 |
 | `agent/plans/PLAN-consolidation-pressure.md` | compacted | 60 | 0 | 10 | 5277 |
 | `agent/plans/PLAN-devbox-uid-derived-image.md` | compacted | 36 | 0 | 0 | 2532 |
 | `agent/plans/PLAN-docker-image-freshness-soak-filter.md` | compacted | 39 | 0 | 0 | 2715 |
@@ -634,4 +637,4 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-wl-wait-duplicate-listener.md` | done | 203 | 0 | 15 | 29033 |
 | `agent/plans/_done/PLAN-www-solution-video-gaps.md` | done | 65 | 0 | 0 | 6663 |
 
-168 plan(s), 96 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.
+171 plan(s), 99 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.

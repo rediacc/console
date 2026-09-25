@@ -100,11 +100,14 @@ IMPORT_ROOTS = (".ci", ".claude", "", "scripts")
 # GLOB DISCOVERY, declared by name with the site that does it, exactly as `.ci/policy/.dead-bash-allowlist` declares `glob:` for shell. Never inferred: `HERE.glob("*.py")` filtered by a prefix tuple is not something a static reader can be trusted to recognise, and guessing wrong in the permissive direction would admit a whole directory.
 GLOB_ROOTS = {
     ".claude/rediacc_hooks/guards/": (
-        ("block_", "warn_", "require_"),
+        ("block_", "warn_", "require_", "test-"),
         (
-            "loaded by importlib from .claude/rediacc_hooks/guards/__init__.py:stems(), "
-            "which globs *.py in its own directory and admits exactly these three "
-            "prefixes; dispatch.py calls it, so no guard is ever named individually"
+            "block_/warn_/require_ are loaded by importlib from "
+            ".claude/rediacc_hooks/guards/__init__.py:stems(), which globs *.py in its own "
+            "directory and admits exactly those three prefixes; dispatch.py calls it, so no "
+            "guard is ever named individually. test-* are the per-guard suites run by "
+            ".claude/rediacc_hooks/tests/test_hooks_delegates.py:_discover_tailed, whose "
+            "_TAILED_ROOTS names this directory beside .claude/hooks/stop/ and context/"
         ),
     ),
     ".claude/hooks/stop/": (
