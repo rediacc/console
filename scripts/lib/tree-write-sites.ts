@@ -2000,6 +2000,12 @@ export function invocations(
       }
     };
     walk(root);
+    // VACUITY FLOOR. `root` is caller-supplied (`--root`, or this gate's own root by default), and a typo or a root moved out from under a caller yields an EMPTY walk rather than an error: `fs.readdirSync` on a real but wrong directory just returns nothing to recurse into. Every consumer of `tracked` would then read a script as "not found on disk" indistinguishably from "found nowhere because there is nothing to find", so this refuses instead of returning a corpus that looks clean because it is empty.
+    if (tracked.size === 0) {
+      throw new Error(
+        `VACUOUS: ${root} yielded 0 tracked file(s) while resolving invocations. The enumeration lost its corpus; refusing to return it.`
+      );
+    }
     u = { byDir: new Map([['', pkg.scripts ?? {}]]), nameToDir: new Map(), tracked };
   } else u = loadScripts(root);
   const out: Record<string, { leaf: string; argv: string[] }[]> = {};

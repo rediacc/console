@@ -14,7 +14,7 @@
  * TWO ENGINES, ONE SHAPE. `runSourceRule` walks an oxc ESTree/TS-ESTree AST and
  * dispatches `Type(node)` visitors. `runJsonRule` parses with momoa and calls a
  * rule's `Document(node)` visitor once (every JSON rule here does its own
- * recursive descent through each Object node's `members`, so nothing else needs dispatching).
+ * recursive descent through `objectMembers`, so nothing else needs dispatching).
  * Both hand the rule the same `context` shape: `{ options, filename,
  * physicalFilename, cwd, sourceCode, report }`.
  *
@@ -35,9 +35,14 @@
 
 import path from 'node:path';
 
-import type { DocumentNode } from '@humanwhocodes/momoa';
+import type {
+  DocumentNode,
+  MemberNode,
+  Node as MomoaNode,
+  ObjectNode as MomoaObjectNode,
+} from '@humanwhocodes/momoa';
 import { parse as momoaParse } from '@humanwhocodes/momoa';
-import { visitorKeys as jsVisitorKeys, parseSync } from 'oxc-parser';
+import { parseSync, visitorKeys as jsVisitorKeys } from 'oxc-parser';
 
 // `.tsx` parses as `tsx`, plain `.ts`/`.mts`/`.cts` as `ts` -- forcing every `.ts` file into the `tsx` grammar breaks the OLD-STYLE generic cast (`<T>value`) and generic-arrow ambiguity that grammar exists to resolve in favour of JSX, and real `.ts` sources in this repo use that syntax. Plain JS family files (`.js`/`.jsx`/`.mjs`/`.cjs`) always parse as `jsx` instead: the real config enables JSX (`ecmaFeatures.jsx: true`) for every js, jsx, ts and tsx source path it lints (`eslint.config/typescript.js`'s react-plugin block), including plain `.js` files under `eslint-rules` -- so `custom/require-testid`'s own probe file is plain `.js` with a JSX literal in it, and JS has no cast-vs-JSX ambiguity for that option to break.
 function langFor(filename: string): 'jsx' | 'ts' | 'tsx' {
@@ -368,11 +373,7 @@ function buildSourceCode(text: string, nodeScope: Map<AnyNode, HostScope>): Host
   };
 }
 
-/**
- * Run one rule's `Type(node)` visitors over JS/TS/JSX source.
- *
- * @public BLOCKER: consumed by eslint-rules/__tests__/harness.js, which knip does not analyze (eslint-rules/ is outside the root project); removed with the ESLint cutover.
- */
+/** Run one rule's `Type(node)` visitors over JS/TS/JSX source. */
 export function runSourceRule(rule: RuleModule, code: string, run: RunOptions): Finding[] {
   const { program, nodeScope } = parseSource(code, run.filename);
   const lineStarts = computeLineStarts(code);
@@ -394,11 +395,7 @@ export function runSourceRule(rule: RuleModule, code: string, run: RunOptions): 
   return findings;
 }
 
-/**
- * Run one rule's `Document(node)` visitor over a JSON source.
- *
- * @public BLOCKER: consumed by eslint-rules/__tests__/harness.js, which knip does not analyze (eslint-rules/ is outside the root project); removed with the ESLint cutover.
- */
+/** Run one rule's `Document(node)` visitor over a JSON source. */
 export function runJsonRule(rule: RuleModule, code: string, run: RunOptions): Finding[] {
   const document = momoaParse(code, { mode: 'json', ranges: true }) as unknown as DocumentNode &
     AnyNode;
@@ -456,11 +453,7 @@ function toFinding(
   };
 }
 
-/**
- * Apply every reported fix, in one non-iterative pass, sorted by range start. Sufficient for this repo's rules: at most one fix is ever reported per run today (`sorted-keys` stops at the first violation; `prefer-const-arrays` reports independent, non-overlapping arrays).
- *
- * @public BLOCKER: consumed by eslint-rules/__tests__/harness.js, which knip does not analyze (eslint-rules/ is outside the root project); removed with the ESLint cutover.
- */
+/** Apply every reported fix, in one non-iterative pass, sorted by range start. Sufficient for this repo's rules: at most one fix is ever reported per run today (`sorted-keys` stops at the first violation; `prefer-const-arrays` reports independent, non-overlapping arrays). */
 export function applyFixes(code: string, findings: Finding[]): string {
   const fixes = findings.flatMap((f) => f.fixes).sort((a, b) => a.range[0] - b.range[0]);
   let out = '';
@@ -472,4 +465,9 @@ export function applyFixes(code: string, findings: Finding[]): string {
   }
   out += code.slice(cursor);
   return out;
+}
+
+/** Every momoa `Member` directly under an `Object` node; `[]` for anything else. Re-exported so callers outside `eslint-rules/` (the differential, the gate) share one definition with the rules themselves. */
+export function objectMembers(node: MomoaNode | null | undefined): MemberNode[] {
+  return node?.type === 'Object' ? (node as MomoaObjectNode).members : [];
 }

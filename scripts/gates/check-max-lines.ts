@@ -221,7 +221,12 @@ export function scanScope(): string[] {
     // `.ci/cache/**` into `cache/**` while scanning the `.ci` root, which is
     // exactly the bug this comment is here to stop from coming back.
     const pattern = `${root}/**/*.{${EXTENSIONS.join(',')}}`;
-    for (const f of globSync(pattern, { cwd: REPO_ROOT, ignore: GLOBAL_IGNORE, nodir: true, dot: false })) {
+    for (const f of globSync(pattern, {
+      cwd: REPO_ROOT,
+      ignore: GLOBAL_IGNORE,
+      nodir: true,
+      dot: false,
+    })) {
       found.add(toPosix(f));
     }
   }
@@ -262,7 +267,9 @@ function selftest(): boolean {
   check('exactly 512 code lines is clean', countText(atCap) === MAX_LINES);
   check('...and does not exceed the cap', countText(atCap) <= MAX_LINES);
 
-  const overCap = Array.from({ length: MAX_LINES + 1 }, (_, i) => `const line${i} = ${i};`).join('\n');
+  const overCap = Array.from({ length: MAX_LINES + 1 }, (_, i) => `const line${i} = ${i};`).join(
+    '\n'
+  );
   check('513 code lines exceeds the cap', countText(overCap) === MAX_LINES + 1);
   check('...and is reported as such', countText(overCap) > MAX_LINES);
 
@@ -270,7 +277,9 @@ function selftest(): boolean {
   check('reverting the 513th line back to 512 is clean again', countText(reverted) === MAX_LINES);
 
   // skipBlankLines: interleaved blank lines are never counted, however many there are.
-  const withBlanks = Array.from({ length: MAX_LINES }, (_, i) => `const l${i} = ${i};\n`).join('\n');
+  const withBlanks = Array.from({ length: MAX_LINES }, (_, i) => `const l${i} = ${i};\n`).join(
+    '\n'
+  );
   check(
     'blank lines between code lines are not counted',
     countText(withBlanks) === MAX_LINES,
@@ -286,7 +295,10 @@ function selftest(): boolean {
     'a comment then code on the same line counts as one code line',
     countText('/* leading */ const x = 1;\nconst y = 2;') === 2
   );
-  check('a comment alone on its line is not counted', countText('const x = 1;\n// alone\nconst y = 2;') === 2);
+  check(
+    'a comment alone on its line is not counted',
+    countText('const x = 1;\n// alone\nconst y = 2;') === 2
+  );
   check(
     'a multi-line block comment with code on its first and last line counts only those two',
     countText('const x = 1; /* start\nmiddle\nend */ const y = 2;\nconst z = 3;') === 3
@@ -299,7 +311,9 @@ function selftest(): boolean {
   );
 
   // A file entirely made of comments and blank lines, however long, is clean: this is what distinguishes the gate from a raw `wc -l` cap.
-  const allComments = Array.from({ length: MAX_LINES + 200 }, (_, i) => `// comment ${i}`).join('\n\n');
+  const allComments = Array.from({ length: MAX_LINES + 200 }, (_, i) => `// comment ${i}`).join(
+    '\n\n'
+  );
   check(
     'a file of nothing but comments and blank lines, well past the raw line count, is clean',
     countText(allComments) === 0,
@@ -307,7 +321,10 @@ function selftest(): boolean {
   );
 
   // A .tsx fixture, since JSX syntax is part of this gate's scope.
-  const tsx = Array.from({ length: MAX_LINES + 1 }, (_, i) => `const c${i} = () => <div>{${i}}</div>;`).join('\n');
+  const tsx = Array.from(
+    { length: MAX_LINES + 1 },
+    (_, i) => `const c${i} = () => <div>{${i}}</div>;`
+  ).join('\n');
   check('the cap applies identically to .tsx sources', countText(tsx, 'x.tsx') === MAX_LINES + 1);
 
   // Scope: the two live per-file silenced files, and one of the generated files, must be exempt end to end, not merely present in the static pattern list -- this walks the real repo tree.
@@ -324,7 +341,10 @@ function selftest(): boolean {
     'a generated renet-contract file is exempt from the scan',
     !scope.has('packages/shared/src/renet-contract/data/functions.generated.ts')
   );
-  check('root scripts/*.ts is out of scope entirely', !scope.has('scripts/gates/check-max-lines.ts'));
+  check(
+    'root scripts/*.ts is out of scope entirely',
+    !scope.has('scripts/gates/check-max-lines.ts')
+  );
   check(
     'private/account sources are out of scope for max-lines',
     ![...scope].some((f) => f.startsWith('private/account/'))

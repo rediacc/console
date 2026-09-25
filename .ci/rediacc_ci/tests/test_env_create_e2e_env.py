@@ -11,8 +11,9 @@ THE FILE IS THE SUBJECT, NOT THE MESSAGES. This program prints three lines, all 
 EVERY CASE WRITES INTO `tmp_path`, NEVER INTO THE CHECKOUT, and one case makes that non-negotiable: `--output` with no value resolves to the literal string `true` and creates a file with that name in the CURRENT DIRECTORY. Driving it from the repository root leaves an untracked `true` behind, which is what happened while this port was being written, so `assert_is_scratch`
 re-derives the working directory before anything runs.
 
-WHAT IS MASKED, and it is three things. The OUTPUT PATH becomes `<out>`, because each recording was taken against its own temporary file. The PROGRAM NAME inside bash's `<prog>: line <N>:` diagnostics becomes `<prog>`, because a `.sh` and a module can never spell it the same way; the LINE NUMBERS are NOT masked and are compared. The CHECKOUT ROOT becomes `<root>`, for the one case
-whose diagnostic names `common.sh` by absolute path.
+WHAT IS MASKED, and it is five things. The OUTPUT PATH becomes `<out>`, because each recording was taken against its own temporary file. The PROGRAM NAME inside bash's `<prog>: line <N>:` diagnostics becomes `<prog>`, because a `.sh` and a module can never spell it the same way; the LINE NUMBERS are NOT masked and are compared. The CHECKOUT ROOT becomes `<root>`, for the one case
+whose diagnostic names `common.sh` by absolute path. The child's own PATH and HOME become `<PATH>` and `<HOME>` (`frozen.mask_env`), because two cases hand bash those NAMES as arithmetic and bash echoes the host's values back; the two goldens were rewritten from the recorder's values to the tokens by hand, the twin being gone. bash's arithmetic-error clause becomes
+`<arith-syntax-error>` on both sides (`frozen.mask_arith_dialect`), because 5.3 and 5.2 spell it differently.
 
 WHAT THE DELETION COST, and it is three staleness alarms that read the twin's own source. Each is named here rather than dropped silently.
 
@@ -377,9 +378,10 @@ def run(tmp_path: pathlib.Path, name: str, *, subject: str | None = None) -> tup
         env["PYTHONPATH"] = "%s/.ci" % diff.repo()
         env["PYTHONDONTWRITEBYTECODE"] = "1"
     quoted = " ".join(shlex.quote(arg) for arg in args)
+    child_env = diff.env_for(**env)
     code, stdout, stderr = diff.bash_streams(
         ("%s %s" % (invocation, quoted)).strip(),
-        env=diff.env_for(**env),
+        env=child_env,
         cwd=str(cwd),
         tty=kw.get("tty"),
         timeout=30,
@@ -393,7 +395,9 @@ def run(tmp_path: pathlib.Path, name: str, *, subject: str | None = None) -> tup
             text = text.replace(spelling, "<prog>")
         if subject is not None and subject.startswith("python3 /"):
             text = text.replace(subject.split(" ", 1)[1].strip("'"), "<prog>")
-        return text.replace(str(output), "<out>").replace(diff.repo(), "<root>")
+        text = text.replace(str(output), "<out>").replace(diff.repo(), "<root>")
+        # The host's own PATH and HOME, for the cases that hand bash those NAMES as arithmetic; see `frozen.mask_env`. Last, so the fixture paths above are already tokens.
+        return frozen.mask_env(text, child_env)
 
     return code, clean(stdout), clean(stderr), clean(produced)
 
@@ -413,6 +417,9 @@ def recorded(name: str) -> tuple:
 def compare(tmp_path: pathlib.Path, name: str) -> tuple:
     want = recorded(name)
     got = run(tmp_path, name)
+    # bash 5.2 and 5.3 spell the arithmetic clause differently and the port asks the running bash, so both sides are folded; see `frozen.mask_arith_dialect`.
+    want = (want[0], *(frozen.mask_arith_dialect(s) for s in want[1:3]), want[3])
+    got = (got[0], *(frozen.mask_arith_dialect(s) for s in got[1:3]), got[3])
     for index, field in enumerate(("exit", "stdout", "stderr", "file")):
         assert got[index] == want[index], "%s: %s diverged:\n twin: %r\n port: %r" % (
             name,

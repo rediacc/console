@@ -185,12 +185,14 @@ class Finding:
     THE LINE NUMBER IS READ AND THEN DROPPED, which looks wasteful and is not: it is what proves the parse consumed a real diagnostic rather than a note or a wrapped continuation. A regex that did not require it would happily key a finding off a summary line.
     """
 
-    __slots__ = ("code", "file", "message")
+    __slots__ = ("code", "file", "line", "message")
 
-    def __init__(self, file: str, code: str, message: str) -> None:
+    def __init__(self, file: str, code: str, message: str, line: int = 0) -> None:
         self.file = file
         self.code = code
         self.message = message
+        # WHERE, never WHO: the line is outside `id` and `key`, so a move still matches its baseline row; it exists only so a NEW finding can be printed as `file:line` instead of sending the reader to rerun mypy by hand (2026-09-25).
+        self.line = line
 
     @property
     def id(self) -> str:
@@ -226,7 +228,7 @@ def parse_findings(text: str) -> list[Finding]:
             message, code = coded.group("message"), coded.group("code")
         else:
             message, code = rest, "(none)"
-        out.append(Finding(match.group("file"), code, message))
+        out.append(Finding(match.group("file"), code, message, int(match.group("line"))))
     return out
 
 
@@ -680,6 +682,14 @@ def _main(root: pathlib.Path, baseline_path: pathlib.Path, *, write: bool, first
         return 1
 
     added, grown, drained = compare(baseline, current)
+    where: dict[str, list[int]] = {}
+    for finding in findings:
+        where.setdefault(finding.id, []).append(finding.line)
+
+    def at(ident: str) -> str:
+        return ", ".join(
+            "%s:%d" % (current[ident]["file"], n) for n in sorted(set(where.get(ident, [])))[:8]
+        )
 
     if added or grown:
         print(file=sys.stderr)
@@ -690,6 +700,7 @@ def _main(root: pathlib.Path, baseline_path: pathlib.Path, *, write: bool, first
                 file=sys.stderr,
             )
             print("    %s" % entry["message"], file=sys.stderr)
+            print("    at %s" % at(ident), file=sys.stderr)
         for ident in grown:
             entry = current[ident]
             print(
@@ -698,6 +709,7 @@ def _main(root: pathlib.Path, baseline_path: pathlib.Path, *, write: bool, first
                 file=sys.stderr,
             )
             print("    %s" % entry["message"], file=sys.stderr)
+            print("    at %s" % at(ident), file=sys.stderr)
         print(file=sys.stderr)
         print(
             "%d new and %d grown finding(s). Fix them. Do NOT add them to %s -- the"

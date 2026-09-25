@@ -3694,15 +3694,8 @@
       "id": "8edfe6964bd34c1e",
       "file": ".claude/rediacc_hooks/tests/test_dispatch.py",
       "code": "var-annotated",
-      "count": 2,
-      "message": "Need type annotation for \"seen\" (hint: \"seen: dict[<type>, <type>] = ...\")"
-    },
-    {
-      "id": "0e192f5a4df0775f",
-      "file": ".claude/rediacc_hooks/tests/test_guards_differential.py",
-      "code": "operator",
       "count": 1,
-      "message": "\"str\" not callable"
+      "message": "Need type annotation for \"seen\" (hint: \"seen: dict[<type>, <type>] = ...\")"
     },
     {
       "id": "3febbda96157f75d",
@@ -3722,7 +3715,7 @@
       "id": "95f59b734c70f71d",
       "file": ".claude/rediacc_hooks/tests/test_guards_differential.py",
       "code": "var-annotated",
-      "count": 2,
+      "count": 1,
       "message": "Need type annotation for \"seen\" (hint: \"seen: dict[<type>, <type>] = ...\")"
     },
     {

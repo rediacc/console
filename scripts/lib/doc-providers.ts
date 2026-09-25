@@ -382,7 +382,7 @@ const reachability = (root: string, wired: Set<string>, files: string[]): Map<st
 export const hookGuardsProvider: Provider = {
   id: 'hook-guards',
   scans:
-    'the `hooks` wiring in .claude/settings.json, closed transitively over the tracked files under .claude/hooks/ and .claude/rediacc_hooks/ (.claude/oracles/ excluded on purpose: those twins are wired to no event by design)',
+    'the `hooks` wiring in .claude/settings.json, closed transitively over the tracked files under .claude/hooks/ and .claude/rediacc_hooks/',
   columns: ['Hook file', 'Events', 'Reached', 'Language'],
   rows: (root) => {
     const wired = wiredHooks(root);
@@ -393,13 +393,12 @@ export const hookGuardsProvider: Provider = {
       events.set(w.file, set);
     }
 
-    // BOTH HOOK TREES, and why .claude/oracles is NOT a third.
+    // BOTH HOOK TREES.
     //
     // Until 2026-09-07 this scanned `.claude/hooks` alone, which made this region's own promise unkeepable: it says a tracked file nothing reaches is dead code sitting beside live guards, while 64 tracked modules under `.claude/rediacc_hooks` were not in the set at all, so they could never be reported in either direction. The parity gate could not catch it, because it compares
     // this generator against itself: both sides were equally blind and the document was wrong while the gate was green.
     //
-    // `.claude/oracles` is excluded ON PURPOSE and must stay excluded. Those 50 files are the bash twins the Python guards are differentially compared against (`test_guards_differential`). They are deliberately wired to NO event, so a reachability closure would correctly find nothing reaching them and report all 50 as dead code. That is precisely the reading that gets a
-    // differential corpus "simplified" away, which is the failure this region exists to prevent rather than to cause. Their coverage is the differential test, not the wiring.
+    // `.claude/oracles` used to be excluded here on purpose, for the bash twins the Python guards were differentially compared against (`test_guards_differential`). PLAN-retire-bash-oracles A3 deleted that tree and the differential's bash side with it: every guard is now judged against a frozen golden instead of a live bash process, so there is no twin tree left to exclude.
     const { present } = presentFiles(root, lsFiles(root, '.claude/hooks', '.claude/rediacc_hooks'));
     const members = present
       .filter((f) => /\.(sh|py)$/.test(f))

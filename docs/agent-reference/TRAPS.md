@@ -629,8 +629,8 @@ This is now enforced by `check:ci-python-gate-deps`, which reads the imports of 
 
 ## A gate failure the serial rerun cannot reproduce is a CONCURRENCY artifact, not a flake
 Trap-Id: concurrency-artifact-not-a-flake
-Enforced-By: JUDGMENT-ONLY
-Residue: the battery classifies gate tests T, S or W from `scripts/ci-runner/gates.lock.json`'s `mutex` and `reads` claims, so the classification is only ever as good as the declaration a gate makes about itself -- and a comment claiming isolation is not evidence of it. Diagnosing by mtime, and asking who else is working in the tree, stay human steps.
+Enforced-By: gate:check:ci-pool-writer-safety, gate:check:ci-gate-tree-writes
+Residue: the scheduler serialises by the lock's `mutex` and `reads` claims, and two gates now check those claims against what the code does: `check:ci-pool-writer-safety` for gate tests, `check:ci-gate-tree-writes` for the gates themselves (every module their leaves reach, through imports and cross-language spawns). What neither sees: a write whose target the scanners cannot resolve and a pragma declares safe, product code under `packages/*/src`, and bare tools (tsc, astro, biome). Diagnosing by mtime, and asking who else is working in the tree, stay human steps.
 
 `npm run ci` runs its gates ~8.7x parallel. Something in that pool rewrites tracked source files in place while other gates are reading them, so a reader can catch a half-written file. The 2026-08-17 battery failed `gate-test:claude-hooks` with
 
@@ -798,7 +798,7 @@ Contamination is SCOPED, so do not discard neighbouring results reflexively: the
 
 ## A detector can match its own prose
 Trap-Id: detector-matches-its-own-prose
-Enforced-By: file:.claude/oracles/pre-bash/lib/command-scan.sh
+Enforced-By: file:.claude/rediacc_hooks/shellscan.py
 Residue: Only the HOOK half has a shared remedy, and two guards must deliberately not use it. The CI-gate half has three instances and no meta-gate: each needed a different fix, so there is nothing shared to enforce.
 
 **A gate that greps for a dangerous construct will eventually match text that merely LOOKS like that construct** — and it will name a file that is doing nothing wrong. Three instances now, all on this repo's own gates:

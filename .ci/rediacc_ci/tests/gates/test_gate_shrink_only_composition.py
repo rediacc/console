@@ -25,6 +25,7 @@ while twenty-two TypeScript offerers carried the total past the floor, and the
 language this programme is migrating TO would be unchecked.
 """
 
+import ast
 import contextlib
 import hashlib
 import json
@@ -66,15 +67,78 @@ PENDING: tuple[str, ...] = ()
 # An IMPORT, not a mention. A bare substring match would count a file that merely names the module in a comment as guarded, which is how an over-permissive matcher turns a gate into decoration. Anchored on the `from '...'` specifier.
 IMPORT_RE = {route: re.compile(r"from '[^']*%s" % re.escape(route)) for route in GUARDED_VIA}
 
-# THE PYTHON HALF HAS NO SHARED GUARD TO IMPORT, and pretending otherwise would make this check unsatisfiable: the guard is TypeScript with no Python binding, so `check_language_policy.py` carries a faithful PORT of its decision half and says so in its own comment. Until a shared Python guard exists, CONSUMING THE PORT is the contract. Three conditions, because any one alone is
-# satisfiable
-# while the write path stays unconditional: the file must DEFINE or IMPORT
-# `write_verdict`, must CALL it somewhere other than its own definition, and must compute `baseline_additions`. A file that only names them in a comment is not guarded, which the mention control proves.
-PY_DEFINES_RE = re.compile(
-    r"^(def write_verdict\(|from [\w.]+ import .*\bwrite_verdict\b)", re.MULTILINE
-)
-PY_CALLS_RE = re.compile(r"(?<!def )\bwrite_verdict\(")
-PY_ADDITIONS_RE = re.compile(r"\bbaseline_additions\(")
+# THE PYTHON HALF'S SHARED GUARD IS `rediacc_ci.quality.shrink_only`, the decision half of the TypeScript guard ported once. A file may consume it by NAME (`from ... import write_verdict`, or a local `def write_verdict` as the pre-shrink_only ports did) or by MODULE (`from rediacc_ci.quality import shrink_only [as SO]` then `SO.write_verdict(`). Three conditions, because any one alone is
+# satisfiable while the write path stays unconditional: the file must BIND `write_verdict` (by name or through a module alias), must CALL it, and must CALL `baseline_additions`. READ FROM THE AST, not the text, so a file that only names them in a comment or a string is not guarded, which the mention control proves.
+#
+# The name-only reading missed MODULE-STYLE use until 2026-09-25: `check_tree_shape.py` calls `shrink_only.write_verdict(` and was reported unguarded, and so was every file that merely NAMES the flag in a string (`tree_shape.py`'s refusal text, four test modules passing it to a subprocess).
+PY_GUARD_MODULE = "shrink_only"
+PY_GUARD_FUNCS = ("write_verdict", "baseline_additions")
+
+# THE DEFINITION SITE, exempt BY PATH with its reason, and printed every run. It names the flag in its docstrings and cannot consume itself.
+PY_EXEMPT = (".ci/rediacc_ci/quality/shrink_only.py",)
+
+
+def py_offers_flag(tree) -> bool:
+    """True when the module PARSES the flag, not when it merely names it.
+
+    A writer reads the flag off its argument vector: `FLAG in argv` / `FLAG not in args`, `arg == FLAG`, or `parser.add_argument(FLAG, ...)`. A docstring, an error message telling the reader to run it, and a test passing it to a subprocess all name the flag without offering it, and treating those as writers is what put four test modules on the offender list.
+    """
+
+    def is_flag(node) -> bool:
+        return isinstance(node, ast.Constant) and node.value == FLAG
+
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Compare):
+            operands = [node.left, *node.comparators]
+            for i, op in enumerate(node.ops):
+                left, right = operands[i], operands[i + 1]
+                if isinstance(op, (ast.In, ast.NotIn)) and is_flag(left):
+                    return True
+                if isinstance(op, (ast.Eq, ast.NotEq)) and (is_flag(left) or is_flag(right)):
+                    return True
+        if (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and node.func.attr == "add_argument"
+            and any(is_flag(a) for a in node.args)
+        ):
+            return True
+    return False
+
+
+def py_guard_calls(tree) -> set[str]:
+    """Which of `PY_GUARD_FUNCS` the module really CALLS, through a route that reaches the guard."""
+    name_of: dict[str, str] = {}  # a bare name bound to a guard function -> that function
+    aliases: set[str] = set()  # names bound to the shrink_only module
+    for node in ast.walk(tree):
+        if isinstance(node, ast.FunctionDef) and node.name in PY_GUARD_FUNCS:
+            name_of[node.name] = node.name
+        elif isinstance(node, ast.ImportFrom):
+            for alias in node.names:
+                if alias.name in PY_GUARD_FUNCS:
+                    name_of[alias.asname or alias.name] = alias.name
+                elif alias.name == PY_GUARD_MODULE:
+                    aliases.add(alias.asname or alias.name)
+        elif isinstance(node, ast.Import):
+            for alias in node.names:
+                if alias.name.split(".")[-1] == PY_GUARD_MODULE and alias.asname:
+                    aliases.add(alias.asname)
+    called: set[str] = set()
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        func = node.func
+        if isinstance(func, ast.Name) and func.id in name_of:
+            called.add(name_of[func.id])
+        elif (
+            isinstance(func, ast.Attribute)
+            and func.attr in PY_GUARD_FUNCS
+            and isinstance(func.value, ast.Name)
+            and func.value.id in aliases
+        ):
+            called.add(func.attr)
+    return called
+
 
 # Floors, one per corpus. Neither excuses the other; see the docstring.
 TS_FLOOR = 8
@@ -135,16 +199,33 @@ def offerers_py() -> list[str]:
     return [f for f in all_offerers() if f.endswith(".py")]
 
 
+def py_parse(rel: str):
+    """The module's AST, or None when it does not parse. A file that cannot be read as Python cannot be shown to be guarded, so the caller treats None as an offender rather than skipping it."""
+    text = (ROOT / rel).read_text(encoding="utf-8", errors="replace")
+    try:
+        return ast.parse(text, filename=rel)
+    except SyntaxError:
+        return None
+
+
+def py_is_writer(rel: str) -> bool:
+    """A Python file in the text corpus that really OFFERS the flag. Unparseable counts as a writer, so a syntax error cannot hide one."""
+    tree = py_parse(rel)
+    return tree is None or py_offers_flag(tree)
+
+
 def py_reaches_guard(rel: str) -> bool:
     """All three conditions, or the Python writer is unguarded."""
-    text = (ROOT / rel).read_text(encoding="utf-8", errors="replace")
-    return bool(
-        PY_DEFINES_RE.search(text) and PY_CALLS_RE.search(text) and PY_ADDITIONS_RE.search(text)
-    )
+    tree = py_parse(rel)
+    return tree is not None and py_guard_calls(tree) == set(PY_GUARD_FUNCS)
 
 
 def unguarded_py() -> list[str]:
-    return [f for f in offerers_py() if not py_reaches_guard(f)]
+    return [
+        f
+        for f in offerers_py()
+        if f not in PY_EXEMPT and py_is_writer(f) and not py_reaches_guard(f)
+    ]
 
 
 def unguarded() -> list[str]:
@@ -224,6 +305,49 @@ if "%s" in sys.argv:
 '''
     % FLAG
 )
+
+GUARDED_MODULE_PY_BODY = (
+    '''#!/usr/bin/env python3
+"""Temporary control fixture. Consumes the shared guard MODULE-STYLE, through an alias."""
+
+import sys
+
+from rediacc_ci.quality import shrink_only as SO
+
+if "%s" in sys.argv:
+    added = SO.baseline_additions([], [])
+    if SO.write_verdict(baseline_exists=True, first_seed=False, additions=added):
+        sys.exit(1)
+'''
+    % FLAG
+)
+
+IMPORT_ONLY_PY_BODY = (
+    '''#!/usr/bin/env python3
+"""Temporary control fixture. Imports the shared guard module and never calls it."""
+
+import sys
+
+from rediacc_ci.quality import shrink_only  # noqa: F401
+
+# shrink_only.write_verdict( and shrink_only.baseline_additions( appear only here.
+if "%s" in sys.argv:
+    print("unconditional reseed")
+'''
+    % FLAG
+)
+
+STRING_ONLY_PY_BODY = '''#!/usr/bin/env python3
+"""Temporary control fixture shaped like a TEST: it names %s in prose and passes it to a subprocess, and parses no argv."""
+
+import subprocess
+import sys
+
+
+def test_the_flag_refuses():
+    proc = subprocess.run([sys.executable, "gate.py", "%s"], check=False)
+    assert proc.returncode == 1, "run it again with %s --first-seed"
+''' % (FLAG, FLAG, FLAG)
 
 UNGUARDED_TS_BODY = """// Temporary control fixture. Offers %s with no composition guard.
 if (process.argv.includes('%s')) {
@@ -323,12 +447,25 @@ def test_every_python_writer_consumes_the_guard(gate):
         gate.log_error("  baseline_additions() for the diff, write_verdict() before the write.")
         gate.log_fail("at least one Python baseline writer bypasses the composition guard")
     py = offerers_py()
+    writers = [f for f in py if f not in PY_EXEMPT and py_is_writer(f)]
+    if not writers:
+        gate.log_fail(
+            "ZERO of the %d Python file(s) naming %s is read as a WRITER. Six were on "
+            "2026-09-25; zero means the AST reading stopped recognising the argv parse, and "
+            "every guard verdict above is about nothing." % (len(py), FLAG)
+        )
     gate.log_pass(
-        "every Python baseline writer consumes the guard (%d offerer(s) scanned)" % len(py)
+        "every Python baseline writer consumes the guard (%d writer(s) among %d file(s) "
+        "naming the flag)" % (len(writers), len(py))
     )
-    # VISIBLE EVERY RUN. There is no shared Python guard yet, so each writer carries its own copy of the decision half. That is real duplication and it is stated rather than left to be discovered a second time.
+    # VISIBLE EVERY RUN, so neither the exemption nor the mention-only set can go quiet.
+    for f in PY_EXEMPT:
+        if not (ROOT / f).is_file():
+            gate.log_fail("PY_EXEMPT names %s, which no longer exists; remove the entry" % f)
+        gate.log_info("EXEMPT (the shared guard's definition site): %s" % f)
     for f in py:
-        gate.log_info("PORTED GUARD (no shared Python module exists yet): %s" % f)
+        if f not in PY_EXEMPT and f not in writers:
+            gate.log_info("NAMES THE FLAG, PARSES NO ARGV FOR IT (not a writer): %s" % f)
 
 
 def test_control_unguarded_python_reseed_is_detected(gate):
@@ -372,6 +509,70 @@ def test_control_python_mention_is_not_a_guard(gate):
             "unguarded, so this check flags correct work"
         )
     gate.log_pass("CONTROL: naming the ported guard in a comment does not count, consuming it does")
+
+
+def test_control_python_module_style_guard_is_recognised(gate):
+    """CONTROL. A writer that consumes `shrink_only` through a MODULE ALIAS (`SO.write_verdict(`) is guarded, and one that only IMPORTS the module and reseeds unconditionally is not. Without the first half this check flags correct work, which is what reddened `check_tree_shape.py` until 2026-09-25; without the second an import alone would pass."""
+    with probe(
+        ".ci/scripts/quality", "zz_composition_module_probe_port", ".py", GUARDED_MODULE_PY_BODY
+    ) as rel:
+        writer = py_is_writer(rel)
+        guarded = rel not in unguarded_py()
+        (ROOT / rel).write_text(IMPORT_ONLY_PY_BODY, encoding="utf-8")
+        import_only_caught = rel in unguarded_py()
+    if (ROOT / rel).exists():
+        gate.log_fail("python module-style probe was not removed")
+    if not writer:
+        gate.log_fail(
+            "CONTROL FAILED: a file parsing the flag off sys.argv was not read as a writer"
+        )
+    if not guarded:
+        gate.log_fail(
+            "CONTROL FAILED: a writer calling SO.write_verdict and SO.baseline_additions was "
+            "reported unguarded, so module-style consumption is not recognised"
+        )
+    if not import_only_caught:
+        gate.log_fail(
+            "CONTROL FAILED: importing shrink_only without calling it was accepted as a guard"
+        )
+    gate.log_pass(
+        "CONTROL: module-style consumption of shrink_only counts, a bare import of it does not"
+    )
+
+
+def test_control_python_string_mention_is_not_a_writer(gate):
+    """CONTROL. A test-shaped file that names the flag in a docstring, a subprocess argument and an assertion message parses no argv, so it is NOT a writer and is not reported. The corpus still SEES it, which keeps this a statement about the writer reading rather than about the enumerator."""
+    with probe(
+        ".ci/scripts/quality", "zz_composition_string_probe_port", ".py", STRING_ONLY_PY_BODY
+    ) as rel:
+        seen = rel in offerers_py()
+        writer = py_is_writer(rel)
+        reported = rel in unguarded_py()
+    if (ROOT / rel).exists():
+        gate.log_fail("python string-mention probe was not removed")
+    if not seen:
+        gate.log_fail("CONTROL FAILED: the string-mention probe was not even in the corpus")
+    if writer or reported:
+        gate.log_fail(
+            "CONTROL FAILED: a file that only names the flag in strings was read as a writer "
+            "(writer=%s, reported=%s)" % (writer, reported)
+        )
+    gate.log_pass("CONTROL: naming the flag in strings, with no argv parse, is not a writer")
+
+
+def test_control_python_exemption_is_the_definition_site(gate):
+    """CONTROL. `PY_EXEMPT` holds exactly the shared guard's home, which must exist, must define both functions, and must NOT itself parse the flag -- an exemption that covered a real writer would be a hole with a reason attached."""
+    gate.assert_eq(PY_EXEMPT, (".ci/rediacc_ci/quality/shrink_only.py",), "PY_EXEMPT is one path")
+    (home,) = PY_EXEMPT
+    tree = py_parse(home)
+    if tree is None:
+        gate.log_fail("%s does not parse" % home)
+    defined = {n.name for n in ast.walk(tree) if isinstance(n, ast.FunctionDef)}
+    if not set(PY_GUARD_FUNCS) <= defined:
+        gate.log_fail("%s no longer defines %s" % (home, ", ".join(PY_GUARD_FUNCS)))
+    if py_offers_flag(tree):
+        gate.log_fail("%s now PARSES the flag, so its exemption hides a writer" % home)
+    gate.log_pass("CONTROL: the one Python exemption is the guard's definition site, not a writer")
 
 
 def test_control_unguarded_reseed_is_detected(gate):

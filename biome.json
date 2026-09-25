@@ -114,10 +114,7 @@
     { "path": "biome-plugins/no-d1-transaction.grit", "includes": ["**/private/account/**"] },
     {
       "path": "biome-plugins/no-route-db-dynamic-import.grit",
-      "includes": [
-        "**/private/account/src/routes/**",
-        "!**/private/account/src/routes/test.ts"
-      ]
+      "includes": ["**/private/account/src/routes/**", "!**/private/account/src/routes/test.ts"]
     },
     {
       "path": "biome-plugins/no-email-literal-copy.grit",
@@ -185,11 +182,7 @@
       }
     },
     {
-      "includes": [
-        "**",
-        "!private/account/**",
-        "!packages/shared/src/**/__tests__/**"
-      ],
+      "includes": ["**", "!private/account/**", "!packages/shared/src/**/__tests__/**"],
       "plugins": [
         "biome-plugins/no-constant-alias.grit",
         "biome-plugins/no-ant-css-var.grit",

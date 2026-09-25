@@ -2,15 +2,15 @@
 exit: 1
 --- stdout ---
 info: Checking shell scripts for CI-incompatible commands...
-  Line: dc -e '1 2 + p'
-  Fix:  awk for calculations
-
   Line: seq 1 3
   Fix:  bash: for ((i=1; i<=n; i++)) or awk
+
+  Line: dc -e '1 2 + p'
+  Fix:  awk for calculations
 
 
 info: These commands may not be available in ubuntu-slim or other minimal CI images
 --- stderr ---
-error: .ci/x/b.sh:2: 'dc' not available in minimal CI
 error: .ci/x/a.sh:2: 'seq' not available in minimal CI
+error: .ci/x/b.sh:2: 'dc' not available in minimal CI
 error: Found 2 CI-incompatible command(s)

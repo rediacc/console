@@ -129,6 +129,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-gate-prerequisites | quality-code / Gate prerequisites | yes | no | no |
 | check:ci-gate-reachability-coverage | quality-static / Gate-reachability probe agrees with registrations | yes | no | no |
 | check:ci-gate-test-real-file-plants | quality-code / Gate-test real-file plants | yes | no | no |
+| check:ci-gate-tree-writes | quality-code / Gates that write the real tree declare it | yes | no | no |
 | check:ci-gates-lock | quality-code / Gates lock | yes | no | no |
 | check:ci-gen-manifest | quality-code / Generated manifest regions | yes | no | no |
 | check:ci-git-history-depth | quality-static / Git history depth | yes | no | no |
@@ -138,7 +139,6 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-go-module-sync | quality-go / Check Go module sync against the renet worktree | yes | no | no |
 | check:ci-go-tool-path | quality-code / Go tool PATH | yes | no | no |
 | check:ci-greenlight-closures | quality-code / Greenlight closure paths | yes | no | no |
-| check:ci-guard-feature-completeness | quality-static / Guard feature completeness | yes | no | no |
 | check:ci-guard-mention-anchoring | quality-code / Guard mention anchoring | yes | no | no |
 | check:ci-guard-mutations | quality-packages / Guard mutations | yes | yes | no |
 | check:ci-hint-corpus | quality-content / Behavioral hints can actually fire | yes | no | no |
@@ -394,7 +394,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 <!-- wired directory that no event names is listed here with Reached = (nothing), which is the -->
 <!-- interesting residue: a file beside the live guards that nothing can reach. -->
 
-Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the tracked files under .claude/hooks/ and .claude/rediacc_hooks/ (.claude/oracles/ excluded on purpose: those twins are wired to no event by design).
+Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the tracked files under .claude/hooks/ and .claude/rediacc_hooks/.
 
 | Hook file | Events | Reached | Language |
 |---|---|---|---|
@@ -439,7 +439,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/hooks/stop/wl_claimcheck.py | (none) | via .claude/hooks/stop/wl_checks.py | py |
 | .claude/hooks/stop/wl_classsweep.py | (none) | via .claude/hooks/stop/test-judge-schema.py | py |
 | .claude/hooks/stop/wl_common.py | (none) | via .claude/hooks/stop/wl_admit.py | py |
-| .claude/hooks/stop/wl_core.py | (none) | via .claude/hooks/context/onboard.py | py |
+| .claude/hooks/stop/wl_core.py | (none) | via .claude/hooks/context/ctx_budget.py | py |
 | .claude/hooks/stop/wl_defersettle.py | (none) | via .claude/hooks/stop/wl_checks.py | py |
 | .claude/hooks/stop/wl_deflect.py | (none) | via .claude/hooks/stop/wl_bgsweep.py | py |
 | .claude/hooks/stop/wl_epic.py | (none) | via .claude/hooks/stop/worklist.py | py |
@@ -464,6 +464,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/hooks/stop/wl_report.py | SubagentStop | settings.json | py |
 | .claude/hooks/stop/wl_resprofile.py | (none) | via .claude/hooks/stop/wl_checks.py | py |
 | .claude/hooks/stop/wl_ressample.py | (none) | via .claude/hooks/stop/wl_common.py | py |
+| .claude/hooks/stop/wl_retro.py | (none) | via .claude/hooks/context/ctx_budget.py | py |
 | .claude/hooks/stop/wl_roster.py | (none) | via .claude/hooks/stop/wl_checks.py | py |
 | .claude/hooks/stop/wl_roundlog.py | (none) | via .claude/hooks/stop/wl_checks.py | py |
 | .claude/hooks/stop/wl_rules.py | (none) | via .claude/hooks/stop/test-judge-schema.py | py |
@@ -473,10 +474,10 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/hooks/stop/worklist_messages.py | (none) | via .claude/hooks/stop/wl_agents.py | py |
 | .claude/hooks/trapguard/dispatch.py | (none) | via .claude/hooks/chain-head.sh | py |
 | .claude/hooks/why-on-edit.py | (none) | via .claude/hooks/stop/test-planrec.py | py |
-| .claude/rediacc_hooks/__init__.py | (none) | via .claude/hooks/stop/test-judge-schema.py | py |
+| .claude/rediacc_hooks/__init__.py | (none) | via .claude/hooks/context/stop-hook-edit-check.py | py |
 | .claude/rediacc_hooks/dispatch.py | (none) | via .claude/hooks/chain-head.sh | py |
 | .claude/rediacc_hooks/execcount.py | (none) | (nothing) | py |
-| .claude/rediacc_hooks/guards/__init__.py | (none) | via .claude/hooks/stop/test-judge-schema.py | py |
+| .claude/rediacc_hooks/guards/__init__.py | (none) | via .claude/hooks/context/stop-hook-edit-check.py | py |
 | .claude/rediacc_hooks/guards/block_adhoc_sanctioned.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_admin_merge.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_agent_browser_repo_output.py | (none) | via dispatch.py (glob) | py |
@@ -546,7 +547,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/proc.py | (none) | via .claude/hooks/context/stop-hook-edit-check.py | py |
 | .claude/rediacc_hooks/run_tests.py | (none) | via .claude/rediacc_hooks/hookio.py | py |
 | .claude/rediacc_hooks/shellscan.py | (none) | via .claude/rediacc_hooks/guards/block_adhoc_sanctioned.py | py |
-| .claude/rediacc_hooks/tests/__init__.py | (none) | via .claude/hooks/stop/test-judge-schema.py | py |
+| .claude/rediacc_hooks/tests/__init__.py | (none) | via .claude/hooks/context/stop-hook-edit-check.py | py |
 | .claude/rediacc_hooks/tests/corpus.py | (none) | via .claude/hooks/context/onboard.py | py |
 | .claude/rediacc_hooks/tests/guardcorpus.py | (none) | via .claude/rediacc_hooks/tests/corpus.py | py |
 | .claude/rediacc_hooks/tests/hookblocks.py | (none) | via .claude/rediacc_hooks/tests/test_hooks_fixtures.py | py |
@@ -570,6 +571,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/tests/test_wl_agent_session_archival.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_background_waits.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_cadence.py | (none) | via pytest (testpaths) | py |
+| .claude/rediacc_hooks/tests/test_wl_cap_wait.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_checklists.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_ci_queue_and_mail.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_ci_status.py | (none) | via pytest (testpaths) | py |
@@ -606,7 +608,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/tests/test_wl_waiter_controls.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/wlfix.py | (none) | via .claude/hooks/stop/wl_popup.py | py |
 
-207 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
+209 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
 
 <!-- <<< gen-docs -->
 
@@ -640,7 +642,7 @@ Scans: every tracked non-source, non-prose file carrying a `BLOCKER:` line.
 | .ci/policy/.embed-assets-upgrade-blocklist | 2 | # comment |
 | .ci/policy/.go-deps-upgrade-blocklist | 4 | # comment |
 | .ci/policy/.host-toolchain-exceptions | 1 | prose only (no live entry) |
-| .ci/policy/.language-policy-allowlist | 19 | # comment |
+| .ci/policy/.language-policy-allowlist | 18 | # comment |
 | .ci/policy/.plan-housekeeping-allowlist | 1 | prose only (no live entry) |
 | .ci/policy/.profiler-coverage-allowlist | 4 | # comment |
 | .ci/policy/.runner-advice-allowlist | 1 | prose only (no live entry) |
@@ -681,7 +683,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/breakpoint/lib | 2 | .sh 2 |
 | .ci/breakpoint/scripts | 20 | .sh 20 |
 | .ci/breakpoint/workflow | 1 | .yml 1 |
-| .ci/config | 35 | .json 28, .txt 4, .conf 1, .sh 1, .yaml 1 |
+| .ci/config | 36 | .json 29, .txt 4, .conf 1, .sh 1, .yaml 1 |
 | .ci/docker | 1 | .sh 1 |
 | .ci/docker/ci | 1 | .yml 1 |
 | .ci/docker/render | 1 | (none) 1 |
@@ -712,12 +714,12 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/pr | 2 | .py 2 |
 | .ci/rediacc_ci/private | 9 | .py 9 |
 | .ci/rediacc_ci/proxies | 10 | .py 10 |
-| .ci/rediacc_ci/quality | 106 | .py 106 |
+| .ci/rediacc_ci/quality | 108 | .py 108 |
 | .ci/rediacc_ci/release | 25 | .py 25 |
 | .ci/rediacc_ci/review | 6 | .py 6 |
 | .ci/rediacc_ci/security | 10 | .py 10 |
 | .ci/rediacc_ci/setup | 12 | .py 12 |
-| .ci/rediacc_ci/tests | 290 | .py 290 |
+| .ci/rediacc_ci/tests | 291 | .py 291 |
 | .ci/rediacc_ci/tests/data | 2 | .json 1, .yml 1 |
 | .ci/rediacc_ci/tests/gates | 173 | .py 172, .fixture 1 |
 | .ci/rediacc_ci/tests/goldens/actionlint | 17 | .golden 17 |
@@ -973,7 +975,7 @@ Scans: every tracked `.json`/`.jsonc` file in the four homes the driver contract
 | `.ci/config/bulk-transform-proof-baseline.json` | .ci/config | code: `.claude/rediacc_hooks/guards/block_unproven_bulk_transform.py` | no -- hardcoded in `.claude/rediacc_hooks/guards/block_unproven_bulk_transform.py` |
 | `.ci/config/bws-secret-map.json` | .ci/config | wiring: `.github/actions/bws-secrets/action.yml` | yes -- repoint in `.github/actions/bws-secrets/action.yml` |
 | `.ci/config/bws-unrequested.json` | .ci/config | code: `.ci/rediacc_ci/tests/gates/test_gate_bws_map.py` | no -- hardcoded in `.ci/rediacc_ci/tests/gates/test_gate_bws_map.py` |
-| `.ci/config/carried-reds.json` | .ci/config | code: `.claude/oracles/pre-bash/block-unverified-push.sh` | no -- hardcoded in `.claude/oracles/pre-bash/block-unverified-push.sh` |
+| `.ci/config/carried-reds.json` | .ci/config | code: `.claude/rediacc_hooks/guards/block_unverified_push.py` | no -- hardcoded in `.claude/rediacc_hooks/guards/block_unverified_push.py` |
 | `.ci/config/commit-identity.json` | .ci/config | code: `.ci/rediacc_ci/quality/commit_identity.py` | no -- hardcoded in `.ci/rediacc_ci/quality/commit_identity.py` |
 | `.ci/config/docker-npm-pin-exclusions.json` | .ci/config | code: `.ci/scripts/quality/check_allowlist_key_matching.py` | no -- hardcoded in `.ci/scripts/quality/check_allowlist_key_matching.py` |
 | `.ci/config/env-manifest.json` | .ci/config | code: `.ci/rediacc_ci/quality/actions_vars.py` | no -- hardcoded in `.ci/rediacc_ci/quality/actions_vars.py` |
@@ -993,6 +995,7 @@ Scans: every tracked `.json`/`.jsonc` file in the four homes the driver contract
 | `.ci/config/secret-supply.json` | .ci/config | code: `.ci/lib/account.sh` | no -- hardcoded in `.ci/lib/account.sh` |
 | `.ci/config/syncpack-source-exclusions.json` | .ci/config | code: `.ci/scripts/quality/check_language_policy.py` | no -- hardcoded in `.ci/scripts/quality/check_language_policy.py` |
 | `.ci/config/tracked-credentials-baseline.json` | .ci/config | code: `.ci/rediacc_ci/quality/python_env_registry.py` | no -- hardcoded in `.ci/rediacc_ci/quality/python_env_registry.py` |
+| `.ci/config/tree-write-mutators.json` | .ci/config | code: `.ci/rediacc_ci/quality/gate_tree_writes.py` | no -- hardcoded in `.ci/rediacc_ci/quality/gate_tree_writes.py` |
 | `scripts/data/css-dom-refs-baseline.json` | scripts/data | code: `scripts/ci-runner/manifest.ts` | no -- hardcoded in `scripts/ci-runner/manifest.ts` |
 | `scripts/data/dead-css-baseline.json` | scripts/data | code: `scripts/ci-runner/manifest.ts` | no -- hardcoded in `scripts/ci-runner/manifest.ts` |
 | `scripts/data/dead-translation-keys-baseline.json` | scripts/data | code: `scripts/ci-runner/manifest.ts` | no -- hardcoded in `scripts/ci-runner/manifest.ts` |
@@ -1023,7 +1026,7 @@ Scans: every tracked `.json`/`.jsonc` file in the four homes the driver contract
 | `.ci/policy/tree-shape.json` | .ci/policy | code: `.ci/rediacc_ci/policy_paths.py` | no -- hardcoded in `.ci/rediacc_ci/policy_paths.py` |
 | `.ci/policy/worklist-env-registry.json` | .ci/policy | code: `.ci/rediacc_ci/policy_paths.py` | no -- hardcoded in `.ci/rediacc_ci/policy_paths.py` |
 
-66 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
+67 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
 
 <!-- <<< gen-docs -->
 

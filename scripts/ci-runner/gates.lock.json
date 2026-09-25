@@ -122,9 +122,6 @@
     "slow": true,
     "gate": true,
     "heavy": true,
-    "mutex": [
-      "www-src-probe"
-    ],
     "leaves": [
       ".ci/rediacc_ci/quality/typecheck_workers.py",
       "knip"
@@ -211,9 +208,6 @@
     "slow": true,
     "run": "npm run check:i18n:key-usage",
     "gate": true,
-    "mutex": [
-      "www-src-probe"
-    ],
     "leaves": [
       "scripts/__tests__/check-translation-key-usage.control.ts",
       "scripts/gates/check-translation-key-usage.ts"
@@ -706,6 +700,10 @@
     "gate": true,
     "weight": 2,
     "heavy": true,
+    "mutex": [
+      "tree:repo"
+    ],
+    "writesTree": "copies packages/cli sources into packages/cli/.guard-mutations.<pid>.<rand>.tmp and mutates them there",
     "leaves": [
       "scripts/gates/check-guard-mutations.ts"
     ],
@@ -771,6 +769,10 @@
     "run": "npm run check:test:tutorial-player",
     "slow": true,
     "gate": true,
+    "mutex": [
+      "tree:repo"
+    ],
+    "writesTree": "writes its run artifacts under artifacts/tutorial-player-release-gate/<timestamp> in the repo",
     "paths": [
       "packages/www/**",
       "packages/shared/**",
@@ -1273,7 +1275,6 @@
     "run": "npm run check:ci-guard-mention-anchoring",
     "gate": true,
     "paths": [
-      ".claude/oracles/**",
       ".claude/rediacc_hooks/guards/**",
       ".claude/rediacc_hooks/dispatch.py",
       ".ci/scripts/quality/check_guard_mention_anchoring.py"
@@ -1533,6 +1534,10 @@
     "run": "npm run check:ci-security-audit",
     "slow": true,
     "gate": true,
+    "mutex": [
+      "tree:repo"
+    ],
+    "writesTree": "writes npm audit reports (audit-prod.json and friends) and .audit-advisory-cache at the repo root",
     "leaves": [
       ".ci/rediacc_ci/security/audit.py"
     ],
@@ -2083,6 +2088,10 @@
     },
     "run": "npm run check:ci-plan-record",
     "gate": true,
+    "mutex": [
+      "tree:repo"
+    ],
+    "writesTree": "appends the daily census row to the tracked agent/ledgers/census-plan-record.jsonl",
     "paths": [
       "agent/plans/**",
       "agent/INDEX.md",
@@ -2346,25 +2355,6 @@
       "workflow": ".github/workflows/ci-quality.yml",
       "job": "quality-static",
       "step": "Hooks resolvable"
-    }
-  },
-  {
-    "id": "check:ci-guard-feature-completeness",
-    "run": "npm run check:ci-guard-feature-completeness",
-    "gate": true,
-    "paths": [
-      ".claude/hooks/**",
-      ".ci/scripts/quality/check_guard_feature_completeness.py"
-    ],
-    "pathsOrigin": "declared",
-    "leaves": [
-      ".ci/scripts/quality/check_guard_feature_completeness.py"
-    ],
-    "ci": {
-      "kind": "step",
-      "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-static",
-      "step": "Guard feature completeness"
     }
   },
   {
@@ -2842,6 +2832,33 @@
       "workflow": ".github/workflows/ci-quality.yml",
       "job": "quality-static",
       "step": "Pool-registered tests do not write the real tree"
+    }
+  },
+  {
+    "id": "check:ci-gate-tree-writes",
+    "run": "npm run check:ci-gate-tree-writes",
+    "gate": true,
+    "paths": [
+      ".ci/rediacc_ci/**",
+      ".ci/scripts/**",
+      "scripts/**",
+      "packages/*/scripts/**",
+      "eslint-rules/**",
+      ".ci/breakpoint/scripts/**",
+      ".claude/hooks/**",
+      "package.json",
+      "scripts/ci-runner/gates.lock.json",
+      ".ci/config/tree-write-mutators.json"
+    ],
+    "pathsOrigin": "declared",
+    "leaves": [
+      ".ci/scripts/quality/check_gate_tree_writes.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Gates that write the real tree declare it"
     }
   },
   {
@@ -3743,8 +3760,10 @@
     "run": "npm run check:ci-renet-types",
     "gate": true,
     "mutex": [
-      "renet-bin"
+      "renet-bin",
+      "tree:repo"
     ],
+    "writesTree": "builds bin/renet inside the private/renet submodule (go build -o bin/renet)",
     "leaves": [
       ".ci/scripts/quality/check_renet_types.py"
     ],
@@ -4282,6 +4301,10 @@
     "id": "check:ci-search-index",
     "run": "npm run check:ci-search-index",
     "gate": true,
+    "mutex": [
+      "tree:repo"
+    ],
+    "writesTree": "regenerates the tracked packages/www/public search-index files in place and restores them from a temp backup",
     "leaves": [
       "scripts/gates/check-search-index-freshness.ts"
     ],
@@ -5100,6 +5123,7 @@
     "mutex": [
       "tree:repo"
     ],
+    "writesTree": "test_gate_gate_anti_vacuity.py and test_gate_generate_tag_inputs.py (the pytest ports in the real-tree xdist group) overwrite tracked files while they run",
     "paths": [
       ".ci/rediacc_ci/**",
       ".claude/rediacc_hooks/**",
@@ -5492,6 +5516,10 @@
     "slow": true,
     "gate": true,
     "heavy": true,
+    "mutex": [
+      "tree:repo"
+    ],
+    "writesTree": "stages workers/proxy/renet/renet-linux-amd64 into the docker build context (Dockerfile:54 COPY)",
     "leaves": [
       ".ci/scripts/quality/check_proxy_image_smoke.py"
     ],

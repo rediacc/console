@@ -42,6 +42,7 @@ import sys
 
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Checker, controls_first, plant
+from rediacc_ci.quality import shrink_only
 
 BASELINE_REL = ".ci/config/account-env-retired-baseline.json"
 SUPPLY_REL = ".ci/config/secret-supply.json"
@@ -55,7 +56,6 @@ MENTION_RE = re.compile(
 EXCLUDED = {
     "agent/": "plans, ledgers and worklists: the record of the migration itself",
     ".ci/shadow/": "shadow-gate observation ledgers: recorded history, never edited",
-    ".claude/oracles/": "the FROZEN bash originals of the hook guards (.claude/oracles/README.md)",
     ".ci/rediacc_ci/tests/goldens/": "recorded bytes of deleted twins, compared, never edited",
     "packages/www/public/search-index": "generated from the docs corpus at build time",
     ".ci/rediacc_ci/quality/account_env_retired.py": "this gate: asserting a file has not come back requires naming it",
@@ -215,14 +215,23 @@ def run(root=None, env=None):
     return findings, stats, found, spec
 
 
+def _mention_id(rel: str, k: int) -> str:
+    return "%s#%d" % (rel, k)
+
+
 def write_baseline(root: pathlib.Path) -> int:
     """Shrink the baseline to the tree. Never adds a file or raises a count."""
     files = tracked(root)
     old = load_baseline(root)
     found = scan(root, files)
     spec = json.loads((root / SUPPLY_REL).read_text(encoding="utf-8"))
-    grown = [r for r, n in found.items() if n > old["mentions"].get(r, 0)]
-    if grown:
+    # THE ADD DECISION IS `shrink_only`'s, the one every Python shrink-only baseline shares. The baseline is a MULTISET (path -> count), so each mention becomes one id, `path#k`: a file new to the baseline and a file whose count rose both surface as additions, and a file that only fell does not.
+    added = shrink_only.baseline_additions(
+        [_mention_id(r, k) for r, n in old["mentions"].items() for k in range(n)],
+        [_mention_id(r, k) for r, n in found.items() for k in range(n)],
+    )
+    grown = sorted({entry.rsplit("#", 1)[0] for entry in added})
+    if shrink_only.write_verdict(baseline_exists=True, first_seed=False, additions=added):
         log.error(
             "refusing: %d file(s) would GROW the baseline: %s"
             % (len(grown), ", ".join(sorted(grown)))

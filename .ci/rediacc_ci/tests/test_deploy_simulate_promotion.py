@@ -33,6 +33,7 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.deploy import simulate_promotion as port
+from rediacc_ci.tests import differential as diff
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -312,6 +313,8 @@ def _run(
     env = {
         "PATH": _bin(root, drop=drop),
         "HOME": os.environ.get("HOME", "/tmp"),
+        # The per-run child TMPDIR, so the twin's leftover `mktemp` files land in a directory removed at exit (see differential._child_tmpdir).
+        "TMPDIR": diff.BASE_ENV["TMPDIR"],
         "LC_ALL": "C.UTF-8",
         "LANG": "C.UTF-8",
         "PYTHONPATH": str(ROOT / ".ci"),
@@ -808,6 +811,8 @@ def test_planted_defect_is_caught_by_the_call_log(tmp_path) -> None:
     env = {
         "PATH": _bin(root),
         "HOME": os.environ.get("HOME", "/tmp"),
+        # The per-run child TMPDIR, so the twin's leftover `mktemp` files land in a directory removed at exit (see differential._child_tmpdir).
+        "TMPDIR": diff.BASE_ENV["TMPDIR"],
         "LC_ALL": "C.UTF-8",
         "LANG": "C.UTF-8",
         "PYTHONPATH": str(ROOT / ".ci"),

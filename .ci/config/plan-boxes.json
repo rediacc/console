@@ -186,26 +186,26 @@
         "4b5f738a",
         "57dfc419",
         "6d253913",
+        "8250d2d1",
         "b3a64bda",
         "c252b0e4",
         "c9d3538b",
         "ce9b9049",
         "cf3eb8e8",
         "d8978b81",
-        "e471495f",
         "e98b7a2e",
         "f4dd96de",
         "f684f77e",
         "f6cbcd94"
       ],
       "done_sigs": [
+        "28a55538",
         "2c61ce10",
         "5b1bb5da",
+        "62f63524",
         "6b7864bb",
-        "80521723",
         "8b32fe16",
         "be28a628",
-        "c1fcfef2",
         "caf9f4b7",
         "e01d11c9",
         "f8911c29"
@@ -302,26 +302,69 @@
       "done": 19,
       "open_sigs": [],
       "done_sigs": [
+        "18b13e64",
         "1c25eaa3",
+        "2253739c",
         "34d6cfda",
+        "389f9f5e",
         "3e197056",
-        "4c5b9a40",
         "54c044e5",
+        "5e723e11",
         "5ea691d6",
-        "5f87f9e6",
         "630e9afc",
-        "782b00ba",
         "787910e8",
         "82248a22",
-        "9beb3e92",
-        "a3b772a1",
         "bb8f82e2",
         "bd9985aa",
         "c3a69a36",
+        "cb1088d8",
         "d54d28ed",
         "e0c269f4",
         "ec86975c"
       ]
+    },
+    "agent/plans/PLAN-ci-time-budget.md": {
+      "status": "draft",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 32,
+      "done": 0,
+      "open_sigs": [
+        "03ced1ab",
+        "0c3fb9c2",
+        "0d4328d2",
+        "0ffa40af",
+        "1adbac43",
+        "20920628",
+        "228ebe52",
+        "2cab8701",
+        "3f2a10d5",
+        "40d018af",
+        "4f4b649d",
+        "528d80bd",
+        "58f16ba1",
+        "5f91d28e",
+        "6181b233",
+        "63b346b7",
+        "64140b11",
+        "652eaace",
+        "65800f04",
+        "6b325073",
+        "75f5093f",
+        "76200590",
+        "8cada800",
+        "8dafb211",
+        "badc1662",
+        "c194e3bd",
+        "dccc2911",
+        "e3d401b7",
+        "f70025df",
+        "f979d2d4",
+        "fbbc21ea",
+        "fd8a0f0c"
+      ],
+      "done_sigs": []
     },
     "agent/plans/PLAN-ci-trace-no-pr-branch.md": {
       "status": "compacted",
@@ -405,6 +448,28 @@
       "open": 0,
       "done": 0,
       "open_sigs": [],
+      "done_sigs": []
+    },
+    "agent/plans/PLAN-config-handoff-relay-only.md": {
+      "status": "draft",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 11,
+      "done": 0,
+      "open_sigs": [
+        "0ff08bfc",
+        "26f06abf",
+        "2a7400ec",
+        "2ea7ccfb",
+        "39dbf00f",
+        "58c053ae",
+        "695b137a",
+        "705ef39a",
+        "90d26a33",
+        "eac723b1",
+        "f24d5818"
+      ],
       "done_sigs": []
     },
     "agent/plans/PLAN-config-passkey-optional.md": {
@@ -783,6 +848,34 @@
         "fe9599e6"
       ]
     },
+    "agent/plans/PLAN-per-commit-review.md": {
+      "status": "draft",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 17,
+      "done": 0,
+      "open_sigs": [
+        "0020a00c",
+        "002fa00e",
+        "25852d98",
+        "298dca41",
+        "31c20e0b",
+        "506b630a",
+        "86abe2cd",
+        "94225721",
+        "adda6c0e",
+        "c146199e",
+        "ce21d5be",
+        "d401fcfa",
+        "dae6822c",
+        "dc2d53a3",
+        "e282d634",
+        "f37723cf",
+        "fbbcf759"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-plan-dependencies.md": {
       "status": "approved",
       "owner": "d778be9d",
@@ -803,6 +896,29 @@
         "98e8fe4f",
         "99fbddd7",
         "cd2f60ac"
+      ],
+      "done_sigs": []
+    },
+    "agent/plans/PLAN-plan-priority-concurrency.md": {
+      "status": "draft",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 12,
+      "done": 0,
+      "open_sigs": [
+        "2245bc52",
+        "34d0dc5e",
+        "3da37da2",
+        "3dd11297",
+        "5f2f6103",
+        "663c28a2",
+        "7130379b",
+        "7b81a161",
+        "8c6768b8",
+        "bbcb36e3",
+        "cbf22d66",
+        "cef6fb0f"
       ],
       "done_sigs": []
     },
@@ -1076,7 +1192,7 @@
     },
     "agent/plans/PLAN-retire-bash-oracles.md": {
       "status": "approved",
-      "owner": "unowned",
+      "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
       "open": 15,
@@ -1286,16 +1402,16 @@
       "done_sigs": []
     },
     "agent/plans/PLAN-stop-hook-cap-saturated-wait.md": {
-      "status": "approved",
+      "status": "done",
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 1,
-      "done": 0,
-      "open_sigs": [
+      "open": 0,
+      "done": 1,
+      "open_sigs": [],
+      "done_sigs": [
         "7433b50f"
-      ],
-      "done_sigs": []
+      ]
     },
     "agent/plans/PLAN-stop-hook-continuity.md": {
       "status": "executing",
@@ -1328,6 +1444,26 @@
         "f2999444",
         "f7701196",
         "ffe447ad"
+      ]
+    },
+    "agent/plans/PLAN-stop-hook-focus-mode.md": {
+      "status": "draft",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 2,
+      "done": 6,
+      "open_sigs": [
+        "2a3fb45f",
+        "b24ba0ec"
+      ],
+      "done_sigs": [
+        "52231803",
+        "5e1f6063",
+        "9963ca72",
+        "ac377422",
+        "cac06e80",
+        "cc299bc2"
       ]
     },
     "agent/plans/PLAN-stop-hook-overhaul.md": {
@@ -1385,25 +1521,55 @@
       "folder": "agent/plans",
       "moved_at": "",
       "open": 1,
-      "done": 14,
+      "done": 22,
       "open_sigs": [
         "6981d5e0"
       ],
       "done_sigs": [
         "00e15331",
+        "0e756125",
+        "1f4e5e5c",
+        "2d41906f",
         "39fccafe",
+        "3dec094e",
         "45268745",
         "56e79ec7",
+        "5d3a1128",
+        "771fb0c2",
         "874cd0d4",
         "8d27f484",
         "95685b6b",
-        "961791b3",
         "9c1023b5",
         "a221c310",
+        "aa78a955",
         "d41dc495",
+        "d589ce24",
         "dd0a9bdf",
+        "de5d2b7c",
         "ec7e1350",
         "fe5f27ef"
+      ]
+    },
+    "agent/plans/PLAN-stop-hook-retro-20260925.md": {
+      "status": "ready",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 7,
+      "done": 3,
+      "open_sigs": [
+        "15f901d8",
+        "2a8b21c4",
+        "5abd062b",
+        "635422d7",
+        "6e6c3a0b",
+        "bfc9b7cd",
+        "d23fa70e"
+      ],
+      "done_sigs": [
+        "121dc28c",
+        "759c2b51",
+        "bec5a550"
       ]
     },
     "agent/plans/PLAN-stop-hook-rulings-campaign.md": {

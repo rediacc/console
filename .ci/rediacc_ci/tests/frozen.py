@@ -15,6 +15,8 @@ the recorded shape.
 
 from __future__ import annotations
 
+import re
+import typing
 from typing import TYPE_CHECKING
 
 from rediacc_ci import paths
@@ -37,6 +39,37 @@ def mask_root(text: str, root: pathlib.Path) -> str:
         for spelling in (str(path), str(path.resolve())):
             text = text.replace(spelling, token)
     return text
+
+
+HOST_ENV_NAMES = ("PATH", "HOME")
+
+# bash's arithmetic-error clause, in either dialect, anchored on the three continuations bash prints after it, so a `syntax error near unexpected token` elsewhere in a stream is left alone.
+_ARITH_CLAUSE_RE = re.compile(
+    r"(?:arithmetic )?syntax error(?= in expression|: operand expected|: invalid arithmetic operator)"
+)
+ARITH_CLAUSE_MASK = "<arith-syntax-error>"
+
+
+def mask_env(text: str, env: typing.Mapping[str, str | None]) -> str:
+    """Replace the child's own `$PATH` and `$HOME` values with `<PATH>` and `<HOME>`.
+
+    A HOST VALUE, NOT A FIXTURE VALUE. A case that feeds the NAME of a variable to bash arithmetic gets that variable's value echoed back in the diagnostic, and a child's PATH and HOME are the machine's own (`differential.BASE_ENV` passes them through). The differential ran both sides with the same env, so the value cancelled out; a recording carries the recorder's PATH and fails on every other machine, every other shell profile, and here the moment a plugin appends one directory. The recorded side holds the token in place of the value.
+
+    PATH first, because its entries usually contain HOME. A value of `/` or shorter is skipped rather than masked, since replacing it would shred every absolute path in the stream. Callers mask their fixture paths (`<out>`, `<root>`) before this, so a HOME that prefixes the checkout does not eat it.
+    """
+    for name in HOST_ENV_NAMES:
+        value = env.get(name)
+        if value and len(value) > 1:
+            text = text.replace(value, "<%s>" % name)
+    return text
+
+
+def mask_arith_dialect(text: str) -> str:
+    """Fold bash's arithmetic-error clause to `<arith-syntax-error>`, on both sides of a comparison.
+
+    bash 5.3 says `arithmetic syntax error` where 5.2 says `syntax error` (`rediacc_ci.core.bash_dialect`), and a port that asks the running bash reproduces whichever the host has. The recordings were taken on a 5.3 host and CI runners are 5.2, so a verbatim comparison passes locally and fails only where nobody is looking. The differential compared two runs on ONE bash and never saw the difference; folding it restores exactly that comparison and no more.
+    """
+    return _ARITH_CLAUSE_RE.sub(ARITH_CLAUSE_MASK, text)
 
 
 def directory(slug: str) -> pathlib.Path:

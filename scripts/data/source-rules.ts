@@ -635,8 +635,7 @@ function i18nJsonInstances(cfg: {
   cliFlags?: boolean;
   extraUntranslatedPatterns?: string[];
 }): RuleInstance[] {
-  const languages = NON_ENGLISH_LOCALES;
-  const nonEnglishFiles = languages.map((lang) => `${cfg.localesDir}/${lang}/**/*.json`);
+  const nonEnglishFiles = NON_ENGLISH_LOCALES.map((lang) => `${cfg.localesDir}/${lang}/**/*.json`);
   const localesDirAbs = cfg.localesDir;
   const out: RuleInstance[] = [];
   if (cfg.cliSyntax) {

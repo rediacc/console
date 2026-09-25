@@ -21,6 +21,7 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.proxies import unit_tests
+from rediacc_ci.tests import differential as diff
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -118,6 +119,8 @@ def _env(fixture: pathlib.Path, path: str | None = None) -> dict[str, str]:
     return {
         "PATH": path if path is not None else os.environ.get("PATH", "/usr/bin:/bin"),
         "HOME": str(home),
+        # The per-run child TMPDIR, so what the subjects leave behind with `mktemp` or `os.tmpdir()` lands in a directory removed at exit (see differential._child_tmpdir).
+        "TMPDIR": diff.BASE_ENV["TMPDIR"],
         "npm_config_cache": str(home / ".npm"),
         # NPM'S UPGRADE NOTICE IS ORDER-DEPENDENT, so it is switched off rather than filtered. npm prints "New major version of npm available!" at most once per interval and records that it has done so IN THE CACHE -- which both subjects share, because the line above deliberately points them at one fixture-local cache. So the twin runs first, gets the notice, and the port runs
         # second and does not:
@@ -202,6 +205,8 @@ def _real_tree_env(no_color: bool = True) -> dict[str, str]:
     env = {
         "PATH": os.environ.get("PATH", ""),
         "HOME": os.environ.get("HOME", "/tmp"),
+        # The per-run child TMPDIR, so what the subjects leave behind with `mktemp` or `os.tmpdir()` lands in a directory removed at exit (see differential._child_tmpdir).
+        "TMPDIR": diff.BASE_ENV["TMPDIR"],
         "LC_ALL": "C",
         "LANG": "C",
         "PYTHONPATH": str(ROOT / ".ci"),

@@ -95,6 +95,8 @@ def _argv(subject: pathlib.Path, fixture: pathlib.Path) -> tuple[list[str], dict
     env = {
         "PATH": os.environ.get("PATH", ""),
         "HOME": os.environ.get("HOME", ""),
+        # The SAME temp base `TMP_RE` is built from, stated rather than inherited, so the subject's `mktemp` paths and the mask agree whatever TMPDIR the test process itself runs with.
+        "TMPDIR": tempfile.gettempdir(),
         "LC_ALL": "C",
         "PYTHONPATH": str(ROOT / ".ci"),
         "PYTHONDONTWRITEBYTECODE": "1",

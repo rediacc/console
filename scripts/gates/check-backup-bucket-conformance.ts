@@ -56,6 +56,7 @@
 import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { joinReport } from '../lib/console.js';
 
 const ROOT = join(fileURLToPath(new URL('.', import.meta.url)), '..', '..');
 
@@ -244,23 +245,27 @@ for (const d of deployments) {
 
 if (problems.length > 0) {
   console.error(
-    `✗ backup bucket conformance broken (${problems.length} problem(s)):\n${problems.join('\n')}\n\n` +
-      '  regions.json is what the deploy hands the presign signer; the wrangler toml\n' +
-      '  is what the Worker actually reads and GCs. When they disagree, clients upload\n' +
-      '  chunks to one bucket while the sweep deletes from another, and nothing errors\n' +
-      '  — the backup simply is not there when someone restores.\n\n' +
-      '  Fix by making regions.json match the bindings (or the bindings match\n' +
-      '  regions.json), then re-run. Do NOT reintroduce a global ACCOUNT_BACKUP_S3_BUCKET secret:\n' +
+    joinReport(
+      `✗ backup bucket conformance broken (${problems.length} problem(s)):\n${problems.join('\n')}\n\n`,
+      '  regions.json is what the deploy hands the presign signer; the wrangler toml\n',
+      '  is what the Worker actually reads and GCs. When they disagree, clients upload\n',
+      '  chunks to one bucket while the sweep deletes from another, and nothing errors\n',
+      '  — the backup simply is not there when someone restores.\n\n',
+      '  Fix by making regions.json match the bindings (or the bindings match\n',
+      '  regions.json), then re-run. Do NOT reintroduce a global ACCOUNT_BACKUP_S3_BUCKET secret:\n',
       '  one global name against six bindings is the defect this gate exists for.'
+    )
   );
   process.exit(1);
 }
 
 console.log(
-  `✓ backup bucket conformance: ${deployments.length} deployment(s), bucket and\n` +
-    '  jurisdiction agree between regions.json and every wrangler binding\n' +
-    '  (extractor control fired both ways).\n' +
-    '  Blind spot, stated so a green is not read as more than it is: this proves the\n' +
-    '  two DECLARATIONS agree. It does not prove either bucket exists in Cloudflare,\n' +
+  joinReport(
+    `✓ backup bucket conformance: ${deployments.length} deployment(s), bucket and\n`,
+    '  jurisdiction agree between regions.json and every wrangler binding\n',
+    '  (extractor control fired both ways).\n',
+    '  Blind spot, stated so a green is not read as more than it is: this proves the\n',
+    '  two DECLARATIONS agree. It does not prove either bucket exists in Cloudflare,\n',
     '  nor that the R2 credential is scoped to reach it.'
+  )
 );

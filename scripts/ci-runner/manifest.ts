@@ -166,7 +166,7 @@ export const GATES: readonly GateSpec[] = [
     slow: true, // 13.4s measured
     gate: true,
     heavy: true,
-    mutex: ['www-src-probe'], // see check:i18n
+    // NO `www-src-probe` MUTEX ANY MORE: it kept knip away from the __control_probe__.tsx that check:i18n:key-usage's control planted in packages/www/src. The control plants into a temp mirror since 2026-09-24 (check:ci-gate-tree-writes V4), so there is nothing left to keep apart.
     leaves: ['.ci/rediacc_ci/quality/typecheck_workers.py', 'knip'],
     ci: {
       kind: 'step',
@@ -254,9 +254,7 @@ export const GATES: readonly GateSpec[] = [
     slow: true,
     run: 'npm run check:i18n:key-usage',
     gate: true,
-    // check-translation-key-usage.control.ts writes __control_probe__.tsx INTO packages/www/src for the length of its run. knip (lint:unused) scanning at the same moment reported it as an unused file (seen 2026-09-02 in a full run). knip refuses an ignore entry for a file that is not on disk, so the two are kept apart here instead. The mutex moved down from check:i18n when that
-    // entry became a gate:false aggregate: it is this child, not the aggregate, that plants the probe.
-    mutex: ['www-src-probe'],
+    // check-translation-key-usage.control.ts USED TO write __control_probe__.tsx INTO packages/www/src for the length of its run, and knip (lint:unused) reported it as an unused file (seen 2026-09-02 in a full run), so the two held a `www-src-probe` mutex. The control now plants into a temp mirror through the gate's KEY_USAGE_WWW_SRC seam (check:ci-gate-tree-writes V4), so the mutex is gone from both entries.
     leaves: [
       'scripts/__tests__/check-translation-key-usage.control.ts',
       'scripts/gates/check-translation-key-usage.ts',
@@ -703,6 +701,10 @@ export const GATES: readonly GateSpec[] = [
     gate: true,
     weight: 2,
     heavy: true,
+    // check:ci-gate-tree-writes V11. The sandbox sits INSIDE packages/cli so its copies resolve the workspace's node_modules; a temp mirror with a node_modules link is the real fix.
+    mutex: ['tree:repo'],
+    writesTree:
+      'copies packages/cli sources into packages/cli/.guard-mutations.<pid>.<rand>.tmp and mutates them there',
     leaves: ['scripts/gates/check-guard-mutations.ts'],
     ci: {
       kind: 'step',
@@ -763,6 +765,10 @@ export const GATES: readonly GateSpec[] = [
     run: 'npm run check:test:tutorial-player',
     slow: true, // spins up a real astro dev server; measured ~90s+ cold
     gate: true,
+    // check:ci-gate-tree-writes V10: the run directory is repo-relative.
+    mutex: ['tree:repo'],
+    writesTree:
+      'writes its run artifacts under artifacts/tutorial-player-release-gate/<timestamp> in the repo',
     // It boots the real www dev server and asserts on rendered DOM, so the whole astro graph is in scope: the remark plugins, the i18n catalogs, and the two workspaces www depends on. Narrowing to the content and the player component is the mistake to avoid.
     paths: ['packages/www/**', 'packages/shared/**', 'packages/locales/**', 'package.json'],
     pathsOrigin: 'declared',
@@ -1221,9 +1227,8 @@ export const GATES: readonly GateSpec[] = [
     run: 'npm run check:ci-guard-mention-anchoring',
     gate: true,
     // The script scans all 3 chains (pre-bash, pre-edit, pre-ask) since the peer's extension on 2026-08-28; this list had stayed pre-bash-only, the exact "half-populated path table" anti-pattern gate-author.md warns against -- a guard added under pre-edit/pre-ask would not have re-selected this gate on --changed. RE-KEYED BY THE W5 CUTOVER, which is invariant 2: the three chain
-    // directories moved and a glob that matches nothing can only EXCLUDE. The gate now reads its PATTERNS from the frozen oracles and PROBES the live Python guards, so both trees select it; the port tree is what actually refuses commands, and it was the one this table would have stopped watching.
+    // directories moved and a glob that matches nothing can only EXCLUDE. RETARGETED AGAIN by PLAN-retire-bash-oracles A2/A3: the gate now reads its patterns from the live Python guard modules directly (no second, frozen copy left to select), so `.claude/oracles/**` dropped out of this list along with the tree it named.
     paths: [
-      '.claude/oracles/**',
       '.claude/rediacc_hooks/guards/**',
       '.claude/rediacc_hooks/dispatch.py',
       '.ci/scripts/quality/check_guard_mention_anchoring.py',
@@ -1474,6 +1479,10 @@ export const GATES: readonly GateSpec[] = [
     run: 'npm run check:ci-security-audit',
     slow: true, // 60.9s measured
     gate: true,
+    // check:ci-gate-tree-writes V7: the report paths are relative, so they land at the repo root the runner starts it in.
+    mutex: ['tree:repo'],
+    writesTree:
+      'writes npm audit reports (audit-prod.json and friends) and .audit-advisory-cache at the repo root',
     leaves: ['.ci/rediacc_ci/security/audit.py'],
     ci: {
       kind: 'step',
@@ -2002,6 +2011,10 @@ export const GATES: readonly GateSpec[] = [
     },
     run: 'npm run check:ci-plan-record',
     gate: true,
+    // check:ci-gate-tree-writes V8: census_append adds a row to a TRACKED ledger (at most one per day).
+    mutex: ['tree:repo'],
+    writesTree:
+      'appends the daily census row to the tracked agent/ledgers/census-plan-record.jsonl',
     paths: [
       'agent/plans/**',
       // agent/INDEX.md joined the gate's subject on 2026-09-06 with W12 P1.7. It used to be excluded on the correct reasoning that no plan had been compacted, so the glob matched nothing and could only exclude. It now exists and carries the plan census that SessionStart reads instead of opening 83 files, and R8 compares it byte for byte, so a hand-edit must reach the only gate
@@ -2254,20 +2267,6 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   // <<< gen-manifest: region 16
-  {
-    id: 'check:ci-guard-feature-completeness',
-    run: 'npm run check:ci-guard-feature-completeness',
-    gate: true,
-    paths: ['.claude/hooks/**', '.ci/scripts/quality/check_guard_feature_completeness.py'],
-    pathsOrigin: 'declared',
-    leaves: ['.ci/scripts/quality/check_guard_feature_completeness.py'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-static',
-      step: 'Guard feature completeness',
-    },
-  },
   {
     // An apt source rewritten to ONE mirror must carry a fallback to another. Born 2026-08-19, when azure.archive.ubuntu.com refused connections for ninety minutes and took down four consecutive CI attempts: every apt source had been rewritten to that single host, so the surrounding five-attempt retry loop hammered the same dead mirror five times. Existing checks counted retry
     // ATTEMPTS and never asked whether the attempts could reach a different SOURCE, which is why nothing caught it.
@@ -2701,6 +2700,34 @@ export const GATES: readonly GateSpec[] = [
       step: 'Pool-registered tests do not write the real tree',
     },
   },
+  // <<< gen-manifest: region 19
+  {
+    // The sibling of check:ci-pool-writer-safety: that gate holds GATE TESTS to "a real-tree writer holds an exclusive tree: claim"; this one holds the GATES themselves to it, through every Python/TS/JS/bash module their leaves reach (imports and cross-language spawns). agent/plans/PLAN-ci-gate-write-taint-scanners.md.
+    id: 'check:ci-gate-tree-writes',
+    run: 'npm run check:ci-gate-tree-writes',
+    gate: true,
+    paths: [
+      '.ci/rediacc_ci/**',
+      '.ci/scripts/**',
+      'scripts/**',
+      'packages/*/scripts/**',
+      'eslint-rules/**',
+      '.ci/breakpoint/scripts/**',
+      '.claude/hooks/**',
+      'package.json',
+      'scripts/ci-runner/gates.lock.json',
+      '.ci/config/tree-write-mutators.json',
+    ],
+    pathsOrigin: 'declared',
+    leaves: ['.ci/scripts/quality/check_gate_tree_writes.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'Gates that write the real tree declare it',
+    },
+  },
+  // >>> gen-manifest: region 20
   {
     id: 'check:ci-review-turn-capacity',
     run: 'npm run check:ci-review-turn-capacity',
@@ -2737,7 +2764,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Gate-reachability probe agrees with registrations',
     },
   },
-  // <<< gen-manifest: region 19
+  // <<< gen-manifest: region 20
   {
     id: 'check:ci-gate-cwd-independence',
     run: 'npm run check:ci-gate-cwd-independence',
@@ -2803,7 +2830,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Workflow banned patterns',
     },
   },
-  // >>> gen-manifest: region 20
+  // >>> gen-manifest: region 21
   {
     id: 'check:ci-greenlight-closures',
     run: 'npm run check:ci-greenlight-closures',
@@ -2816,7 +2843,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Greenlight closure paths',
     },
   },
-  // <<< gen-manifest: region 20
+  // <<< gen-manifest: region 21
   {
     id: 'check:ci-workflow-gates',
     run: 'npm run check:ci-workflow-gates',
@@ -2829,7 +2856,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Workflow structural gates',
     },
   },
-  // >>> gen-manifest: region 21
+  // >>> gen-manifest: region 22
   {
     id: 'check:ci-actionlint',
     run: 'npm run check:ci-actionlint',
@@ -2842,7 +2869,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Workflow lint (actionlint)',
     },
   },
-  // <<< gen-manifest: region 21
+  // <<< gen-manifest: region 22
   {
     id: 'check:ci-breakpoint-drift',
     run: 'npm run check:ci-breakpoint-drift',
@@ -2855,7 +2882,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Breakpoint drift',
     },
   },
-  // >>> gen-manifest: region 22
+  // >>> gen-manifest: region 23
   {
     id: 'check:ci-app-admin-perm',
     run: 'npm run check:ci-app-admin-perm',
@@ -2880,7 +2907,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Tracked runtime sidecars',
     },
   },
-  // <<< gen-manifest: region 22
+  // <<< gen-manifest: region 23
   {
     id: 'check:ci-scans-tracked-paths',
     run: 'npm run check:ci-scans-tracked-paths',
@@ -2907,7 +2934,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'agent-browser exit status',
     },
   },
-  // >>> gen-manifest: region 23
+  // >>> gen-manifest: region 24
   {
     id: 'check:ci-silent-failures',
     run: 'npm run check:ci-silent-failures',
@@ -2968,7 +2995,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Check audit logging coverage for CLI operations',
     },
   },
-  // <<< gen-manifest: region 23
+  // <<< gen-manifest: region 24
   {
     id: 'check:ci-cli-contract',
     run: 'npm run check:ci-cli-contract',
@@ -3011,7 +3038,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Command planes',
     },
   },
-  // >>> gen-manifest: region 24
+  // >>> gen-manifest: region 25
   {
     id: 'check:ci-design-tree',
     run: 'npm run check:ci-design-tree',
@@ -3048,7 +3075,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'i18n untranslated',
     },
   },
-  // <<< gen-manifest: region 24
+  // <<< gen-manifest: region 25
   {
     id: 'check:ci-i18n-cross-locale',
     run: 'npm run check:ci-i18n-cross-locale',
@@ -3066,7 +3093,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'i18n cross-locale',
     },
   },
-  // >>> gen-manifest: region 25
+  // >>> gen-manifest: region 26
   {
     id: 'check:ci-i18n-cross-locale-core',
     run: 'npm run check:ci-i18n-cross-locale-core',
@@ -3312,7 +3339,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Test suites are CI-reachable',
     },
   },
-  // <<< gen-manifest: region 25
+  // <<< gen-manifest: region 26
   {
     id: 'check:ci-editorconfig',
     run: 'npm run check:ci-editorconfig',
@@ -3498,7 +3525,9 @@ export const GATES: readonly GateSpec[] = [
     run: 'npm run check:ci-renet-types',
     // 1.4s measured. It shells out to `go build`, so a COLD Go build cache costs more than this -- but that is a once-per-tree cost, not the steady-state one the lane is sized against.
     gate: true,
-    mutex: ['renet-bin'],
+    // check:ci-gate-tree-writes V6: `go build -o bin/renet` runs with cwd=private/renet.
+    mutex: ['renet-bin', 'tree:repo'],
+    writesTree: 'builds bin/renet inside the private/renet submodule (go build -o bin/renet)',
     leaves: ['.ci/scripts/quality/check_renet_types.py'],
     ci: {
       kind: 'step',
@@ -3522,7 +3551,7 @@ export const GATES: readonly GateSpec[] = [
         'BLOCKER: no CI step invokes this script; the seven tier-map tests it drives already run in CI inside rediacc_ci.private.run_renet test (ct-tests.yml job test-renet, step "Run renet tests"), which resolves to that leaf and not this one, so a step pointer would claim CI runs a script it never invokes',
     },
   },
-  // >>> gen-manifest: region 26
+  // >>> gen-manifest: region 27
   {
     id: 'check:ci-embed-credits',
     run: 'npm run check:ci-embed-credits',
@@ -3547,7 +3576,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Check embed arch parity',
     },
   },
-  // <<< gen-manifest: region 26
+  // <<< gen-manifest: region 27
   {
     id: 'check:ci-embed-asset-freshness',
     env: {
@@ -3567,7 +3596,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Check embed-asset upstream freshness',
     },
   },
-  // >>> gen-manifest: region 27
+  // >>> gen-manifest: region 28
   {
     id: 'check:ci-unverified-downloads',
     run: 'npm run check:ci-unverified-downloads',
@@ -3596,7 +3625,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Check devcontainer pin upstream freshness',
     },
   },
-  // <<< gen-manifest: region 27
+  // <<< gen-manifest: region 28
   {
     id: 'check:ci-embed-asset-versions',
     run: 'npm run check:ci-embed-asset-versions',
@@ -3611,7 +3640,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Check embedded asset versions match their pins',
     },
   },
-  // >>> gen-manifest: region 28
+  // >>> gen-manifest: region 29
   {
     id: 'check:ci-recovery-context',
     run: 'npm run check:ci-recovery-context',
@@ -3624,7 +3653,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Check recovery functions get an uncancellable context',
     },
   },
-  // <<< gen-manifest: region 28
+  // <<< gen-manifest: region 29
   {
     id: 'check:ci-no-otlp-creds',
     run: 'npm run check:ci-no-otlp-creds',
@@ -3638,7 +3667,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Assert no OTLP credentials baked into the built binaries',
     },
   },
-  // >>> gen-manifest: region 29
+  // >>> gen-manifest: region 30
   {
     id: 'check:ci-subscription-schema',
     run: 'npm run check:ci-subscription-schema',
@@ -3663,7 +3692,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Pricing consistency',
     },
   },
-  // <<< gen-manifest: region 29
+  // <<< gen-manifest: region 30
   {
     id: 'check:ci-seo',
     run: 'npm run check:ci-seo',
@@ -3709,7 +3738,7 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   // Its cheap source-level complement: no build, so it lives in the i18n lane. It is a proxy (an inline English string is invisible to it) and cannot replace the gate above. >>> gen-manifest: region 31
-  // >>> gen-manifest: region 30
+  // >>> gen-manifest: region 31
   {
     id: 'check:ci-page-locale-imports',
     run: 'npm run check:ci-page-locale-imports',
@@ -3722,7 +3751,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Page locale imports',
     },
   },
-  // <<< gen-manifest: region 30
+  // <<< gen-manifest: region 31
   {
     id: 'check:ci-external-links',
     env: {
@@ -3755,7 +3784,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'DKIM notify DNS',
     },
   },
-  // >>> gen-manifest: region 31
+  // >>> gen-manifest: region 32
   {
     id: 'check:ci-css-dom-refs',
     run: 'npm run check:ci-css-dom-refs',
@@ -3804,7 +3833,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Dead CSS',
     },
   },
-  // <<< gen-manifest: region 31
+  // <<< gen-manifest: region 32
   {
     id: 'check:ci-illustration-contract',
     run: 'npm run check:ci-illustration-contract',
@@ -3862,7 +3891,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Browser smoke',
     },
   },
-  // >>> gen-manifest: region 32
+  // >>> gen-manifest: region 33
   {
     id: 'check:ci-captcha-recovery',
     run: 'npm run check:ci-captcha-recovery',
@@ -3875,7 +3904,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Captcha recovery',
     },
   },
-  // <<< gen-manifest: region 32
+  // <<< gen-manifest: region 33
   {
     id: 'check:ci-page-density',
     run: 'npm run check:ci-page-density',
@@ -3919,7 +3948,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'SSR locale',
     },
   },
-  // >>> gen-manifest: region 33
+  // >>> gen-manifest: region 34
   {
     id: 'check:ci-docker-image-freshness',
     env: {
@@ -3935,7 +3964,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Docker image freshness',
     },
   },
-  // <<< gen-manifest: region 33
+  // <<< gen-manifest: region 34
   {
     id: 'check:ci-baseline-key-semantics',
     run: 'npm run check:ci-baseline-key-semantics',
@@ -3985,11 +4014,14 @@ export const GATES: readonly GateSpec[] = [
       step: 'Test-gate wiring',
     },
   },
-  // >>> gen-manifest: region 34
   {
     id: 'check:ci-search-index',
     run: 'npm run check:ci-search-index',
     gate: true,
+    // check:ci-gate-tree-writes V9, the lint-rule-liveness shape: the generator rewrites TRACKED files in place and a `finally` restores them, which a hard kill skips. Pointing the generator at a temp output directory is the real fix.
+    mutex: ['tree:repo'],
+    writesTree:
+      'regenerates the tracked packages/www/public search-index files in place and restores them from a temp backup',
     leaves: ['scripts/gates/check-search-index-freshness.ts'],
     ci: {
       kind: 'step',
@@ -3998,7 +4030,6 @@ export const GATES: readonly GateSpec[] = [
       step: 'Search index',
     },
   },
-  // <<< gen-manifest: region 34
   {
     id: 'check:ci-cta-bolt',
     run: 'npm run check:ci-cta-bolt',
@@ -4818,6 +4849,8 @@ export const GATES: readonly GateSpec[] = [
     // `mutex` AND NOT `reads` SINCE THE LAST TWO tree:repo GATE TESTS WERE RETIRED, and the upgrade is the whole reason those retirements are safe. `gate-test:gate-anti-vacuity` and `gate-test:generate-tag-inputs` each carried `mutex: ['tree:repo']` and each wrote the tracked tree; their pytest ports still do, and the ports run HERE. A shared claim releases this gate to run beside
     // every other `tree:repo` reader, which is exactly the overlap that reddened gate-test:claude-hooks in 2026-08-17 with a bash syntax error in a file that parses clean. The exclusive claim is what `check:ci-pool-writer-safety` now checks for, so a downgrade back to `reads` is a red rather than a silent flake.
     mutex: ['tree:repo'],
+    writesTree:
+      'test_gate_gate_anti_vacuity.py and test_gate_generate_tag_inputs.py (the pytest ports in the real-tree xdist group) overwrite tracked files while they run',
     // The old set was ['.ci/rediacc_ci/**', 'pyproject.toml'] and could not see two things this gate actually runs: `.claude/rediacc_hooks/**` is a testpaths root, and `.ci/scripts/test/gates/**` holds the twins test_twin_parity drives. Under `--changed` an edit to either did not select this gate, which is a path filter reporting a pass over code it never looked at.
     //
     // WIDENED AGAIN WHEN gate-test:claude-hooks WAS RETIRED, and the widening is the whole reason that retirement does not open a selection hole. The four entries below carried the SUBJECTS of the harness this gate now collects: the guards and the chain head under `.claude/hooks/**`, the wiring the settings file declares, the git fixture the trapguard cases source, and the
@@ -5199,6 +5232,10 @@ export const GATES: readonly GateSpec[] = [
     slow: true,
     gate: true,
     heavy: true,
+    // check:ci-gate-tree-writes V3. The Dockerfile's `COPY workers/proxy/renet/` fixes the build context to the tree, so staging elsewhere needs `docker build --build-context`, a Dockerfile change; until then the stage is declared. Local-only and heavy, so serialising costs nothing.
+    mutex: ['tree:repo'],
+    writesTree:
+      'stages workers/proxy/renet/renet-linux-amd64 into the docker build context (Dockerfile:54 COPY)',
     leaves: ['.ci/scripts/quality/check_proxy_image_smoke.py'],
     ci: {
       kind: 'local-only',

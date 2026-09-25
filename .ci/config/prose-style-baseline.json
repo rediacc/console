@@ -15,10 +15,10 @@
   "that shrank by 29 can still hide one brand-new violation. Comparing sizes is not",
   "the same claim as diffing the sets."
  ],
- "count": 2953,
- "files": 730,
+ "count": 2952,
+ "files": 729,
  "by_rule": {
-  "R1": 1611,
+  "R1": 1610,
   "R11": 150,
   "R14": 1,
   "R18": 14,
@@ -1069,11 +1069,6 @@
    "R7": [
     "af7ee98f6334ea7c",
     "d86afcd6e7d87ee8"
-   ]
-  },
-  ".ci/scripts/quality/check_guard_feature_completeness.py": {
-   "R1": [
-    "bd22a540d4dc9a2b"
    ]
   },
   ".ci/scripts/quality/check_guard_mention_anchoring.py": {

@@ -254,7 +254,7 @@ MIN_WEBAUTHN_TESTS=20
 if [[ " ${PROJECT_ARR[*]} " == *" chromium "* ]] && { [[ -z "$GREP" ]] || [[ "$GREP" == *webauthn* ]]; }; then
     RESULTS_JSON="$E2E_DIR/reports/e2e/results.json"
     log_step "Checking @webauthn coverage in $RESULTS_JSON (floor: $MIN_WEBAUTHN_TESTS)"
-    if ! node - "$RESULTS_JSON" "$MIN_WEBAUTHN_TESTS" <<'NODE'
+    if ! node - "$RESULTS_JSON" "$MIN_WEBAUTHN_TESTS" <<'NODE'; then
 const fs = require('node:fs');
 const [file, floorArg] = process.argv.slice(2);
 const floor = Number(floorArg);
@@ -291,7 +291,6 @@ if (counts.skipped > 0 || counts.other > 0 || counts.expected < floor) {
   process.exit(1);
 }
 NODE
-    then
         log_error "WebAuthn virtual-authenticator coverage check failed"
         exit 1
     fi

@@ -22,6 +22,7 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.proxies import ensure_nfpm
+from rediacc_ci.tests import differential as diff
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -118,6 +119,8 @@ def _env(fixture: pathlib.Path) -> dict[str, str]:
     return {
         "PATH": os.environ.get("PATH", "/usr/local/bin:/usr/bin:/bin"),
         "HOME": os.environ.get("HOME", "/tmp"),
+        # The per-run child TMPDIR, so the twin's leftover `mktemp` files land in a directory removed at exit (see differential._child_tmpdir).
+        "TMPDIR": diff.BASE_ENV["TMPDIR"],
         "LC_ALL": "C",
         "LANG": "C",
         "PYTHONPATH": str(fixture / ".ci"),
@@ -160,6 +163,8 @@ def test_selftest_is_byte_identical() -> None:
     env = {
         "PATH": os.environ.get("PATH", ""),
         "HOME": os.environ.get("HOME", "/tmp"),
+        # The per-run child TMPDIR, so the twin's leftover `mktemp` files land in a directory removed at exit (see differential._child_tmpdir).
+        "TMPDIR": diff.BASE_ENV["TMPDIR"],
         "LC_ALL": "C",
         "PYTHONPATH": str(ROOT / ".ci"),
         "PYTHONDONTWRITEBYTECODE": "1",
@@ -184,6 +189,8 @@ def test_real_tree_agrees_byte_for_byte() -> None:
     env = {
         "PATH": os.environ.get("PATH", ""),
         "HOME": os.environ.get("HOME", "/tmp"),
+        # The per-run child TMPDIR, so the twin's leftover `mktemp` files land in a directory removed at exit (see differential._child_tmpdir).
+        "TMPDIR": diff.BASE_ENV["TMPDIR"],
         "LC_ALL": "C",
         "PYTHONPATH": str(ROOT / ".ci"),
         "PYTHONDONTWRITEBYTECODE": "1",

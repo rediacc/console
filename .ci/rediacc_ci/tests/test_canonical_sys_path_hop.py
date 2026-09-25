@@ -148,8 +148,6 @@ BASELINE: dict[str, tuple[str, ...]] = {
     ".claude/hooks/stop/wl_profile.py": ("0f4656206187",),
     ".claude/hooks/stop/worklist.py": ("16811be88177",),
     ".claude/hooks/why-on-edit.py": ("8b7733d72e0c", "97bcfa3db44a"),
-    ".claude/oracles/stop/wl_planfid.py": ("0cb3f1a3e028",),
-    ".claude/oracles/stop/worklist.py": ("12ba27597dab",),
     ".claude/rediacc_hooks/dispatch.py": ("068d93dec96d",),
 }
 

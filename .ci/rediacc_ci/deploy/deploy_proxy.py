@@ -165,12 +165,6 @@ def _http_code(url: str) -> str:
 
 def smoke(worker_dir: pathlib.Path) -> int:
     """The post-deploy smoke: /v1/health 200, then an unauthenticated /v1/server-info 401."""
-    # `require_cmd curl` in the twin: without it a missing curl reads as "answered nothing".
-    try:
-        common.require_cmd("curl")
-    except common.RefusalError as exc:
-        log.error(str(exc))
-        return 1
     url = "https://" + smoke_host((worker_dir / "wrangler.toml").read_text(encoding="utf-8"))
     log.step("Smoke-testing %s..." % url)
     health = _http_code(url + "/v1/health")

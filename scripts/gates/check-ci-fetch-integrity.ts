@@ -54,6 +54,7 @@ import { readFileSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { joinReport } from '../lib/console.js';
 
 const ROOT = join(fileURLToPath(new URL('.', import.meta.url)), '..', '..');
 
@@ -184,21 +185,25 @@ for (const rel of files) {
 
 if (problems.length > 0) {
   console.error(
-    `✗ unverified CI fetch (${problems.length} site(s)):\n${problems.join('\n')}\n\n` +
-      '  A fetch that CI pipes into a shell or an archiver runs bytes nobody checked,\n' +
-      '  and a fetch from master/latest runs bytes that are ALLOWED to change. Both\n' +
-      '  parse fine, pass actionlint and shellcheck, and build successfully while\n' +
-      '  installing a substituted artifact — which is why no other gate sees them.\n\n' +
-      '  Fix by pinning an exact version AND verifying it (sha256sum -c, gpg --verify,\n' +
+    joinReport(
+      `✗ unverified CI fetch (${problems.length} site(s)):\n${problems.join('\n')}\n\n`,
+      '  A fetch that CI pipes into a shell or an archiver runs bytes nobody checked,\n',
+      '  and a fetch from master/latest runs bytes that are ALLOWED to change. Both\n',
+      '  parse fine, pass actionlint and shellcheck, and build successfully while\n',
+      '  installing a substituted artifact — which is why no other gate sees them.\n\n',
+      '  Fix by pinning an exact version AND verifying it (sha256sum -c, gpg --verify,\n',
       '  or cosign verify) in the same step, as ci.yml already does for nfpm.'
+    )
   );
   process.exit(1);
 }
 
 console.log(
-  `✓ CI fetch integrity: ${files.length} workflow/script file(s), no fetch piped into a\n` +
-    '  shell or archiver and none from a moving ref (11 classifier controls fired,\n' +
-    '  including the two real defects fixed by hand on 2026-09-02).\n' +
-    '  Blind spot: this does NOT check that a pinned fetch is hash-verified — that is\n' +
+  joinReport(
+    `✓ CI fetch integrity: ${files.length} workflow/script file(s), no fetch piped into a\n`,
+    '  shell or archiver and none from a moving ref (11 classifier controls fired,\n',
+    '  including the two real defects fixed by hand on 2026-09-02).\n',
+    '  Blind spot: this does NOT check that a pinned fetch is hash-verified — that is\n',
     "  check:ci-unverified-downloads' job, and it covers Dockerfiles only."
+  )
 );

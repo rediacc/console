@@ -27,6 +27,7 @@ import typing
 
 from rediacc_ci import paths
 from rediacc_ci.release import install_sh_config_check
+from rediacc_ci.tests import differential as diff
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -76,6 +77,8 @@ def _run(subject: pathlib.Path, fixture: pathlib.Path) -> subprocess.CompletedPr
     env = {
         "PATH": os.environ.get("PATH", ""),
         "HOME": os.environ.get("HOME", ""),
+        # The per-run child TMPDIR, so what the subjects leave behind with `mktemp` or `os.tmpdir()` lands in a directory removed at exit (see differential._child_tmpdir).
+        "TMPDIR": diff.BASE_ENV["TMPDIR"],
         "LC_ALL": "C",
     }
     if subject.suffix == ".py":

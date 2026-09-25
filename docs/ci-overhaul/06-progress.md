@@ -739,7 +739,7 @@ Both were written, both passed on an operator's box, and neither had ever execut
 
 Runs `./run.sh drill universe` then `./run.sh drill transfer`. Both drive the real `./rdc.sh` against a real `./run.sh account dev` gateway and assert on stdout and stderr SEPARATELY, which is the surface no unit test sees and the surface each drill's header says it was written to catch defects in.
 
-Proven locally before the wiring, not after: universe 42/42 in 31s, transfer 33/33 in 32s, both on this checkout with Docker up (transfer needs the RustFS container, so it is a real prerequisite rather than a nicety). No org secrets are involved -- `account_ensure_env` generates `private/account/.env` with fresh throwaway ed25519/x25519 keys on first use.
+Proven locally before the wiring, not after: universe 42/42 in 31s, transfer 33/33 in 32s, both on this checkout with Docker up (transfer needs the RustFS container, so it is a real prerequisite rather than a nicety). No org secrets are involved -- `account_ensure_env` generates a local, gitignored env file (since retired in favor of the secret vault) with fresh throwaway ed25519/x25519 keys on first use.
 
 The Go toolchain, the Docker Hub login and the embed-assets cache on this leg all exist for ONE reason, and it is worth stating because none of them look like a drill's business: `rdc.sh:188` calls `ensure_renet_built` unconditionally, which runs `build.sh dev` -> `embed_assets`. With the cache warm the receipt check makes staging a verified no-op; on a miss it falls back to the
 Docker extraction, which is what the 30-minute budget covers. Neither drill touches renet.
@@ -3962,7 +3962,7 @@ confirmed. The other twelve M-live runs are operator-approved and driven from th
 
 **Roster liveness** (`4ee524a1e`, `61ade0880`). An agent that ended its turn while its own background shell runs is WAITING, and the roster now counts it as live. `worker:queue` is a placeholder and owes no 20-minute status. A running workflow is judged by its agents' transcripts, because its own output file stays empty until it returns.
 
-**Bitwarden is the only secret source.** GitHub holds only `BWS_ACCESS_TOKEN`. The account's local env file, its bench variant and every example env file are deleted, and the token lives at `~/.config/rediacc/bws-access-token`. The R2 cleanup revoked six unreferenced tokens and narrowed `backup-s3-20260901T103133Z` to the eight `*-backups-*` buckets, verified by a signed list call per bucket.
+**Bitwarden is the only secret source.** GitHub holds only `BWS_ACCESS_TOKEN`. The local account and bench env files, and every example env file, are deleted, and the token lives at `~/.config/rediacc/bws-access-token`. The R2 cleanup revoked six unreferenced tokens and narrowed `backup-s3-20260901T103133Z` to the eight `*-backups-*` buckets, verified by a signed list call per bucket.
 
 **In flight at this writing.**
 - The biome-only lint and TypeScript 7 migration: `agent/plans/PLAN-biome-only-lint.md`, Phase 1 running as a workflow.

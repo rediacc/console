@@ -34,7 +34,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseBlockeredList, verifyAllBlockers } from '../lib/blocker-validator.js';
-import { BLUE, GREEN, NC, RED, YELLOW } from '../lib/console.js';
+import { BLUE, GREEN, joinReport, NC, RED, YELLOW } from '../lib/console.js';
 import { policyPath } from '../lib/policy-paths.js';
 import { getMinReleaseAgeMs, isWithinFreshnessWindow } from '../lib/release-age.js';
 
@@ -1007,11 +1007,13 @@ function selftest(): void {
   }
 
   console.log(
-    `${GREEN}\u2713${NC} control fired on both shapes: an unrunnable probe and an unreachable ` +
-      'registry each fail the gate instead of passing it; a scoped blocklist entry blocks ' +
-      'only its own directory (4 checks); and nested private manifests ' +
-      '(private/account/web, private/account/e2e) are discovered, with an absent submodule ' +
+    joinReport(
+      `${GREEN}\u2713${NC} control fired on both shapes: an unrunnable probe and an unreachable `,
+      'registry each fail the gate instead of passing it; a scoped blocklist entry blocks ',
+      'only its own directory (4 checks); and nested private manifests ',
+      '(private/account/web, private/account/e2e) are discovered, with an absent submodule ',
       'tolerated (5 checks)'
+    )
   );
   process.exit(0);
 }

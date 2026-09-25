@@ -540,6 +540,44 @@ def test_a_named_file_drain_leaves_other_files_rows_alone(tmp_path):
     assert next(iter(after.values()))[0] == "b.md"
 
 
+def test_drain_refuses_an_add_through_shrink_only(tmp_path, capsys, monkeypatch):
+    """MUTATION CONTROL: a kept-set filter that lets a current finding in is refused by `shrink_only`, and nothing is written.
+
+    The filter is broken on purpose to smuggle one unbaselined id into the kept set. With the `shrink_only` verdict in `drain_baseline` the drain reds and the file is untouched; with that call removed the smuggled row is written and this test fails, which is what makes the call load-bearing rather than decorative.
+    """
+    root = _tree(tmp_path, {"a.md": "Did you run the tests?\n"})
+    ps.run_check(root, GLOBALS, RULES, ["a.md"], write_baseline=True)
+    baseline = root / ps.BASELINE_FILE
+    before_bytes = baseline.read_bytes()
+    (root / "b.md").write_text("Did you check it?\n", encoding="utf-8")
+    smuggled = next(iter(ps.lint_text("b.md", "Did you check it?\n", RULES, GLOBALS)[0]))
+
+    real = ps._drain_rows
+
+    def leaky(previous, still_firing):
+        return {**real(previous, still_firing), smuggled.fid: (smuggled.path, smuggled.rule)}
+
+    monkeypatch.setattr(ps, "_drain_rows", leaky)
+    calls = []
+    real_verdict = ps.shrink_only.write_verdict
+
+    def spy(**kwargs):
+        calls.append(kwargs)
+        return real_verdict(**kwargs)
+
+    monkeypatch.setattr(ps.shrink_only, "write_verdict", spy)
+    capsys.readouterr()
+
+    assert ps.run_check(root, GLOBALS, RULES, ["a.md", "b.md"], drain=True) == 1
+    assert calls, "the drain did not route its add decision through shrink_only.write_verdict"
+    assert calls[0]["additions"] == [smuggled.fid]
+    err = capsys.readouterr().err
+    assert "REFUSED to drain the baseline" in err
+    assert "+ %s" % smuggled.fid in err
+    assert baseline.read_bytes() == before_bytes, "a refused drain wrote the baseline"
+    assert smuggled.fid not in ps.load_baseline(root)
+
+
 def test_drain_refuses_without_a_baseline_and_with_write_flags(tmp_path):
     root = _tree(tmp_path, {"a.md": "Did you run the tests?\n"})
     assert ps.run_check(root, GLOBALS, RULES, ["a.md"], drain=True) == 1

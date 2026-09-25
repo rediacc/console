@@ -19,9 +19,9 @@ matches where the old bare-`$` form did not). Applying the fix surfaced **46 rea
 `for i in $(seq A B); do` loops rewritten to `for ((i=A; i<=B; i++)); do`,
 plus a handful of non-mechanical padding-idiom and `timeout`/`set -e` rewrites -- see `agent/plans/PLAN-shell-command-gate-regex-fix.md` for the full list and the two subtler bugs a naive rewrite would have introduced). The real registered gate (`npm run check:ci-shell-commands`) is green against the fully-fixed tree.
 
-CORPUS ENUMERATION SHELLS OUT TO THE REAL `find`, rather than reimplementing directory traversal in Python, because the twin's own output ORDER is whatever `find` returns (no `sort` in the pipeline) and that order is filesystem-dependent. Two different traversal implementations agreeing on the SET of files is not the same claim as agreeing on ORDER, and finding order changes which
-"first matching command" wins ties within a file's error count only in edge cases, but changes overall stdout/stderr INTERLEAVING across files unconditionally. Shelling out to the identical `find` binary
-with the identical arguments sidesteps the question rather than arguing it.
+CORPUS ENUMERATION USES `paths.walk_tree`, NOT A RAW `find` SHELL-OUT. It used to shell out to the real `find` binary so the twin's own unsorted, filesystem-dependent output ORDER would be reproduced exactly. The twin is gone (see above), so nothing depends on that order any more, and a raw `find <subdir> -name '*.sh'` walks `.ci/cache/` -- untracked build state (profiles, gate
+durations, stamps, generated scratch) that CI never checks out. On 2026-09-24 that put a local run's `.ci/cache/w7p5a-realrun/.../run-stripe-e2e.sh` and several other cached copies of tracked scripts into this gate's corpus, reporting `seq`/`timeout`/`mapfile` findings CI could never see or fix. `paths.walk_tree` prunes `.ci/cache` (and `.claude/worktrees`, `.git`, `node_modules`)
+the same way `rediacc_ci.security.shfmt.shell_files` already does, so both `*.sh` enumerators in this package now agree on what "the tree" means. Output is sorted for a deterministic order instead of an arbitrary one.
 
 `[[:space:]]` IS TRANSLITERATED AS `[ \\t]`, not `\\s`, in the two branches that use it (`^[[:space:]]*`, `^[[:space:]]*if\\s+`). POSIX's space class includes more (`\\n \\v \\f \\r`), but these patterns run against single already-split lines with no embedded newline, so the only members that can ever appear are space and tab.
 
@@ -40,9 +40,10 @@ from __future__ import annotations
 
 import os
 import re
-import subprocess
 import sys
 from pathlib import Path
+
+from rediacc_ci import paths
 
 RED = "\033[0;31m"
 GREEN = "\033[0;32m"
@@ -85,19 +86,18 @@ def _yaml_key_skip_re(cmd: str) -> re.Pattern[str]:
 
 
 def _find_sh_files(root: Path, subdir: str) -> list[str]:
-    """`find <subdir> -name "*.sh" -type f 2>/dev/null` -- the real binary,
-    for its traversal order, not a Python reimplementation. A missing
-    directory (or any other `find` failure) is swallowed exactly as the twin's `2>/dev/null` swallows it: empty result, no crash."""
-    proc = subprocess.run(
-        ["find", subdir, "-name", "*.sh", "-type", "f"],
-        cwd=root,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    if proc.returncode != 0:
-        return []
-    return [line for line in proc.stdout.split("\n") if line]
+    """Every `*.sh` regular file under `root / subdir`, repo-relative and sorted. Walks with `paths.walk_tree`, which prunes `.ci/cache` (untracked build scratch, invisible to `git ls-files` and to every CI checkout, but not to a raw directory walk -- see the module docstring) along with `.claude/worktrees`, `.git` and `node_modules`. A missing directory yields no files, matching the twin's `2>/dev/null` swallow of a `find` failure."""
+    start = root / subdir
+    found: list[str] = []
+    for dirpath, _dirnames, filenames in paths.walk_tree(start):
+        for name in filenames:
+            if not name.endswith(".sh"):
+                continue
+            candidate = Path(dirpath) / name
+            if candidate.is_symlink() or not candidate.is_file():
+                continue
+            found.append(candidate.relative_to(root).as_posix())
+    return sorted(found)
 
 
 def _line_finding(line_content: str) -> tuple[str, str] | None:

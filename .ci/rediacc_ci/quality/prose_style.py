@@ -42,7 +42,7 @@ should look at the line again.
 `--write-baseline` DIFFS THE OLD AND NEW SETS AND REFUSES A NON-EMPTY ADDED SIDE. Comparing SIZES is a different and weaker claim: a drain that removes thirty and adds one prints a smaller number and goes green while enshrining a brand-new violation. The ADDED side has to be empty, so the only way a new finding enters the baseline is to say so on the command line.
 
 `--drain` IS THE VERB FOR A FIXED FINDING, AND IT CAN ONLY REMOVE. `--write-baseline` freezes the WHOLE current set, so it refuses whenever any unbaselined finding exists anywhere in the tree, warnings included. On 2026-09-24 that meant 96 unrelated advisory warnings blocked the removal of two rows that had stopped firing, and the gate stayed red on a tree with no new error. `--drain` keeps
-the previous baseline's rows that still fire and writes nothing else: the kept set is computed as a subset of the old file, never from the current findings, so there is no code path by which a new finding can enter. It then reports "N drained, 0 added" and runs the ordinary verdict, so a new finding still fails the same run.
+the previous baseline's rows that still fire and writes nothing else: the kept set is a filter of the old file, and before it is written it passes the same `shrink_only` add verdict the other shrink-only gates use, so a new finding cannot enter even through a broken filter. It then reports "N drained, 0 added" and runs the ordinary verdict, so a new finding still fails the same run.
 """
 
 import collections
@@ -60,6 +60,7 @@ import tokenize
 
 from rediacc_ci import gitx, log, paths
 from rediacc_ci.controls import Controls
+from rediacc_ci.quality import shrink_only
 
 RULES_FILE = ".ci/config/prose-style-rules.json"
 BASELINE_FILE = ".ci/config/prose-style-baseline.json"
@@ -1270,15 +1271,24 @@ def write_baseline(root, findings, previous):
 
 
 def drain_baseline(root, previous, still_firing):
-    """Remove the rows of `previous` that no longer fire, and add NOTHING. Returns the drained ids.
+    """Remove the rows of `previous` that no longer fire, and add NOTHING. Returns `(drained, added)`.
 
-    THE KEPT SET IS A SUBSET OF THE OLD FILE BY CONSTRUCTION: it is `previous` filtered, and the current findings are consulted only as a membership test. That is the whole guarantee, and it is structural rather than checked after the fact, because a drain that could add is the composition trap `write_baseline` exists to refuse.
+    THE ADD REFUSAL IS `shrink_only`'s, NOT A SECOND COPY OF IT. The kept set is `_drain_rows`' filter of `previous`, and before anything is written it goes through the same `baseline_additions` and `write_verdict` that python_env_registry, python_types, plant_proofs and tree_shape use. A non-empty `added` means the write was REFUSED and the file is untouched, so a regression in the filter that let a current finding in is caught
+    here rather than enshrined, which is the composition trap `write_baseline` exists to refuse.
     A kept row is written back with the path and rule it was stored under, so a drain never re-keys or relocates the rows it keeps.
     """
-    drained = sorted(fid for fid in previous if fid not in still_firing)
-    kept = {fid: row for fid, row in previous.items() if fid in still_firing}
+    kept = _drain_rows(previous, still_firing)
+    added = shrink_only.baseline_additions(list(previous), list(kept))
+    if shrink_only.write_verdict(baseline_exists=True, first_seed=False, additions=added):
+        return [], added
+    drained = sorted(fid for fid in previous if fid not in kept)
     _write_rows(root, kept)
-    return drained
+    return drained, added
+
+
+def _drain_rows(previous, still_firing):
+    """The rows of `previous` a drain keeps: those still firing, as `{fid: (path, rule)}`. The current findings are a membership test only."""
+    return {fid: row for fid, row in previous.items() if fid in still_firing}
 
 
 def _write_rows(root, rows):
@@ -1453,11 +1463,19 @@ def run_check(
             fid for fid, row in previous.items() if scope is not None and row[0] not in scope
         }
         before = len(previous)
-        drained = drain_baseline(root, previous, still_firing)
+        drained, added = drain_baseline(root, previous, still_firing)
+        if added:
+            log.error(
+                "REFUSED to drain the baseline: the kept set ADDED %d row(s) the baseline did "
+                "not have. A drain only removes; nothing was written:" % len(added)
+            )
+            for fid in added[:20]:
+                print("  + %s" % fid, file=sys.stderr)
+            return 1
         previous = load_baseline(root)
         log.success(
-            "baseline drained: %d entries (%d before, %d drained, 0 added)"
-            % (len(previous), before, len(drained))
+            "baseline drained: %d entries (%d before, %d drained, %d added)"
+            % (len(previous), before, len(drained), len(added))
         )
         for fid in drained[:20]:
             print("  - %s" % fid, file=sys.stderr)

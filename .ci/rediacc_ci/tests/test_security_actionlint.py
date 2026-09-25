@@ -661,11 +661,9 @@ def test_cache_dir_ignores_ci_temp_because_common_sh_overwrites_it(monkeypatch) 
 
 def test_common_sh_really_does_overwrite_ci_temp() -> None:
     """The bash half of the case above. Sourcing common.sh is the whole test."""
-    for extra, expected in (({}, "/tmp"), ({"TMPDIR": "/TMPD"}, "/TMPD")):
+    # `TMPDIR: None` REMOVES the key: BASE_ENV now carries a per-run TMPDIR (see differential._child_tmpdir), and the first case is about TMPDIR being UNSET.
+    for extra, expected in (({"TMPDIR": None}, "/tmp"), ({"TMPDIR": "/TMPD"}, "/TMPD")):
         env = differential.env_for(CI_TEMP="/CALLER_SET", **extra)
-        # differential gives every child a per-run TMPDIR; the "unset" case must really be unset.
-        if "TMPDIR" not in extra:
-            env.pop("TMPDIR", None)
         code, out, _err = differential.bash_streams(
             'source .ci/scripts/lib/common.sh; printf "%s" "$CI_TEMP"',
             env=env,

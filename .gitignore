@@ -105,6 +105,12 @@ __pycache__/
 # ruff writes this whenever check:ci-python-lint runs (or anyone runs ruff
 # by hand); it is a local cache, never an artifact.
 .ruff_cache/
+# uv writes this at the repo root whenever `uv` is pointed at the root
+# pyproject.toml (e.g. `uv lock`, `uv sync`, or an editor extension probing it).
+# That pyproject.toml deliberately carries no [project] table (see its own
+# header comment) -- this repo is not a uv/pip project and ships no locked
+# dependency set -- so the file is local tool state, never a tracked artifact.
+/uv.lock
 *.py[cod]
 *$py.class
 *.pyc

@@ -2,7 +2,7 @@
 exit: 0
 --- stdout ---
 --- stderr ---
-<prog>: line 116: /home/developer: arithmetic syntax error: operand expected (error token is "/home/developer")
+<prog>: line 116: <HOME>: arithmetic syntax error: operand expected (error token is "<HOME>")
 → Creating E2E test environment: <out>
 ✓ Created E2E test environment: <out>
 --- file ---

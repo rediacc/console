@@ -15,6 +15,9 @@ WHAT IT CANNOT SEE, stated here because a proof whose limits go unstated is how 
 
 The first is covered by reading a sampled file per cluster across both revisions, the second by the same read, and the third by `--columns`, which reports the multiset of leading-indent widths per file and is the specific answer to that third bug.
 
+JSON FILES GET KEY PATHS, NOT SHAPES. A `.json` file's lines are nearly all `prose` to the shape table, so a dropped locale key reads as one prose line fewer, indistinguishable from a reformat. For each changed `.json` path the tool instead diffs the set of key paths (`a.b[0].c`) against `--rev`: added, removed, and value-type changed. A REMOVED key is the finding (exit 1); an added key or a type
+change is reported for the reader. Chosen automatically by suffix, so one run over a mixed scope proves both kinds (agent/plans/PLAN-stop-hook-retro-20260925.md R20260925.4).
+
 USE IT ON ANY MECHANICAL BULK CHANGE, before committing one. The exit code is the finding: 0 when no cluster shrank, 1 when one did. A shrinking cluster is not automatically wrong -- collapsing a hard-wrapped paragraph legitimately reduces `prose` -- so the tool reports and the reader rules. What it refuses to do is stay quiet.
 """
 
@@ -86,6 +89,53 @@ def columns(text):
     return widths
 
 
+JSON_SUFFIXES = frozenset({".json"})
+
+
+def _json_type(value):
+    """The JSON type name of a parsed value: object, array, string, number, boolean or null."""
+    if isinstance(value, dict):
+        return "object"
+    if isinstance(value, list):
+        return "array"
+    if isinstance(value, bool):
+        return "boolean"
+    if isinstance(value, (int, float)):
+        return "number"
+    if value is None:
+        return "null"
+    return "string"
+
+
+def key_paths(value, prefix=""):
+    """{key path: JSON type} for every node under `value`. An object member is `prefix.key`, an array element `prefix[i]`; the root itself is not a path."""
+    out: dict[str, str] = {}
+    if isinstance(value, dict):
+        items = (("%s.%s" % (prefix, k) if prefix else str(k), v) for k, v in value.items())
+    elif isinstance(value, list):
+        items = (("%s[%d]" % (prefix, i), v) for i, v in enumerate(value))
+    else:
+        return out
+    for path, child in items:
+        out[path] = _json_type(child)
+        out.update(key_paths(child, path))
+    return out
+
+
+def json_key_diff(before, after):
+    """{added, removed, type_changed} between two JSON texts, or {error} when one side does not parse. `after=None` is a deleted file: every key is removed."""
+    try:
+        kb = key_paths(json.loads(before))
+        ka = key_paths(json.loads(after)) if after is not None else {}
+    except ValueError as exc:
+        return {"error": str(exc)}
+    return {
+        "added": sorted(set(ka) - set(kb)),
+        "removed": sorted(set(kb) - set(ka)),
+        "type_changed": {k: (kb[k], ka[k]) for k in sorted(set(kb) & set(ka)) if kb[k] != ka[k]},
+    }
+
+
 def git_show(rev, path):
     """The file at `rev`, or None when it did not exist there."""
     done = subprocess.run(
@@ -104,14 +154,26 @@ def changed_paths(rev, paths):
 
 
 def report(rev, paths, want_columns):
-    """(findings, summary): one entry per file whose shape multiset lost members."""
+    """(findings, summary): one entry per file whose shape multiset lost members, or, for a `.json` file, which lost a key path or no longer parses. `summary["json"]` carries every changed `.json` file's key diff."""
     findings = []
     totals_before = collections.Counter()
     totals_after = collections.Counter()
+    json_files = []
     files = changed_paths(rev, paths)
     for rel in files:
         before = git_show(rev, rel)
         if before is None:
+            continue
+        if pathlib.Path(rel).suffix in JSON_SUFFIXES:
+            try:
+                after = pathlib.Path(rel).read_text(encoding="utf-8")
+            except OSError:
+                after = None
+            keys = json_key_diff(before, after)
+            if keys.get("error") or keys["added"] or keys["removed"] or keys["type_changed"]:
+                json_files.append(dict(keys, path=rel))
+            if keys.get("error") or keys["removed"]:
+                findings.append({"path": rel, "lost": {}, "keys": keys})
             continue
         try:
             after = pathlib.Path(rel).read_text(encoding="utf-8", errors="surrogateescape")
@@ -136,6 +198,7 @@ def report(rev, paths, want_columns):
         "delta": {
             k: totals_after[k] - totals_before[k] for k in set(totals_before) | set(totals_after)
         },
+        "json": json_files,
     }
     return findings, summary
 
@@ -201,6 +264,34 @@ def selftest():
         cluster(indented_comment, markdown=False)["indent-code"] == 0,
     )
 
+    # JSON KEY-PATH MODE (R20260925.4). Each fire has an inverse differing by one fact.
+    locale = '{"a": {"b": "x", "c": "y"}, "n": 1}'
+    check(
+        "key paths name every nested member with its type",
+        key_paths(json.loads(locale))
+        == {"a": "object", "a.b": "string", "a.c": "string", "n": "number"},
+    )
+    dropped = json_key_diff(locale, '{"a": {"b": "x"}, "n": 1}')
+    check("a dropped nested key is REMOVED", dropped["removed"] == ["a.c"])
+    reordered = json_key_diff(locale, '{"n": 1, "a": {"c": "Y", "b": "X"}}')
+    check(
+        "but a reorder plus new values removes, adds and retypes nothing",
+        reordered == {"added": [], "removed": [], "type_changed": {}},
+    )
+    grown = json_key_diff(locale, '{"a": {"b": "x", "c": "y", "d": "z"}, "n": 1}')
+    check("an added key is ADDED, not removed", grown["added"] == ["a.d"] and not grown["removed"])
+    retyped = json_key_diff(locale, '{"a": {"b": "x", "c": "y"}, "n": "1"}')
+    check(
+        "a value whose type changes is TYPE-CHANGED and nothing else",
+        retyped["type_changed"] == {"n": ("number", "string")} and not retyped["removed"],
+    )
+    check("a deleted file removes every key", len(json_key_diff(locale, None)["removed"]) == 4)
+    check("a file that no longer parses is an error", "error" in json_key_diff(locale, "{"))
+    check(
+        "an array element is an indexed path",
+        key_paths([{"k": 1}]) == {"[0]": "object", "[0].k": "number"},
+    )
+
     for label in failures:
         print("*** FAIL *** %s" % label, file=sys.stderr)
     print("%d control(s) passed, %d failed" % (ok, len(failures)))
@@ -245,11 +336,34 @@ def main(argv=None):
                 "  %-14s %+d  (%d -> %d)"
                 % (shape, delta, summary["before"].get(shape, 0), summary["after"].get(shape, 0))
             )
+    for entry in summary["json"][:20]:
+        if entry.get("error"):
+            print("  json %-53s does not parse: %s" % (entry["path"][:53], entry["error"]))
+            continue
+        print(
+            "  json %-53s +%d key(s) -%d key(s) ~%d type(s)"
+            % (
+                entry["path"][:53],
+                len(entry["added"]),
+                len(entry["removed"]),
+                len(entry["type_changed"]),
+            )
+        )
+        for label, keys in (("added", entry["added"]), ("removed", entry["removed"])):
+            for key in keys[:10]:
+                print("      %s %s" % (label, key))
+        for key, (was, now) in list(entry["type_changed"].items())[:10]:
+            print("      type %s %s->%s" % (key, was, now))
     if not findings:
-        print("no file lost a shape; nothing structural disappeared.")
+        print("no file lost a shape or a key; nothing structural disappeared.")
         return 0
-    print("\n%d file(s) LOST a structural shape:" % len(findings))
+    print("\n%d file(s) LOST a structural shape or a JSON key:" % len(findings))
     for entry in findings[:20]:
+        keys = entry.get("keys")
+        if keys is not None:
+            bits = keys.get("error") or "removed key(s): " + ", ".join(keys["removed"][:5])
+            print("  %-58s %s" % (entry["path"][:58], bits))
+            continue
         bits = ", ".join("%s %d->%d" % (k, v[0], v[1]) for k, v in sorted(entry["lost"].items()))
         cols = entry.get("columns_lost")
         if cols:

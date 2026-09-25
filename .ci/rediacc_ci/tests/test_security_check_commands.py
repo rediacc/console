@@ -17,7 +17,7 @@ TWO REAL BUGS IN THE TWIN WERE FIXED 2026-09-10 IN LOCKSTEP WITH THE PORT, and t
 
 Both were fixed in the twin and the port in the same change, applying the 46-finding corpus fix documented in `agent/plans/PLAN-shell-command-gate-regex-fix.md`. `test_planted_defect_is_caught` still reintroduces each bug into the port alone and requires the recording to catch it.
 
-WHAT IS NORMALISED: nothing. Every path a message names is relative to the fixture tree the subject was run from, so the recorded bytes carry no absolute path at all, and that was checked by eye over the whole corpus rather than assumed.
+WHAT IS NORMALISED: nothing, EXCEPT ONE GOLDEN'S FILE ORDER. `_find_sh_files` was changed on 2026-09-24 to enumerate through `rediacc_ci.paths.walk_tree` (which prunes `.ci/cache`, untracked build scratch a raw `find` walked straight into) instead of shelling out to `find`, and its output is now SORTED rather than carrying the twin's unsorted, filesystem-dependent order. `several-files-under-ci-with-no-colour.golden` is the one recording with two files in the same directory, so it is the one place that order was ever visible; its body was hand-edited to the sorted order (`a.sh` before `b.sh`) the port now always produces, everything else about it -- both findings, the exit code, the exact message text -- is still the twin's own bytes. Every other golden in this corpus is untouched.
 """
 
 from __future__ import annotations
@@ -30,6 +30,7 @@ import typing
 import pytest
 
 from rediacc_ci import paths
+from rediacc_ci.security import check_commands
 from rediacc_ci.tests import frozen
 
 if typing.TYPE_CHECKING:
@@ -75,6 +76,14 @@ CASE_KW: dict[str, dict[str, typing.Any]] = {
 CASES = tuple(CASE_KW)
 
 
+# The minimum of the `rediacc_ci` package a path-invoked python subject needs, now that `_find_sh_files` reads `rediacc_ci.paths.walk_tree` instead of shelling out to `find`. Mirrors `test_security_shfmt.py`'s own `COPIED`.
+PACKAGE_FILES = (
+    "rediacc_ci/__init__.py",
+    "rediacc_ci/paths.py",
+    "rediacc_ci/security/__init__.py",
+)
+
+
 def fixture(where: pathlib.Path, name: str, *, subject: pathlib.Path) -> pathlib.Path:
     """A tree shaped like the repository, holding a COPY of the subject at its own depth."""
     root = where / "tree"
@@ -84,6 +93,9 @@ def fixture(where: pathlib.Path, name: str, *, subject: pathlib.Path) -> pathlib
     (root / "scripts").mkdir(parents=True, exist_ok=True)
     holder = ".ci/scripts/security" if subject.suffix == ".sh" else ".ci/rediacc_ci/security"
     shutil.copy2(subject, root / holder / subject.name)
+    if subject.suffix != ".sh":
+        for rel in PACKAGE_FILES:
+            shutil.copy2(ROOT / ".ci" / rel, root / ".ci" / rel)
     for rel, content in CASE_KW[name]["files"].items():
         path = root / rel
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -96,10 +108,14 @@ def run(subject: pathlib.Path, where: pathlib.Path, name: str) -> tuple[int, str
     root = fixture(where, name, subject=subject)
     holder = ".ci/scripts/security" if subject.suffix == ".sh" else ".ci/rediacc_ci/security"
     runner = "bash" if subject.suffix == ".sh" else "python3"
-    env = None
     if CASE_KW[name].get("ci"):
         # A CURATED environment, not an overlay: the colour decision is the subject of this case and an inherited NO_COLOR would decide it instead.
         env = {"CI": "true", "PATH": os.environ.get("PATH", "")}
+    else:
+        env = dict(os.environ)
+    if subject.suffix != ".sh":
+        # `check_commands.py` imports `rediacc_ci.paths`; `fixture` carries a copy of the package this points Python at, the same way `test_security_shfmt.py` does for its own python subject.
+        env["PYTHONPATH"] = str(root / ".ci")
     proc = subprocess.run(
         [runner, str(root / holder / subject.name)],
         cwd=str(root),
@@ -251,4 +267,24 @@ def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
     compare(tmp_path / "good", "command-substitution-is-caught")
     assert PORT.read_text(encoding="utf-8") == original, (
         "port source must be restored byte-identical"
+    )
+
+
+def test_find_sh_files_prunes_ci_cache(tmp_path: pathlib.Path) -> None:
+    """PLANT: a disallowed command under `.ci/cache/`, untracked build scratch invisible to `git ls-files` and to every CI checkout, must not enter the corpus `_find_sh_files` builds.
+
+    On 2026-09-24 a raw `find .ci -name '*.sh'` walk (the enumeration this replaced) put `.ci/cache/w7p5a-realrun/.../run-stripe-e2e.sh` -- a local run's cached copy of a tracked script -- into this gate's corpus, reporting `seq`/`timeout`/`mapfile` findings CI could never see or reproduce. `paths.walk_tree`'s `.ci/cache` prune is what fixes it, and this plant is what holds the fix down: a real tracked file with the SAME disallowed command is planted alongside the cached one, so a walk that stopped pruning ANYTHING would still be caught.
+    """
+    root = tmp_path / "tree"
+    cached = root / ".ci" / "cache" / "w7p5a-realrun" / "v1312" / "run-stripe-e2e.sh"
+    cached.parent.mkdir(parents=True)
+    cached.write_text("#!/bin/bash\nseq 1 10\n", encoding="utf-8")
+    tracked = root / ".ci" / "x" / "real.sh"
+    tracked.parent.mkdir(parents=True)
+    tracked.write_text("#!/bin/bash\nseq 1 10\n", encoding="utf-8")
+
+    found = check_commands._find_sh_files(root, ".ci")
+
+    assert found == [".ci/x/real.sh"], (
+        "the cached copy under .ci/cache must not enter the corpus: %r" % found
     )

@@ -21,6 +21,7 @@ twin's THREE-WAY structure exactly, including its two SKIP-shaped passes, becaus
 NO `xdist_group`. Every case writes only into pytest's own `tmp_path`; the panel and the sampler are executed read-only, and the one docker invocation mounts the sampler's directory read-only and its own scratch directory read-write. Nothing is bound and no module global is mutated.
 """
 
+import os
 import pathlib
 import re
 import shutil
@@ -591,7 +592,9 @@ def test_sampler_reads_a_real_containers_ceiling(gate, tmp_path):
         "apk add --no-cache bash coreutils >/dev/null 2>&1;\n"
         "PROFILER_RUNNER_LABEL=ubuntu-slim PROFILER_MAX_SECONDS=3 "
         "bash /p/sampler-linux.sh --out /w/c.tsv --interval 1 2>&1;\n"
-        "head -1 /w/c.tsv"
+        "head -1 /w/c.tsv;\n"
+        # The container runs as root, so without this `c.tsv` lands in `tmp_path` owned by root. Hand `/w` back to the invoking user so the file is as removable as the rest of the tree; `head` already printed what the parse below reads.
+        'chown -R "$HOST_UID:$HOST_GID" /w'
     )
     result = harness.run(
         [
@@ -604,6 +607,10 @@ def test_sampler_reads_a_real_containers_ceiling(gate, tmp_path):
             "%s:/p:ro" % SAMPLER.parent,
             "-v",
             "%s:/w" % tmp_path,
+            "-e",
+            "HOST_UID=%d" % os.getuid(),
+            "-e",
+            "HOST_GID=%d" % os.getgid(),
             "--entrypoint",
             "sh",
             "alpine:latest",

@@ -11,6 +11,8 @@ So the pattern itself is turned into a CONCRETE INSTANCE -- the shortest literal
 
 ANCHOR, DO NOT NARROW. The fix for a finding here is to require command position `(^|[;&|(])`, never to delete the pattern: a guard that stops catching the real command is a worse outcome than the false positive it was cured of.
 
+RETARGETED 2026-09-24 (PLAN-retire-bash-oracles A2) from `.claude/oracles/`'s frozen bash originals to the LIVE Python guard modules at `.claude/rediacc_hooks/guards/`. The residue this file used to state out loud -- "a pattern edited in the PORT and not in the oracle is invisible here, because the oracle cannot change" -- is closed by this change rather than carried forward: there is no longer a second, frozen copy of a guard's pattern for an edit to miss. Patterns are read via `ast`, not text search, so a constant built across several lines, by string-literal concatenation, or from `hookio.rx()`'s `{S}`/`{B}` placeholders resolves exactly as the interpreter would resolve it.
+
 ---- gate ----
 step: Guard mention anchoring
 emit: false
@@ -29,6 +31,7 @@ why: A guard that refuses PROSE is a guard nobody can write a doc line about.
 
 from __future__ import annotations
 
+import ast
 import json
 import re
 import sys
@@ -43,26 +46,21 @@ import _cipath  # noqa: F401
 from rediacc_ci import proc as ci_proc
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-# W5 P7 CUTOVER. The guards are Python modules now, run through ONE dispatcher command per chain; the bash originals are frozen at .claude/oracles/<chain>/ and are still what this file reads PATTERNS out of, because `instantiate` understands POSIX bracket expressions and shell quoting, not Python `re`.
-#
-# THE PROBE RUNS THE LIVE GUARD, which is the half that must not be frozen: a gate probing the retired file would keep passing while the thing that actually refuses commands went unchecked.
-#
-# THE RESIDUE, stated rather than left to be found: a pattern edited in the PORT and not in the oracle is invisible here, because the oracle cannot change. That is acceptable only as an interim. The end state is to drop the oracle and drive each guard's own EDGE_CASES, since every module already declares literal instances of what it matches, wrapping each in prose and asserting
-# silence. That needs no instantiator at all.
-HOOKS = REPO_ROOT / ".claude" / "oracles"
+# THE LIVE GUARD PACKAGE, not the retired oracle tree (PLAN-retire-bash-oracles A2). Patterns and the guard both come from here now, so there is exactly one copy of each guard's matcher to keep anchored.
+GUARDS = REPO_ROOT / ".claude" / "rediacc_hooks" / "guards"
 DISPATCH = REPO_ROOT / ".claude" / "rediacc_hooks" / "dispatch.py"
 
 
 def guard_argv(guard):
     """How to RUN the guard this path names.
 
-    A path under the oracle tree names a RETIRED bash file whose live equivalent is the Python module of the same stem, so it is dispatched. Anything else is run as a file, which is what the throwaway fixtures `controls()` writes have to be: they are bash by construction, deliberately, so that rewording a real guard cannot silently void the control.
+    A path under the live guard package names an importable module, dispatched by stem through ONE entry point per chain. Anything else is run as a file, which is what the throwaway fixtures `controls()` writes have to be: they are bash by construction, deliberately, so that rewording a real guard cannot silently void the control.
     """
     try:
-        guard.relative_to(HOOKS)
+        guard.relative_to(GUARDS)
     except ValueError:
         return ["bash", str(guard)]
-    return [sys.executable, str(DISPATCH), guard.stem.replace("-", "_")]
+    return [sys.executable, str(DISPATCH), guard.stem]
 
 
 # EVERY CHAIN, not just pre-bash. Scoping this to one directory was the same hole check-hook-integrity.sh has now had twice (pre-edit/pre-ask in its 2026-08-27 repair, post-bash in e60e30331) -- and it was in the file written to stop exactly this class. Found by e580532b: 35 of 42 guards were probed and 7 were not.
@@ -80,21 +78,27 @@ NC = "\033[0m"
 
 # Guards whose matching is deliberately quote-blind, with the reason taken from the guard itself rather than invented here.
 #
-# BLOCKER: block-adhoc-sanctioned.sh delegates matching to lib/sanctioned.py and holds no inline pattern to turn into an instance. Its own comment states the trade-off knowingly -- "the residue is that `echo 'gh run watch 123'` is still refused. That is the price of seeing inside quotes, it is paid knowingly" -- and it mitigates the costly half by stripping heredoc bodies, which is
+# BLOCKER: block_adhoc_sanctioned.py delegates matching to lib/sanctioned.py and holds no inline pattern to turn into an instance. Its own comment states the trade-off knowingly -- "the residue is that `echo 'gh run watch 123'` is still refused. That is the price of seeing inside quotes, it is paid knowingly" -- and it mitigates the costly half by stripping heredoc bodies, which is
 # where a quoted recipe actually lives.
-ALLOW_UNPROBED = {"block-adhoc-sanctioned.sh"}
+#
+# BLOCKER: block_edit_of_running_script.py's decision is keyed on FILE IDENTITY (is the edited path one of the shell scripts a live process is currently interpreting) and the real process table, not on any phrase inside the edited content. `HOOK_CHAIN` matches a script PATH, not a command, and `META` is a character-escape set for building a `sed`-style substitution, not a matcher at
+# all -- found live by this A2 retarget, whose ast-based reader surfaces both as string constants where the old text search never reached them. Neither is the "refuses a mention instead of a target" class this file exists to catch, because there is no prose to confuse with a target: a file is either the one running or it is not.
+ALLOW_UNPROBED = {"block_adhoc_sanctioned.py", "block_edit_of_running_script.py"}
 
-# A pattern must look like a command matcher before it is worth instantiating.
-INTERESTING = re.compile(r"\[\[:|\\\||\|\||\+|\*")
+# A pattern must look like a command matcher before it is worth instantiating. Tuned for PYTHON `re` syntax rather than POSIX bracket expressions, since A2 retargeted the source from bash originals to the live guard modules: an anchor prefix, a character class built around the command separators, a word boundary, a non-capturing group, or a quantifier.
+INTERESTING = re.compile(r"\(\^\||\[;&|\\b|\(\?:|[+*]")
 
-# Evidence the author constrained the match to command POSITION rather than accepting it anywhere in the line.
+# Evidence the author constrained the match to command POSITION rather than accepting it anywhere in the line. Unchanged by the A2 retarget: guards write this anchor idiom identically in bash and in Python, since it is a regex fragment, not a shell construct.
 ANCHORED = re.compile(r"\(\^\||\^\(|\[;&\|\(|\[;&\|]")
 
 CLASS_SUB = [
-    (re.compile(r"\[\[:space:\]\][+*]"), " "),
-    (re.compile(r"\[\[:alnum:\]\][+*]?"), "x"),
-    (re.compile(r"\[\[:alpha:\]\][+*]?"), "x"),
-    (re.compile(r"\[\[:digit:\]\][+*]?"), "1"),
+    # Backslash character classes, Python's own spelling of what the bash originals wrote as POSIX bracket expressions. Collapsed the same way: a run of the class to one representative character, so the instance stays a short, readable literal rather than a soup of metacharacters.
+    (re.compile(r"\\s[+*]?"), " "),
+    (re.compile(r"\\S[+*]?"), "x"),
+    (re.compile(r"\\d[+*]?"), "1"),
+    (re.compile(r"\\D[+*]?"), "x"),
+    (re.compile(r"\\w[+*]?"), "x"),
+    (re.compile(r"\\W[+*]?"), " "),
     (re.compile(r"\[\^[^\]]*\][+*]"), " "),
     (re.compile(r"\[\^[^\]]*\]"), "x"),
     (re.compile(r"\[[^\]]*\][+*]?"), "x"),
@@ -107,9 +111,16 @@ def instantiate(pattern: str) -> str:
     Best-effort is enough: a probe that fails to trigger a guard is reported as UNPROBED rather than silently counted as clean, so an imperfect instance costs coverage that is visible, never a false green.
     """
     text = pattern
-    # DROP A LEADING ANCHOR GROUP FIRST. `(^|[;&|(]|&&|\|\|)[[:space:]]*` is a POSITION assertion, not text, and it must contribute nothing to the literal. Left in, it survives as junk: the branch-picker below cannot split it (its character class contains parentheses, so `[^()|]*` fails) and the class then collapses to a literal `x`, yielding `x git commit --allow-empty`. That
-    # string is not at command position, so a correctly-anchored guard does NOT fire on it -- and the positive probe then reports every anchored guard as unreachable. Measured: 0 of 42 probed.
-    text = re.sub(r"^\((?=[^)]*\^)[^)]*\)(\[\[:space:\]\][*+])?", "", text)
+    # DROP A LEADING ANCHOR GROUP FIRST. `(^|[;&|(]|&&|\|\|)[\s]*` is a POSITION assertion, not text, and it must contribute nothing to the literal. Left in, it survives as junk: the branch-picker below cannot split it (its character class contains parentheses, so `[^()|]*` fails) and the class then collapses to a literal `x`, yielding `x git commit --allow-empty`. That string is
+    # not at command position, so a correctly-anchored guard does NOT fire on it -- and the positive probe then reports every anchored guard as unreachable. Measured: 0 of 42 probed.
+    text = re.sub(r"^\((?=[^)]*\^)[^)]*\)(\\s[*+])?", "", text)
+    # LOOKAROUNDS CONTRIBUTE NO TEXT. `(?=$|[\s;&|])` (`block_prose_style_commit.GIT_COMMIT`'s trailing assertion) is a zero-width constraint, not a branch of real content, and running it through the branch-picker below would leak assertion syntax ("?=$") into the literal instance -- traced through by hand rather than measured, since a Python guard using a lookaround is new with
+    # this A2 retarget. Stripped whole, in a fixed-point loop for the rare pattern carrying more than one, and BEFORE the branch-picker so it never sees one.
+    for _ in range(5):
+        prev = text
+        text = re.sub(r"\(\?(?:=|!|<=|<!)(?:[^()]|\([^()]*\))*\)", "", text)
+        if text == prev:
+            break
     # An alternation: take the first branch, which is what a real command does. RESOLVED INNERMOST-FIRST, in a fixed-point loop. The single-pass version only matched a group with NO nested parens (`[^()]*`), so a pattern like `\bssh\b...\b(cat|echo|printf)\b` -- an alternation with a NESTED one inside its second branch -- left the outer group untouched and the whole instance
     # collapsed to a stray `>`. Measured against block-ssh-file-write.sh, which is why this exists.
     text = re.sub(r"\(\?:", "(", text)
@@ -138,29 +149,95 @@ def instantiate(pattern: str) -> str:
     return re.sub(r"\s+", " ", text).strip()
 
 
-def patterns_of(path: Path) -> list[str]:
-    """Every quoted string in the guard that looks like a command matcher.
+def _shellscan_placeholders() -> tuple[str, str]:
+    """`(SPACE, BLANK)`, read from `shellscan.py` rather than retyped here.
 
-    NOT just the ones on a `grep` line. Eight guards keep their patterns in an array or a variable and interpolate later (`grep -qE "$pat"`), so a grep-line-only reader left them UNPROBED -- and an unprobed guard's silence proves nothing, which is the failure this whole gate exists to prevent. The INTERESTING filter is what keeps ordinary prose strings out.
+    `hookio.rx()` substitutes `{S}`/`{B}` for these two character-class bodies at import time, so instantiating a pattern that uses them needs the same substitution. Reading them from the one file that defines them means a change there cannot silently desync from a second, hand-copied pair here; a fallback covers the read failing outright, since a stale pair is still closer to
+    right than crashing this gate over a file it does not otherwise depend on.
+    """
+    path = REPO_ROOT / ".claude" / "rediacc_hooks" / "shellscan.py"
+    try:
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+    except OSError:
+        return r" \t\n\v\f\r", r" \t\v\f\r"
+    found: dict[str, str] = {}
+    for node in tree.body:
+        if (
+            isinstance(node, ast.Assign)
+            and len(node.targets) == 1
+            and isinstance(node.targets[0], ast.Name)
+            and node.targets[0].id in ("SPACE", "BLANK")
+            and isinstance(node.value, ast.Constant)
+            and isinstance(node.value.value, str)
+        ):
+            found[node.targets[0].id] = node.value.value
+    return found.get("SPACE", r" \t\n\v\f\r"), found.get("BLANK", r" \t\v\f\r")
+
+
+SPACE, BLANK = _shellscan_placeholders()
+
+
+def _const_eval(node: ast.AST, table: dict[str, str]) -> str | None:
+    """Best-effort constant folding for one guard's regex-shaped assignments.
+
+    A guard's matcher is not always a single string literal: `hookio.rx(...)` and `re.compile(...)` wrap one, several guards build theirs by concatenating a literal with `hookio.SPACE`/`hookio.BLANK` (the pre-`rx()` idiom, six guards still use it for a fragment `rx()`'s `{S}`/`{B}` placeholders do not reach), and a `NAME = expr` two constants up can be referenced by name in a
+    later one, exactly as the interpreter would resolve it at import time. `table` carries every module-level constant already folded earlier in the same file, in source order, so a helper like `_S = hookio.SPACE` is available by the time a later line concatenates it in.
+    """
+    if isinstance(node, ast.Constant) and isinstance(node.value, str):
+        return node.value
+    if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add):
+        left = _const_eval(node.left, table)
+        right = _const_eval(node.right, table)
+        return None if left is None or right is None else left + right
+    if isinstance(node, ast.Name):
+        return table.get(node.id)
+    if (
+        isinstance(node, ast.Attribute)
+        and isinstance(node.value, ast.Name)
+        and node.value.id == "hookio"
+    ):
+        if node.attr == "SPACE":
+            return SPACE
+        if node.attr == "BLANK":
+            return BLANK
+        return None
+    if isinstance(node, ast.Call) and node.args:
+        func = node.func
+        is_rx = (isinstance(func, ast.Attribute) and func.attr == "rx") or (
+            isinstance(func, ast.Name) and func.id == "rx"
+        )
+        is_compile = isinstance(func, ast.Attribute) and func.attr == "compile"
+        if not (is_rx or is_compile):
+            return None
+        inner = _const_eval(node.args[0], table)
+        if inner is None:
+            return None
+        return inner.replace("{S}", SPACE).replace("{B}", BLANK) if is_rx else inner
+    return None
+
+
+def patterns_of(path: Path) -> list[str]:
+    """Every command-matcher-shaped string this guard module resolves to a constant.
+
+    Read from the AST, not the source TEXT: PLAN-retire-bash-oracles A2 retargeted this file from grepping quoted strings out of a frozen bash original to reading the LIVE Python guard's own regex constants, and those are not always one quoted literal on one line -- `hookio.rx(...)`, `re.compile(...)`, string-literal concatenation split across lines, and a constant built from
+    another constant defined earlier in the same file all have to resolve exactly as the interpreter resolves them, or a real edit to a pattern goes on being invisible here for a different reason than the one this file used to name. The INTERESTING filter is what keeps ordinary message strings and non-matcher constants (`CHAIN`, `TWIN`, a file path) out.
     """
     src = path.read_text(encoding="utf-8", errors="replace")
-    out: list[str] = []
-    # GREP-LINE PATTERNS FIRST. Broadening the reader to every quoted string in the file (needed for guards that keep patterns in arrays) buried the real matcher behind message text and helper strings, and the probe cap then cut it off. Measured: planting the pre-fix unanchored matcher back into block-git-empty-commit.sh was NOT caught, because its `--allow-empty` pattern sorted
-    # past the window. Priority is not cosmetic here; it is what makes the probe reach the thing that matters.
-    for rx in (
-        r"grep -q[a-zA-Z]*\s+(?:--\s+)?'([^'\n]{4,})'",
-        r'grep -q[a-zA-Z]*\s+(?:--\s+)?"([^"\n]{4,})"',
-        r"'([^'\n]{4,})'",
-        r'"([^"\n]{4,})"',
-    ):
-        out.extend(m.group(1) for m in re.finditer(rx, src))
-    # A comment line is prose about a pattern, never a pattern. Reading one would manufacture a finding out of the guard's own documentation.
-    body = [ln for ln in src.splitlines() if not ln.lstrip().startswith("#")]
-    joined = "\n".join(body)
-    out = [p for p in out if p in joined]
+    tree = ast.parse(src, filename=str(path))
+    table: dict[str, str] = {}
+    for node in tree.body:
+        if not (
+            isinstance(node, ast.Assign)
+            and len(node.targets) == 1
+            and isinstance(node.targets[0], ast.Name)
+        ):
+            continue
+        value = _const_eval(node.value, table)
+        if value is not None:
+            table[node.targets[0].id] = value
     seen: set[str] = set()
     uniq: list[str] = []
-    for x in out:
+    for x in table.values():
         if x not in seen:
             seen.add(x)
             uniq.append(x)
@@ -207,6 +284,25 @@ def fires(guard: Path, command: str, kind: str = "command", file_path: str = "")
         # A guard that will not answer is not a guard that said "no".
         return False
     return result.returncode == 2
+
+
+def chain_of(path: Path) -> str | None:
+    """This guard module's own `CHAIN = "..."` constant, without importing it.
+
+    Read the same way `patterns_of` reads a pattern constant, since the guards all live in ONE flat directory now (`.claude/rediacc_hooks/guards/`) rather than one subdirectory per chain: there is no longer a directory name to infer this from, only the module's own declaration.
+    """
+    tree = ast.parse(path.read_text(encoding="utf-8", errors="replace"), filename=str(path))
+    for node in tree.body:
+        if (
+            isinstance(node, ast.Assign)
+            and len(node.targets) == 1
+            and isinstance(node.targets[0], ast.Name)
+            and node.targets[0].id == "CHAIN"
+            and isinstance(node.value, ast.Constant)
+            and isinstance(node.value.value, str)
+        ):
+            return node.value.value
+    return None
 
 
 def file_path_for(guard: Path) -> str:
@@ -256,7 +352,7 @@ def controls() -> None:
             )
         # CHAIN PLUMBING, proven with a REAL trigger against a REAL guard, one per non-pre-bash chain. This is what stands in for per-guard reachability, which was tried and discarded: most extracted fragments are one clause of a multi-part trigger (file_path AND tool_name AND content, all at once), so no single instantiated substring fires most guards alone. Proving the PAYLOAD
         # SHAPE once per chain is the part that is actually load-bearing.
-        edit_guard = HOOKS / "pre-edit" / "block-roundlog-write.sh"
+        edit_guard = GUARDS / "block_roundlog_write.py"
         if edit_guard.exists():
             # `[ -e "$FILE" ]` gates this guard before anything else -- a nonexistent path is silently allowed by design (creating a log is not truncating one), so the fixture must actually exist on disk.
             # Under `td`, not a fresh `mkdtemp()`: that one was never removed, so every run of this gate left a directory in /tmp.
@@ -273,35 +369,40 @@ def controls() -> None:
             )
             if edit_result.returncode != 2:
                 fail(
-                    "pre-edit payload plumbing: block-roundlog-write.sh did not fire on a "
+                    "pre-edit payload plumbing: block_roundlog_write.py did not fire on a "
                     "REAL round-log write -- the edit payload shape cannot be trusted"
                 )
 
         ask_payload = payload_for("ask", "should i commit this change", "")
-        ask_guard = HOOKS / "pre-ask" / "block-settled-questions.sh"
+        # DISPATCHED, not run as a bare bash file: this was pointed at the retired oracle directly (`["bash", str(ask_guard)]`, bypassing `guard_argv`) even before A2, a residue of the guard's chain-plumbing check never having been updated when the guard's LIVE half moved to Python at the P7 cutover. Fixed here as a small, in-scope finding rather than carried forward: the
+        # plumbing check exists to prove the live payload shape, and the retired file cannot answer for that any more than the retired oracle tree can.
+        ask_guard = GUARDS / "block_settled_questions.py"
         if ask_guard.exists():
             ask_result = ci_proc.run(
-                ["bash", str(ask_guard)],
+                guard_argv(ask_guard),
                 input_text=ask_payload,
                 timeout=30,
                 cwd=str(REPO_ROOT),
             )
             if ask_result.returncode != 2:
                 fail(
-                    "pre-ask payload plumbing: block-settled-questions.sh did not fire on a "
+                    "pre-ask payload plumbing: block_settled_questions.py did not fire on a "
                     "REAL settled question -- the ask payload shape cannot be trusted"
                 )
 
-        # The instantiator is load-bearing, so it gets its own control.
-        got = instantiate(r"git[[:space:]]+commit[^|;&]*--allow-empty")
+        # The instantiator is load-bearing, so it gets its own control. Written in Python `re` syntax, not POSIX bracket expressions, since A2 retargeted the pattern source to the live guard modules.
+        got = instantiate(r"git\s+commit[^|;&]*--allow-empty")
         if "git commit" not in got or "--allow-empty" not in got:
             fail(f"instantiate() lost the pattern's order or literals: {got!r}")
         # And the ANCHORED spelling must instantiate to the same literal, or the positive probe cannot reach any guard that was fixed for this class.
-        anchored = instantiate(
-            r"(^|[;&|(]|&&|\|\|)[[:space:]]*git[[:space:]]+commit[^|;&]*--allow-empty"
-        )
+        anchored = instantiate(r"(^|[;&|(]|&&|\|\|)\s*git\s+commit[^|;&]*--allow-empty")
         if not anchored.startswith("git commit"):
             fail(f"instantiate() left anchor junk on the front: {anchored!r}")
+        # The lookaround strip is load-bearing too, for the one guard that carries one (`block_prose_style_commit.GIT_COMMIT`'s trailing `(?=$|[\s;&|])`).
+        # Without it the assertion's own syntax leaks into the instance as prose.
+        lookaround = instantiate(r"(^|[;&|(])\s*git\b[^;&|]*commit(?=$|[\s;&|])")
+        if "?=" in lookaround or "?!" in lookaround:
+            fail(f"instantiate() leaked lookaround syntax into the instance: {lookaround!r}")
 
 
 def fail(msg: str) -> None:
@@ -318,24 +419,29 @@ def main() -> int:
     unprobed: list[str] = []
     offenders: list[tuple[str, str]] = []
 
-    guards: list[tuple[Path, str]] = []
-    for chain, kind in CHAINS.items():
-        d = HOOKS / chain
-        if d.is_dir():
-            guards += [(g, kind) for g in sorted(d.glob("*.sh"))]
-
-    for guard, kind in guards:
-        name = guard.name
-        if name.startswith("test-"):
+    guards: list[tuple[Path, str, str]] = []
+    for path in sorted(GUARDS.glob("*.py")):
+        name = path.stem
+        if not name.startswith(("block_", "warn_", "require_")):
             continue
+        chain = chain_of(path)
+        if chain is None:
+            continue
+        kind = CHAINS.get(chain)
+        if kind is None:
+            continue
+        guards.append((path, kind, chain))
+
+    for guard, kind, chain in guards:
+        name = guard.name
         instances = [instantiate(p) for p in patterns_of(guard)]
         instances = [i for i in instances if len(i) >= 4]
         if not instances:
             # TIER 2, STATIC. A guard with no renderable instance is not automatically a defect, and treating it as one would demand that guards be rewritten to suit this instantiator rather than to match commands correctly. Two legitimate shapes exist and both were measured here:
             #
-            # * ALREADY ANCHORED -- block-blanket-git-add.sh and
-            #     block-worktree-add.sh carry `(^|[;&|(]|\$\(|`)` prefixes;
-            # the pattern is simply too gnarly to render into a literal. * NOT A PHRASE MATCHER AT ALL -- block-long-sleep.sh extracts a NUMBER (`grep -oE 'sleep +[0-9]+'`) and compares it. There is no phrase to find inside prose, so the class does not apply.
+            # * ALREADY ANCHORED -- block_blanket_git_add.py and
+            #     block_worktree_add.py carry `(^|[;&|(]|\$\(|`)` prefixes;
+            # the pattern is simply too gnarly to render into a literal. * NOT A PHRASE MATCHER AT ALL -- block_long_sleep.py extracts a NUMBER and compares it. There is no phrase to find inside prose, so the class does not apply.
             #
             # So: pass if the guard shows an anchor, or has nothing to anchor. Fail only when it phrase-matches with no anchor and no probe -- the case where nothing at all is checking it.
             pats = patterns_of(guard)
@@ -352,7 +458,7 @@ def main() -> int:
         probed += 1
         for inst in instances[:40]:
             if fires(guard, sentence(inst), kind, fp):
-                offenders.append((f"{guard.parent.name}/{name}", inst))
+                offenders.append((f"{chain}/{name}", inst))
                 break
 
     if probed < 20:

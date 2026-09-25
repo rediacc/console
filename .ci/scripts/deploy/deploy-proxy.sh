@@ -26,6 +26,8 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../lib/common.sh"
 
+require_cmd curl
+
 parse_args "$@"
 
 REPO_ROOT="$(get_repo_root)"
@@ -62,7 +64,6 @@ cp "$REPO_ROOT/private/bin/renet-linux-amd64" "$WORKER_DIR/renet/renet-linux-amd
 log_step "Deploying the proxy worker and container image (region: $REGION)..."
 npx wrangler deploy
 
-require_cmd curl
 SMOKE_URL="https://$(sed -n 's/.*pattern = "\([^"]*\)".*/\1/p' wrangler.toml | head -n 1)"
 log_step "Smoke-testing $SMOKE_URL..."
 HEALTH="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 30 "$SMOKE_URL/v1/health" || true)"

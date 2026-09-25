@@ -356,9 +356,6 @@ jobs:
           python3 -m pip install --user --disable-pip-version-check "PyYAML==${PYYAML_VERSION}"
           python3 -c "import yaml; print('PyYAML', yaml.__version__)"
           .ci/scripts/quality/check_git_history_depth.py
-      - name: Guard feature completeness
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check_guard_feature_completeness.py
       - name: Hook cross-OS seams
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_hook_cross_os.py
@@ -1051,6 +1048,9 @@ jobs:
         id: gate_check_ci_gate_test_real_file_plants
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 2) }}
         run: .ci/scripts/quality/check_gate_test_real_file_plants.py
+      - name: Gates that write the real tree declare it
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_gate_tree_writes.py
       - name: Generated manifest regions
         id: gate_check_ci_gen_manifest
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 3) }}
