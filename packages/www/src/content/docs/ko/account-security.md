@@ -8,7 +8,7 @@ tags:
 subcategory: account
 order: 13
 language: ko
-sourceHash: "c898204d1ff917f8"
+sourceHash: "5d139c4889b6a803"
 sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
@@ -53,7 +53,7 @@ CLI는 디바이스 코드 흐름을 사용하여 헤드리스 머신에서 인�
 ![Device Code Flow](/img/account-device-code-flow.svg)
 
 ```bash
-rdc config remote enable --headless
+rdc subscription login
 # 표시: Enter code XXXX-XXXX-XX at https://www.rediacc.com/account/authorize
 # 승인 후 CLI가 자격 증명을 자동으로 수신합니다
 ```

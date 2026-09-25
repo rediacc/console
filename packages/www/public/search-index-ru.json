@@ -1331,8 +1331,8 @@
   {
     "id": "search-15689",
     "content": "Поток кода устройства",
-    "body": "CLI может аутентифицироваться на безголовых машинах с помощью потока кода устройства: Device Code Flow rdc config remote enable --headless # Displays: Enter code XXXX-XXXX-XX at https://www.rediacc.com/account/authorize # After approval, CLI receives credentials automatically",
-    "excerpt": "CLI может аутентифицироваться на безголовых машинах с помощью потока кода устройства: Device Code Flow rdc config remote enable --headless # Displays:...",
+    "body": "CLI может аутентифицироваться на безголовых машинах с помощью потока кода устройства: Device Code Flow rdc subscription login # Displays: Enter code XXXX-XXXX-XX at https://www.rediacc.com/account/authorize # After approval, CLI receives credentials automatically",
+    "excerpt": "CLI может аутентифицироваться на безголовых машинах с помощью потока кода устройства: Device Code Flow rdc subscription login # Displays: Enter code X...",
     "category": "Documentation",
     "page": "/ru/docs/account-security",
     "fragment": "device-code-flow",
@@ -3843,7 +3843,7 @@
   {
     "id": "search-15907",
     "content": "1.11 remote",
-    "body": "Управление подключением к удалённому хранилищу конфигурации <a id=\"cli-local-config-remote-enable\"></a> #### enable Привязать эту конфигурацию к удалённому зашифрованному хранилищу rdc config remote enable [options] | Флаг | Описание | Обязательно | По умолчанию | |------|-------------|----------|---------| | --headless | Использовать поток кода устройства (для серверов без интерфейса) | Нет | - | | --password | Зарегистрироваться в безголовом режиме с заранее выданным password slot (без браузера) | Нет | - | | --api-url <url> | URL сервера аккаунта | Нет | - | | --force | Заменить отличающееся локальное содержимое копией с сервера без подтверждения | Нет | - | <a id=\"cli-local-config-remote-disable\"></a> #### disable Отключиться от удалённого хранилища и сохранить конфигурацию локально rdc config remote disable <a id=\"cli-local-config-remote-status\"></a> #### status Показать состояние удалённого подключения rdc config remote status <a id=\"cli-local-config-remote-refresh\"></a> #### refresh Принудительно загрузить конфигурацию из удалённого хранилища rdc config remote refresh <a id=\"cli-local-config-field\"></a>",
+    "body": "Управление подключением к удалённому хранилищу конфигурации <a id=\"cli-local-config-remote-enable\"></a> #### enable Привязать эту конфигурацию к удалённому зашифрованному хранилищу rdc config remote enable [options] | Флаг | Описание | Обязательно | По умолчанию | |------|-------------|----------|---------| | --password | Зарегистрироваться в безголовом режиме с заранее выданным password slot (без браузера) | Нет | - | | --api-url <url> | URL сервера аккаунта | Нет | - | | --force | Заменить отличающееся локальное содержимое копией с сервера без подтверждения | Нет | - | <a id=\"cli-local-config-remote-disable\"></a> #### disable Отключиться от удалённого хранилища и сохранить конфигурацию локально rdc config remote disable <a id=\"cli-local-config-remote-status\"></a> #### status Показать состояние удалённого подключения rdc config remote status <a id=\"cli-local-config-remote-refresh\"></a> #### refresh Принудительно загрузить конфигурацию из удалённого хранилища rdc config remote refresh <a id=\"cli-local-config-field\"></a>",
     "excerpt": "Управление подключением к удалённому хранилищу конфигурации <a id=\"cli-local-config-remote-enable\"></a> #### enable Привязать эту конфигурацию к удалё...",
     "category": "Documentation",
     "page": "/ru/docs/cli-application",

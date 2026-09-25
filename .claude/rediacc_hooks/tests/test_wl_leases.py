@@ -217,7 +217,9 @@ def test_l6_the_operator_switch_turns_the_stop_path_off_and_only_it(wl):  # noqa
     ready(wl)
     add(wl, "(deadbeef) open work that would block")
     wl.say("working\\n\\n## Remaining\\n- the item")
-    assert "OPEN worklist item" in wl.run({"WORKLIST_FOCUS": "off"}).out  # CONTROL: no config, the hook blocks
+    assert (
+        "OPEN worklist item" in wl.run({"WORKLIST_FOCUS": "off"}).out
+    )  # CONTROL: no config, the hook blocks
     cfg = wl.proj / ".ci" / "config" / "stop-hook.json"
     cfg.parent.mkdir(parents=True, exist_ok=True)
     cfg.write_text("{not json", encoding="utf-8")

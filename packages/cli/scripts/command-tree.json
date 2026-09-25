@@ -4068,12 +4068,6 @@
               "descriptionKey": "commands.config.remote.enable.description",
               "options": [
                 {
-                  "flags": "--headless",
-                  "descriptionKey": "commands.config.remote.enable.optionHeadless",
-                  "mandatory": false,
-                  "defaultValue": null
-                },
-                {
                   "flags": "--password",
                   "descriptionKey": "commands.config.remote.enable.optionPassword",
                   "mandatory": false,

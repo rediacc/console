@@ -1331,8 +1331,8 @@
   {
     "id": "search-11390",
     "content": "デバイスコードフロー",
-    "body": "CLIはデバイスコードフローを使用してヘッドレスマシンで認証できます： Device Code Flow rdc config remote enable --headless # Displays: Enter code XXXX-XXXX-XX at https://www.rediacc.com/account/authorize # After approval, CLI receives credentials automatically",
-    "excerpt": "CLIはデバイスコードフローを使用してヘッドレスマシンで認証できます： Device Code Flow rdc config remote enable --headless # Displays: Enter code XXXX-XXXX-XX at https://www.rediacc.co...",
+    "body": "CLIはデバイスコードフローを使用してヘッドレスマシンで認証できます： Device Code Flow rdc subscription login # Displays: Enter code XXXX-XXXX-XX at https://www.rediacc.com/account/authorize # After approval, CLI receives credentials automatically",
+    "excerpt": "CLIはデバイスコードフローを使用してヘッドレスマシンで認証できます： Device Code Flow rdc subscription login # Displays: Enter code XXXX-XXXX-XX at https://www.rediacc.com/account/aut...",
     "category": "Documentation",
     "page": "/ja/docs/account-security",
     "fragment": "device-code-flow",
@@ -3843,7 +3843,7 @@
   {
     "id": "search-11608",
     "content": "1.11 remote",
-    "body": "リモート設定ストレージ接続を管理 <a id=\"cli-local-config-remote-enable\"></a> #### enable この設定をリモート暗号化ストレージにリンク rdc config remote enable [options] | フラグ | 説明 | 必須 | デフォルト | |------|-------------|----------|---------| | --headless | デバイスコードフローを使用（ヘッドレスサーバー用） | いいえ | - | | --password | 事前にプロビジョニングされたパスワードスロットでヘッドレス登録する（ブラウザ不要） | いいえ | - | | --api-url <url> | アカウントサーバーURL | いいえ | - | | --force | 確認なしでローカルの相違内容をサーバーのコピーで置き換える | いいえ | - | <a id=\"cli-local-config-remote-disable\"></a> #### disable リモートストレージから切断し、設定をローカルに保存 rdc config remote disable <a id=\"cli-local-config-remote-status\"></a> #### status リモート接続状態を表示 rdc config remote status <a id=\"cli-local-config-remote-refresh\"></a> #### refresh リモートストレージから設定を強制再取得 rdc config remote refresh <a id=\"cli-local-config-field\"></a>",
+    "body": "リモート設定ストレージ接続を管理 <a id=\"cli-local-config-remote-enable\"></a> #### enable この設定をリモート暗号化ストレージにリンク rdc config remote enable [options] | フラグ | 説明 | 必須 | デフォルト | |------|-------------|----------|---------| | --password | 事前にプロビジョニングされたパスワードスロットでヘッドレス登録する（ブラウザ不要） | いいえ | - | | --api-url <url> | アカウントサーバーURL | いいえ | - | | --force | 確認なしでローカルの相違内容をサーバーのコピーで置き換える | いいえ | - | <a id=\"cli-local-config-remote-disable\"></a> #### disable リモートストレージから切断し、設定をローカルに保存 rdc config remote disable <a id=\"cli-local-config-remote-status\"></a> #### status リモート接続状態を表示 rdc config remote status <a id=\"cli-local-config-remote-refresh\"></a> #### refresh リモートストレージから設定を強制再取得 rdc config remote refresh <a id=\"cli-local-config-field\"></a>",
     "excerpt": "リモート設定ストレージ接続を管理 <a id=\"cli-local-config-remote-enable\"></a> #### enable この設定をリモート暗号化ストレージにリンク rdc config remote enable [options] | フラグ | 説明 | 必須 | デフ...",
     "category": "Documentation",
     "page": "/ja/docs/cli-application",

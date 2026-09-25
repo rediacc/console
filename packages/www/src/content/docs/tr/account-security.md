@@ -8,7 +8,7 @@ tags:
 subcategory: account
 order: 13
 language: tr
-sourceHash: "c898204d1ff917f8"
+sourceHash: "5d139c4889b6a803"
 sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
@@ -53,7 +53,7 @@ CLI, cihaz kodu akışını kullanarak ekransız makinelerde kimlik doğrulamas�
 ![Device Code Flow](/img/account-device-code-flow.svg)
 
 ```bash
-rdc config remote enable --headless
+rdc subscription login
 # Gösterir: XXXX-XXXX-XX kodunu https://www.rediacc.com/account/authorize adresine girin
 # Onaydan sonra CLI otomatik olarak kimlik bilgilerini alır
 ```

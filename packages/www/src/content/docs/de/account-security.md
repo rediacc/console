@@ -8,7 +8,7 @@ tags:
 subcategory: account
 order: 13
 language: de
-sourceHash: "c898204d1ff917f8"
+sourceHash: "5d139c4889b6a803"
 sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
@@ -53,7 +53,7 @@ Die CLI kann sich auf Headless-Maschinen über den Device-Code-Ablauf authentifi
 ![Device Code Flow](/img/account-device-code-flow.svg)
 
 ```bash
-rdc config remote enable --headless
+rdc subscription login
 # Zeigt an: Code XXXX-XXXX-XX eingeben unter https://www.rediacc.com/account/authorize
 # Nach Genehmigung erhält die CLI automatisch Zugangsdaten
 ```

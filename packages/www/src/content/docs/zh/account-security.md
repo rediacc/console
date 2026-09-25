@@ -8,7 +8,7 @@ tags:
 subcategory: account
 order: 13
 language: zh
-sourceHash: "c898204d1ff917f8"
+sourceHash: "5d139c4889b6a803"
 sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
@@ -53,7 +53,7 @@ CLI可以使用设备码流程在无界面机器上进行身份验证：
 ![Device Code Flow](/img/account-device-code-flow.svg)
 
 ```bash
-rdc config remote enable --headless
+rdc subscription login
 # Displays: Enter code XXXX-XXXX-XX at https://www.rediacc.com/account/authorize
 # After approval, CLI receives credentials automatically
 ```

@@ -1331,8 +1331,8 @@
   {
     "id": "search-12823",
     "content": "디바이스 코드 흐름",
-    "body": "CLI는 디바이스 코드 흐름을 사용하여 헤드리스 머신에서 인증할 수 있습니다: Device Code Flow rdc config remote enable --headless # 표시: Enter code XXXX-XXXX-XX at https://www.rediacc.com/account/authorize # 승인 후 CLI가 자격 증명을 자동으로 수신합니다",
-    "excerpt": "CLI는 디바이스 코드 흐름을 사용하여 헤드리스 머신에서 인증할 수 있습니다: Device Code Flow rdc config remote enable --headless # 표시: Enter code XXXX-XXXX-XX at https://www.rediacc....",
+    "body": "CLI는 디바이스 코드 흐름을 사용하여 헤드리스 머신에서 인증할 수 있습니다: Device Code Flow rdc subscription login # 표시: Enter code XXXX-XXXX-XX at https://www.rediacc.com/account/authorize # 승인 후 CLI가 자격 증명을 자동으로 수신합니다",
+    "excerpt": "CLI는 디바이스 코드 흐름을 사용하여 헤드리스 머신에서 인증할 수 있습니다: Device Code Flow rdc subscription login # 표시: Enter code XXXX-XXXX-XX at https://www.rediacc.com/account/a...",
     "category": "Documentation",
     "page": "/ko/docs/account-security",
     "fragment": "device-code-flow",
@@ -3843,7 +3843,7 @@
   {
     "id": "search-13041",
     "content": "1.11 remote",
-    "body": "원격 설정 스토리지 연결을 관리합니다 <a id=\"cli-local-config-remote-enable\"></a> #### enable 이 설정을 원격 암호화 스토리지에 연결합니다 rdc config remote enable [options] | 플래그 | 설명 | 필수 | 기본값 | |------|-------------|----------|---------| | --headless | 기기 코드 흐름을 사용합니다 (헤드리스 서버용) | 아니오 | - | | --password | 사전 프로비저닝된 비밀번호 슬롯으로 헤드리스 등록 (브라우저 불필요) | 아니오 | - | | --api-url <url> | 계정 서버 URL | 아니오 | - | | --force | 확인 없이 다른 로컬 내용을 서버 사본으로 교체합니다 | 아니오 | - | <a id=\"cli-local-config-remote-disable\"></a> #### disable 원격 스토리지 연결을 끊고 설정을 로컬에 저장합니다 rdc config remote disable <a id=\"cli-local-config-remote-status\"></a> #### status 원격 연결 상태를 표시합니다 rdc config remote status <a id=\"cli-local-config-remote-refresh\"></a> #### refresh 원격 스토리지에서 설정을 강제로 다시 가져옵니다 rdc config remote refresh <a id=\"cli-local-config-field\"></a>",
+    "body": "원격 설정 스토리지 연결을 관리합니다 <a id=\"cli-local-config-remote-enable\"></a> #### enable 이 설정을 원격 암호화 스토리지에 연결합니다 rdc config remote enable [options] | 플래그 | 설명 | 필수 | 기본값 | |------|-------------|----------|---------| | --password | 사전 프로비저닝된 비밀번호 슬롯으로 헤드리스 등록 (브라우저 불필요) | 아니오 | - | | --api-url <url> | 계정 서버 URL | 아니오 | - | | --force | 확인 없이 다른 로컬 내용을 서버 사본으로 교체합니다 | 아니오 | - | <a id=\"cli-local-config-remote-disable\"></a> #### disable 원격 스토리지 연결을 끊고 설정을 로컬에 저장합니다 rdc config remote disable <a id=\"cli-local-config-remote-status\"></a> #### status 원격 연결 상태를 표시합니다 rdc config remote status <a id=\"cli-local-config-remote-refresh\"></a> #### refresh 원격 스토리지에서 설정을 강제로 다시 가져옵니다 rdc config remote refresh <a id=\"cli-local-config-field\"></a>",
     "excerpt": "원격 설정 스토리지 연결을 관리합니다 <a id=\"cli-local-config-remote-enable\"></a> #### enable 이 설정을 원격 암호화 스토리지에 연결합니다 rdc config remote enable [options] | 플래그 | 설명 |...",
     "category": "Documentation",
     "page": "/ko/docs/cli-application",

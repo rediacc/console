@@ -1331,8 +1331,8 @@
   {
     "id": "search-1346",
     "content": "تدفق رمز الجهاز",
-    "body": "يمكن لـ CLI المصادقة على الاجهزة بدون شاشة باستخدام تدفق رمز الجهاز: Device Code Flow rdc config remote enable --headless # Displays: Enter code XXXX-XXXX-XX at https://www.rediacc.com/account/authorize # After approval, CLI receives credentials automatically",
-    "excerpt": "يمكن لـ CLI المصادقة على الاجهزة بدون شاشة باستخدام تدفق رمز الجهاز: Device Code Flow rdc config remote enable --headless # Displays: Enter code XXXX-...",
+    "body": "يمكن لـ CLI المصادقة على الاجهزة بدون شاشة باستخدام تدفق رمز الجهاز: Device Code Flow rdc subscription login # Displays: Enter code XXXX-XXXX-XX at https://www.rediacc.com/account/authorize # After approval, CLI receives credentials automatically",
+    "excerpt": "يمكن لـ CLI المصادقة على الاجهزة بدون شاشة باستخدام تدفق رمز الجهاز: Device Code Flow rdc subscription login # Displays: Enter code XXXX-XXXX-XX at ht...",
     "category": "Documentation",
     "page": "/ar/docs/account-security",
     "fragment": "device-code-flow",
@@ -3843,7 +3843,7 @@
   {
     "id": "search-1564",
     "content": "1.11 remote",
-    "body": "إدارة اتصال تخزين الإعدادات عن بُعد <a id=\"cli-local-config-remote-enable\"></a> #### enable ربط هذه الإعدادات بالتخزين المشفر عن بُعد rdc config remote enable [options] | العلامة | الوصف | مطلوب | افتراضي | |------|-------------|----------|---------| | --headless | استخدام تدفق رمز الجهاز (للخوادم بدون واجهة) | لا | - | | --password | التسجيل بلا واجهة رسومية باستخدام فتحة كلمة مرور مُجهَّزة مسبقًا (بلا متصفح) | لا | - | | --api-url <url> | عنوان خادم الحساب | لا | - | | --force | استبدال المحتوى المحلي المختلف بنسخة الخادم دون تأكيد | لا | - | <a id=\"cli-local-config-remote-disable\"></a> #### disable قطع الاتصال بالتخزين عن بُعد وحفظ الإعدادات محلياً rdc config remote disable <a id=\"cli-local-config-remote-status\"></a> #### status عرض حالة الاتصال عن بُعد rdc config remote status <a id=\"cli-local-config-remote-refresh\"></a> #### refresh إعادة جلب الإعدادات من التخزين عن بُعد rdc config remote refresh <a id=\"cli-local-config-field\"></a>",
+    "body": "إدارة اتصال تخزين الإعدادات عن بُعد <a id=\"cli-local-config-remote-enable\"></a> #### enable ربط هذه الإعدادات بالتخزين المشفر عن بُعد rdc config remote enable [options] | العلامة | الوصف | مطلوب | افتراضي | |------|-------------|----------|---------| | --password | التسجيل بلا واجهة رسومية باستخدام فتحة كلمة مرور مُجهَّزة مسبقًا (بلا متصفح) | لا | - | | --api-url <url> | عنوان خادم الحساب | لا | - | | --force | استبدال المحتوى المحلي المختلف بنسخة الخادم دون تأكيد | لا | - | <a id=\"cli-local-config-remote-disable\"></a> #### disable قطع الاتصال بالتخزين عن بُعد وحفظ الإعدادات محلياً rdc config remote disable <a id=\"cli-local-config-remote-status\"></a> #### status عرض حالة الاتصال عن بُعد rdc config remote status <a id=\"cli-local-config-remote-refresh\"></a> #### refresh إعادة جلب الإعدادات من التخزين عن بُعد rdc config remote refresh <a id=\"cli-local-config-field\"></a>",
     "excerpt": "إدارة اتصال تخزين الإعدادات عن بُعد <a id=\"cli-local-config-remote-enable\"></a> #### enable ربط هذه الإعدادات بالتخزين المشفر عن بُعد rdc config remot...",
     "category": "Documentation",
     "page": "/ar/docs/cli-application",

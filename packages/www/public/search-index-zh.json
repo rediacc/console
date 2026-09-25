@@ -1331,8 +1331,8 @@
   {
     "id": "search-18555",
     "content": "设备码流程",
-    "body": "CLI可以使用设备码流程在无界面机器上进行身份验证： Device Code Flow rdc config remote enable --headless # Displays: Enter code XXXX-XXXX-XX at https://www.rediacc.com/account/authorize # After approval, CLI receives credentials automatically",
-    "excerpt": "CLI可以使用设备码流程在无界面机器上进行身份验证： Device Code Flow rdc config remote enable --headless # Displays: Enter code XXXX-XXXX-XX at https://www.rediacc.com/account...",
+    "body": "CLI可以使用设备码流程在无界面机器上进行身份验证： Device Code Flow rdc subscription login # Displays: Enter code XXXX-XXXX-XX at https://www.rediacc.com/account/authorize # After approval, CLI receives credentials automatically",
+    "excerpt": "CLI可以使用设备码流程在无界面机器上进行身份验证： Device Code Flow rdc subscription login # Displays: Enter code XXXX-XXXX-XX at https://www.rediacc.com/account/authorize #...",
     "category": "Documentation",
     "page": "/zh/docs/account-security",
     "fragment": "device-code-flow",
@@ -3843,7 +3843,7 @@
   {
     "id": "search-18773",
     "content": "1.11 remote",
-    "body": "管理远程配置存储连接 <a id=\"cli-local-config-remote-enable\"></a> #### enable 将此配置链接到远程加密存储 rdc config remote enable [options] | 标志 | 描述 | 必填 | 默认值 | |------|-------------|----------|---------| | --headless | 使用设备代码流程（用于无界面服务器） | 否 | - | | --password | 使用预先配置好的密码槽位进行无头注册（无需浏览器） | 否 | - | | --api-url <url> | 账户服务器URL | 否 | - | | --force | 无需确认，直接用服务器副本替换不同的本地内容 | 否 | - | <a id=\"cli-local-config-remote-disable\"></a> #### disable 断开远程存储连接并将配置保存到本地 rdc config remote disable <a id=\"cli-local-config-remote-status\"></a> #### status 显示远程连接状态 rdc config remote status <a id=\"cli-local-config-remote-refresh\"></a> #### refresh 强制从远程存储重新获取配置 rdc config remote refresh <a id=\"cli-local-config-field\"></a>",
+    "body": "管理远程配置存储连接 <a id=\"cli-local-config-remote-enable\"></a> #### enable 将此配置链接到远程加密存储 rdc config remote enable [options] | 标志 | 描述 | 必填 | 默认值 | |------|-------------|----------|---------| | --password | 使用预先配置好的密码槽位进行无头注册（无需浏览器） | 否 | - | | --api-url <url> | 账户服务器URL | 否 | - | | --force | 无需确认，直接用服务器副本替换不同的本地内容 | 否 | - | <a id=\"cli-local-config-remote-disable\"></a> #### disable 断开远程存储连接并将配置保存到本地 rdc config remote disable <a id=\"cli-local-config-remote-status\"></a> #### status 显示远程连接状态 rdc config remote status <a id=\"cli-local-config-remote-refresh\"></a> #### refresh 强制从远程存储重新获取配置 rdc config remote refresh <a id=\"cli-local-config-field\"></a>",
     "excerpt": "管理远程配置存储连接 <a id=\"cli-local-config-remote-enable\"></a> #### enable 将此配置链接到远程加密存储 rdc config remote enable [options] | 标志 | 描述 | 必填 | 默认值 | |------|---...",
     "category": "Documentation",
     "page": "/zh/docs/cli-application",

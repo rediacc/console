@@ -1331,8 +1331,8 @@
   {
     "id": "search-7091",
     "content": "Seadme koodivogu",
-    "body": "CLI saab peata masinatel autentida seadme koodivogu abil: Seadme koodivogu rdc config remote enable --headless # Kuvatakse: Enter code XXXX-XXXX-XX at https://www.rediacc.com/account/authorize # Pärast kinnitamist saab CLI mandaadid automaatselt",
-    "excerpt": "CLI saab peata masinatel autentida seadme koodivogu abil: Seadme koodivogu rdc config remote enable --headless # Kuvatakse: Enter code XXXX-XXXX-XX at...",
+    "body": "CLI saab peata masinatel autentida seadme koodivogu abil: Seadme koodivogu rdc subscription login # Kuvatakse: Enter code XXXX-XXXX-XX at https://www.rediacc.com/account/authorize # Pärast kinnitamist saab CLI mandaadid automaatselt",
+    "excerpt": "CLI saab peata masinatel autentida seadme koodivogu abil: Seadme koodivogu rdc subscription login # Kuvatakse: Enter code XXXX-XXXX-XX at https://www....",
     "category": "Documentation",
     "page": "/et/docs/account-security",
     "fragment": "device-code-flow",
@@ -3843,7 +3843,7 @@
   {
     "id": "search-7309",
     "content": "1.11 remote",
-    "body": "Halda kaugsalvestuse konfiguratsiooniühendust <a id=\"cli-local-config-remote-enable\"></a> #### enable Seo see konfiguratsioon kaugega krüpteeritud salvestusega rdc config remote enable [options] | Lipuke | Kirjeldus | Kohustuslik | Vaikimisi | |------|-------------|----------|---------| | --headless | Kasuta seadmekoodi voogu (päiseta serveritele) | Ei | - | | --password | Registreeru pealevaatamiseta eelnevalt jagatud password slot'iga (ilma brauserita) | Ei | - | | --api-url <url> | Kontoserveri URL | Ei | - | | --force | Asenda erinev kohalik sisu serveri koopiaga ilma kinnituseta | Ei | - | <a id=\"cli-local-config-remote-disable\"></a> #### disable Katkesta ühendus kaugsalvestusega ja salvesta konfiguratsioon kohalikult rdc config remote disable <a id=\"cli-local-config-remote-status\"></a> #### status Kuva kaugühenduse olek rdc config remote status <a id=\"cli-local-config-remote-refresh\"></a> #### refresh Sunni konfiguratsiooni uuesti toomist kaugsalvestusest rdc config remote refresh <a id=\"cli-local-config-field\"></a>",
+    "body": "Halda kaugsalvestuse konfiguratsiooniühendust <a id=\"cli-local-config-remote-enable\"></a> #### enable Seo see konfiguratsioon kaugega krüpteeritud salvestusega rdc config remote enable [options] | Lipuke | Kirjeldus | Kohustuslik | Vaikimisi | |------|-------------|----------|---------| | --password | Registreeru pealevaatamiseta eelnevalt jagatud password slot'iga (ilma brauserita) | Ei | - | | --api-url <url> | Kontoserveri URL | Ei | - | | --force | Asenda erinev kohalik sisu serveri koopiaga ilma kinnituseta | Ei | - | <a id=\"cli-local-config-remote-disable\"></a> #### disable Katkesta ühendus kaugsalvestusega ja salvesta konfiguratsioon kohalikult rdc config remote disable <a id=\"cli-local-config-remote-status\"></a> #### status Kuva kaugühenduse olek rdc config remote status <a id=\"cli-local-config-remote-refresh\"></a> #### refresh Sunni konfiguratsiooni uuesti toomist kaugsalvestusest rdc config remote refresh <a id=\"cli-local-config-field\"></a>",
     "excerpt": "Halda kaugsalvestuse konfiguratsiooniühendust <a id=\"cli-local-config-remote-enable\"></a> #### enable Seo see konfiguratsioon kaugega krüpteeritud sal...",
     "category": "Documentation",
     "page": "/et/docs/cli-application",

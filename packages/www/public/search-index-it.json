@@ -1331,8 +1331,8 @@
   {
     "id": "search-9957",
     "content": "Flusso Device Code",
-    "body": "La CLI può autenticarsi su macchine headless tramite il flusso device code: Device Code Flow rdc config remote enable --headless # Visualizza: Enter code XXXX-XXXX-XX at https://www.rediacc.com/account/authorize # Dopo l'approvazione, la CLI riceve le credenziali automaticamente",
-    "excerpt": "La CLI può autenticarsi su macchine headless tramite il flusso device code: Device Code Flow rdc config remote enable --headless # Visualizza: Enter c...",
+    "body": "La CLI può autenticarsi su macchine headless tramite il flusso device code: Device Code Flow rdc subscription login # Visualizza: Enter code XXXX-XXXX-XX at https://www.rediacc.com/account/authorize # Dopo l'approvazione, la CLI riceve le credenziali automaticamente",
+    "excerpt": "La CLI può autenticarsi su macchine headless tramite il flusso device code: Device Code Flow rdc subscription login # Visualizza: Enter code XXXX-XXXX...",
     "category": "Documentation",
     "page": "/it/docs/account-security",
     "fragment": "device-code-flow",
@@ -3843,7 +3843,7 @@
   {
     "id": "search-10175",
     "content": "1.11 remote",
-    "body": "Gestisci la connessione allo storage di configurazione remoto <a id=\"cli-local-config-remote-enable\"></a> #### enable Collega questa configurazione allo storage cifrato remoto rdc config remote enable [options] | Flag | Descrizione | Obbligatorio | Predefinito | |------|-------------|----------|---------| | --headless | Usa il flusso device code (per server headless) | No | - | | --password | Iscriviti in modalità headless con un password slot pre-provisionato (senza browser) | No | - | | --api-url <url> | URL del server account | No | - | | --force | Sostituisci il contenuto locale differente con la copia del server senza conferma | No | - | <a id=\"cli-local-config-remote-disable\"></a> #### disable Disconnetti dallo storage remoto e salva la configurazione in locale rdc config remote disable <a id=\"cli-local-config-remote-status\"></a> #### status Mostra lo stato della connessione remota rdc config remote status <a id=\"cli-local-config-remote-refresh\"></a> #### refresh Forza il recupero della configurazione dallo storage remoto rdc config remote refresh <a id=\"cli-local-config-field\"></a>",
+    "body": "Gestisci la connessione allo storage di configurazione remoto <a id=\"cli-local-config-remote-enable\"></a> #### enable Collega questa configurazione allo storage cifrato remoto rdc config remote enable [options] | Flag | Descrizione | Obbligatorio | Predefinito | |------|-------------|----------|---------| | --password | Iscriviti in modalità headless con un password slot pre-provisionato (senza browser) | No | - | | --api-url <url> | URL del server account | No | - | | --force | Sostituisci il contenuto locale differente con la copia del server senza conferma | No | - | <a id=\"cli-local-config-remote-disable\"></a> #### disable Disconnetti dallo storage remoto e salva la configurazione in locale rdc config remote disable <a id=\"cli-local-config-remote-status\"></a> #### status Mostra lo stato della connessione remota rdc config remote status <a id=\"cli-local-config-remote-refresh\"></a> #### refresh Forza il recupero della configurazione dallo storage remoto rdc config remote refresh <a id=\"cli-local-config-field\"></a>",
     "excerpt": "Gestisci la connessione allo storage di configurazione remoto <a id=\"cli-local-config-remote-enable\"></a> #### enable Collega questa configurazione al...",
     "category": "Documentation",
     "page": "/it/docs/cli-application",

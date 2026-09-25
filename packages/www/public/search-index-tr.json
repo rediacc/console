@@ -1331,8 +1331,8 @@
   {
     "id": "search-17122",
     "content": "Cihaz Kodu Akışı",
-    "body": "CLI, cihaz kodu akışını kullanarak ekransız makinelerde kimlik doğrulaması yapabilir: Device Code Flow rdc config remote enable --headless # Gösterir: XXXX-XXXX-XX kodunu https://www.rediacc.com/account/authorize adresine girin # Onaydan sonra CLI otomatik olarak kimlik bilgilerini alır",
-    "excerpt": "CLI, cihaz kodu akışını kullanarak ekransız makinelerde kimlik doğrulaması yapabilir: Device Code Flow rdc config remote enable --headless # Gösterir:...",
+    "body": "CLI, cihaz kodu akışını kullanarak ekransız makinelerde kimlik doğrulaması yapabilir: Device Code Flow rdc subscription login # Gösterir: XXXX-XXXX-XX kodunu https://www.rediacc.com/account/authorize adresine girin # Onaydan sonra CLI otomatik olarak kimlik bilgilerini alır",
+    "excerpt": "CLI, cihaz kodu akışını kullanarak ekransız makinelerde kimlik doğrulaması yapabilir: Device Code Flow rdc subscription login # Gösterir: XXXX-XXXX-XX...",
     "category": "Documentation",
     "page": "/tr/docs/account-security",
     "fragment": "device-code-flow",
@@ -3843,7 +3843,7 @@
   {
     "id": "search-17340",
     "content": "1.11 remote",
-    "body": "Uzak yapılandırma depolama bağlantısını yönet <a id=\"cli-local-config-remote-enable\"></a> #### enable Bu yapılandırmayı uzak şifreli depolamaya bağla rdc config remote enable [options] | Bayrak | Açıklama | Gerekli | Varsayılan | |------|-------------|----------|---------| | --headless | Cihaz kodu akışını kullan (arayüzsüz sunucular için) | Hayır | - | | --password | Önceden hazırlanmış bir password slot ile headless kaydol (tarayıcısız) | Hayır | - | | --api-url <url> | Hesap sunucusu URL'si | Hayır | - | | --force | Farklı olan yerel içeriği onay almadan sunucu kopyasıyla değiştir | Hayır | - | <a id=\"cli-local-config-remote-disable\"></a> #### disable Uzak depolamadan bağlantıyı kes ve yapılandırmayı yerel olarak kaydet rdc config remote disable <a id=\"cli-local-config-remote-status\"></a> #### status Uzak bağlantı durumunu göster rdc config remote status <a id=\"cli-local-config-remote-refresh\"></a> #### refresh Yapılandırmayı uzak depolamadan zorla yeniden al rdc config remote refresh <a id=\"cli-local-config-field\"></a>",
+    "body": "Uzak yapılandırma depolama bağlantısını yönet <a id=\"cli-local-config-remote-enable\"></a> #### enable Bu yapılandırmayı uzak şifreli depolamaya bağla rdc config remote enable [options] | Bayrak | Açıklama | Gerekli | Varsayılan | |------|-------------|----------|---------| | --password | Önceden hazırlanmış bir password slot ile headless kaydol (tarayıcısız) | Hayır | - | | --api-url <url> | Hesap sunucusu URL'si | Hayır | - | | --force | Farklı olan yerel içeriği onay almadan sunucu kopyasıyla değiştir | Hayır | - | <a id=\"cli-local-config-remote-disable\"></a> #### disable Uzak depolamadan bağlantıyı kes ve yapılandırmayı yerel olarak kaydet rdc config remote disable <a id=\"cli-local-config-remote-status\"></a> #### status Uzak bağlantı durumunu göster rdc config remote status <a id=\"cli-local-config-remote-refresh\"></a> #### refresh Yapılandırmayı uzak depolamadan zorla yeniden al rdc config remote refresh <a id=\"cli-local-config-field\"></a>",
     "excerpt": "Uzak yapılandırma depolama bağlantısını yönet <a id=\"cli-local-config-remote-enable\"></a> #### enable Bu yapılandırmayı uzak şifreli depolamaya bağla...",
     "category": "Documentation",
     "page": "/tr/docs/cli-application",

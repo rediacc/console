@@ -21,6 +21,7 @@ An id is `D-<SRC><n>`. `<SRC>` is a source key declared in the table below, `<n>
   | `B` | `docs/ci-overhaul/04-decisions.md` section B, decided by recommendation |
   | `M` | `docs/agent-reference/model-routing.md`, the numbered `## Rulings` section |
   | `S` | `agent/plans/PLAN-secret-namespace-migration.md`, locked by the operator 2026-09-02 |
+  | `W` | `agent/plans/PLAN-ci-time-budget.md`, section "Operator rulings", locked by the operator 2026-09-25 (AskUserQuestion, re-asked and revised the same day) |
 
 **The `D-1`..`D-9` labels in `docs/ci-overhaul/04-decisions.md:57-112` are NOT register ids and must never be read as one.** They label section C, "Open decision points", which are questions carrying a recommended default rather than decisions. They have no letter, so the grammar below cannot read `D-6` as a register id at all; only a hurried reader can. The same file's section F
 then uses `D8`, `D9` and `D10` (`docs/ci-overhaul/04-decisions.md:184-201`) for something else again, defect ids from an earlier plan, and `docs/ci-overhaul/04-decisions.md:93` carries both on one line (`**D-6. D6: how does a submodule draft PR get flipped ready?**`). Those are left exactly as they are: renumbering a document to suit a register is how a register starts lying about
@@ -66,6 +67,12 @@ The last one is the licence half. It cannot stop a bad substitution and does not
 | D-S8 | R2 token `backup-s3-20260901T103133Z` is kept, then narrowed to the backup buckets only | agent/plans/PLAN-secret-namespace-migration.md:210 | live | | Three further ruling rounds sit at agent/plans/PLAN-secret-namespace-migration.md:158, :170 and :193 and have no id of their own |
 | D-S9 | Mint the five; ASIA stays absent on purpose | agent/plans/PLAN-secret-namespace-migration.md:1570 | live | | |
 | D-S10 | Both backup families are renamed and `CLOUDFLARE_` comes off the S3 family | agent/plans/PLAN-secret-namespace-migration.md:1172 | live | | Overturns the `BACKUP_S3_* -> CLOUDFLARE_R2_BACKUP_*` row that ruling round `8ter` had accepted the same day |
+| D-W1 | Stay on GitHub Free; the pipeline target is ~35 minutes, the per-job budget 15 | agent/plans/PLAN-ci-time-budget.md:343 | live | | Revised the same day from "Team plan" |
+| D-W2 | For budgeted jobs the lane gate (p90 <= 12, timeout <= 15) supersedes the 1.5x headroom rule | agent/plans/PLAN-ci-time-budget.md:347 | live | | The plan's recommendation, taken by the operator |
+| D-W3 | The two long K8s tests stay whole as named, operator-approved lane-gate exemptions | agent/plans/PLAN-ci-time-budget.md:345 | live | | Revised from the checkpoint split |
+| D-W4 | The OPS tutorials become independent and shard like tests | agent/plans/PLAN-ci-time-budget.md:344 | live | | Cross-tutorial state is no longer exercised |
+| D-W5 | The budget is enforced on PRs and main together | agent/plans/PLAN-ci-time-budget.md:346 | live | | Revised from PRs-first |
+| D-W6 | ops-tests drops quality/review-gate from its needs; review-gate stays on stage-artifacts | agent/plans/PLAN-ci-time-budget.md:347 | live | | The plan's recommendation, taken by the operator |
 
 ## Adding a row
 

@@ -8,7 +8,7 @@ tags:
 subcategory: account
 order: 13
 language: pt
-sourceHash: "c898204d1ff917f8"
+sourceHash: "5d139c4889b6a803"
 sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
@@ -53,7 +53,7 @@ A CLI pode autenticar em máquinas sem interface gráfica usando o fluxo de cód
 ![Device Code Flow](/img/account-device-code-flow.svg)
 
 ```bash
-rdc config remote enable --headless
+rdc subscription login
 # Apresenta: Enter code XXXX-XXXX-XX at https://www.rediacc.com/account/authorize
 # Após aprovação, a CLI recebe as credenciais automaticamente
 ```
