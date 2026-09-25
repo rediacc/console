@@ -507,7 +507,15 @@ for tool in ("aws", "bw", "bws"):
 # One case below does exactly that, because the end-to-end path deserves one; the rest use a fixture root, which is also what makes the refusal cases affordable to enumerate.
 #
 # THE PARSER IS STILL THE REAL ONE. The fixture supplies only the file; `_ci_seams` reaches rediacc_ci.core.allowlist out of this checkout, so a harness copy of the BLOCKER grammar never gets a chance to disagree with the one every gate uses.
-sys.path.insert(0, os.path.join(REPO, ".claude"))
+# The hop itself goes through the canonical `.claude` helper, rediacc_hooks/syspath.py, loaded BY PATH the same way runtmp is above, because `rediacc_hooks` is not importable by name until it has run.
+_SYSPATH = importlib.util.spec_from_file_location(
+    "rediacc_hooks_syspath", pathlib.Path(REPO) / ".claude" / "rediacc_hooks" / "syspath.py"
+)
+if _SYSPATH is None or _SYSPATH.loader is None:
+    raise SystemExit("%s: .claude/rediacc_hooks/syspath.py is missing" % __file__)
+_syspath = importlib.util.module_from_spec(_SYSPATH)
+_SYSPATH.loader.exec_module(_syspath)
+_syspath.on_sys_path(os.path.join(REPO, ".claude"))
 from rediacc_hooks import guards  # noqa: E402 - the path hop above is what makes it importable
 
 GUARD = guards.load("block_host_toolchain_run")

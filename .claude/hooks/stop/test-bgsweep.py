@@ -7,12 +7,8 @@ Run: python3 .claude/hooks/stop/test-bgsweep.py
 from __future__ import annotations
 
 import os
-import pathlib
 import subprocess
 import sys
-
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
-
 from typing import Any
 
 import wl_bgsweep as B

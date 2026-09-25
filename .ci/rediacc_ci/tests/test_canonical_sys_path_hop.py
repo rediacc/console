@@ -83,6 +83,15 @@ EXEMPT: dict[str, str] = {
         "per-line waiver where the bare form costs nothing. The exemption dies the "
         "day that import moves inside a function."
     ),
+    ".claude/rediacc_hooks/syspath.py": (
+        "BLOCKER: this IS the canonical hop for code under `.claude`, the counterpart "
+        "of `paths.on_sys_path` for files that cannot reach `rediacc_ci`: a guard or "
+        "hook suite importing `rediacc_ci.paths` would first need `.ci` on sys.path, "
+        "which is the hop being replaced. Guards import it as `rediacc_hooks.syspath`; "
+        "scripts outside the package (Stop-hook suites, context hooks, standalone "
+        "guard tests) load it BY PATH, which is why it is stdlib-only. The function "
+        "whose whole purpose is the insert has to contain the one insert that does it."
+    ),
     ".claude/rediacc_hooks/guards/block_prose_style_edit.py": (
         "BLOCKER: importing `rediacc_ci.quality.prose_style` needs `.ci` on sys.path, "
         "and neither `_cipath.py` nor `paths.on_sys_path` can supply it -- both live "

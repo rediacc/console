@@ -36,7 +36,7 @@ import pathlib
 import re
 import sys
 
-from rediacc_hooks import hookio, shellscan
+from rediacc_hooks import hookio, shellscan, syspath
 
 CHAIN = "pre-bash"
 ORDER = 34
@@ -306,9 +306,7 @@ def _ci_seams():
     IMPORTED RATHER THAN REIMPLEMENTED. The BLOCKER grammar has had four hand-rolled copies in this tree and `rediacc_ci.core.allowlist` exists to end that; a fifth living in a hook would be the same mistake one directory further out.
     """
     cipath = str(hookio.repo_root() / ".ci")
-    inserted = cipath not in sys.path
-    if inserted:
-        sys.path.insert(0, cipath)
+    inserted = syspath.on_sys_path(cipath)
     try:
         from rediacc_ci.core import allowlist  # noqa: PLC0415 - deliberately late
         from rediacc_ci.policy_paths import policy_path  # noqa: PLC0415 - deliberately late

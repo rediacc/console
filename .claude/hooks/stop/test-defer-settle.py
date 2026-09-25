@@ -33,7 +33,6 @@ _RUNTMP.loader.exec_module(runtmp)
 _TMP = runtmp.run_dir("ds-test-")
 os.environ["TMPDIR"] = _TMP
 tempfile.tempdir = _TMP
-sys.path.insert(0, str(HERE))
 
 import wl_checks  # noqa: E402
 import wl_core  # noqa: E402

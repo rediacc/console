@@ -11,6 +11,8 @@ So the pattern itself is turned into a CONCRETE INSTANCE -- the shortest literal
 
 ANCHOR, DO NOT NARROW. The fix for a finding here is to require command position `(^|[;&|(])`, never to delete the pattern: a guard that stops catching the real command is a worse outcome than the false positive it was cured of.
 
+STRUCTURE JUDGES ARE PROBED DIFFERENTLY, NOT SKIPPED. A pre-edit guard whose rule is about the RESULTING DOCUMENT (block_plan_without_depends.py refuses a live plan that loses its `Depends-On:` header) correctly refuses the plain probe, because that probe writes the sentence as the WHOLE content and the header is gone. The plain probe cannot tell that guard from a mention matcher, so a guard declares it with a module constant, `ANCHORING = "structure: <reason, 20+ chars>"`, and is then probed with a STRUCTURE-NEUTRAL edit instead: the sentence APPENDED to a document the guard accepts, at a path the guard has just refused the bare sentence at (which proves the path reaches its judgement). A structure judge stays silent on that; a mention matcher still sees the sentence and still fires, so declaring structure buys a mention matcher nothing. The reason is printed on every run, and a declaration with a missing or short reason, on a chain other than pre-edit, or with no accepted in-scope document to append to, is red.
+
 RETARGETED 2026-09-24 (PLAN-retire-bash-oracles A2) from `.claude/oracles/`'s frozen bash originals to the LIVE Python guard modules at `.claude/rediacc_hooks/guards/`. The residue this file used to state out loud -- "a pattern edited in the PORT and not in the oracle is invisible here, because the oracle cannot change" -- is closed by this change rather than carried forward: there is no longer a second, frozen copy of a guard's pattern for an edit to miss. Patterns are read via `ast`, not text search, so a constant built across several lines, by string-literal concatenation, or from `hookio.rx()`'s `{S}`/`{B}` placeholders resolves exactly as the interpreter would resolve it.
 
 ---- gate ----
@@ -59,6 +61,9 @@ def guard_argv(guard):
     try:
         guard.relative_to(GUARDS)
     except ValueError:
+        # The structure-declaration fixtures are Python, because the declaration is a Python module constant; they run as a plain file, never through the dispatcher.
+        if guard.suffix == ".py":
+            return [sys.executable, str(guard)]
         return ["bash", str(guard)]
     return [sys.executable, str(DISPATCH), guard.stem]
 
@@ -84,6 +89,13 @@ NC = "\033[0m"
 # BLOCKER: block_edit_of_running_script.py's decision is keyed on FILE IDENTITY (is the edited path one of the shell scripts a live process is currently interpreting) and the real process table, not on any phrase inside the edited content. `HOOK_CHAIN` matches a script PATH, not a command, and `META` is a character-escape set for building a `sed`-style substitution, not a matcher at
 # all -- found live by this A2 retarget, whose ast-based reader surfaces both as string constants where the old text search never reached them. Neither is the "refuses a mention instead of a target" class this file exists to catch, because there is no prose to confuse with a target: a file is either the one running or it is not.
 ALLOW_UNPROBED = {"block_adhoc_sanctioned.py", "block_edit_of_running_script.py"}
+
+# The structure declaration (see the module docstring): `ANCHORING = "structure: <reason>"` as a module-level string constant, read by `ast` like every other constant here.
+ANCHORING_NAME = "ANCHORING"
+STRUCTURE_PREFIX = "structure:"
+MIN_REASON = 20
+# How many sibling documents are tried as the accepted baseline before the structure probe gives up (red, never silent).
+MAX_BASELINES = 25
 
 # A pattern must look like a command matcher before it is worth instantiating. Tuned for PYTHON `re` syntax rather than POSIX bracket expressions, since A2 retargeted the source from bash originals to the live guard modules: an anchor prefix, a character class built around the command separators, a word boundary, a non-capturing group, or a quantifier.
 INTERESTING = re.compile(r"\(\^\||\[;&|\\b|\(\?:|[+*]")
@@ -232,6 +244,8 @@ def patterns_of(path: Path) -> list[str]:
             and isinstance(node.targets[0], ast.Name)
         ):
             continue
+        if node.targets[0].id == ANCHORING_NAME:
+            continue
         value = _const_eval(node.value, table)
         if value is not None:
             table[node.targets[0].id] = value
@@ -324,6 +338,117 @@ def sentence(instance: str) -> str:
     return f"echo the docs say never to run {instance} in this repo"
 
 
+def anchoring_of(path: Path) -> str | None:
+    """The module's `ANCHORING` string constant, or None when it declares nothing. Read by `ast`, never imported."""
+    tree = ast.parse(path.read_text(encoding="utf-8", errors="replace"), filename=str(path))
+    for node in tree.body:
+        if (
+            isinstance(node, ast.Assign)
+            and len(node.targets) == 1
+            and isinstance(node.targets[0], ast.Name)
+            and node.targets[0].id == ANCHORING_NAME
+        ):
+            value = _const_eval(node.value, {})
+            return value if value is not None else ""
+    return None
+
+
+def structure_reason(declared: str, kind: str) -> tuple[str | None, str]:
+    """(reason, "") for a valid structure declaration, (None, why) for an invalid one."""
+    if not declared.startswith(STRUCTURE_PREFIX):
+        return None, "ANCHORING must read `structure: <reason>`, got %r" % declared[:60]
+    reason = declared[len(STRUCTURE_PREFIX) :].strip()
+    if len(reason) < MIN_REASON:
+        return None, "ANCHORING's reason is %d char(s); at least %d are required" % (
+            len(reason),
+            MIN_REASON,
+        )
+    if kind != "edit":
+        return None, "ANCHORING declares document structure, which only a pre-edit guard judges"
+    return reason, ""
+
+
+def baseline_candidates(fp: str) -> list[Path]:
+    """Documents to append the sentence to: `fp` itself, then its same-suffix siblings, nearest name first."""
+    target = Path(fp)
+    out = [target] if target.is_file() else []
+    try:
+        siblings = [
+            p
+            for p in target.parent.iterdir()
+            if p.is_file() and p.suffix == target.suffix and p != target
+        ]
+    except OSError:
+        siblings = []
+
+    def shared(p: Path) -> int:
+        n = 0
+        for a, b in zip(p.name, target.name, strict=False):
+            if a != b:
+                break
+            n += 1
+        return n
+
+    out.extend(sorted(siblings, key=lambda p: (-shared(p), p.name)))
+    return out[:MAX_BASELINES]
+
+
+def structure_probe(guard: Path, kind: str, instances: list[str], fp: str) -> tuple[str, str]:
+    """The structure-neutral probe. ("clean", <baseline>), ("prose", <instance>) or ("nobase", <why>).
+
+    A baseline qualifies only when the guard REFUSES the bare sentence at its path (so the path reaches the guard's judgement rather than an early out-of-scope allow) and ACCEPTS the document unmodified (so appending prose is the only change). Then the sentence is appended; a structure judge accepts the result and a mention matcher refuses it.
+    """
+    probe = sentence(instances[0])
+    for doc in baseline_candidates(fp):
+        try:
+            body = doc.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            continue
+        if not fires(guard, probe, kind, str(doc)):
+            continue
+        if fires(guard, body, kind, str(doc)):
+            continue
+        for inst in instances[:40]:
+            appended = body.rstrip("\n") + "\n\n" + sentence(inst) + "\n"
+            if fires(guard, appended, kind, str(doc)):
+                return "prose", inst
+        return "clean", str(doc)
+    return "nobase", (
+        "no in-scope document the guard accepts unmodified was found beside %s, so the "
+        "structure-neutral probe cannot run" % fp
+    )
+
+
+def assess(guard: Path, kind: str, fp: str) -> tuple[str, str]:
+    """One guard's verdict: (outcome, detail).
+
+    outcome is "clean", "static" (no renderable instance, anchored or nothing to anchor), "unprobed", "prose" (detail = the offending instance), "invalid" (a malformed declaration), or "nobase". Structure-judged verdicts carry the reason in the detail of "clean" as `<reason> | <baseline>`.
+    """
+    declared = anchoring_of(guard)
+    reason = None
+    if declared is not None:
+        reason, why = structure_reason(declared, kind)
+        if reason is None:
+            return "invalid", why
+    pats = patterns_of(guard)
+    instances = [i for i in (instantiate(p) for p in pats) if len(i) >= 4]
+    if not instances:
+        if guard.name in ALLOW_UNPROBED:
+            return "allowed", ""
+        if not pats or any(ANCHORED.search(x) for x in pats):
+            return "static", reason or ""
+        return "unprobed", ""
+    if reason is not None:
+        outcome, detail = structure_probe(guard, kind, instances, fp)
+        if outcome == "clean":
+            return "clean", "%s | baseline %s" % (reason, detail)
+        return outcome, detail
+    for inst in instances[:40]:
+        if fires(guard, sentence(inst), kind, fp):
+            return "prose", inst
+    return "clean", ""
+
+
 def controls() -> None:
     """A detector that cannot fire would pass the whole file silently."""
     with tempfile.TemporaryDirectory() as td:
@@ -404,6 +529,86 @@ def controls() -> None:
         if "?=" in lookaround or "?!" in lookaround:
             fail(f"instantiate() leaked lookaround syntax into the instance: {lookaround!r}")
 
+        structure_controls(Path(td))
+
+
+# The planted structure-declaration fixtures. One Python guard body, parameterised by what it refuses and what it declares, so the three controls differ in exactly the property under test.
+_FIXTURE = """import json
+import re
+import sys
+
+{declaration}
+SUBJECT = re.compile(r"frobnicate\\s+widgets")
+
+doc = json.load(sys.stdin).get("tool_input") or {{}}
+content = str(doc.get("content") or "")
+if not str(doc.get("file_path") or "").endswith(".md"):
+    sys.exit(0)
+{rule}
+sys.exit(0)
+"""
+_STRUCTURE_RULE = 'if not content.startswith("Header: ok\\n"):\n    sys.exit(2)'
+_MENTION_RULE = "if SUBJECT.search(content):\n    sys.exit(2)"
+_VALID = 'ANCHORING = "structure: judges whether the resulting document keeps its Header line"'
+
+
+def structure_controls(td: Path) -> None:
+    """Both directions of the structure declaration, against planted Python guards."""
+    docs = td / "docs"
+    docs.mkdir()
+    (docs / "a-accepted.md").write_text("Header: ok\nA body with nothing in it.\n")
+    # A path that does not exist, like the real plan guard's own first path: the baseline must then be found among its siblings.
+    fp = str(docs / "a-probe.md")
+
+    def plant(name: str, declaration: str, rule: str) -> Path:
+        path = td / name
+        path.write_text(_FIXTURE.format(declaration=declaration, rule=rule))
+        return path
+
+    structure = plant("structure_declared.py", _VALID, _STRUCTURE_RULE)
+    outcome, detail = assess(structure, "edit", fp)
+    if outcome != "clean" or "a-accepted.md" not in detail:
+        fail(
+            "a STRUCTURE guard that declares it was not passed by the neutral probe "
+            f"({outcome}: {detail}); the declaration cannot work"
+        )
+    if not fires(structure, sentence("frobnicate widgets"), "edit", fp):
+        fail(
+            "the planted structure guard does not refuse the bare sentence; the control proves nothing"
+        )
+
+    bare = plant("structure_undeclared.py", "", _STRUCTURE_RULE)
+    outcome, detail = assess(bare, "edit", fp)
+    if outcome != "prose":
+        fail(
+            "the SAME structure guard WITHOUT the declaration was not reported as refusing prose "
+            f"({outcome}: {detail}); the plain probe has stopped firing"
+        )
+
+    mention = plant("mention_declared.py", _VALID, _MENTION_RULE)
+    outcome, detail = assess(mention, "edit", fp)
+    if outcome != "prose":
+        fail(
+            "a MENTION matcher that declares structure passed the neutral probe "
+            f"({outcome}: {detail}); the declaration would excuse the very class this gate catches"
+        )
+
+    short = plant("structure_short.py", 'ANCHORING = "structure: short"', _STRUCTURE_RULE)
+    if assess(short, "edit", fp)[0] != "invalid":
+        fail("a structure declaration with a too-short reason was accepted")
+    missing = plant("structure_noreason.py", 'ANCHORING = "document shape"', _STRUCTURE_RULE)
+    if assess(missing, "edit", fp)[0] != "invalid":
+        fail("an ANCHORING constant without the `structure:` form was accepted")
+    if assess(structure, "command", fp)[0] != "invalid":
+        fail("a structure declaration on a non-pre-edit chain was accepted")
+
+    # No accepted document to append to: red, never a silent skip.
+    lonely = td / "lonely"
+    lonely.mkdir()
+    (lonely / "b-rejected.md").write_text("no header here\n")
+    if assess(structure, "edit", str(lonely / "b-probe.md"))[0] != "nobase":
+        fail("a structure guard with no accepted baseline document was not reported")
+
 
 def fail(msg: str) -> None:
     print(f"{RED}✗ CONTROL FAILED{NC}: {msg}", file=sys.stderr)
@@ -432,34 +637,44 @@ def main() -> int:
             continue
         guards.append((path, kind, chain))
 
+    invalid: list[tuple[str, str]] = []
     for guard, kind, chain in guards:
         name = guard.name
-        instances = [instantiate(p) for p in patterns_of(guard)]
-        instances = [i for i in instances if len(i) >= 4]
-        if not instances:
-            # TIER 2, STATIC. A guard with no renderable instance is not automatically a defect, and treating it as one would demand that guards be rewritten to suit this instantiator rather than to match commands correctly. Two legitimate shapes exist and both were measured here:
-            #
-            # * ALREADY ANCHORED -- block_blanket_git_add.py and
-            #     block_worktree_add.py carry `(^|[;&|(]|\$\(|`)` prefixes;
-            # the pattern is simply too gnarly to render into a literal. * NOT A PHRASE MATCHER AT ALL -- block_long_sleep.py extracts a NUMBER and compares it. There is no phrase to find inside prose, so the class does not apply.
-            #
-            # So: pass if the guard shows an anchor, or has nothing to anchor. Fail only when it phrase-matches with no anchor and no probe -- the case where nothing at all is checking it.
-            pats = patterns_of(guard)
-            if name in ALLOW_UNPROBED:
-                continue
-            if not pats or any(ANCHORED.search(x) for x in pats):
-                static_ok += 1
-                continue
-            unprobed.append(name)
-            continue
+        # TIER 2, STATIC, inside `assess`. A guard with no renderable instance is not automatically a defect, and treating it as one would demand that guards be rewritten to suit this instantiator rather than to match commands correctly. Two legitimate shapes exist and both were measured here:
+        #
+        # * ALREADY ANCHORED -- block_blanket_git_add.py and
+        #     block_worktree_add.py carry `(^|[;&|(]|\$\(|`)` prefixes;
+        # the pattern is simply too gnarly to render into a literal. * NOT A PHRASE MATCHER AT ALL -- block_long_sleep.py extracts a NUMBER and compares it. There is no phrase to find inside prose, so the class does not apply.
+        #
+        # So: pass if the guard shows an anchor, or has nothing to anchor. Fail only when it phrase-matches with no anchor and no probe -- the case where nothing at all is checking it.
+        #
         # PROSE FIRING IS SELF-EVIDENT: nothing else has to be true for a guard refusing a sentence to be a defect. Requiring a POSITIVE probe to also fire before trusting silence was tried and rejected -- most extracted instances are one fragment of a multi-part trigger (a roundlog guard needs BOTH a matching file_path AND a write call; no single instantiated substring can satisfy
         # that alone), so demanding per-instance reachability reported 37 of 42 guards as inconclusive even though most were already known-clean from the pre-bash-only scan. The signal this check needs is the one that is unconditionally trustworthy: does prose trip the guard.
-        fp = file_path_for(guard)
+        outcome, detail = assess(guard, kind, file_path_for(guard))
+        if outcome == "allowed":
+            continue
+        if outcome == "static":
+            static_ok += 1
+            continue
+        if outcome == "unprobed":
+            unprobed.append(name)
+            continue
+        if outcome == "invalid":
+            invalid.append((f"{chain}/{name}", detail))
+            continue
         probed += 1
-        for inst in instances[:40]:
-            if fires(guard, sentence(inst), kind, fp):
-                offenders.append((f"{chain}/{name}", inst))
-                break
+        if outcome == "prose":
+            offenders.append((f"{chain}/{name}", detail))
+        elif outcome == "nobase":
+            invalid.append((f"{chain}/{name}", detail))
+        elif " | baseline " in detail:
+            # PRINTED EVERY RUN: a structure declaration is an exemption from the plain probe, and a quiet exemption is how a gate stops meaning what its name says.
+            reason, base = detail.split(" | baseline ", 1)
+            print(f"STRUCTURE-JUDGED {chain}/{name}: {reason}")
+            shown = Path(base)
+            if shown.is_relative_to(REPO_ROOT):
+                shown = shown.relative_to(REPO_ROOT)
+            print(f"    probed structure-neutrally: the sentence appended to {shown}")
 
     if probed < 20:
         print(
@@ -487,9 +702,18 @@ def main() -> int:
         print("    probed and its silence proves nothing. Give it an inline grep", file=sys.stderr)
         print("    pattern, or add it to ALLOW_UNPROBED with a BLOCKER reason.", file=sys.stderr)
 
-    if offenders or unprobed:
+    for name, why in invalid:
+        print(f"{RED}✗{NC} {name}: {why}", file=sys.stderr)
         print(
-            f"\n{RED}✗{NC} {len(offenders)} guard(s) refuse prose; {len(unprobed)} could not be probed.",
+            f'    A structure judge declares `{ANCHORING_NAME} = "{STRUCTURE_PREFIX} <reason>"` '
+            f"(>= {MIN_REASON} chars) and needs an accepted in-scope document to append to.",
+            file=sys.stderr,
+        )
+
+    if offenders or unprobed or invalid:
+        print(
+            f"\n{RED}✗{NC} {len(offenders)} guard(s) refuse prose; {len(unprobed)} could not be "
+            f"probed; {len(invalid)} structure declaration(s) invalid or unprobeable.",
             file=sys.stderr,
         )
         return 1

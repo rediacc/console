@@ -15,15 +15,23 @@ ONE SCRIPT FOR ALL THREE DIFFERENTIALS, because a guard's rc/out/err, shellscan'
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
 import os
 import pathlib
-import sys
 import tempfile
 import time
 
 _HERE = pathlib.Path(__file__).resolve()
-sys.path.insert(0, str(_HERE.parents[2]))
+# The canonical `.claude` hop, rediacc_hooks/syspath.py, loaded BY PATH: run as a script, only this file's own directory is on sys.path, so `rediacc_hooks` is not importable by name until the hop is made.
+_SYSPATH = importlib.util.spec_from_file_location(
+    "rediacc_hooks_syspath", _HERE.parents[1] / "syspath.py"
+)
+if _SYSPATH is None or _SYSPATH.loader is None:
+    raise SystemExit("%s: .claude/rediacc_hooks/syspath.py is missing" % __file__)
+_syspath = importlib.util.module_from_spec(_SYSPATH)
+_SYSPATH.loader.exec_module(_syspath)
+_syspath.on_sys_path(_HERE.parents[2])
 
 # ALWAYS THE FULL CROSS PRODUCT for a guard recording, never the default 40-of-378 sample. A golden built from the sample would have no record for the other 338 payloads any default-mode differential run might legitimately ask about once `cross_sample`'s deterministic hash picks a different 40 for a guard whose corpus grew; recording the full pool once makes every later default-mode lookup a strict subset lookup. Must be set BEFORE `test_guards_differential` is imported: its `CASES`/`POOL` are built at import time from this flag.
 os.environ["REDIACC_GUARD_DIFF_FULL"] = "1"

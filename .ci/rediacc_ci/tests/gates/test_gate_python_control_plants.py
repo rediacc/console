@@ -76,7 +76,8 @@ def _gate_module() -> Any:
     if "subject" not in _CACHE:
         if not GATE.is_file():
             raise harness.GateAssertionError("subject under test is missing: %s" % GATE)
-        sys.path.insert(0, str(GATE.parent))
+        added = str(GATE.parent) not in sys.path
+        entry = paths.on_sys_path(GATE.parent)
         try:
             spec = importlib.util.spec_from_file_location("py_control_plants_subject", GATE)
             if spec is None or spec.loader is None:
@@ -87,7 +88,8 @@ def _gate_module() -> Any:
             module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(module)
         finally:
-            sys.path.remove(str(GATE.parent))
+            if added and entry in sys.path:
+                sys.path.remove(entry)
         _CACHE["subject"] = module
     return _CACHE["subject"]
 

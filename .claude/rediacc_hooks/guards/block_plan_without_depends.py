@@ -19,11 +19,13 @@ import pathlib
 import re
 import sys
 
-from rediacc_hooks import hookio
+from rediacc_hooks import hookio, syspath
 
 CHAIN = "pre-edit"
 OWN_SUITE = True
 ORDER = 13
+# Read by check:ci-guard-mention-anchoring: this guard judges the RESULTING plan's header, so a sentence written as a plan's whole content is refused for losing `Depends-On:`, not for mentioning anything. The gate probes it by appending the sentence to a valid plan instead.
+ANCHORING = "structure: refuses a live plan whose resulting text lacks a valid Depends-On header, never a phrase in it"
 
 # See the module docstring. PLAN-plan-dependencies T10 sets this to False in the commit that backfills the field.
 PRE_BACKFILL_RATCHET = False
@@ -240,9 +242,7 @@ def run(ev):
     if text is None:
         return hookio.ALLOW
 
-    inserted = str(STOP_DIR) not in sys.path
-    if inserted:
-        sys.path.insert(0, str(STOP_DIR))
+    inserted = syspath.on_sys_path(STOP_DIR)
     try:
         try:
             deps = _grammar()

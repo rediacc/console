@@ -26,6 +26,7 @@ SAFETY. This is a PostToolUse hook, so it must never break a tool call: every pa
 """
 
 import contextlib
+import importlib.util
 import json
 import os
 import subprocess
@@ -329,9 +330,15 @@ def stop_modules():
     The audit reads the store through the store's OWN code rather than re-deriving where the log lives. The log is in two places at once (the tracked per-writer files and the legacy TMPDIR log still folded in beside them), and an audit reading a different union than the hook would be an audit of nothing.
     """
     stop_dir = Path(__file__).resolve().parents[1] / "stop"
-    if str(stop_dir) not in sys.path:
-        sys.path.insert(0, str(stop_dir))
     try:
+        # The canonical `.claude` hop, rediacc_hooks/syspath.py, loaded BY PATH: this hook runs as a script with only its own directory on sys.path, so `rediacc_hooks` is not importable by name here.
+        hop_file = stop_dir.parents[1] / "rediacc_hooks" / "syspath.py"
+        spec = importlib.util.spec_from_file_location("rediacc_hooks_syspath", hop_file)
+        if spec is None or spec.loader is None or not hop_file.is_file():
+            raise ImportError("no loadable %s" % hop_file)
+        syspath = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(syspath)
+        syspath.on_sys_path(stop_dir)
         import wl_core  # noqa: PLC0415 -- deferred; it must follow the sys.path hop above, and the PostToolUse path must never pay this import
         import wl_store  # noqa: PLC0415 -- see wl_core
     except ImportError as exc:

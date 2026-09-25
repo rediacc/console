@@ -24,10 +24,9 @@ import datetime
 import json
 import os
 import pathlib
-import sys
 import tempfile
 
-from rediacc_hooks import hookio
+from rediacc_hooks import hookio, syspath
 
 CHAIN = "pre-agent"
 OWN_SUITE = True
@@ -161,8 +160,7 @@ def run(event):
     kind = str(tool_input.get("subagent_type") or "general-purpose")
     cwd = str(doc.get("cwd") or event.cwd)
     session_id = str(doc.get("session_id") or "")
-    if str(STOP_DIR) not in sys.path:
-        sys.path.insert(0, str(STOP_DIR))
+    syspath.on_sys_path(STOP_DIR)
     try:
         import wl_core as C  # noqa: PLC0415 -- loaded only for an Agent call, never for the other chains
         import wl_standdown  # noqa: PLC0415
