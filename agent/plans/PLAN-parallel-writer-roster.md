@@ -1,6 +1,7 @@
 # PLAN: Parallel-writer roster, where the Stop hook and the main session share supervision of the writers
 
 Status: ready
+Depends-On: no-dep -- cites no other plan
 Owner: d778be9d
 Updated: 2026-09-24
 First-Seen: 2026-09-24

@@ -1,6 +1,7 @@
 # PLAN: four packages nothing typechecks
 
 Status: ready to run, AFTER #583 merges
+Depends-On: no-dep -- cites no other plan
 First-Seen: 2026-09-17
 Origin: session f88f9be7, 2026-09-01. Found by sweeping the class behind `6ba6a0c4c`,
 which wired `packages/cli`'s 185 test files into a typecheck project and fixed the 111 errors hiding there. These four are the siblings. All counts below were MEASURED on the tree at `6ba6a0c4c`, not estimated.

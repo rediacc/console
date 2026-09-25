@@ -1,5 +1,6 @@
 # PLAN: renet fetch hardening (remaining sweep from closed renet PR #96)
 Status: parked
+Depends-On: no-dep -- cites no other plan
 First-Seen: 2026-09-17
 Owner: housekeeping writer agent, branch main
 Full-Text: f7a5351a9 agent/PLAN-renet-fetch-hardening.md

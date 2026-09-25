@@ -1,5 +1,6 @@
 # PLAN: A permanent shape for agent/ and the repo root, kept true by Python
 Status: mostly-done -- 6 of 7 boxes verified done 2026-09-22 (commits 1ea0c7340, fce51e202). S6 (sweeper's first run + shadow-ledger drop) correctly stays open: time-gated (40/90-day clock, move was 2026-09-21) and dependent on PLAN-tooling-transformation.md's W1P6, which is itself unticked.
+Depends-On: PLAN-tooling-transformation.md#W1P6 -- the one open box S6 waits on the umbrella's terminal box W1P6, as this plan's Status line states
 First-Seen: 2026-09-21
 Owner: d778be9d
 

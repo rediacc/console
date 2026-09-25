@@ -1,6 +1,7 @@
 # PLAN: route the cheap-tier work to Haiku, by task shape
 
 Status: phase 0-1 done and standing as historical record; phase 2 and the flip it gated are SUPERSEDED 2026-09-23 by `D-M1` -- see section 9
+Depends-On: no-dep -- cites only finished plans: PLAN-remove-autopilot.md
 Owner: d778be9d
 First-Seen: 2026-09-22
 Operator ask: "we burn a lot of tokens with stop hook... investigate where we can use haiku model for sub-agents. Which task categories and which languages are better to leverage haiku... implement planned changes to encourage haiku model wherever possible. I suppose python and typescript could be the targets but not limited to them." <!-- style-ok -->

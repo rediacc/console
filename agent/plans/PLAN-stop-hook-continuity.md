@@ -1,6 +1,7 @@
 # PLAN: Stop-hook continuity. Make it surface what it computes, and stop generating turns
 
 Status: executing. 20 of the 21 boxes in PART 3 landed on 2026-09-24, uncommitted, each with a control test that fails on the code before it. P2.6 (the post-edit check) is open: its files, `.claude/hooks/context/`, `lifecycle.py` and `settings.json`, were outside the implementing writer's file ownership.
+Depends-On: no-dep -- related, not ordered: closes F3 of PLAN-parallel-writer-roster.md, draws design from PLAN-remove-cross-session-messaging.md, and PLAN-stop-hook-retro-20260924.md boxes implemented its P3.1
 Owner: d778be9d
 First-Seen: 2026-09-24
 Updated: 2026-09-24

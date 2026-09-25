@@ -1,6 +1,7 @@
 # PLAN: Stop-hook retro, 2026-09-25 (band late, lead session d778be9d)
 
 Status: ready
+Depends-On: no-dep -- cites no other plan
 First-Seen: 2026-09-25
 Owner: d778be9d (adopted from retro ae06fedae89115ef2 20260925)
 Updated: 2026-09-25

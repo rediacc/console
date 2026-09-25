@@ -1,5 +1,6 @@
 # PLAN: read-only rdc verbs never provision renet
 Status: executing
+Depends-On: no-dep -- cites no other plan
 Owner: d778be9d
 Updated: 2026-09-24
 

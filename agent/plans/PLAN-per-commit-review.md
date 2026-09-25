@@ -3,7 +3,7 @@
 Status: draft
 Owner: d778be9d
 First-Seen: 2026-09-25
-Depends-On: PLAN-<Y focus-mode slug>.md, PLAN-<X priority-concurrency slug>.md, PLAN-<W ci-time-budget slug>.md -- operator order "Z last"; Z also reuses Y's focus keep-list and X's Owns: header, and overlaps W on .github/workflows/ci.yml and ci-quality.yml. The lead fills in the slugs once those plans exist.
+Depends-On: PLAN-stop-hook-focus-mode.md, PLAN-plan-priority-concurrency.md, PLAN-ci-time-budget.md, PLAN-commit-as-you-go.md#T6, PLAN-commit-as-you-go.md#T7 -- operator order Z last; reuses Y's focus keep-list and X's Owns: header, overlaps W on ci.yml and ci-quality.yml; commit-as-you-go T6/T7 edit this plan and land before its T2
 Priority: P1 -- proposed by AI (the operator: "per-commit reviews become the main quality signal")
 Concurrency: parallel
 Owns: .claude/hooks/stop/wl_review.py, .claude/hooks/post-bash/review_commit.py, .claude/hooks/stop/test-commit-review.py, .claude/rediacc_hooks/guards/block_review_file_edit.py, .claude/rediacc_hooks/guards/block_push_with_unrecorded_reviews.py, .ci/config/commit-review.json, .ci/rediacc_ci/review/**, .ci/scripts/review/**, .github/workflows/claude-review*.yml, .github/workflows/review-status.yml, .ci/rediacc_ci/quality/agent_session_archival.py, agent/reviews/**

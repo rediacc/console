@@ -191,6 +191,7 @@
     "check:ci-decision-ids": ".ci/scripts/quality/check_decision_ids.py",
     "check:ci-plan-citations": ".ci/scripts/quality/check_plan_citations.py",
     "check:ci-plan-folders": ".ci/scripts/quality/check_plan_folders.py",
+    "check:ci-plan-deps": ".ci/scripts/quality/check_plan_deps.py",
     "check:ci-agent-session-archival": ".ci/scripts/quality/check_agent_session_archival.py",
     "check:ci-gates-lock": "tsx scripts/gen/gen-gates-lock.ts --selftest && tsx scripts/gen/gen-gates-lock.ts",
     "check:ci-lint-rule-units": "tsx scripts/gates/check-lint-rule-units.ts --selftest && tsx scripts/gates/check-lint-rule-units.ts",

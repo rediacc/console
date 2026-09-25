@@ -1,5 +1,6 @@
 # PLAN: stop-hook code-maintenance pressure -- a second, wider duplication corpus that only the Stop hook reads
 Status: executing -- Commits 1-2 done (commits e31838a0f, 3128f9a2f). Commit 3: done -- advisory profile populated and unseeded (62a6df4c4), wide tier implemented, wired, controlled and measured (uncommitted, see the implementation notes above Commit 4). Commit 4: the anchor span and its siblings are triaged and settled (two shapes accepted site by site in `scripts/data/shape-duplication-seed-advisory.json`, backlog 96 to 94, and `fingerprint:6ae372a04efb` routed to a gate-test harness fix); only the graduation box remains, gated on the backlog dropping under 10.
+Depends-On: no-dep -- cites only finished plans: PLAN-extension-shaped-matchers.md, PLAN-fix-stop-hook-completion-evidence-refire.md
 Owner: d778be9d
 Updated: 2026-09-24
 

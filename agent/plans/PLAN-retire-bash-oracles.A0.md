@@ -1,6 +1,7 @@
 <!-- A0 output (opus Plan agent, 2026-09-24) for PLAN-retire-bash-oracles.md task A0; saved verbatim by the lead. The fail-open bugs in section 1 are Rule T items for task A4. -->
 
 # A0 design: `test_bash_semantics.py`, the kept real-bash facts, and the live bugs they expose
+Depends-On: no-dep -- appendix of PLAN-retire-bash-oracles.md; carries no work of its own
 
 I checked every probe below against `/usr/bin/bash` 5.3.9 in this session, except where a row says otherwise. Nothing in the tree was modified.
 

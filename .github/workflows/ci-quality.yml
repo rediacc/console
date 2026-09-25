@@ -610,6 +610,13 @@ jobs:
         if: ${{ !cancelled() }}
         run: npm run check:ci-plan-folders
 
+      # Hand-written for the same reason as its neighbours: quality-branch has no
+      # `- id: setup`. No GITHUB_BASE_REF: it reads plan headers and agent/INDEX.md
+      # from the working tree, so a push and a PR get the same verdict.
+      - name: Plan dependencies
+        if: ${{ !cancelled() }}
+        run: npm run check:ci-plan-deps
+
       # Hand-written for the same reason as its neighbour above, and with no
       # GITHUB_BASE_REF for the same reason too: this one reads the working tree and one
       # heading stamp per session directory, never a merge-base, so a push and a PR get

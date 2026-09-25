@@ -1,6 +1,7 @@
 # PLAN: re-sync the nine `techDiff.description` values across 12 locales
 
 Status: ready to run, gated on #583 merging
+Depends-On: no-dep -- cites no other plan
 First-Seen: 2026-09-17
 Owner: whichever session picks it up
 Origin: worklist `#d84b5b51`, session f88f9be7, 2026-08-31. Its 120-minute autonomy

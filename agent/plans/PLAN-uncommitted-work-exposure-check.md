@@ -1,6 +1,7 @@
 # PLAN: a Stop-hook uncommitted-work exposure check (advisory-only, session-attributed)
 
 Status: proposed
+Depends-On: no-dep -- cites only finished plans: PLAN-bgsweep-orphan-shells.md
 Owner: d778be9d
 Updated: 2026-09-23
 

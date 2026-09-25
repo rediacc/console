@@ -2134,6 +2134,28 @@
     }
   },
   {
+    "id": "check:ci-plan-deps",
+    "run": "npm run check:ci-plan-deps",
+    "gate": true,
+    "paths": [
+      "agent/plans/**",
+      "agent/INDEX.md",
+      ".ci/scripts/quality/check_plan_deps.py",
+      ".claude/hooks/stop/wl_plandeps.py",
+      ".claude/hooks/stop/wl_planfile.py"
+    ],
+    "pathsOrigin": "declared",
+    "leaves": [
+      ".ci/scripts/quality/check_plan_deps.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-branch",
+      "step": "Plan dependencies"
+    }
+  },
+  {
     "id": "check:ci-agent-session-archival",
     "run": "npm run check:ci-agent-session-archival",
     "gate": true,

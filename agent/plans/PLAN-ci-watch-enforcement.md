@@ -1,5 +1,6 @@
 # PLAN: CI-watch enforcement, from "the session remembered" to a ledger join
 Status: draft
+Depends-On: no-dep -- cites no other plan
 First-Seen: 2026-09-17
 Owner: unowned (drafted by 9d92d9b6, 2026-08-28)
 Updated: 2026-08-28

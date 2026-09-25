@@ -1,6 +1,7 @@
 # PLAN: biome-only linting and TypeScript 7
 
 Status: draft
+Depends-On: no-dep -- cites no other plan
 Owner: d778be9d
 Updated: 2026-09-24
 

@@ -1,6 +1,7 @@
 # PLAN: chunk-store browse, Stage 2 (encrypted TOC writer) and Stage 3 (remote `--at` browse)
 
 Status: proposed
+Depends-On: no-dep -- cites only finished plans: PLAN-chunk-store-browse-DECISION.md, PLAN-chunk-store-browse-server.md, PLAN-backup-quota-delta-gc.md
 Owner: d778be9d
 Updated: 2026-09-23
 

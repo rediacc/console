@@ -1,4 +1,5 @@
 Status: ready
+Depends-On: no-dep -- sections 2-6 split out byte-identical into PLAN-stop-hook-rulings-campaign.md; neither waits on the other
 First-Seen: 2026-09-17
 Owner: d778be9d (adopted from f4da5c2e 2026-09-23)
 Date: 2026-09-09

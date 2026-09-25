@@ -1,5 +1,6 @@
 # PLAN: Gates that write the real tree must declare it (gate-module write-target scanners)
 Status: active
+Depends-On: no-dep -- cites no other plan
 First-Seen: 2026-09-24
 Owner: d778be9d
 Worklist: deb0b82d

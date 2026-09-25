@@ -1,5 +1,6 @@
 # PLAN: stop-hook rulings campaign (sections 2-6 split from PLAN-stop-hook-overhaul.md)
 Status: draft -- sections 2+3 and 5 APPROVED by operator ruling on #373907ed (2026-09-23T14:31Z); section 4 declined and moved to PLAN-stop-hook-plan-agent-check-declined.md; section 6 not named in that ruling and stays a proposal. Not adopted by any session, so its boxes are advisory until one adopts it.
+Depends-On: no-dep -- split out of PLAN-stop-hook-overhaul.md, which keeps only section 1 and 7-9; neither waits on the other
 Correction, 2026-09-24: this header used to say #373907ed PARKED sections 2 to 6. That was the question's DEFAULT, not the answer. Not adopted by any session, so its boxes are an advisory, never a block.
 First-Seen: 2026-09-17
 Owner: d778be9d (the session holding the #373907ed answer)

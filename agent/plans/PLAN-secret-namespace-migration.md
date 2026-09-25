@@ -1,4 +1,5 @@
 Status: mostly stale 2026-09-22 -- 5 of 9 open boxes were already done in the tree, via commits this file was never updated to reflect; verified and ticked 2026-09-22.
+Depends-On: no-dep -- cites only finished plans: PLAN-completion-strategy.md; the other three citations are archived records
 First-Seen: 2026-09-17
 Done: org secrets deleted, mc_migrate_claude replaced/rotated, OTLP row O3 closed.
 Still open (2026-09-24): only the two operator-only `[?]` boxes (gh token scope narrowing, backup R2 credential revocation). The TTS_ENGINE/RDC_ renames landed uncommitted in private/generative and private/growth as MEDIA_*; the decision-9 SES and Cloudflare boxes were already done.

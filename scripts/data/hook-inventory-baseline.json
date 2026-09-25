@@ -32,6 +32,7 @@
   ".claude/rediacc_hooks/guards/block_nondraft_pr_create.py",
   ".claude/rediacc_hooks/guards/block_nonstandard_branch_name.py",
   ".claude/rediacc_hooks/guards/block_pathspecless_git_commit.py",
+  ".claude/rediacc_hooks/guards/block_plan_without_depends.py",
   ".claude/rediacc_hooks/guards/block_plan_without_tasks.py",
   ".claude/rediacc_hooks/guards/block_premature_ready.py",
   ".claude/rediacc_hooks/guards/block_prose_style_commit.py",

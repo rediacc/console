@@ -1,6 +1,7 @@
 # PLAN: repair the 171 committed prose-style findings that hold check:ci-prose-style red
 
 Status: draft
+Depends-On: no-dep -- related, not ordered: PLAN-secret-namespace-migration.md and PLAN-ci-watch-enforcement.md are files holding findings it repairs
 Owner: d778be9d
 Updated: 2026-09-23
 

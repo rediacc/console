@@ -1,6 +1,7 @@
 # PLAN: submodule branch-name divergence -- diagnosis, immediate action, and a pre-commit guard
 
 Status: proposed
+Depends-On: no-dep -- cites no other plan
 Owner: d778be9d
 Updated: 2026-09-23
 

@@ -1,6 +1,7 @@
 # PLAN: W7P5-a real-run dispatch — execute the 32-path authorization safely
 
 Status: in-progress -- Tier R (2026-09-23), Tier Q and the eight runnable Tier M-contained paths (2026-09-24, operator ruling) are done; what remains is the operator's M-live queue (19 paths, now including purge-media-cache.sh) and assert-artifact-version.sh's post-merge window.
+Depends-On: no-dep -- cites only finished plans: PLAN-w7p5a-deploy-release-port.md
 Owner: d778be9d
 Updated: 2026-09-24
 

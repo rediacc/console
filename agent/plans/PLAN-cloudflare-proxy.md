@@ -1,6 +1,7 @@
 # PLAN: Cloudflare executor proxy (rediacc-proxy-eu): status, tests, live trial, cost, teardown
 
 Status: proposed
+Depends-On: no-dep -- cites no other plan
 Owner: d778be9d
 Updated: 2026-09-24
 

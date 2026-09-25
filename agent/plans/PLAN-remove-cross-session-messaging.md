@@ -1,6 +1,7 @@
 # PLAN: remove cross-session messaging from the worklist Stop hook
 
 Status: draft. Planning only; this plan has not changed any code.
+Depends-On: no-dep -- related, not ordered: this plan re-scopes prose in PLAN-stop-hook-rulings-campaign.md and PLAN-uncommitted-work-exposure-check.md; it does not wait on them
 Operator ruling (2026-09-24): "The stop hook system has a messaging system between claude sessions (not for sub-agents). Let's remove it completely since we drive the sessions usually with only one terminal now."
 Approach: clean break. Nothing is kept for compatibility: no shims, no dual paths.
 
