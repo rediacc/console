@@ -132,6 +132,13 @@ describe('ConfigServiceBase remote integration', () => {
 
     // Ensure we don't pick up env vars
     delete process.env.REDIACC_CONFIG;
+
+    // The real updateCache runs its updater over the on-disk document and saves the result; loadRemote returns that
+    // result, so a stub that skips the updater would hand it nothing. The disk here is whatever the test loads.
+    mockConfigFileStorage.updateCache.mockImplementation(
+      async (_name: string, updater: (c: unknown) => unknown) =>
+        updater(await mockConfigFileStorage.getOrCreateDefault())
+    );
   });
 
   // ─── getCurrent() ─────────────────────────────────────────────────
@@ -157,8 +164,9 @@ describe('ConfigServiceBase remote integration', () => {
       const result = await service.getCurrent();
 
       expect(mockAdapterInstance.pull).toHaveBeenCalled();
-      // Pulled config should have remote pointer and language preserved from local
-      expect(result?.remote).toEqual(remotePointer);
+      // Pulled config should have remote pointer and language preserved from local; the pointer is cache-stamped
+      // because the in-memory config is exactly what the cache now holds.
+      expect(result?.remote).toMatchObject({ ...remotePointer, cachedVersion: 3 });
       expect(result?.defaults?.language).toBe('en');
       expect(result?.resources?.machines).toHaveProperty('prod');
     });
@@ -251,15 +259,15 @@ describe('ConfigServiceBase remote integration', () => {
         version: 4,
         sdkEpoch: 42,
       });
-      mockConfigFileStorage.updateCache.mockResolvedValue(cachedOnDisk);
-
-      await service.getCurrent();
+      const result = await service.getCurrent();
 
       expect(mockConfigFileStorage.updateCache).toHaveBeenCalledTimes(1);
       expect(mockConfigFileStorage.updateCache).toHaveBeenCalledWith(
         'rediacc',
         expect.any(Function)
       );
+      expect(result?.remote?.cachedVersion).toBe(4);
+      expect(result?.resources?.machines).toHaveProperty('prod');
     });
   });
 

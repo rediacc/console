@@ -72,16 +72,17 @@ async function disableRemote(configName: string): Promise<void> {
     throw error;
   }
 
-  // Write full decrypted config to local file, removing remote pointer
-  const restored: RdcConfig = {
-    ...fullConfig,
-    defaults: {
-      ...(fullConfig.defaults ?? {}),
-      language: localConfig.defaults?.language ?? fullConfig.defaults?.language,
-    },
-  };
-  delete restored.remote;
-  await configFileStorage.save(restored, configName);
+  // Write the full config to the local file without the remote pointer. The pull carries no host-local sections, so they come from the decrypted local copy through the one overlay: saving the pull as is dropped state.repos networkIds, renetPath, the master-password verifier and unknown keys, and wrote a master-password config back in plaintext (F3/F4/F18 sibling, PLAN-config-sync-hardening T3).
+  const { overlayHostLocal } = await import('../services/config/remote-cache.js');
+  await configFileStorage.update(configName, (local) => {
+    const restored: RdcConfig = overlayHostLocal(fullConfig, local);
+    restored.defaults = {
+      ...(restored.defaults ?? {}),
+      language: local.defaults?.language ?? fullConfig.defaults?.language,
+    };
+    delete restored.remote;
+    return restored;
+  });
 
   // Clean up credentials
   await remoteTokenStorage.delete(configName);

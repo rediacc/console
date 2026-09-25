@@ -32,7 +32,7 @@ import type {
   SSHContent,
   StorageConfig,
 } from '../../types/index.js';
-import { mergeRemoteIntoCache } from './remote-cache.js';
+import { mergeRemoteIntoCache, overlayHostLocal } from './remote-cache.js';
 
 // =============================================================================
 // Flatten / decompose: v3 families + state.repos <-> flat composite view
@@ -455,7 +455,11 @@ export class RemoteResourceState implements ResourceState {
     } catch (error) {
       throw this.toWriteError(error);
     }
-    this.state = { ...loadLocalState(fresh.config), [mutated]: this.state[mutated] };
+    // The pull carries no host-local sections; overlay them from the on-disk cache, or every repo
+    // outside the mutated bucket loses its runtime half (networkId) and the retry writes that loss (F3).
+    const base = await configFileStorage.loadDecrypted(this.configName);
+    const view = overlayHostLocal(fresh.config, base);
+    this.state = { ...loadLocalState(view), [mutated]: this.state[mutated] };
     this.version = fresh.version;
   }
 

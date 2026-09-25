@@ -346,6 +346,37 @@ export const SENSITIVITY_REGISTRY: Map<PointerTemplate, Required<SensitivityMeta
 );
 
 /**
+ * Host-local pointers: the parts of a config document that belong to THIS host and never come from a pull.
+ * A pulled (or just-pushed) server copy is overlaid with the local value at each pointer, absence included,
+ * by the one `overlayHostLocal` in packages/cli/src/services/config/remote-cache.ts. The server copy never
+ * carries these: `toFullConfig` (payload.ts) does not project them, and `fullConfigToRdcConfig` rebuilds a
+ * document without them (or with a placeholder, `encryption: plaintext`). Every other top-level key of
+ * RdcConfigSchema is projected by `toFullConfig`; `__tests__/host-local-registry.test.ts` fails when a new
+ * key is neither.
+ *
+ * - `/schemaVersion`, `/version`: the local file's format marker and its own optimistic counter. The
+ *   server's envelope version lives in `remote.cachedVersion`.
+ * - `/remote`: how this host reaches the store (commit:false throughout).
+ * - `/state`: runtime observations, stripped before every push. Losing it on a pull wiped every repo's
+ *   networkId (F3, PLAN-config-sync-hardening).
+ * - `/encryption`: this file's at-rest mode.
+ * - `/renetPath`: a filesystem override for this host's renet binary.
+ * - `/credentials/masterPasswordVerifier`: meaningful only to this file's at-rest mode (F4).
+ *
+ * Nested pointers are one level deep and sit under a projected root. No pointer here may carry a
+ * committed template: a committed-but-not-carried pointer bricks the re-push (anti-downgrade).
+ */
+export const HOST_LOCAL_POINTERS = [
+  '/schemaVersion',
+  '/version',
+  '/remote',
+  '/state',
+  '/encryption',
+  '/renetPath',
+  '/credentials/masterPasswordVerifier',
+] as const satisfies readonly PointerTemplate[];
+
+/**
  * Read-only list of all sensitivity templates. Useful for tests and coverage gates.
  */
 export function listSensitivityTemplates(): readonly PointerTemplate[] {

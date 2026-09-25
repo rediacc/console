@@ -23,6 +23,14 @@ export interface ConfigServerFetchOptions {
   configToken: string;
   /** Account server URL (e.g., 'https://account.rediacc.com') */
   serverUrl: string;
+  /**
+   * Test seam: the fetch that carries the tunnel request. Production passes nothing and the global
+   * fetch is used. The round-trip harness routes each device through its own fetch so two devices
+   * in one process can call from different client addresses.
+   */
+  fetchImpl?: typeof fetch;
+  /** Test seam: the server's E2E key. Production passes nothing and getServerKeyMaterial() resolves it. */
+  serverKey?: { key: CryptoKey; keyId: string };
 }
 
 export interface ConfigServerResponse<T> {
@@ -67,7 +75,7 @@ export async function configServerFetch<T = unknown>(
   }
 
   // Encrypt the request via E2E tunnel
-  const { key: serverKey, keyId } = await getServerKeyMaterial();
+  const { key: serverKey, keyId } = options.serverKey ?? (await getServerKeyMaterial());
   const { envelope, aesKey } = await sealRequest(
     serverKey,
     keyId,
@@ -79,7 +87,7 @@ export async function configServerFetch<T = unknown>(
 
   // Send through the tunnel
   const tunnelUrl = `${options.serverUrl}/account/api/v1/tunnel`;
-  const resp = await fetch(tunnelUrl, {
+  const resp = await (options.fetchImpl ?? fetch)(tunnelUrl, {
     method: 'POST',
     headers: { 'Content-Type': E2E_CONTENT_TYPE },
     body: JSON.stringify(envelope),

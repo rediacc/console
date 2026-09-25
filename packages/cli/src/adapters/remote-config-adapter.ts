@@ -20,7 +20,11 @@ import {
 import { fullConfigToRdcConfig } from '@rediacc/shared/config-crypto/rotation';
 import { buildConfigPushPayload } from '@rediacc/shared/config-schema';
 import { t } from '../i18n/index.js';
-import { ConfigServerError, configServerFetch } from '../services/config/config-server-client.js';
+import {
+  ConfigServerError,
+  type ConfigServerFetchOptions,
+  configServerFetch,
+} from '../services/config/config-server-client.js';
 import type { RdcConfig, RemoteConfig } from '../types/index.js';
 import type { SecureStorage } from '../utils/secure-storage.js';
 import type { RemoteTokenStorage } from './remote-token-storage.js';
@@ -218,7 +222,9 @@ export class RemoteConfigAdapter {
     private readonly remote: RemoteConfig,
     private readonly configName: string,
     private readonly tokenStorage: RemoteTokenStorage,
-    private readonly secureStorage: SecureStorage
+    private readonly secureStorage: SecureStorage,
+    /** Test seam for the round-trip harness; production passes nothing. */
+    private readonly transport?: Pick<ConfigServerFetchOptions, 'fetchImpl' | 'serverKey'>
   ) {}
 
   /**
@@ -447,6 +453,7 @@ export class RemoteConfigAdapter {
     try {
       const resp = await configServerFetch<T>(path, {
         ...options,
+        ...this.transport,
         configToken: currentToken,
         serverUrl: this.remote.apiUrl,
       });

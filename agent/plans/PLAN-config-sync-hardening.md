@@ -46,6 +46,7 @@ The submodule PR (A and C) merges first. The console PR (B, plus the pointer bum
 - [ ] T12 [B] account/defaults semantics per D3 (F5), enable cleanup (F17), and preserving unknown keys (F18). Section 3.9.
 - [ ] T13 [A] Enforce the SDK epoch window per D5 (F13), and move the portal ConfigSession to the push response's fresh session material. Section 3.10.
 - [ ] T14 [B] Docs: rewrite the zero-knowledge claim in `docs/DESIGN-CONFIG-STORAGE.md` and `config-storage.md` (13 locales) per D9, using the table in section 1.
+- [ ] T16 [A+B] Version restore (D1 "plus versioning"): `GET /:id/versions/:v` returns an archived blob with its own `sdkEpoch` key; the CLI's `rdc config remote versions` lists and `rdc config remote restore <v>` decrypts the old version and pushes it as a NEW version through the T5 compare-and-swap, so the v3 high-water mark never moves backwards and a tombstone is emitted for anything the restored copy lacks; audit event `config.version.restore`. Harness scenario H18: A pushes v1..v3 (v3 deletes a machine), restores v1; B pulls and sees v1's content at v4, and a server `rollbackTo` of the same content is still refused.
 - [ ] T15 [lead] Closure:
   - H1-H17 are all green, with no `it.fails` left.
   - The mutation controls table (section 4.3) is run and recorded: each named revert turns its named test red.
@@ -378,6 +379,14 @@ Each scenario runs today's code before its fix. A scenario that reproduces a def
 | Restore the `...local.account` overlay | H16 |
 
 ## 5. Operator decisions (recommended option first)
+
+**Rulings, 2026-09-25 (operator, via AskUserQuestion):**
+- D1: (a) tombstone with proof, **plus versioning**. First check whether a deletion or versioning plan already exists (planned or half-built); plan it here if none does.
+- D2: (a) read v2 and write v3.
+- D3: (b) **all synced**, with no local override. This drops the `...local.account` / `...local.defaults` layering; T12 becomes "remove the overlay" (F5, H16).
+- D4: (a) auto-refresh, **with a 7-day config token lifetime instead of 24 h**.
+- D5: (a) enforce a ±1 epoch window. D6: (a) blind pointer names in v3. D7: (a) the harness in `private/account/tests/integration/config-sync/` (default taken; T1 built it there). D8: (a) separate plans for F19 and F20. D9: (a) the precise claim.
+- D1's versioning, investigated: no other plan covers deletion (only T9 here). Version HISTORY is built: every push archives the previous blob to `versions/{version}.enc` with a `config_versions` row (`config.service.ts:604-625`), pruned to `CONFIG_VERSION_HISTORY_LIMIT = 50` (`:337`), listed by `GET /:id/versions` (`routes/configs.ts:1154`). RESTORE is designed (`docs/DESIGN-CONFIG-STORAGE.md:731`, audit event `config.version.restore` at `:751`) and was never built: no route, no service method, no CLI command. It becomes T16.
 
 - **D1, deletion:**
   - (a) tombstone-with-knowledge (section 3.6), **recommended**;
