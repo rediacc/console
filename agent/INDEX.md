@@ -498,7 +498,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-config-handoff-relay-only.md` | draft | 397 | 11 | 0 | 35708 |
 | `agent/plans/PLAN-config-networkid-sync.md` | draft | 272 | 8 | 0 | 29402 |
 | `agent/plans/PLAN-config-passkey-optional.md` | approved | 116 | 4 | 0 | 12469 |
-| `agent/plans/PLAN-config-sync-hardening.md` | draft | 440 | 17 | 0 | 47148 |
+| `agent/plans/PLAN-config-sync-hardening.md` | draft | 442 | 19 | 0 | 48962 |
 | `agent/plans/PLAN-config-team-scoping.md` | draft | 228 | 11 | 0 | 27881 |
 | `agent/plans/PLAN-consolidation-pressure.md` | compacted | 60 | 0 | 10 | 5277 |
 | `agent/plans/PLAN-devbox-uid-derived-image.md` | compacted | 36 | 0 | 0 | 2532 |

@@ -928,7 +928,7 @@ def test_q1b_control_a_shell_already_reported_back_frees_the_slot(wl):  # noqa: 
     assert "spawn that writer first" in got.err, got.err[:400]
 
 
-def _shell_stream(wl, text):
+def _shell_stream(wl, text):  # noqa: F811
     """Plant the harness's `tasks/bshell09.output` for the waiter's shell where `shell_ended` derives it from the transcript path, under the fixture's own TMPDIR (the roster reads no other environment). The caller removes it."""
     tx = subagents_dir(wl) / ("agent-%s.jsonl" % W4)
     d = (
