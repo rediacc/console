@@ -68,13 +68,52 @@ const REMOTE: RemoteConfig = {
 
 const CONFIG_NAME = 'test-config';
 
-function createMockTokenStorage() {
+/** A pull response body: the blob plus the session material it carries. */
+function pullBody() {
   return {
+    server_secret: 'c2Vy',
+    sdk_derived: 'c2Rr',
+    configData: 'blob',
+    envelope: { configId: 'c', version: 1, teamId: null, lastModified: 'x', sdkEpoch: 1 },
+    hmac: null,
+  };
+}
+
+/**
+ * The lease reads through `get` and records every persisted rotation through `updateToken`, so a
+ * test sees which token each request sent and which ones were saved.
+ */
+function createMockTokenStorage() {
+  const storage = {
     get: vi.fn(),
     set: vi.fn(),
     updateToken: vi.fn(),
     delete: vi.fn(),
+    withLease: vi.fn(
+      async (
+        name: string,
+        fn: (lease: {
+          data: { token: string; wrappedCek: string } | null;
+          token: string | undefined;
+          update(token: string): Promise<void>;
+        }) => Promise<unknown>
+      ) => {
+        const data = (await storage.get(name)) as { token: string; wrappedCek: string } | null;
+        let current = data;
+        return fn({
+          data,
+          get token() {
+            return current?.token;
+          },
+          update: async (token: string) => {
+            current = current ? { ...current, token } : current;
+            await storage.updateToken(name, token);
+          },
+        });
+      }
+    ),
   };
+  return storage;
 }
 
 function createMockSecureStorage() {
@@ -128,10 +167,8 @@ describe('RemoteConfigAdapter', () => {
         marker: new TextDecoder().decode(bytes),
       }));
       mockConfigServerFetch.mockResolvedValueOnce({
-        data: { server_secret: 'c2Vy', sdk_derived: 'SESSION_EPOCH_KEY', sdkEpoch: 42 },
-      });
-      mockConfigServerFetch.mockResolvedValueOnce({
         data: {
+          server_secret: 'c2Vy',
           configData: 'encrypted-blob',
           envelope: {
             configId: 'config-001',
@@ -165,25 +202,19 @@ describe('RemoteConfigAdapter', () => {
       expect(result.sdkEpoch).toBe(7);
     });
 
-    it('should fetch session, fetch config, decrypt, and return result', async () => {
-      // Session endpoint
+    it('should pull in ONE request (server_secret rides the pull), decrypt, and return result', async () => {
+      // Config endpoint: the only request (F8: /session would spend a second token use)
       mockConfigServerFetch.mockResolvedValueOnce({
         data: {
           server_secret: 'c2VydmVyX3NlY3JldA==',
           sdk_derived: 'c2RrX2Rlcml2ZWQ=',
-          sdkEpoch: 42,
-        },
-      });
-
-      // Config endpoint
-      mockConfigServerFetch.mockResolvedValueOnce({
-        data: {
           configData: 'encrypted-blob',
           envelope: {
             configId: 'config-001',
             version: 5,
             teamId: 'team-001',
             lastModified: '2025-01-01T00:00:00Z',
+            sdkEpoch: 42,
           },
           hmac: 'hmac-value',
         },
@@ -206,29 +237,18 @@ describe('RemoteConfigAdapter', () => {
       expect(result.version).toBe(5);
       expect(result.sdkEpoch).toBe(42);
 
-      // Session endpoint called first
-      expect(mockConfigServerFetch).toHaveBeenCalledWith(
-        '/account/api/v1/configs/session',
-        expect.objectContaining({ method: 'POST', configToken: 'tok_current' })
-      );
-
-      // Config endpoint called second
+      expect(mockConfigServerFetch).toHaveBeenCalledTimes(1);
       expect(mockConfigServerFetch).toHaveBeenCalledWith(
         '/account/api/v1/configs/config-001?teamId=team-001',
         expect.objectContaining({ configToken: 'tok_current' })
       );
     });
 
-    it('should persist rotated tokens from server responses', async () => {
-      // Session returns a rotated token
-      mockConfigServerFetch.mockResolvedValueOnce({
-        data: { server_secret: 'c2Vy', sdk_derived: 'c2Rr', sdkEpoch: 1 },
-        newServerToken: 'tok_rotated_1',
-      });
-
-      // Config also returns a rotated token
+    it('should persist the rotated token from the pull response', async () => {
       mockConfigServerFetch.mockResolvedValueOnce({
         data: {
+          server_secret: 'c2Vy',
+          sdk_derived: 'c2Rr',
           configData: 'blob',
           envelope: {
             configId: 'c',
@@ -238,7 +258,7 @@ describe('RemoteConfigAdapter', () => {
           },
           hmac: null,
         },
-        newServerToken: 'tok_rotated_2',
+        newServerToken: 'tok_rotated_1',
       });
 
       mockSelectiveDecrypt.mockResolvedValue({
@@ -252,7 +272,19 @@ describe('RemoteConfigAdapter', () => {
       await adapter.pull();
 
       expect(tokenStorage.updateToken).toHaveBeenCalledWith(CONFIG_NAME, 'tok_rotated_1');
-      expect(tokenStorage.updateToken).toHaveBeenCalledWith(CONFIG_NAME, 'tok_rotated_2');
+      expect(tokenStorage.withLease).toHaveBeenCalledTimes(1);
+    });
+
+    it('persists the token an ERROR response rotated to before classifying the error (F9)', async () => {
+      const { ConfigServerError } = await import('../../services/config/config-server-client.js');
+      mockConfigServerFetch.mockRejectedValueOnce(
+        Object.assign(new ConfigServerError('Config not found', 404), {
+          newServerToken: 'tok_after_error',
+        })
+      );
+
+      await expect(adapter.pull()).rejects.toBeInstanceOf(ConfigServerError);
+      expect(tokenStorage.updateToken).toHaveBeenCalledWith(CONFIG_NAME, 'tok_after_error');
     });
 
     it('should throw RemoteTokenExpiredError on 401 token_expired', async () => {
@@ -311,10 +343,7 @@ describe('RemoteConfigAdapter', () => {
     });
 
     it('should throw RemotePasskeySecretMissingError when passkey_secret is missing', async () => {
-      // Session succeeds
-      mockConfigServerFetch.mockResolvedValueOnce({
-        data: { server_secret: 'c2Vy', sdk_derived: 'c2Rr', sdkEpoch: 1 },
-      });
+      mockConfigServerFetch.mockResolvedValueOnce({ data: pullBody() });
 
       // Passkey secret not found
       secureStorage.get.mockResolvedValue(null);
@@ -329,10 +358,8 @@ describe('RemoteConfigAdapter', () => {
     });
 
     it('should throw RemoteStaleSlotError when the CEK unwrap fails (rotated/stale slot)', async () => {
-      // Session succeeds so we reach the CEK-derivation step.
-      mockConfigServerFetch.mockResolvedValueOnce({
-        data: { server_secret: 'c2Vy', sdk_derived: 'c2Rr', sdkEpoch: 1 },
-      });
+      // The pull succeeds so we reach the CEK-derivation step.
+      mockConfigServerFetch.mockResolvedValueOnce({ data: pullBody() });
 
       // A wrong slot secret / rotated CEK surfaces as an AES-GCM auth failure.
       mockCekUnwrap.mockRejectedValueOnce(new Error('OperationError'));
@@ -404,6 +431,12 @@ describe('RemoteConfigAdapter', () => {
       await adapter.push({ schemaVersion: 3, id: 'id', version: 1 }, 1);
 
       expect(tokenStorage.updateToken).toHaveBeenCalledWith(CONFIG_NAME, 'tok_push_rotated');
+      // The PUT sends the token /session rotated to, in the same lease (F8).
+      expect(mockConfigServerFetch.mock.calls[0][1]).toMatchObject({ configToken: 'tok_current' });
+      expect(mockConfigServerFetch.mock.calls[1][1]).toMatchObject({
+        configToken: 'tok_push_rotated',
+      });
+      expect(tokenStorage.withLease).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -452,10 +485,7 @@ describe('RemoteConfigAdapter', () => {
 
     it('should surface a 404 unchanged as ConfigServerError (the seed path branches on it)', async () => {
       const { ConfigServerError } = await import('../../services/config/config-server-client.js');
-      // Session succeeds; the config GET 404s (fresh store, nothing pushed yet).
-      mockConfigServerFetch.mockResolvedValueOnce({
-        data: { server_secret: 'c2Vy', sdk_derived: 'c2Rr', sdkEpoch: 1 },
-      });
+      // The config GET 404s (fresh store, nothing pushed yet).
       mockConfigServerFetch.mockRejectedValueOnce(new ConfigServerError('Config not found', 404));
 
       const err = await adapter.pull().then(

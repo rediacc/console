@@ -330,9 +330,8 @@ export class ConfigServiceBase {
     key: 'language' | 'datastoreSize' | 'pruneGraceDays',
     value: string
   ): Promise<void> {
-    const name = this.getEffectiveConfigName();
     const typed: string | number = key === 'pruneGraceDays' ? Number(value) : value;
-    await configFileStorage.update(name, (cfg) => ({
+    await this.updateSyncedSection((cfg) => ({
       ...cfg,
       defaults: { ...(cfg.defaults ?? {}), [key]: typed },
     }));
@@ -340,8 +339,7 @@ export class ConfigServiceBase {
 
   /** Clear one v3 `defaults` field. */
   async clearDefault(key: 'language' | 'datastoreSize' | 'pruneGraceDays'): Promise<void> {
-    const name = this.getEffectiveConfigName();
-    await configFileStorage.update(name, (cfg) => ({
+    await this.updateSyncedSection((cfg) => ({
       ...cfg,
       defaults: cfg.defaults ? { ...cfg.defaults, [key]: undefined } : undefined,
     }));
@@ -349,8 +347,31 @@ export class ConfigServiceBase {
 
   /** Clear the whole v3 `defaults` bucket. */
   async clearDefaults(): Promise<void> {
+    await this.updateSyncedSection((cfg) => ({ ...cfg, defaults: undefined }));
+  }
+
+  /**
+   * Apply an edit to a synced section (`defaults`, ...) of the current config. For a remote config
+   * the edit is pushed to the server: `account` and `defaults` follow the store with no local
+   * override (operator ruling D3), so an edit that only reached the local file would be overwritten
+   * by the next pull. Any other config is edited on disk as before.
+   */
+  private async updateSyncedSection(edit: (cfg: RdcConfig) => RdcConfig): Promise<void> {
     const name = this.getEffectiveConfigName();
-    await configFileStorage.update(name, (cfg) => ({ ...cfg, defaults: undefined }));
+    const local = (await configFileStorage.exists(name))
+      ? await configFileStorage.load(name)
+      : null;
+    if (local && hasRemoteConfig(local)) {
+      const state = await this.getResourceState();
+      const { RemoteResourceState } = await import('./resource-state.js');
+      if (state instanceof RemoteResourceState) {
+        await state.updateDocument(edit);
+        // The memoized snapshot predates the push; the next read pulls again.
+        this._remoteConfig = null;
+        return;
+      }
+    }
+    await configFileStorage.update(name, edit);
   }
 
   // --- Language Settings ---
@@ -363,8 +384,7 @@ export class ConfigServiceBase {
   }
 
   async setLanguage(language: string): Promise<void> {
-    const name = this.getEffectiveConfigName();
-    await configFileStorage.update(name, (cfg) => ({
+    await this.updateSyncedSection((cfg) => ({
       ...cfg,
       defaults: { ...(cfg.defaults ?? {}), language: normalizeLanguage(language) },
     }));

@@ -42,9 +42,12 @@ export function buildCommitEntries(config: RdcConfig): CommitEntry[] {
 }
 
 /**
- * Committed top-level sections (userEmail, universalUser, certEmail,
- * cfDnsZoneId): committed means carried, or the first pull/re-push round trip
- * drops them and trips the server's anti-downgrade check. The sections
+ * `account`, `defaults` and `infra` travel WHOLE, every key: they are synced with
+ * no local override (operator ruling D3, PLAN-config-sync-hardening F5), so a key
+ * left out here would be lost on the next pull. Some of their leaves are also
+ * committed (userEmail, universalUser, certEmail, cfDnsZoneId), and committed means
+ * carried, or the first pull/re-push round trip drops them and trips the server's
+ * anti-downgrade check. The sections
  * deliberately NOT projected are host-local by design and carry no committed
  * pointers: `remote` (store pointer, commit:false), `state` (runtime half,
  * stripped before push), `encryption` (at-rest metadata), `renetPath` (binary
@@ -163,13 +166,14 @@ export function buildConfigPushPayload(
 
 /**
  * Inverse of `buildConfigPushPayload`: decrypt a pulled envelope back into the
- * sensitive halves of the config (every `resources` family, ssh, policy, org
- * secrets — see SENSITIVE_FIELDS).
+ * synced halves of the config (account, defaults, infra, every `resources`
+ * family, ssh, policy, org secrets — see SENSITIVE_FIELDS).
  *
- * Returns `FullConfig` rather than a whole `RdcConfig` because the remaining
- * fields (defaults, state, encryption mode) are host-local and never leave the
- * client. Verifies the HMAC and rejects non-v2 envelopes, both inside
- * `selectiveDecrypt`.
+ * Returns `FullConfig` rather than a whole `RdcConfig` because the host-local
+ * sections (HOST_LOCAL_POINTERS: `remote`, `state`, `encryption`, `renetPath`,
+ * the master-password verifier) never leave the client; `account` and `defaults`
+ * do travel, in the blob. Verifies the HMAC and rejects non-v2 envelopes, both
+ * inside `selectiveDecrypt`.
  */
 export function decryptConfigPullPayload(
   payload: EncryptedConfigPayload,

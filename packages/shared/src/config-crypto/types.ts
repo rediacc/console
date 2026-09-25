@@ -35,8 +35,9 @@ export interface ConfigEnvelope {
 /** The sensitive config data that gets encrypted */
 export interface ConfigSensitiveData {
   /**
-   * Top-level document sections with COMMITTED pointers (account.userEmail,
-   * defaults.universalUser, infra.certEmail/cfDnsZoneId). Committed means they
+   * Top-level document sections, synced whole (operator ruling D3: no local
+   * override). Some of their leaves are COMMITTED (account.userEmail,
+   * defaults.universalUser, infra.certEmail/cfDnsZoneId), and committed means they
    * must travel: a committed-but-not-carried field is dropped by the first
    * pull, and the re-push then commits fewer pointers than the server stored —
    * anti-downgrade rejects it as a conflict.

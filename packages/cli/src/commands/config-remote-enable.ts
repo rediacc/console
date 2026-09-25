@@ -7,13 +7,14 @@
  *
  * - 404 (fresh store) → push the local config at version 0 (server inserts at
  *   v1), pull it back as round-trip proof, then write the cache.
- * - pull succeeds but the store's content differs from non-empty local
- *   resources → confirm before replacing local content (`--force` skips;
- *   non-TTY aborts naming --force).
+ * - pull succeeds but the store's synced content differs from non-empty local
+ *   synced content → confirm before replacing it (`--force` skips; non-TTY
+ *   aborts naming --force).
  * - any other error → abort with the local file untouched (the cache write is
  *   the LAST step).
  */
 
+import { toFullConfig } from '@rediacc/shared/config-schema';
 import type { RemoteConfigAdapter } from '../adapters/remote-config-adapter.js';
 import { t } from '../i18n/index.js';
 import { accountServerFetch } from '../services/account/account-client.js';
@@ -152,31 +153,110 @@ export async function storeHandoffCredentials(
   };
 }
 
-/** Best-effort removal of stored handoff credentials after a failed enable. */
-async function cleanupHandoffCredentials(storageKeyId: string, configName: string): Promise<void> {
+/**
+ * True when a local config other than `configName` points at `storageKeyId`. The id names the
+ * (store, user) enrollment, not one local config, so two local configs enrolled to the same store by
+ * the same member share one slot secret (F17). A config file that cannot be read counts as a user:
+ * a leftover keyring entry costs nothing, a deleted one locks that config out.
+ */
+export async function storageKeyInUseElsewhere(
+  storageKeyId: string,
+  configName: string
+): Promise<boolean> {
+  const { configFileStorage } = await import('../adapters/config-file-storage.js');
+  for (const name of await configFileStorage.list()) {
+    if (name === configName) continue;
+    try {
+      const other = await configFileStorage.load(name);
+      if (other.remote?.storageKeyId === storageKeyId) return true;
+    } catch {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Best-effort removal of stored handoff credentials after a failed enable. The slot secret goes only
+ * when this enable wrote it (it was absent before) and no other local config uses it (F17): a failed
+ * enable of a second local config for the same store must not lock the first one out.
+ */
+async function cleanupHandoffCredentials(
+  storageKeyId: string,
+  configName: string,
+  secretExisted: boolean
+): Promise<void> {
   const { getSecureStorage } = await import('../utils/secure-storage.js');
   const { remoteTokenStorage } = await import('../adapters/remote-token-storage.js');
-  await getSecureStorage()
-    .delete(storageKeyId)
-    .catch(() => {});
+  const inUse =
+    secretExisted || (await storageKeyInUseElsewhere(storageKeyId, configName).catch(() => true));
+  if (!inUse) {
+    await getSecureStorage()
+      .delete(storageKeyId)
+      .catch(() => {});
+  }
   await remoteTokenStorage.delete(configName).catch(() => {});
 }
 
-function countResources(config: RdcConfig): { machines: number; repos: number; total: number } {
+function countResources(config: RdcConfig): { machines: number; repos: number } {
   const r = config.resources;
-  const machines = Object.keys(r?.machines ?? {}).length;
-  const repos = Object.keys(r?.repositories ?? {}).length;
-  const total =
-    machines +
-    repos +
-    Object.keys(r?.storages ?? {}).length +
-    (r?.deletedRepositories?.length ?? 0);
-  return { machines, repos, total };
+  return {
+    machines: Object.keys(r?.machines ?? {}).length,
+    repos: Object.keys(r?.repositories ?? {}).length,
+  };
 }
 
-/** Order-sensitive but adequate: worst case is one extra confirmation prompt. */
-function resourcesDiffer(local: RdcConfig, pulled: RdcConfig): boolean {
-  return JSON.stringify(local.resources ?? {}) !== JSON.stringify(pulled.resources ?? {});
+/** Envelope fields toFullConfig adds; they say nothing about the content an enable would replace. */
+const ENVELOPE_KEYS = new Set([
+  'envelopeVersion',
+  'id',
+  'version',
+  'sdkEpoch',
+  'teamId',
+  'commitments',
+]);
+
+/**
+ * The synced half of a config: exactly what a push carries (toFullConfig), minus the envelope, with
+ * empty sections dropped so an absent family and an empty one compare equal.
+ */
+function syncedContent(config: RdcConfig): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(toFullConfig(config, { version: 0, sdkEpoch: 0 }))) {
+    if (ENVELOPE_KEYS.has(key) || isEmpty(value)) continue;
+    out[key] = value;
+  }
+  return out;
+}
+
+function isEmpty(value: unknown): boolean {
+  if (value === undefined || value === null) return true;
+  if (Array.isArray(value)) return value.length === 0;
+  return typeof value === 'object' && Object.keys(value).length === 0;
+}
+
+/** JSON with object keys sorted at every level, so key order never reads as a difference. */
+function canonicalJson(value: unknown): string {
+  return JSON.stringify(value, (_key, v: unknown) =>
+    v && typeof v === 'object' && !Array.isArray(v)
+      ? Object.fromEntries(Object.entries(v).sort(([a], [b]) => a.localeCompare(b)))
+      : v
+  );
+}
+
+/**
+ * Whether taking the store's copy would replace local content the user could lose (F17b): the whole
+ * synced projection is compared, not only `resources`, so local ssh credentials, policy, infra, org
+ * secrets and datastores are protected by the same prompt. `account` and `defaults` alone do not
+ * count as local content (login writes `account` on its own, and a language or default size is a
+ * preference, not data), but once there is content they take part in the comparison.
+ */
+const PREFERENCE_SECTIONS = new Set(['account', 'defaults']);
+
+function localContentWouldBeReplaced(local: RdcConfig, pulled: RdcConfig): boolean {
+  const mine = syncedContent(local);
+  const hasContent = Object.keys(mine).some((key) => !PREFERENCE_SECTIONS.has(key));
+  return hasContent && canonicalJson(mine) !== canonicalJson(syncedContent(pulled));
 }
 
 /**
@@ -258,7 +338,7 @@ export async function finalizeEnable(
   const { pulled, seeded } = await pullOrSeed(adapter, local);
 
   const counts = countResources(local);
-  if (!seeded && counts.total > 0 && resourcesDiffer(local, pulled.config) && !opts.force) {
+  if (!seeded && !opts.force && localContentWouldBeReplaced(local, pulled.config)) {
     await confirmOverwrite(
       configName,
       counts,
@@ -282,11 +362,13 @@ export async function applyHandoff(
   configName: string,
   opts: { force?: boolean }
 ): Promise<void> {
+  const { getSecureStorage } = await import('../utils/secure-storage.js');
+  const secretExisted = (await getSecureStorage().get(payload.storageKeyId)) !== null;
   const remote = await storeHandoffCredentials(payload, configName);
   try {
     await finalizeEnable(remote, configName, opts);
   } catch (error) {
-    await cleanupHandoffCredentials(payload.storageKeyId, configName);
+    await cleanupHandoffCredentials(payload.storageKeyId, configName, secretExisted);
     throw error;
   }
 }

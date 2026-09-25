@@ -9,7 +9,8 @@ import { Command } from 'commander';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { RdcConfig } from '../../types/index.js';
 
-const { mockPull, fileState, secureDelete, tokenDelete } = vi.hoisted(() => ({
+const { mockPull, fileState, secureDelete, tokenDelete, otherConfigs } = vi.hoisted(() => ({
+  otherConfigs: {} as Record<string, unknown>,
   mockPull: vi.fn(),
   fileState: { current: undefined as unknown },
   secureDelete: vi.fn(() => Promise.resolve()),
@@ -18,7 +19,9 @@ const { mockPull, fileState, secureDelete, tokenDelete } = vi.hoisted(() => ({
 
 vi.mock('../../adapters/config-file-storage.js', () => ({
   configFileStorage: {
-    load: () => Promise.resolve(fileState.current),
+    list: () => Promise.resolve(Object.keys(otherConfigs).concat('rediacc')),
+    load: (name: string) =>
+      Promise.resolve(name === 'rediacc' ? fileState.current : otherConfigs[name]),
     loadDecrypted: () => Promise.resolve(fileState.current),
     update: (_name: string, updater: (c: RdcConfig) => RdcConfig) => {
       fileState.current = updater(structuredClone(fileState.current) as RdcConfig);
@@ -93,6 +96,8 @@ async function runDisable(): Promise<void> {
 
 describe('config remote disable', () => {
   beforeEach(() => {
+    vi.clearAllMocks();
+    for (const key of Object.keys(otherConfigs)) delete otherConfigs[key];
     fileState.current = localCache();
     mockPull.mockResolvedValue({ config: pulled(), version: 12 });
   });
@@ -110,8 +115,16 @@ describe('config remote disable', () => {
     expect(written.encryption).toEqual({ mode: 'master-password' });
     expect(written.credentials?.masterPasswordVerifier).toBe('mpv-hash');
     expect(written.fromANewerCli).toEqual({ keep: true });
-    expect(written.defaults?.language).toBe('de');
+    // All synced (operator ruling D3): the store's language, not the stale cached one.
+    expect(written.defaults?.language).toBe('en');
     expect(tokenDelete).toHaveBeenCalledWith('rediacc');
     expect(secureDelete).toHaveBeenCalledWith('sk-1');
+  });
+
+  it('keeps the slot secret when another local config is enrolled with it', async () => {
+    otherConfigs.second = { remote: { storageKeyId: 'sk-1' } };
+    await runDisable();
+    expect(tokenDelete).toHaveBeenCalledWith('rediacc');
+    expect(secureDelete).not.toHaveBeenCalled();
   });
 });

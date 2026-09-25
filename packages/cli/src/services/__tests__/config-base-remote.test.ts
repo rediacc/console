@@ -164,10 +164,10 @@ describe('ConfigServiceBase remote integration', () => {
       const result = await service.getCurrent();
 
       expect(mockAdapterInstance.pull).toHaveBeenCalled();
-      // Pulled config should have remote pointer and language preserved from local; the pointer is cache-stamped
-      // because the in-memory config is exactly what the cache now holds.
+      // The remote pointer is host-local and cache-stamped, because the in-memory config is exactly what the cache
+      // now holds. `defaults` follows the store with no local override (operator ruling D3): the pulled copy has none.
       expect(result?.remote).toMatchObject({ ...remotePointer, cachedVersion: 3 });
-      expect(result?.defaults?.language).toBe('en');
+      expect(result?.defaults).toBeUndefined();
       expect(result?.resources?.machines).toHaveProperty('prod');
     });
 

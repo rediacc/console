@@ -69,13 +69,14 @@ describe('mergeRemoteIntoCache', () => {
     expect(merged.version).toBe(9);
   });
 
-  it('local defaults and account overrides survive over the pulled values', () => {
+  it('account and defaults follow the pulled copy with no local override (operator ruling D3, F5)', () => {
     const merged = mergeRemoteIntoCache(local, pulled, 5);
 
-    expect(merged.defaults?.language).toBe('tr');
-    // Non-overridden pulled defaults still come through.
-    expect(merged.defaults?.datastoreSize).toBe('90%');
-    expect(merged.account?.userEmail).toBe('me@example.com');
+    // A local override kept every device's first-pulled value forever, and its next push reverted
+    // another device's change.
+    expect(merged.defaults).toEqual({ language: 'en', datastoreSize: '90%' });
+    // The pulled copy carries no account section, so none survives locally.
+    expect(merged.account).toBeUndefined();
   });
 
   it('keeps the host-local renetPath, which the server copy never carries', () => {

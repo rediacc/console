@@ -4,8 +4,8 @@
  * The local config file of a remote-enabled config is a full-content,
  * read-only CACHE of the last successful pull/push, not a bare pointer.
  * Content sections mirror the server copy; the host-local sections named by
- * HOST_LOCAL_POINTERS (packages/shared config-schema/sensitivity.ts), plus the
- * local `account`/`defaults` overrides, stay host-local. One helper owns that merge so enable, read-refresh,
+ * HOST_LOCAL_POINTERS (packages/shared config-schema/sensitivity.ts) stay host-local; `account` and
+ * `defaults` are synced like every other section (operator ruling D3). One helper owns that merge so enable, read-refresh,
  * mutation-push, `remote refresh`, and the CEK-rotation verify all write the
  * same shape.
  *
@@ -61,8 +61,9 @@ function overlayPointer(
  *   trusted there (a pull rebuilds `encryption` as plaintext and carries no `state`).
  * - Unknown top-level keys from `local` survive unless `pulled` carries the same key (F18, the
  *   `.loose()` contract in schemas.ts).
- * - `account`/`defaults`: local keys layer over the pulled ones. This is today's rule, kept as is
- *   until decision D3 (PLAN-config-sync-hardening, F5) settles which of their keys are per device.
+ * - `account` and `defaults` follow the server with no local override (operator ruling D3,
+ *   PLAN-config-sync-hardening F5): layering local keys over the pulled ones kept a stale copy on
+ *   every device that had pulled once, and its next push reverted another device's change.
  *
  * Pure: neither input is mutated.
  */
@@ -75,9 +76,6 @@ export function overlayHostLocal(pulled: RdcConfig, local: RdcConfig): RdcConfig
   }
 
   for (const pointer of HOST_LOCAL_POINTERS) overlayPointer(out, localDoc, pointer);
-
-  if (local.account) out.account = { ...(pulled.account ?? {}), ...local.account };
-  if (local.defaults) out.defaults = { ...(pulled.defaults ?? {}), ...local.defaults };
   return out as RdcConfig;
 }
 

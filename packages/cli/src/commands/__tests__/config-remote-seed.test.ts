@@ -35,6 +35,7 @@ const {
   }
   return {
     mockConfigFileStorage: {
+      list: vi.fn(() => Promise.resolve([] as string[])),
       load: vi.fn(),
       loadDecrypted: vi.fn(),
       save: vi.fn(),
@@ -245,5 +246,68 @@ describe('finalizeEnable (seed-on-enable)', () => {
     expect(mockConfigFileStorage.save).not.toHaveBeenCalled();
     expect(secureMem.size).toBe(0);
     expect(tokenMem.size).toBe(0);
+  });
+
+  it('keeps a slot secret that existed before the failed enable (F17: another local config uses it)', async () => {
+    secureMem.set('rdc:pk:handoff-key', 'c2VjcmV0');
+    mockAdapterInstance.pull.mockRejectedValue(new ConfigServerError('Forbidden', 403));
+
+    await expect(applyHandoff(handoffPayload(CONFIG_ID), CONFIG_NAME, {})).rejects.toThrow(
+      'Forbidden'
+    );
+
+    expect(secureMem.get('rdc:pk:handoff-key')).toBe('c2VjcmV0');
+    expect(tokenMem.size).toBe(0);
+  });
+
+  it('keeps a slot secret another local config names, even when this enable wrote it', async () => {
+    mockConfigFileStorage.list.mockResolvedValueOnce(['other', CONFIG_NAME]);
+    mockConfigFileStorage.load.mockResolvedValueOnce({
+      remote: { storageKeyId: 'rdc:pk:handoff-key' },
+    });
+    mockAdapterInstance.pull.mockRejectedValue(new ConfigServerError('Forbidden', 403));
+
+    await expect(applyHandoff(handoffPayload(CONFIG_ID), CONFIG_NAME, {})).rejects.toThrow(
+      'Forbidden'
+    );
+
+    expect(secureMem.has('rdc:pk:handoff-key')).toBe(true);
+  });
+
+  it('asks before replacing local content outside resources (F17b: ssh credentials and policy)', async () => {
+    mockConfigFileStorage.loadDecrypted.mockResolvedValue({
+      schemaVersion: 3,
+      id: LOCAL_ID,
+      version: 4,
+      encryption: { mode: 'plaintext' },
+      credentials: { ssh: { privateKey: 'LOCAL-KEY' } },
+      policy: { version: 1 },
+    });
+    mockAdapterInstance.pull.mockResolvedValue({
+      config: structuredClone(serverConfig),
+      version: 3,
+      sdkEpoch: 1,
+    });
+
+    await expect(finalizeEnable(pendingRemote(CONFIG_ID), CONFIG_NAME)).rejects.toThrow(/--force/);
+    expect(mockConfigFileStorage.save).not.toHaveBeenCalled();
+  });
+
+  it('does not ask when the local content already equals the store copy, whatever the key order', async () => {
+    mockConfigFileStorage.loadDecrypted.mockResolvedValue({
+      schemaVersion: 3,
+      id: LOCAL_ID,
+      version: 4,
+      encryption: { mode: 'plaintext' },
+      resources: { machines: { srv: { user: 'deploy', ip: '10.0.0.9' } } },
+    });
+    mockAdapterInstance.pull.mockResolvedValue({
+      config: structuredClone(serverConfig),
+      version: 3,
+      sdkEpoch: 1,
+    });
+
+    await finalizeEnable(pendingRemote(CONFIG_ID), CONFIG_NAME);
+    expect(mockConfigFileStorage.save).toHaveBeenCalledTimes(1);
   });
 });

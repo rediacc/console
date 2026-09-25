@@ -44,7 +44,13 @@ export class ConfigServerError extends Error {
   constructor(
     message: string,
     public readonly status: number,
-    public readonly code?: string
+    public readonly code?: string,
+    /**
+     * The token the server rotated to before it failed the request. The request still spent the
+     * old token, so the caller must persist this one (F9); absent when the server rotated nothing
+     * (a tunnel-level failure, or a rejection before the token was accepted).
+     */
+    public readonly newServerToken?: string
   ) {
     super(message);
     this.name = 'ConfigServerError';
@@ -114,7 +120,7 @@ export async function configServerFetch<T = unknown>(
   // Check the inner HTTP status
   if (status >= 400) {
     const msg = parsed.error ?? `Config server returned HTTP ${status}`;
-    throw new ConfigServerError(msg, status, parsed.code);
+    throw new ConfigServerError(msg, status, parsed.code, parsed.newServerToken);
   }
 
   return {

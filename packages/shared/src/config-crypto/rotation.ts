@@ -66,9 +66,9 @@ function buf(data: Uint8Array): ArrayBuffer {
 /**
  * Project a decrypted envelope back onto the config document.
  *
- * A pull only carries the encrypted halves (every `resources` family, ssh,
- * policy, org secrets — the SENSITIVE_FIELDS list); the rest of an RdcConfig
- * is host-local and never leaves the client. The
+ * A pull only carries the encrypted halves (account, defaults, infra, every
+ * `resources` family, ssh, policy, org secrets — the SENSITIVE_FIELDS list); the
+ * rest of an RdcConfig (HOST_LOCAL_POINTERS) never leaves the client. The
  * commitment pointers are rooted at the DOCUMENT, though, so re-encryption has
  * to rebuild this shape before it can recompute them.
  *

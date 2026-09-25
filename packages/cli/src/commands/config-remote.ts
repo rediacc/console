@@ -12,6 +12,7 @@ import {
   applyHandoff,
   checkEnablePrerequisites,
   requireLoginToken,
+  storageKeyInUseElsewhere,
   storeHandoffCredentials,
 } from './config-remote-enable.js';
 import { runRelayHandoff, tryOpenBrowser } from './config-remote-relay.js';
@@ -73,20 +74,21 @@ async function disableRemote(configName: string): Promise<void> {
   }
 
   // Write the full config to the local file without the remote pointer. The pull carries no host-local sections, so they come from the decrypted local copy through the one overlay: saving the pull as is dropped state.repos networkIds, renetPath, the master-password verifier and unknown keys, and wrote a master-password config back in plaintext (F3/F4/F18 sibling, PLAN-config-sync-hardening T3).
+  // `defaults.language` comes from the store like the rest of `defaults` (operator ruling D3, all synced): a remote config
+  // holds no device-only language, so preferring the local copy here only brought back a stale cached value.
   const { overlayHostLocal } = await import('../services/config/remote-cache.js');
   await configFileStorage.update(configName, (local) => {
     const restored: RdcConfig = overlayHostLocal(fullConfig, local);
-    restored.defaults = {
-      ...(restored.defaults ?? {}),
-      language: local.defaults?.language ?? fullConfig.defaults?.language,
-    };
     delete restored.remote;
     return restored;
   });
 
-  // Clean up credentials
+  // Clean up credentials. The slot secret belongs to the (store, user) enrollment, which another local config may
+  // share: it goes only when no other config names it (F17 sibling).
   await remoteTokenStorage.delete(configName);
-  await secureStorage.delete(remote.storageKeyId);
+  if (!(await storageKeyInUseElsewhere(remote.storageKeyId, configName))) {
+    await secureStorage.delete(remote.storageKeyId);
+  }
 
   outputService.success(t('commands.config.remote.disable.success', { name: configName }));
 }

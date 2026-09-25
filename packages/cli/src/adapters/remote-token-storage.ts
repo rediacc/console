@@ -15,7 +15,7 @@ import lockfile from 'proper-lockfile';
 
 const TOKENS_DIR = join(getConfigDir(), '.tokens');
 
-interface TokenData {
+export interface TokenData {
   /** Current rotating config token */
   token: string;
   /** Wrapped CEK (base64) for this config */
@@ -27,6 +27,22 @@ const LOCK_OPTIONS = {
   stale: 45_000,
   retries: { retries: 900, minTimeout: 50, maxTimeout: 50, factor: 1 },
 };
+
+/**
+ * One adapter operation's hold on a config's token file (`RemoteTokenStorage.withLease`).
+ *
+ * `token` is the token the next request must send. `update` persists a rotated token under the lock
+ * the lease already holds and makes it the lease's current token, so every request of the operation
+ * sends the token the previous one returned, and no other process spends a token this one has used.
+ */
+export interface TokenLease {
+  /** The token file as it was when the lease was taken, or null when this config has none. */
+  readonly data: TokenData | null;
+  /** The token the next request of this operation sends. */
+  readonly token: string | undefined;
+  /** Persist a rotated token and send it on the next request. */
+  update(token: string): Promise<void>;
+}
 
 export class RemoteTokenStorage {
   private readonly tokensDir: string;
@@ -66,6 +82,13 @@ export class RemoteTokenStorage {
     }
   }
 
+  /** temp+rename write; the caller holds the lock. */
+  private async writeUnlocked(path: string, data: TokenData): Promise<void> {
+    const tmpPath = `${path}.tmp`;
+    await fs.writeFile(tmpPath, JSON.stringify(data), { mode: 0o600 });
+    await fs.rename(tmpPath, path);
+  }
+
   /**
    * Atomically save a token and wrappedCek.
    * Uses file locking + temp+rename for crash safety.
@@ -83,24 +106,60 @@ export class RemoteTokenStorage {
 
     const release = await lockfile.lock(path, LOCK_OPTIONS);
     try {
-      const tmpPath = `${path}.tmp`;
-      await fs.writeFile(tmpPath, JSON.stringify(data), { mode: 0o600 });
-      await fs.rename(tmpPath, path);
+      await this.writeUnlocked(path, data);
     } finally {
       await release();
     }
   }
 
   /**
-   * Update only the token value, preserving wrappedCek.
-   * This is the common case during token rotation.
+   * Hold the token file's lock for a whole adapter operation: read the token, run every request
+   * with it, and persist each rotated token under the same lock (F8). Two processes sharing one
+   * token file then take turns instead of spending the same token twice, and an older token can
+   * never overwrite a newer one. Not reentrant: `fn` must not take another lease on `configName`.
+   *
+   * A config with no token file runs `fn` unlocked with `data` null; the adapter refuses that
+   * before any request, and `update` throws.
+   */
+  async withLease<T>(configName: string, fn: (lease: TokenLease) => Promise<T>): Promise<T> {
+    const path = this.getPath(configName);
+    let release: () => Promise<void>;
+    try {
+      release = await lockfile.lock(path, LOCK_OPTIONS);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+      return fn({
+        data: null,
+        token: undefined,
+        update: () => Promise.reject(missingTokenFile(configName)),
+      });
+    }
+    try {
+      const data = await this.get(configName);
+      let current = data;
+      const lease: TokenLease = {
+        data,
+        get token() {
+          return current?.token;
+        },
+        update: async (token: string) => {
+          if (!current) throw missingTokenFile(configName);
+          current = { ...current, token };
+          await this.writeUnlocked(path, current);
+        },
+      };
+      return await fn(lease);
+    } finally {
+      await release();
+    }
+  }
+
+  /**
+   * Update only the token value, preserving wrappedCek. The read and the write happen under one
+   * lock, so a concurrent rotation cannot be overwritten by an older token.
    */
   async updateToken(configName: string, token: string): Promise<void> {
-    const existing = await this.get(configName);
-    if (!existing) {
-      throw new Error(`No token file for config "${configName}". Run: rdc config remote enable`);
-    }
-    await this.set(configName, { ...existing, token });
+    await this.withLease(configName, (lease) => lease.update(token));
   }
 
   /**
@@ -116,6 +175,10 @@ export class RemoteTokenStorage {
       }
     }
   }
+}
+
+function missingTokenFile(configName: string): Error {
+  return new Error(`No token file for config "${configName}". Run: rdc config remote enable`);
 }
 
 export const remoteTokenStorage = new RemoteTokenStorage();

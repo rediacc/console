@@ -86,11 +86,23 @@ const REMOTE: RemoteConfig = {
 // ─── In-memory storage stubs (no module mock, passed to the constructor) ─
 
 function createTokenStorage(entry: { token: string; wrappedCek: string } | null) {
+  let current = entry;
   return {
     get: vi.fn().mockResolvedValue(entry),
     set: vi.fn().mockResolvedValue(undefined),
     updateToken: vi.fn().mockResolvedValue(undefined),
     delete: vi.fn().mockResolvedValue(undefined),
+    withLease: <T>(_name: string, fn: (lease: unknown) => Promise<T>) =>
+      fn({
+        data: entry,
+        get token() {
+          return current?.token;
+        },
+        update: (token: string) => {
+          current = current ? { ...current, token } : current;
+          return Promise.resolve();
+        },
+      }),
   };
 }
 
@@ -154,12 +166,15 @@ async function provision(
       sdkEpoch: SDK_EPOCH,
     },
     config: {
+      // The pull carries the session material too (configs.ts pull route), so the CLI pulls in one request.
+      server_secret: toBase64(serverSecret),
       configData: payload.encryptedBlob,
       envelope: {
         configId: CONFIG_ID,
         version: 1,
         teamId,
         lastModified: '2026-01-01T00:00:00Z',
+        sdkEpoch: SDK_EPOCH,
         commitments: payload.envelope.commitments,
       },
       hmac: payload.hmac,

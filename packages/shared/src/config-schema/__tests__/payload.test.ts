@@ -108,4 +108,33 @@ describe('config push payload', () => {
       /integrity check failed/i
     );
   });
+
+  it('carries EVERY account and defaults key through a push and pull (operator ruling D3: all synced)', async () => {
+    const account = {
+      userEmail: 'op@example.com',
+      accountServer: 'https://eu.example.com',
+      e2ePublicKey: 'SPKI',
+      updateChannel: 'edge',
+      releasesUrl: 'https://releases.example.com',
+    };
+    const defaults = {
+      language: 'de',
+      universalUser: 'deploy',
+      datastoreSize: '90%',
+      pruneGraceDays: 7,
+    };
+    const config = { ...sampleConfig(), account, defaults } as RdcConfig;
+    const { cek, sdkDerived } = await keys();
+
+    const payload = await buildConfigPushPayload(config, {
+      version: 5,
+      sdkEpoch: 1,
+      sdkDerived,
+      cek,
+    });
+    const decrypted = await decryptConfigPullPayload(payload, { cek, sdkDerived });
+
+    expect(decrypted.account).toEqual(account);
+    expect(decrypted.defaults).toEqual(defaults);
+  });
 });

@@ -27,7 +27,7 @@ import {
 } from '../services/config/config-server-client.js';
 import type { RdcConfig, RemoteConfig } from '../types/index.js';
 import type { SecureStorage } from '../utils/secure-storage.js';
-import type { RemoteTokenStorage } from './remote-token-storage.js';
+import type { RemoteTokenStorage, TokenLease } from './remote-token-storage.js';
 
 // ─── Types ──────────────────────────────────────────────────────────────
 
@@ -228,13 +228,16 @@ export class RemoteConfigAdapter {
   ) {}
 
   /**
-   * Pull the latest config from the remote server.
-   * Handles session setup, token rotation, and 3-layer decryption.
+   * Pull the latest config from the remote server: ONE request, under the token lease. The pull
+   * response carries `server_secret`, so `/session` is not asked first (F8: every extra request
+   * spends a token use).
    */
-  async pull(): Promise<PullResult> {
-    const token = await this.requireToken();
-    const session = await this.fetchSession(token);
-    const cek = await this.deriveCek(session.serverSecret);
+  pull(): Promise<PullResult> {
+    return this.tokenStorage.withLease(this.configName, (lease) => this.pullLeased(lease));
+  }
+
+  private async pullLeased(lease: TokenLease): Promise<PullResult> {
+    this.requireToken(lease);
 
     // Fetch encrypted config blob
     const pullPath = `/account/api/v1/configs/${this.remote.configId}${
@@ -249,19 +252,22 @@ export class RemoteConfigAdapter {
         lastModified: string;
         envelopeVersion?: 2;
         commitments?: FieldCommitments;
-        sdkEpoch?: number;
+        /** The epoch the blob was pushed in; the server's envelope always carries it. */
+        sdkEpoch: number;
       };
       hmac: string | null;
+      server_secret: string;
       sdk_derived: string;
-    }>(pullPath, token);
+    }>(lease, pullPath);
+    const cek = await this.deriveCek(fromBase64(pullResp.data.server_secret), lease);
 
     // The session layer was sealed under the epoch the config was PUSHED in, and the pull
     // response carries that epoch's key (configs.ts derives it from the stored sdkEpoch).
-    // `session.sdkDerived` is the CURRENT epoch's key: using it opened the blob only until
-    // the epoch window rolled over, then every pull failed as "the server session layer
-    // would not open it" (2026-09-25, right after the first remote enable).
+    // The CURRENT epoch's key opened the blob only until the epoch window rolled over, then every
+    // pull failed as "the server session layer would not open it" (2026-09-25, right after the
+    // first remote enable).
     const pulledSdkDerived = await importAesKey(fromBase64(pullResp.data.sdk_derived));
-    const pulledSdkEpoch = pullResp.data.envelope.sdkEpoch ?? session.sdkEpoch;
+    const pulledSdkEpoch = pullResp.data.envelope.sdkEpoch;
 
     // Decrypt: Layer 2 (CEK) + Layer 1 (SDK) Server-stored envelope is v2 (see Step 5). Until the server supports that,
     // fabricate empty commitments so the v2 shape is well-formed; selectiveDecrypt
@@ -304,37 +310,39 @@ export class RemoteConfigAdapter {
   }
 
   /**
-   * Push an updated config to the remote server.
-   * Handles session setup, token rotation, and 3-layer encryption.
+   * Push an updated config to the remote server: `/session` then PUT, under one token lease, the
+   * PUT sending the token `/session` rotated to.
    */
-  async push(config: RdcConfig, currentVersion: number): Promise<PushResult> {
-    const token = await this.requireToken();
-    const session = await this.fetchSession(token);
-    const cek = await this.deriveCek(session.serverSecret);
+  push(config: RdcConfig, currentVersion: number): Promise<PushResult> {
+    return this.tokenStorage.withLease(this.configName, async (lease) => {
+      this.requireToken(lease);
+      const session = await this.fetchSession(lease);
+      const cek = await this.deriveCek(session.serverSecret, lease);
 
-    // Envelope + commitments + ciphertext are composed by the shared helper, so the CLI, the web console editor, and the CEK rotation flow all emit a byte-identical payload. Diverging here would fail the server precondition.
-    const encrypted = await buildConfigPushPayload(config, {
-      version: currentVersion + 1,
-      sdkEpoch: session.sdkEpoch,
-      sdkDerived: session.sdkDerived,
-      cek,
-    });
-
-    // Push to server (server adds Layer 3)
-    const pushPath = `/account/api/v1/configs/${this.remote.configId}`;
-    const pushResp = await this.fetch<{ version: number }>(pushPath, token, {
-      method: 'PUT',
-      body: {
-        teamId: this.remote.teamId,
+      // Envelope + commitments + ciphertext are composed by the shared helper, so the CLI, the web console editor, and the CEK rotation flow all emit a byte-identical payload. Diverging here would fail the server precondition.
+      const encrypted = await buildConfigPushPayload(config, {
         version: currentVersion + 1,
-        encryptedBlob: encrypted.encryptedBlob,
         sdkEpoch: session.sdkEpoch,
-        hmac: encrypted.hmac,
-        envelope: encrypted.envelope,
-      },
-    });
+        sdkDerived: session.sdkDerived,
+        cek,
+      });
 
-    return { version: pushResp.data.version };
+      // Push to server (server adds Layer 3)
+      const pushPath = `/account/api/v1/configs/${this.remote.configId}`;
+      const pushResp = await this.fetch<{ version: number }>(lease, pushPath, {
+        method: 'PUT',
+        body: {
+          teamId: this.remote.teamId,
+          version: currentVersion + 1,
+          encryptedBlob: encrypted.encryptedBlob,
+          sdkEpoch: session.sdkEpoch,
+          hmac: encrypted.hmac,
+          envelope: encrypted.envelope,
+        },
+      });
+
+      return { version: pushResp.data.version };
+    });
   }
 
   /**
@@ -342,8 +350,10 @@ export class RemoteConfigAdapter {
    */
   async testConnection(): Promise<boolean> {
     try {
-      const token = await this.requireToken();
-      await this.fetchSession(token);
+      await this.tokenStorage.withLease(this.configName, async (lease) => {
+        this.requireToken(lease);
+        await this.fetchSession(lease);
+      });
       return true;
     } catch {
       return false;
@@ -352,34 +362,34 @@ export class RemoteConfigAdapter {
 
   // ─── Private Helpers ──────────────────────────────────────────────────
 
-  /** Get the current token or throw a clear error */
   /**
    * Unwrap this device's config key (CEK) from its enrollment, without pulling
    * the config. The `--proxy` client seals it to an executor's session key so
    * the executor can open the config for that session (ProxyClient.ensureSession).
    * Rotates the config token like any other request.
    */
-  async unwrapCek(): Promise<CryptoKey> {
-    const token = await this.requireToken();
-    const session = await this.fetchSession(token);
-    return this.deriveCek(session.serverSecret);
+  unwrapCek(): Promise<CryptoKey> {
+    return this.tokenStorage.withLease(this.configName, async (lease) => {
+      this.requireToken(lease);
+      const session = await this.fetchSession(lease);
+      return this.deriveCek(session.serverSecret, lease);
+    });
   }
 
-  private async requireToken(): Promise<string> {
-    const data = await this.tokenStorage.get(this.configName);
-    if (!data?.token) {
+  /** Refuse an operation whose lease holds no token, before any request. */
+  private requireToken(lease: TokenLease): void {
+    if (!lease.token) {
       throw new RemoteTokenExpiredError();
     }
-    return data.token;
   }
 
   /** Fetch session crypto material (server_secret, sdk_derived, sdkEpoch) */
-  private async fetchSession(currentToken: string): Promise<SessionMaterial> {
+  private async fetchSession(lease: TokenLease): Promise<SessionMaterial> {
     const resp = await this.fetch<{
       server_secret: string;
       sdk_derived: string;
       sdkEpoch: number;
-    }>('/account/api/v1/configs/session', currentToken, { method: 'POST' });
+    }>(lease, '/account/api/v1/configs/session', { method: 'POST' });
 
     return {
       serverSecret: fromBase64(resp.data.server_secret),
@@ -389,7 +399,7 @@ export class RemoteConfigAdapter {
   }
 
   /** Derive CEK from passkey_secret + server_secret */
-  private async deriveCek(serverSecret: Uint8Array) {
+  private async deriveCek(serverSecret: Uint8Array, lease: TokenLease) {
     const passkeySecretStr = await this.secureStorage.get(this.remote.storageKeyId);
     if (!passkeySecretStr) {
       throw new RemotePasskeySecretMissingError();
@@ -398,7 +408,7 @@ export class RemoteConfigAdapter {
     const passkeySecret = fromBase64(passkeySecretStr);
     const wrappingKey = await deriveWrappingKey(passkeySecret, serverSecret);
 
-    const tokenData = await this.tokenStorage.get(this.configName);
+    const tokenData = lease.data;
     if (!tokenData?.wrappedCek) {
       throw new RemoteTokenExpiredError();
     }
@@ -442,31 +452,32 @@ export class RemoteConfigAdapter {
   }
 
   /**
-   * Make a config server request with automatic token rotation.
-   * Persists the new token after every successful response.
+   * One config server request under the operation's lease. The request sends the lease's current
+   * token, and the token the server rotated to is persisted, and sent by the next request of the
+   * operation, whether the request succeeded or failed: an error body carries the rotated token
+   * too (F9), and dropping it spent one grace use of the old token per error.
    */
   private async fetch<T>(
+    lease: TokenLease,
     path: string,
-    currentToken: string,
     options?: { method?: string; body?: unknown }
   ): Promise<{ data: T }> {
+    let resp: Awaited<ReturnType<typeof configServerFetch<T>>>;
     try {
-      const resp = await configServerFetch<T>(path, {
+      resp = await configServerFetch<T>(path, {
         ...options,
         ...this.transport,
-        configToken: currentToken,
+        configToken: lease.token ?? '',
         serverUrl: this.remote.apiUrl,
       });
-
-      // Persist rotated token immediately
-      if (resp.newServerToken) {
-        await this.tokenStorage.updateToken(this.configName, resp.newServerToken);
-      }
-
-      return { data: resp.data };
     } catch (error) {
+      if (error instanceof ConfigServerError && error.newServerToken) {
+        await lease.update(error.newServerToken);
+      }
       throw classifyFetchError(error, this.remote.apiUrl);
     }
+    if (resp.newServerToken) await lease.update(resp.newServerToken);
+    return { data: resp.data };
   }
 }
 

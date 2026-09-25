@@ -77,6 +77,20 @@ vi.mock('../../adapters/remote-token-storage.js', () => ({
       if (cur) tokenMem.set(name, { ...cur, token });
       return Promise.resolve();
     },
+    withLease: <T>(name: string, fn: (lease: unknown) => Promise<T>) => {
+      const data = tokenMem.get(name) ?? null;
+      return fn({
+        data,
+        get token() {
+          return tokenMem.get(name)?.token;
+        },
+        update: (token: string) => {
+          const cur = tokenMem.get(name);
+          if (cur) tokenMem.set(name, { ...cur, token });
+          return Promise.resolve();
+        },
+      });
+    },
     delete: (name: string) => {
       tokenMem.delete(name);
       return Promise.resolve();
@@ -158,12 +172,14 @@ async function provision(password: string, teamId: string | null = TEAM_ID) {
       sdkEpoch: SDK_EPOCH,
     },
     config: {
+      server_secret: toBase64(serverSecret),
       configData: payload.encryptedBlob,
       envelope: {
         configId: CONFIG_ID,
         version: 1,
         teamId,
         lastModified: '2026-01-01T00:00:00Z',
+        sdkEpoch: SDK_EPOCH,
         commitments: payload.envelope.commitments,
       },
       hmac: payload.hmac,
