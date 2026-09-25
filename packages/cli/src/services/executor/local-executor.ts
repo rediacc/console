@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 /**
  * LocalExecutorService - Direct task execution via renet.
  *

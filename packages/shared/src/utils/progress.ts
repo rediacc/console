@@ -64,13 +64,10 @@ export function extractMostRecentProgress(output: string): number | null {
 
 /** Clean message by removing ANSI codes and emojis */
 function cleanProgressMessage(message: string): string {
-  return (
-    message
-      // eslint-disable-next-line no-control-regex
-      .replaceAll(/\x1b\[[0-9;]*m/g, '')
-      .replaceAll(/[\u{1F300}-\u{1F9FF}]/gu, '')
-      .trim()
-  );
+  return message
+    .replaceAll(/\x1b\[[0-9;]*m/g, '')
+    .replaceAll(/[\u{1F300}-\u{1F9FF}]/gu, '')
+    .trim();
 }
 
 /** Pattern for msg_progress format "message - N%" */

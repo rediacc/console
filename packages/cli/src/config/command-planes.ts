@@ -116,7 +116,7 @@ export const COMMAND_PLANES: Record<string, PlaneMeta> = {
   'config rotate-cek': { plane: 'other' },
   // The zero-knowledge config store on the account server (HTTPS), not a machine.
   'config remote': { plane: 'other' },
-  // Opens a browser and blocks on a localhost callback (unless --headless).
+  // Opens a browser and blocks polling the server relay until the handoff arrives or the code expires.
   'config remote enable': { interactive: true },
   // $EDITOR round-trip on the decrypted config (unless --dump/--apply).
   'config edit': { interactive: true },

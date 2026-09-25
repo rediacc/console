@@ -36,7 +36,7 @@ describe('canonicalize', () => {
   });
 
   it('rejects non-finite numbers', () => {
-    expect(() => canonicalize(Infinity)).toThrow();
+    expect(() => canonicalize(Number.POSITIVE_INFINITY)).toThrow();
     expect(() => canonicalize(Number.NaN)).toThrow();
   });
 });

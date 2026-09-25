@@ -35,7 +35,7 @@ import { assertRepoMountedOnMachine } from '../services/repo/repo-mount-check.js
 import { assertCommandPolicy, CMD, validateRemotePath } from '../utils/command-policy.js';
 import { handleError } from '../utils/errors.js';
 import { resolveRepoRef } from '../utils/repo-target.js';
-import { withSpinner } from '../utils/spinner.js';
+import { oraOptions, withSpinner } from '../utils/spinner.js';
 import {
   buildSyncRemotePaths,
   formatBytes,
@@ -113,7 +113,7 @@ async function executeSyncWithProgress(
   mode: 'upload' | 'download',
   keyDiagnostic?: string
 ): Promise<{ filesTransferred: number; bytesTransferred: number }> {
-  const spinner = ora(t(`commands.sync.${mode}.starting`)).start();
+  const spinner = ora(oraOptions(t(`commands.sync.${mode}.starting`))).start();
 
   rsyncOptions.onProgress = (progress: SyncProgress) => {
     spinner.text = t(`commands.sync.${mode}.progress`, {
@@ -303,7 +303,9 @@ async function executeSyncWithSftpFallback(
     return await executeSyncWithProgress(rsyncOptions, mode, keyDiagnostic);
   } catch (err: unknown) {
     if (!isRsyncNotFoundError(err)) throw err;
-    const spinner = ora('rsync not available, using SFTP transfer (no delta sync)...').start();
+    const spinner = ora(
+      oraOptions('rsync not available, using SFTP transfer (no delta sync)...')
+    ).start();
     const result = await sftpTransfer(spinner);
     displaySyncResult(result, spinner, mode);
     return {

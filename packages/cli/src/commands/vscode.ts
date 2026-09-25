@@ -436,19 +436,16 @@ async function connectVSCode(target: string, options: VSCodeConnectOptions): Pro
   const vscodeUri = generateRemoteUri(connectionName, remotePath);
 
   if (options.urlOnly) {
-    // eslint-disable-next-line no-console
     console.log(vscodeUri);
     return;
   }
 
-  // eslint-disable-next-line no-console
   console.log(
     t('commands.vscode.connect.opening', { connection: connectionName, path: remotePath })
   );
 
   await launchVSCode(vscodeInfo, vscodeUri, { newWindow: options.newWindow });
 
-  // eslint-disable-next-line no-console
   console.log(t('commands.vscode.connect.success'));
 }
 
@@ -460,27 +457,21 @@ function listVSCodeConnections(): void {
   const keys = listPersistedKeys();
 
   if (entries.length === 0) {
-    // eslint-disable-next-line no-console
     console.log(t('commands.vscode.list.noConnections'));
-    // eslint-disable-next-line no-console
     console.log(t('commands.vscode.list.configFile', { path: getSSHConfigPath() }));
     return;
   }
 
-  // eslint-disable-next-line no-console
   console.log(t('commands.vscode.list.header'));
 
   for (const entry of entries) {
     // Check if key exists for this entry
     const hasKey = keys.some((k: string) => entry.includes(k.replaceAll('_', '-')));
     const keyIndicator = hasKey ? t('commands.vscode.list.keyPersisted') : '';
-    // eslint-disable-next-line no-console
     console.log(`  ${entry}${keyIndicator}`);
   }
 
-  // eslint-disable-next-line no-console
   console.log(t('commands.vscode.list.total', { count: entries.length }));
-  // eslint-disable-next-line no-console
   console.log(t('commands.vscode.list.configFile', { path: getSSHConfigPath() }));
 }
 
@@ -497,9 +488,7 @@ function cleanupVSCodeConnections(options: VSCodeCleanupOptions): void {
     }
     cleanupAllPersistedKeys();
 
-    // eslint-disable-next-line no-console
     console.log(t('commands.vscode.cleanup.cleanedAll', { count }));
-    // eslint-disable-next-line no-console
     console.log(t('commands.vscode.cleanup.removedKeys'));
   } else if (options.connection) {
     const connectionName = options.connection;
@@ -515,7 +504,6 @@ function cleanupVSCodeConnections(options: VSCodeCleanupOptions): void {
       removePersistedKeys(team, machine, repository);
     }
 
-    // eslint-disable-next-line no-console
     console.log(t('commands.vscode.cleanup.cleaned', { connection: connectionName }));
   } else {
     throw new Error(t('errors.vscode.cleanupRequired'));
@@ -526,7 +514,6 @@ function cleanupVSCodeConnections(options: VSCodeCleanupOptions): void {
  * Checks VS Code installation and configuration
  */
 async function checkVSCodeSetup(isInsiders = false): Promise<void> {
-  // eslint-disable-next-line no-console
   console.log(t('commands.vscode.check.title'));
 
   const vscode = await findVSCode();
@@ -536,16 +523,13 @@ async function checkVSCodeSetup(isInsiders = false): Promise<void> {
   const extensionStatus = hasExtension
     ? t('commands.vscode.check.installed')
     : t('commands.vscode.check.notDetected');
-  // eslint-disable-next-line no-console
   console.log(t('commands.vscode.check.remoteSSH', { status: extensionStatus }));
 
-  // eslint-disable-next-line no-console
   console.log(t('commands.vscode.check.configuration'));
   const configCheck = checkVSCodeConfiguration(isInsiders);
   displayConfigurationStatus(configCheck);
 
   const configPath = getSSHConfigPath();
-  // eslint-disable-next-line no-console
   console.log(t('commands.vscode.check.sshConfig', { path: configPath }));
 
   const connections = listSSHConfigEntries();

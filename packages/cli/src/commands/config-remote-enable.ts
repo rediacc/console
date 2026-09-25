@@ -1,6 +1,6 @@
 /**
- * Enable/seed flow for `config remote enable` (split from config-remote.ts,
- * which keeps the transports: callback server, device-code polling, rotate).
+ * Enable/seed flow for `config remote enable` (split from config-remote.ts;
+ * the one transport, the server relay, lives in config-remote-relay.ts).
  *
  * Validate the enrollment by pulling, seed a fresh store, and turn the local
  * file into a full-content cache (D1/D5):
@@ -16,11 +16,109 @@
 
 import type { RemoteConfigAdapter } from '../adapters/remote-config-adapter.js';
 import { t } from '../i18n/index.js';
+import { accountServerFetch } from '../services/account/account-client.js';
+import {
+  getSubscriptionTokenState,
+  normalizeServerUrl,
+} from '../services/account/subscription-auth.js';
 import { outputService } from '../services/core/output.js';
 import type { RdcConfig, RemoteConfig } from '../types/index.js';
 import { ValidationError } from '../utils/errors.js';
 import { askConfirm } from '../utils/prompt.js';
 import type { HandoffPayload } from './config-remote-handoff.js';
+
+/** GET /configs/enable-requirements (api-token auth, subscription:read) for the token's own user. */
+export interface EnableRequirements {
+  email: string;
+  totpEnabled: boolean;
+  configServiceAvailable: boolean;
+}
+
+/**
+ * This config's login token when it belongs to `apiUrl`. The relay binds the handoff to the token's user, so
+ * without one there is nothing to bind to and enable refuses (operator ruling D1, 2026-09-25).
+ */
+export function requireLoginToken(apiUrl: string): string {
+  const state = getSubscriptionTokenState();
+  if (
+    state.kind !== 'ready' ||
+    normalizeServerUrl(state.serverUrl) !== normalizeServerUrl(apiUrl)
+  ) {
+    throw new ValidationError(
+      t('commands.config.remote.enable.loginRequired', { apiUrl: normalizeServerUrl(apiUrl) })
+    );
+  }
+  return state.token.token;
+}
+
+/**
+ * The prerequisites the portal page enforces, read with the login token.
+ * Null when the server cannot answer (an older server without the route, a revoked token): the CLI then only states the prerequisites.
+ */
+async function fetchEnableRequirements(
+  apiUrl: string,
+  token: string
+): Promise<EnableRequirements | null> {
+  try {
+    return await accountServerFetch<EnableRequirements>(
+      '/account/api/v1/configs/enable-requirements',
+      { serverUrl: apiUrl, token }
+    );
+  } catch {
+    return null;
+  }
+}
+
+/** What the relay needs once the prerequisites pass: the login token, and the approving account when the server named it. */
+export interface EnablePrerequisites {
+  token: string;
+  email?: string;
+}
+
+/**
+ * Pre-flight for the relay enable: runs BEFORE any portal link is printed or opened.
+ * No login token for `apiUrl` refuses with `loginRequired`. With one, the 2FA and server-availability
+ * requirements are checked and a missing one refuses with the exact portal step; a server that cannot answer
+ * gets the requirements stated instead. The page itself asks for the recently verified session.
+ */
+export async function checkEnablePrerequisites(apiUrl: string): Promise<EnablePrerequisites> {
+  const token = requireLoginToken(apiUrl);
+  const base = normalizeServerUrl(apiUrl);
+  const settingsUrl = `${base}/account/settings`;
+  const reqs = await fetchEnableRequirements(apiUrl, token);
+
+  if (reqs) {
+    const missing: string[] = [];
+    if (!reqs.configServiceAvailable) {
+      missing.push(t('commands.config.remote.enable.prereqUnavailable', { apiUrl: base }));
+    }
+    if (!reqs.totpEnabled) {
+      missing.push(t('commands.config.remote.enable.prereqTotpMissing', { url: settingsUrl }));
+    }
+    if (missing.length > 0) {
+      throw new ValidationError(
+        [
+          t('commands.config.remote.enable.prereqMissing', { email: reqs.email }),
+          ...missing.map((line) => `  - ${line}`),
+          t('commands.config.remote.enable.prereqRetry'),
+        ].join('\n')
+      );
+    }
+    outputService.info(t('commands.config.remote.enable.prereqChecked', { email: reqs.email }));
+    outputService.info(`  - ${t('commands.config.remote.enable.prereqElevated')}`);
+    outputService.info('');
+    return { token, email: reqs.email };
+  }
+
+  outputService.info(t('commands.config.remote.enable.prereqHeader'));
+  outputService.info(
+    `  - ${t('commands.config.remote.enable.prereqSignedIn', { url: `${base}/account/login` })}`
+  );
+  outputService.info(`  - ${t('commands.config.remote.enable.prereqTotp', { url: settingsUrl })}`);
+  outputService.info(`  - ${t('commands.config.remote.enable.prereqElevated')}`);
+  outputService.info('');
+  return { token };
+}
 
 /**
  * A remote pointer whose configId may still be unminted. Fresh-store handoffs
@@ -175,7 +273,7 @@ export async function finalizeEnable(
 }
 
 /**
- * Decrypt-store-finalize shared by the browser and headless flows. On any
+ * Store-and-finalize for a relay handoff. On any
  * finalize failure the stored credentials are removed so a retry starts clean
  * (mirrors the password path's cleanup). Exported for the seed tests.
  */

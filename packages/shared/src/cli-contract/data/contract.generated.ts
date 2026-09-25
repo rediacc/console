@@ -3339,17 +3339,6 @@ export const CLI_CONTRACT: CliContract = {
       "label": "Link this config to remote encrypted storage",
       "options": [
         {
-          "flags": "--headless",
-          "long": "headless",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "tier": "advanced",
-          "descriptionKey": "commands.config.remote.enable.optionHeadless",
-          "label": "Use device code flow (for headless servers)"
-        },
-        {
           "flags": "--password",
           "long": "password",
           "valueTaking": false,

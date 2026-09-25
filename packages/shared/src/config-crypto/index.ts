@@ -48,7 +48,13 @@ export {
   SENSITIVE_FIELDS,
 } from './constants.js';
 // X25519 CEK handoff
-export { cekHandoffDecrypt, cekHandoffEncrypt } from './handoff.js';
+export {
+  cekHandoffDecrypt,
+  cekHandoffEncrypt,
+  handoffKeyHash,
+  handoffPairingCode,
+  handoffPollVerifier,
+} from './handoff.js';
 // HKDF key derivation
 export { hkdfDeriveKey, hkdfDeriveRaw } from './hkdf.js';
 // HMAC tamper detection

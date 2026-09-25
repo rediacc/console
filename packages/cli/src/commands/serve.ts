@@ -4,8 +4,8 @@
  * The same binary that operators run on a laptop becomes the thing that runs
  * commands on their behalf. Two placements, one artifact:
  *
- *   --mode daemon     on a customer's own host. It enrolled like any headless
- *                     CLI (`rdc config remote enable --headless`), so it can
+ *   --mode daemon     on a customer's own host. It enrolled like any other
+ *                     CLI (`rdc config remote enable`), so it can
  *                     derive the config key by itself and needs no per-session
  *                     grant. This is the strict tier: SSH never leaves the
  *                     customer's network.

@@ -13,6 +13,16 @@ function loadOra(): typeof import('ora')['default'] {
 let currentSpinner: Ora | null = null;
 
 /**
+ * Options for every ora spinner in the CLI. `discardStdin: false` keeps the terminal in cooked mode, so Ctrl-C stays a
+ * real SIGINT: ora's default puts stdin in RAW mode and listens for 0x03 with `prependListener('data')`, which never
+ * starts a stream that has not flowed yet, so the byte was swallowed and every spinner (e.g. `config remote enable`
+ * waiting on the browser) ignored Ctrl-C (2026-09-25).
+ */
+export function oraOptions(text: string): { text: string; discardStdin: false } {
+  return { text, discardStdin: false };
+}
+
+/**
  * Check if we're in an interactive environment (TTY).
  * Spinners should only be shown in interactive terminals.
  */
@@ -29,7 +39,7 @@ export function startSpinner(text: string): Ora | null {
     currentSpinner.stop();
   }
   const ora = loadOra();
-  currentSpinner = ora({ text, stream: process.stderr }).start();
+  currentSpinner = ora({ ...oraOptions(text), stream: process.stderr }).start();
   return currentSpinner;
 }
 

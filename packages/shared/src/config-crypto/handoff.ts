@@ -140,3 +140,55 @@ export async function cekHandoffDecrypt(
 
   return new Uint8Array(plaintext);
 }
+
+// ─── CLI relay handoff: key fingerprint and pairing code ─────────────────────
+// The CLI mints an ephemeral X25519 key pair and sends only the SHA-256 of its SPKI to the account server. The portal page recomputes both values from the key in the link, so a swapped key fails the server's hash check and the pairing code the user types from the terminal.
+
+/** 32 symbols, exactly 5 bits each (no modulo bias), without the letters that read like the digits zero and one. */
+const PAIRING_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const PAIRING_SYMBOLS = 12;
+const PAIRING_GROUP = 4;
+
+async function spkiDigest(spki: Uint8Array): Promise<Uint8Array> {
+  return new Uint8Array(await crypto.subtle.digest('SHA-256', buf(spki)));
+}
+
+function toBase64Url(bytes: Uint8Array): string {
+  return toBase64(bytes).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+/** base64url (no padding) of SHA-256(spki): always 43 characters. */
+export async function handoffKeyHash(spki: Uint8Array): Promise<string> {
+  return toBase64Url(await spkiDigest(spki));
+}
+
+/**
+ * The first 60 bits of SHA-256(spki), 5 bits per symbol over
+ * `ABCDEFGHJKLMNPQRSTUVWXYZ23456789`, formatted `XXXX-XXXX-XXXX`.
+ */
+export async function handoffPairingCode(spki: Uint8Array): Promise<string> {
+  const digest = await spkiDigest(spki);
+  let symbols = '';
+  for (let i = 0; i < PAIRING_SYMBOLS; i++) {
+    const bit = i * 5;
+    const byte = bit >> 3;
+    // Two bytes always cover the 5-bit window; digest has 32 bytes, so byte+1 exists.
+    const window = (digest[byte] << 8) | digest[byte + 1];
+    const value = (window >> (11 - (bit & 7))) & 0x1f;
+    symbols += PAIRING_ALPHABET[value];
+  }
+  const groups: string[] = [];
+  for (let i = 0; i < PAIRING_SYMBOLS; i += PAIRING_GROUP) {
+    groups.push(symbols.slice(i, i + PAIRING_GROUP));
+  }
+  return groups.join('-');
+}
+
+/**
+ * The verifier the account server stores for a relay poll secret S: base64url (no padding) of SHA-256 over
+ * the 32 RAW bytes of S, not over the base64url text the CLI sends as `{pollSecret}`. 43 characters.
+ * Mirrors `pollVerifierOf` in private/account/src/services/device-code.service.ts.
+ */
+export async function handoffPollVerifier(pollSecret: Uint8Array): Promise<string> {
+  return toBase64Url(new Uint8Array(await crypto.subtle.digest('SHA-256', buf(pollSecret))));
+}

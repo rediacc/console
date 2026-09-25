@@ -1,5 +1,3 @@
-/* eslint-disable no-console */
-
 import { DEFAULTS } from '@rediacc/shared/config';
 import { formatPropertyName, formatTimestampAsIs, formatValue } from '@rediacc/shared/formatters';
 import { escapeCSVValue } from '@rediacc/shared/utils';

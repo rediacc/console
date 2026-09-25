@@ -3,7 +3,8 @@
  *
  * This is the executable contract between the CLI and the portal enrollment
  * pages: the portal builds exactly this payload shape and seals it with
- * `cekHandoffEncrypt` to the X25519 public key from the URL; the CLI decrypts
+ * `cekHandoffEncrypt` to the X25519 public key from the link fragment, then
+ * posts it to the server relay; the CLI decrypts
  * with `decryptHandoff`. The web-side mirror fixture lives at
  * `private/account/web/src/lib/__tests__/config-handoff.test.ts`, keep the
  * two payload fixtures textually identical.
@@ -32,6 +33,7 @@ const BASE_PAYLOAD = {
   wrappedCek: 'd3JhcHBlZF9jZWtfb3BhcXVl',
   storeId: '11111111-1111-4111-8111-111111111111',
   apiUrl: 'https://account.example.com',
+  handoffNonce: 'bm9uY2VfZnJvbV90aGVfbGlua19mcmFnbWVudA',
 };
 
 describe('handoff blob contract round-trip (real X25519)', () => {
@@ -92,7 +94,7 @@ describe('handoff blob contract round-trip (real X25519)', () => {
   });
 
   it('explains a wrong-key handoff instead of leaking the WebCrypto error', async () => {
-    // A stale portal tab from an earlier `config remote enable` seals against the OLD run's public key and posts to the new run's callback. Raw, that reached the user as "OperationError: The operation failed for an operation-specific reason" at all three call sites in config-remote.ts.
+    // A blob sealed to a key this run did not generate (a relay-side or link swap). Raw, that reached the user as "OperationError: The operation failed for an operation-specific reason".
     const keyPair = await generateX25519KeyPair();
     const otherPair = await generateX25519KeyPair();
     const blob = await seal({ ...BASE_PAYLOAD }, keyPair.publicKey);
@@ -104,14 +106,14 @@ describe('handoff blob contract round-trip (real X25519)', () => {
 
     expect(error).not.toBeNull();
     expect(error?.message).toMatch(/cannot open/i);
-    expect(error?.message).toMatch(/close every rediacc portal tab/i);
+    expect(error?.message).toMatch(/open only the link it prints/i);
   });
 });
 
 // The device relay stores the sealed blob as a JSON STRING (device-code.dto.ts `configHandoff: z.string()`); before 2026-09-24 the CLI treated it as an object and decryption of the string failed.
 describe('device relay: parseHandoff', () => {
   it('parses the stringified blob the relay returns, which then decrypts', async () => {
-    const { parseHandoff } = await import('../config-remote.js');
+    const { parseHandoff } = await import('../config-remote-relay.js');
     const keyPair = await generateX25519KeyPair();
     const blob = await seal(BASE_PAYLOAD, keyPair.publicKey);
     const decrypted = await decryptHandoff(parseHandoff(JSON.stringify(blob)), keyPair.privateKey);
@@ -119,21 +121,8 @@ describe('device relay: parseHandoff', () => {
   });
 
   it('fails with a ValidationError on an unreadable handoff instead of polling on', async () => {
-    const { parseHandoff } = await import('../config-remote.js');
+    const { parseHandoff } = await import('../config-remote-relay.js');
     const { ValidationError } = await import('../../utils/errors.js');
     expect(() => parseHandoff('{not json')).toThrow(ValidationError);
-  });
-});
-
-// The portal posts the sealed handoff to /device-codes/<code>/config-handoff, a route that accepts only the
-// UUID device code; the headless URL carried the short user code and answered 404 (2026-09-24).
-describe('headless enable: headlessRemoteUrl', () => {
-  it('carries the device code the config-handoff route accepts, never the user code', async () => {
-    const { headlessRemoteUrl } = await import('../config-remote.js');
-    const deviceCode = '0f1e2d3c-4b5a-4968-8776-a5b4c3d2e1f0';
-    const url = new URL(headlessRemoteUrl('https://eu.rediacc.com', deviceCode, 'cHVi+/='));
-    expect(url.pathname).toBe('/account/config-remote');
-    expect(url.searchParams.get('code')).toBe(deviceCode);
-    expect(url.searchParams.get('key')).toBe('cHVi+/=');
   });
 });

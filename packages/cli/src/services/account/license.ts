@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 import { DEFAULTS } from '@rediacc/shared/config';
 import { isValidPublicKeyId } from '@rediacc/shared/subscription';
 import { TELEMETRY_SUBSCRIPTION_SOURCES } from '@rediacc/shared/telemetry';
