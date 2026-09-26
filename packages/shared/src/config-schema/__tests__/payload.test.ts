@@ -167,7 +167,9 @@ describe('config push payload', () => {
     });
 
     // The login (server and its key) is per device (ruling 2026-09-25): it stays home.
-    const { accountServer: _server, e2ePublicKey: _key, ...synced } = account;
+    const synced: Record<string, unknown> = { ...account };
+    delete synced.accountServer;
+    delete synced.e2ePublicKey;
     expect(decrypted.account).toEqual(synced);
     expect(decrypted.defaults).toEqual(defaults);
   });

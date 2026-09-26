@@ -295,6 +295,8 @@
     "check:ci-pricing-consistency": "tsx scripts/gates/check-pricing-consistency.ts",
     "check:cli-examples": "tsx scripts/gen/validate-cli-examples.ts",
     "check:ci-account-onboarding": "tsx scripts/gates/check-account-onboarding.ts",
+    "check:ci-max-lines": "tsx scripts/gates/check-max-lines.ts --selftest && tsx scripts/gates/check-max-lines.ts",
+    "check:ci-source-rules": "tsx scripts/gates/check-source-rules.ts --selftest && tsx scripts/gates/check-source-rules.ts",
     "check:ci-changed-selection": "tsx scripts/gates/check-changed-selection.ts --selftest && tsx scripts/gates/check-changed-selection.ts",
     "check:ci-paths-origin": "tsx scripts/gates/check-paths-origin.ts --selftest && tsx scripts/gates/check-paths-origin.ts",
     "check:ci-setup-port-parity": ".ci/rediacc_ci/setup/port_parity.py",

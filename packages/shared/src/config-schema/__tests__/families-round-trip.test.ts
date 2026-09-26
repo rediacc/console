@@ -241,7 +241,9 @@ describe('resource families round trip', () => {
     const rebuilt = await pushPullRoundTrip(original);
 
     // Everything in `account` but the device's login (DEVICE_LOCAL_POINTERS).
-    const { accountServer: _server, e2ePublicKey: _key, ...syncedAccount } = original.account ?? {};
+    const syncedAccount: Record<string, unknown> = { ...(original.account ?? {}) };
+    delete syncedAccount.accountServer;
+    delete syncedAccount.e2ePublicKey;
     expect(rebuilt.account).toEqual(syncedAccount);
     expect(rebuilt.account?.accountServer).toBeUndefined();
     expect(rebuilt.defaults).toEqual(original.defaults);

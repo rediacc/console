@@ -27,7 +27,7 @@
     },
     {
       "gate": "check:ci-gate-bind",
-      "reason": "scripts/gates/check-max-lines.ts and scripts/gates/check-source-rules.ts (added in c8f92eaa0 by the Biome-only lint migration, agent/plans/PLAN-biome-only-lint.md) declare gate ids check:ci-max-lines and check:ci-source-rules with no package.json script, no manifest entry and no ci-quality.yml step. Wiring them is an open box of that plan, and check-source-rules deliberately still exits 1 on 27 files carrying eslint-disable until its deletion box lands (PLAN-biome-only-lint.md:173), so registering it now would add a second red. Transitional until the migration's wiring box closes."
+      "reason": "BLOCKER: one binding finding remains, an inferred-need false positive: gate-bind reads `git ls-files --recurse-submodules` in .ci/scripts/quality/check_plan_deps.py and infers that the gate needs submodules, which its quality-branch lane does not check out; only the hand-run --overlaps and --migrate-x verbs call that listing, never the CI check path. gate-bind has no way to declare an inferred need as not applying to the CI path; tracked to add one (or move the migration verbs out of the gate file). The earlier cause, the unwired Biome gates check:ci-max-lines and check:ci-source-rules, was fixed on 2026-09-26 (max-lines wired, source-rules registered local-only with emit: false)."
     },
     {
       "gate": "check:ci-enumeration-vacuity",

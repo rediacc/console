@@ -4619,6 +4619,31 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    // Source-authored lint rules on the oxc/momoa host (PLAN-biome-only-lint). Registered so gate-bind resolves its id, but not a gate and not a CI step yet: its header says emit: false with the same blocker.
+    id: 'check:ci-source-rules',
+    run: 'npm run check:ci-source-rules',
+    gate: false,
+    leaves: ['scripts/gates/check-source-rules.ts'],
+    ci: {
+      kind: 'local-only',
+      blocker:
+        'BLOCKER: the Biome-only lint migration (PLAN-biome-only-lint) is unfinished: 20 files still carry eslint-disable tokens nothing honours, so this gate is red until that plan clears them; it runs by hand until then (2026-09-26).',
+    },
+  },
+  {
+    // The line budget eslint's `max-lines` enforced until the Biome-only lint cut (PLAN-biome-only-lint); its own gate header binds it to this step. Wired 2026-09-26 after gate-bind --write emitted the step while no script or entry existed, so CI ran `npm run check:ci-max-lines` against a missing script.
+    id: 'check:ci-max-lines',
+    run: 'npm run check:ci-max-lines',
+    gate: true,
+    leaves: ['scripts/gates/check-max-lines.ts'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'No source file exceeds the line-count budget',
+    },
+  },
+  {
     // C2 (W2.5 tier 1). `pathsOrigin` is required whenever `paths` is present, both directions, and a `'declared'` origin's globs must each match at least one tracked file -- the 46 hand-typed arrays this box's own paths key powers had nothing asserting they still match anything on disk.
     id: 'check:ci-paths-origin',
     run: 'npm run check:ci-paths-origin',

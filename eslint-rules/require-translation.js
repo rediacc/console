@@ -174,6 +174,9 @@ export const requireTranslation = {
       },
 
       CallExpression(node) {
+        // ONLY A BOUND `t` IS A TRANSLATION CALL. A string with a colon reads as `ns:key`, and a key that names its own namespace used to skip the callee check entirely, so `cn('h-11 md:text-lg')` was reported as a missing key `text-lg` in a namespace called `h-11` (ConfigRemote.tsx, 2026-09-26). Every translation call in the linted trees is a `t` from useTranslation(), so nothing real is lost.
+        if (node.callee.type !== 'Identifier') return;
+        if (findNamespacesForIdentifier(node.callee.name, node) === null) return;
         const keyNode = node.arguments?.[0];
         const keyValue = getStringValue(keyNode);
         if (!keyValue) return;

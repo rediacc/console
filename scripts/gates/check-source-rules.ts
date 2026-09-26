@@ -11,6 +11,8 @@
  * needs: node
  * selftest: true
  * lane: quality-code
+ * emit: false
+ * blocker: the Biome-only lint migration (PLAN-biome-only-lint) is unfinished: 20 files still carry eslint-disable tokens nothing honours, so this gate stays red until that plan clears them; it runs by hand until then (2026-09-26)
  * why: eslint-rules/ has no type-aware or esquery-dependent rule (finding #4 of PLAN-biome-only-lint.md), so it can run on a small host instead of ESLint; nothing else proves the host and the rules still agree with what ESLint reported before ESLint is retired.
  * ---- end gate ----
  */

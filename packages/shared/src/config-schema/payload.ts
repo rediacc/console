@@ -96,7 +96,8 @@ function omitPointer(doc: Record<string, unknown>, pointer: string): void {
   }
   const parent = doc[root];
   if (!isPlainObject(parent) || !(child in parent)) return;
-  const { [child]: _dropped, ...rest } = parent;
+  const rest = { ...parent };
+  delete rest[child];
   doc[root] = rest;
 }
 

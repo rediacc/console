@@ -86,14 +86,12 @@ async function legacyV2(config: RdcConfig, k: { cek: CryptoKey; sdkDerived: Cryp
   const fckSalt = generateFckSalt();
   const fck = await deriveFieldCommitmentKey(k.cek, fckSalt);
   const commitments = await computeCommitments(fck, fckSalt, buildCommitEntries(config));
-  const {
-    envelopeVersion: _v,
-    id: _id,
-    version: _ver,
-    sdkEpoch: _e,
-    commitments: _c,
-    ...sensitive
-  } = toFullConfig(config, { version: 1, sdkEpoch: 11 });
+  const sensitive: Record<string, unknown> = {
+    ...toFullConfig(config, { version: 1, sdkEpoch: 11 }),
+  };
+  for (const envelopeField of ['envelopeVersion', 'id', 'version', 'sdkEpoch', 'commitments']) {
+    delete sensitive[envelopeField];
+  }
   const encryptedBlob = await configEncrypt(JSON.stringify(sensitive), k.sdkDerived, k.cek);
   const payload: EncryptedConfigPayload = {
     envelope: { envelopeVersion: 2, id: CONFIG, version: 1, sdkEpoch: 11, commitments },
@@ -217,7 +215,9 @@ describe('envelope v3: tombstones (F2, D1)', () => {
       expect(next.envelope.commitments.fields).not.toHaveProperty([key]);
     }
     // Push-only blocks are not commitment state: the blob opens with them removed, as the server stores it.
-    const { removed: _r, migrated: _m, ...state } = next.envelope.commitments;
+    const state = { ...next.envelope.commitments };
+    delete state.removed;
+    delete state.migrated;
     expect(
       (await open({ ...next, envelope: { ...next.envelope, commitments: state } }, k)).machines
     ).toEqual({

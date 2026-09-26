@@ -4940,6 +4940,32 @@
     }
   },
   {
+    "id": "check:ci-source-rules",
+    "run": "npm run check:ci-source-rules",
+    "gate": false,
+    "leaves": [
+      "scripts/gates/check-source-rules.ts"
+    ],
+    "ci": {
+      "kind": "local-only",
+      "blocker": "BLOCKER: the Biome-only lint migration (PLAN-biome-only-lint) is unfinished: 20 files still carry eslint-disable tokens nothing honours, so this gate is red until that plan clears them; it runs by hand until then (2026-09-26)."
+    }
+  },
+  {
+    "id": "check:ci-max-lines",
+    "run": "npm run check:ci-max-lines",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-max-lines.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "No source file exceeds the line-count budget"
+    }
+  },
+  {
     "id": "check:ci-paths-origin",
     "run": "npm run check:ci-paths-origin",
     "gate": true,
