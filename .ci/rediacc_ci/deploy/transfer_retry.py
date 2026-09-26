@@ -4,20 +4,11 @@ The bash twins run each `aws s3 cp/sync` once under `set -e`, so ONE broken read
 
 A REFUSAL IS NOT RETRIED (#b22efec4). On 2026-09-24 (M-live item 10) the minted R2 token expired mid-run and the retry spent its remaining attempts, and their delays, on `AccessDenied`. A wrong or expired credential, or a missing bucket, gives the same answer on every try, so `retried` stops on the first one and names it. Transient failures (a broken read, a timeout, a 5xx) keep the retry.
 
-A RETRIED DOWNLOAD MUST RESUME, NOT RESTART (#a8d1d6d0). The promotes used to stage `<dir>/edge/` with `aws s3 cp --recursive`, which fetches every object on every attempt, so on a flaky link each retry drew a fresh broken read on a different file and never got further. Measured 2026-09-25 (M-live item 10 re-run): `rpm/edge` failed 3/3 with `IncompleteRead`, a different `.rpm` each time. They now stage
-with `aws s3 sync` into a directory `fresh_stage` emptied once per run, so a retry fetches only what is still missing. Two properties of aws-cli make that safe, both driven against a local fake endpoint with aws-cli 2.36.40 (and read in the awscli 1.46.1 source, `s3transfer/download.py` and `customizations/s3/utils.py`):
-
-  * A BROKEN READ LEAVES NOTHING THAT LOOKS COMPLETE. The body is written to `<name>.<8 random chars>` and renamed only when complete; a failed transfer removes the temporary file. After an `IncompleteRead` the file is simply absent, so the next `sync` fetches it.
-  * A COMPLETED FILE IS SKIPPED. aws stamps it with the object's LastModified TRUNCATED TO WHOLE SECONDS, and a download-direction sync skips a same-size local file that is not newer than the object. `--exact-timestamps` would defeat that on a backend whose LastModified carries milliseconds (R2 does): truncated != exact, so every file is fetched again. It is deliberately not used.
-
-The same skip rule is why the stage is emptied BEFORE the first attempt: a same-size, older leftover from an earlier run (the fixed `/tmp/promote-<dir>` outlives a failed run) would be skipped and promoted in place of the current object. Emptying it once per run, and never between attempts, is what keeps the resume and drops the leftover.
+WHAT IS RETRIED NOW. Since the server-side promote (operator ruling 2026-09-26, `r2_promote.py`) the promotes no longer stage `<dir>/edge/` on the runner, so the resume-versus-restart question the staging download raised (#a8d1d6d0) is gone with it. What remains is per call and idempotent: a listing, one server-side `copy-object`, and a single-file fetch or put of a channel pointer.
 """
 
 from __future__ import annotations
 
-import os
-import shutil
-import subprocess
 import sys
 import time
 from typing import TYPE_CHECKING
@@ -31,29 +22,12 @@ ATTEMPTS = 3
 FATAL_CODES = ("AccessDenied", "InvalidAccessKeyId", "NoSuchBucket", "ExpiredToken")
 
 
-def fresh_stage(path: str) -> None:
-    """Empty `path` and recreate it, once per run before the first download attempt. See the module docstring: a resumable `sync` must not start from an earlier run's leftovers."""
-    shutil.rmtree(path, ignore_errors=True)
-    os.makedirs(path, exist_ok=True)
-
-
 def fatal_code(stderr: str) -> str:
     """The first non-transient error code named in `stderr`, or "" when there is none."""
     for code in FATAL_CODES:
         if "(%s)" % code in stderr:
             return code
     return ""
-
-
-def run_captured(argv: list[str]) -> tuple[int, str]:
-    """Run `argv` with stdout inherited, and stderr captured AND forwarded unchanged, so the retry can read what failed."""
-    sys.stdout.flush()
-    sys.stderr.flush()
-    proc = subprocess.run(argv, check=False, stderr=subprocess.PIPE)
-    if proc.stderr:
-        sys.stderr.buffer.write(proc.stderr)
-        sys.stderr.flush()
-    return proc.returncode, proc.stderr.decode("utf-8", errors="replace")
 
 
 def retried(run: Callable[[], tuple[int, str]], what: str, self_name: str, delay_s: float) -> int:

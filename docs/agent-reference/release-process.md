@@ -63,6 +63,8 @@ Manual:     gh workflow run "Release to Production" -f force=true
 
 Promotes the current edge release to the stable channel (`eu`/`us`/`asia`), serving `www.rediacc.com`. Runs on a daily cron and refuses to promote a version still inside its `SOAK_DAYS` (7) window unless dispatched with `force: true`, which skips the soak check entirely -- there is no partial-skip.
 
+Both R2 promotes (this one and the `publish_stable` hotfix lane) copy `<dir>/edge/` to `<dir>/stable/` server-side with one `aws s3api copy-object` per object, so no release bytes pass through the runner; only the four channel pointers (`cli/install.sh`, `cli/install.ps1`, `rpm/rediacc.repo`, `archlinux/rediacc.conf`) are fetched, stamped for stable and uploaded after the rest of their tree. `.ci/rediacc_ci/deploy/r2_promote.py` carries the plan and R2's copy limits.
+
 ## Why this is a separate file
 
 `CLAUDE.md`'s own rule is to stay under budget by cutting what already has a home elsewhere (`agent/plans/PLAN-tooling-transformation.md`, box W11 P5b). `release_mode`'s semantics, the three less-visible dispatch inputs and the soak-skip behavior did not exist in any `docs/` file before this one -- deleting them from `CLAUDE.md` without first writing them somewhere would have

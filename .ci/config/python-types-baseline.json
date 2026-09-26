@@ -1262,48 +1262,6 @@
       "message": "Argument 1 to \"env_for\" has incompatible type \"**dict[str, None]\"; expected \"str\""
     },
     {
-      "id": "8ac616c68904a095",
-      "file": ".ci/rediacc_ci/tests/test_deploy_promote_r2_to_stable.py",
-      "code": "arg-type",
-      "count": 2,
-      "message": "Argument 3 to \"_run\" has incompatible type \"**dict[str, Sequence[str]]\"; expected \"Callable[[], None] | None\""
-    },
-    {
-      "id": "3fb806c18ce86ce1",
-      "file": ".ci/rediacc_ci/tests/test_deploy_promote_r2_to_stable.py",
-      "code": "arg-type",
-      "count": 2,
-      "message": "Argument 3 to \"_run\" has incompatible type \"**dict[str, Sequence[str]]\"; expected \"str\""
-    },
-    {
-      "id": "1fc3ea0bca6db39c",
-      "file": ".ci/rediacc_ci/tests/test_deploy_promote_r2_to_stable.py",
-      "code": "arg-type",
-      "count": 2,
-      "message": "Argument 3 to \"_run\" has incompatible type \"**dict[str, Sequence[str]]\"; expected \"tuple[str, ...]\""
-    },
-    {
-      "id": "e3e3b5ea11bf7247",
-      "file": ".ci/rediacc_ci/tests/test_deploy_promote_r2_to_stable_hotfix.py",
-      "code": "arg-type",
-      "count": 2,
-      "message": "Argument 3 to \"_run\" has incompatible type \"**dict[str, Sequence[str]]\"; expected \"Callable[[], None] | None\""
-    },
-    {
-      "id": "31a504841611c81c",
-      "file": ".ci/rediacc_ci/tests/test_deploy_promote_r2_to_stable_hotfix.py",
-      "code": "arg-type",
-      "count": 2,
-      "message": "Argument 3 to \"_run\" has incompatible type \"**dict[str, Sequence[str]]\"; expected \"str\""
-    },
-    {
-      "id": "2504dccea3f054da",
-      "file": ".ci/rediacc_ci/tests/test_deploy_promote_r2_to_stable_hotfix.py",
-      "code": "arg-type",
-      "count": 2,
-      "message": "Argument 3 to \"_run\" has incompatible type \"**dict[str, Sequence[str]]\"; expected \"tuple[str, ...]\""
-    },
-    {
       "id": "f829cd73fecc004f",
       "file": ".ci/rediacc_ci/tests/test_deploy_verify_edge_endpoints.py",
       "code": "dict-item",
