@@ -81,7 +81,13 @@ export async function aesDecrypt(
 
 /** Encode Uint8Array to base64. */
 export function toBase64(data: Uint8Array): string {
-  return btoa(String.fromCharCode(...data));
+  // In chunks: spreading the whole array into one call passes every byte as an argument, and a config blob of a
+  // few hundred KB overflowed the stack ("Maximum call stack size exceeded" on `rdc machine add`, 2026-09-26).
+  let binary = '';
+  for (let i = 0; i < data.length; i += 0x8000) {
+    binary += String.fromCharCode(...data.subarray(i, i + 0x8000));
+  }
+  return btoa(binary);
 }
 
 /** Decode base64 to Uint8Array. */

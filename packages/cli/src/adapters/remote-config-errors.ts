@@ -122,13 +122,36 @@ export class RemoteRollbackError extends Error {
  * back to the offline cache on this error, writes must fail closed.
  */
 export class RemoteUnreachableError extends Error {
+  /** The HTTP status when the server answered with a 5xx; undefined when it could not be reached at all. */
+  readonly status: number | undefined;
   constructor(
     public readonly apiUrl: string,
     cause: unknown
   ) {
-    super(t('commands.config.remote.unreachable', { server: apiUrl }), { cause });
+    // A 5xx is grouped with "unreachable" so a read can fall back to the offline cache, but the message must not
+    // claim the server is down when it answered: a 500 from a push read as "unreachable" on 2026-09-26.
+    const status = serverStatusOf(cause);
+    super(
+      status === undefined
+        ? t('commands.config.remote.unreachable', { server: apiUrl })
+        : t('commands.config.remote.serverFailed', { server: apiUrl, status }),
+      { cause }
+    );
     this.name = 'RemoteUnreachableError';
+    this.status = status;
   }
+}
+
+/** The status of the first ConfigServerError in `error`'s cause chain, or undefined. */
+function serverStatusOf(error: unknown): number | undefined {
+  let current: unknown = error;
+  const seen = new Set<unknown>();
+  while (current && typeof current === 'object' && !seen.has(current)) {
+    seen.add(current);
+    if (current instanceof ConfigServerError) return current.status;
+    current = (current as { cause?: unknown }).cause;
+  }
+  return undefined;
 }
 
 /**
@@ -171,9 +194,17 @@ export class RemoteWriteFailedClosedError extends Error {
     public readonly apiUrl: string,
     cause: unknown
   ) {
-    super(t('commands.config.remote.writeFailedClosed', { config: configName, server: apiUrl }), {
-      cause,
-    });
+    const status = findUnreachable(cause)?.status;
+    super(
+      status === undefined
+        ? t('commands.config.remote.writeFailedClosed', { config: configName, server: apiUrl })
+        : t('commands.config.remote.writeFailedServerError', {
+            config: configName,
+            server: apiUrl,
+            status,
+          }),
+      { cause }
+    );
     this.name = 'RemoteWriteFailedClosedError';
   }
 }
