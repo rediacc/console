@@ -14,7 +14,8 @@
  * TWO ENGINES, ONE SHAPE. `runSourceRule` walks an oxc ESTree/TS-ESTree AST and
  * dispatches `Type(node)` visitors. `runJsonRule` parses with momoa and calls a
  * rule's `Document(node)` visitor once (every JSON rule here does its own
- * recursive descent through `objectMembers`, so nothing else needs dispatching).
+ * recursive descent through its own `objectMembers` helper in eslint-rules/, so nothing else
+ * needs dispatching).
  * Both hand the rule the same `context` shape: `{ options, filename,
  * physicalFilename, cwd, sourceCode, report }`.
  *
@@ -37,9 +38,7 @@ import path from 'node:path';
 
 import type {
   DocumentNode,
-  MemberNode,
   Node as MomoaNode,
-  ObjectNode as MomoaObjectNode,
 } from '@humanwhocodes/momoa';
 import { parse as momoaParse } from '@humanwhocodes/momoa';
 import { parseSync, visitorKeys as jsVisitorKeys } from 'oxc-parser';
@@ -451,23 +450,4 @@ function toFinding(
     nodeType: descriptor.node.type,
     fixes,
   };
-}
-
-/** Apply every reported fix, in one non-iterative pass, sorted by range start. Sufficient for this repo's rules: at most one fix is ever reported per run today (`sorted-keys` stops at the first violation; `prefer-const-arrays` reports independent, non-overlapping arrays). */
-export function applyFixes(code: string, findings: Finding[]): string {
-  const fixes = findings.flatMap((f) => f.fixes).sort((a, b) => a.range[0] - b.range[0]);
-  let out = '';
-  let cursor = 0;
-  for (const fix of fixes) {
-    if (fix.range[0] < cursor) continue; // overlapping fix, skip rather than corrupt output
-    out += code.slice(cursor, fix.range[0]) + fix.text;
-    cursor = fix.range[1];
-  }
-  out += code.slice(cursor);
-  return out;
-}
-
-/** Every momoa `Member` directly under an `Object` node; `[]` for anything else. Re-exported so callers outside `eslint-rules/` (the differential, the gate) share one definition with the rules themselves. */
-export function objectMembers(node: MomoaNode | null | undefined): MemberNode[] {
-  return node?.type === 'Object' ? (node as MomoaObjectNode).members : [];
 }

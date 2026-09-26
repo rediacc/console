@@ -90,8 +90,8 @@ const MUTANTS: Mutant[] = [
   {
     name: 'withheld relay lines are WRAPPED when replayed, not dumped at full width',
     file: 'src/services/executor/output-lines.ts',
-    find: 'for (const row of wrapProse(line, terminalWidth())) process.stderr.write(`${row}\\n`);',
-    replace: 'process.stderr.write(`${line}\\n`);',
+    find: 'for (const row of wrapProse(line, terminalWidth())) writeStderr(`${row}\\n`);',
+    replace: 'writeStderr(`${line}\\n`);',
     test: 'src/services/__tests__/quiet-stderr-replay.test.ts',
   },
   {
