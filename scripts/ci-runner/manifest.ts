@@ -2008,6 +2008,7 @@ export const GATES: readonly GateSpec[] = [
   {
     // The other half of the plan lifetime. check:ci-plan-boxes rules on a plan's boxes; this one rules on a COMPACTED plan's pointer back to its full text, which lives in a git blob and is the only thing standing between a record and an unreachable document that still advertises a recovery command.
     id: 'check:ci-plan-record',
+    slow: true, // 40.4s in the idle pre-push pool (walks git history per plan record); first judged 2026-09-26
     env: {
       GITHUB_BASE_REF: '${{ github.base_ref }}',
     },

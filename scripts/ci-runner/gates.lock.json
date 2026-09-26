@@ -2085,6 +2085,7 @@
   },
   {
     "id": "check:ci-plan-record",
+    "slow": true,
     "env": {
       "GITHUB_BASE_REF": "${{ github.base_ref }}"
     },

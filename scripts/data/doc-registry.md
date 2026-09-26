@@ -221,7 +221,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-plan-folders | quality-branch / Plan folders and retention | yes | no | no |
 | check:ci-plan-housekeeping | quality-i18n / Plan file housekeeping | yes | no | no |
 | check:ci-plan-implementation | quality-branch / Plan implementation clock | yes | no | no |
-| check:ci-plan-record | quality-branch / Plan records | yes | no | no |
+| check:ci-plan-record | quality-branch / Plan records | yes | yes | no |
 | check:ci-plant-proofs | quality-static / Control plant proofs | yes | no | no |
 | check:ci-player-css-scope | quality-www-build / Player CSS scope | yes | yes | no |
 | check:ci-policy-inventory | quality-static / Policy inventory | yes | no | no |
