@@ -353,7 +353,7 @@ ARG STATICCHECK_VERSION=0.8.1
 # golangci-lint v2 moved to the /v2 module path. Installing the old
 # `github.com/golangci/golangci-lint/cmd/golangci-lint` at a v2 version fails
 # outright, so the path below is not interchangeable with the pre-v2 one.
-ARG GOLANGCILINT_VERSION=2.13.2
+ARG GOLANGCILINT_VERSION=2.14.0
 ARG GOIMPORTS_VERSION=0.49.0
 # The `: "${X_VERSION:?...}"` guards are not decoration: without them an empty
 # build arg silently resolves to `@v`, which Go treats as a floating reference,

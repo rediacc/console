@@ -1224,6 +1224,7 @@ export const GATES: readonly GateSpec[] = [
     // with a sentence built from its OWN pattern, so it cannot go stale as
     // guards are added.
     id: 'check:ci-guard-mention-anchoring',
+    slow: true, // 22.2s in the idle pre-push pool, 5.5s alone (parses every guard); 2026-09-26
     run: 'npm run check:ci-guard-mention-anchoring',
     gate: true,
     // The script scans all 3 chains (pre-bash, pre-edit, pre-ask) since the peer's extension on 2026-08-28; this list had stayed pre-bash-only, the exact "half-populated path table" anti-pattern gate-author.md warns against -- a guard added under pre-edit/pre-ask would not have re-selected this gate on --changed. RE-KEYED BY THE W5 CUTOVER, which is invariant 2: the three chain
@@ -1807,6 +1808,7 @@ export const GATES: readonly GateSpec[] = [
     // quoting the flag whole makes this comment an offender) is refused whenever it would ADD a pair, so a trimmer cannot reseed past it; additions are typed with --allow-new, which is itself checked against the derived set so it cannot pre-bank. 124 read sites hold the name in a variable, so constant resolution recovers 87 pairs a literal scan cannot see -- it is load-bearing,
     // not polish.
     id: 'check:ci-python-env-registry',
+    slow: true, // 20.0s in the idle pre-push pool, 5.1s alone (AST-scans 1217 Python files); 2026-09-26
     run: 'npm run check:ci-python-env-registry',
     gate: true,
     leaves: ['.ci/scripts/quality/check_python_env_registry.py'],
@@ -2725,6 +2727,7 @@ export const GATES: readonly GateSpec[] = [
   {
     // The sibling of check:ci-pool-writer-safety: that gate holds GATE TESTS to "a real-tree writer holds an exclusive tree: claim"; this one holds the GATES themselves to it, through every Python/TS/JS/bash module their leaves reach (imports and cross-language spawns). agent/plans/PLAN-ci-gate-write-taint-scanners.md.
     id: 'check:ci-gate-tree-writes',
+    slow: true, // 15.7s in the idle pre-push pool, 4.4s alone; 2026-09-26
     run: 'npm run check:ci-gate-tree-writes',
     gate: true,
     paths: [
@@ -4603,6 +4606,7 @@ export const GATES: readonly GateSpec[] = [
     // B4. `--changed` scopes by `paths` and only 46 of 465 gates declare any, so the other 419 are selected by nothing. Worse than fail-open: on an EMPTY file list the rule INVERTS -- no file matches any glob, so the 46 scoped gates drop and the run reports green having skipped them. Both unusable change sets (unresolvable differ, zero files) now REFUSE instead of scoping. No
     // `paths` key here on purpose: always selected.
     id: 'check:ci-changed-selection',
+    slow: true, // 15.1s in the idle pre-push pool, 3.4s alone (seven runner subprocesses); 2026-09-26
     run: 'npm run check:ci-changed-selection',
     gate: true,
     leaves: ['scripts/gates/check-changed-selection.ts'],

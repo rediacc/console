@@ -461,8 +461,11 @@ function main(): number {
       inner: ['inner.txt'],
     });
     const gl = selectedIds(
-      runRunner(['--list', '--changed', '--manifest', glManifest], { CI_RUNNER_BASE: 'HEAD' }, glBin)
-        .out
+      runRunner(
+        ['--list', '--changed', '--manifest', glManifest],
+        { CI_RUNNER_BASE: 'HEAD' },
+        glBin
+      ).out
     );
     check(
       gl.has('probe:inner') && !gl.has('probe:outer'),

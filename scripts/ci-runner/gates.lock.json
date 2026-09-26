@@ -1272,6 +1272,7 @@
   },
   {
     "id": "check:ci-guard-mention-anchoring",
+    "slow": true,
     "run": "npm run check:ci-guard-mention-anchoring",
     "gate": true,
     "paths": [
@@ -1877,6 +1878,7 @@
   },
   {
     "id": "check:ci-python-env-registry",
+    "slow": true,
     "run": "npm run check:ci-python-env-registry",
     "gate": true,
     "leaves": [
@@ -2858,6 +2860,7 @@
   },
   {
     "id": "check:ci-gate-tree-writes",
+    "slow": true,
     "run": "npm run check:ci-gate-tree-writes",
     "gate": true,
     "paths": [
@@ -4922,6 +4925,7 @@
   },
   {
     "id": "check:ci-changed-selection",
+    "slow": true,
     "run": "npm run check:ci-changed-selection",
     "gate": true,
     "leaves": [

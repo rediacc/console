@@ -63,7 +63,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-bws-rotation-notice | quality-security / BWS rotation notice | yes | no | no |
 | check:ci-captcha-recovery | quality-www-build / Captcha recovery | yes | no | no |
 | check:ci-ceph-image-pin | quality-code / Ceph image pin freshness | yes | no | no |
-| check:ci-changed-selection | quality-code / Changed-file selection contract | yes | no | no |
+| check:ci-changed-selection | quality-code / Changed-file selection contract | yes | yes | no |
 | check:ci-checkout-cone | quality-static / Checkout cone covers what steps run | yes | no | no |
 | check:ci-cli-contract | quality-packages / CLI contract | yes | yes | no |
 | check:ci-cli-doc-coverage | quality-code / CLI docs stay in sync with their scripts' real flags | yes | no | no |
@@ -129,7 +129,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-gate-prerequisites | quality-code / Gate prerequisites | yes | no | no |
 | check:ci-gate-reachability-coverage | quality-static / Gate-reachability probe agrees with registrations | yes | no | no |
 | check:ci-gate-test-real-file-plants | quality-code / Gate-test real-file plants | yes | no | no |
-| check:ci-gate-tree-writes | quality-code / Gates that write the real tree declare it | yes | no | no |
+| check:ci-gate-tree-writes | quality-code / Gates that write the real tree declare it | yes | yes | no |
 | check:ci-gates-lock | quality-code / Gates lock | yes | no | no |
 | check:ci-gen-manifest | quality-code / Generated manifest regions | yes | no | no |
 | check:ci-git-history-depth | quality-static / Git history depth | yes | no | no |
@@ -139,7 +139,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-go-module-sync | quality-go / Check Go module sync against the renet worktree | yes | no | no |
 | check:ci-go-tool-path | quality-code / Go tool PATH | yes | no | no |
 | check:ci-greenlight-closures | quality-code / Greenlight closure paths | yes | no | no |
-| check:ci-guard-mention-anchoring | quality-code / Guard mention anchoring | yes | no | no |
+| check:ci-guard-mention-anchoring | quality-code / Guard mention anchoring | yes | yes | no |
 | check:ci-guard-mutations | quality-packages / Guard mutations | yes | yes | no |
 | check:ci-hint-corpus | quality-content / Behavioral hints can actually fire | yes | no | no |
 | check:ci-hook-cross-os | quality-static / Hook cross-OS seams | yes | no | no |
@@ -245,7 +245,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-proxy-rdc-update | local-only | yes | no | no |
 | check:ci-pytest | quality-security / Python package tests | yes | yes | no |
 | check:ci-python-control-plants | quality-static / Python control plants | yes | no | no |
-| check:ci-python-env-registry | quality-static / Python env registry | yes | no | no |
+| check:ci-python-env-registry | quality-static / Python env registry | yes | yes | no |
 | check:ci-python-gate-deps | quality-static / Python gate deps | yes | no | no |
 | check:ci-python-lint | quality-static / Python lint + format (ruff) | yes | no | no |
 | check:ci-python-types | quality-static / Python types (mypy) | yes | yes | no |
