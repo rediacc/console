@@ -93,6 +93,7 @@ import pathlib
 import re
 import subprocess
 import sys
+import typing
 
 import _cipath  # noqa: F401
 from rediacc_ci import controls, paths
@@ -132,7 +133,9 @@ class Finding:
     missing: bool = False
 
 
-def evaluate(graph: D.Graph, strict_x: bool | None = None) -> tuple[list[Finding], dict[str, int]]:
+def evaluate(
+    graph: D.Graph, strict_x: bool | None = None
+) -> tuple[list[Finding], dict[str, typing.Any]]:
     """(findings, stats) over every required plan. Raises CannotRunError on zero.
 
     `strict_x` defaults to `wl_plandeps.X_FIELDS_REQUIRED`. When it is False the D10-D16 X findings land in `stats["pending"]` (a list, printed by `check`) instead of `findings`; when True they are findings like any other and the D8 floor also counts parsed X triples.
@@ -680,6 +683,8 @@ def _x_controls(tally: controls.Controls) -> None:
 
     # D17, pure: a base of operator values against the head graph.
     was, _ = D.parse_priority("P1 (operator) -- the operator ranked it")
+    if was is None:
+        raise RuntimeError("the D17 fixture priority must parse")
 
     def d17(**fields: str) -> tuple[set[str], int]:
         graph = D.Graph.from_texts(_xwith("p00", **fields), _INDEX)
@@ -1400,7 +1405,7 @@ def migrate_rows(root: pathlib.Path, today: str | None = None) -> list[dict]:
         rows.append(seed_row(root, rel, text, files, today))
     table = {
         r["rel"]: X.normalize_owns(
-            D.parse_owns(r[D.OWNS])[0].globs if D.parse_owns(r[D.OWNS])[0] else (), root
+            owns.globs if (owns := D.parse_owns(r[D.OWNS])[0]) else (), root
         )[0]
         for r in rows
     }

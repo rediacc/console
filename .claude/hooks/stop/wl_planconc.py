@@ -63,7 +63,9 @@ def expand_braces(glob: str, limit: int = BRACE_MAX) -> list[str]:
             out = [o + ch for o in out]
             i += 1
             continue
-        depth, j, parts, cur = 1, i + 1, [], []
+        depth, j = 1, i + 1
+        parts: list[str] = []
+        cur: list[str] = []
         while j < len(glob) and depth:
             c = glob[j]
             if c == "{":
@@ -186,7 +188,8 @@ def _tokens(seg: str) -> list[tuple]:
                 out.append((_LIT, c))
                 i += 1
                 continue
-            body, members = seg[start:j], set()
+            body = seg[start:j]
+            members: set[str] = set()
             k = 0
             while k < len(body):
                 if k + 2 < len(body) and body[k + 1] == "-":
@@ -604,9 +607,10 @@ def live_plans(cwd, session_id, fold, now=None) -> dict[str, list[str]] | None:
             continue
         if C.lease_state(str(rec.get("line") or "")) != "fresh":
             continue
-        plan = item_plan(rec)
-        if not plan:
+        linked = item_plan(rec)
+        if not linked:
             continue
+        plan = linked
         mine = C.owned_by_me(rec.get("owner"), session_id)
         if mine and not any(
             worker == w or w.startswith(worker) or worker.startswith(w) for w in live_ids

@@ -274,7 +274,8 @@ def _operator_texts(transcript_path):
             chunk = fh.read()
     except OSError:
         return texts
-    asks, answers = set(), []
+    asks: set[object] = set()
+    answers: list[str] = []
     for raw in chunk.split(b"\n"):
         try:
             rec = json.loads(raw)

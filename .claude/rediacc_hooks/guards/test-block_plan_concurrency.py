@@ -24,6 +24,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import typing
 
 HERE = pathlib.Path(__file__).resolve().parent
 GUARD = HERE / "block_plan_concurrency.py"
@@ -163,7 +164,8 @@ E_ITEM = ("e0e0e0e0", SID[:8], "regenerate PLAN-e.md [e1e1e1e1]")
 P_ITEM = ("a0a0a0a0", PEER, "edit a PLAN-p.md [a1a1a1a1]")
 
 # (name, world kwargs, payload, want_rc, stderr needles)
-CASES = [
+# (name, world kwargs, spawn payload, expected rc, stderr needles)
+CASES: list[tuple[str, dict[str, typing.Any], typing.Any, int, typing.Any]] = [
     (
         "m1 a live exclusive writer refuses another plan",
         {"plans": BASIC, "writers": ["Plan: PLAN-e.md"]},

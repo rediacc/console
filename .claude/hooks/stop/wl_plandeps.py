@@ -371,7 +371,9 @@ def parse_owns(value: str) -> tuple[Owns | None, list[str]]:
 
 def _split_owns(value: str) -> list[str]:
     """Split on commas that are outside `{...}` and `(...)`, so `a/{b,c}.py` and `x.ts (a, b only)` stay whole."""
-    out, cur, depth = [], [], 0
+    out: list[str] = []
+    cur: list[str] = []
+    depth = 0
     for ch in value:
         if ch in "{(":
             depth += 1
