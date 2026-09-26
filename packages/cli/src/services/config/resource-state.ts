@@ -191,7 +191,12 @@ interface LocalState {
   sshContent: SSHContent | null;
 }
 
-function loadLocalState(config: RdcConfig): LocalState {
+function loadLocalState(source: RdcConfig): LocalState {
+  // A COPY, never the caller's object: configFileStorage.load() hands out its in-process cache, so a state that
+  // aliased it made `delete machines[name]` delete from the cache too, and pushOnce then read that cache as the
+  // push base. The base no longer held the machine, no tombstone was built, and the server refused every remote
+  // machine removal as anti-downgrade (eu live test, 2026-09-26).
+  const config = structuredClone(source);
   return {
     machines: config.resources?.machines ?? {},
     storages: config.resources?.storages ?? {},
