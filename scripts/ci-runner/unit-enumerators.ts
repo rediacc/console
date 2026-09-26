@@ -51,7 +51,9 @@ export async function renetGoUnits(repoRoot: string): Promise<Unit[]> {
     .map((l) => l.trim())
     .filter(Boolean);
   if (ids.length === 0) {
-    throw new Error(`renetGoUnits: "go list ./pkg/... ./cmd/..." in ${cwd} returned no packages.`);
+    throw new Error(
+      `VACUOUS: renetGoUnits: "go list ./pkg/... ./cmd/..." in ${cwd} returned no packages.`
+    );
   }
   return ids.map((id) => ({ id }));
 }
@@ -71,7 +73,7 @@ export async function renetIntegrationUnits(repoRoot: string): Promise<Unit[]> {
     .filter((f) => f.startsWith('test_') && f.endsWith('.py'))
     .sort();
   if (files.length === 0) {
-    throw new Error(`renetIntegrationUnits: ${dir} holds no test_*.py file.`);
+    throw new Error(`VACUOUS: renetIntegrationUnits: ${dir} holds no test_*.py file.`);
   }
   return files.map((f) => ({ id: `renet-integration:${f}` }));
 }
@@ -105,7 +107,7 @@ export async function opsTutorialUnits(repoRoot: string): Promise<Unit[]> {
     pairs.push({ order: Number(orderMatch[1]), slug });
   }
   if (pairs.length === 0) {
-    throw new Error(`opsTutorialUnits: ${docsDir} holds no tutorial-*.mdx file.`);
+    throw new Error(`VACUOUS: opsTutorialUnits: ${docsDir} holds no tutorial-*.mdx file.`);
   }
   pairs.sort((a, b) => a.order - b.order);
   const drift: string[] = [];
@@ -148,7 +150,7 @@ export async function accountE2eUnits(repoRoot: string): Promise<Unit[]> {
   };
   walk('');
   if (files.length === 0) {
-    throw new Error(`accountE2eUnits: ${dir} holds no *.test.ts file.`);
+    throw new Error(`VACUOUS: accountE2eUnits: ${dir} holds no *.test.ts file.`);
   }
   files.sort();
   return files.map((f) => ({
@@ -223,7 +225,7 @@ export async function qualityPytestUnits(repoRoot: string): Promise<Unit[]> {
   }
   const roots = [...(m[1] as string).matchAll(/"([^"]+)"/g)].map((mm) => mm[1] as string);
   if (roots.length === 0) {
-    throw new Error('qualityPytestUnits: testpaths parsed to zero roots.');
+    throw new Error('VACUOUS: qualityPytestUnits: testpaths parsed to zero roots.');
   }
   const seen = new Map<string, string>();
   const walk = (dir: string): void => {
@@ -270,7 +272,7 @@ export async function qualityGateTestsUnits(repoRoot: string): Promise<Unit[]> {
     });
   }
   if (units.length === 0) {
-    throw new Error('qualityGateTestsUnits: "battery.py --list" named zero drivers.');
+    throw new Error('VACUOUS: qualityGateTestsUnits: "battery.py --list" named zero drivers.');
   }
   return units;
 }
